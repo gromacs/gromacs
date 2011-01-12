@@ -525,6 +525,8 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   PR("min_gaussian",rotg->min_gaussian);
   PR("epsilon",rotg->eps);
   PS("fit_method",EROTFIT(rotg->eFittype));
+  PI("potfitangle_nstep",rotg->PotAngle_nstep);
+  PR("potfitangle_step",rotg->PotAngle_step);
 }
 
 static void pr_rot(FILE *fp,int indent,t_rot *rot)

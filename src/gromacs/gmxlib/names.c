@@ -193,7 +193,7 @@ const char *erotg_names[erotgNR+1] = {
 };
 
 const char *erotg_fitnames[erotgFitNR+1] = { 
-  "rmsd", "norm", NULL
+  "rmsd", "norm", "potential", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {

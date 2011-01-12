@@ -170,9 +170,20 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Fitting method to determine angle of rotation group (rmsd or norm) (flex* potentials)");
+        CTYPE("Fitting method to determine angle of rotation group (rmsd, norm, or potential)");
         sprintf(buf,"rot_fit_method%d",g);
         ETYPE(buf, rotg->eFittype, erotg_fitnames);
+        CTYPE("For fit type 'potential', nr. of angles around the reference for which the pot. is evaluated");
+        sprintf(buf,"rot_potfit_nsteps%d",g);
+        ITYPE(buf, rotg->PotAngle_nstep, 21);
+        if ( (rotg->eFittype==erotgFitPOT) && (rotg->PotAngle_nstep < 1) )
+        {
+            sprintf(warn_buf, "rot_potfit_nsteps%d < 1", g);
+            warning_error(wi, warn_buf);
+        }
+        CTYPE("For fit type 'potential', distance in degrees between two consecutive angles");
+        sprintf(buf,"rot_potfit_step%d",g);
+        RTYPE(buf, rotg->PotAngle_step, 0.25);
     }
     
     *ninp_p   = ninp;

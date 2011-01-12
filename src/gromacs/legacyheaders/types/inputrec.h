@@ -161,6 +161,11 @@ typedef struct {
   real       k;              /* Force constant (kJ/(mol nm^2)                 */
   rvec       pivot;          /* Pivot point of rotation axis (nm)             */
   int        eFittype;       /* Type of fit to determine actual group angle   */
+  int        PotAngle_nstep; /* Number of angles around the reference angle
+                                for which the rotation potential is also
+                                evaluated (for fit type 'potential' only)     */
+  real       PotAngle_step;  /* Distance between two angles in degrees (for
+                                fit type 'potential' only)                    */
   real       slab_dist;      /* Slab distance (nm)                            */
   real       min_gaussian;   /* Minimum value the gaussian must have so that 
                                 the force is actually evaluated               */
