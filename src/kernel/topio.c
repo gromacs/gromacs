@@ -299,14 +299,6 @@ static char ** cpp_opts(const char *define,const char *include,
       }
     }
   }
-  if ((rptr=strrchr(infile,DIR_SEPARATOR)) != NULL) {
-    buf = strdup(infile);
-    buf[(int)(rptr-infile)] = '\0';
-    srenew(cppopts,++ncppopts);
-    snew(cppopts[ncppopts-1],strlen(buf)+4);
-    sprintf(cppopts[ncppopts-1],"-I%s",buf);
-    sfree(buf);
-  }
   srenew(cppopts,++ncppopts);
   cppopts[ncppopts-1] = NULL;
 
