@@ -40,8 +40,7 @@
  *   - \ref page_module_selection_parser
  *   - \ref page_module_selection_compiler
  *   - \ref page_module_selection_insolidangle
- */
-/*! \ingroup group_analysismodules
+ *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 /*! \file

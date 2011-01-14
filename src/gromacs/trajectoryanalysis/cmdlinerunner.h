@@ -31,6 +31,10 @@
 /*! \file
  * \brief
  * Declares gmx::TrajectoryAnalysisCommandLineRunner.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
@@ -41,21 +45,40 @@ namespace gmx
 class TrajectoryAnalysisModule;
 
 /*! \brief
- * Implementation class for cmd-line analysis tools.
+ * Runner class for command-line analysis tools.
  *
  * This class implements a command-line analysis program, given a
- * TrajectoryAnalysisModule object. It takes care of converting cmd-line
+ * TrajectoryAnalysisModule object.  It takes care of converting command-line
  * parameters to a form understood by the module, as well as parsing common
  * options, initializing and evaluating selections, and looping over trajectory
  * frames.
+ *
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisCommandLineRunner
 {
     public:
+        /*! \brief
+         * Create a new runner with the provided module.
+         *
+         * Takes ownership of the module and deletes it when it is no longer
+         * needed.
+         */
         TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModule *module);
         ~TrajectoryAnalysisCommandLineRunner();
 
+        /*! \brief
+         * Sets the default debugging level for selections.
+         *
+         * This is intended only for use by internal debugging tools.
+         *
+         * \see SelectionCollection::setDebugLevel()
+         */
         void setSelectionDebugLevel(int debuglevel);
+        /*! \brief
+         * Parses options from the given command line and runs the analysis.
+         */
         int run(int argc, char *argv[]);
 
     private:

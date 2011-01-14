@@ -28,9 +28,12 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Declaration of TrajanaModule and integrally related classes.
+ * Declares gmx::TrajectoryAnalysisRunnerCommon.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
@@ -45,9 +48,20 @@ class SelectionCollection;
 class TopologyInformation;
 class TrajectoryAnalysisSettings;
 
+/*! \internal \brief
+ * Implements common trajectory analysis runner functionality.
+ *
+ * As there is currently only one runner (TrajectoryAnalysisCommandLineRunner),
+ * the division of responsibilities is not yet very clear.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
 class TrajectoryAnalysisRunnerCommon
 {
     public:
+        /*! \brief
+         * Flags that define what kind of help should be printed.
+         */
         enum HelpFlag
         {
             efHelpShowOptions           = 1<<0,
@@ -73,6 +87,7 @@ class TrajectoryAnalysisRunnerCommon
         HelpFlags helpFlags() const;
         //! Returns true if input data comes from a trajectory.
         bool hasTrajectory() const;
+        //! Returns the topology information object.
         const TopologyInformation &topologyInformation() const;
         //! Returns the currently loaded frame.
         t_trxframe &frame() const;

@@ -30,9 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implements TrajectoryAnalysisSettings..
+ * Implements classes in analysissettings.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

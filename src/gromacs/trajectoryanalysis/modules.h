@@ -32,9 +32,9 @@
  * \brief
  * Generic interface for creation of trajectory analysis modules.
  *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_H
@@ -52,9 +52,14 @@ class TrajectoryAnalysisModule;
  * \returns  An allocated TrajectoryAnalysisModule object, or NULL if \p name
  *      is not valid.
  *
+ * This function should be used to instantiate selection methods defined in the
+ * library.
+ *
  * In addition to recognizing exact matches on \p name, the function also
  * identifies cases where \p name is a prefix of exactly one recognized name
  * (exact matches always take precedence).
+ *
+ * \inpublicapi
  */
 TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name);
 

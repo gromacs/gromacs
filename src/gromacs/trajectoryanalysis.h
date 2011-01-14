@@ -33,6 +33,31 @@
  * \brief
  * Provides functionality for implementing trajectory analysis modules.
  *
+ * This module implements a framework for implementing flexible trajectory
+ * analysis routines.  It provides a base class for implementing analysis as
+ * reusable modules that can be used from different contexts and can also
+ * support per-frame parallelization.  It integrally uses functionality from the
+ * following modules:
+ *  - \ref module_options
+ *  - \ref module_analysisdata
+ *  - \ref module_selection
+ *
+ * The main interface of this module is the gmx::TrajectoryAnalysisModule class.
+ * Analysis modules should derive from this class, and override the necessary
+ * virtual methods to provide the actual initialization and analysis routines.
+ * Classes gmx::TrajectoryAnalysisSettings and gmx::TopologyInformation (in
+ * addition to classes declared in the above-mentioned modules) are used to pass
+ * information to and from these methods.  gmx::TrajectoryAnalysisModuleData can
+ * be used in advanced scenarios where the tool requires custom thread-local
+ * data for parallel analysis.
+ *
+ * In addition to the framework for defining analysis modules, this module also
+ * provides gmx::TrajectoryAnalysisCommandLineRunner, which implements a
+ * command-line program that runs a certain analysis module.
+ *
+ * Internally, the module also defines a set of trajectory analysis modules that
+ * can be instantiated using createTrajectoryAnalysisModule().
+ *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 /*! \file

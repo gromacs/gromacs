@@ -30,10 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in analysismodule.h
+ * Implements classes in analysismodule.h.
  *
- * \ingroup module_trajectoryanalysis
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 

@@ -31,6 +31,9 @@
 /*! \internal \file
  * \brief
  * Implements gmx::TrajectoryAnalysisCommandLineRunner.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>

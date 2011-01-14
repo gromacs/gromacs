@@ -30,7 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Declaration of TrajanaModule and integrally related classes.
+ * Declares private implementation class for gmx::TrajectoryAnalysisSettings.
+ *
+ * \ingroup module_trajectoryanalysis
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
@@ -40,9 +43,15 @@
 namespace gmx
 {
 
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisSettings.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
 class TrajectoryAnalysisSettings::Impl
 {
     public:
+        //! Initializes the default values for the settings object.
         Impl() : flags(0), frflags(0), bRmPBC(true), bPBC(true) {}
 
         unsigned long        flags;

@@ -30,7 +30,12 @@
  */
 /*! \file
  * \brief
- * Declaration of TrajanaModule and integrally related classes.
+ * Declares gmx::TrajectoryAnalysisModule and
+ * gmx::TrajectoryAnalysisModuleData.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
@@ -61,6 +66,11 @@ class TrajectoryAnalysisSettings;
  * using dataHandle() and parallelSelection().
  *
  * \see TrajectoryAnalysisModule::startFrames()
+ * \see TrajectoryAnalysisModule::analyzeFrames()
+ * \see TrajectoryAnalysisModule::finishFrames()
+ *
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisModuleData
 {
@@ -133,13 +143,23 @@ class TrajectoryAnalysisModuleData
 
 
 /*! \brief
- * Trajectory analysis method.
+ * Base class for trajectory analysis methods.
+ *
+ * Trajectory analysis methods should derive from this class and override the
+ * necessary virtual functions to implement initialization (initOptions(),
+ * initOptionsDone(), initAnalysis(), initAfterFirstFrame()), per-frame analysis
+ * (analyzeFrame()), and final processing (finishFrames(), finishAnalysis(),
+ * writeOutput()).
  *
  * For parallel analysis using threads, only a single object is constructed,
- * but the methods startFrames(), analyzeFrame() and finishFrames() are
- * called in each thread. Frame-local data should be initialized in
- * startFrames() and stored in a class derived from
- * TrajectoryAnalysisModuleData that is passed to the other methods.
+ * but the methods startFrames(), analyzeFrame() and finishFrames() are called
+ * in each thread.  Frame-local data should be initialized in startFrames() and
+ * stored in a class derived from TrajectoryAnalysisModuleData that is passed
+ * to the other methods.  The default implementation of startFrames() can be
+ * used if only data handles and selections need to be thread-local.
+ *
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisModule
 {
@@ -147,23 +167,23 @@ class TrajectoryAnalysisModule
         virtual ~TrajectoryAnalysisModule();
 
         /*! \brief
-         * Initializes parameters understood by the module.
+         * Initializes options understood by the module.
          *
-         * In addition to initializing the accepted parameters, this function
-         * should also set any required options using the options() object,
-         * see TrajanaOptions for more details.
-         * It can also customize the acceptable selections using selections(),
-         * see Selections.
+         * In addition to initializing the options, this function can also
+         * provide information about its requirements using the \p settings
+         * object; see TrajectoryAnalysisSettings for more details.
          *
-         * If option values depend on the parameter values provided by the
-         * user, see initParamsDone().
+         * If settings depend on the option values provided by the user, see
+         * initOptionsDone().
          */
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
-         * Called after all parameter values have been set.
+         * Called after all option values have been set.
          *
-         * If the module needs to set options that affect topology loading or
-         * selection initialization based on parameters values, this function
+         * \returns  Zero on success, a non-zero error code on error.
+         *
+         * If the module needs to change settings that affect topology loading
+         * or selection initialization based on option values, this function
          * has to be overridden.
          *
          * The default implementation does nothing.
@@ -176,7 +196,7 @@ class TrajectoryAnalysisModule
          *
          * When this function is called, selections have been initialized based
          * on user input, and a topology has been loaded if provided by the
-         * user. For dynamic selections, the selections have been evaluated to
+         * user.  For dynamic selections, the selections have been evaluated to
          * the largest possible selection, i.e., the selections passed to
          * analyzeFrame() are always a subset of the selections provided here.
          */
@@ -201,8 +221,8 @@ class TrajectoryAnalysisModule
          * Starts the analysis of frames.
          *
          * \param[in]  opt
-         * \param[in]  selections  Frame-local selection object.
-         * \param[out] pdatap  Data structure for thread-local data.
+         * \param[in]  selections  Frame-local selection collection object.
+         * \param[out] pdatap      Data structure for thread-local data.
          *
          * This function is necessary only for threaded parallelization.
          * It is called once for each thread and should initialize a class that

@@ -30,7 +30,11 @@
  */
 /*! \file
  * \brief
- * Declaration of TrajanaModule and integrally related classes.
+ * Declares gmx::TrajectoryAnalysisSettings and gmx::TopologyInformation.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
@@ -51,46 +55,49 @@ class TrajectoryAnalysisRunnerCommon;
  * required, or whether PBC removal makes sense). It is also used to pass
  * similar information back to the analysis module after parsing user input.
  *
- * Having this functionality as a separate class makes the TrajanaModule
- * interface much cleaner, and also reduces the need to change existing code
- * when new options are added.
+ * Having this functionality as a separate class makes the
+ * TrajectoryAnalysisModule interface much cleaner, and also reduces the need to
+ * change existing code when new options are added.
  *
- * The class name is not the best possible, as the class is also used to pass
- * topology information into trajectory analysis modules.
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisSettings
 {
     public:
         //! Recognized flags.
-        enum {
+        enum
+        {
             /*! \brief
              * Forces loading of a topology file.
              *
              * If this flag is not specified, the topology file is loaded only
              * if it is provided on the command line explicitly.
-             *
-             * \see topology(), hasFullTopology()
              */
             efRequireTop     = 1<<0,
             /*! \brief
              * Requests topology coordinates.
              *
              * If this flag is specified, the coordinates loaded from the
-             * topology can be accessed with getTopologyConf().
+             * topology can be accessed, otherwise they are not loaded.
              *
-             * \see getTopologyConf()
+             * \see TopologyInformation
              */
             efUseTopX        = 1<<1,
             /*! \brief
              * Disallows the user from changing PBC handling.
              *
              * If this option is not specified, the analysis module (see
-             * TrajanaModule::analyzeFrame()) may be passed a NULL PBC
-             * structure, and it should be able to handle such a situation.
+             * TrajectoryAnalysisModule::analyzeFrame()) may be passed a NULL
+             * PBC structure, and it should be able to handle such a situation.
+             *
+             * \see setPBC()
              */
             efNoUserPBC      = 1<<4,
             /*! \brief
              * Disallows the user from changing PBC removal.
+             *
+             * \see setRmPBC()
              */
             efNoUserRmPBC    = 1<<5,
             /*! \brief
@@ -102,19 +109,21 @@ class TrajectoryAnalysisSettings
             efDebugSelection = 1<<16,
         };
 
+        //! Initializes default settings.
         TrajectoryAnalysisSettings();
         ~TrajectoryAnalysisSettings();
 
         //! Returns the currently set flags.
         unsigned long flags() const;
+        //! Tests whether a flag has been set.
         bool hasFlag(unsigned long flag) const;
         /*! \brief
          * Returns whether PBC should be used.
          *
-         * Returns the value set with setPBC(). TrajanaModule subcalees can
-         * access the user-provided value TrajanaModule::initParamsDone() (or
-         * at any point after that), as long as the value has not been replaced
-         * with another call to setPBC().
+         * Returns the value set with setPBC() and/or overridden by the user.
+         * The user-provided value can be accessed in
+         * TrajectoryAnalysisModule::initOptionsDone(), and can be overridden
+         * with a call to setPBC().
          */
         bool hasPBC() const;
         /*! \brief
@@ -142,9 +151,9 @@ class TrajectoryAnalysisSettings
          * \param[in]  bPBC   TRUE if PBC should be used.
          * \returns    0 on success.
          *
-         * If called in TrajanaModule::initParams(), this function sets the
-         * default for whether PBC are used in the analysis.
-         * If \ref efNoUserPBC is not set, a command-line option is provided
+         * If called in TrajectoryAnalysisModule::initOptions(), this function
+         * sets the default for whether PBC are used in the analysis.
+         * If ::efNoUserPBC is not set, a command-line option is provided
          * for the user to override the default value.
          * If called later, it overrides the setting provided by the user or an
          * earlier call.
@@ -152,10 +161,10 @@ class TrajectoryAnalysisSettings
          * If this function is not called, the default is to use PBC.
          *
          * If PBC are not used, the \p pbc pointer passed to
-         * TrajanaModule::analyzeFrame() is NULL.
+         * TrajectoryAnalysisModule::analyzeFrame() is NULL.
          * The value of the flag can also be accessed with hasPBC().
          *
-         * \see \ref efNoUserPBC
+         * \see ::efNoUserPBC
          */
         int setPBC(bool bPBC);
         /*! \brief
@@ -164,9 +173,9 @@ class TrajectoryAnalysisSettings
          * \param[in]     bRmPBC TRUE if molecules should be made whole.
          * \returns       0 on success.
          *
-         * If called in TrajanaModule::initParams(), this function sets the
-         * default for whether molecules are made whole.
-         * If \ref efNoUserRmPBC is not set, a command-line option is provided
+         * If called in TrajectoryAnalysisModule::initOptions(), this function
+         * sets the default for whether molecules are made whole.
+         * If ::efNoUserRmPBC is not set, a command-line option is provided
          * for the user to override the default value.
          * If called later, it overrides the setting provided by the user or an
          * earlier call.
@@ -177,11 +186,11 @@ class TrajectoryAnalysisSettings
          * The main use of this function is to call it with \c false if your
          * analysis program does not require whole molecules as this can
          * increase the performance.
-         * In such a case, you can also specify \ref efNoUserRmPBC to not to
+         * In such a case, you can also specify ::efNoUserRmPBC to not to
          * confuse the user with an option that would only slow the program
          * down.
          *
-         * \see \ref efNoUserRmPBC
+         * \see ::efNoUserRmPBC
          */
         int setRmPBC(bool bRmPBC);
         /*! \brief
@@ -209,6 +218,12 @@ class TrajectoryAnalysisSettings
         friend class TrajectoryAnalysisRunnerCommon;
 };
 
+/*! \brief
+ * Topology information passed to a trajectory analysis module.
+ *
+ * \inpublicapi
+ * \ingroup module_trajectoryanalysis
+ */
 class TopologyInformation
 {
     public:
@@ -229,8 +244,8 @@ class TopologyInformation
          *      (can be NULL, in which case it is not used).
          * \returns    0 on success, a non-zero error code on error.
          *
-         * If \ref efUseTopX has not been specified, the \p x parameter should
-         * be NULL.
+         * If TrajectoryAnalysisSettings::efUseTopX has not been specified,
+         * \p x should be NULL.
          *
          * The pointer returned in \p *x should not be freed.
          */
@@ -240,9 +255,9 @@ class TopologyInformation
         TopologyInformation();
         ~TopologyInformation();
 
-        //! The topology structure, or \p NULL if no topology loaded.
+        //! The topology structure, or NULL if no topology loaded.
         t_topology          *_top;
-        //! TRUE if full tpx file was loaded, FALSE otherwise.
+        //! true if full tpx file was loaded, false otherwise.
         bool                 _bTop;
         //! Coordinates from the topology (can be NULL).
         rvec                *_xtop;

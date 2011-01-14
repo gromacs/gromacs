@@ -30,10 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::createTrajectoryAnalysisModule().
+ * Implements createTrajectoryAnalysisModule().
  *
- * \ingroup module_trajectoryanalysis
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
