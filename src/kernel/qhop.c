@@ -1146,12 +1146,13 @@ static void low_level_swap_m_and_q(t_mdatoms *md, t_atom *atom, const int atomid
 
   md->chargeA[atomid] = q;
 
-/*   if (md->massA) */
-/*     { */
-/*       md->massA[atomid] = m; */
-/*     } */
+  if (md->massA != NULL)
+    {
+      md->massA[atomid] = m;
+    }
 
-/*   md->invmass[atomid] = (m==0 ? 0 : 1/m); */
+  md->invmass[atomid] = (m==0 ? 0 : 1/m);
+  
 }
 
 /* Hacks mdatoms such that the masses and
@@ -1161,16 +1162,20 @@ static void low_level_swap_m_and_q(t_mdatoms *md, t_atom *atom, const int atomid
 static void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 			      const qhop_res *prod,
 			      t_mdatoms *md,
-			      const qhop_db *db)
+			      const qhop_db *db, t_qhoprec *qr)
 {
-  int i, j;
+  int i, j, nH;
   t_restp *rtp;
   real m;
+  gmx_bool bWater;
+  t_qhop_atom *qa;
 
+  bWater = db->rb.bWater[swapres->rtype];
+  
   rtp = &(db->rtp[prod->rtp]);
 
   /* Compare atomnames with atomnames in rtp.
-   * Change */
+   * Change m and q upon match. */
 
   for (i=0; i < swapres->nr_atoms; i++)
     {
@@ -1191,9 +1196,45 @@ static void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 	    }
 	}
     }
+
+  if (bWater)
+    {
+      /* Masses are different for water. */
+
+      qa = &(qr->qhop_atoms[swapres->titrating_sites[0]]);
+      nH = 0;
+
+      for (i=0; i<qa->nr_protons; i++)
+	{
+	  if (db->H_map.H[qa->protons[i]] != 0)
+	    {
+	      nH++;
+	    }
+	}
+
+      /* Hardcoded = ugly. Sorry. */
+      if (md->massA != NULL)
+      {
+	md->massA[qa->protons[0]] = 1.008;
+	md->massA[qa->protons[1]] = 1.008;
+	md->massA[qa->protons[2]] = 0; /* vsite */
+	md->massA[qa->protons[3]] = 0; /* vsite */
+	md->massA[qa->protons[4]] = 0; /* vsite */
+	md->massA[qa->atom_id]    = 15.9994 + (nH-2)*1.008;
+      }
+
+      md->invmass[qa->protons[0]] = 1/1.008;
+      md->invmass[qa->protons[1]] = 1/1.008;
+      md->invmass[qa->protons[2]] = 0; /* vsite */
+      md->invmass[qa->protons[3]] = 0; /* vsite */
+      md->invmass[qa->protons[4]] = 0; /* vsite */
+      md->invmass[qa->atom_id]    = 1 / (15.9994 + (nH-2)*1.008);
+
+    }
+
 }
 
-static void set_interactions(qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
+static void set_interactions(t_qhoprec *qr, qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
 {
   int i, j, k, nri, bt, b, Gr, RB, R;
   qhop_res *reac;
@@ -1208,10 +1249,10 @@ static void set_interactions(qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qho
   for (i=0; i<qres->nr_titrating_sites; i++)
     {
       /* find among qdb->res[][].acc/.don */
-      for (j=0; j<reac->na; j++)
+      for (j=0; j < reac->na; j++)
 	{
 	  /* loop over tautomeric sites */
-	  for (k=0; k<reac->acc[j].nname; k++)
+	  for (k=0; k < reac->acc[j].nname; k++)
 	    {
 	      if (strcmp(reac->acc[j].name[k], QA[qres->titrating_sites[i]].atomname) == 0)
 		{
@@ -1238,7 +1279,7 @@ static void set_interactions(qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qho
 
   qhop_swap_bondeds(qres, reac);
   qhop_swap_vdws(qres, reac);
-  qhop_swap_m_and_q(qres, reac, md, qdb);
+  qhop_swap_m_and_q(qres, reac, md, qdb, qr);
   
     /* Non-bonded */
 }
@@ -1658,7 +1699,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
       /* What flavour of the residue shall we set it to? */
       target = which_subRes(mtop, qhoprec, *db, i);
       qhoprec->qhop_residues[i].res = target;
-      set_interactions(*db, md, qhoprec->qhop_atoms, &(qhoprec->qhop_residues[i]));
+      set_interactions(qhoprec, *db, md, qhoprec->qhop_atoms, &(qhoprec->qhop_residues[i]));
     }
 
   /* Complete the t_mdatoms */
@@ -1792,7 +1833,9 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
   return (hop);
 } /* find_acceptors */
 
-static void rotate_water(rvec *x,t_qhop_atom *res,real angle,t_mdatoms *md){
+/* If bFlip==TRUE, then the rotation axis is O-H1 + O-H2 */
+static void _rotate_water(t_pbc *pbc, rvec *x, t_qhop_atom *res,
+			  real angle, t_mdatoms *md, gmx_bool bFlip){
   int
     i,j;
   matrix
@@ -1806,25 +1849,51 @@ static void rotate_water(rvec *x,t_qhop_atom *res,real angle,t_mdatoms *md){
   clear_rvec(temp);
 
   /* find rotation axis */
-  for(j=2; j < res->nr_protons; j++)
+  if (bFlip)
     {
-      for(i=0; i<DIM; i++)
-	{
-	  axis[i] += x[res->protons[j]][i] / (3.0);
-	}
+      
+      pbc_dx(pbc, x[res->protons[0]], x[res->atom_id], axis);
+
+      pbc_dx(pbc, x[res->protons[1]], x[res->atom_id], temp);
+
+      rvec_inc(axis, temp);
+
+/*       rvec_add(x[res->protons[0]], */
+/* 	       x[res->protons[1]], */
+/* 	       axis); */
+/*       /\* axis = HW1 + HW2 *\/ */
+
+/*       svmul(1/2.0, axis, axis); */
+/*       /\* axis = <HW?> *\/ */
+    }
+  else
+    {
+      pbc_dx(pbc, x[res->protons[2]], x[res->atom_id], axis);
+
+      pbc_dx(pbc, x[res->protons[3]], x[res->atom_id], temp);
+      rvec_inc(axis, temp);
+
+      pbc_dx(pbc, x[res->protons[4]], x[res->atom_id], temp);
+      rvec_inc(axis, temp);
+
+/*       rvec_add(x[res->protons[2]], */
+/* 	       x[res->protons[3]], */
+/* 	       axis); */
+/*       /\* axis = H31 + H32 *\/ */
+
+/*       rvec_inc(x[res->protons[4]], */
+/* 	       axis); */
+/*       /\* axis = H31 + H32 + H33 *\/ */
+
+/*       svmul(1/3.0, axis, axis); */
+/*       /\* axis = <H3?> *\/ */
     }
 
-  for(i=0; i<DIM; i++)
-    {
-      axis[i] -= x[res->atom_id][i];
-    }
-
-  n=norm(axis);
-
-  for(i=0; i<DIM; i++)
-    {
-      axis[i] = axis[i]/n;
-    }
+  /* rvec_dec(axis, x[res->atom_id]); */
+  unitv(axis, axis);
+  /* axis is now a unitvector that points from the oxygen
+   * through the midpoint between the hydronium protons, or
+   * through the midpoint of the water protons if bFlip. */
 
   theta = angle*M_PI/180.0;
   /* construct rotation matrix. I hope there is no mistake here.... 
@@ -1843,19 +1912,33 @@ static void rotate_water(rvec *x,t_qhop_atom *res,real angle,t_mdatoms *md){
 
   for(j=0; j < res->nr_protons; j++)
     {
-      for(i=0; i<DIM; i++)
-	{
-	  temp[i] = x[res->protons[j]][i] - x[res->atom_id][i];
-	}
+      rvec_sub(x[res->protons[j]], x[res->atom_id], temp); /* shift origin */
+      mvmul(r, temp, xnew);                                /* rotate */
+      rvec_add(xnew, x[res->atom_id], x[res->protons[j]]); /* re-shift origin */
 
-      mvmul(r,temp,xnew);     
+/*       for(i=0; i<DIM; i++) */
+/* 	{ */
+/* 	  temp[i] = x[res->protons[j]][i] - x[res->atom_id][i]; */
+/* 	} */
 
-      for(i=0; i<DIM; i++)
-	{
-	  x[res->protons[j]][i] = xnew[i] + x[res->atom_id][i];
-	} 
+/*       mvmul(r,temp,xnew);      */
+
+/*       for(i=0; i<DIM; i++) */
+/* 	{ */
+/* 	  x[res->protons[j]][i] = xnew[i] + x[res->atom_id][i]; */
+/* 	}  */
     }
-} /* rotate_water */
+} /* _rotate_water */
+
+static void rotate_water(t_pbc *pbc, rvec *x, t_qhop_atom *res, real angle, t_mdatoms *md)
+{
+  _rotate_water(pbc, x, res, angle, md, FALSE);
+}
+
+static void flip_water(t_pbc *pbc, rvec *x, t_qhop_atom *res, t_mdatoms *md)
+{
+  _rotate_water(pbc, x, res, 180, md, TRUE);
+}
 
 static gmx_bool is_DA(qhop_db *db, t_qhop_residue *qr, t_qhop_atom *qa, int prod, int DA)
 {
@@ -1996,7 +2079,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
       qhop_swap_vdws   (&(qr->qhop_residues[qatom->qres_id]), product_res);
     }
 
-  qhop_swap_m_and_q(&(qr->qhop_residues[qatom->qres_id]), product_res, md, db);
+  qhop_swap_m_and_q(&(qr->qhop_residues[qatom->qres_id]), product_res, md, db, qr);
 
   /* Set the residue subtype */
   qr->qhop_residues[qatom->qres_id].res = i;
@@ -2136,11 +2219,11 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
     switch (hop->proton_id)
       {
       case 3:
-	rotate_water(x,donor_atom,-ang,md);
+	rotate_water(pbc, x,donor_atom,-ang,md);
 	break;
 	
       case 4:
-	rotate_water(x,donor_atom, ang,md);
+	rotate_water(pbc, x,donor_atom, ang,md);
 	break;
 	
       default:
@@ -2205,42 +2288,43 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
 	   * routines.
 	   */
 	
-	  copy_rvec(x[acceptor_atom->protons[0]], x_tmp);
-	  copy_rvec(x[acceptor_atom->protons[1]], x[acceptor_atom->protons[0]]);
-	  copy_rvec(x_tmp, x[acceptor_atom->protons[1]]);
+	  /* copy_rvec(x[acceptor_atom->protons[0]], x_tmp); */
+/* 	  copy_rvec(x[acceptor_atom->protons[1]], x[acceptor_atom->protons[0]]); */
+/* 	  copy_rvec(x_tmp, x[acceptor_atom->protons[1]]); */
 
-	  /* Update vsite position by calling construct_vsite() or by mirroring in the water plane */
-	  /* Try manually, since we have a vector normal to the water plane half of the time.
-	   * It will be done automatically in all concurrent time steps. */
+/* 	  /\* Update vsite position by calling construct_vsite() or by mirroring in the water plane *\/ */
+/* 	  /\* Try manually, since we have a vector normal to the water plane half of the time. */
+/* 	   * It will be done automatically in all concurrent time steps. *\/ */
 	
 
-	  if (bUndo)
-	    {
-	      /* We don't have the water normal, nor dowe have the other
-	       * vectors that we need. Let's calculate them. */
+/* 	  if (bUndo) */
+/* 	    { */
+/* 	      /\* We don't have the water normal, nor dowe have the other */
+/* 	       * vectors that we need. Let's calculate them. *\/ */
 
-	      pbc_dx(pbc,
-		     x[acceptor_atom->protons[0]],
-		     x[acceptor_atom->atom_id],
-		     OH1);
-	      pbc_dx(pbc,
-		     x[acceptor_atom->protons[1]],
-		     x[acceptor_atom->atom_id],
-		     OH2);
-	      pbc_dx(pbc,
-		     x[acceptor_atom->protons[out_of_plane_proton]],
-		     x[acceptor_atom->atom_id],
-		     w_third);
+/* 	      pbc_dx(pbc, */
+/* 		     x[acceptor_atom->protons[0]], */
+/* 		     x[acceptor_atom->atom_id], */
+/* 		     OH1); */
+/* 	      pbc_dx(pbc, */
+/* 		     x[acceptor_atom->protons[1]], */
+/* 		     x[acceptor_atom->atom_id], */
+/* 		     OH2); */
+/* 	      pbc_dx(pbc, */
+/* 		     x[acceptor_atom->protons[out_of_plane_proton]], */
+/* 		     x[acceptor_atom->atom_id], */
+/* 		     w_third); */
 
-	      cprod(OH1, OH2, w_normal);
-	    }
+/* 	      cprod(OH1, OH2, w_normal); */
+/* 	    } */
 
-	  unitv(w_normal, w_normal); /* Make water normal unit vector */
+/* 	  unitv(w_normal, w_normal); /\* Make water normal unit vector *\/ */
 
-	  planedist = iprod(w_normal, w_third);  /* project out-of-plane proton onto unit water normal*/
-	  svmul(-2*planedist, w_normal, w_normal);
-	  rvec_inc(w_third, w_normal);
-	  copy_rvec(w_third, x[acceptor_atom->protons[out_of_plane_proton]]); /* Mirror the position. */
+/* 	  planedist = iprod(w_normal, w_third);  /\* project out-of-plane proton onto unit water normal*\/ */
+/* 	  svmul(-2*planedist, w_normal, w_normal); */
+/* 	  rvec_inc(w_third, w_normal); */
+/* 	  copy_rvec(w_third, x[acceptor_atom->protons[out_of_plane_proton]]); /\* Mirror the position. *\/ */
+	  flip_water(pbc, x, acceptor_atom, md);
 	}
     }
 
@@ -2763,10 +2847,10 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   return(Eafter_tot-Ebefore_tot);
 }
 
-
+/* redundant */
 static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec, 
-			t_mdatoms *md, t_hop *hop, rvec *x,
-			gmx_mtop_t *mtop){
+			    t_mdatoms *md, t_hop *hop, rvec *x,
+			    gmx_mtop_t *mtop, t_pbc *pbc){
   int
     i;
   rvec
@@ -2778,10 +2862,10 @@ static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec,
   switch (hop->proton_id)
     {
     case 3:
-      rotate_water(x,&qhoprec->qhop_atoms[hop->donor_id],-120,md);
+      rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]),-120, md);
       break;
     case 4:
-      rotate_water(x,&qhoprec->qhop_atoms[hop->donor_id], 120,md);
+      rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]), 120, md);
       break;
     default:
       break;
@@ -2817,9 +2901,10 @@ static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec,
     }
 }
 	    
-static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec, 
-		   t_mdatoms *md, t_hop *hop, rvec *x,
-		   gmx_mtop_t *mtop){
+static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec,
+		       qhop_db *db,
+		       t_mdatoms *md, t_hop *hop, rvec *x, rvec *v,
+		       gmx_mtop_t *mtop, t_pbc *pbc){
   /* change the state of the system, such that it corresponds to the
      situation after a proton transfer between hop.donor_id and
      hop.acceptor_id. For hops from hydronium to water we swap donor
@@ -2827,8 +2912,23 @@ static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec,
      charges in mdatoms.
   */
   gmx_bool
-    bOk, b;
-  
+    bOk, bDonWater, bAccWater;
+  int
+    i;
+  real
+    a, planedist;
+  rvec
+    xtmp,
+    OH1, OH2, OHoop, w_normal;
+  t_qhop_atom *donor_atom, *acceptor_atom;
+  t_qhop_residue *qra, *qrd;
+
+  qra = &(qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->acceptor_id].qres_id]);
+  qrd = &(qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->donor_id].qres_id]);
+
+  bAccWater = db->rb.bWater[qra->rtype];
+  bDonWater = db->rb.bWater[qrd->rtype];
+
 /*   if(qhoprec->qhop_atoms[hop->donor_id].bWater &&  */
 /*      qhoprec->qhop_atoms[hop->acceptor_id].bWater ){ */
 
@@ -2847,6 +2947,65 @@ static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec,
 /*     bOk = change_protonation(cr, qhoprec, md, hop,  */
 /* 			     x,FALSE,mtop); */
 /*   } */
+
+  donor_atom    = &qhoprec->qhop_atoms[hop->donor_id];
+  acceptor_atom = &qhoprec->qhop_atoms[hop->acceptor_id];
+
+  if (bDonWater)
+    {
+      a = 120;
+
+      switch (hop->proton_id)
+	{
+	case 3:
+	  rotate_water(pbc, x, donor_atom, -a, md);
+	  break;
+
+	case 4:
+	  rotate_water(pbc, x, donor_atom, a, md);
+	  break;
+
+	default:
+	  break;
+	}
+    }
+
+  /* Should we flip the accepting side? */
+  if (hop->bFlip)
+    {
+      flip_water(pbc, x, acceptor_atom, md);
+      
+      /* Also swap velocities */
+      copy_rvec(v[acceptor_atom->protons[0]], xtmp);
+      copy_rvec(v[acceptor_atom->protons[1]], v[acceptor_atom->protons[0]]);
+      copy_rvec(xtmp, v[acceptor_atom->protons[1]]);
+
+    }
+
+  if(bDonWater && bAccWater)
+    {
+    /* Just swap atom positions. Don't use qhop_titrate(). */
+      for (i=0; i<qrd->nr_atoms; i++)
+	{
+	  /* coords */
+	  copy_rvec(x[qra->atoms[i]], xtmp);
+	  copy_rvec(x[qrd->atoms[i]], x[qra->atoms[i]]);
+	  copy_rvec(xtmp, x[qrd->atoms[i]]);
+
+	  /* vel */
+	  copy_rvec(v[qra->atoms[i]], xtmp);
+	  copy_rvec(v[qrd->atoms[i]], v[qra->atoms[i]]);
+	  copy_rvec(xtmp, v[qrd->atoms[i]]);
+	}
+    }
+  else
+    {
+      qhop_deprotonate(db, qhoprec, donor_atom, md, bDonWater, TRUE);
+      qhop_protonate  (db, qhoprec, acceptor_atom, md, bAccWater, TRUE);
+    }
+  
+  bOk = TRUE;
+
   return(bOk);
 }
 
@@ -3242,7 +3401,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 		  /* hoppenmaar! */
       
 		  /* Move the actual hopping to update() */
-		  bHop = do_hop(cr, fr->qhoprec, md, &(qr->hop[i]),state->x, mtop);
+		  bHop = do_hop(cr, fr->qhoprec, db, md, &(qr->hop[i]), state->x, state->v, mtop, &pbc);
 		  fprintf(stderr,"hopping!\n");
 		  /*      scale_velocities();*/
 
