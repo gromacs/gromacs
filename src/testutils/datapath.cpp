@@ -30,20 +30,36 @@
  */
 /*! \internal \file
  * \brief
- * main() for unit tests that use Google C++ Testing Framework.
+ * Implements functions in datapath.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
-#include <gtest/gtest.h>
+#include "datapath.h"
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include <cassert>
 
-/*! \brief
- * Initializes unit testing with Google C++ Testing Framework.
- */
-int main(int argc, char *argv[])
+static const char *g_testDataPath = NULL;
+
+namespace gmx
 {
-    ::testing::InitGoogleTest(&argc, argv);
-    ::gmx::setFatalErrorHandler(NULL);
-    return RUN_ALL_TESTS();
+namespace test
+{
+
+std::string getTestFilePath(const char *filename)
+{
+    return std::string(getTestDataPath()) + "/" + filename;
 }
+
+const char *getTestDataPath()
+{
+    assert(g_testDataPath != NULL || !"Test data path not set");
+    return g_testDataPath;
+}
+
+void setTestDataPath(const char *path)
+{
+    g_testDataPath = path;
+}
+
+} // namespace test
+} // namespace gmx

@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * main() for unit tests that use Google C++ Mocking Framework.
  *
@@ -37,6 +37,7 @@
 #include <gmock/gmock.h>
 
 #include "gromacs/fatalerror/fatalerror.h"
+#include "testutils/datapath.h"
 
 /*! \brief
  * Initializes unit testing with Google C++ Mocking Framework.
@@ -44,6 +45,9 @@
 int main(int argc, char *argv[])
 {
     ::testing::InitGoogleMock(&argc, argv);
+#ifdef TEST_DATA_PATH
+    ::gmx::test::setTestDataPath(TEST_DATA_PATH);
+#endif
     ::gmx::setFatalErrorHandler(NULL);
     return RUN_ALL_TESTS();
 }

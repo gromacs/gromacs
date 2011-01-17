@@ -1,17 +1,3 @@
-IF (GTEST_FOUND)
-    include_directories(${GTEST_INCLUDE_DIRS})
-    set(UNITTEST_SOURCES cmdlineparser.cpp option.cpp optionsassigner.cpp)
-    IF (GMOCK_FOUND)
-        include_directories(${GMOCK_INCLUDE_DIRS})
-        list(APPEND UNITTEST_SOURCES
-             abstractoptionstorage.cpp test_gmock_main.cpp)
-    ELSE (GMOCK_FOUND)
-        list(APPEND UNITTEST_SOURCES test_main.cpp)
-    ENDIF (GMOCK_FOUND)
-    add_executable(options-test ${UNITTEST_SOURCES})
-    target_link_libraries(options-test libgromacs ${GTEST_LIBRARIES})
-    IF (GMOCK_FOUND)
-        target_link_libraries(options-test ${GMOCK_LIBRARIES})
-    ENDIF (GMOCK_FOUND)
-    add_test(OptionsUnitTests options-test)
-ENDIF (GTEST_FOUND)
+add_gtest_or_gmock_test(OptionsUnitTests options-test
+                        cmdlineparser.cpp option.cpp optionsassigner.cpp
+                        GMOCK_ONLY abstractoptionstorage.cpp)

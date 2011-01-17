@@ -10,9 +10,6 @@
 #pragma warning (disable : 4090)
 #endif
 
-/* Source directory for accessing test data */
-#define SOURCE_DIR "@CMAKE_SOURCE_DIR@"
-
 /* Name of package (translate from cmake to autoconf macro name) */
 #define PACKAGE  "@PROJECT_NAME@"
 

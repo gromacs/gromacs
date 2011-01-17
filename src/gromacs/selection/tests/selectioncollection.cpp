@@ -49,6 +49,8 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 
+#include "testutils/datapath.h"
+
 namespace
 {
 
@@ -108,7 +110,8 @@ SelectionCollectionTest::loadTopology(const char *filename)
     matrix  box;
 
     snew(_top, 1);
-    read_tps_conf(filename, title, _top, &ePBC, &xtop, NULL, box, FALSE);
+    read_tps_conf(gmx::test::getTestFilePath(filename).c_str(),
+                  title, _top, &ePBC, &xtop, NULL, box, FALSE);
 
     snew(_frame, 1);
     _frame->flags  = TRX_NEED_X;
@@ -173,7 +176,7 @@ TEST_F(SelectionCollectionTest, HandlesStringMatching)
     ASSERT_EQ(2U, sel.size());
     EXPECT_FALSE(sel[0]->isDynamic());
     EXPECT_FALSE(sel[1]->isDynamic());
-    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    loadTopology("simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(9, sel[0]->posCount());
     EXPECT_EQ(6, sel[1]->posCount());
@@ -277,7 +280,7 @@ TEST_F(SelectionCollectionTest, HandlesSameResidue)
     EXPECT_EQ(0, _sc.parseFromString("same residue as atomnr 1 4 12", &_errors, &sel));
     ASSERT_EQ(1U, sel.size());
     EXPECT_FALSE(sel[0]->isDynamic());
-    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    loadTopology("simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(9, sel[0]->posCount());
 }
@@ -289,7 +292,7 @@ TEST_F(SelectionCollectionTest, HandlesSameResidueName)
     EXPECT_EQ(0, _sc.parseFromString("same resname as atomnr 1 14", &_errors, &sel));
     ASSERT_EQ(1U, sel.size());
     EXPECT_FALSE(sel[0]->isDynamic());
-    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    loadTopology("simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(9, sel[0]->posCount());
 }
@@ -307,7 +310,7 @@ TEST_F(SelectionCollectionTest, HandlesArithmeticExpressions)
     EXPECT_TRUE(sel[1]->isDynamic());
     EXPECT_TRUE(sel[2]->isDynamic());
     EXPECT_TRUE(sel[3]->isDynamic());
-    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    loadTopology("simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(15, sel[0]->posCount());
     EXPECT_EQ(15, sel[1]->posCount());
@@ -332,7 +335,7 @@ TEST_F(SelectionCollectionTest, HandlesWithinConstantPositions)
     EXPECT_EQ(0, _sc.parseFromString("within 1 of [2, 1, 0]", &_errors, &sel));
     ASSERT_EQ(1U, sel.size());
     EXPECT_TRUE(sel[0]->isDynamic());
-    loadTopology(SOURCE_DIR "/src/gromacs/selection/tests/simple.gro");
+    loadTopology("simple.gro");
     EXPECT_EQ(0, _sc.compile());
     EXPECT_EQ(15, sel[0]->posCount());
     EXPECT_EQ(0, _sc.evaluate(_frame, NULL));
