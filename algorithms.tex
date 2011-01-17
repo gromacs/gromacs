@@ -1017,7 +1017,7 @@ temperature deviations and no oscillations.
 When an $NVT$ ensemble is used, the conserved energy quantity
 is written to the energy and log file.  
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
 \index{extended ensemble} The Berendsen weak coupling algorithm is
 extremely efficient for relaxing a system to the target temperature,
@@ -1278,7 +1278,7 @@ with the correct average pressure, it does not yield the exact NPT
 ensemble, and it is not yet clear exactly what errors this approximation
 may yield.
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Parrinello-Rahman}{pressure coupling}}
 
 In cases where the fluctuations in pressure or volume are important
@@ -1546,7 +1546,7 @@ For pressure control, this becomes:
 Where the box volume integration occurs every step, but the auxiliary variable 
 integrations happen every $n$ steps.
 
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 
 \subsection{The complete update algorithm}
@@ -1617,7 +1617,7 @@ the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
 are  mirrored with respect to the sampling frequency and appear as
 lower frequencies. 
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Shell molecular dynamics}
 {\gromacs} can simulate \normindex{polarizability} using the 
 \normindex{shell model} of Dick and Overhauser~\cite{Dick58}. In such models
@@ -1664,7 +1664,7 @@ of shell positions:
 \begin{equation}
 \ve{x}_S(n+1) ~=~ \ve{x}_S(n) + \ve{F}_S/k_b
 \end{equation}
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 \section{\normindex{Constraint} algorithms}
 Constraints can be imposed in {\gromacs} using LINCS (default) or
@@ -1706,7 +1706,7 @@ Verlet algorithm is equal to $(\ve{G}_i/m_i)(\Dt)^2$. Solving the
 Lagrange multipliers (and hence the displacements) requires the
 solution of a set of coupled equations of the second degree. These are
 solved iteratively by SHAKE.
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
 \normindex{SETTLE}
@@ -1718,7 +1718,7 @@ removing any component of the velocity parallel to the bond vector.
 This step is called RATTLE, and is covered in more detail in the
 original Andersen paper~\cite{Andersen1983a}.
 
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 
 
@@ -1735,7 +1735,7 @@ original Andersen paper~\cite{Andersen1983a}.
 \newcommand{\con}{\ve{g}}
 \newcommand{\lenc}{\ve{d}}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{LINCS}}
 \label{subsec:lincs}
 
@@ -1908,7 +1908,7 @@ However, LINCS will generate a warning when in one step a bond
 rotates over more than a predefined angle.
 This angle is set by the user in the {\tt *.mdp} file.
 
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 
 \section{Simulated Annealing}
@@ -1937,7 +1937,7 @@ match both types of annealing and non-annealed groups in your simulation.
 \newcommand{\rond}{\stackrel{\circ}{r}}
 \newcommand{\ruis}{\ve{r}^G}
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{\swapindex{Stochastic}{Dynamics}}
 \label{sec:SD}
 Stochastic or velocity \swapindex{Langevin}{dynamics} adds a friction
@@ -2009,7 +2009,7 @@ Because the system is assumed to be over-damped, large timesteps
 can be used. LINCS should be used for the constraints since SHAKE
 will not converge for large atomic displacements.
 BD is an option of the {\tt mdrun} program.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 \section{Energy Minimization}
 \label{sec:EM}
@@ -2057,7 +2057,7 @@ $k$ Boltzmann's constant. For a weak oscillator with a wave number of
 $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 10 is acceptable.   
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{Conjugate Gradient}}
 Conjugate gradient is slower than steepest descent in the early stages
 of the minimization, but becomes more efficient closer to the energy
@@ -2072,9 +2072,9 @@ This is not really a restriction, since the accuracy of conjugate
 gradient is only required for minimization prior to a normal mode
 analysis, which cannot be performed with constraints.  For most other
 purposes steepest descent is efficient enough.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{L-BFGS}}
 The original BFGS algorithm works by successively creating better
 approximations of the inverse Hessian matrix, and moving the system to
@@ -2092,9 +2092,9 @@ It is also noteworthy that switched or shifted interactions usually
 improve the convergence, since sharp cut-offs mean the potential
 function at the current coordinates is slightly different from the
 previous steps used to build the inverse Hessian approximation.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Normal Mode Analysis}
 \normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
@@ -2144,9 +2144,9 @@ Ensembles of structures at any temperature and for any subset of
 normal modes can be generated with {\tt \normindex{g_nmens}}.
 An overview of normal mode analysis and the related principal component
 analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 
 \section{Free energy calculations}
 \label{sec:fecalc}
@@ -2262,7 +2262,7 @@ is the isothermal compressibility. This is usually
 small; for example, the growth of a water molecule from nothing
 in a bath of 1000 water molecules at constant volume would produce an
 additional pressure of as much as 22 bar, but a correction to the 
-Helmholtz free energy of just -1 kJ mol^{-1}. %-20 J/mol.
+Helmholtz free energy of just -1 kJ mol$^{-1}$. %-20 J/mol.
 
 In Cartesian coordinates, the kinetic energy term in the Hamiltonian
 depends only on the momenta, and can be separately integrated and in
@@ -2285,9 +2285,9 @@ by an appropriate numerical integration procedure.
 
 The $\lambda$-dependence for the force-field contributions is
 described in detail in section \secref{feia}.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{\normindex{Replica exchange}}
 Replica exchange molecular dynamics (\normindex{REMD})
 is a method that can be used to speed up
@@ -2361,9 +2361,9 @@ Replica exchange is an option of the {\tt mdrun} program. It will only
 work when MPI is installed, due to the inherent parallelism in the
 algorithm. For efficiency each replica can run on a separate node.
 See the manual page of {\tt mdrun} on how to use it.
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+% \ifthenelse{\equal{\gmxlite}{1}}{}{
 
 \section{\normindex{Essential Dynamics Sampling}}
 The results from Essential Dynamics (see \secref{covanal})
@@ -2394,7 +2394,7 @@ which has many options for selecting vectors and setting parameters,
 see \appref{progman} for the manual page of {\tt make_edi}.
 The generated {\tt edi} input file is then passed to {\tt mdrun}.
 
-} % Brace matches ifthenelse test for gmxlite
+% } % Brace matches ifthenelse test for gmxlite
 
 % This stuff is quite outdated now.
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
@@ -2542,7 +2542,7 @@ on different processors, bond constraints can cross cell boundaries.
 Therefore a parallel constraint algorithm is required.
 {\gromacs} uses the \normindex{P-LINCS} algorithm~\cite{Hess2008a},
 which is the parallel version of the \normindex{LINCS} algorithm~\cite{Hess97}
-\ifthenelse{\equal{\gmxlite}{1}}
+% \ifthenelse{\equal{\gmxlite}{1}}
 {.}
 {(see \ssecref{lincs}).}
 The P-LINCS procedure is illustrated in \figref{plincs}.
@@ -2630,7 +2630,7 @@ one might want to set $r_{mb}$ by hand to reduce this cost.
 Electrostatics interactions are long-range, therefore special
 algorithms are used to avoid summation over many atom pairs.
 In {\gromacs} this is usually
-\ifthenelse{\equal{\gmxlite}{1}}
+% \ifthenelse{\equal{\gmxlite}{1}}
 {.}
 {PME (\secref{pme}).}
 Since with PME all particles interact with each other, global communication
@@ -2758,7 +2758,7 @@ G_{pol} = \left(1-\frac{1}{\epsilon}\right) \sum_{i=1}^n \sum_{j>i}^n \frac {q_i
 \label{eqn:gb_still}
 \eeq
 
-In, GROMACS we have introduced the substitution~\cite{Larsson10}:
+In GROMACS, we have introduced the substitution~\cite{Larsson10}:
 
 \beq
 c_i=\frac{1}{\sqrt{b_i}}
