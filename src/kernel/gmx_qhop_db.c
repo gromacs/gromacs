@@ -345,6 +345,41 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
   sfree(bRtypeAdded);
 }
 
+/* extern static correct_water_masses(qhop_db *db) */
+/* { */
+/*   int rt, r, nH, h, a; */
+/*   t_restp *rtp; */
+/*   qhop_res *res; */
+
+/*   for (rt=0; rt < db->rb.nrestypes; rt++) */
+/*     { */
+/*       if (db->rt.bWater[rt]) */
+/* 	{ */
+/* 	  for (r=0; r < db->rb.nres[0]) */
+/* 	    { */
+/* 	      res = &(db->rb.res[rt][r]); */
+/* 	      rtp = &(db->rtp[res->rtp]); */
+/* 	      nH = count_protons(rtp); */
+/* 	    } */
+
+/* 	  if (nH == 3) */
+/* 	    { */
+/* 	      /\* This is hydronium *\/ */
+/* 	      for(a=0; a < rtp->natom; a++) */
+/* 		{ */
+/* 		  if (stnrcmp(*(rtp->atomname[a]), "HW", 2) == 0) */
+/* 		    /\* Water-hydrogen *\/ */
+/* 		    { */
+		      
+/* 		    } */
+/* 		} */
+
+/* 	      break; */
+/* 	    } */
+/* 	} */
+/*     } */
+/* } */
+
 static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext)
 {
   
@@ -431,6 +466,13 @@ static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
   }
   ri->charge = qtot;
 }
+
+/* extern int count_protons(qhop_reactant *reac) */
+/* { */
+/*   int t; */
+
+/*   for (i = ) */
+/* } */
 
 static void lo_fill_qhp(qhop_t gqh,char *name,real *xx)
 {

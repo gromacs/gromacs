@@ -59,4 +59,11 @@ extern int qhop_db_get_parameters(qhop_db_t qdb,
 				  char *donor,char *acceptor,
 				  qhop_parameters *qp);
 
+/* /\* Returns the number of protons on a residue *\/ */
+/* extern int count_protons_res(qhop_res_t res, t_restp *rtp); */
+
+/* /\* Returns the number of protons attached to a donor/accoptor, */
+/*    or on a set of chemically equivalent donors/acceptors, e.g., */
+/*    the oxygens in a carboxylic acid. *\/ */
+/* extern int count_protons_res(qhop_reactant_t reac, t_restp *rtp); */
 #endif
