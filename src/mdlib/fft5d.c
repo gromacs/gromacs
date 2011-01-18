@@ -426,9 +426,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     
     nthreads = omp_get_max_threads();
 
-    if (prank[0] == 0 && prank[1] == 0)
+
+    if (debug)
     {
-        printf("Running on %d threads\n",nthreads);        
+        fprintf(debug, "Running on %d threads\n",nthreads);        
     }
 
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but instead use only 1D plans */

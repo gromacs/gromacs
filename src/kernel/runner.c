@@ -90,6 +90,10 @@
 #include "md_openmm.h"
 #endif
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -753,6 +757,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype))
     {
+    	int nthread = 1;
+		char *ptr;
+
         if (mdatoms)
         {
             nChargePerturbed = mdatoms->nChargePerturbed;
@@ -762,11 +769,30 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             /* The PME only nodes need to know nChargePerturbed */
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
+
+        /* getting number of threads
+         * env variable should be read only on one node to make sure it is identical everywhere */
+        if (MASTER(cr))
+        {
+#ifdef GMX_OPENMP
+			nthread = omp_get_max_threads();
+			if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
+			{
+				sscanf(ptr,"%d",&nthread);
+			}
+            if (fplog!=NULL) 
+            {
+                fprintf(fplog,"Using %d threads for PME\n",nthread);
+            }
+#endif
+        }
+		gmx_bcast_sim(sizeof(nthread),&nthread,cr);
+
         if (cr->duty & DUTY_PME)
         {
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
-                                  (Flags & MD_REPRODUCIBLE));
+                                  (Flags & MD_REPRODUCIBLE),nthread);
             if (status != 0) 
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);

@@ -2757,7 +2757,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                  t_inputrec *        ir,
                  int                 homenr,
                  gmx_bool            bFreeEnergy,
-                 gmx_bool            bReproducible)
+                 gmx_bool            bReproducible,
+                 int				 nthread)
 {
     gmx_pme_t pme=NULL;
     
@@ -2845,19 +2846,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->bPPnode = (cr->duty & DUTY_PP);
     }
     
-#ifdef GMX_OPENMP
-    pme->nthread = omp_get_max_threads();
-#else
-    pme->nthread = 1;
-#endif
-    {
-        char *ptr;
-        if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
-        {
-            sscanf(ptr,"%d",&pme->nthread);
-            printf("Using %d threads for PME\n",pme->nthread);
-        }
-    }
+    pme->nthread = nthread;
 
     if (ir->ePBC == epbcSCREW)
     {
