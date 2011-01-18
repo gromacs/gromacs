@@ -22,8 +22,8 @@ of a small peptide in water. The only input file we need to do this
 is a pdb file of a small peptide.
 
 If you have any problems or remarks with respect to this demonstration,
-please mail to: gromacs@gromacs.org , or check the resources on
-our website http://www.gromacs.org .
+please mail to: gromacs@gromacs.org, or check the resources on
+our website http://www.gromacs.org.
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 _EOF_
@@ -64,7 +64,7 @@ file of our peptide ( .pdb extension ).
 Because most pdb files do not contain all hydrogen atoms, the pdb2gmx
 program will also add them to our peptide. The output file which
 contains the structure of the peptide when hydrogen atoms are added is a
-gromos structure file ( .gro extension )  
+GROMOS structure file ( .gro extension )  
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -98,16 +98,16 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-Because a simulation of a peptide in vacua is a bit unrealistic, we
+Because a simulation of a peptide in vacuo is a bit unrealistic, we
 have to solvate our peptide in a box of water. genbox is the program
 we use to do this.
 
 The genbox program reads the peptide structure file and an input file
 containing the sizes of the desired water box. The output of genbox is
-a gromos structure file of a peptide solvated in a box of water. The
+a GROMOS structure file of a peptide solvated in a box of water. The
 genbox program also changes the topology file ( .top extension ) to
 include water. First we will use the program editconf to define the
-right boxsize for our system.
+right box size for our system.
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -140,19 +140,19 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-In principle we can start a Molecular Dynamics simulation now. However
+In principle we can start a molecular dynamics simulation now. However
 it is not very wise to do so, because our system is full of close
 contacts. These close contacts are mainly a result of the genbox
 program. The added solvent might have some close contacts with the
 peptide resulting in very high repulsive energies. If we would start a
-Molecular Dynamics (MD) simulation without energy minimisation the
+molecular dynamics (MD) simulation without energy minimisation the
 system would not be stable because of these high energies.
 
 The standard procedure to remove these close contacts is
-Energy Minimisation (EM). Energy minimisation slightly changes the
+energy minimisation (EM). Energy minimisation slightly changes the
 coordinates of our system to remove high energies from our system.  
 
-Before we can start the Energy Minimisation we have to preprocess all
+Before we can start the energy minimisation we have to preprocess all
 the input files with the GROMACS preprocessor named grompp. grompp
 preprocesses the topology file (.top), the structure file (.gro) and a
 parameter file (.mdp) resulting in a binary topology file (.tpr
@@ -170,14 +170,13 @@ endif
 echo -n "Press <enter>"
 set  ans = $<
 
-echo generating energy minimisation parameter file...
+echo "generating energy minimisation parameter file..."
 cat > em.mdp << _EOF_
 title               =  ${MOL}
 cpp                 =  /usr/bin/cpp
 define              =  -DFLEX_SPC
 constraints         =  none
 integrator          =  steep
-dt                  =  0.002    ; ps !
 nsteps              =  100
 nstlist             =  10
 ns_type             =  grid
@@ -213,7 +212,7 @@ minimisation (EM). The program which performs the EM is called
 mdrun. In fact all simulations are performed by the same program:
 mdrun. 
 
-As the Energy Minimisation is running, watch the output of the
+As the energy minimisation is running, watch the output of the
 program. The first number ( from left to right ) is the number of the
 iteration step. The second number is the step size, which gives an
 indication of the change in the system. The third number is the
@@ -253,13 +252,13 @@ Once all close contacts are removed from the system, we want to do
 molecular dynamics of the water molecules, and keep the peptide
 fixed. This is called position restrained (PR) MD.
 
-Position Restrained MD keeps the peptide fixed and lets all water
+Position restrained MD keeps the peptide fixed and lets all water
 molecules equilibrate around the peptide in order to fill holes
-etc. which were not filled by the genbox program.
+etc. that were not filled by the genbox program.
 
 We are first going to preprocess the input files to generate the
 binary topology. The input files are the topology file, the structure
-file ( output of the EM ) a paremeter file, and an index file.
+file ( output of the EM ) a parameter file, and an index file.
 
 By default our system is split into several groups. In this case we
 use two of those groups: Protein and SOL(vent). We use these groups to
@@ -267,7 +266,7 @@ put position restraints on all the atoms of the peptide.
 
 The parameter file ( .mdp extension ) contains all information about
 the PR-MD like: step size, number of steps, temperature, etc. This
-Paramter file also tells GROMACS what kind of simulation should be
+parameter file also tells GROMACS what kind of simulation should be
 performed ( like EM, PR-MD and MD etc. )
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -335,10 +334,10 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-Now we start the Position restrained Molecular Dynamics simulation. It
+Now we start the position restrained molecular dynamics simulation. It
 is important to note that in this example the simulated time is too
 short (1 ps) to equilibrate our system completely, but that would simple take
-too much time. ( about one day ). 
+too much time ( about one day ). 
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -369,8 +368,8 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-Now our complete system is finally ready for the actual Molecular
-Dynamics simulation. We start again by preprocessing the input files
+Now our complete system is finally ready for the actual molecular
+dynamics simulation. We start again by preprocessing the input files
 by the grompp program to generate the binary topology file (.tpb/.tpr
 extension).
 
@@ -393,7 +392,7 @@ cpp                 =  /usr/bin/cpp
 constraints         =  all-bonds
 integrator          =  md
 dt                  =  0.002	; ps !
-nsteps              =  5000	; total 5 ps.
+nsteps              =  5000	; total 10.0 ps.
 nstcomm             =  1
 nstxout             =  50
 nstvout             =  0
@@ -436,8 +435,8 @@ clear
 cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
-Now we can start the MD simualtion. Watch the number of steps
-increasing ( the total number of steps is 2500, for 5 ps ).
+Now we can start the MD simulation. Watch the number of steps
+increasing ( the total number of steps is 5000, for 10 ps ).
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -469,7 +468,7 @@ cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 We are finished simulating, and we are going to view the calculated
-trajectory. The trajectory file ( .trj extension ) contains all
+trajectory. The trajectory file ( .trr extension ) contains all
 coordinates, velocities and forces of all the atoms in our system. 
 
 The next program we are going run is ngmx. ngmx is a very simple
@@ -480,12 +479,12 @@ buttons to view your trajectory.
 
 1. Once the program has been started a dialog box shows up. Click on
 the box on the left of the word Protein. ( This means that we want to
-view the peptide ). Then Click on the OK Button
+view the peptide ). Then click on the OK Button.
 
-2. Now we see the edges of the box with a lines drawing of the peptide
+2. Now we see the edges of the box with a line drawing of the peptide
 we just simulated. 
 
-3. Select Animation in the Display menu. If you did this correctly. A
+3. Select Animation in the Display menu. If you did this correctly, a
 dialog box at the bottom of the screen appears. This dialog box is
 used to move through your trajectory. 
 
