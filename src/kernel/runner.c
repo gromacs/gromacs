@@ -801,7 +801,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
         MPI_Scan(&threads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
         core-=threads; //make exclusive scan
-        printf("coreid: %d, threads: %d, PME: %d\n", core, threads, cr->duty & DUTY_PME);
 #pragma omp parallel firstprivate(core) num_threads(threads)
         {
             cpu_set_t mask;
