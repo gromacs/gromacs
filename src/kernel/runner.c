@@ -36,7 +36,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
+#ifdef __linux
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
 
@@ -772,9 +776,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         /* getting number of threads
          * env variable should be read only on one node to make sure it is identical everywhere */
+#ifdef GMX_OPENMP
         if (MASTER(cr))
         {
-#ifdef GMX_OPENMP
 			nthread = omp_get_max_threads();
 			if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
 			{
@@ -784,9 +788,31 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             {
                 fprintf(fplog,"Using %d threads for PME\n",nthread);
             }
-#endif
         }
 		gmx_bcast_sim(sizeof(nthread),&nthread,cr);
+
+
+        //set CPU affinity
+#ifdef __linux
+#ifdef GMX_MPI
+        int threads = (cr->duty & DUTY_PME) ? nthread : 1; //threads on this node
+        int core;
+        MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
+        MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
+        MPI_Scan(&threads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+        core-=threads; //make exclusive scan
+        printf("coreid: %d, threads: %d, PME: %d\n", core, threads, cr->duty & DUTY_PME);
+#pragma omp parallel firstprivate(core) num_threads(threads)
+        {
+            cpu_set_t mask;
+            CPU_ZERO(&mask);
+            core+=omp_get_thread_num();
+            CPU_SET(core,&mask);
+            sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+        }
+#endif //GMX_MPI
+#endif //__linux
+#endif //GMX_OPENMP
 
         if (cr->duty & DUTY_PME)
         {
