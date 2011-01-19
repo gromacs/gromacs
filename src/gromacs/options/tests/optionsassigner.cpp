@@ -35,7 +35,8 @@
  * In addition to testing gmx::OptionsAssigner, these are the main
  * tests for the classes from basicoptions.h and basicoptionstorage.h (and
  * their base classes) that actually implement the behavior, as well as for the
- * internal implementation of the gmx::Options and gmx::Option classes.
+ * internal implementation of the gmx::Options and gmx::AbstractOptionStorage
+ * classes.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
@@ -330,6 +331,56 @@ TEST(OptionsAssignerIntegerTest, StoresDefaultValue)
 
     gmx::EmptyErrorReporter errors;
     gmx::OptionsAssigner assigner(&options, &errors);
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, options.finish(&errors));
+
+    EXPECT_EQ(2, value);
+}
+
+TEST(OptionsAssignerIntegerTest, StoresDefaultValueIfSet)
+{
+    gmx::Options options(NULL, NULL);
+    int value = -1;
+    using gmx::IntegerOption;
+    options.addOption(IntegerOption("p").store(&value).defaultValueIfSet(2));
+    EXPECT_EQ(-1, value);
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    EXPECT_EQ(0, assigner.startOption("p"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, options.finish(&errors));
+
+    EXPECT_EQ(2, value);
+}
+
+TEST(OptionsAssignerIntegerTest, HandlesDefaultValueIfSetWhenNotSet)
+{
+    gmx::Options options(NULL, NULL);
+    int value = -1;
+    using gmx::IntegerOption;
+    options.addOption(IntegerOption("p").store(&value).defaultValueIfSet(2));
+    EXPECT_EQ(-1, value);
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, options.finish(&errors));
+
+    EXPECT_EQ(-1, value);
+}
+
+TEST(OptionsAssignerIntegerTest, HandlesBothDefaultValues)
+{
+    gmx::Options options(NULL, NULL);
+    int value = -1;
+    using gmx::IntegerOption;
+    options.addOption(IntegerOption("p").store(&value).defaultValue(1).defaultValueIfSet(2));
+    EXPECT_EQ(1, value);
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&options, &errors);
+    EXPECT_EQ(0, assigner.startOption("p"));
     EXPECT_EQ(0, assigner.finish());
     EXPECT_EQ(0, options.finish(&errors));
 

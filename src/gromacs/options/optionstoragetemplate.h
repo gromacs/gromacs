@@ -177,6 +177,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         T                      *_store;
         T                     **_storeArray;
         int                    *_nvalptr;
+        T                      *_defaultValueIfSet;
 
         // Copy and assign disallowed by base.
 };
@@ -215,7 +216,8 @@ createOptionStorage(const T *settings, Options *options,
 
 template <typename T>
 OptionStorageTemplate<T>::OptionStorageTemplate()
-    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL)
+    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
+      _defaultValueIfSet(NULL)
 {
 }
 
@@ -227,6 +229,7 @@ OptionStorageTemplate<T>::~OptionStorageTemplate()
     {
         delete _values;
     }
+    delete _defaultValueIfSet;
 }
 
 
@@ -253,7 +256,9 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
         _values = new std::vector<T>;
     }
     // If the option does not support default values, one should not be set.
-    assert(!hasFlag(efNoDefaultValue) || settings._defaultValue == NULL);
+    assert(!hasFlag(efNoDefaultValue)
+           || (settings._defaultValue == NULL
+               && settings._defaultValueIfSet == NULL));
     if (!hasFlag(efNoDefaultValue))
     {
         if (settings._defaultValue != NULL)
@@ -273,6 +278,10 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
                 _values->push_back(_store[i]);
             }
             setFlag(efHasDefaultValue);
+        }
+        if (settings._defaultValueIfSet != NULL)
+        {
+            _defaultValueIfSet = new T(*settings._defaultValueIfSet);
         }
     }
     return 0;
@@ -301,6 +310,11 @@ int OptionStorageTemplate<T>::addValue(const T &value)
 template <typename T>
 void OptionStorageTemplate<T>::processValues(int nvalues, bool bDoArray)
 {
+    if (nvalues == 0 && _defaultValueIfSet != NULL)
+    {
+        addValue(*_defaultValueIfSet);
+        nvalues = 1;
+    }
     if (_nvalptr)
     {
         *_nvalptr = _values->size();

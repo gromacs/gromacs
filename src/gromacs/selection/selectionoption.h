@@ -102,6 +102,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         // Disable default value because it is impossible to provide a
         // Selection object.
         using MyBase::defaultValue;
+        using MyBase::defaultValueIfSet;
 
         virtual int createDefaultStorage(Options *options,
                                          AbstractOptionStorage **storage) const;

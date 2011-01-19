@@ -245,6 +245,19 @@ class OptionTemplate : public AbstractOption
         MyClass &defaultValue(const T &defaultValue)
         { _defaultValue = &defaultValue; return me(); }
         /*! \brief
+         * Sets a default value for the option when it is set.
+         *
+         * \param[in] defaultValue Default value.
+         *
+         * This value is used if the option is set, but no value is provided.
+         * If the option is never set, the value set with defaultValue() is
+         * used.  Can only be used for options that accept a single value.
+         *
+         * \p defaultValue is copied when the option is created.
+         */
+        MyClass &defaultValueIfSet(const T &defaultValue)
+        { _defaultValueIfSet = &defaultValue; return me(); }
+        /*! \brief
          * Stores value(s) in memory pointed by \p store.
          *
          * \param[in] store  Storage for option value(s).
@@ -294,7 +307,8 @@ class OptionTemplate : public AbstractOption
     protected:
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
-            : AbstractOption(name), _defaultValue(NULL), _store(NULL),
+            : AbstractOption(name),
+              _defaultValue(NULL), _defaultValueIfSet(NULL), _store(NULL),
               _storeArray(NULL), _nvalptr(NULL), _storeVector(NULL)
         { }
 
@@ -303,11 +317,17 @@ class OptionTemplate : public AbstractOption
          * is none.
          */
         const T *defaultValue() const { return _defaultValue; }
+        /*! \brief
+         * Returns a pointer to user-specified default value, or NULL if there
+         * is none.
+         */
+        const T *defaultValueIfSet() const { return _defaultValueIfSet; }
         //! Returns \p *this casted into MyClass to reduce typing.
         MyClass &me() { return static_cast<MyClass &>(*this); }
 
     private:
         const T                *_defaultValue;
+        const T                *_defaultValueIfSet;
         T                      *_store;
         T                     **_storeArray;
         int                    *_nvalptr;
