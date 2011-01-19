@@ -176,7 +176,7 @@ int gmx_rmsf(int argc,char *argv[])
     "coordinates.[PAR]",
     "With the option [TT]-od[tt] the root mean square deviation with",
     "respect to the reference structure is calculated.[PAR]",
-    "With the option [TT]aniso[tt] g_rmsf will compute anisotropic",
+    "With the option [TT]-aniso[tt], g_rmsf will compute anisotropic",
     "temperature factors and then it will also output average coordinates",
     "and a pdb file with ANISOU records (corresonding to the [TT]-oq[tt]",
     "or [TT]-ox[tt] option). Please note that the U values",

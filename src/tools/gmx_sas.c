@@ -586,8 +586,8 @@ int gmx_sas(int argc,char *argv[])
     "in this case or whether you would rather use e.g. 0. It is good",
     "to keep in mind that the results for volume and density are very",
     "approximate, in e.g. ice Ih one can easily fit water molecules in the",
-    "pores which would yield too low volume, too high surface area and too",
-    "high density."
+    "pores which would yield a volume that is too low, and surface area and density",
+    "that are both too high."
   };
 
   output_env_t oenv;
