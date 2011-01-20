@@ -16,6 +16,7 @@ pkgconfig_DATA = libmd@LIBSUFFIX@.pc
 EXTRA_DIST = libmd.pc.cmakein
 
 libmd@LIBSUFFIX@_la_SOURCES = \
+	adress.c	adress.h	\
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	\
 	domdec.c	domdec_box.c	domdec_con.c	\
@@ -43,7 +44,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
-	shellfc.c	stat.c 		\
+	shellfc.c	stat.c 		pull_rotation.c \
 	tables.c	tgroup.c	tpi.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\

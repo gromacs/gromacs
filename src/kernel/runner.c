@@ -52,6 +52,7 @@
 #include "mdrun.h"
 #include "network.h"
 #include "pull.h"
+#include "pull_rotation.h"
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
@@ -72,6 +73,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "membed.h"
 
 #include "md_openmm.h"
 
@@ -366,6 +368,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
+    gmx_membed_t *membed=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -413,6 +416,16 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #endif
     }
     /* END OF CAUTION: cr is now reliable */
+
+    /* g_membed initialisation *
+     * Because we change the mtop, init_membed is called before the init_parallel *
+     * (in case we ever want to make it run in parallel) */
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+	fprintf(stderr,"Entering membed code");
+        snew(membed,1);
+        init_membed(fplog,membed,nfile,fnm,mtop,inputrec,state,cr,&cpt_period);
+    }
 
     if (PAR(cr))
     {
@@ -665,12 +678,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
+                      opt2fn("-tablea",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-          "nofile","nofile","nofile",FALSE,pforce);
+          "nofile","nofile","nofile","nofile",FALSE,pforce);
           */        
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
@@ -798,6 +812,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
+        
+        if (inputrec->bRot)
+        {
+           /* Initialize enforced rotation code */
+           init_rot(fplog,inputrec,nfile,fnm,cr,state->x,state->box,mtop,oenv,
+                    bVerbose,Flags);
+        }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
 
@@ -820,6 +841,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       fcd,state,
                                       mdatoms,nrnb,wcycle,ed,fr,
                                       repl_ex_nst,repl_ex_seed,
+                                      membed,
                                       cpt_period,max_hours,
                                       deviceOptions,
                                       Flags,
@@ -829,6 +851,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             finish_pull(fplog,inputrec->pull);
         }
+        
+        if (inputrec->bRot)
+        {
+            finish_rot(fplog,inputrec->rot);
+        }
+
     } 
     else 
     {
@@ -860,6 +888,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+    
+    if (opt2bSet("-membed",nfile,fnm))
+    {
+        sfree(membed);
+    }
 
     /* Does what it says */  
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);

@@ -80,7 +80,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "copyrite.h"
-
+#include "pull_rotation.h"
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
@@ -94,6 +94,7 @@
 #include "tmpi.h"
 #endif
 
+#include "adress.h"
 #include "qmmm.h"
 
 #if 0
@@ -428,6 +429,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     double mu[2*DIM]; 
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bDoAdressWF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -468,11 +470,13 @@ void do_force(FILE *fplog,t_commrec *cr,
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
+    /* should probably move this to the forcerec since it doesn't change */
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff));
 
     if (bStateChanged)
     {
         update_forcerec(fplog,fr,box);
-        
+
         /* Calculate total (local) dipole moment in a temporary common array. 
          * This makes it possible to sum them over nodes faster.
          */
@@ -558,6 +562,33 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
     if (bStateChanged)
     {
+
+        /* update adress weight beforehand */
+        if(bDoAdressWF)
+        {
+            /* need pbc for adress weight calculation with pbc_dx */
+            set_pbc(&pbc,inputrec->ePBC,box);
+            if(fr->adress_site == eAdressSITEcog)
+            {
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEcom)
+            {
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEatomatom){
+                update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else
+            {
+                update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+        }
+
         for(i=0; i<2; i++)
         {
             for(j=0;j<DIM;j++)
@@ -631,14 +662,22 @@ void do_force(FILE *fplog,t_commrec *cr,
             dd_force_flop_start(cr->dd,nrnb);
         }
     }
-	
+    
+    if (inputrec->bRot)
+    {
+        /* Enforced rotation has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF */
+        do_rotation(cr,inputrec,box,x,t,step,wcycle,bNS);
+    }
+
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
      * since that will interfere with the dynamic load balancing.
      */
     wallcycle_start(wcycle,ewcFORCE);
-    
+    GMX_MPE_LOG(ev_forcecycles_start);
+
     if (bDoForces)
     {
         /* Reset forces for which the virial is calculated separately:
@@ -700,8 +739,11 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        /* Position restraints always require full pbc */
-        set_pbc(&pbc,inputrec->ePBC,box);
+        /* Position restraints always require full pbc. Check if we already did it for Adress */
+        if(!(bStateChanged && bDoAdressWF))
+        {
+            set_pbc(&pbc,inputrec->ePBC,box);
+        }
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
@@ -755,6 +797,13 @@ void do_force(FILE *fplog,t_commrec *cr,
             calc_f_el(MASTER(cr) ? field : NULL,
                       start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
                       inputrec->ex,inputrec->et,t);
+        }
+
+        if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
+        {
+            /* Compute thermodynamic force in hybrid AdResS region */
+            adress_thermo_force(start,homenr,&(top->cgs),x,fr->f_novirsum,fr,mdatoms,
+                                inputrec->ePBC==epbcNONE ? NULL : &pbc);
         }
         
         /* Communicate the forces */
@@ -841,6 +890,13 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
         enerd->dvdl_lin += dvdl;
     }
+    else
+        enerd->term[F_COM_PULL] = 0.0;
+    
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
+    
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
@@ -1525,6 +1581,11 @@ void init_md(FILE *fplog,
                               mtop,ir, (*outf)->fp_dhdl);
     }
     
+    if (ir->adress_type != eAdressOff)
+    {
+      please_cite(fplog,"Praprotnik05");
+      please_cite(fplog,"Junghans10");
+    }
     /* Initiate variables */  
     clear_mat(force_vir);
     clear_mat(shake_vir);

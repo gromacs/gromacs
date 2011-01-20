@@ -34,7 +34,7 @@ hizzie.c	hizzie.h	\
 pdb2top.c	\
 pgutil.c	pgutil.h	\
 readir.c	readir.h	\
-readpull.c	\
+readpull.c	readrot.c	\
 resall.c	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
@@ -58,7 +58,7 @@ bin_PROGRAMS = \
 g_x2top_SOURCES = g_x2top.c nm2type.c g_x2top.h
 
 mdrun_SOURCES = \
-	gctio.c 	\
+	gctio.c 	membed.c        membed.h    \
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	runner.c	md.c		mdrun.c		\

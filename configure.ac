@@ -20,7 +20,7 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="6:0:0"
+SHARED_VERSION_INFO="6:1:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_ENABLE_SHARED
@@ -1294,6 +1294,7 @@ AC_CONFIG_FILES([ src/gmxlib/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_adress_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse2/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse2/Makefile ])

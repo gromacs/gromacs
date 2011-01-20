@@ -122,8 +122,9 @@ int gmx_saltbr(int argc,char *argv[])
   const char *desc[] = {
     "g_saltbr plots the distance between all combination of charged groups",
     "as a function of time. The groups are combined in different ways.",
-    "A minimum distance can be given, (eg. the cut-off), then groups",
-    "that are never closer than that distance will not be plotted.[BR]",
+    "A truncation/cut-off distance can be supplied with -t, ",
+    "such that only groups interacting within this distance will be plotted in the ",
+    "output.[BR]",
     "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
     "and plus-plus.xvg, or files for every individual ion-pair if the [TT]-sep[tt]",
     "option is selected. In this case files are named as [TT]sb-ResnameResnr-Atomnr[tt].",

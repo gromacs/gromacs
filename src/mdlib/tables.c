@@ -958,7 +958,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
 	x0 = i*table.r/(5*(table.n-1));
 	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
-      }
+	      }
       gmx_fio_fclose(fp);
     }
     done_tabledata(&(td[k]));
@@ -1121,6 +1121,132 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	return table;
 	
 	
+}
+
+t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
+			    const t_forcerec *fr,
+			    const char *fn,
+                            matrix box)
+{
+	const char *fns[3] = { "atfctab.xvg", "atfdtab.xvg", "atfrtab.xvg" };
+	const char *fns14[3] = { "atfctab14.xvg", "atfdtab14.xvg", "atfrtab14.xvg" };
+	FILE        *fp;
+	t_tabledata *td;
+	gmx_bool    bReadTab,bGenTab;
+	real        x0,y0,yp,rtab;
+	int         i,j,k,nx,nx0,tabsel[etiNR];
+	void *      p_tmp;
+        real        rx, ry, rz, box_r;
+	
+	t_forcetable table;
+	
+	
+	/* Set the table dimensions for ATF, not really necessary to
+	 * use etiNR (since we only have one table, but ...) 
+	 */
+	snew(td,1);
+
+        if (fr->badress_tf_full_box){
+            /* take half box x direction as tab range */
+            table.r         = box[0][0]/2;
+        }
+        else
+        {
+            table.r         = fr->adress_hy_width;
+        }
+	table.scale     = 0;
+	table.n         = 0;
+	table.scale_exp = 0;
+	nx0             = 10;
+	nx              = 0;
+	
+	/* Check whether we have to read or generate 
+	 * We will always read a table, so remove the generate code
+	 * (Compare with original make_table function
+	 */
+
+	bReadTab = TRUE;
+	bGenTab  = FALSE;
+
+	if (bReadTab) 
+	  {
+	    read_tables(out,fn,1,0,td);
+	    rtab      = td[0].x[td[0].nx-1];
+            
+            if (fr->badress_tf_full_box){
+                /* TODO : should really check tf is defined everywhere (in box) */
+               if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
+                   gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                                "\tshould extend to at least half the length of the longest box side"
+                                "%f\n",fn,rtab, box[0][0]/2);
+               }
+               if (fr->adress_type == eAdressSphere){
+                   rx = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
+                   ry = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
+                   rz = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
+                   box_r = sqrt(rx*rx+ry*ry+rz*rz);
+                   if (rtab < box_r){
+                           gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                            "\tshould extend to at least for spherical adress"
+                            "%f (=distance from center to furthermost point in box \n",fn,rtab, box_r);
+                   }
+                                   
+               }
+            }
+            else{
+                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
+                  {
+                    gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
+                                "\tshould extend to exactly the size of the hybrid zone"
+                                "%f\n",fn,rtab, fr->adress_hy_width);
+                  }
+            }
+
+	    table.n   = td[0].nx;
+	    nx        = table.n;
+	    table.scale = td[0].tabscale;
+	    nx0         = td[0].nx0;
+	  }
+
+	/* Each table type (e.g. coul,lj6,lj12) requires four 
+	 * numbers per datapoint. For performance reasons we want
+	 * the table data to be aligned to 16-byte. This is accomplished
+	 * by allocating 16 bytes extra to a temporary pointer, and then
+	 * calculating an aligned pointer. This new pointer must not be
+	 * used in a free() call, but thankfully we're sloppy enough not
+	 * to do this :-)
+	 */
+	
+	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
+           to align it. */
+       p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
+	
+	/* align it - size_t has the same same as a pointer */
+	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));
+	
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	
+	if(bDebugMode())
+	  {
+	    fp=xvgropen(fns[0],fns[0],"r","V",oenv);
+	    /* plot the output 5 times denser than the table data */
+	    /* for(i=5*nx0;i<5*table.n;i++) */
+	   
+            for(i=5*((nx0+1)/2); i<5*table.n; i++)
+	      {
+		/* x0=i*table.r/(5*table.n); */
+		x0 = i*table.r/(5*(table.n-1));
+		evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
+		fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
+		
+	      }
+	    ffclose(fp);
+	  }
+
+	done_tabledata(&(td[0]));
+	sfree(td);
+	
+	return table;
 }
 
 bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle)

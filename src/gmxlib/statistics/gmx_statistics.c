@@ -129,20 +129,34 @@ int gmx_stats_add_point(gmx_stats_t gstats,double x,double y,
 }
 
 int gmx_stats_get_point(gmx_stats_t gstats,real *x,real *y,
-                        real *dx,real *dy)
+                        real *dx,real *dy,real level)
 {
     gmx_stats *stats = (gmx_stats *) gstats;
-  
-    if (stats->np_c < stats->np) 
-    {
-        if (NULL != x)  *x  = stats->x[stats->np_c];
-        if (NULL != y)  *y  = stats->y[stats->np_c];
-        if (NULL != dx) *dx = stats->dx[stats->np_c];
-        if (NULL != dy) *dy = stats->dy[stats->np_c];
-        stats->np_c++;
+    int  ok,outlier;
+    real rmsd,r;
     
-        return estatsOK;
+    if ((ok = gmx_stats_get_rmsd(gstats,&rmsd)) != estatsOK)
+    {
+        return ok;
     }
+    outlier = 0;
+    while ((outlier == 0) && (stats->np_c < stats->np))
+    {
+        r = fabs(stats->x[stats->np_c] - stats->y[stats->np_c]);
+        outlier = (r > rmsd*level);
+        if (outlier)
+        {
+            if (NULL != x)  *x  = stats->x[stats->np_c];
+            if (NULL != y)  *y  = stats->y[stats->np_c];
+            if (NULL != dx) *dx = stats->dx[stats->np_c];
+            if (NULL != dy) *dy = stats->dy[stats->np_c];
+        }
+        stats->np_c++;
+        
+        if (outlier)    
+            return estatsOK;
+    }
+    
     stats->np_c = 0;
   
     return estatsNO_POINTS;
