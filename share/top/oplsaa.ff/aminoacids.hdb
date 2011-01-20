@@ -157,6 +157,8 @@ NAC     2
 3	4	HH3	CH3	N	-C
 NH2     1       
 2	3	H	N	-C	-CA
+NHE     1       
+2	3	H	N	-C	-CA
 PHE     8       
 1	1	H	N	-C	CA
 1	5	HA	CA	N	C	CB
