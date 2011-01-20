@@ -311,7 +311,7 @@ void list_trx(const char *fn,gmx_bool bXVG)
   else if ((ftp == efTRR) || (ftp == efTRJ))
     list_trn(fn);
   else
-    fprintf(stderr,"File %s not supported. Try using more %s\n",
+    fprintf(stderr,"File %s is of an unsupported type. Try using the command\n 'less %s'\n",
 	    fn,fn);
 }
 
