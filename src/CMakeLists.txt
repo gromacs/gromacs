@@ -8,6 +8,7 @@ endif (BUILD_TESTING)
 add_subdirectory(gromacs)
 add_subdirectory(kernel)
 add_subdirectory(programs)
+add_subdirectory(contrib)
 
 if(NOT GMX_FAHCORE)
   add_subdirectory(tools)
