@@ -1471,6 +1471,52 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
   }
 }
 
+extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0)
+{
+    int i;
+    
+    if (efep==efepNO) {
+        for (i=0;i<efptNR;i++)  {
+            lambda[i] = 0.0;
+            if (lam0) 
+            {
+                lam0[i] = 0.0;
+            }
+        }
+        return;
+    }
+    
+    for (i=0;i<efptNR;i++) 
+    {
+        *fep_state = fep->init_fep_state;
+        /* overwrite lambda state with init_lambda for now for backwards compatibility */
+        if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
+        {
+            lambda[i] = fep->init_lambda;
+            if (lam0) {
+                lam0[i] = lambda[i];
+            }
+        }
+        else 
+        {
+            lambda[i] = fep->all_lambda[i][*fep_state];
+            if (lam0) {
+                lam0[i] = lambda[i];
+            }
+        }
+    } 
+    
+    /* Send to the log the information on the current lambdas */
+    fprintf(fplog,"Initial lambda vector:[ ");
+    for (i=0;i<efptNR;i++) 
+    {
+        fprintf(fplog,"%10.4f ",lambda[i]);
+    }
+    fprintf(fplog,"]\n");
+    return;
+}
+
+    
 void init_md(FILE *fplog,
              t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
@@ -1488,26 +1534,8 @@ void init_md(FILE *fplog,
     /* Initial values */
     *t = *t0       = ir->init_t;
 
-    for (i=0;i<efptNR;i++) 
-    {
-        if (ir->efep != efepNO)
-        {
-            *fep_state = ir->fepvals->init_fep_state;
-            /* overwrite lambda state with init_lambda for now for backwards compatibility */
-            if (ir->fepvals->init_lambda>=0) /* if it's -1, it was never initializd */
-            {
-                lambda[i] = lam0[i] = ir->fepvals->init_lambda;
-            }
-            else 
-            {
-                lambda[i] = lam0[i] = ir->fepvals->all_lambda[i][*fep_state];
-            }
-        } 
-        else 
-        {
-            lambda[i] = lam0[i] = 0.0;
-        }
-    }
+    /* Initialize lambda variables */
+    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,fep_state,lambda,lam0);
 
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)

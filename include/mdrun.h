@@ -295,10 +295,12 @@ void finish_run(FILE *log,t_commrec *cr,const char *confout,
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_large_int_t step, int natoms, 
-			  matrix box,real lambda,tensor pres,tensor virial,
-			  real *prescorr, real *enercorr, real *dvdlcorr);
+		   gmx_large_int_t step, int natoms, 
+		   matrix box,real lambda,tensor pres,tensor virial,
+		   real *prescorr, real *enercorr, real *dvdlcorr);
   
+extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0);
+
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
 				     int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng);
 

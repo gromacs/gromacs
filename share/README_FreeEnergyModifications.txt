@@ -22,7 +22,7 @@ method used to update the weights)
 nst-transition-matrix    = 0 [nonnegativeinteger] frequency at which the transition-matrix is output to the log
 lmc-mc-move          = gibbs [metropolis,barker,gibbs,metropolized-gibbs] (the method used to for lambda MC moves)
 
-mc-seed                 = -1 [for lambda mc transformations, -1 means it's taken from the process number]
+lmc-seed                 = -1 [for lambda mc transformations, -1 means it's taken from the process number]
 mc-temperature          = [positive real] [If omitted, set to the same as the ref_t for the 0th system, if there is one]
 
 lmc-gibbsdelta          = -1 [any integer] (the interval [lambda-1,lambda+1] for moves for gibbs sampling on the lambdas.  -1,

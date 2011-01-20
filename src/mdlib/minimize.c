@@ -281,7 +281,9 @@ void init_em(FILE *fplog,const char *title,
     state_global->ngtc = 0;
 
     /* Initialize lambda variables */
+    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,&(state_global->fep_state),state_global->lambda,NULL);
 
+#if 0
     for (i=0;i<efptNR;i++)
     {
         if (ir->efep != efepNO)
@@ -302,7 +304,8 @@ void init_em(FILE *fplog,const char *title,
             state_global->lambda[i] = 0.0;
         }
     }
-    
+#endif
+
     init_nrnb(nrnb);
     
     if (DOMAINDECOMP(cr))
