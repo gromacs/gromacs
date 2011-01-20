@@ -1,0 +1,12 @@
+libdir=@LIB_INSTALL_DIR@
+includedir=@INCL_INSTALL_DIR@
+
+Name: libgromacs
+Description: Gromacs library
+URL: http://www.gromacs.org
+Version: @PROJECT_VERSION@
+Requires: @PKG_FFT@ @PKG_XML@
+Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
+Libs: -L${libdir} -lgromacs@LIBSUFFIX@ @PKG_FFT_LIBS@
+Cflags: -I${includedir} @PKG_CFLAGS@
+

@@ -1,0 +1,3 @@
+set(COMMON_SOURCES datapath.cpp)
+add_library(testutils STATIC ${COMMON_SOURCES})
+set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)

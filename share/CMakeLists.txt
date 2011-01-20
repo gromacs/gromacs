@@ -1,4 +1,5 @@
-# Data: Nothing to build, just installation
+add_subdirectory(template)
+
 install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
   COMPONENT data
   PATTERN "Makefile*" EXCLUDE
