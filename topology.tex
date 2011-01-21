@@ -1035,6 +1035,32 @@ contain 2 or 3 columns with atom names, followed by a number specifying the bond
 (in degrees). {\bf Note} that these are approximations of the equilibrated geometry for the entire molecule, 
 which might not be identical to the equilibrium value for a single bond/angle if the molecule is strained.
 
+\subsection{Special bonds}
+The mechanism for generating bonds used by {\tt pdb2gmx} relies principally on linear linking
+of residues to build a macromolecule. In some cases, {\ie} disulfides, a heme group, etc., it is 
+necessary to create ``non-linear'' bonds.  The file {\tt specbond.dat} takes care of this function.
+
+The first line of {\tt specbond.dat} indicates the number of entries that are in the file. If you
+add a new entry, be sure to increment this number. The remaining lines in the file provide the
+specifications for creating bonds.  The format of the lines is as follows:
+
+{\tt resA  atomA  nbondsA  resB  atomB  nbondsB  length  newresA  newresB }
+
+The columns indicate:
+\begin{enumerate}
+\item {\tt resA} The name of residue A that participates in the bond.
+\item {\tt atomA} The atom in residue A that forms the bond.
+\item {\tt nbondsA} The number of bonds {\tt atomA} can form.
+\item {\tt resB} The name of residue B that participates in the bond.
+\item {\tt atomB} The atom in residue B that forms the bond.
+\item {\tt nbondsB} The number of bonds {\tt atomB} can form.
+\item {\tt length} The reference length for the bond.  If {\tt atomA} and {\tt atomB} are not within
+{\tt length} $\pm$ 10\%, no bond will be formed.
+\item {\tt newresA} The new name of residue A, if necessary. Some force fields use {\eg} CYS2 for 
+a cysteine in a disulfide or heme linkage.
+\item {\tt rewresB} The new name of residue B.
+\end{enumerate}
+
 
 \section{File formats}
 \subsection{\swapindex{Topology}{file}}
@@ -1831,7 +1857,7 @@ tensor, not a vector.
 
 \subsection{Force-field files}
 \label{subsec:fffiles}
-As of {\gromacs} version 4.5, 18 force fields are available by default.
+As of {\gromacs} version 4.5, 14 force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
 in the {\gromacs} {\tt /share/top} subdirectory and/or the working directory.  
 The information regarding the location of the force field files is printed
@@ -1857,8 +1883,8 @@ The force fields included with {\gromacs} are:
  \item OPLS-AA/L all-atom force field (2001 aminoacid dihedrals) 
 \end{itemize}} 
  
- There are also some additional deprecated force fields listed in the selection from
- pdb2gmx, but we do not currently recommend that you use those for new simulations.
+There are also some additional deprecated force fields listed in the selection from
+pdb2gmx, but we do not currently recommend that you use those for new simulations.
  
 A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.
