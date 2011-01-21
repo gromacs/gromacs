@@ -758,7 +758,7 @@ and {\tt specbond.dat} files.
 This convention is only of importance when you are adding residue types
 to an {\tt .rtp} file. The convention is listed in \tabref{r2b}.
 For special bonds with, for instance, a heme group, the {\gromacs} naming
-convention is introduced through {\tt specbond.dat}, which can
+convention is introduced through {\tt specbond.dat} (see~\ssecref{specbond}), which can
 subsequently be translated by the {\tt .r2b} file, if required.
 
 \begin{table}
@@ -1036,6 +1036,7 @@ contain 2 or 3 columns with atom names, followed by a number specifying the bond
 which might not be identical to the equilibrium value for a single bond/angle if the molecule is strained.
 
 \subsection{Special bonds}
+\label{subsec:specbond}
 The mechanism for generating bonds used by {\tt pdb2gmx} relies principally on linear linking
 of residues to build a macromolecule. In some cases, {\ie} disulfides, a heme group, etc., it is 
 necessary to create ``non-linear'' bonds.  The file {\tt specbond.dat} takes care of this function.
