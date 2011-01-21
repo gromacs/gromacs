@@ -71,6 +71,7 @@ typedef struct gmx_wallcycle
     gmx_large_int_t   reset_counters;
 #ifdef GMX_MPI
     MPI_Comm     mpi_comm_mygroup;
+    int          omp_nthreads;
 #endif
 } gmx_wallcycle_t_t;
 
@@ -83,7 +84,7 @@ gmx_bool wallcycle_have_counter(void)
   return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
+gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_nthreads)
 {
     gmx_wallcycle_t wc;
     
@@ -100,6 +101,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
     wc->wc_depth   = 0;
     wc->ewc_prev   = -1;
     wc->reset_counters = resetstep;
+    wc->omp_nthreads = omp_nthreads;
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -258,6 +260,14 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     }
 
     wcc = wc->wcc;
+
+    if (wc->omp_nthreads>1)
+    {
+        for(i=0; i<ewcNR; i++)
+        {
+            wcc[i].c *= wc->omp_nthreads;
+        }
+    }
 
     if (wcc[ewcDDCOMMLOAD].n > 0)
     {

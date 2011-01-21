@@ -374,6 +374,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
+    int         omp_nthreads = 1;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -630,7 +631,30 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    wcycle = wallcycle_init(fplog,resetstep,cr);
+    /* getting number of threads
+     * env variable should be read only on one node to make sure it is identical everywhere */
+#ifdef GMX_OPENMP
+    if (EEL_PME(inputrec->coulombtype))
+    {
+        if (MASTER(cr))
+        {
+            char *ptr;
+            omp_nthreads = omp_get_max_threads();
+            if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
+            {
+                sscanf(ptr,"%d",&omp_nthreads);
+            }
+            if (fplog!=NULL)
+            {
+                fprintf(fplog,"Using %d threads for PME\n",omp_nthreads);
+            }
+        }
+        gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
+        omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; //threads on this node
+    }
+#endif
+
+    wcycle = wallcycle_init(fplog,resetstep,cr,omp_nthreads);
     if (PAR(cr))
     {
         /* Master synchronizes its value of reset_counters with all nodes 
@@ -761,9 +785,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype))
     {
-    	int nthread = 1;
-		char *ptr;
-
         if (mdatoms)
         {
             nChargePerturbed = mdatoms->nChargePerturbed;
@@ -774,34 +795,17 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
 
-        /* getting number of threads
-         * env variable should be read only on one node to make sure it is identical everywhere */
-#ifdef GMX_OPENMP
-        if (MASTER(cr))
-        {
-			nthread = omp_get_max_threads();
-			if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
-			{
-				sscanf(ptr,"%d",&nthread);
-			}
-            if (fplog!=NULL) 
-            {
-                fprintf(fplog,"Using %d threads for PME\n",nthread);
-            }
-        }
-		gmx_bcast_sim(sizeof(nthread),&nthread,cr);
-
 
         //set CPU affinity
+#ifdef GMX_OPENMP
 #ifdef __linux
 #ifdef GMX_MPI
-        int threads = (cr->duty & DUTY_PME) ? nthread : 1; //threads on this node
         int core;
         MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
         MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-        MPI_Scan(&threads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-        core-=threads; //make exclusive scan
-#pragma omp parallel firstprivate(core) num_threads(threads)
+        MPI_Scan(&omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+        core-=omp_nthreads; //make exclusive scan
+#pragma omp parallel firstprivate(core) num_threads(omp_nthreads)
         {
             cpu_set_t mask;
             CPU_ZERO(&mask);
@@ -817,7 +821,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
-                                  (Flags & MD_REPRODUCIBLE),nthread);
+                                  (Flags & MD_REPRODUCIBLE),omp_nthreads);
             if (status != 0) 
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);
