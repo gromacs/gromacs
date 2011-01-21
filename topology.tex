@@ -52,7 +52,7 @@ This chapter describes the setup of the topology file, the
 stand for and how/where to change them if needed.
 First, all file formats are explained.
 Section \ssecref{fffiles} describes the organization of
-the force-field files.
+the force field files.
 
 {\bf Note:} if you construct your own topologies, we encourage you
 to upload them to our topology archive at www.gromacs.org! Just imagine
@@ -1853,10 +1853,10 @@ tensor, not a vector.
 
 
 
-\section{Force-field organization \index{force-field organization}}
+\section{Force field organization \index{force-field organization}}
 \label{sec:fforganization}
 
-\subsection{Force-field files}
+\subsection{Force field files}
 \label{subsec:fffiles}
 As of {\gromacs} version 4.5, 14 force fields are available by default.
 Force fields are detected by the presence of {\tt <name>.ff} directories
@@ -1930,7 +1930,7 @@ behind the definition of the bonded interaction directly in the {\tt *.top} file
 under the {\tt [~moleculetype~]} section (see \ssecref{topfile} for the format
 and units).
 If one wants to change the parameters for all instances of a certain
-interaction one can change them in the force-field file or add a
+interaction one can change them in the force field file or add a
 new {\tt [~???types~]} section after including the force field.
 When parameters for a certain interaction are defined multiple times,
 the last definition is used. As of {\gromacs} version 3.1.3, a warning is
