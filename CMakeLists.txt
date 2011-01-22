@@ -709,6 +709,18 @@ if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
+  if(GMX_EXTERNAL_BLAS)
+    #FindBLAS needs Fortran
+    enable_language(Fortran)
+    find_package(BLAS)
+    list(APPEND	GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+  endif(GMX_EXTERNAL_BLAS)
+  if(GMX_EXTERNAL_LAPACK)
+    #FindLAPACK needs Fortran
+    enable_language(Fortran)
+    find_package(LAPACK)
+    list(APPEND	GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+  endif(GMX_EXTERNAL_LAPACK)
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
@@ -717,8 +729,6 @@ mark_as_advanced(GMX_EXTERNAL_BLAS)
 if(HAVE_LIBM)
     list(APPEND	GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
-
-
 
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
