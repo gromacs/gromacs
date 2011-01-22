@@ -31,7 +31,7 @@ add_library(gmxana
             gmx_pme_error.c	)
 
 
-target_link_libraries(gmxana libgromacs)
+target_link_libraries(gmxana libgromacs ${GSL_LIBRARIES})
 set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 # List of programs with single corresponding .c source file,
