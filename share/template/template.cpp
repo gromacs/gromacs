@@ -92,7 +92,8 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 
 
 AnalysisTemplate::AnalysisTemplate()
-    : _options("template", "Template options"), _cutoff(0.0)
+    : _options("template", "Template options"), _cutoff(0.0),
+      _refsel(NULL), _avem(NULL)
 {
 }
 
@@ -120,8 +121,8 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
     _options.setDescription(desc);
 
     _options.addOption(FileNameOption("o")
-        .filetype(eftPlot).writeOnly().required()
-        .store(&_fnDist).defaultValue("avedist")
+        .filetype(eftPlot).writeOnly()
+        .store(&_fnDist).defaultValueIfSet("avedist")
         .description("Average distances from reference group"));
 
     _options.addOption(SelectionOption("reference")
@@ -236,7 +237,7 @@ AnalysisTemplate::writeOutput()
 }
 
 /*! \brief
- * The main function.
+ * The main function for the analysis template.
  */
 int
 main(int argc, char *argv[])
