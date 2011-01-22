@@ -2708,9 +2708,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             gmx_bool do_dr,do_or;
             
-            if (fplog && do_log) 
+            if (fplog && do_log && bExpandedEnsemble) 
             {
-                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,&df_history,state->fep_state,ir->nstlog,step);
+                /* only needed if doing expanded ensemble */ 
+               PrintFreeEnergyInfoToFile(fplog,ir->fepvals,&df_history,state->fep_state,ir->nstlog,step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
