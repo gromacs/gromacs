@@ -248,6 +248,11 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
     }
 }
 
+static gmx_bool subdivision(int ewc)
+{
+    return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
+}
+
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     wallcc_t *wcc;
@@ -265,7 +270,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     {
         for(i=0; i<ewcNR; i++)
         {
-            wcc[i].c *= wc->omp_nthreads;
+            if (subdivision(i) || i==ewcPMEMESH || (i==ewcRUN && cr->duty == DUTY_PME))
+            {
+                wcc[i].c *= wc->omp_nthreads;
+            }
         }
     }
 
@@ -277,6 +285,11 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     {
         wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMBOUND].c;
     }
+    if (wcc[ewcPME_FFTCOMM].n > 0)
+    {
+        wcc[ewcPME_FFT].c -= wcc[ewcPME_FFTCOMM].c;
+    }
+
     if (cr->npmenodes == 0)
     {
         /* All nodes do PME (or no PME at all) */
@@ -359,10 +372,6 @@ static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
     }
 }
 
-static gmx_bool subdivision(int ewc)
-{
-    return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
-}
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                      gmx_wallcycle_t wc, double cycles[])
@@ -387,10 +396,15 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         npme = nnodes;
     }
     tot = cycles[ewcRUN];
+    /* PME part has to be multiplied with number of threads */
+    if (npme == 0)
+    {
+        tot += cycles[ewcPMEMESH]*(wc->omp_nthreads-1);
+    }
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
     {
-      c2t = nnodes*realtime/tot;
+      c2t = (npp+npme*wc->omp_nthreads)*realtime/tot;
     }
     else
     {

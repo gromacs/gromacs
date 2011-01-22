@@ -650,7 +650,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
         gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
-        omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; //threads on this node
     }
 #endif
 
@@ -800,18 +799,21 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifdef GMX_OPENMP
 #ifdef __linux
 #ifdef GMX_MPI
-        int core;
-        MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
-        MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-        MPI_Scan(&omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-        core-=omp_nthreads; //make exclusive scan
-#pragma omp parallel firstprivate(core) num_threads(omp_nthreads)
         {
-            cpu_set_t mask;
-            CPU_ZERO(&mask);
-            core+=omp_get_thread_num();
-            CPU_SET(core,&mask);
-            sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+            int core;
+            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
+            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; //threads on this node
+            MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            core-=local_omp_nthreads; //make exclusive scan
+    #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
+            {
+                cpu_set_t mask;
+                CPU_ZERO(&mask);
+                core+=omp_get_thread_num();
+                CPU_SET(core,&mask);
+                sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+            }
         }
 #endif //GMX_MPI
 #endif //__linux
