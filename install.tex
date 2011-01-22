@@ -248,7 +248,7 @@ mdrun process with the {\tt --disable-nice} option.
 For communications over multiple nodes connected by a network,
 there is usually a program called {\tt mpirun} with which you can start 
 the parallel processes. A typical command line looks like:
-\type{mpirun -p goofus,doofus,fred 10 mdrun_mpi -s topol -v}
+{\tt mpirun -p goofus,doofus,fred 10 mdrun_mpi -s topol -v}
 
 This command runs 10 processes each on the machines goofus, doofus, and fred.
 \footnote{Example taken from Silicon Graphics manual}
@@ -256,7 +256,7 @@ This command runs 10 processes each on the machines goofus, doofus, and fred.
 With the implementation of threading available by default in {\gromacs} version 4.5, 
 if you have a single machine with multiple processors you don't have to
 use the {\tt mpirun} command, or compile with MPI. Instead, you can allow GROMACS to determine the number of threads automatically, or use the {\tt mdrun} option {\tt -nt}:
-\type{mdrun -nt 8 -s topol.tpr}
+{\tt mdrun -nt 8 -s topol.tpr}
 
 Check your local manuals (or online manual) for exact details
 of your MPI implementation.
