@@ -222,7 +222,7 @@ are essential for running and compiling {\gromacs}. Other variables are:
 \item {\tt GMX_NOOPTIMIZEDKERNELS}: will prevent using assembly
   kernels.
 \item {\tt GMX_NOSEHOOVER_CHAINS}: enables printing of Nos{\'e}-Hoover chain data
-  to the .edr file.
+  to the {\tt .edr} file.
 \item There are a number of extra environment variables like the one
   above, which are used in debugging.
 \end{enumerate}
@@ -243,7 +243,7 @@ the option {\tt --enable-mpi} to the {\tt configure} script and recompile. Pleas
 (But don't forget to {\tt make distclean} before running {\tt configure} if you have
 previously compiled with a different configuration.) If you are using a 
 supercomputer you might also want to turn of the default nice-ing of the
-mdrun process with the {\tt --disable-nice} option.
+{\tt mdrun} process with the {\tt --disable-nice} option.
 
 For communications over multiple nodes connected by a network,
 there is usually a program called {\tt mpirun} with which you can start 

@@ -570,7 +570,7 @@ for TIP3P and TIP4P~\cite{Jorgensen83}.
 TIP3P just has another geometry. TIP4P has a virtual site, but since 
 that is generated it does not need to be shaken (nor stirred).
 
-\section{\normindex{pdb2gmx input files}}
+\section{\normindex{pdb2gmx} input files}
 \label{sec:pdb2gmxfiles}
 The {\gromacs} program {\tt pdb2gmx} generates a topology for
 the input coordinate file. Several formats are supported for
@@ -1008,9 +1008,9 @@ Since we cannot rely on the positions of hydrogens in input files, we need a spe
 input file to decide the geometries and parameters with which to add virtual site
 hydrogens. For more complex virtual site constructs ({\eg} when entire aromatic side chains
 are made rigid) we also need information about the equilibrium bond lengths and angles
-for all atoms in the side chain. This information is specified in the \verb+.vsd+ file for each force 
+for all atoms in the side chain. This information is specified in the {\tt .vsd} file for each force 
 field. Just as for the termini, there is one such file for each class of residues in 
-the \verb+.rtp+ file. 
+the {\tt .rtp} file. 
 
 The virtual site database is not really a very simple list of information. The first couple of sections
 specify which mass centers (typically called MCH$_3$/MNH$_3$) to use for CH$_3$, NH$_3$, 
@@ -1470,7 +1470,7 @@ in {\tt [~pairs~]}!
 {\bf {\tt [~position_restraints~]} :} harmonically restrain the selected particles
 to reference positions (\secref{posre}). 
 The reference positions are read from a 
-separate coordinate file by \normindex{grompp}.
+separate coordinate file by {\tt \normindex{grompp}}.
 
 {\bf {\tt \#include "spc.itp"} :} includes a topology file that was already
 constructed (see section~\ssecref{molitp}).
@@ -1885,7 +1885,7 @@ The force fields included with {\gromacs} are:
 \end{itemize}} 
  
 There are also some additional deprecated force fields listed in the selection from
-pdb2gmx, but we do not currently recommend that you use those for new simulations.
+{\tt pdb2gmx}, but we do not currently recommend that you use those for new simulations.
  
 A force field is included at the beginning of a topology file with an
 {\tt \#include} statement followed by {\tt <name>.ff/forcefield.itp}.

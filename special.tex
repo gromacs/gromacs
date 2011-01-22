@@ -982,7 +982,7 @@ thus accepted and equivalent to {\tt andersen}. Multiple temperature coupling gr
 are not supported, only {\tt tc-grps=System} will work.
 \item \textbf{Force fields:} Supported FF are Amber, CHARMM. {\gromos} and OPLS-AA are not supported.
 \begin{itemize}
-\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with pdb2gmx.
+\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with {\tt pdb2gmx}.
 \end{itemize}
 \item \textbf{Implicit solvent:} Supported only with {\tt Reaction-Field} electrostatics.
 The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale fators
@@ -1108,7 +1108,7 @@ tree and execute the following commands:
 
 %\subsubsection{Testing and troubleshooting}
 
-\subsubsection{{\gromacs}-GPU specific mdrun features}
+\subsubsection{{\gromacs}-GPU specific {\tt mdrun} features}
 
 Besides the usual command line options, 
 {\tt mdrun-gpu} also supports a set of ``device options'', that are meant to 

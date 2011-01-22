@@ -321,10 +321,10 @@ use the same groups for temperature coupling and center of mass motion
 removal.
 
 \item[XTC output group]
-In order to reduce the size of the \normindex{XTC} trajectory file, only a subset
+In order to reduce the size of the {\tt .xtc{\index{XTC}}} trajectory file, only a subset
 of all particles can be stored. All XTC groups that are specified
 are saved, the rest is not. If no XTC groups are specified, than all
-atoms are saved to the XTC file.
+atoms are saved to the {\tt .xtc} file.
 
 \end{description}
 The use of groups in analysis programs is described in
@@ -805,7 +805,7 @@ With the square inside the average.
 
 A nonstandard variant of velocity Verlet which averages the kinetic
 energies $KE(t+\hDt)$ and $KE(t-\hDt)$, exactly like leap-frog, is also
-now implemented in {\gromacs} (as mdp option {\em md-vv-avek}).  Without
+now implemented in {\gromacs} (as {\tt .mdp} file option {\tt md-vv-avek}).  Without
 temperature and pressure coupling, velocity Verlet with
 half-step-averaged kinetic energies and leapfrog will be identical up
 to numerical precision.  For temperature and pressure control schemes,
@@ -1122,7 +1122,7 @@ amount of space and are generally not important for analysis of
 simulations, but this can be overridden by defining the environment
 variable {\tt GMX_NOSEHOOVER_CHAINS}, which will print the values of all
 the positions and velocities of all Nos{\'e}-Hoover particles in the
-chain to the .edr file.  Leap-frog simulations currently can only have 
+chain to the {\tt .edr} file.  Leap-frog simulations currently can only have 
 Nos{\'e}-Hoover chain lengths of 1, but this will likely be updated in 
 later version.
 
@@ -1602,8 +1602,8 @@ account the update algorithm for the velocities becomes:
 where $g$ and $h$ are group indices which differ per atom.
 
 \subsection{Output step}
-The important output of the MD run is the {\em
-\swapindex{trajectory}{file}} \verb'name.trj', which contains particle coordinates
+The most important output of the MD run is the {\em
+\swapindex{trajectory}{file}}, which contains particle coordinates
 and (optionally) velocities at regular intervals. Since the trajectory
 files are lengthy, one should not save every step! To retain all
 information it suffices to write a frame every 15 steps, since at
