@@ -76,6 +76,11 @@ bin_PROGRAMS = \
 	g_clustsize 	g_mdmat     	g_wham		\
 	g_sigeps
 
+# These programs are not compiled or installed by default - you will have to 
+# issue "make <program>" and copy the binary to the correct location yourself! 
+# Add new entries in Makefile.am!
+
+EXTRA_PROGRAMS 	=  	options
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
