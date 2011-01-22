@@ -1037,29 +1037,29 @@ which might not be identical to the equilibrium value for a single bond/angle if
 
 \subsection{Special bonds}
 \label{subsec:specbond}
-The mechanism for generating bonds used by {\tt pdb2gmx} relies principally on linear linking
-of residues to build a macromolecule. In some cases, {\ie} disulfides, a heme group, etc., it is 
-necessary to create ``non-linear'' bonds.  The file {\tt specbond.dat} takes care of this function.
+The mechanism used by {\tt pdb2gmx} to generate inter-residue bonds relies principally on head-to-tail linking
+of backbone atoms in different residues to build a macromolecule. In some cases, {\eg} disulfides, a heme group, branched polymers, etc., it is 
+necessary to create inter-residue bonds that do not lie on the backbone.  The file {\tt specbond.dat} takes care of this function.
 
 The first line of {\tt specbond.dat} indicates the number of entries that are in the file. If you
 add a new entry, be sure to increment this number. The remaining lines in the file provide the
-specifications for creating bonds.  The format of the lines is as follows:
+specifications for creating bonds. The format of the lines is as follows:
 
 {\tt resA  atomA  nbondsA  resB  atomB  nbondsB  length  newresA  newresB }
 
 The columns indicate:
 \begin{enumerate}
 \item {\tt resA} The name of residue A that participates in the bond.
-\item {\tt atomA} The atom in residue A that forms the bond.
-\item {\tt nbondsA} The number of bonds {\tt atomA} can form.
+\item {\tt atomA} The name of the atom in residue A that forms the bond.
+\item {\tt nbondsA} The total number of bonds {\tt atomA} can form.
 \item {\tt resB} The name of residue B that participates in the bond.
-\item {\tt atomB} The atom in residue B that forms the bond.
-\item {\tt nbondsB} The number of bonds {\tt atomB} can form.
-\item {\tt length} The reference length for the bond.  If {\tt atomA} and {\tt atomB} are not within
-{\tt length} $\pm$ 10\%, no bond will be formed.
+\item {\tt atomB} The name of the atom in residue B that forms the bond.
+\item {\tt nbondsB} The total number of bonds {\tt atomB} can form.
+\item {\tt length} The reference length for the bond. If {\tt atomA} and {\tt atomB} are not within
+{\tt length} $\pm$ 10\% in the coordinate file supplied to {\tt pdb2gmx}, no bond will be formed.
 \item {\tt newresA} The new name of residue A, if necessary. Some force fields use {\eg} CYS2 for 
 a cysteine in a disulfide or heme linkage.
-\item {\tt rewresB} The new name of residue B.
+\item {\tt newresB} The new name of residue B, likewise.
 \end{enumerate}
 
 
