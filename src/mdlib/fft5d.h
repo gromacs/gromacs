@@ -30,10 +30,15 @@ double MPI_Wtime();
 #define FFTW(x) fftw_##x
 #endif
 
+#ifdef NOGMX
 struct fft5d_time_t {
 	double fft,local,mpi1,mpi2;
 };
 typedef struct fft5d_time_t *fft5d_time;
+#else
+#include "gmx_wallcycle.h"
+typedef gmx_wallcycle_t fft5d_time;
+#endif
 
 typedef enum fft5d_flags_t {
 	FFT5D_ORDER_YZ=1,

@@ -878,11 +878,19 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     if (plan->p3d) {
 #pragma omp master
         {
-        if (times!=0)
-            time=MPI_Wtime();
-        FFTW(execute)(plan->p3d); 
-        if (times!=0)
-            times->fft+=MPI_Wtime()-time;
+#ifdef NOGMX
+            if (times!=0)
+            {
+                time=MPI_Wtime();
+            }
+#endif
+            FFTW(execute)(plan->p3d);
+#ifdef NOGMX
+            if (times!=0)
+            {
+                times->fft+=MPI_Wtime()-time;
+            }
+#endif
         }
         return;
     }
@@ -911,44 +919,63 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
         }
 
         /* ---------- START FFT ------------ */
+#ifdef NOGMX
 #pragma omp master 
         {
             if (times!=0)
+            {
                 time=MPI_Wtime();
+            }
         }
+#endif
         
         if (bParallelDim) {
             fftout = lout;
-        } else {
-            if (s==0) {
+        }
+        else
+        {
+            if (s==0)
+            {
                 fftout = lout3;
-            } else {
+            } else
+            {
                 fftout = lout2;
             }
         }
         
         tstart = (t*pM[s]*pK[s]/plan->nthreads)*C[s];
-        if ((plan->flags&FFT5D_REALCOMPLEX) && !(plan->flags&FFT5D_BACKWARD) && s==0) {
+        if ((plan->flags&FFT5D_REALCOMPLEX) && !(plan->flags&FFT5D_BACKWARD) && s==0)
+        {
             gmx_fft_many_1d_real(p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin+tstart,fftout+tstart);
-        } else {
+        } else
+        {
             gmx_fft_many_1d(     p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin+tstart,fftout+tstart);
             
         }
+
 #pragma omp master 
         {
+#ifdef NOGMX
             if (times!=0)
+            {
                 time_fft+=MPI_Wtime()-time;
+            }
+#endif
             if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
         }
         /* ---------- END FFT ------------ */        
 
         /* ---------- START SPLIT + TRANSPOSE------------ (if parallel in in this dimension)*/
         if (bParallelDim) {
+#ifdef NOGMX
 #pragma omp master
             { 
                 if (times!=0)
-                    time=MPI_Wtime(); 
+                {
+                    time=MPI_Wtime();
+                }
             }
+#endif
             /*prepare for A
 llToAll
               1. (most outer) axes (x) is split into P[s] parts of size N[s] 
@@ -960,18 +987,28 @@ llToAll
                 splitaxes(lout2,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
             }
 #pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
+#ifdef NOGMX
 #pragma omp master 
             {
                 if (times!=0)
+                {
                     time_local+=MPI_Wtime()-time;
+                }
             }
+#endif
 
         /* ---------- END SPLIT , START TRANSPOSE------------ */            
 
 #pragma omp master 
             {
+#ifdef NOGMX
                 if (times!=0)
+                {
                     time=MPI_Wtime();
+                }
+#else
+                wallcycle_start(times,ewcPME_FFTCOMM);
+#endif
 #ifdef FFT5D_MPI_TRANSPOSE
                 FFTW(execute)(mpip[s]);  /*TODO would need to read from lout2 to work!  */
 #else
@@ -984,8 +1021,14 @@ llToAll
                 gmx_incons("fft5d MPI call without MPI configuration");
 #endif /*GMX_MPI*/
 #endif /*FFT5D_MPI_TRANSPOSE*/
+#ifdef NOGMX
                 if (times!=0)
+                {
                     time_mpi[s]=MPI_Wtime()-time;
+                }
+#else
+                wallcycle_stop(times,ewcPME_FFTCOMM);
+#endif
             }  /*master*/
         }  /* bPrallelDim */
 #pragma omp barrier  /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
@@ -993,11 +1036,15 @@ llToAll
         /* ---------- END SPLIT + TRANSPOSE------------ */
 
         /* ---------- START JOIN ------------ */
+#ifdef NOGMX
 #pragma omp master 
         {
             if (times!=0)
+            {
                 time=MPI_Wtime();
+            }
         }
+#endif
 
         if (bParallelDim) {
             joinin = lout3;
@@ -1027,20 +1074,27 @@ llToAll
         }
 #pragma omp master 
         {
+#ifdef NOGMX
             if (times!=0)
+            {
                 time_local+=MPI_Wtime()-time;
-    
+            }
+#endif
             if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: tranposed %d\n", s+1, plan);
         }       
         /* ---------- END JOIN ------------ */
 
         /*if (debug) print_localdata(lin, "%d %d: transposed x-z\n", N1, M0, K, ZYX, coor);*/
     }  /* for(s=0;s<2;s++) */
+#ifdef NOGMX
 #pragma omp master 
     {    
         if (times!=0)
+        {
             time=MPI_Wtime();
+        }
     }
+#endif
 
     if (plan->flags&FFT5D_INPLACE) lout=lin; /*in place currently not supported*/
 
@@ -1055,42 +1109,52 @@ llToAll
 
 #pragma omp master
     {
+#ifdef NOGMX
         if (times!=0)
+        {
             time_fft+=MPI_Wtime()-time;
-        if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
-        /*if (debug) print_localdata(lout, "%d %d: FFT in y\n", N1, M, K0, YZX, coor);*/
         
-        if (times!=0) {
             times->fft+=time_fft;
             times->local+=time_local;
             times->mpi2+=time_mpi[1];
             times->mpi1+=time_mpi[0];
         }
+#endif
+
+        if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
+                /*if (debug) print_localdata(lout, "%d %d: FFT in y\n", N1, M, K0, YZX, coor);*/
     }
 }
 
 void fft5d_destroy(fft5d_plan plan) {
     int s,t;
-    for (s=0;s<3;s++) {
-        if (plan->p1d[s]) {
-            for (t=0;t<plan->nthreads;t++) { 
+    for (s=0;s<3;s++)
+    {
+        if (plan->p1d[s])
+        {
+            for (t=0;t<plan->nthreads;t++)
+            {
                 gmx_many_fft_destroy(plan->p1d[s][t]);
             }
             free(plan->p1d[s]);
         }
-        if (plan->iNin[s]) {
+        if (plan->iNin[s])
+        {
             free(plan->iNin[s]);
             plan->iNin[s]=0;
         }
-        if (plan->oNin[s]) {
+        if (plan->oNin[s])
+        {
             free(plan->oNin[s]);
             plan->oNin[s]=0;
         }
-        if (plan->iNout[s]) {
+        if (plan->iNout[s])
+        {
             free(plan->iNout[s]);
             plan->iNout[s]=0;
         }
-        if (plan->oNout[s]) {
+        if (plan->oNout[s])
+        {
             free(plan->oNout[s]);
             plan->oNout[s]=0;
         }
@@ -1099,9 +1163,13 @@ void fft5d_destroy(fft5d_plan plan) {
     FFTW_LOCK;
 #ifdef FFT5D_MPI_TRANSPOS
     for (s=0;s<2;s++)    
+    {
         FFTW(destroy_plan)(plan->mpip[s]);
-    if (plan->p3d) 
+    }
+    if (plan->p3d)
+    {
         FFTW(destroy_plan)(plan->p3d);
+    }
 #endif /* FFT5D_MPI_TRANSPOS */
 #endif /* GMX_FFT_FFTW3 */
 
@@ -1145,7 +1213,8 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     MPI_Comm_rank(comm,&prank);
 
     if (P0==0) P0 = lfactor(size);
-    if (size%P0!=0) {
+    if (size%P0!=0)
+    {
         if (prank==0) printf("FFT5D: WARNING: Number of processors %d not evenly dividable by %d\n",size,P0);
         P0 = lfactor(size);
     }

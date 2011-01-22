@@ -174,14 +174,15 @@ int
 gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            enum gmx_fft_direction  dir,
                            void *                  in_data,
-                           void *                  out_data) {
+                           void *                  out_data,
+                           gmx_wallcycle_t         wcycle) {
     if ((!(pfft_setup->p1->flags&FFT5D_REALCOMPLEX)) ^ (dir==GMX_FFT_FORWARD ||dir==GMX_FFT_BACKWARD)) { 
         gmx_fatal(FARGS,"Invalid transform. Plan and execution don't match regarding reel/complex");
     }
     if (dir==GMX_FFT_FORWARD || dir==GMX_FFT_REAL_TO_COMPLEX) {
-        fft5d_execute(pfft_setup->p1,0);
+        fft5d_execute(pfft_setup->p1,wcycle);
     } else {
-        fft5d_execute(pfft_setup->p2,0);
+        fft5d_execute(pfft_setup->p2,wcycle);
     }
     return 0;
 }

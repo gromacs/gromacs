@@ -4013,7 +4013,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle,ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,
-                                           fftgrid,cfftgrid);
+                                           fftgrid,cfftgrid,wcycle);
 #pragma omp master
                 {
                     wallcycle_stop(wcycle,ewcPME_FFT);
@@ -4052,7 +4052,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     where();
                     wallcycle_start(wcycle,ewcPME_FFT);
                 }
-                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid);
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid,wcycle);
 #pragma omp master
                 {
                     wallcycle_stop(wcycle,ewcPME_FFT);
