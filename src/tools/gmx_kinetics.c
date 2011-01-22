@@ -890,7 +890,7 @@ int gmx_kinetics(int argc,char *argv[])
 #else
 int gmx_kinetics(int argc,char *argv[])
 {
-  gmx_fatal(FARGS,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.");
+  fprintf(stderr,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
   
   return 0;
 }
