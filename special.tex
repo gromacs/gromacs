@@ -930,11 +930,11 @@ future.
 The following should be noted before using the accelerated {\tt mdrun-gpu}:
 \begin{itemize}
 \item The current release runs only on modern, CUDA compatible NVIDIA GPU hardware 
-(for details see \ref{subsec-compatibility}. Make sure that the necessary CUDA drivers and 
+(for details see \ref{subsec:compatibility}. Make sure that the necessary CUDA drivers and 
 libraries for your operating system are already installed. 
 \item Only single-GPU simulations are supported.
 \item Only a relatively small subset of the {\gromacs} features and options are supported 
-with the  current OpenMM-based implementation. See section \ref{subsec-features} for 
+with the  current OpenMM-based implementation. See section \ref{subsec:features} for 
 a detailed list.
 \item Consumer-level GPU cards are known to often have problems with faulty memory.
 It is strongly recommended that a full memory check of the cards is done at least once
@@ -1027,7 +1027,7 @@ are very demanding and unlike in other application areas,
 only high-end graphics cards are capable of providing performance comparable 
 to or higher then modern CPUs. For this reason, {\tt mdrun-gpu} is compatible with 
 only a subset of more performant CUDA-enabled GPUs (for detailed list see section 
-\ref{subsec-compatibility}) and by default it does not run if it detects
+\ref{subsec:compatibility}) and by default it does not run if it detects
 incompatible hardware. 
 
 For details about compatibility of NVIDIA drivers with harthe CUDA library and GPUs consult  
