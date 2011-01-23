@@ -471,7 +471,7 @@ int gmx_editconf(int argc, char *argv[])
     const char
         *desc[] =
             {
-                "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+                "[TT]editconf[tt] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
                 "or [TT].pdb[tt].",
                 "[PAR]",
                 "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
@@ -547,8 +547,8 @@ int gmx_editconf(int argc, char *argv[])
                 "of the principal axis of a specified group against the given vector, ",
 				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
                 "[PAR]",
-                "Finally with option [TT]-label[tt], editconf can add a chain identifier",
-                "to a pdb file, which can be useful for analysis with e.g. rasmol.",
+                "Finally with option [TT]-label[tt], [TT]editconf[tt] can add a chain identifier",
+                "to a [TT].pdb[tt] file, which can be useful for analysis with e.g. rasmol.",
                 "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
@@ -648,7 +648,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add CONECT records to a pdb file when written. Can only be done when a topology is present" } };
+                        "Add CONECT records to a [TT].pdb[tt] file when written. Can only be done when a topology is present" } };
 #define NPA asize(pa)
 
     FILE *out;

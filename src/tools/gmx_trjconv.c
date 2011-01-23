@@ -257,7 +257,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
     calc_box_center(ecenter,box,box_center);
     set_pbc(&pbc,ePBC,box);
     if (mols->nr <= 0) 
-        gmx_fatal(FARGS,"There are no molecule descriptions. I need a tpr file for this pbc option.");
+        gmx_fatal(FARGS,"There are no molecule descriptions. I need a .tpr file for this pbc option.");
     for(i=0; (i<mols->nr); i++) {
         /* calc COM */
         clear_rvec(com);
@@ -408,7 +408,7 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
 void check_trn(const char *fn)
 {
     if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
-        gmx_fatal(FARGS,"%s is not a trj file, exiting\n",fn);
+        gmx_fatal(FARGS,"%s is not a trajectory file, exiting\n",fn);
 }
 
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
@@ -478,7 +478,7 @@ void do_trunc(const char *fn, real t0)
 int gmx_trjconv(int argc,char *argv[])
 {
     const char *desc[] = {
-        "trjconv can convert trajectory files in many ways:[BR]",
+        "[TT]trjconv[tt] can convert trajectory files in many ways:[BR]",
         "[BB]1.[bb] from one format to another[BR]",
         "[BB]2.[bb] select a subset of atoms[BR]",
         "[BB]3.[bb] change the periodicity representation[BR]",
@@ -508,7 +508,7 @@ int gmx_trjconv(int argc,char *argv[])
         "is always taken from [TT]-ndec[tt], when this option is set.",
         "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
         "output can be single or double precision, depending on the precision",
-        "of the trjconv binary.",
+        "of the [TT]trjconv[tt] binary.",
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
         "Option [TT]-app[tt] can be used to",
@@ -581,7 +581,7 @@ int gmx_trjconv(int argc,char *argv[])
         "simultaneously). For making smooth movies, the program [TT]g_filter[tt]",
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
-        "Using [TT]-trunc[tt] trjconv can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [TT]trjconv[tt] can truncate [TT].trj[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
@@ -691,7 +691,7 @@ int gmx_trjconv(int argc,char *argv[])
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
                     { "-trunc", FALSE, etTIME,
                         { &ttrunc }, 
-                        "Truncate input trj file after this time (%t)" },
+                        "Truncate input trajectory file after this time (%t)" },
 #endif
                     { "-exec", FALSE, etSTR,
                         { &exec_command },
@@ -717,7 +717,7 @@ int gmx_trjconv(int argc,char *argv[])
                         { &dropover }, "Drop all frames above this value" },
                     { "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add conect records when writing pdb files. Useful "
+                        "Add conect records when writing [TT].pdb[tt] files. Useful "
                         "for visualization of non-standard molecules, e.g. "
                         "coarse grained ones" } };
 #define NPA asize(pa)
@@ -1019,7 +1019,7 @@ int gmx_trjconv(int argc,char *argv[])
             clear_rvec(x_shift);
 
         if (bDropUnder || bDropOver) {
-            /* Read the xvg file with the drop values */
+            /* Read the .xvg file with the drop values */
             fprintf(stderr,"\nReading drop file ...");
             ndrop = read_xvg(opt2fn("-drop",NFILE,fnm),&dropval,&ncol);
             fprintf(stderr," %d time points\n",ndrop);
@@ -1032,7 +1032,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         /* Make atoms struct for output in GRO or PDB files */
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB)) {
-            /* get memory for stuff to go in pdb file */
+            /* get memory for stuff to go in .pdb file */
             init_t_atoms(&useatoms,atoms->nr,FALSE);
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
@@ -1385,7 +1385,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         ntrxopen++;
                                     }
                                     else if (clust_status_id[my_clust] == -2)
-                                        gmx_fatal(FARGS,"File %s.xtc should still be open (%d open xtc files)\n""in order to write frame %d. my_clust = %d",
+                                        gmx_fatal(FARGS,"File %s.xtc should still be open (%d open .xtc files)\n""in order to write frame %d. my_clust = %d",
                                                   clust->grpname[my_clust],ntrxopen,frame,
                                                   my_clust);
                                     write_trxframe(clust_status[my_clust],&frout,gc);
@@ -1397,7 +1397,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         clust_status_id[my_clust] = -2;
                                         ntrxopen--;
                                         if (ntrxopen < 0)
-                                            gmx_fatal(FARGS,"Less than zero open xtc files!");
+                                            gmx_fatal(FARGS,"Less than zero open .xtc files!");
                                     }
                                 }
                             }

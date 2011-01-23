@@ -1504,7 +1504,7 @@ int gmx_energy(int argc,char *argv[])
 {
   const char *desc[] = {
     
-    "g_energy extracts energy components or distance restraint",
+    "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
     "select the energy terms she wants.[PAR]",
     
@@ -1518,8 +1518,8 @@ int gmx_energy(int argc,char *argv[])
     "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
     "Note that in most cases the energy files contains averages over all",
     "MD steps, or over many more points than the number of frames in",
-    "energy file. This makes the g_energy statistics output more accurate",
-    "than the xvg output. When exact averages are not present in the energy",
+    "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
+    "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
     "file the statistics mentioned above is simply over the single, per-frame",
     "energy values.[PAR]",
 
@@ -1569,7 +1569,7 @@ int gmx_energy(int argc,char *argv[])
 
     "Option [TT]-odh[tt] extracts and plots the free energy data",
     "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",
-    "from the ener.edr file.[PAR]",
+    "from the [TT]ener.edr[tt] file.[PAR]",
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
@@ -1626,7 +1626,7 @@ int gmx_energy(int argc,char *argv[])
     { "-orinst", FALSE, etBOOL, {&bOrinst},
       "Analyse instantaneous orientation data" },
     { "-ovec", FALSE, etBOOL, {&bOvec},
-      "Also plot the eigenvectors with -oten" }
+      "Also plot the eigenvectors with [TT]-oten[tt]" }
   };
   const char* drleg[] = {
     "Running average",

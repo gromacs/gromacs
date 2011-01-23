@@ -91,10 +91,10 @@ any defines to control options in your customized topology files. Options
 that are already available by default are:
 <dd><dl compact>
 <dt>-DFLEXIBLE</dt>
-<dd>Will tell grompp to include flexible water in stead of rigid water into your
+<dd>Will tell <tt>grompp</tt> to include flexible water in stead of rigid water into your
 topology, this can be useful for normal mode analysis.</dd>
 <dt>-DPOSRES</dt>
-<dd>Will tell grompp to include posre.itp into your topology, used for
+<dd>Will tell <tt>grompp</tt> to include posre.itp into your topology, used for
 <!--Idx-->position restraints<!--EIdx-->.</dd>
 </dl>
 </dl>
@@ -967,7 +967,7 @@ each temperature group. Use 0 for groups that are not annealed. The number of en
 <dd>List of temperatures at the annealing reference/control points for each group. The number of entries should equal the sum of the numbers given in <tt>annealing_npoints</tt>.</dd>
 <br>
 Confused? OK, let's use an example. Assume you have two temperature groups, set the group selections to <tt>annealing = single periodic</tt>, the number of points of each group to <tt>annealing_npoints = 3 4</tt>, the times to <tt>annealing_time = 0 3 6 0 2 4 6</tt> and finally temperatures to <tt>annealing_temp = 298 280 270 298 320 320 298</tt>.
-The first group will be coupled to 298K at 0ps, but the reference temperature will drop linearly to reach 280K at 3ps, and then linearly between 280K and 270K from 3ps to 6ps. After this is stays constant, at 270K. The second group is coupled to 298K at 0ps, it increases linearly to 320K at 2ps, where it stays constant until 4ps. Between 4ps and 6ps it decreases to 298K, and then it starts over with the same pattern again, i.e. rising linearly from 298K to 320K between 6ps and 8ps. Check the summary printed by grompp if you are unsure!
+The first group will be coupled to 298K at 0ps, but the reference temperature will drop linearly to reach 280K at 3ps, and then linearly between 280K and 270K from 3ps to 6ps. After this is stays constant, at 270K. The second group is coupled to 298K at 0ps, it increases linearly to 320K at 2ps, where it stays constant until 4ps. Between 4ps and 6ps it decreases to 298K, and then it starts over with the same pattern again, i.e. rising linearly from 298K to 320K between 6ps and 8ps. Check the summary printed by <tt>grompp</tt> if you are unsure!
 </dl>
 
 <A NAME="vel"><br>
@@ -981,7 +981,7 @@ The first group will be coupled to 298K at 0ps, but the reference temperature wi
 <dd> Do not generate velocities. The velocities are set to zero
 when there are no velocities in the input structure file.</dd>
 <dt><b>yes</b></dt>
-<dd>Generate velocities in grompp according to a Maxwell distribution at
+<dd>Generate velocities in <tt>grompp</tt> according to a Maxwell distribution at
 temperature <b>gen_temp</b> [K], with random seed <b>gen_seed</b>. 
 This is only meaningful with integrator <b><A HREF="#run">md</A></b>.</dd>
 </dl></dd>
@@ -1166,7 +1166,7 @@ interaction between periodic images.
 <dt><b>no</b></dt>
 <dd>No center of mass pulling.
 All the following pull options will be ignored
-(and if present in the mdp file, they unfortunately generate warnings)</dd>
+(and if present in the <tt>.mdp</tt> file, they unfortunately generate warnings)</dd>
 <dt><b>umbrella</b></dt>
 <dd>Center of mass pulling using an umbrella potential
 between the reference group and one or more groups.</dd>
@@ -1298,7 +1298,7 @@ restraint information in topology file)</dd>
 <dd>simple (per-molecule) distance restraints,
 ensemble averaging can be performed with <tt>mdrun -multi</tt>
 where the environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
-of systems within each ensemble (usually equal to the mdrun -multi value)</dd>
+of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value)</dd>
 <dt><b>ensemble</b></dt>
 <dd>distance restraints over an ensemble of molecules in one simulation box,
 should only be used for special cases, such as dimers
@@ -1656,7 +1656,7 @@ calculated</dd>
 <dt><b>sa_surface_tension: [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
 <dd>Default value for surface tension with SA algorithms. The default value is -1; 
 Note that if this default value is not changed
-it will be overridden by grompp using values that are specific for the choice
+it will be overridden by <tt>grompp</tt> using values that are specific for the choice
 of radii algorithm (0.0049 kcal/mol/Angstrom<sup>2</sup> for Still, 0.0054 kcal/mol/Angstrom<sup>2</sup> 
 for HCT/OBC)
 

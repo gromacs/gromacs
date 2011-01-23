@@ -267,7 +267,7 @@ static gmx_bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "ngmx is the Gromacs trajectory viewer. This program reads a",
+    "[TT]ngmx[tt] is the Gromacs trajectory viewer. This program reads a",
     "trajectory file, a run input file and an index file and plots a",
     "3D structure of your molecule on your standard X Window",
     "screen. No need for a high end graphics workstation, it even",
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
     "user friendly menus, option to remove periodicity, option to",
     "show computational box.[PAR]",
     "Some of the more common X command line options can be used:[BR]",
-    "-bg, -fg change colors, -font fontname, changes the font."
+    "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font[tt] fontname, changes the font."
   };
   const char *bugs[] = {
     "Balls option does not work",

@@ -188,7 +188,7 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
 int gmx_nmeig(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,",
+    "[TT]g_nmeig[tt] calculates the eigenvectors/values of a (Hessian) matrix,",
     "which can be calculated with [TT]mdrun[tt].",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "The structure is written first with t=0. The eigenvectors",

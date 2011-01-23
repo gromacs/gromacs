@@ -1028,7 +1028,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
 int gmx_pme_error(int argc,char *argv[])
 {
     const char *desc[] = {
-            "g_pme_error estimates the error of the electrostatic forces",
+            "[TT]g_pme_error[tt] estimates the error of the electrostatic forces",
             "if using the sPME algorithm. The flag [TT]-tune[tt] will determine",
             "the splitting parameter such that the error is equally",
             "distributed over the real and reciprocal space part.",
@@ -1063,13 +1063,13 @@ int gmx_pme_error(int argc,char *argv[])
 
     t_pargs pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
-            "If positive, overwrite ewald_beta from tpr file with this value" },
+            "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
             "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
         { "-self",     FALSE, etREAL, {&fracself},
             "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles" },
         { "-seed",     FALSE, etINT,  {&seed},
-          "Random number seed used for Monte Carlo algorithm when -self is set to a value between 0.0 and 1.0" },
+          "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0" },
         { "-v",        FALSE, etBOOL, {&bVerbose},
             "Be loud and noisy" }
     };

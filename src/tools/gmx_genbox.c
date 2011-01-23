@@ -600,7 +600,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 int gmx_genbox(int argc,char *argv[])
 {
   const char *desc[] = {
-    "genbox can do one of 3 things:[PAR]",
+    "[TT]genbox[tt] can do one of 3 things:[PAR]",
     
     "1) Generate a box of solvent. Specify [TT]-cs[tt] and [TT]-box[tt]. Or specify [TT]-cs[tt] and",
     "[TT]-cp[tt] with a structure file with a box, but without atoms.[PAR]",
@@ -660,10 +660,10 @@ int gmx_genbox(int argc,char *argv[])
     
     "Setting [TT]-shell[tt] larger than zero will place a layer of water of",
     "the specified thickness (nm) around the solute. Hint: it is a good",
-    "idea to put the protein in the center of a box first (using editconf).",
+    "idea to put the protein in the center of a box first (using [TT]editconf[tt]).",
     "[PAR]",
     
-    "Finally, genbox will optionally remove lines from your topology file in ",
+    "Finally, [TT]genbox[tt] will optionally remove lines from your topology file in ",
     "which a number of solvent molecules is already added, and adds a ",
     "line with the total number of solvent molecules in your coordinate file."
   };
@@ -712,7 +712,7 @@ int gmx_genbox(int argc,char *argv[])
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
       "no of extra molecules to insert" },
     { "-try",    FALSE, etINT , {&nmol_try},  
-      "try inserting -nmol*-try times" },
+      "try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
     { "-seed",   FALSE, etINT , {&seed},      
       "random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},

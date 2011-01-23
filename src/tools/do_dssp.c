@@ -339,11 +339,11 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "do_dssp ", 
+    "[TT]do_dssp[tt] ", 
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. do_dssp assumes that the dssp executable is",
+    "get it. [TT]do_dssp[tt] assumes that the dssp executable is",
     "/usr/local/bin/dssp. If this is not the case, then you should",
     "set an environment variable [BB]DSSP[bb] pointing to the dssp",
     "executable, e.g.: [PAR]",
@@ -351,7 +351,7 @@ int main(int argc,char *argv[])
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
-    "Individual chains are separated by light grey lines in the xpm and",
+    "Individual chains are separated by light grey lines in the [TT].xpm[tt] and",
     "postscript files.",
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",

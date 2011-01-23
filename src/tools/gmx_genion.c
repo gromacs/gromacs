@@ -319,7 +319,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 int gmx_genion(int argc, char *argv[])
 {
   const char *desc[] = {
-    "genion replaces solvent molecules by monoatomic ions at",
+    "[TT]genion[tt] replaces solvent molecules by monoatomic ions at",
     "the position of the first atoms with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
     "normal GROMACS particle-based methods (in contrast to other methods",
@@ -337,10 +337,10 @@ int gmx_genion(int argc, char *argv[])
     "multiple charge states get the multiplicilty added, without sign,",
     "for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
-    "in a pdb file (for visualisation using e.g. rasmol).",
+    "in a [TT].pdb[tt] file (for visualisation using e.g. rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
-    "For larger ions, e.g. sulfate we recommended using genbox."
+    "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."
   };
   const char *bugs[] = {
     "Calculation of the potential is not reliable, therefore the [TT]-random[tt] option is now turned on by default.",
@@ -361,9 +361,9 @@ int gmx_genion(int argc, char *argv[])
     { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
     { "-random",FALSE,etBOOL, {&bRandom},"Use random placement of ions instead of based on potential. The rmin option should still work" },
     { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
-    { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for -pot" },
+    { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for [TT]-pot[tt]" },
     { "-conc",  FALSE, etREAL, {&conc},  
-      "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input tpr file. Overrides the -np and  nn options." },
+      "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
     { "-neutral", FALSE, etBOOL, {&bNeutral},
       "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
   };

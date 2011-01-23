@@ -145,31 +145,31 @@ static void process_multiprot_output(const char *fn, real *rmsd, int *nres, rvec
 int main(int argc,char *argv[])
 {
     const char *desc[] = {
-	"do_multiprot ", 
+	"[TT]do_multiprot[tt] ", 
 	"reads a trajectory file and aligns it to a reference structure  ",
 	"each time frame",
 	"calling the multiprot program. This allows you to use a reference",
 	"structure whose sequence is different than that of the protein in the ",
 	"trajectory, since the alignment is based on the geometry, not sequence.",
-	"The output of do_multiprot includes the rmsd and the number of residues",
+	"The output of [TT]do_multiprot[tt] includes the rmsd and the number of residues",
 	"on which it was calculated.",
 	"[PAR]",
-	"An aligned trajectory file is generated with the [TT] -ox [tt] option.[PAR]",
-	"With the [TT] -cr [tt] option, the number of hits in the alignment is given",
+	"An aligned trajectory file is generated with the [TT]-ox[tt] option.[PAR]",
+	"With the [TT]-cr[tt] option, the number of hits in the alignment is given",
 	"per residue. This number can be between 0 and the number of frames, and",
 	"indicates the structural conservation of this residue.[PAR]",
-	"If you do not have the multiprot program, get it. do_multiprot assumes", 
-	"that the multiprot executable is /usr/local/bin/multiprot. If this is ",
+	"If you do not have the [TT]multiprot[tt] program, get it. [TT]do_multiprot[tt] assumes", 
+	"that the [TT]multiprot[tt] executable is [TT]/usr/local/bin/multiprot[tt]. If this is ",
 	"not the case, then you should set an environment variable [BB]MULTIPROT[bb]", 
-	"pointing to the multiprot executable, e.g.: [PAR]",
+	"pointing to the [TT]multiprot[tt] executable, e.g.: [PAR]",
 	"[TT]setenv MULTIPROT /usr/MultiProtInstall/multiprot.Linux[tt][PAR]",
 	"Note that at the current implementation only binary alignment (your",
 	"molecule to a reference) is supported. In addition, note that the ",
-	"by default multiprot aligns the two proteins on their C-alpha carbons.",
-	"and that this depends on the multiprot parameters which are not dealt ",
+	"by default [TT]multiprot[tt] aligns the two proteins on their C-alpha carbons.",
+	"and that this depends on the [TT]multiprot[tt] parameters which are not dealt ",
 	"with here. Thus, the C-alpha carbons is expected to give the same "
 	"results as choosing the whole protein and will be slightly faster.[PAR]",
-	"For information about multiprot, see:",
+	"For information about [TT]multiprot[tt], see:",
 	"http://bioinfo3d.cs.tau.ac.il/MultiProt/.[PAR]"
     };
     static bool bVerbose;

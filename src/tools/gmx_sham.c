@@ -677,9 +677,9 @@ static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 int gmx_sham(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
-    "g_sham reads one or more xvg files and analyzes data sets.",
-    "The basic purpose of g_sham is to plot Gibbs free energy landscapes",
+    "[TT]g_sham[tt] makes multi-dimensional free-energy, enthalpy and entropy plots.",
+    "[TT]g_sham[tt] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+    "The basic purpose of [TT]g_sham[tt] is to plot Gibbs free energy landscapes",
     "(option [TT]-ls[tt])",
     "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",
     "but it can also",

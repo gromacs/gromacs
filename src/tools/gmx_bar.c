@@ -1959,7 +1959,7 @@ static void read_bar_xvg_lowlevel(char *fn, real *temp, xvg_t *ba)
     {
         if (*temp <= 0)
         {
-            gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of g_bar",fn);
+            gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of [TT]g_bar[tt]",fn);
         }
         ba->temp = *temp;
     }
@@ -2475,7 +2475,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
 int gmx_bar(int argc,char *argv[])
 {
     static const char *desc[] = {
-        "g_bar calculates free energy difference estimates through ",
+        "[TT]g_bar[tt] calculates free energy difference estimates through ",
         "Bennett's acceptance ratio method (BAR). It also automatically",
         "adds series of individual free energies obtained with BAR into",
         "a combined free energy estimate.[PAR]",
@@ -2526,7 +2526,7 @@ int gmx_bar(int argc,char *argv[])
         "over 5 blocks. A range of blocks numbers for error estimation can ",
         "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[PAR]",
 
-        "g_bar tries to aggregate samples with the same 'native' and 'foreign'",
+        "[TT]g_bar[tt] tries to aggregate samples with the same 'native' and 'foreign'",
         "lambda values, but always assumes independent samples: note that",
         "when aggregating energy differences/derivatives with different",
         "sampling intervals, this is almost certainly not correct: usually",
