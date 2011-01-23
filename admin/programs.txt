@@ -17,7 +17,6 @@ END
 
 HEAD|Viewing trajectories
 ngmx|displays a trajectory
-g_highway|X Window System gadget for highway simulations
 g_nmtraj|generate a virtual trajectory from an eigenvector
 END
 
