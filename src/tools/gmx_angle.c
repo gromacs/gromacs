@@ -122,7 +122,7 @@ int gmx_g_angle(int argc,char *argv[])
     { "-periodic", FALSE, etBOOL, {&bPBC},
       "Print dihedral angles modulo 360 degrees" },
     { "-chandler", FALSE,  etBOOL, {&bChandler},
-      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
+      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };
