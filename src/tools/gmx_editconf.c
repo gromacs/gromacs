@@ -552,12 +552,12 @@ int gmx_editconf(int argc, char *argv[])
                 "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
-                "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
+                "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
                 "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
     const char *bugs[] =
         {
-            "For complex molecules, the periodicity removal routine may break down, ",
-                "in that case you can use trjconv." };
+            "For complex molecules, the periodicity removal routine may break down, "
+                "in that case you can use [TT]trjconv[tt]." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;

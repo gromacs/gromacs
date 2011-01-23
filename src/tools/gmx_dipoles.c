@@ -1327,7 +1327,7 @@ int gmx_dipoles(int argc,char *argv[])
         { "-pairs",    FALSE, etBOOL, {&bPairs},
           "Calculate |cos theta| between all pairs of molecules. May be slow" },
         { "-ncos",     FALSE, etINT, {&ncos},
-          "Must be 1 or 2. Determines whether the <cos> is computed between all mole cules in one group, or between molecules in two different groups. This turns on the -gkr flag." }, 
+          "Must be 1 or 2. Determines whether the <cos> is computed between all molecules in one group, or between molecules in two different groups. This turns on the -gkr flag." }, 
         { "-axis",     FALSE, etSTR, {&axtitle}, 
           "Take the normal on the computational box in direction X, Y or Z." },
         { "-sl",       FALSE, etINT, {&nslices},

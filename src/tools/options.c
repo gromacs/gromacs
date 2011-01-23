@@ -52,7 +52,7 @@
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "All GROMACS programs have 6 standard options,",
+    "GROMACS programs have some standard options,",
     "of which some are hidden by default:"
   };
 
@@ -66,7 +66,7 @@ int main(int argc,char *argv[])
     "[TT]-npri[tt] int [TT]0[tt] Set non blocking priority (try 128)",
 
     "Optional files are not used unless the option is set, in contrast to "
-    "non optional files, where the default file name is used when the "
+    "non-optional files, where the default file name is used when the "
     "option is not set.",
 
     "All GROMACS programs will accept file options without a file extension "
@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
     "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
     "very well anyway.",
 
-    "Most GROMACS programs can process a trajectory with less atoms than "
+    "Most GROMACS programs can process a trajectory with fewer atoms than "
     "the run input or structure file, but only if the trajectory consists "
     "of the first n atoms of the run input or structure file.",
     
