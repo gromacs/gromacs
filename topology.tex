@@ -441,7 +441,7 @@ have function type 1. Function types 2 and 3 are intended
 for free-energy simulations. When determining hydration
 free energies, the solute needs to be decoupled from the solvent.
 This can be done by adding a B-state topology (see \secref{fecalc})
-that uses zero for all solute non-bonded parameters, i.e. charges and LJ parameters.
+that uses zero for all solute non-bonded parameters, {\ie} charges and LJ parameters.
 However, the free energy difference between the A and
 B states is not the total hydration free energy.  One has to
 add the free energy for reintroducing the internal Coulomb and 
@@ -1398,8 +1398,8 @@ Here follows the explanatory text.
 
 {\bf {\tt [~defaults~]} :}
 \begin{itemize}
-\item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)
-\item \normindex{combination rule} = 
+\item {\tt nbfunc} is the non-bonded function type. Use 1 (Lennard-Jones) or 2 (Buckingham)
+\item {\tt comb-rule} is the \normindex{combination rule}: 
 \begin{enumerate}
 \item For Lennard-Jones: supply $C^{(6)}$ and $C^{(N)}$,
 $C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ ($M$ = 6,$N$).
@@ -1414,23 +1414,23 @@ $\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
 \item supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$,
 $\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
 \end{enumerate}
-\item generate pairs = no
-(the default, get 1-4 parameters from the pairtypes list, when parameters
-are not present in the list stop with a fatal error)
-or yes (generate 1-4 parameters which are not present in the pair list
-from normal Lennard-Jones parameters using FudgeLJ)
-\item FudgeLJ = factor by which to multiply Lennard-Jones 1-4 interactions, default 1
-\item FudgeQQ = factor by which to multiply electrostatic 1-4 interactions, default 1
-\item $N$ = power for the repulsion term in a 6-$N$ potential (with 
+\item {\tt gen-pairs} is for pair generation. The default is `no', {\ie} 
+get 1-4 parameters from the pairtypes list. When parameters
+are not present in the list, stop with a fatal error.
+Setting `yes' generates 1-4 parameters that are not present in the pair list
+from normal Lennard-Jones parameters using {\tt fudgeLJ}
+\item {\tt fudgeLJ} is the factor by which to multiply Lennard-Jones 1-4 interactions, default 1
+\item {\tt fudgeQQ} is the factor by which to multiply electrostatic 1-4 interactions, default 1
+\item $N$ is the power for the repulsion term in a 6-$N$ potential (with 
 nonbonded-type Lennard-Jones only), starting with {\gromacs} version 4.5,
 {\tt mdrun} also reads and applies $N$, for values not equal to 12 tabulated
 interaction functions are used
 (in older version you would have to use user tabulated interactions).
 \end{itemize}
-{\bf Note:} generate pairs, FudgeLJ, FudgeQQ and N are optional,
-FudgeLJ is only used when generate pairs is set to `yes',
-FudgeQQ is always used. However if you
-want to specify N you need to give a value for the other parameters as well.
+{\bf Note} that {\tt gen-pairs}, {\tt fudgeLJ}, {\tt fudgeQQ}, and $N$ are optional.
+{\tt fudgeLJ} is only used when generate pairs is set to `yes', and
+{\tt fudgeQQ} is always used. However, if you
+want to specify $N$ you need to give a value for the other parameters as well.
 
 % move these figures so they end up on facing pages 
 % (first figure on even page)
