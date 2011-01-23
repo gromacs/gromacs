@@ -1,11 +1,1 @@
-.deps
-.libs
 g_luck
-g_protonate
-g_x2top
-gmxcheck
-gmxdump
-grompp
-mdrun
-pdb2gmx
-tpbconv
