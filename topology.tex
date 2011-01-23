@@ -1259,14 +1259,16 @@ Description of the file layout:
 \item Semicolon (;) and newline characters surround comments
 \item On a line ending with $\backslash$ the newline character is ignored.
 \item Directives are surrounded by {\tt [} and {\tt ]}
-\item The topology consists of three levels:
+\item The topology hierarchy (which must be followed) consists of three levels:
 \begin{itemize}
-\item the parameter level (see \tabref{topfile1})
+\item the parameter level, which defines certain force field specifications 
+      (see~\tabref{topfile1})
 \item the molecule level, which should contain one or more molecule
-      definitions (see \tabref{topfile2})
-\item the system level: {\tt [~system~]}, {\tt [~molecules~]}
+      definitions (see~\tabref{topfile2})
+\item the system level, containing only system-specific information 
+      ({\tt [~system~]} and {\tt [~molecules~]})
 \end{itemize}
-\item items should be separated by spaces or tabs, not commas
+\item Items should be separated by spaces or tabs, not commas
 \item Atoms in molecules should be numbered consecutively starting at 1
 \item The file is parsed only once, which implies that no forward
       references can be treated: items must be defined before they
