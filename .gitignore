@@ -4,17 +4,10 @@
 *.a
 *.exe
 *.lib
-stamp-h1
 config.h
-config.h.in
 *.cache
-libtool
-config.status
 log
-config.log
 Makefile
-.deps
-.libs
 lib*.pc
 Doxyfile
 Doxyfile-lib
