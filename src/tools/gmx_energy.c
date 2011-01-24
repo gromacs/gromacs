@@ -1510,7 +1510,7 @@ int gmx_energy(int argc,char *argv[])
     
     "Average, RMSD and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
-    "a LSQ fit of the data to a straight line. The reported total drift",
+    "a least-squares fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "An error estimate of the average is given based on a block averages",
     "over 5 blocks using the full precision averages. The error estimate",
@@ -1520,10 +1520,10 @@ int gmx_energy(int argc,char *argv[])
     "MD steps, or over many more points than the number of frames in",
     "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
     "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
-    "file the statistics mentioned above is simply over the single, per-frame",
+    "file the statistics mentioned above are simply over the single, per-frame",
     "energy values.[PAR]",
 
-    "The term fluctuation gives the RMSD around the LSQ fit.[PAR]",
+    "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
     
     "Some fluctuation-dependent properties can be calculated provided",
     "the correct energy terms are selected. The following properties",

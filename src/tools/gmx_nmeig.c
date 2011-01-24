@@ -196,9 +196,9 @@ int gmx_nmeig(int argc,char *argv[])
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
     "An ensemble of structures can be generated from the eigenvectors with",
     "[TT]g_nmens[tt]. When mass weighting is used, the generated eigenvectors",
-    "will be scaled back to plain cartesian coordinates before generating the",
-    "output - in this case they will no longer be exactly orthogonal in the",
-    "standard cartesian norm (But in the mass weighted norm they would be)."
+    "will be scaled back to plain Cartesian coordinates before generating the",
+    "output. In this case, they will no longer be exactly orthogonal in the",
+    "standard Cartesian norm, but in the mass-weighted norm they would be."
   };
     
   static gmx_bool bM=TRUE;

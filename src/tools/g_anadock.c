@@ -301,7 +301,7 @@ int main(int argc,char *argv[])
     "and free energy estimates are analysed, and for each cluster the",
     "energy statistics are printed.[PAR]",
     "An alternative approach to this is to cluster the structures first",
-    "(using [TT]g_cluster[tt] and then sort the clusters on either lowest",
+    "using [TT]g_cluster[tt] and then sort the clusters on either lowest",
     "energy or average energy."
   };
   t_filenm fnm[] = {

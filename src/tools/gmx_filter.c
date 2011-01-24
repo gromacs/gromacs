@@ -76,7 +76,7 @@ int gmx_filter(int argc,char *argv[])
     "Option [TT]-oh[tt] writes a high-pass filtered trajectory.",
     "The high-pass filtered coordinates are added to the coordinates",
     "from the structure file. When using high-pass filtering use [TT]-fit[tt]",
-    "or make sure you use a trajectory which has been fitted on",
+    "or make sure you use a trajectory that has been fitted on",
     "the coordinates in the structure file."
   };
   

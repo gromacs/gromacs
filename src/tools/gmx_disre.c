@@ -544,8 +544,8 @@ int gmx_disre(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_disre[tt] computes violations of distance restraints.",
-    "If necessary all protons can be added to a protein molecule ",
-    "using the protonate program.[PAR]",
+    "If necessary, all protons can be added to a protein molecule ",
+    "using the [TT]g_protonate[tt] program.[PAR]",
     "The program always",
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",

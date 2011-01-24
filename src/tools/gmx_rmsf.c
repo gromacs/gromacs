@@ -180,7 +180,7 @@ int gmx_rmsf(int argc,char *argv[])
     "temperature factors and then it will also output average coordinates",
     "and a [TT].pdb[tt] file with ANISOU records (corresonding to the [TT]-oq[tt]",
     "or [TT]-ox[tt] option). Please note that the U values",
-    "are orientation dependent, so before comparison with experimental data",
+    "are orientation-dependent, so before comparison with experimental data",
     "you should verify that you fit to the experimental coordinates.[PAR]",
     "When a [TT].pdb[tt] input file is passed to the program and the [TT]-aniso[tt]",
     "flag is set",

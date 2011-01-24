@@ -122,7 +122,7 @@ int gmx_saltbr(int argc,char *argv[])
   const char *desc[] = {
     "[TT]g_saltbr[tt] plots the distance between all combination of charged groups",
     "as a function of time. The groups are combined in different ways.",
-    "A minimum distance can be given, (eg. the cut-off), then groups",
+    "A minimum distance can be given, (ie. a cut-off), then groups",
     "that are never closer than that distance will not be plotted.[BR]",
     "Output will be in a number of fixed filenames, [TT]min-min.xvg[tt], [TT]plus-min.xvg[tt]",
     "and [TT]plus-plus.xvg[tt], or files for every individual ion-pair if the [TT]-sep[tt]",

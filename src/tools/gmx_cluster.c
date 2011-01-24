@@ -953,7 +953,7 @@ int gmx_cluster(int argc,char *argv[])
   const char *desc[] = {
     "[TT]g_cluster[tt] can cluster structures with several different methods.",
     "Distances between structures can be determined from a trajectory",
-    "or read from an XPM matrix file with the [TT]-dm[tt] option.",
+    "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     
