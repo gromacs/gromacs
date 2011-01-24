@@ -748,7 +748,7 @@ static void rmsf(const char *outfile,int natoms,real *sqrtm,
 int gmx_anaeig(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
+    "g_anaeig analyzes eigenvectors. The eigenvectors can be of a",
     "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes analysis",
     "([TT]g_nmeig[tt]).[PAR]",
     

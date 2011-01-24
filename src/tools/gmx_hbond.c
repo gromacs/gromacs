@@ -3096,7 +3096,7 @@ int gmx_hbond(int argc,char *argv[])
         "identical or non-overlapping. All hydrogen bonds between the two",
         "groups are analyzed.[PAR]",
     
-        "If you set -shell, you will be asked for an additional index group",
+        "If you set [TT]-shell[tt], you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
         "considered.[PAR]",

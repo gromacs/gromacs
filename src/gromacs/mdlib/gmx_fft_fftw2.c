@@ -67,7 +67,7 @@ struct gmx_fft
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
-                enum gmx_fft_flag  flags) 
+                gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t           fft;
@@ -130,7 +130,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 int
 gmx_fft_init_1d_real(gmx_fft_t *        pfft,
                      int                nx,
-                     enum gmx_fft_flag  flags) 
+                     gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t             fft;
@@ -202,7 +202,7 @@ int
 gmx_fft_init_2d(gmx_fft_t *        pfft,
                 int                nx, 
                 int                ny,
-                enum gmx_fft_flag  flags) 
+                gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t             fft;
@@ -266,7 +266,7 @@ int
 gmx_fft_init_2d_real(gmx_fft_t *        pfft,
                      int                nx, 
                      int                ny,
-                     enum gmx_fft_flag  flags) 
+                     gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t             fft;
@@ -341,7 +341,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
                 int                nx, 
                 int                ny,
                 int                nz,
-                enum gmx_fft_flag  flags) 
+                gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t             fft;
@@ -409,7 +409,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
                      int                nx, 
                      int                ny,
                      int                nz,
-                     enum gmx_fft_flag  flags) 
+                     gmx_fft_flag       flags) 
 {
     int i,j;
     gmx_fft_t            fft;

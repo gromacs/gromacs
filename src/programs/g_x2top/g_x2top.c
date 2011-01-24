@@ -365,7 +365,7 @@ static void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "x2top generates a primitive topology from a coordinate file.",
+    "g_x2top generates a primitive topology from a coordinate file.",
     "The program assumes all hydrogens are present when defining",
     "the hybridization from the atom name and the number of bonds.",
     "The program can also make an rtp entry, which you can then add",

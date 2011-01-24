@@ -172,6 +172,7 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
+include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
 if(GMX_MPI)
 	MESSAGE(WARNING "
             There are known problems with some MPI implementations:

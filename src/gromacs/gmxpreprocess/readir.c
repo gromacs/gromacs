@@ -829,7 +829,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Preprocessor information: use cpp syntax.");
   CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
   STYPE ("include",	opts->include,	NULL);
-  CTYPE ("e.g.: -DI_Want_Cookies -DMe_Too");
+  CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");

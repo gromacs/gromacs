@@ -71,7 +71,7 @@ int gmx_morph(int argc,char *argv[])
     "create intermediates. Of course these are completely unphysical, but",
     "that you may try to justify yourself. Output is in the form of a ",
     "generic trajectory. The number of intermediates can be controlled with",
-    "the -ninterm flag. The first and last flag correspond to the way of",
+    "the [TT]-ninterm[tt] flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
     "1 corresponds to input structure 2.",
     "If you specify first < 0 or last > 1 extrapolation will be",

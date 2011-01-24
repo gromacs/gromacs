@@ -356,8 +356,8 @@ int gmx_clustsize(int argc,char *argv[])
 {
   const char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",
-    "the gas phase. The output is given in the form of a XPM file.",
-    "The total number of clusters is written to a XVG file.[PAR]",
+    "the gas phase. The output is given in the form of an .xpm file.",
+    "The total number of clusters is written to an .xvg file.[PAR]",
     "When the [TT]-mol[tt] option is given clusters will be made out of",
     "molecules rather than atoms, which allows clustering of large molecules.",
     "In this case an index file would still contain atom numbers",
@@ -367,7 +367,7 @@ int gmx_clustsize(int argc,char *argv[])
     "that the particles are free to move. If you are using constraints,",
     "please correct the temperature. For instance water simulated with SHAKE",
     "or SETTLE will yield a temperature that is 1.5 times too low. You can",
-    "compensate for this with the -ndf option. Remember to take the removal",
+    "compensate for this with the [TT]-ndf[tt] option. Remember to take the removal",
     "of center of mass motion into account.[PAR]",
     "The [TT]-mc[tt] option will produce an index file containing the",
     "atom numbers of the largest cluster."
