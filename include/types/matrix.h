@@ -81,6 +81,16 @@ typedef struct {
   int nmap;
   t_mapping *map;
 } t_matrix;
+  /* title      matrix title
+   * legend     label for the continuous legend
+   * label_x    label for the x-axis
+   * label_y    label for the y-axis
+   * nx, ny     size of the matrix
+   * axis_x[]   the x-ticklabels
+   * axis_y[]   the y-ticklables
+   * *matrix[]  element x,y is matrix[x][y]
+   * nmap       number of color levels for the output(?)
+   */
 
 #ifdef __cplusplus
 }
