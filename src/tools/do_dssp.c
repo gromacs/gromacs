@@ -433,7 +433,7 @@ int main(int argc,char *argv[])
   int        nres,nr0,naccr,nres_plus_separators;
   gmx_bool       *bPhbres,bDoAccSurf;
   real       t;
-  int        i,natoms,nframe=0;
+  int        i,j,natoms,nframe=0;
   matrix     box;
   int        gnx;
   char       *grpnm,*ss_str;
@@ -592,15 +592,22 @@ int main(int argc,char *argv[])
   write_xpm_m(ss,mat);
   ffclose(ss);
   
-  if (opt2bSet("-ssdump",NFILE,fnm)) {
-    snew(ss_str,nres+1);
-    for(i=0; (i<nres); i++)
-      ss_str[i] = mat.map[mat.matrix[0][i]].code.c1;
-    ss_str[i] = '\0';
-    ss = opt2FILE("-ssdump",NFILE,fnm,"w");
-    fprintf(ss,"%d\n%s\n",nres,ss_str);
-    ffclose(ss);
-    sfree(ss_str);
+  if (opt2bSet("-ssdump",NFILE,fnm))
+  {
+      ss = opt2FILE("-ssdump",NFILE,fnm,"w");
+      snew(ss_str,nres+1);
+      fprintf(ss,"%d\n",nres);
+      for(j=0; j<mat.nx; j++)
+      {
+          for(i=0; (i<mat.ny); i++)
+          {
+              ss_str[i] = mat.map[mat.matrix[j][i]].code.c1;
+          }
+          ss_str[i] = '\0';
+          fprintf(ss,"%s\n",ss_str);
+      }
+      ffclose(ss);
+      sfree(ss_str);
   }
   analyse_ss(fnSCount,&mat,ss_string,oenv);
 
