@@ -583,6 +583,9 @@ adress_thermo_force(int                  start,
                         }
                         rinv             = gmx_invsqrt(sqr_dl);
                         break;
+                    default:
+                        /* This case should not happen */
+                        rinv = 0.0;
                     }
 
                     dl=sqrt(sqr_dl);
