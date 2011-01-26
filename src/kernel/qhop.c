@@ -1129,13 +1129,13 @@ static void qhop_swap_vdws(t_qhop_residue *swapres, qhop_res *prod)
   
 }
 
-static void low_level_swap_m_and_q(t_mdatoms *md, t_atom *atom, const int atomid)
+static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int atomid)
 {
   real m, q;
   
   if (atom == NULL)
     {
-      m = 1;
+      m = 0;
       q = 0;
     }
   else
@@ -1206,7 +1206,7 @@ static void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
       for (i=0; i<qa->nr_protons; i++)
 	{
-	  if (db->H_map.H[qa->protons[i]] != 0)
+	  if (get_proton_presence(&db->H_map, qa->protons[i]))
 	    {
 	      nH++;
 	    }
@@ -1234,7 +1234,7 @@ static void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
 }
 
-static void set_interactions(t_qhoprec *qr, qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
+static void set_interactions(t_qhoprec *qr, const qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
 {
   int i, j, k, nri, bt, b, Gr, RB, R;
   qhop_res *reac;
@@ -1656,7 +1656,7 @@ void qhop_atoms2md(t_mdatoms *md, t_qhoprec *qr)
 }
 
 int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
-	      t_forcerec *fr, rvec *x,matrix box,t_mdatoms *md,
+	      const t_forcerec *fr, const rvec *x, matrix box, t_mdatoms *md,
 	      qhop_db **db){
 
   int 
@@ -1681,7 +1681,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
     }
 
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, box);
-  
+
   qhoprec = fr->qhoprec;
 
   qhoprec->qhopfreq = ir->qhopfreq;
