@@ -689,7 +689,7 @@ static void cont_status(const char *slog,const char *ener,
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
-     * with respect to using tpbconv to create a tpx file.
+     * with respect to using tpbconv to create a [TT].tpx[tt] file.
      */
     set_box_rel(ir,state);
 
@@ -1139,20 +1139,20 @@ int main (int argc, char *argv[])
     "for hydrogens and heavy atoms.",
     "Then a coordinate file is read and velocities can be generated",
     "from a Maxwellian distribution if requested.",
-    "grompp also reads parameters for the mdrun ",
+    "[TT]grompp[tt] also reads parameters for the [TT]mdrun[tt] ",
     "(eg. number of MD steps, time step, cut-off), and others such as",
     "NEMD parameters, which are corrected so that the net acceleration",
     "is zero.",
     "Eventually a binary file is produced that can serve as the sole input",
     "file for the MD program.[PAR]",
     
-    "grompp uses the atom names from the topology file. The atom names",
+    "[TT]grompp[tt] uses the atom names from the topology file. The atom names",
     "in the coordinate file (option [TT]-c[tt]) are only read to generate",
     "warnings when they do not match the atom names in the topology.",
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-    "grompp uses a built-in preprocessor to resolve includes, macros ",
+    "[TT]grompp[tt] uses a built-in preprocessor to resolve includes, macros ",
     "etcetera. The preprocessor supports the following keywords:[BR]",
     "#ifdef VARIABLE[BR]",
     "#ifndef VARIABLE[BR]",
@@ -1171,7 +1171,7 @@ int main (int argc, char *argv[])
     "topology file written out so that you can verify its contents.[PAR]",
     
     "If your system does not have a c-preprocessor, you can still",
-    "use grompp, but you do not have access to the features ",
+    "use [TT]grompp[tt], but you do not have access to the features ",
     "from the cpp. Command line options to the c-preprocessor can be given",
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
     
@@ -1189,10 +1189,10 @@ int main (int argc, char *argv[])
     "in your [TT].mdp[tt] file. An energy file can be supplied with",
     "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
     "variables. Note that for continuation it is better and easier to supply",
-    "a checkpoint file directly to mdrun, since that always contains",
+    "a checkpoint file directly to [TT]mdrun[tt], since that always contains",
     "the complete state of the system and you don't need to generate",
     "a new run input file. Note that if you only want to change the number",
-    "of run steps tpbconv is more convenient than grompp.[PAR]",
+    "of run steps [TT]tpbconv[tt] is more convenient than [TT]grompp[tt].[PAR]",
 
     "By default all bonded interactions which have constant energy due to",
     "virtual site constructions will be removed. If this constant energy is",
@@ -1207,9 +1207,15 @@ int main (int argc, char *argv[])
     "of the [TT]mdout.mdp[tt] file, this contains comment lines, as well as",
     "the input that [TT]grompp[tt] has read. If in doubt you can start grompp",
     "with the [TT]-debug[tt] option which will give you more information",
-    "in a file called grompp.log (along with real debug info). Finally, you",
+    "in a file called [TT]grompp.log[tt] (along with real debug info). Finally, you",
     "can see the contents of the run input file with the [TT]gmxdump[tt]",
-    "program."
+    "program.[PAR]"
+
+    "The [TT]-maxwarn[tt] option can be used to override warnings printed",
+    "by [TT]grompp[tt] that otherwise halt output. In some cases, warnings are",
+    "harmless, but usually they are not. The user is advised to carefully",
+    "interpret the output messages before attempting to bypass them with",
+    "this option."
   };
   t_gromppopts *opts;
   gmx_mtop_t   *sys;
@@ -1264,7 +1270,7 @@ int main (int argc, char *argv[])
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
       "Remove constant bonded interactions with virtual sites" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
-      "Number of allowed warnings during input processing" },
+      "Number of allowed warnings during input processing. Not for normal use and may generate unstable systems" },
     { "-zero",    FALSE, etBOOL, {&bZero},
       "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},

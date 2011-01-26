@@ -828,7 +828,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Preprocessor information: use cpp syntax.");
   CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
   STYPE ("include",	opts->include,	NULL);
-  CTYPE ("e.g.: -DI_Want_Cookies -DMe_Too");
+  CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");
@@ -880,10 +880,10 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("nstlog",	ir->nstlog,	100);
   ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
-  CTYPE ("Output frequency and precision for xtc file");
+  CTYPE ("Output frequency and precision for .xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc-precision",ir->xtcprec,   1000.0);
-  CTYPE ("This selects the subset of atoms for the xtc file. You can");
+  CTYPE ("This selects the subset of atoms for the .xtc file. You can");
   CTYPE ("select multiple groups. By default all atoms will be written.");
   STYPE ("xtc-grps",    xtc_grps,       NULL);
   CTYPE ("Selection of energy groups");
@@ -1313,7 +1313,7 @@ int search_string(char *s,int ng,char *gn[])
     if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
       
-  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
+  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your .mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
   
   return -1;
 }

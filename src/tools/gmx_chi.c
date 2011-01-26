@@ -1006,21 +1006,21 @@ static void order_params(FILE *log,
 int gmx_chi(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_chi computes phi, psi, omega and chi dihedrals for all your ",
+    "[TT]g_chi[tt] computes phi, psi, omega and chi dihedrals for all your ",
     "amino acid backbone and sidechains.",
     "It can compute dihedral angle as a function of time, and as",
     "histogram distributions.",
-    "The distributions (histo-(dihedral)(RESIDUE).xvg) are cumulative over all residues of each type.[PAR]", 
+    "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all residues of each type.[PAR]", 
     "If option [TT]-corr[tt] is given, the program will",
     "calculate dihedral autocorrelation functions. The function used",
     "is C(t) = < cos(chi(tau)) cos(chi(tau+t)) >. The use of cosines",
     "rather than angles themselves, resolves the problem of periodicity.",
-    "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041).",
+    "(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032-2041).",
     "Separate files for each dihedral of each residue", 
-    "(corr(dihedral)(RESIDUE)(nresnr).xvg) are output, as well as a", 
+    "[TT](corr(dihedral)(RESIDUE)(nresnr).xvg[tt]) are output, as well as a", 
     "file containing the information for all residues (argument of [TT]-corr[tt]).[PAR]", 
     "With option [TT]-all[tt], the angles themselves as a function of time for", 
-    "each residue are printed to separate files (dihedral)(RESIDUE)(nresnr).xvg.", 
+    "each residue are printed to separate files [TT](dihedral)(RESIDUE)(nresnr).xvg[tt].", 
     "These can be in radians or degrees.[PAR]", 
     "A log file (argument [TT]-g[tt]) is also written. This contains [BR]",
     "(a) information about the number of residues of each type.[BR]", 
@@ -1029,18 +1029,18 @@ int gmx_chi(int argc,char *argv[])
     "rotamers per nanosecond,  and the order parameter S2 of each dihedral.[BR]",
     "(d) a table for each residue of the rotamer occupancy.[BR]", 
     "All rotamers are taken as 3-fold, except for omegas and chi-dihedrals",
-    "to planar groups (i.e. chi2 of aromatics asp and asn, chi3 of glu", 
-    "and gln, and chi4 of arg), which are 2-fold. \"rotamer 0\" means ", 
+    "to planar groups (i.e. chi2 of aromatics Asp and Asn, chi3 of Glu", 
+    "and Gln, and chi4 of Arg), which are 2-fold. \"rotamer 0\" means ", 
     "that the dihedral was not in the core region of each rotamer. ", 
     "The width of the core region can be set with [TT]-core_rotamer[tt][PAR]", 
 
-    "The S2 order parameters are also output to an xvg file", 
-    "(argument [TT]-o[tt] ) and optionally as a pdb file with", 
+    "The S2 order parameters are also output to an [TT].xvg[tt] file", 
+    "(argument [TT]-o[tt] ) and optionally as a [TT].pdb[tt] file with", 
     "the S2 values as B-factor (argument [TT]-p[tt]). ", 
     "The total number of rotamer transitions per timestep", 
     "(argument [TT]-ot[tt]), the number of transitions per rotamer", 
     "(argument [TT]-rt[tt]), and the 3J couplings (argument [TT]-jc[tt]), ", 
-    "can also be written to .xvg files.[PAR]", 
+    "can also be written to [TT].xvg[tt] files.[PAR]", 
 
     "If [TT]-chi_prod[tt] is set (and maxchi > 0), cumulative rotamers, e.g.", 
     "1+9(chi1-1)+3(chi2-1)+(chi3-1) (if the residue has three 3-fold ", 
@@ -1050,8 +1050,8 @@ int gmx_chi(int argc,char *argv[])
     "rotamers (starting with rotamer 0) are written to the file", 
     "that is the argument of [TT]-cp[tt], and if the [TT]-all[tt] flag", 
     "is given, the rotamers as functions of time", 
-    "are written to chiproduct(RESIDUE)(nresnr).xvg ", 
-    "and their occupancies to histo-chiproduct(RESIDUE)(nresnr).xvg.[PAR]", 
+    "are written to [TT]chiproduct(RESIDUE)(nresnr).xvg[tt] ", 
+    "and their occupancies to [TT]histo-chiproduct(RESIDUE)(nresnr).xvg[tt].[PAR]", 
 
     "The option [TT]-r[tt] generates a contour plot of the average omega angle",
     "as a function of the phi and psi angles, that is, in a Ramachandran plot",
@@ -1061,8 +1061,8 @@ int gmx_chi(int argc,char *argv[])
   
   const char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
-    "Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.", 
-    "-r0 option does not work properly", 
+    "Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like [TT]g_rama[tt].", 
+    "[TT]-r0[tt] option does not work properly", 
     "Rotamers with multiplicity 2 are printed in chi.log as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0" 
   };
 
@@ -1099,21 +1099,21 @@ int gmx_chi(int argc,char *argv[])
     { "-binwidth", FALSE, etINT, {&ndeg},
       "bin width for histograms (degrees)" },
     { "-core_rotamer", FALSE, etREAL, {&core_frac},
-      "only the central -core_rotamer*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
+      "only the central [TT]-core_rotamer[tt]*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
     { "-maxchi", FALSE, etENUM, {maxchistr},
       "calculate first ndih Chi dihedrals" },
     { "-normhisto", FALSE, etBOOL, {&bNormHisto},
       "Normalize histograms" },
     { "-ramomega",FALSE,etBOOL, {&bRamOmega},
-      "compute average omega as a function of phi/psi and plot it in an xpm plot" },
+      "compute average omega as a function of phi/psi and plot it in an [TT].xpm[tt] plot" },
     { "-bfact", FALSE, etREAL, {&bfac_init},
-      "B-factor value for pdb file for atoms with no calculated dihedral order parameter"},
+      "B-factor value for [TT].pdb[tt] file for atoms with no calculated dihedral order parameter"},
     { "-chi_prod",FALSE,etBOOL, {&bChiProduct},
       "compute a single cumulative rotamer for each residue"},
     { "-HChi",FALSE,etBOOL, {&bHChi},
       "Include dihedrals to sidechain hydrogens"}, 
     { "-bmax",  FALSE, etREAL, {&bfac_max},
-      "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax <= 0 means no limit." }
+      "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
   };
 
   FILE       *log;

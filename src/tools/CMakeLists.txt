@@ -32,7 +32,7 @@ add_library(gmxana
             gmx_membed.c	gmx_pme_error.c	)
 
 
-target_link_libraries(gmxana md gmx)
+target_link_libraries(gmxana md gmx ${GSL_LIBRARIES})
 set_target_properties(gmxana PROPERTIES OUTPUT_NAME "gmxana${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 # List of programs with single corresponding .c source file,
@@ -53,9 +53,11 @@ set(GMX_TOOLS_PROGRAMS
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
     g_membed g_pme_error g_rmsdist g_rotmat)
 
+set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
+    options)
 
 
-foreach(TOOL ${GMX_TOOLS_PROGRAMS})
+foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
     target_link_libraries(${TOOL} gmxana)
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")

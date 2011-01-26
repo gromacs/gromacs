@@ -565,9 +565,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int gmx_sas(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
+    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent accessible surface area.",
     "As a side effect the Connolly surface can be generated as well in",
-    "a pdb file where the nodes are represented as atoms and the vertices",
+    "a [TT].pdb[tt] file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records.",
     "The program will ask for a group for the surface calculation",
     "and a group for the output. The calculation group should always",
@@ -586,8 +586,8 @@ int gmx_sas(int argc,char *argv[])
     "in this case or whether you would rather use e.g. 0. It is good",
     "to keep in mind that the results for volume and density are very",
     "approximate, in e.g. ice Ih one can easily fit water molecules in the",
-    "pores which would yield too low volume, too high surface area and too",
-    "high density."
+    "pores which would yield a volume that is too low, and surface area and density",
+    "that are both too high."
   };
 
   output_env_t oenv;
@@ -610,7 +610,7 @@ int gmx_sas(int argc,char *argv[])
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
-      "Output the protein to the connelly pdb file too" },
+      "Output the protein to the connelly [TT].pdb[tt] file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
       "default value for solvation free energy per area (kJ/mol/nm^2)" }
   };

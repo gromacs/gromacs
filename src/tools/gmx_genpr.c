@@ -54,7 +54,7 @@
 int gmx_genpr(int argc,char *argv[])
 {
   const char *desc[] = {
-    "genrestr produces an include file for a topology containing",
+    "[TT]genrestr[tt] produces an include file for a topology containing",
     "a list of atom numbers and three force constants for the",
     "X, Y and Z direction. A single isotropic force constant may",
     "be given on the command line instead of three components.[PAR]",
@@ -65,9 +65,9 @@ int gmx_genpr(int argc,char *argv[])
     "in the topology start at 1 and the numbers in the input file for",
     "genpr number consecutively from 1, genpr will only produce a useful",
     "file for the first molecule.[PAR]",
-    "The -of option produces an index file that can be used for",
-    "freezing atoms. In this case the input file must be a pdb file.[PAR]",
-    "With the [TT]-disre[tt] option half a matrix of distance restraints",
+    "The [TT]-of[tt] option produces an index file that can be used for",
+    "freezing atoms. In this case, the input file must be a [TT].pdb[tt] file.[PAR]",
+    "With the [TT]-disre[tt] option, half a matrix of distance restraints",
     "is generated instead of position restraints. With this matrix, that",
     "one typically would apply to C-alpha atoms in a protein, one can",
     "maintain the overall conformation of a protein without tieing it to",
@@ -86,7 +86,7 @@ int gmx_genpr(int argc,char *argv[])
     { "-fc", FALSE, etRVEC, {fc}, 
       "force constants (kJ mol-1 nm-2)" },
     { "-freeze", FALSE, etREAL, {&freeze_level},
-      "if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
+      "if the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
     { "-disre", FALSE, etBOOL, {&bDisre},
       "Generate a distance restraint matrix for all the atoms in index" },
     { "-disre_dist", FALSE, etREAL, {&disre_dist},

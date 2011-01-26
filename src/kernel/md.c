@@ -456,6 +456,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                           state->x,state->v,vcm);
             inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
         }
+
+        /* Calculate the amplitude of the cosine velocity profile */
+        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
     }
 
     if (bTemp) 

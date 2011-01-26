@@ -171,6 +171,7 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
+include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
 if(GMX_MPI)
 	MESSAGE(WARNING "
             There are known problems with some MPI implementations:
@@ -368,14 +369,28 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
-find_package(LibXml2)
-set(PKG_XML "")
-if(LIBXML2_FOUND)
+option(GMX_XML "Use libxml2 to parse xml files" ON)
+if (GMX_XML)
+  find_package(LibXml2)
+  set(PKG_XML "")
+  if(LIBXML2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
     set(PKG_XML libxml-2.0)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
     set(HAVE_LIBXML2 1)
-endif(LIBXML2_FOUND)
+  endif(LIBXML2_FOUND)
+endif(GMX_XML)
+
+option(GMX_GSL "Add support for gsl" OFF)
+if (GMX_GSL)
+  find_package(gsl)
+  set(PKG_GSL "")
+  if(GSL_FOUND)
+    include_directories(${GSL_INCLUDE_DIR})
+    set(PKG_GSL gsl)
+    set(HAVE_LIBGSL 1)
+  endif(GSL_FOUND)
+endif (GMX_GSL)
 
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
@@ -701,6 +716,18 @@ if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
+  if(GMX_EXTERNAL_BLAS)
+    #FindBLAS needs Fortran
+    enable_language(Fortran)
+    find_package(BLAS REQUIRED)
+    list(APPEND	GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+  endif(GMX_EXTERNAL_BLAS)
+  if(GMX_EXTERNAL_LAPACK)
+    #FindLAPACK needs Fortran
+    enable_language(Fortran)
+    find_package(LAPACK REQUIRED)
+    list(APPEND	GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+  endif(GMX_EXTERNAL_LAPACK)
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
@@ -709,8 +736,6 @@ mark_as_advanced(GMX_EXTERNAL_BLAS)
 if(HAVE_LIBM)
     list(APPEND	GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
-
-
 
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 

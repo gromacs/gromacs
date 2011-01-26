@@ -515,7 +515,7 @@ int gmx_relax(int argc,char *argv[])
     { "-nrestart", FALSE, etINT,  &nrestart,
       "Number of frames between starting point for computation of ACF without FFT" },
     { "-fit",      FALSE, etBOOL, &bFit,
-      "Do an optimal superposition on reference structure in tpx file" },
+      "Do an optimal superposition on reference structure in [TT].tpx[tt] file" },
     { "-v",        FALSE, etBOOL, &bVerbose,
       "Tell you what I am about to do" }
   };

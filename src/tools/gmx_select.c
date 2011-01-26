@@ -175,7 +175,7 @@ int
 gmx_select(int argc, char *argv[])
 {
     const char *desc[] = {
-        "g_select writes out basic data about dynamic selections.",
+        "[TT]g_select[tt] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
@@ -202,7 +202,7 @@ gmx_select(int argc, char *argv[])
         "of positions is omitted from the output. In this case, only one",
         "selection can be given.[PAR]",
         "With [TT]-on[tt], the selected atoms are written as a index file",
-        "compatible with make_ndx and the analyzing tools. Each selection",
+        "compatible with [TT]make_ndx[tt] and the analyzing tools. Each selection",
         "is written as a selection group and for dynamic selections a",
         "group is written for each frame.[PAR]",
         "For residue numbers, the output of [TT]-oi[tt] can be controlled",
