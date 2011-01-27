@@ -649,7 +649,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 fprintf(fplog,"Using %d threads for PME\n",omp_nthreads);
             }
         }
-        gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
+        if (PAR(cr))
+        {
+            gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
+        }
     }
 #endif
 
