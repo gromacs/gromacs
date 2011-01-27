@@ -96,7 +96,7 @@ const char *egrp_nm[egNR+1] = {
 };
 
 const char *etcoupl_names[etcNR+1] = {
-  "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-interval", "V-rescale", NULL
+  "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-massive", "V-rescale", NULL
 }; /* yes is alias for berendsen */
 
 const char *epcoupl_names[epcNR+1] = {

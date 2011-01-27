@@ -583,22 +583,86 @@ void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
         {
             T = ekind->tcstat[i].Th;
         }
-    
-    if ((opts->tau_t[i] > 0) && (T > 0.0)) {
- 
-      reft = max(0.0,opts->ref_t[i]);
-      lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
+
+        if ((opts->tau_t[i] > 0) && (T > 0.0)) {  
+            reft = max(0.0,opts->ref_t[i]);
+            lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+            ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
+        }
+        else {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+
+        if (debug)
+        {
+            fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
+                    i,T,ekind->tcstat[i].lambda);
+        }
     }
-    else {
-       ekind->tcstat[i].lambda = 1.0;
+}
+
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng)
+{
+    t_grpopts *opts;
+    int    i,d,n,ngtc,gc=0;
+    real   boltz,sd,reft;
+    gmx_bool *randomize;
+    real *boltzfac;
+    /*double ekin,temper;*/
+    
+    opts = &ir->opts;
+    ngtc = opts->ngtc;
+    snew(randomize,ngtc);
+    snew(boltzfac,ngtc);
+    
+    for (i=0;i<ngtc;i++) {
+        reft = max(0.0,opts->ref_t[i]);
+        if ((opts->tau_t[i] > 0) && (reft > 0))
+        {
+            randomize[i] = TRUE;
+            boltzfac[i] = BOLTZ*opts->ref_t[i];
+        }
     }
 
-    if (debug)
-      fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-	      i,T,ekind->tcstat[i].lambda);
-  }
+    /*  ** DEBUGGING **
+    ekin = 0;
+    natoms = md->homenr;
+
+    for (n=md->start;n<md->start+md->homenr;n++) 
+    {
+        for (d=0;d<DIM;d++) 
+        {
+            ekin += 0.5*state->v[n][d]*state->v[n][d]/md->invmass[n];        
+        }
+    }
+    temper = (2.0*ekin)/(opts->nrdf[0]*BOLTZ);
+    printf("before: ekin, temp: %12.4f, %12.4f\n",ekin,temper);
+    ekin = 0;
+    */
+
+    /* randomize the velocities*/
+
+    for (n=md->start;n<md->start+md->homenr;n++) 
+    {
+        if (md->cTC)
+        {
+            gc   = md->cTC[n];  /* assign temperature group if there are more than one */
+        }
+        if (randomize[gc]) 
+        {
+            sd = sqrt(boltzfac[gc]*md->invmass[n]);
+            for (d=0;d<DIM;d++) 
+            {
+                //state->v[n][d] = sd*gmx_rng_gaussian_real(rng);  /* I think? */
+                state->v[n][d] = sd*gmx_rng_gaussian_table(rng);  /* more efficient? */
+                //ekin += 0.5*state->v[n][d]*state->v[n][d]/md->invmass[n];
+            }
+        }
+    }
+    //temper = (2.0*ekin)/(opts->nrdf[0]*BOLTZ);
+    //printf("after: ekin, temp: %12.4f, %12.4f\n",ekin,temper);
 }
+
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
                        double xi[],double vxi[], t_extmass *MassQ)
@@ -735,7 +799,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
             /* modify the velocities as well */
             for (n=md->start;n<md->start+md->homenr;n++) 
             {
-                if (md->cTC) 
+                if (md->cTC)   /* does this conditional need to be here? is this always true?*/
                 { 
                     gc = md->cTC[n];
                 }

@@ -490,7 +490,7 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
     
     snew(upd,1);
     
-    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE)
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERS(ir->etc))
     {
         upd->sd = init_stochd(fplog,ir);
     }
@@ -1697,6 +1697,15 @@ void update_coords(FILE         *fplog,
     default:
         gmx_fatal(FARGS,"Don't know how to update coordinates");
         break;
+    }
+
+    if (ETC_ANDERS(inputrec->etc) && ((UpdatePart == etrtVELOCITY1) && EI_VV(inputrec->eI)))
+    {
+        if ((inputrec->etc==etcANDERSEN) || do_per_step(step,inputrec->opts.tau_t[0]/(inputrec->delta_t)))
+        {
+            /* proceed with andersen if 1) it's fractional andersen or 2) it's massive andersen and it's tau_t/dt */
+            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand);
+        }
     }
 }
 

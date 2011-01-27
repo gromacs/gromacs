@@ -551,7 +551,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi,warn_buf);
     }
 
-    if ((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL) 
+    if ((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENMASSIVE) 
         && ir->epc==epcBERENDSEN)
     {
         sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "

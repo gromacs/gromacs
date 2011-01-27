@@ -44,8 +44,10 @@ enum {
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, etcVRESCALE, etcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
 }; /* yes is an alias for berendsen */
+
+#define ETC_ANDERS(e) (((e) == etcANDERSENMASSIVE) || ((e) == etcANDERSEN))
 
 enum {
   epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR

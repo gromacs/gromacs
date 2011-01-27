@@ -1507,12 +1507,15 @@ extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state
     } 
     
     /* Send to the log the information on the current lambdas */
-    fprintf(fplog,"Initial lambda vector:[ ");
-    for (i=0;i<efptNR;i++) 
+    if (fplog != NULL) 
     {
-        fprintf(fplog,"%10.4f ",lambda[i]);
+        fprintf(fplog,"Initial lambda vector:[ ");
+        for (i=0;i<efptNR;i++) 
+        {
+            fprintf(fplog,"%10.4f ",lambda[i]);
+        }
+        fprintf(fplog,"]\n");
     }
-    fprintf(fplog,"]\n");
     return;
 }
 
@@ -1534,9 +1537,6 @@ void init_md(FILE *fplog,
     /* Initial values */
     *t = *t0       = ir->init_t;
 
-    /* Initialize lambda variables */
-    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,fep_state,lambda,lam0);
-
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
     {
@@ -1550,11 +1550,15 @@ void init_md(FILE *fplog,
     {
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
+
+    /* Initialize lambda variables */
+    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,fep_state,lambda,lam0);
     
     if (upd)
     {
         *upd = init_update(fplog,ir);
     }
+
     
     if (vcm != NULL)
     {

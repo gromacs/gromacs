@@ -181,6 +181,8 @@ restore_ekinstate_from_state(t_commrec *cr,
 
 void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt);
 
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state,gmx_rng_t rng);
+
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      double xi[],double vxi[],t_extmass *MassQ);
 
