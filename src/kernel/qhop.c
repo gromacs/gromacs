@@ -1122,15 +1122,31 @@ static void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod)
 }
 
 /* We change vdv by changing atomtype. */
-static void qhop_swap_vdws(t_qhop_residue *swapres, qhop_res *prod)
+static void qhop_swap_vdws(const t_qhop_residue *swapres,
+			   qhop_res *prod,
+			   t_mdatoms *md,
+			   qhop_db *db)
 {
 
-  int i;
-  i=0;
+  int i, j;
+  t_restp *rtp;
+
+  if (db->rb.bWater[swapres->rtype])
+    {return;}
+  
+  rtp = &(db->rtp[prod->rtp]);
 
   /* For now, assume that all atomtypes are present, e.g. that grompp was run with -norenum */
-
-
+  for (i=0; i < swapres->nr_atoms; i++)
+    {
+      for (j=0; j < rtp->natom; j++)
+	{
+	  if (strcmp(swapres->atomnames[i], *(rtp->atomname[j])) != 0)
+	    {
+	      md->typeA[swapres->atoms[i]] = rtp->atom[j].type;
+	    }
+	}
+    }
 }
 
 static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int atomid)
@@ -1282,7 +1298,7 @@ static void set_interactions(t_qhoprec *qr, const qhop_db *qdb, t_mdatoms *md, t
     }
 
   qhop_swap_bondeds(qres, reac);
-  qhop_swap_vdws(qres, reac);
+  qhop_swap_vdws(qres, reac, md, qdb);
   qhop_swap_m_and_q(qres, reac, md, qdb, qr);
   
     /* Non-bonded */
@@ -2080,7 +2096,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 	  qhop_swap_bondeds(&(qr->qhop_residues[qatom->qres_id]), product_res);
 	}
       
-      qhop_swap_vdws   (&(qr->qhop_residues[qatom->qres_id]), product_res);
+      qhop_swap_vdws   (&(qr->qhop_residues[qatom->qres_id]), product_res, md, db);
     }
 
   qhop_swap_m_and_q(&(qr->qhop_residues[qatom->qres_id]), product_res, md, db, qr);
