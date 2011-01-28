@@ -131,9 +131,9 @@ files.tex:
 		$(RM) files.html; ./mkfiles ;
 
 g_options.tex:	
-		@if ./$(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+		@if ./$(OPTIONS) -hidden -man tex >/dev/null 2>&1; then :; \
 		else \
-		  if $(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+		  if $(OPTIONS) -hidden -man tex >/dev/null 2>&1; then :; \
 		  else \
 		    echo "Error: Can't find the executable '$(OPTIONS)' in the current"; \
 		    echo "ddirectory or in your path (I need it to create latex files)."; \
