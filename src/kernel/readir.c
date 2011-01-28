@@ -544,6 +544,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         ir->opts.nhchainlength = 0;
     }
 
+    if (ETC_ANDERS(ir->etc))
+    {
+        for (i=0;i<ir->opts.ngtc;i++) 
+        {
+            sprintf(err_buf,"all tau_t must currently be equal using Andersen temperature control");
+            CHECK(ir->opts.tau_t[0] == ir->opts.tau_t[i]);
+            sprintf(err_buf,"all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
+                    i,ir->opts.tau_t[i]);      
+            CHECK(ir->opts.tau_t[i]>0);
+        }  
+    }
     if (ir->etc == etcBERENDSEN)
     {
         sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",

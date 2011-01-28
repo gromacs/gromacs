@@ -634,15 +634,17 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
     snew(randomize,ngtc);
     snew(boltzfac,ngtc);
     
-    /* for now, assume that all groups, if randomized, are randomized at the same rate */
+    /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
     /* since constraint groups don't necessarily match up with temperature groups! */
 
     for (i=0;i<ngtc;i++) {
         reft = max(0.0,opts->ref_t[i]);
-        if ((opts->tau_t[i] > 0) && (reft > 0))
+        if ((opts->tau_t[i] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
         {
             randomize[i] = TRUE;
             boltzfac[i] = BOLTZ*opts->ref_t[i];
+        } else {
+            randomize[i] = FALSE;
         }
     }
         
@@ -742,7 +744,15 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             }
         }
     }
- }
+    /* free up all the allocated arrays! */
+    if (idef) {
+        sfree(settle_randomize);
+        sfree(shake_randomize);
+    }
+    sfree(randatom);
+    sfree(randomize);
+    sfree(boltzfac);
+}
 
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
