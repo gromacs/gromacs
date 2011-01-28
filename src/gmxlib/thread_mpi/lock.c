@@ -66,7 +66,7 @@ void tMPI_Lock_init(tMPI_Lock_t *lock)
 
 void tMPI_Lock_lock(tMPI_Lock_t *lock)
 {
-    while(!tMPI_Spinlock_trylock(&(lock->lock)))
+    while(tMPI_Spinlock_trylock(&(lock->lock)))
     {
         TMPI_YIELD_WAIT(lock);
     }

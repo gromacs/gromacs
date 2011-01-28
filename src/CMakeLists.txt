@@ -9,5 +9,3 @@ if(NOT GMX_FAHCORE)
   add_subdirectory(tools)
   add_subdirectory(ngmx)
 endif(NOT GMX_FAHCORE)
-
-

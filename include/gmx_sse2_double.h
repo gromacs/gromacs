@@ -122,6 +122,28 @@ gmx_mm_inv_pd(__m128d x)
 }
 
 
+static int gmx_mm_check_and_reset_overflow(void)
+{
+    int MXCSR;
+    int sse_overflow;
+
+    MXCSR = _mm_getcsr();
+    /* The overflow flag is bit 3 in the register */
+    if (MXCSR & 0x0008)
+    {
+        sse_overflow = 1;
+        /* Set the overflow flag to zero */
+        MXCSR = MXCSR & 0xFFF7;
+        _mm_setcsr(MXCSR);
+    }
+    else
+    {
+       sse_overflow = 0;
+    }
+
+    return sse_overflow;
+}
+
 
 static inline __m128d
 gmx_mm_invsqrt_pd(__m128d x)
@@ -454,7 +476,7 @@ gmx_mm_sincos_pd(__m128d x,
     };
 #endif
     
-    const __m128d signmask    = _mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF,0xFFFFFFFF,0x7FFFFFFF,0xFFFFFFFF) );
+    const __m128d signmask    = gmx_mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF,0xFFFFFFFF,0x7FFFFFFF,0xFFFFFFFF) );
     const __m128d tabscale    = _mm_set1_pd(32.0/M_PI);
     const __m128d invtabscale = _mm_set1_pd(M_PI/32.0);
     const __m128d one         = _mm_set1_pd(1.0);
@@ -511,10 +533,10 @@ gmx_mm_sincos_pd(__m128d x,
     cswapsign = _mm_shuffle_epi32(cswapsign,_MM_SHUFFLE(1,1,0,0));
     minusone  = _mm_sub_pd(_mm_setzero_pd(),one);
     
-    ssign     = _mm_or_pd(_mm_and_pd( _mm_castsi128_pd(sswapsign),minusone ),
-                          _mm_andnot_pd( _mm_castsi128_pd(sswapsign),one ));
-    csign     = _mm_or_pd(_mm_and_pd( _mm_castsi128_pd(cswapsign),minusone ),
-                          _mm_andnot_pd( _mm_castsi128_pd(cswapsign),one ));
+    ssign     = _mm_or_pd(_mm_and_pd( gmx_mm_castsi128_pd(sswapsign),minusone ),
+                          _mm_andnot_pd( gmx_mm_castsi128_pd(sswapsign),one ));
+    csign     = _mm_or_pd(_mm_and_pd( gmx_mm_castsi128_pd(cswapsign),minusone ),
+                          _mm_andnot_pd( gmx_mm_castsi128_pd(cswapsign),one ));
     
     /* First lookup into table */
 #ifdef _MSC_VER

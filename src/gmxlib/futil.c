@@ -454,7 +454,7 @@ FILE *ffopen(const char *file,const char *mode)
 
     bRead= (mode[0]=='r'&&mode[1]!='+');
     strcpy(buf,file);
-    if (gmx_fexist(buf) || !bRead) {
+    if (!bRead || gmx_fexist(buf)) {
         if ((ff=fopen(buf,mode))==NULL)
             gmx_file(buf);
         where();
@@ -890,14 +890,14 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
             {
                 gmx_fatal(FARGS,
                           "Library file %s not found %sin your GMXLIB path.",
-                          bAddCWD ? "in current dir nor " : "",file);
+                          file, bAddCWD ? "in current dir nor " : "");
             }
             else
             {
                 gmx_fatal(FARGS,
                           "Library file %s not found %sin default directories.\n"
                         "(You can set the directories to search with the GMXLIB path variable)",
-                          bAddCWD ? "in current dir nor " : "",file);
+                          file, bAddCWD ? "in current dir nor " : "");
             }
         }
     }

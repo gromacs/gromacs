@@ -109,7 +109,7 @@ static void move_x(int natoms,rvec x[],matrix box)
 int gmx_genconf(int argc, char *argv[])
 {
   const char *desc[] = {
-    "genconf multiplies a given coordinate file by simply stacking them",
+    "[TT]genconf[tt] multiplies a given coordinate file by simply stacking them",
     "on top of each other, like a small child playing with wooden blocks.",
     "The program makes a grid of [IT]user defined[it]",
     "proportions ([TT]-nbox[tt]), ",

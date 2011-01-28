@@ -246,12 +246,12 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 int gmx_h2order(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Compute the orientation of water molecules with respect to the normal",
+    "[TT]g_h2order[tt] computes the orientation of water molecules with respect to the normal",
     "of the box. The program determines the average cosine of the angle",
-    "between de dipole moment of water and an axis of the box. The box is",
+    "between the dipole moment of water and an axis of the box. The box is",
     "divided in slices and the average orientation per slice is printed.",
     "Each water molecule is assigned to a slice, per time frame, based on the",
-    "position of the oxygen. When -nm  is used the angle between the water",
+    "position of the oxygen. When [TT]-nm[tt] is used, the angle between the water",
     "dipole and the axis from the center of mass to the oxygen is calculated",
     "instead of the angle between the dipole and a box axis."
   };
@@ -266,9 +266,9 @@ int gmx_h2order(int argc,char *argv[])
       " in #nr slices."}
   };
   const char *bugs[] = {
-    "The program assigns whole water molecules to a slice, based on the first"
-    "atom of three in the index file group. It assumes an order O,H,H."
-    "Name is not important, but the order is. If this demand is not met,"
+    "The program assigns whole water molecules to a slice, based on the first "
+    "atom of three in the index file group. It assumes an order O,H,H. "
+    "Name is not important, but the order is. If this demand is not met, "
     "assigning molecules to slices is different."
   };
 

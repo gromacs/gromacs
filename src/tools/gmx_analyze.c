@@ -139,7 +139,8 @@ static void regression_analysis(int n,gmx_bool bXYdy,
                                 real *x,int nset,real **val)
 {
   real S,chi2,a,b,da,db,r=0;
-
+  int ok;
+  
   if (bXYdy || (nset == 1)) 
   {
       printf("Fitting data to a function f(x) = ax + b\n");
@@ -147,9 +148,17 @@ static void regression_analysis(int n,gmx_bool bXYdy,
       printf("Error estimates will be given if w_i (sigma) values are given\n");
       printf("(use option -xydy).\n\n");
       if (bXYdy) 
-          lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S);
+      {
+          if ((ok = lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S)) != estatsOK)
+              gmx_fatal(FARGS,"Error fitting the data: %s",
+                        gmx_stats_message(ok));
+      }
       else
-          lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S);
+      {
+          if ((ok = lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S)) != estatsOK)
+              gmx_fatal(FARGS,"Error fitting the data: %s",
+                        gmx_stats_message(ok));
+      }
       chi2 = sqr((n-2)*S);
       printf("Chi2                    = %g\n",chi2);
       printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);
@@ -687,11 +696,12 @@ static void filter(real flen,int n,int nset,real **val,real dt,
   sfree(filt);
 }
 
-static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
-		   int npargs,t_pargs *ppa,const output_env_t oenv)
+static void do_fit(FILE *out,int n,gmx_bool bYdy,
+                   int ny,real *x0,real **val,
+                   int npargs,t_pargs *ppa,const output_env_t oenv)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
-  real dt=0,tendfit,tbeginfit;
+  real tendfit,tbeginfit;
   int  i,efitfn,nparm;
   
   efitfn = get_acffitfn();
@@ -709,12 +719,12 @@ static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
   if (opt2parg_bSet("-beginfit",npargs,ppa)) {
     tbeginfit = opt2parg_real("-beginfit",npargs,ppa);
   } else {
-    tbeginfit = x0 ? x0[0]    : 0;
+    tbeginfit = x0[0];
   }
   if (opt2parg_bSet("-endfit",npargs,ppa)) {
     tendfit   = opt2parg_real("-endfit",npargs,ppa);
   } else {
-    tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
+    tendfit   = x0[ny-1];
   }
   
   snew(fitparm,nparm);
@@ -760,7 +770,7 @@ static void do_fit(FILE *out,int n,gmx_bool bYdy,int ny,real *x0,real **val,
   fprintf(out,"Starting parameters:\n");
   for(i=0; (i<nparm); i++) 
     fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
-  if (do_lmfit(ny,c1,sig,dt,x0,tbeginfit,tendfit,
+  if (do_lmfit(ny,c1,sig,0,x0,tbeginfit,tendfit,
 	       oenv,bDebugMode(),efitfn,fitparm,0)) {
     for(i=0; (i<nparm); i++) 
       fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
@@ -878,7 +888,7 @@ static void do_geminate(const char *gemFile, int nData,
 int gmx_analyze(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "g_analyze reads an ascii file and analyzes data sets.",
+    "[TT]g_analyze[tt] reads an ascii file and analyzes data sets.",
     "A line in the input file may start with a time",
     "(see option [TT]-time[tt]) and any number of y values may follow.",
     "Multiple sets can also be",
@@ -891,7 +901,7 @@ int gmx_analyze(int argc,char *argv[])
     "All options, except for [TT]-av[tt] and [TT]-power[tt] assume that the",
     "points are equidistant in time.[PAR]",
 
-    "g_analyze always shows the average and standard deviation of each",
+    "[TT]g_analyze[tt] always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
     "and fourth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
@@ -994,7 +1004,7 @@ int gmx_analyze(int argc,char *argv[])
     { "-bw",      FALSE, etREAL, {&binwidth},
       "Binwidth for the distribution" },
     { "-errbar",  FALSE, etENUM, {avbar_opt},
-      "Error bars for -av" },
+      "Error bars for [TT]-av[tt]" },
     { "-integrate",FALSE,etBOOL, {&bIntegrate},
       "Integrate data function(s) numerically using trapezium rule" },
     { "-aver_start",FALSE, etREAL, {&aver_start},
@@ -1002,15 +1012,15 @@ int gmx_analyze(int argc,char *argv[])
     { "-xydy",    FALSE, etBOOL, {&bXYdy},
       "Interpret second data set as error in the y values for integrating" },
     { "-regression",FALSE,etBOOL,{&bRegression},
-      "Perform a linear regression analysis on the data. If -xydy is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize chi^2 = (y - A0 x0 - A1 x1 - ... - AN xN)^2 where now Y is the first data set in the input file and xi the others. Do read the information at the option [TT]-time[tt]." },
+      "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize chi^2 = (y - A0 x0 - A1 x1 - ... - AN xN)^2 where now Y is the first data set in the input file and xi the others. Do read the information at the option [TT]-time[tt]." },
     { "-luzar",   FALSE, etBOOL, {&bLuzar},
-      "Do a Luzar and Chandler analysis on a correlation function and related as produced by g_hbond. When in addition the -xydy flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
+      "Do a Luzar and Chandler analysis on a correlation function and related as produced by [TT]g_hbond[tt]. When in addition the [TT]-xydy[tt] flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
     { "-temp",    FALSE, etREAL, {&temp},
       "Temperature for the Luzar hydrogen bonding kinetics analysis" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
     { "-fitend", FALSE, etREAL, {&fit_end},
-      "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with -gem" }, 
+      "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" }, 
     { "-smooth",FALSE, etREAL, {&smooth_tail_start},
       "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
@@ -1086,50 +1096,75 @@ int gmx_analyze(int argc,char *argv[])
   eefile   = opt2fn_null("-ee",NFILE,fnm);
   balfile  = opt2fn_null("-bal",NFILE,fnm);
 /*   gemfile  = opt2fn_null("-gem",NFILE,fnm); */
-  if (opt2parg_bSet("-fitfn",npargs,ppa)) 
-    fitfile  = opt2fn("-g",NFILE,fnm);
-  else
-    fitfile  = opt2fn_null("-g",NFILE,fnm);
+    /* When doing autocorrelation we don't want a fitlog for fitting
+     * the function itself (not the acf) when the user did not ask for it.
+     */
+    if (opt2parg_bSet("-fitfn",npargs,ppa) && acfile == NULL)
+    {
+        fitfile  = opt2fn("-g",NFILE,fnm);
+    }
+    else
+    {
+        fitfile  = opt2fn_null("-g",NFILE,fnm);
+    }
     
-  val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
-		    opt2parg_bSet("-b",npargs,ppa),tb,
-		    opt2parg_bSet("-e",npargs,ppa),te,
-		    nsets_in,&nset,&n,&dt,&t);
-  printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
+    val = read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
+                        opt2parg_bSet("-b",npargs,ppa),tb,
+                        opt2parg_bSet("-e",npargs,ppa),te,
+                        nsets_in,&nset,&n,&dt,&t);
+    printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   
-  if (bDer) {
-    printf("Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
-	    d,d);
-    n -= d;
-    for(s=0; s<nset; s++)
-      for(i=0; (i<n); i++)
-	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
-  }
-  if (bIntegrate) {
-    real sum,stddev;
-    printf("Calculating the integral using the trapezium rule\n");
+    if (bDer)
+    {
+        printf("Calculating the derivative as (f[i+%d]-f[i])/(%d*dt)\n\n",
+               d,d);
+        n -= d;
+        for(s=0; s<nset; s++)
+        {
+            for(i=0; (i<n); i++)
+            {
+                val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
+            }
+        }
+    }
     
-    if (bXYdy) {
-      sum = evaluate_integral(n,t,val[0],val[1],aver_start,&stddev);
-      printf("Integral %10.3f +/- %10.5f\n",sum,stddev);
+    if (bIntegrate)
+    {
+        real sum,stddev;
+
+        printf("Calculating the integral using the trapezium rule\n");
+    
+        if (bXYdy)
+        {
+            sum = evaluate_integral(n,t,val[0],val[1],aver_start,&stddev);
+            printf("Integral %10.3f +/- %10.5f\n",sum,stddev);
+        }
+        else
+        {
+            for(s=0; s<nset; s++)
+            {
+                sum = evaluate_integral(n,t,val[s],NULL,aver_start,&stddev);
+                printf("Integral %d  %10.5f  +/- %10.5f\n",s+1,sum,stddev);
+            }
+        }
     }
-    else {
-      for(s=0; s<nset; s++) {
-	sum = evaluate_integral(n,t,val[s],NULL,aver_start,&stddev);
-	printf("Integral %d  %10.5f  +/- %10.5f\n",s+1,sum,stddev);
-      }
+
+    if (fitfile != NULL)
+    {
+        out_fit = ffopen(fitfile,"w");
+        if (bXYdy && nset >= 2)
+        {
+            do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa,oenv);
+        }
+        else
+        {
+            for(s=0; s<nset; s++)
+            {
+                do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
+            }
+        }
+        ffclose(out_fit);
     }
-  }
-  if (fitfile) {
-    out_fit = ffopen(fitfile,"w");
-    if (bXYdy && nset>=2) {
-      do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa,oenv);
-    } else {
-      for(s=0; s<nset; s++)
-	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
-    }
-    ffclose(out_fit);
-  }
 
   printf("                                      std. dev.    relative deviation of\n");
   printf("                       standard       ---------   cumulants from those of\n");
@@ -1207,14 +1242,23 @@ int gmx_analyze(int argc,char *argv[])
 /*                   nFitPoints, fit_start, fit_end, oenv); */
   if (bPower)
     power_fit(n,nset,val,t);
-  if (acfile) {
-    if (bSubAv) 
-      for(s=0; s<nset; s++)
-	for(i=0; i<n; i++)
-	  val[s][i] -= av[s];
-    do_autocorr(acfile,oenv,"Autocorrelation",n,nset,val,dt,
-		eacNormal,bAverCorr);
-  }
+
+    if (acfile != NULL)
+    {
+        if (bSubAv)
+        {
+            for(s=0; s<nset; s++)
+            {
+                for(i=0; i<n; i++)
+                {
+                    val[s][i] -= av[s];
+                }
+            }
+        }
+        do_autocorr(acfile,oenv,"Autocorrelation",n,nset,val,dt,
+                    eacNormal,bAverCorr);
+    }
+
   if (bRegression)
       regression_analysis(n,bXYdy,t,nset,val);
 

@@ -145,7 +145,7 @@ static void ster_print(FILE *out,const char *s)
   int  slen;
   char buf[128];
   
-  sprintf(buf,":-)  %s  (-:",s);
+  snprintf(buf,128,":-)  %s  (-:",s);
   slen=strlen(buf);
   space(out,(80-slen)/2);
   fprintf(out,"%s\n",buf);
@@ -258,7 +258,7 @@ void CopyRight(FILE *out,const char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",Program());
+  snprintf(buf,256,"%s",Program());
 #ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif
@@ -358,6 +358,11 @@ void please_cite(FILE *fp,const char *key)
       "GROMACS 4: Algorithms for highly efficient, load-balanced, and scalable molecular simulation",
       "J. Chem. Theory Comput.",
       4, 2008, "435-447" },
+    { "Hub2010",
+      "J. S. Hub, B. L. de Groot and D. van der Spoel",
+      "g_wham - A free weighted histogram analysis implementation including robust error and autocorrelation estimates",
+      "J. Chem. Theory Comput.",
+      0, 2010, "0000-0000"}, 
     { "In-Chul99a",
       "Y. In-Chul and M. L. Berkowitz",
       "Ewald summation for systems with slab geometry",

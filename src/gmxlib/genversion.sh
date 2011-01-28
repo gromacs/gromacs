@@ -14,7 +14,7 @@ if which git >/dev/null && test -d $GITDIR ; then
     # Git before 1.5.3 does not support any sensible date format,
     # so we need to massage the output.
     if git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | grep '[0-9]\{4\}' >/dev/null 2>&1; then
-        date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/-\| .*$//g;p;}'`
+        date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%ci HEAD | sed -ne '/commit/!{s/ .*$//;s/-//g;p;}'`
     else
         date=`git --git-dir=$GITDIR rev-list -n1 --pretty=format:%cD HEAD | \
               sed -ne '/commit/!{s/^.*, *\([ 0-9][0-9]\) \([a-zA-Z]*\) \([0-9]*\) .*$/\3\2\1/;y/ /0/;\

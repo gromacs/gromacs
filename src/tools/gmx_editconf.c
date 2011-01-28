@@ -448,12 +448,30 @@ void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
 		rotmatrix[2][0],rotmatrix[2][1],rotmatrix[2][2]);
 }
 
+static void renum_resnr(t_atoms *atoms,int isize,const int *index,
+                        int resnr_start)
+{
+    int i,resind_prev,resind;
+
+    resind_prev = -1;
+    for(i=0; i<isize; i++)
+    {
+        resind = atoms->atom[index == NULL ? i : index[i]].resind;
+        if (resind != resind_prev)
+        {
+            atoms->resinfo[resind].nr = resnr_start;
+            resnr_start++;
+        }
+        resind_prev = resind;
+    }
+}
+
 int gmx_editconf(int argc, char *argv[])
 {
     const char
         *desc[] =
             {
-                "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+                "[TT]editconf[tt] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
                 "or [TT].pdb[tt].",
                 "[PAR]",
                 "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
@@ -489,7 +507,8 @@ int gmx_editconf(int argc, char *argv[])
                 "[TT]-rotate[tt] rotates the coordinates and velocities.",
                 "[PAR]",
                 "[TT]-princ[tt] aligns the principal axes of the system along the",
-                "coordinate axes, this may allow you to decrease the box volume,",
+                "coordinate axes, with the longest axis aligned with the x axis. ",
+                "This may allow you to decrease the box volume,",
                 "but beware that molecules can rotate significantly in a nanosecond.",
                 "[PAR]",
                 "Scaling is applied before any of the other operations are",
@@ -497,11 +516,11 @@ int gmx_editconf(int argc, char *argv[])
                 "[TT]-density[tt]). Note that this may be inaccurate in case a gro",
                 "file is given as input. A special feature of the scaling option, when the",
                 "factor -1 is given in one dimension, one obtains a mirror image,",
-                "mirrored in one of the plains, when one uses -1 in three dimensions",
+                "mirrored in one of the planes. When one uses -1 in three dimensions, ",
                 "a point-mirror image is obtained.[PAR]",
                 "Groups are selected after all operations have been applied.[PAR]",
                 "Periodicity can be removed in a crude manner.",
-                "It is important that the box sizes at the bottom of your input file",
+                "It is important that the box vectors at the bottom of your input file",
                 "are correct when the periodicity is to be removed.",
                 "[PAR]",
                 "When writing [TT].pdb[tt] files, B-factors can be",
@@ -515,30 +534,31 @@ int gmx_editconf(int argc, char *argv[])
                 "a row of CA atoms with B-factors ranging from the minimum to the",
                 "maximum value found, effectively making a legend for viewing.",
                 "[PAR]",
-                "With the option -mead a special pdb (pqr) file for the MEAD electrostatics",
+                "With the option [TT]-mead[tt] a special [TT].pdb[tt] ([TT].pqr[tt])",
+                "file for the MEAD electrostatics",
                 "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
                 "is that the input file is a run input file.",
                 "The B-factor field is then filled with the Van der Waals radius",
                 "of the atoms while the occupancy field will hold the charge.",
                 "[PAR]",
-                "The option -grasp is similar, but it puts the charges in the B-factor",
+                "The option [TT]-grasp[tt] is similar, but it puts the charges in the B-factor",
                 "and the radius in the occupancy.",
                 "[PAR]",
                 "Option [TT]-align[tt] allows alignment",
                 "of the principal axis of a specified group against the given vector, ",
 				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
                 "[PAR]",
-                "Finally with option [TT]-label[tt] editconf can add a chain identifier",
-                "to a pdb file, which can be useful for analysis with e.g. rasmol.",
-                    "[PAR]",
+                "Finally with option [TT]-label[tt], [TT]editconf[tt] can add a chain identifier",
+                "to a [TT].pdb[tt] file, which can be useful for analysis with e.g. rasmol.",
+                "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
-                "a cubic box with the corners cut off (such as Gromos) use:[BR]",
-                "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
+                "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
+                "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
                 "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
     const char *bugs[] =
         {
-            "For complex molecules, the periodicity removal routine may break down, ",
-                "in that case you can use trjconv." };
+            "For complex molecules, the periodicity removal routine may break down, "
+                "in that case you can use [TT]trjconv[tt]." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;
@@ -560,6 +580,7 @@ int gmx_editconf(int argc, char *argv[])
         *label = "A";
     static rvec visbox =
         { 0, 0, 0 };
+    static int resnr_start = -1;
     t_pargs
         pa[] =
             {
@@ -598,10 +619,13 @@ int gmx_editconf(int argc, char *argv[])
                         { scale }, "Scaling factor" },
                     { "-density", FALSE, etREAL,
                         { &rho },
-                        "Density (g/l) of the output box achieved by scaling" },
+                        "Density (g/L) of the output box achieved by scaling" },
                     { "-pbc", FALSE, etBOOL,
                         { &bRMPBC },
                         "Remove the periodicity (make molecule whole again)" },
+                    { "-resnr", FALSE, etINT,
+                        { &resnr_start },
+                        " Renumber residues starting from resnr" },
                     { "-grasp", FALSE, etBOOL,
                         { &bGrasp },
                         "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
@@ -625,7 +649,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add CONECT records to a pdb file when written. Can only be done when a topology is present" } };
+                        "Add CONECT records to a [TT].pdb[tt] file when written. Can only be done when a topology is present" } };
 #define NPA asize(pa)
 
     FILE *out;
@@ -1022,7 +1046,7 @@ int gmx_editconf(int argc, char *argv[])
                 "vector might be somewhat smaller than your specified value %f.\n"
                 "You can check the actual value with g_mindist -pi\n",dist);
         }
-        else
+        else if (!opt2parg_bSet("-bt", NPA, pa))
         {
             printf("\nWARNING: No boxtype specified - distance condition applied in each dimension.\n"
                 "If the molecule rotates the actual distance will be smaller. You might want\n"
@@ -1038,6 +1062,12 @@ int gmx_editconf(int argc, char *argv[])
         fprintf(stderr,"\nSelect a group for output:\n");
         get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
                   1,&isize,&index,&grpname);
+
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,isize,index,resnr_start);
+        }
+
         if (opt2parg_bSet("-label",NPA,pa)) {
             for(i=0; (i<atoms.nr); i++) 
                 atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
@@ -1059,7 +1089,13 @@ int gmx_editconf(int argc, char *argv[])
             write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,isize,index); 
         }
     }
-    else {
+    else
+    {
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,atoms.nr,NULL,resnr_start);
+        }
+
         if ((outftp == efPDB) || (outftp == efPQR)) {
             out=ffopen(outfile,"w");
             if (bMead) {

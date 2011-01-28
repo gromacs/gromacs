@@ -38,10 +38,15 @@ EXTRA_DIST = config/depcomp \
 			 src/CMakeLists.txt \
 			 src/tools/CMakeLists.txt \
 			 COPYING-GPU \
-			 INSTALL-GPU
+			 INSTALL-GPU \
+			 INSTALL.cmake \
+			 INSTALL.automake
 
 
 install-exec-hook:
+if NO_LA_FILES
+	cd $(DESTDIR)$(libdir) && rm -f libmd@LIBSUFFIX@.la libgmx@LIBSUFFIX@.la libgmxpreprocess@LIBSUFFIX@.la libgmxana@LIBSUFFIX@.la
+endif
 	@echo ""
 	@echo "GROMACS is installed under $(prefix)."
 	@echo "Make sure to update your PATH and MANPATH to find the"
@@ -65,6 +70,9 @@ install-mdrun:
 	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-libLTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
+if NO_LA_FILES
+	cd $(DESTDIR)$(libdir) && rm -f libmd@LIBSUFFIX@.la libgmx@LIBSUFFIX@.la libgmxpreprocess@LIBSUFFIX@.la libgmxana@LIBSUFFIX@.la
+endif
 
 fahcore:
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) ; exit 0)

@@ -35,6 +35,14 @@
 #include <config.h>
 #endif
 
+
+#include <time.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -1930,23 +1938,23 @@ int gmx_tune_pme(int argc,char *argv[])
 {
     const char *desc[] = {
             "For a given number [TT]-np[tt] or [TT]-nt[tt] of processors/threads, this program systematically",
-            "times mdrun with various numbers of PME-only nodes and determines",
+            "times [TT]mdrun[tt] with various numbers of PME-only nodes and determines",
             "which setting is fastest. It will also test whether performance can",
             "be enhanced by shifting load from the reciprocal to the real space",
             "part of the Ewald sum. ",
-            "Simply pass your [TT].tpr[tt] file to g_tune_pme together with other options",
-            "for mdrun as needed.[PAR]",
+            "Simply pass your [TT].tpr[tt] file to [TT]g_tune_pme[tt] together with other options",
+            "for [TT]mdrun[tt] as needed.[PAR]",
             "Which executables are used can be set in the environment variables",
             "MPIRUN and MDRUN. If these are not present, 'mpirun' and 'mdrun'",
             "will be used as defaults. Note that for certain MPI frameworks you",
             "need to provide a machine- or hostfile. This can also be passed",
             "via the MPIRUN variable, e.g.",
-            "'export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"'[PAR]",
-            "Please call g_tune_pme with the normal options you would pass to",
-            "mdrun and add [TT]-np[tt] for the number of processors to perform the",
+            "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
+            "Please call [TT]g_tune_pme[tt] with the normal options you would pass to",
+            "[TT]mdrun[tt] and add [TT]-np[tt] for the number of processors to perform the",
             "tests on, or [TT]-nt[tt] for the number of threads. You can also add [TT]-r[tt]",
             "to repeat each test several times to get better statistics. [PAR]",
-            "g_tune_pme can test various real space / reciprocal space workloads",
+            "[TT]g_tune_pme[tt] can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
             "Typically, the first test (no. 0) will be with the settings from the input",
@@ -1964,10 +1972,10 @@ int gmx_tune_pme(int argc,char *argv[])
             "From the 'DD' load imbalance entries in the md.log output file you",
             "can tell after how many steps the load is sufficiently balanced.[PAR]"
             "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
-            "After calling mdrun several times, detailed performance information",
+            "After calling [TT]mdrun[tt] several times, detailed performance information",
             "is available in the output file perf.out. ",
             "Note that during the benchmarks a couple of temporary files are written",
-            "(options -b*), these will be automatically deleted after each test.[PAR]",
+            "(options [TT]-b[tt]*), these will be automatically deleted after each test.[PAR]",
             "If you want the simulation to be started automatically with the",
             "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
     };
@@ -2109,7 +2117,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-npstring", FALSE, etENUM, {procstring},
         "Specify the number of processors to $MPIRUN using this string"},
       { "-passall",  FALSE, etBOOL, {&bPassAll},
-        "HIDDENPut arguments unknown to mdrun at the end of the command line. Can e.g. be used for debugging purposes. "},
+        "HIDDENPut arguments unknown to [TT]mdrun[tt] at the end of the command line. Can e.g. be used for debugging purposes. "},
       { "-nt",       FALSE, etINT,  {&nthreads},
         "Number of threads to run the tests on (turns MPI & mpirun off)"},
       { "-r",        FALSE, etINT,  {&repeats},
@@ -2119,21 +2127,21 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-min",      FALSE, etREAL, {&minPMEfraction},
         "Min fraction of PME nodes to test with" },
       { "-npme",     FALSE, etENUM, {npmevalues_opt},
-        "Benchmark all possible values for -npme or just the subset that is expected to perform well"},
+        "Benchmark all possible values for [TT]-npme[tt] or just the subset that is expected to perform well"},
       { "-upfac",    FALSE, etREAL, {&upfac},
         "Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling)" },
       { "-downfac",  FALSE, etREAL, {&downfac},
         "Lower limit for rcoulomb scaling factor" },
       { "-ntpr",     FALSE, etINT,  {&ntprs},
-        "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
+        "Number of [TT].tpr[tt] files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
       { "-four",     FALSE, etREAL, {&fs},
-        "Use this fourierspacing value instead of the grid found in the tpr input file. (Spacing applies to a scaling factor of 1.0 if multiple tpr files are written)" },
+        "Use this fourierspacing value instead of the grid found in the [TT].tpr[tt] input file. (Spacing applies to a scaling factor of 1.0 if multiple [TT].tpr[tt] files are written)" },
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Take timings for these many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
         "Let dlb equilibrate these many steps before timings are taken (reset cycle counters after these many steps)" },
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
-        "If non-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)" }, 
+        "If non-negative, perform these many steps in the real run (overwrite nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
         "Lauch the real simulation after optimization" },
       /******************/
@@ -2146,7 +2154,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-ddcheck",   FALSE, etBOOL, {&bDDBondCheck},
         "Check for all bonded interactions with DD" },
       { "-ddbondcomm",FALSE, etBOOL, {&bDDBondComm},
-        "HIDDENUse special bonded atom communication when -rdd > cut-off" },
+        "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
       { "-rdd",       FALSE, etREAL, {&rdd},
         "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
       { "-rcon",      FALSE, etREAL, {&rconstr},
@@ -2188,15 +2196,15 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-reseed",    FALSE, etINT,  {&repl_ex_seed},
         "Seed for replica exchange, -1 is generate a seed" },
       { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
-        "HIDDENRecalculate virtual site coordinates with -rerun" },
+        "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
       { "-ionize",    FALSE, etBOOL, {&bIonize},
         "Do a simulation including the effect of an X-Ray bombardment on your system" },
       { "-confout",   FALSE, etBOOL, {&bConfout},
-        "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
+        "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
       { "-stepout",   FALSE, etINT,  {&nstepout},
         "HIDDENFrequency of writing the remaining runtime" },
       { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-        "HIDDENReset the cycle counters after half the number of steps or halfway -maxh (launch only)" }
+        "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (launch only)" }
     };
 
     

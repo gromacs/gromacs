@@ -101,11 +101,18 @@ int gmx_covar(int argc,char *argv[])
     "Option [TT]-ascii[tt] writes the whole covariance matrix to",
     "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",
     "[PAR]",
-    "Option [TT]-xpm[tt] writes the whole covariance matrix to an xpm file.",
+    "Option [TT]-xpm[tt] writes the whole covariance matrix to an [TT].xpm[tt] file.",
     "[PAR]",
-    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
+    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an [TT].xpm[tt] file,",
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
-    "written."
+    "written.",
+    "[PAR]",
+    "Note that the diagonalization of a matrix requires memory and time",
+    "that will increase at least as fast as than the square of the number",
+    "of atoms involved. It is easy to run out of memory, in which",
+    "case this tool will probably exit with a 'Segmentation fault'. You",
+    "should consider carefully whether a reduced set of atoms will meet",
+    "your needs for lower costs."
   };
   static gmx_bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
   static int  end=-1;

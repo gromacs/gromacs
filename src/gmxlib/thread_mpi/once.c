@@ -118,6 +118,7 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
 
     /* now do a compare-and-swap on the current_syncc */
     syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
+    tMPI_Atomic_memory_barrier_acq();
     if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
                                          If it is a later number, we can't 
                                          have been the first to arrive here. 
@@ -134,7 +135,7 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
         /* broadcast the output data */
         cev->coll.res=ret;
 
-        tMPI_Atomic_memory_barrier();
+        tMPI_Atomic_memory_barrier_rel();
         /* signal that we're done */
         tMPI_Atomic_fetch_add(&(cev->coll.current_sync), 1);
         /* we need to keep being in sync */
@@ -146,10 +147,11 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
         csync->syncs++;
         do
         {
-            tMPI_Atomic_memory_barrier();
+            /*tMPI_Atomic_memory_barrier();*/
             syncs=tMPI_Atomic_get( &(cev->coll.current_sync) );
         } while (csync->syncs - syncs > 0); /* difference again due to ABA 
                                                problems */
+        tMPI_Atomic_memory_barrier_acq();
         ret=cev->coll.res;
     }
     return ret;

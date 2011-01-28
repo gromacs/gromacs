@@ -1649,7 +1649,7 @@ static void do_merge(t_hbdata *hb,int ntmp,
         srenew(hb0->h[0],4+nnframes/hb->wordlen);
         srenew(hb0->g[0],4+nnframes/hb->wordlen);  
     }
-    if (hb->per->pHist)
+    if (NULL != hb->per->pHist)
     {
         clearPshift(&(hb->per->pHist[a1][a2]));
     }
@@ -3084,7 +3084,7 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
 int gmx_hbond(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
+        "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
         "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
         "(zero is extended) and the distance Hydrogen - Acceptor.",
         "OH and NH groups are regarded as donors, O is an acceptor always,",
@@ -3096,7 +3096,7 @@ int gmx_hbond(int argc,char *argv[])
         "identical or non-overlapping. All hydrogen bonds between the two",
         "groups are analyzed.[PAR]",
     
-        "If you set -shell, you will be asked for an additional index group",
+        "If you set [TT]-shell[tt], you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
         "considered.[PAR]",
@@ -3161,7 +3161,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-da",   FALSE,  etBOOL, {&bDA},
           "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
         { "-r2",   FALSE,  etREAL, {&r2cut},
-          "Second cutoff radius. Mainly useful with -contact and -ac"},
+          "Second cutoff radius. Mainly useful with [TT]-contact[tt] and [TT]-ac[tt]"},
         { "-abin", FALSE,  etREAL, {&abin},
           "Binwidth angle distribution (degrees)" },
         { "-rbin", FALSE,  etREAL, {&rbin},
@@ -3174,15 +3174,15 @@ int gmx_hbond(int argc,char *argv[])
           "when > 0, only calculate hydrogen bonds within # nm shell around "
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With -gemfit we suggest -fitstart 0" },
+          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With [TT]-gemfit[tt] we suggest [TT]-fitstart 0[tt]" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with -gemfit)" },
+          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
           "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
         { "-dump",  FALSE, etINT, {&nDump},
-          "Dump the first N hydrogen bond ACFs in a single xvg file for debugging" },
+          "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb",FALSE, etREAL, {&maxnhb},
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},
@@ -3195,24 +3195,6 @@ int gmx_hbond(int argc,char *argv[])
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
-        /* The ballistic/geminate fitting will be taken away temporarily sue to problems with stability. */
-/*         { "-NN", FALSE, etENUM, {NNtype}, */
-/*           "HIDDENDo a full all vs all loop and estimate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"}, */
-/*         { "-gemfit", FALSE, etBOOL, {&bGemFit}, */
-/*           "With -gemainate != none: fit ka and kd to the ACF"}, */
-/*         { "-gemlogstart", FALSE, etREAL, {&logAfterTime}, */
-/*           "HIDDENWith -gemfit: After this time (ps) the data points fitted to will be equidistant in log-time."}, */
-/*         { "-gemnp", FALSE, etINT, {&nFitPoints}, */
-/*           "HIDDENNuber of points in the ACF used to fit rev. gem. recomb. model"}, */
-/*         { "-ballistic", FALSE, etBOOL, {&bBallistic}, */
-/*           "Calculate and remove ultrafast \"ballistic\" component in the ACF"}, */
-/*         { "-ballisticlen", FALSE, etREAL, {&gemBallistic}, */
-/*           "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF"}, */
-/*         { "-nbalexp", FALSE, etINT, {&nBalExp}, */
-/*           "HIDDENNumber of exponentials to fit when removing the ballistic component"}, */
-/*         { "-ballisticDt", FALSE, etBOOL, {&bBallisticDt}, */
-/*           "HIDDENIf TRUE, finding of the fastest ballistic component will be based on the time derivative at t=0, " */
-/*           "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)"} */
     };
     const char *bugs[] = {
         "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
@@ -3253,9 +3235,9 @@ int gmx_hbond(int argc,char *argv[])
     atom_id **index;
     rvec    *x,hbox;
     matrix  box;
-    real    t,ccut,dist,ang;
+    real    t,ccut,dist=0.0,ang=0.0;
     double  max_nhb,aver_nhb,aver_dist;
-    int     h,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
+    int     h=0,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
     int     xi,yi,zi,ai;
     int     xj,yj,zj,aj,xjj,yjj,zjj;
     int     xk,yk,zk,ak,xkk,ykk,zkk;
@@ -3339,23 +3321,25 @@ int gmx_hbond(int argc,char *argv[])
                 bMerge = TRUE;
             }
         }
-    } else
-        printf("No geminate recombination.\n");
-
+    } 
+    
     /* process input */
-    bSelected = opt2bSet("-sel",NFILE,fnm);
+    bSelected = FALSE;
     ccut = cos(acut*DEG2RAD);
   
     if (bContact) {
         if (bSelected)
-            gmx_fatal(FARGS,"Can not analyze selected contacts: turn off -sel");
+            gmx_fatal(FARGS,"Can not analyze selected contacts.");
         if (!bDA) {
             gmx_fatal(FARGS,"Can not analyze contact between H and A: turn off -noda");
         }
     }
 
 #ifndef HAVE_LIBGSL
-    printf("NO GSL! Can't find and take away ballistic term in ACF without GSL\n.");
+    /* Don't pollute stdout with information about external libraries.
+     *
+     * printf("NO GSL! Can't find and take away ballistic term in ACF without GSL\n.");
+     */
 #endif
   
     /* Initiate main data structure! */
@@ -3366,7 +3350,11 @@ int gmx_hbond(int argc,char *argv[])
               bGem);
   
 #ifdef HAVE_OPENMP
-    printf("Compiled with OpenMP (%i)\n", _OPENMP);
+    /* Same thing here. There is no reason whatsoever to write the specific version of
+     * OpenMP used for compilation to stdout for normal usage.
+     *
+     * printf("Compiled with OpenMP (%i)\n", _OPENMP);
+     */
 #endif
 
     /*   if (bContact && bGem) */
@@ -3862,7 +3850,7 @@ int gmx_hbond(int argc,char *argv[])
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
                 nframes++;      /*    +   */
             }      /*                 +   */
-#ifdef HAVE_OPENMP /* ++++++++++++++++´   */
+#ifdef HAVE_OPENMP /* +++++++++++++++++   */
 #pragma omp barrier
 #endif
         } while (trrStatus);

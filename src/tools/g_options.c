@@ -30,44 +30,25 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
-/* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-int ftocstr(char *ds, int dl, char *ss, int sl)
-    /* dst, src ptrs */
-    /* dst max len */
-    /* src len */
-{
-    char *p;
+#include <gmx_ana.h>
 
-    p = ss + sl;
-    while ( --p >= ss && *p == ' ' );
-    sl = p - ss + 1;
-    dl--;
-    ds[0] = 0;
-    if (sl > dl)
-      return 1;
-    while (sl--)
-      (*ds++ = *ss++);
-    *ds = '\0';
-    return 0;
+
+/* This is just a wrapper binary.
+* The code is in gmx_options.c,
+* where the old main function is called gmx_options().
+*/
+int
+main(int argc, char *argv[])
+{
+  gmx_options(argc,argv);
+  return 0;
 }
 
 
-int ctofstr(char *ds, int dl, char *ss)
-     /* dest space */
-     /* max dest length */
-     /* src string (0-term) */
-{
-    while (dl && *ss) {
-	*ds++ = *ss++;
-	dl--;
-    }
-    while (dl--)
-	*ds++ = ' ';
-    return 0;
-}
+  

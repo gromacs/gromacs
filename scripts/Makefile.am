@@ -17,7 +17,10 @@ dist_bin_SCRIPTS =   \
 
 # Scripts that will not be installed
 EXTRA_SCRIPTS = 		grompplog2top       	make_gromos_nb.pl  \
-	make_gromos_rtp.py 	make_gromos_bon.pl 	make_gromos_rtp.pl 
+	make_gromos_rtp.py 	make_gromos_bon.pl 	make_gromos_rtp.pl \
+	CMakeLists.txt		GMXRC.cmakein		GMXRC.bash.cmakein \
+	GMXRC.csh.cmakein	GMXRC.zsh.cmakein
+
 
 
 # Extra files we need

@@ -1,4 +1,3 @@
-
 if(X11_FOUND)
 
 set(NGMX_COMMON_SOURCE
@@ -24,9 +23,8 @@ foreach(PROG ${NGMX_PROGRAMS})
         set_target_properties(${PROG} PROPERTIES OUTPUT_NAME "${PROG}${GMX_BINARY_SUFFIX}")
 endforeach(PROG) 
 
-
 install(TARGETS ${NGMX_PROGRAMS}
+        COMPONENT ngmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
-
 
 endif(X11_FOUND)

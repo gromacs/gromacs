@@ -951,9 +951,9 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
 int gmx_cluster(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_cluster can cluster structures with several different methods.",
+    "[TT]g_cluster[tt] can cluster structures with several different methods.",
     "Distances between structures can be determined from a trajectory",
-    "or read from an XPM matrix file with the [TT]-dm[tt] option.",
+    "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     
@@ -1078,10 +1078,10 @@ int gmx_cluster(int argc,char *argv[])
     { "-method",FALSE, etENUM, {methodname},
       "Method for cluster determination" },
     { "-minstruct", FALSE, etINT, {&minstruct},
-      "Minimum number of structures in cluster for coloring in the xpm file" },
+      "Minimum number of structures in cluster for coloring in the [TT].xpm[tt] file" },
     { "-binary",FALSE, etBOOL, {&bBinary},
       "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
-      "is given by -cutoff" },
+      "is given by [TT]-cutoff[tt]" },
     { "-M",     FALSE, etINT,  {&M},
       "Number of nearest neighbors considered for Jarvis-Patrick algorithm, "
       "0 is use cutoff" },

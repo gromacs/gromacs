@@ -1504,13 +1504,13 @@ int gmx_energy(int argc,char *argv[])
 {
   const char *desc[] = {
     
-    "g_energy extracts energy components or distance restraint",
+    "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
     "select the energy terms she wants.[PAR]",
     
     "Average, RMSD and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
-    "a LSQ fit of the data to a straight line. The reported total drift",
+    "a least-squares fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "An error estimate of the average is given based on a block averages",
     "over 5 blocks using the full precision averages. The error estimate",
@@ -1518,12 +1518,12 @@ int gmx_energy(int argc,char *argv[])
     "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
     "Note that in most cases the energy files contains averages over all",
     "MD steps, or over many more points than the number of frames in",
-    "energy file. This makes the g_energy statistics output more accurate",
-    "than the xvg output. When exact averages are not present in the energy",
-    "file the statistics mentioned above is simply over the single, per-frame",
+    "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
+    "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
+    "file the statistics mentioned above are simply over the single, per-frame",
     "energy values.[PAR]",
 
-    "The term fluctuation gives the RMSD around the LSQ fit.[PAR]",
+    "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
     
     "Some fluctuation-dependent properties can be calculated provided",
     "the correct energy terms are selected. The following properties",
@@ -1569,7 +1569,7 @@ int gmx_energy(int argc,char *argv[])
 
     "Option [TT]-odh[tt] extracts and plots the free energy data",
     "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",
-    "from the ener.edr file.[PAR]",
+    "from the [TT]ener.edr[tt] file.[PAR]",
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
@@ -1626,7 +1626,7 @@ int gmx_energy(int argc,char *argv[])
     { "-orinst", FALSE, etBOOL, {&bOrinst},
       "Analyse instantaneous orientation data" },
     { "-ovec", FALSE, etBOOL, {&bOvec},
-      "Also plot the eigenvectors with -oten" }
+      "Also plot the eigenvectors with [TT]-oten[tt]" }
   };
   const char* drleg[] = {
     "Running average",

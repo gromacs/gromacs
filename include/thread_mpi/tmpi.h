@@ -63,6 +63,11 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
+/** tMPI definition. 
+
+Use this to check for thread_mpi with the preprocessor. */
+#define TMPI 
+
 
 
 /** tMPI Communicator

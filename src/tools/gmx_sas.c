@@ -226,6 +226,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
   const char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *or_and_oa_legend[] = { "Average (nm\\S2\\N)", "Standard deviation (nm\\S2\\N)" };
   const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
@@ -499,10 +500,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       atom_area2[i] /= nfr;
     }
     fprintf(stderr,"Printing out areas per atom\n");
-    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
+    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue over the trajectory","Residue",
 		   "Area (nm\\S2\\N)",oenv);
-    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
+    xvgr_legend(fp, asize(or_and_oa_legend),or_and_oa_legend,oenv);
+    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom over the trajectory","Atom #",
 		   "Area (nm\\S2\\N)",oenv);
+    xvgr_legend(fp2, asize(or_and_oa_legend),or_and_oa_legend,oenv);
     if (bITP) {
       fp3 = ftp2FILE(efITP,nfile,fnm,"w");
       fprintf(fp3,"[ position_restraints ]\n"
@@ -562,15 +565,15 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int gmx_sas(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
+    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent accessible surface area.",
     "As a side effect the Connolly surface can be generated as well in",
-    "a pdb file where the nodes are represented as atoms and the vertices",
+    "a [TT].pdb[tt] file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records.",
     "The program will ask for a group for the surface calculation",
     "and a group for the output. The calculation group should always",
     "consists of all the non-solvent atoms in the system.",
     "The output group can be the whole or part of the calculation group.",
-    "The area can be plotted",
+    "The average and standard deviation of the area over the trajectory can be plotted",
     "per residue and atom as well (options [TT]-or[tt] and [TT]-oa[tt]).",
     "In combination with the latter option an [TT]itp[tt] file can be",
     "generated (option [TT]-i[tt])",
@@ -583,8 +586,8 @@ int gmx_sas(int argc,char *argv[])
     "in this case or whether you would rather use e.g. 0. It is good",
     "to keep in mind that the results for volume and density are very",
     "approximate, in e.g. ice Ih one can easily fit water molecules in the",
-    "pores which would yield too low volume, too high surface area and too",
-    "high density."
+    "pores which would yield a volume that is too low, and surface area and density",
+    "that are both too high."
   };
 
   output_env_t oenv;
@@ -607,7 +610,7 @@ int gmx_sas(int argc,char *argv[])
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
-      "Output the protein to the connelly pdb file too" },
+      "Output the protein to the connelly [TT].pdb[tt] file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
       "default value for solvation free energy per area (kJ/mol/nm^2)" }
   };

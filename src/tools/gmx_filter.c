@@ -57,7 +57,7 @@
 int gmx_filter(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_filter performs frequency filtering on a trajectory.",
+    "[TT]g_filter[tt] performs frequency filtering on a trajectory.",
     "The filter shape is cos(pi t/A) + 1 from -A to +A, where A is given",
     "by the option [TT]-nf[tt] times the time step in the input trajectory.",
     "This filter reduces fluctuations with period A by 85%, with period",
@@ -76,7 +76,7 @@ int gmx_filter(int argc,char *argv[])
     "Option [TT]-oh[tt] writes a high-pass filtered trajectory.",
     "The high-pass filtered coordinates are added to the coordinates",
     "from the structure file. When using high-pass filtering use [TT]-fit[tt]",
-    "or make sure you use a trajectory which has been fitted on",
+    "or make sure you use a trajectory that has been fitted on",
     "the coordinates in the structure file."
   };
   

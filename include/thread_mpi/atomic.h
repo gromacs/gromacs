@@ -91,9 +91,10 @@ extern "C"
 #endif
 
 
-/* first check for gcc/icc platforms. icc on linux+mac will take this path, 
+/* first check for gcc/icc platforms. 
+   Some compatible compilers, like icc on linux+mac will take this path, 
    too */
-#if ( (defined(__GNUC__) || defined(__PATHSCALE__)) && (!defined(__xlc__)) )
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
 
 /* now check specifically for several architectures: */
 #if (defined(i386) || defined(__x86_64__)) 
@@ -105,13 +106,9 @@ extern "C"
 /* then ia64: */
 #include "atomic/gcc_ia64.h"
 
-#elif (defined(__powerpc__) || (defined(__ppc__)) )
-/* and powerpc: */
-/*#include "atomic/gcc_ppc.h"*/
-
 /* for now we use gcc intrinsics on gcc: */
-#include "atomic/gcc.h"
-
+/*#elif (defined(__powerpc__) || (defined(__ppc__)) )*/
+/*#include "atomic/gcc_ppc.h"*/
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */
@@ -127,22 +124,16 @@ extern "C"
 
 #elif ( (defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM))  && \
         (defined(__powerpc__) || defined(__ppc__)))
-/* PowerPC using xlC inline assembly. 
- * Recent versions of xlC (>=7.0) _partially_ support GCC inline assembly
- * if you use the option -qasm=gcc but we have had to hack things a bit, in 
- * particular when it comes to clobbered variables. Since this implementation
- * _could_ be buggy, we have separated it from the known-to-be-working gcc
- * one above.
- */
+
+/* PowerPC using xlC intrinsics.  */
+
 #include "atomic/xlc_ppc.h"
 
-#elif defined(__xlC__) && defined (_AIX)
-/* IBM xlC compiler on AIX */
+#elif defined(__xlC__)  || defined(__xlc__)
+/* IBM xlC compiler */
 #include "atomic/xlc_ppc.h"
 
-#elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
-/* HP compiler on ia64 */
-#include "atomic/hpux.h"
+
 
 
 
@@ -168,9 +159,36 @@ extern "C"
  it in the code should be visible to all memory operations after it - the
  CPU cannot propagate load/stores across it.
 
+ This barrier is a full barrier: all load and store operations of
+ instructions before it are completed, while all load and store operations
+ that are in instructions after it won't be done before this barrier.
+
  \hideinitializer
  */
 #define tMPI_Atomic_memory_barrier()
+
+/** Memory barrier operation with acquire semantics
+
+ This barrier is a barrier with acquire semantics: the terminology comes
+ from its common use after acquiring a lock: all load/store instructions 
+ after this barrier may not be re-ordered to happen before this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_acq()
+
+/** Memory barrier operation with release semantics
+
+ This barrier is a barrier with release semantics: the terminology comes
+ from its common use before releasing a lock: all load/store instructions 
+ before this barrier may not be re-ordered to happen after this barrier.
+
+ \hideinitializer
+ */
+#define tMPI_Atomic_memory_barrier_rel()
+
+
+
 
 /* System mutex used for locking to guarantee atomicity */
 static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
@@ -644,6 +662,14 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
     } while(!tMPI_Atomic_ptr_cas(a, oldval, b));
     return oldval;
 }
+#endif
+
+/* only define this if there were no separate acquire and release barriers */
+#ifndef TMPI_HAVE_ACQ_REL_BARRIERS
+
+/* if they're not defined explicitly, we just make full barriers out of both */
+#define tMPI_Atomic_memory_barrier_acq tMPI_Atomic_memory_barrier
+#define tMPI_Atomic_memory_barrier_rel tMPI_Atomic_memory_barrier
 
 #endif
 

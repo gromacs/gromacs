@@ -857,13 +857,19 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
     break;
   default:
 #ifdef GMX_DLOPEN
+      fprintf(stderr,"The file format of %s is not a known trajectory format to GROMACS.\n"
+	      "Please make sure that the file is a trajectory!\n"
+	      "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
+	      "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n",fn);
       gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
       if (!read_first_vmd_frame(&dummy,fn,fr,flags))
       {
 	  gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
       }
 #else
-      gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
+      gmx_fatal(FARGS,"Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
+		"GROMACS is not compiled with DLOPEN. Thus it cannot read non-GROMACS trajectory formats.\n"
+		"Please compile with DLOPEN support if you want to read non-GROMACS trajectory formats.\n",fn);
 #endif
       break;
   }

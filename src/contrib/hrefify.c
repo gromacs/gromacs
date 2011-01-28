@@ -119,7 +119,7 @@ char *strstr_href(char *line,gmx_bool *bInHREF,int *i_dat,int n_dat,char **dat)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "hrefify adds href's for all the words in the input file which are not",
+    "[TT]hrefify[tt] adds href's for all the words in the input file which are not",
     "already hyperlinked and which appear in the file specified with the",
     "option [TT]-l[tt].[PAR]",
     "If the href's should call a script, text can be added",

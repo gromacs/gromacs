@@ -169,6 +169,13 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 	  
     for (n = 0; n < nr_grps; n++)
     {      
+        /* Check whether we actually have all positions of the requested index
+         * group in the trajectory file */
+        if (gnx[n] > natoms)
+        {
+            gmx_fatal(FARGS, "You selected a group with %d atoms, but only %d atoms\n"
+                             "were found in the trajectory.\n", gnx[n], natoms);
+        }
       for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
       {
 	if (bSpherical)
@@ -364,7 +371,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
     for (n = 0; n < nr_grps; n++)
     {
       fprintf(pot,"   %20.16g", potential[n][slice]);
-      fprintf(fie,"   %20.16g", field[n][slice]);
+      fprintf(fie,"   %20.16g", field[n][slice]/1e9);  /* convert to V/nm */
       fprintf(cha,"   %20.16g", charge[n][slice]);
     }
     fprintf(pot,"\n");
@@ -380,14 +387,14 @@ void plot_potential(double *potential[], double *charge[], double *field[],
 int gmx_potential(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Compute the electrostatical potential across the box. The potential is",
+    "[TT]g_potential[tt] computes the electrostatical potential across the box. The potential is",
     "calculated by first summing the charges per slice and then integrating",
     "twice of this charge distribution. Periodic boundaries are not taken",
     "into account. Reference of potential is taken to be the left side of",
-    "the box. It's also possible to calculate the potential in spherical",
+    "the box. It is also possible to calculate the potential in spherical",
     "coordinates as function of r by calculating a charge distribution in",
     "spherical slices and twice integrating them. epsilon_r is taken as 1,",
-    "2 is more appropriate in many cases."
+    "but 2 is more appropriate in many cases."
   };
   output_env_t oenv;
   static int  axis = 2;                      /* normal to memb. default z  */

@@ -293,23 +293,25 @@ int main (int argc, char *argv[])
 {
   const char *desc[] = {
     "tpbconv can edit run input files in four ways.[PAR]",
-    "[BB]1st.[bb] by modifying the number of steps in a run input file",
+    "[BB]1.[bb] by modifying the number of steps in a run input file",
     "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
     "(nsteps=-1 means unlimited number of steps)[PAR]",
-    "[BB]2nd.[bb] (OBSOLETE) by creating a run input file",
+    "[BB]2.[bb] (OBSOLETE) by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
     "This option is obsolete, since mdrun now writes and reads",
     "checkpoint files.",
-    "Note that a frame with coordinates and velocities is needed.",
+    "[BB]Note[bb] that a frame with coordinates and velocities is needed.",
     "When pressure and/or Nose-Hoover temperature coupling is used",
     "an energy file can be supplied to get an exact continuation",
     "of the original run.[PAR]",
-    "[BB]3rd.[bb] by creating a tpx file for a subset of your original",
+    "[BB]3.[bb] by creating a [TT].tpx[tt] file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
-    "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
-    "[BB]WARNING: this tpx file is not fully functional[bb].",
-    "[BB]4th.[bb] by setting the charges of a specified group",
+    "your [TT].tpx[tt] file, or when you want to make e.g. a pure Ca [TT].tpx[tt] file.",
+    "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
+    "this to work.",
+    "[BB]WARNING: this [TT].tpx[tt] file is not fully functional[bb].[PAR]",
+    "[BB]4.[bb] by setting the charges of a specified group",
     "to zero. This is useful when doing free energy estimates",
     "using the LIE (Linear Interaction Energy) method."
   };
@@ -526,7 +528,7 @@ int main (int argc, char *argv[])
   } else {
     /* Determine total number of steps remaining */
     if (bExtend) {
-      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
+      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_large_int_t)(extend_t/ir->delta_t + 0.5);
       printf("Extending remaining runtime of by %g ps (now %s steps)\n",
 	     extend_t,gmx_step_str(ir->nsteps,buf));
     }
