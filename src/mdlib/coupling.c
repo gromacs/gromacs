@@ -671,8 +671,12 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         }
         /* note that this process does not account for replacements.  That's fine -- the worst that happens is 
            that we randomize them extra times, and our rate is artificially low.  In fact, does this correct for the 
-           fact that we are using poisson instead of binomial?  Or does the correction go in the other direction? */
-
+           fact that we are using poisson instead of binomial?  Or does the correction go in the other direction?
+           Also, if that correction was made, then we would have to cap the total number of randomizations;
+           right now, it's ok to have 2000 randomizations for 1000 particles, since it just randomizes the 
+           velocities again.
+        */
+          
         /* now that we know which constraint groups to randomize, let's make a list of atoms to randomize */
         /* maximum will be all atoms; probably much smaller, but we are freeing the space anyway later. */
         
