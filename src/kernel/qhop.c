@@ -1121,12 +1121,16 @@ static void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod)
   
 }
 
+/* We change vdv by changing atomtype. */
 static void qhop_swap_vdws(t_qhop_residue *swapres, qhop_res *prod)
 {
-  /* placeholder. */
+
   int i;
   i=0;
-  
+
+  /* For now, assume that all atomtypes are present, e.g. that grompp was run with -norenum */
+
+
 }
 
 static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int atomid)
