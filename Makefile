@@ -136,7 +136,7 @@ g_options.tex:
 		  if $(OPTIONS) -hidden -man tex >/dev/null 2>&1; then :; \
 		  else \
 		    echo "Error: Can't find the executable '$(OPTIONS)' in the current"; \
-		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "directory or in your path (I need it to create latex files)."; \
 		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
 		    exit 1 ; \
 		  fi; \
@@ -155,7 +155,7 @@ ifeq ($(GMXDATA),)
 		  @echo "(Source the GMXRC script in your installation)" 
 		  @exit 1; 
 endif
-		./mkmdp $(GMXDATA)/gromacs/html
+		./mkmdp $(GMXDATA)/html
 
 proglist.tex:	./mk_proglist programs.txt
 # If you dont have programs.txt from the gromacs source, just touch it
