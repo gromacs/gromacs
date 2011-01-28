@@ -17,7 +17,9 @@ DVIPS	=	dvips
 # Binaries from the gromacs/src/contrib directory
 PRFN    =       prfn
 COPYRGT	=	copyrgt
-OPTIONS =       options
+
+# Normal installed GROMACS binaries
+OPTIONS =       g_options
 
 TEXFS = algorithms	analyse		averages	\
 	defunits	files		forcefield	\
@@ -128,7 +130,7 @@ files.tex:
 # we will only get here if PRFN could be executed
 		$(RM) files.html; ./mkfiles ;
 
-options.tex:	
+g_options.tex:	
 		@if ./$(OPTIONS) -man tex >/dev/null 2>&1; then :; \
 		else \
 		  if $(OPTIONS) -man tex >/dev/null 2>&1; then :; \
@@ -139,6 +141,8 @@ options.tex:
 		    exit 1 ; \
 		  fi; \
 		fi;
+# don't want the section header to actually be g_options
+		sed -i -e 's/g_options/options/g' g_options.tex
 
 progman.tex:	
 		$(TOUCH) progman.tex

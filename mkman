@@ -24,7 +24,7 @@ cd $TEXMAN
 touch $INDEX
 foreach program ( $PROGRAMS )
   set PROG = $BINDIR/$program
-  if ( ( -x $PROG ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
+  if ( ( -x $PROG ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) && ( $program != "g_options") ) then
     echo -n "$program "
     $PROG -quiet -man tex >& /dev/null
     endif
@@ -42,8 +42,8 @@ cat >! $TEXMAN.tex << EOD
 \label{app:progman}
 
 {\small
-%options.tex is created by the GROMACS binary options in the contrib directory 
-\input{options.tex}
+%g_options.tex is created by the GROMACS installed binary g_options
+\input{g_options.tex}
 }
 {\small
 \input{$MANDIR/all}
