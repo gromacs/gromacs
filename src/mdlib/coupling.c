@@ -601,20 +601,42 @@ void berendsen_tcoupl(t_inputrec *ir,gmx_ekindata_t *ekind,real dt)
     }
 }
 
-void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng)
+static int poisson_variate(real lambda,gmx_rng_t rng) {
+
+    real L;
+    int k=0;
+    real p=1.0; 
+    
+    L = exp(-lambda);
+    
+    do 
+    {
+        k = k+1;
+        p *= gmx_rng_uniform_real(rng);
+    } while (p>L) ;
+
+    return k-1;
+}
+
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock)
 {
     t_grpopts *opts;
-    int    i,d,n,ngtc,gc=0;
+    int    i,j,k,d,len,n,ngtc,gc=0;
+    int    nshake, nsettle, nrandom, nsettle_randomize, nshake_randomize;
     real   boltz,sd,reft;
     gmx_bool *randomize;
     real *boltzfac;
-    /*double ekin,temper;*/
-    
+    int *randatom,*settle_randomize,*shake_randomize;
+    t_iatom *iatoms; 
+
     opts = &ir->opts;
     ngtc = opts->ngtc;
     snew(randomize,ngtc);
     snew(boltzfac,ngtc);
     
+    /* for now, assume that all groups, if randomized, are randomized at the same rate */
+    /* since constraint groups don't necessarily match up with temperature groups! */
+
     for (i=0;i<ngtc;i++) {
         reft = max(0.0,opts->ref_t[i]);
         if ((opts->tau_t[i] > 0) && (reft > 0))
@@ -623,27 +645,85 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng)
             boltzfac[i] = BOLTZ*opts->ref_t[i];
         }
     }
+        
+    if (idef) {
+        /* select randomly from shake and settle groups */
+        /* Do the selection of the two groups independently, so they
+         * can be handled differently. */
+        
+        /* first the settles. */
+        nsettle  = idef->il[F_SETTLE].nr/2;
+        nsettle_randomize = poisson_variate(nsettle*rate,rng);  /* how many do we randomize? Use Poisson. */
+        snew(settle_randomize,nsettle_randomize);
+        for (i=0;i<nsettle_randomize;i++) {
+            settle_randomize[i] = (int)(gmx_rng_uniform_real(rng)*nsettle);  /* floor?  int? */
+        }
 
-    /*  ** DEBUGGING **
-    ekin = 0;
-    natoms = md->homenr;
+        /* now the shakes */
+        nshake  = nblocks;
+        /* how many do we randomize? Use Poisson. Might not be a good approximation 
+           here, since there may be not that many atoms? It's good as long as the rate is low. */
+        nshake_randomize = poisson_variate(nshake*rate,rng);  
+        snew(shake_randomize,nshake_randomize);
 
-    for (n=md->start;n<md->start+md->homenr;n++) 
-    {
-        for (d=0;d<DIM;d++) 
-        {
-            ekin += 0.5*state->v[n][d]*state->v[n][d]/md->invmass[n];        
+        for (i=0;i<nshake_randomize;i++) {
+            shake_randomize[i] = (int)(gmx_rng_uniform_real(rng)*nshake);
+        }
+        /* note that this process does not account for replacements.  That's fine -- the worst that happens is 
+           that we randomize them extra times, and our rate is artificially low.  In fact, does this correct for the 
+           fact that we are using poisson instead of binomial?  Or does the correction go in the other direction? */
+
+        /* now that we know which constraint groups to randomize, let's make a list of atoms to randomize */
+        /* maximum will be all atoms; probably much smaller, but we are freeing the space anyway later. */
+        
+        snew(randatom,md->homenr);
+        n = 0;
+        for (i=0;i<nsettle_randomize;i++) {
+            j = settle_randomize[i];
+            iatoms = idef->il[F_SETTLE].iatoms;
+            for (k=0;k<3;k++)  /* settles are always 3 atoms, hardcoded */
+            {
+                randatom[n] = iatoms[2*j+1]+k;
+                n++;
+            }
+        }
+        
+        for (i=0;i<nshake_randomize;i++) {
+            j = shake_randomize[i];
+            iatoms = &(idef->il[F_CONSTR].iatoms[sblock[j]]);
+            len = sblock[j+1]-sblock[j];
+            for (k=1;k<len;k++)
+            { 
+                randatom[n] = iatoms[k];
+                n++;
+            }
+        }
+        /* the total number of atoms to randomize */
+        nrandom = n;
+
+        if (debug) {
+            fprintf(debug,"nsettle: %d\n",nsettle);
+            fprintf(debug,"nsettle_randomize: %d\n",nsettle_randomize);
+            fprintf(debug,"nshake: %d\n",nshake);
+            fprintf(debug,"nshake_randomize: %d\n",nshake_randomize);
+            fprintf(debug,"nrandom: %d\n",nrandom);
         }
     }
-    temper = (2.0*ekin)/(opts->nrdf[0]*BOLTZ);
-    printf("before: ekin, temp: %12.4f, %12.4f\n",ekin,temper);
-    ekin = 0;
-    */
-
-    /* randomize the velocities*/
-
-    for (n=md->start;n<md->start+md->homenr;n++) 
+    else
     {
+        /* if it's massive, then randomize all the atoms */
+        nrandom = md->homenr;
+        snew(randatom,nrandom);
+        for (i=0;i<nrandom;i++) {         
+            randatom[i] = md->start + i;
+        }
+    }
+
+    /* randomize these velocities*/
+
+    for (i=0;i<nrandom;i++)  /* now loop over the list of atoms */
+    {
+        n = randatom[i];
         if (md->cTC)
         {
             gc   = md->cTC[n];  /* assign temperature group if there are more than one */
@@ -653,15 +733,12 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng)
             sd = sqrt(boltzfac[gc]*md->invmass[n]);
             for (d=0;d<DIM;d++) 
             {
-                //state->v[n][d] = sd*gmx_rng_gaussian_real(rng);  /* I think? */
+                //state->v[n][d] = sd*gmx_rng_gaussian_real(rng);  /* perhaps */
                 state->v[n][d] = sd*gmx_rng_gaussian_table(rng);  /* more efficient? */
-                //ekin += 0.5*state->v[n][d]*state->v[n][d]/md->invmass[n];
             }
         }
     }
-    //temper = (2.0*ekin)/(opts->nrdf[0]*BOLTZ);
-    //printf("after: ekin, temp: %12.4f, %12.4f\n",ekin,temper);
-}
+ }
 
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,

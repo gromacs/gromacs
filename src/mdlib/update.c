@@ -1560,6 +1560,7 @@ void update_coords(FILE         *fplog,
 {
     gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
+    real             rate;
     real             *imass,*imassin;
     rvec             *force;
     real             dt_1;
@@ -1701,10 +1702,11 @@ void update_coords(FILE         *fplog,
 
     if (ETC_ANDERS(inputrec->etc) && ((UpdatePart == etrtVELOCITY1) && EI_VV(inputrec->eI)))
     {
-        if ((inputrec->etc==etcANDERSEN) || do_per_step(step,inputrec->opts.tau_t[0]/(inputrec->delta_t)))
+        rate = (inputrec->delta_t)/inputrec->opts.tau_t[0];
+        if ((inputrec->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
         {
             /* proceed with andersen if 1) it's fractional andersen or 2) it's massive andersen and it's tau_t/dt */
-            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand);
+            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand,rate,(inputrec->etc==etcANDERSEN)?idef:NULL,get_nblocks(constr),get_sblock(constr));
         }
     }
 }

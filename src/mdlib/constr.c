@@ -1125,3 +1125,15 @@ gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 
   return bInterCG;
 }
+
+/* helper functions for andersen temperature control; return the list
+ * of blocks, because the gmx_constr structure is only defined here */
+extern int *get_sblock(struct gmx_constr *constr)
+{
+    return constr->sblock;
+}
+
+extern int get_nblocks(struct gmx_constr *constr)
+{
+    return constr->nblocks;
+}
