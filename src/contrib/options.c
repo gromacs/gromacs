@@ -76,8 +76,8 @@ int main(int argc,char *argv[])
     "supplied or default name. When no such file is found, or with output "
     "files the first file type will be used.",
 
-    "All GROMACS programs with the exception of [TT]mdrun[tt], "
-    "[TT]nmrun[tt] and [TT]eneconv[tt] check if the command line options "
+    "All GROMACS programs with the exception of [TT]mdrun[tt] "
+    "and [TT]eneconv[tt] check if the command line options "
     "are valid.  If this is not the case, the program will be halted.",
 
     "Enumerated options (enum) should be used with one of the arguments "
@@ -87,9 +87,6 @@ int main(int argc,char *argv[])
     "Vector options can be used with 1 or 3 parameters. When only one "
     "parameter is supplied the two others are also set to this value.",
 
-    "For many GROMACS programs, the time options can be supplied in different "
-    "time units, depending on the setting of the [TT]-tu[tt] option.",
-    
     "All GROMACS programs can read compressed or g-zipped files. There "
     "might be a problem with reading compressed [TT].xtc[tt], "
     "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "

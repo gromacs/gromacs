@@ -1,4 +1,4 @@
-#include "ffG43a1.itp"
+#include "gromos43a1.ff/forcefield.itp"
 #include "methanol.itp"
 
 [ system ]

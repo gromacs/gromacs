@@ -890,6 +890,10 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
         muframelsq = gmx_stats_init();
     
+        /* Initialise */
+        for(m=0; (m<DIM); m++) 
+            M_av2[m] = 0;
+            
         if (bMU) 
         {
             /* Copy rvec into double precision local variable */
@@ -900,10 +904,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         {
             /* Initialise */
             for(m=0; (m<DIM); m++) 
-            {
                 M_av[m] = 0;
-                M_av2[m] = 0;
-            }
+                
             gmx_rmpbc(gpbc,natom,box,x);
       
             /* Begin loop of all molecules in frame */
@@ -1123,7 +1125,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
             bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr); 
         else
             bCont = read_next_x(oenv,status,&t,natom,x,box);
-    } while (bCont);
+        timecheck=check_times(t);
+    } while (bCont && (timecheck == 0) );
   
     gmx_rmpbc_done(gpbc);
 
@@ -1290,7 +1293,7 @@ int gmx_dipoles(int argc,char *argv[])
         "the dipoles divided by the distance to the third power.[PAR]",
         "[PAR]",
         "EXAMPLES[PAR]",
-        "g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft[PAR]",
+        "[TT]g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft[tt][PAR]",
         "This will calculate the autocorrelation function of the molecular",
         "dipoles using a first order Legendre polynomial of the angle of the",
         "dipole vector and itself a time t later. For this calculation 1001",
@@ -1385,6 +1388,8 @@ int gmx_dipoles(int argc,char *argv[])
         printf("WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
 
     bMU   = opt2bSet("-en",NFILE,fnm);
+    if (bMU)
+        gmx_fatal(FARGS,"Due to new ways of treating molecules in GROMACS the total dipole in the energy file may be incorrect, because molecules can be split over periodic boundary conditions before computing the dipole. Please use your trajectory file.");
     bQuad = opt2bSet("-q",NFILE,fnm);
     bGkr  = opt2bSet("-g",NFILE,fnm);
     if (opt2parg_bSet("-ncos",asize(pa),pa)) {

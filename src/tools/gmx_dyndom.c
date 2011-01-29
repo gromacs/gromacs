@@ -128,9 +128,9 @@ int gmx_dyndom(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_dyndom reads a pdb file output from DynDom",
-    "http://www.cmp.uea.ac.uk/dyndom/",
-    "It reads the coordinates, and the coordinates of the rotation axis",
-    "furthermore it reads an index file containing the domains.",
+    "(http://www.cmp.uea.ac.uk/dyndom/).",
+    "It reads the coordinates, the coordinates of the rotation axis,",
+    "and an index file containing the domains.",
     "Furthermore it takes the first and last atom of the arrow file",
     "as command line arguments (head and tail) and",
     "finally it takes the translation vector (given in DynDom info file)",

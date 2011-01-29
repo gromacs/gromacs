@@ -228,7 +228,7 @@ int gmx_bond(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_bond makes a distribution of bond lengths. If all is well a",
-    "gaussian distribution should be made when using a harmonic potential.",
+    "Gaussian distribution should be made when using a harmonic potential.",
     "Bonds are read from a single group in the index file in order i1-j1",
     "i2-j2 through in-jn.[PAR]",
     "[TT]-tol[tt] gives the half-width of the distribution as a fraction",

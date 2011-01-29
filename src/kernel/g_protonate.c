@@ -52,8 +52,8 @@
 int main (int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]protonate[tt] reads (a) conformation(s) and adds all missing",
-    "hydrogens as defined in [TT]ffgmx2.hdb[tt]. If only [TT]-s[tt] is",
+    "g_protonate reads (a) conformation(s) and adds all missing",
+    "hydrogens as defined in [TT]gmx2.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
     "specified, this conformation will be protonated, if also [TT]-f[tt]",
     "is specified, the conformation(s) will be read from this file",
     "which can be either a single conformation or a trajectory.",

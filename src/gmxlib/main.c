@@ -166,7 +166,8 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   int  *ibuf,p;
   gmx_bool bCompatible;
 
-  fprintf(log,"Multi-checking %s ... ",name);
+  if (NULL != log)
+      fprintf(log,"Multi-checking %s ... ",name);
   
   if (ms == NULL)
     gmx_fatal(FARGS,
@@ -181,12 +182,19 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
     bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
   
   if (bCompatible) 
-    fprintf(log,"OK\n");
-  else {
-    fprintf(log,"\n%s is not equal for all subsystems\n",name);
-    for(p=0; p<ms->nsim; p++)
-      fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
-    gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
+  {
+      if (NULL != log)
+          fprintf(log,"OK\n");
+  }
+  else 
+  {
+      if (NULL != log)
+      {
+          fprintf(log,"\n%s is not equal for all subsystems\n",name);
+          for(p=0; p<ms->nsim; p++)
+              fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
+      }
+      gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
   }
   
   sfree(ibuf);

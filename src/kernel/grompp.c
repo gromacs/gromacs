@@ -1209,7 +1209,13 @@ int main (int argc, char *argv[])
     "with the [TT]-debug[tt] option which will give you more information",
     "in a file called grompp.log (along with real debug info). Finally, you",
     "can see the contents of the run input file with the [TT]gmxdump[tt]",
-    "program."
+    "program.[PAR]"
+
+    "The [TT]-maxwarn[tt] option can be used to override warnings printed",
+    "by grompp that otherwise halt output. In some cases, warnings are",
+    "harmless, but usually they are not. The user is advised to carefully",
+    "interpret the output messages before attempting to bypass them with",
+    "this option."
   };
   t_gromppopts *opts;
   gmx_mtop_t   *sys;
@@ -1264,7 +1270,7 @@ int main (int argc, char *argv[])
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
       "Remove constant bonded interactions with virtual sites" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
-      "Number of allowed warnings during input processing" },
+      "Number of allowed warnings during input processing. Not for normal use and may generate unstable systems" },
     { "-zero",    FALSE, etBOOL, {&bZero},
       "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},

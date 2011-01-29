@@ -322,7 +322,7 @@ int gmx_genion(int argc, char *argv[])
     "genion replaces solvent molecules by monoatomic ions at",
     "the position of the first atoms with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
-    "normal GROMACS particle based methods (in contrast to other methods",
+    "normal GROMACS particle-based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
     "The potential is recalculated after every ion insertion.",
     "If specified in the run input file, a reaction field, shift function",
@@ -340,7 +340,7 @@ int gmx_genion(int argc, char *argv[])
     "in a pdb file (for visualisation using e.g. rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
-    "For larger ions, e.g. sulfate we recommended to use genbox."
+    "For larger ions, e.g. sulfate we recommended using genbox."
   };
   const char *bugs[] = {
     "Calculation of the potential is not reliable, therefore the [TT]-random[tt] option is now turned on by default.",

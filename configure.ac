@@ -9,7 +9,7 @@ AC_PREREQ(2.50)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-AC_INIT(gromacs, 4.5.2-dev, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.3-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -23,7 +23,8 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-AC_DISABLE_SHARED
+AC_ENABLE_SHARED
+test "$enable_mpi" = "yes" && AC_DISABLE_SHARED
 PKG_CFLAGS=""
 
 #######################################################################
