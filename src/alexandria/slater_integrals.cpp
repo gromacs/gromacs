@@ -382,6 +382,7 @@ extern "C" double DNuclear_SS(double r,int i,double xi)
 #endif
 }
 
+#ifdef HAVE_CLN_CLN_H
 cl_R Power(cl_R a,int b)
 {
   int  minus = 0;
@@ -413,4 +414,5 @@ cl_R Power(cl_R a,int b)
   }
   return ZERO;
 }
+#endif
 

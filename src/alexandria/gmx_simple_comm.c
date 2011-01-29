@@ -38,9 +38,14 @@
 #endif
 
 #include <string.h>
-#ifdef GMX_MPI
-#include "mpi.h"
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
 #endif
+
+#ifdef GMX_THREADS
+#include "tmpi.h"
+#endif
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "network.h"
