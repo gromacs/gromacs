@@ -49,7 +49,8 @@
  * It should be ran with the option: -hidden
  */
 
-int main(int argc,char *argv[])
+int
+gmx_options(int argc,char *argv[])
 {
   const char *desc[] = {
     "GROMACS programs have some standard options,",
