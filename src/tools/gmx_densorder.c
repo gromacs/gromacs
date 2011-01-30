@@ -149,13 +149,13 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 	/****Start trajectory processing***/
 	
 	//Initialize Densdevel and PBC-remove
-	//gpbc=gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+	gpbc=gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
 
 	*Densdevel=NULL;		
 	
 	do 	{
-		//gmx_rmpbc(gpbc,natoms,box,x0);
-	//Reset Densslice every nsttblock steps
+	  gmx_rmpbc(gpbc,top->atoms.nr,box,x0);
+	  //Reset Densslice every nsttblock steps
 		if   ( framenr % nsttblock==0  ){ 
 			snew(Densslice,*xslices);
 				for (i=0;i<*xslices;i++) {
@@ -217,7 +217,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 		
 
 	//Free memory we no longer need and exit.
-	//gmx_rmpbc_done(gpbc);
+	gmx_rmpbc_done(gpbc);
 	close_trj(status);
 }
 
