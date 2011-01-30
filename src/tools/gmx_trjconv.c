@@ -175,8 +175,8 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                 /* Make molecule whole, move 2nd and higher atom to same periodicity as 1st atom in molecule */
                 if(j>molind[i])
                 {
-                    pbc_dx(&pbc,x[j],x[molind[i]],dx);
-                    rvec_add(x[molind[i]],dx,x[j]);
+                    pbc_dx(&pbc,x[j],x[j-1],dx);
+                    rvec_add(x[j-1],dx,x[j]);
                 }
                 /* Compute center of geometry of molecule - m_com[i] was zeroed when we did snew() on it! */
                 rvec_inc(m_com[i],x[j]);
