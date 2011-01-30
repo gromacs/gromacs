@@ -118,6 +118,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 	real dscale; //physical scaling factor
 	real t,x,y,z; // time and coordinates
 	*tblock=0;/* blocknr in block average - initialise to 0*/
+	rvec bbww;
 	
 	/* Axis: X=0, Y=1,Z=2 */
 	switch(axis)	
@@ -154,6 +155,9 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 	*Densdevel=NULL;		
 	
 	do 	{
+	  bbww[XX] = box[ax1][ax1]/ *xslices;
+	  bbww[YY] = box[ax2][ax2]/ *yslices;
+	  bbww[ZZ] = box[axis][axis]/ *zslices;
 	  gmx_rmpbc(gpbc,top->atoms.nr,box,x0);
 	  //Reset Densslice every nsttblock steps
 		if   ( framenr % nsttblock==0  ){ 
@@ -196,9 +200,9 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 			while(z>box[axis][axis])
 				z-=box[axis][axis];
 			
-			slicex=(int) (x/bw);
-			slicey=(int) (y/bw);
-			slicez=(int) (z/bwz);
+			slicex=((int) (x/bbww[XX])) % *xslices;
+			slicey=((int) (y/bbww[YY])) % *yslices;
+			slicez=((int) (z/bbww[ZZ])) % *zslices;
 			Densslice[slicex][slicey][slicez]+=(top->atoms.atom[index[0][j]].m*dscale);
 		
 			
@@ -219,6 +223,21 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 	//Free memory we no longer need and exit.
 	gmx_rmpbc_done(gpbc);
 	close_trj(status);
+	
+	if (0)
+	{
+	  FILE *fp;
+	  fp = fopen("koko.xvg","w");
+	  for(j=0; (j<*zslices); j++) {
+	    fprintf(fp,"%5d",j);
+	    for(i=0; (i<*tblock); i++) {
+	      fprintf(fp,"  %10g",(*Densdevel)[i][9][1][j]);
+	    }
+	    fprintf(fp,"\n");
+	  }
+	  fclose(fp); 
+	}
+	
 }
 
 
@@ -536,7 +555,7 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,int xbins, 
 int gmx_densorder(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "A small program to reduce a two-phase densitydistribution", 
+    "A small program to reduce a two-phase density distribution", 
     "along an axis, computed over a MD trajectory",
     "to 2D surfaces fluctuating in time, by a fit to",
     "a functional profile for interfacial densities",
