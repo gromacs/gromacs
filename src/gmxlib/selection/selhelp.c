@@ -31,6 +31,10 @@
 /*! \internal \file
  * \brief Implementation of functions in selhelp.c.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <macros.h>
 #include <string2.h>
 #include <wman.h>
@@ -57,6 +61,16 @@ static const char *help_common[] = {
     "described under \"syntax\". Available keywords can be found under",
     "\"keywords\", and concrete examples under \"examples\".",
     "Other subtopics give more details on certain aspects.",
+    "\"help all\" prints the help for all subtopics.",
+};
+
+static const char *help_arithmetic[] = {
+    "ARITHMETIC EXPRESSIONS IN SELECTIONS[PAR]",
+
+    "Basic arithmetic evaluation is supported for numeric expressions.",
+    "Supported operations are addition, subtraction, negation, multiplication,",
+    "division, and exponentiation (using ^).",
+    "Result of a division by zero or other illegal operations is undefined.",
 };
 
 static const char *help_cmdline[] = {
@@ -167,13 +181,19 @@ static const char *help_keywords[] = {
 static const char *help_limits[] = {
     "SELECTION LIMITATIONS[PAR]",
 
-    "Arithmetic expressions are not implemented.[PAR]",
-
     "Some analysis programs may require a special structure for the input",
     "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
     "of groups of three or four atoms).",
     "For such programs, it is up to the user to provide a proper selection",
-    "expression that always returns such positions.[PAR]",
+    "expression that always returns such positions.",
+    "[PAR]",
+
+    "Due to technical reasons, having a negative value as the first value in",
+    "expressions like[BR]",
+    "[TT]charge -1 to -0.7[tt][BR]",
+    "result in a syntax error. A workaround is to write[BR]",
+    "[TT]charge {-1 to -0.7}[tt][BR]",
+    "instead.",
 };
 
 static const char *help_positions[] = {
@@ -181,7 +201,7 @@ static const char *help_positions[] = {
 
     "Possible ways of specifying positions in selections are:[PAR]",
 
-    "1. A constant position can be defined as [TT](XX, YY, ZZ)[tt], where",
+    "1. A constant position can be defined as [TT][XX, YY, ZZ][tt], where",
     "[TT]XX[tt], [TT]YY[tt] and [TT]ZZ[tt] are real numbers.[PAR]",
 
     "2. [TT]com of ATOM_EXPR [pbc][tt] or [TT]cog of ATOM_EXPR [pbc][tt]",
@@ -253,7 +273,7 @@ static const char *help_syntax[] = {
     "1. An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
     "[TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
     "is true.[BR]",
-    "2. Atom expressions can be combined with boolean operations such as",
+    "2. Atom expressions can be combined with gmx_boolean operations such as",
     "[TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
     "[TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
     "evaluation order.[BR]",
@@ -283,14 +303,15 @@ static const char *help_syntax[] = {
 };
 
 static const t_selection_help_item helpitems[] = {
-    {NULL,          asize(help_common),    help_common},
-    {"cmdline",     asize(help_cmdline),   help_cmdline},
-    {"evaluation",  asize(help_eval),      help_eval},
-    {"examples",    asize(help_examples),  help_examples},
-    {"keywords",    asize(help_keywords),  help_keywords},
-    {"limitations", asize(help_limits),    help_limits},
-    {"positions",   asize(help_positions), help_positions},
-    {"syntax",      asize(help_syntax),    help_syntax},
+    {NULL,          asize(help_common),     help_common},
+    {"cmdline",     asize(help_cmdline),    help_cmdline},
+    {"syntax",      asize(help_syntax),     help_syntax},
+    {"positions",   asize(help_positions),  help_positions},
+    {"arithmetic",  asize(help_arithmetic), help_arithmetic},
+    {"keywords",    asize(help_keywords),   help_keywords},
+    {"evaluation",  asize(help_eval),       help_eval},
+    {"limitations", asize(help_limits),     help_limits},
+    {"examples",    asize(help_examples),   help_examples},
 };
 
 /*! \brief
@@ -303,7 +324,7 @@ static const t_selection_help_item helpitems[] = {
  */
 static void
 print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
-                   bool bMod)
+                   gmx_bool bMod)
 {
     gmx_sel_symrec_t *symbol;
 
@@ -311,7 +332,7 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
     while (symbol)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-        bool                 bShow;
+        gmx_bool                 bShow;
         bShow = (method->type == type)
             && ((bMod && (method->flags & SMETH_MODIFIER))
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));
@@ -325,7 +346,14 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
             }
             else
             {
-                fprintf(stderr, "%s\n", method->name);
+                const char *symname = _gmx_sel_sym_name(symbol);
+
+                fprintf(stderr, "%s", symname);
+                if (strcmp(symname, method->name) != 0)
+                {
+                    fprintf(stderr, " (synonym for %s)", method->name);
+                }
+                fprintf(stderr, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
@@ -342,13 +370,26 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
 void
 _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
 {
-    const t_selection_help_item *item = 0;
-    int  i;
+    const t_selection_help_item *item = NULL;
+    size_t i;
 
     /* Find the item for the topic */
     if (!topic)
     {
         item = &helpitems[0];
+    }
+    else if (strcmp(topic, "all") == 0)
+    {
+        for (i = 0; i < asize(helpitems); ++i)
+        {
+            item = &helpitems[i];
+            _gmx_sel_print_help(sc, item->topic);
+            if (i != asize(helpitems) - 1)
+            {
+                fprintf(stderr, "\n\n");
+            }
+        }
+        return;
     }
     else
     {
@@ -357,6 +398,7 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
             if (strncmp(helpitems[i].topic, topic, strlen(topic)) == 0)
             {
                 item = &helpitems[i];
+                break;
             }
         }
     }
@@ -388,10 +430,20 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
     /* Special handling of certain pages */
     if (!topic)
     {
+        int len = 0;
+
         /* Print the subtopics on the main page */
         fprintf(stderr, "\nAvailable subtopics:\n");
         for (i = 1; i < asize(helpitems); ++i)
         {
+            int len1 = strlen(helpitems[i].topic) + 2;
+
+            len += len1;
+            if (len > 79)
+            {
+                fprintf(stderr, "\n");
+                len = len1;
+            }
             fprintf(stderr, "  %s", helpitems[i].topic);
         }
         fprintf(stderr, "\n");

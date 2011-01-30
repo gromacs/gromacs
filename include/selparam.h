@@ -41,10 +41,10 @@
 #ifndef SELPARAM_H
 #define SELPARAM_H
 
-#include <typedefs.h>
+#include "typedefs.h"
 
-#include <indexutil.h>
-#include <selvalue.h>
+#include "indexutil.h"
+#include "selvalue.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -185,7 +185,7 @@ typedef struct gmx_ana_selparam_t
 } gmx_ana_selparam_t;
 
 /** Finds a parameter from an array by name. */
-extern gmx_ana_selparam_t *
+gmx_ana_selparam_t *
 gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
 
 #ifdef __cplusplus

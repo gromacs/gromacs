@@ -32,9 +32,12 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
+#include "atoms.h"
+#include "idef.h"
+#include "block.h"
+#include "simple.h"
+#include "symtab.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +82,8 @@ typedef struct {
  */
 #define ggrpnr(groups,egc,i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
 
-/* The global topology struct, based on molecule types */
+/* The global, complete system topology struct, based on molecule types.
+   This structure should contain no data that is O(natoms) in memory. */
 typedef struct {
   char           **name;	/* Name of the topology	       	        */
   gmx_ffparams_t ffparams;
@@ -96,7 +100,7 @@ typedef struct {
   t_symtab	 symtab;        /* The symbol table			*/
 } gmx_mtop_t;
 
-/* The mdrun local topology struct, completely written out */
+/* The mdrun node-local topology struct, completely written out */
 typedef struct {
   t_idef	idef;		/* The interaction function definition	*/
   t_atomtypes   atomtypes;      /* Atomtype properties                  */

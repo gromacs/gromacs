@@ -43,7 +43,7 @@
 
 #include "types/simple.h"
 
-static void nrerror(char error_text[], bool bExit)
+static void nrerror(const char error_text[], gmx_bool bExit)
 {
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);
@@ -239,7 +239,7 @@ static void dump_mat(int n,real **a)
   }
 }
 
-bool gaussj(real **a, int n, real **b, int m)
+gmx_bool gaussj(real **a, int n, real **b, int m)
 {
   int *indxc,*indxr,*ipiv;
   int i,icol=0,irow=0,j,k,l,ll;
@@ -385,7 +385,7 @@ static void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
 }
 
 	
-bool mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
+gmx_bool mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
 	    int ma, int lista[], int mfit, 
 	    real **covar, real **alpha, real *chisq,
 	    void (*funcs)(real,real *,real *,real *),
@@ -456,7 +456,7 @@ bool mrqmin(real x[], real y[], real sig[], int ndata, real a[],
 }
 
 
-bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
+gmx_bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		void (*funcs)(real, real [], real *, real []), 
 		real *alamda)
@@ -484,7 +484,7 @@ bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
       */
 {
   void covsrt(real **covar, int ma, int ia[], int mfit);
-  bool gaussj(real **a, int n, real **b,int m);
+  gmx_bool gaussj(real **a, int n, real **b,int m);
   void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
 	      int ia[], int ma, real **alpha, real beta[], real *chisq,
 	      void (*funcs)(real, real [], real *, real []));

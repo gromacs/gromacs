@@ -60,10 +60,10 @@
 
 static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
 {
-  bool *bE;
+  gmx_bool *bE;
   int  n,k,j,i;
   int  *set;
-  bool bVerbose = TRUE;
+  gmx_bool bVerbose = TRUE;
   
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
@@ -99,7 +99,7 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
-static bool same_time(real t1,real t2)
+static gmx_bool same_time(real t1,real t2)
 {
   const real tol=1e-5;
 
@@ -107,7 +107,7 @@ static bool same_time(real t1,real t2)
 }
 
 
-bool bRgt(double a,double b)
+gmx_bool bRgt(double a,double b)
 {
   double tol = 1e-6;
   
@@ -206,10 +206,10 @@ static int scan_ene_files(char **fnms, int nfiles,
 
 
 static void edit_files(char **fnms,int nfiles,real *readtime, 
-		       real *settime,int *cont_type,bool bSetTime,bool bSort)
+		       real *settime,int *cont_type,gmx_bool bSetTime,gmx_bool bSort)
 {
   int i;
-  bool ok;
+  gmx_bool ok;
   char inputstring[STRLEN],*chptr;
   
   if(bSetTime) {
@@ -425,7 +425,7 @@ static void update_ee_sum(int nre,
     }
     nsteps = fr->nsteps;
     nsum   = fr_nsum;
-  } else if (out_step - *ee_sum_step == nsteps + fr->nsteps) {
+  } else if (out_step + *ee_sum_nsum - *ee_sum_step == nsteps + fr->nsteps) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].eav  +=
@@ -496,10 +496,14 @@ int gmx_eneconv(int argc,char *argv[])
   char       **fnms;
   real       *readtime,*settime,timestep,t1,tadjust;
   char       inputstring[STRLEN],*chptr,buf[22],buf2[22],buf3[22];
-  bool       ok;
+  gmx_bool       ok;
   int        *cont_type;
-  bool       bNewFile,bFirst,bNewOutput;
+  gmx_bool       bNewFile,bFirst,bNewOutput;
   output_env_t oenv;
+  gmx_bool   warned_about_dh=FALSE;
+  t_enxblock *blocks=NULL;
+  int nblocks=0;
+  int nblocks_alloc=0;
   
   t_filenm fnm[] = {
     { efEDR, "-f", NULL,    ffRDMULT },
@@ -507,12 +511,13 @@ int gmx_eneconv(int argc,char *argv[])
   };
 
 #define NFILE asize(fnm)  
-  bool   bWrite;
+  gmx_bool   bWrite;
   static real  delta_t=0.0, toffset=0,scalefac=1;
-  static bool  bSetTime=FALSE;
-  static bool  bSort=TRUE,bError=TRUE;
+  static gmx_bool  bSetTime=FALSE;
+  static gmx_bool  bSort=TRUE,bError=TRUE;
   static real  begin=-1;
   static real  end=-1;
+  gmx_bool  remove_dh=FALSE;
   
   t_pargs pa[] = {
     { "-b",        FALSE, etREAL, {&begin},
@@ -522,11 +527,13 @@ int gmx_eneconv(int argc,char *argv[])
     { "-dt",       FALSE, etREAL, {&delta_t},
       "Only write out frame when t MOD dt = offset" },
     { "-offset",   FALSE, etREAL, {&toffset},
-      "Time offset for -dt option" }, 
+      "Time offset for [TT]-dt[tt] option" }, 
     { "-settime",  FALSE, etBOOL, {&bSetTime}, 
       "Change starting time interactively" },
     { "-sort",     FALSE, etBOOL, {&bSort},
       "Sort energy files (not frames)"},
+    { "-rmdh",     FALSE, etBOOL, {&remove_dh},
+      "Remove free energy block data" },
     { "-scalefac", FALSE, etREAL, {&scalefac},
       "Multiply energy component by this factor" },
     { "-error",    FALSE, etBOOL, {&bError},
@@ -657,11 +664,13 @@ int gmx_eneconv(int argc,char *argv[])
 	}
 
 	fro->nsteps = ee_sum_nsteps;
+	fro->dt     = fr->dt;
 
 	if (ee_sum_nsum <= 1) {
 	  fro->nsum = 0;
 	} else {
-	  fro->nsum = ee_sum_nsum;
+	  fro->nsum = gmx_large_int_to_int(ee_sum_nsum,
+					   "energy average summation");
 	  /* Copy the energy sums */
 	  for(i=0; i<nre; i++) {
 	    fro->ener[i].esum = ee_sum[i].esum;
@@ -682,12 +691,78 @@ int gmx_eneconv(int argc,char *argv[])
 	  }
 	}
 	/* Copy restraint stuff */
-	fro->ndisre       = fr->ndisre;
+	/*fro->ndisre       = fr->ndisre;
 	fro->disre_rm3tav = fr->disre_rm3tav;
-	fro->disre_rt     = fr->disre_rt;
+	fro->disre_rt     = fr->disre_rt;*/
 	fro->nblock       = fr->nblock;
-	fro->nr           = fr->nr;
+	/*fro->nr           = fr->nr;*/
 	fro->block        = fr->block;
+
+        /* check if we have blocks with delta_h data and are throwing 
+           away data */
+        if (fro->nblock > 0)
+        {
+            if (remove_dh)
+            {
+                int i;
+                if (!blocks || nblocks_alloc < fr->nblock)
+                {
+                    /* we pre-allocate the blocks */
+                    nblocks_alloc=fr->nblock;
+                    snew(blocks, nblocks_alloc);
+                }
+                nblocks=0; /* number of blocks so far */
+
+                for(i=0;i<fr->nblock;i++)
+                {
+                    if ( (fr->block[i].id != enxDHCOLL) &&
+                         (fr->block[i].id != enxDH) &&
+                         (fr->block[i].id != enxDHHIST) )
+                    {
+                        /* copy everything verbatim */
+                        blocks[nblocks] = fr->block[i];
+                        nblocks++;
+                    }
+                }
+                /* now set the block pointer to the new blocks */
+                fro->nblock = nblocks;
+                fro->block  = blocks;
+            }
+            else if (delta_t > 0)
+            {
+                if (!warned_about_dh) 
+                {
+                    for(i=0;i<fr->nblock;i++)
+                    {
+                        if (fr->block[i].id == enxDH ||
+                            fr->block[i].id == enxDHHIST)
+                        {
+                            int size;
+                            if (fr->block[i].id == enxDH )
+                            {
+                                size=fr->block[i].sub[2].nr;
+                            }
+                            else
+                            {
+                                size=fr->nsteps;
+                            }
+                            if (size>0)
+                            {
+                                printf("\nWARNING: %s contains delta H blocks or histograms for which\n"
+                                       "         some data is thrown away on a block-by-block basis, where each block\n"
+                                       "         contains up to %d samples.\n"
+                                       "         This is almost certainly not what you want.\n"
+                                       "         Use the -rmdh option to throw all delta H samples away.\n"
+                                       "         Use g_energy -odh option to extract these samples.\n",
+                                       fnms[f], size);
+                                warned_about_dh=TRUE;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 	
 	do_enx(out,fro);
 	if (noutfr % 1000 == 0)

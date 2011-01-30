@@ -1,0 +1,21 @@
+*******************************************************************************
+*                    CHARMM port writted by                                   *
+*                    Par Bjelkmar, Per Larsson, Michel Cuendet,               *
+*                    Berk Hess and Erik Lindahl.                              *
+*                    Correspondance:                                          *
+*                    bjelkmar@cbr.su.se or lindahl@cbr.su.se                  *
+*******************************************************************************
+
+
+#define _FF_CHARMM
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1	2	yes	1.0	1.0
+
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
+#include "gb.itp"
+#include "cmap.itp"
+; Nucleic acids nonbonded and bonded parameters"
+#include "ffnanonbonded.itp"
+#include "ffnabonded.itp"

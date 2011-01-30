@@ -25,13 +25,15 @@ chomp $dir;
 	     "completion.zsh", "average", "completion.bash", "luck", 
 	     "xplor2gmx.pl", "mptest", "ffscan", "demux.pl", "gentop", "mkyaw",
 	     "tune_dip", "tune_pol", "hrefify", "options", "genvsites",
-	     "pdtest", "bastat", "ehole" );
+	     "pdtest", "bastat", "ehole", "GMXRC.bash", "GMXRC.csh",
+             "GMXRC.zsh" );
 
 %desc = ();
 open(PPP,"$ptxt") || die("Can't open $ptxt");
 $npp = 0;
 while($line = <PPP>) {
   if ((index($line,"\|") > 0) && (index($line,"HEAD") < 0)) {
+    $line =~ s/ -/ \\-/g;
     @tmp = split('\|',$line);
     if ($#tmp == 1) {
       if (!defined $desc{$tmp[0]}) {

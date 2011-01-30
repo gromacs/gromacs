@@ -1,0 +1,4 @@
+; atom renaming specification
+; residue	gromacs	forcefield
+  *		H	HN
+

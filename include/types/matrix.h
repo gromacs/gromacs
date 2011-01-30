@@ -32,14 +32,12 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include "simple.h"
 
 typedef struct {
   real r,g,b;
@@ -76,13 +74,23 @@ typedef struct {
   char legend[256];
   char label_x[256];
   char label_y[256];
-  bool bDiscrete;
+  gmx_bool bDiscrete;
   real *axis_x;
   real *axis_y;
   t_matelmt **matrix;
   int nmap;
   t_mapping *map;
 } t_matrix;
+  /* title      matrix title
+   * legend     label for the continuous legend
+   * label_x    label for the x-axis
+   * label_y    label for the y-axis
+   * nx, ny     size of the matrix
+   * axis_x[]   the x-ticklabels
+   * axis_y[]   the y-ticklables
+   * *matrix[]  element x,y is matrix[x][y]
+   * nmap       number of color levels for the output(?)
+   */
 
 #ifdef __cplusplus
 }

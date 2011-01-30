@@ -209,7 +209,7 @@ static void print_nbt (FILE *out,char *title,gpp_atomtype_t at,
 
 void print_bt(FILE *out, directive d, gpp_atomtype_t at,
 	      int ftype,int fsubtype,t_params plist[],
-	      bool bFullDih)
+	      gmx_bool bFullDih)
 {
   /* This dihp is a DIRTY patch because the dih-types do not use
    * all four atoms to determine the type.
@@ -217,7 +217,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
   const int dihp[2][2] = { { 1,2 }, { 0,3 } };
   t_params *bt;
   int      i,j,f,nral,nrfp;
-  bool     bDih=FALSE,bSwapParity;
+  gmx_bool     bDih=FALSE,bSwapParity;
   
   bt=&(plist[ftype]);
   
@@ -354,7 +354,7 @@ void print_blocka(FILE *out, const char *szName,
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
   atom_id i;
-  bool    have_excl;
+  gmx_bool    have_excl;
   int     j;
   
   have_excl=FALSE;
@@ -376,13 +376,29 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
   }
 }
 
-void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr)
+static double get_residue_charge(const t_atoms *atoms,int at)
 {
-  int  i;
+  int ri;
+  double q;
+  
+  ri = atoms->atom[at].resind;
+  q = 0;
+  while (at < atoms->nr && atoms->atom[at].resind == ri) {
+    q += atoms->atom[at].q;
+    at++;
+  }
+
+  return q;
+}
+
+void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
+		 gmx_bool bRTPresname)
+{
+  int  i,ri;
   int  tpA,tpB;
   const char *as;
   char *tpnmA,*tpnmB;
-  double qtot;
+  double qres,qtot;
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
@@ -398,14 +414,31 @@ void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr)
   if (at->nres) {
     /* if the information is present... */
     for (i=0; (i < at->nr); i++) {
+      ri = at->atom[i].resind;
+      if ((i == 0 || ri != at->atom[i-1].resind) &&
+	  at->resinfo[ri].rtp != NULL) {
+	qres = get_residue_charge(at,i);
+	fprintf(out,"; residue %3d %-3s rtp %-4s q ",
+		at->resinfo[ri].nr,
+		*at->resinfo[ri].name,
+		*at->resinfo[ri].rtp);
+	if (fabs(qres) < 0.001) {
+	  fprintf(out," %s","0.0");
+	} else {
+	  fprintf(out,"%+3.1f",qres);
+	}
+	fprintf(out,"\n");
+      }
       tpA = at->atom[i].type;
       if ((tpnmA = get_atomtype_name(tpA,atype)) == NULL)
 	gmx_fatal(FARGS,"tpA = %d, i= %d in print_atoms",tpA,i);
       
       fprintf(out,"%6d %10s %6d%c %5s %6s %6d %10g %10g",
 	      i+1,tpnmA,
-	      at->resinfo[at->atom[i].resind].nr,
-	      at->resinfo[at->atom[i].resind].ic,
+	      at->resinfo[ri].nr,
+	      at->resinfo[ri].ic,
+	      bRTPresname ?
+	      *(at->resinfo[at->atom[i].resind].rtp) :
 	      *(at->resinfo[at->atom[i].resind].name),
 	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);

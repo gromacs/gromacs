@@ -35,7 +35,29 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
+
 
 int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                   void* recvbuf, int recvcount, tMPI_Datatype recvtype,
@@ -50,7 +72,6 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     size_t recvsize=recvtype->size*recvcount;
     int n_remaining;
     struct tmpi_thread *cur=tMPI_Get_current();
-    bool last_found=TRUE;
 
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_start(cur); 
@@ -86,9 +107,15 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendsize*i;
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
+    tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
+
     /* post availability */
-    tMPI_Atomic_memory_barrier();
-    tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
+    for(i=0;i<cev->N;i++)
+    {
+        if (i!=myrank)
+            tMPI_Event_signal( &(cev->met[i].recv_ev) );
+    }
 
     /* we don't do the copy buffer thing here because it's pointless:
        the processes have to synchronize anyway, because they all
@@ -102,26 +129,21 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     cev->met[myrank].read_data[myrank]=TRUE;
     /* and poll data availability */
     n_remaining=cev->N-1;
-#if defined(TMPI_PROFILE)
-    tMPI_Profile_wait_start(cur);
-#endif
     while(n_remaining>0)
     {
-        if (!last_found)
-        {
-            /* only yield if the last iteration didn't find anything */
-            TMPI_YIELD_WAIT(cur);
-        }
-        last_found=FALSE;
-
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_start(cur);
+#endif
+        tMPI_Event_wait( &(cev->met[myrank]).recv_ev ) ;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
+#endif
         for(i=0;i<cev->N;i++)
         {
             if ((! cev->met[myrank].read_data[i]) && 
                 (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct))
             {
-#if defined(TMPI_PROFILE) 
-                tMPI_Profile_wait_start(cur);
-#endif
+                tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                 tMPI_Mult_recv(comm, cev, i, myrank, TMPI_ALLTOALL_TAG,
                                recvtype, recvsize, (char*)recvbuf+recvsize*i, 
                                &ret);
@@ -129,16 +151,9 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                     return ret;
                 cev->met[myrank].read_data[i]=TRUE;
                 n_remaining--;
-                last_found=TRUE;
-#if defined(TMPI_PROFILE) 
-                tMPI_Profile_wait_start(cur);
-#endif
             }
         }
     }
-#if defined(TMPI_PROFILE) 
-    tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
-#endif
 
 
     /* and wait until everybody is done copying our data */
@@ -165,7 +180,6 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     int i;
     int n_remaining;
     struct tmpi_thread *cur=tMPI_Get_current();
-    bool last_found=TRUE;
 
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_start(cur); 
@@ -201,12 +215,15 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
         cev->met[myrank].buf[i]=(char*)sendbuf+sendtype->size*sdispls[i];
         cev->met[myrank].read_data[i]=FALSE;
     }
+    tMPI_Atomic_memory_barrier_rel();
+    tMPI_Atomic_set(&(cev->met[myrank].current_sync), synct);
 
     /* post availability */
-    tMPI_Atomic_memory_barrier();
-
-    tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
-
+    for(i=0;i<cev->N;i++)
+    {
+        if (i!=myrank)
+            tMPI_Event_signal( &(cev->met[i].recv_ev) );
+    }
 
     /* we don't do the copy buffer thing here because it's pointless:
        the processes have to synchronize anyway, because they all
@@ -221,28 +238,22 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     cev->met[myrank].read_data[myrank]=TRUE;
 
     /* and poll data availability */
-#if defined(TMPI_PROFILE) 
-    tMPI_Profile_wait_start(cur);
-#endif
     n_remaining=cev->N-1;
     while(n_remaining>0)
     {
-        if (!last_found)
-        {
-            /* only yield if the last iteration didn't find anything */
-            TMPI_YIELD_WAIT(cur);
-        }
-        last_found=FALSE;
-
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_start(cur);
+#endif
+        tMPI_Event_wait( &(cev->met[myrank]).recv_ev ) ;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
+#endif
         for(i=0;i<cev->N;i++)
         {
             if ((! cev->met[myrank].read_data[i]) && 
                 (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct) )
             {
-#if defined(TMPI_PROFILE)
-                tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
-                /* we don't count transfers as waits */
-#endif
+                tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                 tMPI_Mult_recv(comm, cev, i, myrank, TMPI_ALLTOALLV_TAG,
                                recvtype, recvtype->size*recvcounts[i],
                                (char*)recvbuf+recvtype->size*rdispls[i], &ret);
@@ -250,16 +261,9 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
                     return ret;
                 cev->met[myrank].read_data[i]=TRUE;
                 n_remaining--;
-                last_found=TRUE;
-#if defined(TMPI_PROFILE)
-                tMPI_Profile_wait_start(cur);
-#endif
             }
         }
     }
-#if defined(TMPI_PROFILE)
-    tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
-#endif
 
     /* and wait until everybody is done copying our data */
     tMPI_Wait_for_others(cev, myrank);

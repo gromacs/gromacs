@@ -86,7 +86,7 @@ static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
 void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
+                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
     int i;
@@ -116,7 +116,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
             oenv->program_name=strdup(argvzero);
     }
     if (oenv->program_name == NULL)
-        oenv->program_name="GROMACS";
+        oenv->program_name = strdup("GROMACS");
    
     /* copy command line */ 
     if (argv) 
@@ -141,6 +141,14 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
 void output_env_init_default(output_env_t oenv)
 {
     output_env_init(oenv, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
+}
+
+
+void output_env_done(output_env_t oenv)
+{
+    sfree(oenv->program_name);
+    sfree(oenv->cmd_line);
+    sfree(oenv);
 }
 
 
@@ -210,7 +218,7 @@ void output_env_conv_times(const output_env_t oenv, int n, real *time)
             time[i] *= fact;
 }
 
-bool output_env_get_view(const output_env_t oenv)
+gmx_bool output_env_get_view(const output_env_t oenv)
 {
     return oenv->view;
 }
@@ -229,10 +237,11 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
 {
     const char *pr,*ret;
     pr=ret=oenv->program_name; 
-    if ((pr=strrchr(ret,'/')) != NULL)
+    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
-    /*else
-        ret=ret;*/
+    /* Strip away the libtool prefix if it's still there. */
+    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+        ret = ret + 3;
     return ret;
 }
 

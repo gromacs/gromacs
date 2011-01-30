@@ -43,6 +43,7 @@
 #include "sysstuff.h"
 #include "string.h"
 #include "typedefs.h"
+#include "statutil.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "gstat.h"
@@ -111,6 +112,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
   int    slindex_x,slindex_y,slindex_z;
   int    ***sl_count;
   real   onethird=1.0/3.0;
+  gmx_rmpbc_t gpbc;
   
   /*  dmat = init_mat(maxidx, FALSE); */
 
@@ -139,8 +141,8 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
   snew(skmol,maxidx);
 
   /* Must init pbc every step because of pressure coupling */
-  set_pbc(&pbc,ePBC,box);
-  rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  gmx_rmpbc(gpbc,natoms,box,x);
 
   *sgmean = 0.0;
   *skmean = 0.0;
@@ -256,9 +258,8 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 /*Determines interface from tetrahedral order parameter in box with specified binwidth.  */
 /*Outputs interface positions(bins), the number of timeframes, and the number of surface-mesh points in xy*/ 
 
-static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const char *fnTRX,
-				       real binw, int tblock, 
-				       int *nframes,  int *nslicex, int *nslicey, 
+static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const char *fnTRX, real binw, int tblock, 
+					int *nframes,  int *nslicex, int *nslicey, 
 				       real sgang1,real sgang2,real ****intfpos,
 				       output_env_t oenv)
 {
@@ -268,7 +269,7 @@ static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const
   t_topology top;
   int        ePBC;
   char       title[STRLEN],subtitle[STRLEN];
-  int        status;
+  t_trxstatus *status;
   int        natoms;
   real       t;
   rvec       *xtop,*x;
@@ -443,7 +444,7 @@ snew(perm,nslicez);  //permutation array for sorting along normal coordinate
 
 }
 
-void writesurftoxpms(real ***surf, int tblocks,int xbins, int ybins, real bw,char **outfiles,int maplevels ) 
+static void writesurftoxpms(real ***surf, int tblocks,int xbins, int ybins, real bw,char **outfiles,int maplevels ) 
 {
 
   char numbuf[8];
@@ -503,7 +504,7 @@ sfree(yticks);
 }
 
 
-void writeraw(real ***surf, int tblocks,int xbins, int ybins,char **fnms){
+static void writeraw(real ***surf, int tblocks,int xbins, int ybins,char **fnms){
 	FILE *raw1, *raw2;
     	int i,j,n;
 	
@@ -546,8 +547,8 @@ int gmx_hydorder(int argc,char *argv[])
   static real binwidth = 1.0;                  /* binwidth in mesh           */
   static real sg1     = 1;
   static real sg2     = 1;		   /* order parameters for bulk phases */
-  static bool bFourier = FALSE;
-  static bool bRawOut = FALSE;
+  static gmx_bool bFourier = FALSE;
+  static gmx_bool bRawOut = FALSE;
   int frames,xslices,yslices;			/* Dimensions of interface arrays*/
   real ***intfpos;				/* Interface arrays (intfnr,t,xy) -potentially large */
   static char *normal_axis[] = { NULL, "z", "x", "y", NULL };
@@ -580,13 +581,13 @@ int gmx_hydorder(int argc,char *argv[])
   /*Filenames*/
   const char *ndxfnm,*tpsfnm,*trxfnm;
   char **spectra,**intfn, **raw;
-  int nfspect,nfxpm, nfraw;
-  output_env_t oenv;	
+  int nfspect,nfxpm, nfraw;	
+  output_env_t oenv;
   
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL,&oenv);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   bFourier= opt2bSet("-Spect",NFILE,fnm);
   bRawOut = opt2bSet("-or",NFILE,fnm);
   
@@ -621,8 +622,7 @@ int gmx_hydorder(int argc,char *argv[])
     if(nfxpm!=2){
 	gmx_fatal(FARGS,"No or not correct number (2) of output-files: %d",nfxpm);
     }
-    calc_tetra_order_interface(ndxfnm,tpsfnm,trxfnm,binwidth,nsttblock,&frames,&xslices,&yslices,
-			       sg1,sg2,&intfpos,oenv);
+    calc_tetra_order_interface(ndxfnm,tpsfnm,trxfnm,binwidth,nsttblock,&frames,&xslices,&yslices,sg1,sg2,&intfpos,oenv);
     writesurftoxpms(intfpos,frames,xslices,yslices,binwidth,intfn,nlevels);
     
     if(bFourier){

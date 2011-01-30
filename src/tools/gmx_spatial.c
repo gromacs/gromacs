@@ -32,6 +32,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 
 #include "statutil.h"
@@ -58,59 +62,59 @@ static void mequit(void){
 int gmx_spatial(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_spatial calculates the spatial distribution function and ",
+    "[TT]g_spatial[tt] calculates the spatial distribution function and ",
     "outputs it in a form that can be read by VMD as Gaussian98 cube format. ",
-    "This was developed from template.c (gromacs-3.3). ",
+    "This was developed from template.c (GROMACS-3.3). ",
     "For a system of 32K atoms and a 50ns trajectory, the SDF can be generated ",
     "in about 30 minutes, with most of the time dedicated to the two runs through ",
-    "trjconv that are required to center everything properly. ",
-    "This also takes a whole bunch of space (3 copies of the xtc file). ",
+    "[TT]trjconv[tt] that are required to center everything properly. ",
+    "This also takes a whole bunch of space (3 copies of the [TT].xtc[tt] file). ",
     "Still, the pictures are pretty and very informative when the fitted selection is properly made. ",
     "3-4 atoms in a widely mobile group like a free amino acid in solution works ",
     "well, or select the protein backbone in a stable folded structure to get the SDF ",
     "of solvent and look at the time-averaged solvation shell. ",
     "It is also possible using this program to generate the SDF based on some arbitrarty ",
-    "Cartesian coordinate. To do that, simply omit the preliminary trjconv steps. \n",
+    "Cartesian coordinate. To do that, simply omit the preliminary [TT]trjconv[tt] steps. \n",
     "USAGE: \n",
-    "1. Use make_ndx to create a group containing the atoms around which you want the SDF \n",
-    "2. trjconv -s a.tpr -f a.xtc -o b.xtc -center tric -ur compact -pbc none \n",
-    "3. trjconv -s a.tpr -f b.xtc -o c.xtc -fit rot+trans \n",
-    "4. run g_spatial on the xtc output of step #3. \n",
+    "1. Use [TT]make_ndx[tt] to create a group containing the atoms around which you want the SDF \n",
+    "2. [TT]trjconv -s a.tpr -f a.xtc -o b.xtc -center tric -ur compact -pbc none[tt] \n",
+    "3. [TT]trjconv -s a.tpr -f b.xtc -o c.xtc -fit rot+trans[tt] \n",
+    "4. run [TT]g_spatial[tt] on the [TT].xtc[tt] output of step #3. \n",
     "5. Load grid.cube into VMD and view as an isosurface. \n",
-    "*** Systems such as micelles will require trjconv -pbc cluster between steps 1 and 2\n",
+    "*** Systems such as micelles will require [TT]trjconv -pbc cluster[tt] between steps 1 and 2\n",
     "WARNINGS: \n",
     "The SDF will be generated for a cube that contains all bins that have some non-zero occupancy. ",
-    "However, the preparatory -fit rot+trans option to trjconv implies that your system will be rotating ",
+    "However, the preparatory [TT]-fit rot+trans[tt] option to [TT]trjconv[tt] implies that your system will be rotating ",
     "and translating in space (in order that the selected group does not). Therefore the values that are ",
     "returned will only be valid for some region around your central group/coordinate that has full overlap ",
     "with system volume throughout the entire translated/rotated system over the course of the trajectory. ",
     "It is up to the user to ensure that this is the case. \n",
     "BUGS: \n",
     "When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected ",
-    "and the program is halted prior to the fault while displaying a warning message suggesting the use of the -nab ",
+    "and the program is halted prior to the fault while displaying a warning message suggesting the use of the [TT]-nab[tt] ",
     "option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again ",
-    "with an increased -nab value. \n",
+    "with an increased [TT]-nab[tt] value. \n",
     "RISKY OPTIONS: \n",
     "To reduce the amount of space and time required, you can output only the coords ",
-    "that are going to be used in the first and subsequent run through trjconv. ",
-    "However, be sure to set the -nab option to a sufficiently high value since ",
-    "memory is allocated for cube bins based on the initial coords and the -nab ",
+    "that are going to be used in the first and subsequent run through [TT]trjconv[tt]. ",
+    "However, be sure to set the [TT]-nab[tt] option to a sufficiently high value since ",
+    "memory is allocated for cube bins based on the initial coords and the [TT]-nab[tt] ",
     "(Number of Additional Bins) option value. \n"
   };
   
-  static bool bPBC=FALSE;
-  static bool bSHIFT=FALSE;
+  static gmx_bool bPBC=FALSE;
+  static gmx_bool bSHIFT=FALSE;
   static int iIGNOREOUTER=-1; /*Positive values may help if the surface is spikey */
-  static bool bCUTDOWN=TRUE;
+  static gmx_bool bCUTDOWN=TRUE;
   static real rBINWIDTH=0.05; /* nm */
-  static bool bCALCDIV=TRUE;
+  static gmx_bool bCALCDIV=TRUE;
   static int iNAB=4;
 
   t_pargs pa[] = {
     { "-pbc",      FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions for computing distances" },
     { "-div",      FALSE, etBOOL, {&bCALCDIV},
-      "Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE (-nodiv) to get accurate counts per frame" },
+      "Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE ([TT]-nodiv[tt]) to get accurate counts per frame" },
     { "-ign",      FALSE, etINT, {&iIGNOREOUTER},
       "Do not display this number of outer cubes (positive values may reduce boundary speckles; -1 ensures outer surface is visible)" },
     /*    { "-cut",      bCUTDOWN, etBOOL, {&bCUTDOWN},*/
@@ -129,7 +133,7 @@ int gmx_spatial(int argc,char *argv[])
   t_trxframe fr;
   rvec       *xtop,*shx[26];
   matrix     box,box_pbc;
-  int        status;
+  t_trxstatus *status;
   int        flags = TRX_READ_X;
   t_pbc      pbc;
   t_atoms    *atoms;
@@ -147,6 +151,7 @@ int gmx_spatial(int argc,char *argv[])
   long tot,max,min;
   double norm;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
   t_filenm fnm[] = {
     { efTPS,  NULL,  NULL, ffREAD },   /* this is for the topology */
@@ -206,13 +211,16 @@ int gmx_spatial(int argc,char *argv[])
   numfr=0;
   minx=miny=minz=999;
   maxx=maxy=maxz=0;
+
+  if (bPBC)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   /* This is the main loop over frames */
   do {
     /* Must init pbc every step because of pressure coupling */
 
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,ePBC,natoms,box,fr.x,fr.x);
+      gmx_rmpbc_trxfr(gpbc,&fr);
       set_pbc(&pbc,ePBC,box_pbc);
     }
 
@@ -241,6 +249,9 @@ int gmx_spatial(int argc,char *argv[])
     /* printf("%f\t%f\t%f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]); */
 
   } while(read_next_frame(oenv,status,&fr));
+
+  if (bPBC)
+    gmx_rmpbc_done(gpbc);
 
   if(!bCUTDOWN){
     minx=miny=minz=0;

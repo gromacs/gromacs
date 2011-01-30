@@ -69,7 +69,7 @@ static void plot_rama(FILE *out,t_xrama *xr)
 int gmx_rama(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rama selects the Phi/Psi dihedral combinations from your topology file",
+    "[TT]g_rama[tt] selects the Phi/Psi dihedral combinations from your topology file",
     "and computes these as a function of time.",
     "Using simple Unix tools such as [IT]grep[it] you can select out", 
     "specific residues."

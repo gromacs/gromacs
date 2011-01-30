@@ -35,6 +35,10 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -56,7 +60,7 @@ files.
 
 /* Group query & manipulation functions */
 
-bool tMPI_In_group(tMPI_Group group)
+tmpi_bool tMPI_In_group(tMPI_Group group)
 {
     int i;
     struct tmpi_thread *cur;

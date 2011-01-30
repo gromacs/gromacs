@@ -121,7 +121,7 @@ int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit)
     return index;
 }
 
-void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
+void add_ebin(t_ebin *eb,int index,int nener,real ener[],gmx_bool bSum)
 {
     int      i,m;
     double   e,sum,sigma,invmm,diff;
@@ -174,7 +174,7 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
     }
 }
 
-void ebin_increase_count(t_ebin *eb,bool bSum)
+void ebin_increase_count(t_ebin *eb,gmx_bool bSum)
 {
     eb->nsteps++;
     eb->nsteps_sim++;
@@ -194,7 +194,7 @@ void reset_ebin_sums(t_ebin *eb)
 }
 
 void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
-             int prmode,bool bPrHead)
+             int prmode,gmx_bool bPrHead)
 {
     int  i,j,i0;
     real ee=0;
@@ -202,7 +202,7 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
     char buf[30];
 
     rc = 0;
-	
+
     if (index < 0)
     {
         gmx_fatal(FARGS,"Invalid index in pr_ebin: %d",index);
@@ -215,11 +215,12 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
     {
         nener = index + nener;
     }
-	for(i=index; (i<nener) && rc>=0; ) {
-		if (bPrHead)
+    for(i=index; (i<nener) && rc>=0; ) 
+    {
+        if (bPrHead)
         {
-			i0=i;
-			for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
+            i0=i;
+            for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
             {
                 if (strncmp(eb->enm[i].name,"Pres",4) == 0)
                 {
@@ -232,33 +233,34 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
                     rc = fprintf(fp,"%15s",eb->enm[i].name);
                 }
             }
-			
-			if (rc >= 0)
+
+            if (rc >= 0)
             {
-				rc = fprintf(fp,"\n");
+                rc = fprintf(fp,"\n");
             }
-            
-			i=i0;
-		}
-		for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
+
+            i=i0;
+        }
+        for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
         {
             switch (prmode) {
-            case eprNORMAL: ee = eb->e[i].e; break;
-            case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
-            default: gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
+                case eprNORMAL: ee = eb->e[i].e; break;
+                case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
+                default: gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",
+                                   prmode);
             }
-			
-			rc = fprintf(fp,"   %12.5e",ee);
-		}
-		if (rc >= 0)
-        {
-			rc = fprintf(fp,"\n");
+
+            rc = fprintf(fp,"   %12.5e",ee);
         }
-	}
-	if (rc < 0)
-	{ 
-		gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
-	}
+        if (rc >= 0)
+        {
+            rc = fprintf(fp,"\n");
+        }
+    }
+    if (rc < 0)
+    { 
+        gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
+    }
 }
 
 #ifdef DEBUGEBIN

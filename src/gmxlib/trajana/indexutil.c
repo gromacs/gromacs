@@ -81,7 +81,7 @@ gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps)
  */
 void
 gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
-                      atom_id **index, char **name, bool bFree)
+                      atom_id **index, char **name, gmx_bool bFree)
 {
     int  i;
 
@@ -253,7 +253,7 @@ gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src)
  * \param[out] g     Index group structure.
  * \returns    TRUE if \p g is empty, i.e., has 0 index groups.
  */
-bool
+gmx_bool
 gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
 {
     return g->nr == 0;
@@ -282,7 +282,7 @@ gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
  * \param[in]  n    Number of the group to extract.
  * \returns TRUE if \p n is a valid group in \p src, FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n)
 {
     if (n < 0 || n >= src->nr)
@@ -304,7 +304,7 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n
  * Uses the Gromacs routine find_group() to find the actual group;
  * the comparison is case-insensitive.
  */
-bool
+gmx_bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name)
 {
     int    i;
@@ -453,7 +453,7 @@ gmx_ana_index_deinit(gmx_ana_index_t *g)
  * A deep copy of the name is only made if \p bAlloc is TRUE.
  */
 void
-gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
+gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, gmx_bool bAlloc)
 {
     dest->isize = src->isize;
     if (dest->isize > 0)
@@ -548,7 +548,7 @@ gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
  * \returns    TRUE if the index group is sorted and has no duplicates,
  *   FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 {
     int  i;
@@ -590,7 +590,7 @@ gmx_ana_index_sort(gmx_ana_index_t *g)
  * \param[in]  b      Index group to check.
  * \returns    TRUE if \p a and \p b are equal, FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i;
@@ -618,7 +618,7 @@ gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
  * If the elements are not in the same order in both groups, the function
  * fails. However, the groups do not need to be sorted.
  */
-bool
+gmx_bool
 gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i, j;
@@ -847,7 +847,7 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  */
 void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
-                         e_index_t type, bool bComplete)
+                         e_index_t type, gmx_bool bComplete)
 {
     int      i, j, ai;
     int      id, cur;
@@ -993,7 +993,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
  *
  * The atoms in \p g are assumed to be sorted.
  */
-bool
+gmx_bool
 gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
 {
     int  i, j, bi;
@@ -1034,7 +1034,7 @@ gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
  *
  * The atoms in \p g and \p b->a are assumed to be in the same order.
  */
-bool
+gmx_bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
 {
     int  i, j, bi;
@@ -1078,7 +1078,7 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
  * If \p type is \ref INDEX_UNKNOWN or \ref INDEX_ALL, the return value is
  * always FALSE.
  */
-bool
+gmx_bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
                                  t_topology *top)
 {
@@ -1240,6 +1240,37 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
 }
 
 /*!
+ * \param[in,out] m    Mapping structure to initialize.
+ * \param[in]     b    Block information to use for data.
+ *
+ * Frees some memory that is not necessary for static index group mappings.
+ * Internal pointers are set to point to data in \p b; it is the responsibility
+ * of the caller to ensure that the block information matches the contents of
+ * the mapping.
+ * After this function has been called, the index group provided to
+ * gmx_ana_indexmap_update() should always be the same as \p g given here.
+ *
+ * This function breaks modularity of the index group mapping interface in an
+ * ugly way, but allows reducing memory usage of static selections by a
+ * significant amount.
+ */
+void
+gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
+{
+    sfree(m->mapid);
+    m->mapid = m->orgid;
+    sfree(m->b.index);
+    m->b.nalloc_index = 0;
+    m->b.index = b->index;
+    sfree(m->mapb.index);
+    m->mapb.nalloc_index = 0;
+    m->mapb.index = m->b.index;
+    sfree(m->b.a);
+    m->b.nalloc_a = 0;
+    m->b.a = b->a;
+}
+
+/*!
  * \param[in,out] dest Destination data structure.
  * \param[in]     src  Source mapping.
  * \param[in]     bFirst If TRUE, memory is allocated for \p dest and a full
@@ -1249,7 +1280,7 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
  * \p dest should have been initialized somehow (calloc() is enough).
  */
 void
-gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst)
+gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_bool bFirst)
 {
     if (bFirst)
     {
@@ -1282,10 +1313,10 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
  */
 void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                        bool bMaskOnly)
+                        gmx_bool bMaskOnly)
 {
     int i, j, bi, bj;
-    bool bStatic;
+    gmx_bool bStatic;
 
     /* Process the simple cases first */
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
@@ -1401,10 +1432,22 @@ void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
 {
     sfree(m->refid);
-    sfree(m->mapid);
-    sfree(m->mapb.index);
+    if (m->mapid != m->orgid)
+    {
+        sfree(m->mapid);
+    }
+    if (m->mapb.nalloc_index > 0)
+    {
+        sfree(m->mapb.index);
+    }
     sfree(m->orgid);
-    sfree(m->b.index);
-    sfree(m->b.a);
+    if (m->b.nalloc_index > 0)
+    {
+        sfree(m->b.index);
+    }
+    if (m->b.nalloc_a > 0)
+    {
+        sfree(m->b.a);
+    }
     gmx_ana_indexmap_clear(m);
 }

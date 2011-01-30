@@ -217,12 +217,12 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 int gmx_tcaf(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_tcaf computes tranverse current autocorrelations.",
+    "[TT]g_tcaf[tt] computes tranverse current autocorrelations.",
     "These are used to estimate the shear viscosity eta.",
     "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
-    "(1,1,0) and (1,-1,0) each also in the 2 other plains (these vectors",
+    "(1,1,0) and (1,-1,0) each also in the 2 other planes (these vectors",
     "are not independent) and (1,1,1) and the 3 other box diagonals (also",
     "not independent). For each k-vector the sine and cosine are used, in",
     "combination with the velocity in 2 perpendicular directions. This gives",
@@ -250,7 +250,7 @@ int gmx_tcaf(int argc,char *argv[])
     "is very important for obtaining a good fit."
   };
   
-  static bool bMol=FALSE,bK34=FALSE;
+  static gmx_bool bMol=FALSE,bK34=FALSE;
   static real wt=5;
   t_pargs pa[] = {
     { "-mol", FALSE, etBOOL, {&bMol},
@@ -265,13 +265,14 @@ int gmx_tcaf(int argc,char *argv[])
   int        ePBC;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS,bTop; /* ,bCubic; */
+  gmx_bool       bTPS,bTop; /* ,bCubic; */
   int        gnx;
   atom_id    *index,*atndx=NULL,at;
   char       *grpname;
   char       title[256];
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
-  int        status,nframes,n_alloc,i,j,k,d;
+  t_trxstatus *status;
+  int        nframes,n_alloc,i,j,k,d;
   rvec       mv_mol,cm_mol,kfac[NK];
   int        nkc,nk,ntc;
   real       **c1,**tc;

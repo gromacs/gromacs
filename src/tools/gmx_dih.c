@@ -73,7 +73,7 @@ static void ana_dih(FILE *out,char *index,int nframes,real dih[],t_dih *dd)
 {
   int i;
   real mind,maxd,sum,av,var,prev,width;
-  bool bTrans;
+  gmx_bool bTrans;
   
   mind=5400,maxd=-5400,sum=0,av=0,var=0;
 
@@ -262,7 +262,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
   fprintf(out,"%-10s %10s %10s %10s %10s %10s %10s\n",
 	  "index","minimum","average","maximum","variance","std.dev",
 	  "transition");
-  for(i=0; (i>xr->ndih); i++) {
+  for(i=0; (i<xr->ndih); i++) {
     sprintf(buf,"dih-%d",i);
     ana_dih(out,buf,nframes,dih[i],&(xr->dih[i]));
   }
@@ -295,7 +295,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
 int gmx_dih(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_dih can do two things. The default is to analyze dihedral transitions",
+    "[TT]g_dih[tt] can do two things. The default is to analyze dihedral transitions",
     "by merely computing all the dihedral angles defined in your topology",
     "for the whole trajectory. When a dihedral flips over to another minimum",
     "an angle/time plot is made.[PAR]",
@@ -305,7 +305,7 @@ int gmx_dih(int argc,char *argv[])
     "conformations sorted according to occupancy."
   };
   static int  mult = -1;
-  static bool bSA  = FALSE;
+  static gmx_bool bSA  = FALSE;
   t_pargs pa[] = {
     { "-sa", FALSE, etBOOL, {&bSA},
       "Perform cluster analysis in dihedral space instead of analysing dihedral transitions." },

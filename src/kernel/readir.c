@@ -1,4 +1,4 @@
-/*   -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * 
  *                This source code is part of
@@ -60,6 +60,7 @@
 #include "pbc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"
+#include "inputrec.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -86,7 +87,15 @@ static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
-enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
+enum {
+    egrptpALL,         /* All particles have to be a member of a group.     */
+    egrptpALL_GENREST, /* A rest group with name is generated for particles *
+                        * that are not part of any group.                   */
+    egrptpPART,        /* As egrptpALL_GENREST, but no name is generated    *
+                        * for the rest group.                               */
+    egrptpONE          /* Merge all selected groups into one group,         *
+                        * make a rest group for the remaining particles.    */
+};
 
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
@@ -95,7 +104,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->define,STRLEN);
 }
 
-static void _low_check(bool b,char *s,warninp_t wi)
+static void _low_check(gmx_bool b,char *s,warninp_t wi)
 {
     if (b)
     {
@@ -119,23 +128,39 @@ static void check_nst(const char *desc_nst,int nst,
     }
 }
 
-static bool ir_NVE(const t_inputrec *ir)
+static gmx_bool ir_NVE(const t_inputrec *ir)
 {
     return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
+}
+
+static int lcd(int n1,int n2)
+{
+    int d,i;
+    
+    d = 1;
+    for(i=2; (i<=n1 && i<=n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+    
+  return d;
 }
 
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency */
 {
-  /* Strange macro: first one fills the err_buf, and then one can check 
-   * the condition, which will print the message and increase the error
-   * counter.
-   */
+    /* Strange macro: first one fills the err_buf, and then one can check 
+     * the condition, which will print the message and increase the error
+     * counter.
+     */
 #define CHECK(b) _low_check(b,err_buf,wi)
     char err_buf[256],warn_buf[STRLEN];
-  int  ns_type=0;
-  real dt_coupl=0;
+    int  ns_type=0;
+    real dt_pcoupl;
 
   set_warning_line(wi,mdparin,-1);
 
@@ -163,36 +188,68 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
   }
 
-  /* GENERAL INTEGRATOR STUFF */
-  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
-    ir->etc = etcNO;
-  }
-  if (!EI_DYNAMICS(ir->eI)) {
-    ir->epc = epcNO;
-  }
-  if (EI_DYNAMICS(ir->eI)) {
-    if (ir->nstcalcenergy < 0) {
-      gmx_fatal(FARGS,"Can not have nstcalcenergy < 0");
+    /* GENERAL INTEGRATOR STUFF */
+    if (!(ir->eI == eiMD || EI_VV(ir->eI)))
+    {
+        ir->etc = etcNO;
     }
-    if ((ir->etc != etcNO || ir->epc != epcNO) && ir->nstcalcenergy == 0) {
-      gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        ir->epc = epcNO;
     }
-    if (IR_TWINRANGE(*ir)) {
-        check_nst("nstlist",ir->nstlist,"nstcalcenergy",&ir->nstcalcenergy,wi);
+    if (EI_DYNAMICS(ir->eI))
+    {
+        if (ir->nstcalcenergy < 0)
+        {
+            ir->nstcalcenergy = ir_optimal_nstcalcenergy(ir);
+            if (ir->nstenergy != 0 && ir->nstenergy < ir->nstcalcenergy)
+            {
+                /* nstcalcenergy larger than nstener does not make sense.
+                 * We ideally want nstcalcenergy=nstener.
+                 */
+                if (ir->nstlist > 0)
+                {
+                    ir->nstcalcenergy = lcd(ir->nstenergy,ir->nstlist);
+                }
+                else
+                {
+                    ir->nstcalcenergy = ir->nstenergy;
+                }
+            }
+        }
+        if (ir->epc != epcNO)
+        {
+            if (ir->nstpcouple < 0)
+            {
+                ir->nstpcouple = ir_optimal_nstpcouple(ir);
+            }
+        }
+        if (IR_TWINRANGE(*ir))
+        {
+            check_nst("nstlist",ir->nstlist,
+                      "nstcalcenergy",&ir->nstcalcenergy,wi);
+            if (ir->epc != epcNO)
+            {
+                check_nst("nstlist",ir->nstlist,
+                          "nstpcouple",&ir->nstpcouple,wi); 
+            }
+        }
+
+        if (ir->nstcalcenergy > 1)
+        {
+            /* for storing exact averages nstenergy should be
+             * a multiple of nstcalcenergy
+             */
+            check_nst("nstcalcenergy",ir->nstcalcenergy,
+                      "nstenergy",&ir->nstenergy,wi);
+            if (ir->efep != efepNO)
+            {
+                /* nstdhdl should be a multiple of nstcalcenergy */
+                check_nst("nstcalcenergy",ir->nstcalcenergy,
+                          "nstdhdl",&ir->nstdhdl,wi);
+            }
+        }
     }
-    dt_coupl = ir->nstcalcenergy*ir->delta_t;
-  
-    if (ir->nstcalcenergy > 1) {
-      /* Energy and log file writing trigger energy calculation,
-       * so we need some checks.
-       */
-        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstenergy",&ir->nstenergy,wi);
-        check_nst("nstcalcenergy",ir->nstcalcenergy,"nstlog",&ir->nstlog,wi);
-      if (ir->efep != efepNO) {
-          check_nst("nstcalcenergy",ir->nstcalcenergy,"nstdhdl",&ir->nstdhdl,wi);
-      }
-    }
-  }
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
@@ -302,88 +359,116 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
-  /* TEMPERATURE COUPLING */
-  if(ir->etc == etcYES) {
-    ir->etc = etcBERENDSEN;
-    warning_note(wi,"Old option for temperature coupling given: "
-		 "changing \"yes\" to \"Berendsen\"\n");
-  }
-  if (ir->etc == etcNOSEHOOVER) {
-    if (ir->opts.nhchainlength < 1) 
-      {
-	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
-	ir->opts.nhchainlength =1;
-	warning(wi,warn_buf);
-      }
-    
-    if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
-        warning_note(wi,"leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
-      ir->opts.nhchainlength = 1;
+    /* TEMPERATURE COUPLING */
+    if (ir->etc == etcYES)
+    {
+        ir->etc = etcBERENDSEN;
+        warning_note(wi,"Old option for temperature coupling given: "
+                     "changing \"yes\" to \"Berendsen\"\n");
     }
-  } else {
-    ir->opts.nhchainlength = 0;
-  }
-
-  if (ir->etc == etcBERENDSEN) {
-    sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
-	    ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
-    warning_note(wi,warn_buf);
-  }
   
-  if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
-     && ir->epc==epcBERENDSEN) {
-    sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
-	    "true ensemble for the thermostat");
-    warning(wi,warn_buf);
-  }
-
-  /* PRESSURE COUPLING */
-  if (ir->epc == epcISOTROPIC) {
-    ir->epc = epcBERENDSEN;
-    warning_note(wi,"Old option for pressure coupling given: "
-                 "changing \"Isotropic\" to \"Berendsen\"\n"); 
-  }
-
-  if (ir->epc != epcNO) {
-    sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
-    CHECK(ir->tau_p <= 0);
-
-    if (ir->tau_p < 100*dt_coupl) {
-      sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than nstcalcenergy*dt (%g)",
-	      ir->tau_p,dt_coupl);
-      warning(wi,warn_buf);
-    }	
-       
-    sprintf(err_buf,"compressibility must be > 0 when using pressure" 
-	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
-    CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
-	  ir->compress[ZZ][ZZ] < 0 || 
-	  (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
-	   ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
-    
-    sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
-    CHECK(ir->coulombtype == eelPPPM);
-     
-  } else if (ir->coulombtype == eelPPPM) {
-    sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
-    warning(wi,warn_buf);
-  }
-
-  if (EI_VV(ir->eI)) {
-    if (ir->epc > epcNO) {
-      if (ir->epc!=epcMTTK) {
-          warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
-      }
+    if (ir->etc == etcNOSEHOOVER)
+    {
+        if (ir->opts.nhchainlength < 1) 
+        {
+            sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
+            ir->opts.nhchainlength =1;
+            warning(wi,warn_buf);
+        }
+        
+        if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1)
+        {
+            warning_note(wi,"leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
+            ir->opts.nhchainlength = 1;
+        }
     }
-  }
+    else
+    {
+        ir->opts.nhchainlength = 0;
+    }
+
+    if (ir->etc == etcBERENDSEN)
+    {
+        sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
+                ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+        warning_note(wi,warn_buf);
+    }
+
+    if ((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL) 
+        && ir->epc==epcBERENDSEN)
+    {
+        sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
+                "true ensemble for the thermostat");
+        warning(wi,warn_buf);
+    }
+
+    /* PRESSURE COUPLING */
+    if (ir->epc == epcISOTROPIC)
+    {
+        ir->epc = epcBERENDSEN;
+        warning_note(wi,"Old option for pressure coupling given: "
+                     "changing \"Isotropic\" to \"Berendsen\"\n"); 
+    }
+
+    if (ir->epc != epcNO)
+    {
+        dt_pcoupl = ir->nstpcouple*ir->delta_t;
+
+        sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
+        CHECK(ir->tau_p <= 0);
+        
+        if (ir->tau_p/dt_pcoupl < pcouple_min_integration_steps(ir->epc))
+        {
+            sprintf(warn_buf,"For proper integration of the %s barostat, tau_p (%g) should be at least %d times larger than nstpcouple*dt (%g)",
+                    EPCOUPLTYPE(ir->epc),ir->tau_p,pcouple_min_integration_steps(ir->epc),dt_pcoupl);
+            warning(wi,warn_buf);
+        }	
+        
+        sprintf(err_buf,"compressibility must be > 0 when using pressure" 
+                " coupling %s\n",EPCOUPLTYPE(ir->epc));
+        CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || 
+              ir->compress[ZZ][ZZ] < 0 || 
+              (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
+               ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
+        
+        sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
+        CHECK(ir->coulombtype == eelPPPM);
+        
+    }
+    else if (ir->coulombtype == eelPPPM)
+    {
+        sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
+        warning(wi,warn_buf);
+    }
+    
+    if (EI_VV(ir->eI))
+    {
+        if (ir->epc > epcNO)
+        {
+            if (ir->epc!=epcMTTK)
+            {
+                warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+            }
+        }
+    }
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
+    if (ir->coulombtype == eelPPPM)
+    {
+        warning_error(wi,"PPPM is not functional in the current version, we plan to implement PPPM through a small modification of the PME code");
+    }
+
   if (ir->coulombtype == eelSWITCH) {
     sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
 	    eel_names[ir->coulombtype],
 	    eel_names[eelRF_ZERO]);
     warning(wi,warn_buf);
+  }
+
+  if (ir->epsilon_r!=1 && ir->implicit_solvent==eisGBSA) {
+    sprintf(warn_buf,"epsilon_r = %g with GB implicit solvent, will use this value for inner dielectric",ir->epsilon_r);
+    warning_note(wi,warn_buf);
   }
 
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
@@ -434,7 +519,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_FULL(ir->coulombtype)) {
-    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER ||
+        ir->coulombtype==eelPMEUSERSWITCH) {
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
@@ -540,7 +626,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             warning_note(wi,warn_buf);
         }
     }
-
+  
+  /* IMPLICIT SOLVENT */
   if(ir->coulombtype==eelGB_NOTUSED)
   {
     ir->coulombtype=eelCUT;
@@ -550,10 +637,58 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    "setting implicit_solvent value to \"GBSA\" in input section.\n");
   }
 
+  if(ir->sa_algorithm==esaSTILL)
+  {
+    sprintf(err_buf,"Still SA algorithm not available yet, use %s or %s instead\n",esa_names[esaAPPROX],esa_names[esaNO]);
+    CHECK(ir->sa_algorithm == esaSTILL);
+  }
+  
   if(ir->implicit_solvent==eisGBSA)
   {
-      sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
-      CHECK(ir->rgbradii != ir->rlist);
+    sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
+    CHECK(ir->rgbradii != ir->rlist);
+	  
+    if(ir->coulombtype!=eelCUT)
+	  {
+		  sprintf(err_buf,"With GBSA, coulombtype must be equal to %s\n",eel_names[eelCUT]);
+		  CHECK(ir->coulombtype!=eelCUT);
+	  }
+	  if(ir->vdwtype!=evdwCUT)
+	  {
+		  sprintf(err_buf,"With GBSA, vdw-type must be equal to %s\n",evdw_names[evdwCUT]);
+		  CHECK(ir->vdwtype!=evdwCUT);
+	  }
+    if(ir->nstgbradii<1)
+    {
+      sprintf(warn_buf,"Using GBSA with nstgbradii<1, setting nstgbradii=1");
+      warning_note(wi,warn_buf);
+      ir->nstgbradii=1;
+    }
+    if(ir->sa_algorithm==esaNO)
+    {
+      sprintf(warn_buf,"No SA (non-polar) calculation requested together with GB. Are you sure this is what you want?\n");
+      warning_note(wi,warn_buf);
+    }
+    if(ir->sa_surface_tension<0 && ir->sa_algorithm!=esaNO)
+    {
+      sprintf(warn_buf,"Value of sa_surface_tension is < 0. Changing it to 2.05016 or 2.25936 kJ/nm^2/mol for Still and HCT/OBC respectively\n");
+      warning_note(wi,warn_buf);
+      
+      if(ir->gb_algorithm==egbSTILL)
+      {
+        ir->sa_surface_tension = 0.0049 * CAL2JOULE * 100;
+      }
+      else
+      {
+        ir->sa_surface_tension = 0.0054 * CAL2JOULE * 100;
+      }
+    }
+    if(ir->sa_surface_tension==0 && ir->sa_algorithm!=esaNO)
+    {
+      sprintf(err_buf, "Surface tension set to 0 while SA-calculation requested\n");
+      CHECK(ir->sa_surface_tension==0 && ir->sa_algorithm!=esaNO);
+    }
+    
   }
 }
 
@@ -600,42 +735,51 @@ static void parse_n_double(char *str,int *n,double **r)
 }
 
 static void do_wall_params(t_inputrec *ir,
-			   char *wall_atomtype, char *wall_density,
-			   t_gromppopts *opts)
+                           char *wall_atomtype, char *wall_density,
+                           t_gromppopts *opts)
 {
-  int  nstr,i;
-  char *names[MAXPTR];
-  double dbl;
+    int  nstr,i;
+    char *names[MAXPTR];
+    double dbl;
 
-  opts->wall_atomtype[0] = NULL;
-  opts->wall_atomtype[1] = NULL;
+    opts->wall_atomtype[0] = NULL;
+    opts->wall_atomtype[1] = NULL;
 
-  ir->wall_atomtype[0] = -1;
-  ir->wall_atomtype[1] = -1;
-  ir->wall_density[0] = 0;
-  ir->wall_density[1] = 0;
+    ir->wall_atomtype[0] = -1;
+    ir->wall_atomtype[1] = -1;
+    ir->wall_density[0] = 0;
+    ir->wall_density[1] = 0;
   
-  if (ir->nwall > 0) {
-    nstr = str_nelem(wall_atomtype,MAXPTR,names);
-    if (nstr != ir->nwall)
-      gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
-		ir->nwall,nstr);
-    for(i=0; i<ir->nwall; i++)
-      opts->wall_atomtype[i] = strdup(names[i]);
+    if (ir->nwall > 0)
+    {
+        nstr = str_nelem(wall_atomtype,MAXPTR,names);
+        if (nstr != ir->nwall)
+        {
+            gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
+                      ir->nwall,nstr);
+        }
+        for(i=0; i<ir->nwall; i++)
+        {
+            opts->wall_atomtype[i] = strdup(names[i]);
+        }
     
-    if (ir->wall_type != ewtTABLE) {
-      nstr = str_nelem(wall_density,MAXPTR,names);
-      if (nstr != ir->nwall)
-	gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",
-		  ir->nwall,nstr);
-      for(i=0; i<ir->nwall; i++) {
-	sscanf(names[i],"%lf",&dbl);
-	if (dbl <= 0)
-	  gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
-	ir->wall_density[i] = dbl;
-      }
+        if (ir->wall_type == ewt93 || ir->wall_type == ewt104) {
+            nstr = str_nelem(wall_density,MAXPTR,names);
+            if (nstr != ir->nwall)
+            {
+                gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",ir->nwall,nstr);
+            }
+            for(i=0; i<ir->nwall; i++)
+            {
+                sscanf(names[i],"%lf",&dbl);
+                if (dbl <= 0)
+                {
+                    gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
+                }
+                ir->wall_density[i] = dbl;
+            }
+        }
     }
-  }
 }
 
 static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
@@ -684,7 +828,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Preprocessor information: use cpp syntax.");
   CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
   STYPE ("include",	opts->include,	NULL);
-  CTYPE ("e.g.: -DI_Want_Cookies -DMe_Too");
+  CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");
@@ -698,11 +842,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
   ITYPE ("simulation_part", ir->simulation_part, 1);
   CTYPE ("mode for center of mass motion removal");
-  CTYPE ("energy calculation and T/P-coupling frequency");
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	1);
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
-  ITYPE ("nstcomm",	ir->nstcomm,	1);
+  ITYPE ("nstcomm",	ir->nstcomm,	10);
   CTYPE ("group(s) for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
@@ -736,11 +878,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
-  CTYPE ("Output frequency and precision for xtc file");
+  CTYPE ("Output frequency and precision for .xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc-precision",ir->xtcprec,   1000.0);
-  CTYPE ("This selects the subset of atoms for the xtc file. You can");
+  CTYPE ("This selects the subset of atoms for the .xtc file. You can");
   CTYPE ("select multiple groups. By default all atoms will be written.");
   STYPE ("xtc-grps",    xtc_grps,       NULL);
   CTYPE ("Selection of energy groups");
@@ -818,13 +961,14 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.009);
   EETYPE("sa_algorithm", ir->sa_algorithm, esa_names);
   CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
-  CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
-  RTYPE ("sa_surface_tension", ir->sa_surface_tension, 2.092);
+  CTYPE ("The value -1 will set default value for Still/HCT/OBC GB-models.");
+  RTYPE ("sa_surface_tension", ir->sa_surface_tension, -1);
 		 
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names);
+  ITYPE ("nsttcouple", ir->nsttcouple,  -1);
   ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
@@ -834,6 +978,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names);
   EETYPE("Pcoupltype",	ir->epct,       epcoupltype_names);
+  ITYPE ("nstpcouple", ir->nstpcouple,  -1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
@@ -971,6 +1116,11 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
+  EETYPE("separate-dhdl-file", ir->separate_dhdl_file, 
+                               separate_dhdl_file_names);
+  EETYPE("dhdl-derivatives", ir->dhdl_derivatives, dhdl_derivatives_names);
+  ITYPE ("dh_hist_size", ir->dh_hist_size, 0);
+  RTYPE ("dh_hist_spacing", ir->dh_hist_spacing, 0.1);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
@@ -1145,7 +1295,7 @@ static int search_QMstring(char *s,int ng,const char *gn[])
   int i;
 
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
 
   gmx_fatal(FARGS,"this QM method or basisset (%s) is not implemented\n!",s);
@@ -1160,118 +1310,154 @@ int search_string(char *s,int ng,char *gn[])
   int i;
   
   for(i=0; (i<ng); i++)
-    if (strcasecmp(s,gn[i]) == 0)
+    if (gmx_strcasecmp(s,gn[i]) == 0)
       return i;
       
-  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
+  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your .mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
   
   return -1;
 }
 
-static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
+static gmx_bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
                          t_blocka *block,char *gnames[],
                          int gtype,int restnm,
-                         int grptp,bool bVerbose,
+                         int grptp,gmx_bool bVerbose,
                          warninp_t wi)
 {
-  unsigned short *cbuf;
-  t_grps *grps=&(groups->grps[gtype]);
-  int    i,j,gid,aj,ognr,ntot=0;
-  const char *title;
-  bool   bRest;
-  char   warn_buf[STRLEN];
+    unsigned short *cbuf;
+    t_grps *grps=&(groups->grps[gtype]);
+    int    i,j,gid,aj,ognr,ntot=0;
+    const char *title;
+    gmx_bool   bRest;
+    char   warn_buf[STRLEN];
 
-  if (debug)
-    fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+    if (debug)
+    {
+        fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+    }
   
-  title = gtypes[gtype];
+    title = gtypes[gtype];
     
-  snew(cbuf,natoms);
-  for(i=0; (i<natoms); i++)
-    cbuf[i]=NOGID;
+    snew(cbuf,natoms);
+    /* Mark all id's as not set */
+    for(i=0; (i<natoms); i++)
+    {
+        cbuf[i] = NOGID;
+    }
   
-  snew(grps->nm_ind,ng+1); /* +1 for possible rest group */
-  for(i=0; (i<ng); i++) {
-    /* Lookup the group name in the block structure */
-    gid = search_string(ptrs[i],block->nr,gnames);
-    if ((grptp != egrptpONE) || (i == 0))
-      grps->nm_ind[grps->nr++]=gid;
-    if (debug) 
-      fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
+    snew(grps->nm_ind,ng+1); /* +1 for possible rest group */
+    for(i=0; (i<ng); i++)
+    {
+        /* Lookup the group name in the block structure */
+        gid = search_string(ptrs[i],block->nr,gnames);
+        if ((grptp != egrptpONE) || (i == 0))
+        {
+            grps->nm_ind[grps->nr++]=gid;
+        }
+        if (debug) 
+        {
+            fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
+        }
     
-    /* Now go over the atoms in the group */
-    for(j=block->index[gid]; (j<block->index[gid+1]); j++) {
-      aj=block->a[j];
-      
-      /* Range checking */
-      if ((aj < 0) || (aj >= natoms)) 
-	gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
-	
-      /* Lookup up the old group number */
-      ognr = cbuf[aj];
-      if (ognr != NOGID) 
-	gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
-		    aj+1,title,ognr+1,i+1);
-      else {
-	/* Store the group number in buffer */
-	if (grptp == egrptpONE)
-	  cbuf[aj] = 0;
-	else
-	  cbuf[aj] = i;
-	ntot++;
-      }
-    }
-  }
-  
-  /* Now check whether we have done all atoms */
-  bRest = FALSE;
-  if (ntot != natoms) {
-    if (grptp == egrptpALL) {
-      gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
-		natoms-ntot,title);
-    } else if (grptp == egrptpPART) {
-      sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
-	      natoms-ntot,title);
-      warning_note(wi,warn_buf);
-    }
-    /* Assign all atoms currently unassigned to a rest group */
-    for(j=0; (j<natoms); j++) {
-      if (cbuf[j] == NOGID) {
-	cbuf[j] = grps->nr;
-	bRest = TRUE;
-      }
-    }
-    if (grptp != egrptpPART) {
-      if (bVerbose)
-	fprintf(stderr,
-		"Making dummy/rest group for %s containing %d elements\n",
-		title,natoms-ntot);
-      /* Add group name "rest" */ 
-      grps->nm_ind[grps->nr] = restnm;
-      
-      /* Assign the rest name to all atoms not currently assigned to a group */
-      for(j=0; (j<natoms); j++) {
-	if (cbuf[j] == NOGID)
-	  cbuf[j] = grps->nr;
-      }
-      grps->nr++;
-    }
-  }
+        /* Now go over the atoms in the group */
+        for(j=block->index[gid]; (j<block->index[gid+1]); j++)
+        {
 
-  if (grps->nr == 1) {
-    groups->ngrpnr[gtype] = 0;
-    groups->grpnr[gtype]  = NULL;
-  } else {
-    groups->ngrpnr[gtype] = natoms;
-    snew(groups->grpnr[gtype],natoms);
-    for(j=0; (j<natoms); j++) {
-      groups->grpnr[gtype][j] = cbuf[j];
+            aj=block->a[j];
+      
+            /* Range checking */
+            if ((aj < 0) || (aj >= natoms)) 
+            {
+                gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
+            }
+            /* Lookup up the old group number */
+            ognr = cbuf[aj];
+            if (ognr != NOGID)
+            {
+                gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
+                          aj+1,title,ognr+1,i+1);
+            }
+            else
+            {
+                /* Store the group number in buffer */
+                if (grptp == egrptpONE)
+                {
+                    cbuf[aj] = 0;
+                }
+                else
+                {
+                    cbuf[aj] = i;
+                }
+                ntot++;
+            }
+        }
     }
-  }
-  
-  sfree(cbuf);
+    
+    /* Now check whether we have done all atoms */
+    bRest = FALSE;
+    if (ntot != natoms)
+    {
+        if (grptp == egrptpALL)
+        {
+            gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
+                      natoms-ntot,title);
+        }
+        else if (grptp == egrptpPART)
+        {
+            sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
+                    natoms-ntot,title);
+            warning_note(wi,warn_buf);
+        }
+        /* Assign all atoms currently unassigned to a rest group */
+        for(j=0; (j<natoms); j++)
+        {
+            if (cbuf[j] == NOGID)
+            {
+                cbuf[j] = grps->nr;
+                bRest = TRUE;
+            }
+        }
+        if (grptp != egrptpPART)
+        {
+            if (bVerbose)
+            {
+                fprintf(stderr,
+                        "Making dummy/rest group for %s containing %d elements\n",
+                        title,natoms-ntot);
+            }
+            /* Add group name "rest" */ 
+            grps->nm_ind[grps->nr] = restnm;
+            
+            /* Assign the rest name to all atoms not currently assigned to a group */
+            for(j=0; (j<natoms); j++)
+            {
+                if (cbuf[j] == NOGID)
+                {
+                    cbuf[j] = grps->nr;
+                }
+            }
+            grps->nr++;
+        }
+    }
+    
+    if (grps->nr == 1)
+    {
+        groups->ngrpnr[gtype] = 0;
+        groups->grpnr[gtype]  = NULL;
+    }
+    else
+    {
+        groups->ngrpnr[gtype] = natoms;
+        snew(groups->grpnr[gtype],natoms);
+        for(j=0; (j<natoms); j++)
+        {
+            groups->grpnr[gtype][j] = cbuf[j];
+        }
+    }
+    
+    sfree(cbuf);
 
-  return (bRest && grptp == egrptpPART);
+    return (bRest && grptp == egrptpPART);
 }
 
 static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
@@ -1490,7 +1676,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   sfree(na_vcm);
 }
 
-static void decode_cos(char *s,t_cosines *cosine,bool bTime)
+static void decode_cos(char *s,t_cosines *cosine,gmx_bool bTime)
 {
   char   *t;
   char   format[STRLEN],f1[STRLEN];
@@ -1526,7 +1712,7 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
   sfree(t);
 }
 
-static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
+static gmx_bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 			const char *option,const char *val,int flag)
 {
   /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
@@ -1537,7 +1723,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   int  nelem,i,j,k,nr;
   char *names[EGP_MAX];
   char ***gnames;
-  bool bSet;
+  gmx_bool bSet;
 
   gnames = groups->grpname;
 
@@ -1549,14 +1735,14 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   for(i=0; i<nelem/2; i++) {
     j = 0;
     while ((j < nr) &&
-	   strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
+	   gmx_strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
       j++;
     if (j == nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
 		  names[2*i],option);
     k = 0;
     while ((k < nr) &&
-	   strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
+	   gmx_strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
       k++;
     if (k==nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
@@ -1573,7 +1759,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
-              bool bVerbose,
+              gmx_bool bVerbose,
               t_inputrec *ir,rvec *v,
               warninp_t wi)
 {
@@ -1584,11 +1770,13 @@ void do_index(const char* mdparin, const char *ndx,
   t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
+  real    tau_min;
+  int     nstcmin;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
-  bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
+  gmx_bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
     nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
   char    warn_buf[STRLEN];
@@ -1643,32 +1831,70 @@ void do_index(const char* mdparin, const char *ndx,
   if (ir->eI==eiBD && ir->bd_fric==0) {
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
   }
-  if (bSetTCpar) {
-    if (nr != nref_t)
-      gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
-    for(i=0; (i<nr); i++) {
-      ir->opts.tau_t[i]=strtod(ptr1[i],NULL);
-      if (ir->opts.tau_t[i] < 0) {
-	gmx_fatal(FARGS,"tau_t for group %d negative",i);
-      }
-      /* We check the relative magnitude of the coupling time tau_t.
-       * V-rescale works correctly, even for tau_t=0.
-       */
-      if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
-	  ir->opts.tau_t[i] != 0 &&
-	  ir->opts.tau_t[i] < 10*ir->nstcalcenergy*ir->delta_t) {
-	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than nstcalcenergy*dt (%g)",
-		ir->opts.tau_t[i],ir->nstcalcenergy*ir->delta_t);
-	warning(wi,warn_buf);
-      }
-    }
-    for(i=0; (i<nr); i++) {
-      ir->opts.ref_t[i]=strtod(ptr2[i],NULL);
-      if (ir->opts.ref_t[i] < 0)
-	gmx_fatal(FARGS,"ref_t for group %d negative",i);
-    }
-  }
 
+  if (bSetTCpar)
+  {
+      if (nr != nref_t)
+      {
+          gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
+      }
+      
+      tau_min = 1e20;
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.tau_t[i] = strtod(ptr1[i],NULL);
+          if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
+          {
+              sprintf(warn_buf,"With integrator %s tau_t should be larger than 0",ei_names[ir->eI]);
+              warning_error(wi,warn_buf);
+          }
+          if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
+              (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
+          {
+              tau_min = min(tau_min,ir->opts.tau_t[i]);
+          }
+      }
+      if (ir->etc != etcNO && ir->nsttcouple == -1)
+      {
+            ir->nsttcouple = ir_optimal_nsttcouple(ir);
+      }
+      if (EI_VV(ir->eI)) 
+      {
+          if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
+          {
+              int mincouple;
+              mincouple = ir->nsttcouple;
+              if (ir->nstpcouple < mincouple)
+              {
+                  mincouple = ir->nstpcouple;
+              }
+              ir->nstpcouple = mincouple;
+              ir->nsttcouple = mincouple;
+              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
+          }
+      }
+      nstcmin = tcouple_min_integration_steps(ir->etc);
+      if (nstcmin > 1)
+      {
+          if (tau_min/(ir->delta_t*ir->nsttcouple) < nstcmin)
+          {
+              sprintf(warn_buf,"For proper integration of the %s thermostat, tau_t (%g) should be at least %d times larger than nsttcouple*dt (%g)",
+                      ETCOUPLTYPE(ir->etc),
+                      tau_min,nstcmin,
+                      ir->nsttcouple*ir->delta_t);
+              warning(wi,warn_buf);
+          }
+      }
+      for(i=0; (i<nr); i++)
+      {
+          ir->opts.ref_t[i] = strtod(ptr2[i],NULL);
+          if (ir->opts.ref_t[i] < 0)
+          {
+              gmx_fatal(FARGS,"ref_t for group %d negative",i);
+          }
+      }
+  }
+    
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
   if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))
@@ -1800,9 +2026,9 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
     for(j=0; (j<DIM); j++,k++) {
-      ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
+      ir->opts.nFreeze[i][j]=(gmx_strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
-	if (strncasecmp(ptr1[k],"N",1) != 0) {
+	if (gmx_strncasecmp(ptr1[k],"N",1) != 0) {
 	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
 		  "(not %s)", ptr1[k]);
 	  warning(wi,warn_buf);
@@ -1895,7 +2121,7 @@ void do_index(const char* mdparin, const char *ndx,
   for(i=0;i<nr;i++){
     ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,10);
     ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,10);
-    ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
+    ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i],"Y",1)==0);
   }
 
   nCASelec  = str_nelem(CASelectrons,MAXPTR,ptr1);
@@ -1913,8 +2139,8 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.bOPT,nr);
   snew(ir->opts.bTS,nr);
   for(i=0;i<nr;i++){
-    ir->opts.bOPT[i] = (strncasecmp(ptr1[i],"Y",1)==0);
-    ir->opts.bTS[i]  = (strncasecmp(ptr2[i],"Y",1)==0);
+    ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i],"Y",1)==0);
+    ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i],"Y",1)==0);
   }
   nSAon     = str_nelem(SAon,MAXPTR,ptr1);
   nSAoff    = str_nelem(SAoff,MAXPTR,ptr2);
@@ -1947,7 +2173,8 @@ void do_index(const char* mdparin, const char *ndx,
 
   bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
-      !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
+      !(ir->coulombtype == eelUSER) && !(ir->coulombtype == eelPMEUSER) &&
+      !(ir->coulombtype == eelPMEUSERSWITCH))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
 
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);
@@ -1999,7 +2226,7 @@ static void check_disre(gmx_mtop_t *mtop)
   }
 }
 
-static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
+static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
 {
   int d,g,i;
   gmx_mtop_ilistloop_t iloop;
@@ -2042,7 +2269,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 {
   char err_buf[256];
   int  i,m,g,nmol,npct;
-  bool bCharge,bAcc;
+  gmx_bool bCharge,bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
   gmx_mtop_atomloop_block_t aloopb;
@@ -2076,7 +2303,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
       warning(wi,err_buf);
     }
   } else {
-    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
+    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0 && !ir->implicit_solvent) {
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
@@ -2181,10 +2408,10 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
   check_disre(sys);
 }
 
-void double_check(t_inputrec *ir,matrix box,bool bConstr,warninp_t wi)
+void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,warninp_t wi)
 {
   real min_size;
-  bool bTWIN;
+  gmx_bool bTWIN;
   char warn_buf[STRLEN];
   const char *ptr;
   
@@ -2291,11 +2518,10 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
              * not be zero at the cut-off.
              */
             if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
-                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
             {
-                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
                         rvdw1+rvdw2,
-                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
                         ir->rlist,ir->rvdw);
                 if (ir_NVE(ir))
                 {

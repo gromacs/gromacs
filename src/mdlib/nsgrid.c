@@ -202,7 +202,7 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
                            real grid_density)
 {
     int  i,j;
-    bool bDD,bDDRect;
+    gmx_bool bDD,bDDRect;
     rvec av,stddev;
     rvec izones_size;
     real inv_r_ideal,size,add_tric,radd;
@@ -420,7 +420,7 @@ void done_grid(t_grid *grid)
   grid->dc_nalloc = 0;
 
   if (debug) 
-    fprintf(debug,"Succesfully freed memory for grid pointers.");
+    fprintf(debug,"Successfully freed memory for grid pointers.");
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)
@@ -614,7 +614,7 @@ void fill_grid(FILE *log,
     rvec   n_box,offset;
     int    zone,ccg0,ccg1,cg,d,not_used;
     ivec   shift0,useall,b0,b1,ind;
-    bool   bUse;
+    gmx_bool   bUse;
     
     if (cg0 == -1)
     {

@@ -99,14 +99,14 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 		    double ***slField, int *nslices, 
 		    t_topology *top, int ePBC,
 		    int axis, int nr_grps, double *slWidth,
-		    double fudge_z, bool bSpherical, bool bCorrect,
+		    double fudge_z, gmx_bool bSpherical, gmx_bool bCorrect,
                     const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
-  int natoms,            /* nr. atoms in trj */
-      status,
-      **slCount,         /* nr. of atoms in one slice for a group */
+  int natoms;            /* nr. atoms in trj */
+  t_trxstatus *status;
+  int **slCount,         /* nr. of atoms in one slice for a group */
       i,j,n,             /* loop indices */
       teller = 0,      
       ax1=0, ax2=0,
@@ -117,7 +117,8 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
   real t;
   double z;
   rvec xcm;
-  
+  gmx_rmpbc_t  gpbc=NULL;
+
   switch(axis)
   {
   case 0:
@@ -152,13 +153,15 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     snew((*slPotential)[i], *nslices);
   }
 
+
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  
   /*********** Start processing trajectory ***********/
   do 
   {
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
-    
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
 
     /* calculate position of center of mass based on group 1 */
     calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
@@ -166,6 +169,13 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 	  
     for (n = 0; n < nr_grps; n++)
     {      
+        /* Check whether we actually have all positions of the requested index
+         * group in the trajectory file */
+        if (gnx[n] > natoms)
+        {
+            gmx_fatal(FARGS, "You selected a group with %d atoms, but only %d atoms\n"
+                             "were found in the trajectory.\n", gnx[n], natoms);
+        }
       for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
       {
 	if (bSpherical)
@@ -200,6 +210,8 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     }
     nr_frames++;
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
+
+  gmx_rmpbc_done(gpbc);
 
   /*********** done with status file **********/
   close_trj(status);
@@ -330,7 +342,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 
 void plot_potential(double *potential[], double *charge[], double *field[], 
 		    const char *afile, const char *bfile, const char *cfile, 
-                    int nslices, int nr_grps, char *grpname[], double slWidth,
+                    int nslices, int nr_grps, const char *grpname[], double slWidth,
                     const output_env_t oenv)
 {
   FILE       *pot,     /* xvgr file with potential */
@@ -359,7 +371,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
     for (n = 0; n < nr_grps; n++)
     {
       fprintf(pot,"   %20.16g", potential[n][slice]);
-      fprintf(fie,"   %20.16g", field[n][slice]);
+      fprintf(fie,"   %20.16g", field[n][slice]/1e9);  /* convert to V/nm */
       fprintf(cha,"   %20.16g", charge[n][slice]);
     }
     fprintf(pot,"\n");
@@ -375,23 +387,23 @@ void plot_potential(double *potential[], double *charge[], double *field[],
 int gmx_potential(int argc,char *argv[])
 {
   const char *desc[] = {
-    "Compute the electrostatical potential across the box. The potential is"
-    "calculated by first summing the charges per slice and then integrating"
-    "twice of this charge distribution. Periodic boundaries are not taken  "
-    "into account. Reference of potential is taken to be the left side of"
-    "the box. It's also possible to calculate the potential in spherical"
-    "coordinates as function of r by calculating a charge distribution in"
-    "spherical slices and twice integrating them. epsilon_r is taken as 1,"
-    "2 is more appropriate in many cases"
+    "[TT]g_potential[tt] computes the electrostatical potential across the box. The potential is",
+    "calculated by first summing the charges per slice and then integrating",
+    "twice of this charge distribution. Periodic boundaries are not taken",
+    "into account. Reference of potential is taken to be the left side of",
+    "the box. It is also possible to calculate the potential in spherical",
+    "coordinates as function of r by calculating a charge distribution in",
+    "spherical slices and twice integrating them. epsilon_r is taken as 1,",
+    "but 2 is more appropriate in many cases."
   };
   output_env_t oenv;
   static int  axis = 2;                      /* normal to memb. default z  */
   static const char *axtitle="Z"; 
   static int  nslices = 10;                  /* nr of slices defined       */
   static int  ngrps   = 1;
-  static bool bSpherical = FALSE;            /* default is bilayer types   */
+  static gmx_bool bSpherical = FALSE;            /* default is bilayer types   */
   static real fudge_z = 0;                    /* translate coordinates      */
-  static bool bCorrect = 0;
+  static gmx_bool bCorrect = 0;
   t_pargs pa [] = {
     { "-d",   FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
@@ -459,7 +471,7 @@ int gmx_potential(int argc,char *argv[])
 
   plot_potential(potential, charge, field, opt2fn("-o",NFILE,fnm),
 		 opt2fn("-oc",NFILE,fnm), opt2fn("-of",NFILE,fnm),
-		 nslices, ngrps, grpname, slWidth,oenv);
+		 nslices, ngrps, (const char**)grpname, slWidth,oenv);
 
   do_view(oenv,opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
   do_view(oenv,opt2fn("-oc",NFILE,fnm), NULL);      /* view xvgr file */  

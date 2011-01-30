@@ -122,34 +122,34 @@ void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 int gmx_helix(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_helix computes all kind of helix properties. First, the peptide",
+    "[TT]g_helix[tt] computes all kind of helix properties. First, the peptide",
     "is checked to find the longest helical part. This is determined by",
     "Hydrogen bonds and Phi/Psi angles.",
     "That bit is fitted",
     "to an ideal helix around the Z-axis and centered around the origin.",
     "Then the following properties are computed:[PAR]",
-    "[BB]1.[bb] Helix radius (file radius.xvg). This is merely the",
+    "[BB]1.[bb] Helix radius (file [TT]radius.xvg[tt]). This is merely the",
     "RMS deviation in two dimensions for all Calpha atoms.",
     "it is calced as sqrt((SUM i(x^2(i)+y^2(i)))/N), where N is the number",
     "of backbone atoms. For an ideal helix the radius is 0.23 nm[BR]",
-    "[BB]2.[bb] Twist (file twist.xvg). The average helical angle per",
+    "[BB]2.[bb] Twist (file [TT]twist.xvg[tt]). The average helical angle per",
     "residue is calculated. For alpha helix it is 100 degrees,",
     "for 3-10 helices it will be smaller,", 
     "for 5-helices it will be larger.[BR]",
-    "[BB]3.[bb] Rise per residue (file rise.xvg). The helical rise per", 
+    "[BB]3.[bb] Rise per residue (file [TT]rise.xvg[tt]). The helical rise per", 
     "residue is plotted as the difference in Z-coordinate between Ca", 
     "atoms. For an ideal helix this is 0.15 nm[BR]",
-    "[BB]4.[bb] Total helix length (file len-ahx.xvg). The total length", 
+    "[BB]4.[bb] Total helix length (file [TT]len-ahx.xvg[tt]). The total length", 
     "of the", 
     "helix in nm. This is simply the average rise (see above) times the",  
     "number of helical residues (see below).[BR]",
-    "[BB]5.[bb] Number of helical residues (file n-ahx.xvg). The title says",
+    "[BB]5.[bb] Number of helical residues (file [TT]n-ahx.xvg[tt]). The title says",
     "it all.[BR]",
-    "[BB]6.[bb] Helix Dipole, backbone only (file dip-ahx.xvg).[BR]",
+    "[BB]6.[bb] Helix Dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
     "[BB]7.[bb] RMS deviation from ideal helix, calculated for the Calpha",
-    "atoms only (file rms-ahx.xvg).[BR]",
-    "[BB]8.[bb] Average Calpha-Calpha dihedral angle (file phi-ahx.xvg).[BR]",
-    "[BB]9.[bb] Average Phi and Psi angles (file phipsi.xvg).[BR]",
+    "atoms only (file [TT]rms-ahx.xvg[tt]).[BR]",
+    "[BB]8.[bb] Average Calpha-Calpha dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
+    "[BB]9.[bb] Average Phi and Psi angles (file [TT]phipsi.xvg[tt]).[BR]",
     "[BB]10.[bb] Ellipticity at 222 nm according to [IT]Hirst and Brooks[it]",
     "[PAR]"
   };
@@ -157,7 +157,7 @@ int gmx_helix(int argc,char *argv[])
     NULL, "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI", 
     "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222", NULL
   };
-  static bool bCheck=FALSE,bFit=TRUE,bDBG=FALSE,bEV=FALSE;
+  static gmx_bool bCheck=FALSE,bFit=TRUE,bDBG=FALSE,bEV=FALSE;
   static int  rStart=0,rEnd=0,r0=1;
   t_pargs pa [] = {
     { "-r0", FALSE, etINT, {&r0},
@@ -180,7 +180,7 @@ int gmx_helix(int argc,char *argv[])
 
   typedef struct {
     FILE *fp,*fp2;
-    bool bfp2;
+    gmx_bool bfp2;
     const char *filenm;
     const char *title;
     const char *xaxis;
@@ -211,7 +211,7 @@ int gmx_helix(int argc,char *argv[])
   output_env_t oenv;
   FILE       *otrj;
   char       buf[54],prop[256];
-  int        status;
+  t_trxstatus *status;
   int        natoms,nre,nres;
   t_bb       *bb;
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;
@@ -222,7 +222,8 @@ int gmx_helix(int argc,char *argv[])
   real       t;
   real       rms,fac;
   matrix     box;
-  bool       bRange;
+  gmx_rmpbc_t  gpbc=NULL;
+  gmx_bool       bRange;
   t_filenm  fnm[] = {
     { efTPX, NULL,  NULL,   ffREAD  },
     { efNDX, NULL,  NULL,   ffREAD  },
@@ -289,12 +290,15 @@ int gmx_helix(int argc,char *argv[])
     pr_bb(stdout,nres,bb);
   }
   
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   snew(xav,natoms);
   teller=0;
   do {
     if ((teller++ % 10) == 0)
       fprintf(stderr,"\rt=%.2f",t);
-    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
+
     
     calc_hxprops(nres,bb,x,box);
     if (bCheck)
@@ -334,6 +338,8 @@ int gmx_helix(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
+  gmx_rmpbc_done(gpbc);
+
   close_trj(status);
 
   if (otrj) {

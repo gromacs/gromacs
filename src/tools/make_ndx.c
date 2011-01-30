@@ -54,13 +54,13 @@
 #define MAXNAMES 30
 #define NAME_LEN 30
 
-bool bCase=FALSE;
+gmx_bool bCase=FALSE;
 
 static int or_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
 		     atom_id *nr,atom_id *at)
 {
   atom_id i1,i2,max=0;
-  bool bNotIncr;
+  gmx_bool bNotIncr;
 
   *nr=0;
   
@@ -123,9 +123,14 @@ static int and_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
   return *nr;
 }
 
-static bool isalnum_star(char c)
+static gmx_bool is_name_char(char c)
 {
-  return (isalnum(c) || (c=='_') || (c=='*') || (c=='?'));
+  /* This string should contain all characters that can not be
+   * the first letter of a name due to the make_ndx syntax.
+   */
+  const char *spec=" !&|";
+
+  return (c != '\0' && strchr(spec,c) == NULL);
 }
 
 static int parse_names(char **string,int *n_names,char **names)
@@ -133,12 +138,12 @@ static int parse_names(char **string,int *n_names,char **names)
   int i;
   
   *n_names=0;
-  while ((isalnum_star((*string)[0]) || ((*string)[0]==' '))) {
-    if (isalnum_star((*string)[0])) {
+  while (is_name_char((*string)[0]) || (*string)[0] == ' ') {
+    if (is_name_char((*string)[0])) {
       if (*n_names >= MAXNAMES) 
 	gmx_fatal(FARGS,"To many names: %d\n",*n_names+1);
       i=0;
-      while (isalnum_star((*string)[i])) {
+      while (is_name_char((*string)[i])) {
 	names[*n_names][i]=(*string)[i];
 	i++;
 	if (i > NAME_LEN) {
@@ -159,10 +164,10 @@ static int parse_names(char **string,int *n_names,char **names)
   return *n_names;
 }
 
-static bool parse_int_char(char **string,int *nr,char *c)
+static gmx_bool parse_int_char(char **string,int *nr,char *c)
 {
   char *orig;
-  bool bRet;
+  gmx_bool bRet;
 
   orig = *string;
 
@@ -197,10 +202,10 @@ static bool parse_int_char(char **string,int *nr,char *c)
   return bRet;
 }
 
-static bool parse_int(char **string,int *nr)
+static gmx_bool parse_int(char **string,int *nr)
 {
   char *orig,c;
-  bool bRet;
+  gmx_bool bRet;
 
   orig = *string;
   bRet = parse_int_char(string,nr,&c);
@@ -212,14 +217,12 @@ static bool parse_int(char **string,int *nr)
   return bRet;
 }
 
-static bool isquote(char c)
+static gmx_bool isquote(char c)
 {
-  char quotes[] = "'\"";
-  
-  return strchr(quotes, c)!=NULL;
+  return (c == '\"');
 }
 
-static bool parse_string(char **string,int *nr, int ngrps, char **grpname)
+static gmx_bool parse_string(char **string,int *nr, int ngrps, char **grpname)
 {
   char *s, *sp;
   char c;
@@ -406,7 +409,7 @@ static int select_residueindices(char **string,t_atoms *atoms,
 }
 
 
-static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
+static gmx_bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
 				      atom_id *nr,atom_id *index,char *gname)
 {
   int i,j,j0,j1,resnr,nres;
@@ -434,7 +437,7 @@ static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
   return *nr;
 }
 
-static bool comp_name(char *name,char *search)
+static gmx_bool comp_name(char *name,char *search)
 {
   while (name[0] != '\0' && search[0] != '\0') {
     switch (search[0]) {
@@ -452,7 +455,7 @@ static bool comp_name(char *name,char *search)
     default:
       /* Compare a single character */
       if (( bCase && strncmp(name,search,1)) ||
-	  (!bCase && strncasecmp(name,search,1))) {
+	  (!bCase && gmx_strncasecmp(name,search,1))) {
 	return FALSE;
       }
     }
@@ -473,7 +476,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
   name[1]=0;
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
-    name[0] = atoms->resinfo[atoms->atom[i].resind].chain;
+    name[0] = atoms->resinfo[atoms->atom[i].resind].chainid;
     j=0; 
     while (j<n_names && !comp_name(name,names[j])) 
       j++;
@@ -492,7 +495,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
 }
 
 static int select_atomnames(t_atoms *atoms,int n_names,char **names,
-			    atom_id *nr,atom_id *index,bool bType)
+			    atom_id *nr,atom_id *index,gmx_bool bType)
 {
   char *name;
   int j;
@@ -614,7 +617,7 @@ static void remove_group(int nr,int nr2,t_blocka *block,char ***gn)
 }
 
 static void split_group(t_atoms *atoms,int sel_nr,t_blocka *block,char ***gn,
-			bool bAtom)
+			gmx_bool bAtom)
 {
   char buf[STRLEN],*name;
   int i,resind;
@@ -724,25 +727,25 @@ static int split_chain(t_atoms *atoms,rvec *x,
   return nchain;
 }
 
-static bool check_have_atoms(t_atoms *atoms, char *string)
+static gmx_bool check_have_atoms(t_atoms *atoms, char *string)
 {
   if ( atoms==NULL ) {
-    printf("Can not process '%s' without atoms info\n", string);
+    printf("Can not process '%s' without atom info, use option -f\n", string);
     return FALSE;
   } else
     return TRUE;
 }
 
-static bool parse_entry(char **string,int natoms,t_atoms *atoms,
+static gmx_bool parse_entry(char **string,int natoms,t_atoms *atoms,
 			t_blocka *block,char ***gn,
 			atom_id *nr,atom_id *index,char *gname)
 {
   static char **names, *ostring;
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   int         j,n_names,sel_nr1;
   atom_id     i,nr1,*index1;
   char        c;
-  bool        bRet,bCompl;
+  gmx_bool        bRet,bCompl;
 
   if (bFirst) {
     bFirst=FALSE;
@@ -873,7 +876,7 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
 static void list_residues(t_atoms *atoms)
 {
   int i,j,start,end,prev_resind,resind;
-  bool bDiff;
+  gmx_bool bDiff;
 
   /* Print all the residues, assuming continuous resnr count */ 
   start = atoms->atom[0].resind;
@@ -903,15 +906,15 @@ static void list_residues(t_atoms *atoms)
   printf("\n");
 }
 
-static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char ***gn, bool bVerbose)
+static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char ***gn, gmx_bool bVerbose)
 {
   static char **atnames, *ostring;
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   char inp_string[STRLEN],*string;
   char gname[STRLEN],gname1[STRLEN],gname2[STRLEN];
   int  i,i0,i1,sel_nr,sel_nr2,newgroup;
   atom_id nr,nr1,nr2,*index,*index1,*index2;
-  bool bAnd,bOr,bPrintOnce;
+  gmx_bool bAnd,bOr,bPrintOnce;
   
   if (bFirst) {
     bFirst=FALSE;
@@ -1179,11 +1182,11 @@ int main(int argc,char *argv[])
   const char *desc[] = {
     "Index groups are necessary for almost every gromacs program.",
     "All these programs can generate default index groups. You ONLY",
-    "have to use make_ndx when you need SPECIAL index groups.",
+    "have to use [TT]make_ndx[tt] when you need SPECIAL index groups.",
     "There is a default index group for the whole system, 9 default", 
     "index groups are generated for proteins, a default index group",
-    "is generated for every other residue name.[PAR]"
-    "When no index file is supplied, also make_ndx will generate the",
+    "is generated for every other residue name.[PAR]",
+    "When no index file is supplied, also [TT]make_ndx[tt] will generate the",
     "default groups.",
     "With the index editor you can select on atom, residue and chain names",
     "and numbers.",
@@ -1194,7 +1197,7 @@ int main(int argc,char *argv[])
   };
 
   static int natoms=0;
-  static bool bVerbose=FALSE;
+  static gmx_bool bVerbose=FALSE;
   t_pargs pa[] = {
     { "-natoms",  FALSE, etINT, {&natoms}, 
       "set number of atoms (default: read from coordinate or index file)" },
@@ -1209,7 +1212,7 @@ int main(int argc,char *argv[])
   const char *stxfile; 
   char     **ndxinfiles;
   const char *ndxoutfile;
-  bool     bNatoms;
+  gmx_bool     bNatoms;
   int      i,j;
   t_atoms  *atoms;
   rvec     *x,*v;

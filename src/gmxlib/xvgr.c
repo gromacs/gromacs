@@ -39,6 +39,12 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -50,7 +56,12 @@
 #include "vec.h"
 #include "gmxfio.h"
 
-bool output_env_get_print_xvgr_codes(const output_env_t oenv)
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
+
+gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
     int xvg_format;
 
@@ -66,7 +77,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
     const char *sym[]={ "beta", "chi", "delta", "eta", "lambda", "mu", "omega", "phi", "psi", "rho", "theta", NULL };
     const char symc[]={ 'b',    'c',   'd',     'h',   'l',      'm',  'w',     'f',   'y',   'r',   'q',     '\0' };
     int  xvgf;
-    bool bXVGR;
+    gmx_bool bXVGR;
     int  g,b,i;
     char c;
 
@@ -171,7 +182,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
                 /* Check for special symbol */
                 i = 0;
                 while (sym[i] != NULL &&
-                       strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
+                       gmx_strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
                 {
                     i++;
                 }
@@ -231,11 +242,12 @@ void xvgr_header(FILE *fp,const char *title,const char *xaxis,
 {
     char pukestr[100],buf[STRLEN];
     time_t t;
-
+ 
     if (output_env_get_print_xvgr_codes(oenv)) 
     {
         time(&t);
-        fprintf(fp,"# This file was created %s",ctime(&t));
+        gmx_ctime_r(&t,buf,STRLEN);
+        fprintf(fp,"# This file was created %s",buf);
         fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
         fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);
@@ -324,7 +336,8 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
     }
 }
 
-void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
+void xvgr_legend(FILE *out,int nsets,const char** setname,
+                 const output_env_t oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -352,6 +365,38 @@ void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
                 }
             }
         }
+    }
+}
+
+void xvgr_new_dataset(FILE *out, int nr_first, int nsets, 
+                      const char **setname, 
+                      const output_env_t oenv)
+{
+    int i;
+    char buf[STRLEN];
+
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@\n");
+        for(i=0; (i<nsets); i++)
+        {
+            if (setname[i]) {
+                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                {
+                    fprintf(out,"@ legend string %d \"%s\"\n",
+                            i+nr_first,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+                else
+                {
+                    fprintf(out,"@ s%d legend \"%s\"\n",
+                            i+nr_first,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+            }
+        }
+    }
+    else
+    {
+        fprintf(out,"\n");
     }
 }
 
@@ -391,39 +436,61 @@ void xvgr_box(FILE *out,
     }
 }
 
-static char *fgets3(FILE *fp,char ptr[],int *len)
+/* reads a line into ptr, adjusting len and renewing ptr if neccesary */
+static char *fgets3(FILE *fp,char **ptr,int *len, int maxlen)
 {
     char *p;
-    int  slen;
+    int len_remaining=*len; /* remaining amount of allocated bytes in buf */
+    int curp=0;             /* current position in buf to read into */
 
-    if (fgets(ptr,*len-1,fp) == NULL)
+    do
     {
-        return NULL;
-    }
-    p = ptr;
-    while ((strchr(ptr,'\n') == NULL) && (!feof(fp)))
-    {
-        /* This line is longer than len characters, let's increase len! */
-        *len += STRLEN;
-        p    += STRLEN;
-        srenew(ptr,*len);
-        if (fgets(p-1,STRLEN,fp) == NULL)
+        if (len_remaining < 2)
         {
-            break;
+            if ( *len + STRLEN < maxlen)
+            {
+                /* This line is longer than len characters, let's increase len! */
+                *len += STRLEN;
+                len_remaining += STRLEN;
+                srenew(*ptr, *len);
+            }
+            else
+            {
+                /*something is wrong, we'll just keep reading and return NULL*/
+                len_remaining = STRLEN;
+                curp=0;
+            }
         }
+        if (fgets(*ptr + curp, len_remaining, fp)==NULL)
+        {
+            /* if last line, skip */
+            return NULL;
+        }
+        curp += len_remaining-1; /* overwrite the nul char in next iteration */
+        len_remaining = 1;
     }
+    while ((strchr(*ptr,'\n') == NULL) && (!feof(fp)));
+
+    if ( *len + STRLEN >= maxlen )
+    {
+        return NULL; /* this line was too long */
+    }
+
     if (feof(fp))
     {
         /* We reached EOF before '\n', skip this last line. */
         return NULL;
     }
-    slen = strlen(ptr);
-    if (ptr[slen-1] == '\n')
     {
-        ptr[slen-1] = '\0';
+        /* now remove newline */
+        int slen = strlen(*ptr);
+        if ((*ptr)[slen-1] == '\n')
+        {
+            (*ptr)[slen-1] = '\0';
+        }
     }
 
-    return ptr;
+    return *ptr;
 }
 
 static int wordcount(char *ptr)
@@ -499,7 +566,7 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,
     *legend = NULL;
   }
 
-  while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL && ptr[0]!='&') {
+  while ((ptr = fgets3(fp,&tmpbuf,&len,10*STRLEN)) != NULL && ptr[0]!='&') {
     line++;
     trim(ptr);
     if (ptr[0] == '@') {
@@ -601,7 +668,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-               char **leg,const output_env_t oenv)
+               const char **leg,const output_env_t oenv)
 {
     FILE *fp;
     int  i,j;
@@ -619,7 +686,7 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
 }
 
 real **read_xvg_time(const char *fn,
-		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		     gmx_bool bHaveT,gmx_bool bTB,real tb,gmx_bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {
   FILE   *fp;
@@ -628,7 +695,7 @@ real **read_xvg_time(const char *fn,
   char   *line;
   int    t_nalloc,*val_nalloc,a,narg,n,sin,set,nchar;
   double dbl,tend=0;
-  bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
+  gmx_bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
   
   t_nalloc = 0;

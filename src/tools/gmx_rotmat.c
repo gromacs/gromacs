@@ -61,16 +61,18 @@
 
 static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
                      int gnx,int *index,
-                     bool bMW,t_topology *top,int ePBC,rvec *x_ref)
+                     gmx_bool bMW,t_topology *top,int ePBC,rvec *x_ref)
 {
     int    natoms,nfr_all,nfr,i,j,a,r,c,min_fr;
-    int    status;
+    t_trxstatus *status;
     real   *ti,min_t;
     double tot_mass,msd,*srmsd,min_srmsd,srmsd_tot;
     rvec   *x,**xi;
     real   xf;
     matrix box,R;
     real   *w_rls;
+    gmx_rmpbc_t  gpbc=NULL;
+
 
     nfr_all = 0;
     nfr     = 0;
@@ -89,12 +91,13 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
         w_rls[a] = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
     do
     {
         if (nfr_all % skip == 0)
         {
-            rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+            gmx_rmpbc(gpbc,natoms,box,x);
             snew(xi[nfr],gnx);
             for(i=0; i<gnx; i++)
             {
@@ -113,6 +116,8 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
     while(read_next_x(oenv,status,&ti[nfr],natoms,x,box));
     close_trj(status);
     sfree(x);
+
+    gmx_rmpbc_done(gpbc);
 
     snew(srmsd,nfr);
     for(i=0; i<nfr; i++)
@@ -176,7 +181,7 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
 int gmx_rotmat(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_rotmat plots the rotation matrix required for least squares fitting",
+        "[TT]g_rotmat[tt] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
         "The output are the three vectors that give the new directions",
@@ -204,19 +209,19 @@ int gmx_rotmat(int argc,char *argv[])
     const char *reffit[] = 
         { NULL, "none", "xyz", "xy", NULL }; 
     static int  skip=1;
-    static bool bFitXY=FALSE,bMW=TRUE;
+    static gmx_bool bFitXY=FALSE,bMW=TRUE;
     t_pargs pa[] = {
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, {&skip},
-          "Use every nr-th frame for -ref" },
+          "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy", FALSE, etBOOL, {&bFitXY},
           "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, {&bMW},
           "Use mass weighted fitting" }
     };
     FILE       *out;
-    int        status;
+    t_trxstatus *status;
     t_topology top;
     int        ePBC;
     rvec       *x_ref,*x;
@@ -225,10 +230,11 @@ int gmx_rotmat(int argc,char *argv[])
     int        natoms,i;
     char       *grpname,title[256];
     int        gnx;
+    gmx_rmpbc_t  gpbc=NULL;
     atom_id    *index;
     output_env_t oenv;
     real       *w_rls;
-    char *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" }; 
+    const char *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" }; 
 #define NLEG asize(leg) 
     t_filenm fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD }, 
@@ -245,7 +251,10 @@ int gmx_rotmat(int argc,char *argv[])
     
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x_ref,NULL,box,bMW);
 
-    rm_pbc(&top.idef,ePBC,top.atoms.nr,box,x_ref,x_ref);
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
+    
+    gmx_rmpbc(gpbc,top.atoms.nr,box,x_ref);
+    
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
     if (reffit[0][0] != 'n')
@@ -277,7 +286,7 @@ int gmx_rotmat(int argc,char *argv[])
     
     do
     {
-        rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+        gmx_rmpbc(gpbc,natoms,box,x);
 
         reset_x(gnx,index,natoms,NULL,x,w_rls);
 
@@ -296,6 +305,8 @@ int gmx_rotmat(int argc,char *argv[])
                 R[ZZ][XX],R[ZZ][YY],R[ZZ][ZZ]);
     }
     while(read_next_x(oenv,status,&t,natoms,x,box));
+
+    gmx_rmpbc_done(gpbc);
 
     close_trj(status);
     

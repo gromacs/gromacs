@@ -31,7 +31,6 @@ ebin.h \
 edsam.h \
 enxio.h \
 ffscanf.h \
-fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
@@ -46,8 +45,10 @@ gmx_fatal.h \
 gmx_fft.h \
 gmx_ga2la.h \
 gmx_lapack.h \
+gmx_matrix.h \
 gmx_parallel_3dfft.h \
 gmx_random.h \
+gmx_sort.h \
 gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
@@ -63,6 +64,7 @@ hackblock.h \
 histogram.h \
 index.h \
 indexutil.h \
+inputrec.h \
 invblock.h \
 macros.h \
 magic.h \
@@ -91,7 +93,7 @@ orires.h \
 partdec.h \
 pbc.h \
 pdbio.h \
-pdebug.h \
+pdb2top.h \
 perf_est.h \
 physics.h \
 pme.h \
@@ -104,15 +106,14 @@ qmmm.h \
 random.h \
 rbin.h \
 rdgroup.h \
-readcomp.h \
 readinp.h \
-reorder.h \
 resall.h \
 rmpbc.h \
 selection.h \
 selmethod.h \
 selparam.h \
 selvalue.h \
+sfactor.h \
 shellfc.h \
 shift.h \
 smalloc.h \
@@ -120,25 +121,20 @@ sortwater.h \
 sparsematrix.h \
 split.h \
 splitter.h \
-statusio.h \
 statutil.h \
 strdb.h \
 string2.h \
-struc2.h \
 symtab.h \
 sysstuff.h \
-tags.h \
 tgroup.h \
 topsort.h \
 toputil.h \
 tpxio.h \
 trajana.h \
-transfer.h \
 trnio.h \
 txtdump.h \
 typedefs.h \
 update.h \
-utils.h \
 vcm.h \
 vec.h \
 viewit.h \
@@ -158,4 +154,5 @@ molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
 oenv.h \
-sighandler.h
+sighandler.h \
+gmx_sse2_double.h

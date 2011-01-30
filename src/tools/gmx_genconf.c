@@ -109,7 +109,7 @@ static void move_x(int natoms,rvec x[],matrix box)
 int gmx_genconf(int argc, char *argv[])
 {
   const char *desc[] = {
-    "genconf multiplies a given coordinate file by simply stacking them",
+    "[TT]genconf[tt] multiplies a given coordinate file by simply stacking them",
     "on top of each other, like a small child playing with wooden blocks.",
     "The program makes a grid of [IT]user defined[it]",
     "proportions ([TT]-nbox[tt]), ",
@@ -124,7 +124,7 @@ int gmx_genconf(int argc, char *argv[])
     
   };
   const char *bugs[] = {
-    "The program should allow for random displacement off lattice points." };
+    "The program should allow for random displacement of lattice points." };
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */
@@ -137,8 +137,9 @@ int gmx_genconf(int argc, char *argv[])
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
-  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz,status=-1;
-  bool    bTRX;
+  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz;
+  t_trxstatus *status;
+  gmx_bool    bTRX;
   output_env_t oenv;
   
   t_filenm fnm[] = {
@@ -151,10 +152,10 @@ int gmx_genconf(int argc, char *argv[])
   static int  seed     = 0;          /* seed for random number generator */
   static int  nmolat   = 3;
   static int  nblock   = 1;
-  static bool bShuffle = FALSE;
-  static bool bSort    = FALSE;
-  static bool bRandom  = FALSE;      /* False: no random rotations */
-  static bool bRenum   = TRUE;       /* renumber residues */
+  static gmx_bool bShuffle = FALSE;
+  static gmx_bool bSort    = FALSE;
+  static gmx_bool bRandom  = FALSE;      /* False: no random rotations */
+  static gmx_bool bRenum   = TRUE;       /* renumber residues */
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
   static rvec max_rot  = {180,180,180}; /* maximum rotation */
   t_pargs pa[] = {

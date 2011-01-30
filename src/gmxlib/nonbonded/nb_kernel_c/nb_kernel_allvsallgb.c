@@ -276,7 +276,7 @@ nb_kernel_allvsallgb(t_forcerec *           fr,
     
 	charge              = mdatoms->chargeA;
 	type                = mdatoms->typeA;
-    gbfactor            = (1.0 - (1.0/fr->gb_epsilon_solvent));
+    gbfactor            = ((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 	facel               = fr->epsfac;
     GBtab               = fr->gbtab.tab;
     gbtabscale          = fr->gbtab.scale;

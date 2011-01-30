@@ -68,7 +68,7 @@
 typedef struct
 { 
     real        deltaF0;
-    bool        bHarmonic;
+    gmx_bool        bHarmonic;
     real        tau;
     real        deltaF;
     real        kT; 
@@ -91,8 +91,8 @@ typedef struct edix
 typedef struct edipar
 {
     int         nini;           /* total Nr of atoms                    */
-    bool        fitmas;         /* true if trans fit with cm            */
-    bool        pcamas;         /* true if mass-weighted PCA            */
+    gmx_bool        fitmas;         /* true if trans fit with cm            */
+    gmx_bool        pcamas;         /* true if mass-weighted PCA            */
     int         presteps;       /* number of steps to run without any   
                                  *    perturbations ... just monitoring */
     int         outfrq;         /* freq (in steps) of writing to edo    */
@@ -347,7 +347,7 @@ int read_conffile(const char *confin,char *title,rvec *x[])
 
 
 void read_eigenvalues(int vecs[],const char *eigfile, real values[], 
-                      bool bHesse, real kT) 
+                      gmx_bool bHesse, real kT) 
 {
   int  neig,nrow,i;
   double **eigval;
@@ -366,13 +366,13 @@ void read_eigenvalues(int vecs[],const char *eigfile, real values[],
   if (bHesse)
     for (i=0; vecs[i]; i++) {
       if (vecs[i]<7)
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the first 6 eigenvectors of the HESSE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=eigval[1][vecs[i]-1]/kT;
     }
   else
     for (i=0; vecs[i]; i++) {
       if (vecs[i]>(neig-6))
-	gmx_fatal(FARGS,"ERROR: You have choosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
+	gmx_fatal(FARGS,"ERROR: You have chosen one of the last 6 eigenvectors of the COVARIANCE Matrix. That does not make sense, since they correspond to the 6 rotational and translational degrees of freedom.\n\n");
       values[i]=1/eigval[1][vecs[i]-1];
     }
   /* free memory */
@@ -460,7 +460,7 @@ int main(int argc,char *argv[])
 {
 
   static const char *desc[] = {
-      "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with mdrun",
+      "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
       "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
       "normal modes anaysis ([TT]g_nmeig[tt]).",
       "ED sampling can be used to manipulate the position along collective coordinates",
@@ -471,14 +471,14 @@ int main(int argc,char *argv[])
       "([TT]-linfix[tt], [TT]-linacc[tt], [TT]-radfix[tt], [TT]-radacc[tt], [TT]-radcon[tt]),",
       "to keep the position along a certain (set of) coordinate(s) fixed ([TT]-linfix[tt]),",
       "or to only monitor the projections of the positions onto",
-      "these coordinates ([TT]-mon[tt]).[PAR]"
+      "these coordinates ([TT]-mon[tt]).[PAR]",
       "References:[BR]",
       "A. Amadei, A.B.M. Linssen, B.L. de Groot, D.M.F. van Aalten and ",
       "H.J.C. Berendsen; An efficient method for sampling the essential subspace ",
       "of proteins., J. Biomol. Struct. Dyn. 13:615-626 (1996)[BR]",
       "B.L. de Groot, A. Amadei, D.M.F. van Aalten and H.J.C. Berendsen; ",
       "Towards an exhaustive sampling of the configurational spaces of the ",
-      "two forms of the peptide hormone guanylin,"
+      "two forms of the peptide hormone guanylin,",
       "J. Biomol. Struct. Dyn. 13 : 741-751 (1996)[BR]",
       "B.L. de Groot, A.Amadei, R.M. Scheek, N.A.J. van Nuland and H.J.C. Berendsen; ",
       "An extended sampling of the configurational space of HPr from E. coli",
@@ -495,22 +495,22 @@ int main(int argc,char *argv[])
       "(steps in the desired direction will be accepted, others will be rejected).",
       "Note: by default the starting MD structure will be taken as origin of the first",
       "expansion cycle for radius expansion. If [TT]-ori[tt] is specified, you will be able",
-      "to read in a structure file that defines an external origin.[PAR]"
+      "to read in a structure file that defines an external origin.[PAR]",
       "[TT]-radcon[tt]: perform acceptance radius contraction along selected eigenvectors",
-      "towards a target structure specified with [TT]-tar[tt].[PAR]"
-      "NOTE: each eigenvector can be selected only once. [PAR]"
+      "towards a target structure specified with [TT]-tar[tt].[PAR]",
+      "NOTE: each eigenvector can be selected only once. [PAR]",
       "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to .edo file[PAR]",
       "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
       "cycle will be started if the spontaneous increase of the radius (in nm/step)",
-      "is less than the value specified.[PAR]" 
+      "is less than the value specified.[PAR]",
       "[TT]-maxedsteps[tt]: maximum number of steps per cycle in radius expansion",
-      "before a new cycle is started.[PAR]"
+      "before a new cycle is started.[PAR]",
       "Note on the parallel implementation: since ED sampling is a 'global' thing",
       "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
       "is not very parallel-friendly from an implentation point of view. Because",
       "parallel ED requires much extra communication, expect the performance to be",
       "lower as in a free MD simulation, especially on a large number of nodes. [PAR]",
-      "All output of mdrun (specify with -eo) is written to a .edo file. In the output",
+      "All output of [TT]mdrun[tt] (specify with [TT]-eo[tt]) is written to a .edo file. In the output",
       "file, per OUTFRQ step the following information is present: [PAR]",
       "* the step number[BR]",
       "* the number of the ED dataset. (Note that you can impose multiple ED constraints in",
@@ -565,9 +565,9 @@ int main(int argc,char *argv[])
     static int* listen[evEND];
     static real T=300.0;
     const real kB = 2.5 / 300.0; /* k_boltzmann in MD units */
-    static bool bRestrain = FALSE;
-    static bool bHesse=FALSE;
-    static bool bHarmonic=FALSE;
+    static gmx_bool bRestrain = FALSE;
+    static gmx_bool bHesse=FALSE;
+    static gmx_bool bHarmonic=FALSE;
     t_pargs pa[] = {
     { "-mon", FALSE, etSTR, {&evSelections[evMON]},
         "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91" },
@@ -584,7 +584,7 @@ int main(int argc,char *argv[])
     { "-radcon", FALSE, etSTR, {&evSelections[5]},
         "Indices of eigenvectors for acceptance radius contraction" },
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-        "Freqency (in steps) of writing output in .edo file" },
+        "Freqency (in steps) of writing output in [TT].edo[tt] file" },
     { "-slope", FALSE, etREAL, { &edi_params.slope},
         "Minimal slope in acceptance radius expansion"},
     { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
@@ -598,7 +598,7 @@ int main(int argc,char *argv[])
     { "-eqsteps", FALSE, etINT, {&eqSteps},
         "Number of steps to run without any perturbations "},
     { "-Eflnull", FALSE, etREAL, {&constEfl},
-        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. "},
+        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use [TT]-tau[tt] 0. "},
     { "-T", FALSE, etREAL, {&T},
         "T is temperature, the value is needed if you want to do flooding "},
     { "-alpha",FALSE,etREAL,{&alpha},
@@ -645,7 +645,7 @@ int main(int argc,char *argv[])
     char       title[STRLEN];
     matrix     topbox;
     rvec       *xtop;
-    bool bTop, bFit1;
+    gmx_bool bTop, bFit1;
     
     t_filenm fnm[] = {
     { efTRN, "-f",    "eigenvec",    ffREAD  },
@@ -728,22 +728,32 @@ int main(int argc,char *argv[])
     printf("\n");
     
     
-    if (xref1==NULL && bFit1) {  
-        /* if g_covar used different coordinate groups to fit and to do the PCA */
-        printf("\nNote: the structure in %s should be the same\n"
-               "      as the one used for the fit in g_covar\n",ftp2fn(efTPS,NFILE,fnm));
-        printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+    if (xref1==NULL)
+    {
+        if (bFit1)
+        {
+            /* if g_covar used different coordinate groups to fit and to do the PCA */
+            printf("\nNote: the structure in %s should be the same\n"
+                     "      as the one used for the fit in g_covar\n",ftp2fn(efTPS,NFILE,fnm));
+            printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+        }
+        else
+        {
+            printf("\nNote: Apparently no fitting was done in g_covar.\n"
+                     "      However, you need to select a reference group for fitting in mdrun\n");
+        }
         get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
         snew(xref1,nfit);
         for (i=0;i<nfit;i++)
             copy_rvec(xtop[ifit[i]],xref1[i]);
-    } else {
+    }
+    else
+    {
         nfit=natoms;
         ifit=index;
-        xref1=xav1;
-    };
+    }
 
-    /* if -flood read eigenvalues and store them in evSteplist[evFLODD] */
+    /* if -flood read eigenvalues and store them in evSteplist[evFLOOD] */
     if (listen[evFLOOD][0]!=0)
         read_eigenvalues(listen[evFLOOD],opt2fn("-eig",NFILE,fnm),evStepList[evFLOOD],bHesse,kB*T);
  

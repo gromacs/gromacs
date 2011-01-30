@@ -1,0 +1,73 @@
+
+                    Welcome to GROMACS-GPU!
+
+Note: Detailed, step-by-step installation instructions as 
+well as additional information are available on the website 
+http://www.gromacs.org/gpu
+
+
+* INSTALLING FROM BINARY DISTRIBUTION:
+
+0. Prerequisites: 
+    - OpenMM (included in the binary release)
+    - NVIDIA CUDA libraries (version >=3.1);
+    - NVIDIA driver (for details on compatiblity consult
+	  http://www.nvidia.com/Download/index5.aspx);
+    - NVIDIA CUDA-enabled GPU (for compatiblity list see 
+	  http://www.gromacs.org/gpu).
+
+
+1. Download and unpack the binary package for the respective 
+OS and architecture. Copy the content of the package to your 
+normal GROMACS installation directory (or to a custom location). 
+Note that as the distributed Gromacs-GPU packages do not contain 
+the entire set of tools and utilities included in a full GROMACS 
+installation. Therefore, it is recommended to have a ≥v4.5 
+standard Gromacs installation along the GPU accelerated one.
+e.g. on unix: 
+
+tar -xvf gromacs-4.5-GPU.tar.gz
+cp -R gromacs-4.5-GPU/* PATH_TO_GROMACS_INSTALLATION
+
+
+2. Add the openmm/lib directory to your library path, e.g. in bash:
+
+export LD_LIBRARY_PATH=PATH_TO_GROMACS/openmm/lib:$LD_LIBRARY_PATH
+
+If there are other OpenMM versions installed, make sure that the 
+supplied libraries have preference when running mdrun-gpu. 
+Also, make sure that the installed CUDA libraries match the version 
+of CUDA with which GROMACS-GPU has been compiled.
+
+
+3. Set the OPENMM_PLUGIN_DIR environment variable to contain the path 
+to the openmm/lib/plugins directory, e.g. in bash:
+
+export OPENMM_PLUGIN_DIR=PATH_TO_GROMACS/openmm/lib/plugins
+
+
+4. At this point, running the command: 
+
+PATH_TO_GROMACS/bin/mdrun-gpu -h 
+
+should display the standard mdrun help which means that all the 
+necessary libraries are accessible.
+
+
+
+* INSTALLING FROM SOURCE DISTRIBUTION:
+
+GROMACS-GPU uses a cmake build-generator and makefiles on unix. 
+All you have to do is run:
+
+cmake PATH_TO_SOURCE_DIRECTORY -DGMX_OPENMM=ON -DGMX_THREADS=OFF 
+make mdrun
+make install-mdrun
+
+
+
+* ARE YOU STILL HAVING PROBLEMS?
+
+Post it to the GROMACS mailing lists. We read these on a regular basis,
+and in many cases another user might already be familiar with the
+task you're trying to perform!

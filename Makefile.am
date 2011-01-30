@@ -7,6 +7,7 @@
 # automake. Presently, this means automake version 1.4f. In Groningen, you
 # can find that under ~lindahl/gnu/bin , or download a copy from www.gromacs.org
 
+ACLOCAL_AMFLAGS = -I config
 
 AUTOMAKE_OPTIONS = foreign 
 
@@ -16,9 +17,36 @@ SUBDIRS = include src admin scripts share man
 # Most files in the config subdir is included automatically when
 # we issue "make dist", but not depcomp
 
-EXTRA_DIST = config/depcomp 	                               
+EXTRA_DIST = config/depcomp \
+			 CMakeLists.txt cmake \
+			 include/thread_mpi/atomic/CMakeLists.txt \
+			 include/thread_mpi/CMakeLists.txt \
+			 include/CMakeLists.txt \
+			 man/CMakeLists.txt \
+			 tests/CMakeLists.txt \
+			 share/CMakeLists.txt \
+			 src/kernel/gmx_gpu_utils \
+			 src/kernel/CMakeLists.txt \
+			 src/kernel/openmm_wrapper.cpp \
+			 src/kernel/openmm_wrapper.h \
+			 src/ngmx/CMakeLists.txt \
+			 src/mdlib/CMakeLists.txt \
+			 src/config.h.cmakein \
+			 src/gmxlib/version.c.cmakein \
+			 src/gmxlib/thread_mpi/CMakeLists.txt \
+			 src/gmxlib/CMakeLists.txt \
+			 src/CMakeLists.txt \
+			 src/tools/CMakeLists.txt \
+			 COPYING-GPU \
+			 INSTALL-GPU \
+			 INSTALL.cmake \
+			 INSTALL.automake
+
 
 install-exec-hook:
+if NO_LA_FILES
+	cd $(DESTDIR)$(libdir) && rm -f libmd@LIBSUFFIX@.la libgmx@LIBSUFFIX@.la libgmxpreprocess@LIBSUFFIX@.la libgmxana@LIBSUFFIX@.la
+endif
 	@echo ""
 	@echo "GROMACS is installed under $(prefix)."
 	@echo "Make sure to update your PATH and MANPATH to find the"
@@ -35,7 +63,6 @@ install-exec-hook:
 mdrun:		
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) ; exit 0)
 	(cd $(top_builddir)/src/mdlib && $(MAKE) ; exit 0)
-	(cd $(top_builddir)/src/kernel && $(MAKE) lib_LTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) mdrun ; exit 0)
 
 install-mdrun:
@@ -43,6 +70,9 @@ install-mdrun:
 	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-libLTLIBRARIES ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
+if NO_LA_FILES
+	cd $(DESTDIR)$(libdir) && rm -f libmd@LIBSUFFIX@.la libgmx@LIBSUFFIX@.la libgmxpreprocess@LIBSUFFIX@.la libgmxana@LIBSUFFIX@.la
+endif
 
 fahcore:
 	(cd $(top_builddir)/src/gmxlib && $(MAKE) ; exit 0)
@@ -89,76 +119,4 @@ mpi-rpm:
 CLEANFILES = *~ \\\#* 
 
 DISTCLEANFILES = libtool config.cache config.log
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

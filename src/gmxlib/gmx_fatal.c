@@ -53,11 +53,14 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
 #ifdef GMX_THREADS
-#include "thread_mpi.h"
+#include "tmpi.h"
 #endif
 
-static bool bDebug = FALSE;
+static gmx_bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
 static FILE *log_file = NULL;
 
@@ -68,9 +71,9 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-bool bDebugMode(void)
+gmx_bool bDebugMode(void)
 {
-    bool ret;
+    gmx_bool ret;
 /*#ifdef GMX_THREADS*/
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -90,7 +93,7 @@ void gmx_fatal_set_log_file(FILE *fp)
 
 void _where(const char *file,int line)
 {
-  static bool bFirst = TRUE;
+  static gmx_bool bFirst = TRUE;
   static int  nskip  = -1;
   static int  nwhere =  0;
   FILE *fp;
@@ -144,7 +147,7 @@ static void bputd(char *msg,int *len,int d)
   if (d<10) bputc(msg,len,d+'0'); else bputc(msg,len,d-10+'a');
 }
 
-static void bputi(char *msg,int *len,int val,int radix,int fld,bool bNeg)
+static void bputi(char *msg,int *len,int val,int radix,int fld,gmx_bool bNeg)
 {
   int fmax=0;
   
@@ -192,10 +195,12 @@ static void quit_gmx(const char *msg)
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-    if (!fatal_errno) 
+    if (fatal_errno == 0) 
     {
-        if (log_file) 
+        if (log_file)
+        {
             fprintf(log_file,"%s\n",msg);
+        }
         fprintf(stderr,"%s\n",msg);
         /* we set it to no-zero because if this function is called, something 
            has gone wrong */
@@ -204,12 +209,15 @@ static void quit_gmx(const char *msg)
     else 
     {
         if (fatal_errno != -1)
+        {
             errno=fatal_errno;
+        }
         perror(msg);
     }
 
 #ifndef GMX_THREADS 
-    if (gmx_parallel_env_initialized()) {
+    if (gmx_parallel_env_initialized())
+    {
         int  nnodes;
         int  noderank;
 
@@ -235,6 +243,47 @@ static void quit_gmx(const char *msg)
     }
 
     exit(fatal_errno);
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+}
+
+/* The function below should be identical to quit_gmx,
+ * except that is does not actually quit and call gmx_abort.
+ */
+static void quit_gmx_noquit(const char *msg)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+    if (!fatal_errno) 
+    {
+        if (log_file) 
+            fprintf(log_file,"%s\n",msg);
+        fprintf(stderr,"%s\n",msg);
+        /* we set it to no-zero because if this function is called, something 
+           has gone wrong */
+        fatal_errno=255;
+    }
+    else 
+    {
+        if (fatal_errno != -1)
+            errno=fatal_errno;
+        perror(msg);
+    }
+
+    if (!gmx_parallel_env_initialized())
+    {
+        if (debug)
+            fflush(debug);
+        if (bDebugMode()) {
+            fprintf(stderr,"dump core (y/n):"); 
+            fflush(stderr);
+            if (toupper(getc(stdin))!='N') 
+                (void) abort(); 
+        }
+    }
+
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -392,13 +441,37 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 }
 
 void gmx_fatal_collective(int f_errno,const char *file,int line,
-                          bool bMaster,
+                          t_commrec *cr,gmx_domdec_t *dd,
                           const char *fmt,...)
 {
+    gmx_bool    bFinalize;
     va_list ap;
     char    msg[STRLEN];
-    
-    if (bMaster)
+#ifdef GMX_MPI
+    int     result;
+#endif
+
+    bFinalize = TRUE;
+
+#ifdef GMX_MPI
+    if (gmx_parallel_env_initialized())
+    {
+        /* Check if we are calling on all processes in MPI_COMM_WORLD */ 
+        if (cr != NULL)
+        {
+            MPI_Comm_compare(cr->mpi_comm_mysim,MPI_COMM_WORLD,&result);
+        }
+        else
+        {
+            MPI_Comm_compare(dd->mpi_comm_all,MPI_COMM_WORLD,&result);
+        }
+        /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
+        bFinalize = (result != MPI_UNEQUAL);
+    }
+#endif
+
+    if ((cr != NULL && MASTER(cr)  ) ||
+        (dd != NULL && DDMASTER(dd)))
     {
         va_start(ap,fmt);
         
@@ -418,15 +491,42 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
         tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
+        if (bFinalize)
+        {
+            /* Use an error handler that does not quit */
+            set_gmx_error_handler(quit_gmx_noquit);
+        }
+
         _gmx_error("fatal",msg,file,line);
     }
 
 #ifdef GMX_MPI
-    /* Let all other processes wait till the master has printed
-     * the error message and issued MPI_Abort.
-     */
-    MPI_Barrier(MPI_COMM_WORLD);
+    if (gmx_parallel_env_initialized())
+    {
+        if (bFinalize)
+        {
+            /* Broadcast the fatal error number possibly modified
+             * on the master process, in case the user would like
+             * to use the return status on a non-master process.
+             * The master process in cr and dd always has global rank 0.
+             */
+            MPI_Bcast(&fatal_errno,sizeof(fatal_errno),MPI_BYTE,
+                      0,MPI_COMM_WORLD);
+
+            /* Finalize nicely instead of aborting */
+            MPI_Finalize();
+        }
+        else
+        {
+            /* Let all other processes wait till the master has printed
+             * the error message and issued MPI_Abort.
+             */
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+    }
 #endif
+
+    exit(fatal_errno);
 }
 
 void _invalid_case(const char *fn,int line)
@@ -449,7 +549,7 @@ void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
  *
  */
 FILE *debug=NULL;
-bool gmx_debug_at=FALSE;
+gmx_bool gmx_debug_at=FALSE;
 
 void init_debug (const int dbglevel,const char *dbgfile)
 {
@@ -588,8 +688,8 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
     strerr = gmx_strerror(key);
     sprintf(buf,"\n%s\nProgram %s, %s\n"
             "Source code file: %s, line: %d\n\n"
-            "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
-            "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
+            "%s:\n%s\nFor more information and tips for troubleshooting, please check the GROMACS\n"
+            "website at http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
             llines,ShortProgram(),GromacsVersion(),file,line,
             strerr,msg ? msg : errerrbuf,llines,tmpbuf);
     free(strerr);

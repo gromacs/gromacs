@@ -44,10 +44,11 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
+#include "futil.h"
+#include "gmx_fatal.h"
 
 
-
-
+#if 0
 #ifdef HAVE_FSEEKO
 #  define gmx_fseek(A,B,C) fseeko(A,B,C)
 #  define gmx_ftell(A) ftello(A)
@@ -57,18 +58,58 @@
 #  define gmx_ftell(A) ftell(A)
 #  define gmx_off_t int
 #endif
+#endif
 
 
+/* This is just for clarity - it can never be anything but 4! */
+#define XDR_INT_SIZE 4
+
+/* same order as the definition of xdr_datatype */
+const char *xdr_datatype_names[] =
+{
+    "int",
+    "float",
+    "double",
+    "large int",
+    "char",
+    "string"
+};
+
+
+#ifdef GMX_FORTRAN
+
+/* NOTE: DO NOT USE THESE ANYWHERE IN GROMACS ITSELF. 
+   These are necessary for the backward-compatile io routines for 3d party
+   tools */
 #define MAXID 256
 static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
+#ifdef GMX_THREADS
+/* we need this because of the global variables above for FORTRAN binding. 
+   The I/O operations are going to be slow. */
+static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
 
-/* This is just for clarity - it can never be anything but 4! */
-#define XDR_INT_SIZE 4
+static void xdr_fortran_lock(void)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&xdr_fortran_mutex);
+#endif
+}
+static void xdr_fortran_unlock(void)
+{
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&xdr_fortran_mutex);
+#endif
+}
 
-#ifdef GMX_FORTRAN
+
+
+/* the open&close prototypes */
+static int xdropen(XDR *xdrs, const char *filename, const char *type);
+static int xdrclose(XDR *xdrs);
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
 
@@ -110,63 +151,82 @@ int ctofstr(char *ds, int dl, char *ss)
 void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
+        xdr_fortran_lock();
 	*ret = xdr_bool(xdridptr[*xdrid], pb);
 	cnt += XDR_INT_SIZE;
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_char(xdridptr[*xdrid], cp);
 	cnt += sizeof(char);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_double(xdridptr[*xdrid], dp);
 	cnt += sizeof(double);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrffloat,XDRFFLOAT)(int *xdrid, float *fp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_float(xdridptr[*xdrid], fp);
 	cnt += sizeof(float);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_int(xdridptr[*xdrid], ip);
 	cnt += XDR_INT_SIZE;
+        xdr_fortran_unlock();
 }
 
+void
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_short(xdridptr[*xdrid], sp);
   	cnt += sizeof(sp);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_u_char(xdridptr[*xdrid], (u_char *)ucp);
 	cnt += sizeof(char);
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_u_short(xdridptr[*xdrid], (unsigned short *)usp);
 	cnt += sizeof(unsigned short);
+        xdr_fortran_unlock();
 }
 
 void 
 F77_FUNC(xdrf3dfcoord,XDRF3DFCOORD)(int *xdrid, float *fp, int *size, float *precision, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr3dfcoord(xdridptr[*xdrid], fp, size, precision);
+        xdr_fortran_unlock();
 }
 
 void
@@ -175,6 +235,7 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 {
 	char *tsp;
 
+        xdr_fortran_lock();
 	tsp = (char*) malloc((size_t)(((sp_len) + 1) * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
@@ -183,12 +244,14 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 	if (ftocstr(tsp, *maxsize+1, sp_ptr, sp_len)) {
 	    *ret = -1;
 	    free(tsp);
+            xdr_fortran_unlock();
 	    return;
 	}
         *ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (unsigned int) *maxsize);
 	ctofstr( sp_ptr, sp_len , tsp);
 	cnt += *maxsize;
 	free(tsp);
+        xdr_fortran_unlock();
 }
 
 void
@@ -197,41 +260,52 @@ F77_FUNC(xdrfwrapstring,XDRFWRAPSTRING)(int *xdrid, char *sp_ptr,
 {
 	char *tsp;
 	int maxsize;
+
+        xdr_fortran_lock();
 	maxsize = (sp_len) + 1;
 	tsp = (char*) malloc((size_t)(maxsize * sizeof(char)));
 	if (tsp == NULL) {
 	    *ret = -1;
 	    return;
+            xdr_fortran_unlock();
 	}
 	if (ftocstr(tsp, maxsize, sp_ptr, sp_len)) {
 	    *ret = -1;
 	    free(tsp);
 	    return;
+            xdr_fortran_unlock();
 	}
 	*ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (u_int)maxsize);
 	ctofstr( sp_ptr, sp_len, tsp);
 	cnt += maxsize;
 	free(tsp);
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfopaque,XDRFOPAQUE)(int *xdrid, caddr_t *cp, int *ccnt, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_opaque(xdridptr[*xdrid], (caddr_t)*cp, (u_int)*ccnt);
 	cnt += *ccnt;
+        xdr_fortran_unlock();
 }
 
 void
 F77_FUNC(xdrfsetpos,XDRFSETPOS)(int *xdrid, int *pos, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdr_setpos(xdridptr[*xdrid], (u_int) *pos);
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrf,XDRF)(int *xdrid, int *pos)
 {
+        xdr_fortran_lock();
 	*pos = xdr_getpos(xdridptr[*xdrid]);
+        xdr_fortran_unlock();
 }
 
 void
@@ -239,17 +313,21 @@ F77_FUNC(xdrfvector,XDRFVECTOR)(int *xdrid, char *cp, int *size, F77_FUNC(xdrfpr
 {
 	int lcnt;
 	cnt = 0;
+        xdr_fortran_lock();
 	for (lcnt = 0; lcnt < *size; lcnt++) {
 		elproc(xdrid, (cp+cnt) , ret);
 	}
+        xdr_fortran_unlock();
 }
 
 
 void
 F77_FUNC(xdrfclose,XDRFCLOSE)(int *xdrid, int *ret)
 {
+        xdr_fortran_lock();
 	*ret = xdrclose(xdridptr[*xdrid]);
 	cnt = 0;
+        xdr_fortran_unlock();
 }
 
 void
@@ -259,6 +337,7 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 	char fname[512];
 	char fmode[3];
 
+        xdr_fortran_lock();
 	if (ftocstr(fname, sizeof(fname), fp_ptr, fp_len)) {
 		*ret = 0;
 	}
@@ -272,51 +351,22 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 		*ret = 0;
 	else 
 		*ret = 1;	
+        xdr_fortran_unlock();
 }
-#endif /* GMX_FORTRAN */
-
-/*___________________________________________________________________________
- |
- | what follows are the C routines for opening, closing xdr streams
- | and the routine to read/write compressed coordinates together
- | with some routines to assist in this task (those are marked
- | static and cannot be called from user programs)
-*/
-#define MAXABS INT_MAX-2
-
-#ifndef MIN
-#define MIN(x,y) ((x) < (y) ? (x):(y))
-#endif
-#ifndef MAX
-#define MAX(x,y) ((x) > (y) ? (x):(y))
-#endif
-#ifndef SQR
-#define SQR(x) ((x)*(x))
-#endif
-static int magicints[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
-    80, 101, 128, 161, 203, 256, 322, 406, 512, 645,
-    812, 1024, 1290, 1625, 2048, 2580, 3250, 4096, 5060, 6501,
-    8192, 10321, 13003, 16384, 20642, 26007, 32768, 41285, 52015, 65536,
-    82570, 104031, 131072, 165140, 208063, 262144, 330280, 416127, 524287, 660561,
-    832255, 1048576, 1321122, 1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042,
-    8388607, 10568983, 13316085, 16777216 };
-
-#define FIRSTIDX 9
-/* note that magicints[FIRSTIDX-1] == 0 */
-#define LASTIDX (sizeof(magicints) / sizeof(*magicints))
-
 
 /*__________________________________________________________________________
  |
  | xdropen - open xdr file
  |
  | This versions differs from xdrstdio_create, because I need to know
- | the state of the file (read or write) so I can use xdr3dfcoord
- | in eigther read or write mode, and the file descriptor
+ | the state of the file (read or write)  and the file descriptor
  | so I can close the file (something xdr_destroy doesn't do).
  |
+ | It assumes xdr_fortran_mutex is locked.
+ |
+ | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
+ |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
+ |       IN GROMACS ITSELF. 
 */
 
 int xdropen(XDR *xdrs, const char *filename, const char *type) {
@@ -324,7 +374,16 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     enum xdr_op lmode;
     int xdrid;
     char newtype[5];
-	
+
+
+#ifdef GMX_THREADS
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
+        gmx_incons("xdropen called without locked mutex. NEVER call this function.");
+    }
+#endif 
+
     if (init_done == 0) {
 	for (xdrid = 1; xdrid < MAXID; xdrid++) {
 	    xdridptr[xdrid] = NULL;
@@ -350,7 +409,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
         strcpy(newtype, "ab+");
         lmode = XDR_ENCODE;
     }
-    else if (strncasecmp(type, "r+", 2) == 0)
+    else if (gmx_strncasecmp(type, "r+", 2) == 0)
     {
         xdrmodes[xdrid] = 'a';
         strcpy(newtype, "rb+");
@@ -369,7 +428,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	return 0;
     }
     
-    /* next test isn't usefull in the case of C language
+    /* next test isn't useful in the case of C language
      * but is used for the Fortran interface
      * (C users are expected to pass the address of an already allocated
      * XDR staructure)
@@ -383,7 +442,6 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     }
     return xdrid;
 }
-
 /*_________________________________________________________________________
  |
  | xdrclose - close a xdr file
@@ -392,11 +450,24 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
  | It also closes the associated file descriptor (this is *not*
  | done by xdr_destroy).
  |
+ | It assumes xdr_fortran_mutex is locked.
+ |
+ | NOTE: THIS FUNCTION IS NOW OBSOLETE AND ONLY PROVIDED FOR BACKWARD
+ |       COMPATIBILITY OF 3D PARTY TOOLS. IT SHOULD NOT BE USED ANYWHERE 
+ |       IN GROMACS ITSELF. 
 */
  
 int xdrclose(XDR *xdrs) {
     int xdrid;
     int rc = 0;
+
+#ifdef GMX_THREADS
+    if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
+    {
+        tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
+        gmx_incons("xdropen called without locked mutex. NEVER call this function");
+    }
+#endif
 
     if (xdrs == NULL) {
 	fprintf(stderr, "xdrclose: passed a NULL pointer\n");
@@ -418,11 +489,39 @@ int xdrclose(XDR *xdrs) {
     return 0;    
 }
 
-FILE *
-xdr_get_fp(int xdrid)
-{
-	return xdrfiles[xdrid];
-}
+#endif /* GMX_FORTRAN */
+
+
+/*___________________________________________________________________________
+ |
+ | what follows are the C routine to read/write compressed coordinates together
+ | with some routines to assist in this task (those are marked
+ | static and cannot be called from user programs)
+*/
+#define MAXABS INT_MAX-2
+
+#ifndef MIN
+#define MIN(x,y) ((x) < (y) ? (x):(y))
+#endif
+#ifndef MAX
+#define MAX(x,y) ((x) > (y) ? (x):(y))
+#endif
+#ifndef SQR
+#define SQR(x) ((x)*(x))
+#endif
+static const int magicints[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
+    80, 101, 128, 161, 203, 256, 322, 406, 512, 645,
+    812, 1024, 1290, 1625, 2048, 2580, 3250, 4096, 5060, 6501,
+    8192, 10321, 13003, 16384, 20642, 26007, 32768, 41285, 52015, 65536,
+    82570, 104031, 131072, 165140, 208063, 262144, 330280, 416127, 524287, 660561,
+    832255, 1048576, 1321122, 1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042,
+    8388607, 10568983, 13316085, 16777216 };
+
+#define FIRSTIDX 9
+/* note that magicints[FIRSTIDX-1] == 0 */
+#define LASTIDX (sizeof(magicints) / sizeof(*magicints))
 
 
 /*____________________________________________________________________________
@@ -696,13 +795,18 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
  |
  */
  
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
-    
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) 
+{
+    int *ip = NULL;
+    int *buf = NULL;
+    gmx_bool bRead;
+        
+    /* preallocate a small buffer and ip on the stack - if we need more
+       we can always malloc(). This is faster for small values of size: */
+    int prealloc_size=3*16;
+    int prealloc_ip[3*16], prealloc_buf[3*20];
+    int we_should_free=0;
 
-    static int *ip = NULL;
-    static int oldsize;
-    static int *buf;
- 
     int minint[3], maxint[3], mindiff, *lip, diff;
     int lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
     int minidx, maxidx;
@@ -719,20 +823,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     int errval = 1;
     int rc;
 	
+    bRead = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
-    
-    /* find out if xdrs is opened for reading or for writing */
-    xdrid = 0;
-    while (xdridptr[xdrid] != xdrs) {
-	xdrid++;
-	if (xdrid >= MAXID) {
-	    fprintf(stderr, "xdr error. no open xdr stream\n");
-	    exit (1);
-	}
-    }
-    if ((xdrmodes[xdrid] == 'w') || (xdrmodes[xdrid] == 'a')) {
-
+   
+    if (!bRead)
+    {
 	/* xdrs is open for writing */
 
 	if (xdr_int(xdrs, size) == 0)
@@ -747,35 +843,25 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	}
 	
 	if(xdr_float(xdrs, precision) == 0)
-		return 0;
-		
-	if (ip == NULL) {
+            return 0;
+
+        if (size3 <= prealloc_size)
+        {
+            ip=prealloc_ip;
+            buf=prealloc_buf;
+        }
+        else
+        {
+            we_should_free=1;
+	    bufsize = size3 * 1.2;
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
 	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
+	    if (ip == NULL || buf==NULL) 
+            {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
-	    oldsize = *size;
-	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
-		fprintf(stderr,"realloc failed\n");
-		exit(1);
-	    }
-	    oldsize = *size;
-	}
+        }
 	/* buf[0-2] are special and do not contain actual data */
 	buf[0] = buf[1] = buf[2] = 0;
 	minint[0] = minint[1] = minint[2] = INT_MAX;
@@ -840,7 +926,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
 		 (xdr_int(xdrs, &(maxint[2])) == 0))
 	{
-		return 0;
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
 	}
 	
 	if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
@@ -871,7 +962,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    smallidx++;
 	}
 	if(xdr_int(xdrs, &smallidx) == 0)
-		return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
 		
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
@@ -980,9 +1078,24 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	if (buf[1] != 0) buf[0]++;
 		/* buf[0] holds the length in bytes */
 	if(xdr_int(xdrs, &(buf[0])) == 0)
-		return 0;
-		
-        return errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+	
+        rc=errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
+        if (we_should_free)
+        {
+            free(ip);
+            free(buf);
+        }
+        return rc;
+	
     } else {
 	
 	/* xdrs is open for reading */
@@ -1002,34 +1115,25 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	}
 	if(xdr_float(xdrs, precision) == 0)
 		return 0;
-		
-	if (ip == NULL) {
+
+        if (size3 <= prealloc_size)
+        {
+            ip=prealloc_ip;
+            buf=prealloc_buf;
+        }
+        else
+        {
+            we_should_free=1;
+	    bufsize = size3 * 1.2;
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
 	    buf = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
+	    if (ip == NULL || buf==NULL) 
+            {
 		fprintf(stderr,"malloc failed\n");
 		exit(1);
 	    }
-	    oldsize = *size;
-	} else if (*size > oldsize) {
-	    ip = (int *)realloc(ip, (size_t)(size3 * sizeof(*ip)));
-	    if (ip == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    bufsize = size3 * 1.2;
-	    buf = (int *)realloc(buf, (size_t)(bufsize * sizeof(*buf)));
-	    if (buf == NULL) {
-		fprintf(stderr,"malloc failed\n");
-		exit(1);
-	    }
-	    oldsize = *size;
-	}
+        }
+
 	buf[0] = buf[1] = buf[2] = 0;
 	
 	if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
@@ -1039,7 +1143,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
 		 (xdr_int(xdrs, &(maxint[2])) == 0))
 	{
-		return 0;
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
 	}
 			
 	sizeint[0] = maxint[0] - minint[0]+1;
@@ -1057,7 +1166,15 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	}
 	
 	if (xdr_int(xdrs, &smallidx) == 0)	
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
@@ -1068,9 +1185,28 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     	/* buf[0] holds the length in bytes */
 
 	if (xdr_int(xdrs, &(buf[0])) == 0)
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+
 	if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
-	    return 0;
+        {
+            if (we_should_free)
+            {
+                free(ip);
+                free(buf);
+            }
+            return 0;
+        }
+
+
+
 	buf[0] = buf[1] = buf[2] = 0;
 	
 	lfp = fp;
@@ -1156,6 +1292,11 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    }
 	    sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx] ;
 	}
+    }
+    if (we_should_free)
+    {
+        free(ip);
+        free(buf);
     }
     return 1;
 }
@@ -1271,7 +1412,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 
 
 static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
-                                     bool * bOK)
+                                     gmx_bool * bOK)
 {
     gmx_off_t off;
     float time;
@@ -1312,7 +1453,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
 
 
 static float 
-xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int step;  
@@ -1360,7 +1501,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 /* Currently not used, just for completeness */
 static int 
-xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, bool * bOK)
+xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, gmx_bool * bOK)
 {
     gmx_off_t off;
     int ret;  
@@ -1428,7 +1569,7 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 
 
 float 
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
   float  res;
   float  tinit;
@@ -1546,7 +1687,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 {
     float t;
     float dt;
-    bool bOK;
+    gmx_bool bOK;
     gmx_off_t low = 0;
     gmx_off_t high, offset, pos;
     int res;
@@ -1703,7 +1844,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 }
 
 float 
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     float  time;
     gmx_off_t  off;
@@ -1734,7 +1875,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 
 int
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int    frame;
     gmx_off_t  off;

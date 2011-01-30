@@ -48,7 +48,7 @@ extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 					   int nst,int init_seed);
 /* Should only be called on the master nodes */
 
-extern bool replica_exchange(FILE *fplog,
+extern gmx_bool replica_exchange(FILE *fplog,
 			     const t_commrec *cr,
 			     gmx_repl_ex_t re,
 			     t_state *state,real *ener,
@@ -57,8 +57,10 @@ extern bool replica_exchange(FILE *fplog,
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,
- * this routine collects the state on the master node before exchange,
- * but it does not redistribute the state over the nodes after exchange.
+ * this routine collects the state on the master node before exchange.
+ * With particle the state is redistributed over the nodes after exchange.
+ * With domain decomposition the global state after exchanged in stored
+ * in state and still needs to be redistributed over the nodes.
  */
 
 extern void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t re);

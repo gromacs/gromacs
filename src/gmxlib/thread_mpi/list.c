@@ -35,9 +35,26 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "thread_mpi/list.h"
 
@@ -60,7 +77,7 @@ void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
         el->next=head;
     }
-    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
+    while (!tMPI_Atomic_ptr_cas(&(st->head), head, el));
 }
 
 tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
@@ -73,7 +90,7 @@ tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
             next=head->next;
         else
             next=NULL;
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
+    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, next));
 
     return head;
 }
@@ -84,7 +101,7 @@ tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
     do
     {
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
+    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, NULL));
 
     return head;
 }
@@ -113,7 +130,7 @@ void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
 
     do
     {
-    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
+    } while (!tMPI_Atomic_ptr_cas(&(q->head), head, next));
 }
 #endif
 

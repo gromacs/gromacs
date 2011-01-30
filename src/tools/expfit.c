@@ -69,13 +69,13 @@ const char *longs_ffn[effnNR] = {
   "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
 
-extern bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
+extern gmx_bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
 		   int ma,int lista[],int mfit,real **covar,real **alpha,
 		   real *chisq,
 		   void (*funcs)(real x,real a[],real *y,real dyda[]),
 		   real *alamda);
 
-extern bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
+extern gmx_bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		       void (*funcs)(real, real [], real *, real []), 
 		       real *alamda);
@@ -334,13 +334,13 @@ real fit_function(int eFitFn,real *parm,real x)
 }
 
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
-static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
-		      real parm[],real dparm[],bool bVerbose,
+static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
+		      real parm[],real dparm[],gmx_bool bVerbose,
 		      int eFitFn,int fix)
 {
   real chisq,ochisq,alamda;
   real *a,**covar,**alpha,*dum;
-  bool bCont;
+  gmx_bool bCont;
   int  i,j,ma,mfit,*lista,*ia;
 
   if ((eFitFn < 0) || (eFitFn >= effnNR))
@@ -437,8 +437,8 @@ static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
-	      real begintimefit,real endtimefit,output_env_t oenv,bool bVerbose,
-	      int eFitFn,real fitparms[],int fix)
+	      real begintimefit,real endtimefit,const output_env_t oenv,
+	      gmx_bool bVerbose, int eFitFn,real fitparms[],int fix)
 {
   FILE *fp;
   char buf[32];
@@ -452,7 +452,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   nparm = nfp_ffn[eFitFn];
   if (debug) {
     fprintf(debug,"There are %d points to fit %d vars!\n",ndata,nparm);
-    fprintf(debug,"Fit to function %d from %g thru %g, dt=%g\n",
+    fprintf(debug,"Fit to function %d from %g through %g, dt=%g\n",
 	    eFitFn,begintimefit,endtimefit,dt);
   }
 

@@ -136,6 +136,14 @@ const char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
 
+const char *separate_dhdl_file_names[sepdhdlfileNR+1] = {
+  "yes", "no", NULL
+};
+
+const char *dhdl_derivatives_names[dhdlderivativesNR+1] = {
+  "yes", "no", NULL
+};
+
 const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };
@@ -165,11 +173,11 @@ const char *egb_names[egbNR+1] = {
 };
 
 const char *esa_names[esaNR+1] = {
-  "No", "Ace-approximation", "Still", NULL
+  "Ace-approximation", "None", "Still", NULL
 };
 
 const char *ewt_names[ewtNR+1] = {
-  "9-3", "10-4", "table", NULL
+  "9-3", "10-4", "table", "12-6", NULL
 };
 
 const char *epull_names[epullNR+1] = { 

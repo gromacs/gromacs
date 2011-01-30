@@ -62,6 +62,14 @@
 #include "copyrite.h"
 #include "mtop_util.h"
 
+
+#ifdef _MSC_VER
+/* MSVC definition for __cpuid() */
+#include <intrin.h>
+#endif
+
+
+
 t_forcerec *mk_forcerec(void)
 {
   t_forcerec *fr;
@@ -72,7 +80,7 @@ t_forcerec *mk_forcerec(void)
 }
 
 #ifdef DEBUG
-static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
+static void pr_nbfp(FILE *fp,real *nbfp,gmx_bool bBHAM,int atnr)
 {
   int i,j;
   
@@ -90,7 +98,7 @@ static void pr_nbfp(FILE *fp,real *nbfp,bool bBHAM,int atnr)
 }
 #endif
 
-static real *mk_nbfp(const gmx_ffparams_t *idef,bool bBHAM)
+static real *mk_nbfp(const gmx_ffparams_t *idef,gmx_bool bBHAM)
 {
   real *nbfp;
   int  i,j,k,atnr;
@@ -157,13 +165,13 @@ check_solvent_cg(const gmx_moltype_t   *molt,
     t_atom            *atom;
     int               j,k;
     int               j0,j1,nj;
-    bool              perturbed;
-    bool              has_vdw[4];
-    bool              match;
+    gmx_bool              perturbed;
+    gmx_bool              has_vdw[4];
+    gmx_bool              match;
     real              tmp_charge[4];
     int               tmp_vdwtype[4];
     int               tjA;
-    bool              qm;
+    gmx_bool              qm;
     solvent_parameters_t *solvent_parameters;
 
     /* We use a list with parameters for each solvent type. 
@@ -510,7 +518,8 @@ check_solvent(FILE *                fp,
 }
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
-                                   t_forcerec *fr,bool bNoSolvOpt)
+                                   t_forcerec *fr,gmx_bool bNoSolvOpt,
+                                   gmx_bool *bExcl_IntraCGAll_InterCGNone)
 {
     const t_block *cgs;
     const t_blocka *excl;
@@ -520,11 +529,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     int  *cginfo;
     int  cg_offset,a_offset,cgm,am;
     int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
-    bool bId,*bExcl,bExclIntraAll,bExclInter;
+    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
-    
+
+    *bExcl_IntraCGAll_InterCGNone = TRUE;
+
     excl_nalloc = 10;
     snew(bExcl,excl_nalloc);
     cg_offset = 0;
@@ -638,6 +649,11 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                     gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
                 }
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
+
+                if (!bExclIntraAll || bExclInter)
+                {
+                    *bExcl_IntraCGAll_InterCGNone = FALSE;
+                }
             }
         }
         cg_offset += molb->nmol*cgs->nr;
@@ -756,7 +772,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
 {
-    const t_atoms *atoms;
+    const t_atoms *atoms,*atoms_tpi;
     const t_blocka *excl;
     int    mb,nmol,nmolc,i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
@@ -766,7 +782,7 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
 #endif
     double csix,ctwelve;
     int    ntp,*typecount;
-    bool   bBHAM;
+    gmx_bool   bBHAM;
     real   *nbfp;
 
     ntp = fr->ntype;
@@ -866,15 +882,9 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
-            atoms = &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
-            if (q == 0)
-            {
-                tpi = atoms->atom[atoms->nr-1].type;
-            }
-            else
-            {
-                tpi = atoms->atom[atoms->nr-1].typeB;
-            }
+            atoms_tpi =
+                &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].atoms;
+
             npair = 0;
             for(mb=0; mb<mtop->nmolblock; mb++) {
                 nmol  = mtop->molblock[mb].nmol;
@@ -884,9 +894,14 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                     /* Remove the interaction of the test charge group
                      * with itself.
                      */
-                    if (mb == mtop->nmolblock-1 && j >= atoms->nr - fr->n_tpi)
+                    if (mb == mtop->nmolblock-1)
                     {
                         nmolc--;
+                        
+                        if (mb == 0 && nmol == 1)
+                        {
+                            gmx_fatal(FARGS,"Old format tpr with TPI, please generate a new tpr file");
+                        }
                     }
                     if (q == 0)
                     {
@@ -896,16 +911,27 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                     {
                         tpj = atoms->atom[j].typeB;
                     }
-                    if (bBHAM)
+                    for(i=0; i<fr->n_tpi; i++)
                     {
-                        csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj);
+                        if (q == 0)
+                        {
+                            tpi = atoms_tpi->atom[i].type;
+                        }
+                        else
+                        {
+                            tpi = atoms_tpi->atom[i].typeB;
+                        }
+                        if (bBHAM)
+                        {
+                            csix    += nmolc*BHAMC(nbfp,ntp,tpi,tpj);
+                        }
+                        else
+                        {
+                            csix    += nmolc*C6 (nbfp,ntp,tpi,tpj);
+                            ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj);
+                        }
+                        npair += nmolc;
                     }
-                    else
-                    {
-                        csix    += nmolc*C6 (nbfp,ntp,tpi,tpj);
-                        ctwelve += nmolc*C12(nbfp,ntp,tpi,tpj);
-                    }
-                    npair += nmolc;
                 }
             }
         }
@@ -1116,7 +1142,8 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
 
 void forcerec_set_ranges(t_forcerec *fr,
                          int ncg_home,int ncg_force,
-                         int natoms_force,int natoms_f_novirsum)
+                         int natoms_force,
+                         int natoms_force_constr,int natoms_f_novirsum)
 {
     fr->cg0 = 0;
     fr->hcg = ncg_home;
@@ -1124,12 +1151,13 @@ void forcerec_set_ranges(t_forcerec *fr,
     /* fr->ncg_force is unused in the standard code,
      * but it can be useful for modified code dealing with charge groups.
      */
-    fr->ncg_force    = ncg_force;
-    fr->natoms_force = natoms_force;
+    fr->ncg_force           = ncg_force;
+    fr->natoms_force        = natoms_force;
+    fr->natoms_force_constr = natoms_force_constr;
 
-    if (fr->natoms_force > fr->nalloc_force)
+    if (fr->natoms_force_constr > fr->nalloc_force)
     {
-        fr->nalloc_force = over_alloc_dd(fr->natoms_force);
+        fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
 
         if (fr->bTwinRange)
         {
@@ -1162,6 +1190,105 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
+gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
+                      gmx_bool bPrintNote,t_commrec *cr,FILE *fp)
+{
+    gmx_bool bAllvsAll;
+
+    bAllvsAll =
+        (
+         ir->rlist==0            &&
+         ir->rcoulomb==0         &&
+         ir->rvdw==0             &&
+         ir->ePBC==epbcNONE      &&
+         ir->vdwtype==evdwCUT    &&
+         ir->coulombtype==eelCUT &&
+         ir->efep==efepNO        &&
+         (ir->implicit_solvent == eisNO || 
+          (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
+                                             ir->gb_algorithm==egbHCT   || 
+                                             ir->gb_algorithm==egbOBC))) &&
+         getenv("GMX_NO_ALLVSALL") == NULL
+            );
+    
+    if (bAllvsAll && ir->opts.ngener > 1)
+    {
+        const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
+
+        if (bPrintNote)
+        {
+            if (MASTER(cr))
+            {
+                fprintf(stderr,"\n%s\n",note);
+            }
+            if (fp != NULL)
+            {
+                fprintf(fp,"\n%s\n",note);
+            }
+        }
+        bAllvsAll = FALSE;
+    }
+
+    if(bAllvsAll && fp && MASTER(cr))
+    {
+        fprintf(fp,"\nUsing accelerated all-vs-all kernels.\n\n");
+    }
+    
+    return bAllvsAll;
+}
+
+
+/* Return 1 if SSE2 support is present, otherwise 0. */
+static int 
+forcerec_check_sse2()
+{
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
+	unsigned int level;
+	unsigned int _eax,_ebx,_ecx,_edx;
+	int status;
+	int CPUInfo[4];
+	
+	level = 1;
+#ifdef _MSC_VER
+	__cpuid(CPUInfo,1);
+	
+	_eax=CPUInfo[0];
+	_ebx=CPUInfo[1];
+	_ecx=CPUInfo[2];
+	_edx=CPUInfo[3];
+	
+#elif defined(__x86_64__)
+	/* GCC 64-bit inline asm */
+	__asm__ ("push %%rbx\n\tcpuid\n\tpop %%rbx\n"                 \
+			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
+			 : "0" (level));
+#elif defined(__i386__)
+	__asm__ ("push %%ebx\n\tcpuid\n\tpop %%ebx\n"                 \
+			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
+			 : "0" (level));
+#else
+	_eax=_ebx=_ecx=_edx=0;
+#endif
+    
+	/* Features:                                                                                                       
+	 *                                                                                                                 
+	 * SSE      Bit 25 of edx should be set                                                                            
+	 * SSE2     Bit 26 of edx should be set                                                                            
+	 * SSE3     Bit  0 of ecx should be set                                                                            
+	 * SSE4.1   Bit 19 of ecx should be set                                                                            
+	 */
+	status =  (_edx & (1 << 26)) != 0;
+    
+#else
+        int status = 0;
+#endif
+	/* Return SSE2 status */
+	return status;
+}
+
+
+
+
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
                    t_forcerec *fr,
@@ -1170,18 +1297,21 @@ void init_forcerec(FILE *fp,
                    const gmx_mtop_t *mtop,
                    const t_commrec  *cr,
                    matrix     box,
-                   bool       bMolEpot,
+                   gmx_bool       bMolEpot,
                    const char *tabfn,
                    const char *tabpfn,
                    const char *tabbfn,
-                   bool       bNoSolvOpt,
+                   gmx_bool       bNoSolvOpt,
                    real       print_force)
 {
     int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
     real    rtab;
+    char    *env;
+    double  dbl;
     rvec    box_size;
     const t_block *cgs;
-    bool    bTab,bSep14tab,bNormalnblists;
+    gmx_bool    bGenericKernelOnly;
+    gmx_bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     
@@ -1223,45 +1353,58 @@ void init_forcerec(FILE *fp,
     fr->fc_stepsize = ir->fc_stepsize;
     
     /* Free energy */
-    fr->efep       = ir->efep;
-    fr->sc_alpha   = ir->sc_alpha;
-    fr->sc_power   = ir->sc_power;
-    fr->sc_sigma6  = pow(ir->sc_sigma,6);
-    
-    /* Check if we can/should do all-vs-all kernels */
-#ifdef GMX_DOUBLE
-    /* double not done yet */
-    fr->bAllvsAll = FALSE;
-#else
-    fr->bAllvsAll = (ir->rlist==0            &&
-                     ir->rcoulomb==0         &&
-                     ir->rvdw==0             &&
-                     ir->ePBC==epbcNONE      &&
-                     ir->vdwtype==evdwCUT    &&
-                     ir->coulombtype==eelCUT &&
-                     ir->efep==efepNO        &&
-                     (ir->implicit_solvent == eisNO || 
-                      (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
-                                                         ir->gb_algorithm==egbHCT   || 
-                                                         ir->gb_algorithm==egbOBC)))
-                     );
-    if (fr->bAllvsAll && ir->opts.ngener > 1)
+    fr->efep          = ir->efep;
+    fr->sc_alpha      = ir->sc_alpha;
+    fr->sc_power      = ir->sc_power;
+    fr->sc_sigma6_def = pow(ir->sc_sigma,6);
+    fr->sc_sigma6_min = pow(ir->sc_sigma_min,6);
+    env = getenv("GMX_SCSIGMA_MIN");
+    if (env != NULL)
     {
-        const char *note="NOTE: Can not use all-vs-all force loops, because there are multiple energy monitor groups; you might get significantly higher performance when using only a single energy monitor group.\n";
-        if (MASTER(cr))
+        dbl = 0;
+        sscanf(env,"%lf",&dbl);
+        fr->sc_sigma6_min = pow(dbl,6);
+        if (fp)
         {
-            fprintf(stderr,"\n%s\n",note);
+            fprintf(fp,"Setting the minimum soft core sigma to %g nm\n",dbl);
         }
+    }
+
+    bGenericKernelOnly = FALSE;
+    if (getenv("GMX_NB_GENERIC") != NULL)
+    {
         if (fp != NULL)
         {
-            fprintf(fp,"\n%s\n",note);
+            fprintf(fp,
+                    "Found environment variable GMX_NB_GENERIC.\n"
+                    "Disabling interaction-specific nonbonded kernels.\n\n");
         }
-        fr->bAllvsAll = FALSE;
+        bGenericKernelOnly = TRUE;
+        bNoSolvOpt         = TRUE;
+    }
+    
+    fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
+    if(fp && fr->UseOptimizedKernels==FALSE)
+    {
+        fprintf(fp,
+                "\nFound environment variable GMX_NOOPTIMIZEDKERNELS.\n"
+                "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
+    }    
+
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
+    if( forcerec_check_sse2() == 0 )
+    {
+        fr->UseOptimizedKernels = FALSE;
     }
 #endif
+    
+    /* Check if we can/should do all-vs-all kernels */
+    fr->bAllvsAll       = can_use_allvsall(ir,mtop,FALSE,NULL,NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
+    
+    
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
     fr->ePBC       = ir->ePBC;
@@ -1618,7 +1761,8 @@ void init_forcerec(FILE *fp,
     fr->qr         = mk_QMMMrec();
     
     /* Set all the static charge group info */
-    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);
+    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,
+                                   &fr->bExcl_IntraCGAll_InterCGNone);
     if (DOMAINDECOMP(cr)) {
         fr->cginfo = NULL;
     } else {
@@ -1631,7 +1775,7 @@ void init_forcerec(FILE *fp,
          * which sets fr->hcg, is corrected later in do_md and init_em.
          */
         forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
-                            mtop->natoms,mtop->natoms);
+                            mtop->natoms,mtop->natoms,mtop->natoms);
     }
     
     fr->print_force = print_force;
@@ -1646,7 +1790,7 @@ void init_forcerec(FILE *fp,
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
     
     if (cr->duty & DUTY_PP)
-        gmx_setup_kernels(fp);
+        gmx_setup_kernels(fp,bGenericKernelOnly);
 }
 
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)

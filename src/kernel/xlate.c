@@ -49,6 +49,7 @@
 #include "fflibutil.h"
 #include "hackblock.h"
 #include "gmx_fatal.h"
+#include "xlate.h"
 
 typedef struct {
     char *filebase;
@@ -134,15 +135,16 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
 
 void rename_atoms(const char *xlfile,const char *ffdir,
                   t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-                  t_aa_names *aan,bool bReorderNum,bool bVerbose)
+                  gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,
+                  gmx_bool bVerbose)
 {
     FILE *fp;
     int nxlate,a,i,resind;
     t_xlate_atom *xlatom;
     int  nf;
     char **f;
-    char c,*res,atombuf[32],*ptr0,*ptr1;
-    bool bReorderedNum,bRenamed,bMatch;
+    char c,*rnm,atombuf[32],*ptr0,*ptr1;
+    gmx_bool bReorderedNum,bRenamed,bMatch;
 
     nxlate = 0;
     xlatom = NULL;
@@ -168,7 +170,15 @@ void rename_atoms(const char *xlfile,const char *ffdir,
     for(a=0; (a<atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
-        res    = *(atoms->resinfo[resind].name);
+        if (bResname)
+        {
+            rnm = *(atoms->resinfo[resind].name);
+        }
+        else
+        {
+            rnm = *(atoms->resinfo[resind].rtp);
+        }
+               
         strcpy(atombuf,*(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
@@ -188,15 +198,19 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         for(i=0; (i<nxlate) && !bRenamed; i++) {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
-                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+                gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
-                          (strcasecmp("protein",xlatom[i].res) == 0 &&
-                           is_protein(aan,res)));
+                          (gmx_strcasecmp("protein",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt,rnm)) ||
+                          (gmx_strcasecmp("DNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_dna(rt,rnm)) ||
+                          (gmx_strcasecmp("RNA",xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_rna(rt,rnm)));
                 if (!bMatch)
                 {
-                    ptr0 = res;
+                    ptr0 = rnm;
                     ptr1 = xlatom[i].res;
                     while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
                            (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
@@ -215,8 +229,11 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                     ptr0 = strdup(xlatom[i].replace);
                     if (bVerbose)
                     {
-                        printf("Renaming atom '%s' in '%s' to '%s'\n",
-                               *atoms->atomname[a],res,ptr0);
+                        printf("Renaming atom '%s' in residue %d %s to '%s'\n",
+                               *atoms->atomname[a],
+                               atoms->resinfo[resind].nr,
+                               *atoms->resinfo[resind].name,
+                               ptr0);
                     }
                     atoms->atomname[a] = put_symtab(symtab,ptr0);
                     bRenamed = TRUE;

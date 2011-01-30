@@ -35,7 +35,28 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from collective.c */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
 
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 
@@ -110,7 +131,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #ifdef TMPI_DEBUG
         printf("%d: iteration %d: myrank_rtr=%d, stepping=%d\n", 
                myrank, iteration, myrank_rtr, stepping);
-        fflush(0);
+        fflush(stdout);
 #endif
         /* check if I'm the reducing thread in this iteration's pair: */
         if (myrank_rtr%stepping == 0)
@@ -125,7 +146,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #ifdef TMPI_DEBUG
                 printf("%d: waiting to reduce with %d, iteration=%d\n", 
                        myrank, nbr, iteration);
-                fflush(0);
+                fflush(stdout);
 #endif
 
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
@@ -140,7 +161,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #ifdef TMPI_DEBUG
                 printf("%d: reducing with %d, iteration=%d\n", 
                        myrank, nbr, iteration);
-                fflush(0);
+                fflush(stdout);
 #endif
                 /* we reduce with our neighbour*/
                 if (iteration==0)
@@ -148,14 +169,14 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     /* for the first iteration, the inputs are in the 
                        sendbuf*/
                     a=sendbuf;
-                    b=tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
+                    b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_sendbuf[nbr]));
                 }
                 else
                 {
                     /* after the first operation, they're already in 
                        the recvbuf */
                     a=recvbuf;
-                    b=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
+                    b=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[nbr]));
                 }
                 /* here we check for overlapping buffers */
                 if (a==b)
@@ -175,7 +196,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             {
 #ifdef TMPI_DEBUG
             printf("%d: not waiting copying buffer\n", myrank);
-            fflush(0);
+            fflush(stdout);
 #endif
                 /* we still need to put things in the right buffer for the next
                    iteration. We need to check for overlapping buffers
@@ -197,7 +218,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 #ifdef TMPI_DEBUG
             printf("%d: signalled %d, now waiting: iteration=%d\n", 
                    nbr, myrank,  iteration);
-            fflush(0);
+            fflush(stdout);
 #endif
  
             /* And wait for an incoming event from out neighbour */
@@ -216,7 +237,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 
 #ifdef TMPI_DEBUG
         printf("%d: iteration over, iteration=%d\n", myrank,  iteration);
-        fflush(0);
+        fflush(stdout);
 #endif
 
         Nred = Nred/2 + Nred%2;
@@ -298,12 +319,12 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 #if defined(TMPI_PROFILE) 
     tMPI_Profile_wait_start(cur);
 #endif
-    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+    tMPI_Barrier_wait( &(comm->barrier));
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
     /* distribute rootbuf */
-    rootbuf=tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
+    rootbuf=(void*)tMPI_Atomic_ptr_get(&(comm->reduce_recvbuf[0]));
 
     /* and now we just copy things back. We know that the root thread 
        arrives last, so there's no point in using tMPI_Scatter with 
@@ -320,7 +341,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
     tMPI_Profile_wait_start(cur);
 #endif
-    tMPI_Spinlock_barrier_wait( &(comm->barrier));
+    tMPI_Barrier_wait( &(comm->barrier));
 #if defined(TMPI_PROFILE)
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
     tMPI_Profile_count_stop(cur, TMPIFN_Allreduce);

@@ -156,7 +156,7 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
  */
 int
 gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
-              bool bMass, rvec xout)
+              gmx_bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -184,7 +184,7 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
  */
 int
 gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
-                bool bMass, rvec fout)
+                gmx_bool bMass, rvec fout)
 {
     if (bMass)
     {
@@ -213,7 +213,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    bool                bChanged;
+    gmx_bool                bChanged;
     int                 m, j, ai, iter;
     rvec                dx, xtest;
 
@@ -270,7 +270,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    bool                bChanged;
+    gmx_bool                bChanged;
     int                 m, j, ai, iter;
     real                mass, mtot;
     rvec                dx, xtest;
@@ -342,7 +342,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
  */
 int
 gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
-                  int nrefat, atom_id index[], bool bMass, rvec xout)
+                  int nrefat, atom_id index[], gmx_bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -482,7 +482,7 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
  */
 int
 gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
-                    bool bMass, rvec xout[])
+                    gmx_bool bMass, rvec xout[])
 {
     if (bMass)
     {
@@ -510,7 +510,7 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  */
 int
 gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
-                      bool bMass, rvec fout[])
+                      gmx_bool bMass, rvec fout[])
 {
     if (bMass)
     {
@@ -543,7 +543,7 @@ gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[]
  */
 int
 gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
-                     bool bMass, rvec xout[])
+                     gmx_bool bMass, rvec xout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     return gmx_calc_comg_block(top, x, (t_block *)block, block->a, bMass, xout);
@@ -570,7 +570,7 @@ gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
  */
 int
 gmx_calc_comg_f_blocka(t_topology *top, rvec f[], t_blocka *block,
-                       bool bMass, rvec fout[])
+                       gmx_bool bMass, rvec fout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     return gmx_calc_comg_f_block(top, f, (t_block *)block, block->a, bMass, fout);

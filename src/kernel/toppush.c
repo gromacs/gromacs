@@ -200,8 +200,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
   t_atom  *atom;
   t_param *param;
   int    atomnr;
-  bool   have_atomic_number;
-  bool   have_bonded_type;
+  gmx_bool   have_atomic_number;
+  gmx_bool   have_bonded_type;
   
   snew(atom,1);
   snew(param,1);
@@ -425,10 +425,10 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
      gmx_fatal(FARGS,"Bond atom type names can't be single digits.");
 
   /* Hack to read old topologies */
-  if (strcasecmp(ptype,"D") == 0)
+  if (gmx_strcasecmp(ptype,"D") == 0)
     sprintf(ptype,"V");
   for(j=0; (j<eptNR); j++)
-    if (strcasecmp(ptype,xl[j].entry) == 0)
+    if (gmx_strcasecmp(ptype,xl[j].entry) == 0)
       break;
   if (j == eptNR)
     gmx_fatal(FARGS,"Invalid particle type %s on line %s",
@@ -470,12 +470,12 @@ static void push_bondtype(t_params *       bt,
                           t_param *        b,
                           int              nral,
                           int              ftype,
-                          bool             bAllowRepeat,
+                          gmx_bool             bAllowRepeat,
                           char *           line,
 			  warninp_t        wi)
 {
 	int  i,j;
-	bool bTest,bFound,bCont,bId;
+	gmx_bool bTest,bFound,bCont,bId;
 	int  nr   = bt->nr;
 	int  nrfp = NRFP(ftype);
 	char  errbuf[256];
@@ -677,7 +677,7 @@ void push_dihedraltype(directive d,t_params bt[],
   char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
   t_param  p;
-  bool     bAllowRepeat;
+  gmx_bool     bAllowRepeat;
   char  errbuf[256];
 
   /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
@@ -715,7 +715,7 @@ void push_dihedraltype(directive d,t_params bt[],
     warning_error(wi,errbuf);
     return;
   }
-	
+    	
 	if(ft == 9)
 	{
 		/* Previously, we have always overwritten parameters if e.g. a torsion
@@ -723,7 +723,7 @@ void push_dihedraltype(directive d,t_params bt[],
 		 some other force fields specify multiple dihedrals over some bonds, 
 		 including cosines with multiplicity 6 and somethimes even higher.
 		 Thus, they cannot be represented with Ryckaert-Bellemans terms.
-		 To add support for these force fields, Dihedral type 4 is identical to
+		 To add support for these force fields, Dihedral type 9 is identical to
 		 normal proper dihedrals, but repeated entries are allowed. 
 		 */
 		bAllowRepeat = TRUE;
@@ -794,7 +794,7 @@ void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
   real    cr[4],sig6;
   atom_id ai,aj;
   t_nbparam *nbp;
-  bool    bId;
+  gmx_bool    bId;
   char  errbuf[256];
 
   if (sscanf (pline,"%s%s%d",a0,a1,&f) != 3) {
@@ -882,7 +882,7 @@ push_gb_params (gpp_atomtype_t at, char *line,
                 warninp_t wi)
 {
     int nfield;
-    int i,n,k,found,gfound;
+    int atype;
     double radius,vol,surftens,gb_radius,S_hct;
     char atypename[STRLEN];
     char errbuf[STRLEN];
@@ -894,24 +894,15 @@ push_gb_params (gpp_atomtype_t at, char *line,
     }
     
     /* Search for atomtype */
-    found = 0;
-    gfound = -1;
-    for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
-    {
-        if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
-        {
-            found = i;
-			gfound = i;
-		}
-    }
+    atype = get_atomtype_type(atypename,at);
 	
-	if (gfound==-1)
+	if (atype == NOTSET)
     {
 		printf("Couldn't find topology match for atomtype %s\n",atypename);
 		abort();
     }
     
-	set_atomtype_gbparam(at,found,radius,vol,surftens,gb_radius,S_hct);
+	set_atomtype_gbparam(at,atype,radius,vol,surftens,gb_radius,S_hct);
 }
 
 void 
@@ -924,9 +915,9 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	int      i,j,ft,ftype,nn,nrfp,nrfpA,nrfpB;
 	int      start;
 	int      nxcmap,nycmap,ncmap,read_cmap,sl,nct;
-	char     s[20],alc[MAXATOMLIST+1][20];
+	char     s[20],alc[MAXATOMLIST+2][20];
 	t_param  p;
-	bool     bAllowRepeat;
+	gmx_bool     bAllowRepeat;
 	char     errbuf[256];
 	
 	/* Keep the compiler happy */
@@ -976,8 +967,12 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	sl = 0;
 	for(i=0;i<ncmap;i++)
 	{
-		nn=sscanf(line+start+sl,"%s",s);
-		sl+=strlen(s)+1;
+    while(isspace(*(line+start+sl))) 
+    { 
+      sl++; 
+    }
+    nn=sscanf(line+start+sl," %s ",s);
+    sl+=strlen(s);
 		bt->cmap[i+(bt->ncmap)-nrfp]=strtod(s,NULL);
 		
 		if(nn==1)
@@ -1229,7 +1224,7 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line,
   /* Test if this atomtype overwrites another */
   i = 0;
   while (i < *nmol) {
-    if (strcasecmp(*((*mol)[i].name),type) == 0)
+    if (gmx_strcasecmp(*((*mol)[i].name),type) == 0)
       gmx_fatal(FARGS,"moleculetype %s is redefined",type);
     i++;
   }
@@ -1245,11 +1240,11 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line,
   newmol->excl_set = FALSE;
 }
 
-static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
-			      t_param *p,int c_start,bool bB,bool bGenPairs)
+static gmx_bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
+			      t_param *p,int c_start,gmx_bool bB,gmx_bool bGenPairs)
 {
   int      i,j,ti,tj,ntype;
-  bool     bFound;
+  gmx_bool     bFound;
   t_param  *pi=NULL;
   int      nr   = bt[ftype].nr;
   int      nral = NRAL(ftype);
@@ -1309,14 +1304,14 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   return bFound;
 }
 
-static bool default_cmap_params(int ftype, t_params bondtype[],
+static gmx_bool default_cmap_params(int ftype, t_params bondtype[],
 				t_atoms *at, gpp_atomtype_t atype,
-				t_param *p, bool bB,
+				t_param *p, gmx_bool bB,
 				int *cmap_type, int *nparam_def)
 {
 	int i,j,nparam_found;
 	int ct;
-	bool bFound=FALSE;
+	gmx_bool bFound=FALSE;
 	
 	nparam_found = 0;
 	ct           = 0;
@@ -1358,14 +1353,14 @@ static bool default_cmap_params(int ftype, t_params bondtype[],
 	return bFound;
 }
 
-static bool default_params(int ftype,t_params bt[],
+static gmx_bool default_params(int ftype,t_params bt[],
 			   t_atoms *at,gpp_atomtype_t atype,
-			   t_param *p,bool bB,
+			   t_param *p,gmx_bool bB,
 			   t_param **param_def,
                int *nparam_def)
 {
   int      i,j,nparam_found;
-  bool     bFound,bSame;
+  gmx_bool     bFound,bSame;
   t_param  *pi=NULL;
   t_param  *pj=NULL;
   int      nr   = bt[ftype].nr;
@@ -1386,7 +1381,7 @@ static bool default_params(int ftype,t_params bt[],
   /* OPLS uses 1000s of dihedraltypes, so in order to speed up the scanning we have a 
    * special case for this. Check for B state outside loop to speed it up.
    */
-  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) 
+  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS || ftype == F_PIDIHS) 
   {
 	  if (bB) 
 	  {
@@ -1461,8 +1456,8 @@ static bool default_params(int ftype,t_params bt[],
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
                t_atoms *at,gpp_atomtype_t atype,char *line,
-               bool bBonded,bool bGenPairs,real fudgeQQ,
-               bool bZero,bool *bWarn_copy_A_B,
+               gmx_bool bBonded,gmx_bool bGenPairs,real fudgeQQ,
+               gmx_bool bZero,gmx_bool *bWarn_copy_A_B,
                warninp_t wi)
 {
   const char *aaformat[MAXATOMLIST]= {
@@ -1488,7 +1483,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB,*param_defA,*param_defB;
-  bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
+  gmx_bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
   int      nparam_defA,nparam_defB;
   char  errbuf[256];
 
@@ -1559,6 +1554,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Get force params for normal and free energy perturbation
    * studies, as determined by types!
    */
+    
   if (bBonded) {
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_defA,&nparam_defA);
     if (bFoundA) {
@@ -1649,9 +1645,6 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = 0;
   }
   /* nread now holds the number of force parameters read! */
- 
-	
-	
 	
 	if (bDef) 
 	{
@@ -1784,7 +1777,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
 			   t_atoms *at, gpp_atomtype_t atype, char *line,
-			   bool *bWarn_copy_A_B,
+			   gmx_bool *bWarn_copy_A_B,
                warninp_t wi)
 {
 	const char *aaformat[MAXATOMLIST+1]= 
@@ -1802,7 +1795,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 	int cmap_type;
 	int aa[MAXATOMLIST+1];
 	char  errbuf[256];
-	bool bFound;
+	gmx_bool bFound;
 	t_param param,paramB,*param_defA,*param_defB;
 	
 	ftype        = ifunc_index(d,1);
@@ -1984,7 +1977,7 @@ void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
   }
   
   /* search moleculename */
-  for (i=0; ((i<nrmols) && strcasecmp(type,*(mols[i].name))); i++)
+  for (i=0; ((i<nrmols) && gmx_strcasecmp(type,*(mols[i].name))); i++)
     ;
 
   if (i<nrmols) {
@@ -2183,7 +2176,7 @@ static void generate_LJCpairsNB(t_molinfo *mol,int nb_funct,t_params *nbp)
   int n,ntype,i,j,k;
   t_atom *atom;
   t_blocka *excl;
-  bool bExcl;
+  gmx_bool bExcl;
   t_param param;
 
   n = mol->atoms.nr;
@@ -2260,7 +2253,7 @@ static void decouple_atoms(t_atoms *atoms,int atomtype_decouple,
 
 void convert_moltype_couple(t_molinfo *mol,int atomtype_decouple,real fudgeQQ,
 			    int couple_lam0,int couple_lam1,
-			    bool bCoupleIntra,int nb_funct,t_params *nbp)
+			    gmx_bool bCoupleIntra,int nb_funct,t_params *nbp)
 {
   convert_pairs_to_pairsQ(mol->plist,fudgeQQ,&mol->atoms);
   if (!bCoupleIntra) {

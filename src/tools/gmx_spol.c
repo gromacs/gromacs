@@ -54,7 +54,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
 			 atom_id index[],rvec xref,int ePBC,matrix box)
 {
   const real tol=1e-4;
-  bool  bChanged;
+  gmx_bool  bChanged;
   int   m,j,ai,iter;
   real  mass,mtot;
   rvec  dx,xtest;
@@ -126,7 +126,7 @@ int gmx_spol(int argc,char *argv[])
   t_inputrec *ir;
   t_atom     *atom;
   char     title[STRLEN];
-  int      status;
+  t_trxstatus *status;
   int      nrefat,natoms,nf,ntot;
   real     t;
   rvec     *xtop,*x,xref,trial,dx={0},dip,dir;
@@ -141,9 +141,11 @@ int gmx_spol(int argc,char *argv[])
   double  sdip,sdip2,sinp,sdinp,nmol;
   int     *hist;
   t_pbc   pbc;
+  gmx_rmpbc_t  gpbc=NULL;
+
   
   const char *desc[] = {
-    "g_spol analyzes dipoles around a solute; it is especially useful",
+    "[TT]g_spol[tt] analyzes dipoles around a solute; it is especially useful",
     "for polarizable water. A group of reference atoms, or a center",
     "of mass reference (option [TT]-com[tt]) and a group of solvent",
     "atoms is required. The program splits the group of solvent atoms",
@@ -164,7 +166,7 @@ int gmx_spol(int argc,char *argv[])
   };
  
   output_env_t oenv;
-  static bool bCom = FALSE,bPBC = FALSE;
+  static gmx_bool bCom = FALSE,bPBC = FALSE;
   static int  srefat=1;
   static real rmin=0.0,rmax=0.32,refdip=0,bw=0.01;
   t_pargs pa[] = {
@@ -236,12 +238,14 @@ int gmx_spol(int argc,char *argv[])
 
   molindex = top->mols.index;
   atom     = top->atoms.atom;
+  
+  gpbc = gmx_rmpbc_init(&top->idef,ir->ePBC,natoms,box);
 
   /* start analysis of trajectory */
   do {
     /* make molecules whole again */
-    rm_pbc(&top->idef,ir->ePBC,natoms,box,x,x);
-    
+    gmx_rmpbc(gpbc,natoms,box,x);
+
     set_pbc(&pbc,ir->ePBC,box);
     if (bCom)
       calc_com_pbc(nrefat,top,x,&pbc,index[0],xref,ir->ePBC,box);
@@ -296,6 +300,8 @@ int gmx_spol(int argc,char *argv[])
     nf++;
 
   }  while (read_next_x(oenv,status,&t,natoms,x,box));
+  
+  gmx_rmpbc_done(gpbc);
 
   /* clean up */
   sfree(x);

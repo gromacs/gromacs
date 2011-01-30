@@ -35,8 +35,28 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* this file is #included from p2p.c */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+
+#include "impl.h"
+#include "p2p.h"
 
 
 int tMPI_Wait(tMPI_Request *request, tMPI_Status *status)
@@ -103,13 +123,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
     rq->next=rq;
     rq->prev=rq;
 
-    /* and wait for our request */
-    do
-    {
-        if (tMPI_Test_single(cur, rq))
-            break;
-        tMPI_Wait_process_incoming(cur);
-    } while(TRUE);
+    /* and check our request */
+    if (tMPI_Test_single(cur, rq))
+        *flag=TRUE;
 
     ret=rq->error;
 
@@ -147,9 +163,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
 
    wait = whether to wait for incoming events 
    blocking = whether to block until all reqs are completed */
-void tMPI_Test_multi_req(struct tmpi_thread *cur, 
-                         int count, tMPI_Request *array_of_requests,
-                         bool wait, bool blocking)
+static void tMPI_Test_multi_req(struct tmpi_thread *cur, 
+                                int count, tMPI_Request *array_of_requests,
+                                tmpi_bool wait, tmpi_bool blocking)
 {
     int i;
     struct tmpi_req_ *first=NULL, *last=NULL;
@@ -157,26 +173,26 @@ void tMPI_Test_multi_req(struct tmpi_thread *cur,
     /* construct the list of requests */
     for(i=0;i<count;i++)
     {
-        struct tmpi_req_ *cur=array_of_requests[i];
-        if (cur)
+        struct tmpi_req_ *curr=array_of_requests[i];
+        if (curr)
         {
             if (!first)
-                first=cur;
+                first=curr;
             /* fix the pointers */
             if (!last)
             {
                 /* we connect to itself */
-                last=cur;
+                last=curr;
                 last->next=NULL;
                 last->prev=NULL;
             }
             else
             {
                 /* we connect to the last */
-                cur->next=NULL;
-                cur->prev=last; 
-                last->next=cur;
-                last=cur;
+                curr->next=NULL;
+                curr->prev=last; 
+                last->next=curr;
+                last=curr;
             }
         }
     }

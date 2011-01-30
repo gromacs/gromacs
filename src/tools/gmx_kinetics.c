@@ -68,9 +68,9 @@ typedef struct {
   int nframe;     /* Number of time frames                                   */
   int nstate;     /* Number of states the system can be in, e.g. F,I,U       */
   int nparams;    /* Is 2, 4 or 8                                            */
-  bool *bMask;    /* Determine whether this replica is part of the d2 comp.  */
-  bool bSum;
-  bool bDiscrete; /* Use either discrete folding (0/1) or a continuous       */
+  gmx_bool *bMask;    /* Determine whether this replica is part of the d2 comp.  */
+  gmx_bool bSum;
+  gmx_bool bDiscrete; /* Use either discrete folding (0/1) or a continuous       */
                   /* criterion */
   int nmask;      /* Number of replicas taken into account                   */
   real dt;        /* Timestep between frames                                 */
@@ -107,7 +107,7 @@ static char *epnm(int nparams,int index)
   return NULL;
 }
 
-static bool bBack(t_remd_data *d) 
+static gmx_bool bBack(t_remd_data *d) 
 {
   return (d->nparams > 2);
 }
@@ -368,8 +368,8 @@ static void optimize_remd_parameters(FILE *fp,t_remd_data *d,int maxiter,
 }
 
 static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
-			    real ucut,bool bBack,real Euf,real Efu,
-			    real Ei,real t0,real t1,bool bSum,bool bDiscrete,
+			    real ucut,gmx_bool bBack,real Euf,real Efu,
+			    real Ei,real t0,real t1,gmx_bool bSum,gmx_bool bDiscrete,
 			    int nmult)
 {
   int i,j,ninter;
@@ -561,8 +561,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
   int  i,j,np=d->nparams;
   real rhs,tauf,taub,fff,DG;
   real *params;
-  char *leg[] = { "Measured", "Fit", "Difference" };
-  char *mleg[] = { "Folded fraction","DG (kJ/mole)"};
+  const char *leg[] = { "Measured", "Fit", "Difference" };
+  const char *mleg[] = { "Folded fraction","DG (kJ/mole)"};
   char **rleg;
   real fac[] = { 0.97, 0.98, 0.99, 1.0, 1.01, 1.02, 1.03 };
 #define NFAC asize(fac)
@@ -594,7 +594,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
       sprintf(rleg[2*i+1],"\\f{12}F \\f{4}(t) %d",i);
     }
     fp = xvgropen(rfn,"Optimized fit to data","Time (ps)","Fraction Folded",oenv);
-    xvgr_legend(fp,d->nreplica*2,rleg,oenv);
+    xvgr_legend(fp,d->nreplica*2,(const char**)rleg,oenv);
     for(j=0; (j<d->nframe); j++) {
       if ((skip <= 0) || ((j % skip) == 0)) {
 	fprintf(fp,"%12.5e",d->time[j]);
@@ -668,21 +668,21 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 int gmx_kinetics(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_kinetics reads two xvg files, each one containing data for N replicas.",
-    "The first file contains the temperature of each replica at each timestep,"
+    "[TT]g_kinetics[tt] reads two [TT].xvg[tt] files, each one containing data for N replicas.",
+    "The first file contains the temperature of each replica at each timestep,",
     "and the second contains real values that can be interpreted as",
     "an indicator for folding. If the value in the file is larger than",
     "the cutoff it is taken to be unfolded and the other way around.[PAR]",
     "From these data an estimate of the forward and backward rate constants",
-    "for folding is made at a reference temperature. In addition,"
-    "a theoretical melting curve and free energy as a function of temperature"
-    "are printed in an xvg file.[PAR]",
+    "for folding is made at a reference temperature. In addition,",
+    "a theoretical melting curve and free energy as a function of temperature",
+    "are printed in an [TT].xvg[tt] file.[PAR]",
     "The user can give a max value to be regarded as intermediate",
     "([TT]-ucut[tt]), which, when given will trigger the use of an intermediate state",
     "in the algorithm to be defined as those structures that have",
     "cutoff < DATA < ucut. Structures with DATA values larger than ucut will",
     "not be regarded as potential folders. In this case 8 parameters are optimized.[PAR]",
-    "The average fraction foled is printed in an xvg file together with the fit to it.", 
+    "The average fraction foled is printed in an [TT].xvg[tt] file together with the fit to it.", 
     "If an intermediate is used a further file will show the build of the intermediate and the fit to that process.[PAR]",
     "The program can also be used with continuous variables (by setting",
     "[TT]-nodiscrete[tt]). In this case kinetics of other processes can be",
@@ -698,7 +698,7 @@ int gmx_kinetics(int argc,char *argv[])
   static real Euf       = 10;
   static real Efu       = 30;
   static real Ei        = 10;
-  static bool bHaveT    = TRUE;
+  static gmx_bool bHaveT    = TRUE;
   static real t0        = -1;
   static real t1        = -1;
   static real tb        = 0;
@@ -707,10 +707,10 @@ int gmx_kinetics(int argc,char *argv[])
   static int  maxiter   = 100;
   static int  skip      = 0;
   static int  nmult     = 1;
-  static bool bBack     = TRUE;
-  static bool bSplit    = TRUE;
-  static bool bSum      = TRUE;
-  static bool bDiscrete = TRUE;
+  static gmx_bool bBack     = TRUE;
+  static gmx_bool bSplit    = TRUE;
+  static gmx_bool bSum      = TRUE;
+  static gmx_bool bDiscrete = TRUE;
   t_pargs pa[] = {
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
@@ -743,7 +743,7 @@ int gmx_kinetics(int argc,char *argv[])
     { "-tol",     FALSE, etREAL,{&tol},
       "Absolute tolerance for convergence of the Nelder and Mead simplex algorithm" },
     { "-skip",    FALSE, etINT, {&skip},
-      "Skip points in the output xvg file" },
+      "Skip points in the output [TT].xvg[tt] file" },
     { "-split",   FALSE, etBOOL,{&bSplit},
       "Estimate error by splitting the number of replicas in two and refitting" },
     { "-sum",     FALSE, etBOOL,{&bSum},
@@ -890,7 +890,7 @@ int gmx_kinetics(int argc,char *argv[])
 #else
 int gmx_kinetics(int argc,char *argv[])
 {
-  gmx_fatal(FARGS,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.");
+  fprintf(stderr,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
   
   return 0;
 }

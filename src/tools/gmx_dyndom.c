@@ -127,10 +127,10 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
 int gmx_dyndom(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_dyndom reads a pdb file output from DynDom",
-    "http://www.cmp.uea.ac.uk/dyndom/",
-    "It reads the coordinates, and the coordinates of the rotation axis",
-    "furthermore it reads an index file containing the domains.",
+    "[TT]g_dyndom[tt] reads a [TT].pdb[tt] file output from DynDom",
+    "(http://www.cmp.uea.ac.uk/dyndom/).",
+    "It reads the coordinates, the coordinates of the rotation axis,",
+    "and an index file containing the domains.",
     "Furthermore it takes the first and last atom of the arrow file",
     "as command line arguments (head and tail) and",
     "finally it takes the translation vector (given in DynDom info file)",
@@ -167,7 +167,8 @@ int gmx_dyndom(int argc,char *argv[])
     { "-tail",     FALSE, etRVEC, {tail},
       "Last atom of the arrow vector" }
   };
-  int     i,j,natoms,isize,status;
+  int     i,j,natoms,isize;
+  t_trxstatus *status;
   atom_id *index=NULL,*index_all;
   char    title[256],*grpname;
   t_atoms atoms;
@@ -217,7 +218,7 @@ int gmx_dyndom(int argc,char *argv[])
     if (label > 'Z')
       label-=26;
     for(j=0; (j<atoms.nr); j++)
-      atoms.resinfo[atoms.atom[j].resind].chain = label;
+      atoms.resinfo[atoms.atom[j].resind].chainid = label;
     
     write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout,NULL);  
   }

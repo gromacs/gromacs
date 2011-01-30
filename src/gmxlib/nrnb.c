@@ -200,7 +200,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Spread Q",                        6 },
     { "Spread Q Bspline",                2 }, 
     { "Gather F",                      23  },
-    { "Gather F Bspline",              12  }, 
+    { "Gather F Bspline",              6   }, 
     { "3D-FFT",                        8   },
     { "Convolution",                   4   },
     { "Solve PME",                     64  },
@@ -371,12 +371,16 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
   if (nodetime == 0.0) {
     fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
   }
-
-  if (nprocs > 1) 
+#ifdef GMX_OPENMM
+  nodetime = realtime;
+  fprintf(out,"\tOpenMM run - timing based on wallclock.\n\n");
+#else
+  if (nprocs > 1)
   {
       nodetime = realtime;
       fprintf(out,"\tParallel run - timing based on wallclock.\n\n");
   }
+#endif
 
   if ((nodetime > 0) && (realtime > 0)) {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");

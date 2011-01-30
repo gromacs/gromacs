@@ -43,16 +43,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
-
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include <direct.h>
-#include <io.h>
-#endif
-
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -60,6 +50,15 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -97,7 +96,7 @@ void fflib_filename_base(const char *filename,char *filebase,int maxlen)
     {
         cptr = filename;
     }
-    if (strlen(filename) >= maxlen)
+    if (strlen(filename) >= (size_t)maxlen)
     {
         gmx_fatal(FARGS,"filename is longer (%d) than maxlen (%d)",
                   strlen(filename),maxlen);
@@ -143,28 +142,25 @@ static void sort_filenames(int n,char **name,char **name2)
 }
 
 static int low_fflib_search_file_end(const char *ffdir,
+                                     gmx_bool bAddCWD,
                                      const char *file_end,
-                                     bool bFatalError,
+                                     gmx_bool bFatalError,
                                      char ***filenames,
                                      char ***filenames_short)
 {
-#ifndef HAVE_DIRENT_H
-    gmx_fatal(FARGS,"lib_search_file_end called while the 'dirent' functionality is not available on this system");
-    return 0;
-#else
     char *ret=NULL;
     char *lib,*dir;
     char buf[1024];
     char *libpath;
-    bool env_is_set;
+    gmx_bool env_is_set;
     int  len_fe,len_name;
     char **fns,**fns_short;
     char dir_print[GMX_PATH_MAX];
     char *pdum;
     char *s,fn_dir[GMX_PATH_MAX];
-    DIR  *dirptr;
-    struct dirent *dirent;
-    int  n,n_thisdir;
+    gmx_directory_t dirhandle;
+    char nextname[STRLEN];
+    int  n,n_thisdir,rc;
 
     len_fe = strlen(file_end);
 
@@ -179,58 +175,50 @@ static int low_fflib_search_file_end(const char *ffdir,
         /* GMXLIB can be a path now */
         lib = getenv("GMXLIB");
         snew(libpath,GMX_PATH_MAX);
+        if (bAddCWD)
+        {
+            sprintf(libpath,"%s%s",".",PATH_SEPARATOR);
+        }
         if (lib != NULL)
         {
             env_is_set = TRUE;
-            strncpy(libpath,lib,GMX_PATH_MAX);
+            strncat(libpath,lib,GMX_PATH_MAX);
         } 
-        else if (!get_libdir(libpath))
+        else if (!get_libdir(libpath+strlen(libpath)))
         {
-            strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
+            strncat(libpath,GMXLIBDIR,GMX_PATH_MAX);
         }
     }
     s = libpath;
     n = 0;
     fns       = NULL;
     fns_short = NULL;
-    /* Start with the current directory, continue with libpath */
-    dir = ".";
-    do
+    /* Loop over all the entries in libpath */
+    while ((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
     {
-        dirptr = opendir(dir);
-        if (dirptr != NULL)
+        rc = gmx_directory_open(&dirhandle,dir);
+        if (rc==0)
         {
-            if (strcmp(dir,".") == 0)
-            {
-                /* Print the absolute path to the current working dir. */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-                pdum = _getcwd(dir_print,sizeof(dir_print)-1);
-#else
-                pdum =  getcwd(dir_print,sizeof(dir_print)-1);
-#endif
-            }
-            else
-            {
-                /* Print the directory dir, can be relative or absolute. */
-                strcpy(dir_print,dir);
-            }
+            strcpy(dir_print,dir);
 
             n_thisdir = 0;
-            while ((dirent = readdir(dirptr)) != NULL)
+            while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)
             {
+                nextname[STRLEN-1]=0;
                 if (debug)
                 {
-                    fprintf(debug,"dir '%s' file '%s'\n",dir,dirent->d_name);
+                    fprintf(debug,"dir '%s' %d file '%s'\n",
+                            dir,n_thisdir,nextname);
                 }
-                len_name = strlen(dirent->d_name);
+                len_name = strlen(nextname);
                 /* What about case sensitivity? */
                 if (len_name >= len_fe &&
-                    strcmp(dirent->d_name+len_name-len_fe,file_end) == 0)
+                    strcmp(nextname+len_name-len_fe,file_end) == 0)
                 {
                     /* We have a match */
                     srenew(fns,n+1);
                     sprintf(fn_dir,"%s%c%s",
-                            dir_print,DIR_SEPARATOR,dirent->d_name);
+                            dir_print,DIR_SEPARATOR,nextname);
 
                     /* Copy the file name, possibly including the path. */
                     fns[n] = strdup(fn_dir);
@@ -250,18 +238,20 @@ static int low_fflib_search_file_end(const char *ffdir,
                         }
                         else
                         {
-                            fns_short[n] = strdup(dirent->d_name);
+                            fns_short[n] = strdup(nextname);
                         }
                     }
                     n++;
                     n_thisdir++;
                 }
             }
+            gmx_directory_close(dirhandle);
 
-            sort_filenames(n_thisdir,fns+n-n_thisdir,fns_short+n-n_thisdir);
+            sort_filenames(n_thisdir,
+                           fns+n-n_thisdir,
+                           fns_short==NULL ? NULL : fns_short+n-n_thisdir);
         }
     }
-    while((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL);
 
     sfree(libpath);
 
@@ -284,43 +274,43 @@ static int low_fflib_search_file_end(const char *ffdir,
     }
 
     return n;
-#endif
 }
 
-int fflib_search_file_end(const char *ffdir,const char *file_end,
-                          bool bFatalError,
+int fflib_search_file_end(const char *ffdir,
+                          const char *file_end,
+                          gmx_bool bFatalError,
                           char ***filenames)
 {
-    return low_fflib_search_file_end(ffdir,file_end,bFatalError,filenames,NULL);
+    return low_fflib_search_file_end(ffdir,FALSE,file_end,bFatalError,
+                                     filenames,NULL);
 }
 
 int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                                 char ***dirnames)
 {
-#ifndef HAVE_DIRENT_H
-    gmx_fatal(FARGS,"lib_search_file_in_dirend called while the 'dirent' functionality is not available on this system");
-    return 0;
-#else
     int  nf,i;
     char **f,**f_short;
     int  n;
     char **dns;
-    DIR  *dirptr;
-    struct dirent *dirent;
-
+    gmx_directory_t dirhandle;
+    char nextname[STRLEN];
+    int  rc;
+    
     /* Find all files (not only dir's) ending on dirend */
-    nf = low_fflib_search_file_end(NULL,dirend,FALSE,&f,&f_short);
+    nf = low_fflib_search_file_end(NULL,TRUE,dirend,FALSE,&f,&f_short);
 
     n = 0;
     dns = NULL;
     for(i=0; i<nf; i++)
     {
-        dirptr = opendir(f[i]);
-        if (dirptr != NULL)
+        rc = gmx_directory_open(&dirhandle,f[i]);
+
+        if (rc==0)
         {
-            while ((dirent = readdir(dirptr)) != NULL)
+            while (gmx_directory_nextfile(dirhandle,nextname,STRLEN-1)==0)
             {
-                if (strcmp(dirent->d_name,filename) == 0)
+                nextname[STRLEN-1]=0;
+                if (strcmp(nextname,filename) == 0)
                 {
                     /* We have a match */
                     srenew(dns,n+1);
@@ -328,6 +318,7 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                     n++;
                 }
             }
+            gmx_directory_close(dirhandle);
         }
         sfree(f[i]);
         sfree(f_short[i]);
@@ -338,14 +329,13 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     *dirnames = dns;
 
     return n;
-#endif 
 }
 
-bool fflib_fexist(const char *file)
+gmx_bool fflib_fexist(const char *file)
 {
     char *file_fullpath;
 
-    file_fullpath = low_gmxlibfn(file,FALSE);
+    file_fullpath = low_gmxlibfn(file,TRUE,FALSE);
     
     if (file_fullpath == NULL)
     {

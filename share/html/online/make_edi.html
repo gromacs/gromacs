@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>make_edi</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0<br>
-Sun 18 Jan 2009</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -25,13 +25,15 @@ of different algorithms are implemented to drive the system along the eigenvecto
 (<tt>-linfix</tt>, <tt>-linacc</tt>, <tt>-radfix</tt>, <tt>-radacc</tt>, <tt>-radcon</tt>),
 to keep the position along a certain (set of) coordinate(s) fixed (<tt>-linfix</tt>),
 or to only monitor the projections of the positions onto
-these coordinates (<tt>-mon</tt>).<p>References:<br>
+these coordinates (<tt>-mon</tt>).<p>
+References:<br>
 A. Amadei, A.B.M. Linssen, B.L. de Groot, D.M.F. van Aalten and 
 H.J.C. Berendsen; An efficient method for sampling the essential subspace 
 of proteins., J. Biomol. Struct. Dyn. 13:615-626 (1996)<br>
 B.L. de Groot, A. Amadei, D.M.F. van Aalten and H.J.C. Berendsen; 
 Towards an exhaustive sampling of the configurational spaces of the 
-two forms of the peptide hormone guanylin,J. Biomol. Struct. Dyn. 13 : 741-751 (1996)<br>
+two forms of the peptide hormone guanylin,
+J. Biomol. Struct. Dyn. 13 : 741-751 (1996)<br>
 B.L. de Groot, A.Amadei, R.M. Scheek, N.A.J. van Nuland and H.J.C. Berendsen; 
 An extended sampling of the configurational space of HPr from E. coli
 PROTEINS: Struct. Funct. Gen. 26: 314-322 (1996)
@@ -46,12 +48,17 @@ reference structure, target positions, etc.<p>
 (steps in the desired direction will be accepted, others will be rejected).
 Note: by default the starting MD structure will be taken as origin of the first
 expansion cycle for radius expansion. If <tt>-ori</tt> is specified, you will be able
-to read in a structure file that defines an external origin.<p><tt>-radcon</tt>: perform acceptance radius contraction along selected eigenvectors
-towards a target structure specified with <tt>-tar</tt>.<p>NOTE: each eigenvector can be selected only once. <p><tt>-outfrq</tt>: frequency (in steps) of writing out projections etc. to .<a href="edo.html">edo</a> file<p>
+to read in a structure file that defines an external origin.<p>
+<tt>-radcon</tt>: perform acceptance radius contraction along selected eigenvectors
+towards a target structure specified with <tt>-tar</tt>.<p>
+NOTE: each eigenvector can be selected only once. <p>
+<tt>-outfrq</tt>: frequency (in steps) of writing out projections etc. to .<a href="edo.html">edo</a> file<p>
 <tt>-slope</tt>: minimal slope in acceptance radius expansion. A new expansion
 cycle will be started if the spontaneous increase of the radius (in nm/step)
-is less than the value specified.<p><tt>-maxedsteps</tt>: maximum number of steps per cycle in radius expansion
-before a new cycle is started.<p>Note on the parallel implementation: since ED sampling is a 'global' thing
+is less than the value specified.<p>
+<tt>-maxedsteps</tt>: maximum number of steps per cycle in radius expansion
+before a new cycle is started.<p>
+Note on the parallel implementation: since ED sampling is a 'global' thing
 (collective coordinates etc.), at least on the 'protein' side, ED sampling
 is not very parallel-friendly from an implentation point of view. Because
 parallel ED requires much extra communication, expect the performance to be
@@ -96,17 +103,18 @@ the output file and manually put them into the .<a href="edi.html">edi</a> file 
 <TR><TD ALIGN=RIGHT> <b><tt>-eig</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenval.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-tar</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  target.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-ori</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  origin.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tar</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  target.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> etc. </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ori</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  origin.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> etc. </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Output </TD><TD> ED sampling input </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-mon</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91 </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-linfix</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for fixed increment linear sampling </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-linacc</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for acceptance linear sampling </TD></TD>
@@ -127,9 +135,9 @@ the output file and manually put them into the .<a href="edi.html">edi</a> file 
 <TR><TD ALIGN=RIGHT> <b><tt>-linstep</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! "1.0 2.3 5.1 -3.1") </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-accdir</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Directions for acceptance linear sampling - only sign counts! (put in quotes! "-1 +1 -1.1") </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-radstep</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Stepsize (nm/step) for fixed increment radius expansion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]restrain</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the flooding potential with inverted sign -&gt; effects as quasiharmonic restraining potential </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]hessian</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvectors and eigenvalues are from a Hessian matrix </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]harmonic</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvalues are interpreted as spring constant </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]restrain</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the flooding potential with inverted sign -&gt; effects as quasiharmonic restraining potential </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]hessian</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvectors and eigenvalues are from a Hessian matrix </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]harmonic</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvalues are interpreted as spring constant </TD></TD>
 </TABLE>
 <P>
 <hr>

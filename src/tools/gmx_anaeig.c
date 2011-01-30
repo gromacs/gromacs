@@ -100,7 +100,7 @@ static void calc_entropy_schlitter(FILE *fp,int n,int nskip,
 
   hbar = PLANCK1/(2*M_PI);
   kt   = BOLTZMANN*temp;
-  kteh = kt*exp(2.0)/(hbar*hbar)*AMU*sqr(NANO);
+  kteh = kt*exp(2.0)/(hbar*hbar)*AMU*(NANO*NANO);
   if (debug)
     fprintf(debug,"n = %d, nskip = %d kteh = %g\n",n,nskip,kteh);
   
@@ -135,7 +135,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
 			      const char *title, const char *subtitle,
 			      const char *xlabel, const char **ylabel,
 			      int n, real *x, real **y, real ***sy,
-			      real scale_x, bool bZero, bool bSplit,
+			      real scale_x, gmx_bool bZero, gmx_bool bSplit,
                               const output_env_t oenv)
 {
   FILE *out;
@@ -295,7 +295,7 @@ compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
 static void inprod_matrix(const char *matfile,int natoms,
 			  int nvec1,int *eignr1,rvec **eigvec1,
 			  int nvec2,int *eignr2,rvec **eigvec2,
-			  bool bSelect,int noutvec,int *outvec)
+			  gmx_bool bSelect,int noutvec,int *outvec)
 {
   FILE  *out;
   real  **mat;
@@ -396,16 +396,18 @@ static void overlap(const char *outfile,int natoms,
 static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
                     const char *projfile,const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile,int skip,
-                    const char *extremefile,bool bExtrAll,real extreme,
+                    const char *extremefile,gmx_bool bExtrAll,real extreme,
                     int nextr, t_atoms *atoms,int natoms,atom_id *index,
-                    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
+                    gmx_bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
                     real *sqrtm,rvec *xav,
                     int *eignr,rvec **eigvec,
-                    int noutvec,int *outvec, bool bSplit,
+                    int noutvec,int *outvec, gmx_bool bSplit,
                     const output_env_t oenv)
 {
   FILE    *xvgrout=NULL;
-  int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
+  int     nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
+  t_trxstatus *out=NULL;
+  t_trxstatus *status;
   int     noutvec_extr,*imin,*imax;
   atom_id *all_at;
   matrix  box;
@@ -413,6 +415,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   real    t,inp,**inprod=NULL,min=0,max=0;
   char    str[STRLEN],str2[STRLEN],**ylabel,*c;
   real    fact;
+  gmx_rmpbc_t  gpbc=NULL;
 
   snew(x,natoms);
   
@@ -440,12 +443,18 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     if (nat>atoms->nr)
       gmx_fatal(FARGS,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
+    
+    if (top)
+      gpbc = gmx_rmpbc_init(&top->idef,ePBC,nat,box);
+    if (top)
+    gmx_rmpbc_done(gpbc);
+
     for(i=0; i<nat; i++)
       all_at[i]=i;
     do {
       if (nfr % skip == 0) {
 	if (top)
-	  rm_pbc(&(top->idef),ePBC,nat,box,xread,xread);
+	  gmx_rmpbc(gpbc,nat,box,xread);
 	if (nframes>=snew_size) {
 	  snew_size+=100;
 	  for(i=0; i<noutvec+1; i++)
@@ -486,7 +495,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       }
       nfr++;
     } while (read_next_x(oenv,status,&t,nat,xread,box));
-    close_trj(status);
+    close_trx(status);
      sfree(x);
      if (filterfile)
        close_trx(out);
@@ -494,6 +503,9 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   else
     snew(xread,atoms->nr);
   
+  if (top)
+    gmx_rmpbc_done(gpbc);
+
 
   if (projfile) {
     snew(ylabel,noutvec);
@@ -529,7 +541,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     real    *b=NULL;
     matrix  box;
     char    *resnm,*atnm, pdbform[STRLEN];
-    bool    bPDB, b4D;
+    gmx_bool    bPDB, b4D;
     FILE    *out;
     
     if (noutvec < 3)
@@ -644,7 +656,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       for(frame=0; frame<nextr; frame++) {
 	if ((extreme==0) && (nextr<=3))
 	  for(i=0; i<natoms; i++) {
-	    atoms->resinfo[atoms->atom[index[i]].resind].chain = 'A' + frame;
+	    atoms->resinfo[atoms->atom[index[i]].resind].chainid = 'A' + frame;
 	  }
 	for(i=0; i<natoms; i++)
 	  for(d=0; d<DIM; d++) 
@@ -737,7 +749,7 @@ int gmx_anaeig(int argc,char *argv[])
 {
   static const char *desc[] = {
     "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
-    "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes anaysis",
+    "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes analysis",
     "([TT]g_nmeig[tt]).[PAR]",
     
     "When a trajectory is projected on eigenvectors, all structures are",
@@ -757,7 +769,7 @@ int gmx_anaeig(int argc,char *argv[])
     "[TT]-first[tt] to [TT]-last[tt].",
     "The projections of a trajectory on the eigenvectors of its",
     "covariance matrix are called principal components (pc's).",
-    "It is often useful to check the cosine content the pc's,",
+    "It is often useful to check the cosine content of the pc's,",
     "since the pc's of random diffusion are cosines with the number",
     "of periods equal to half the pc index.",
     "The cosine content of the pc's can be calculated with the program",
@@ -779,7 +791,7 @@ int gmx_anaeig(int argc,char *argv[])
     "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
     "will be written to separate files. Chain identifiers will be added",
     "when writing a [TT].pdb[tt] file with two or three structures (you",
-    "can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
     
     "  Overlap calculations between covariance analysis:[BR]",
     "  NOTE: the analysis should use the same fitting structure[PAR]",
@@ -810,7 +822,7 @@ int gmx_anaeig(int argc,char *argv[])
   };
   static int  first=1,last=8,skip=1,nextr=2,nskip=6;
   static real max=0.0,temp=298.15;
-  static bool bSplit=FALSE,bEntropy=FALSE;
+  static gmx_bool bSplit=FALSE,bEntropy=FALSE;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, {&first},     
       "First eigenvector for analysis (-1 is select)" },
@@ -840,7 +852,7 @@ int gmx_anaeig(int argc,char *argv[])
   int        ePBC=-1;
   t_atoms    *atoms=NULL;
   rvec       *xtop,*xref1,*xref2,*xrefp=NULL;
-  bool       bDMR1,bDMA1,bDMR2,bDMA2;
+  gmx_bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
   matrix     topbox;
@@ -858,13 +870,14 @@ int gmx_anaeig(int argc,char *argv[])
   const char *TwoDPlotFile,*ThreeDPlotFile;
   const char *FilterFile,*ExtremeFile;
   const char *OverlapFile,*InpMatFile;
-  bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
-  bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
+  gmx_bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
+  gmx_bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
   real       *eigval1=NULL,*eigval2=NULL;
   int        neig1,neig2;
   double     **xvgdata;
   output_env_t oenv;
-  
+  gmx_rmpbc_t  gpbc;
+
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
     { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
@@ -986,13 +999,15 @@ int gmx_anaeig(int argc,char *argv[])
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
-  if (!bTPS)
+
+  if (!bTPS) {
     bTop=FALSE;
-  else {
+  } else {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
-    rm_pbc(&(top.idef),ePBC,atoms->nr,topbox,xtop,xtop);
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,topbox);
+    gmx_rmpbc(gpbc,atoms->nr,topbox,xtop);
     /* Fitting is only required for the projection */ 
     if (bProj && bFit1) {
       if (xref1 == NULL) {
@@ -1024,8 +1039,9 @@ int gmx_anaeig(int argc,char *argv[])
 	reset_x(nfit,ifit,atoms->nr,NULL,xrefp,w_rls);
       }
     }
+    gmx_rmpbc_done(gpbc);
   }
-  
+
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
     get_index(atoms,indexfile,1,&i,&index,&grpname);

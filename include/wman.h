@@ -36,9 +36,6 @@
 #ifndef _wman_h
 #define _wman_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include "readinp.h"
 
@@ -46,20 +43,20 @@
 extern "C" {
 #endif
 
-extern void write_java(FILE *out,const char *program,
+void write_java(FILE *out,const char *program,
 		       int nldesc,const char **desc,
 		       int nfile,t_filenm *fnm,
 		       int npargs,t_pargs *pa,
 		       int nbug,const char **bugs);
      
-extern void write_man(FILE *out,const char *mantp,const char *program,
+void write_man(FILE *out,const char *mantp,const char *program,
 		      int nldesc,const char **desc,
 		      int nfile,t_filenm *fnm,
 		      int npargs,t_pargs *pa,
 		      int nbug,const char **bugs,
-		      bool bHidden);
+		      gmx_bool bHidden);
 
-extern char *fileopt(unsigned long flag,char buf[],int maxsize);
+char *fileopt(unsigned long flag,char buf[],int maxsize);
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
  * You have to provide a buffer and buffer length in which
@@ -67,16 +64,16 @@ extern char *fileopt(unsigned long flag,char buf[],int maxsize);
  * a pointer to this buffer.
  */
 
-extern char *check_tex(const char *s);
+char *check_tex(const char *s);
 
-extern char *check_tty(const char *s);
+char *check_tty(const char *s);
 
 /* FIXME: It should not be necessary to expose the struct */
 struct t_linkdata;
 
-extern void
+void
 print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
-                    struct t_linkdata *links, const char *program, bool bWiki);
+                    struct t_linkdata *links, const char *program, gmx_bool bWiki);
 
 #ifdef __cplusplus
 }

@@ -66,7 +66,7 @@ static void pr_two(FILE *out,int c,int i)
 void pr_difftime(FILE *out,double dt)
 {
   int    ndays,nhours,nmins,nsecs;
-  bool   bPrint,bPrinted;
+  gmx_bool   bPrint,bPrinted;
 
   ndays = dt/(24*3600);
   dt    = dt-24*3600*ndays;
@@ -103,13 +103,18 @@ void pr_difftime(FILE *out,double dt)
 }
 
 
-bool be_cool(void)
+gmx_bool be_cool(void)
 {
   /* Yes, it is bad to check the environment variable every call,
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
+#ifdef GMX_FAHCORE
+  /*be uncool*/
+  return FALSE;
+#else
   return (getenv("GMX_NO_QUOTES") == NULL);
+#endif
 }
 
 void space(FILE *out, int n)
@@ -140,7 +145,7 @@ static void ster_print(FILE *out,const char *s)
   int  slen;
   char buf[128];
   
-  sprintf(buf,":-)  %s  (-:",s);
+  snprintf(buf,128,":-)  %s  (-:",s);
   slen=strlen(buf);
   space(out,(80-slen)/2);
   fprintf(out,"%s\n",buf);
@@ -224,7 +229,11 @@ void CopyRight(FILE *out,const char *szProgram)
   char buf[256],tmpstr[1024];
   int i;
 
+#ifdef GMX_FAHCORE
+  set_program_name("Gromacs");
+#else
   set_program_name(szProgram);
+#endif
 
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
@@ -234,7 +243,7 @@ void CopyRight(FILE *out,const char *szProgram)
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
-  fprintf(out,"\n\n");
+  fprintf(out,"\n");
 
   /* fprintf(out,"\n");*/
 
@@ -249,7 +258,7 @@ void CopyRight(FILE *out,const char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",Program());
+  snprintf(buf,256,"%s",Program());
 #ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif
@@ -309,6 +318,11 @@ void please_cite(FILE *fp,const char *key)
       "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms for Rigid Water Models",
       "J. Comp. Chem.",
       13, 1992, "952-962" },
+    { "Cromer1968a",
+      "D. T. Cromer & J. B. Mann",
+      "X-ray scattering factors computed from numerical Hartree-Fock wave functions",
+      "Acta Cryst. A",
+      24, 1968, "321" },
     { "Barth95a",
       "E. Barth and K. Kuczera and B. Leimkuhler and R. D. Skeel",
       "Algorithms for Constrained Molecular Dynamics",
@@ -344,6 +358,11 @@ void please_cite(FILE *fp,const char *key)
       "GROMACS 4: Algorithms for highly efficient, load-balanced, and scalable molecular simulation",
       "J. Chem. Theory Comput.",
       4, 2008, "435-447" },
+    { "Hub2010",
+      "J. S. Hub, B. L. de Groot and D. van der Spoel",
+      "g_wham - A free weighted histogram analysis implementation including robust error and autocorrelation estimates",
+      "J. Chem. Theory Comput.",
+      6, 2010, "3713-3720"}, 
     { "In-Chul99a",
       "Y. In-Chul and M. L. Berkowitz",
       "Ewald summation for systems with slab geometry",
@@ -379,6 +398,11 @@ void please_cite(FILE *fp,const char *key)
       "Auger Electron Cascades in Water and Ice",
       "Chem. Phys.",
       299, 2004, "277-283" },
+    { "Caleman2011b",
+      "C. Caleman and M. Hong and J. S. Hub and L. T. da Costa and P. J. van Maaren and D. van der Spoel",
+      "Force Field Benchmark 1: Density, Heat of Vaporization, Heat Capacity, Surface Tension and Dielectric Constant of 152 Organic Liquids",
+      "Submitted",
+      0, 2011, "" },
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
@@ -483,7 +507,23 @@ void please_cite(FILE *fp,const char *key)
       "J. S. Hub and B. L. de Groot",
       "Mechanism of selectivity in aquaporins and aquaglyceroporins",
       "PNAS",
-      105, 2008, "1198-1203" }
+      105, 2008, "1198-1203" },
+    { "Friedrich2009",
+      "M. S. Friedrichs, P. Eastman, V. Vaidyanathan, M. Houston, S. LeGrand, A. L. Beberg, D. L. Ensign, C. M. Bruns, and V. S. Pande",
+      "Accelerating Molecular Dynamic Simulation on Graphics Processing Units",
+      "J. Comp. Chem.",
+      30, 2009, "864-872" },
+    { "Engin2010",
+      "O. Engin, A. Villa, M. Sayar and B. Hess",
+      "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
+      "J. Phys. Chem. B",
+      0, 2010, "???" },
+    { "Wang2010",
+      "H. Wang, F. Dommert, C.Holm",
+      "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
+      "J. Chem. Phys. B",
+      133, 2010, "034117"
+    }
   };
 #define NSTR (int)asize(citedb)
   

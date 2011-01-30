@@ -218,7 +218,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
   real     lam;
-  bool     bNEMD,bSA;
+  gmx_bool     bSA;
   int      traj=0,xtc_traj=0;
   t_state  *state;
   rvec     mutot;
@@ -234,7 +234,12 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(fplog,inputrec,tpx,mtop,state);
+  read_tpx_state(tpx,inputrec,state, NULL, mtop);
+  set_state_entries(state,inputrec,1);
+  if (fplog)
+      pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
+
+
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
@@ -244,7 +249,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   clear_rvec(mutot);
   init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,NULL,NULL,
-	  force_vir,shake_vir,mutot,&bNEMD,&bSA,NULL,NULL,0);
+	  force_vir,shake_vir,mutot,&bSA,NULL,NULL,0);
 
   init_enerdata(mtop->groups.grps[egcENER].nr,0,enerd);  
 

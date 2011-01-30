@@ -35,6 +35,10 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -53,7 +57,7 @@ files.
 
 
 
-void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
+void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
 {
     barrier->threshold = count;
     barrier->cycle     = 0;
@@ -62,7 +66,7 @@ void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
 }
 
 
-int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
+int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
 {
     int    cycle;
     int    status;
@@ -83,6 +87,7 @@ int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
      */
     if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
     {
+        tMPI_Atomic_memory_barrier_rel();
         tMPI_Atomic_set(&(barrier->count), barrier->threshold);
         barrier->cycle = !barrier->cycle;
 
@@ -97,10 +102,11 @@ int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
          */
         do
         {
+            /*tMPI_Atomic_memory_barrier();*/
             TMPI_YIELD_WAIT(barrier);
-            tMPI_Atomic_memory_barrier();
         }
         while( *(volatile int *)(&(barrier->cycle)) == cycle);
+        tMPI_Atomic_memory_barrier_acq();
 
         status = 0;
     }

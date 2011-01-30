@@ -102,6 +102,10 @@ typedef struct gmx_timeprint {
 } t_gmx_timeprint;
 #endif
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 double
 gmx_gettime()
@@ -131,40 +135,56 @@ gmx_gettime()
 void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,   
                 t_inputrec *ir, t_commrec *cr)
 {
-  time_t finish;
-
-  double dt;
-  char buf[48];
-
+    time_t finish;
+    char   timebuf[STRLEN];
+    double dt;
+    char buf[48];
+    
 #ifndef GMX_THREADS
-  if (!PAR(cr))
+    if (!PAR(cr))
 #endif
-    fprintf(out,"\r");
-  fprintf(out,"step %s",gmx_step_str(step,buf));
-  if ((step >= ir->nstlist)) {
-    if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
-      /* We have done a full cycle let's update time_per_step */
-      runtime->last = gmx_gettime();
-      dt = difftime(runtime->last,runtime->real);
-      runtime->time_per_step = dt/(step - ir->init_step + 1);
+    {
+        fprintf(out,"\r");
     }
-    dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
-
-    if (dt >= 300) {    
-      finish = (time_t) (runtime->last + dt);
-      sprintf(buf,"%s",ctime(&finish));
-      buf[strlen(buf)-1]='\0';
-      fprintf(out,", will finish %s",buf);
+    fprintf(out,"step %s",gmx_step_str(step,buf));
+    if ((step >= ir->nstlist))
+    {
+        if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0))
+        {
+            /* We have done a full cycle let's update time_per_step */
+            runtime->last = gmx_gettime();
+            dt = difftime(runtime->last,runtime->real);
+            runtime->time_per_step = dt/(step - ir->init_step + 1);
+        }
+        dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
+        
+        if (ir->nsteps >= 0)
+        {
+            if (dt >= 300)
+            {    
+                finish = (time_t) (runtime->last + dt);
+                gmx_ctime_r(&finish,timebuf,STRLEN);
+                sprintf(buf,"%s",timebuf);
+                buf[strlen(buf)-1]='\0';
+                fprintf(out,", will finish %s",buf);
+            }
+            else
+                fprintf(out,", remaining runtime: %5d s          ",(int)dt);
+        }
+        else
+        {
+            fprintf(out," performance: %.1f ns/day    ",
+                    ir->delta_t/1000*24*60*60/runtime->time_per_step);
+        }
     }
-    else
-      fprintf(out,", remaining runtime: %5d s          ",(int)dt);
-  }
 #ifndef GMX_THREADS
-  if (PAR(cr))
-    fprintf(out,"\n");
+    if (PAR(cr))
+    {
+        fprintf(out,"\n");
+    }
 #endif
 
-  fflush(out);
+    fflush(out);
 }
 
 #ifdef NO_CLOCK 
@@ -229,26 +249,28 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
                          const gmx_runtime_t *runtime)
 {
     int i;
-    char *ts,time_string[STRLEN];
+    char timebuf[STRLEN];
+    char time_string[STRLEN];
     time_t tmptime;
 
-    if (runtime != NULL)
-    {
-		tmptime = (time_t) runtime->real;
-        ts = ctime(&tmptime);
-    }
-    else
-    {
-        tmptime = (time_t) gmx_gettime();
-        ts = ctime(&tmptime);
-    }
-    for(i=0; ts[i]>=' '; i++)
-    {
-        time_string[i]=ts[i];
-    }
-    time_string[i]='\0';
     if (fplog)
     {
+        if (runtime != NULL)
+        {
+            tmptime = (time_t) runtime->real;
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        else
+        {
+            tmptime = (time_t) gmx_gettime();
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        for(i=0; timebuf[i]>=' '; i++)
+        {
+            time_string[i]=timebuf[i];
+        }
+        time_string[i]='\0';
+
         fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
     }
 }
@@ -398,14 +420,14 @@ void do_force(FILE *fplog,t_commrec *cr,
               real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              bool bBornRadii,
+              gmx_bool bBornRadii,
               int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
     double mu[2*DIM]; 
-    bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
-    bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -506,7 +528,9 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda,step);
+    gmx_pme_send_x(cr,bBS ? boxs : box,x,
+                   mdatoms->nChargePerturbed,lambda,
+                   ( flags & GMX_FORCE_VIRIAL),step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -573,7 +597,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->bTwinRange)
         {
             /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
@@ -648,7 +672,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (bSepLRF)
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force; i++)
+            for(i=0; i<fr->natoms_force_constr; i++)
             {
                 copy_rvec(fr->f_twin[i],f[i]);
             }
@@ -656,7 +680,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         else if (!(fr->bTwinRange && bNS))
         {
             /* Clear the short-range forces */
-            clear_rvecs(fr->natoms_force,f);
+            clear_rvecs(fr->natoms_force_constr,f);
         }
 
         clear_rvec(fr->vir_diag_posres);
@@ -912,7 +936,11 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* Do a first constrain to reset particles... */
     step = ir->init_step;
     if (fplog)
-        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
+    {
+        char buf[STEPSTRSIZE];
+        fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
+                gmx_step_str(step,buf));
+    }
     dvdlambda = 0;
     
     /* constrain the current position */
@@ -950,8 +978,9 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
-                    step);
+            char buf[STEPSTRSIZE];
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
+                    gmx_step_str(step,buf));
         }
         dvdlambda = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
@@ -1138,7 +1167,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
+    gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
@@ -1270,7 +1299,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 
 static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			    gmx_mtop_t *mtop,rvec x[],
-			    bool bFirst)
+			    gmx_bool bFirst)
 {
   t_graph *graph;
   int mb,as,mol;
@@ -1325,7 +1354,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                bool bWriteStat)
+                gmx_bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_tot=NULL;
@@ -1357,11 +1386,34 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     print_dd_statistics(cr,inputrec,fplog);
   }
 
-  if (SIMMASTER(cr)) {
-    if (PARTDECOMP(cr)) {
-      pr_load(fplog,cr,nrnb_tot);
-    }
+#ifdef GMX_MPI
+    if (PARTDECOMP(cr))
+    {
+        if (MASTER(cr))
+        {
+            t_nrnb     *nrnb_all;
+            int        s;
+            MPI_Status stat;
 
+            snew(nrnb_all,cr->nnodes);
+            nrnb_all[0] = *nrnb;
+            for(s=1; s<cr->nnodes; s++)
+            {
+                MPI_Recv(nrnb_all[s].n,eNRNB,MPI_DOUBLE,s,0,
+                         cr->mpi_comm_mysim,&stat);
+            }
+            pr_load(fplog,cr,nrnb_all);
+            sfree(nrnb_all);
+        }
+        else
+        {
+            MPI_Send(nrnb->n,eNRNB,MPI_DOUBLE,MASTERRANK(cr),0,
+                     cr->mpi_comm_mysim);
+        }
+    }
+#endif  
+
+  if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
                     wcycle,cycles);
 
@@ -1410,7 +1462,7 @@ void init_md(FILE *fplog,
              int nfile,const t_filenm fnm[],
              gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
+             gmx_bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
@@ -1441,8 +1493,6 @@ void init_md(FILE *fplog,
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
     
-    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-    
     if (upd)
     {
         *upd = init_update(fplog,ir);
@@ -1469,10 +1519,10 @@ void init_md(FILE *fplog,
     
     if (nfile != -1)
     {
-        *outf = init_mdoutf(nfile,fnm,(Flags & MD_APPENDFILES),cr,ir,oenv);
+        *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
-                              mtop,ir);
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     /* Initiate variables */  

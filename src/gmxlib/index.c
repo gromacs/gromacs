@@ -56,16 +56,20 @@
 #include "txtdump.h"
 #include "gmxfio.h"
 
-typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
-static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 
-static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
-#define  NDNA asize(Sugars)
 
-static const char *Negate[] = { "SOL" };
-#define  NNEGATE asize(Negate)
+const char gmx_residuetype_undefined[]="Other";
 
-static bool gmx_ask_yesno(bool bASK)
+struct gmx_residuetype
+{
+    int      n; 
+    char **  resname;
+    char **  restype;
+    
+};
+
+
+static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 {
   char c;
 
@@ -126,7 +130,7 @@ void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name)
 
 /* compare index in `a' with group in `b' at `index', 
    when `index'<0 it is relative to end of `b' */
-static bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
+static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 {
   int i;
   
@@ -143,46 +147,78 @@ static bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
   return TRUE;
 }
 
-static void p_status(int nres,eRestp restp[],bool bVerb)
+static void 
+p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx_bool bVerb)
 {
-  int i,j,ntp[erestNR];
-
-  for(i=0; (i<erestNR); i++)
-    ntp[i]=0;
-  for(j=0; (j<nres); j++)
-    ntp[restp[j]]++;
-  
-  if (bVerb)
-    for(i=0; (i<erestNR); i++) 
-      printf("There are: %5d %10s residues\n",ntp[i],ResTP[i]);
+    int i,j;
+    int found;
+    
+    int * counter;
+    
+    snew(counter,ntypes);
+    for(i=0;i<ntypes;i++)
+    {
+        counter[i]=0;
+    }
+    for(i=0;i<nres;i++)
+    {
+        found=0;
+        for(j=0;j<ntypes;j++)
+        {
+            if(!gmx_strcasecmp(restype[i],typenames[j]))
+            {
+                counter[j]++;
+            }
+        }
+    }
+    
+    if (bVerb)
+    {
+        for(i=0; (i<ntypes); i++) 
+        {
+            if(counter[i]>0)
+            {
+                printf("There are: %5d %10s residues\n",counter[i],typenames[i]);
+            }
+        }
+    }
 }
 
-atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
-		bool bTrue)
-/* Make an array of atom_ids for all atoms with:
- * (restp[i] == res) == bTrue
- */
-{
-  atom_id *a;
-  int     i;
 
-  snew(a,atoms->nr);
-  *nra=0;
-  for(i=0; (i<atoms->nr); i++) 
-    if ((restp[atoms->atom[i].resind] == res) == bTrue)
-      a[(*nra)++]=i;
+atom_id *
+mk_aid(t_atoms *atoms,const char ** restype,const char * typestring,int *nra,gmx_bool bMatch)
+/* Make an array of atom_ids for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
+{
+    atom_id *a;
+    int     i;
+    int     res;
+    
+    snew(a,atoms->nr);
+    *nra=0;
+    for(i=0; (i<atoms->nr); i++) 
+    {
+        res=!gmx_strcasecmp(restype[atoms->atom[i].resind],typestring);
+        if(bMatch==FALSE)
+        {
+            res=!res;
+        }
+        if(res)
+        {
+            a[(*nra)++]=i;
+        }
+    }
   
-  return a;
+    return a;
 }
 
 typedef struct {
   char *rname;
-  bool bNeg;
+  gmx_bool bNeg;
   char *gname;
 } restp_t;
 
-static void analyse_other(eRestp Restp[],t_atoms *atoms,
-			  t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+static void analyse_other(const char ** restype,t_atoms *atoms,
+			  t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
   restp_t *restp=NULL;
   char **attp=NULL;
@@ -190,18 +226,25 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
   atom_id *other_ndx,*aid,*aaid;
   int  i,j,k,l,resind,naid,naaid,natp,nrestp=0;
   
-  for(i=0; (i<atoms->nres); i++)
-    if (Restp[i] == etOther)
-      break;
+    for(i=0; (i<atoms->nres); i++)
+    {
+        if (gmx_strcasecmp(restype[i],"Protein") && gmx_strcasecmp(restype[i],"DNA") && gmx_strcasecmp(restype[i],"RNA") && gmx_strcasecmp(restype[i],"Water"))
+        {
+            break;
+        }
+    }
   if (i < atoms->nres) {
     /* we have others */
     if (bVerb)
-      printf("Analysing Other...\n");
+      printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
     snew(other_ndx,atoms->nr);
     for(k=0; (k<atoms->nr); k++) {
       resind = atoms->atom[k].resind;
       rname = *atoms->resinfo[resind].name;
-      if (Restp[resind] == etOther) {
+        if (gmx_strcasecmp(restype[resind],"Protein") && gmx_strcasecmp(restype[resind],"DNA") && 
+            gmx_strcasecmp(restype[resind],"RNA") && gmx_strcasecmp(restype[resind],"Water")) 
+        {
+
 	for(l=0; (l<nrestp); l++)
 	  if (strcmp(restp[l].rname,rname) == 0)
 	    break;
@@ -211,17 +254,8 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
 	  restp[nrestp].bNeg  = FALSE;
 	  restp[nrestp].gname = strdup(rname);
 	  nrestp++;
-	  for(i=0; i<NNEGATE; i++) {
-	    if (strcmp(rname,Negate[i]) == 0) {
-	      srenew(restp,nrestp+1);
-	      restp[nrestp].rname = strdup(rname);
-	      restp[nrestp].bNeg  = TRUE;
-	      snew(restp[nrestp].gname,4+strlen(rname)+1);
-	      sprintf(restp[nrestp].gname,"%s%s","non-",rname);
-	      nrestp++;
-	    }
-	  }
-	}
+        
+    }
       }
     }
     for(i=0; (i<nrestp); i++) {
@@ -273,8 +307,8 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
   }
 }
 
-static void analyse_prot(eRestp restp[],t_atoms *atoms,
-			 t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+static void analyse_prot(const char ** restype,t_atoms *atoms,
+			 t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
   static const char *pnoh[]    = { "H" };
@@ -282,9 +316,9 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static const char *calpha[]  = { "CA" };
   static const char *bb[]      = { "N","CA","C" };
-  static const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
-  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  static const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+  static const char *mc[]      = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OC1","OC2","OT","OXT" };
+  static const char *mch[]     = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
   static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
@@ -302,13 +336,13 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   };
   /* construct index group containing (TRUE) or excluding (FALSE)
      given atom names */
-  const bool complement[NCH] = { 
+  const gmx_bool complement[NCH] = { 
     TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
   };
   const int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
   /* the index in wholename gives the first item in the arrays of 
-   * atomtypes that should be tested with 'strncasecmp' in stead of
-   * strcasecmp, or -1 if all items should be tested with strcasecmp
+   * atomtypes that should be tested with 'gmx_strncasecmp' in stead of
+   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
    * This is comparable to using a '*' wildcard at the end of specific
    * atom names, but that is more involved to implement...
    */
@@ -319,25 +353,29 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   int     n,j;
   atom_id *aid;
   int     nra,nnpres,npres;
-  bool    match;
+  gmx_bool    match;
   char    ndx_name[STRLEN],*atnm;
   int i;
 
   if (bVerb)
+  {
     printf("Analysing Protein...\n");
+  }
   snew(aid,atoms->nr);
 
   /* calculate the number of protein residues */
   npres=0;
   for(i=0; (i<atoms->nres); i++)
-    if (restp[i] == etProt)
+  if (!gmx_strcasecmp(restype[i],"Protein"))
+  {
       npres++;
-
+  }
   /* find matching or complement atoms */
   for(i=0; (i<(int)NCH); i++) {
     nra=0;
     for(n=0; (n<atoms->nr); n++) {
-      if (restp[atoms->atom[n].resind] == etProt) {
+        if (!gmx_strcasecmp(restype[atoms->atom[n].resind],"Protein")) {
+
 	match=FALSE;
 	for(j=0; (j<sizes[i]); j++) {
 	  /* skip digits at beginning of atomname, e.g. 1H */
@@ -345,10 +383,10 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 	  while (isdigit(atnm[0]))
 	    atnm++;
 	  if ( (wholename[i]==-1) || (j<wholename[i]) ) {
-	    if (strcasecmp(chains[i][j],atnm) == 0)
+	    if (gmx_strcasecmp(chains[i][j],atnm) == 0)
 	      match=TRUE;
 	  } else {
-	    if (strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
+	    if (gmx_strncasecmp(chains[i][j],atnm,strlen(chains[i][j])) == 0)
 	      match=TRUE;
 	  }
 	}
@@ -373,7 +411,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 	  for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++) {
 	    match=FALSE;
 	    for(j=0;(j<sizes[i]); j++) 
-	      if (strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
+	      if (gmx_strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
 		match=TRUE;
 	    if (match != complement[i])
 	      aid[nra++]=n;
@@ -428,111 +466,400 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   sfree(aid);
 }
 
-static void analyse_dna(eRestp restp[],t_atoms *atoms,
-			t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+
+
+
+/* Return 0 if the name was found, otherwise -1.
+ * p_restype is set to a pointer to the type name, or 'Other' if we did not find it.
+ */
+int
+gmx_residuetype_get_type(gmx_residuetype_t rt,const char * resname, const char ** p_restype)
 {
-  if (bVerb)
-    printf("Analysing DNA... (not really)\n");
-  if (debug)
-    printf("eRestp %p; atoms %p; gb %p; gn %p; bASK %s; bASK %s",
-	   (void *)restp, (void *)atoms, (void *)gb, (void *)gn, 
-	   bool_names[bASK], bool_names[bVerb]);
+    int    i,rc;
+    
+    rc=-1;
+    for(i=0;i<rt->n && rc;i++)
+    {
+        rc=gmx_strcasecmp(rt->resname[i],resname);
+    }
+    
+    *p_restype = (rc==0) ? rt->restype[i-1] : gmx_residuetype_undefined;
+    
+    return rc;
 }
 
-t_aa_names *get_aa_names(void) 
+int
+gmx_residuetype_add(gmx_residuetype_t rt,const char *newresname, const char *newrestype)
 {
-  /* Read the database in aminoacids.dat */
-  t_aa_names *aan;
+    int     i;
+    int     found;
+    const char *  p_oldtype;
+    
+    found = !gmx_residuetype_get_type(rt,newresname,&p_oldtype);
+    
+    if(found && gmx_strcasecmp(p_oldtype,newrestype))
+    {
+        fprintf(stderr,"Warning: Residue '%s' already present with type '%s' in database, ignoring new type '%s'.",
+                newresname,p_oldtype,newrestype);
+    }
+    
+    if(found==0)
+    {
+        srenew(rt->resname,rt->n+1);
+        srenew(rt->restype,rt->n+1);
+        rt->resname[rt->n]=strdup(newresname);
+        rt->restype[rt->n]=strdup(newrestype);
+        rt->n++;
+    }
   
-  snew(aan,1);
-  
-  aan->n = get_strings("aminoacids.dat",&(aan->aa));
-  /* qsort(aan->aa,aan->n,sizeof(aan->aa[0]),strcmp);*/
-  
-  return aan;
+    return 0;
 }
 
-bool is_protein(t_aa_names *aan,char *resnm)
+
+int
+gmx_residuetype_init(gmx_residuetype_t *prt)
 {
-  /* gives true if resnm occurs in aminoacids.dat */
-  int i;
-  
-  for(i=0; (i<aan->n); i++)
-    if (strcasecmp(aan->aa[i],resnm) == 0)
-      return TRUE;
-  
-  return FALSE;
+    FILE *  db;
+    char    line[STRLEN];
+    char    resname[STRLEN],restype[STRLEN],dum[STRLEN];
+    char *  p;
+    int     i;
+    struct gmx_residuetype *rt;
+    
+    snew(rt,1);
+    *prt=rt;
+    
+    rt->n        = 0;
+    rt->resname  = NULL;
+    rt->restype = NULL;
+    
+    db=libopen("residuetypes.dat");
+    
+    while(get_a_line(db,line,STRLEN)) 
+    {
+        strip_comment(line);
+        trim(line);
+        if(line[0]!='\0')
+        {
+            if(sscanf(line,"%s %s %s",resname,restype,dum)!=2)
+            {
+                gmx_fatal(FARGS,"Incorrect number of columns (2 expected) for line in residuetypes.dat");
+            }
+            gmx_residuetype_add(rt,resname,restype);
+        }
+    }
+    
+    fclose(db);
+    
+    return 0;
 }
 
-void done_aa_names(t_aa_names **aan)
+
+
+int
+gmx_residuetype_destroy(gmx_residuetype_t rt)
 {
-  /* Free memory */
-  int i;
-  
-  for(i=0; (i<(*aan)->n); i++)
-    sfree((*aan)->aa[i]);
-  sfree((*aan)->aa);
-  sfree(*aan);
-  *aan = NULL;
+    int i;
+    
+    for(i=0;i<rt->n;i++)
+    {
+        free(rt->resname[i]);
+        free(rt->restype[i]);
+    }
+    free(rt);
+    
+    return 0;
 }
 
-void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
+int
+gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
+                             const char ***       p_typenames,
+                             int *                ntypes)
 {
-  t_aa_names *aan;
-  eRestp  *restp;
-  char    *resnm;
-  atom_id *aid;
-  int     nra;
-  int     i;
-  size_t  j;
+    int      i,j,n;
+    int      found;
+    const char **  my_typename;
+    char *   p;
+    
+    n=0;
+    
+    my_typename=NULL;
+    for(i=0;i<rt->n;i++)
+    {
+        p=rt->restype[i];
+        found=0;
+        for(j=0;j<n && !found;j++)
+        {
+            found=!gmx_strcasecmp(p,my_typename[j]);
+        }
+        
+        if(!found)
+        {
+            srenew(my_typename,n+1);
+            my_typename[n]=p;
+            n++;
+        }
+    }
+    *ntypes=n;
+    *p_typenames=my_typename; 
+    
+    return 0;
+}
+    
 
-  if (bVerb)
-    printf("Analysing residue names:\n");
-  snew(restp,atoms->nres);
-  aid=mk_aid(atoms,restp,etOther,&nra,TRUE);
-  add_grp(gb,gn,nra,aid,"System"); 
-  sfree(aid);
 
-  aan = get_aa_names();
-  for(i=0; (i<atoms->nres); i++) {
-    resnm = *atoms->resinfo[i].name;
-    if ((restp[i] == etOther) && is_protein(aan,resnm))
-      restp[i] = etProt;
-    if (restp[i] == etOther)
-      for(j=0; (j<NDNA);  j++) {
-	if (strcasecmp(Sugars[j],resnm) == 0)
-	  restp[i] = etDNA;
-      }
+gmx_bool 
+gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm)
+{
+    gmx_bool rc;
+    const char *p_type;
+    
+    if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
+       gmx_strcasecmp(p_type,"Protein")==0)
+    {
+        rc=TRUE;
+    }
+    else
+    {
+        rc=FALSE;
+    }
+    return rc;
+}
+
+gmx_bool 
+gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm)
+{
+    gmx_bool rc;
+    const char *p_type;
+
+    if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
+       gmx_strcasecmp(p_type,"DNA")==0)
+    {
+        rc=TRUE;
+    }
+    else
+    {
+        rc=FALSE;
+    }
+    return rc;
+}
+
+gmx_bool 
+gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm)
+{
+    gmx_bool rc;
+    const char *p_type;
+
+    if(gmx_residuetype_get_type(rt,resnm,&p_type)==0 &&
+       gmx_strcasecmp(p_type,"RNA")==0)
+    {
+        rc=TRUE;
+    }
+    else
+    {
+        rc=FALSE;
+    }
+    return rc;
+}
+
+/* Return the size of the arrays */
+int
+gmx_residuetype_get_size(gmx_residuetype_t rt)
+{
+    return rt->n;
+}
+
+/* Search for a residuetype with name resnm within the
+ * gmx_residuetype database. Return the index if found,
+ * otherwise -1.
+ */
+int
+gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm)
+{
+    int i,rc;
+
+    rc=-1;
+    for(i=0;i<rt->n && rc;i++)
+    {
+        rc=gmx_strcasecmp(rt->resname[i],resnm);
+    }
+
+    return (0 == rc) ? i-1 : -1;
+}
+
+/* Return the name of the residuetype with the given index, or
+ * NULL if not found. */
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t rt, int index)
+{
+  if(index >= 0 && index < rt->n) {
+    return rt->resname[index];
+  } else {
+    return NULL;
   }
-  p_status(atoms->nres,restp,bVerb);
-  done_aa_names(&aan);
-  
-  /* Protein */
-  aid=mk_aid(atoms,restp,etProt,&nra,TRUE);
-  if (nra > 0) 
-    analyse_prot(restp,atoms,gb,gn,bASK,bVerb);
-  
-  sfree(aid);
-
-  /* Non-Protein */
-  aid=mk_aid(atoms,restp,etProt,&nra,FALSE);
-  if ((nra > 0) && (nra < atoms->nr))
-    add_grp(gb,gn,nra,aid,"non-Protein"); 
-  sfree(aid);
-
-  /* DNA */
-  aid=mk_aid(atoms,restp,etDNA,&nra,TRUE);
-  if (nra > 0) {
-    add_grp(gb,gn,nra,aid,"DNA"); 
-    analyse_dna(restp,atoms,gb,gn,bASK,bVerb);
-  }
-  sfree(aid);
-
-  /* Other */
-  analyse_other(restp,atoms,gb,gn,bASK,bVerb);
-
-  sfree(restp);
 }
+
+
+
+void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
+{
+    gmx_residuetype_t rt;
+    char    *resnm;
+    atom_id *aid;
+    const char **  restype;
+    int     nra;
+    int     i,k;
+    size_t  j;
+    int     ntypes;
+    char *  p;
+    const char ** p_typename;
+    int     iwater,iion;
+    int     nwater,nion;
+    int     found;
+    
+    if (bVerb)
+    {
+        printf("Analysing residue names:\n");
+    }
+    /* Create system group, every single atom */
+    snew(aid,atoms->nr);
+    for(i=0;i<atoms->nr;i++)
+    {
+        aid[i]=i;
+    }
+    add_grp(gb,gn,atoms->nr,aid,"System"); 
+    sfree(aid);
+
+    /* For every residue, get a pointer to the residue type name */
+    gmx_residuetype_init(&rt);
+
+    snew(restype,atoms->nres);
+    ntypes = 0;
+    p_typename = NULL;
+    for(i=0;i<atoms->nres;i++)
+    {
+        resnm = *atoms->resinfo[i].name;
+        gmx_residuetype_get_type(rt,resnm,&(restype[i]));
+
+        if(i==0)
+        {
+            snew(p_typename,1);
+            p_typename[ntypes++] = strdup(restype[i]);
+        }
+        else
+        {
+            /* Note that this does not lead to a N*N loop, but N*K, where
+             * K is the number of residue _types_, which is small and independent of N.
+             */
+            found = 0;
+            for(k=0;k<i && !found;k++)
+            {
+                found = !strcmp(restype[i],restype[k]);
+            }
+            if(!found)
+            {
+                srenew(p_typename,ntypes+1);
+                p_typename[ntypes++] = strdup(restype[i]);
+            }
+        }
+    }    
+    
+    p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
+
+    for(k=0;k<ntypes;k++)
+    {              
+        aid=mk_aid(atoms,restype,p_typename[k],&nra,TRUE);
+
+        /* Check for special types to do fancy stuff with */
+        
+        if(!gmx_strcasecmp(p_typename[k],"Protein") && nra>0)
+        {
+            sfree(aid);
+            /* PROTEIN */
+            analyse_prot(restype,atoms,gb,gn,bASK,bVerb);
+            
+            /* Create a Non-Protein group */
+            aid=mk_aid(atoms,restype,"Protein",&nra,FALSE);
+            if ((nra > 0) && (nra < atoms->nr))
+            {
+                add_grp(gb,gn,nra,aid,"non-Protein"); 
+            }
+            sfree(aid);
+        }
+        else if(!gmx_strcasecmp(p_typename[k],"Water") && nra>0)
+        {
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            /* Add this group as 'SOL' too, for backward compatibility with older gromacs versions */
+            add_grp(gb,gn,nra,aid,"SOL"); 
+
+            sfree(aid);
+
+            /* Solvent, create a negated group too */
+            aid=mk_aid(atoms,restype,"Water",&nra,FALSE);
+            if ((nra > 0) && (nra < atoms->nr))
+            {
+                add_grp(gb,gn,nra,aid,"non-Water"); 
+            }
+            sfree(aid);
+        }
+        else if(nra>0)
+        {
+            /* Other groups */
+            add_grp(gb,gn,nra,aid,p_typename[k]); 
+            sfree(aid);
+            analyse_other(restype,atoms,gb,gn,bASK,bVerb);
+        }
+    }
+    
+    sfree(p_typename);
+    sfree(restype);
+    gmx_residuetype_destroy(rt);      
+    
+    /* Create a merged water_and_ions group */
+    iwater = -1;
+    iion   = -1;
+    nwater = 0;
+    nion   = 0;
+        
+    for(i=0;i<gb->nr;i++)
+    {        
+        if(!gmx_strcasecmp((*gn)[i],"Water"))
+        {
+            iwater = i;
+            nwater = gb->index[i+1]-gb->index[i];
+        }
+        else if(!gmx_strcasecmp((*gn)[i],"Ion"))
+        {
+            iion = i;
+            nion = gb->index[i+1]-gb->index[i];
+        }
+    }
+    
+    if(nwater>0 && nion>0)
+    {
+        srenew(gb->index,gb->nr+2);
+        srenew(*gn,gb->nr+1);
+        (*gn)[gb->nr] = strdup("Water_and_ions");
+        srenew(gb->a,gb->nra+nwater+nion);
+        if(nwater>0)
+        {
+            for(i=gb->index[iwater];i<gb->index[iwater+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        if(nion>0)
+        {
+            for(i=gb->index[iion];i<gb->index[iion+1];i++)
+            {
+                gb->a[gb->nra++] = gb->a[i];
+            }
+        }
+        gb->nr++;
+        gb->index[gb->nr]=gb->nra;
+    }
+}
+
 
 void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
 {
@@ -637,7 +964,7 @@ int find_group(char s[], int ngrps, char **grpname)
 {
   int aa, i, n;
   char string[STRLEN];
-  bool bMultiple;
+  gmx_bool bMultiple;
   
   bMultiple = FALSE;
   n = strlen(s);
@@ -645,7 +972,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* first look for whole name match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strcasecmp_min(s,grpname[i])==0) {
+      if (gmx_strcasecmp_min(s,grpname[i])==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -653,7 +980,7 @@ int find_group(char s[], int ngrps, char **grpname)
   /* second look for first string match */
   if (aa==NOTSET)
     for(i=0; i<ngrps; i++)
-      if (strncasecmp_min(s,grpname[i],n)==0) {
+      if (gmx_strncasecmp_min(s,grpname[i],n)==0) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -684,7 +1011,7 @@ static int qgroup(int *a, int ngrps, char **grpname)
 {
     char s[STRLEN];
     int  aa;
-    bool bInRange;
+    gmx_bool bInRange;
     char *end;
 
     do {
@@ -714,7 +1041,7 @@ static void rd_groups(t_blocka *grps,char **grpname,char *gnames[],
   if (grps->nr==0)
     gmx_fatal(FARGS,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
-    fprintf(stderr,"Group %5d (%12s) has %5d elements\n",i,grpname[i],
+    fprintf(stderr,"Group %5d (%15s) has %5d elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)

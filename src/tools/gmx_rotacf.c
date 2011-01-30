@@ -57,28 +57,25 @@
 int gmx_rotacf(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rotacf calculates the rotational correlation function",
+    "[TT]g_rotacf[tt] calculates the rotational correlation function",
     "for molecules. Three atoms (i,j,k) must be given in the index",
-    "file, defining two vectors ij and jk. The rotational acf",
+    "file, defining two vectors ij and jk. The rotational ACF",
     "is calculated as the autocorrelation function of the vector",
     "n = ij x jk, i.e. the cross product of the two vectors.",
     "Since three atoms span a plane, the order of the three atoms",
-    "does not matter. Optionally, controlled by the -d switch, you can",
+    "does not matter. Optionally, controlled by the [TT]-d[tt] switch, you can",
     "calculate the rotational correlation function for linear molecules",
     "by specifying two atoms (i,j) in the index file.",
     "[PAR]",
     "EXAMPLES[PAR]",
-    "g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
-    "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[PAR]",
+    "[TT]g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
+    "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[tt][PAR]",
     "This will calculate the rotational correlation function using a first",
     "order Legendre polynomial of the angle of a vector defined by the index",
-    "file. The correlation function will be fitted from 2.5 ps till 20.0 ps",
-    "to a two parameter exponential",
-
-
-    ""
+    "file. The correlation function will be fitted from 2.5 ps until 20.0 ps",
+    "to a two-parameter exponential."
   };
-  static bool bVec    = FALSE,bAver=TRUE;
+  static gmx_bool bVec    = FALSE,bAver=TRUE;
 
   t_pargs pa[] = {
     { "-d",   FALSE, etBOOL, {&bVec},
@@ -87,7 +84,8 @@ int gmx_rotacf(int argc,char *argv[])
       "Average over molecules" }
   };
 
-  int        status,isize;
+  t_trxstatus *status;
+  int        isize;
   atom_id    *index;
   char       *grpname;
   rvec       *x,*x_s;
@@ -97,6 +95,7 @@ int gmx_rotacf(int argc,char *argv[])
   int        i,m,teller,n_alloc,natoms,nvec,ai,aj,ak;
   unsigned long mode;
   real       t,t0,t1,dt;
+  gmx_rmpbc_t  gpbc=NULL;
   t_topology *top;
   int        ePBC;
   t_filenm   fnm[] = {
@@ -142,6 +141,8 @@ int gmx_rotacf(int argc,char *argv[])
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(x_s,natoms);
   
+  gpbc = gmx_rmpbc_init(&(top->idef),ePBC,natoms,box);
+
   /* Start the loop over frames */
   t1 = t0 = t;
   teller  = 0;
@@ -154,8 +155,8 @@ int gmx_rotacf(int argc,char *argv[])
     t1 = t;
     
     /* Remove periodicity */
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x_s);
-    
+    gmx_rmpbc_copy(gpbc,natoms,box,x,x_s);
+  
     /* Compute crossproducts for all vectors, if triplets.
      * else, just get the vectors in case of doublets.
      */
@@ -186,6 +187,9 @@ int gmx_rotacf(int argc,char *argv[])
   close_trj(status); 
   fprintf(stderr,"\nDone with trajectory\n");
   
+  gmx_rmpbc_done(gpbc);
+
+
   /* Autocorrelation function */
   if (teller < 2)
     fprintf(stderr,"Not enough frames for correlation function\n");

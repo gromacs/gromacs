@@ -1,0 +1,153 @@
+<HTML>
+<HEAD>
+<TITLE>g_membed</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_membed</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position
+and orientation specified by the user.
+
+
+
+SHORT MANUAL
+------------
+
+The user should merge the structure files of the protein and membrane (+solvent), creating a
+single structure file with the protein overlapping the membrane at the desired position and
+orientation. Box size should be taken from the membrane structure file. The corresponding topology
+files should also be merged. Consecutively, create a <a href="tpr.html">tpr</a> file (input for g_membed) from these files,with the following options included in the <a href="mdp.html">mdp</a> file.
+
+ - integrator      = md
+
+ - energygrp       = Protein (or other group that you want to insert)
+
+ - freezegrps      = Protein
+
+ - freezedim       = Y Y Y
+
+ - energygrp_excl  = Protein Protein
+
+The output is a structure file containing the protein embedded in the membrane. If a topology
+file is provided, the number of lipid and 
+solvent molecules will be updated to match the new structure file.
+
+For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.
+
+
+
+SHORT METHOD DESCRIPTION
+
+------------------------
+
+1. The protein is resized around its center of mass by a factor -xy in the xy-plane
+(the membrane plane) and a factor -z in the z-direction (if the size of the
+protein in the z-direction is the same or smaller than the width of the membrane, a
+-z value larger than 1 can prevent that the protein will be enveloped by the lipids).
+
+2. All lipid and solvent molecules overlapping with the resized protein are removed. All
+intraprotein interactions are turned off to prevent numerical issues for small values of -xy
+ or -z
+
+3. One md step is performed.
+
+4. The resize factor (-xy or -z) is incremented by a small amount ((1-xy)/nxy or (1-z)/nz) and the
+protein is resized again around its center of mass. The resize factor for the xy-plane
+is incremented first. The resize factor for the z-direction is not changed until the -xy factor
+is 1 (thus after -nxy iteration).
+
+5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).
+
+For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.
+
+
+
+NOTE
+----
+
+ - Protein can be any molecule you want to insert in the membrane.
+
+ - It is recommended to perform a short equilibration run after the embedding
+(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly
+protein equilibration might require longer.
+
+
+
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">into_mem.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">   topol.top</a></tt> </TD><TD> In/Out, Opt. </TD><TD> Topology file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-x</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">    traj.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Input, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Output, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">membedded.gro</a></tt> </TD><TD> Output </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> etc. </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edr.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Energy file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">      md.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tableb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dhdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tableb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     tpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> tpidist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Output, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-px</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullx.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  dipole.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xyinit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> Resize factor for the protein in the xy dimension before starting embedding </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xyend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Final resize factor in the xy dimension </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-zinit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Resize factor for the protein in the z dimension before starting embedding </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-zend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Final resize faction in the z dimension </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nxy</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1000</tt> </TD><TD> Number of iteration for the xy dimension </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nz</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of iterations for the z dimension </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rad</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.22  </tt> </TD><TD> Probe radius to check for overlap between the group to embed and the membrane </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pieces</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Perform piecewise resize. Select parts of the group to insert and resize these with respect to their own geometrical center. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]asymmetry</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Allow asymmetric insertion, i.e. the number of lipids removed from the upper and lower leaflet will not be checked. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ndiff</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of lipids that will additionally be removed from the lower (negative number) or upper (positive number) membrane leaflet. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxwarn</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Maximum number of warning allowed </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Write a compact <a href="log.html">log</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

@@ -1137,6 +1137,7 @@ real pdihs(int nbonds,
   real phi,sign,ddphi,vpd,vtot;
 
   vtot = 0.0;
+
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
     ai   = forceatoms[i++];
@@ -1146,14 +1147,14 @@ real pdihs(int nbonds,
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
                   &sign,&t1,&t2,&t3);			/*  84 		*/
-		
+
     *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
 			  forceparams[type].pdihs.cpB,
 			  forceparams[type].pdihs.phiA,
 			  forceparams[type].pdihs.phiB,
 			  forceparams[type].pdihs.mult,
 			  phi,lambda,&vpd,&ddphi);
-		       
+
     vtot += vpd;
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
@@ -1244,96 +1245,115 @@ real idihs(int nbonds,
 
 
 real posres(int nbonds,
-	    const t_iatom forceatoms[],const t_iparams forceparams[],
-	    const rvec x[],rvec f[],rvec vir_diag,
-	    t_pbc *pbc,
-	    real lambda,real *dvdlambda,
-	    int refcoord_scaling,int ePBC,rvec comA,rvec comB)
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec vir_diag,
+            t_pbc *pbc,
+            real lambda,real *dvdlambda,
+            int refcoord_scaling,int ePBC,rvec comA,rvec comB)
 {
-  int  i,ai,m,d,type,ki,npbcdim=0;
-  const t_iparams *pr;
-  real v,vtot,fm,*fc;
-  real posA,posB,ref=0;
-  rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
+    int  i,ai,m,d,type,ki,npbcdim=0;
+    const t_iparams *pr;
+    real L1;
+    real vtot,kk,fm;
+    real posA,posB,ref=0;
+    rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
 
-  npbcdim = ePBC2npbcdim(ePBC);
+    npbcdim = ePBC2npbcdim(ePBC);
 
-  if (refcoord_scaling == erscCOM) {
-    clear_rvec(comA_sc);
-    clear_rvec(comB_sc);
-    for(m=0; m<npbcdim; m++) {
-      for(d=m; d<npbcdim; d++) {
-	comA_sc[m] += comA[d]*pbc->box[d][m];
-	comB_sc[m] += comB[d]*pbc->box[d][m];
-      }
-    }
-  }
-
-  vtot = 0.0;
-  for(i=0; (i<nbonds); ) {
-    type = forceatoms[i++];
-    ai   = forceatoms[i++];
-    pr   = &forceparams[type];
-    
-    for(m=0; m<DIM; m++) {
-      posA = forceparams[type].posres.pos0A[m];
-      posB = forceparams[type].posres.pos0B[m];
-      if (m < npbcdim) {
-	switch (refcoord_scaling) {
-	case erscNO:
-	  ref      = 0;
-	  rdist[m] = (1 - lambda)*posA + lambda*posB;
-	  dpdl[m]  = posB - posA;
-	  break;
-	case erscALL:
-	  /* Box relative coordinates are stored for dimensions with pbc */
-	  posA *= pbc->box[m][m];
-	  posB *= pbc->box[m][m];
-	  for(d=m+1; d<npbcdim; d++) {
-	    posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
-	    posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
-	  }
-	  ref      = (1 - lambda)*posA + lambda*posB;
-	  rdist[m] = 0;
-	  dpdl[m]  = posB - posA;
-	  break;
-	case erscCOM:
-	  ref      = (1 - lambda)*comA_sc[m] + lambda*comB_sc[m];
-	  rdist[m] = (1 - lambda)*posA + lambda*posB;
-	  dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
-	  break;
-	}
-      } else {
-	ref      = (1 - lambda)*posA + lambda*posB;
-	rdist[m] = 0;
-	dpdl[m]  = posB - posA;
-      }
-
-      /* We do pbc_dx with ref+rdist,
-       * since with only ref we can be up to half a box vector wrong.
-       */
-      pos[m] = ref + rdist[m];
+    if (refcoord_scaling == erscCOM)
+    {
+        clear_rvec(comA_sc);
+        clear_rvec(comB_sc);
+        for(m=0; m<npbcdim; m++)
+        {
+            for(d=m; d<npbcdim; d++)
+            {
+                comA_sc[m] += comA[d]*pbc->box[d][m];
+                comB_sc[m] += comB[d]*pbc->box[d][m];
+            }
+        }
     }
 
-    if (pbc) {
-      pbc_dx(pbc,x[ai],pos,dx);
-    } else {
-      rvec_sub(x[ai],pos,dx);
+    L1 = 1.0 - lambda;
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        pr   = &forceparams[type];
+        
+        for(m=0; m<DIM; m++)
+        {
+            posA = forceparams[type].posres.pos0A[m];
+            posB = forceparams[type].posres.pos0B[m];
+            if (m < npbcdim)
+            {
+                switch (refcoord_scaling)
+                {
+                case erscNO:
+                    ref      = 0;
+                    rdist[m] = L1*posA + lambda*posB;
+                    dpdl[m]  = posB - posA;
+                    break;
+                case erscALL:
+                    /* Box relative coordinates are stored for dimensions with pbc */
+                    posA *= pbc->box[m][m];
+                    posB *= pbc->box[m][m];
+                    for(d=m+1; d<npbcdim; d++)
+                    {
+                        posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
+                        posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
+                    }
+                    ref      = L1*posA + lambda*posB;
+                    rdist[m] = 0;
+                    dpdl[m]  = posB - posA;
+                    break;
+                case erscCOM:
+                    ref      = L1*comA_sc[m] + lambda*comB_sc[m];
+                    rdist[m] = L1*posA       + lambda*posB;
+                    dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
+                    break;
+                }
+            }
+            else
+            {
+                ref      = L1*posA + lambda*posB;
+                rdist[m] = 0;
+                dpdl[m]  = posB - posA;
+            }
+
+            /* We do pbc_dx with ref+rdist,
+             * since with only ref we can be up to half a box vector wrong.
+             */
+            pos[m] = ref + rdist[m];
+        }
+
+        if (pbc)
+        {
+            pbc_dx(pbc,x[ai],pos,dx);
+        }
+        else
+        {
+            rvec_sub(x[ai],pos,dx);
+        }
+
+        for (m=0; (m<DIM); m++)
+        {
+            kk          = L1*pr->posres.fcA[m] + lambda*pr->posres.fcB[m];
+            fm          = -kk*dx[m];
+            f[ai][m]   += fm;
+            vtot       += 0.5*kk*dx[m]*dx[m];
+            *dvdlambda +=
+                0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
+                -fm*dpdl[m];
+
+            /* Here we correct for the pbc_dx which included rdist */
+            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+        }
     }
 
-    v=0;
-    for (m=0; (m<DIM); m++) {
-      *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
-			     0,dpdl[m],dx[m],lambda,&v,&fm);
-      vtot += v;
-      f[ai][m] += fm;
-
-      /* Here we correct for the pbc_dx which included rdist */
-      vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
-    }
-  }
-
-  return vtot;
+    return vtot;
 }
 
 static real low_angres(int nbonds,
@@ -1341,7 +1361,7 @@ static real low_angres(int nbonds,
 		       const rvec x[],rvec f[],rvec fshift[],
 		       const t_pbc *pbc,const t_graph *g,
 		       real lambda,real *dvdlambda,
-		       bool bZAxis)
+		       gmx_bool bZAxis)
 {
   int  i,m,type,ai,aj,ak,al;
   int  t1,t2;
@@ -1840,9 +1860,9 @@ real cmap_dihs(int nbonds,
 		ty12[3]   = cmapd[pos4*4+3];
 		
 		/* Switch to degrees */
-		dx = 15;
+		dx = 360.0 / cmap_grid->grid_spacing;
 		xphi1 = xphi1 * RAD2DEG;
-		xphi2 = xphi2 * RAD2DEG; /* HERE */
+		xphi2 = xphi2 * RAD2DEG; 
 		
 		for(i=0;i<4;i++) /* 16 */
 		{
@@ -2551,7 +2571,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,
-		bool bPrintSepPot,gmx_large_int_t step)
+		gmx_bool bPrintSepPot,gmx_large_int_t step)
 {
   int    ftype,nbonds,ind,nat1;
   real   *epot,v,dvdl;

@@ -39,10 +39,6 @@
 #include "typedefs.h"
 #include "grompp.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,7 +68,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 /* Bonded GB interactions */								
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
-				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
+				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
 				  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
 
@@ -90,10 +86,10 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 
 
 /* Functions for calculating adjustments due to ie chain rule terms */
-real 
+void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, t_nrnb *nrnb, bool bRad,
-			   const t_pbc *pbc, const t_graph *graph);
+			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+			   const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd);
 
 
 int

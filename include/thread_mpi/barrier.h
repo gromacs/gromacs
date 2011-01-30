@@ -38,6 +38,8 @@ files.
 #ifndef _TMPI_BARRIER_H_
 #define _TMPI_BARRIER_H_
 
+#include "wait.h"
+
 /** Fast (possibly busy-wait-based) barrier type
  *
  *  This barrier has the same functionality as the standard
@@ -48,14 +50,23 @@ files.
  *  barrier for when waits are expected to be reasonably short.
  *
  *  Variables of this type should be initialized by calling
- *  tMPI_Spinlock_barrier_init() to set the number of threads
+ *  tMPI_Barrier_init() to set the number of threads
  *  that should be synchronized.
  * 
  * \see
- * - tMPI_Spinlock_barrier_init
- * - tMPI_Spinlock_barrier_wait
+ * - tMPI_Barrier_init
+ * - tMPI_Barrier_wait
  */
-typedef struct tMPI_Spinlock_barrier tMPI_Spinlock_barrier_t;
+typedef struct tMPI_Barrier_t tMPI_Barrier_t;
+struct tMPI_Barrier_t
+{
+    tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
+    int               threshold; /*!< Total number of threads         */
+    volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
+    TMPI_YIELD_WAIT_DATA
+};
+
+
 
 /** Initialize barrier
  *
@@ -63,9 +74,9 @@ typedef struct tMPI_Spinlock_barrier tMPI_Spinlock_barrier_t;
  *                  the same datatype as the full, thread based, barrier.
  *  \param count    Number of threads to synchronize. All threads
  *                  will be released after \a count calls to 
- *                  tMPI_Spinlock_barrier_wait().  
+ *                  tMPI_Barrier_wait().  
  */
-void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count);
+void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count);
 
 
 /** Perform yielding, busy-waiting barrier synchronization
@@ -79,7 +90,7 @@ void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count);
   *
   *  \return The last thread returns -1, all the others 0.
   */
-int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier);
+int tMPI_Barrier_wait(tMPI_Barrier_t *barrier);
 
 
 #ifdef DOXYGEN
@@ -92,9 +103,9 @@ int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier);
   *
   *  \return the number of threads to synchronize
   */
-int tMPI_Spinlock_barrier_N(tMPI_Spinlock_barrier_t *barrier);
+int tMPI_Barrier_N(tMPI_Barrier_t *barrier);
 #else
-#define tMPI_Spinlock_barrier_N(barrier)  ((barrier)->threshold)
+#define tMPI_Barrier_N(barrier)  ((barrier)->threshold)
 #endif
 
 #endif

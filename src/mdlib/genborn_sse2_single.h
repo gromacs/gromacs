@@ -43,19 +43,17 @@
 
 
 float 
-calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
-					  float *xd, float *f, float *fshift, float *shift_vec, int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md);						
-
-
-int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
-					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
+calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+                              float *xd, float *f, float *fshift, float *shift_vec,
+                              int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md);
 
 int 
-calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-					const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, int gb_algorithm);
+calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
+                              const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born);
 
-float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
-					   t_idef *idef, real gb_epsilon_solvent, real epsfac);
+int 
+calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
+                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, int gb_algorithm);
+
 
 #endif /* _genborn_sse_h */

@@ -50,6 +50,9 @@
 #include "tgroup.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
+/* Probably the test for (nr) > 0 in the next macro is only needed
+ * on BlueGene(/L), where IBM's MPI_Bcast will segfault after
+ * dereferencing a null pointer, even when no data is to be transferred. */
 #define  nblock_bc(cr,nr,d) { if ((nr) > 0) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr)); }
 #define    snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
 /* Dirty macro with bAlloc not as an argument */
@@ -217,7 +220,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
   block_bc(cr,state->flags);
 }
 
-void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
+void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
 {
   int i,nnht,nnhtp;
 
@@ -460,7 +463,7 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
-  bool bAlloc=TRUE;
+  gmx_bool bAlloc=TRUE;
   int i;
   
   block_bc(cr,*inputrec);
@@ -491,7 +494,7 @@ static void bc_moltype(const t_commrec *cr,t_symtab *symtab,
 
 static void bc_molblock(const t_commrec *cr,gmx_molblock_t *molb)
 {
-  bool bAlloc=TRUE;
+  gmx_bool bAlloc=TRUE;
   
   block_bc(cr,molb->type);
   block_bc(cr,molb->nmol);

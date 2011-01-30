@@ -12,6 +12,7 @@
      C     O   gb_4
      C    +N   gb_9
  [ angles ]
+   CA     C     O    ga_30
    CA     C    +N    ga_18
     O     C    +N    ga_32
  [ impropers ]
@@ -9094,7 +9095,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ ZN2+ ]
+[ ZN ]
  [ atoms ]
    ZN  ZN2+     2.00000     0
  [ bonds ]
@@ -9105,7 +9106,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ NA+ ]
+[ NA ]
  [ atoms ]
    NA   NA+     1.00000     0
  [ bonds ]
@@ -9116,7 +9117,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CL- ]
+[ CL ]
  [ atoms ]
    CL   CL-    -1.00000     0
  [ bonds ]
@@ -9127,7 +9128,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CA2+ ]
+[ CA ]
  [ atoms ]
    CA  CA2+     2.00000     0
  [ bonds ]
@@ -9138,7 +9139,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ MG2+ ]
+[ MG ]
  [ atoms ]
    MG  MG2+     2.00000     0
  [ bonds ]
@@ -9149,7 +9150,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CU1+ ]
+[ CU1 ]
  [ atoms ]
    CU  CU1+     1.00000     0
  [ bonds ]
@@ -9160,7 +9161,7 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
-[ CU2+ ]
+[ CU ]
  [ atoms ]
    CU  CU2+     2.00000     0
  [ bonds ]
@@ -9221,11 +9222,11 @@ AO3PB   APG AO3PG AH3PG     gd_9
 
 [ CHCL3 ]
  [ atoms ]
- CChl  CCHL     0.17900     0
- HChl  HCHL     0.08200     0
-CLCh1 CLCHL    -0.08700     0
-CLCh2 CLCHL    -0.08700     0
-CLCh3 CLCHL    -0.08700     0
+ CChl  CChl     0.17900     0
+ HChl  HChl     0.08200     0
+CLCh1 CLChl    -0.08700     0
+CLCh2 CLChl    -0.08700     0
+CLCh3 CLChl    -0.08700     0
  [ bonds ]
  CChl CLCh1    gb_37   
  CChl CLCh2    gb_37   
@@ -9245,10 +9246,10 @@ CLCh2 CLCh3    gb_43
 
 [ DMSO ]
  [ atoms ]
-SDmso SDMSO     0.13900     0
-ODmso ODMSO    -0.45900     0
-CDms1 CDMSO     0.16000     0
-CDms2 CDMSO     0.16000     0
+SDmso SDmso     0.13900     0
+ODmso ODmso    -0.45900     0
+CDms1 CDmso     0.16000     0
+CDms2 CDmso     0.16000     0
  [ bonds ]
 SDmso ODmso    gb_38   
 SDmso CDms1    gb_39   
@@ -9265,9 +9266,9 @@ CDms1 CDms2    gb_45
 
 [ CH3OH ]
  [ atoms ]
- Omet  OMET    -0.57400     0
+ Omet  OMet    -0.57400     0
  HMet     H     0.39800     0
- CMet  CMET     0.17600     0
+ CMet  CMet     0.17600     0
  [ bonds ]
  Omet  HMet    gb_1    
  Omet  CMet    gb_17   
@@ -9281,11 +9282,11 @@ CDms1 CDms2    gb_45
 
 [ CCL4 ]
  [ atoms ]
- CCl4  CCL4     0.00000     0
-CLCl1 CLCL4     0.00000     0
-CLCl2 CLCL4     0.00000     0
-CLCl3 CLCL4     0.00000     0
-CLCl4 CLCL4     0.00000     0
+ CCl4  CCl4     0.00000     0
+CLCl1 CLCl4     0.00000     0
+CLCl2 CLCl4     0.00000     0
+CLCl3 CLCl4     0.00000     0
+CLCl4 CLCl4     0.00000     0
  [ bonds ]
  CCl4 CLCl1    gb_40   
  CCl4 CLCl2    gb_40   

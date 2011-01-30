@@ -67,25 +67,25 @@ static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
 int gmx_morph(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_morph does a linear interpolation of conformations in order to",
+    "[TT]g_morph[tt] does a linear interpolation of conformations in order to",
     "create intermediates. Of course these are completely unphysical, but",
     "that you may try to justify yourself. Output is in the form of a ",
     "generic trajectory. The number of intermediates can be controlled with",
-    "the -ninterm flag. The first and last flag correspond to the way of",
+    "the [TT]-ninterm[tt] flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
-    "1 corresponds to input strucutre 2.",
+    "1 corresponds to input structure 2.",
     "If you specify first < 0 or last > 1 extrapolation will be",
     "on the path from input structure x1 to x2. In general the coordinates",
     "of the intermediate x(i) out of N total intermidates correspond to:[PAR]",
     "x(i) = x1 + (first+(i/(N-1))*(last-first))*(x2-x1)[PAR]",
     "Finally the RMSD with respect to both input structures can be computed",
-    "if explicitly selected (-or option). In that case an index file may be",
+    "if explicitly selected ([TT]-or[tt] option). In that case an index file may be",
     "read to select what group RMS is computed from."
   };
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },
     { efSTX, "-f2", "conf2",  ffREAD },
-    { efTRO, "-o",  "interm", ffWRITE },
+    { efTRX, "-o",  "interm", ffWRITE },
     { efXVG, "-or", "rms-interm", ffOPTWR },
     { efNDX, "-n",  "index",  ffOPTRD }
   };
@@ -93,7 +93,7 @@ int gmx_morph(int argc,char *argv[])
   static  int  ninterm = 11;
   static  real first   = 0.0;
   static  real last    = 1.0;
-  static  bool bFit    = TRUE;
+  static  gmx_bool bFit    = TRUE;
   t_pargs pa [] = {
     { "-ninterm", FALSE, etINT,  {&ninterm},
       "Number of intermediates" },
@@ -104,16 +104,17 @@ int gmx_morph(int argc,char *argv[])
     { "-fit",     FALSE, etBOOL, {&bFit},
       "Do a least squares fit of the second to the first structure before interpolating" }
   };
-  char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
+  const char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp=NULL;
-  int      i,isize,is_lsq,status,nat1,nat2;
+  int      i,isize,is_lsq,nat1,nat2;
+  t_trxstatus *status;
   atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;
   rvec     *x1,*x2,*xx,*v;
   matrix   box;
   real     rms1,rms2,fac,*mass;
   char     title[STRLEN],*grpname;
-  bool     bRMS;
+  gmx_bool     bRMS;
   output_env_t oenv;
   
   CopyRight(stderr,argv[0]);

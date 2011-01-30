@@ -106,10 +106,11 @@ const char *ShortProgram(void)
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
-    if ((pr=strrchr(ret,'/')) != NULL)
+    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
-    /*else
-        ret=ret;*/
+    /* Strip away the libtool prefix if it's still there. */
+    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+        ret = ret + 3;
     return ret;
 }
 
@@ -195,7 +196,7 @@ void set_command_line(int argc, char *argv[])
 
 /* utility functions */
 
-bool bRmod_fd(double a, double b, double c, bool bDouble)
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 {
     int iq;
     double tol;
@@ -210,7 +211,7 @@ bool bRmod_fd(double a, double b, double c, bool bDouble)
         return FALSE;
 }
 
-int check_times2(real t,real t0,real tp, real tpp, bool bDouble)
+int check_times2(real t,real t0,real tp, real tpp, gmx_bool bDouble)
 {
     int  r;
     real margin;
@@ -249,7 +250,7 @@ int check_times(real t)
 
 
 
-static void set_default_time_unit(const char *time_list[], bool bCanTime)
+static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 {
     int i,j;
     const char *select;
@@ -430,13 +431,7 @@ static FILE *man_file(const output_env_t oenv,const char *mantp)
 {
     FILE   *fp;
     char   buf[256];
-    const char *pr;
-    const char *program_name=output_env_get_program_name(oenv);
-    
-    if ( (pr=strrchr(program_name,'/')) == NULL)
-        pr=program_name;
-    else 
-        pr+=1;
+    const char *pr = output_env_get_short_program_name(oenv);
     
     if (strcmp(mantp,"ascii") != 0)
         sprintf(buf,"%s.%s",pr,mantp);
@@ -523,7 +518,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nbugs,const char **bugs,
                        output_env_t *oenv)
 {
-    bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
+    gmx_bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
                             "completion", "py", "xml", "wiki", NULL };
     /* This array should match the order of the enum in oenv.h */
@@ -534,7 +529,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
-    bool bView=FALSE;
+    gmx_bool bView=FALSE;
     
     t_pargs *all_pa=NULL;
     
@@ -551,7 +546,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     t_pargs dt_pa     = { "-dt",   FALSE, etTIME,  {&tdelta},        
     "Only use frame when t MOD dt = first time (%t)" };
     t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},
-    "View output xvg, xpm, eps and pdb files" };
+    "View output [TT].xvg[tt], [TT].xpm[tt], [TT].eps[tt] and [TT].pdb[tt] files" };
     t_pargs xvg_pa    = { "-xvg",  FALSE, etENUM,  {xvg_format},
     "xvg plot formatting" };
     t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {time_units},
@@ -577,7 +572,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     };
 #define NPCA_PA asize(pca_pa)
     FILE *fp;  
-    bool bPrint,bExit,bXvgr;
+    gmx_bool bPrint,bExit,bXvgr;
     int  i,j,k,npall,max_pa,cmdlength;
     char *ptr,*newdesc;
     const char *envstr;
@@ -743,7 +738,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (nicelevel != 0 && !bExit)
     {
 #ifdef GMX_THREADS
-        static bool nice_set=FALSE; /* only set it once */
+        static gmx_bool nice_set=FALSE; /* only set it once */
         tMPI_Thread_mutex_lock(&init_mutex);
         if (!nice_set)
         {
@@ -815,6 +810,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
     
     /* clear memory */
+    for (i = 0; i < npall; ++i)
+        sfree((void *)all_pa[i].desc);
     sfree(all_pa);
     
     if (!FF(PCA_NOEXIT_ON_ARGS)) {

@@ -103,19 +103,20 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 
 static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 				  t_topology *top,int ePBC,
-				  int n,atom_id index[],bool bSplit,
+				  int n,atom_id index[],gmx_bool bSplit,
                                   const output_env_t oenv)
 {
   FILE   *out;
-  char *leg[5] = { "min per.","max int.","box1","box2","box3" };
-  int    status;
+  const char *leg[5] = { "min per.","max int.","box1","box2","box3" };
+  t_trxstatus *status;
   real   t;
   rvec   *x;
   matrix box;
   int    natoms,ind_min[2]={0,0},ind_mini=0,ind_minj=0;
   real   r,rmin,rmax,rmint,tmint;
-  bool   bFirst;
-  
+  gmx_bool   bFirst;
+  gmx_rmpbc_t  gpbc=NULL;
+
   natoms=read_first_x(oenv,&status,trxfn,&t,&x,box);
   
   check_index(NULL,n,index,NULL,natoms);
@@ -129,11 +130,14 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   rmint = box[XX][XX];
   tmint = 0;
   
+  if (NULL != top)
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   bFirst=TRUE;  
   do {
-    if (top) {
-      rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
-    }
+    if (NULL != top) 
+      gmx_rmpbc(gpbc,natoms,box,x);
+    
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
@@ -147,6 +151,9 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 	    output_env_conv_time(oenv,t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
     bFirst=FALSE;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
+
+  if (NULL != top)
+    gmx_rmpbc_done(gpbc);
     
   ffclose(out);
   
@@ -157,9 +164,9 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 	  index[ind_mini]+1,index[ind_minj]+1);
 }
 
-static void calc_dist(real rcut, bool bPBC, int ePBC, matrix box, rvec x[], 
+static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[], 
 		      int nx1,int nx2, atom_id index1[], atom_id index2[],
-		      bool bGroup,
+		      gmx_bool bGroup,
 		      real *rmin, real *rmax, int *nmin, int *nmax,
 		      int *ixmin, int *jxmin, int *ixmax, int *jxmax)
 {
@@ -245,25 +252,26 @@ static void calc_dist(real rcut, bool bPBC, int ePBC, matrix box, rvec x[],
 
 void dist_plot(const char *fn,const char *afile,const char *dfile,
 	       const char *nfile,const char *rfile,const char *xfile,
-	       real rcut,bool bMat,t_atoms *atoms,
-	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
-	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC,
-	       bool bGroup,bool bEachResEachTime, bool bPrintResName,
+	       real rcut,gmx_bool bMat,t_atoms *atoms,
+	       int ng,atom_id *index[],int gnx[],char *grpn[],gmx_bool bSplit,
+	       gmx_bool bMin, int nres, atom_id *residue,gmx_bool bPBC,int ePBC,
+	       gmx_bool bGroup,gmx_bool bEachResEachTime, gmx_bool bPrintResName,
                const output_env_t oenv)
 {
   FILE         *atm,*dist,*num;
-  int          trxout;
+  t_trxstatus  *trxout;
   char         buf[256];
   char         **leg;
   real         t,dmin,dmax,**mindres=NULL,**maxdres=NULL;
-  int          nmin,nmax,status;
+  int          nmin,nmax;
+  t_trxstatus  *status;
   int          i=-1,j,k,natoms;
-  int	       min1,min2,max1,max2;
+  int	       min1,min2,max1,max2,min1r,min2r,max1r,max2r;
   atom_id      oindex[2];
   rvec         *x0;
   matrix       box;
   t_trxframe   frout;
-  bool         bFirst;
+  gmx_bool         bFirst;
   FILE *respertime=NULL;
   
   if ((natoms=read_first_x(oenv,&status,fn,&t,&x0,box))==0)
@@ -274,15 +282,15 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",rcut);
   num = nfile ? xvgropen(nfile,buf,output_env_get_time_label(oenv),"Number",oenv) : NULL;
   atm = afile ? ffopen(afile,"w") : NULL;
-  trxout = xfile ? open_trx(xfile,"w") : NOTSET;
+  trxout = xfile ? open_trx(xfile,"w") : NULL;
   
   if (bMat) {
     if (ng == 1) {
       snew(leg,1);
       sprintf(buf,"Internal in %s",grpn[0]);
       leg[0]=strdup(buf);
-      xvgr_legend(dist,0,leg,oenv);
-      if (num) xvgr_legend(num,0,leg,oenv);
+      xvgr_legend(dist,0,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,0,(const char**)leg,oenv);
     } 
     else {
       snew(leg,(ng*(ng-1))/2);
@@ -292,8 +300,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  leg[j]=strdup(buf);
 	}
       }
-      xvgr_legend(dist,j,leg,oenv);
-      if (num) xvgr_legend(num,j,leg,oenv);
+      xvgr_legend(dist,j,(const char**)leg,oenv);
+      if (num) xvgr_legend(num,j,(const char**)leg,oenv);
     }
   }
   else {  
@@ -302,15 +310,15 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       sprintf(buf,"%s-%s",grpn[0],grpn[i+1]);
       leg[i]=strdup(buf);
     }
-    xvgr_legend(dist,ng-1,leg,oenv);
-    if (num) xvgr_legend(num,ng-1,leg,oenv);
+    xvgr_legend(dist,ng-1,(const char**)leg,oenv);
+    if (num) xvgr_legend(num,ng-1,(const char**)leg,oenv);
   }
   
   if (bEachResEachTime)
   {
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     respertime=xvgropen(rfile,buf,output_env_get_time_label(oenv),"Distance (nm)",oenv);
-    xvgr_legend(respertime,ng-1,leg,oenv);
+    xvgr_legend(respertime,ng-1,(const char**)leg,oenv);
 	if (bPrintResName) 
 	  fprintf(respertime,"# ");
 	    for (j=0; j<nres; j++)
@@ -369,7 +377,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	  for(j=0; j<nres; j++) {
 	    calc_dist(rcut,bPBC,ePBC,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],bGroup,
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1r,&min2r,&max1r,&max2r);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
 	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
 	  }
@@ -385,7 +393,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 		output_env_conv_time(oenv,t),1+(bMin ? min1 : max1),
                                   1+(bMin ? min2 : max2));
     
-    if (trxout>=0) {
+    if (trxout) {
       oindex[0]=bMin?min1:max1;
       oindex[1]=bMin?min2:max2;
       write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL,NULL);
@@ -411,14 +419,14 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   ffclose(dist);
   if (num) ffclose(num);
   if (atm) ffclose(atm);
-  if (trxout>=0) close_xtc(trxout);
+  if (trxout) close_trx(trxout);
   
   if(nres && !bEachResEachTime) {
     FILE *res;
     
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
     res=xvgropen(rfile,buf,"Residue (#)","Distance (nm)",oenv);
-    xvgr_legend(res,ng-1,leg,oenv);
+    xvgr_legend(res,ng-1,(const char**)leg,oenv);
     for(j=0; j<nres; j++) {
       fprintf(res, "%4d", j+1);
       for(i=1; i<ng; i++) {
@@ -472,7 +480,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
 int gmx_mindist(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_mindist computes the distance between one group and a number of",
+    "[TT]g_mindist[tt] computes the distance between one group and a number of",
     "other groups. Both the minimum distance", 
     "(between any pair of atoms from the respective groups)",
     "and the number of contacts within a given",
@@ -481,7 +489,7 @@ int gmx_mindist(int argc,char *argv[])
     "with multiple atoms in the first group is counted as one contact",
     "instead of as multiple contacts.",
     "With [TT]-or[tt], minimum distances to each residue in the first",
-    "group are determined and plotted as a function of reisdue number.[PAR]",
+    "group are determined and plotted as a function of residue number.[PAR]",
     "With option [TT]-pi[tt] the minimum distance of a group to its",
     "periodic image is plotted. This is useful for checking if a protein",
     "has seen its periodic image during a simulation. Only one shift in",
@@ -495,11 +503,11 @@ int gmx_mindist(int argc,char *argv[])
     "The [TT]-pi[tt] option is very slow."
   };
   
-  static bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
-  static bool bGroup=FALSE;
+  static gmx_bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
+  static gmx_bool bGroup=FALSE;
   static real rcutoff=0.6;
   static int  ng=1;
-  static bool bEachResEachTime=FALSE,bPrintResName=FALSE;
+  static gmx_bool bEachResEachTime=FALSE,bPrintResName=FALSE;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
@@ -529,7 +537,7 @@ int gmx_mindist(int argc,char *argv[])
   real       t;
   rvec       *x;
   matrix     box;
-  bool       bTop=FALSE;
+  gmx_bool       bTop=FALSE;
   
   FILE      *atm;
   int       i,j,nres=0;

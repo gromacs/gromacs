@@ -36,48 +36,44 @@
 #ifndef _matio_h
 #define _matio_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
+gmx_bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
-extern t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
+t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
 /* Seach in the map for code 'c' and return entry number. 
  * return -1 if not found
  */
 
-extern int getcmap(FILE *in,const char *fn,t_mapping **map);
+int getcmap(FILE *in,const char *fn,t_mapping **map);
 /* Read the mapping table from in, return number of entries */
 
-extern int readcmap(const char *fn,t_mapping **map);
+int readcmap(const char *fn,t_mapping **map);
 /* Read the mapping table from fn, return number of entries */
 
-extern void printcmap(FILE *out,int n,t_mapping map[]);
+void printcmap(FILE *out,int n,t_mapping map[]);
 /* print mapping table to out */
 
-extern void writecmap(const char *fn,int n,t_mapping map[]);
+void writecmap(const char *fn,int n,t_mapping map[]);
 /* print mapping table to fn */
 
-extern int read_xpm_matrix(const char *fnm, t_matrix **matrix);
+int read_xpm_matrix(const char *fnm, t_matrix **matrix);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
-extern real **matrix2real(t_matrix *matrix,real **mat);
+real **matrix2real(t_matrix *matrix,real **mat);
 /* Converts an matrix in a t_matrix struct to a matrix of reals
  * When mat==NULL memory will be allocated 
  * Returns NULL when something went wrong
  */
 
-extern void write_xpm_m(FILE *out, t_matrix m);
+void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 
-extern void write_xpm3(FILE *out,unsigned int flags,
+void write_xpm3(FILE *out,unsigned int flags,
 		       const char *title,const char *legend,
 		       const char *label_x,const char *label_y,
 		       int n_x,int n_y,real axis_x[],real axis_y[],
@@ -86,7 +82,7 @@ extern void write_xpm3(FILE *out,unsigned int flags,
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
-extern void write_xpm_split(FILE *out,unsigned int flags,
+void write_xpm_split(FILE *out,unsigned int flags,
 			    const char *title,const char *legend,
 			    const char *label_x,const char *label_y,
 			    int n_x,int n_y,real axis_x[],real axis_y[],
@@ -94,7 +90,7 @@ extern void write_xpm_split(FILE *out,unsigned int flags,
 			    real lo_top,real hi_top,int *nlevel_top,
 			    t_rgb rlo_top,t_rgb rhi_top,
 			    real lo_bot,real hi_bot,int *nlevel_bot,
-			    bool bDiscreteColor,
+			    gmx_bool bDiscreteColor,
 			    t_rgb rlo_bot,t_rgb rhi_bot);
 /* See write_xpm.
  * Writes a colormap with separate above and below diagonal colormaps.
@@ -102,7 +98,7 @@ extern void write_xpm_split(FILE *out,unsigned int flags,
  * which is white.
  */
 
-extern void write_xpm(FILE *out,unsigned int flags,
+void write_xpm(FILE *out,unsigned int flags,
 		      const char *title,const char *legend,
 		      const char *label_x,const char *label_y,
 		      int n_x,int n_y,real t_x[],real t_y[],
@@ -130,11 +126,11 @@ extern void write_xpm(FILE *out,unsigned int flags,
  * nlevels    number of color levels for the output
  */
 
-extern real **mk_matrix(int nx, int ny, bool b1D);
+real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
-extern void done_matrix(int nx, real ***m);
+void done_matrix(int nx, real ***m);
 
-extern void clear_matrix(int nx, int ny, real **m);
+void clear_matrix(int nx, int ny, real **m);
 
 #ifdef __cplusplus
 }

@@ -70,6 +70,11 @@ yyerror(yyscan_t, char const *s);
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 };
+/* NOTE: The Intel compiler seems to report warnings for the above line about
+ * "definition at end of file not followed by a semicolon or a declarator".
+ * This is due to the compiler misinterpreting #line directives in the
+ * generated files parser.c/.h, and changing them would be more trouble than
+ * it's worth. */
 
 /* Invalid token to report lexer errors */
 %token INVALID
@@ -123,12 +128,20 @@ yyerror(yyscan_t, char const *s);
 %nonassoc <str> CMP_OP
 /* A dummy token that determines the precedence of parameter reduction */
 %nonassoc       PARAM_REDUCT
-/* Operator tokens */
-%left           AND OR XOR
+/* Boolean operator tokens */
+%left           OR XOR
+%left           AND
 %left           NOT
+/* Arithmetic operator tokens */
+%left           '+' '-'
+%left           '*' '/'
+%right          UNARY_NEG   /* Dummy token for unary negation precedence */
+%right          '^'
+%nonassoc       NUM_REDUCT  /* Dummy token for numerical keyword reduction precedence */
 
 /* Simple non-terminals */
-%type <r>     number
+%type <r>     integer_number
+%type <r>     real_number number
 %type <str>   string
 %type <str>   pos_mod
 
@@ -137,21 +150,24 @@ yyerror(yyscan_t, char const *s);
 %type <sel>   selection
 %type <sel>   sel_expr
 %type <sel>   num_expr
+%type <sel>   str_expr
 %type <sel>   pos_expr
 
 /* Parameter/value non-terminals */
 %type <param> method_params method_param_list method_param
-%type <val>   value_list value_list_nonempty value_item
+%type <val>   value_list value_list_contents value_item value_item_range
+%type <val>   basic_value_list basic_value_list_contents basic_value_item
 
-%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
+%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
 %destructor { if($$) free($$);              } PARAM
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
-%destructor { _gmx_selelem_free($$);        } sel_expr num_expr pos_expr
+%destructor { _gmx_selelem_free($$);        } sel_expr num_expr str_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
-%destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
+%destructor { _gmx_selexpr_free_values($$); } value_list value_list_contents value_item value_item_range
+%destructor { _gmx_selexpr_free_values($$); } basic_value_list basic_value_list_contents basic_value_item
 
-%expect 72
+%expect 50
 %debug
 %pure-parser
 
@@ -259,8 +275,18 @@ selection:   pos_expr           { $$ = $1; }
  * BASIC NON-TERMINAL SYMBOLS
  ********************************************************************/
 
-number:      TOK_INT            { $$ = $1; }
-           | TOK_REAL               { $$ = $1; }
+integer_number:
+             TOK_INT            { $$ = $1; }
+           | '-' TOK_INT        { $$ = -$2; }
+;
+
+real_number:
+             TOK_REAL           { $$ = $1; }
+           | '-' TOK_REAL       { $$ = -$2; }
+;
+
+number:      integer_number     { $$ = $1; }
+           | real_number        { $$ = $1; }
 ;
 
 string:      STR                { $$ = $1; }
@@ -332,12 +358,12 @@ sel_expr:    pos_mod KEYWORD_GROUP
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
              }
-           | pos_mod KEYWORD_STR value_list_nonempty
+           | pos_mod KEYWORD_STR basic_value_list
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
              }
-           | pos_mod KEYWORD_NUMERIC value_list_nonempty
+           | pos_mod KEYWORD_NUMERIC basic_value_list
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
@@ -374,7 +400,7 @@ num_expr:    TOK_INT
 ;
 
 /* Numeric selection methods */
-num_expr:    pos_mod KEYWORD_NUMERIC
+num_expr:    pos_mod KEYWORD_NUMERIC    %prec NUM_REDUCT
              {
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
@@ -386,8 +412,38 @@ num_expr:    pos_mod KEYWORD_NUMERIC
              }
 ;
 
-/* Grouping of numeric expressions */
-num_expr:    '(' num_expr ')'   { $$ = $2; }
+/* Arithmetic evaluation and grouping */
+num_expr:    num_expr '+' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '+', scanner); }
+           | num_expr '-' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '-', scanner); }
+           | num_expr '*' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '*', scanner); }
+           | num_expr '/' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '/', scanner); }
+           | '-' num_expr %prec UNARY_NEG
+             { $$ = _gmx_sel_init_arithmetic($2, NULL, '-', scanner); }
+           | num_expr '^' num_expr
+             { $$ = _gmx_sel_init_arithmetic($1, $3, '^', scanner); }
+           | '(' num_expr ')'   { $$ = $2; }
+;
+
+/********************************************************************
+ * STRING EXPRESSIONS
+ ********************************************************************/
+
+str_expr:    string
+             {
+                 $$ = _gmx_selelem_create(SEL_CONST);
+                 _gmx_selelem_set_vtype($$, STR_VALUE);
+                 _gmx_selvalue_reserve(&$$->v, 1);
+                 $$->v.u.s[0] = $1;
+             }
+           | pos_mod KEYWORD_STR
+             {
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
+                 if ($$ == NULL) YYERROR;
+             }
 ;
 
 /********************************************************************
@@ -395,7 +451,7 @@ num_expr:    '(' num_expr ')'   { $$ = $2; }
  ********************************************************************/
 
 /* Constant position expressions */
-pos_expr:    '(' number ',' number ',' number ')'
+pos_expr:    '[' number ',' number ',' number ']'
              { $$ = _gmx_sel_init_const_position($2, $4, $6); }
 ;
 
@@ -460,15 +516,29 @@ method_param:
              }
 ;
 
-value_list:  /* empty */         { $$ = NULL; }
-           | value_list_nonempty { $$ = $1;   }
+value_list:  /* empty */                         { $$ = NULL; }
+           | value_list_contents                 { $$ = $1;   }
+           | '{' value_list_contents '}'         { $$ = $2;   }
 ;
 
-value_list_nonempty:
+value_list_contents:
              value_item          { $$ = $1; }
-           | value_list_nonempty value_item
+           | value_list_contents value_item
                                  { $2->next = $1; $$ = $2; }
-           | value_list_nonempty ',' value_item
+           | value_list_contents ',' value_item
+                                 { $3->next = $1; $$ = $3; }
+;
+
+basic_value_list:
+             basic_value_list_contents           { $$ = $1; }
+           | '{' basic_value_list_contents '}'   { $$ = $2; }
+;
+
+basic_value_list_contents:
+             basic_value_item    { $$ = $1; }
+           | basic_value_list_contents basic_value_item
+                                 { $2->next = $1; $$ = $2; }
+           | basic_value_list_contents ',' basic_value_item
                                  { $3->next = $1; $$ = $3; }
 ;
 
@@ -478,25 +548,45 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
            | num_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
-           | TOK_INT TO TOK_INT
+           | str_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
+           | value_item_range    { $$ = $1; }
+;
+
+basic_value_item:
+             integer_number      %prec PARAM_REDUCT
+             {
+                 $$ = _gmx_selexpr_create_value(INT_VALUE);
+                 $$->u.i.i1 = $$->u.i.i2 = $1;
+             }
+           | real_number         %prec PARAM_REDUCT
+             {
+                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
+                 $$->u.r.r1 = $$->u.r.r2 = $1;
+             }
+           | string              %prec PARAM_REDUCT
+             {
+                 $$ = _gmx_selexpr_create_value(STR_VALUE);
+                 $$->u.s = $1;
+             }
+           | value_item_range    { $$ = $1; }
+;
+
+value_item_range:
+             integer_number TO integer_number
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $1; $$->u.i.i2 = $3;
              }
-           | TOK_INT TO TOK_REAL
+           | integer_number TO real_number
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
              }
-           | TOK_REAL TO number
+           | real_number TO number
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
-             }
-           | string
-             {
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $1;
              }
 ;
 

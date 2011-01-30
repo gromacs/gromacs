@@ -257,7 +257,7 @@ gmx_histogram_create(gmx_histogram_t **hp, e_histogram_t type, int nbins)
  */
 int
 gmx_histogram_create_range(gmx_histogram_t **hp, e_histogram_t type,
-                           real start, real end, real binw, bool bIntegerBins)
+                           real start, real end, real binw, gmx_bool bIntegerBins)
 {
     gmx_histogram_t *h;
     int              nbins;
@@ -413,7 +413,7 @@ gmx_histogram_set_range(gmx_histogram_t *h, real start, real end)
  *   \c start+(n+0.5)*binwidth.
  */
 void
-gmx_histogram_set_integerbins(gmx_histogram_t *h, bool bIntegerBins)
+gmx_histogram_set_integerbins(gmx_histogram_t *h, gmx_bool bIntegerBins)
 {
     /* Adjust the ranges if they have been initialized */
     if (h->start < h->end)
@@ -463,7 +463,7 @@ gmx_histogram_set_integerbins(gmx_histogram_t *h, bool bIntegerBins)
  * the exact maximum are still correctly included.
  */
 void
-gmx_histogram_set_all(gmx_histogram_t *h, bool bAll)
+gmx_histogram_set_all(gmx_histogram_t *h, gmx_bool bAll)
 {
     if (bAll)
     {
@@ -901,7 +901,7 @@ gmx_histogram_finish(gmx_histogram_t *h)
  */
 void
 gmx_histogram_resample_dblbw(gmx_histogram_t **destp, gmx_histogram_t *src,
-                             bool bIntegerBins)
+                             gmx_bool bIntegerBins)
 {
     gmx_histogram_t *dest;
     int              i, j;
@@ -1066,7 +1066,7 @@ prepare_output(int n, gmx_histogram_t *h[], int *nbins)
  * \see gmx_histogram_write_array()
  */
 void
-gmx_histogram_write(FILE *fp, gmx_histogram_t *h, bool bErrors)
+gmx_histogram_write(FILE *fp, gmx_histogram_t *h, gmx_bool bErrors)
 {
     gmx_histogram_write_array(fp, 1, &h, TRUE, bErrors);
 }
@@ -1088,7 +1088,7 @@ gmx_histogram_write(FILE *fp, gmx_histogram_t *h, bool bErrors)
  */
 void
 gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
-                          bool bValue, bool bErrors)
+                          gmx_bool bValue, gmx_bool bErrors)
 {
     int           i, j, nbins;
 
@@ -1130,7 +1130,7 @@ gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
  */
 void
 gmx_histogram_write_cum_array(FILE *fp, int n, gmx_histogram_t *h[],
-                                  bool bValue, bool bErrors)
+                                  gmx_bool bValue, gmx_bool bErrors)
 {
     int           i, j, nbins;
     double       *sum;

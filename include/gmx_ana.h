@@ -261,6 +261,15 @@ gmx_wheel(int argc,char *argv[]);
 int 
 gmx_xpm2ps(int argc,char *argv[]);
 
+int 
+gmx_membed(int argc,char *argv[]);
+
+int 
+gmx_pme_error(int argc,char *argv[]);
+
+int
+gmx_options(int argc,char *argv[]);
+
 #ifdef __cplusplus
 }
 #endif

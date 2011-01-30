@@ -14,23 +14,28 @@ gromos43a2.ff \
 gromos45a3.ff \
 gromos53a5.ff \
 gromos53a6.ff \
-oplsaa.ff 
+oplsaa.ff \
+charmm27.ff \
+amber94.ff \
+amber96.ff \
+amberGS.ff \
+amber99.ff \
+amber99sb.ff \
+amber99sb-ildn.ff \
+amber03.ff 
+
 
 topol_DATA = \
-	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
-	buck.itp	decane.itp	dlg.itp		dmso.itp	\
-	fa.itp		ff_dum.itp	flexspc.itp	flexspce.itp	\
-	flexwat-ferguson.itp		h2p4o13.itp	h2p8o25.itp	\
-	h2po4.itp	ions.itp	methanol.itp	spc.itp		\
-	spce.itp	tfe.itp		tip3p.itp	tip4p.itp	\
-	urea.itp	dgsolv.dat	electroneg.dat			\
-	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
-	urea+h2o.gro    \
-	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
+	flexspc.itp	\
+	flexspce.itp	flexwat-ferguson.itp		ions.itp	\
+	spc.itp		spce.itp	tip3p.itp	tip4p.itp	\
+	dgsolv.dat	electroneg.dat	\
+	spc216.gro	tip4p.gro	\
+	residuetypes.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
 	cb-shift.dat	co-shift.dat	edissoc.dat			\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
-	vdwradii.dat	xlateat.dat	highway.dat			\
+	vdwradii.dat	xlateat.dat	highway.dat	sfactor.dat	\
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	tip5p.gro	\

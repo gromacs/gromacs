@@ -39,6 +39,11 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
@@ -67,6 +72,11 @@
 #include "eigensolver.h"
 #include "physics.h"
 #include "gmx_ana.h"
+#include "string2.h"
+
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
 
 
 int gmx_covar(int argc,char *argv[])
@@ -91,13 +101,20 @@ int gmx_covar(int argc,char *argv[])
     "Option [TT]-ascii[tt] writes the whole covariance matrix to",
     "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",
     "[PAR]",
-    "Option [TT]-xpm[tt] writes the whole covariance matrix to an xpm file.",
+    "Option [TT]-xpm[tt] writes the whole covariance matrix to an [TT].xpm[tt] file.",
     "[PAR]",
-    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
+    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an [TT].xpm[tt] file,",
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
-    "written."
+    "written.",
+    "[PAR]",
+    "Note that the diagonalization of a matrix requires memory and time",
+    "that will increase at least as fast as than the square of the number",
+    "of atoms involved. It is easy to run out of memory, in which",
+    "case this tool will probably exit with a 'Segmentation fault'. You",
+    "should consider carefully whether a reduced set of atoms will meet",
+    "your needs for lower costs."
   };
-  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
+  static gmx_bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
@@ -112,7 +129,8 @@ int gmx_covar(int argc,char *argv[])
       "Apply corrections for periodic boundary conditions" }
   };
   FILE       *out;
-  int        status,trjout;
+  t_trxstatus *status;
+  t_trxstatus *trjout;
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;  
@@ -132,11 +150,13 @@ int gmx_covar(int argc,char *argv[])
   char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        d,dj,nfit;
   atom_id    *index,*ifit;
-  bool       bDiffMass1,bDiffMass2;
+  gmx_bool       bDiffMass1,bDiffMass2;
   time_t     now;
+  char       timebuf[STRLEN];
   t_rgb      rlo,rmi,rhi;
   real       *tmp;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
   t_filenm fnm[] = { 
     { efTRX, "-f",  NULL, ffREAD }, 
@@ -216,17 +236,19 @@ int gmx_covar(int argc,char *argv[])
 	w_rls[ifit[i]]=1.0;
     }
   }
-
+  
   /* Prepare reference frame */
-  if (bPBC)
-    rm_pbc(&(top.idef),ePBC,atoms->nr,box,xref,xref);
+  if (bPBC) {
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,atoms->nr,box);
+    gmx_rmpbc(gpbc,atoms->nr,box,xref);
+  }
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
 
   snew(x,natoms);
   snew(xav,natoms);
   ndim=natoms*DIM;
-  if (sqrt(LARGE_INT_MAX)<ndim) {
+  if (sqrt(GMX_LARGE_INT_MAX)<ndim) {
     gmx_fatal(FARGS,"Number of degrees of freedoms to large for matrix.\n");
   }
   snew(mat,ndim*ndim);
@@ -240,7 +262,7 @@ int gmx_covar(int argc,char *argv[])
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
+      gmx_rmpbc(gpbc,nat,box,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -269,7 +291,7 @@ int gmx_covar(int argc,char *argv[])
     tend = t;
     /* calculate x: a (fitted) structure of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
+      gmx_rmpbc(gpbc,nat,box,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -295,6 +317,7 @@ int gmx_covar(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,nat,xread,box) && 
 	   (bRef || nframes < nframes0));
   close_trj(status);
+  gmx_rmpbc_done(gpbc);
 
   fprintf(stderr,"Read %d frames\n",nframes);
   
@@ -459,9 +482,10 @@ int gmx_covar(int argc,char *argv[])
 
   out = ffopen(logfile,"w");
 
-  now = time(NULL);
-  fprintf(out,"Covariance analysis log, written %s\n",
-	  ctime(&now));
+  time(&now);
+  gmx_ctime_r(&now,timebuf,STRLEN);
+  fprintf(out,"Covariance analysis log, written %s\n",timebuf);
+    
   fprintf(out,"Program: %s\n",argv[0]);
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
   pcwd=_getcwd(str,STRLEN);

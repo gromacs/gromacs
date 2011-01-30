@@ -35,6 +35,10 @@
  * finished FD 09/07/08
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #include "statutil.h"
 #include "typedefs.h"
@@ -82,14 +86,14 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
   *n = nmol;
 }
 
-static bool precalc(t_topology top,real mass2[],real qmol[]){
+static gmx_bool precalc(t_topology top,real mass2[],real qmol[]){
 
   real mtot;
   real qtot;
   real qall;
   int i,j,k,l;
   int ai,ci;
-  bool bNEU;
+  gmx_bool bNEU;
   ai=0;
   ci=0;
   qall=0.0;
@@ -150,7 +154,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[]){
     }
 }
 
-static void calc_mj(t_topology top,int ePBC,matrix box,bool bNoJump,int isize,int index0[],\
+static void calc_mj(t_topology top,int ePBC,matrix box,gmx_bool bNoJump,int isize,int index0[],\
 		rvec fr[],rvec mj,real mass2[],real qmol[]){
 
   int   i,j,k,l;
@@ -192,7 +196,7 @@ static void calc_mj(t_topology top,int ePBC,matrix box,bool bNoJump,int isize,in
 }
 
 
-static real calceps(real prefactor,real md2,real mj2,real cor,real eps_rf,bool bCOR){
+static real calceps(real prefactor,real md2,real mj2,real cor,real eps_rf,gmx_bool bCOR){
 
 	/* bCOR determines if the correlation is computed via
 	 * static properties (FALSE) or the correlation integral (TRUE)
@@ -285,10 +289,10 @@ static void calc_mjdsp(FILE *fmjdsp,real vol,real temp,real prefactor,rvec mjdsp
 
 
 static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
-                       FILE *fmjdsp, bool bNoJump,bool bACF,bool bINT,
+                       FILE *fmjdsp, gmx_bool bNoJump,gmx_bool bACF,gmx_bool bINT,
                        int ePBC,t_topology top, t_trxframe fr,real temp,
                        real trust,real bfit,real efit,real bvit,real evit,
-		       int status,int isize,int nmols, int nshift,
+		       t_trxstatus *status,int isize,int nmols, int nshift,
                        atom_id *index0,int indexm[],real mass2[],
                        real qmol[], real eps_rf, const output_env_t oenv)
 {
@@ -344,7 +348,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
   real err=0.0;
   real *xfit;
   real *yfit;
-
+  gmx_rmpbc_t  gpbc=NULL;
+ 
   /*
    * indices for EH
    */
@@ -377,7 +382,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
   clear_rvec(mjd_tmp);
   clear_rvec(mdvec);
   clear_rvec(tmp);
-  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+
   do{
     
     refr=(real)(nfr+1);
@@ -426,8 +432,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 
     }
     
-		rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
-
+		gmx_rmpbc_trxfr(gpbc,&fr);
+		
 		calc_mj(top,ePBC,fr.box,bNoJump,nmols,indexm,fr.x,mtrans[nfr],mass2,qmol);
 
     for(i=0;i<isize;i++){
@@ -505,6 +511,8 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
     
   }while(read_next_frame(oenv,status,&fr));
   
+  gmx_rmpbc_done(gpbc);
+ 
   volume_av/=refr;
   
 	prefactor=1.0;
@@ -666,7 +674,7 @@ int gmx_current(int argc,char *argv[])
   static real temp=300.0;
   static real trust=0.25;
   static real eps_rf=0.0;
-  static bool bNoJump=TRUE;
+  static gmx_bool bNoJump=TRUE;
   static real bfit=100.0;
   static real bvit=0.5;
   static real efit=400.0;
@@ -705,12 +713,12 @@ int gmx_current(int argc,char *argv[])
   atom_id    *index0=NULL;
   int					*indexm=NULL;
   int        isize;
-  int        status;
+  t_trxstatus *status;
   int        flags = 0;
-  bool	     bTop;
-  bool		 bNEU;
-  bool		 bACF;
-  bool		 bINT;
+  gmx_bool	     bTop;
+  gmx_bool		 bNEU;
+  gmx_bool		 bACF;
+  gmx_bool		 bINT;
   int	     ePBC=-1;
   int	     natoms;
   int 			nmols;
@@ -752,7 +760,7 @@ int gmx_current(int argc,char *argv[])
     "[PAR]",
     "The flag [TT]-caf[tt] is for the output of the current autocorrelation function and [TT]-mc[tt] writes the",
     "correlation of the rotational and translational part of the dipole moment in the corresponding",
-    "file. However this option is only available for trajectories containing velocities."
+    "file. However this option is only available for trajectories containing velocities.",
     "Options [TT]-sh[tt] and [TT]-tr[tt] are responsible for the averaging and integration of the",
     "autocorrelation functions. Since averaging proceeds by shifting the starting point",
     "through the trajectory, the shift can be modified with [TT]-sh[tt] to enable the choice of uncorrelated",
@@ -761,7 +769,7 @@ int gmx_current(int argc,char *argv[])
     "the number of frames. The option [TT]-tr[tt] controls the region of the integral taken into account",
     "for calculating the static dielectric constant.",
     "[PAR]",
-    "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant."
+    "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant.",
     "[PAR]",
     "Option [TT]-eps[tt] controls the dielectric constant of the surrounding medium for simulations using",
     "a Reaction Field or dipole corrections of the Ewald summation (eps=0 corresponds to",

@@ -77,15 +77,15 @@ calc_principal_axes(t_topology *   top,
 int gmx_principal(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_principal calculates the three principal axes of inertia for a group",
+    "[TT]g_principal[tt] calculates the three principal axes of inertia for a group",
     "of atoms.",
   };
-  static bool foo = FALSE;
+  static gmx_bool foo = FALSE;
 
   t_pargs pa[] = {
 	  { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
   };
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC;
   real       t;
@@ -102,6 +102,8 @@ int gmx_principal(int argc,char *argv[])
   FILE *     fmoi;
   matrix     axes,box;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
+
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
@@ -130,9 +132,12 @@ int gmx_principal(int argc,char *argv[])
 
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
 
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+
   do
   {
-	  rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
+
 	  calc_principal_axes(&top,x,index,gnx,axes,moi);
 
 	  fprintf(axis1,"%15.10f     %15.10f  %15.10f  %15.10f\n",t,axes[XX][XX],axes[YY][XX],axes[ZZ][XX]);
@@ -142,6 +147,9 @@ int gmx_principal(int argc,char *argv[])
   } 	
   while(read_next_x(oenv,status,&t,natoms,x,box));
 	
+  gmx_rmpbc_done(gpbc);
+
+
   close_trj(status);
   ffclose(axis1);
   ffclose(axis2);

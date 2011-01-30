@@ -50,6 +50,7 @@
 #include "index.h"
 #include "random.h"
 #include "pbc.h"
+#include "rmpbc.h"
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
@@ -239,7 +240,7 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   t_clustid *c;
   t_dist    *d;
   int       i,j,k,nn,cid,n1,diff;
-  bool      bChange;
+  gmx_bool  bChange;
   
   /* First we sort the entries in the RMSD matrix */
   n1 = m->nn;
@@ -300,9 +301,9 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   sfree(d);
 }
 
-bool jp_same(int **nnb,int i,int j,int P)
+gmx_bool jp_same(int **nnb,int i,int j,int P)
 {
-  bool bIn;
+  gmx_bool bIn;
   int  k,ii,jj,pp;
 
   bIn = FALSE;
@@ -333,7 +334,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
   t_clustid *c;
   int       **nnb;
   int       i,j,k,cid,diff,max;
-  bool      bChange;
+  gmx_bool  bChange;
   real      **mcpy=NULL;
 
   if (rmsdcut < 0)
@@ -549,13 +550,15 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
-                      int *nframe, real **time,const output_env_t oenv)
+                      int *nframe, real **time,const output_env_t oenv,gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
   rvec   **xx,*x;
   matrix box;
   real   t;
   int    i,i0,j,max_nf;
-  int    status,natom;
+  int    natom;
+  t_trxstatus *status;
+
   
   max_nf = 0;
   xx     = NULL;
@@ -564,6 +567,9 @@ rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
   i  = 0;
   i0 = 0;
   do {
+    if (bPBC) {
+      gmx_rmpbc(gpbc,natom,box,x);
+    }
     if (i0 >= max_nf) {
       max_nf += 10;
       srenew(xx,max_nf);
@@ -728,16 +734,17 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     int iosize, atom_id *outidx,
 			     const char *trxfn, const char *sizefn, 
                              const char *transfn, const char *ntransfn, 
-                             const char *clustidfn, bool bAverage, 
+                             const char *clustidfn, gmx_bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,
-                             bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
+                             gmx_bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
                              const output_env_t oenv)
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
-  int  trxout=0,trxsout=0;
+  t_trxstatus *trxout=NULL;
+  t_trxstatus *trxsout=NULL;
   int  i,i1,cl,nstr,*structure,first=0,midstr;
-  bool *bWrite=NULL;
+  gmx_bool *bWrite=NULL;
   real r,clrmsd,midrmsd;
   rvec *xav=NULL;
   matrix zerobox;
@@ -776,7 +783,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   
     /* Prepare a reference structure for the orientation of the clusters  */
     if (bFit)
-    reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
+        reset_x(ifsize,fitidx,natom,NULL,xtps,mass);
     trxout = open_trx(trxfn,"w");
     /* Calculate the average structure in each cluster,               *
      * all structures are fitted to the first struture of the cluster */
@@ -944,9 +951,9 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
 int gmx_cluster(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_cluster can cluster structures with several different methods.",
+    "[TT]g_cluster[tt] can cluster structures with several different methods.",
     "Distances between structures can be determined from a trajectory",
-    "or read from an XPM matrix file with the [TT]-dm[tt] option.",
+    "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     
@@ -961,7 +968,7 @@ int gmx_cluster(int argc,char *argv[])
     
     "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
     
-    "diagonalization: diagonalize the RMSD matrix.[PAR]"
+    "diagonalization: diagonalize the RMSD matrix.[PAR]",
     
     "gromos: use algorithm as described in Daura [IT]et al.[it]",
     "([IT]Angew. Chem. Int. Ed.[it] [BB]1999[bb], [IT]38[it], pp 236-240).",
@@ -976,7 +983,7 @@ int gmx_cluster(int argc,char *argv[])
     "the smallest average distance to the others or the average structure",
     "or all structures for each cluster will be written to a trajectory",
     "file. When writing all structures, separate numbered files are made",
-    "for each cluster.[PAR]"
+    "for each cluster.[PAR]",
     
     "Two output files are always written:[BR]",
     "[TT]-o[tt] writes the RMSD values in the upper left half of the matrix",
@@ -1016,15 +1023,15 @@ int gmx_cluster(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      useatoms;
-  t_matrix     *readmat;
+  t_matrix     *readmat=NULL;
   real         *tmp;
   
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
-  real     rmsd,**d1,**d2,*time,time_invfac,*mass=NULL;
+  real     rmsd,**d1,**d2,*time=NULL,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
-  bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
+  gmx_bool bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bPBC=TRUE;
 
   int method,ncluster=0;  
   static const char *methodname[] = { 
@@ -1040,11 +1047,13 @@ int gmx_cluster(int argc,char *argv[])
   static t_rgb rhi_bot = { 0.0, 0.0, 1.0 };
   static int  nlevels=40,skip=1;
   static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
-  static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
+  gmx_bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
   static int  niter=10000,seed=1993,write_ncl=0,write_nst=1,minstruct=1;
   static real kT=1e-3;
   static int  M=10,P=3;
   output_env_t oenv;
+  gmx_rmpbc_t gpbc=NULL;
+  
   t_pargs pa[] = {
     { "-dista", FALSE, etBOOL, {&bRMSdist},
       "Use RMSD of distances instead of RMS deviation" },
@@ -1069,10 +1078,10 @@ int gmx_cluster(int argc,char *argv[])
     { "-method",FALSE, etENUM, {methodname},
       "Method for cluster determination" },
     { "-minstruct", FALSE, etINT, {&minstruct},
-      "Minimum number of structures in cluster for coloring in the xpm file" },
+      "Minimum number of structures in cluster for coloring in the [TT].xpm[tt] file" },
     { "-binary",FALSE, etBOOL, {&bBinary},
       "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
-      "is given by -cutoff" },
+      "is given by [TT]-cutoff[tt]" },
     { "-M",     FALSE, etINT,  {&M},
       "Number of nearest neighbors considered for Jarvis-Patrick algorithm, "
       "0 is use cutoff" },
@@ -1084,7 +1093,9 @@ int gmx_cluster(int argc,char *argv[])
       "Number of iterations for MC" },
     { "-kT",    FALSE, etREAL, {&kT},
       "Boltzmann weighting factor for Monte Carlo optimization "
-      "(zero turns off uphill steps)" }
+      "(zero turns off uphill steps)" },
+    { "-pbc", FALSE, etBOOL,
+      { &bPBC }, "PBC check" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",     NULL,        ffOPTRD },
@@ -1131,7 +1142,7 @@ int gmx_cluster(int argc,char *argv[])
 	    "         ignoring option -cl %s\n", trx_out_fn);
 
   method=1;
-  while ( method < m_nr && strcasecmp(methodname[0], methodname[method])!=0 )
+  while ( method < m_nr && gmx_strcasecmp(methodname[0], methodname[method])!=0 )
     method++;
   if (method == m_nr)
     gmx_fatal(FARGS,"Invalid method");
@@ -1179,6 +1190,9 @@ int gmx_cluster(int argc,char *argv[])
     /* don't read mass-database as masses (and top) are not used */
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&xtps,NULL,box,
 		  bAnalyze);
+    if(bPBC) {
+	gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
+    }
     
     fprintf(stderr,"\nSelect group for least squares fit%s:\n",
 	    bReadMat?"":" and RMSD calculation");
@@ -1230,8 +1244,8 @@ int gmx_cluster(int argc,char *argv[])
   if (bReadTraj) {
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);
-    
-    xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv);
+
+    xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv,bPBC,gpbc);
     output_env_conv_times(oenv, nf, time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
@@ -1243,6 +1257,10 @@ int gmx_cluster(int argc,char *argv[])
 	reset_x(ifsize,fitidx,isize,NULL,xx[i],mass);
     }
   }
+  if (bPBC) {
+    gmx_rmpbc_done(gpbc);
+  }
+
   if (bReadMat) {
     fprintf(stderr,"Reading rms distance matrix ");
     read_xpm_matrix(opt2fn("-dm",NFILE,fnm),&readmat);

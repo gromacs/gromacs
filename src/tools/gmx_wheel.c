@@ -60,11 +60,11 @@
 #include "strdb.h"
 #include "gmx_ana.h"
 
-bool *bPhobics(int nres,char *resnm[])
+gmx_bool *bPhobics(int nres,char *resnm[])
 {
   int  i,nb;
   char **cb;
-  bool *bb;
+  gmx_bool *bb;
   
   nb=get_strings("phbres.dat",&cb);
   snew(bb,nres);
@@ -87,7 +87,7 @@ void wheel(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   int  i,sl,slen;
   real ring,inner,outer;
   real xc,yc,box;
-  bool *bPh;
+  gmx_bool *bPh;
   char **rnms;
   char sign;
   
@@ -203,14 +203,14 @@ void wheel2(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 int gmx_wheel(int argc,char *argv[])
 {
   const char *desc[] = {
-    "wheel plots a helical wheel representation of your sequence."
-    "The input sequence is in the .dat file where the first line contains",
+    "[TT]g_wheel[tt] plots a helical wheel representation of your sequence.",
+    "The input sequence is in the [TT].dat[tt] file where the first line contains",
     "the number of residues and each consecutive line contains a residue"
     "name."
   };
   output_env_t oenv;
   static real rot0=0;
-  static bool bNum=TRUE;
+  static gmx_bool bNum=TRUE;
   static char *title=NULL;
   static int  r0=1;
   t_pargs pa [] = {

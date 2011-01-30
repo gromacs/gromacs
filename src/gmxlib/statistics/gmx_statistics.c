@@ -180,11 +180,6 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             return estatsNO_POINTS;
         }
       
-        if (weight != elsqWEIGHT_NONE)
-        {
-            return estatsNOT_IMPLEMENTED;
-        }
-        
         xx = xx_nw = 0;
         yy = yy_nw = 0;
         yx = yx_nw = 0;
@@ -503,12 +498,12 @@ int gmx_stats_remove_outliers(gmx_stats_t gstats,double level)
     return estatsOK;
 }
 
-int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
-                             int normalized,real **x,real **y)
+int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int *nb,
+                             int ehisto,int normalized,real **x,real **y)
 {
     gmx_stats *stats = (gmx_stats *) gstats;
-    int    i,ok,index;
-    double maxy,miny,dy;
+    int    i,ok,index=0,nbins=*nb,*nindex;
+    double minx,maxx,maxy,miny,delta,dd,minh;
   
     if (((binwidth <= 0) && (nbins <= 0)) ||
         ((binwidth > 0) && (nbins > 0)))
@@ -519,49 +514,76 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
     {
         return estatsNO_POINTS;
     }
+    minx = maxx = stats->x[0];
     miny = maxy = stats->y[0];
     for(i=1; (i<stats->np); i++) 
     {
         miny = (stats->y[i] < miny) ? stats->y[i] : miny;
         maxy = (stats->y[i] > maxy) ? stats->y[i] : maxy;
+        minx = (stats->x[i] < minx) ? stats->x[i] : minx;
+        maxx = (stats->x[i] > maxx) ? stats->x[i] : maxx;
     }
+    if (ehisto == ehistoX)
+    {
+        delta = maxx-minx;
+        minh = minx;
+    }
+    else if (ehisto == ehistoY)
+    {
+        delta = maxy-miny;
+        minh = miny;
+    }
+    else
+        return estatsINVALID_INPUT;
+        
     if (binwidth == 0)
     {
-        binwidth = (maxy-miny)/nbins;
+        binwidth = (delta)/nbins;
     }
     else
     {
-        nbins = gmx_nint((maxy-miny)/binwidth + 0.5);
+        nbins = gmx_nint((delta)/binwidth + 0.5);
     }
     snew(*x,nbins);
+    snew(nindex,nbins);
     for(i=0; (i<nbins); i++) 
     {
-        (*x)[i] = miny + binwidth*(i+0.5);
+        (*x)[i] = minh + binwidth*(i+0.5);
     }
     if (normalized == 0)
     {
-        dy = 1;
+        dd = 1;
     }
     else
     {
-        dy = 1.0/(binwidth*stats->np);
+        dd = 1.0/(binwidth*stats->np);
     }
     
     snew(*y,nbins);
     for(i=0; (i<stats->np); i++) 
     {
-        index = (stats->y[i]-miny)/binwidth;
-		
-		if(index<0)
+        if (ehisto == ehistoY)
+            index = (stats->y[i]-miny)/binwidth;
+		else if (ehisto == ehistoX)
+            index = (stats->x[i]-minx)/binwidth;
+		if (index<0)
 		{
 			index = 0;
 		}
-		if(index>nbins-1)
+		if (index>nbins-1)
 		{
 			index = nbins-1;
 		}
-        (*y)[index] += dy;
+        (*y)[index] += dd;
+        nindex[index]++;
     }
+    if (*nb == 0)
+        *nb = nbins;
+    for(i=0; (i<nbins); i++)
+        if (nindex[i] > 0)
+            (*y)[i] /= nindex[i];
+            
+    sfree(nindex);
     
     return estatsOK;
 }

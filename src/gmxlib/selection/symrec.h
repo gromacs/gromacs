@@ -46,7 +46,7 @@ typedef enum
     SYMBOL_RESERVED,    /**< The symbol is a reserved keyword. */
     SYMBOL_VARIABLE,    /**< The symbol is a variable. */
     SYMBOL_METHOD,      /**< The symbol is a selection method. */
-    SYMBOL_POS,         /**< The symbol is a position keyword. */
+    SYMBOL_POS          /**< The symbol is a position keyword. */
 } e_symbol_t;
 
 /** Symbol table for the selection parser. */
@@ -75,11 +75,11 @@ void
 _gmx_sel_symtab_free(gmx_sel_symtab_t *tab);
 /** Finds a symbol by name. */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact);
+_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, gmx_bool bExact);
 /** Finds a symbol by name. */
 gmx_sel_symrec_t *
 _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
-                         bool bExact);
+                         gmx_bool bExact);
 /** Returns the first symbol of a given type. */
 gmx_sel_symrec_t *
 _gmx_sel_first_symbol(gmx_sel_symtab_t *tab, e_symbol_t type);

@@ -55,7 +55,7 @@ files.
 
 
 /* the number of envelopes to allocate per thread-to-thread path */
-#define N_EV_ALLOC 8
+#define N_EV_ALLOC 16
 
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll
@@ -79,14 +79,14 @@ files.
 
 
 
-/* whether to disable double-copying (where the sender copies data to an 
+/* whether to enable double-copying (where the sender copies data to an 
    intermediate buffer for small enough buffers, allowing it to return
    from a blocking send call early. The receiver is free to copy from the
    original buffer while the sender is copying, possibly allowing them to
    work in parallel). 
    
    This option can be set with cmake. */
-/*#define TMPI_NO_COPY_BUFFER*/
+/*#define TMPI_COPY_BUFFER*/
 
 
 /* The size (in bytes) of the maximum transmission size for which double 
@@ -95,7 +95,7 @@ files.
 
    A size of 8192 bytes was chosen after some testing with Gromacs. */
 #define COPY_BUFFER_SIZE 8192
-#ifndef TMPI_NO_COPY_BUFFER
+#ifdef TMPI_COPY_BUFFER
 /* We can separately specify whether we want copy buffers for send/recv or
    multicast communications: */
 #define USE_SEND_RECV_COPY_BUFFER

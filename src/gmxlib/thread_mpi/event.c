@@ -35,19 +35,13 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "impl.h"
 
@@ -70,15 +64,17 @@ void tMPI_Event_destroy(tMPI_Event *ev)
 
 int tMPI_Event_wait(tMPI_Event *ev) 
 {
+    int ret;
     /* for most OSes yielding waits result in much better performance 
        (by an order of magnitude) than using the OS-provided wait functions 
        such as pthread_cond_wait(). That's why we do a busy-wait loop here.*/
     while( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
     { 
-        tMPI_Atomic_memory_barrier(); 
         TMPI_YIELD_WAIT(ev);
     }
-    return tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync); 
+    tMPI_Atomic_memory_barrier_acq(); 
+    ret=tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync); 
+    return ret;
 }
 
 

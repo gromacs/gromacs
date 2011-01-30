@@ -61,7 +61,7 @@
 
 
 real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
-	       rvec gvec,rvec d,bool bQ,bool bRot,bool bMOI,matrix trans)
+	       rvec gvec,rvec d,gmx_bool bQ,gmx_bool bRot,gmx_bool bMOI,matrix trans)
 {
   int    i,ii,m;
   real   gyro,dx2,m0,Itot;
@@ -151,7 +151,7 @@ void calc_gyro_z(rvec x[],matrix box,
 int gmx_gyrate(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_gyrate computes the radius of gyration of a group of atoms",
+    "[TT]g_gyrate[tt] computes the radius of gyration of a group of atoms",
     "and the radii of gyration about the x, y and z axes,",
     "as a function of time. The atoms are explicitly mass weighted.[PAR]",
     "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
@@ -161,7 +161,7 @@ int gmx_gyrate(int argc,char *argv[])
     "of slices along the z-axis are calculated."
   };
   static int  nmol=1,nz=0;
-  static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
+  static gmx_bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
   t_pargs pa[] = {
     { "-nmol", FALSE, etINT, {&nmol},
       "The number of molecules to analyze" },
@@ -175,13 +175,13 @@ int gmx_gyrate(int argc,char *argv[])
       "Calculate the 2D radii of gyration of # slices along the z-axis" },
   };
   FILE       *out;
-  int        status;
+  t_trxstatus *status;
   t_topology top;
   int        ePBC;
   rvec       *x,*x_s;
   rvec       xcm,gvec,gvec1;
   matrix     box,trans;
-  bool       bACF;
+  gmx_bool       bACF;
   real       **moi_trans=NULL;
   int        max_moi=0,delta_moi=100;
   rvec       d,d1;         /* eigenvalues of inertia tensor */
@@ -191,8 +191,9 @@ int gmx_gyrate(int argc,char *argv[])
   int        i,j,m,gnx,nam,mol;
   atom_id    *index;
   output_env_t oenv;
-  char *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
-  char *legI[] = { "Itot", "I1", "I2", "I3" }; 
+  gmx_rmpbc_t  gpbc=NULL;
+  const char *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
+  const char *legI[] = { "Itot", "I1", "I2", "I3" }; 
 #define NLEG asize(leg) 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
@@ -260,9 +261,11 @@ int gmx_gyrate(int argc,char *argv[])
 	fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
     xvgr_legend(out,NLEG,leg,oenv);
   }
+  if (nz == 0)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
     if (nz == 0)
-      rm_pbc(&top.idef,ePBC,natoms,box,x,x_s);
+      gmx_rmpbc_copy(gpbc,natoms,box,x,x_s);
     gyro = 0;
     clear_rvec(gvec);
     clear_rvec(d);
@@ -300,6 +303,8 @@ int gmx_gyrate(int argc,char *argv[])
     j++;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
+  if (nz == 0)
+    gmx_rmpbc_done(gpbc);
   
   ffclose(out);
 

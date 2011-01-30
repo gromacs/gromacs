@@ -52,14 +52,25 @@
 #include "pppm.h"
 #include "gmxfio.h"
 
+#include "thread_mpi.h"
+
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x)) 
 #define p4(x) ((x)*(x)*(x)*(x)) 
 
 static real A,A_3,B,B_4,C,c1,c2,c3,c4,c5,c6,One_4pi,FourPi_V,Vol,N0;
+#ifdef GMX_THREADS
+static tMPI_Thread_mutex_t shift_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
 
 void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
 {
+#ifdef GMX_THREADS
+  /* at the very least we shouldn't allow multiple threads to set these 
+     simulataneously */
+  tMPI_Thread_mutex_lock(&shift_mutex);
+#endif
   /* A, B and C are recalculated in tables.c */
   if (r1 < rc) {
     A   = (2*r1-5*rc)/(p3(rc)*p2(rc-r1));
@@ -100,6 +111,9 @@ void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   }
     
   One_4pi = 1.0/(4.0*M_PI);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&shift_mutex);
+#endif
 }
 
 real gk(real k,real rc,real r1)
@@ -242,9 +256,9 @@ real potential(real r1,real rc,real R)
 real shift_LRcorrection(FILE *fp,int start,int natoms,
 			t_commrec *cr,t_forcerec *fr,
 			real charge[],t_blocka *excl,rvec x[],
-			bool bOld,matrix box,matrix lr_vir)
+			gmx_bool bOld,matrix box,matrix lr_vir)
 {
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   static real Vself;
   int    i,i1,i2,j,k,m,iv,jv;
   int *AA;
@@ -352,7 +366,7 @@ real phi_aver(int natoms,real phi[])
   return (phitot/natoms);
 }
 
-real symmetrize_phi(FILE *log,int natoms,real phi[],bool bVerbose)
+real symmetrize_phi(FILE *log,int natoms,real phi[],gmx_bool bVerbose)
 {
   real phitot;
   int  i;

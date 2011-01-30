@@ -198,11 +198,24 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 #endif
 }
 
+/* IBM's BlueGene(/L) MPI_Bcast dereferences the data pointer
+ * even when 0 == nbytes, so we protect calls to it on BlueGene.
+ * Fortunately dd_bcast() and dd_bcastc() are only
+ * called during DD setup and partition.
+ */
+
 void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
 {
 #ifdef GMX_MPI
+#ifdef GMX_BLUEGENE
+    if (nbytes > 0)
+    {
+#endif
     MPI_Bcast(data,nbytes,MPI_BYTE,
               DDMASTERRANK(dd),dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+    }
+#endif
 #endif
 }
 
@@ -213,8 +226,15 @@ void dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
         memcpy(dest,src,nbytes);
     }
 #ifdef GMX_MPI
+#ifdef GMX_BLUEGENE
+    if (nbytes > 0)
+    {
+#endif
     MPI_Bcast(dest,nbytes,MPI_BYTE,
               DDMASTERRANK(dd),dd->mpi_comm_all);
+#ifdef GMX_BLUEGENE
+    }
+#endif
 #endif
 }
 
@@ -241,6 +261,13 @@ void dd_scatterv(gmx_domdec_t *dd,
                  int rcount,void *rbuf)
 {
 #ifdef GMX_MPI
+    int dum;
+
+    if (rcount == 0)
+    {
+        /* MPI does not allow NULL pointers */
+        rbuf = &dum;
+    }
     MPI_Scatterv(sbuf,scounts,disps,MPI_BYTE,
                  rbuf,rcount,MPI_BYTE,
                  DDMASTERRANK(dd),dd->mpi_comm_all);
@@ -252,6 +279,13 @@ void dd_gatherv(gmx_domdec_t *dd,
                 int *rcounts,int *disps,void *rbuf)
 {
 #ifdef GMX_MPI
+    int dum;
+
+    if (scount == 0)
+    {
+        /* MPI does not allow NULL pointers */
+        sbuf = &dum;
+    }
     MPI_Gatherv(sbuf,scount,MPI_BYTE,
                 rbuf,rcounts,disps,MPI_BYTE,
                 DDMASTERRANK(dd),dd->mpi_comm_all);

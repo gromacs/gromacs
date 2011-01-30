@@ -70,7 +70,7 @@ void copy_atom(t_symtab *tab,t_atoms *a1,int i1,t_atoms *a2,int i2,
 }
 
 static void rotate_x(int natom,rvec xin[],real angle,rvec xout[],
-		     bool bZ,bool bUpsideDown,real dz)
+		     gmx_bool bZ,gmx_bool bUpsideDown,real dz)
 {
   int i;
   matrix mat;
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 {
   t_symtab tab;
   static char *desc[] = {
-    "hexamer takes a single input coordinate file and makes five symmetry",
+    "[TT]hexamer[tt] takes a single input coordinate file and makes five symmetry",
     "related copies."
   };
 #define NPA asize(pa)
@@ -154,9 +154,9 @@ int main(int argc, char *argv[])
     { efPDB, "-o", NULL, ffWRITE }
   };
 #define NFILE asize(fnm)
-  bool bCenter    = FALSE;
-  bool bTrimer    = FALSE;
-  bool bAlternate = FALSE;
+  gmx_bool bCenter    = FALSE;
+  gmx_bool bTrimer    = FALSE;
+  gmx_bool bAlternate = FALSE;
   real rDist = 0,rAngleZ = 0,rAngleX = 0, alterz = 0;
   t_pargs pa[] = {
     { "-center",   FALSE, etBOOL,  {&bCenter}, 
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     { "-alterz",   FALSE, etREAL,  {&alterz},
       "Add this amount to Z-coordinate in every other molecule" },
     { "-radius",   FALSE, etREAL,  {&rDist},
-      "Distance of protein axis from Z-axis (implies -center)" },
+      "Distance of protein axis from Z-axis (implies [TT]-center[tt])" },
     { "-anglez",   FALSE, etREAL,  {&rAngleZ},
       "Initial angle of rotation around Z-axis of protein" },
     { "-anglex",   FALSE, etREAL,  {&rAngleX},

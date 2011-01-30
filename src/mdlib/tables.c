@@ -76,9 +76,13 @@ enum {
   etabNR 
 };
 
+/** Evaluates to true if the table type contains user data. */
+#define ETAB_USER(e)  ((e) == etabUSER || \
+                       (e) == etabEwaldUser || (e) == etabEwaldUserSwitch)
+
 typedef struct {
   const char *name;
-  bool bCoulomb;
+  gmx_bool bCoulomb;
 } t_tab_props;
 
 /* This structure holds name and a flag that tells whether 
@@ -221,7 +225,7 @@ static void copy2table(int n,int offset,int stride,
 }
 
 static void init_table(FILE *fp,int n,int nx0,
-		       double tabscale,t_tabledata *td,bool bAlloc)
+		       double tabscale,t_tabledata *td,gmx_bool bAlloc)
 {
   int i;
   
@@ -233,11 +237,11 @@ static void init_table(FILE *fp,int n,int nx0,
     snew(td->v,td->nx);
     snew(td->f,td->nx);
   }
-  for(i=td->nx0; (i<td->nx); i++)
+  for(i=0; (i<td->nx); i++)
     td->x[i] = i/tabscale;
 }
 
-static void spline_forces(int nx,double h,double v[],bool bS3,bool bE3,
+static void spline_forces(int nx,double h,double v[],gmx_bool bS3,gmx_bool bE3,
 			  double f[])
 {
   int    start,end,i;
@@ -352,7 +356,7 @@ static void read_tables(FILE *fp,const char *fn,
   char buf[STRLEN];
   double **yy=NULL,start,end,dx0,dx1,ssd,vm,vp,f,numf;
   int  k,i,nx,nx0=0,ny,nny,ns;
-  bool bAllZero,bZeroV,bZeroF;
+  gmx_bool bAllZero,bZeroV,bZeroF;
   double tabscale;
 
   nny = 2*ntab+1;  
@@ -511,7 +515,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   /* Parameters for the switching function */
   double ksw,swi,swi1;
   /* Temporary parameters */
-  bool bSwitch,bShift;
+  gmx_bool bSwitch,bShift;
   double ewc=fr->ewaldcoeff;
   double isp= 0.564189583547756;
    
@@ -564,7 +568,11 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     r     = td->x[i];
     r2    = r*r;
     r6    = 1.0/(r2*r2*r2);
-    r12   = r6*r6;
+    if (gmx_within_tol(reppow,12.0,10*GMX_DOUBLE_EPS)) {
+      r12 = r6*r6;
+    } else {
+      r12 = pow(r,-reppow);   
+    }
     Vtab  = 0.0;
     Ftab  = 0.0;
     if (bSwitch) {
@@ -596,7 +604,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 #endif
 
     rc6 = rc*rc*rc;
-	rc6 = 1.0/(rc6*rc6);
+    rc6 = 1.0/(rc6*rc6);
 
     switch (tp) {
     case etabLJ6:
@@ -706,7 +714,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       }
     }
 
-    if (tp == etabEwaldUser) {
+    if (ETAB_USER(tp)) {
       Vtab += td->v[i];
       Ftab += td->f[i];
     }
@@ -721,12 +729,20 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     td->f[i]  = Ftab;
   }
 
+  /* Continue the table linearly from nx0 to 0.
+   * These values are only required for energy minimization with overlap or TPI.
+   */
+  for(i=td->nx0-1; i>=0; i--) {
+    td->v[i] = td->v[i+1] + td->f[i+1]*(td->x[i+1] - td->x[i]);
+    td->f[i] = td->f[i+1];
+  }
+
 #ifdef DEBUG_SWITCH
   gmx_fio_fclose(fp);
 #endif
 }
 
-static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
+static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
 {
   int eltype,vdwtype;
 
@@ -742,6 +758,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       break;
     case eelUSER:
     case eelPMEUSER:
+    case eelPMEUSERSWITCH:
       eltype = eelUSER;
       break;
     default:
@@ -774,6 +791,9 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     break;
   case eelPMEUSER:
     tabsel[etiCOUL] = etabEwaldUser;
+    break;
+  case eelPMEUSERSWITCH:
+    tabsel[etiCOUL] = etabEwaldUserSwitch;
     break;
   case eelRF:
   case eelGRF:
@@ -836,17 +856,16 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 
 t_forcetable make_tables(FILE *out,const output_env_t oenv,
                          const t_forcerec *fr,
-			 bool bVerbose,const char *fn,
+			 gmx_bool bVerbose,const char *fn,
 			 real rtab,int flags)
 {
   const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   const char *fns14[3] = { "ctab14.xvg", "dtab14.xvg", "rtab14.xvg" };
   FILE        *fp;
   t_tabledata *td;
-  bool        b14only,bReadTab,bGenTab;
+  gmx_bool        b14only,bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
-  void *      p_tmp;
   
   t_forcetable table;
 
@@ -871,7 +890,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   bReadTab = FALSE;
   bGenTab  = FALSE;
   for(i=0; (i<etiNR); i++) {
-    if (tabsel[i] == etabUSER || tabsel[i] == etabEwaldUser) 
+    if (ETAB_USER(tabsel[i]))
       bReadTab = TRUE;
     if (tabsel[i] != etabUSER)
       bGenTab  = TRUE;
@@ -909,21 +928,11 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
   }
 
   /* Each table type (e.g. coul,lj6,lj12) requires four 
-   * numbers per datapoint. For performance reasons we want
-   * the table data to be aligned to 16-byte. This is accomplished
-   * by allocating 16 bytes extra to a temporary pointer, and then
-   * calculating an aligned pointer. This new pointer must not be
-   * used in a free() call, but thankfully we're sloppy enough not
-   * to do this :-)
+   * numbers per nx+1 data points. For performance reasons we want
+   * the table data to be aligned to 16-byte.
    */
+  snew_aligned(table.tab, 12*(nx+1)*sizeof(real),16);
 
-  /* 12 fp entries per table point, nx+1 points, and 16 bytes extra to align it. */
-  p_tmp = malloc(12*(nx+1)*sizeof(real)+16);
-  
-  /* align it - size_t has the same same as a pointer */
-  table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
-  
-  
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,
@@ -933,7 +942,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
       if (out) 
 	fprintf(out,"%s table with %d data points for %s%s.\n"
 		"Tabscale = %g points/nm\n",
-		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
+		ETAB_USER(tabsel[k]) ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tprops[tabsel[k]].name,
 		td[k].tabscale);
     }
@@ -968,7 +977,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	const char *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
 	FILE        *fp;
 	t_tabledata *td;
-	bool        bReadTab,bGenTab;
+	gmx_bool        bReadTab,bGenTab;
 	real        x0,y0,yp;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
 	void *      p_tmp;

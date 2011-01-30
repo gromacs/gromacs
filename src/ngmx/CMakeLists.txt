@@ -1,4 +1,3 @@
-
 if(X11_FOUND)
 
 set(NGMX_COMMON_SOURCE
@@ -16,16 +15,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # used to create build rules automatically.
 #
 set(NGMX_PROGRAMS 
-    ngmx xrama highway gmxlogo dlg scrollw showcol)
+    ngmx g_xrama)
 
 foreach(PROG ${NGMX_PROGRAMS})
         add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})
-        target_link_libraries(${PROG} gmx ${GMX_EXTRA_LIBRARIES} ${X11_LIBRARIES})
+        target_link_libraries(${PROG} gmx ${GMX_EXTRA_LIBRARIES} ${X11_LIBRARIES})        
+        set_target_properties(${PROG} PROPERTIES OUTPUT_NAME "${PROG}${GMX_BINARY_SUFFIX}")
 endforeach(PROG) 
 
-
 install(TARGETS ${NGMX_PROGRAMS}
+        COMPONENT ngmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
-
 
 endif(X11_FOUND)

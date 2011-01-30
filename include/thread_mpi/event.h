@@ -35,6 +35,11 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifndef _TMPI_EVENT_H_
+#define _TMPI_EVENT_H_
+
+#include "wait.h"
+
 /*! \file
 
   \brief Event notification wait and signaling functions.
@@ -56,7 +61,14 @@ files.
    
    This structure allows notification of a single thread by any number of 
    threads*/
-typedef struct tMPI_Event tMPI_Event;
+typedef struct tMPI_Event_t tMPI_Event;
+struct tMPI_Event_t
+{
+    tMPI_Atomic_t sync; /* the event sync counter */
+    int last_sync; /* the last sync event looked at */
+    TMPI_YIELD_WAIT_DATA   /* data associated with yielding */
+};
+
 
 
 /*! \brief Initialize the event object.
@@ -85,6 +97,7 @@ void tMPI_Event_signal(tMPI_Event *ev);
 #else
 #define tMPI_Event_signal(ev) \
 { \
+    tMPI_Atomic_memory_barrier_rel(); \
     tMPI_Atomic_add_return( &((ev)->sync), 1); \
 }
 #endif
@@ -104,5 +117,7 @@ void tMPI_Event_process(tMPI_Event *ev, int N);
 { \
     (ev)->last_sync += N; \
 }
+#endif
+
 #endif
 

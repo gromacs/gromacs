@@ -88,11 +88,11 @@ typedef struct tMPI_Spinlock
     ( (i) + InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i)) )
 
 #define tMPI_Atomic_cas(a, oldval, newval) \
-    InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval))
+    (InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval)) == (LONG)oldval)
 
 #define tMPI_Atomic_ptr_cas(a, oldval, newval) \
-    InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
-                                      (PVOID) (oldval))
+    (InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
+                                      (PVOID) (oldval)) == (PVOID)oldval)
 
 #define tMPI_Atomic_swap(a, b) \
     InterlockedExchange((LONG volatile *)(a), (LONG) (b))
@@ -121,7 +121,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 }
 
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
 {
     return (*(volatile signed char *)(&(x)->lock) != 0);
 }

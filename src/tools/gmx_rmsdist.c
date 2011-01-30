@@ -79,7 +79,7 @@ static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
 static void calc_dist_tot(int nind,atom_id index[],rvec x[],
 			  int ePBC,matrix box,
 			  real **d, real **dtot, real **dtot2,
-			  bool bNMR, real **dtot1_3, real **dtot1_6)
+			  gmx_bool bNMR, real **dtot1_3, real **dtot1_6)
 {
   int     i,j;
   real    *xi;
@@ -212,12 +212,12 @@ static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
   }
 }
     
-static bool is_equiv(int neq, t_equiv **equiv, char **nname,
+static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
 		     int rnr1, char *rname1, char *aname1,
 		     int rnr2, char *rname2, char *aname2)
 {
   int i,j;
-  bool bFound;
+  gmx_bool bFound;
   
   bFound=FALSE;
   /* we can terminate each loop when bFound is true! */
@@ -244,13 +244,13 @@ static bool is_equiv(int neq, t_equiv **equiv, char **nname,
 
 static int analyze_noe_equivalent(const char *eq_fn,
 				  t_atoms *atoms, int isize, atom_id *index, 
-				  bool bSumH, 
+				  gmx_bool bSumH, 
 				  atom_id *noe_index, t_noe_gr *noe_gr)
 {
   FILE   *fp;
   int i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
   char *anmi, *anmj, **nnm;
-  bool bMatch,bEquiv;
+  gmx_bool bMatch,bEquiv;
   t_equiv **equiv;
   
   snew(nnm,isize);
@@ -509,14 +509,14 @@ real rms_diff(int natom,real **d,real **d_r)
 int gmx_rmsdist (int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rmsdist computes the root mean square deviation of atom distances,",
+    "[TT]g_rmsdist[tt] computes the root mean square deviation of atom distances,",
     "which has the advantage that no fit is needed like in standard RMS",
-    "deviation as computed by g_rms.",
+    "deviation as computed by [TT]g_rms[tt].",
     "The reference structure is taken from the structure file.",
     "The rmsd at time t is calculated as the rms",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
-    "g_rmsdist can also produce matrices of the rms distances, rms distances",
+    "[TT]g_rmsdist[tt] can also produce matrices of the rms distances, rms distances",
     "scaled with the mean distance and the mean distances and matrices with",
     "NMR averaged distances (1/r^3 and 1/r^6 averaging). Finally, lists",
     "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",
@@ -542,7 +542,8 @@ int gmx_rmsdist (int argc,char *argv[])
   rvec         *x;
   FILE         *fp;
 
-  int      status,isize,gnr=0;
+  t_trxstatus *status;
+  int      isize,gnr=0;
   atom_id  *index, *noe_index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
@@ -553,12 +554,12 @@ int gmx_rmsdist (int argc,char *argv[])
   t_noe    **noe=NULL;
   t_rgb    rlo,rhi;
   char     buf[255];
-  bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
+  gmx_bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
   
   static int  nlevels=40;
   static real scalemax=-1.0;
-  static bool bSumH=TRUE;
-
+  static gmx_bool bSumH=TRUE;
+  static gmx_bool bPBC=TRUE;
   output_env_t oenv;
 
   t_pargs pa[] = {
@@ -567,7 +568,9 @@ int gmx_rmsdist (int argc,char *argv[])
     { "-max",   FALSE, etREAL, {&scalemax},    
       "Maximum level in matrices" },
     { "-sumh",  FALSE, etBOOL, {&bSumH},       
-      "average distance over equivalent hydrogens" }
+      "average distance over equivalent hydrogens" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions when computing distances" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
@@ -608,6 +611,9 @@ int gmx_rmsdist (int argc,char *argv[])
     
   /* get topology and index */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&x,NULL,box,FALSE);
+  
+  if (!bPBC)
+    ePBC = epbcNONE;
   atoms=&(top.atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -664,7 +670,7 @@ int gmx_rmsdist (int argc,char *argv[])
   ffclose(fp);
   close_trj(status);
 
-  teller = nframes_read();
+  teller = nframes_read(status);
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   

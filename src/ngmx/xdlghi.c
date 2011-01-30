@@ -1,4 +1,3 @@
-
 /*
  * 
  *                This source code is part of
@@ -96,7 +95,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
   t_id      *ids;
   edlgitem  edlg;
   char      *name;
-  bool      bBool;
+  gmx_bool      bBool;
   Pixmap    pm;
   int       nlines,buflen;
   char      *buf,**lines;
@@ -165,7 +164,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
 }
 
 static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy, 
-			     t_dlgitemlist **grid, bool bAutoPosition)
+			     t_dlgitemlist **grid, gmx_bool bAutoPosition)
 {
   t_dlgitemlist *item;
   int x1,y1,w1,h1;
@@ -241,7 +240,7 @@ static void AddListItem(t_dlgitemlist *list, t_dlgitem *item)
 
 static void AddListFItem(t_x11 *x11, t_dlgitemlist *list, 
 			 t_fitem *fitem, t_id GroupID, t_id *ID,
-			 int x, int *y, int *w,bool bUseMon)
+			 int x, int *y, int *w,gmx_bool bUseMon)
 {
   int i,iSel,slen;
   char buf[STRLEN];
@@ -260,7 +259,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
 
       strcpy(buf2,fitem->name[i]);
       buf2[strlen(buf)]='\0'; /* truncate itemname */
-      if (strcasecmp(buf2,buf)==0)
+      if (gmx_strcasecmp(buf2,buf)==0)
 	iSel=i;
     }
 
@@ -275,9 +274,9 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
     }
     break;
   case edlgCB: {
-    bool bCheck;
+    gmx_bool bCheck;
 
-    bCheck=strcasecmp(fitem->def,"TRUE")==0;
+    bCheck=gmx_strcasecmp(fitem->def,"TRUE")==0;
     AddListItem(list,CreateCheckBox(x11,fitem->name[0],bCheck,
 				    (*ID)++,GroupID,x,(*y),0,0,0));
     break;
@@ -307,7 +306,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
 }
 
 static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
-			  t_fgroup *fgroup, t_id *ID,bool bUseMon)
+			  t_fgroup *fgroup, t_id *ID,gmx_bool bUseMon)
 {
   int i;
   t_id GroupID,*ids;
@@ -339,7 +338,7 @@ static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
 }
 
 static void AddListFSimple(t_x11 *x11, t_dlgitemlist **grid,
-			   t_fsimple *fsimple, t_id *ID,bool bUseMon)
+			   t_fsimple *fsimple, t_id *ID,gmx_bool bUseMon)
 {
   t_dlgitemlist *item;
   int x,y,w;
@@ -355,7 +354,7 @@ static void AddListFSimple(t_x11 *x11, t_dlgitemlist **grid,
 
 t_dlg *ReadDlg(t_x11 *x11,Window Parent, const char *title,
 	       unsigned long fg, unsigned long bg, const char *infile, 
-	       int x0, int y0, bool bAutoPosition,bool bUseMon,
+	       int x0, int y0, gmx_bool bAutoPosition,gmx_bool bUseMon,
 	       DlgCallback *cb,void *data)
 {
   t_fgrid       *fgrid;

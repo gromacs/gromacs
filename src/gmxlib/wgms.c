@@ -40,12 +40,12 @@
 #include "gstat.h"
 #include "wgms.h"
 
-static int     n=0;
+/*static int     n=0;*/
 #define FPL 10
 
 void write_gms(FILE *fp,int natoms,rvec x[],matrix box)
 {
-  int i,j;
+  int i,j,n;
 
   n=0;
   for(i=0;(i<natoms);i++)
@@ -65,7 +65,7 @@ void write_gms(FILE *fp,int natoms,rvec x[],matrix box)
 
 void write_gms_ndx(FILE *fp,int isize,atom_id index[],rvec x[],matrix box)
 {
-  int i,j;
+  int i,j,n;
 
   n=0;
   for(i=0;(i<isize);i++)

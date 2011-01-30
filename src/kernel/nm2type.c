@@ -58,13 +58,13 @@
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
-#include "x2top.h"
+#include "g_x2top.h"
 #include "fflibutil.h"
 
 static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
 {
   FILE      *fp;
-  bool      bCont;
+  gmx_bool      bCont;
   char      libfilename[128];
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
@@ -73,7 +73,9 @@ static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
   t_nm2type *nm2t=NULL;
   
   fp = fflib_open(fn);
-  
+  if (NULL == fp)
+    gmx_fatal(FARGS,"Can not find %s in library directory",fn);
+    
   nnnm = *nnm;
   nm2t = *nmp;
   do {
@@ -158,7 +160,7 @@ static int match_str(const char *atom,const char *template_string)
 {
   if (!atom || !template_string)
     return ematchNone;
-  else if (strcasecmp(atom,template_string) == 0) 
+  else if (gmx_strcasecmp(atom,template_string) == 0) 
     return ematchExact;
   else if (atom[0] == template_string[0])
     return ematchElem;

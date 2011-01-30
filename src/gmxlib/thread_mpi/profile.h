@@ -123,11 +123,15 @@ struct tmpi_profile
 #endif
 };
 
+extern int tMPI_Profile_started;
+
 /* initialize the profile counter */
 void tMPI_Profile_init(struct tmpi_profile *prof);
 
+#if 0
 /* deallocations */
 void tMPI_Profile_destroy(struct tmpi_profile *prof);
+#endif
 
 /* stop counting */
 void tMPI_Profile_stop(struct tmpi_profile *prof);
