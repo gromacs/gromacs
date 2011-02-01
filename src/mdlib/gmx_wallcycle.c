@@ -71,8 +71,8 @@ typedef struct gmx_wallcycle
     gmx_large_int_t   reset_counters;
 #ifdef GMX_MPI
     MPI_Comm     mpi_comm_mygroup;
-    int          omp_nthreads;
 #endif
+    int          omp_nthreads;
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 characters */

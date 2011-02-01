@@ -298,6 +298,10 @@ typedef struct gmx_pme {
 } t_gmx_pme;
 
 
+#ifndef GMX_OPENMP
+static int omp_get_thread_num() {  return 0; }
+#endif
+
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc,
                                    int start,int end,int thread)
 {

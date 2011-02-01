@@ -257,10 +257,11 @@ int gmx_node_rank(void)
 
 int gmx_host_num() 
 {
+#ifndef GMX_MPI
+  return 0;
+#else
   int  resultlen,hostnum,i,j;
-#ifdef GMX_MPI
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME],num[MPI_MAX_PROCESSOR_NAME];
-#endif
 
   MPI_Get_processor_name(mpi_hostname,&resultlen);
   /* This procedure can only differentiate nodes with host names
@@ -288,6 +289,7 @@ int gmx_host_num()
 	    mpi_hostname,hostnum);
   }
   return hostnum;
+#endif
 }
 
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
