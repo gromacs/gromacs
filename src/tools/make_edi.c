@@ -460,7 +460,7 @@ int main(int argc,char *argv[])
 {
 
   static const char *desc[] = {
-      "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with mdrun",
+      "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with [TT]mdrun[tt]",
       "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
       "normal modes anaysis ([TT]g_nmeig[tt]).",
       "ED sampling can be used to manipulate the position along collective coordinates",
@@ -510,7 +510,7 @@ int main(int argc,char *argv[])
       "is not very parallel-friendly from an implentation point of view. Because",
       "parallel ED requires much extra communication, expect the performance to be",
       "lower as in a free MD simulation, especially on a large number of nodes. [PAR]",
-      "All output of mdrun (specify with -eo) is written to a .edo file. In the output",
+      "All output of [TT]mdrun[tt] (specify with [TT]-eo[tt]) is written to a .edo file. In the output",
       "file, per OUTFRQ step the following information is present: [PAR]",
       "* the step number[BR]",
       "* the number of the ED dataset. (Note that you can impose multiple ED constraints in",
@@ -584,7 +584,7 @@ int main(int argc,char *argv[])
     { "-radcon", FALSE, etSTR, {&evSelections[5]},
         "Indices of eigenvectors for acceptance radius contraction" },
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-        "Freqency (in steps) of writing output in .edo file" },
+        "Freqency (in steps) of writing output in [TT].edo[tt] file" },
     { "-slope", FALSE, etREAL, { &edi_params.slope},
         "Minimal slope in acceptance radius expansion"},
     { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
@@ -598,7 +598,7 @@ int main(int argc,char *argv[])
     { "-eqsteps", FALSE, etINT, {&eqSteps},
         "Number of steps to run without any perturbations "},
     { "-Eflnull", FALSE, etREAL, {&constEfl},
-        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. "},
+        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use [TT]-tau[tt] 0. "},
     { "-T", FALSE, etREAL, {&T},
         "T is temperature, the value is needed if you want to do flooding "},
     { "-alpha",FALSE,etREAL,{&alpha},

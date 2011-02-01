@@ -1182,11 +1182,11 @@ int main(int argc,char *argv[])
   const char *desc[] = {
     "Index groups are necessary for almost every gromacs program.",
     "All these programs can generate default index groups. You ONLY",
-    "have to use make_ndx when you need SPECIAL index groups.",
+    "have to use [TT]make_ndx[tt] when you need SPECIAL index groups.",
     "There is a default index group for the whole system, 9 default", 
     "index groups are generated for proteins, a default index group",
     "is generated for every other residue name.[PAR]",
-    "When no index file is supplied, also make_ndx will generate the",
+    "When no index file is supplied, also [TT]make_ndx[tt] will generate the",
     "default groups.",
     "With the index editor you can select on atom, residue and chain names",
     "and numbers.",

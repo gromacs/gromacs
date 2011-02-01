@@ -227,7 +227,7 @@ static void do_bonds(FILE *log,const char *fn,const char *fbond,
 int gmx_bond(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_bond makes a distribution of bond lengths. If all is well a",
+    "[TT]g_bond[tt] makes a distribution of bond lengths. If all is well a",
     "Gaussian distribution should be made when using a harmonic potential.",
     "Bonds are read from a single group in the index file in order i1-j1",
     "i2-j2 through in-jn.[PAR]",
@@ -252,7 +252,7 @@ int gmx_bond(int argc,char *argv[])
     { "-aver", FALSE, etBOOL, {&bAver},
       "Average bond length distributions" },
     { "-averdist", FALSE, etBOOL, {&bAverDist},
-      "Average distances (turns on -d)" }
+      "Average distances (turns on [TT]-d[tt])" }
   };
   FILE      *fp;
   char      *grpname;

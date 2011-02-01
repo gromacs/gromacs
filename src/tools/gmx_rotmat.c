@@ -181,7 +181,7 @@ static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
 int gmx_rotmat(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_rotmat plots the rotation matrix required for least squares fitting",
+        "[TT]g_rotmat[tt] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
         "The output are the three vectors that give the new directions",
@@ -214,7 +214,7 @@ int gmx_rotmat(int argc,char *argv[])
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, {&skip},
-          "Use every nr-th frame for -ref" },
+          "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy", FALSE, etBOOL, {&bFitXY},
           "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, {&bMW},

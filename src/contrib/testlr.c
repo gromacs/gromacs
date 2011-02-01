@@ -412,7 +412,7 @@ static void print_opts(FILE *fp,t_inputrec *ir,gmx_bool bFour)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "testlr tests the PPPM and Ewald method for the",
+    "[TT]testlr[tt] tests the PPPM and Ewald method for the",
     "long range electrostatics problem."
   };
   static t_filenm  fnm[] = {

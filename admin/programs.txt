@@ -17,7 +17,6 @@ END
 
 HEAD|Viewing trajectories
 ngmx|displays a trajectory
-g_highway|X Window System gadget for highway simulations
 g_nmtraj|generate a virtual trajectory from an eigenvector
 END
 
@@ -53,6 +52,7 @@ xpm2ps|convert XPM (XPixelMap) file to postscript
 g_sham|read/write xmgr and xvgr data sets
 g_spatial|calculates the spatial distribution function
 g_select|selects groups of atoms based on flexible textual selections
+g_pme_error|estimates the error of using PME with a given input file
 g_tune_pme|time mdrun as a function of PME nodes to optimize settings
 END
 

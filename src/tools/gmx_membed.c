@@ -50,15 +50,15 @@
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {
-			"g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position",
+			"[TT]g_membed[tt] embeds a membrane protein into an equilibrated lipid bilayer at the position",
 			"and orientation specified by the user.\n",
 			"\n",
 			"SHORT MANUAL\n------------\n",
 			"The user should merge the structure files of the protein and membrane (+solvent), creating a",
 			"single structure file with the protein overlapping the membrane at the desired position and",
 			"orientation. Box size should be taken from the membrane structure file. The corresponding topology",
-			"files should also be merged. Consecutively, create a tpr file (input for g_membed) from these files,"
-			"with the following options included in the mdp file.\n",
+			"files should also be merged. Consecutively, create a [TT].tpr[tt] file (input for [TT]g_membed[tt]) from these files,"
+			"with the following options included in the [TT].mdp[tt] file.\n",
 			" - [TT]integrator      = md[tt][BR]",
 			" - [TT]energygrp       = Protein[tt] (or other group that you want to insert)[BR]",
 			" - [TT]freezegrps      = Protein[tt][BR]",

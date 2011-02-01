@@ -689,7 +689,7 @@ static void cont_status(const char *slog,const char *ener,
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
-     * with respect to using tpbconv to create a tpx file.
+     * with respect to using tpbconv to create a [TT].tpx[tt] file.
      */
     set_box_rel(ir,state);
 
@@ -1139,20 +1139,20 @@ int main (int argc, char *argv[])
     "for hydrogens and heavy atoms.",
     "Then a coordinate file is read and velocities can be generated",
     "from a Maxwellian distribution if requested.",
-    "grompp also reads parameters for the mdrun ",
+    "[TT]grompp[tt] also reads parameters for the [TT]mdrun[tt] ",
     "(eg. number of MD steps, time step, cut-off), and others such as",
     "NEMD parameters, which are corrected so that the net acceleration",
     "is zero.",
     "Eventually a binary file is produced that can serve as the sole input",
     "file for the MD program.[PAR]",
     
-    "grompp uses the atom names from the topology file. The atom names",
+    "[TT]grompp[tt] uses the atom names from the topology file. The atom names",
     "in the coordinate file (option [TT]-c[tt]) are only read to generate",
     "warnings when they do not match the atom names in the topology.",
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-    "grompp uses a built-in preprocessor to resolve includes, macros ",
+    "[TT]grompp[tt] uses a built-in preprocessor to resolve includes, macros ",
     "etcetera. The preprocessor supports the following keywords:[BR]",
     "#ifdef VARIABLE[BR]",
     "#ifndef VARIABLE[BR]",
@@ -1171,7 +1171,7 @@ int main (int argc, char *argv[])
     "topology file written out so that you can verify its contents.[PAR]",
     
     "If your system does not have a c-preprocessor, you can still",
-    "use grompp, but you do not have access to the features ",
+    "use [TT]grompp[tt], but you do not have access to the features ",
     "from the cpp. Command line options to the c-preprocessor can be given",
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
     
@@ -1184,17 +1184,24 @@ int main (int argc, char *argv[])
     
     "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
-    "unless the [TT]-time[tt] option is used.",
+    "unless the [TT]-time[tt] option is used. Only if this information",
+    "is absent will the coordinates in the [TT]-c[tt] file be used.",
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. An energy file can be supplied with",
     "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
-    "variables. Note that for continuation it is better and easier to supply",
-    "a checkpoint file directly to mdrun, since that always contains",
-    "the complete state of the system and you don't need to generate",
-    "a new run input file. Note that if you only want to change the number",
-    "of run steps tpbconv is more convenient than grompp.[PAR]",
+    "variables.[PAR]",
 
-    "By default all bonded interactions which have constant energy due to",
+    "[TT]grompp[tt] can be used to restart simulations preserving",
+    "continuity by supplying just a checkpoint file with [TT]-t[tt].",
+    "However, for simply changing the number of run steps to extend",
+    "a run, using [TT]tpbconv[tt] is more convenient than [TT]grompp[tt].",
+    "You then supply the old checkpoint file directly to [TT]mdrun[tt]",
+    "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
+    "like output frequency, then supplying the checkpoint file to",
+    "[TT]grompp[tt] with [TT]-t[tt] along with a new [TT].mdp[tt] file",
+    "with [TT]-f[tt] is the recommended procedure.[PAR]",
+
+    "By default, all bonded interactions which have constant energy due to",
     "virtual site constructions will be removed. If this constant energy is",
     "not zero, this will result in a shift in the total energy. All bonded",
     "interactions can be kept by turning off [TT]-rmvsbds[tt]. Additionally,",
@@ -1207,12 +1214,13 @@ int main (int argc, char *argv[])
     "of the [TT]mdout.mdp[tt] file, this contains comment lines, as well as",
     "the input that [TT]grompp[tt] has read. If in doubt you can start grompp",
     "with the [TT]-debug[tt] option which will give you more information",
-    "in a file called grompp.log (along with real debug info). Finally, you",
+    "in a file called [TT]grompp.log[tt] (along with real debug info). You",
     "can see the contents of the run input file with the [TT]gmxdump[tt]",
-    "program.[PAR]"
+    "program. [TT]gmxcheck[tt] can be used to compare the contents of two",
+    "run input files.[PAR]"
 
     "The [TT]-maxwarn[tt] option can be used to override warnings printed",
-    "by grompp that otherwise halt output. In some cases, warnings are",
+    "by [TT]grompp[tt] that otherwise halt output. In some cases, warnings are",
     "harmless, but usually they are not. The user is advised to carefully",
     "interpret the output messages before attempting to bypass them with",
     "this option."

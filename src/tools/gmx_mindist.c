@@ -480,7 +480,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
 int gmx_mindist(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_mindist computes the distance between one group and a number of",
+    "[TT]g_mindist[tt] computes the distance between one group and a number of",
     "other groups. Both the minimum distance", 
     "(between any pair of atoms from the respective groups)",
     "and the number of contacts within a given",
