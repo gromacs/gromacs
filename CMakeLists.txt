@@ -213,18 +213,6 @@ if(GMX_MPI)
 endif(GMX_MPI)
 
 
-#######################################################################
-# Check for options incompatible with the OpenMP build                #
-#######################################################################
-if(GMX_OPENMP)
-    if(GMX_THREADS)
-        message(STATUS "Threads not compatible with OpenMM build, disabled!")
-        set(GMX_THREADS OFF CACHE BOOL 
-		"Threads not compatible with OpenMM build, disabled!" FORCE)
-    endif(GMX_THREADS)
-    mark_as_advanced(FORCE GMX_THREADS)
-endif()
-
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #

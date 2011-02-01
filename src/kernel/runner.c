@@ -801,7 +801,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         //set CPU affinity
 #ifdef GMX_OPENMP
 #ifdef __linux
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
         {
             int core;
             MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
