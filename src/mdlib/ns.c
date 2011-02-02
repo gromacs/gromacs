@@ -1148,7 +1148,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     }
 }
 
-static void 
+static void
 put_in_list_qhop(gmx_bool          bHaveVdW[],
                  int               ngid,
                  t_mdatoms *       md,
@@ -1207,6 +1207,7 @@ put_in_list_qhop(gmx_bool          bHaveVdW[],
     }
 }
 
+static void
 put_in_list_qmmm(gmx_bool              bHaveVdW[],
                  int               ngid,
                  t_mdatoms *       md,
