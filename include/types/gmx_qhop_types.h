@@ -54,7 +54,7 @@ typedef struct qhop_parameters {
   real  f, g, h;
   real  p_1, q_1, q_2, q_3, r_1, r_2, r_3;
 } qhop_parameters;
-	
+
 typedef struct qhop_resinfo_t {
   int id,charge,natom;
   int ndonor,*donor,nacceptor,*acceptor;
@@ -114,7 +114,20 @@ typedef struct qhop_resblocks {
 
   char **files;     /* extra files containg additional parameters. */
   int  nf;          /* number of extra files */
+
+  int ****ba;        /* Reisue local atom numbers for the bonded interactions
+		      * outer dimension  == nrestypes,
+		      * second dimension == ebtsNR
+		      * inner dimension  == bond/angle/dihedral
+		      * Matches the bonded interactions in the rtp-data */
+
+  int btype[ebtsNR]; /* which forcetype
+		      * correpond to the bonded interactions
+		      * in the rtp data? */
+
   int ni;           /* Size of ilib below. */
+
+  /* t_ilist ilist[]; */
   t_iparams *ilib;  /* The actual interaction parameters.
 		     * ilib[0] to ilib[ni-2] are real interactions,
 		     * the last two are dummy interactions with zeroed force constants;

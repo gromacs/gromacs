@@ -1,11 +1,13 @@
 #ifndef QHOPREC_H
 #define QHOPREC_H
 
-#ifdef HAVE_CONFIG_H
+/* #ifdef HAVE_CONFIG_H */
 #include "config.h"
+/* #include "hackblock.h" */
+/* #include "atoms.h" */
 #include "idef.h"
 #include "../gmx_random.h"
-#endif
+/* #endif */
 
 enum {eQNONE=0, eQACC=1, eQDON=2, eQACCDON=3, eQNR=4};
 /* Trivial. But note that eQACCDON = eQACC|eQDON */
@@ -38,37 +40,33 @@ typedef struct {
 } t_hop;
 
 
-/* relates position in idef to a position in a bondeds library for a residue. */
-typedef struct {
-  t_iatom*  ilib;
-  t_iatom** reslib; /* points to entry in resblocks.
-		       Use it to find bonded interaction
-		       for a specific protonation state. */
-} qhop_bonswap;
+/* /\* relates position in idef to a position in a bondeds library for a residue. *\/ */
+/* typedef struct { */
+/*   t_iatom*  ilib; */
+/*   t_iatom** reslib; /\* points to entry in resblocks. */
+/* 		       Use it to find bonded interaction */
+/* 		       for a specific protonation state. *\/ */
+/* } qhop_bonswap; */
 
 /* Keeps track of where bonded interactions are in an ilist.
    We use it to quickly change bonded interactions for a residue
    upon (de)protonation. */
 typedef struct {
   int     nb;
-  qhop_bonswap *bondeds; /* nb elements long. */
+  /* qhop_bonswap *bondeds; /\* nb elements long. *\/ */
+  t_iatom *ilist_pos[F_NRE];
+  int nr[F_NRE]; /* How many interactions in ilist_pos[] arrays? */
+  gmx_bool *indexed[F_NRE]; /* are the bonded interactions indexed */
+
 } qhop_bonded_index;
 
 typedef struct {
   int atom_id; /* global atom index */
-  int res_id; /* global residue index */
-  int qres_id;
-/*   char atomname[6]; /\* unfortunately we need this at least for */
-/* 		       histidine, but possibly for other residues as */
-/* 		       well.... */
-/* 		    *\/ */
-/*   char resname[6]; */
+  int res_id;  /* global residue index */
+  int qres_id; /* qhop_residue index */
 
   char *atomname, *resname; /* will point to names in the depths of qhop_resblocks */
 
-  /* We need to consider ampholytic species, such as water(!),
-   * which is why we can't have a bool bdonor anymore. */
-  /* bool bdonor; /\* 1= donor, 0=acceptor *\/ */
   int state; /* None, acceptor, donor or both? This can perhaps speed up the search for potential hops.
 	      * Takes on values eQNONE, eQACC, eQDON, eQACCDON. */
   
@@ -82,17 +80,12 @@ typedef struct {
 		    No they are not anymore. There is an exisence array for all hydrogens in the system
 		    in qhop_db (maybe it should move to t_qhoprec?).
 		  */
-/*   bool bWater;  /\* This is ugly and should probably go. *\/ */
-  /* Is the links stuff needed? */
-/*   int nr_links; */
-/*   int *links;  /\* points to atoms that are part of the same residue. */
-/* 		*\/ */
+
   int nr_acceptors; /* known after nbsearching. */
   int *acceptors;   /* j particles that fulfil additional geometric
 		      criteria */
   /* upon accepting a proton, state becomes eQDON or eQACCDON; */
 } t_qhop_atom;
-
 
 typedef struct {
   /* rtype and res are needed to switch between interaction parameters. */
@@ -104,29 +97,22 @@ typedef struct {
   char   **atomnames;
   int    nr_titrating_sites;
   int    *titrating_sites; /* points back to acceptor donors in the qhop_atoms structure. */
-  /* real   **charge_set; 0*/
-/*   int    pryte; */
-/*   int    *protonated;   /\* 1/0 for each titrating atoms. Used to */
-/* 			   construct a unique pryte, which indexes the */
-/* 			   charge_set array. */
-/* 			*\/ */
-  /* Why max state? Can we take this away? */
-/*   int    max_state; /\* 2^n *\/ */
-  /* State seems obsolete. */
-  /* Well, it could speed up things when looking for possible hops. */
+
   int    state; /* 0 is competely deprotonated, 1 is fully protonated.
 		   For histidines, we have to decide the state from
 		   the atom name.... */
   /* Let's change to eQACC for deprotonated, eQACCDON for ampholytic and eQDON for fully protonated. */
   
   int    res_nr; /* Global resnr. */
-  int    **ilistPosG; /* Where in the global topology are the
+  /* int    **ilistPosG; */ /* Where in the global topology are the
 		       * bonded interactions found?
 		       * Indexes a t_ilist[F_*][interaction] */
-  int    **ilistPosL; /* Where in the local topology are the
-		       * bonded interactions found?
-		       * Indexes a t_ilist[F_*][interaction] */
+  int    *ilistPosL[F_NRE]; /* Where in the local topology are the
+			     * bonded interactions found?
+			     * Indexes a t_ilist[F_*][interaction] */
+
   qhop_bonded_index bindex; /* Makes ilistPosG and ilistPosL redundant. For now anyway. */
+  int nr_indexed;      /* are the ilists indexed? */
 } t_qhop_residue;
 
 /* This enum can probably go, because thigns are now explicit in the xml input. */
@@ -141,6 +127,7 @@ typedef struct {
   t_qhop_atom    *qhop_atoms;
   t_qhop_residue *qhop_residues;
   gmx_rng_t      rng, rng_int;
+  gmx_bool       bFreshNlists;
   int nr_hops,
     nr_qhop_residues,
     nr_qhop_atoms,
