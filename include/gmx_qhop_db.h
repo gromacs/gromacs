@@ -59,6 +59,15 @@ extern int qhop_db_get_parameters(qhop_db_t qdb,
 				  char *donor,char *acceptor,
 				  qhop_parameters *qp);
 
+/* Build a list of residue-local atom indices fro the bonded interactions.
+ * Will save time when searching through the ilists. */
+extern void qhop_db_names2nrs(qhop_db *db);
+
+/* Maps the atoms in the residue subtypes onto the restypes. */
+extern void qhop_db_map_subres_atoms(qhop_db *db);
+
+
+
 /* /\* Returns the number of protons on a residue *\/ */
 /* extern int count_protons_res(qhop_res_t res, t_restp *rtp); */
 

@@ -799,3 +799,146 @@ int qhop_db_get_parameters(qhop_db_t qdb,
   }
   return 0;
 }
+
+extern void qhop_db_names2nrs(qhop_db *db)
+{
+  int rt, bt, b, it, a, ia;
+  t_restp *rtp;
+
+  if (db->rtp == NULL)
+    {
+      gmx_fatal(FARGS, "Empty RTP data in qhop database.");
+    }
+
+  snew(db->rb.ba, db->rb.nrestypes);
+
+  for (bt=0; bt < ebtsNR; bt++)
+    {
+      db->rb.btype[bt] = -1;
+    }
+
+
+  for (rt=0; rt < db->rb.nrestypes; rt++)
+    {
+      /* You would think that this would not require a loop over
+       * restypes, but the first restype may not have all bonded types.
+       * And since we're looping, we might as well translate all the atoms
+       * in the bonded interactions to residue local atom indices. */
+
+      if (db->rb.ba[rt] == NULL)
+	{
+	  snew(db->rb.ba[rt], ebtsNR);
+	}
+
+      rtp = &(db->rtp[db->rb.rtp[bt]]);
+
+      for (bt=0; bt < ebtsNR; bt++)
+	{
+	  if (db->rb.ba[rt][bt] == NULL)
+	    {
+	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
+	    }
+
+	  if (db->rb.btype[bt] != -1)
+	    {
+	      /* We already know what kind of flavor this bonded type has. */
+	      continue;
+	    }
+	  
+	  switch (bt)
+	    {
+	    case ebtsBONDS:
+	      /* For now, always do constraints */
+	      it = F_CONSTR;
+	      break;
+
+	    case ebtsANGLES:
+	      it = F_ANGLES + rtp->rb[bt].type - 1; /* should it be -1? */
+	      if (rtp->rb[bt].type == 8)
+		{
+		  it = F_TABANGLES;
+		}
+	      break;
+	    
+	    case ebtsPDIHS:
+	      switch (rtp->rb[bt].type)
+		{
+		case 1:
+		case 9:
+		  it = F_PDIHS;
+		  break;
+		case 2:
+		  it = F_IDIHS;
+		  break;
+		case 3:
+		  it = F_RBDIHS;
+		  break;
+		case 4:
+		  it = F_PIDIHS;
+		  break;
+		case 5:
+		  it = F_FOURDIHS;
+		  break;
+		case 8:
+		  it = F_TABDIHS;
+		  break;
+
+		default:
+		  gmx_fatal(FARGS, "Unsupported dihedral type %i.");
+		}
+	      break;
+
+	    case ebtsIDIHS:
+	      switch (rtp->rb[bt].type)
+		{
+		case 2:
+		  it = F_IDIHS;
+		  break;
+		case 4:
+		  it = F_PIDIHS;
+		  break;
+		default:
+		  gmx_fatal(FARGS, "Unsupported improper dihedral type %i.");
+		}
+	      break;
+
+	    case ebtsEXCLS:
+	      break;
+
+	    case ebtsCMAP
+	      break;
+	    }
+
+	  db->rb.btype[bt] = it;
+	}
+
+      /* Now translate atomnames to residue local atomnumbers. */
+      for (bt=0; bt < ebtsNR; bt++)
+	{
+	  for (b=0; (b < rtp->rb[bt].nb) && (db->rb.btype[bt] != -1); b++)
+	    {
+	      if (db->rb.ba[rt][bt][b] == NULL)
+		{
+		  snew(db->rb.ba[rt][bt][b], btsNiatoms[bt]);
+		}
+
+	      /* Loop over atoms in the intearction */
+	      for (ia=0; ia < btsNiatoms[bt]; ia++)
+		{
+		  /* Loop over atoms in the residue */
+		  for (a=0; a < rtp->natom; a++)
+		    {
+		      if (strcmp(rtp->rb[bt].b[b].a[ia], *(rtp->atomnames[a])) == 0)
+			{
+			  /* store the residue local index of this interacting atom */
+			  db->rb.ba[rt][bt][b][ia] = a;
+
+			  /* Proceed with next interacting atom */
+			  break;
+			}
+		    }
+		}
+	    }
+	}
+    }
+}
