@@ -17,7 +17,9 @@ DVIPS	=	dvips
 # Binaries from the gromacs/src/contrib directory
 PRFN    =       prfn
 COPYRGT	=	copyrgt
-OPTIONS =       options
+
+# Normal installed GROMACS binaries
+OPTIONS =       g_options
 
 TEXFS = algorithms	analyse		averages	\
 	defunits	files		forcefield	\
@@ -128,17 +130,19 @@ files.tex:
 # we will only get here if PRFN could be executed
 		$(RM) files.html; ./mkfiles ;
 
-options.tex:	
-		@if ./$(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+g_options.tex:	
+		@if ./$(OPTIONS) -hidden -man tex >/dev/null 2>&1; then :; \
 		else \
-		  if $(OPTIONS) -man tex >/dev/null 2>&1; then :; \
+		  if $(OPTIONS) -hidden -man tex >/dev/null 2>&1; then :; \
 		  else \
 		    echo "Error: Can't find the executable '$(OPTIONS)' in the current"; \
-		    echo "ddirectory or in your path (I need it to create latex files)."; \
+		    echo "directory or in your path (I need it to create latex files)."; \
 		    echo "(Compile and copy it from the GROMACS contrib directory)"; \
 		    exit 1 ; \
 		  fi; \
 		fi;
+# don't want the section header to actually be g_options
+		sed -i -e 's/g_options/options/g' g_options.tex
 
 progman.tex:	
 		$(TOUCH) progman.tex
@@ -151,7 +155,7 @@ ifeq ($(GMXDATA),)
 		  @echo "(Source the GMXRC script in your installation)" 
 		  @exit 1; 
 endif
-		./mkmdp $(GMXDATA)/gromacs/html
+		./mkmdp $(GMXDATA)/html
 
 proglist.tex:	./mk_proglist programs.txt
 # If you dont have programs.txt from the gromacs source, just touch it

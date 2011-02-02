@@ -814,28 +814,31 @@ where $k$ is a force constant in units of energy
 and $f$ is a cubic spline function; for details see \ssecref{cubicspline}.
 For each interaction, the force constant $k$ and the table number $n$
 are specified in the topology.
-The are two different types of bonds, one that generates exclusions
-and one that does not.
+The are two different types of bonds, one that generates exclusions (type 8)
+and one that does not (type 9).
 For details see \tabref{topfile2}.
 The table files are supplied to the {\tt mdrun} program.
 After the table file name an underscore, the letter ``b'' for bonds,
 ``a'' for angles or ``d'' for dihedrals and the table number are appended.
 For example, for a bond with $n=0$ (and using the default table file name)
-the table is read from the file {\tt table_b0.xvg}.
+the table is read from the file {\tt table_b0.xvg}.  Multiple tables can be
+supplied simply by using different values of $n$, and are applied to the appropriate
+bonds, as specified in the topology (\tabref{topfile2}).
 The format for the table files is three columns with $x$, $f(x)$, $-f'(x)$,
-where $x$ should be uniformly-spaced.
+where $x$ should be uniformly-spaced. Requirements for entries in the topology
+are given in~\tabref{topfile2}. 
 The setup of the tables is as follows:
 \\{\bf bonds}:
-$x$ is the distance in nanometers, for distances beyond the table length
+$x$ is the distance in nm. For distances beyond the table length
 cause {\tt mdrun} to quit with an error message
 \\{\bf angles}:
-$x$ is the angle in degrees, the table should go from
-0 up to and including 180 degrees, the derivative is taken in degrees
+$x$ is the angle in degrees. The table should go from
+0 up to and including 180 degrees; the derivative is taken in degrees.
 \\{\bf dihedrals}:
-$x$ is the dihedral angle in degrees, the table should go from
--180 up to and including 180 degrees,
-the IUPAC/IUB convention is used, i.e. zero is cis,
-the derivative is taken in degrees
+$x$ is the dihedral angle in degrees. The table should go from
+-180 up to and including 180 degrees;
+the IUPAC/IUB convention is used, {\ie} zero is cis,
+the derivative is taken in degrees.
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{Restraints}

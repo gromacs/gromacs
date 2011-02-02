@@ -90,14 +90,14 @@ a canonical ensemble of the initial state A and $\beta=1/k_B T$.
 \label{sec:pull}
 The pull code applies forces or constraints between the centers
 of mass of one or more pairs of groups of atoms.
-There is one reference group and one more other pull groups.
+There is one reference group and one or more other pull groups.
 Instead of a reference group, one can also use absolute reference
 point in space.
 The most common situation consists of a reference group
 and one pull group. In this case, the two groups are treated
 equivalently.
 The distance between a pair of groups can be determined
-in 1, 2 or 3 dimension, or can be along a user-defined vector.
+in 1, 2 or 3 dimensions, or can be along a user-defined vector.
 The reference distance can be constant or can change linearly with time.
 Normally all atoms are weighted by their mass, but an additional
 weighting factor can also be used.
@@ -220,7 +220,7 @@ In some cases this limitation can be avoided by using the free energy code,
 see \secref{fepmf}.
 In practice, the errors caused by not iterating the two constraint
 algorithms can be negligible when the pull group consists of a large
-amount of atoms and/or the the pull force is small.
+amount of atoms and/or the pull force is small.
 In such cases, the constraint correction displacement of the pull group
 is small compared to the bond lengths.
 
@@ -229,12 +229,12 @@ is small compared to the bond lengths.
 \label{sec:fepmf}
 \index{potentials of mean force}
 \index{free energy calculations}
-The free-energy coupling-parameter approach (see \secref{fecalc})
+The free-energy coupling-parameter approach (see~\secref{fecalc})
 provides several ways to calculate potentials of mean force.
 A potential of mean force between two atoms can be calculated
 by connecting them with a harmonic potential or a constraint.
 For this purpose there are special potentials that avoid the generation of
-extra exclusions, see \secref{excl}.
+extra exclusions, see~\secref{excl}.
 When the position of the minimum or the constraint length is 1 nm more
 in state B than in state A, the restraint or constraint force is given
 by $\partial H/\partial \lambda$.
@@ -629,7 +629,7 @@ The algorithm goes a little something like this:
 	to get a table index
 \item	Calculate fractional component ($\epsilon$ = $s$r$_{ij} - n_0$) 
 	and $\epsilon^2$ 
-\item	Do the interpolation to calculate the potential $V$ and the the scalar force $f$
+\item	Do the interpolation to calculate the potential $V$ and the scalar force $f$
 \item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
 \end{enumerate}
 
@@ -930,11 +930,11 @@ future.
 The following should be noted before using the accelerated {\tt mdrun-gpu}:
 \begin{itemize}
 \item The current release runs only on modern, CUDA compatible NVIDIA GPU hardware 
-(for details see \ref{subsec-compatibility}. Make sure that the necessary CUDA drivers and 
+(for details see \ref{subsec:compatibility}. Make sure that the necessary CUDA drivers and 
 libraries for your operating system are already installed. 
 \item Only single-GPU simulations are supported.
 \item Only a relatively small subset of the {\gromacs} features and options are supported 
-with the  current OpenMM-based implementation. See section \ref{subsec-features} for 
+with the  current OpenMM-based implementation. See section \ref{subsec:features} for 
 a detailed list.
 \item Consumer-level GPU cards are known to often have problems with faulty memory.
 It is strongly recommended that a full memory check of the cards is done at least once
@@ -982,7 +982,7 @@ thus accepted and equivalent to {\tt andersen}. Multiple temperature coupling gr
 are not supported, only {\tt tc-grps=System} will work.
 \item \textbf{Force fields:} Supported FF are Amber, CHARMM. {\gromos} and OPLS-AA are not supported.
 \begin{itemize}
-\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with pdb2gmx.
+\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with {\tt pdb2gmx}.
 \end{itemize}
 \item \textbf{Implicit solvent:} Supported only with {\tt Reaction-Field} electrostatics.
 The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale fators
@@ -1027,7 +1027,7 @@ are very demanding and unlike in other application areas,
 only high-end graphics cards are capable of providing performance comparable 
 to or higher then modern CPUs. For this reason, {\tt mdrun-gpu} is compatible with 
 only a subset of more performant CUDA-enabled GPUs (for detailed list see section 
-\ref{subsec-compatibility}) and by default it does not run if it detects
+\ref{subsec:compatibility}) and by default it does not run if it detects
 incompatible hardware. 
 
 For details about compatibility of NVIDIA drivers with harthe CUDA library and GPUs consult  
@@ -1108,7 +1108,7 @@ tree and execute the following commands:
 
 %\subsubsection{Testing and troubleshooting}
 
-\subsubsection{{\gromacs}-GPU specific mdrun features}
+\subsubsection{{\gromacs}-GPU specific {\tt mdrun} features}
 
 Besides the usual command line options, 
 {\tt mdrun-gpu} also supports a set of ``device options'', that are meant to 
