@@ -10,8 +10,13 @@
 extern "C" {
 #endif
 
+/* find the inert hydrogen (zero vdw params). */
+extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr);
+
+/* Flags that the proton is present in the existence function Hext */
 extern void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present);
 
+/* Reads the existence function Hext to see wether the proton is present or not */
 extern gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid);
 
   /* Goes through the ilists to locate the bonded
