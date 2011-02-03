@@ -158,6 +158,7 @@ typedef struct currentRes {
 } currentRes;
 
 typedef struct qhop_db {
+  int                     inertH; /* The atomtype for the inert hydrogen. */
   int                     nrtp;
   t_restp                 *rtp;
   /* Replacing resinfo with more elaborate structures */
