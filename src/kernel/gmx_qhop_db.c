@@ -905,7 +905,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	    case ebtsEXCLS:
 	      break;
 
-	    case ebtsCMAP
+	    case ebtsCMAP:
 	      break;
 	    }
 
@@ -928,7 +928,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 		  /* Loop over atoms in the residue */
 		  for (a=0; a < rtp->natom; a++)
 		    {
-		      if (strcmp(rtp->rb[bt].b[b].a[ia], *(rtp->atomnames[a])) == 0)
+		      if (strcmp(rtp->rb[bt].b[b].a[ia], *(rtp->atomname[a])) == 0)
 			{
 			  /* store the residue local index of this interacting atom */
 			  db->rb.ba[rt][bt][b][ia] = a;
@@ -941,4 +941,45 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	    }
 	}
     }
+}
+
+/* Maps atoms in subresidues to the ones in the restype */
+extern void qhop_db_map_subres_atoms(qhop_db *db)
+{
+  int rt, r, ra, rta;
+  t_restp *rtpr, *rtprt;
+  
+  /* Restypes */
+  for (rt=0; rt < db->rb.nrestypes; rt++)
+    {
+      rtprt = &(db->rtp[db->rb.rtp[rt]]);
+
+      /* Residue subtypes */
+      for (r=0; r < db->rb.nres[rt]; r++)
+	{
+	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
+
+	  if (db->rb.res[rt][r].iatomMap == NULL)
+	    {
+	      snew(db->rb.res[rt][r].iatomMap, rtpr->natom);
+	    }
+
+	  /* Loop over atoms in subresidue */
+	  for (ra=0; ra < rtpr->natom; ra++)
+	    {
+	      /* Loop over atoms in residue type */
+	      for (rta=0; rta < rtprt->natom; rta++)
+		{
+		  if (strcmp(*(rtpr->atomname[ra]), *(rtprt->atomname[rta])) == 0)
+		    {
+		      /* We have a match. */
+		      db->rb.res[rt][r].iatomMap[ra] = rta;
+
+		      /* Move on to next atom */
+		      break;
+		    }
+		} /* rta */
+	    } /* ra */
+	} /* r */
+    } /* rt */
 }
