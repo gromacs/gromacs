@@ -748,11 +748,12 @@ static int get_qhop_atoms(t_commrec *cr,
 
 
 
-
+/* obsolete */
 static int int_comp(const void *a, const void *b){
   return (*(int *)a) - (*(int *)b);
-} 
+}
 
+/* obsolete */
 static int qhop_atom_comp(const void *a, const void *b){
   
   return (int)(((t_qhop_atom *)a)->atom_id)-(int)(((t_qhop_atom *)b)->atom_id);
@@ -917,50 +918,51 @@ static void get_protons(t_commrec *cr, gmx_mtop_t *mtop,
   srenew(qhop_atom->protons, nr_protons);
 } /* get_protons */ 
 
+/* Obsolete*/
 /* This must go! */
-static void create_res_links(t_commrec *cr, t_qhoprec *qhoprec){
-  /* if a residue has more than one titratable atoms (stored in the
-     qhop_atom, we need to connect these residues, such that we can
-     modifiy the state and charges simultaneously if one of the atoms
-     changes protonation state. 
-  */
-  int
-    i,j;
+/* static void create_res_links(t_commrec *cr, t_qhoprec *qhoprec){ */
+/*   /\* if a residue has more than one titratable atoms (stored in the */
+/*      qhop_atom, we need to connect these residues, such that we can */
+/*      modifiy the state and charges simultaneously if one of the atoms */
+/*      changes protonation state.  */
+/*   *\/ */
+/*   int */
+/*     i,j; */
   
-  /* we also quicksort the qhop atoms, which is important later on
-     when we want to find out what chargeset we are supposed to use
-     for the residue */
+/*   /\* we also quicksort the qhop atoms, which is important later on */
+/*      when we want to find out what chargeset we are supposed to use */
+/*      for the residue *\/ */
   
-  qsort(qhoprec->qhop_atoms,qhoprec->nr_qhop_atoms,
-	(size_t)sizeof(qhoprec->qhop_atoms[0]),qhop_atom_comp);
+/*   qsort(qhoprec->qhop_atoms,qhoprec->nr_qhop_atoms, */
+/* 	(size_t)sizeof(qhoprec->qhop_atoms[0]),qhop_atom_comp); */
   
 
-  for(i=0;i<qhoprec->nr_qhop_atoms;i++){
-    qhoprec->global_atom_to_qhop_atom[qhoprec->qhop_atoms[i].atom_id]=i;
-/*     qhoprec->qhop_atoms[i].nr_links=0; */
-/*     snew(qhoprec->qhop_atoms[i].links,qhoprec->nr_qhop_atoms); */
-  }
-  /* double loop, there might be more efficient ways, but I do not
-     care... ;-)
-   */
-  for(i=0;i<qhoprec->nr_qhop_atoms;i++){
-    for(j=i+1;j<qhoprec->nr_qhop_atoms;j++){
-      if (qhoprec->qhop_atoms[i].res_id==qhoprec->qhop_atoms[j].res_id){
-/* 	qhoprec->qhop_atoms[i].links[qhoprec->qhop_atoms[i].nr_links++] */
-/* 	  = j; */
-/* 	qhoprec->qhop_atoms[j].links[qhoprec->qhop_atoms[j].nr_links++] */
-/* 	  = i; */
-      }
-    }
-  }  
-  /* clean up some memory
-   */
-  for(i=0;i<qhoprec->nr_qhop_atoms;i++){
-/*     srenew(qhoprec->qhop_atoms[i].links,qhoprec->qhop_atoms[i].nr_links); */
-/*     qhoprec->qhop_residues[i].nr_titrating_sites =  */
-/*       qhoprec->qhop_atoms[i].nr_links+1; */
-  }
-} /* create_res_links */
+/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
+/*     qhoprec->global_atom_to_qhop_atom[qhoprec->qhop_atoms[i].atom_id]=i; */
+/* /\*     qhoprec->qhop_atoms[i].nr_links=0; *\/ */
+/* /\*     snew(qhoprec->qhop_atoms[i].links,qhoprec->nr_qhop_atoms); *\/ */
+/*   } */
+/*   /\* double loop, there might be more efficient ways, but I do not */
+/*      care... ;-) */
+/*    *\/ */
+/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
+/*     for(j=i+1;j<qhoprec->nr_qhop_atoms;j++){ */
+/*       if (qhoprec->qhop_atoms[i].res_id==qhoprec->qhop_atoms[j].res_id){ */
+/* /\* 	qhoprec->qhop_atoms[i].links[qhoprec->qhop_atoms[i].nr_links++] *\/ */
+/* /\* 	  = j; *\/ */
+/* /\* 	qhoprec->qhop_atoms[j].links[qhoprec->qhop_atoms[j].nr_links++] *\/ */
+/* /\* 	  = i; *\/ */
+/*       } */
+/*     } */
+/*   }   */
+/*   /\* clean up some memory */
+/*    *\/ */
+/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
+/* /\*     srenew(qhoprec->qhop_atoms[i].links,qhoprec->qhop_atoms[i].nr_links); *\/ */
+/* /\*     qhoprec->qhop_residues[i].nr_titrating_sites =  *\/ */
+/* /\*       qhoprec->qhop_atoms[i].nr_links+1; *\/ */
+/*   } */
+/* } /\* create_res_links *\/ */
 
 
 /* Obsolete */
