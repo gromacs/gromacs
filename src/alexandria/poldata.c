@@ -129,14 +129,14 @@ gmx_poldata_t gmx_poldata_init()
     return (gmx_poldata_t) pold;
 }
 
-void gmx_poldata_add_alexandria(gmx_poldata_t pd,char *elem,char *desc,
-                                char *gt_name,char *gt_type,
-                                char *miller_equiv,int charge,
-                                char *geometry,int numbonds,
-                                char *neighbors,
-                                double polarizability,double sig_pol,
-                                char *vdwparams,
-                                char *spref)
+void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
+                             char *gt_name,char *gt_type,
+                             char *miller_equiv,int charge,
+                             char *geometry,int numbonds,
+                             char *neighbors,
+                             double polarizability,double sig_pol,
+                             char *vdwparams,
+                             char *spref)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;

@@ -201,17 +201,17 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
             NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlNUMBONDS]) && 
             NN(xbuf[exmlNEIGHBORS]) &&
             NN(xbuf[exmlSPREF]) && NN(xbuf[exmlGT_TYPE]) && NN(xbuf[exmlGT_NAME]))
-            gmx_poldata_add_alexandria(pd,xbuf[exmlELEM],
-                                       xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
-                                       xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
-                                       xbuf[exmlMILLER_EQUIV],
-                                       atoi(xbuf[exmlCHARGE]),
-                                       xbuf[exmlGEOMETRY],
-                                       atoi(xbuf[exmlNUMBONDS]),
-                                       xbuf[exmlNEIGHBORS],
-                                       atof(xbuf[exmlPOLARIZABILITY]),
-                                       NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
-                                       NULL,xbuf[exmlSPREF]);
+            gmx_poldata_add_ffatype(pd,xbuf[exmlELEM],
+                                    xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
+                                    xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
+                                    xbuf[exmlMILLER_EQUIV],
+                                    atoi(xbuf[exmlCHARGE]),
+                                    xbuf[exmlGEOMETRY],
+                                    atoi(xbuf[exmlNUMBONDS]),
+                                    xbuf[exmlNEIGHBORS],
+                                    atof(xbuf[exmlPOLARIZABILITY]),
+                                    NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
+                                    NULL,xbuf[exmlSPREF]);
         break;
     case exmlMILATOM:
         if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) && 

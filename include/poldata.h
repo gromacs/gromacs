@@ -50,14 +50,14 @@ typedef struct gmx_poldata *gmx_poldata_t;
 
 extern gmx_poldata_t gmx_poldata_init();
 
-extern void gmx_poldata_add_alexandria(gmx_poldata_t pd,char *elem,char *desc,
-                                       char *gt_name,char *gt_type,
-                                       char *miller_equiv,
-                                       int charge,char *geometry,int numbonds,
-                                       char *neighbors,
-                                       double polarizability,double sig_pol,
-                                       char *vdwparams,
-                                       char *spref);
+extern void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
+                                    char *gt_name,char *gt_type,
+                                    char *miller_equiv,
+                                    int charge,char *geometry,int numbonds,
+                                    char *neighbors,
+                                    double polarizability,double sig_pol,
+                                    char *vdwparams,
+                                    char *spref);
 
 extern void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
 				  double polarizability,double sig_pol,
