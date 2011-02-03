@@ -7,6 +7,57 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 
+extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
+{
+  int n, i, nvdwparam, nti, ti;
+  real *vdwparam, c[3];
+
+  /* Since we ran grompp with -nurenum we know that
+   * the last atomtype is the inert hydrogen.
+   * This may change in future versions, however. */
+
+  n = mtop->atomtypes.nr-1;
+
+
+  /* Validate that this is indeed an inert hydrogen. */
+
+  nvdwparam = fr->bBHAM ? 3 : 2;
+
+  nti = nvdwparam * fr->ntype * n; /* The n-row */
+
+  for (i=0; i<=n; i++)
+    {
+      vdwparam = fr->nbfp;
+      ti = nti + nvdwparam * i; /* The offset, i-column */
+
+      if (fr->bBHAM)
+	{
+	  /* Buckingham */
+	  c[0]               = vdwparam[ti];
+	  c[1]               = vdwparam[ti+1];
+	  c[2]               = vdwparam[ti+2];
+	  
+	}
+      else
+	{
+	  /* LJ */
+	  c[0]               = vdwparam[ti];
+	  c[1]               = vdwparam[ti+1];
+	  c[2]               = 0.0;
+	}
+
+      if ((c[0] != 0.0) ||
+	  (c[1] != 0.0) ||
+	  (c[2] != 0.0))
+	{
+	  gmx_fatal(FARGS, "Atomtype %i is not inert!", n+1);
+	}
+    }
+
+  return n;
+}
+
+
 extern void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present)
 {
   Hext->H[Hext->atomid2H[atomid]] = present ? (char)1: (char)0;
@@ -499,15 +550,17 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
   rtp = &(db->rtp[prod->rtp]);
 
   /* For now, assume that all atomtypes are present, e.g. that grompp was run with -norenum */
+
+  /* Just make it all inert... */
   for (i=0; i < swapres->nr_atoms; i++)
     {
-      for (j=0; j < rtp->natom; j++)
-	{
-	  if (strcmp(swapres->atomnames[i], *(rtp->atomname[j])) != 0)
-	    {
-	      md->typeA[swapres->atoms[i]] = rtp->atom[j].type;
-	    }
-	}
+      md->typeA[swapres->atoms[i]] = db->inertH;	  
+    }
+
+  /* ...then set the atomtypes for the atoms in the residue */
+  for (i=0; i < prod->niatom; i++)
+    {
+      md->typeA[swapres->atoms[i]] = rtp->atomtype[i];
     }
 }
 
