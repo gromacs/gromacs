@@ -33,6 +33,9 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 
+#ifndef TOPOLOGY_H
+#define TOPOLOGY_H
+
 #include "atoms.h"
 #include "idef.h"
 #include "block.h"
@@ -124,3 +127,4 @@ typedef struct {
 }
 #endif
 
+#endif
