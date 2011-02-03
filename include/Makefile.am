@@ -110,6 +110,7 @@ pppm.h \
 princ.h \
 pull.h \
 qhop.h \
+qhop_toputil.h \
 qmmm.h \
 random.h \
 rbin.h \
