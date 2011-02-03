@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -288,62 +289,106 @@ void write_sas_mat(const char *fn,real **accr,int nframe,int nres,t_matrix *mat)
 void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
                 const output_env_t oenv)
 {
-  FILE *fp;
-  t_mapping *map;
-  int f,r,*count,ss_count;
-  size_t s;
-  const char** leg;
-  
-  map=mat->map;
-  snew(count,mat->nmap);
-  snew(leg,mat->nmap+1);
-  leg[0]="Structure";
-  for(s=0; s<mat->nmap; s++)
-    leg[s+1]=strdup(map[s].desc);
-  
-  fp=xvgropen(outfile,"Secondary Structure",
-	      output_env_get_xvgr_tlabel(oenv),"Number of Residues",oenv);
-  if (output_env_get_print_xvgr_codes(oenv))
-    fprintf(fp,"@ subtitle \"Structure = ");
-  for(s=0; s<strlen(ss_string); s++) {
-    if (s>0)
-      fprintf(fp," + ");
-    for(f=0; f<mat->nmap; f++)
-      if (ss_string[s]==map[f].code.c1)
-	fprintf(fp,"%s",map[f].desc);
-  }
-  fprintf(fp,"\"\n");
-  xvgr_legend(fp,mat->nmap+1,leg,oenv);
-  
-  for(f=0; f<mat->nx; f++) {
-    ss_count=0;
+    FILE *fp;
+    t_mapping *map;
+    int f,r,*count,*total,ss_count,total_count;
+    size_t s;
+    const char** leg;
+    
+    map=mat->map;
+    snew(count,mat->nmap);
+    snew(total,mat->nmap);
+    snew(leg,mat->nmap+1);
+    leg[0]="Structure";
     for(s=0; s<mat->nmap; s++)
-      count[s]=0;
-    for(r=0; r<mat->ny; r++)
-      count[mat->matrix[f][r]]++;
-    for(s=0; s<mat->nmap; s++) {
-      if (strchr(ss_string,map[s].code.c1))
-	ss_count+=count[s];
+    {
+        leg[s+1]=strdup(map[s].desc);
     }
-    fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
+    
+    fp=xvgropen(outfile,"Secondary Structure",
+                output_env_get_xvgr_tlabel(oenv),"Number of Residues",oenv);
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp,"@ subtitle \"Structure = ");
+    }
+    for(s=0; s<strlen(ss_string); s++)
+    {
+        if (s>0)
+        {
+            fprintf(fp," + ");
+        }
+        for(f=0; f<mat->nmap; f++)
+        {
+            if (ss_string[s]==map[f].code.c1)
+            {
+                fprintf(fp,"%s",map[f].desc);
+            }
+        }
+    }
+    fprintf(fp,"\"\n");
+    xvgr_legend(fp,mat->nmap+1,leg,oenv);
+    
+    total_count = 0;
     for(s=0; s<mat->nmap; s++)
-      fprintf(fp," %5d",count[s]);
+    {
+        total[s]=0;
+    }
+    for(f=0; f<mat->nx; f++)
+    {
+        ss_count=0;
+        for(s=0; s<mat->nmap; s++)
+        {
+            count[s]=0;
+        }
+        for(r=0; r<mat->ny; r++)
+        {
+            count[mat->matrix[f][r]]++;
+            total[mat->matrix[f][r]]++;
+        }
+        for(s=0; s<mat->nmap; s++)
+        {
+            if (strchr(ss_string,map[s].code.c1))
+            {
+                ss_count+=count[s];
+                total_count += count[s];
+            }
+        }
+        fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
+        for(s=0; s<mat->nmap; s++)
+        {
+            fprintf(fp," %5d",count[s]);
+        }
+        fprintf(fp,"\n");
+    }
+    /* now print column totals */
+    fprintf(fp, "%-8s %5d", "# Totals", total_count);
+    for(s=0; s<mat->nmap; s++)
+    {
+        fprintf(fp," %5d",total[s]);
+    }
     fprintf(fp,"\n");
-  }
-  
-  ffclose(fp);
-  sfree(leg);
-  sfree(count);
+
+    /* now print percentages */
+    fprintf(fp, "%-8s %5.2f", "# SS %", total_count / (real) (mat->nx * mat->ny));
+    for(s=0; s<mat->nmap; s++)
+    {
+        fprintf(fp," %5.2f",total[s] / (real) (mat->nx * mat->ny));
+    }
+    fprintf(fp,"\n");
+    
+    ffclose(fp);
+    sfree(leg);
+    sfree(count);
 }
 
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "do_dssp ", 
+    "[TT]do_dssp[tt] ", 
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. do_dssp assumes that the dssp executable is",
+    "get it. [TT]do_dssp[tt] assumes that the dssp executable is",
     "/usr/local/bin/dssp. If this is not the case, then you should",
     "set an environment variable [BB]DSSP[bb] pointing to the dssp",
     "executable, e.g.: [PAR]",
@@ -351,7 +396,7 @@ int main(int argc,char *argv[])
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
-    "Individual chains are separated by light grey lines in the xpm and",
+    "Individual chains are separated by light grey lines in the [TT].xpm[tt] and",
     "postscript files.",
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",
@@ -388,7 +433,7 @@ int main(int argc,char *argv[])
   int        nres,nr0,naccr,nres_plus_separators;
   gmx_bool       *bPhbres,bDoAccSurf;
   real       t;
-  int        i,natoms,nframe=0;
+  int        i,j,natoms,nframe=0;
   matrix     box;
   int        gnx;
   char       *grpnm,*ss_str;
@@ -547,15 +592,22 @@ int main(int argc,char *argv[])
   write_xpm_m(ss,mat);
   ffclose(ss);
   
-  if (opt2bSet("-ssdump",NFILE,fnm)) {
-    snew(ss_str,nres+1);
-    for(i=0; (i<nres); i++)
-      ss_str[i] = mat.map[mat.matrix[0][i]].code.c1;
-    ss_str[i] = '\0';
-    ss = opt2FILE("-ssdump",NFILE,fnm,"w");
-    fprintf(ss,"%d\n%s\n",nres,ss_str);
-    ffclose(ss);
-    sfree(ss_str);
+  if (opt2bSet("-ssdump",NFILE,fnm))
+  {
+      ss = opt2FILE("-ssdump",NFILE,fnm,"w");
+      snew(ss_str,nres+1);
+      fprintf(ss,"%d\n",nres);
+      for(j=0; j<mat.nx; j++)
+      {
+          for(i=0; (i<mat.ny); i++)
+          {
+              ss_str[i] = mat.map[mat.matrix[j][i]].code.c1;
+          }
+          ss_str[i] = '\0';
+          fprintf(ss,"%s\n",ss_str);
+      }
+      ffclose(ss);
+      sfree(ss_str);
   }
   analyse_ss(fnSCount,&mat,ss_string,oenv);
 

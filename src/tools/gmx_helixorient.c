@@ -58,7 +58,7 @@
 int gmx_helixorient(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_helixorient calculates the coordinates and direction of the average",
+    "[TT]g_helixorient[tt] calculates the coordinates and direction of the average",
     "axis inside an alpha helix, and the direction/vectors of both the",
     "alpha carbon and (optionally) a sidechain atom relative to the axis.[PAR]",
     "As input, you need to specify an index group with alpha carbon atoms",
@@ -73,7 +73,7 @@ int gmx_helixorient(int argc,char *argv[])
     "Z axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
     "we first tilt the helix axis (1) around and (2) orthogonal to the residues",
     "vector, and finally apply the (3) rotation around it. For debugging or other",
-    "purposes, we also write out the actual Euler rotation angles as theta1-3.xvg"
+    "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
   
     t_topology *top=NULL;

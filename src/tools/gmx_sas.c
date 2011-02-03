@@ -565,9 +565,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int gmx_sas(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
+    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent accessible surface area.",
     "As a side effect the Connolly surface can be generated as well in",
-    "a pdb file where the nodes are represented as atoms and the vertices",
+    "a [TT].pdb[tt] file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records.",
     "The program will ask for a group for the surface calculation",
     "and a group for the output. The calculation group should always",
@@ -610,7 +610,7 @@ int gmx_sas(int argc,char *argv[])
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
-      "Output the protein to the connelly pdb file too" },
+      "Output the protein to the connelly [TT].pdb[tt] file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
       "default value for solvation free energy per area (kJ/mol/nm^2)" }
   };

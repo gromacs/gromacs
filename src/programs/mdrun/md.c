@@ -1381,6 +1381,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
+    if (repl_ex_nst > 0)
+    {
+        /* We need to be sure replica exchange can only occur
+         * when the energies are current */
+        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
+                        "repl_ex_nst",&repl_ex_nst);
+        /* This check needs to happen before inter-simulation
+         * signals are initialized, too */
+    }
     if (repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
