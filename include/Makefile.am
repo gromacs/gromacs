@@ -83,6 +83,7 @@ mvdata.h \
 names.h \
 nbsearch.h \
 network.h \
+nmsimplex.h \
 nonbonded.h \
 nrama.h \
 nrjac.h \

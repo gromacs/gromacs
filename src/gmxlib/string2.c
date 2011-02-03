@@ -600,3 +600,27 @@ char *gmx_strsep(char **stringp, const char *delim)
     return ret;
 }
 
+char *gmx_ftoa(double f)
+{
+    char a[32],*ptr;
+  
+    if (f < 100)
+        sprintf(a,"%.3f",f);
+    else
+        sprintf(a,"%g",f);
+        
+    ptr = strdup(a);
+  
+    return ptr;
+}
+
+char *gmx_itoa(int f)
+{
+    char a[32],*ptr;
+  
+    sprintf(a,"%d",f);
+    ptr = strdup(a);
+  
+    return ptr;
+}
+

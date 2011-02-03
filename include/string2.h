@@ -118,10 +118,16 @@ char *wrap_lines(const char *buf,int line_width, int indent,
  */
 
 
-char **split(char sep,const char *str);
+extern char **split(char sep,const char *str);
 /* Implementation of the well-known Perl function split */
 
-gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
+extern char *gmx_ftoa(double f);
+/* return new pointer to a string with f printed. Pointer can be discarded after use. */ 
+ 
+extern char *gmx_itoa(int f);
+/* return new pointer to a string with f printed. Pointer can be discarded after use. */  
+
+extern gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #define snprintf _snprintf

@@ -43,6 +43,7 @@
 #include <libxml/tree.h>
 #include "gmx_fatal.h"
 #include "macros.h"
+#include "string2.h"
 #include "grompp.h"
 #include "smalloc.h"
 #include "poldata_xml.h"
@@ -80,14 +81,14 @@ static const char *xmltypes[] = {
 	
 enum { 
     exmlGENTOP,
-    exmlSMATOMS, exmlPOLAR_UNIT, 
-    exmlSMATOM, exmlELEM, exmlNAME, exmlDESC,
-    exmlSMNAME, exmlSMTYPE, exmlMILLER_EQUIV, exmlCHARGE,
+    exmlGT_ATOMS, exmlGT_FORCEFIELD, exmlPOLAR_UNIT, 
+    exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
+    exmlGT_NAME, exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
     exmlNEIGHBORS, 
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlSPREF,
-    exmlSMBONDS, exmlLENGTH_UNIT, exmlSMBOND,
+    exmlGT_BONDS, exmlLENGTH_UNIT, exmlGT_BOND,
     exmlATOM1, exmlATOM2, exmlLENGTH, exmlBONDORDER,
-    exmlSMANGLES, exmlANGLE_UNIT, exmlSMANGLE,
+    exmlGT_ANGLES, exmlANGLE_UNIT, exmlGT_ANGLE,
     exmlATOM3, exmlANGLE, 
     exmlBSATOMS, exmlBSATOM,
     exmlMILATOMS, exmlTAU_UNIT, exmlAHP_UNIT,
@@ -102,14 +103,14 @@ enum {
   
 static const char *exml_names[exmlNR] = {
     "gentop",
-    "smatoms", "polarizability_unit",
-    "smatom", "elem", "name", "description",
-    "smname", "smtype", "miller_equiv", "charge",
+    "gt_atoms", "forcefield", "polarizability_unit",
+    "gt_atom", "elem", "name", "description",
+    "gt_name", "gt_type", "miller_equiv", "charge",
     "neighbors", 
     "geometry", "numbonds", "polarizability", "sigma_pol", "spref",
-    "smbonds", "length_unit", "smbond",
+    "gt_bonds", "length_unit", "gt_bond",
     "atom1", "atom2", "length", "bondorder",
-    "smangles", "angle_unit", "smangle",
+    "gt_angles", "angle_unit", "gt_angle",
     "atom3", "angle",
     "bsatoms", "bsatom",
     "milatoms", "tau_ahc_unit", "alpha_ahp_unit",
@@ -172,19 +173,21 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
      */
      
     switch (elem) {
-    case exmlSMATOMS:
-        if (NN(xbuf[exmlPOLAR_UNIT])) 
-            gmx_poldata_set_alexandria_unit(pd,xbuf[exmlPOLAR_UNIT]);
+    case exmlGT_ATOMS:
+        if (NN(xbuf[exmlPOLAR_UNIT]))
+            gmx_poldata_set_ffatype_unit(pd,xbuf[exmlPOLAR_UNIT]);
+        if (NN(xbuf[exmlGT_FORCEFIELD]))
+            gmx_poldata_set_ffatype_ff(pd,xbuf[exmlGT_FORCEFIELD]);
         break;
     case exmlBSATOMS:
         if (NN(xbuf[exmlPOLAR_UNIT])) 
             gmx_poldata_set_bosque_unit(pd,xbuf[exmlPOLAR_UNIT]);
         break;
-    case exmlSMANGLES:
+    case exmlGT_ANGLES:
         if (NN(xbuf[exmlANGLE_UNIT])) 
             gmx_poldata_set_angle_unit(pd,xbuf[exmlANGLE_UNIT]);
         break;
-    case exmlSMBONDS:
+    case exmlGT_BONDS:
         if (NN(xbuf[exmlLENGTH_UNIT])) 
             gmx_poldata_set_length_unit(pd,xbuf[exmlLENGTH_UNIT]);
         break;
@@ -192,23 +195,23 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlTAU_UNIT]) && NN(xbuf[exmlAHP_UNIT]))
             gmx_poldata_set_miller_units(pd,xbuf[exmlTAU_UNIT],xbuf[exmlAHP_UNIT]);
         break;
-    case exmlSMATOM:
+    case exmlGT_ATOM:
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlMILLER_EQUIV]) && 
             NN(xbuf[exmlCHARGE]) && NN(xbuf[exmlGEOMETRY]) && 
             NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlNUMBONDS]) && 
             NN(xbuf[exmlNEIGHBORS]) &&
-            NN(xbuf[exmlSPREF]) && NN(xbuf[exmlSMTYPE]) && NN(xbuf[exmlSMNAME]))
+            NN(xbuf[exmlSPREF]) && NN(xbuf[exmlGT_TYPE]) && NN(xbuf[exmlGT_NAME]))
             gmx_poldata_add_alexandria(pd,xbuf[exmlELEM],
-                                  xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
-                                  xbuf[exmlSMNAME],xbuf[exmlSMTYPE],
-                                  xbuf[exmlMILLER_EQUIV],
-                                  atoi(xbuf[exmlCHARGE]),
-                                  xbuf[exmlGEOMETRY],
-                                  atoi(xbuf[exmlNUMBONDS]),
-                                  xbuf[exmlNEIGHBORS],
-                                  atof(xbuf[exmlPOLARIZABILITY]),
-                                  NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
-                                  xbuf[exmlSPREF]);
+                                       xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
+                                       xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
+                                       xbuf[exmlMILLER_EQUIV],
+                                       atoi(xbuf[exmlCHARGE]),
+                                       xbuf[exmlGEOMETRY],
+                                       atoi(xbuf[exmlNUMBONDS]),
+                                       xbuf[exmlNEIGHBORS],
+                                       atof(xbuf[exmlPOLARIZABILITY]),
+                                       NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
+                                       NULL,xbuf[exmlSPREF]);
         break;
     case exmlMILATOM:
         if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) && 
@@ -221,16 +224,16 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
             gmx_poldata_add_bosque(pd,xbuf[exmlELEM],atof(xbuf[exmlPOLARIZABILITY]));
         break;
-    case exmlSMBOND:
+    case exmlGT_BOND:
         if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) && 
             NN(xbuf[exmlLENGTH]) && NN(xbuf[exmlBONDORDER]))
-            gmx_poldata_add_smbond(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
+            gmx_poldata_add_gt_bond(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
                                    atof(xbuf[exmlLENGTH]),atof(xbuf[exmlBONDORDER]));
         break;
     case exmlANGLE:
         if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2]) && 
             NN(xbuf[exmlATOM3]) && NN(xbuf[exmlANGLE]))
-            gmx_poldata_add_smangle(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
+            gmx_poldata_add_gt_angle(pd,xbuf[exmlATOM1],xbuf[exmlATOM2],
                                     xbuf[exmlATOM3],atof(xbuf[exmlANGLE]));
         break;
     case exmlSYM_CHARGE:
@@ -345,27 +348,29 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     xmlNodePtr child,grandchild,comp;
     int    i,charge,atomnumber,numbonds,
         numattach,element,model;
-    char *elem,*miller_equiv,*geometry,*name,*smtype,*alexandria_equiv,*spref,*blu,
+    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*spref,*blu,
         *atom1,*atom2,*atom3,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc;
     char *neighbors,*zeta,*qstr,*rowstr;
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
         bondorder;
   
-    child = add_xml_child(parent,exml_names[exmlSMATOMS]);
-    tmp = gmx_poldata_get_alexandria_unit(pd);
+    child = add_xml_child(parent,exml_names[exmlGT_ATOMS]);
+    tmp = gmx_poldata_get_ffatype_unit(pd);
     if (tmp)
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
-  
-    while ((name = gmx_poldata_get_alexandria(pd,NULL,&elem,&desc,&smtype,&miller_equiv,
+    tmp = gmx_poldata_get_ffatype_ff(pd);
+    if (tmp)
+        add_xml_char(child,exml_names[exmlGT_FORCEFIELD],tmp);
+    while ((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,&miller_equiv,
                                          &charge,&geometry,
                                          &numbonds,&neighbors,
                                          &polarizability,&sig_pol,&spref)) != NULL) {
-        grandchild = add_xml_child(child,exml_names[exmlSMATOM]);
+        grandchild = add_xml_child(child,exml_names[exmlGT_ATOM]);
         add_xml_char(grandchild,exml_names[exmlELEM],elem);
         add_xml_char(grandchild,exml_names[exmlDESC],desc);
-        add_xml_char(grandchild,exml_names[exmlSMNAME],name);
-        add_xml_char(grandchild,exml_names[exmlSMTYPE],smtype);
+        add_xml_char(grandchild,exml_names[exmlGT_NAME],name);
+        add_xml_char(grandchild,exml_names[exmlGT_TYPE],gt_type);
         add_xml_char(grandchild,exml_names[exmlMILLER_EQUIV],miller_equiv);
         add_xml_char(grandchild,exml_names[exmlGEOMETRY],geometry);
         add_xml_int(grandchild,exml_names[exmlNUMBONDS],numbonds);
@@ -376,22 +381,22 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_char(grandchild,exml_names[exmlSPREF],spref);
     }
 
-    child = add_xml_child(parent,exml_names[exmlSMBONDS]);
+    child = add_xml_child(parent,exml_names[exmlGT_BONDS]);
     if ((blu = gmx_poldata_get_length_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlLENGTH_UNIT],blu);
-    while (gmx_poldata_get_smbond(pd,&atom1,&atom2,&length,&bondorder) == 1) {
-        grandchild = add_xml_child(child,exml_names[exmlSMBOND]);
+    while (gmx_poldata_get_gt_bond(pd,&atom1,&atom2,&length,&bondorder) == 1) {
+        grandchild = add_xml_child(child,exml_names[exmlGT_BOND]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
         add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
         add_xml_double(grandchild,exml_names[exmlLENGTH],length);
         add_xml_double(grandchild,exml_names[exmlBONDORDER],bondorder);
     }
   
-    child = add_xml_child(parent,exml_names[exmlSMANGLES]);
+    child = add_xml_child(parent,exml_names[exmlGT_ANGLES]);
     if ((blu = gmx_poldata_get_angle_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlANGLE_UNIT],blu);
-    while (gmx_poldata_get_smangle(pd,&atom1,&atom2,&atom3,&angle) == 1) {
-        grandchild = add_xml_child(child,exml_names[exmlSMANGLE]);
+    while (gmx_poldata_get_gt_angle(pd,&atom1,&atom2,&atom3,&angle) == 1) {
+        grandchild = add_xml_child(child,exml_names[exmlGT_ANGLE]);
         add_xml_char(grandchild,exml_names[exmlATOM1],atom1);
         add_xml_char(grandchild,exml_names[exmlATOM2],atom2);
         add_xml_char(grandchild,exml_names[exmlATOM3],atom3);
