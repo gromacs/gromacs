@@ -951,7 +951,7 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
 int gmx_cluster(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]g_cluster[tt] can cluster structures with several different methods.",
+    "[TT]g_cluster[tt] can cluster structures using several different methods.",
     "Distances between structures can be determined from a trajectory",
     "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
@@ -974,7 +974,7 @@ int gmx_cluster(int argc,char *argv[])
     "([IT]Angew. Chem. Int. Ed.[it] [BB]1999[bb], [IT]38[it], pp 236-240).",
     "Count number of neighbors using cut-off, take structure with",
     "largest number of neighbors with all its neighbors as cluster",
-    "and eleminate it from the pool of clusters. Repeat for remaining",
+    "and eliminate it from the pool of clusters. Repeat for remaining",
     "structures in pool.[PAR]",
     
     "When the clustering algorithm assigns each structure to exactly one",
