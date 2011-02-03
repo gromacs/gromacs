@@ -1167,6 +1167,8 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   qhop_db_map_subres_atoms(*db);
 
+  (*db)->inertH = find_inert_atomtype(mtop, fr);
+
   return (nr_qhop_atoms);
 } /* init_hop */
 
@@ -2386,58 +2388,58 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 }
 
 /* redundant */
-static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec, 
-			    t_mdatoms *md, t_hop *hop, rvec *x,
-			    gmx_mtop_t *mtop, t_pbc *pbc){
-  int
-    i;
-  rvec
-    temp_vec;
+/* static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec,  */
+/* 			    t_mdatoms *md, t_hop *hop, rvec *x, */
+/* 			    gmx_mtop_t *mtop, t_pbc *pbc){ */
+/*   int */
+/*     i; */
+/*   rvec */
+/*     temp_vec; */
   
-  /* swap the donor and acceptor atom
-   */  
-  /* assumuming the user uses the correct water topology..... */
-  switch (hop->proton_id)
-    {
-    case 3:
-      rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]),-120, md);
-      break;
-    case 4:
-      rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]), 120, md);
-      break;
-    default:
-      break;
-    }
+/*   /\* swap the donor and acceptor atom */
+/*    *\/   */
+/*   /\* assumuming the user uses the correct water topology..... *\/ */
+/*   switch (hop->proton_id) */
+/*     { */
+/*     case 3: */
+/*       rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]),-120, md); */
+/*       break; */
+/*     case 4: */
+/*       rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]), 120, md); */
+/*       break; */
+/*     default: */
+/*       break; */
+/*     } */
   
-  copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].atom_id],
-	    temp_vec);
-  copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id],
-	    x[qhoprec->qhop_atoms[hop->donor_id].atom_id]);
-  copy_rvec(temp_vec,
-	    x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id]);
+/*   copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].atom_id], */
+/* 	    temp_vec); */
+/*   copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id], */
+/* 	    x[qhoprec->qhop_atoms[hop->donor_id].atom_id]); */
+/*   copy_rvec(temp_vec, */
+/* 	    x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id]); */
   
-  if(qhoprec->qhop_atoms[hop->donor_id].nr_protons ==
-     qhoprec->qhop_atoms[hop->acceptor_id].nr_protons)
-    {
-      for(i=0; i < qhoprec->qhop_atoms[hop->donor_id].nr_protons; i++)
-	{
-	  copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].protons[i]],
-		    temp_vec);
-	  copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]],
-		    x[qhoprec->qhop_atoms[hop->donor_id].protons[i]]);
-	  copy_rvec(temp_vec,
-		    x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]]);
-	}
+/*   if(qhoprec->qhop_atoms[hop->donor_id].nr_protons == */
+/*      qhoprec->qhop_atoms[hop->acceptor_id].nr_protons) */
+/*     { */
+/*       for(i=0; i < qhoprec->qhop_atoms[hop->donor_id].nr_protons; i++) */
+/* 	{ */
+/* 	  copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].protons[i]], */
+/* 		    temp_vec); */
+/* 	  copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]], */
+/* 		    x[qhoprec->qhop_atoms[hop->donor_id].protons[i]]); */
+/* 	  copy_rvec(temp_vec, */
+/* 		    x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]]); */
+/* 	} */
 
-      return(TRUE);
+/*       return(TRUE); */
 	
-    }
-  else
-    {
-      gmx_fatal(FARGS,"Oops, donor and acceptor do not have same number of protons!\n");
-      return(FALSE);
-    }
-}
+/*     } */
+/*   else */
+/*     { */
+/*       gmx_fatal(FARGS,"Oops, donor and acceptor do not have same number of protons!\n"); */
+/*       return(FALSE); */
+/*     } */
+/* } */
 	    
 static gmx_bool do_hop(t_commrec *cr, t_qhoprec *qhoprec,
 		       qhop_db *db,
