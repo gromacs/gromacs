@@ -85,6 +85,7 @@ typedef struct qhop_res {
   int na, nd; /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
   int *iatomMap; /* maps the atoms to the atoms in qXXX */
+  int *biMap;    /* maps the bonded interactions to the atoms in qXXX */
   int niatom;    /* = db->rtp[rtp].natom */
   /*   int nft; */
   int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
