@@ -830,7 +830,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	  snew(db->rb.ba[rt], ebtsNR);
 	}
 
-      rtp = &(db->rtp[db->rb.rtp[bt]]);
+      rtp = &(db->rtp[db->rb.rtp[rt]]);
 
       for (bt=0; bt < ebtsNR; bt++)
 	{
@@ -839,12 +839,12 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
 	    }
 
-	  if (db->rb.btype[bt] != -1)
+	  if (db->rb.btype[bt] != -1 || rtp->rb[bt].nb == 0)
 	    {
 	      /* We already know what kind of flavor this bonded type has. */
 	      continue;
 	    }
-	  
+
 	  switch (bt)
 	    {
 	    case ebtsBONDS:
@@ -853,15 +853,15 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	      break;
 
 	    case ebtsANGLES:
-	      it = F_ANGLES + rtp->rb[bt].type - 1; /* should it be -1? */
-	      if (rtp->rb[bt].type == 8)
+	      it = F_ANGLES + rtp->rb[bt].type; /* should it be -1? */
+	      if (rtp->rb[bt].type+1 == 8)
 		{
 		  it = F_TABANGLES;
 		}
 	      break;
 	    
 	    case ebtsPDIHS:
-	      switch (rtp->rb[bt].type)
+	      switch (rtp->rb[bt].type+1)
 		{
 		case 1:
 		case 9:
@@ -884,12 +884,12 @@ extern void qhop_db_names2nrs(qhop_db *db)
 		  break;
 
 		default:
-		  gmx_fatal(FARGS, "Unsupported dihedral type %i.");
+		  gmx_fatal(FARGS, "Unsupported dihedral type %i.", rtp->rb[bt].type+1);
 		}
 	      break;
 
 	    case ebtsIDIHS:
-	      switch (rtp->rb[bt].type)
+	      switch (rtp->rb[bt].type+1)
 		{
 		case 2:
 		  it = F_IDIHS;
@@ -898,7 +898,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 		  it = F_PIDIHS;
 		  break;
 		default:
-		  gmx_fatal(FARGS, "Unsupported improper dihedral type %i.");
+		  gmx_fatal(FARGS, "Unsupported improper dihedral type %i.", rtp->rb[bt].type+1);
 		}
 	      break;
 
