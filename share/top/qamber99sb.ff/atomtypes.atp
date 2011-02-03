@@ -64,3 +64,4 @@ OW_tip5p          16.00000      ; tip5p OW
 MW                 0.00000      ; Virtual site for tip4p/5p water point charge
 MCH3               0.00000      ; Dummy mass in rigid tetrahedral CH3 group
 MNH3               0.00000      ; Dummy mass in rigid tetrahedral NH3 group
+H_inert            1.00800      ; Inert hydrogen for qhop. MUST be the last atomtype.
