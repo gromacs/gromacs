@@ -560,7 +560,7 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
   /* ...then set the atomtypes for the atoms in the residue */
   for (i=0; i < prod->niatom; i++)
     {
-      md->typeA[swapres->atoms[i]] = rtp->atomtype[i];
+      md->typeA[swapres->atoms[i]] = rtp->atom[i].type;
     }
 }
 
