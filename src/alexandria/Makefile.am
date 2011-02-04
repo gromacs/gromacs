@@ -19,7 +19,8 @@ libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../m
 libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
 libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
-bin_PROGRAMS 	=  	g_poldata_test		g_gauss_test	g_slater_test	gentop	gen_table
+bin_PROGRAMS 	=  	g_poldata_test	g_gauss_test	g_slater_test	gentop	gen_table\
+			g_mptest	g_merge_mp	g_mp2csv
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
@@ -41,26 +42,19 @@ libalexandria@LIBSUFFIX@_la_SOURCES = \
 			slater_integrals.cpp 	slater_integrals.h	\
 			slater_low.h \
 			DSlater_1S_1S.cpp DSlater_1S_2S.cpp DSlater_1S_3S.cpp \
-			DSlater_1S_4S.cpp DSlater_1S_5S.cpp DSlater_1S_6S.cpp \
-			DSlater_2S_2S.cpp DSlater_2S_3S.cpp DSlater_2S_4S.cpp \
-			DSlater_2S_5S.cpp DSlater_2S_6S.cpp DSlater_3S_3S.cpp \
-			DSlater_3S_4S.cpp DSlater_3S_5S.cpp DSlater_3S_6S.cpp \
-			DSlater_4S_4S.cpp DSlater_4S_5S.cpp DSlater_4S_6S.cpp \
-			DSlater_5S_5S.cpp DSlater_5S_6S.cpp DSlater_6S_6S.cpp \
+			DSlater_1S_4S.cpp DSlater_1S_5S.cpp DSlater_2S_2S.cpp \
+			DSlater_2S_3S.cpp DSlater_2S_4S.cpp DSlater_2S_5S.cpp \
+			DSlater_3S_3S.cpp DSlater_3S_4S.cpp DSlater_3S_5S.cpp \
+			DSlater_4S_4S.cpp DSlater_4S_5S.cpp DSlater_5S_5S.cpp \
 			Slater_1S_1S.cpp Slater_1S_2S.cpp Slater_1S_3S.cpp \
-			Slater_1S_4S.cpp Slater_1S_5S.cpp Slater_1S_6S.cpp \
-			Slater_2S_2S.cpp Slater_2S_3S.cpp Slater_2S_4S.cpp \
-			Slater_2S_5S.cpp Slater_2S_6S.cpp Slater_3S_3S.cpp \
+			Slater_1S_4S.cpp Slater_1S_5S.cpp Slater_2S_2S.cpp \
+			Slater_2S_3S.cpp Slater_2S_4S.cpp Slater_2S_5S.cpp \
+			Slater_4S_4S.cpp Slater_4S_5S.cpp Slater_5S_5S.cpp \
+			DSlater_1S_6S.cpp DSlater_2S_6S.cpp DSlater_3S_6S.cpp \
+			DSlater_4S_6S.cpp DSlater_5S_6S.cpp DSlater_6S_6S.cpp \
+			Slater_1S_6S.cpp Slater_2S_6S.cpp Slater_3S_3S.cpp \
 			Slater_3S_4S.cpp Slater_3S_5S.cpp Slater_3S_6S.cpp \
-			Slater_4S_4S.cpp Slater_4S_5S.cpp Slater_4S_6S.cpp \
-			Slater_5S_5S.cpp Slater_5S_6S.cpp Slater_6S_6S.cpp 
-
-
-g_slater_test_SOURCES	= g_slater_test.c
-
-g_gauss_test_SOURCES	= g_gauss_test.c
-
-g_poldata_test_SOURCES	= g_poldata_test.c
+			Slater_4S_6S.cpp Slater_5S_6S.cpp Slater_6S_6S.cpp 
 
 CLEANFILES   = 	*~ \\\#*
 
