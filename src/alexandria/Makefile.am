@@ -15,7 +15,7 @@ lib_LTLIBRARIES = libalexandria@LIBSUFFIX@.la
 
 LDADD = $(lib_LTLIBRARIES)
 
-libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
+libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
 libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
 libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
