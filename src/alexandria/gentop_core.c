@@ -687,24 +687,6 @@ void copy_atoms(t_atoms *src,t_atoms *dest)
     }
 }
 
-void copy_blocka(t_blocka *src,t_blocka *dest)
-{
-    int i;
-    
-    if (dest->nr < src->nr)
-        srenew(dest->index,src->nr);
-    dest->nr = src->nr;
-    if (dest->nra < src->nra)
-        srenew(dest->a,src->nra);
-    dest->nra = src->nra;
-    dest->nalloc_index = dest->nr;
-    dest->nalloc_a = dest->nra;
-    for(i=0; (i<dest->nr); i++)
-        dest->index[i] = src->index[i];
-    for(i=0; (i<dest->nra); i++)
-        dest->a[i] = src->a[i];
-}
-
 void copy_t_excls(t_excls *src,t_excls *dest)
 {
     int i;
