@@ -19,16 +19,25 @@ libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../m
 libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
 libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
-bin_PROGRAMS 	=  	g_poldata_test		g_gauss_test	g_slater_test
+bin_PROGRAMS 	=  	g_poldata_test		g_gauss_test	g_slater_test	gentop	gen_table
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
 libalexandria@LIBSUFFIX@_la_SOURCES = \
-			xml_util.c	xml_util.h	\
-			poldata.c 	poldata.h \
-			poldata_xml.c	poldata_xml.h \
+			xml_util.c		xml_util.h		\
+			poldata.c 		poldata.h 		\
+			poldata_xml.c		poldata_xml.h 		\
 			gaussian_integrals.c 	gaussian_integrals.h	\
 			gmx_simple_comm.h	gmx_simple_comm.c	\
+			gmx_resp.c 		gmx_resp.h		\
+			gentop_qgen.c		gentop_qgen.h 		\
+			gentop_core.c		gentop_core.h		\
+			gentop_nm2type.c 	gentop_nm2type.h	\
+			gentop_vsite.c	 	gentop_vsite.h		\
+			molprop.c		molprop.h		\
+			molprop_util.c		molprop_util.h		\
+			molprop_xml.c		molprop_xml.h		\
+			molselect.c		molselect.h		\
 			slater_integrals.cpp 	slater_integrals.h	\
 			slater_low.h \
 			DSlater_1S_1S.cpp DSlater_1S_2S.cpp DSlater_1S_3S.cpp \
