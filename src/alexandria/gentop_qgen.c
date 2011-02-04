@@ -497,7 +497,7 @@ gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,gmx_atomprop_t aps,
 {
     gentop_qgen *qgen;
     char *atp;
-    bool bSup=TRUE;
+    gmx_bool bSup=TRUE;
     int i,j,k,atm,nz;
   
     snew(qgen,1);
