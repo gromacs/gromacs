@@ -20,7 +20,7 @@ libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../m
 libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 bin_PROGRAMS 	=  	g_poldata_test	g_gauss_test	g_slater_test	gentop	gen_table\
-			g_mptest	g_merge_mp	g_mp2csv
+			g_mptest	g_merge_mp	g_mp2csv	addquote
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
