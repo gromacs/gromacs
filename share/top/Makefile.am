@@ -16,6 +16,7 @@ gromos53a5.ff \
 gromos53a6.ff \
 oplsaa.ff \
 charmm27.ff \
+alexandria.ff \
 amber94.ff \
 amber96.ff \
 amberGS.ff \

@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
+<gentop>
+  <atomtypes polarizability_unit="A3">
+    <atype elem="Br" description="Bromine" gt_name="Bra" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams=""/>
+    <atype elem="Br" description="Bromine" gt_name="Brb" gt_type="Br" miller_equiv="Br" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="3.28999" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Carbon with sp1" gt_name="C1c" gt_type="CDI" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="1.50062" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Carbon with C=O" gt_name="C2o" gt_type="CRP" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="O2" charge="0" polarizability="1.456" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Carbon sp2" gt_name="C2c" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Carbon with C=S" gt_name="C2s" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="S2" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Aromatic Carbon" gt_name="C2d" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C Cl" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Aromatic Carbon" gt_name="C2h" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C H" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Aromatic Carbon" gt_name="C2i" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C F" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Aromatic Carbon" gt_name="C2j" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C Br" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Aromatic Carbon" gt_name="C2k" gt_type="CTR" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C I" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3a" gt_type="CTP" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="O" charge="0" polarizability="1.49715" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3b" gt_type="CTA" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="1.26585" sigma_pol="0" vdwparams=""/>
+    <atype elem="C" description="Condensed Aromatic Carbon" gt_name="C2e" gt_type="CBR" miller_equiv="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2" charge="0" polarizability="1.76736" sigma_pol="0" vdwparams=""/>
+    <atype elem="Cl" description="Chlorine" gt_name="Cla" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams=""/>
+    <atype elem="Cl" description="Chlorine" gt_name="Clb" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams=""/>
+    <atype elem="Cl" description="Chlorine" gt_name="Clc" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams=""/>
+    <atype elem="F" description="Fluorine" gt_name="F" gt_type="F" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.348558" sigma_pol="0" vdwparams=""/>
+    <atype elem="H" description="Hydrogen bound to Carbon" gt_name="HA" gt_type="HA" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams=""/>
+    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="HP" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams=""/>
+    <atype elem="I" description="Iodine" gt_name="Ia" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams=""/>
+    <atype elem="I" description="Iodine" gt_name="Ib" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Nitrogen in sp1" gt_name="N1a" gt_type="NDI" miller_equiv="NDI" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Nitrogen in sp1" gt_name="N1b" gt_type="NDI" miller_equiv="NDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Nitrogen in sp2" gt_name="N2a" gt_type="NTR2" miller_equiv="NTR2" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.761262" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2b" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2o" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2q" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2s" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2d" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="2 2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3a" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/>
+    <!-- atype elem="N" description="Tetahedral Nitrogen" gt_name="N3q" gt_type="NTE" miller_equiv="NTE" geometry="planar" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/-->
+    <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3b" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/>
+    <atype elem="O" description="Oxygen with double bond" gt_name="O2" gt_type="OTR4" miller_equiv="OTR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.613507" sigma_pol="0" vdwparams=""/>
+    <atype elem="O" description="Oxygen with O-H" gt_name="OTH" gt_type="OTH" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="H" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams=""/>
+    <atype elem="O" description="Oxygen" gt_name="O3a" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams=""/>
+    <atype elem="O" description="Oxygen" gt_name="O3b" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams=""/>
+    <atype elem="O" description="Aromatic Oxygen" gt_name="OPI2" gt_type="OPI2" miller_equiv="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="0" polarizability="0.505675" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P1" gt_type="PTE" miller_equiv="PTE" geometry="linear" numbonds="1" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P2a" gt_type="PTE" miller_equiv="PTE" geometry="planar" numbonds="2" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P3a" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P3b" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P3c" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="P" description="Phosphor" gt_name="P3d" gt_type="PTE" miller_equiv="PTE" geometry="tetrahedral" numbonds="6" neighbors="" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur with S=X" gt_name="S2a" gt_type="STR4" miller_equiv="STR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="3.43911" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="S3a" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="S3b" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="S3q" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="S3d" gt_type="STE" miller_equiv="STE" geometry="tetrahedral" numbonds="6" neighbors="" charge="0" polarizability="2.98596" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="SPI2a" gt_type="SPI2" miller_equiv="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="SPI2b" gt_type="SPI2" miller_equiv="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2" charge="0" polarizability="2.7958" sigma_pol="0" vdwparams=""/>
+  </atomtypes>
+  <gt_bonds length_unit="nm">
+    <gt_bond atom1="H" atom2="H" length="0.0738" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Li" length="0.16" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Be" length="0.134" bondorder="1"/>
+    <gt_bond atom1="H" atom2="B" length="0.119" bondorder="1"/>
+    <gt_bond atom1="H" atom2="C" length="0.11" bondorder="1"/>
+    <gt_bond atom1="H" atom2="N" length="0.102" bondorder="1"/>
+    <gt_bond atom1="H" atom2="O" length="0.096" bondorder="1"/>
+    <gt_bond atom1="H" atom2="F" length="0.092" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Na" length="0.19" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Si" length="0.147" bondorder="1"/>
+    <gt_bond atom1="H" atom2="P" length="0.141" bondorder="1"/>
+    <gt_bond atom1="H" atom2="S" length="0.134" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Cl" length="0.128" bondorder="1"/>
+    <gt_bond atom1="H" atom2="K" length="0.23" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Ge" length="0.152" bondorder="1"/>
+    <gt_bond atom1="H" atom2="As" length="0.15" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Se" length="0.146" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Br" length="0.14" bondorder="1"/>
+    <gt_bond atom1="H" atom2="Sb" length="0.17" bondorder="1"/>
+    <gt_bond atom1="H" atom2="I" length="0.16" bondorder="1"/>
+    <gt_bond atom1="He" atom2="N" length="0.1" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="O" length="0.163" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="F" length="0.158" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="Na" length="0.296" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="Cl" length="0.202" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="K" length="0.346" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="Br" length="0.227" bondorder="1"/>
+    <gt_bond atom1="Li" atom2="I" length="0.242" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="O" length="0.141" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="F" length="0.138" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="S" length="0.176" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="Cl" length="0.18" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="Se" length="0.188" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="Br" length="0.195" bondorder="1"/>
+    <gt_bond atom1="Be" atom2="I" length="0.218" bondorder="1"/>
+    <gt_bond atom1="B" atom2="C" length="0.157" bondorder="1"/>
+    <gt_bond atom1="B" atom2="N" length="0.134" bondorder="1"/>
+    <gt_bond atom1="B" atom2="O" length="0.138" bondorder="1"/>
+    <gt_bond atom1="B" atom2="F" length="0.132" bondorder="1"/>
+    <gt_bond atom1="B" atom2="P" length="0.17" bondorder="1"/>
+    <gt_bond atom1="B" atom2="Cl" length="0.174" bondorder="1"/>
+    <gt_bond atom1="B" atom2="Br" length="0.19" bondorder="1"/>
+    <gt_bond atom1="B" atom2="I" length="0.212" bondorder="1"/>
+    <gt_bond atom1="C" atom2="C" length="0.147" bondorder="1"/>
+    <gt_bond atom1="C" atom2="N" length="0.138" bondorder="1"/>
+    <gt_bond atom1="C" atom2="O" length="0.134" bondorder="1"/>
+    <gt_bond atom1="C" atom2="F" length="0.134" bondorder="1"/>
+    <gt_bond atom1="C" atom2="Si" length="0.186" bondorder="1"/>
+    <gt_bond atom1="C" atom2="P" length="0.168" bondorder="1"/>
+    <gt_bond atom1="C" atom2="S" length="0.178" bondorder="1"/>
+    <gt_bond atom1="C" atom2="Cl" length="0.176" bondorder="1"/>
+    <gt_bond atom1="C" atom2="As" length="0.189" bondorder="1"/>
+    <gt_bond atom1="C" atom2="Se" length="0.188" bondorder="1"/>
+    <gt_bond atom1="C" atom2="Br" length="0.192" bondorder="1"/>
+    <gt_bond atom1="C" atom2="I" length="0.213" bondorder="1"/>
+    <gt_bond atom1="C" atom2="Hg" length="0.21" bondorder="1"/>
+    <gt_bond atom1="N" atom2="N" length="0.127" bondorder="1"/>
+    <gt_bond atom1="N" atom2="O" length="0.124" bondorder="1"/>
+    <gt_bond atom1="N" atom2="F" length="0.141" bondorder="1"/>
+    <gt_bond atom1="N" atom2="Si" length="0.174" bondorder="1"/>
+    <gt_bond atom1="N" atom2="P" length="0.162" bondorder="1"/>
+    <gt_bond atom1="N" atom2="S" length="0.158" bondorder="1"/>
+    <gt_bond atom1="N" atom2="Cl" length="0.186" bondorder="1"/>
+    <gt_bond atom1="N" atom2="Ge" length="0.186" bondorder="1"/>
+    <gt_bond atom1="N" atom2="As" length="0.166" bondorder="1"/>
+    <gt_bond atom1="N" atom2="Br" length="0.224" bondorder="1"/>
+    <gt_bond atom1="O" atom2="O" length="0.136" bondorder="1"/>
+    <gt_bond atom1="O" atom2="F" length="0.152" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Na" length="0.199" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Mg" length="0.176" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Al" length="0.162" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Si" length="0.163" bondorder="1"/>
+    <gt_bond atom1="O" atom2="P" length="0.157" bondorder="1"/>
+    <gt_bond atom1="O" atom2="S" length="0.145" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Cl" length="0.172" bondorder="1"/>
+    <gt_bond atom1="O" atom2="K" length="0.232" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Ca" length="0.206" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Ge" length="0.164" bondorder="1"/>
+    <gt_bond atom1="O" atom2="As" length="0.182" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Se" length="0.165" bondorder="1"/>
+    <gt_bond atom1="O" atom2="I" length="0.2" bondorder="1"/>
+    <gt_bond atom1="O" atom2="La" length="0.2" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Ba" length="0.24" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Zr" length="0.155" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Cr" length="0.16" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Cu" length="0.18" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Pb" length="0.186" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Sr" length="0.225" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Sn" length="0.182" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Ti" length="0.162" bondorder="1"/>
+    <gt_bond atom1="O" atom2="Y" length="0.182" bondorder="1"/>
+    <gt_bond atom1="F" atom2="F" length="0.133" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Na" length="0.194" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Mg" length="0.176" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Al" length="0.165" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Si" length="0.159" bondorder="1"/>
+    <gt_bond atom1="F" atom2="P" length="0.158" bondorder="1"/>
+    <gt_bond atom1="F" atom2="S" length="0.162" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Cl" length="0.168" bondorder="1"/>
+    <gt_bond atom1="F" atom2="K" length="0.22" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Ca" length="0.202" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Ge" length="0.175" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Ga" length="0.185" bondorder="1"/>
+    <gt_bond atom1="F" atom2="As" length="0.175" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Se" length="0.175" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Br" length="0.18" bondorder="1"/>
+    <gt_bond atom1="F" atom2="I" length="0.196" bondorder="1"/>
+    <gt_bond atom1="F" atom2="In" length="0.196" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Cu" length="0.175" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Tl" length="0.22" bondorder="1"/>
+    <gt_bond atom1="F" atom2="Ag" length="0.205" bondorder="1"/>
+    <gt_bond atom1="Na" atom2="Cl" length="0.238" bondorder="1"/>
+    <gt_bond atom1="Na" atom2="K" length="0.366" bondorder="1"/>
+    <gt_bond atom1="Na" atom2="Br" length="0.254" bondorder="1"/>
+    <gt_bond atom1="Na" atom2="I" length="0.276" bondorder="1"/>
+    <gt_bond atom1="Mg" atom2="S" length="0.216" bondorder="1"/>
+    <gt_bond atom1="Mg" atom2="Cl" length="0.219" bondorder="1"/>
+    <gt_bond atom1="Mg" atom2="Se" length="0.228" bondorder="1"/>
+    <gt_bond atom1="Mg" atom2="Br" length="0.233" bondorder="1"/>
+    <gt_bond atom1="Mg" atom2="I" length="0.259" bondorder="1"/>
+    <gt_bond atom1="Al" atom2="CL" length="0.206" bondorder="1"/>
+    <gt_bond atom1="Al" atom2="Br" length="0.222" bondorder="1"/>
+    <gt_bond atom1="Al" atom2="I" length="0.246" bondorder="1"/>
+    <gt_bond atom1="Si" atom2="Si" length="0.232" bondorder="1"/>
+    <gt_bond atom1="Si" atom2="S" length="0.194" bondorder="1"/>
+    <gt_bond atom1="Si" atom2="Cl" length="0.203" bondorder="1"/>
+    <gt_bond atom1="Si" atom2="Br" length="0.219" bondorder="1"/>
+    <gt_bond atom1="Si" atom2="I" length="0.244" bondorder="1"/>
+    <gt_bond atom1="P" atom2="S" length="0.186" bondorder="1"/>
+    <gt_bond atom1="P" atom2="Cl" length="0.204" bondorder="1"/>
+    <gt_bond atom1="P" atom2="As" length="0.204" bondorder="1"/>
+    <gt_bond atom1="S" atom2="S" length="0.206" bondorder="1"/>
+    <gt_bond atom1="S" atom2="Cl" length="0.21" bondorder="1"/>
+    <gt_bond atom1="S" atom2="Ca" length="0.238" bondorder="1"/>
+    <gt_bond atom1="S" atom2="Ge" length="0.202" bondorder="1"/>
+    <gt_bond atom1="S" atom2="Se" length="0.206" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Cl" length="0.203" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="K" length="0.286" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Ca" length="0.251" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Ge" length="0.216" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="As" length="0.218" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Br" length="0.216" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="I" length="0.236" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="In" length="0.25" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Ag" length="0.245" bondorder="1"/>
+    <gt_bond atom1="Cl" atom2="Tl" length="0.255" bondorder="1"/>
+    <gt_bond atom1="K" atom2="Br" length="0.292" bondorder="1"/>
+    <gt_bond atom1="K" atom2="I" length="0.316" bondorder="1"/>
+    <gt_bond atom1="Ca" atom2="Se" length="0.252" bondorder="1"/>
+    <gt_bond atom1="Ca" atom2="Br" length="0.266" bondorder="1"/>
+    <gt_bond atom1="Ca" atom2="I" length="0.29" bondorder="1"/>
+    <gt_bond atom1="Ge" atom2="Se" length="0.216" bondorder="1"/>
+    <gt_bond atom1="Ge" atom2="Te" length="0.24" bondorder="1"/>
+    <gt_bond atom1="As" atom2="Br" length="0.235" bondorder="1"/>
+    <gt_bond atom1="Br" atom2="Br" length="0.232" bondorder="1"/>
+    <gt_bond atom1="Br" atom2="I" length="0.25" bondorder="1"/>
+    <gt_bond atom1="Br" atom2="Ag" length="0.25" bondorder="1"/>
+    <gt_bond atom1="Br" atom2="Tl" length="0.27" bondorder="1"/>
+    <gt_bond atom1="I" atom2="I" length="0.27" bondorder="1"/>
+    <gt_bond atom1="I" atom2="Ag" length="0.27" bondorder="1"/>
+    <gt_bond atom1="I" atom2="Tl" length="0.3" bondorder="1"/>
+  </gt_bonds>
+  <gt_angles angle_unit="degree"/>
+  <bsatoms polarizability_unit="A3">
+    <bsatom elem="H" polarizability="0.17"/>
+    <bsatom elem="C" polarizability="1.51"/>
+    <bsatom elem="N" polarizability="1.05"/>
+    <bsatom elem="O" polarizability="0.57"/>
+    <bsatom elem="F" polarizability="0.22"/>
+    <bsatom elem="P" polarizability="2.48"/>
+    <bsatom elem="S" polarizability="2.99"/>
+    <bsatom elem="Cl" polarizability="2.16"/>
+    <bsatom elem="Br" polarizability="3.29"/>
+    <bsatom elem="I" polarizability="5.45"/>
+    <bsatom elem="0" polarizability="0.32"/>
+  </bsatoms>
+  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3">
+    <milatom milname="H" atomnumber="1" tau_ahc="0.313" alpha_ahp="0.387"/>
+    <milatom milname="F" atomnumber="9" tau_ahc="1.089" alpha_ahp="0.296"/>
+    <milatom milname="Cl" atomnumber="17" tau_ahc="3.165" alpha_ahp="2.315"/>
+    <milatom milname="Br" atomnumber="35" tau_ahc="5.566" alpha_ahp="3.013"/>
+    <milatom milname="I" atomnumber="53" tau_ahc="8.593" alpha_ahp="5.415"/>
+    <milatom milname="CTE" atomnumber="6" tau_ahc="1.294" alpha_ahp="1.061"/>
+    <milatom milname="CTR" atomnumber="6" tau_ahc="1.433" alpha_ahp="1.352"/>
+    <milatom milname="CBR" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896" alexandria_equiv="C2"/>
+    <milatom milname="CDI" atomnumber="6" tau_ahc="1.393" alpha_ahp="1.283"/>
+    <milatom milname="NTE" atomnumber="7" tau_ahc="1.373" alpha_ahp="0.964"/>
+    <milatom milname="NTR2" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
+    <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09" alexandria_equiv="N2"/>
+    <milatom milname="NDI" atomnumber="7" tau_ahc="1.304" alpha_ahp="0.956"/>
+    <milatom milname="OTE" atomnumber="8" tau_ahc="1.249" alpha_ahp="0.637"/>
+    <milatom milname="OTR4" atomnumber="8" tau_ahc="1.216" alpha_ahp="0.569"/>
+    <milatom milname="OPI2" atomnumber="8" tau_ahc="1.083" alpha_ahp="0.274" alexandria_equiv="O2"/>
+    <milatom milname="STE" atomnumber="16" tau_ahc="3.496" alpha_ahp="3"/>
+    <milatom milname="STR4" atomnumber="16" tau_ahc="3.827" alpha_ahp="3.729"/>
+    <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7" alexandria_equiv="S2"/>
+    <milatom milname="PTE" atomnumber="15" tau_ahc="2.485" alpha_ahp="1.538"/>
+    <milatom milname="Si" atomnumber="14" tau_ahc="2.7" alpha_ahp="1.97"/>
+  </milatoms>
+  <symmetric_charges>
+    <sym_charge central="C" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="3"/>
+    <sym_charge central="N" attached="H" numattach="2"/>
+    <sym_charge central="O" attached="H" numattach="2"/>
+    <sym_charge central="C" attached="F" numattach="3"/>
+    <sym_charge central="C" attached="Cl" numattach="3"/>
+    <sym_charge central="C" attached="Br" numattach="3"/>
+    <sym_charge central="C" attached="I" numattach="3"/>
+    <sym_charge central="Si" attached="H" numattach="3"/>
+  </symmetric_charges>
+  <eemprops>
+    <eemprop model="AXp" name="HA" jaa="24.4306" chi="2.2" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="HP" jaa="19.4656" chi="2.16598" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="BR" jaa="24.1408" chi="4.88474" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CDI" jaa="12.7396" chi="2.5644" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CRP" jaa="14.4632" chi="1.03633" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CTR" jaa="17.4792" chi="3.52573" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CBR" jaa="16.9897" chi="1.23067" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CTA" jaa="23.5304" chi="2.43391" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CTP" jaa="25.8324" chi="10.0956" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="NDI" jaa="20.3808" chi="8.83108" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="NPI2" jaa="12.4496" chi="1.07492" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="NTR2" jaa="17.3623" chi="7.32133" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="NTE" jaa="29.2935" chi="8.20182" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="OPI2" jaa="18.5276" chi="4.25119" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="OTR4" jaa="23.4406" chi="9.26716" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="OTE" jaa="29.3594" chi="7.36583" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="OTH" jaa="29.9999" chi="10.9108" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="F" jaa="28.2715" chi="5.24103" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="I" jaa="17.7799" chi="4.29432" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="PTE" jaa="13.9092" chi="3.84663" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="SPI2" jaa="17.9325" chi="3.17047" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="STR4" jaa="24.6032" chi="8.72197" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="STE" jaa="13.3722" chi="3.98631" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="CL" jaa="12.9307" chi="4.12693" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXg" name="BR" jaa="10" chi="10" zeta="0 61.1 41.2 18.9 13.0" charge="35 -2 -8 -8 0" row="1 2 3 4 5"/>
+    <eemprop model="AXg" name="CBR" jaa="10.4861" chi="2.48505" zeta="0 40 8.922" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CDI" jaa="10.4861" chi="2.48505" zeta="0 40 8.922" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CRP" jaa="10.4861" chi="2.48505" zeta="0 59.3 10.2" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CTA" jaa="10.4861" chi="2.48505" zeta="0 21.5 56.0" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CTP" jaa="10.4861" chi="2.48505" zeta="0 40.6 12.0" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CTR" jaa="10.4861" chi="2.48505" zeta="0 44.4 10.9" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="CL" jaa="10.5557" chi="4.40485" zeta="0 90.1 61.5 55.6" charge="17 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXg" name="F" jaa="23.6575" chi="6" zeta="0 110.1 28.2" charge="9 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="HA" jaa="19.5586" chi="2.2" zeta="0 11.9" charge="1 0" row="0 1"/>
+    <eemprop model="AXg" name="HP" jaa="20.9395" chi="2.2" zeta="0 11.4" charge="1 0" row="0 1"/>
+    <eemprop model="AXg" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 40 10" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 30.8 49.9" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="NTR2" jaa="24.9083" chi="7.49112" zeta="0 38.6 10.8" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="OPI2" jaa="28.4907" chi="11.3236" zeta="0 40.9 15.8" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="OTE" jaa="28.4907" chi="11.3236" zeta="0 40.8 15.7" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="OTH" jaa="28.4907" chi="11.3236" zeta="0 55.3 35.0" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="OTR4" jaa="21.1173" chi="10.7594" zeta="0 39.7 13.9" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="PTE" jaa="10.1539" chi="3.98949" zeta="0 40.9 28.9 8.6" charge="15 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXg" name="SPI2" jaa="13.5364" chi="4.34788" zeta="0 80 40 20" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXg" name="STE" jaa="13.5364" chi="4.34788" zeta="0 143.5 80.5 9.8" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXg" name="STR4" jaa="13.5364" chi="4.34788" zeta="0 80 40 20" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXs" name="BR" jaa="10" chi="10" zeta="0 100.1 80.7 59.8 41.5" charge="35 -2 -8 -8 0" row="0 1 2 3 4"/>
+    <eemprop model="AXs" name="CBR" jaa="10.4861" chi="2.48505" zeta="0 60 28.922" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="CDI" jaa="10.4861" chi="2.48505" zeta="0 60 28.922" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="CRP" jaa="10.4861" chi="2.48505" zeta="0 58.7 31.1" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="CTA" jaa="10.4861" chi="2.48505" zeta="0 60.7 30.1" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="CTP" jaa="10.4861" chi="2.48505" zeta="0 59.2 30.4" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="CTR" jaa="10.4861" chi="2.48505" zeta="0 59.5 28.4" charge="6 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="Cl" jaa="11.7076" chi="3.61331" zeta="0 40.7 34.1 25.0" charge="17 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXs" name="F" jaa="17.7799" chi="4.29432" zeta="0 89.1 25.0" charge="9 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="HA" jaa="19.5586" chi="2.2" zeta="0 22.5" charge="1 0" row="0 1"/>
+    <eemprop model="AXs" name="HP" jaa="20.9395" chi="2.2" zeta="0 21.5" charge="1 0" row="0 1"/>
+    <eemprop model="AXs" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 60 38" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 61.6 38.2" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 61.4 36.9" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="NTR2" jaa="24.9083" chi="7.49112" zeta="0 60.1 37.1" charge="7 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="OPI2" jaa="28.4907" chi="11.3236" zeta="0 56.0 20.0" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="OTE" jaa="28.4907" chi="11.3236" zeta="0 58.5 20.0" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="OTH" jaa="28.4907" chi="11.3236" zeta="0 56.8 20.0" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="OTR4" jaa="21.1173" chi="10.7594" zeta="0 40.1 21.8" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXs" name="PTE" jaa="1" chi="1" zeta="0 39.6 24.5 15.0" charge="15 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXs" name="SPI2" jaa="1" chi="1" zeta="0 80 60 20" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXs" name="STE" jaa="1" chi="1" zeta="0 80.6 59.5 24.9" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="AXs" name="STR4" jaa="1" chi="1" zeta="0 80 60 20" charge="16 -2 -8 0" row="0 1 2 3"/>
+    <eemprop model="Yang" name="H" jaa="13.8904" chi="4.498" zeta="19.8639" charge="0" row="1"/>
+    <eemprop model="Yang" name="LI" jaa="4.772" chi="3.006" zeta="7.88857" charge="0" row="1"/>
+    <eemprop model="Yang" name="C" jaa="10.126" chi="5.723" zeta="16.1825" charge="0" row="1"/>
+    <eemprop model="Yang" name="N" jaa="11.76" chi="8.599" zeta="17.1783" charge="0" row="1"/>
+    <eemprop model="Yang" name="O" jaa="13.364" chi="8.961" zeta="18.3595" charge="0" row="1"/>
+    <eemprop model="Yang" name="F" jaa="14.498" chi="6.374" zeta="17.3973" charge="0" row="1"/>
+    <eemprop model="Yang" name="NA" jaa="4.592" chi="2.843" zeta="8.24724" charge="0" row="1"/>
+    <eemprop model="Yang" name="SI" jaa="6.974" chi="4.168" zeta="14.622" charge="0" row="1"/>
+    <eemprop model="Yang" name="P" jaa="8" chi="5.463" zeta="15.6039" charge="0" row="1"/>
+    <eemprop model="Yang" name="S" jaa="8.972" chi="6.268" zeta="18.1579" charge="0" row="1"/>
+    <eemprop model="Yang" name="CL" jaa="9.892" chi="5.464" zeta="17.2993" charge="0" row="1"/>
+    <eemprop model="Yang" name="K" jaa="3.84" chi="2.421" zeta="8.5493" charge="0" row="1"/>
+    <eemprop model="Yang" name="BR" jaa="8.85" chi="5.79" zeta="19.3764" charge="0" row="1"/>
+    <eemprop model="Yang" name="RB" jaa="3.692" chi="2.331" zeta="9.75505" charge="0" row="1"/>
+    <eemprop model="Yang" name="I" jaa="7.524" chi="5.622" zeta="20.2712" charge="0" row="1"/>
+    <eemprop model="Yang" name="CS" jaa="3.422" chi="2.183" zeta="10.7019" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="H" jaa="17.95" chi="1" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="C" jaa="9" chi="5.25" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="N" jaa="9.39" chi="8.8" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="O" jaa="14.34" chi="14.72" zeta="0" charge="0" row="1"/>
+    <eemprop model="Bultinck" name="F" jaa="19.77" chi="15" zeta="0" charge="0" row="1"/>
+    <eemprop model="Rappe" name="H" jaa="13.8904" chi="4.528" zeta="20.2163" charge="0" row="1"/>
+    <eemprop model="Rappe" name="LI" jaa="4.772" chi="3.006" zeta="7.88772" charge="0" row="1"/>
+    <eemprop model="Rappe" name="C" jaa="10.126" chi="5.343" zeta="16.1817" charge="0" row="1"/>
+    <eemprop model="Rappe" name="N" jaa="11.76" chi="6.899" zeta="17.1757" charge="0" row="1"/>
+    <eemprop model="Rappe" name="O" jaa="13.364" chi="8.741" zeta="18.3587" charge="0" row="1"/>
+    <eemprop model="Rappe" name="F" jaa="14.948" chi="10.874" zeta="17.3968" charge="0" row="1"/>
+    <eemprop model="Rappe" name="NA" jaa="4.592" chi="2.843" zeta="8.24677" charge="0" row="1"/>
+    <eemprop model="Rappe" name="SI" jaa="6.974" chi="4.168" zeta="14.6208" charge="0" row="1"/>
+    <eemprop model="Rappe" name="P" jaa="8" chi="5.463" zeta="15.6035" charge="0" row="1"/>
+    <eemprop model="Rappe" name="S" jaa="8.972" chi="6.928" zeta="16.4217" charge="0" row="1"/>
+    <eemprop model="Rappe" name="CL" jaa="9.892" chi="8.564" zeta="17.2986" charge="0" row="1"/>
+    <eemprop model="Rappe" name="K" jaa="3.84" chi="2.421" zeta="8.54912" charge="0" row="1"/>
+    <eemprop model="Rappe" name="BR" jaa="8.85" chi="7.79" zeta="19.3754" charge="0" row="1"/>
+    <eemprop model="Rappe" name="RB" jaa="3.692" chi="2.331" zeta="9.75477" charge="0" row="1"/>
+    <eemprop model="Rappe" name="I" jaa="7.524" chi="6.822" zeta="20.2692" charge="0" row="1"/>
+    <eemprop model="Rappe" name="CS" jaa="3.422" chi="2.183" zeta="10.7015" charge="0" row="1"/>
+    <eemprop_ref model="Yang" epref="Yang2006b"/>
+    <eemprop_ref model="Bultinck" epref="Bultinck2002a"/>
+    <eemprop_ref model="Rappe" epref="Rappe1991a"/>
+    <eemprop_ref model="AXp" epref="Maaren2010a"/>
+    <eemprop_ref model="AXs" epref="Maaren2010a"/>
+    <eemprop_ref model="AXg" epref="Maaren2010a"/>
+  </eemprops>
+</gentop>
