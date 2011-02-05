@@ -50,18 +50,18 @@ typedef struct gmx_poldata *gmx_poldata_t;
 
 extern gmx_poldata_t gmx_poldata_init();
 
+extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
+
 extern void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
                                     char *gt_name,char *gt_type,
                                     char *miller_equiv,
                                     int charge,char *geometry,int numbonds,
                                     char *neighbors,
                                     double polarizability,double sig_pol,
-                                    char *vdwparams,
-                                    char *spref);
+                                    char *vdwparams);
 
 extern void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
-				  double polarizability,double sig_pol,
-				  char *spref);
+                                    double polarizability,double sig_pol);
 		
 extern void gmx_poldata_set_ffatype_ff(gmx_poldata_t pd,char *forcefield);
 
@@ -86,16 +86,17 @@ extern char *gmx_poldata_get_gt_type(gmx_poldata_t pd,char *gt_atom);
 extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *gt_atom);
 
 /* Returns name or NULL if last or not found */
-extern char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *name,char **elem,char **desc,
-                                   char **gt_type,char **miller_equiv,
-                                   int *charge,char **geometry,
-                                   int *numbonds,char **neighbors,
-                                   double *polarizability,double *sig_pol,
-                                   char **spref);
+extern char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *name,
+                                     char **elem,char **desc,
+                                     char **gt_type,char **miller_equiv,
+                                     int *charge,char **geometry,
+                                     int *numbonds,char **neighbors,
+                                     double *polarizability,double *sig_pol,
+                                     char **vdwparams);
 
 /* Return 1 if OK, 0 if not found */				 
 extern int gmx_poldata_gt_type_polarizability(gmx_poldata_t pd,char *gt_type,
-                                             double *polarizability,double *sig_pol);
+                                              double *polarizability,double *sig_pol);
  
 extern void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
                                    int atomnumber,

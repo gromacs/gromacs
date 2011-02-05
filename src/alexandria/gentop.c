@@ -247,7 +247,6 @@ int main(int argc, char *argv[])
     gmx_atomprop_t aps;
     gmx_poldata_t  pd;
     char       title[STRLEN];
-    const char *forcefield = "alexandria.ff";
     rvec       *x=NULL;        /* coordinates? */
     int        *nbonds;
     char       **smnames;
@@ -264,9 +263,10 @@ int main(int argc, char *argv[])
     t_symtab   symtab;
     int        nqa=0,iModel;
     real       cutoff,qtot,mtot;
-    char *gentop_version = (char *)PACKAGE_STRING;
+    char       *gentop_version = (char *)PACKAGE_STRING;
     const char *fn,*xmlf;
-    char       rtp[STRLEN];
+    char       rtp[STRLEN],forcefield[STRLEN],ffdir[STRLEN];
+    char       ffname[STRLEN],suffix[STRLEN],buf[STRLEN],gentopdat[STRLEN];
     gmx_conect gc = NULL;
     const char *potfn,*rhofn,*hisfn,*difffn,*diffhistfn,*reffn;
     gmx_resp_t gr = NULL;
@@ -284,7 +284,6 @@ int main(int argc, char *argv[])
         { efLOG, "-g03",  "gauss",  ffOPTRD },
         { efDAT, "-q",    "qout", ffOPTWR },
         { efDAT, "-x",    "mol",  ffOPTWR },
-        { efDAT, "-di",   "gentop", ffOPTRD },
         { efDAT, "-mpdb", "molprops", ffOPTRD },
         { efCUB, "-pot",  "potential", ffOPTWR },
         { efCUB, "-ref",  "refpot", ffOPTRD },
@@ -317,9 +316,12 @@ int main(int argc, char *argv[])
     static const char *cgopt[] = { NULL, "Group", "Atom", "Neutral", NULL };
     static const char *lot = "B3LYP/aug-cc-pVTZ",*cat="Other";
     static const char *dzatoms = "";
+    static const char *ff = "select";
     t_pargs pa[] = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
+        { "-ff",     FALSE, etSTR,  {&ff},
+          "Force field, interactive by default. Use -h for information." },
         { "-db",     FALSE, etSTR,  {&dbname},
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
@@ -424,6 +426,25 @@ int main(int argc, char *argv[])
 
     parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                       asize(desc),desc,asize(bugs),bugs,&oenv);
+    
+    /* Force field selection, interactive or direct */
+    choose_ff(strcmp(ff,"select") == 0 ? NULL : ff,
+              forcefield,sizeof(forcefield),
+              ffdir,sizeof(ffdir));
+
+    if (strlen(forcefield) > 0) 
+    {
+        strcpy(ffname,forcefield);
+        ffname[0] = toupper(ffname[0]);
+    } 
+    else 
+    {
+        gmx_fatal(FARGS,"Empty forcefield string");
+    }
+    sprintf(gentopdat,"%s/gentop.dat",ffdir);
+    printf("\nUsing the %s force field file %s\n\n",
+           ffname,gentopdat);
+    
     /* Check the options */
     bRTP = opt2bSet("-r",NFILE,fnm);
     bITP = opt2bSet("-oi",NFILE,fnm);
@@ -453,10 +474,11 @@ int main(int argc, char *argv[])
     aps = gmx_atomprop_init();
   
     /* Read polarization stuff */
-    if (bVerbose)
-        printf("Reading force field information.\n");
-    if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),aps)) == NULL)
+    if ((pd = gmx_poldata_read(gentopdat,aps)) == NULL)
         gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
+    if (bVerbose)
+        printf("Reading force field information. There are %d atomtypes.\n",
+               gmx_poldata_get_natypes(pd));
   
     /* Init parameter lists */
     snew(plist,F_NRE);
@@ -517,7 +539,10 @@ int main(int argc, char *argv[])
     else 
     {
         if ((NULL == molnm) || (strlen(molnm) == 0))
+        {
             mymol.name = strdup("BOE");
+            molnm = strdup(mymol.name);
+        }
         else
             mymol.name = strdup(molnm);
         mymol.nr   = 1;

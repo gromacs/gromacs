@@ -85,7 +85,7 @@ enum {
     exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
     exmlGT_NAME, exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE,
     exmlNEIGHBORS, 
-    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlSPREF,
+    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
     exmlGT_BONDS, exmlLENGTH_UNIT, exmlGT_BOND,
     exmlATOM1, exmlATOM2, exmlLENGTH, exmlBONDORDER,
     exmlGT_ANGLES, exmlANGLE_UNIT, exmlGT_ANGLE,
@@ -103,11 +103,11 @@ enum {
   
 static const char *exml_names[exmlNR] = {
     "gentop",
-    "gt_atoms", "forcefield", "polarizability_unit",
-    "gt_atom", "elem", "name", "description",
+    "atomtypes", "forcefield", "polarizability_unit",
+    "atype", "elem", "name", "description",
     "gt_name", "gt_type", "miller_equiv", "charge",
     "neighbors", 
-    "geometry", "numbonds", "polarizability", "sigma_pol", "spref",
+    "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
     "gt_bonds", "length_unit", "gt_bond",
     "atom1", "atom2", "length", "bondorder",
     "gt_angles", "angle_unit", "gt_angle",
@@ -198,9 +198,9 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlGT_ATOM:
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlMILLER_EQUIV]) && 
             NN(xbuf[exmlCHARGE]) && NN(xbuf[exmlGEOMETRY]) && 
-            NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlNUMBONDS]) && 
-            NN(xbuf[exmlNEIGHBORS]) &&
-            NN(xbuf[exmlSPREF]) && NN(xbuf[exmlGT_TYPE]) && NN(xbuf[exmlGT_NAME]))
+            NN(xbuf[exmlNUMBONDS]) && NN(xbuf[exmlNEIGHBORS]) &&
+            NN(xbuf[exmlVDWPARAMS]) && NN(xbuf[exmlGT_TYPE]) && 
+            NN(xbuf[exmlGT_NAME]))
             gmx_poldata_add_ffatype(pd,xbuf[exmlELEM],
                                     xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
                                     xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
@@ -209,9 +209,9 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
                                     xbuf[exmlGEOMETRY],
                                     atoi(xbuf[exmlNUMBONDS]),
                                     xbuf[exmlNEIGHBORS],
-                                    atof(xbuf[exmlPOLARIZABILITY]),
+                                    NN(xbuf[exmlPOLARIZABILITY]) ? atof(xbuf[exmlPOLARIZABILITY]) : 0,
                                     NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
-                                    NULL,xbuf[exmlSPREF]);
+                                    xbuf[exmlVDWPARAMS]);
         break;
     case exmlMILATOM:
         if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) && 
@@ -348,7 +348,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     xmlNodePtr child,grandchild,comp;
     int    i,charge,atomnumber,numbonds,
         numattach,element,model;
-    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*spref,*blu,
+    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*vdwparams,*blu,
         *atom1,*atom2,*atom3,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc;
     char *neighbors,*zeta,*qstr,*rowstr;
@@ -365,7 +365,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     while ((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,&miller_equiv,
                                          &charge,&geometry,
                                          &numbonds,&neighbors,
-                                         &polarizability,&sig_pol,&spref)) != NULL) {
+                                         &polarizability,&sig_pol,&vdwparams)) != NULL) {
         grandchild = add_xml_child(child,exml_names[exmlGT_ATOM]);
         add_xml_char(grandchild,exml_names[exmlELEM],elem);
         add_xml_char(grandchild,exml_names[exmlDESC],desc);
@@ -378,7 +378,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_int(grandchild,exml_names[exmlCHARGE],charge);
         add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
         add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
-        add_xml_char(grandchild,exml_names[exmlSPREF],spref);
+        add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);
     }
 
     child = add_xml_child(parent,exml_names[exmlGT_BONDS]);

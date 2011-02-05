@@ -45,11 +45,10 @@
 #include "gmx_simple_comm.h"
 
 typedef struct {
-    char   *desc,*name,*type,*elem,*miller_equiv,*spref,*neighbors,*geometry;
+    char   *desc,*name,*type,*elem,*miller_equiv,*neighbors,*geometry,*vdwparams;
     char   **nb;
     int    charge,numbonds,numnb;
     double polarizability,sig_pol;
-    double *vdwparams;
 } t_ffatype;
 
 typedef struct {
@@ -135,8 +134,7 @@ void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
                              char *geometry,int numbonds,
                              char *neighbors,
                              double polarizability,double sig_pol,
-                             char *vdwparams,
-                             char *spref)
+                             char *vdwparams)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;
@@ -178,14 +176,18 @@ void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
             }
             sfree(ptr);
         }
-        sp->spref          = strdup(spref);
     }
     else 
         fprintf(stderr,"Atom %s was already added to poldata record\n",gt_name);
 }
 
+int gmx_poldata_get_natypes(gmx_poldata_t pd)
+{
+    return pd->nspoel;
+}
+
 void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
-                           double polarizability,double sig_pol,char *spref)
+                           double polarizability,double sig_pol)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;
@@ -196,9 +198,6 @@ void gmx_poldata_set_ffatype(gmx_poldata_t pd,char *gt_type,
             sp = &(pold->spoel[i]);
             sp->polarizability = polarizability;
             sp->sig_pol = sig_pol;
-            if (sp->spref)
-                sfree(sp->spref);
-            sp->spref = strdup(spref);
         }
     }
 }		
@@ -377,7 +376,8 @@ char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *gt_name,char **elem,char **
                             char **gt_type,char **miller_equiv,
                             int *charge,char **geometry,
                             int *numbonds,char **neighbors,
-                            double *polarizability,double *sig_pol,char **spref)
+                            double *polarizability,double *sig_pol,
+                            char **vdwparams)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;
@@ -402,7 +402,7 @@ char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *gt_name,char **elem,char **
         assign_str(desc,sp->desc);
         assign_str(gt_type,sp->type);
         assign_str(miller_equiv,sp->miller_equiv);
-        assign_str(spref,sp->spref);
+        assign_str(vdwparams,sp->vdwparams);
         assign_str(neighbors,sp->neighbors);
         if (!gt_name)
             pold->nalexandria_c++;
