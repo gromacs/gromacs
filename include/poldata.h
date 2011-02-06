@@ -55,7 +55,7 @@ extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
 extern void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
                                     char *gt_name,char *gt_type,
                                     char *miller_equiv,
-                                    int charge,char *geometry,int numbonds,
+                                    char *charge,char *geometry,int numbonds,
                                     char *neighbors,
                                     double polarizability,double sig_pol,
                                     char *vdwparams);
@@ -89,7 +89,7 @@ extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *gt_atom);
 extern char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *name,
                                      char **elem,char **desc,
                                      char **gt_type,char **miller_equiv,
-                                     int *charge,char **geometry,
+                                     char **charge,char **geometry,
                                      int *numbonds,char **neighbors,
                                      double *polarizability,double *sig_pol,
                                      char **vdwparams);

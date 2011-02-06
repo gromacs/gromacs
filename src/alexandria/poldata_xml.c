@@ -205,7 +205,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
                                     xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
                                     xbuf[exmlGT_NAME],xbuf[exmlGT_TYPE],
                                     xbuf[exmlMILLER_EQUIV],
-                                    atoi(xbuf[exmlCHARGE]),
+                                    xbuf[exmlCHARGE],
                                     xbuf[exmlGEOMETRY],
                                     atoi(xbuf[exmlNUMBONDS]),
                                     xbuf[exmlNEIGHBORS],
@@ -346,9 +346,9 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
                             gmx_atomprop_t aps)
 {
     xmlNodePtr child,grandchild,comp;
-    int    i,charge,atomnumber,numbonds,
+    int    i,atomnumber,numbonds,
         numattach,element,model;
-    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*vdwparams,*blu,
+    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*vdwparams,*blu,*charge,
         *atom1,*atom2,*atom3,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc;
     char *neighbors,*zeta,*qstr,*rowstr;
@@ -363,9 +363,9 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     if (tmp)
         add_xml_char(child,exml_names[exmlGT_FORCEFIELD],tmp);
     while ((name = gmx_poldata_get_ffatype(pd,NULL,&elem,&desc,&gt_type,&miller_equiv,
-                                         &charge,&geometry,
-                                         &numbonds,&neighbors,
-                                         &polarizability,&sig_pol,&vdwparams)) != NULL) {
+                                           &charge,&geometry,
+                                           &numbonds,&neighbors,
+                                           &polarizability,&sig_pol,&vdwparams)) != NULL) {
         grandchild = add_xml_child(child,exml_names[exmlGT_ATOM]);
         add_xml_char(grandchild,exml_names[exmlELEM],elem);
         add_xml_char(grandchild,exml_names[exmlDESC],desc);
@@ -375,7 +375,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
         add_xml_char(grandchild,exml_names[exmlGEOMETRY],geometry);
         add_xml_int(grandchild,exml_names[exmlNUMBONDS],numbonds);
         add_xml_char(grandchild,exml_names[exmlNEIGHBORS],neighbors);
-        add_xml_int(grandchild,exml_names[exmlCHARGE],charge);
+        add_xml_char(grandchild,exml_names[exmlCHARGE],charge);
         add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
         add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
         add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);

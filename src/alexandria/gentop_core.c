@@ -72,14 +72,15 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
               gmx_conect gc,t_params *bond,int nbond[],
               gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol)
 {
-    t_param b;
-    int     i,j;
-    t_pbc   pbc;
-    rvec    dx;
-    real    dx1;
-    double  b_order;
-    gmx_bool    bBond;
-  
+    t_param  b;
+    int      i,j;
+    t_pbc    pbc;
+    rvec     dx;
+    real     dx1;
+    double   b_order;
+    gmx_bool bBond;
+    char     *elem_i,*elem_j;
+    
     for(i=0; (i<MAXATOMLIST); i++)
         b.a[i] = -1;
     for(i=0; (i<MAXFORCEPARAM); i++)
@@ -89,10 +90,12 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
         set_pbc(&pbc,-1,box);
     for(i=0; (i<atoms->nr); i++) 
     {
+        elem_i = gmx_atomprop_element(aps,atoms->atom[i].atomnumber);
         /*    if ((i % 10) == 0)
               fprintf(stderr,"\ratom %d",i);*/
         for(j=i+1; (j<atoms->nr); j++) 
         {
+            elem_j = gmx_atomprop_element(aps,atoms->atom[j].atomnumber);
             if (bPBC)
                 pbc_dx(&pbc,x[i],x[j],dx);
             else
@@ -111,10 +114,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             else 
             {
                 b_order =
-                    gmx_poldata_get_bondorder(pd,
-                                              gmx_atomprop_element(aps,atoms->atom[i].atomnumber),
-                                              gmx_atomprop_element(aps,atoms->atom[j].atomnumber),
-                                              dx1,tol);
+                    gmx_poldata_get_bondorder(pd,elem_i,elem_j,dx1,tol);
                 bBond = (b_order > 0);
             }
             if (bBond) 

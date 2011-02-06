@@ -2,8 +2,8 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <atomtypes polarizability_unit="A3">
-    <atype elem="Br" description="Bromine" gt_name="Bra" gt_type="opls_402" miller_equiv="Br" geometry="tetrahedral" numbonds="1" neighbors="" charge="-1.000" vdwparams=""/>
-    <atype elem="Br" description="Bromine" gt_name="Brb" gt_type="opls_722" miller_equiv="Br" geometry="tetrahedral" numbonds="5" neighbors="" charge="-0.220" vdwparams=""/>
+    <atype elem="Br" description="Bromide" gt_name="Br-" gt_type="opls_402" miller_equiv="Br" geometry="tetrahedral" numbonds="0" neighbors="" charge="-1.000" vdwparams=""/>
+    <atype elem="Br" description="Bromide" gt_name="Br" gt_type="opls_722" miller_equiv="Br" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.22" vdwparams=""/>
     <atype elem="C" description="Carbon with sp1" gt_name="C1bn" gt_type="opls_230" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="N1 C2" charge="0.200" vdwparams=""/>
     <atype elem="C" description="Carbon with sp1" gt_name="C1n" gt_type="opls_242" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="N" charge="0.020" vdwparams=""/>
     <atype elem="C" description="Carbon with sp1" gt_name="C1c" gt_type="opls_067" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0.000" vdwparams=""/>
@@ -17,8 +17,12 @@
     <atype elem="C" description="Aromatic Carbon" gt_name="C2j" gt_type="opls_122" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C Br" charge="0.230" vdwparams=""/>
     <atype elem="C" description="Aromatic Carbon" gt_name="C2k" gt_type="opls_122" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C C I" charge="0.220" vdwparams=""/>
     <atype elem="C" description="Aromatic Carbon" gt_name="C2n" gt_type="opls_166" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C1bn" charge="0.150" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon bound to Cl" gt_name="C3cl" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Cl" charge="-0.006" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3a" gt_type="opls_139" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="O" charge="0.000" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3b" gt_type="opls_138" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="H H H H" charge="-0.240" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3o2" gt_type="opls_157" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT H H" charge="0.145" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3o1" gt_type="opls_158" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT H" charge="0.205" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral Carbon" gt_name="C3o" gt_type="opls_159" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT" charge="0.265" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s2" gt_type="opls_206" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S H H" charge="0.060" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s1" gt_type="opls_207" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S H" charge="0.120" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s" gt_type="opls_208" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S" charge="0.18" vdwparams=""/>
@@ -31,16 +35,19 @@
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3cn1" gt_type="opls_137" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C1 H" charge="-0.060" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3cn0" gt_type="opls_139" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C1" charge="0.000" vdwparams=""/>
     <atype elem="C" description="Condensed Aromatic Carbon" gt_name="C2e" gt_type="opls_145" miller_equiv="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2" charge="0" vdwparams=""/>
-    <atype elem="Cl" description="Chlorine" gt_name="Cla" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.200" vdwparams=""/>
-    <atype elem="Cl" description="Chlorine" gt_name="Clb" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" vdwparams=""/>
+    <atype elem="Cl" description="Chlorine" gt_name="Cl-" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="0" neighbors="" charge="-1" vdwparams=""/>
+    <atype elem="Cl" description="Chlorine" gt_name="Cl" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.2" vdwparams=""/>
     <atype elem="Cl" description="Chlorine" gt_name="Clc" gt_type="opls_123" miller_equiv="Cl" geometry="tetrahedral" numbonds="4" neighbors="" charge="-0.062" vdwparams=""/>
     <atype elem="F" description="Fluorine" gt_name="F" gt_type="opls_400" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="-1" vdwparams=""/>
     <atype elem="H" description="Hydrogen bound to Carbon next to CN" gt_name="HAcn" gt_type="opls_759" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3cn" charge="0.060" vdwparams=""/>
     <atype elem="H" description="Hydrogen bound to Benzene Carbon" gt_name="HAb" gt_type="opls_146" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2" charge="0.015" vdwparams=""/>
+    <atype elem="H" description="Hydrogen bound to Alcohol Carbon" gt_name="HAo" gt_type="opls_156" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3o" charge="0.040" vdwparams=""/>
     <atype elem="H" description="Hydrogen bound to Carbon" gt_name="HAc" gt_type="opls_140" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C" charge="0.060" vdwparams=""/>
+    <atype elem="H" description="Hydrogen bound to Carbon bound to Cl" gt_name="HAcl" gt_type="opls_153" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C" charge="0.103" vdwparams=""/>
     <atype elem="H" description="Other Hydrogen" gt_name="HPss" gt_type="opls_205" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="S3s" charge="0.235" vdwparams=""/>
     <atype elem="H" description="Other Hydrogen" gt_name="HPs" gt_type="opls_204" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="S3" charge="0.155" vdwparams=""/>
-    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="opls_140" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0.060" vdwparams=""/>
+    <atype elem="H" description="Other Hydrogen" gt_name="HPo" gt_type="opls_155" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="O" charge="0.418" vdwparams=""/>
+    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="opls_155" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0.418" vdwparams=""/>
     <atype elem="I" description="Iodine" gt_name="Ia" gt_type="opls_403" miller_equiv="I" geometry="tetrahedral" numbonds="1" neighbors="" charge="-1" vdwparams=""/>
     <atype elem="I" description="Iodine" gt_name="Ib" gt_type="opls_732" miller_equiv="I" geometry="tetrahedral" numbonds="5" neighbors="" charge="-0.1" vdwparams=""/>
     <atype elem="N" description="Nitrogen in sp1" gt_name="N1a" gt_type="opls_237" miller_equiv="NDI" geometry="tetrahedral" numbonds="1" neighbors="C1bn" charge="-0.760" vdwparams=""/>
