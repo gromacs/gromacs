@@ -1115,11 +1115,13 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 	      qhop_db **db){
 
   int 
-    nr_qhop_atoms, nr_qhop_residues, i, target;
+    nr_qhop_atoms, nr_qhop_residues, i, j, target, ft;
   t_qhoprec
     *qhoprec; 
   t_pbc
     pbc;
+  t_qhop_residue
+    *qres;
   
   qhoprec = NULL;
   nr_qhop_atoms    = 0;
@@ -1149,19 +1151,6 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
   scan_for_H(qhoprec, *db);
 
-  for (i=0; i < qhoprec->nr_qhop_residues; i++)
-    {
-      /* What flavour of the residue shall we set it to? */
-      target = which_subRes(mtop, qhoprec, *db, i);
-      qhoprec->qhop_residues[i].res = target;
-      set_interactions(qhoprec, *db, md, qhoprec->qhop_atoms, &(qhoprec->qhop_residues[i]));
-    }
-
-  /* Complete the t_mdatoms */
-  qhop_atoms2md(md, qhoprec);
-
-  qhoprec->hop = NULL;
-  
   /* make tables of interacting atoms for the bonded rtp data. */
   qhop_db_names2nrs(*db);
 
@@ -1169,6 +1158,39 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   (*db)->inertH = find_inert_atomtype(mtop, fr);
 
+  for (i=0; i < qhoprec->nr_qhop_residues; i++)
+    {
+      qres = &(qhoprec->qhop_residues[i]);
+
+      /* What flavour of the residue shall we set it to? */
+      target = which_subRes(mtop, qhoprec, *db, i);
+      qres->res = target;
+      set_interactions(qhoprec, *db, md, qhoprec->qhop_atoms, qres);
+
+      /* Alocate memory for the bonded index. */
+      /* This should probably go to qhop_toputil.c */
+      snew(qres->bindex.ilist_pos, F_NRE);
+      snew(qres->bindex.indexed,   F_NRE);
+      for (j=0; j < ebtsNR; j++)
+	{
+	  ft = (*db)->rb.btype[j];
+
+	  if (ft >= 0)
+	    {
+	      snew((qres->bindex.ilist_pos[j]),
+		   (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb);
+
+	      snew((qres->bindex.indexed[j]),
+		   (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb);
+	    }
+	}
+    }
+
+  /* Complete the t_mdatoms */
+  qhop_atoms2md(md, qhoprec);
+
+  qhoprec->hop = NULL;
+  
   return (nr_qhop_atoms);
 } /* init_hop */
 
@@ -1238,7 +1260,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 	      r_close = 100000;
 	      for (k=0; k < donor.nr_protons; k++)
 		{
-		  if(Hmap->H[Hmap->atomid2H[k]] /* md->chargeA[donor.protons[k]] > 0.000001 */)
+		  if(get_proton_presence(Hmap, donor.protons[k]) /* md->chargeA[donor.protons[k]] > 0.000001 */)
 		    {
 		      pbc_dx(&pbc, x[donor.protons[k]], x[acceptor.atom_id], dx);
 		      /* if(norm(dx)< HBOND) */
@@ -1263,13 +1285,13 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 		  /* use gmx_angle() instead? */
 		  pbc_dx(&pbc, x[donor.atom_id],    x[donor.protons[k]], veca);
 		  pbc_dx(&pbc, x[donor.protons[k]], x[acceptor.atom_id], vecb);
-		  /* pbc_dx(&pbc, x[acceptor.atom_id], x[donor.atom_id],    vecc); */
+		  pbc_dx(&pbc, x[acceptor.atom_id], x[donor.atom_id],    vecc);
 		
-		  ang = gmx_angle(veca, vecb);
-		  /* ang = acos( (norm2(vecb) + norm2(veca) - norm2(vecc) )/ */
-/* 			      (2 * norm(veca) * norm(vecb))); */
-
-		  if (ang*180.0/(M_PI) >= (HOPANG))
+		  /* ang = gmx_angle(veca, vecb); */
+		  ang = acos( (norm2(vecb) + norm2(veca) - norm2(vecc) )/
+			      (2 * norm(veca) * norm(vecb)));
+		  /* ((M_PI-ang)*180.0/(M_PI) >= (HOPANG)) */
+		  if ((ang)*180.0/(M_PI) >= (HOPANG))
 		    {
 		      /* the geometric conditions are right for a hop to take place
 		       */
@@ -1329,7 +1351,7 @@ static void _rotate_group(t_pbc *pbc, rvec *x, t_qhop_atom *res,
     /* axis, */xnew ,temp;
   real
     n;
-  clear_rvec(axis);
+/*   clear_rvec(axis); */
   clear_rvec(xnew);
   clear_rvec(temp);
 
@@ -1571,26 +1593,26 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 	{
 	  qhop_swap_bondeds(qres, product_res);
 	}
-      
-      qhop_swap_vdws(qres, product_res, md, db);
     }
   else
     {
       /* Remove/add constraints to the titrating H */
       
-      if (qres->nr_indexed == 0)
-	{
-	  index_ilists(qres, db, top, cr);
-	}
+      /* if (qres->nr_indexed == 0) */
+/* 	{ */
+/* 	  index_ilists(qres, db, top, cr); */
+/* 	} */
 
-      if (bDonor)
-	{
-	  /* remove */
+/*       if (bDonor) */
+/* 	{ */
+/* 	  /\* remove *\/ */
 	  
-	}
+/* 	} */
     }
 
-  qhop_swap_m_and_q(&(qr->qhop_residues[qatom->qres_id]), product_res, md, db, qr);
+  qhop_swap_vdws(qres, product_res, md, db);
+
+  qhop_swap_m_and_q(qres, product_res, md, db, qr);
 
   /* Set the residue subtype */
   qr->qhop_residues[qatom->qres_id].res = i;
@@ -1955,7 +1977,7 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	   /*NULL,*/NULL,force_vir,md,enerd,fcd,
 	   state->lambda,graph,
 	   fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,/*born*//* bBornRadii */ FALSE,
-	   forceflags /* GMX_FORCE_STATECHANGED|GMX_FORCE_NS  */);
+	   /* forceflags */ GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
   //	   GMX_FORCE_ALLFORCES | (GMX_FORCE_VIRIAL ));
 
   fr->qhoprec->bFreshNlists = TRUE;
@@ -2866,9 +2888,9 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   t_qhoprec
     *qr;
 
-  qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists */
-
   qr = fr->qhoprec;
+
+  qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists */
 
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
