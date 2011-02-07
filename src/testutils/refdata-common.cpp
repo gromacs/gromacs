@@ -28,31 +28,73 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use Google C++ Mocking Framework.
+ * Implements functions in refdata.h that don't have external dependencies.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_testutils
  */
-#include <gmock/gmock.h>
+#include "refdata.h"
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include <cstring>
+
+#include "gromacs/utility/path.h"
 #include "testutils/datapath.h"
-#include "testutils/refdata.h"
 
-/*! \brief
- * Initializes unit testing with Google C++ Mocking Framework.
- */
-int main(int argc, char *argv[])
+namespace gmx
 {
-    ::testing::InitGoogleMock(&argc, argv);
-#ifdef TEST_DATA_PATH
-    ::gmx::test::setTestDataPath(TEST_DATA_PATH);
-    if (::gmx::test::initReferenceData(&argc, argv) != 0)
-    {
-        return 1;
-    }
-#endif
-    ::gmx::setFatalErrorHandler(NULL);
-    return RUN_ALL_TESTS();
+namespace test
+{
+
+static ReferenceDataMode g_referenceDataMode = erefdataCompare;
+
+
+ReferenceDataMode getReferenceDataMode()
+{
+    return g_referenceDataMode;
 }
+
+
+void setReferenceDataMode(ReferenceDataMode mode)
+{
+    g_referenceDataMode = mode;
+}
+
+
+std::string getReferenceDataPath()
+{
+    return getTestFilePath("refdata");
+}
+
+
+int initReferenceData(int *argc, char **argv)
+{
+    int i, newi;
+
+    for (i = newi = 1; i < *argc; ++i, ++newi)
+    {
+        argv[newi] = argv[i];
+        if (!std::strcmp(argv[i], "--create-ref-data"))
+        {
+            setReferenceDataMode(erefdataCreateMissing);
+            --newi;
+        }
+        else if (!std::strcmp(argv[i], "--update-ref-data"))
+        {
+            setReferenceDataMode(erefdataUpdateAll);
+            --newi;
+        }
+    }
+    *argc = newi;
+
+    std::string dirname = getReferenceDataPath();
+    if (!Directory::exists(dirname))
+    {
+        return Directory::create(dirname);
+    }
+    return 0;
+}
+
+} // namespace test
+} // namespace gmx
