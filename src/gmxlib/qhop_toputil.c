@@ -6,6 +6,7 @@
 #include "types/gmx_qhop_types.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
+#include "types/commrec.h"
 
 extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 {
@@ -89,14 +90,21 @@ extern void unindex_ilists(t_qhop_residue *qres)
 extern void index_ilists(t_qhop_residue *qres, qhop_db *db,
 			 const gmx_localtop_t *top, const t_commrec *cr)
 {
-  int b, i, ni, *ra, ia, ft, itype, nia, *l2g, oldi, bt, j;
-  gmx_bool bMatch;
+  int b, i, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
+  gmx_bool bMatch, bDD;
 
   const t_ilist *ilist = top->idef.il;;
 
+  if (db->rb.bWater[qres->rtype])
+    {
+      return;
+    }
+
 /* #define ASSUME_ORDERED_BONDS */
 
-  l2g = cr->dd->gatindex; /* local to global atom translation */
+  bDD = DOMAINDECOMP(cr);
+
+  l2g = bDD ? cr->dd->gatindex : NULL; /* local to global atom translation */
 
   unindex_ilists(qres);
 
@@ -128,7 +136,9 @@ extern void index_ilists(t_qhop_residue *qres, qhop_db *db,
 	      for (j=0; j<nia; j++)
 		{
 		  /* Translate atoms in ilist to residue local numbers */
-		  ia = l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0];
+		  ia = bDD ?
+		    l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0] : /* local != global*/
+		    ilist[itype].iatoms[i+j] - qres->atoms[0];       /* local != global*/
 
 		  if (ia != ra[j])
 		    {
@@ -139,7 +149,7 @@ extern void index_ilists(t_qhop_residue *qres, qhop_db *db,
 		}
 
 	      if (!bMatch)
-		{
+		{ 
 		  i += (nia); /* proceed with next interaction */
 		}
 	    } /* while */
@@ -544,8 +554,8 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
   int i, j;
   t_restp *rtp;
 
-  if (db->rb.bWater[swapres->rtype])
-    {return;}
+/*   if (db->rb.bWater[swapres->rtype]) */
+/*       {return;} */
   
   rtp = &(db->rtp[prod->rtp]);
 
@@ -554,13 +564,13 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
   /* Just make it all inert... */
   for (i=0; i < swapres->nr_atoms; i++)
     {
-      md->typeA[swapres->atoms[i]] = db->inertH;	  
+      md->typeA[swapres->atoms[i]] = db->inertH;
     }
 
   /* ...then set the atomtypes for the atoms in the residue */
   for (i=0; i < prod->niatom; i++)
     {
-      md->typeA[swapres->atoms[i]] = rtp->atom[i].type;
+      md->typeA[swapres->atoms[prod->iatomMap[i]]] = rtp->atom[i].type;
     }
 }
 
