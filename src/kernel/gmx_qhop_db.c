@@ -401,7 +401,7 @@ static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext
   /* Find the hydrogens */  
   for (a=0; a<n; a++)
     {
-      atomid2H[a] = -1;
+      atomid2H[a] = NOTSET;
       gmx_mtop_atomnr_to_atom(top,a,&atom);
       
       if (atom->atomnumber == 1 || (atom->atomnumber == NOTSET && atom->elem[0] == 'H' ))
@@ -959,10 +959,11 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 	{
 	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
 
-	  if (db->rb.res[rt][r].iatomMap == NULL)
-	    {
+/* 	  if (db->rb.res[rt][r].iatomMap == NULL) */
+/* 	    { */
 	      snew(db->rb.res[rt][r].iatomMap, rtpr->natom);
-	    }
+	      db->rb.res[rt][r].niatom = rtpr->natom;
+/* 	    } */
 
 	  /* Loop over atoms in subresidue */
 	  for (ra=0; ra < rtpr->natom; ra++)
