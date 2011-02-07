@@ -10,6 +10,7 @@ add_subdirectory(fatalerror)
 add_subdirectory(options)
 add_subdirectory(selection)
 add_subdirectory(trajectoryanalysis)
+add_subdirectory(utility)
 
 file(GLOB LIBGROMACS_HEADERS *.h)
 install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs

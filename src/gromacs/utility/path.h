@@ -10,7 +10,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -28,41 +28,49 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements functions in datapath.h.
+ * Declares functions for OS-independent path handling.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  */
-#include "datapath.h"
+#ifndef GMX_UTILITY_PATH_H
+#define GMX_UTILITY_PATH_H
 
-#include <cassert>
-
-#include "gromacs/utility/path.h"
-
-static const char *g_testDataPath = NULL;
+#include <string>
 
 namespace gmx
 {
-namespace test
-{
 
-std::string getTestFilePath(const char *filename)
+class Path
 {
-    return Path::join(getTestDataPath(), filename);
-}
+    public:
+        static std::string join(const std::string &path1,
+                                const std::string &path2);
+        static std::string join(const std::string &path1,
+                                const std::string &path2,
+                                const std::string &path3);
 
-const char *getTestDataPath()
+    private:
+        // Disallow instantiation.
+        Path();
+};
+
+
+class Directory
 {
-    assert(g_testDataPath != NULL || !"Test data path not set");
-    return g_testDataPath;
-}
+    public:
+        static int create(const char *path);
+        static int create(const std::string &path);
+        static bool exists(const char *path);
+        static bool exists(const std::string &path);
 
-void setTestDataPath(const char *path)
-{
-    assert(Directory::exists(path));
-    g_testDataPath = path;
-}
+    private:
+        // Disallow instantiation.
+        Directory();
+};
 
-} // namespace test
 } // namespace gmx
+
+#endif

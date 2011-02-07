@@ -10,7 +10,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -30,39 +30,77 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in datapath.h.
+ * Implements functions in path.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_utility
  */
-#include "datapath.h"
+#include "path.h"
 
-#include <cassert>
+#include <errno.h>
+#include <sys/stat.h>
 
-#include "gromacs/utility/path.h"
-
-static const char *g_testDataPath = NULL;
+static const char cDirSeparator = '/';
 
 namespace gmx
 {
-namespace test
-{
 
-std::string getTestFilePath(const char *filename)
+std::string Path::join(const std::string &path1,
+                       const std::string &path2)
 {
-    return Path::join(getTestDataPath(), filename);
+    // TODO: Remove extra separators if they are present in the input paths.
+    return path1 + cDirSeparator + path2;
 }
 
-const char *getTestDataPath()
+
+std::string Path::join(const std::string &path1,
+                       const std::string &path2,
+                       const std::string &path3)
 {
-    assert(g_testDataPath != NULL || !"Test data path not set");
-    return g_testDataPath;
+    // TODO: Remove extra separators if they are present in the input paths.
+    return path1 + cDirSeparator + path2 + cDirSeparator + path3;
 }
 
-void setTestDataPath(const char *path)
+
+int Directory::create(const char *path)
 {
-    assert(Directory::exists(path));
-    g_testDataPath = path;
+    if (Directory::exists(path))
+    {
+        return 0;
+    }
+    if (mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) != 0)
+    {
+        // TODO: Proper error handling.
+        return -1;
+    }
+    return 0;
 }
 
-} // namespace test
+
+int Directory::create(const std::string &path)
+{
+    return create(path.c_str());
+}
+
+
+bool Directory::exists(const char *path)
+{
+    struct stat info;
+    if (stat(path, &info) != 0)
+    {
+        if (errno != ENOENT && errno != ENOTDIR)
+        {
+            // TODO: Proper error handling.
+        }
+        return false;
+    }
+    return S_ISDIR(info.st_mode);
+}
+
+
+bool Directory::exists(const std::string &path)
+{
+    return exists(path.c_str());
+}
+
 } // namespace gmx
