@@ -96,6 +96,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
         for(j=i+1; (j<atoms->nr); j++) 
         {
             elem_j = gmx_atomprop_element(aps,atoms->atom[j].atomnumber);
+            if (NULL != debug)
+                fprintf(debug,"Testing %s-%d vs. %s-%d\n",elem_i,i,elem_j,j); 
             if (bPBC)
                 pbc_dx(&pbc,x[i],x[j],dx);
             else

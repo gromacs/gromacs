@@ -81,7 +81,7 @@ extern int *symmetrize_charges(gmx_bool bQsym,
                                t_atoms *atoms,t_params *bonds,gmx_poldata_t pd,
                                gmx_atomprop_t aps,char *symm_string);
 
-enum { ecgGroup, ecgAtom, ecgNeutral, ecgNR };
+enum { ecgAtom, ecgGroup, ecgNeutral, ecgNR };
 
 extern int *generate_charge_groups(int cgtp,t_atoms *atoms,
                                    t_params *bonds,t_params *pols,

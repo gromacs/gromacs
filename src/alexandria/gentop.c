@@ -309,11 +309,12 @@ int main(int argc, char *argv[])
     static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
+    static gmx_bool bSkipVSites=TRUE;
     static char *molnm = "",*dbname = "", *symm_string = "";
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
-    static const char *cgopt[] = { NULL, "Group", "Atom", "Neutral", NULL };
+    static const char *cgopt[] = { NULL, "Atom", "Group", "Neutral", NULL };
     static const char *lot = "B3LYP/aug-cc-pVTZ",*cat="Other";
     static const char *dzatoms = "";
     static const char *ff = "select";
@@ -342,8 +343,10 @@ int main(int argc, char *argv[])
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "Use CONECT records in the pdb file to signify bonds" },
+        { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
+          "[HIDDEN]Skip virtual sites in the input pdb file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
-          "Use the B-factor supplied in a pdb file for the atomic charges" },
+          "[HIDDEN]Use the B-factor supplied in a pdb file for the atomic charges" },
         { "-btol",  FALSE, etREAL, {&btol},
           "Relative tolerance for determining whether two atoms are bonded." },
         { "-epsr", FALSE, etREAL, {&epsr},
@@ -556,7 +559,22 @@ int main(int argc, char *argv[])
         if (bCONECT)
             gc = gmx_conect_init();
         read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,&ePBC,box,FALSE,gc);
-    
+        if (bSkipVSites) 
+        {
+            for(i=0; (i<atoms->nr); i++) {
+                if (strcmp(*atoms->atomname[i],"ML") == 0) {
+                    for(j=i; (j<atoms->nr-1); j++) {
+                        atoms->atom[j] = atoms->atom[j+1];
+                        atoms->atomname[j] = atoms->atomname[j+1];
+                        if (NULL != atoms->atomtype)
+                            atoms->atomtype[j] = atoms->atomtype[j+1];
+                        if (NULL != atoms->atomtypeB)
+                            atoms->atomtypeB[j] = atoms->atomtypeB[j+1];
+                    }
+                    atoms->nr--;
+                }
+            }
+        }
         get_pdb_atomnumber(atoms,aps);
         
         /* Check input consistency */  
@@ -610,10 +628,16 @@ int main(int argc, char *argv[])
     strcpy(qgen_msg,"");
     if (iModel == eqgNone)
     {
-        printf("Using zero charges\n");
+        printf("Using charges from gentop.dat\n");
         for(i=0; (i<atoms->nr); i++)
         {
-            atoms->atom[i].q  = atoms->atom[i].qB = 0;
+            char *qq = gmx_poldata_get_charge(pd,smnames[i]);
+            double q;
+            if (NULL != qq)
+                sscanf(qq,"%lf",&q);
+            else
+                q = 0;
+            atoms->atom[i].q  = atoms->atom[i].qB = q;
         }
         eQGEN = eQGEN_OK;
     }
@@ -752,7 +776,8 @@ int main(int argc, char *argv[])
                                            bUsePDBcharge,
                                            &qtot,&mtot)) == NULL)
             gmx_fatal(FARGS,"Error generating charge groups");
-        sort_on_charge_groups(cgnr,atoms,plist,x,excls,smnames,NULL);
+        if (cgtp != ecgAtom)
+            sort_on_charge_groups(cgnr,atoms,plist,x,excls,smnames,NULL);
     
         if (bVerbose) 
         {

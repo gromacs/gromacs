@@ -736,9 +736,19 @@ int gmx_editconf(int argc, char *argv[])
         snew(x,natom);
         snew(v,natom);
         read_stx_conf(infile,title,&atoms,x,v,&ePBC,box);
-        if (fn2ftp(infile) == efPDB)
+        if (fn2ftp(infile) == efPDB) 
         {
             get_pdb_atomnumber(&atoms,aps);
+        }
+        else 
+        {
+            for(i=0; (i<atoms.nr); i++) 
+            {
+                if ((atoms.atom[i].atomnumber > 0) &&
+                    (strlen(atoms.atom[i].elem) == 0))
+                    strcpy(atoms.atom[i].elem,
+                           gmx_atomprop_element(aps,atoms.atom[i].atomnumber));
+            }
         }
         printf("Read %d atoms\n",atoms.nr);
 

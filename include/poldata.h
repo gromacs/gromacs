@@ -85,6 +85,9 @@ extern char *gmx_poldata_get_gt_type(gmx_poldata_t pd,char *gt_atom);
 
 extern char *gmx_poldata_get_desc(gmx_poldata_t pd,char *gt_atom);
 
+/* Get the charge from the gentop.dat file */
+extern char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_atom);
+
 /* Returns name or NULL if last or not found */
 extern char *gmx_poldata_get_ffatype(gmx_poldata_t pd,char *name,
                                      char **elem,char **desc,

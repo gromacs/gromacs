@@ -309,6 +309,19 @@ static int count_neighbors(t_ffatype *spoel,int nbond,char *nbhybrid[])
     return ni;
 }
 
+char *gmx_poldata_get_charge(gmx_poldata_t pd,char *gt_atom)
+{
+    gmx_poldata *pold = (gmx_poldata *) pd;
+    int i;
+  
+    if (gt_atom)
+        for(i=0; (i<pold->nspoel); i++) 
+            if (strcasecmp(pold->spoel[i].name,gt_atom) == 0) 
+                return pold->spoel[i].charge;
+      
+    return NULL;
+}
+
 char *gmx_poldata_get_gt_atom(gmx_poldata_t pd,char *elem,
                              int nbond,char *neighbors[],
                              const char *geometry)

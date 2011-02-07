@@ -100,6 +100,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     int     *bbb,type,atomnr_i;
     char    *aname_i,*aname_m,*aname_n,*gt_atom,*gt_type,*elem_i;
     char    **nbhybrid;
+    char    *empty_string = "";
     double  mm;
     int     bLinear,bPlanar,geom;
     real    value;
@@ -138,7 +139,8 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
             if (1 /*(((iter == 0) && (nbonds[i] == 1)) || (iter > 0))*/ /*&&
                                                                     (atoms->atom[i].type == -NOTSET)*/) {
                 aname_i = *atoms->atomname[i];
-                elem_i  = gmx_atomprop_element(aps,atoms->atom[i].atomnumber);
+                if ((elem_i = gmx_atomprop_element(aps,atoms->atom[i].atomnumber)) == NULL)
+                    elem_i = empty_string;
                 atomnr_i = atoms->atom[i].atomnumber;
                 if ((atomnr_i < 0) && (gmx_atomprop_query(aps,epropElement,"???",
                                                           aname_i,&value)))
