@@ -54,9 +54,12 @@ typedef struct {
 typedef struct {
   int     nb;
   /* qhop_bonswap *bondeds; /\* nb elements long. *\/ */
-  t_iatom *ilist_pos[F_NRE];
+  t_iatom **ilist_pos; /* dimensions: [F_NRE][#bonded_of this type] */
+
   int nr[F_NRE]; /* How many interactions in ilist_pos[] arrays? */
-  gmx_bool *indexed[F_NRE]; /* are the bonded interactions indexed */
+
+  gmx_bool **indexed; /* Are the bonded interactions indexed.
+		       * Dimensions: [F_NRE][#bonded_of this type] */
 
 } qhop_bonded_index;
 
@@ -107,7 +110,7 @@ typedef struct {
   /* int    **ilistPosG; */ /* Where in the global topology are the
 		       * bonded interactions found?
 		       * Indexes a t_ilist[F_*][interaction] */
-  int    *ilistPosL[F_NRE]; /* Where in the local topology are the
+  /* int    *ilistPosL[F_NRE]; */ /* Where in the local topology are the
 			     * bonded interactions found?
 			     * Indexes a t_ilist[F_*][interaction] */
 
