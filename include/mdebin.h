@@ -83,7 +83,7 @@ typedef struct {
   char   **print_grpnms;
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
-  t_mde_delta_h_coll *dhc; /* the BAR delta U (raw data + histogram) */
+  t_mde_delta_h_coll *dhc; /* the delta U components (raw data + histogram) */
 } t_mdebin;
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,

@@ -173,6 +173,8 @@ enum {
   elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
 };
 
+#define ELAMSTATS_EXPANDED(e) ((e) > elamstatsNO)
+
 #define EWL(e) ((e) == elamstatsGWL || (e) == elamstatsWL)  
 
 /* How moves in lambda are calculated:                                                                                 

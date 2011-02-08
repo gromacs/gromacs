@@ -136,9 +136,10 @@ typedef struct sample_range_t
 /* a collection of samples for a partial free energy calculation 
     (i.e. the collection of samples from one native lambda to one 
     foreign lambda) */
+
 typedef struct sample_coll_t
 {
-    double native_lambda;  /* these should be the same for all samples in the */
+    double native_lambda;  /* these should be the same for all samples in the histogram?*/
     double foreign_lambda; /* collection */
     double temp; /* the temperature */
 
@@ -154,6 +155,7 @@ typedef struct sample_coll_t
 } sample_coll_t;
 
 /* all the samples associated with a lambda point */
+
 typedef struct lambda_t
 {
     double lambda; /* the native lambda (at start time if dynamic) */

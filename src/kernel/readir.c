@@ -1259,8 +1259,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Scaling of reference coordinates, No, All or COM");
   EETYPE ("refcoord_scaling",ir->refcoord_scaling,erefscaling_names);
 
-  CTYPE ("Random seed for Andersen thermostat");
-  ITYPE ("andersen_seed", ir->andersen_seed, 815131);
+  // actually usinh just use ld_seed for now? THis doesn't apparently do anything.
+  //CTYPE ("Random seed for Andersen thermostat");
+  //ITYPE ("andersen_seed", ir->andersen_seed, 815131);
 
   /* QMMM */
   CCTYPE ("OPTIONS FOR QMMM calculations");

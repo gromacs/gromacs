@@ -58,7 +58,7 @@
 #include "viewit.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
-
+#include "mdebin.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -293,8 +293,19 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
+static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
+{
+    gmx_mtop_t mtop;
+    int        natoms;
+    t_iatom    *iatom;
+    matrix     box;
+    
+    /* all we need is the ir to be able to write the label */
+    read_tpx(topnm,ir,box,&natoms,NULL,NULL,NULL,&mtop);
+}
+
 static void get_orires_parms(const char *topnm,
-			     int *nor,int *nex,int **label,real **obs)
+                             int *nor,int *nex,int **label,real **obs)
 {
   gmx_mtop_t mtop;
   gmx_localtop_t *top;
@@ -1235,7 +1246,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 }
 
 
-static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
+static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *filename,
                     const output_env_t oenv)
 {
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
@@ -1287,6 +1298,8 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     {
         if (nblock_dh>0)
         {
+            /* we have standard dat -- call open_dhdl to open the file */
+            *fp_dhdl=open_dhdl(filename,ir,oenv);
             sprintf(title,"%s, %s",dhdl,deltag);
             sprintf(label_x,"%s (%s)","Time",unit_time);
             sprintf(label_y,"(%s)",unit_energy);
@@ -1296,15 +1309,13 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
             sprintf(title,"N(%s)",deltag);
             sprintf(label_x,"%s (%s)",deltag,unit_energy);
             sprintf(label_y,"Samples");
+            xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
+                          oenv);
+            sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+            xvgr_subtitle(*fp_dhdl,buf,oenv);
+            first=TRUE;
         }
-        *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
-                               oenv);
-        sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
-        xvgr_subtitle(*fp_dhdl,buf,oenv);
-        first=TRUE;
     }
-
-
 
     /* write the data */
     if (nblock_hist > 0)
@@ -1380,51 +1391,11 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         char **setnames=NULL;
         int nnames=nblock_dh;
 
-        if (fabs(delta_lambda) > 1e-9)
-        {
-            nnames++;
-        }
-        if (first)
-        {
-            snew(setnames, nnames);
-        }
-        j=0;
-
-        if (fabs(delta_lambda) > 1e-9)
-        {
-            /* lambda is a plotted value */
-            setnames[j]=gmx_strdup(lambda);
-            j++;
-        }
-
-
         for(i=0;i<fr->nblock;i++)
         {
             t_enxblock *blk=&(fr->block[i]);
             if (blk->id == enxDH)
             {
-                if (first)
-                {
-                    /* do the legends */
-                    int derivative;
-                    double foreign_lambda;
-
-                    derivative=blk->sub[0].ival[0];
-                    foreign_lambda=blk->sub[1].dval[0];
-
-                    if (derivative)
-                    {
-                        sprintf(buf, "%s %s %g",dhdl,lambda,start_lambda);
-                    }
-                    else
-                    {
-                        sprintf(buf, "%s %s %g",deltag,lambda,
-                                foreign_lambda);
-                    }
-                    setnames[j] = gmx_strdup(buf);
-                    j++;
-                }
-
                 if (len == 0)
                 {   
                     len=blk->sub[2].nr;
@@ -1440,30 +1411,18 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
             }
         }
 
-        if (first)
-        {
-            xvgr_legend(*fp_dhdl, nblock_dh, (const char**)setnames, oenv);
-            setnr += nblock_dh;
-            for(i=0;i<nblock_dh;i++)
-            {
-                sfree(setnames[i]);
-            }
-            sfree(setnames);
-        }
+        /* we already printed the legend, just start in on printing the data */
 
         for(i=0;i<len;i++)
         {
             double time=start_time + delta_time*i;
 
             fprintf(*fp_dhdl,"%.4f", time);
-            if (fabs(delta_lambda) > 1e-9)
-            {
-                double lambda_now=i*delta_lambda + start_lambda;
-                fprintf(*fp_dhdl,"  %.4f", lambda_now);
-            }
+
             for(j=0;j<fr->nblock;j++)
             {
                 t_enxblock *blk=&(fr->block[j]);
+
                 if (blk->id == enxDH)
                 {
                     double value;
@@ -1475,7 +1434,14 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     {
                         value=blk->sub[2].dval[i];
                     }
-                    fprintf(*fp_dhdl,"  %g", value);
+                    /* we need to decide which data type it is based on the count*/
+                    
+                    if ((j==1) && (ir->fepvals->elamstats > elamstatsNO)) 
+                    {
+                        fprintf(*fp_dhdl," % 4d", (int)value);   /* if expanded ensembles and zero, this is a state value, it's an integer. We need a cleaner conditional than if j==1! */
+                    } else {
+                        fprintf(*fp_dhdl," %#.8g", value);   /* print normal precision */
+                    }
                 }
             }
             fprintf(*fp_dhdl, "\n");
@@ -2230,7 +2196,8 @@ int gmx_energy(int argc,char *argv[])
 	  }
           if (bDHDL)
           {
-              do_dhdl(fr, &fp_dhdl, opt2fn("-odh",NFILE,fnm), oenv);
+              get_dhdl_parms(ftp2fn(efTPX,NFILE,fnm),&ir);
+              do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), oenv);
           }
 	}
       }

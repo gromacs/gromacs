@@ -58,26 +58,16 @@ static void mde_delta_h_reset(t_mde_delta_h *dh)
 
 /* initialize the delta_h list */
 static void mde_delta_h_init(t_mde_delta_h *dh, int nbins, 
-                             double dx, unsigned int  ndhmax, 
-                             gmx_bool derivative, double dhdl_label, int state_label)
+                             double dx, unsigned int  ndhmax)
 {
     int i;
-
-    dh->derivative=derivative;
-    if (derivative) 
-    {
-        dh->fep_state=state_label;
-    }
-    else 
-    {
-        dh->lambda=dhdl_label;
-    }
+    
     dh->ndhmax=ndhmax+2;
     for(i=0;i<2;i++)
     {
         dh->bin[i]=NULL;
     }
-
+    
     snew(dh->dh, ndhmax);
     if ( nbins <= 0 || dx<GMX_REAL_EPS*10 )
     {
@@ -87,10 +77,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     {
         int i;
         /* pre-allocate the histogram */
-        if (derivative)
-            dh->nhist=2;
-        else
-            dh->nhist=1;
+        dh->nhist=2; /* energies and derivatives histogram? */  
         dh->dx=dx;
         dh->nbins=nbins;
         for(i=0;i<dh->nhist;i++)
@@ -159,16 +146,17 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
        
        Get this start value in number of histogram dxs from zero, 
        as an integer.*/
+
     dh->x0[hi] = (gmx_large_int_t)floor(min_dh/dx);
     
     min_dh_hist=(dh->x0[hi])*dx;
     max_dh_hist=(dh->x0[hi] + dh->nbins + 1)*dx;
-
+    
     /* and fill the histogram*/
     for(i=0;i<dh->ndh;i++)
     {
         unsigned int bin;
-
+        
         /* Determine the bin number. If it doesn't fit into the histogram, 
            add it to the last bin. 
            We check the max_dh_int range because converting to integers 
@@ -319,92 +307,108 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
 {
     int i; 
     double lambda;
-    double lambda_component[efptNR];
     int ndhmax=ir->nstenergy/ir->nstcalcenergy;
     
-    dhc->temp=ir->opts.ref_t[0]; 
+    dhc->temperature=ir->opts.ref_t[0];  /* only store system temperature */
     dhc->start_time=0.;
-    dhc->start_lambda=ir->fepvals->init_lambda; 
-   
     dhc->delta_time=ir->delta_t*ir->nstdhdl;
-    dhc->delta_lambda=ir->fepvals->delta_lambda*ir->nstdhdl;
-
     dhc->start_time_set=FALSE;
 
-    dhc->ndhdl=0;
-    if (ir->fepvals->dhdl_derivatives == dhdlderivativesYES)
+    /* for continuous change of lambda values */
+    dhc->start_lambda=ir->fepvals->init_lambda; 
+    dhc->delta_lambda=ir->fepvals->delta_lambda*ir->nstdhdl;
+    
+    /* total number of raw data points in the sample */
+    dhc->ndh = 0;
+    
+    /* include one more for the specification of the state, by lambda or fep_state, store as double for now*/
+    if (ir->fepvals->elamstats > elamstatsNO) {
+        dhc->ndh +=1;
+    }
+    
+    /* whether to print energies */
+    if (ir->fepvals->bPrintEnergy) {
+        dhc->ndh += 1;  
+    }
+    
+    /* add the dhdl's */
+    for (i=0;i<efptNR;i++)
     {
-        /* add up the dhdl components that are being stored */
-        for (i=0;i<efptNR;i++)
+        if (ir->fepvals->separate_dvdl[i])
         {
-            if (ir->fepvals->separate_dvdl[i])
-            {
-                lambda_component[dhc->ndhdl] = ir->fepvals->all_lambda[i][ir->fepvals->init_fep_state];
-                dhc->ndhdl+=1;
-            }
+            dhc->ndh+=1;
         }
     }
-
-    dhc->ndh=ir->fepvals->n_lambda+dhc->ndhdl;
-
+    
+    /* add the lambdas */
+    dhc->ndh += ir->fepvals->n_lambda;
+    
+    if (ir->epc > epcNO) {
+        dhc->ndh += 1;  /* include pressure-volume work */
+    }
+    
     snew(dhc->dh, dhc->ndh);
     for(i=0;i<dhc->ndh;i++)
     {
-        if (i<dhc->ndhdl)
-        {
-            if (dhc->ndhdl==1) 
-            {
-                /* only one lambda -- we use the current lambda value */
-                lambda = dhc->start_lambda;
-            }
-            else 
-            {
-                /* we have a vector of lambdas */
-                lambda = lambda_component[i];
-            }
-            mde_delta_h_init(dhc->dh + i, ir->fepvals->dh_hist_size, 
-                             ir->fepvals->dh_hist_spacing, ndhmax, 
-                             TRUE, lambda,0);
-        }
-        else
-        {
-            mde_delta_h_init(dhc->dh + i, ir->fepvals->dh_hist_size, 
-                             ir->fepvals->dh_hist_spacing, ndhmax, 
-                             FALSE,0,i-dhc->ndhdl);
-        }
+        mde_delta_h_init(dhc->dh+i, ir->fepvals->dh_hist_size, 
+                         ir->fepvals->dh_hist_spacing, ndhmax);
     }
 }
 
-/* add a bunch of samples */
+/* add a bunch of samples - note fep_state is double to allow for better data storage */
 void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc, 
+                             double fep_state,  
+                             double energy,
+                             double pV,
+                             double *current_lambda,
+                             int bExpanded,
+                             int bPrintEnergy,
+                             int bPressure,
+                             int ndhdl,
+                             int nlambda,
                              double *dhdl,
-                             double *foreign_U, 
-                             double time,
-                             double *current_lambda)
+                             double *foreign_dU, 
+                             double time)
 {
-    int i;
-
+    int i,n;
+    
     if (!dhc->start_time_set)
     {
         dhc->start_time_set=TRUE;
         dhc->start_time=time;
-        dhc->start_lambda=current_lambda[0]; /* is it correct to just to the first lambda here? MRS */
     }
-    for(i=0;i<dhc->ndh;i++)
+
+    n = 0;
+    if (bExpanded) 
     {
-        if (i<dhc->ndhdl)
-        {
-            mde_delta_h_add_dh(dhc->dh + i, dhdl[i], time);
-        }
-        else
-        {
-            mde_delta_h_add_dh(dhc->dh + i, foreign_U[i+1-dhc->ndhdl] - foreign_U[0], time);
-        }
+        mde_delta_h_add_dh(dhc->dh+n,fep_state,time);
+        n++;
+    }            
+    if (bPrintEnergy) 
+    {
+        mde_delta_h_add_dh(dhc->dh+n,energy,time);
+        n++;
+    }
+    for (i=0;i<ndhdl;i++) 
+    {
+        mde_delta_h_add_dh(dhc->dh+n, dhdl[i], time);
+        n++;
+    }
+    for (i=0;i<nlambda;i++) 
+    {
+        mde_delta_h_add_dh(dhc->dh+n, foreign_dU[i], time);
+        n++;
+    }
+    if (bPressure)
+    {
+        mde_delta_h_add_dh(dhc->dh+n, pV, time);
+        n++;
     }
 }
 
 /* write the data associated with all the du blocks, but not the blocks 
-   themselves. */
+   themselves. Essentially, the metadata.  Or -- is this generated every time?*/
+
 void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
                                    t_enxframe *fr, int nblock)
 {
@@ -418,12 +422,11 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
 
     add_subblocks_enxblock(blk, 1);
 
-    dhc->subblock_d[0] = dhc->temp; /* temperature */
+    dhc->subblock_d[0] = dhc->temperature; /* temperature */
     dhc->subblock_d[1] = dhc->start_time; /* time of first sample */
     dhc->subblock_d[2] = dhc->delta_time; /* time difference between samples */
     dhc->subblock_d[3] = dhc->start_lambda; /* lambda at starttime */
     dhc->subblock_d[4] = dhc->delta_lambda; /* lambda diff. between samples */
-
     blk->id=enxDHCOLL;
     blk->sub[0].nr=5;
     blk->sub[0].type=xdr_datatype_double;

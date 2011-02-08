@@ -566,8 +566,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     return md;
 }
 
-FILE *open_dhdl(const char *filename,const t_inputrec *ir,
-                const output_env_t oenv)
+extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+                       const output_env_t oenv)
 {
     FILE *fp;
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda",
@@ -743,6 +743,8 @@ void upd_mdebin(t_mdebin *md,
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   store_dhdl[efptNR]; 
+    real   *store_dh;
+    real   store_energy;
     real   tmp;
     gmx_bool   bNoseHoover;
 
@@ -940,7 +942,8 @@ void upd_mdebin(t_mdebin *md,
         /* total energy (for if the temperature changes */
         if (fepvals->bPrintEnergy) 
         {
-            fprintf(md->fp_dhdl," %.4f ",enerd->term[F_ETOT]);
+            store_energy = enerd->term[F_ETOT];
+            fprintf(md->fp_dhdl," %.4f ",store_energy);
         }
 
         for (i=0;i<efptNR;i++) 
@@ -954,6 +957,7 @@ void upd_mdebin(t_mdebin *md,
         {
             fprintf(md->fp_dhdl," %#.5g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+            
         }
         if (md->epc!=epcNO) 
         {
@@ -961,23 +965,37 @@ void upd_mdebin(t_mdebin *md,
         }
         fprintf(md->fp_dhdl,"\n");
         /* and the binary free energy output */
-        if (md->dhc)
+    }
+    if (md->dhc && bDoDHDL)
+    {
+        int idhdl = 0; 
+        snew(store_dh,fepvals->n_lambda);
+        for (i=0;i<efptNR;i++) 
         {
-            int idvdl = 0; 
-            for (i=0;i<efptNR;i++) 
+            if (fepvals->separate_dvdl[i])
             {
-                if (fepvals->separate_dvdl[i])
-                {
-                    store_dhdl[idvdl] = enerd->term[F_DVDL_REMAIN+i]; /* assumes F_DVDL_REMAIN is first */
-                    idvdl+=1;
-                }
+                store_dhdl[idhdl] = enerd->term[F_DVDL_REMAIN+i]; /* assumes F_DVDL_REMAIN is first */
+                idhdl+=1;
             }
-            mde_delta_h_coll_add_dh(md->dhc, 
-                                    store_dhdl,
-                                    enerd->enerpart_lambda, 
-                                    time, 
-                                    state->lambda);
         }
+        for(i=1; i<enerd->n_lambda; i++)
+        {
+            store_dh[i-1] = enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0];
+        }
+        mde_delta_h_coll_add_dh(md->dhc, 
+                                (double)state->fep_state,
+                                store_energy,
+                                pv,
+                                state->lambda,
+                                (fepvals->elamstats>elamstatsNO),
+                                (fepvals->bPrintEnergy),
+                                (md->epc!=epcNO),
+                                idhdl,
+                                fepvals->n_lambda,
+                                store_dhdl,
+                                store_dh,
+                                time);
+        sfree(store_dh);
     }
 }
 
@@ -1149,7 +1167,9 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
 
                 /* we can now free & reset the data in the blocks */
                 if (md->dhc)
+                {
                     mde_delta_h_coll_reset(md->dhc);
+                }
             }
             free_enxframe(&fr);
             break;

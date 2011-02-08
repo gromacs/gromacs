@@ -620,6 +620,9 @@ static int poisson_variate(real lambda,gmx_rng_t rng) {
 
 void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock)
 {
+    /* To do -- I don't think it handles the case when constraints are on, but some particles are not 
+       actually constrained.  I don't think they get randomized at all.  How do we find them? */
+
     t_grpopts *opts;
     int    i,j,k,d,len,n,ngtc,gc=0;
     int    nshake, nsettle, nrandom, nsettle_randomize, nshake_randomize;
