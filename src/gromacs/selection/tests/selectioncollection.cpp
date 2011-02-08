@@ -169,18 +169,31 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 void
 SelectionCollectionDataTest::runParser(const char *const *selections)
 {
-    for (_count = 0; selections[_count] != NULL; ++_count)
+    size_t varcount = 0;
+    _count = 0;
+    for (size_t i = 0; selections[i] != NULL; ++i)
     {
+        ASSERT_EQ(0, _sc.parseFromString(selections[i], &_errors, &_sel));
         char buf[50];
-        snprintf(buf, 50, "Selection%dParse", static_cast<int>(_count + 1));
-        _data.startCompound("SelectionParse", buf);
-        _data.checkString(selections[_count], "Input");
-        ASSERT_EQ(0, _sc.parseFromString(selections[_count], &_errors, &_sel));
-        ASSERT_EQ(_count + 1, _sel.size());
-        _data.checkString(_sel[_count]->name(), "Name");
-        _data.checkString(_sel[_count]->selectionText(), "Text");
-        _data.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
-        _data.finishCompound();
+        if (_sel.size() == _count)
+        {
+            snprintf(buf, 50, "Variable%dParse", static_cast<int>(varcount + 1));
+            _data.startCompound("VariableParse", buf);
+            _data.checkString(selections[i], "Input");
+            _data.finishCompound();
+            ++varcount;
+        }
+        else
+        {
+            snprintf(buf, 50, "Selection%dParse", static_cast<int>(_count + 1));
+            _data.startCompound("SelectionParse", buf);
+            _data.checkString(selections[i], "Input");
+            _data.checkString(_sel[_count]->name(), "Name");
+            _data.checkString(_sel[_count]->selectionText(), "Text");
+            _data.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
+            _data.finishCompound();
+            ++_count;
+        }
     }
 }
 
@@ -307,7 +320,7 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
 
 
 /********************************************************************
- * Tests for selection syntax
+ * Tests for selection keywords
  */
 
 TEST_F(SelectionCollectionDataTest, HandlesAllNone)
@@ -385,10 +398,45 @@ TEST_F(SelectionCollectionDataTest, HandlesCoordinateKeywords)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesSameResidue)
+{
+    static const char * const selections[] = {
+        "same residue as atomnr 1 4 12",
+        NULL
+    };
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesSameResidueName)
+{
+    static const char * const selections[] = {
+        "same resname as atomnr 1 14",
+        NULL
+    };
+    runTest("simple.gro", selections);
+}
+
+
+/********************************************************************
+ * Tests for selection syntactic constructs
+ */
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
         "[1, -2, 3.5]",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
+{
+    static const char * const selections[] = {
+        "within 1 of [2, 1, 0]",
         NULL
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositions);
@@ -406,153 +454,74 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
 }
 
 
-TEST_F(SelectionCollectionTest, HandlesBasicBoolean)
+TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
 {
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 7", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 or not atomnr 3 to 8", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7", &_errors, &sel));
-    ASSERT_EQ(3U, sel.size());
-    EXPECT_FALSE(sel[0]->isDynamic());
-    EXPECT_FALSE(sel[1]->isDynamic());
-    EXPECT_FALSE(sel[2]->isDynamic());
-    setAtomCount(10);
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(4, sel[0]->posCount());
-    EXPECT_EQ(7, sel[1]->posCount());
-    EXPECT_EQ(3, sel[2]->posCount());
+    static const char * const selections[] = {
+        "atomnr 1 to 5 and atomnr 2 to 7",
+        "atomnr 1 to 5 or not atomnr 3 to 8",
+        "atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7",
+        NULL
+    };
+    runTest(10, selections);
 }
 
 
-TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysis)
+TEST_F(SelectionCollectionDataTest, HandlesArithmeticExpressions)
 {
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and atomnr 2 to 7 and x < 2", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)", &_errors, &sel));
-    ASSERT_EQ(4U, sel.size());
-    EXPECT_TRUE(sel[0]->isDynamic());
-    EXPECT_TRUE(sel[1]->isDynamic());
-    EXPECT_TRUE(sel[2]->isDynamic());
-    EXPECT_TRUE(sel[3]->isDynamic());
-    setAtomCount(10);
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(4, sel[0]->posCount());
-    EXPECT_EQ(5, sel[1]->posCount());
-    EXPECT_EQ(5, sel[2]->posCount());
-    EXPECT_EQ(3, sel[3]->posCount());
+    static const char * const selections[] = {
+        "x+1 > 3",
+        "(y-1)^2 <= 1",
+        "x+--1 > 3",
+        "-x+-1 < -3",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
+    runTest("simple.gro", selections);
 }
 
 
-TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysisWithVariables)
+/********************************************************************
+ * Tests for complex boolean syntax
+ */
+
+TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysis)
 {
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("foo = atomnr 4 to 7 or x < 2", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 4 and foo", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 2 to 6 and y < 3 and foo", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 6 to 10 and not foo", &_errors, &sel));
-    ASSERT_EQ(3U, sel.size());
-    EXPECT_TRUE(sel[0]->isDynamic());
-    EXPECT_TRUE(sel[1]->isDynamic());
-    EXPECT_TRUE(sel[2]->isDynamic());
-    setAtomCount(10);
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(4, sel[0]->posCount());
-    EXPECT_EQ(5, sel[1]->posCount());
-    EXPECT_EQ(3, sel[2]->posCount());
+    static const char * const selections[] = {
+        "atomnr 1 to 5 and atomnr 2 to 7 and x < 2",
+        "atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)",
+        "atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)",
+        "atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)",
+        NULL
+    };
+    runTest(10, selections);
 }
 
 
-TEST_F(SelectionCollectionTest, HandlesBooleanStaticAnalysisWithMoreVariables)
+TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithVariables)
 {
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("foo = atomnr 4 to 7", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("bar = foo and x < 2", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("bar2 = foo and y < 2", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 1 to 4 and bar", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 2 to 6 and y < 3 and bar2", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("atomnr 6 to 10 and not foo", &_errors, &sel));
-    ASSERT_EQ(3U, sel.size());
-    EXPECT_TRUE(sel[0]->isDynamic());
-    EXPECT_TRUE(sel[1]->isDynamic());
-    EXPECT_FALSE(sel[2]->isDynamic());
-    setAtomCount(10);
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(1, sel[0]->posCount());
-    EXPECT_EQ(3, sel[1]->posCount());
-    EXPECT_EQ(3, sel[2]->posCount());
+    static const char * const selections[] = {
+        "foo = atomnr 4 to 7 or x < 2",
+        "atomnr 1 to 4 and foo",
+        "atomnr 2 to 6 and y < 3 and foo",
+        "atomnr 6 to 10 and not foo",
+        NULL
+    };
+    runTest(10, selections);
 }
 
 
-TEST_F(SelectionCollectionTest, HandlesSameResidue)
+TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithMoreVariables)
 {
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("same residue as atomnr 1 4 12", &_errors, &sel));
-    ASSERT_EQ(1U, sel.size());
-    EXPECT_FALSE(sel[0]->isDynamic());
-    loadTopology("simple.gro");
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(9, sel[0]->posCount());
-}
-
-
-TEST_F(SelectionCollectionTest, HandlesSameResidueName)
-{
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("same resname as atomnr 1 14", &_errors, &sel));
-    ASSERT_EQ(1U, sel.size());
-    EXPECT_FALSE(sel[0]->isDynamic());
-    loadTopology("simple.gro");
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(9, sel[0]->posCount());
-}
-
-
-TEST_F(SelectionCollectionTest, HandlesArithmeticExpressions)
-{
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("x+1 > 3", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("(y-1)^2 <= 1", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("x+--1 > 3", &_errors, &sel));
-    EXPECT_EQ(0, _sc.parseFromString("-x+-1 < -3", &_errors, &sel));
-    ASSERT_EQ(4U, sel.size());
-    EXPECT_TRUE(sel[0]->isDynamic());
-    EXPECT_TRUE(sel[1]->isDynamic());
-    EXPECT_TRUE(sel[2]->isDynamic());
-    EXPECT_TRUE(sel[3]->isDynamic());
-    loadTopology("simple.gro");
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(15, sel[0]->posCount());
-    EXPECT_EQ(15, sel[1]->posCount());
-    EXPECT_EQ(15, sel[2]->posCount());
-    EXPECT_EQ(15, sel[3]->posCount());
-    EXPECT_EQ(0, _sc.evaluate(_frame, NULL));
-    EXPECT_EQ(7, sel[0]->posCount());
-    EXPECT_EQ(8, sel[1]->posCount());
-    EXPECT_EQ(7, sel[2]->posCount());
-    EXPECT_EQ(7, sel[3]->posCount());
-    EXPECT_EQ(0, _sc.evaluateFinal(1));
-    EXPECT_EQ(15, sel[0]->posCount());
-    EXPECT_EQ(15, sel[1]->posCount());
-    EXPECT_EQ(15, sel[2]->posCount());
-    EXPECT_EQ(15, sel[3]->posCount());
-}
-
-
-TEST_F(SelectionCollectionTest, HandlesWithinConstantPositions)
-{
-    std::vector<gmx::Selection *> sel;
-    EXPECT_EQ(0, _sc.parseFromString("within 1 of [2, 1, 0]", &_errors, &sel));
-    ASSERT_EQ(1U, sel.size());
-    EXPECT_TRUE(sel[0]->isDynamic());
-    loadTopology("simple.gro");
-    EXPECT_EQ(0, _sc.compile());
-    EXPECT_EQ(15, sel[0]->posCount());
-    EXPECT_EQ(0, _sc.evaluate(_frame, NULL));
-    EXPECT_EQ(4, sel[0]->posCount());
-    EXPECT_EQ(0, _sc.evaluateFinal(1));
-    EXPECT_EQ(15, sel[0]->posCount());
+    static const char * const selections[] = {
+        "foo = atomnr 4 to 7",
+        "bar = foo and x < 2",
+        "bar2 = foo and y < 2",
+        "atomnr 1 to 4 and bar",
+        "atomnr 2 to 6 and y < 3 and bar2",
+        "atomnr 6 to 10 and not foo",
+        NULL
+    };
+    runTest(10, selections);
 }
 
 } // namespace
