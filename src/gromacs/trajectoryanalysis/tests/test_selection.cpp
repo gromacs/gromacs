@@ -170,7 +170,8 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    gmx::TrajectoryAnalysisCommandLineRunner runner(new gmx::SelectionTester());
+    gmx::SelectionTester module;
+    gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
     runner.setSelectionDebugLevel(1);
     return runner.run(argc, argv);
 }

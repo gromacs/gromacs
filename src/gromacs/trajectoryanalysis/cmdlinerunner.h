@@ -62,8 +62,8 @@ class TrajectoryAnalysisCommandLineRunner
         /*! \brief
          * Create a new runner with the provided module.
          *
-         * Takes ownership of the module and deletes it when it is no longer
-         * needed.
+         * The caller should ensure that the provided module is not destroyed
+         * while the runner exists.
          */
         TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModule *module);
         ~TrajectoryAnalysisCommandLineRunner();
