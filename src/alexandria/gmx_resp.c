@@ -396,7 +396,7 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,int *symmetric_at
             }
             else if (symmetric_atoms[i] > i)
                 gmx_fatal(FARGS,"The symmetric_atoms array can not point to larger atom numbers");
-            else
+            else if (gr->ra[i].nZeta > 0)
             {
                 gr->ra[i].iq[gr->ra[i].nZeta-1] = 
                     gr->ra[symmetric_atoms[i]].iq[gr->ra[i].nZeta-1];

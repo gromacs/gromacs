@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-topoldir = ${pkgdatadir}/top/alexandria.ff
+topoldir = ${pkgdatadir}/top/gaff.ff
 
 topol_DATA = \
 gentop.dat	forcefield.doc	forcefield.itp
