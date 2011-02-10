@@ -1196,9 +1196,8 @@ void update_pcouple(FILE         *fplog,
     real   dtpc=0;
     int    i;
     
-    /* if using vv, we do this elsewhere in the code */
-    if (inputrec->epc != epcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+    /* if using Trotter pressure, we do this elsewhere in the code, so we leave it false. */
+    if (inputrec->epc != epcNO && !(IR_NPT_TROTTER(inputrec)))
     {
         /* We should only couple after a step where energies were determined */
         bPCouple = (inputrec->nstpcouple == 1 ||

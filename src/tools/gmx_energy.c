@@ -1247,7 +1247,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 
 
 static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *filename,
-                    const output_env_t oenv)
+                    gmx_bool bDp, const output_env_t oenv)
 {
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
@@ -1300,9 +1300,6 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
         {
             /* we have standard dat -- call open_dhdl to open the file */
             *fp_dhdl=open_dhdl(filename,ir,oenv);
-            sprintf(title,"%s, %s",dhdl,deltag);
-            sprintf(label_x,"%s (%s)","Time",unit_time);
-            sprintf(label_y,"(%s)",unit_energy);
         }
         else
         {
@@ -1440,7 +1437,13 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
                     {
                         fprintf(*fp_dhdl," % 4d", (int)value);   /* if expanded ensembles and zero, this is a state value, it's an integer. We need a cleaner conditional than if j==1! */
                     } else {
-                        fprintf(*fp_dhdl," %#.8g", value);   /* print normal precision */
+                        if (bDp) {
+                            fprintf(*fp_dhdl," %#.12g", value);   /* print normal precision */
+                        } 
+                        else
+                        {
+                            fprintf(*fp_dhdl," %#.6g", value);   /* print normal precision */
+                        }
                     }
                 }
             }
@@ -2193,11 +2196,17 @@ int gmx_energy(int argc,char *argv[])
                   for(j=0; j<(bOvec?12:3); j++)
                       fprintf(foten," %g",vals[i*12+j]);
               fprintf(foten,"\n");
-	  }
+          }
           if (bDHDL)
           {
               get_dhdl_parms(ftp2fn(efTPX,NFILE,fnm),&ir);
-              do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), oenv);
+              if (ir.efep == efepNO) {
+                  gmx_fatal(FARGS,"Can't generate dhdl file if the .edr was generated with free energies off");
+              }
+              else 
+              {
+                  do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), bDp,oenv);
+              }
           }
 	}
       }

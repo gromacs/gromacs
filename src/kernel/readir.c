@@ -611,12 +611,16 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     
     if (EI_VV(ir->eI))
     {
-        if (ir->epc > epcNO)
+        if (ir->epc > epcNO) 
         {
-            if (ir->epc!=epcMTTK)
+            if ((ir->epc!=epcBERENDSEN) && (ir->epc!=epcMTTK))
             {
-                warning_error(wi,"NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+                warning_error(wi,"for md-vv, can only use Berendsen and Martyna-Tuckerman-Tobias-Klein equations for pressure control"); 
             }
+        }
+        if (ir->epc == etcBERENDSEN || ir->etc == etcVRESCALE) 
+        {
+            warning_error(wi,"for md-vv, Berendsen and velocity rescale temperature control algorithms are not supported.");
         }
     }
 
@@ -2176,7 +2180,8 @@ void do_index(const char* mdparin, const char *ndx,
               }
               ir->nstpcouple = mincouple;
               ir->nsttcouple = mincouple;
-              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
+              sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
+              warning_note(wi,warn_buf);
           }
       }
       nstcmin = tcouple_min_integration_steps(ir->etc);
