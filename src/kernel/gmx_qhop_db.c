@@ -54,26 +54,34 @@ char *trim_strndup(const char *s, int maxlen)
 
 static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d, t_symtab *tab)
 {
-  int i,j;
-  d->nb = s->nb;
-  if (d->b == NULL)
-    snew(d->b, d->nb);
-  
-  for (i=0; i<s->nb; i++)
+  int i, j, bt;
+
+  for (bt=0; bt < ebtsNR; bt++)
     {
-      for(j=0; j<MAXATOMLIST; j++)
+      d[bt].nb = s[bt].nb;
+      if (d[bt].b == NULL && d[bt].nb != 0)
 	{
-	  
-	  if (s->b[i].a[j] == NULL)
+	  snew(d[bt].b, d[bt].nb);
+	  d[bt].type = s[bt].type;
+
+	  for (i=0; i < s[bt].nb; i++)
 	    {
-	      d->b[i].a[j] = NULL;
-	    }
-	  else
-	    {
-	      d->b[i].a[j] = *(put_symtab(tab, s->b[i].a[j]));
+	      for(j=0; j<MAXATOMLIST; j++)
+		{
+		  
+		  if (s[bt].b[i].a[j] == NULL)
+		    {
+		      d[bt].b[i].a[j] = NULL;
+		    }
+		  else
+		    {
+		      d[bt].b[i].a[j] = *(put_symtab(tab, s[bt].b[i].a[j]));
+		    }
+		}
+
+	      d[bt].b[i].s = *(put_symtab(tab, s[bt].b[i].s));
 	    }
 	}
-      d->b[i].s = *(put_symtab(tab, s->b[i].s));
     }
 }
 
@@ -313,7 +321,6 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 
   for (i=0; i<nbigrtp; i++)
     {
-      fprintf(stderr, "rtp entry no %d", i);
       bMatch = FALSE;
 
       for (rt=0; rt<nrt && !bMatch; rt++) /* resblock */
@@ -321,7 +328,7 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	  /* Add the resblock. */
 	  if (strcmp(bigrtp[i].resname, qdb->rb.restype[rt]) == 0 && !bRtypeAdded[rt])
 	    {
-	      fprintf(stderr, "FOUND!");
+	      fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 	      srenew(qdb->rb.rtp, rt+1);
 	      qdb->rb.rtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
@@ -333,13 +340,12 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	    {
 	      if (bMatch = ((strcmp(bigrtp[i].resname, qdb->rb.res[rt][r].name) == 0)))
 		{
-		  fprintf(stderr, " FOUND!");
+		  fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
 		  qdb->rb.res[rt][r].rtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 		}
 	    }
 	}
-      fprintf(stderr, "\n");
     }
 
   sfree(bRtypeAdded);
@@ -800,6 +806,86 @@ int qhop_db_get_parameters(qhop_db_t qdb,
   return 0;
 }
 
+static int get_interaction_type(int bt, int type)
+{
+  int it;
+
+  switch (bt)
+    {
+    case ebtsBONDS:
+      /* For now, always do constraints */
+      it = F_CONSTR;
+      break;
+      
+    case ebtsANGLES:
+      if (type < 1 || type > 8 || type == 7)
+	{
+	  gmx_fatal(FARGS, "Unsupported angle type %i.", type);
+	}
+      it = F_ANGLES + type-1; /* should it be -1? */
+      if (type == 8)
+	{
+	  it = F_TABANGLES;
+	}
+      break;
+	    
+    case ebtsPDIHS:
+    case ebtsIDIHS:
+      if (type == 6 || type == 7)
+	{
+	  gmx_fatal(FARGS, "Unsupported dihedral type %i.", type);
+	}
+      switch (type)
+	{
+	case 1:
+	case 9:
+	  it = F_PDIHS;
+	  break;
+	case 2:
+	  it = F_IDIHS;
+	  break;
+	case 3:
+	  it = F_RBDIHS;
+	  break;
+	case 4:
+	  it = F_PIDIHS;
+	  break;
+	case 5:
+	  it = F_FOURDIHS;
+	  break;
+	case 8:
+	  it = F_TABDIHS;
+	  break;
+
+	default:
+	  gmx_fatal(FARGS, "Unsupported dihedral type %i.", type);
+	}
+      break;
+
+    /* case ebtsIDIHS: */
+/*       switch (type) */
+/* 	{ */
+/* 	case 2: */
+/* 	  it = F_IDIHS; */
+/* 	  break; */
+/* 	case 4: */
+/* 	  it = F_PIDIHS; */
+/* 	  break; */
+/* 	default: */
+/* 	  gmx_fatal(FARGS, "Unsupported improper dihedral type %i.", type); */
+/* 	} */
+/*       break; */
+
+    case ebtsEXCLS:
+      break;
+
+    case ebtsCMAP:
+      break;
+    }
+
+  return it;
+}
+
 extern void qhop_db_names2nrs(qhop_db *db)
 {
   int rt, bt, b, it, a, ia;
@@ -834,81 +920,26 @@ extern void qhop_db_names2nrs(qhop_db *db)
 
       for (bt=0; bt < ebtsNR; bt++)
 	{
+	  if (rtp->rb[bt].nb == 0)
+	    {
+	      /* No bondeds of this type */
+	      db->rb.btype[bt] = -1;
+	      continue;
+	    }
+
 	  if (db->rb.ba[rt][bt] == NULL)
 	    {
 	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
 	    }
 
-	  if (db->rb.btype[bt] != -1 || rtp->rb[bt].nb == 0)
+	  if (db->rb.btype[bt] != -1)
 	    {
 	      /* We already know what kind of flavor this bonded type has. */
 	      continue;
 	    }
 
-	  switch (bt)
-	    {
-	    case ebtsBONDS:
-	      /* For now, always do constraints */
-	      it = F_CONSTR;
-	      break;
-
-	    case ebtsANGLES:
-	      it = F_ANGLES + rtp->rb[bt].type; /* should it be -1? */
-	      if (rtp->rb[bt].type+1 == 8)
-		{
-		  it = F_TABANGLES;
-		}
-	      break;
-	    
-	    case ebtsPDIHS:
-	      switch (rtp->rb[bt].type+1)
-		{
-		case 1:
-		case 9:
-		  it = F_PDIHS;
-		  break;
-		case 2:
-		  it = F_IDIHS;
-		  break;
-		case 3:
-		  it = F_RBDIHS;
-		  break;
-		case 4:
-		  it = F_PIDIHS;
-		  break;
-		case 5:
-		  it = F_FOURDIHS;
-		  break;
-		case 8:
-		  it = F_TABDIHS;
-		  break;
-
-		default:
-		  gmx_fatal(FARGS, "Unsupported dihedral type %i.", rtp->rb[bt].type+1);
-		}
-	      break;
-
-	    case ebtsIDIHS:
-	      switch (rtp->rb[bt].type+1)
-		{
-		case 2:
-		  it = F_IDIHS;
-		  break;
-		case 4:
-		  it = F_PIDIHS;
-		  break;
-		default:
-		  gmx_fatal(FARGS, "Unsupported improper dihedral type %i.", rtp->rb[bt].type+1);
-		}
-	      break;
-
-	    case ebtsEXCLS:
-	      break;
-
-	    case ebtsCMAP:
-	      break;
-	    }
-
+	  it = get_interaction_type(bt, rtp->rb[bt].type);
+	  
 	  db->rb.btype[bt] = it;
 	}
 
@@ -959,11 +990,8 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 	{
 	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
 
-/* 	  if (db->rb.res[rt][r].iatomMap == NULL) */
-/* 	    { */
-	      snew(db->rb.res[rt][r].iatomMap, rtpr->natom);
-	      db->rb.res[rt][r].niatom = rtpr->natom;
-/* 	    } */
+	  snew(db->rb.res[rt][r].iatomMap, rtpr->natom);
+	  db->rb.res[rt][r].niatom = rtpr->natom;
 
 	  /* Loop over atoms in subresidue */
 	  for (ra=0; ra < rtpr->natom; ra++)
@@ -983,4 +1011,81 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 	    } /* ra */
 	} /* r */
     } /* rt */
+}
+
+extern void qhop_db_map_subres_bondeds(qhop_db *db)
+{
+  int rt, r, bt, br, brt, a, i, **map;
+  gmx_bool bMatch;
+  t_restp *rtpr, *rtprt;
+  
+
+  /* Restypes */
+  for (rt=0; rt < db->rb.nrestypes; rt++)
+    {
+      rtprt = &(db->rtp[db->rb.rtp[rt]]);
+
+      /* Residue subtypes */
+      for (r=0; r < db->rb.nres[rt]; r++)
+	{
+	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
+	  snew(db->rb.res[rt][r].biMap, ebtsNR);
+	  snew(db->rb.res[rt][r].findex, ebtsNR);
+	  map = db->rb.res[rt][r].biMap;
+
+	  /* Loop over bonded types */
+	  for (bt=0; bt < ebtsNR; bt++)
+	    {
+	      snew(db->rb.res[rt][r].biMap[bt],  rtpr->rb[bt].nb);
+	      snew(db->rb.res[rt][r].findex[bt], rtpr->rb[bt].nb);
+
+	      /* Loop over bondeds in residue subtype r */
+	      for (br=0; br < rtpr->rb[bt].nb; br++)
+		{
+
+		  /* Find counterpart in the restype. */
+		  for (brt=0; brt < rtprt->rb[bt].nb; brt++)
+		    {
+		      bMatch = TRUE;
+
+		      for (a=0; a < btsNiatoms[bt]; a++)
+			{
+			  if(strcmp(rtpr-> rb[bt].b[br]. a[a],
+				    rtprt->rb[bt].b[brt].a[a]) != 0)
+			    {
+			      bMatch = FALSE;
+			      break;
+			    }
+			}
+
+		      if (bMatch)
+			{
+			  /* in case of dihedral type 9 we may have several
+			   * bonded terms with the same atoms. Let's see if
+			   * we've already mapped this one. */
+
+			  /* Loop over the map so far*/
+			  for (i=0; i < br; i++)
+			    {
+			      if (map[bt][i] == brt)
+				{
+				  /* Ok, we already have this one in the map, so we
+				   * need to find the next one having these atoms. */
+				  bMatch == FALSE;
+				}
+			    }
+
+			  if (bMatch)
+			    {
+			      /*We've found it. Let's move on. */
+			      db->rb.res[rt][r].biMap[bt][br] = brt;
+			      break;
+			    }
+			}
+			
+		    } /* brt */
+		}     /* br */
+	    }         /* bt */
+	}  /* r */
+    }      /* rt */
 }
