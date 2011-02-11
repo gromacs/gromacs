@@ -82,4 +82,6 @@ extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
 extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
 			       t_qhoprec *qr, gmx_bool bGlobal);
 
+extern void fold_inactive_protons(const qhop_db *db, const t_qhoprec *qr, rvec x[], rvec v[]);
+
 #endif	/* _qhop_h */
