@@ -3,6 +3,23 @@
 
 #include "types/gmx_qhop_types.h"
 
+/* npbon[][][] contains the number of parameters for a certain type of bonded interacion.
+ * The outmost dimension denotes the A- and B-state respectively. */
+static const int npbon[3][9][2] = {
+  /*  bond    G96     morse   cubic   conn    harm    fene    table  tabnc */
+  {{2, 4}, {2, 4}, {3, 3}, {3, 3}, {0, 0}, {2, 4}, {2, 2}, {2, 3}, {2, 3}}, /*  <-------------- Bonds */
+  /* harm    G96     cr_bb    cr_ba    UB     qang     -     table     -   */
+  {{2, 4}, {2, 4}, {3, 3}, {4, 4}, {4, 4}, {6, 6}, {0, 0}, {2, 3}, {0, 0}}, /*  <-------------- Angles */
+  /*  prop    imp     RB                        -      fou     -     -     table   prop9 */
+  {{3, 5}, {2, 4}, {NR_RBDIHS, 2*NR_RBDIHS}, {0, 0}, {4, 8}, {0,0},{0,0}, {2, 3}, {3, 5}} /* <- Dihedrals */
+  };
+
+/* These enums serve to find the correct element in npbon */
+enum {ebtypeBOND, ebtypeANGLE, ebtypeDIHEDRAL};
+enum {eAstate, eBstate};
+  
+
+
 /* *********************
  * qhop resblock stuff *
  * ********************* */
