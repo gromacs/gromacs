@@ -54,6 +54,7 @@
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
+#include "invblock.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
@@ -61,35 +62,197 @@
 #include "sparsematrix.h"
 #include "mtxio.h"
 
-static void dump_top(FILE *fp,t_topology *top,char *tpr)
+char *ft2category(int ft)
 {
-  int i,j,k,*types;
+  switch(ft) {
+  case F_BONDS: 
+  case F_G96BONDS:
+  case F_MORSE:
+  case F_CUBICBONDS:
+  case F_CONNBONDS:
+  case F_HARMONIC:
+  case F_FENEBONDS:
+  case F_TABBONDS:
+  case F_TABBONDSNC:
+  case F_RESTRBONDS:
+    return "bonds";
+  case F_ANGLES: 
+  case F_G96ANGLES:
+  case F_CROSS_BOND_BONDS:
+  case F_CROSS_BOND_ANGLES:
+  case F_UREY_BRADLEY:
+  case F_QUARTIC_ANGLES:
+  case F_TABANGLES:
+    return "angles";
+  case F_PDIHS:
+  case F_RBDIHS: 
+  case F_FOURDIHS:
+  case F_IDIHS: 
+  case F_PIDIHS: 
+  case F_TABDIHS:
+    return "dihedrals";
+  case F_CMAP:
+  case F_GB12:
+  case F_GB13:
+  case F_GB14:
+  case F_GBPOL:
+  case F_NPSOLVATION:
+    return "unknown";
+  case F_LJ14:
+  case F_COUL14:
+  case F_LJC14_Q:
+  case F_LJC_PAIRS_NB:
+    return "pairs";
+  case F_LJ:
+  case F_BHAM:
+  case F_LJ_LR:
+  case F_BHAM_LR:
+  case F_DISPCORR:
+  case F_COUL_SR:
+  case F_COUL_LR:
+  case F_RF_EXCL:
+  case F_COUL_RECIP:
+  case F_DPD:
+    return "unknown";
+  case F_POLARIZATION:
+  case F_WATER_POL:
+  case F_THOLE_POL:
+    return "polarization";
+  case F_POSRES:
+    return "position_restraints";
+  case F_DISRES:
+    return "distance_restraints";
+  case F_DISRESVIOL:
+  case F_ORIRES:
+    return "orientation_restraints";
+  case F_ORIRESDEV:
+    return "unknown";
+  case F_ANGRES:
+  case F_ANGRESZ:
+    return "angle_restraints";
+  case F_DIHRES:
+    return "dihedral_restraints";
+  case F_DIHRESVIOL:
+    return "unknown";
+  case F_CONSTR:
+  case F_CONSTRNC:
+    return "constraints";
+  case F_SETTLE:
+    return "settle";
+  case F_VSITE2:
+    return "virtual_sites2";
+  case F_VSITE3:
+  case F_VSITE3FD:
+  case F_VSITE3FAD:
+  case F_VSITE3OUT:
+    return "virtual_sites3";
+  case F_VSITE4FD:
+  case F_VSITE4FDN:
+    return "virtual_sites4";
+  case F_VSITEN:
+  case F_COM_PULL:
+  case F_EQM:
+  case F_EPOT:
+  case F_EKIN:
+  case F_ETOT:
+  case F_ECONSERVED:
+  case F_TEMP:
+  case F_VTEMP:
+  case F_PDISPCORR:
+  case F_PRES:
+  case F_DVDL:
+  case F_DKDL:
+  case F_DHDL_CON:
+  default:
+    return "poep";
+  }
+}
+
+static void dump_ilist(FILE *fp,int ft,t_ilist *il)
+{
+  if (il->nr > 0) {
+    fprintf(fp,"[ %s ]\n",ft2category(ft));
+  }
+  fprintf(fp,"\n");
+ 
+}
+
+static void dump_moltype(FILE *fp,gmx_moltype_t mt)
+{
+  atom_id *invcg;
+  int i,j,resnr;
   
-  fprintf(fp,"; Topology generated from %s by program %s\n",tpr,Program());
-  fprintf(fp,"[ defaults ]\n 1 1 no 1.0 1.0\n\n");
+  fprintf(fp,"[ molecule_type ]\n");
+  fprintf(fp,"%s 1\n\n",*mt.name);
+  
+  invcg = make_invblock(&mt.cgs,mt.atoms.nr);
+  fprintf(fp,"[ atoms ]\n");
+  fprintf(fp,";   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB\n");
+  for(i=0; (i<mt.atoms.nr); i++) {
+    resnr = mt.atoms.atom[i].resind;
+    fprintf(fp,"%5d  %8s  %5d  %5s  %5s  %5d  %10g  %10g  %8s  %10g  %10g\n",
+	    i+1,*mt.atoms.atomtype[i],1+resnr,*mt.atoms.resinfo[resnr].name,
+	    *mt.atoms.atomname[i],invcg[i]+1,mt.atoms.atom[i].q,mt.atoms.atom[i].m,
+	    *mt.atoms.atomtypeB[i],mt.atoms.atom[i].qB,mt.atoms.atom[i].mB);
+  }
+  fprintf(fp,"\n");
+  for(j=0; (j<F_NRE); j++) 
+    dump_ilist(fp,j,&mt.ilist[j]);
+  if (mt.excls.nr > 0) {
+    fprintf(fp,"[ exclusions ]\n");
+    for(i=0; (i<mt.excls.nr); i++) {
+      if (mt.excls.index[i] < mt.excls.index[i+1]) {
+	fprintf(fp,"%d",i+1);
+	for(j=mt.excls.index[i]; (j<mt.excls.index[i+1]); j++) {
+	  fprintf(fp,"  %d",mt.excls.a[j]+1);
+	}
+	fprintf(fp,"\n");
+      }
+    }
+  }
+}
+
+static void dump_atomtypes(FILE *fp,t_atomtypes at)
+{
+  int i;
+  
   fprintf(fp,"[ atomtypes ]\n");
   fprintf(fp,";name  at.num    mass      charge ptype        c6        c12\n");
-  snew(types,top->atomtypes.nr);
-  for(i=0; (i<top->atomtypes.nr); i++) {
-    for(j=0; (j<top->atoms.nr) && (top->atoms.atom[j].type != i); j++)
-      ;
-    if (j<top->atoms.nr) {
-      types[i] = j;
-      fprintf(fp,"%5s  %4d   %8.4f   %8.4f  %2s  %8.3f  %8.3f\n",
-	      *(top->atoms.atomtype[j]),top->atomtypes.atomnumber[i],
-	      0.0,0.0,"A",0.0,0.0);
-    }
+  
+  
+  
+}
+
+static void dump_top(const char *tpr,const char *top)
+{
+  FILE        *fp;
+  int         indent,i,j,**gcount,atot;
+  t_state     state;
+  t_tpxheader tpx;
+  gmx_mtop_t  mtop;
+
+  read_tpxheader(tpr,&tpx,TRUE,NULL,NULL);
+  
+  if (!tpx.bTop) {
+    print("Need a tpr file containing a topology in order to write a top file\n");
+    return;
   }
-  fprintf(fp,"[ nonbonded_params ]\n");
-  for(i=k=0; (i<top->idef.ntypes); i++) {
-    for(j=0; (j<top->idef.ntypes); j++,k++) {
-      fprintf(fp,"%12s  %12s  1  %12.5e  %12.5e\n",
-	      *(top->atoms.atomtype[types[i]]),
-	      *(top->atoms.atomtype[types[j]]),
-	      top->idef.iparams[k].lj.c12,top->idef.iparams[k].lj.c6);
-    }
+  read_tpx_state(tpr,NULL,&state,NULL,&mtop);
+  fp = ffopen(top,"w");
+  fprintf(fp,"; Topology generated from %s by program %s\n",tpr,Program());
+  fprintf(fp,"[ defaults ]\n 1 1 no 1.0 1.0\n\n");
+  dump_atomtypes(fp,mtop.atomtypes);
+     
+  for(j=0; (j<mtop.nmoltype); j++) {
+    dump_moltype(fp,mtop.moltype[j]);
   }
-  sfree(types);
+
+  fprintf(fp,"[ system ]\n");
+  fprintf(fp,"%s\n\n",*mtop.name);
+  for(j=0; (j<mtop.nmolblock); j++) {
+    fprintf(fp,"%s  %d\n",*(mtop.moltype[mtop.molblock[j].type].name),mtop.molblock[j].nmol);
+  }
+  fclose(fp);
 }
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
@@ -476,7 +639,8 @@ int main(int argc,char *argv[])
     { efCPT, NULL, NULL, ffOPTRD },
     { efTOP, "-p", NULL, ffOPTRD },
     { efMTX, "-mtx", "hessian", ffOPTRD }, 
-    { efMDP, "-om", NULL, ffOPTWR }
+    { efMDP, "-om", NULL, ffOPTWR },
+    { efTOP, "-op", NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -496,9 +660,13 @@ int main(int argc,char *argv[])
 		    asize(desc),desc,0,NULL,&oenv);
 
 
-  if (ftp2bSet(efTPX,NFILE,fnm))
-    list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers,
-	     ftp2fn_null(efMDP,NFILE,fnm),bSysTop);
+  if (ftp2bSet(efTPX,NFILE,fnm)) {
+    if (opt2bSet("-op",NFILE,fnm))
+      dump_top(ftp2fn(efTPX,NFILE,fnm),opt2fn("-op",NFILE,fnm));
+    else
+      list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers,
+	       ftp2fn_null(efMDP,NFILE,fnm),bSysTop);
+  }
   else if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
   else if (ftp2bSet(efEDR,NFILE,fnm))
