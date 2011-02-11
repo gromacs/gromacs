@@ -50,8 +50,33 @@
 #define HBOND  0.2
 #define HOPANG 120
 
+extern void fold_inactive_protons(const qhop_db *db, const t_qhoprec *qr, rvec x[], rvec v[])
+{
+  int r, t, h;
+  t_qhop_residue *qres;
+  t_qhop_atom *qatom;
 
-const char *waterName = "HXO";
+  for (r=0; r < qr->nr_qhop_residues; r++)
+    {
+      qres = &(qr->qhop_residues[r]);
+      if (!db->rb.bWater[qres->rtype])
+	{
+	  for (t=0; t < qres->nr_titrating_sites; t++)
+	    {
+	      qatom = &(qr->qhop_atoms[qres->titrating_sites[t]]);
+
+	      for (h=0; h < qatom->nr_protons; h++)
+		{
+		  if (!get_proton_presence(&(db->H_map), qatom->protons[h]))
+		    {
+		      copy_rvec(x[qatom->atom_id], x[qatom->protons[h]]);
+		      copy_rvec(v[qatom->atom_id], v[qatom->protons[h]]);
+		    }
+		}
+	    }
+	}
+    }
+}
 
 static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
 {/* (char *donor_name,char *acceptor_name, qhop_db_t db){ */
@@ -61,7 +86,6 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
    */
 
   char *donor_name, *acceptor_name;
-
   qhop_parameters
     *q;
 
@@ -141,6 +165,7 @@ static int is_qhopatom(const t_qhoprec *qr, const int id)
   return -1;
 }
 
+/* returns the restype for residue with name rname */
 static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
 {
   int i;
@@ -161,6 +186,7 @@ static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
   return -2;
 }
 
+/* Attaches proton atom_id to t_qhop_atom qatom if it's not already attached. */
 static void attach_proton(t_qhop_atom *qatom, const int id)
 {
   int i;
@@ -177,6 +203,7 @@ static void attach_proton(t_qhop_atom *qatom, const int id)
   qatom->protons[qatom->nr_protons++] = id;
 }
 
+/* Finds the hydrogens connected to the t_qhop_atoms in qr. */
 static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
 {
 
@@ -865,6 +892,32 @@ static int qhop_atom_comp(const void *a, const void *b){
 /*   sfree(H); */
 /* } */
 
+/* Returns the equillibrium distance from a heavy atom for a proton.
+ * This equates to the constraint or harmonic bond reference distance. */
+static real find_XH_distance(qhop_db *db, t_qhoprec *qr, int qatom)
+{
+  int rt, r, bt, b;
+  real d;
+  t_restp *rtp;
+
+
+  rt = qr->qhop_residues[qr->qhop_atoms[qatom].qres_id].rtype;
+  r  = qr->qhop_residues[qr->qhop_atoms[qatom].qres_id].res;
+
+  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
+
+  bt = ebtsBONDS;
+
+  for (b=0, d=0.0;
+       b < rtp->rb[bt].nb;
+       b++)
+    {
+
+    }
+
+  return d;
+}
+
 static void get_protons(t_commrec *cr, gmx_mtop_t *mtop, 
 			t_qhop_atom    *qhop_atom,
 			t_qhop_residue *qhop_residue,
@@ -1115,7 +1168,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 	      qhop_db **db){
 
   int 
-    nr_qhop_atoms, nr_qhop_residues, i, j, target, ft;
+    nr_qhop_atoms, nr_qhop_residues, i, j, target, ft, nb;
   t_qhoprec
     *qhoprec; 
   t_pbc
@@ -1156,6 +1209,9 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   qhop_db_map_subres_atoms(*db);
 
+  qhop_db_map_subres_bondeds(*db);
+
+
   (*db)->inertH = find_inert_atomtype(mtop, fr);
 
   for (i=0; i < qhoprec->nr_qhop_residues; i++)
@@ -1174,14 +1230,15 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
       for (j=0; j < ebtsNR; j++)
 	{
 	  ft = (*db)->rb.btype[j];
-
+	  
 	  if (ft >= 0)
 	    {
-	      snew((qres->bindex.ilist_pos[j]),
-		   (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb);
+	      nb = (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb;
+	      qres->bindex.nr[ft] = nb;
 
-	      snew((qres->bindex.indexed[j]),
-		   (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb);
+	      snew((qres->bindex.ilist_pos[ft]), nb);
+
+	      snew((qres->bindex.indexed[ft]), nb);
 	    }
 	}
     }
@@ -1585,6 +1642,9 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
       gmx_fatal(FARGS, "Could not find the product for this reaction.");
     }
 
+  /* Set the residue subtype */
+  qr->qhop_residues[qatom->qres_id].res = i;
+
   /* Change interactions */
   /* For water we don't change any bonded or VdW. For now. */
   if (!bWater)
@@ -1593,29 +1653,20 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 	{
 	  qhop_swap_bondeds(qres, product_res);
 	}
-    }
-  else
-    {
-      /* Remove/add constraints to the titrating H */
-      
-      /* if (qres->nr_indexed == 0) */
-/* 	{ */
-/* 	  index_ilists(qres, db, top, cr); */
-/* 	} */
-
-/*       if (bDonor) */
-/* 	{ */
-/* 	  /\* remove *\/ */
-	  
-/* 	} */
+     
+      if (bDonor)
+	{
+	  qhop_deconstrain(qres, db, top, qatom->protons[qatom->nr_protons-1], cr);
+	}
+      else
+	{
+	  qhop_constrain(qres, qr, db, top, qatom->protons[qatom->nr_protons-1], cr);
+	}
     }
 
   qhop_swap_vdws(qres, product_res, md, db);
 
   qhop_swap_m_and_q(qres, product_res, md, db, qr);
-
-  /* Set the residue subtype */
-  qr->qhop_residues[qatom->qres_id].res = i;
 
   return i;
 }
@@ -1647,7 +1698,7 @@ extern void qhop_protonate(qhop_db *db, t_qhoprec *qr,
     {
       qatom->state &= ~eQACC;
     }
-
+  
 }
 
 extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
@@ -1777,10 +1828,14 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
       /* Take away the LAST proton. That makes sense from an atomname point of view.
        * Ammonium would have H1 H2 H3 H4 while ammonia would have H1 H2 H3. */
 
-/*       if (hop->proton_id != 1) */
-/* 	{ */
-/* 	  invert_dihedrals() */
-/* 	} */
+      /* So, we positiosubstitute the proton at the hoppiung position for
+       * the last proton on the site. */
+      if (hop->proton_id != donor_atom->nr_protons-1)
+	{
+	  copy_rvec(x[donor_atom->protons[hop->proton_id]], x_tmp);
+	  copy_rvec(x[donor_atom->protons[donor_atom->nr_protons-1]], x[donor_atom->protons[hop->proton_id]]);
+	  copy_rvec(x_tmp, x[donor_atom->protons[donor_atom->nr_protons-1]]);
+	}
     }
 
   /**/
@@ -1903,22 +1958,25 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
       if (bUndo)
 	{
 	  /* Put proton back */
-	  copy_rvec(x_old, x[acceptor_atom->protons[hop->proton_id]]);
+	  /* Don't use hop->proton_id. It's the last proton that goes in/out of existence.
+	   * Diprotic acids may be the exceptions, but let's not worry about that now. */
+	  copy_rvec(x_old, x[acceptor_atom->protons[acceptor_atom->nr_protons-1]]);
 	}
       else
 	{
 	  /* We need to position the hydrogen correctly */
 	  if (x_old != NULL)
 	    {
-	      copy_rvec(x[acceptor_atom->protons[hop->proton_id]], x_old); /* Save old position. Needed for undo */
+	      copy_rvec(x[acceptor_atom->protons[acceptor_atom->nr_protons-1]], x_old); /* Save old position. Needed for undo */
 	    }
 	  
 	  /* Get old AH-distance (assume it's correct) */
-	  pbc_dx(pbc,
-		 x[donor_atom->atom_id],
-		 x[acceptor_atom->atom_id],
-		 x_tmp);
-	  d = norm(x_tmp);
+	  /* NO! Put it at 1 Å distance for now. This code was incorrect anyhow. */
+/* 	  pbc_dx(pbc, */
+/* 		 x[donor_atom->atom_id], */
+/* 		 x[acceptor_atom->atom_id], */
+/* 		 x_tmp); */
+/* 	  d = norm(x_tmp); */
 
 	  /* Reposition the proton on the DA-line */
 	  pbc_dx(pbc,
@@ -1926,6 +1984,7 @@ static gmx_bool change_protonation(t_commrec *cr, t_qhoprec *qhoprec,
 		 x[acceptor_atom->atom_id],
 		 x_tmp);
 	  unitv(x_tmp, x_tmp);
+	  d = 0.1; /* Such hardcoding needs to go! Check the rtp data for correct distance. */
 	  svmul(d, x_tmp, x_tmp);
 	  rvec_add(x[acceptor_atom->atom_id], x_tmp, x[acceptor_atom->protons[0]]);
 	}
@@ -2890,7 +2949,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 
   qr = fr->qhoprec;
 
-  qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists */
+  qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists only when needed. Doesn't work yet though. */
 
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
   
@@ -3003,7 +3062,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	    }
 	}
       fprintf(fplog,"\n");
-    }
+    }  
 }
 
 /* paramStr is the string from the rtp file.
