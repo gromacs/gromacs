@@ -1928,6 +1928,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             }
         }
+        
+        /* Keep inactive hydrogens from drifting away. */
+        if (fr->bqhop)
+        {
+            fold_inactive_protons(qhop_database, fr->qhoprec, state->x, state->v);
+        }
 
         if (shellfc)
         {
