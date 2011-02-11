@@ -66,7 +66,9 @@ extern void qhop_db_names2nrs(qhop_db *db);
 /* Maps the atoms in the residue subtypes onto the restypes. */
 extern void qhop_db_map_subres_atoms(qhop_db *db);
 
-
+/* Maps the bonded interactions in the residue subtypes onto the restypes.
+ * Also allocates memory for db->rb.res[][].findex */
+extern void qhop_db_map_subres_bondeds(qhop_db *db);
 
 /* /\* Returns the number of protons on a residue *\/ */
 /* extern int count_protons_res(qhop_res_t res, t_restp *rtp); */
