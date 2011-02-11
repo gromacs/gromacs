@@ -215,60 +215,62 @@ gmx_rng_make_seed(void)
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-  unsigned int lastx,x1,x2,y,*mt;
-  int mti,k;
-  const unsigned int mag01[2]={0x0UL, RNG_MATRIX_A};
+    unsigned int lastx,x1,x2,y,*mt;
+    int mti,k;
+    const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     /* update random numbers */
-  mt=rng->mt;   /* pointer to array - avoid repeated dereferencing */
-  mti=rng->mti;
-  
-  x1=mt[0];
-  for (k=0;k<RNG_N-RNG_M-3;k+=4) {
-    x2=mt[k+1];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+2];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+3];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+2]= mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+4];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x1=mt[k+1];
-  y=(x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  for (;k<RNG_N-1;k+=4) {
-    x1=mt[k+1];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k] = mt[k+(RNG_M-RNG_N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+2];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+3];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+4];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  y = (x2&RNG_UPPER_MASK)|(mt[0]&RNG_LOWER_MASK);
-  mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  
-  rng->mti = 0;
+    mt = rng->mt;   /* pointer to array - avoid repeated dereferencing */
+    mti = rng->mti;
+
+    x1        = mt[0];
+    for (k = 0; k < RNG_N-RNG_M-3; k += 4)
+    {
+        x2      = mt[k+1];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+RNG_M]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+2];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+3];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+4];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x1        = mt[k+1];
+    y         = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    for (; k < RNG_N-1; k += 4)
+    {
+        x1      = mt[k+1];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+(RNG_M-RNG_N)]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+2];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+3];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+4];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    y = (x2 & RNG_UPPER_MASK) | (mt[0] & RNG_LOWER_MASK);
+    mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+
+    rng->mti = 0;
 }
 
 
