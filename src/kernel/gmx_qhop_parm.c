@@ -9,6 +9,7 @@
 #include "resall.h"
 #include "gpp_atomtype.h"
 #include "types/gmx_qhop_types.h"
+#include "types/idef.h"
 #include "gmx_qhop_parm.h"
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
@@ -22,6 +23,228 @@ extern qhop_resblocks_t qhop_resblock_init()
   rb->nrestypes = 0;
   return rb;
 }
+
+/* Adds parameters for an interaction to an array of parameters, */
+/* or finds the parameter in case it's already in the array. */
+/* Returns the index in params where it was found or inserted. */
+
+/* btype is ebtsBONDS, ebtsANGLES, ...
+ * bflavour specifies the functype. See the npbon[] in gmx_qhop_parm.h */
+extern int qhop_add_iparam(t_iparams **params, int *nparams, t_iparams *interaction, int btype, int bflavor)
+{
+  int p, np, i;
+
+  gmx_bool bMatch;
+
+  np = *nparams;
+
+  if (np == 0)
+    {
+      snew((*params), 1);
+      *nparams = 1;
+      (*params)[0] = *interaction; /* copy params */
+       return 0;
+    }
+
+  for (p=0; p < np; p++)
+    {
+      bMatch = TRUE;
+      /* Assume that the params are type real.
+       * This means that the following types of params are disallowed:
+       *   tab, vsiten, disres, dihres, orires, and cmap */
+      for (i=0; i < npbon[btype][bflavor][0]; i++)
+	{
+	  if (!(((real*)interaction)[i] != ((real*)&(params[p]))[p]))
+	    {
+	      bMatch == FALSE;
+
+	      break;
+	    }
+	}
+
+      if (bMatch)
+	{
+	  /* It was already in the list */
+	  return p;
+	}
+    }
+
+  /* It was not found, let's add it. */
+  srenew((*params), np+1);      /* expand the list */
+  (*nparams)++;
+  (*params)[np] = *interaction; /* copy params */
+  return np;
+}
+
+/* Reads the next entry in the string of parameters s. */
+static real read_next_param(const char *s, int *pos)
+{
+  int n, i, p;
+  double d;
+  real r;
+
+  
+  n = sscanf(&(s[*pos]), "%d", &d);
+  r = (real)d;
+    
+  if (n <= 0)
+    {
+      /* No parameters read */
+      *pos = -1;
+      return r;
+    }
+
+  /* Find next param in s */
+  p = *pos;
+
+  /* find next space */
+  while (s[p] != '\0')
+    {
+      if (s[p] != ' ')
+	{
+	  /* Here starts the next param. */
+	  *pos = p;
+	  return r;
+	}
+    }
+
+  /* We've reached the end of the string */
+  *pos = -1;
+  return r;
+}
+
+static t_iparams str2iparams(const char *s, int bt)
+{
+  int i, pos, np;
+  t_iparams params;
+  real p[MAXFORCEPARAM+1];
+
+  if (s==NULL || s[0]=='\0')
+    {
+      gmx_fatal(FARGS, "Interaction parameters were empty.");
+    }
+
+  pos = 0;
+  np = 0;
+  /* Keep reading until end of string or to last parameter in string */
+  while(pos >= 0 && i < MAXFORCEPARAM)
+    {
+      p[np++] = read_next_param(s, &pos);
+    }
+
+  if (bt==ebtsBONDS)
+    {
+      /* make it a constraint. */
+      np = 1;
+    }
+
+  /* copy to params */
+  for (i=0; i<np; i++)
+    {
+      params.generic.buf[i] = p[i];
+    }
+
+  return params;
+}
+
+/* Makes a library of bonded interaction parameters from rtp-data. */
+extern void make_ilib(qhop_db *db)
+{
+  int rt, r, bt, b, btype,  bf, np, fi;
+  t_restp *rtp;
+
+  t_iparams *ilib, params;
+
+  /* Start with an empty ilib */
+  ilib = NULL;
+  np = 0;
+
+  for (rt=0; rt < db->rb.nrestypes; rt++)
+    {
+      for (r=0; r < db->rb.nres[rt]; r++)
+	{
+	  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
+
+	  switch (bt)
+	    {
+	    case ebtsBONDS:
+	      btype = ebtypeBOND;
+	      break;
+	    case ebtsANGLES:
+	      btype = ebtypeANGLE;
+	      break;
+	    case ebtsPDIHS:
+	    case ebtsIDIHS:
+	      btype = ebtypeDIHEDRAL;
+	      break;
+	    default:
+	      gmx_fatal(FARGS, "Bonded type not supported. bt = %i", bt);
+	    }
+
+	  for (bt=0; bt < ebtsNR; bt++)
+	    {
+	      for (b=0; b < rtp->rb[bt].nb; b++)
+		{
+		  params = str2iparams(rtp->rb[bt].b[b].s, bt);
+		  fi =  qhop_add_iparam(&ilib, &np, &params, btype, db->rb.btype[bt]);
+		  db->rb.res[rt][r].findex[bt][b] = fi;
+
+		  /* Was it a new parameter? */
+		  if (fi == db->rb.ni)
+		    {
+		      db->rb.ni++;
+		    }
+		}
+	    }
+	}
+    }
+
+  /* /\* Add ebtsNR null interactions *\/ */
+/*   for (bt=0; bt < ebtsNR; bt++) */
+/*     { */
+/*       switch (bt) */
+/* 	{ */
+/* 	case ebtsBONDS: */
+/* 	  btype = ebtypeBOND; */
+	  
+/* 	  break; */
+/* 	case ebtsANGLES: */
+/* 	  btype = ebtypeANGLE; */
+/* 	  break; */
+/* 	case ebtsPDIHS: */
+/* 	case ebtsIDIHS: */
+/* 	  btype = ebtypeDIHEDRAL; */
+/* 	  break; */
+/* 	default: */
+/* 	  gmx_fatal(FARGS, "Bonded type not supported. bt = %i", bt); */
+/* 	} */
+
+/*       if (bt == ebtsBONDS) */
+/* 	{ */
+/* 	  /\* Since we're constraining bonds, skip this one. *\/ */
+/* 	  continue; */
+/* 	} */
+
+/*       /\* All zeroes. *\/ */
+/*       memset(&params, 0, sizeof(t_iparams)); */
+
+/*       db->rb.ft_null qhop_add_iparam(&ilib, &np, &params, btype, db->rb.btype[bt]); */
+/*     } */
+
+/*   We really just need one null interaction. */
+  memset(&params, 0, sizeof(t_iparams));
+
+  fi = qhop_add_iparam(&ilib, &np, &params, btype, db->rb.btype[bt]);
+  db->rb.ft_null = fi;
+  if (fi == db->rb.ni)
+    {
+      db->rb.ni++;
+    }
+
+  db->rb.ilib = ilib;
+  db->rb.ni = np;
+}
+
 #if 0
 t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
 {
