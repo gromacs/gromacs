@@ -40,20 +40,11 @@ typedef struct {
 } t_hop;
 
 
-/* /\* relates position in idef to a position in a bondeds library for a residue. *\/ */
-/* typedef struct { */
-/*   t_iatom*  ilib; */
-/*   t_iatom** reslib; /\* points to entry in resblocks. */
-/* 		       Use it to find bonded interaction */
-/* 		       for a specific protonation state. *\/ */
-/* } qhop_bonswap; */
-
 /* Keeps track of where bonded interactions are in an ilist.
    We use it to quickly change bonded interactions for a residue
    upon (de)protonation. */
 typedef struct {
   int     nb;
-  /* qhop_bonswap *bondeds; /\* nb elements long. *\/ */
   t_iatom **ilist_pos; /* dimensions: [F_NRE][#bonded_of this type] */
 
   int nr[F_NRE]; /* How many interactions in ilist_pos[] arrays? */
@@ -107,12 +98,6 @@ typedef struct {
   /* Let's change to eQACC for deprotonated, eQACCDON for ampholytic and eQDON for fully protonated. */
   
   int    res_nr; /* Global resnr. */
-  /* int    **ilistPosG; */ /* Where in the global topology are the
-		       * bonded interactions found?
-		       * Indexes a t_ilist[F_*][interaction] */
-  /* int    *ilistPosL[F_NRE]; */ /* Where in the local topology are the
-			     * bonded interactions found?
-			     * Indexes a t_ilist[F_*][interaction] */
 
   qhop_bonded_index bindex; /* Makes ilistPosG and ilistPosL redundant. For now anyway. */
   int nr_indexed;      /* are the ilists indexed? */
