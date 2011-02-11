@@ -4,13 +4,17 @@
 #include "types/mdatom.h"
 #include "types/topology.h"
 #include "types/qhoprec.h"
+#include "hackblock.h"
 #include "types/gmx_qhop_types.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* find the inert hydrogen (zero vdw params). */
+/* Find the inert hydrogen (zero vdw params).
+ * Finding it is trivial (it's the last atomtype),
+ * But this function also checks that the vdw interactions
+ * are zero and bails otherwise.*/
 extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr);
 
 /* Flags that the proton is present in the existence function Hext */
@@ -23,13 +27,27 @@ extern gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid);
    * interactions of qres. Stores the ilist locations
    * for future hacking of bonded interactions. */
 extern void index_ilists(t_qhop_residue *qres,
-			 qhop_db *db,
+			 const qhop_db *db,
 			 const gmx_localtop_t *top,
 			 const t_commrec *cr);
 
   /* Clears the indexing. Under the hood it does not
    * wipe the ilist locations, but only marks them as obsolete. */
 extern void unindex_ilists(t_qhop_residue *qres);
+
+  /* Returns the index in top->idef.il[?].iatoms where the
+   * parameters for the bond involving proton_id are found. */
+extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
+				       t_qhop_atom *qatom, gmx_localtop_t *top,
+				       int proton_id, const t_commrec *cr);
+
+  /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
+   * Use it when activating a proton. */
+extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr);
+
+  /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
+   * Use it when deactivating a proton. */
+extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr);
 
 /*   Exchanges the current bonded interactions*/
 /*   for the ones defined by prod. */
@@ -75,6 +93,10 @@ extern int which_subRes(const gmx_mtop_t *top,
 			const t_qhoprec *qr,
 			qhop_db *db,
 			const int resnr);
+
+
+  /* Put the interaction parameters in top.params */
+extern int insert_ilib_in_localtop(qhop_db *db, gmx_localtop_t *top);
 
 #ifdef __cplusplus
 }
