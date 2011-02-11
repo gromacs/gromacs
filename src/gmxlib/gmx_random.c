@@ -71,7 +71,7 @@
 
 
 struct gmx_rng {
-  unsigned int  mt[624];  
+  unsigned int  mt[RNG_N];
   int           mti;
   int           has_saved;  
   double        gauss_saved;
@@ -208,9 +208,9 @@ gmx_rng_make_seed(void)
 }
 
 
-/* The random number state contains 624 entries that are returned one by
+/* The random number state contains RNG_N entries that are returned one by
  * one as random numbers. When we run out of them, this routine is called to
- * regenerate 624 new entries.
+ * regenerate RNG_N new entries.
  */
 static void
 gmx_rng_update(gmx_rng_t rng)
@@ -307,7 +307,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng)
 {
   unsigned int y;
   
-  if(rng->mti==624) 
+  if(rng->mti==RNG_N)
     gmx_rng_update(rng);
   y=rng->mt[rng->mti++];
   
