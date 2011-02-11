@@ -30,38 +30,70 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in datapath.h.
+ * Implements functions in refdata.h that don't have external dependencies.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_testutils
  */
-#include "datapath.h"
+#include "refdata.h"
 
-#include <cassert>
+#include <cstring>
 
 #include "gromacs/utility/path.h"
-
-static const char *g_testDataPath = NULL;
+#include "testutils/datapath.h"
 
 namespace gmx
 {
 namespace test
 {
 
-std::string getTestFilePath(const char *filename)
+static ReferenceDataMode g_referenceDataMode = erefdataCompare;
+
+
+ReferenceDataMode getReferenceDataMode()
 {
-    return Path::join(getTestDataPath(), filename);
+    return g_referenceDataMode;
 }
 
-const char *getTestDataPath()
+
+void setReferenceDataMode(ReferenceDataMode mode)
 {
-    assert(g_testDataPath != NULL || !"Test data path not set");
-    return g_testDataPath;
+    g_referenceDataMode = mode;
 }
 
-void setTestDataPath(const char *path)
+
+std::string getReferenceDataPath()
 {
-    assert(Directory::exists(path));
-    g_testDataPath = path;
+    return getTestFilePath("refdata");
+}
+
+
+int initReferenceData(int *argc, char **argv)
+{
+    int i, newi;
+
+    for (i = newi = 1; i < *argc; ++i, ++newi)
+    {
+        argv[newi] = argv[i];
+        if (!std::strcmp(argv[i], "--create-ref-data"))
+        {
+            setReferenceDataMode(erefdataCreateMissing);
+            --newi;
+        }
+        else if (!std::strcmp(argv[i], "--update-ref-data"))
+        {
+            setReferenceDataMode(erefdataUpdateAll);
+            --newi;
+        }
+    }
+    *argc = newi;
+
+    std::string dirname = getReferenceDataPath();
+    if (!Directory::exists(dirname))
+    {
+        return Directory::create(dirname);
+    }
+    return 0;
 }
 
 } // namespace test

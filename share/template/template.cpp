@@ -242,6 +242,7 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    TrajectoryAnalysisCommandLineRunner runner(new AnalysisTemplate());
+    AnalysisTemplate module;
+    TrajectoryAnalysisCommandLineRunner runner(&module);
     return runner.run(argc, argv);
 }

@@ -33,9 +33,12 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
+#include <memory>
+
 #include <copyrite.h>
 
 #include "gromacs/fatalerror.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 
@@ -49,9 +52,9 @@ main(int argc, char *argv[])
                   "Not enough command-line arguments");
     }
 
-    gmx::TrajectoryAnalysisModule *mod
-        = gmx::createTrajectoryAnalysisModule(argv[1]);
-    if (mod == NULL)
+    std::auto_ptr<gmx::TrajectoryAnalysisModule>
+        mod(gmx::createTrajectoryAnalysisModule(argv[1]));
+    if (mod.get() == NULL)
     {
         CopyRight(stderr, argv[0]);
         GMX_ERROR(gmx::eeInvalidInput,
@@ -60,6 +63,6 @@ main(int argc, char *argv[])
     --argc;
     ++argv;
 
-    gmx::TrajectoryAnalysisCommandLineRunner runner(mod);
+    gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
     return runner.run(argc, argv);
 }

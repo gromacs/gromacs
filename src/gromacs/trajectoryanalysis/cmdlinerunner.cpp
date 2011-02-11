@@ -91,7 +91,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::Impl(
 
 TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 {
-    delete _module;
 }
 
 

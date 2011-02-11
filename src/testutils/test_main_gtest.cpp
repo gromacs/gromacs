@@ -38,6 +38,7 @@
 
 #include "gromacs/fatalerror/fatalerror.h"
 #include "testutils/datapath.h"
+#include "testutils/refdata.h"
 
 /*! \brief
  * Initializes unit testing with Google C++ Testing Framework.
@@ -47,6 +48,10 @@ int main(int argc, char *argv[])
     ::testing::InitGoogleTest(&argc, argv);
 #ifdef TEST_DATA_PATH
     ::gmx::test::setTestDataPath(TEST_DATA_PATH);
+    if (::gmx::test::initReferenceData(&argc, argv) != 0)
+    {
+        return 1;
+    }
 #endif
     ::gmx::setFatalErrorHandler(NULL);
     return RUN_ALL_TESTS();
