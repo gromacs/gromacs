@@ -81,11 +81,12 @@ typedef struct qhop_reactant {
 } qhop_reactant;
 
 typedef struct qhop_res {
-  char *name; /* Name of the residue */
-  int na, nd; /* Number of acceptors and donors */
+  char *name;    /* Name of the residue */
+  int na, nd;    /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
-  int *iatomMap; /* maps the atoms to the atoms in qXXX */
-  int *biMap;    /* maps the bonded interactions to the atoms in qXXX */
+  int *iatomMap; /* maps the atoms to the atoms in restype qXXX */
+  int **biMap;   /* maps the bonded interactions to the bondeds in restype qXXX
+		  * Matches the rtp data. */
   int niatom;    /* = db->rtp[rtp].natom */
   /*   int nft; */
   int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
@@ -130,11 +131,11 @@ typedef struct qhop_resblocks {
 
   /* t_ilist ilist[]; */
   t_iparams *ilib;  /* The actual interaction parameters.
-		     * ilib[0] to ilib[ni-2] are real interactions,
+		     * ilib[0] to ilib[ni-1] are real interactions,
 		     * the last two are dummy interactions with zeroed force constants;
 		     * one for bonds with a 0.1 nm reference distance, and one with only zeroes.
 		     * ilib will be appended to the iparams in some central t_idef.*/
-  t_functype ft_null[ebtsNR]; /* Here are the nubers for the dummy functypes. */
+  int ft_null;      /* Here is the the dummy interaction in ilib. Perhaps we don't need to keep track of it, but let's do that for now. */
 } qhop_resblocks;
 
 
@@ -159,6 +160,7 @@ typedef struct currentRes {
 
 typedef struct qhop_db {
   int                     inertH; /* The atomtype for the inert hydrogen. */
+  int                     constrain; /* What do we constrain? none=0, h-bonds=1, all-bonds=2, */
   int                     nrtp;
   t_restp                 *rtp;
   /* Replacing resinfo with more elaborate structures */
