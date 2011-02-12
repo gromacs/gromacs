@@ -1849,18 +1849,24 @@ static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state
         return FALSE;
     }
     
+    /* for simplicity */
+    nlim = fep->n_lambda;
+
     if (CheckIfDoneEquilibrating(fep,dfhist,step))
     {
         dfhist->bEquil = TRUE; 
+        /* zero out the visited states so we know how many equilibrated states we have
+           from here on out.*/
+        for (i=0;i<nlim;i++)
+        {
+            dfhist->n_at_lam[i] = 0;
+        }
         return TRUE;
     }
     
     /* If we reached this far, we have not equilibrated yet, keep on
        going resetting the weights */
     
-    /* for simplicity */
-    nlim = fep->n_lambda;
-
     if (EWL(fep->elamstats))
     {
         if (fep->elamstats==elamstatsWL) 
@@ -2439,11 +2445,11 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
                     fprintf(outfile,"%7.3f",fep->all_lambda[i][ifep]);
                 }
             }
-            if (EWL(fep->elamstats))
+            if (EWL(fep->elamstats) && (!(dfhist->bEquil)))  /* if performing WL and still haven't equilibrated */
             {
                 fprintf(outfile,"%9.3f",dfhist->wl_histo[ifep]);
             } 
-            else 
+            else   /* we have equilibrated weights */
             {
                 fprintf(outfile,"%9d",dfhist->n_at_lam[ifep]);	      
             }

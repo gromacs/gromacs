@@ -618,7 +618,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 warning_error(wi,"for md-vv, can only use Berendsen and Martyna-Tuckerman-Tobias-Klein equations for pressure control"); 
             }
         }
-        if (ir->epc == etcBERENDSEN || ir->etc == etcVRESCALE) 
+        if (ir->etc == etcBERENDSEN || ir->etc == etcVRESCALE) 
         {
             warning_error(wi,"for md-vv, Berendsen and velocity rescale temperature control algorithms are not supported.");
         }
