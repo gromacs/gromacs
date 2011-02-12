@@ -1483,6 +1483,15 @@ constructed (see section~\ssecref{molitp}).
 in your system that are defined in this {\tt *.top}. In this
 example file, it stands for 1 urea molecule dissolved in 1000 water
 molecules. The molecule type SOL is defined in the {\tt spc.itp} file.
+Each name here must correspond to a name given with {\tt [~moleculetype~]}
+earlier in the topology. The order of the blocks of molecule types and
+the numbers of such molecules must match the coordinate file that
+accompanies the topology when supplied to {\tt \normindex{grompp}}.
+The blocks of molecules do not need to be contiguous, but some
+tools (e.g. {\tt \normindex{genion}}) may act only on the first or
+last such block of a particular molecule type. Also, these blocks
+have nothing to do with the definition of \normindex{groups}
+(see \secref{group} and \secref{groups}).
 
 \subsection{Molecule.itp file}
 \label{subsec:molitp}
