@@ -1243,9 +1243,6 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 	}
     }
 
-  /* Complete the t_mdatoms */
-  qhop_atoms2md(md, qhoprec);
-
   qhoprec->hop = NULL;
   
   return (nr_qhop_atoms);
@@ -1667,6 +1664,10 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
   qhop_swap_vdws(qres, product_res, md, db);
 
   qhop_swap_m_and_q(qres, product_res, md, db, qr);
+
+  set_proton_presence(&(db->H_map),
+		      qatom->protons[qatom->nr_protons-1],
+		      !bDonor);
 
   return i;
 }
