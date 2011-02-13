@@ -50,11 +50,14 @@
 #define HBOND  0.2
 #define HOPANG 120
 
-extern void fold_inactive_protons(const qhop_db *db, const t_qhoprec *qr, rvec x[], rvec v[])
+extern void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[])
 {
   int r, t, h;
   t_qhop_residue *qres;
   t_qhop_atom *qatom;
+  qhop_db *db;
+
+  db = qr->db;
 
   for (r=0; r < qr->nr_qhop_residues; r++)
     {
@@ -1164,8 +1167,8 @@ static void get_protons(t_commrec *cr, gmx_mtop_t *mtop,
 
 
 int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
-	      const t_forcerec *fr, const rvec *x, matrix box, t_mdatoms *md,
-	      qhop_db **db){
+	      const t_forcerec *fr/* , const rvec *x */, matrix box, t_mdatoms *md)
+{
 
   int 
     nr_qhop_atoms, nr_qhop_residues, i, j, target, ft, nb;
@@ -1175,6 +1178,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
     pbc;
   t_qhop_residue
     *qres;
+  qhop_db *db;
   
   qhoprec = NULL;
   nr_qhop_atoms    = 0;
@@ -1185,7 +1189,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
       return 0;
     }
 
-  if ((*db = qhop_db_read("qamber99sb.ff", mtop, md)) == NULL)
+  if ((db = qhop_db_read("qamber99sb.ff", mtop)) == NULL)
     {
       gmx_fatal(FARGS,"Can not read qhop database information");
     }
@@ -1199,54 +1203,26 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   snew(qhoprec->global_atom_to_qhop_atom, mtop->natoms);
 
-  nr_qhop_atoms = get_qhop_atoms(cr, mtop, qhoprec ,ir, *db);
+  nr_qhop_atoms = get_qhop_atoms(cr, mtop, qhoprec ,ir, db);
 
   /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
-  scan_for_H(qhoprec, *db);
+  scan_for_H(qhoprec, db);
 
   /* make tables of interacting atoms for the bonded rtp data. */
-  qhop_db_names2nrs(*db);
+  qhop_db_names2nrs(db);
 
-  qhop_db_map_subres_atoms(*db);
+  qhop_db_map_subres_atoms(db);
 
-  qhop_db_map_subres_bondeds(*db);
+  qhop_db_map_subres_bondeds(db);
 
-
-  (*db)->inertH = find_inert_atomtype(mtop, fr);
-
-  for (i=0; i < qhoprec->nr_qhop_residues; i++)
-    {
-      qres = &(qhoprec->qhop_residues[i]);
-
-      /* What flavour of the residue shall we set it to? */
-      target = which_subRes(mtop, qhoprec, *db, i);
-      qres->res = target;
-      set_interactions(qhoprec, *db, md, qhoprec->qhop_atoms, qres);
-
-      /* Alocate memory for the bonded index. */
-      /* This should probably go to qhop_toputil.c */
-      snew(qres->bindex.ilist_pos, F_NRE);
-      snew(qres->bindex.indexed,   F_NRE);
-      for (j=0; j < ebtsNR; j++)
-	{
-	  ft = (*db)->rb.btype[j];
-	  
-	  if (ft >= 0)
-	    {
-	      nb = (*db)->rtp[(*db)->rb.rtp[qres->rtype]].rb[j].nb;
-	      qres->bindex.nr[ft] = nb;
-
-	      snew((qres->bindex.ilist_pos[ft]), nb);
-
-	      snew((qres->bindex.indexed[ft]), nb);
-	    }
-	}
-    }
+  db->inertH = find_inert_atomtype(mtop, fr);
 
   qhoprec->hop = NULL;
-  
+  qhoprec->db = db;
+
   return (nr_qhop_atoms);
 } /* init_hop */
+
 
 static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 			     int *nr, t_mdatoms *md, qhop_H_exist *Hmap){
@@ -2942,7 +2918,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     t_mdatoms *md, t_fcdata *fcd,t_graph *graph, t_forcerec *fr,
 	     gmx_vsite_t *vsite,rvec mu_tot,/*gmx_genborn_t *born, */
 	     gmx_bool bBornRadii,real T, int step,
-	     tensor force_vir, qhop_db_t db){
+	     tensor force_vir){
 
   int
     nr_hops,i,j,a;
@@ -2956,8 +2932,11 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     start_seed=0;
   t_qhoprec
     *qr;
+  qhop_db
+    *db;
 
   qr = fr->qhoprec;
+  db = qr->db;
 
   qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists only when needed. Doesn't work yet though. */
 

@@ -1150,7 +1150,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq; 
-    qhop_db_t   qhop_database=NULL;
+    /* qhop_db_t   qhop_database=NULL; */
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
@@ -1533,8 +1533,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     if(fr->bqhop)
     {
-        init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms, &qhop_database);
-        if (qhop_database == NULL)
+/*         init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms, &qhop_database); */
+
+        finalize_qhoprec(fr->qhoprec, top_global, mdatoms);
+
+        if (fr->qhoprec->db == NULL)
             gmx_fatal(FARGS, "qhop_database not set");
     }
  
@@ -1924,7 +1927,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                         mdatoms,fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
-                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir, qhop_database);
+                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir);
             
             }
         }
@@ -1932,7 +1935,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Keep inactive hydrogens from drifting away. */
         if (fr->bqhop)
         {
-            fold_inactive_protons(qhop_database, fr->qhoprec, state->x, state->v);
+            fold_inactive_protons(fr->qhoprec, state->x, state->v);
         }
 
         if (shellfc)
@@ -2793,8 +2796,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
-    if (qhop_database != NULL)
-        qhop_db_done(qhop_database);
+    if (fr->qhoprec->db != NULL)
+        qhop_db_done(fr->qhoprec->db);
 
     /* Stop the time */
     runtime_end(runtime);

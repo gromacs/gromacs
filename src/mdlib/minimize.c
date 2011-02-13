@@ -925,10 +925,14 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
   if(fr->bqhop)
   {
-      init_qhop(cr, top_global, inputrec, fr,
+      /* init_qhop(cr, top_global, inputrec, fr,
                 state_global->x, state_global->box,
-                mdatoms, &qhop_database);
-      if (qhop_database == NULL)
+                mdatoms, &qhop_database); */
+
+      /* Complete the t_mdatoms */
+      finalize_qhoprec(fr->qhoprec, top_global, mdatoms);
+
+      if (fr->qhoprec->db == NULL)
           gmx_fatal(FARGS, "qhop_database not set");
   }
   
@@ -2099,10 +2103,14 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
   if(fr->bqhop)
   {
-      init_qhop(cr, top_global, inputrec, fr,
+      /* init_qhop(cr, top_global, inputrec, fr,
                 state_global->x, state_global->box,
-                mdatoms, &qhop_database);
-      if (qhop_database == NULL)
+                mdatoms, &qhop_database);*/
+
+      /* Complete the t_mdatoms */
+      finalize_qhoprec(fr->qhoprec, top_global, mdatoms);
+
+      if (fr->qhoprec->db == NULL)
           gmx_fatal(FARGS, "qhop_database not set");
   }
     

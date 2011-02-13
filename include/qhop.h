@@ -27,7 +27,7 @@
  * \return The number of titrating atoms.
  */
 extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, t_forcerec *fr,
-	      rvec *x,matrix box, t_mdatoms *md, qhop_db_t *db);
+	      /* rvec *x, */matrix box, t_mdatoms *md);
 
 /** \brief Identifies potential hops calculates probabilities.
  *
@@ -57,8 +57,7 @@ do_qhop(FILE *fplog,
 	gmx_bool bBornRadii,
 	real T,
 	int step,
-	tensor force_vir,
-	qhop_db_t db
+	tensor force_vir
 	);
 
 extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
@@ -82,6 +81,6 @@ extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
 extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
 			       t_qhoprec *qr, gmx_bool bGlobal);
 
-extern void fold_inactive_protons(const qhop_db *db, const t_qhoprec *qr, rvec x[], rvec v[]);
+extern void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[]);
 
 #endif	/* _qhop_h */

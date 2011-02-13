@@ -923,18 +923,3 @@ extern void set_interactions(t_qhoprec *qr, const qhop_db *qdb, t_mdatoms *md, t
   
     /* Non-bonded */
 }
-
-/* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
-extern void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
-{
-  int i;
-  t_qhop_atom *a;
-
-  for (i=0; i < qr->nr_qhop_atoms; i++)
-    {
-      a = &(qr->qhop_atoms[i]);
-
-      md->bqhopacceptor[a->atom_id] = (a->state & eQACC) != 0;
-      md->bqhopdonor[a->atom_id]    = (a->state & eQDON) != 0;
-    }
-}

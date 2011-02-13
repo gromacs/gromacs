@@ -77,8 +77,8 @@ extern void set_interactions(t_qhoprec *qr,
 			     t_qhop_residue *qres);
 
 /* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
-extern void qhop_atoms2md(t_mdatoms *md,
-			  const t_qhoprec *qr);
+/* extern void qhop_atoms2md(t_mdatoms *md, */
+/* 			  const t_qhoprec *qr); */
 
 /* Reads the info in the db->qhop_H_exist and finds the corresponding
  * residue subtype in the qhop_db.

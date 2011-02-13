@@ -386,7 +386,7 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 /*     } */
 /* } */
 
-static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext)
+static int init_qhop_H_exist(gmx_mtop_t *top, qhop_H_exist *Hext)
 {
   
   int a, nH = 0, n;
@@ -395,7 +395,7 @@ static int init_qhop_H_exist(gmx_mtop_t *top, t_mdatoms *mda, qhop_H_exist *Hext
   int *atomid2H;
   t_atom *atom;
 
-  n = mda->nr;
+  n = top->natoms;
   H = NULL;
   H2atomid = NULL;
   atomid2H = NULL;
@@ -566,7 +566,7 @@ void qhop_db_print (qhop_parameters *qhp)
 /*   i = 0; */
 /* } */
 
-qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
+qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 {
   qhop_db_t qdb;
   char buf[256], buf2[256];
@@ -662,7 +662,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda)
     }
 
   /* init the hydrogen existence array. */
-  qdb->H_map.nH = init_qhop_H_exist(top, mda, &(qdb->H_map));
+  qdb->H_map.nH = init_qhop_H_exist(top, &(qdb->H_map));
   
   done_atomtype(atype);
   sfree(fn);
@@ -911,6 +911,8 @@ extern void qhop_db_names2nrs(qhop_db *db)
        * And since we're looping, we might as well translate all the atoms
        * in the bonded interactions to residue local atom indices. */
 
+      fprintf(stderr, "Making bonded atom index for restype %i\n", rt);
+
       if (db->rb.ba[rt] == NULL)
 	{
 	  snew(db->rb.ba[rt], ebtsNR);
@@ -920,21 +922,10 @@ extern void qhop_db_names2nrs(qhop_db *db)
 
       for (bt=0; bt < ebtsNR; bt++)
 	{
-	  if (rtp->rb[bt].nb == 0)
-	    {
-	      /* No bondeds of this type */
-	      db->rb.btype[bt] = -1;
-	      continue;
-	    }
-
-	  if (db->rb.ba[rt][bt] == NULL)
-	    {
-	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
-	    }
-
-	  if (db->rb.btype[bt] != -1)
-	    {
-	      /* We already know what kind of flavor this bonded type has. */
+	  if ((rtp->rb[bt].nb == 0)          /* No bondeds of this type, */
+	      || (db->rb.btype[bt] != -1))   /* ...or we already know what kind
+					      * of flavor this bonded type has. */
+	    {	      
 	      continue;
 	    }
 
@@ -946,7 +937,17 @@ extern void qhop_db_names2nrs(qhop_db *db)
       /* Now translate atomnames to residue local atomnumbers. */
       for (bt=0; bt < ebtsNR; bt++)
 	{
-	  for (b=0; (b < rtp->rb[bt].nb) && (db->rb.btype[bt] != -1); b++)
+	  if (db->rb.btype[bt] == -1 || rtp->rb[bt].nb == 0)
+	    {
+	      continue;
+	    }
+
+	  if (db->rb.ba[rt][bt] == NULL)
+	    {
+	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
+	    }
+
+	  for (b=0; b < rtp->rb[bt].nb; b++)
 	    {
 	      if (db->rb.ba[rt][bt][b] == NULL)
 		{
@@ -967,11 +968,11 @@ extern void qhop_db_names2nrs(qhop_db *db)
 			  /* Proceed with next interacting atom */
 			  break;
 			}
-		    }
-		}
-	    }
-	}
-    }
+		    } /* a  */
+		}     /* ia */
+	    } /* b  */
+	}     /* bt */
+    } /* rt */
 }
 
 /* Maps atoms in subresidues to the ones in the restype */

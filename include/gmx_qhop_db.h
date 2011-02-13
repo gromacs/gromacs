@@ -15,7 +15,7 @@ extern char *trim_strndup(const char *s,int maxlen);
 extern void qhop_db_print (qhop_parameters *qhp);
 
 /* Return database if succesfull, or NULL on failure */
-extern qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top, t_mdatoms *mda);
+extern qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top);
  
 /* Write the database to a filename. Return 1 on success, or 0 for
    failure */
