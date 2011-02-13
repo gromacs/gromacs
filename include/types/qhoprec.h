@@ -16,6 +16,9 @@ enum {eQIDEF, eQBONLIB}; /* use the first to get the pointer to the idef,
 			   the other for the bonded stuff stored for a
 			   certain residue. */
 
+typedef struct qhop_db *qhop_db_s; /* Symbolic name for qhop_db. We can't include
+				    * gmx_qhop_types.h since that breaks compilation. */
+
 typedef struct {
   int donor_id,
     acceptor_id,
@@ -114,6 +117,7 @@ typedef struct {
   t_hop          *hop;
   t_qhop_atom    *qhop_atoms;
   t_qhop_residue *qhop_residues;
+  qhop_db_s      db;
   gmx_rng_t      rng, rng_int;
   gmx_bool       bFreshNlists;
   int nr_hops,
