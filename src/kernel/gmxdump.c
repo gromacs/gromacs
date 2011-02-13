@@ -234,7 +234,7 @@ static void dump_top(const char *tpr,const char *top)
   read_tpxheader(tpr,&tpx,TRUE,NULL,NULL);
   
   if (!tpx.bTop) {
-    print("Need a tpr file containing a topology in order to write a top file\n");
+    printf("Need a tpr file containing a topology in order to write a top file\n");
     return;
   }
   read_tpx_state(tpr,NULL,&state,NULL,&mtop);
