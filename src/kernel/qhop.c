@@ -1659,15 +1659,24 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 	{
 	  qhop_constrain(qres, qr, db, top, qatom->protons[qatom->nr_protons-1], cr);
 	}
+      set_proton_presence(&(db->H_map),
+			  qatom->protons[qatom->nr_protons-1],
+			  !bDonor);
+    }
+  else
+    {
+      /* Ugly hardcoding */
+      set_proton_presence(&(db->H_map), qatom->protons[0], bDonor);
+      set_proton_presence(&(db->H_map), qatom->protons[1], bDonor);
+      set_proton_presence(&(db->H_map), qatom->protons[2], !bDonor);
+      set_proton_presence(&(db->H_map), qatom->protons[3], !bDonor);
+      set_proton_presence(&(db->H_map), qatom->protons[4], !bDonor);
     }
 
   qhop_swap_vdws(qres, product_res, md, db);
 
   qhop_swap_m_and_q(qres, product_res, md, db, qr);
 
-  set_proton_presence(&(db->H_map),
-		      qatom->protons[qatom->nr_protons-1],
-		      !bDonor);
 
   return i;
 }
