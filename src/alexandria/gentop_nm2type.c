@@ -167,7 +167,8 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                 for(j=0; (j<nb); j++) {
                     nbhybrid[j] = gt_atoms[bbb[j]];
                     if (debug)
-                        fprintf(debug," %s(hybrid: %s)",*atoms->atomname[bbb[j]],nbhybrid[j]);
+                        fprintf(debug," %s%d (%s)",*atoms->atomname[bbb[j]],
+                                bbb[j]+1,nbhybrid[j]);
                 }
                 if (debug)
                     fprintf(debug,"\n");
@@ -226,7 +227,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
         if (debug)
             fprintf(debug,"Iter %d nresolved %d/%d\n",iter,nresolved,atoms->nr);
         iter++;
-    } while (((nresolved < atoms->nr) && (iter < maxiter)) || (iter < 3));
+    } while (((nresolved < atoms->nr) && (iter < maxiter)) || (iter < 5));
     
     /* fprintf(stderr,"\n");*/
     if (nresolved < atoms->nr) {
