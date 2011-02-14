@@ -2358,7 +2358,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   real
     Ebefore_tot,Ebefore_self,Ebefore,
     Eafter_tot, Eafter_self, Eafter,
-    E12,E12_right,E12_left,Eb,
+    /* E12,E12_right,E12_left,Eb, */
     r_TST,r_SE,r_log;
   qhop_parameters 
     *p;
@@ -2405,7 +2405,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
       r_TST = compute_rate_TST(p, hop);
       r_SE  = compute_rate_SE (p, hop);
 
-      if(E12 > hop->Er)
+      if(hop->E12 > hop->Er)
 	{
 	  /* Classical TST regime */
 	  hop->prob = poisson_prob(r_TST, (ir->delta_t * qhoprec->qhopfreq)); /* (1-pow((1-r_TST),fr->qhoprec->qhopfreq)); */
@@ -2413,7 +2413,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	}
       else 
 	{
-	  if (E12 < hop->El)
+	  if (hop->E12 < hop->El)
 	    {
 	      /* Schroedinger regime */
 	      /* using volkhards probality propagation:
@@ -3001,10 +3001,11 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	      if(MASTER(cr)){
 		/* some printing to the log file */
 		fprintf(fplog,
-			"\n%d. don %d acc %d. E12 = %18.12f, DE_MM = %18.12f, Eb = %18.12f, rda = %3.4f, prob. = %f, ran. = %f (%s)", i,
+			"\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)", i,
 			fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
 			fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
-			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb, qr->hop[i].rda,
+			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
+			qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].El, qr->hop[i].Er,
 			qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
 	      }
  
