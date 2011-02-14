@@ -10,8 +10,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libalexandria@LIBSUFFIX@.la
 
-#pkgconfigdir = ${libdir}/pkgconfig
-#pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
 
 LDADD = $(lib_LTLIBRARIES)
 
