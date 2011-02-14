@@ -3983,9 +3983,20 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
     {
-        cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
-                                           dddlb_opt,dlb_scale,
-                                           ddcsx,ddcsy,ddcsz,
+        /* Quick hack for compatibility with new gmx_cmdlinerec_t
+	 * structure. */
+        gmx_cmdlinerec_t cmdlinerec;
+	snew(cmdlinerec,1);
+	copy_ivec(ddxyz, cmdlinerec->dd_ncells);
+	cmdlinerec->dd_comm_distance_min = rdd;
+	cmdlinerec->rconstr_max = rconstr;
+	cmdlinerec->dd_dlb_opt = dddlb_opt;
+	cmdlinerec->dd_dlb_scale = dlb_scale;
+	cmdlinerec->dd_cell_size[XX] = ddcsx;
+	cmdlinerec->dd_cell_size[YY] = ddcsy;
+	cmdlinerec->dd_cell_size[ZZ] = ddcsz;
+
+        cr->dd = init_domain_decomposition(fplog,cr,Flags,cmdlinerec,
                                            mtop,inputrec,
                                            box,state->x,
                                            &ddbox,&npme_major,&npme_minor);

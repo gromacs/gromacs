@@ -114,30 +114,7 @@ struct mdrunner_arglist
 {
     FILE *fplog;
     t_commrec *cr;
-    int nfile;
-    const t_filenm *fnm;
-    output_env_t oenv;
-    gmx_bool bVerbose;
-    gmx_bool bCompact;
-    int nstglobalcomm;
-    ivec ddxyz;
-    int dd_node_order;
-    real rdd;
-    real rconstr;
-    const char *dddlb_opt;
-    real dlb_scale;
-    const char *ddcsx;
-    const char *ddcsy;
-    const char *ddcsz;
-    int nstepout;
-    int resetstep;
-    int nmultisim;
-    int repl_ex_nst;
-    int repl_ex_seed;
-    real pforce;
-    real cpt_period;
-    real max_hours;
-    const char *deviceOptions;
+    gmx_cmdlinerec cmdlinerec;
     unsigned long Flags;
     int ret; /* return value */
 };
@@ -146,7 +123,8 @@ struct mdrunner_arglist
 /* The function used for spawning threads. Extracts the mdrunner() 
    arguments from its one argument and calls mdrunner(), after making
    a commrec. */
-static void mdrunner_start_fn(void *arg)
+static void
+mdrunner_start_fn(void *arg)
 {
     struct mdrunner_arglist *mda=(struct mdrunner_arglist*)arg;
     struct mdrunner_arglist mc=*mda; /* copy the arg list to make sure 
@@ -155,9 +133,9 @@ static void mdrunner_start_fn(void *arg)
                                         but those are all const. */
     t_commrec *cr;  /* we need a local version of this */
     FILE *fplog=NULL;
-    t_filenm *fnm;
+    gmx_cmdlinerec cmdlinerec = mc.cmdlinerec;
 
-    fnm = dup_tfn(mc.nfile, mc.fnm);
+    cmdlinerec.fnm = dup_tfn(mc.cmdlinerec.nfile, mc.cmdlinerec.fnm);
 
     cr = init_par_threads(mc.cr);
 
@@ -166,34 +144,23 @@ static void mdrunner_start_fn(void *arg)
         fplog=mc.fplog;
     }
 
-    mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
-                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
-                      mc.ddxyz, mc.dd_node_order, mc.rdd,
-                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
-                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
-                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
+    mda->ret=mdrunner(cr->nnodes, fplog, cr, &cmdlinerec, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including 
    the main thread) for thread-parallel runs. This in turn calls mdrunner()
    for each thread. 
    All options besides nthreads are the same as for mdrunner(). */
-static t_commrec *mdrunner_start_threads(int nthreads, 
-              FILE *fplog,t_commrec *cr,int nfile, 
-              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-              gmx_bool bCompact, int nstglobalcomm,
-              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-              const char *dddlb_opt,real dlb_scale,
-              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
-              int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
-              const char *deviceOptions, unsigned long Flags)
+static t_commrec *
+mdrunner_start_threads(int nthreads,
+                       FILE *fplog,
+                       t_commrec *cr,
+                       gmx_cmdlinerec_t cmdlinerec,
+                       unsigned long Flags)
 {
     int ret;
     struct mdrunner_arglist *mda;
     t_commrec *crn; /* the new commrec */
-    t_filenm *fnmn;
 
     /* first check whether we even need to start tMPI */
     if (nthreads<2)
@@ -201,38 +168,13 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 
     /* a few small, one-time, almost unavoidable memory leaks: */
     snew(mda,1);
-    fnmn=dup_tfn(nfile, fnm);
+    mda->cmdlinerec = *cmdlinerec;
+    mda->cmdlinerec.fnm = dup_tfn(cmdlinerec->nfile, cmdlinerec->fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
-    mda->fplog=fplog;
-    mda->cr=cr;
-    mda->nfile=nfile;
-    mda->fnm=fnmn;
-    mda->oenv=oenv;
-    mda->bVerbose=bVerbose;
-    mda->bCompact=bCompact;
-    mda->nstglobalcomm=nstglobalcomm;
-    mda->ddxyz[XX]=ddxyz[XX];
-    mda->ddxyz[YY]=ddxyz[YY];
-    mda->ddxyz[ZZ]=ddxyz[ZZ];
-    mda->dd_node_order=dd_node_order;
-    mda->rdd=rdd;
-    mda->rconstr=rconstr;
-    mda->dddlb_opt=dddlb_opt;
-    mda->dlb_scale=dlb_scale;
-    mda->ddcsx=ddcsx;
-    mda->ddcsy=ddcsy;
-    mda->ddcsz=ddcsz;
-    mda->nstepout=nstepout;
-    mda->resetstep=resetstep;
-    mda->nmultisim=nmultisim;
-    mda->repl_ex_nst=repl_ex_nst;
-    mda->repl_ex_seed=repl_ex_seed;
-    mda->pforce=pforce;
-    mda->cpt_period=cpt_period;
-    mda->max_hours=max_hours;
-    mda->deviceOptions=deviceOptions;
-    mda->Flags=Flags;
+    mda->fplog = fplog;
+    mda->cr = cr;
+    mda->Flags = Flags;
 
     fprintf(stderr, "Starting %d threads\n",nthreads);
     fflush(stderr);
@@ -250,8 +192,9 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 
 /* get the number of threads based on how many there were requested, 
    which algorithms we're using, and how many particles there are. */
-static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
-                        gmx_mtop_t *mtop)
+static int
+get_nthreads(int nthreads_requested, t_inputrec *inputrec,
+             gmx_mtop_t *mtop)
 {
     int nthreads,nthreads_new;
     int min_atoms_per_thread;
@@ -329,15 +272,12 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 #endif
 
 
-int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
-             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
-             ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-             const char *dddlb_opt,real dlb_scale,
-             const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
-             int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions, unsigned long Flags)
+int
+mdrunner(int nthreads_requested,
+         FILE *fplog,
+         t_commrec *cr,
+         gmx_cmdlinerec_t cmdlinerec,
+         unsigned long Flags)
 {
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
@@ -366,6 +306,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
     int         nthreads=1;
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -395,14 +338,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (nthreads > 1)
         {
             /* now start the threads. */
-            cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
-                                      oenv, bVerbose, bCompact, nstglobalcomm, 
-                                      ddxyz, dd_node_order, rdd, rconstr, 
-                                      dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                      nstepout, resetstep, nmultisim, 
-                                      repl_ex_nst, repl_ex_seed, pforce, 
-                                      cpt_period, max_hours, deviceOptions, 
-                                      Flags);
+            cr=mdrunner_start_threads(nthreads, fplog, cr_old, cmdlinerec, Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
             if (cr == NULL)
@@ -430,7 +366,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
-        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
+        (cmdlinerec->dd_ncells[XX] > 1 ||
+         cmdlinerec->dd_ncells[YY] > 1 ||
+         cmdlinerec->dd_ncells[ZZ] > 1 ||
+         cr->npmenodes > 0))
     {
         gmx_fatal(FARGS,
                   "The -dd or -npme option request a parallel simulation, "
@@ -528,7 +467,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
         {
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
-                            cr,Flags & MD_PARTDEC,ddxyz,
+                            cr,Flags & MD_PARTDEC,cmdlinerec->dd_ncells,
                             inputrec,state,&bReadRNG,&bReadEkin,
                             (Flags & MD_APPENDFILES));
             
@@ -582,14 +521,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                      EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
-        cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
-                                           dddlb_opt,dlb_scale,
-                                           ddcsx,ddcsy,ddcsz,
+        cr->dd = init_domain_decomposition(fplog,cr,Flags,cmdlinerec,
                                            mtop,inputrec,
                                            box,state->x,
                                            &ddbox,&npme_major,&npme_minor);
 
-        make_dd_communicators(fplog,cr,dd_node_order);
+        make_dd_communicators(fplog,cr,cmdlinerec->dd_node_order);
 
         /* Set overallocation to avoid frequent reallocation of arrays */
         set_over_alloc_dd(TRUE);
@@ -622,7 +559,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    wcycle = wallcycle_init(fplog,resetstep,cr);
+    wcycle = wallcycle_init(fplog,cmdlinerec->resetstep,cr);
     if (PAR(cr))
     {
         /* Master synchronizes its value of reset_counters with all nodes 
@@ -663,10 +600,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         /* Initiate forcerecord */
         fr = mk_forcerec();
-        init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
+        init_forcerec(fplog,cmdlinerec->oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
-                      opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+                      opt2fn("-tableb",nfile,fnm),FALSE,cmdlinerec->pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -720,7 +657,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 gmx_fatal(FARGS,"Free energy with %s is not implemented",
                           eel_names[fr->eeltype]);
             }
-            status = gmx_pppm_init(fplog,cr,oenv,FALSE,TRUE,box,
+            status = gmx_pppm_init(fplog,cr,cmdlinerec->oenv,FALSE,TRUE,box,
                                    getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
             if (status != 0)
             {
@@ -795,7 +732,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
-            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,cmdlinerec->oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
 
@@ -806,22 +743,17 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
                             Flags & MD_DDBONDCHECK,fr->cginfo_mb);
 
-            set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,&ddbox);
+            set_dd_parameters(fplog,cr->dd,cmdlinerec->dd_dlb_scale,inputrec,fr,&ddbox);
 
             setup_dd_grid(fplog,cr->dd);
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
-                                      oenv,bVerbose,bCompact,
-                                      nstglobalcomm,
+        integrator[inputrec->eI].func(fplog,cr,cmdlinerec,
                                       vsite,constr,
-                                      nstepout,inputrec,mtop,
+                                      inputrec,mtop,
                                       fcd,state,
                                       mdatoms,nrnb,wcycle,ed,fr,
-                                      repl_ex_nst,repl_ex_seed,
-                                      cpt_period,max_hours,
-                                      deviceOptions,
                                       Flags,
                                       &runtime);
 

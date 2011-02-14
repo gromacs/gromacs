@@ -6157,16 +6157,18 @@ static gmx_domdec_comm_t *init_dd_comm()
     return comm;
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
-                                        unsigned long Flags,
-                                        ivec nc,
-                                        real comm_distance_min,real rconstr,
-                                        const char *dlb_opt,real dlb_scale,
-                                        const char *sizex,const char *sizey,const char *sizez,
-                                        gmx_mtop_t *mtop,t_inputrec *ir,
-                                        matrix box,rvec *x,
-                                        gmx_ddbox_t *ddbox,
-                                        int *npme_x,int *npme_y)
+gmx_domdec_t *
+init_domain_decomposition(FILE *fplog,
+                          t_commrec *cr,
+                          unsigned long Flags,
+                          gmx_cmdlinerec_t cmdlinerec,
+                          gmx_mtop_t *mtop,
+                          t_inputrec *ir,
+                          matrix box,
+                          rvec *x,
+                          gmx_ddbox_t *ddbox,
+                          int *npme_x,
+                          int *npme_y)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6225,7 +6227,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                              
     }
     
-    comm->eDLB = check_dlb_support(fplog,cr,dlb_opt,comm->bRecordLoad,Flags,ir);
+    comm->eDLB = check_dlb_support(fplog,cr,cmdlinerec->dd_dlb_opt,comm->bRecordLoad,Flags,ir);
     
     comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
@@ -6289,9 +6291,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (comm->bInterCGBondeds)
     {
-        if (comm_distance_min > 0)
+        if (cmdlinerec->dd_comm_distance_min > 0)
         {
-            comm->cutoff_mbody = comm_distance_min;
+            comm->cutoff_mbody = cmdlinerec->dd_comm_distance_min;
             if (Flags & MD_DDBONDCOMM)
             {
                 comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
@@ -6356,22 +6358,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         }
     }
 
-    if (dd->bInterCGcons && rconstr <= 0)
+    if (dd->bInterCGcons && cmdlinerec->rconstr_max <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
-        rconstr = constr_r_max(fplog,mtop,ir);
+        cmdlinerec->rconstr_max = constr_r_max(fplog,mtop,ir);
         if (fplog)
         {
             fprintf(fplog,
                     "Estimated maximum distance required for P-LINCS: %.3f nm\n",
-                    rconstr);
-            if (rconstr > comm->cellsize_limit)
+                    cmdlinerec->rconstr_max);
+            if (cmdlinerec->rconstr_max > comm->cellsize_limit)
             {
                 fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
             }
         }
     }
-    else if (rconstr > 0 && fplog)
+    else if (cmdlinerec->rconstr_max > 0 && fplog)
     {
         /* Here we do not check for dd->bInterCGcons,
          * because one can also set a cell size limit for virtual sites only
@@ -6379,15 +6381,15 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
          */
         fprintf(fplog,
                 "User supplied maximum distance required for P-LINCS: %.3f nm\n",
-                rconstr);
+                cmdlinerec->rconstr_max);
     }
-    comm->cellsize_limit = max(comm->cellsize_limit,rconstr);
+    comm->cellsize_limit = max(comm->cellsize_limit,cmdlinerec->rconstr_max);
 
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
-    if (nc[XX] > 0)
+    if (cmdlinerec->dd_ncells[XX] > 0)
     {
-        copy_ivec(nc,dd->nc);
+        copy_ivec(cmdlinerec->dd_ncells,dd->nc);
         set_dd_dim(fplog,dd);
         set_ddbox_cr(cr,&dd->nc,ir,box,&comm->cgs_gl,x,ddbox);
 
@@ -6413,13 +6415,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         limit = dd_choose_grid(fplog,cr,dd,ir,mtop,box,ddbox,
-                               comm->eDLB!=edlbNO,dlb_scale,
+                               comm->eDLB!=edlbNO,cmdlinerec->dd_dlb_scale,
                                comm->cellsize_limit,comm->cutoff,
                                comm->bInterCGBondeds,comm->bInterCGMultiBody);
         
         if (dd->nc[XX] == 0)
         {
-            bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
+            bC = (dd->bInterCGcons && cmdlinerec->rconstr_max > r_bonded_limit);
             sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->eDLB!=edlbNO ? " or -dds" : "",
@@ -6519,9 +6521,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)
     {
-        comm->slb_frac[XX] = get_slb_frac(fplog,"x",dd->nc[XX],sizex);
-        comm->slb_frac[YY] = get_slb_frac(fplog,"y",dd->nc[YY],sizey);
-        comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],sizez);
+        comm->slb_frac[XX] = get_slb_frac(fplog,"x",dd->nc[XX],cmdlinerec->dd_cell_size[XX]);
+        comm->slb_frac[YY] = get_slb_frac(fplog,"y",dd->nc[YY],cmdlinerec->dd_cell_size[YY]);
+        comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],cmdlinerec->dd_cell_size[ZZ]);
     }
 
     if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
@@ -6537,7 +6539,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             if (comm->eDLB != edlbNO)
             {
                 /* Check if this does not limit the scaling */
-                comm->cutoff_mbody = min(comm->cutoff_mbody,dlb_scale*acs);
+                comm->cutoff_mbody = min(comm->cutoff_mbody,cmdlinerec->dd_dlb_scale*acs);
             }
             if (!comm->bBondComm)
             {

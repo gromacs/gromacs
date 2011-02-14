@@ -1063,22 +1063,22 @@ static void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
     }
 }
 
-double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
-             gmx_vsite_t *vsite,gmx_constr_t constr,
-             int stepout,t_inputrec *ir,
-             gmx_mtop_t *top_global,
-             t_fcdata *fcd,
-             t_state *state_global,
-             t_mdatoms *mdatoms,
-             t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
-             real cpt_period,real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
-             gmx_runtime_t *runtime)
+double
+do_md(FILE *fplog,t_commrec *cr,
+      gmx_cmdlinerec_t cmdlinerec,
+      gmx_vsite_t *vsite,
+      gmx_constr_t constr,
+      t_inputrec *ir,
+      gmx_mtop_t *top_global,
+      t_fcdata *fcd,
+      t_state *state_global,
+      t_mdatoms *mdatoms,
+      t_nrnb *nrnb,
+      gmx_wallcycle_t wcycle,
+      gmx_edsam_t ed,
+      t_forcerec *fr,
+      unsigned long Flags,
+      gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;
     gmx_large_int_t step,step_rel;
@@ -1154,12 +1154,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
 #endif
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose;
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
     bIonize  = (Flags & MD_IONIZE);
     bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
+    bVerbose = (Flags & MD_VERBOSE);
     if (Flags & MD_RESETCOUNTERSHALFWAY)
     {
         if (ir->nsteps > 0)
@@ -1168,7 +1172,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             wcycle_set_reset_counters(wcycle,ir->nsteps/2);
         }
         /* Signal to reset the counters halfway the simulation time. */
-        bResetCountersHalfMaxH = (max_hours > 0);
+        bResetCountersHalfMaxH = (cmdlinerec->max_hours > 0);
     }
 
     /* md-vv uses averaged full step velocities for T-control 
@@ -1190,13 +1194,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         ir->nstlist       = 1;
         ir->nstcalcenergy = 1;
-        nstglobalcomm     = 1;
+        cmdlinerec->nstglobalcomm = 1;
     }
 
     check_ir_old_tpx_versions(cr,fplog,ir,top_global);
 
-    nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
-    bGStatEveryStep = (nstglobalcomm == 1);
+    cmdlinerec->nstglobalcomm = check_nstglobalcomm(fplog,cr,cmdlinerec->nstglobalcomm,ir);
+    bGStatEveryStep = (cmdlinerec->nstglobalcomm == 1);
 
     if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
     {
@@ -1218,7 +1222,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,cmdlinerec->oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -1380,18 +1384,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
-    if (repl_ex_nst > 0)
+    if (cmdlinerec->repl_ex_nst > 0)
     {
         /* We need to be sure replica exchange can only occur
          * when the energies are current */
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                        "repl_ex_nst",&repl_ex_nst);
+                        "repl_ex_nst",&cmdlinerec->repl_ex_nst);
         /* This check needs to happen before inter-simulation
          * signals are initialized, too */
     }
-    if (repl_ex_nst > 0 && MASTER(cr))
+    if (cmdlinerec->repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
-                                        repl_ex_nst,repl_ex_seed);
+                                        cmdlinerec->repl_ex_nst,cmdlinerec->repl_ex_seed);
 
     if (!ir->bContinuation && !bRerunMD)
     {
@@ -1569,7 +1573,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         rerun_fr.natoms = 0;
         if (MASTER(cr))
         {
-            bNotLastFrame = read_first_frame(oenv,&status,
+            bNotLastFrame = read_first_frame(cmdlinerec->oenv,&status,
                                              opt2fn("-rerun",nfile,fnm),
                                              &rerun_fr,TRX_NEED_X | TRX_READ_V);
             if (rerun_fr.natoms != top_global->natoms)
@@ -1616,7 +1620,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     bExchanged   = FALSE;
 
-    init_global_signals(&gs,cr,ir,repl_ex_nst);
+    init_global_signals(&gs,cr,ir,cmdlinerec->repl_ex_nst);
 
     step = ir->init_step;
     step_rel = 0;
@@ -1779,7 +1783,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
-                  (step % stepout == 0 || bFirstStep || bLastStep);
+                  (step % cmdlinerec->nstepout == 0 || bFirstStep || bLastStep);
 
         if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD))
         {
@@ -1809,7 +1813,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* Repartition the domain decomposition */
                 wallcycle_start(wcycle,ewcDOMDEC);
                 dd_partition_system(fplog,step,cr,
-                                    bMasterState,nstglobalcomm,
+                                    bMasterState,cmdlinerec->nstglobalcomm,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
@@ -1846,7 +1850,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Ionize the atoms if necessary */
         if (bIonize)
         {
-            ionize(fplog,oenv,mdatoms,top_global,t,ir,state->x,state->v,
+            ionize(fplog,cmdlinerec->oenv,mdatoms,top_global,t,ir,state->x,state->v,
                    mdatoms->start,mdatoms->start+mdatoms->homenr,state->box,cr);
         }
         
@@ -1889,7 +1893,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
-                  do_per_step(step,nstglobalcomm) ||
+                  do_per_step(step,cmdlinerec->nstglobalcomm) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
@@ -2290,20 +2294,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
+                 (cmdlinerec->max_hours > 0 && run_time > cmdlinerec->max_hours*60.0*60.0*0.99) &&
                  gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
             gs.sig[eglsSTOPCOND] = 1;
             if (fplog)
             {
-                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),cmdlinerec->max_hours*0.99);
             }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),cmdlinerec->max_hours*0.99);
         }
         
         if (bResetCountersHalfMaxH && MASTER(cr) &&
-            run_time > max_hours*60.0*60.0*0.495)
+            run_time > cmdlinerec->max_hours*60.0*60.0*0.495)
         {
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
@@ -2338,9 +2342,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          *  otherwise the other nodes don't know.
          */
         if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-                           cpt_period >= 0 &&
-                           (cpt_period == 0 || 
-                            run_time >= nchkpt*cpt_period*60.0)) &&
+                           cmdlinerec->cpt_period >= 0 &&
+                           (cmdlinerec->cpt_period == 0 ||
+                            run_time >= nchkpt*cmdlinerec->cpt_period*60.0)) &&
             gs.set[eglsCHKPT] == 0)
         {
             gs.sig[eglsCHKPT] = 1;
@@ -2591,7 +2595,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Since this is called with the new coordinates state->x, I assume
              * we want the new box state->box too. / EL 20040121
              */
-            do_coupling(fplog,oenv,nfile,fnm,tcr,t,step,enerd->term,fr,
+            do_coupling(fplog,cmdlinerec->oenv,nfile,fnm,tcr,t,step,enerd->term,fr,
                         ir,MASTER(cr),
                         mdatoms,&(top->idef),mu_aver,
                         top_global->mols.nr,cr,
@@ -2637,7 +2641,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  END PREPARING EDR OUTPUT  ###########  */
         
         /* Time for performance */
-        if (((step % stepout) == 0) || bLastStep) 
+        if (((step % cmdlinerec->nstepout) == 0) || bLastStep)
         {
             runtime_upd_proc(runtime);
         }
@@ -2666,7 +2670,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 print_ebin(outf->fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
                            step,t,
-                           eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
+                           eprNORMAL,(Flags & MD_COMPACT_EBIN),mdebin,fcd,groups,&(ir->opts));
             }
             if (ir->ePull != epullNO)
             {
@@ -2695,8 +2699,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Replica exchange */
         bExchanged = FALSE;
-        if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-            do_per_step(step,repl_ex_nst)) 
+        if ((cmdlinerec->repl_ex_nst > 0) && (step > 0) && !bLastStep &&
+            do_per_step(step,cmdlinerec->repl_ex_nst))
         {
             bExchanged = replica_exchange(fplog,cr,repl_ex,
                                           state_global,enerd->term,
@@ -2737,7 +2741,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (MASTER(cr))
             {
                 /* read next frame from input trajectory */
-                bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
+                bNotLastFrame = read_next_frame(cmdlinerec->oenv,status,&rerun_fr);
             }
 
             if (PAR(cr))
@@ -2766,7 +2770,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
-            max_hours -= run_time/(60.0*60.0);
+            cmdlinerec->max_hours -= run_time/(60.0*60.0);
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
@@ -2815,7 +2819,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 tcount/step_rel);
     }
     
-    if (repl_ex_nst > 0 && MASTER(cr))
+    if (cmdlinerec->repl_ex_nst > 0 && MASTER(cr))
     {
         print_replica_exchange_statistics(fplog,repl_ex);
     }

@@ -344,6 +344,7 @@ int main(int argc,char *argv[])
 #endif
   };
   t_commrec    *cr;
+  gmx_cmdlinerec_t cmdlinerec;
   t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
     { efTRN, "-o",      NULL,       ffWRITE },
@@ -373,7 +374,6 @@ int main(int argc,char *argv[])
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR }
   };
-#define NFILE asize(fnm)
 
   /* Command line options ! */
   gmx_bool bCart        = FALSE;
@@ -391,32 +391,44 @@ int main(int argc,char *argv[])
     
   int  npme=-1;
   int  nmultisim=0;
-  int  nstglobalcomm=-1;
-  int  repl_ex_nst=0;
-  int  repl_ex_seed=-1;
-  int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
-  int  resetstep=-1;
-  
-  rvec realddxyz={0,0,0};
-  const char *ddno_opt[ddnoNR+1] =
+
+  snew(cmdlinerec,1);
+  cmdlinerec->fnm = fnm;
+  cmdlinerec->nfile = asize(fnm);
+  cmdlinerec->oenv = NULL;
+  cmdlinerec->nstglobalcomm = -1;
+  cmdlinerec->dd_comm_distance_min = 0.0;
+  cmdlinerec->rconstr_max = 0.0;
+  cmdlinerec->dd_dlb_scale = 0.8;
+  cmdlinerec->dd_cell_size[XX] = NULL;
+  cmdlinerec->dd_cell_size[YY] = NULL;
+  cmdlinerec->dd_cell_size[ZZ] = NULL;
+  cmdlinerec->nstepout = 100;
+  cmdlinerec->resetstep = -1;
+  cmdlinerec->repl_ex_nst = 0;
+  cmdlinerec->repl_ex_seed = -1;
+  cmdlinerec->pforce = -1.0;
+  cmdlinerec->cpt_period = 15.0;
+  cmdlinerec->max_hours = -1;
+#ifdef GMX_OPENMM
+  cmdlinerec->deviceOptions = "";
+#endif
+
+  rvec real_dd_ncells={0,0,0};
+  const char *dd_no_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char *dddlb_opt[] =
+  const char *dd_dlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
-  real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
-  char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
-  real cpt_period=15.0,max_hours=-1;
   gmx_bool bAppendFiles=TRUE;
   gmx_bool bKeepAndNumCPT=FALSE;
   gmx_bool bResetCountersHalfWay=FALSE;
-  output_env_t oenv=NULL;
-  const char *deviceOptions = "";
 
   t_pargs pa[] = {
 
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
-    { "-dd",      FALSE, etRVEC,{&realddxyz},
+    { "-dd",      FALSE, etRVEC,{&real_dd_ncells},
       "Domain decomposition grid, 0 is optimize" },
 #ifdef GMX_THREADS
     { "-nt",      FALSE, etINT, {&nthreads},
@@ -424,27 +436,27 @@ int main(int argc,char *argv[])
 #endif
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
-    { "-ddorder", FALSE, etENUM, {ddno_opt},
+    { "-ddorder", FALSE, etENUM, {dd_no_opt},
       "DD node order" },
     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
       "Check for all bonded interactions with DD" },
     { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
       "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
-    { "-rdd",     FALSE, etREAL, {&rdd},
+    { "-rdd",     FALSE, etREAL, {&cmdlinerec->dd_comm_distance_min},
       "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
-    { "-rcon",    FALSE, etREAL, {&rconstr},
+    { "-rcon",    FALSE, etREAL, {&cmdlinerec->rconstr_max},
       "Maximum distance for P-LINCS (nm), 0 is estimate" },
-    { "-dlb",     FALSE, etENUM, {dddlb_opt},
+    { "-dlb",     FALSE, etENUM, {dd_dlb_opt},
       "Dynamic load balancing (with DD)" },
-    { "-dds",     FALSE, etREAL, {&dlb_scale},
-      "Minimum allowed dlb scaling of the DD cell size" },
-    { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+    { "-dds",     FALSE, etREAL, {&cmdlinerec->dd_dlb_scale},
+      "Minimum allowed scaling of the DD cell size for dynamic load balancing" },
+    { "-ddcsx",   FALSE, etSTR, {&cmdlinerec->dd_cell_size[XX]},
       "HIDDENThe DD cell sizes in x" },
-    { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+    { "-ddcsy",   FALSE, etSTR, {&cmdlinerec->dd_cell_size[YY]},
       "HIDDENThe DD cell sizes in y" },
-    { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+    { "-ddcsz",   FALSE, etSTR, {&cmdlinerec->dd_cell_size[ZZ]},
       "HIDDENThe DD cell sizes in z" },
-    { "-gcom",    FALSE, etINT,{&nstglobalcomm},
+    { "-gcom",    FALSE, etINT,{&cmdlinerec->nstglobalcomm},
       "Global communication frequency" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
@@ -452,23 +464,23 @@ int main(int argc,char *argv[])
       "Write a compact log file" },
     { "-seppot",  FALSE, etBOOL, {&bSepPot},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
-    { "-pforce",  FALSE, etREAL, {&pforce},
+    { "-pforce",  FALSE, etREAL, {&cmdlinerec->pforce},
       "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod",  FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },
-    { "-cpt",     FALSE, etREAL, {&cpt_period},
+    { "-cpt",     FALSE, etREAL, {&cmdlinerec->cpt_period},
       "Checkpoint interval (minutes)" },
     { "-cpnum",   FALSE, etBOOL, {&bKeepAndNumCPT},
       "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-    { "-maxh",   FALSE, etREAL, {&max_hours},
+    { "-maxh",   FALSE, etREAL, {&cmdlinerec->max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
-    { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
+    { "-replex",  FALSE, etINT, {&cmdlinerec->repl_ex_nst},
       "Attempt replica exchange every # steps" },
-    { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
+    { "-reseed",  FALSE, etINT, {&cmdlinerec->repl_ex_seed},
       "Seed for replica exchange, -1 is generate a seed" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
       "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
@@ -476,22 +488,20 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
-    { "-stepout", FALSE, etINT, {&nstepout},
+    { "-stepout", FALSE, etINT, {&cmdlinerec->nstepout},
       "HIDDENFrequency of writing the remaining runtime" },
-    { "-resetstep", FALSE, etINT, {&resetstep},
+    { "-resetstep", FALSE, etINT, {&cmdlinerec->resetstep},
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
 #ifdef GMX_OPENMM
     ,
-    { "-device",  FALSE, etSTR, {&deviceOptions},
+    { "-device",  FALSE, etSTR, {&cmdlinerec->deviceOptions},
       "Device option string" }
 #endif
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
-  ivec     ddxyz;
-  int      dd_node_order;
   gmx_bool     bAddPart;
   FILE     *fplog,*fptest;
   int      sim_part,sim_part_fn;
@@ -521,14 +531,14 @@ int main(int argc,char *argv[])
      }
      */
 
-  parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
-                    asize(desc),desc,0,NULL, &oenv);
+  parse_common_args(&argc,argv,PCA_Flags,cmdlinerec->nfile,cmdlinerec->fnm,asize(pa),pa,
+                    asize(desc),desc,0,NULL, &cmdlinerec->oenv);
 
   /* we set these early because they might be used in init_multisystem() 
      Note that there is the potential for npme>nnodes until the number of
      threads is set later on, if there's thread parallelization. That shouldn't
      lead to problems. */ 
-  dd_node_order = nenum(ddno_opt);
+  cmdlinerec->dd_node_order = nenum(dd_no_opt);
   cr->npmenodes = npme;
 
 #ifndef GMX_THREADS
@@ -536,12 +546,12 @@ int main(int argc,char *argv[])
 #endif
 
 
-  if (repl_ex_nst != 0 && nmultisim < 2)
+  if (cmdlinerec->repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   if (nmultisim > 1) {
 #ifndef GMX_THREADS
-    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+    init_multisystem(cr,nmultisim,cmdlinerec->nfile,cmdlinerec->fnm,TRUE);
 #else
     gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif
@@ -552,7 +562,7 @@ int main(int argc,char *argv[])
   /* Check if there is ANY checkpoint file available */	
   sim_part    = 1;
   sim_part_fn = sim_part;
-  if (opt2bSet("-cpi",NFILE,fnm))
+  if (opt2bSet("-cpi",cmdlinerec->nfile,cmdlinerec->fnm))
   {
       if (bSepPot && bAppendFiles)
       {
@@ -560,10 +570,10 @@ int main(int argc,char *argv[])
       }
 
       bAppendFiles =
-                read_checkpoint_simulation_part(opt2fn_master("-cpi", NFILE,
-                                                              fnm,cr),
+                read_checkpoint_simulation_part(opt2fn_master("-cpi", cmdlinerec->nfile,
+                                                              cmdlinerec->fnm,cr),
                                                 &sim_part_fn,NULL,cr,
-                                                bAppendFiles,NFILE,fnm,
+                                                bAppendFiles,cmdlinerec->nfile,cmdlinerec->fnm,
                                                 part_suffix,&bAddPart);
       if (sim_part_fn==0 && MASTER(cr))
       {
@@ -590,14 +600,14 @@ int main(int argc,char *argv[])
       /* create new part name first (zero-filled) */
       sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
-      add_suffix_to_output_names(fnm,NFILE,suffix);
+      add_suffix_to_output_names(cmdlinerec->fnm,cmdlinerec->nfile,suffix);
       if (MASTER(cr))
       {
           fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
       }
   }
 
-  Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
+  Flags = opt2bSet("-rerun",cmdlinerec->nfile,cmdlinerec->fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
   Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
@@ -610,6 +620,8 @@ int main(int argc,char *argv[])
   Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
+  Flags = Flags | (bVerbose      ? MD_VERBOSE      : 0);
+  Flags = Flags | (bCompact      ? MD_COMPACT_EBIN : 0);
 
 
   /* We postpone opening the log file if we are appending, so we can 
@@ -617,7 +629,7 @@ int main(int argc,char *argv[])
      there instead.  */
   if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
-      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+      gmx_log_open(ftp2fn(efLOG,cmdlinerec->nfile,cmdlinerec->fnm),cr,!bSepPot,Flags,&fplog);
       CopyRight(fplog,argv[0]);
       please_cite(fplog,"Hess2008b");
       please_cite(fplog,"Spoel2005a");
@@ -626,22 +638,21 @@ int main(int argc,char *argv[])
   }
   else if (!MASTER(cr) && bSepPot)
   {
-      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
+      gmx_log_open(ftp2fn(efLOG,cmdlinerec->nfile,cmdlinerec->fnm),cr,!bSepPot,Flags,&fplog);
   }
   else
   {
       fplog = NULL;
   }
 
-  ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
-  ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
-  ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+  cmdlinerec->dd_ncells[XX] = (int)(real_dd_ncells[XX] + 0.5);
+  cmdlinerec->dd_ncells[YY] = (int)(real_dd_ncells[YY] + 0.5);
+  cmdlinerec->dd_ncells[ZZ] = (int)(real_dd_ncells[ZZ] + 0.5);
+  cmdlinerec->dd_dlb_opt = dd_dlb_opt[0];
 
-  rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
-                nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
-                dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                pforce, cpt_period,max_hours,deviceOptions,Flags);
+  rc = mdrunner(nthreads, fplog, cr, cmdlinerec, Flags);
+
+  sfree(cmdlinerec);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

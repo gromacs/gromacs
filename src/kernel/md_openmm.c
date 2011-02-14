@@ -197,20 +197,16 @@ static void init_global_signals(globsig_t *gs,const t_commrec *cr,
 }
 
 
-double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-                    const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-                    int nstglobalcomm,
+double do_md_openmm(FILE *fplog,t_commrec *cr,
+                    gmx_cmdlinerec_t cmdlinerec,
                     gmx_vsite_t *vsite,gmx_constr_t constr,
-                    int stepout,t_inputrec *ir,
+                    t_inputrec *ir,
                     gmx_mtop_t *top_global,
                     t_fcdata *fcd,
                     t_state *state_global,
                     t_mdatoms *mdatoms,
                     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                     gmx_edsam_t ed,t_forcerec *fr,
-                    int repl_ex_nst,int repl_ex_seed,
-                    real cpt_period,real max_hours,
-                    const char *deviceOptions,
                     unsigned long Flags,
                     gmx_runtime_t *runtime)
 {
@@ -250,6 +246,12 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; 
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+#ifdef GMX_OPENMM
+    const char  *deviceOptions = cmdlinerec->deviceOptions;
+#endif
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
 
     const char *ommOptions = NULL;
     void   *openmmData;
@@ -267,7 +269,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,cmdlinerec->oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -321,6 +323,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     update_mdatoms(mdatoms,state->lambda);
 
+#ifdef GMX_OPENMM
     if (deviceOptions[0]=='\0')
     {
         /* empty options, which should default to OpenMM in this build */
@@ -342,6 +345,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
     }
+#endif
 
     openmmData = openmm_init(fplog, ommOptions, ir, top_global, top, mdatoms, fr, state);
     please_cite(fplog,"Friedrichs2009");
@@ -450,7 +454,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep = FALSE;
 
-    init_global_signals(&gs,cr,ir,repl_ex_nst);
+    init_global_signals(&gs,cr,ir,cmdlinerec->repl_ex_nst);
 
     step = ir->init_step;
     step_rel = 0;
@@ -471,7 +475,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
-                     (step % stepout == 0 || bFirstStep || bLastStep);
+                     (step % cmdlinerec->nstepout == 0 || bFirstStep || bLastStep);
 
         if (MASTER(cr) && do_log)
         {
@@ -539,7 +543,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        ekind,mu_tot,constr);
             print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,do_log?fplog:NULL,
                        step,t,
-                       eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
+                       eprNORMAL,(Flags & MD_COMPACT_EBIN),mdebin,fcd,groups,&(ir->opts));
             write_traj(fplog,cr,outf,mdof_flags,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             if (bCPT)
@@ -608,29 +612,29 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
-                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
+                 (cmdlinerec->max_hours > 0 && run_time > cmdlinerec->max_hours*60.0*60.0*0.99) &&
                  gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
             gs.set[eglsSTOPCOND] = 1;
             if (fplog)
             {
-                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),cmdlinerec->max_hours*0.99);
             }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),cmdlinerec->max_hours*0.99);
         }
 
         /* checkpoints */
-        if (MASTER(cr) && (cpt_period >= 0 &&
-                           (cpt_period == 0 ||
-                            run_time >= nchkpt*cpt_period*60.0)) &&
+        if (MASTER(cr) && (cmdlinerec->cpt_period >= 0 &&
+                           (cmdlinerec->cpt_period == 0 ||
+                            run_time >= nchkpt*cmdlinerec->cpt_period*60.0)) &&
                 gs.set[eglsCHKPT] == 0)
         {
             gs.set[eglsCHKPT] = 1;
         }
 
         /* Time for performance */
-        if (((step % stepout) == 0) || bLastStep)
+        if (((step % cmdlinerec->nstepout) == 0) || bLastStep)
         {
             runtime_upd_proc(runtime);
         }

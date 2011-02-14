@@ -71,6 +71,7 @@
 #include "types/constr.h"
 #include "types/matrix.h"
 #include "types/oenv.h"
+#include "types/cmdlinerec.h"
 
 #ifdef __cplusplus
 extern "C" {

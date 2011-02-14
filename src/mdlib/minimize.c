@@ -865,11 +865,8 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 }
 
 double do_cg(FILE *fplog,t_commrec *cr,
-             int nfile,const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
+             gmx_cmdlinerec_t cmdlinerec,
              gmx_vsite_t *vsite,gmx_constr_t constr,
-             int stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global,t_fcdata *fcd,
              t_state *state_global,
@@ -877,9 +874,6 @@ double do_cg(FILE *fplog,t_commrec *cr,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,
              t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
-             real cpt_period,real max_hours,
-             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -907,6 +901,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
   gmx_mdoutf_t *outf;
   int    i,m,gf,step,nminstep;
   real   terminate=0;  
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
 
   step=0;
 
@@ -1385,11 +1382,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
 
 double do_lbfgs(FILE *fplog,t_commrec *cr,
-                int nfile,const t_filenm fnm[],
-                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-                int nstglobalcomm,
+                gmx_cmdlinerec_t cmdlinerec,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
-                int stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global,t_fcdata *fcd,
                 t_state *state,
@@ -1397,9 +1391,6 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
-                int repl_ex_nst,int repl_ex_seed,
-                real cpt_period,real max_hours,
-                const char *deviceOptions,
                 unsigned long Flags,
                 gmx_runtime_t *runtime)
 {
@@ -1429,6 +1420,9 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
   real   terminate;
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
 
   if (PAR(cr))
     gmx_fatal(FARGS,"Cannot do parallel L-BFGS Minimization - yet.\n");
@@ -2019,11 +2013,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 
 
 double do_steep(FILE *fplog,t_commrec *cr,
-                int nfile, const t_filenm fnm[],
-                const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-                int nstglobalcomm,
+                gmx_cmdlinerec_t cmdlinerec,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
-                int stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global,t_fcdata *fcd,
                 t_state *state_global,
@@ -2031,9 +2022,6 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                 gmx_edsam_t ed,
                 t_forcerec *fr,
-                int repl_ex_nst,int repl_ex_seed,
-                real cpt_period,real max_hours,
-                const char *deviceOptions,
                 unsigned long Flags,
                 gmx_runtime_t *runtime)
 { 
@@ -2057,6 +2045,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
   int    steps_accepted=0; 
   /* not used */
   real   terminate=0;
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
 
   s_min = init_em_state();
   s_try = init_em_state();
@@ -2223,11 +2214,8 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
 
 double do_nm(FILE *fplog,t_commrec *cr,
-             int nfile,const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
+             gmx_cmdlinerec_t cmdlinerec,
              gmx_vsite_t *vsite,gmx_constr_t constr,
-             int stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global,t_fcdata *fcd,
              t_state *state_global,
@@ -2235,9 +2223,6 @@ double do_nm(FILE *fplog,t_commrec *cr,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,
              t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
-             real cpt_period,real max_hours,
-             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -2261,7 +2246,10 @@ double do_nm(FILE *fplog,t_commrec *cr,
     gmx_sparsematrix_t * sparse_matrix = NULL;
     real *     full_matrix             = NULL;
     em_state_t *   state_work;
-	
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
+
     /* added with respect to mdrun */
     int        i,j,k,row,col;
     real       der_range=10.0*sqrt(GMX_REAL_EPS);

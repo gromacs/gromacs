@@ -55,6 +55,10 @@
 extern "C" {
 #endif
 
+#if 0
+{
+#endif
+
 #define MD_POLARISE       (1<<2)
 #define MD_IONIZE         (1<<3)
 #define MD_RERUN          (1<<4)
@@ -72,6 +76,8 @@ extern "C" {
 #define MD_READ_EKIN      (1<<17)
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
+#define MD_VERBOSE        (1<<20)
+#define MD_COMPACT_EBIN   (1<<21)
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
@@ -149,22 +155,20 @@ extern tMPI_Thread_mutex_t deform_init_box_mutex;
 #endif
 
 
-typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
-				int nfile,const t_filenm fnm[],
-				const output_env_t oenv, gmx_bool bVerbose,
-                                gmx_bool bCompact, int nstglobalcomm,
-				gmx_vsite_t *vsite,gmx_constr_t constr,
-				int stepout,
+typedef double gmx_integrator_t(FILE *log,
+				t_commrec *cr,
+				gmx_cmdlinerec_t cmdlinerec,
+				gmx_vsite_t *vsite,
+				gmx_constr_t constr,
 				t_inputrec *inputrec,
-				gmx_mtop_t *mtop,t_fcdata *fcd,
+				gmx_mtop_t *mtop,
+				t_fcdata *fcd,
 				t_state *state,
 				t_mdatoms *mdatoms,
-				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+				t_nrnb *nrnb,
+				gmx_wallcycle_t wcycle,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
-				int repl_ex_nst,int repl_ex_seed,
-				real cpt_period,real max_hours,
-				const char *deviceOptions,
 				unsigned long Flags,
 				gmx_runtime_t *runtime);
 
@@ -334,14 +338,12 @@ void dynamic_load_balancing(gmx_bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
-             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
-             real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
-	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
-             int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-	     const char *deviceOptions, unsigned long Flags);
+int
+mdrunner(int nthreads_requested,
+	 FILE *fplog,
+	 t_commrec *cr,
+	 gmx_cmdlinerec_t cmdlinerec,
+	 unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);

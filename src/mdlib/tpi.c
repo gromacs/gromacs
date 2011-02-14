@@ -114,11 +114,8 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 }
 
 double do_tpi(FILE *fplog,t_commrec *cr,
-              int nfile, const t_filenm fnm[],
-              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-              int nstglobalcomm,
+              gmx_cmdlinerec_t cmdlinerec,
               gmx_vsite_t *vsite,gmx_constr_t constr,
-              int stepout,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global,t_fcdata *fcd,
               t_state *state,
@@ -126,9 +123,6 @@ double do_tpi(FILE *fplog,t_commrec *cr,
               t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_edsam_t ed,
               t_forcerec *fr,
-              int repl_ex_nst,int repl_ex_seed,
-              real cpt_period,real max_hours,
-              const char *deviceOptions,
               unsigned long Flags,
               gmx_runtime_t *runtime)
 {
@@ -160,6 +154,10 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   real dvdl,prescorr,enercorr,dvdlcorr;
   gmx_bool bEnergyOutOfBounds;
   const char *tpid_leg[2]={"direct","reweighted"};
+    int         nfile = cmdlinerec->nfile;
+    t_filenm    *fnm = cmdlinerec->fnm;
+    gmx_bool    bVerbose = (Flags & MD_VERBOSE);
+    output_env_t oenv = cmdlinerec->oenv;
 
   /* Since there is no upper limit to the insertion energies,
    * we need to set an upper limit for the distribution output.
