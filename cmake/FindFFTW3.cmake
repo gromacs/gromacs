@@ -4,7 +4,6 @@
 #  FFTW3_INCLUDE_DIR    where to find fftw3.h
 #  FFTW3_LIBRARIES      List of libraries when using FFTW.
 #  FFTW3_FOUND          True if FFTW found.
-#  FFTW3_THREADS        True if threaded version was found
 
 if (FFTW3_INCLUDE_DIR AND FFTW3_LIBRARIES)
   # Already in cache, be silent
@@ -25,12 +24,6 @@ find_library (FFTW3_LIBRARIES
 include (FindPackageHandleStandardArgs)
 find_package_handle_standard_args (FFTW3 DEFAULT_MSG FFTW3_LIBRARIES FFTW3_INCLUDE_DIR)
 
-if(_threads)
-    set(FFTW3_THREADS CACHE STRING "Are we using threads FFTW3?" "True")
-else()
-    set(FFTW3_THREADS CACHE STRING "Are we using threads FFTW3?" "False")
-endif()
-
-mark_as_advanced (FFTW3_LIBRARIES FFTW3_INCLUDE_DIR FFTW3_THREADS)
+mark_as_advanced (FFTW3_LIBRARIES FFTW3_INCLUDE_DIR)
 
 
