@@ -76,7 +76,8 @@ typedef struct gmx_wallcycle
 #ifdef GMX_MPI
     MPI_Comm     mpi_comm_mygroup;
 #endif
-    int          omp_nthreads;
+    int          omp_nthreads_pp;
+    int          omp_nthreads_pme;
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 characters */
@@ -88,7 +89,8 @@ gmx_bool wallcycle_have_counter(void)
   return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_nthreads)
+gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, 
+                               int omp_nthreads_pp, int omp_nthreads_pme)
 {
     gmx_wallcycle_t wc;
     
@@ -100,12 +102,13 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_
 
     snew(wc,1);
 
-    wc->wc_barrier = FALSE;
-    wc->wcc_all    = NULL;
-    wc->wc_depth   = 0;
-    wc->ewc_prev   = -1;
-    wc->reset_counters = resetstep;
-    wc->omp_nthreads = omp_nthreads;
+    wc->wc_barrier          = FALSE;
+    wc->wcc_all             = NULL;
+    wc->wc_depth            = 0;
+    wc->ewc_prev            = -1;
+    wc->reset_counters      = resetstep;
+    wc->omp_nthreads_pp     = omp_nthreads_pp;
+    wc->omp_nthreads_pme    = omp_nthreads_pme;
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -252,7 +255,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
     }
 }
 
-static gmx_bool subdivision(int ewc)
+static gmx_bool pme_subdivision(int ewc)
 {
     return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
 }
@@ -270,14 +273,15 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 
     wcc = wc->wcc;
 
-    if (wc->omp_nthreads>1)
+    for(i=0; i<ewcNR; i++)
     {
-        for(i=0; i<ewcNR; i++)
+        if (pme_subdivision(i) || i==ewcPMEMESH || (i==ewcRUN && cr->duty == DUTY_PME))
         {
-            if (subdivision(i) || i==ewcPMEMESH || (i==ewcRUN && cr->duty == DUTY_PME))
-            {
-                wcc[i].c *= wc->omp_nthreads;
-            }
+            wcc[i].c *= wc->omp_nthreads_pme;
+        }
+        else
+        {
+            wcc[i].c *= wc->omp_nthreads_pp;
         }
     }
 
@@ -427,19 +431,17 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         npme = nnodes;
     }
     tot = cycles[ewcRUN];
-    /* PME part has to be multiplied with number of threads */
-    if (npme == 0)
-    {
-        tot += cycles[ewcPMEMESH]*(wc->omp_nthreads-1);
-    }
+
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
     {
-      c2t = (npp+npme*wc->omp_nthreads)*realtime/tot;
+        // printf("npp=%d/%dT, npme=%d/%dT, realtime=%.3f, tot=%.3f\n",
+        //        npp, wc->omp_nthreads_pp, npme, wc->omp_nthreads_pme, realtime, tot );
+        c2t = (npp*wc->omp_nthreads_pp + npme*wc->omp_nthreads_pme)*realtime/tot/2;
     }
     else
     {
-      c2t = 0;
+        c2t = 0;
     }
 
     fprintf(fplog,"\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
@@ -449,7 +451,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     sum = 0;
     for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
     {
-        if (!subdivision(i))
+        if (!pme_subdivision(i))
         {
             print_cycles(fplog,c2t,wcn[i],
                          (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
@@ -485,7 +487,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog,"%s\n",myline);
         for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
         {
-            if (subdivision(i))
+            if (pme_subdivision(i))
             {
                 print_cycles(fplog,c2t,wcn[i],
                              (i>=ewcPMEMESH || i<=ewcPME_SOLVE) ? npme : npp,
@@ -513,10 +515,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
         tot_gpu += tot_k;
     
-        tot_cpu_overlap = wc->wcc[ewcFORCE].c;
+        tot_cpu_overlap = wc->wcc[ewcFORCE].c/wc->omp_nthreads_pp;
         if (wc->wcc[ewcPMEMESH].n > 0)
         {
-            tot_cpu_overlap += wc->wcc[ewcPMEMESH].c;
+            tot_cpu_overlap += wc->wcc[ewcPMEMESH].c/wc->omp_nthreads_pme;
         }
         tot_cpu_overlap *= c2t * 1000; /* convert s to ms */
 

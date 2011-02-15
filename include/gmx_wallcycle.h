@@ -48,7 +48,8 @@ extern "C" {
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, int omp_nthreads);
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, 
+                               int omp_nthreads_pp, int omp_nthreads_pme);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
