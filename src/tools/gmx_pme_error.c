@@ -1,5 +1,4 @@
-/* $Id: gmx_tune_pme.c 9 2009-08-11 09:43:30Z dommert $
- * 
+/*
  *                This source code is part of
  *
  *                 G   R   O   M   A   C   S

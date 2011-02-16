@@ -631,7 +631,11 @@ int gmx_genbox(int argc,char *argv[])
     "sized holes (holes that can hold an extra molecule) are available the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
-    
+
+    "If you need to do more than one of the above operations, it can be",
+    "best to call [TT]genbox[tt] separately for each operation, so that",
+    "you are sure of the order in which the operations occur.[PAR]",
+
     "The default solvent is Simple Point Charge water (SPC), with coordinates ",
     "from [TT]$GMXLIB/spc216.gro[tt]. These coordinates can also be used",
     "for other 3-site water models, since a short equibilibration will remove",

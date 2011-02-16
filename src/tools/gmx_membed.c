@@ -1,5 +1,4 @@
 /*
- * $Id: mdrun.c,v 1.139.2.9 2009/05/04 16:13:29 hess Exp $
  *
  *                This source code is part of
  *
