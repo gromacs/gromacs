@@ -71,11 +71,12 @@ static void insert_ion(int nsa,int *nwater,
   real extr_e,poti,rmin2;
   rvec xei,dx;
   gmx_bool bSub=FALSE;
-  int  maxrand;
+  gmx_large_int_t maxrand;
   
   ei=-1;
   nw = *nwater;
-  maxrand = 1000*nw;
+  maxrand  = nw;
+  maxrand *= 1000;
   if (bRandom) {
     do {
       ei = nw*rando(seed);
