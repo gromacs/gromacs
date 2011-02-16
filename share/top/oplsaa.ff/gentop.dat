@@ -7,7 +7,7 @@
     
     <atype elem="C" description="Nitrile C bound to C2" gt_name="C1bn" gt_type="opls_261" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="N1 C2" charge="0.395" vdwparams=""/>
     <atype elem="C" description="Carbon with sp1" gt_name="C1n" gt_type="opls_242" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="N" charge="0.020" vdwparams=""/>
-    <atype elem="C" description="C with sp1" gt_name="C1c" gt_type="opls_067" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0.000" vdwparams=""/>
+    <atype elem="C" description="C with sp1" gt_name="C1c" gt_type="opls_067" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0.0" vdwparams=""/>
     <atype elem="C" description="Alkene C bound to 2 Cl" gt_name="C2cl2" gt_type="opls_227" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="Cl2 Cl2 C" charge="0.24" vdwparams=""/>
     <atype elem="C" description="Aromatic C bound to Cl" gt_name="C2cl" gt_type="opls_263" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="Cl2 C C" charge="0.18" vdwparams=""/>
     <atype elem="C" description="C sp2" gt_name="C2naph" gt_type="opls_147" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 C2" charge="0.0" vdwparams=""/>
@@ -16,16 +16,22 @@
     <atype elem="C" description="Alkene CH2" gt_name="C2h2" gt_type="opls_143" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 Ha Ha" charge="-0.23" vdwparams=""/>
     <atype elem="C" description="Alkene CH" gt_name="C2h1" gt_type="opls_142" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C3 Ha" charge="-0.115" vdwparams=""/>
     <atype elem="C" description="Alkene C" gt_name="C2h0" gt_type="opls_141" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C3 C3" charge="0" vdwparams=""/>
+    <atype elem="C" description="Anisole C2-O-CH3" gt_name="C2om" gt_type="opls_199" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 O3" charge="0.085" vdwparams=""/>
     <atype elem="C" description="Phenol C-OH" gt_name="C2oh" gt_type="opls_166" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 OTHp" charge="0.15" vdwparams=""/>
-    <atype elem="C" description="Aromatic C" gt_name="C2i" gt_type="opls_122" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 F" charge="0.320" vdwparams=""/>
+    <atype elem="C" description="Aromatic C" gt_name="C2fbh" gt_type="opls_720" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2fb C2fb F3" charge="0.13" vdwparams=""/>
+    <atype elem="C" description="Aromatic C" gt_name="C2fbd" gt_type="opls_727" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2fb C2 F3" charge="0.2" vdwparams=""/>
+    <atype elem="C" description="Aromatic C" gt_name="C2fb" gt_type="opls_718" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 F" charge="0.220" vdwparams=""/>
     <atype elem="C" description="Aromatic C" gt_name="C2j" gt_type="opls_122" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 Br" charge="0.230" vdwparams=""/>
     <atype elem="C" description="Aromatic C" gt_name="C2k" gt_type="opls_122" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 I" charge="0.220" vdwparams=""/>
-    <atype elem="C" description="C1 pyridine" gt_name="C2pyr1a" gt_type="opls_521" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 N2pyr C3" charge="0.473" vdwparams=""/>
-    <atype elem="C" description="C1 pyridine" gt_name="C2pyr1b" gt_type="opls_521" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 N2pyr" charge="0.473" vdwparams=""/>
+    <atype elem="C" description="C1 pyridine" gt_name="C2pyr1a" gt_type="opls_521" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 N2pyridine C3" charge="0.473" vdwparams=""/>
+    <atype elem="C" description="C1 pyridine" gt_name="C2pyr1b" gt_type="opls_521" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 N2pyridine" charge="0.473" vdwparams=""/>
     <atype elem="C" description="C2 pyridine" gt_name="C2pyr2a" gt_type="opls_522" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2pyr1 C2 H" charge="-0.447" vdwparams=""/>
     <atype elem="C" description="C2 pyridine" gt_name="C2pyr2b" gt_type="opls_522" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2pyr1 C2 C3" charge="-0.447" vdwparams=""/>
     <atype elem="C" description="C3 pyridine" gt_name="C2pyr3a" gt_type="opls_523" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2pyr2 C2 H" charge="0.227" vdwparams=""/>
     <atype elem="C" description="C3 pyridine" gt_name="C2pyr3b" gt_type="opls_523" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2pyr2 C2 C3" charge="0.227" vdwparams=""/>
+    <atype elem="C" description="C2 pyrrole" gt_name="C2pyrrole2" gt_type="opls_543" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 N2pyrrole H" charge="-0.163" vdwparams=""/>
+    <atype elem="C" description="C3 pyrrole" gt_name="C2pyrrole3" gt_type="opls_544" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2pyrrole" charge="-0.149" vdwparams=""/>
+    <atype elem="C" description="Aromatic C bound to CF3" gt_name="C2CF3" gt_type="opls_724" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 C3C2" charge="0.15" vdwparams=""/>
     <atype elem="C" description="Anilline C" gt_name="C2na" gt_type="opls_916" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C2 C2 N3" charge="0.180" vdwparams=""/>
     <atype elem="C" description="Condensed Aromatic Carbon" gt_name="C2e" gt_type="opls_145" miller_equiv="CBR" geometry="planar" numbonds="3" neighbors="C2 C2 C2" charge="0" vdwparams=""/>
     <atype elem="C" description="Aromatic C" gt_name="C2n" gt_type="opls_166" miller_equiv="CTR" geometry="planar" numbonds="3" neighbors="C1bn" charge="0.150" vdwparams=""/>
@@ -38,10 +44,12 @@
     <atype elem="C" description="Tetrahedral C with NO2" gt_name="C3no2c" gt_type="opls_766" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C3 C3 N2n" charge="0.2" vdwparams=""/>
     <atype elem="C" description="Tetrahedral C bound to Cl" gt_name="C3cl" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Cl3 Ha Ha" charge="-0.006" vdwparams=""/>
     <atype elem="C" description="Tetrahedral C bound to 2 Cl" gt_name="C3cl2" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Cl3 Cl3 Ha" charge="0.097" vdwparams=""/>
+    <atype elem="C" description="CF3 bound to benzene" gt_name="C3C2" gt_type="opls_725" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2 F F F" charge="0.45" vdwparams=""/>
     <atype elem="C" description="CH3 bound to Pyridine ring - q modified" gt_name="C3pyr11" gt_type="opls_670" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2pyr1 Ha Ha Ha" charge="-0.168" vdwparams=""/>
     <atype elem="C" description="CH3 bound to Pyridine ring - q modified" gt_name="C3pyr21" gt_type="opls_672" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2pyr2 Ha Ha Ha" charge="-0.025" vdwparams=""/>
     <atype elem="C" description="CH3 bound to Pyridine ring - q modified" gt_name="C3pyr31" gt_type="opls_674" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2pyr3 Ha Ha Ha" charge="-0.115" vdwparams=""/>
-    <atype elem="C" description="Tetrahedral C bound to Br" gt_name="C3br" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Br3 Ha Ha" charge="0.014" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral C bound to Br" gt_name="C3Bra" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Br3 Ha Ha" charge="0.014" vdwparams=""/>
+    <atype elem="C" description="Tetrahedral C bound to Br" gt_name="C3Brb" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Br3 C Ha" charge="0.117" vdwparams=""/>
     <atype elem="C" description="Tetrahedral C bound to I" gt_name="C3i" gt_type="opls_152" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="I3 Ha" charge="-0.003" vdwparams=""/>
     <atype elem="C" description="Tetrahedral C" gt_name="C3b" gt_type="opls_138" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Ha Ha Ha Ha" charge="-0.240" vdwparams=""/>
     <atype elem="C" description="Primary Isopropyl C bound to N" gt_name="C3nno" gt_type="opls_912" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="N3 C3 C3 Ha" charge="0.12" vdwparams=""/>
@@ -49,14 +57,20 @@
     <atype elem="C" description="Tetrahedral C next to Ketone C" gt_name="C32o22" gt_type="opls_136" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2O2 Ha Ha" charge="-0.12" vdwparams=""/>
     <atype elem="C" description="CH2 bound to N" gt_name="C3nnc" gt_type="opls_906" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="N3 C3 Ha Ha" charge="0.06" vdwparams=""/>
     <atype elem="C" description="Methanol C bound to O" gt_name="C3OH3" gt_type="opls_157" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT Ha Ha Ha" charge="0.145" vdwparams=""/>
-    <atype elem="C" description="Tetrahedral C bound to O" gt_name="C3OH2" gt_type="opls_157" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT Ha Ha" charge="0.145" vdwparams=""/>
-    <atype elem="C" description="Tetrahedral C" gt_name="C3OH1" gt_type="opls_158" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT Ha" charge="0.205" vdwparams=""/>
+    <atype elem="C" description="Triol C bound to O" gt_name="C3ota0" gt_type="opls_173" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OTH C3ot Ha Ha" charge="0.145" vdwparams=""/>
+    <atype elem="C" description="Triol C bound to O" gt_name="C3ota1" gt_type="opls_174" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OTH C3o C3o Ha" charge="0.205" vdwparams=""/>
+    <!--atype elem="C" description="Triol C bound to O" gt_name="C3ota2" gt_type="opls_175" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT C3ot" charge="0.265" vdwparams=""/-->
+    <atype elem="C" description="Diol C bound to O" gt_name="C3oda" gt_type="opls_157" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OTH C3o Ha Ha" charge="0.145" vdwparams=""/>
+    <atype elem="C" description="Mono-Alcohol C with 2 H" gt_name="C3OH2" gt_type="opls_157" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT Ha Ha" charge="0.145" vdwparams=""/>
+    <atype elem="C" description="Mono-Alcohol C with 1 H" gt_name="C3OH1" gt_type="opls_158" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT Ha" charge="0.205" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3O" gt_type="opls_159" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="OT" charge="0.265" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s2" gt_type="opls_206" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S3 Ha Ha" charge="0.060" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s1" gt_type="opls_207" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S3 Ha" charge="0.120" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3s" gt_type="opls_208" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="S3" charge="0.18" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3cn3" gt_type="opls_135" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C1 Ha Ha Ha" charge="-0.180" vdwparams=""/>
     <atype elem="C" description="Tetrahedral C bound to benzene" gt_name="C3tol" gt_type="opls_148" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C2 Ha Ha Ha" charge="-0.065" vdwparams=""/>
+    <atype elem="C" description="Methoxy C in Anisole" gt_name="C3oem" gt_type="opls_181" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="O3 Ha Ha Ha" charge="0.11" vdwparams=""/>
+    <atype elem="C" description="Ethoxy C in Anisole" gt_name="C3oee" gt_type="opls_182" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="O3 C3 Ha Ha" charge="0.14" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3c" gt_type="opls_135" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Ha Ha Ha" charge="-0.180" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3cn2" gt_type="opls_136" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="C1 Ha Ha" charge="-0.120" vdwparams=""/>
     <atype elem="C" description="Tetrahedral Carbon" gt_name="C3d" gt_type="opls_136" miller_equiv="CTE" geometry="tetrahedral" numbonds="4" neighbors="Ha Ha" charge="-0.120" vdwparams=""/>
@@ -72,18 +86,27 @@
     <atype elem="Cl" description="Alkyl Cl2 - q modified" gt_name="Cl3b" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="C3Cl2" charge="-0.1" vdwparams=""/>
     <atype elem="Cl" description="Alkyl Cl" gt_name="Cl3a" gt_type="opls_151" miller_equiv="Cl" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.2" vdwparams=""/>
     
-    <atype elem="F" description="Fluoride" gt_name="F-" gt_type="opls_400" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="-1" vdwparams=""/>
-    <atype elem="F" description="F" gt_name="F3" gt_type="opls_726" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.2" vdwparams=""/>
+    <atype elem="F" description="Fluoride" gt_name="F-" gt_type="opls_400" miller_equiv="F" geometry="tetrahedral" numbonds="0" neighbors="" charge="-1" vdwparams=""/>
+    <atype elem="F" description="F in (trifluoromethyl)benzene" gt_name="F3t" gt_type="opls_726" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C3" charge="-0.2" vdwparams=""/>
+    <atype elem="F" description="F in difluorobenzene" gt_name="F3b" gt_type="opls_728" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2fbd" charge="-0.2" vdwparams=""/>
+    <atype elem="F" description="F in hexafluorobenzene" gt_name="F3h" gt_type="opls_721" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2fbh" charge="-0.13" vdwparams=""/>
+    <atype elem="F" description="F in fluorobenzene" gt_name="F3a" gt_type="opls_719" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2" charge="-0.22" vdwparams=""/>
     
     <atype elem="H" description="H bound to C next to C#N" gt_name="HAccn" gt_type="opls_140" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2CN" charge="0.06" vdwparams=""/>
     <atype elem="H" description="H bound to C next to N3" gt_name="HAnn" gt_type="opls_911" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3nn" charge="0.06" vdwparams=""/>
     <atype elem="H" description="H bound to C next to CN" gt_name="HAcn" gt_type="opls_759" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3cn" charge="0.060" vdwparams=""/>
     <atype elem="H" description="H bound to C next to Ketone C" gt_name="HAc32o2" gt_type="opls_282" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C32o2" charge="0.060" vdwparams=""/>
+    <atype elem="H" description="H bound to C next to ether O" gt_name="HAc3oe" gt_type="opls_185" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3oe" charge="0.03" vdwparams=""/>
+    <atype elem="H" description="H bound to C in triol" gt_name="HAc3xo" gt_type="opls_176" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3ot" charge="0.060" vdwparams=""/>
     <atype elem="H" description="H bound to pyridine C1" gt_name="HPyr1" gt_type="opls_524" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2Pyr1" charge="0.012" vdwparams=""/>
     <atype elem="H" description="H bound to pyridine C2" gt_name="HPyr2" gt_type="opls_525" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2Pyr2" charge="0.155" vdwparams=""/>
     <atype elem="H" description="H bound to pyridine C3" gt_name="HPyr3" gt_type="opls_526" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2Pyr3" charge="0.065" vdwparams=""/>
+    <atype elem="H" description="H bound to pyrrole N1" gt_name="HPyrrole1" gt_type="opls_545" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="N2Pyrrole" charge="0.317" vdwparams=""/>
+    <atype elem="H" description="H bound to pyrrole C2" gt_name="HPyrrole2" gt_type="opls_546" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2Pyrrole2" charge="0.155" vdwparams=""/>
+    <atype elem="H" description="H bound to pyrrole C3" gt_name="HPyrrole3" gt_type="opls_547" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2Pyrrole3" charge="0.118" vdwparams=""/>
     <atype elem="H" description="H bound to Alkene C" gt_name="HAene" gt_type="opls_144" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2h2" charge="0.115" vdwparams=""/>
     <atype elem="H" description="H bound to Benzene C" gt_name="HAb" gt_type="opls_146" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2" charge="0.115" vdwparams=""/>
+    <atype elem="H" description="H bound to ether C" gt_name="HAom" gt_type="opls_185" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3om" charge="0.03" vdwparams=""/>
     <atype elem="H" description="Methyl H in methanol" gt_name="HAo" gt_type="opls_156" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3OH3" charge="0.04" vdwparams=""/>
     <atype elem="H" description="H bound to C bound to Cl" gt_name="HAcl" gt_type="opls_153" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3cl" charge="0.103" vdwparams=""/>
     <atype elem="H" description="H bound to C bound to Br" gt_name="HAbr" gt_type="opls_153" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C3br" charge="0.103" vdwparams=""/>
@@ -94,7 +117,9 @@
     <atype elem="H" description="H bound to S" gt_name="HPs" gt_type="opls_204" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="S3" charge="0.155" vdwparams=""/>
     <atype elem="H" description="H bound to N" gt_name="HPn" gt_type="opls_909" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="N3" charge="0.36" vdwparams=""/>
     <atype elem="H" description="H bound to phenol O" gt_name="HPoh" gt_type="opls_168" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="OTHp" charge="0.435" vdwparams=""/>
-    <atype elem="H" description="H bound to O" gt_name="HPo" gt_type="opls_155" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="O3" charge="0.418" vdwparams=""/>
+    <atype elem="H" description="Monoalcohol H bound to O" gt_name="HPoma" gt_type="opls_155" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="O3" charge="0.418" vdwparams=""/>
+    <atype elem="H" description="Diol H bound to O" gt_name="HPoda" gt_type="opls_170" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="OTHda" charge="0.435" vdwparams=""/>
+    <atype elem="H" description="Triol H bound to O" gt_name="HPota" gt_type="opls_172" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="OTHta" charge="0.465" vdwparams=""/>
     <atype elem="H" description="H polar" gt_name="HP" gt_type="opls_155" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0.418" vdwparams=""/>
     
     <atype elem="I" description="Iodide" gt_name="Imin" gt_type="opls_403" miller_equiv="" geometry="tetrahedral" numbonds="0" neighbors="" charge="-1" vdwparams=""/>
@@ -108,7 +133,8 @@
     <atype elem="N" description="Aromatic N" gt_name="N2h" gt_type="opls_346" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="-0.530" vdwparams=""/>
     <atype elem="N" description="Aromatic N" gt_name="N2b" gt_type="opls_760" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2o" charge="-0.540" vdwparams=""/>
     <atype elem="N" description="Aromatic N" gt_name="N2q" gt_type="opls_760" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2s" charge="-0.700" vdwparams=""/>
-    <atype elem="N" description="Pyridine N" gt_name="N2pyr" gt_type="opls_520" miller_equiv="NPI2" geometry="tetrahedral" numbonds="2" neighbors="C2 C2" charge="-0.678" vdwparams=""/>
+    <atype elem="N" description="Pyrrole N" gt_name="N2pyrrole" gt_type="opls_542" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2 C2 H" charge="-0.239" vdwparams=""/>
+    <atype elem="N" description="Pyridine N" gt_name="N2pyridine" gt_type="opls_520" miller_equiv="NPI2" geometry="tetrahedral" numbonds="2" neighbors="C2 C2" charge="-0.678" vdwparams=""/>
     <atype elem="N" description="Nitro N" gt_name="N2no2" gt_type="opls_760" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C O O" charge="0.540" vdwparams=""/>
     <atype elem="N" description="Nitrate N" gt_name="N2o3" gt_type="opls_787" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="O O O" charge="-1.000" vdwparams=""/>
     <atype elem="N" description="Tetrahedral Nitrogen" gt_name="N3a" gt_type="opls_900" miller_equiv="NTE" geometry="tetrahedral" numbonds="3" neighbors="C H H" charge="-0.900" vdwparams=""/>
@@ -121,9 +147,11 @@
     <atype elem="O" description="Oxygen with double bond" gt_name="O2a" gt_type="opls_236" miller_equiv="OTR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams=""/>
     <!-- atype elem="O" description="Oxygen in O2 gas" gt_name="O2" gt_type="opls_494" miller_equiv="OTE" geometry="planar" numbonds="2" neighbors="O" charge="0.000" vdwparams=""/-->
     <atype elem="O" description="O in phenol" gt_name="OTHp" gt_type="opls_167" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="C2 Hp" charge="-0.585" vdwparams=""/>
-    <atype elem="O" description="O with O-H" gt_name="OTH" gt_type="opls_154" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="Hp" charge="-0.683" vdwparams=""/>
-    <atype elem="O" description="O" gt_name="O3a" gt_type="opls_420" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="" charge="-0.980" vdwparams=""/>
-    <atype elem="O" description="O" gt_name="O3b" gt_type="opls_475" miller_equiv="OTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="-0.680" vdwparams=""/>
+    <atype elem="O" description="Diol O with O-H" gt_name="OTHda" gt_type="opls_169" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="Hp C3oda" charge="-0.7" vdwparams=""/>
+    <atype elem="O" description="Triol O with O-H" gt_name="OTHta" gt_type="opls_171" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="Hp C3ota" charge="-0.73" vdwparams=""/>
+    <atype elem="O" description="Monoalcohol O with O-H" gt_name="OTHma" gt_type="opls_154" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="Hp" charge="-0.683" vdwparams=""/>
+    <atype elem="O" description="Methoxy O in Anisole" gt_name="O3om" gt_type="opls_179" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="C3 C2" charge="-0.285" vdwparams=""/>
+    <atype elem="O" description="Ether O" gt_name="O3b" gt_type="opls_180" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="C C" charge="-0.4" vdwparams=""/>
     <atype elem="O" description="Aromatic Oxygen" gt_name="OPI2" gt_type="opls_167" miller_equiv="OPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="-0.585" vdwparams=""/>
     
     <atype elem="P" description="Phosphor" gt_name="P1" gt_type="opls_393" miller_equiv="PTE" geometry="linear" numbonds="1" neighbors="" charge="0.780" vdwparams=""/>
@@ -134,15 +162,15 @@
     <atype elem="P" description="Phosphor" gt_name="P3d" gt_type="opls_785" miller_equiv="PTE" geometry="tetrahedral" numbonds="6" neighbors="" charge="1.340" vdwparams=""/>
     
     <atype elem="S" description="Sulphur with S=X" gt_name="S2a" gt_type="opls_082" miller_equiv="STR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="-0.470" vdwparams=""/>
-    <atype elem="S" description="Thiol S" gt_name="S3a" gt_type="opls_200" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="H" charge="-0.335" vdwparams=""/>
+    <atype elem="S" description="Thiol S" gt_name="S3a" gt_type="opls_200" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="HP" charge="-0.335" vdwparams=""/>
     <atype elem="S" description="H2S S" gt_name="S3s" gt_type="opls_201" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="H H" charge="-0.470" vdwparams=""/>
-    <atype elem="S" description="Disulphide S" gt_name="S3s2" gt_type="opls_203" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="S C" charge="-0.217" vdwparams=""/>
+    <atype elem="S" description="Disulphide S" gt_name="S3s2" gt_type="opls_203" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="S3 C" charge="-0.217" vdwparams=""/>
     <atype elem="S" description="Sulphide S" gt_name="S3c" gt_type="opls_202" miller_equiv="STE" geometry="tetrahedral" numbonds="2" neighbors="" charge="-0.335" vdwparams=""/>
     <atype elem="S" description="Sulphur" gt_name="S3b" gt_type="opls_084" miller_equiv="STE" geometry="tetrahedral" numbonds="3" neighbors="" charge="-0.470" vdwparams=""/>
     <atype elem="S" description="Sulphur" gt_name="S3q" gt_type="opls_085" miller_equiv="STE" geometry="tetrahedral" numbonds="4" neighbors="" charge="-0.300" vdwparams=""/>
     <atype elem="S" description="Sulphur" gt_name="S3d" gt_type="opls_493" miller_equiv="STE" geometry="tetrahedral" numbonds="6" neighbors="" charge="1.374" vdwparams=""/>
     <atype elem="S" description="Sulphur" gt_name="SPI2a" gt_type="opls_222" miller_equiv="SPI2" geometry="tetrahedral" numbonds="2" neighbors="2 2" charge="-0.320" vdwparams=""/>
-	<atype elem="S" description="Sulphur" gt_name="SPI2b" gt_type="opls_633" miller_equiv="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2" charge="-0.030" vdwparams=""/>
+    <atype elem="S" description="Sulphur" gt_name="SPI2b" gt_type="opls_633" miller_equiv="SPI2" geometry="planar" numbonds="3" neighbors="2 2 2" charge="-0.030" vdwparams=""/>
 	
 	<!--atype elem="He" description="Helium" gt_name="He" gt_type="opls_130" miller_equiv="He" geometry="" numbonds="" neighbors="" charge="0" vdwparams=""/-->
 	<!--atype elem="Ar" description="Argon from Verlet and Veis" gt_name="Ar" gt_type="opls_097" miller_equiv="Ar" geometry="" numbonds="" neighbors="" charge="0" vdwparams=""/-->

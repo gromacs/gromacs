@@ -227,7 +227,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
         if (debug)
             fprintf(debug,"Iter %d nresolved %d/%d\n",iter,nresolved,atoms->nr);
         iter++;
-    } while (((nresolved < atoms->nr) && (iter < maxiter)) || (iter < 5));
+    } while (iter < maxiter);
     
     /* fprintf(stderr,"\n");*/
     if (nresolved < atoms->nr) {
