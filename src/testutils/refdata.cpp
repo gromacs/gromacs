@@ -206,6 +206,10 @@ TestReferenceData::Impl::findOrCreateNode(const xmlChar *name, const char *id)
                 }
             }
         }
+        else
+        {
+            node = NULL;
+        }
     }
     else
     {
