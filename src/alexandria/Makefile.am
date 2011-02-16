@@ -10,14 +10,14 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libalexandria@LIBSUFFIX@.la
 
-#pkgconfigdir = ${libdir}/pkgconfig
-#pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libalexandria@LIBSUFFIX@.pc
 
 LDADD = $(lib_LTLIBRARIES)
 
 libalexandria@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
-libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la
-libalexandria@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
+libalexandria@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../tools/libgmxana@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
+libalexandria@LIBSUFFIX@_la_LDFLAGS        = -no-undefined -version-info @SHARED_VERSION_INFO@ $(FFT_LIBS) $(XML_LIBS) $(PTHREAD_LIBS)
 
 bin_PROGRAMS 	=  	g_poldata_test	g_gauss_test	g_slater_test	gentop	gen_table\
 			g_mptest	g_merge_mp	g_mp2csv	addquote

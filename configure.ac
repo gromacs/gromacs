@@ -1325,6 +1325,7 @@ AC_CONFIG_FILES([ src/tools/libgmxana${LIBSUFFIX}.pc:src/tools/libgmxana.pc.in ]
 AC_CONFIG_FILES([ src/ngmx/Makefile ])
 AC_CONFIG_FILES([ src/contrib/Makefile ])
 AC_CONFIG_FILES([ src/alexandria/Makefile ])
+AC_CONFIG_FILES([ src/alexandria/libalexandria${LIBSUFFIX}.pc:src/alexandria/libalexandria.pc.in ])
 AC_CONFIG_FILES([ scripts/Makefile ])
 AC_CONFIG_FILES([ admin/Makefile ])
 AC_CONFIG_FILES([ share/Makefile ])
