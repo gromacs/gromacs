@@ -2,30 +2,34 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <atomtypes polarizability_unit="A3">
-    <atype elem="br" description="Bromine" gt_name="br" gt_type="br" miller_equiv="BR" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.395559  1.33888"/>
+    <atype elem="br" description="Bromine" gt_name="br3" gt_type="br" miller_equiv="BR" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.395559  1.33888"/>
     <atype elem="c" description="Alkyne C" gt_name="c1" gt_type="c1" miller_equiv="CDI" geometry="linear" numbonds="2" neighbors="" charge="0" vdwparams="0.339967  0.359824"/>
     <atype elem="c" description="Heterocyclic C" gt_name="cc" gt_type="cc" miller_equiv="" geometry="planar" numbonds="3" neighbors="C OS H" charge="0" vdwparams="0.339967  0.359824"/>
     <atype elem="c" description="Heterocyclic C" gt_name="cd" gt_type="cd" miller_equiv="" geometry="planar" numbonds="3" neighbors="CC C H" charge="0" vdwparams="0.339967  0.359824"/>
     <atype elem="c" description="Aromatic C" gt_name="ca" gt_type="ca" miller_equiv="" geometry="planar" numbonds="3" neighbors="C C" charge="0" vdwparams="0.339967  0.359824"/>
     <atype elem="c" description="Carbonyl C" gt_name="c" gt_type="c" miller_equiv="" geometry="planar" numbonds="3" neighbors="O" charge="0" vdwparams="0.339967  0.359824"/>
     <atype elem="c" description="Alkene C" gt_name="c2" gt_type="c2" miller_equiv="" geometry="planar" numbonds="3" neighbors="" charge="0" vdwparams="0.339967  0.359824"/>
-    <atype elem="c" description="Tetrahedral C" gt_name="c3" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="H H H" charge="0" vdwparams="0.339967  0.45773"/>
-    <atype elem="c" description="Tetrahedral C" gt_name="c3br" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="Br" charge="0" vdwparams="0.339967  0.45773"/>
-    <atype elem="c" description="" gt_name="ce" gt_type="ce" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/>
-    <atype elem="c" description="" gt_name="cg" gt_type="cg" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/>
+    <atype elem="c" description="Tetrahedral C" gt_name="c3br" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="Br3" charge="0" vdwparams="0.339967  0.45773"/>
+    <atype elem="c" description="Tetrahedral C" gt_name="c3o" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="oh" charge="0" vdwparams="0.339967  0.45773"/>
+    <atype elem="c" description="Tetrahedral C" gt_name="c3s" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="s3" charge="0" vdwparams="0.339967  0.45773"/>
+    <atype elem="c" description="Tetrahedral C" gt_name="c3x" gt_type="c3" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.45773"/>
+    <!--atype elem="c" description="" gt_name="ce" gt_type="ce" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/-->
+    <!--atype elem="c" description="" gt_name="cg" gt_type="cg" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/-->
     <atype elem="cl" description="" gt_name="cl" gt_type="cl" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.347094  1.10876"/>
-    <atype elem="c" description="" gt_name="cx" gt_type="cx" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/>
+    <!--atype elem="c" description="" gt_name="cx" gt_type="cx" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.339967  0.359824"/-->
     <atype elem="f" description="" gt_name="f" gt_type="f" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.311815  0.255224"/>
     <atype elem="h" description="" gt_name="h1" gt_type="h1" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="c3br" charge="0" vdwparams="0.247135  0.0656888"/>
-    <atype elem="h" description="" gt_name="hc" gt_type="hc" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="c3" charge="0" vdwparams="0.264953  0.0656888"/>
-    <atype elem="h" description="" gt_name="h2" gt_type="h2" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.229317  0.0656888"/>
-    <atype elem="h" description="" gt_name="h3" gt_type="h3" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.211499  0.0656888"/>
-    <atype elem="h" description="" gt_name="h4" gt_type="h4" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.251055  0.06276"/>
-    <atype elem="h" description="" gt_name="h5" gt_type="h5" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.242146  0.06276"/>
-    <atype elem="h" description="" gt_name="ha" gt_type="ha" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.259964  0.06276"/>
+    <atype elem="h" description="" gt_name="h1" gt_type="h1" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="c3s" charge="0" vdwparams="0.247135  0.0656888"/>
+    <atype elem="h" description="" gt_name="h1" gt_type="h1" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="c3o" charge="0" vdwparams="0.247135  0.0656888"/>
+    <atype elem="h" description="" gt_name="hc" gt_type="hc" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="c3x" charge="0" vdwparams="0.264953  0.0656888"/>
+    <!--atype elem="h" description="" gt_name="h2" gt_type="h2" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.229317  0.0656888"/-->
+    <!--atype elem="h" description="" gt_name="h3" gt_type="h3" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.211499  0.0656888"/-->
+    <!--atype elem="h" description="" gt_name="h4" gt_type="h4" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.251055  0.06276"/-->
+    <!--atype elem="h" description="" gt_name="h5" gt_type="h5" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.242146  0.06276"/-->
+    <!--atype elem="h" description="" gt_name="ha" gt_type="ha" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.259964  0.06276"/-->
     <atype elem="h" description="" gt_name="hn" gt_type="hn" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="N" charge="0" vdwparams="0.106908  0.0656888"/>
-    <atype elem="h" description="" gt_name="ho" gt_type="ho" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="O" charge="0" vdwparams="0  0"/>
-    <atype elem="h" description="" gt_name="hs" gt_type="hs" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="S" charge="0" vdwparams="0.106908  0.0656888"/>
+    <atype elem="h" description="" gt_name="ho" gt_type="ho" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="oh" charge="0" vdwparams="0  0"/>
+    <atype elem="h" description="" gt_name="hs" gt_type="hs" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="s3" charge="0" vdwparams="0.106908  0.0656888"/>
     <atype elem="i" description="" gt_name="i" gt_type="i" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.418722  1.6736"/>
     <atype elem="n" description="" gt_name="n1" gt_type="n1" miller_equiv="" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" vdwparams="0.325  0.71128"/>
     <atype elem="n" description="" gt_name="n3" gt_type="n3" miller_equiv="" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" vdwparams="0.325  0.71128"/>
@@ -40,8 +44,8 @@
     <atype elem="p" description="" gt_name="p5" gt_type="p5" miller_equiv="" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" vdwparams="0.374177  0.8368"/>
     <atype elem="s" description="" gt_name="s4" gt_type="s4" miller_equiv="" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" vdwparams="0.356359  1.046"/>
     <atype elem="s" description="" gt_name="s6" gt_type="s6" miller_equiv="" geometry="tetrahedral" numbonds="6" neighbors="" charge="0" vdwparams="0.356359  1.046"/>
-    <atype elem="s" description="" gt_name="sh" gt_type="sh" miller_equiv="" geometry="tetrahedral" numbonds="2" neighbors="H" charge="0" vdwparams="0.356359  1.046"/>
-    <atype elem="s" description="" gt_name="ss" gt_type="ss" miller_equiv="" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" vdwparams="0.356359  1.046"/>
+    <atype elem="s" description="" gt_name="s3h" gt_type="sh" miller_equiv="" geometry="tetrahedral" numbonds="2" neighbors="H" charge="0" vdwparams="0.356359  1.046"/>
+    <atype elem="s" description="" gt_name="s3s" gt_type="ss" miller_equiv="" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" vdwparams="0.356359  1.046"/>
   </atomtypes>
   <gt_bonds length_unit="nm">
     <gt_bond atom1="H" atom2="H" length="0.0738" bondorder="1"/>
