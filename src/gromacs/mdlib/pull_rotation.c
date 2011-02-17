@@ -2984,6 +2984,9 @@ static void do_radial_motion2(
     bPF = rotg->eType==erotgRM2PF;
     bCalcPotFit = (bOutstepRot || bOutstepSlab) && (erotgFitPOT==rotg->eFittype);
 
+
+    clear_rvec(yj0_yc0); /* Make the compiler happy */
+
     clear_rvec(innersumvec);
     if (bPF)
     {
