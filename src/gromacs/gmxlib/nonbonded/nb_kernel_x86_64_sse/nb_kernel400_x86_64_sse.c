@@ -97,10 +97,10 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	__m128i  n0, nnn;
 	__m128i  n0B, nnnB;
 	
-	const __m128 neg        = {-1.0f,-1.0f,-1.0f,-1.0f};
-	const __m128 zero       = {0.0f,0.0f,0.0f,0.0f};
-	const __m128 minushalf  = {-0.5f,-0.5f,-0.5f,-0.5f};
-	const __m128 two        = {2.0f,2.0f,2.0f,2.0f};
+	const __m128 neg        = _mm_set_ps(-1.0f,-1.0f,-1.0f,-1.0f);
+	const __m128 zero       = _mm_set_ps(0.0f,0.0f,0.0f,0.0f);
+	const __m128 minushalf  = _mm_set_ps(-0.5f,-0.5f,-0.5f,-0.5f);
+	const __m128 two        = _mm_set_ps(2.0f,2.0f,2.0f,2.0f);
 
 	gbdata          = (gmx_gbdata_t *)work;
 	gpol            = gbdata->gpol;

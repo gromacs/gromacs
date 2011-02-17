@@ -69,6 +69,7 @@
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
 #include "genborn.h"
+#include "maths.h"
 
 #define CPPMARK  	'#'	/* mark from cpp			*/
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -924,7 +925,7 @@ static char **read_topol(const char *infile,const char *outfile,
     sprintf(warn_buf,"System has non-zero total charge: %e\n\n",qt);
     warning_note(wi,warn_buf);
   }
-  if (fabs(qBt) > 1e-4 && qBt != qt) {
+  if (fabs(qBt) > 1e-4 && !gmx_within_tol(qBt,qt,1e-6)) {
     sprintf(warn_buf,"State B has non-zero total charge: %e\n\n",qBt);
     warning_note(wi,warn_buf);
   }

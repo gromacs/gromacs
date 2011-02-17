@@ -1,5 +1,4 @@
 /*
- * $Id: ehole.c,v 1.12.2.3 2008/02/29 07:02:43 spoel Exp $
  * 
  *                This source code is part of
  * 

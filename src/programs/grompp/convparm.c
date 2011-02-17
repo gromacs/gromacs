@@ -49,6 +49,7 @@
 #include "convparm.h"
 #include "names.h"
 #include "gpp_atomtype.h"
+#include "maths.h"
 
 static int round_check(real r,int limit,int ftype,const char *name)
 {
@@ -378,8 +379,22 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
   if (!bAppend) {
     for (type=start; (type<ffparams->ntypes); type++) {
       if (ffparams->functype[type]==ftype) {
+	if (F_GB13 == ftype) {
+	  /* Occasionally, the way the 1-3 reference distance is
+	   * computed can lead to non-binary-identical results, but I
+	   * don't know why. */
+	  if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6)) &&
+	      (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6)) &&
+	      (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6)) &&
+	      (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6)) &&
+	      (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6))) {
+	    return type;
+	  }
+	}
+	else {
 	if (memcmp(&newparam,&ffparams->iparams[type],(size_t)sizeof(newparam)) == 0)
 	  return type;
+	}
       }
     }
   }

@@ -173,6 +173,8 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
     _count = 0;
     for (size_t i = 0; selections[i] != NULL; ++i)
     {
+        SCOPED_TRACE(std::string("Parsing selection \"")
+                     + selections[i] + "\"");
         ASSERT_EQ(0, _sc.parseFromString(selections[i], &_errors, &_sel));
         char buf[50];
         if (_sel.size() == _count)
@@ -212,6 +214,8 @@ SelectionCollectionDataTest::checkCompiled()
 {
     for (size_t i = 0; i < _count; ++i)
     {
+        SCOPED_TRACE(std::string("Checking selection \"") +
+                     _sel[i]->selectionText() + "\"");
         char buf[50];
         snprintf(buf, 50, "Selection%dCompile", static_cast<int>(i + 1));
         _data.startCompound("SelectionCompile", buf);
@@ -243,6 +247,8 @@ SelectionCollectionDataTest::runEvaluate()
     ASSERT_EQ(0, _sc.evaluate(_frame, NULL));
     for (size_t i = 0; i < _count; ++i)
     {
+        SCOPED_TRACE(std::string("Checking selection \"") +
+                     _sel[i]->selectionText() + "\"");
         char buf[50];
         snprintf(buf, 50, "Selection%dFrame%d",
                  static_cast<int>(i + 1), _framenr);
@@ -391,6 +397,7 @@ TEST_F(SelectionCollectionDataTest, HandlesCoordinateKeywords)
     static const char * const selections[] = {
         "x < 3",
         "y >= 3",
+        "x {-1 to 2}",
         NULL
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositions);
@@ -414,6 +421,103 @@ TEST_F(SelectionCollectionDataTest, HandlesSameResidueName)
         "same resname as atomnr 1 14",
         NULL
     };
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
+{
+    static const char * const selections[] = {
+        "cog of resnr 1 3",
+        "res_cog of name CB and resnr 1 3",
+        "whole_res_cog of name CB and resnr 1 3",
+        "part_res_cog of x < 3",
+        "dyn_res_cog of x < 3",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions
+             | efTestPositionBlocks);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesDistanceKeyword)
+{
+    static const char * const selections[] = {
+        "distance from cog of resnr 1 < 2",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesMinDistanceKeyword)
+{
+    static const char * const selections[] = {
+        "mindistance from resnr 1 < 2",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesWithinKeyword)
+{
+    static const char * const selections[] = {
+        "within 1 of resnr 2",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
+    runTest("simple.gro", selections);
+}
+
+
+// TODO: Add test for "insolidangle"
+
+
+// TODO: Check the handling of mapped and reference IDs in the modifier tests
+// below.
+
+TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
+{
+    static const char * const selections[] = {
+        "all permute 3 1 2",
+        "res_cog of resnr 1 to 4 permute 2 1",
+        "name CB S1 and res_cog x < 3 permute 2 1",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions
+             | efTestPositionBlocks);
+    runTest("simple.gro", selections);
+}
+
+
+// TODO: Add tests for plus/merge on dynamic selections
+// (can't remember whether it's actually implemented or not).
+
+TEST_F(SelectionCollectionDataTest, HandlesPlusModifier)
+{
+    static const char * const selections[] = {
+        "name S2 plus name S1",
+        "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions
+             | efTestPositionBlocks);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
+{
+    static const char * const selections[] = {
+        "name S2 merge name S1",
+        "name S2 merge name S1 merge name CB",
+        NULL
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositions);
     runTest("simple.gro", selections);
 }
 
