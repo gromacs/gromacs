@@ -54,6 +54,7 @@ enum OptionFileType {
     eftTrajectory,
     eftIndex,
     eftPlot,
+    eftGenericData
 };
 
 } // namespace gmx

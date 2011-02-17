@@ -78,9 +78,11 @@ class Select : public TrajectoryAnalysisModule
         std::string              _fnIndex;
         std::string              _fnNdx;
         std::string              _fnMask;
+        bool                     _bDump;
         bool                     _bTotNorm;
         bool                     _bFracNorm;
         bool                     _bResInd;
+        std::string              _resNumberType;
 
         t_topology              *_top;
         int                     *_totsize;
@@ -89,8 +91,6 @@ class Select : public TrajectoryAnalysisModule
         AnalysisData             _idata;
         AnalysisData             _mdata;
         std::vector<std::string> _modnames;
-        t_blocka                *_block;
-        char                   **_gnames;
 };
 
 } // namespace analysismodules

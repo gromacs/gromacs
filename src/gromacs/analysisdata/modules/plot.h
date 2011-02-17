@@ -84,10 +84,16 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          * Set plain output.
          *
          * If \p bPlain is true, no xvgr headers are written to the file.
-         * In this case, only setXFormat() and setYFormat() methods have any
-         * effect on the output.
+         * In this case, only setOmitX(), setXFormat(), and setYFormat()
+         * methods have any effect on the output.
          */
         void setPlainOutput(bool bPlain);
+        /*! \brief
+         * Omit the X coordinates from the output.
+         *
+         * This method only makes sense when combined with setPlainOutput().
+         */
+        void setOmitX(bool bOmitX);
         /*! \brief
          * Set plot title.
          */
