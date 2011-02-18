@@ -218,6 +218,7 @@ typedef struct {
     real *   denom;
     real *   tmp1_alloc;
     real *   tmp1;
+    real *   eterm;
     real *   m2inv;
   
     real     energy;
@@ -1768,8 +1769,12 @@ static void realloc_work(pme_work_t *work,int nkx)
         /* Allocate an aligned pointer for SSE operations, including 3 extra
          * elements at the end since SSE operates on 4 elements at a time.
          */
-        srenew(work->tmp1_alloc,work->nalloc+8);
-        work->tmp1 = (real *) (((size_t) work->tmp1_alloc + 16) & (~((size_t) 15)));
+        sfree_aligned(work->denom);
+        sfree_aligned(work->tmp1);
+        sfree_aligned(work->eterm);
+        snew_aligned(work->denom,work->nalloc+3,16);
+        snew_aligned(work->tmp1 ,work->nalloc+3,16);
+        snew_aligned(work->eterm,work->nalloc+3,16);
 		srenew(work->m2inv,work->nalloc);
 	}
 }
@@ -1781,29 +1786,51 @@ static void free_work(pme_work_t *work)
     sfree(work->mhy);
     sfree(work->mhz);
     sfree(work->m2);
-    sfree(work->denom);
-    sfree(work->tmp1);
+    sfree_aligned(work->denom);
+    sfree_aligned(work->tmp1);
+    sfree_aligned(work->eterm);
     sfree(work->m2inv);
 }
 
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
     /* Calculate exponentials through SSE in float precision */
-#define CALC_EXPONENTIALS(start,end,r_aligned)      \
+#define CALC_EXPONENTIALS(start,end,f,d_aligned,r_aligned,e_aligned) \
     {                                               \
-        __m128 tmp_sse;                             \
+        const __m128 two = {2.0f,2.0f,2.0f,2.0f};   \
+        __m128 f_sse;                               \
+        __m128 lu;                                  \
+        __m128 tmp_d1,d_inv,tmp_r,tmp_e;            \
+        f_sse = _mm_load1_ps(&f);                   \
         for(kx=0; kx<end; kx+=4)                    \
         {                                           \
-            tmp_sse = _mm_load_ps(r_aligned+kx);    \
-            tmp_sse = gmx_mm_exp_ps(tmp_sse);       \
-            _mm_store_ps(r_aligned+kx,tmp_sse);     \
+            tmp_d1   = _mm_load_ps(d_aligned+kx);                      \
+            lu       = _mm_rcp_ps(tmp_d1);                             \
+            d_inv    = _mm_mul_ps(lu,_mm_sub_ps(two,_mm_mul_ps(lu,tmp_d1))); \
+            _mm_store_ps(d_aligned+kx,d_inv);                          \
+            tmp_r    = _mm_load_ps(r_aligned+kx);                      \
+            tmp_r    = gmx_mm_exp_ps(tmp_r);        \
+            _mm_store_ps(r_aligned+kx,tmp_r);       \
+            tmp_e    = _mm_mul_ps(f_sse,d_inv);     \
+            tmp_e    = _mm_mul_ps(tmp_e,tmp_r);     \
+            _mm_store_ps(e_aligned+kx,tmp_e);       \
         }                                           \
     }
 #else
-#define CALC_EXPONENTIALS(start,end,r)          \
-    for(kx=start; kx<end; kx++)                 \
-    {                                           \
-        r[kx] = exp(r[kx]);                     \
+#define CALC_EXPONENTIALS(start,end,f,d,r,e)        \
+    {                                               \
+        for(kx=start; kx<end; kx++)                 \
+        {                                           \
+            d[kx] = 1.0/d[kx];                      \
+        }                                           \
+        for(kx=start; kx<end; kx++)                 \
+        {                                           \
+            r[kx] = exp(r[kx]);                     \
+        }                                           \
+        for(kx=start; kx<end; kx++)                 \
+        {                                           \
+            e[kx] = f*r[kx]*d[kx];                  \
+        }                                           \
     }
 #endif
 
@@ -1821,17 +1848,20 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     real    mx,my,mz;
     real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real    ets2,struct2,vfactor,ets2vf;
-    real    eterm,d1,d2,energy=0;
+    real    d1,d2,energy=0;
     real    by,bz;
     real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
     real    rxx,ryx,ryy,rzx,rzy,rzz;
     pme_work_t *work;
-	real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*m2inv;
+    real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*eterm,*m2inv;
     real    mhxk,mhyk,mhzk,m2k;
     real    corner_fac;
     ivec    complex_order;
     ivec    local_ndata,local_offset,local_size;
-    
+    real    elfac;
+
+    elfac = ONE_4PI_EPS0/pme->epsilon_r;
+     
     nx = pme->nkx;
     ny = pme->nky;
     nz = pme->nkz;
@@ -1861,6 +1891,7 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
 	m2    = work->m2;
 	denom = work->denom;
 	tmp1  = work->tmp1;
+    eterm = work->eterm;
 	m2inv = work->m2inv;	
 
     iyz0 = local_ndata[YY]*local_ndata[ZZ]* thread   /nthread;
@@ -1956,26 +1987,20 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             {
                 m2inv[kx] = 1.0/m2[kx];
             }
-            for(kx=kxstart; kx<kxend; kx++)
-            {
-                denom[kx] = 1.0/denom[kx];
-            }
 
-            CALC_EXPONENTIALS(kxstart,kxend,tmp1);
+            CALC_EXPONENTIALS(kxstart,kxend,elfac,denom,tmp1,eterm);
             
             for(kx=kxstart; kx<kxend; kx++,p0++)
             {
                 d1      = p0->re;
                 d2      = p0->im;
                 
-                eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
-                
-                p0->re  = d1*eterm;
-                p0->im  = d2*eterm;
+                p0->re  = d1*eterm[kx];
+                p0->im  = d2*eterm[kx];
                 
                 struct2 = 2.0*(d1*d1+d2*d2);
                 
-                tmp1[kx] = eterm*struct2;
+                tmp1[kx] = eterm[kx]*struct2;
             }
             
             for(kx=kxstart; kx<kxend; kx++)
@@ -2024,23 +2049,16 @@ static int solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
                 tmp1[kx]  = -factor*m2k;
             }
-            
-            for(kx=kxstart; kx<kxend; kx++)
-            {
-                denom[kx] = 1.0/denom[kx];
-            }
 
-            CALC_EXPONENTIALS(kxstart,kxend,tmp1);
-            
+            CALC_EXPONENTIALS(kxstart,kxend,elfac,denom,tmp1,eterm);
+
             for(kx=kxstart; kx<kxend; kx++,p0++)
             {
                 d1      = p0->re;
                 d2      = p0->im;
                 
-                eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
-                
-                p0->re  = d1*eterm;
-                p0->im  = d2*eterm;
+                p0->re  = d1*eterm[kx];
+                p0->im  = d2*eterm[kx];
             }
         }
     }
