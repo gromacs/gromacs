@@ -66,6 +66,7 @@ TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name);
 namespace analysismodules
 {
 
+static const char * const angle    = "angle";
 static const char * const distance = "distance";
 static const char * const select   = "select";
 
