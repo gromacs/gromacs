@@ -644,7 +644,7 @@ void do_force(FILE *fplog,t_commrec *cr,
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
                                      fr->rcut_nsbox,fr->rlist_nsbox,
-                                     800,
+                                     700,
                                      fr->nnbl,fr->nbl,TRUE);
 
             gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
