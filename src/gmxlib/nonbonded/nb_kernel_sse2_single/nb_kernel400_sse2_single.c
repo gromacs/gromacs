@@ -26,9 +26,6 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-#include "nb_kernel400_sse2_single.h"
-
-
 
 void nb_kernel400_sse2_single(int *           p_nri,
                     int *           iinr,
@@ -144,7 +141,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
 		fix              = _mm_setzero_ps();
 		fiy              = _mm_setzero_ps();
 		fiz              = _mm_setzero_ps();
-       
+
         for(k=nj0; k<nj1-7; k+=8)
 		{
 			jnrA        = jjnr[k];   
@@ -213,7 +210,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
 			rB           = _mm_mul_ps(rsqB,rinvB);
 			rtab         = _mm_mul_ps(r,gbscale);
 			rtabB        = _mm_mul_ps(rB,gbscaleB);
-			
+
 			n0           = _mm_cvttps_epi32(rtab);
 			n0B          = _mm_cvttps_epi32(rtabB);
             eps          = _mm_sub_ps(rtab , _mm_cvtepi32_ps(n0) );
@@ -248,8 +245,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
             FB      = _mm_add_ps(FB, _mm_add_ps(GB , _mm_mul_ps(HB,two)));
             vgbB    = _mm_mul_ps(YB, qqB);           
             fijGBB  = _mm_mul_ps(FB, _mm_mul_ps(qqB,gbscaleB));
-            
-            
+           
             dvdatmp = _mm_mul_ps(_mm_add_ps(vgb, _mm_mul_ps(fijGB,r)) , minushalf);
             dvdatmpB = _mm_mul_ps(_mm_add_ps(vgbB, _mm_mul_ps(fijGBB,rB)) , minushalf);
 
@@ -333,7 +329,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
  			/* Calculate GB table index */
 			r            = _mm_mul_ps(rsq,rinv);
 			rtab         = _mm_mul_ps(r,gbscale);
-			
+
 			n0           = _mm_cvttps_epi32(rtab);
             eps          = _mm_sub_ps(rtab , _mm_cvtepi32_ps(n0) );
 			nnn          = _mm_slli_epi32(n0,2);
@@ -352,7 +348,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
             F       = _mm_add_ps(F, _mm_add_ps(G , _mm_mul_ps(H,two)));
             vgb     = _mm_mul_ps(Y, qq);           
             fijGB   = _mm_mul_ps(F, _mm_mul_ps(qq,gbscale));
-                        
+   
             dvdatmp = _mm_mul_ps(_mm_add_ps(vgb, _mm_mul_ps(fijGB,r)) , minushalf);
             
             vgbtot  = _mm_add_ps(vgbtot, vgb);
@@ -448,7 +444,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
  			/* Calculate GB table index */
 			r            = _mm_mul_ps(rsq,rinv);
 			rtab         = _mm_mul_ps(r,gbscale);
-			
+
 			n0           = _mm_cvttps_epi32(rtab);
             eps          = _mm_sub_ps(rtab , _mm_cvtepi32_ps(n0) );
 			nnn          = _mm_slli_epi32(n0,2);
@@ -467,7 +463,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
             F       = _mm_add_ps(F, _mm_add_ps(G , _mm_mul_ps(H,two)));
             vgb     = _mm_mul_ps(Y, qq);           
             fijGB   = _mm_mul_ps(F, _mm_mul_ps(qq,gbscale));
-            
+
             dvdatmp = _mm_mul_ps(_mm_add_ps(vgb, _mm_mul_ps(fijGB,r)) , minushalf);            
             vgbtot  = _mm_add_ps(vgbtot, vgb);
             
@@ -531,7 +527,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel400nf_sse2_single(
+void nb_kernel400nf_x86_64_sse(
                                int *           p_nri,
                                int *           iinr,
                                int *           jindex,

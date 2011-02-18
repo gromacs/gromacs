@@ -1649,7 +1649,10 @@ static void do_merge(t_hbdata *hb,int ntmp,
         srenew(hb0->h[0],4+nnframes/hb->wordlen);
         srenew(hb0->g[0],4+nnframes/hb->wordlen);  
     }
-    clearPshift(&(hb->per->pHist[a1][a2]));
+    if (NULL != hb->per->pHist)
+    {
+        clearPshift(&(hb->per->pHist[a1][a2]));
+    }
 
     /* Copy temp array to target array */
     for(m=0; (m<=nnframes); m++) {
@@ -3081,7 +3084,7 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
 int gmx_hbond(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
+        "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
         "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
         "(zero is extended) and the distance Hydrogen - Acceptor.",
         "OH and NH groups are regarded as donors, O is an acceptor always,",
@@ -3093,7 +3096,7 @@ int gmx_hbond(int argc,char *argv[])
         "identical or non-overlapping. All hydrogen bonds between the two",
         "groups are analyzed.[PAR]",
     
-        "If you set -shell, you will be asked for an additional index group",
+        "If you set [TT]-shell[tt], you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
         "considered.[PAR]",
@@ -3158,7 +3161,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-da",   FALSE,  etBOOL, {&bDA},
           "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
         { "-r2",   FALSE,  etREAL, {&r2cut},
-          "Second cutoff radius. Mainly useful with -contact and -ac"},
+          "Second cutoff radius. Mainly useful with [TT]-contact[tt] and [TT]-ac[tt]"},
         { "-abin", FALSE,  etREAL, {&abin},
           "Binwidth angle distribution (degrees)" },
         { "-rbin", FALSE,  etREAL, {&rbin},
@@ -3171,15 +3174,15 @@ int gmx_hbond(int argc,char *argv[])
           "when > 0, only calculate hydrogen bonds within # nm shell around "
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With -gemfit we suggest -fitstart 0" },
+          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With [TT]-gemfit[tt] we suggest [TT]-fitstart 0[tt]" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with -gemfit)" },
+          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
           "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
         { "-dump",  FALSE, etINT, {&nDump},
-          "Dump the first N hydrogen bond ACFs in a single xvg file for debugging" },
+          "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb",FALSE, etREAL, {&maxnhb},
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},
@@ -3847,7 +3850,7 @@ int gmx_hbond(int argc,char *argv[])
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
                 nframes++;      /*    +   */
             }      /*                 +   */
-#ifdef HAVE_OPENMP /* ++++++++++++++++´   */
+#ifdef HAVE_OPENMP /* +++++++++++++++++   */
 #pragma omp barrier
 #endif
         } while (trrStatus);

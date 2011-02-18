@@ -459,6 +459,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                           state->x,state->v,vcm);
             inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
         }
+
+        /* Calculate the amplitude of the cosine velocity profile */
+        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
     }
 
     if (bTemp) 
@@ -1383,6 +1386,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
+    if (repl_ex_nst > 0)
+    {
+        /* We need to be sure replica exchange can only occur
+         * when the energies are current */
+        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
+                        "repl_ex_nst",&repl_ex_nst);
+        /* This check needs to happen before inter-simulation
+         * signals are initialized, too */
+    }
     if (repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
@@ -1865,7 +1877,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = (((gs.set[eglsCHKPT] && bNS) ||
+        bCPT = (((gs.set[eglsCHKPT] && (bNS || ir->nstlist == 0)) ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
@@ -2710,25 +2722,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
-        /* Complicated conditional when bGStatEveryStep=FALSE.
-         * We can not just use bGStat, since then the simulation results
-         * would depend on nstenergy and nstlog or step_nscheck.
+        /* With all integrators, except VV, we need to retain the pressure
+         * at the current step for coupling at the next step.
          */
-        if (((state->flags & (1<<estPRES_PREV)) || 
-             (state->flags & (1<<estSVIR_PREV)) ||
-             (state->flags & (1<<estFVIR_PREV))) &&
+        if ((state->flags & (1<<estPRES_PREV)) &&
             (bGStatEveryStep ||
-             (ir->nstlist > 0 && step % ir->nstlist == 0) ||
-             (ir->nstlist < 0 && nlh.nabnsb > 0) ||
-             (ir->nstlist == 0 && bGStat))) 
+             (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.
              */
-            if (state->flags & (1<<estPRES_PREV))
-            {
-                copy_mat(pres,state->pres_prev);
-            }
+            copy_mat(pres,state->pres_prev);
         }
         
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */

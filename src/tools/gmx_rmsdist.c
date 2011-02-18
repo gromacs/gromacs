@@ -509,14 +509,14 @@ real rms_diff(int natom,real **d,real **d_r)
 int gmx_rmsdist (int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rmsdist computes the root mean square deviation of atom distances,",
+    "[TT]g_rmsdist[tt] computes the root mean square deviation of atom distances,",
     "which has the advantage that no fit is needed like in standard RMS",
-    "deviation as computed by g_rms.",
+    "deviation as computed by [TT]g_rms[tt].",
     "The reference structure is taken from the structure file.",
     "The rmsd at time t is calculated as the rms",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
-    "g_rmsdist can also produce matrices of the rms distances, rms distances",
+    "[TT]g_rmsdist[tt] can also produce matrices of the rms distances, rms distances",
     "scaled with the mean distance and the mean distances and matrices with",
     "NMR averaged distances (1/r^3 and 1/r^6 averaging). Finally, lists",
     "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",

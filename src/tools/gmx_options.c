@@ -49,10 +49,11 @@
  * It should be ran with the option: -hidden
  */
 
-int main(int argc,char *argv[])
+int
+gmx_options(int argc,char *argv[])
 {
   const char *desc[] = {
-    "All GROMACS programs have 6 standard options,",
+    "GROMACS programs have some standard options,",
     "of which some are hidden by default:"
   };
 
@@ -66,7 +67,7 @@ int main(int argc,char *argv[])
     "[TT]-npri[tt] int [TT]0[tt] Set non blocking priority (try 128)",
 
     "Optional files are not used unless the option is set, in contrast to "
-    "non optional files, where the default file name is used when the "
+    "non-optional files, where the default file name is used when the "
     "option is not set.",
 
     "All GROMACS programs will accept file options without a file extension "
@@ -76,8 +77,8 @@ int main(int argc,char *argv[])
     "supplied or default name. When no such file is found, or with output "
     "files the first file type will be used.",
 
-    "All GROMACS programs with the exception of [TT]mdrun[tt], "
-    "[TT]nmrun[tt] and [TT]eneconv[tt] check if the command line options "
+    "All GROMACS programs with the exception of [TT]mdrun[tt] "
+    "and [TT]eneconv[tt] check if the command line options "
     "are valid.  If this is not the case, the program will be halted.",
 
     "Enumerated options (enum) should be used with one of the arguments "
@@ -87,15 +88,12 @@ int main(int argc,char *argv[])
     "Vector options can be used with 1 or 3 parameters. When only one "
     "parameter is supplied the two others are also set to this value.",
 
-    "For many GROMACS programs, the time options can be supplied in different "
-    "time units, depending on the setting of the [TT]-tu[tt] option.",
-    
     "All GROMACS programs can read compressed or g-zipped files. There "
     "might be a problem with reading compressed [TT].xtc[tt], "
     "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
     "very well anyway.",
 
-    "Most GROMACS programs can process a trajectory with less atoms than "
+    "Most GROMACS programs can process a trajectory with fewer atoms than "
     "the run input or structure file, but only if the trajectory consists "
     "of the first n atoms of the run input or structure file.",
     

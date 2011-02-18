@@ -476,8 +476,12 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
       at->atom[i].m    = get_atomtype_massA(restp[resind].atom[j].type,
 					    atype);
       cg = restp[resind].cgnr[j];
-      if ( (cg != prevcg) || (resind != prevresind) )
-	curcg++;
+      /* A charge group number -1 signals a separate charge group
+       * for this atom.
+       */
+      if ( (cg == -1) || (cg != prevcg) || (resind != prevresind) ) {
+          curcg++;
+      }
     } else {
       if (debug)
 	fprintf(debug,"atom %d%s: curcg=%d, qt=%g, is_int=%d\n",
@@ -1398,7 +1402,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
              int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-             int *rn, int *rc, gmx_bool bAllowMissing,
+             gmx_bool bAllowMissing,
              gmx_bool bVsites, gmx_bool bVsiteAromatics,
              const char *ff, const char *ffdir,
              real mHmult,

@@ -161,11 +161,6 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   gmx_bool bEnergyOutOfBounds;
   const char *tpid_leg[2]={"direct","reweighted"};
 
-  /* Since numerical problems can lead to extreme negative energies
-   * when atoms overlap, we need to set a lower limit for beta*U.
-   */
-  real bU_neg_limit = -50;
-
   /* Since there is no upper limit to the insertion energies,
    * we need to set an upper limit for the distribution output.
    */
@@ -400,7 +395,12 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 	      mdatoms->nr,a_tp1-a_tp0);
 
   refvolshift = log(det(rerun_fr.box));
-  
+
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+    /* Make sure we don't detect SSE overflow generated before this point */
+    gmx_mm_check_and_reset_overflow();
+#endif
+
     while (bNotLastFrame)
     {
         lambda = rerun_fr.lambda;
@@ -598,10 +598,20 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 }
 #endif
                 /* If the compiler doesn't optimize this check away
-                 * we catch the NAN energies. With tables extreme negative
-                 * energies might occur close to r=0.
+                 * we catch the NAN energies.
+                 * The epot>GMX_REAL_MAX check catches inf values,
+                 * which should nicely result in embU=0 through the exp below,
+                 * but it does not hurt to check anyhow.
                  */
-                if (epot != epot || epot*beta < bU_neg_limit)
+                /* Non-bonded Interaction usually diverge at r=0.
+                 * With tabulated interaction functions the first few entries
+                 * should be capped in a consistent fashion between
+                 * repulsion, dispersion and Coulomb to avoid accidental
+                 * negative values in the total energy.
+                 * The table generation code in tables.c does this.
+                 * With user tbales the user should take care of this.
+                 */
+                if (epot != epot || epot > GMX_REAL_MAX)
                 {
                     bEnergyOutOfBounds = TRUE;
                 }

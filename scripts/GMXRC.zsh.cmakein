@@ -4,20 +4,24 @@
 # This is not 100% necessary, but very useful when we
 # repeatedly switch between gmx versions in a shell.
 
+# ATTENTION
+# zsh understands sh syntax - so this is just a copy from GMXRC.bash.in
+# BEGIN COPY
+
 # First remove gromacs part of ld_library_path
 tmppath=""
 for i in `echo $LD_LIBRARY_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB"; then
-    tmppath=${tmppath}:$i
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 LD_LIBRARY_PATH=$tmppath
 
-# First remove gromacs part of PKG_CONFIG_PATH
+# remove gromacs part of PKG_CONFIG_PATH
 tmppath=""
 for i in `echo $PKG_CONFIG_PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXLDLIB/pkgconfig"; then
-    tmppath=${tmppath}:$i
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 PKG_CONFIG_PATH=$tmppath
@@ -26,7 +30,7 @@ PKG_CONFIG_PATH=$tmppath
 tmppath=""
 for i in `echo $PATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXBIN"; then
-    tmppath=${tmppath}:$i
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 PATH=$tmppath
@@ -35,7 +39,7 @@ PATH=$tmppath
 tmppath=""
 for i in `echo $MANPATH | sed "s/:/ /g"`; do
   if test "$i" != "$GMXMAN"; then
-    tmppath=${tmppath}:$i
+    tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
 MANPATH=$tmppath
@@ -45,16 +49,21 @@ MANPATH=$tmppath
 # things in separate vars, so we can remove them later.
 # If you move gromacs, change the next four line.
 ##########################################################
-export GMXBIN=@BIN_INSTALL_DIR@
-export GMXLDLIB=@LIB_INSTALL_DIR@
-export GMXMAN=@MAN_INSTALL_DIR@
-export GMXDATA=@DATA_INSTALL_DIR@
+GMXBIN=@BIN_INSTALL_DIR@
+GMXLDLIB=@LIB_INSTALL_DIR@
+GMXMAN=@MAN_INSTALL_DIR@
+GMXDATA=@DATA_INSTALL_DIR@
 	
-# NB: The variables already begin with ':' now, or are empty
-export LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH}
-export PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
-export PATH=${GMXBIN}${PATH}
-export MANPATH=${GMXMAN}${MANPATH}
+LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
+PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
+PATH=${GMXBIN}${PATH:+:}${PATH}
+#debian/ubuntu needs a : at the end
+MANPATH=${GMXMAN}:${MANPATH}
+
+# export should be separate, so /bin/sh understands it
+export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH PKG_CONFIG_PATH
+
+# END COPY
 
 # read zsh completions if understand how to use them
 if compctl >& /dev/null; then

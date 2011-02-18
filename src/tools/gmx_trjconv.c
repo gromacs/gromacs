@@ -63,38 +63,57 @@
 #include "viewit.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "gmx_sort.h"
 
 enum { euSel,euRect, euTric, euCompact, euNR};
 
-static real calc_isquared(int nmol,rvec m_com[],rvec m_shift[],rvec clust_com)
-{
-    real Isq=0;
-    int  i;
-    rvec m0,dx;
 
-    for(i=0; (i<nmol); i++) {
-        rvec_add(m_com[i],m_shift[i],m0);
-        rvec_sub(m0,clust_com,dx);
-        Isq += iprod(dx,dx);
+static int 
+sort_comdist2(void *thunk, const void *a, const void *b)
+{
+    /* Thunk should point to a real array with the distance to the cluster COM for each molecule,
+     * a/b point to integers that refer to the molecule number. 
+     */
+    real *pcomdist2 = thunk;
+    int  ia    = * (int *)a;
+    int  ib    = * (int *)b;
+    int  rc;
+    
+    if(pcomdist2[ia]<pcomdist2[ib])
+    {
+        rc=-1;
     }
-    return Isq;
+    else if (pcomdist2[ia]>pcomdist2[ib])
+    {
+        rc=1;
+    }
+    else
+    {
+        rc=0;
+    }
+    return rc;
 }
+
 
 static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                              rvec x[],atom_id index[],
-                             rvec clust_com,matrix box)
+                             rvec clust_com,matrix box, rvec clustercenter)
 {
-    const   real tol=1e-3;
-    gmx_bool    bChanged;
-    int     m,i,j,j0,j1,jj,ai,iter,is;
-    real    fac,Isq,min_dist2;
-    rvec    dx,ddx,xtest,xrm,box_center;
-    int     nmol,nmol_cl,imol_center;
+    int     m,i,j,j0,j1,jj,ai,aj;
+    int     imin,jmin;
+    real    fac,min_dist2;
+    rvec    dx,xtest,box_center;
+    int     nmol,imol_center;
     atom_id *molind;
-    gmx_bool    *bMol,*bTmp;
-    rvec    *m_com,*m_shift,m0;
+    gmx_bool *bMol,*bTmp;
+    rvec    *m_com,*m_shift;
     t_pbc   pbc;
-
+    real    *com_dist2;
+    int     *cluster;
+    int     *added;
+    int     ncluster,nadded;
+    real    tmp_r2;
+    
     calc_box_center(ecenter,box,box_center);
 
     /* Initiate the pbc structure */
@@ -107,8 +126,10 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
     snew(bMol,nmol);
     snew(m_com,nmol);
     snew(m_shift,nmol);
+    snew(cluster,nmol);
+    snew(added,nmol);
     snew(bTmp,top->atoms.nr);
-    nmol_cl = 0;
+
     for(i=0; (i<nrefat); i++) {
         /* Mark all molecules in the index */
         ai = index[i];
@@ -136,110 +157,119 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
      */
     min_dist2   = 10*sqr(trace(box));
     imol_center = -1;
-    for(i=0; (i<nmol); i++) {
-        for(j=molind[i]; (j<molind[i+1]); j++) {
+    ncluster    = 0;
+    for(i=0; i<nmol; i++) 
+    {
+        for(j=molind[i]; j<molind[i+1]; j++) 
+        {
             if (bMol[i] && !bTmp[j])
-                gmx_fatal(FARGS,"Molecule %d marked for clustering but not atom %d",
-                          i+1,j+1);
+            {
+                gmx_fatal(FARGS,"Molecule %d marked for clustering but not atom %d in it - check your index!",i+1,j+1);
+            }
             else if (!bMol[i] && bTmp[j])
-                gmx_fatal(FARGS,"Atom %d marked for clustering but not molecule %d",
-                          j+1,i+1);
-            else if (bMol[i]) {
-                /* Compute center of geometry of molecule */
+            {
+                gmx_fatal(FARGS,"Atom %d marked for clustering but not molecule %d - this is an internal error...",j+1,i+1);
+            }
+            else if (bMol[i]) 
+            {
+                /* Make molecule whole, move 2nd and higher atom to same periodicity as 1st atom in molecule */
+                if(j>molind[i])
+                {
+                    pbc_dx(&pbc,x[j],x[j-1],dx);
+                    rvec_add(x[j-1],dx,x[j]);
+                }
+                /* Compute center of geometry of molecule - m_com[i] was zeroed when we did snew() on it! */
                 rvec_inc(m_com[i],x[j]);
             }
         }
-        if (bMol[i]) {
+        if (bMol[i]) 
+        {
             /* Normalize center of geometry */
             fac = 1.0/(molind[i+1]-molind[i]);
             for(m=0; (m<DIM); m++) 
                 m_com[i][m] *= fac;
             /* Determine which molecule is closest to the center of the box */
             pbc_dx(&pbc,box_center,m_com[i],dx);
-            if (iprod(dx,dx) < min_dist2) {
-                min_dist2   = iprod(dx,dx);
+            tmp_r2=iprod(dx,dx);
+            
+            if (tmp_r2 < min_dist2) 
+            {
+                min_dist2   = tmp_r2;
                 imol_center = i;
             }
-            nmol_cl++;
+            cluster[ncluster++]=i;
         }
     }
     sfree(bTmp);
 
-    if (nmol_cl <= 0) {
+    if (ncluster <= 0) 
+    {
         fprintf(stderr,"No molecules selected in the cluster\n");
         return;
-    } else if (imol_center == -1) {
+    }
+    else if (imol_center == -1) 
+    {
         fprintf(stderr,"No central molecules could be found\n");
         return;
     }
-
-
-    /* First calculation is incremental */
-    clear_rvec(clust_com);
-    Isq = 0;
-    for(i=m=0; (i<nmol); i++) {
-        /* Check whether this molecule is part of the cluster */
-        if (bMol[i]) {
-            if ((i > 0) && (m > 0)) {
-                /* Compute center of cluster by dividing by number of molecules */
-                svmul(1.0/m,clust_com,xrm);
-                /* Distance vector between molecular COM and cluster */
-                pbc_dx(&pbc,m_com[i],xrm,dx);
-                rvec_add(xrm,dx,xtest);
-                /* xtest is now the image of m_com[i] that is closest to clust_com */
-                rvec_inc(clust_com,xtest);
-                rvec_sub(xtest,m_com[i],m_shift[i]);
-            }
-            else {
-                rvec_inc(clust_com,m_com[i]);
-            }
-            m++;
-        }
-    }
-    assert(m == nmol_cl);
-    svmul(1/nmol_cl,clust_com,clust_com);
-    put_atom_in_box(box,clust_com);
-
-    /* Now check if any molecule is more than half the box from the COM */
-    if (box) {
-        iter = 0;
-        do {
-            bChanged = FALSE;
-            for(i=0; (i<nmol) && !bChanged; i++) {
-                if (bMol[i]) {
-                    /* Sum com and shift from com */
-                    rvec_add(m_com[i],m_shift[i],m0);
-                    pbc_dx(&pbc,m0,clust_com,dx);
-                    rvec_add(clust_com,dx,xtest);
-                    rvec_sub(xtest,m0,ddx);
-                    if (iprod(ddx,ddx) > tol) {
-                        /* Here we have used the wrong image for contributing to the COM */
-                        rvec_sub(xtest,m_com[i],m_shift[i]);
-                        for(j=0; (j<DIM); j++) 
-                            clust_com[j] += (xtest[j]-m0[j])/nmol_cl;
-                        bChanged = TRUE;
-                    }
+    
+    nadded = 0;
+    added[nadded++]   = imol_center;
+    bMol[imol_center] = FALSE;
+    
+    while (nadded<ncluster)
+    {
+        /* Find min distance between cluster molecules and those remaining to be added */
+        min_dist2   = 10*sqr(trace(box));
+        imin        = -1;
+        jmin        = -1;
+        /* Loop over added mols */
+        for(i=0;i<nadded;i++)
+        {
+            ai = added[i];
+            /* Loop over all mols */
+            for(j=0;j<ncluster;j++)
+            {
+                aj = cluster[j];
+                /* check those remaining to be added */
+                if(bMol[aj])
+                {
+                    pbc_dx(&pbc,m_com[aj],m_com[ai],dx);
+                    tmp_r2=iprod(dx,dx);
+                    if (tmp_r2 < min_dist2) 
+                    {
+                        min_dist2   = tmp_r2;
+                        imin        = ai;
+                        jmin        = aj;
+                    } 
                 }
             }
-            Isq = calc_isquared(nmol,m_com,m_shift,clust_com);
-            put_atom_in_box(box,clust_com);
-
-            if (bChanged && (iter > 0))
-                printf("COM: %8.3f  %8.3f  %8.3f  iter = %d  Isq = %8.3f\n",
-                       clust_com[XX],clust_com[YY],clust_com[ZZ],iter,Isq);
-            iter++;
-        } while (bChanged);
-    }
-    /* Now transfer the shift to all atoms in the molecule */
-    for(i=0; (i<nmol); i++) {
-        if (bMol[i]) {
-            for(j=molind[i]; (j<molind[i+1]); j++)
-                rvec_inc(x[j],m_shift[i]);
         }
+        
+        /* Add the best molecule */
+        added[nadded++]   = jmin;
+        bMol[jmin]        = FALSE;
+        /* Calculate the shift from the ai molecule */
+        pbc_dx(&pbc,m_com[jmin],m_com[imin],dx);
+        rvec_add(m_com[imin],dx,xtest);
+        rvec_sub(xtest,m_com[jmin],m_shift[jmin]);
+        rvec_inc(m_com[jmin],m_shift[jmin]);
+
+        for(j=molind[jmin]; j<molind[jmin+1]; j++) 
+        {
+            rvec_inc(x[j],m_shift[jmin]);
+        }
+        fprintf(stdout,"\rClustering iteration %d of %d...",nadded,ncluster);
+        fflush(stdout);
     }
+    
+    sfree(added);
+    sfree(cluster);
     sfree(bMol);
     sfree(m_com);
     sfree(m_shift);
+    
+    fprintf(stdout,"\n");
 }
 
 static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
@@ -257,7 +287,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
     calc_box_center(ecenter,box,box_center);
     set_pbc(&pbc,ePBC,box);
     if (mols->nr <= 0) 
-        gmx_fatal(FARGS,"There are no molecule descriptions. I need a tpr file for this pbc option.");
+        gmx_fatal(FARGS,"There are no molecule descriptions. I need a .tpr file for this pbc option.");
     for(i=0; (i<mols->nr); i++) {
         /* calc COM */
         clear_rvec(com);
@@ -393,10 +423,11 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
 
     strcpy(out_file,base);
     fnr = file_nr;
-    while(fnr > 0) {
-        fnr = fnr/10;
+    do {
+        fnr /= 10;
         nd++;
-    }
+    } while (fnr > 0);
+
     if (nd < ndigit)
         strncat(out_file,"00000000000",ndigit-nd);
     sprintf(nbuf,"%d.",file_nr);
@@ -407,7 +438,7 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
 void check_trn(const char *fn)
 {
     if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
-        gmx_fatal(FARGS,"%s is not a trj file, exiting\n",fn);
+        gmx_fatal(FARGS,"%s is not a trajectory file, exiting\n",fn);
 }
 
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
@@ -477,7 +508,7 @@ void do_trunc(const char *fn, real t0)
 int gmx_trjconv(int argc,char *argv[])
 {
     const char *desc[] = {
-        "trjconv can convert trajectory files in many ways:[BR]",
+        "[TT]trjconv[tt] can convert trajectory files in many ways:[BR]",
         "[BB]1.[bb] from one format to another[BR]",
         "[BB]2.[bb] select a subset of atoms[BR]",
         "[BB]3.[bb] change the periodicity representation[BR]",
@@ -489,13 +520,13 @@ int gmx_trjconv(int argc,char *argv[])
         "([TT]-t0[tt] and [TT]-timestep[tt])[BR]",
         "[BB]9.[bb] cut the trajectory in small subtrajectories according",
         "to information in an index file. This allows subsequent analysis of",
-        "the subtrajectories that could, for example be the result of a",
+        "the subtrajectories that could, for example, be the result of a",
         "cluster analysis. Use option [TT]-sub[tt].",
         "This assumes that the entries in the index file are frame numbers and",
         "dumps each group in the index file to a separate trajectory file.[BR]",
         "[BB]10.[bb] select frames within a certain range of a quantity given",
         "in an [TT].xvg[tt] file.[PAR]",
-        "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
+        "The program [TT]trjcat[tt] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
         "Currently seven formats are supported for input and output:",
         "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt],",
@@ -507,7 +538,7 @@ int gmx_trjconv(int argc,char *argv[])
         "is always taken from [TT]-ndec[tt], when this option is set.",
         "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
         "output can be single or double precision, depending on the precision",
-        "of the trjconv binary.",
+        "of the [TT]trjconv[tt] binary.",
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
         "Option [TT]-app[tt] can be used to",
@@ -515,7 +546,7 @@ int gmx_trjconv(int argc,char *argv[])
         "No checks are performed to ensure integrity",
         "of the resulting combined trajectory file.[PAR]",
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
-        ".gro, .g96 or .pdb file, default all frames all written to one file.",
+        "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
         "[TT].pdb[tt] files with all frames concatenated can be viewed with",
         "[TT]rasmol -nmrpdb[tt].[PAR]",
         "It is possible to select part of your trajectory and write it out",
@@ -525,9 +556,9 @@ int gmx_trjconv(int argc,char *argv[])
         "We recommend to use the portable [TT].xtc[tt] format for your analysis",
         "to save disk space and to have portable files.[PAR]",
         "There are two options for fitting the trajectory to a reference",
-        "either for essential dynamics analysis or for whatever.",
+        "either for essential dynamics analysis, etc.",
         "The first option is just plain fitting to a reference structure",
-        "in the structure file, the second option is a progressive fit",
+        "in the structure file. The second option is a progressive fit",
         "in which the first timeframe is fitted to the reference structure ",
         "in the structure file to obtain and each subsequent timeframe is ",
         "fitted to the previously fitted structure. This way a continuous",
@@ -536,23 +567,26 @@ int gmx_trjconv(int argc,char *argv[])
         "conformational transitions.[PAR]",
         "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
         "treatment:[BR]",
-        "* [TT]mol[tt] puts the center of mass of molecules in the box.[BR]",
-        "* [TT]res[tt] puts the center of mass of residues in the box.[BR]",
-        "* [TT]atom[tt] puts all the atoms in the box.[BR]",
-        "* [TT]nojump[tt] checks if atoms jump across the box and then puts",
+        "[TT]* mol[tt] puts the center of mass of molecules in the box.[BR]",
+        "[TT]* res[tt] puts the center of mass of residues in the box.[BR]",
+        "[TT]* atom[tt] puts all the atoms in the box.[BR]",
+        "[TT]* nojump[tt] checks if atoms jump across the box and then puts",
         "them back. This has the effect that all molecules",
         "will remain whole (provided they were whole in the initial",
-        "conformation), note that this ensures a continuous trajectory but",
+        "conformation). [BB]Note[bb] that this ensures a continuous trajectory but",
         "molecules may diffuse out of the box. The starting configuration",
         "for this procedure is taken from the structure file, if one is",
         "supplied, otherwise it is the first frame.[BR]",
-        "* [TT]cluster[tt] clusters all the atoms in the selected index",
-        "such that they are all closest to the center of mass of the cluster",
-        "which is iteratively updated. Note that this will only give meaningful",
+        "[TT]* cluster[tt] clusters all the atoms in the selected index",
+        "such that they are all closest to the center of mass of the cluster,",
+        "which is iteratively updated. [BB]Note[bb] that this will only give meaningful",
         "results if you in fact have a cluster. Luckily that can be checked",
         "afterwards using a trajectory viewer. Note also that if your molecules",
         "are broken this will not work either.[BR]",
-        "* [TT]whole[tt] only makes broken molecules whole.[PAR]",
+        "The separate option [TT]-clustercenter[tt] can be used to specify an",
+        "approximate center for the cluster. This is useful e.g. if you have",
+        "two big vesicles, and you want to maintain their relative positions.[BR]",
+        "[TT]* whole[tt] only makes broken molecules whole.[PAR]",
         "Option [TT]-ur[tt] sets the unit cell representation for options",
         "[TT]mol[tt], [TT]res[tt] and [TT]atom[tt] of [TT]-pbc[tt].",
         "All three options give different results for triclinic boxes and",
@@ -561,7 +595,7 @@ int gmx_trjconv(int argc,char *argv[])
         "[TT]tric[tt] is the triclinic unit cell.", 
         "[TT]compact[tt] puts all atoms at the closest distance from the center",
         "of the box. This can be useful for visualizing e.g. truncated",
-        "octahedrons. The center for options [TT]tric[tt] and [TT]compact[tt]",
+        "octahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
         "is [TT]tric[tt] (see below), unless the option [TT]-boxcenter[tt]",
         "is set differently.[PAR]",
         "Option [TT]-center[tt] centers the system in the box. The user can",
@@ -573,18 +607,17 @@ int gmx_trjconv(int argc,char *argv[])
         "[TT]zero[tt]: zero.",
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
-        "With [TT]-dt[tt] it is possible to reduce the number of ",
+        "With [TT]-dt[tt], it is possible to reduce the number of ",
         "frames in the output. This option relies on the accuracy of the times",
         "in your input trajectory, so if these are inaccurate use the",
         "[TT]-timestep[tt] option to modify the time (this can be done",
-        "simultaneously). For making smooth movies the program [TT]g_filter[tt]",
+        "simultaneously). For making smooth movies, the program [TT]g_filter[tt]",
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
-        "Using [TT]-trunc[tt] trjconv can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [TT]trjconv[tt] can truncate [TT].trj[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
-        "during disk I/O (one more disk full), or when two contiguous",
-        "trajectories must be concatenated without have double frames.[PAR]",
-        "[TT]trjcat[tt] is more suitable for concatenating trajectory files.[PAR]",
+        "during disk I/O (i.e. full disk), or when two contiguous",
+        "trajectories must be concatenated without having double frames.[PAR]",
         "Option [TT]-dump[tt] can be used to extract a frame at or near",
         "one specific time from your trajectory.[PAR]",
         "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
@@ -637,7 +670,8 @@ int gmx_trjconv(int argc,char *argv[])
     static char  *exec_command=NULL;
     static real  dropunder=0,dropover=0;
     static gmx_bool  bRound=FALSE;
-
+    static rvec  clustercenter = {0,0,0};
+    
     t_pargs
         pa[] =
             {
@@ -665,10 +699,13 @@ int gmx_trjconv(int argc,char *argv[])
                     { "-center", FALSE, etBOOL,
                         { &bCenter }, "Center atoms in box" },
                     { "-boxcenter", FALSE, etENUM,
-                        { center_opt }, "Center for -pbc and -center" },
+                        { center_opt }, "Center for -pbc and -center" },                
                     { "-box", FALSE, etRVEC,
                         { newbox },
                         "Size for new cubic box (default: read from input)" },
+                    { "-clustercenter", FALSE, etRVEC,
+                        { clustercenter }, 
+                        "Optional starting point for pbc cluster option" },
                     { "-trans", FALSE, etRVEC,
                         { trans }, 
                         "All coordinates will be translated by trans. This "
@@ -691,7 +728,7 @@ int gmx_trjconv(int argc,char *argv[])
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
                     { "-trunc", FALSE, etTIME,
                         { &ttrunc }, 
-                        "Truncate input trj file after this time (%t)" },
+                        "Truncate input trajectory file after this time (%t)" },
 #endif
                     { "-exec", FALSE, etSTR,
                         { &exec_command },
@@ -709,15 +746,15 @@ int gmx_trjconv(int argc,char *argv[])
                         "file" },
                     { "-nzero", FALSE, etINT,
                         { &nzero },
-                        "Prepend file number in case you use the -sep flag "
-                        "with this number of zeroes" },
+                        "If the -sep flag is set, use these many digits "
+                        "for the file numbers and prepend zeros as needed" },
                     { "-dropunder", FALSE, etREAL,
                         { &dropunder }, "Drop all frames below this value" },
                     { "-dropover", FALSE, etREAL,
                         { &dropover }, "Drop all frames above this value" },
                     { "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add conect records when writing pdb files. Useful "
+                        "Add conect records when writing [TT].pdb[tt] files. Useful "
                         "for visualization of non-standard molecules, e.g. "
                         "coarse grained ones" } };
 #define NPA asize(pa)
@@ -1019,7 +1056,7 @@ int gmx_trjconv(int argc,char *argv[])
             clear_rvec(x_shift);
 
         if (bDropUnder || bDropOver) {
-            /* Read the xvg file with the drop values */
+            /* Read the .xvg file with the drop values */
             fprintf(stderr,"\nReading drop file ...");
             ndrop = read_xvg(opt2fn("-drop",NFILE,fnm),&dropval,&ncol);
             fprintf(stderr," %d time points\n",ndrop);
@@ -1032,7 +1069,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         /* Make atoms struct for output in GRO or PDB files */
         if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB)) {
-            /* get memory for stuff to go in pdb file */
+            /* get memory for stuff to go in .pdb file */
             init_t_atoms(&useatoms,atoms->nr,FALSE);
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
@@ -1195,7 +1232,7 @@ int gmx_trjconv(int argc,char *argv[])
                 else if (bCluster) {
                     rvec com;
 
-                    calc_pbc_cluster(ecenter,ifit,&top,ePBC,fr.x,ind_fit,com,fr.box);
+                    calc_pbc_cluster(ecenter,ifit,&top,ePBC,fr.x,ind_fit,com,fr.box,clustercenter);
                 }
 
                 if (bPFit) {
@@ -1385,7 +1422,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         ntrxopen++;
                                     }
                                     else if (clust_status_id[my_clust] == -2)
-                                        gmx_fatal(FARGS,"File %s.xtc should still be open (%d open xtc files)\n""in order to write frame %d. my_clust = %d",
+                                        gmx_fatal(FARGS,"File %s.xtc should still be open (%d open .xtc files)\n""in order to write frame %d. my_clust = %d",
                                                   clust->grpname[my_clust],ntrxopen,frame,
                                                   my_clust);
                                     write_trxframe(clust_status[my_clust],&frout,gc);
@@ -1397,7 +1434,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         clust_status_id[my_clust] = -2;
                                         ntrxopen--;
                                         if (ntrxopen < 0)
-                                            gmx_fatal(FARGS,"Less than zero open xtc files!");
+                                            gmx_fatal(FARGS,"Less than zero open .xtc files!");
                                     }
                                 }
                             }

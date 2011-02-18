@@ -94,7 +94,7 @@ int gmx_rms(int argc, char *argv[])
     const char
         *desc[] =
             {
-                "g_rms compares two structures by computing the root mean square",
+                "[TT]g_rms[tt] compares two structures by computing the root mean square",
                 "deviation (RMSD), the size-independent 'rho' similarity parameter",
                 "(rho) or the scaled rho (rhosc), ",
                 "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
@@ -123,7 +123,7 @@ int gmx_rms(int argc, char *argv[])
 
                 "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
                 "If you select the option (default) and ",
-                "supply a valid tpr file masses will be taken from there, ",
+                "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
                 "otherwise the masses will be deduced from the atommass.dat file in",
                 "the GROMACS library directory. This is fine for proteins but not",
                 "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",

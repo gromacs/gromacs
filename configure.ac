@@ -3,7 +3,13 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.5.1, [gmx-users@gromacs.org])
+
+# The "-dev" suffix is important to keep because it makes possible to distinguish 
+# between a build from official release and a build from git release branch on a 
+# machine with no git. 
+#
+# NOTE: when releasing the "-dev" suffix needs to be stripped off!
+AC_INIT(gromacs, 4.5.3-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -17,7 +23,8 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="6:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-AC_DISABLE_SHARED
+AC_ENABLE_SHARED
+test "$enable_mpi" = "yes" && AC_DISABLE_SHARED
 PKG_CFLAGS=""
 
 #######################################################################
@@ -51,10 +58,15 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-# Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
+#On some systems GNU libtool's la files are more confusing for libtool than helpful due to the 
+#hard coded paths/libs in the files. And for better linking we have pkg-config files (.pc).
+AC_ARG_ENABLE(la-files,
+	[AS_HELP_STRING([--disable-la-files],[Do NOT install GNU libtool's la files])],,
+	[enable_la_files=yes])
+AM_CONDITIONAL(NO_LA_FILES,[test "$enable_la_files" = no])
 
 
 
@@ -148,11 +160,9 @@ esac
 # IBM Power6-specific optimization
 AC_ARG_ENABLE(power6,
              [AC_HELP_STRING([--enable-power6],
-                             [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
-# Turn off generic fortran loops if we are using power6-specific optimization
+                             [Use IBM Power6-specific F77 kernels])],,enable_power6=no)
 if test "$enable_power6" = "yes"; then
-  enable_fortran=no;
-  AC_DEFINE(GMX_POWER6,,[Enable IBM Pwr6/PPC440/PPC450-specific F77 kernels])
+  AC_DEFINE(GMX_POWER6,,[Enable IBM Power6-specific F77 kernels])
 fi
 
 AC_ARG_ENABLE(bluegene,
@@ -171,11 +181,11 @@ AC_ARG_ENABLE(software-invsqrt,
               [AC_HELP_STRING([--disable-software-invsqrt],
                               [No software 1/sqrt (disabled on sgi,ibm,ia64)])],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_invsqrt=no ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | powerpc*-none | ia64*-*) enable_software_invsqrt=no ;;
   *) enable_software_invsqrt=yes ;;
 esac])
 if test "$enable_software_invsqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS sGMX_INTERNAL_XDRsqrt(x)])
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
   PKG_CFLAGS="$PKG_CFLAGS -DGMX_SOFTWARE_INVSQRT"
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
@@ -325,11 +335,11 @@ AM_CONDITIONAL([USE_VERSION_H],[test "$generate_version" = "yes"])
 case "${host_cpu}-${host_os}" in
   alpha*-linux*)
     cc_names="ccc cc gcc"
-    f77_names="fort f77 g77"
+    f77_names="fort f77 gfortran g77"
     ;;
   *) 
     cc_names="cc icc xlc gcc"
-    f77_names="f77 ifort xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    f77_names="f77 ifort xlf xlf77 cf77 fl32 gfortran g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
@@ -464,6 +474,9 @@ if test "$enable_threads" = "yes"; then
   if test "$with_fft" = "fftw2"; then
     AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
   fi 
+  if test "$enable_fortran" = "yes"; then
+    AC_MSG_ERROR([FORTRAN is incompatible with threads and only provides a speed-up on certain IBM compilers. Use --disable-threads if you really want to use FORTRAN kernels.])
+  fi
   AC_CHECK_HEADERS(unistd.h)
   AC_CHECK_HEADERS(sys/time.h)
   AC_CHECK_HEADERS(sched.h)
@@ -570,6 +583,7 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_LIBTOOL_WIN32_DLL
+AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
 #
@@ -1119,6 +1133,8 @@ fi
 
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+  AC_DEFINE_UNQUOTED(GMX_POWERPC_INVSQRT,,[Use the PowerPC hardware 1/sqrt(x)])
+  PKG_CFLAGS="$PKG_CFLAGS -DGMX_POWERPC_INVSQRT"
 fi
 
 if test "$enable_fortran" = "yes"; then
@@ -1171,13 +1187,22 @@ if test "$with_dlopen" = "yes"; then
       CFLAGS_RET=$CFLAGS
       #LDFLAGS="$lt_cv_dlopen_libs $LDFLAGS" #can't make the macro, which is getting lt_cv_dlopen_libs, to work
       LDFLAGS_RET=$LDFLAGS
+      LIBS_RET=$LIBS
       if test "$enable_all_static" = "yes"; then  #make sure we test also whether it works static
       	 LDFLAGS="$LDFLAGS -static"
       fi
       CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
-      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
-	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
+      LIBS="$DLOPEN_LIBS $LIBS"
+      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[
+        AC_MSG_RESULT([yes])
+	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])
+	AC_SUBST(DLOPEN_LIBS)
+      ],[
+	AC_MSG_RESULT([no])
+	AC_SUBST(DLOPEN_LIBS,"")
+      ])
       CFLAGS=$CFLAGS_RET
+      LIBS=$LIBS_RET
       LDFLAGS=$LDFLAGS_RET
 fi
 
@@ -1207,7 +1232,7 @@ AC_ARG_VAR(
    variable you can overwrite it
   ]
 )
-if test -z ${LIBSUFFIX} ; then
+if test -z "${LIBSUFFIX}" ; then
   if test "$enable_mpi" = "yes"; then
     LIBSUFFIX="_mpi"
   fi

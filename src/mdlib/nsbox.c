@@ -59,7 +59,7 @@
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
-// #define GMX_SSE4_1
+// #define NBS_BB_SSE4_1
 #ifdef GMX_SSE4_1
 #include <smmintrin.h>
 #endif
@@ -1140,7 +1140,7 @@ static real subc_bb_dist2_sse(int naps,
     return d2_align[0] + d2_align[1] + d2_align[2];
 }
 
-#ifdef GMX_SSE4_1
+#ifdef NBS_BB_SSE4_1
 static real subc_bb_dist2_sse4_1(int naps,
                                  int si,const real *bb_i_ci,
                                  int csj,const real *bb_j_all)
@@ -1625,7 +1625,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
              * not at compile time.
              */
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-#ifdef GMX_SSE4_1
+#ifdef NBS_BB_SSE4_1
             d2 = subc_bb_dist2_sse4_1(naps,si,bb_ci,csj,nbs->bb);
 #else
             d2 = subc_bb_dist2_sse(naps,si,bb_ci,csj,nbs->bb);

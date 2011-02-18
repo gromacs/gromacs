@@ -382,6 +382,9 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
       else if (len >= 0)
 	len++;
     }
+    if (len == -1) {
+      return eCPP_SYNTAX;
+    }
     snew(inc_fn,len+1);
     strncpy(inc_fn,dval+i0,len);
     inc_fn[len] = '\0';

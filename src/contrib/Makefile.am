@@ -14,9 +14,10 @@ EXTRA_DIST              = README
 # Add new entries in Makefile.am!
 
 EXTRA_PROGRAMS 	=  	copyrgt 	\
-			options 	hrefify 	\
+			hrefify 	\
 			addquote 	compnl	\
-			gen_table	ehole   g_sdf
+			gen_table	ehole   g_sdf\
+			do_multiprot
 
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la

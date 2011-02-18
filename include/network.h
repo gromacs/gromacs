@@ -62,6 +62,9 @@ int gmx_node_num(void);
 int gmx_node_rank(void);
 /* return the rank of the node */
 
+int gmx_host_num(void);
+/* returns the number within the hostname */
+
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 

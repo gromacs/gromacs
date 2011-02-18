@@ -715,7 +715,7 @@ nb_kernel_allvsallgb_sse2_double(t_forcerec *           fr,
         pmask1           = prologue_mask[i+1];
         emask0           = epilogue_mask[i];
         emask1           = epilogue_mask[i+1];
-        imask_SSE0       = _mm_load1_pd((double *)(imask+i));
+        imask_SSE0       = _mm_load1_pd((double *)(imask+2*i));
         imask_SSE1       = _mm_load1_pd((double *)(imask+2*i+2));
         
         for(j=nj0; j<nj1; j+=UNROLLJ)

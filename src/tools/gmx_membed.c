@@ -3464,25 +3464,17 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bStartingFromCpt = FALSE;
 
         /* #######  SET VARIABLES FOR NEXT ITERATION IF THEY STILL NEED IT ###### */
-        /* Complicated conditional when bGStatEveryStep=FALSE.
-         * We can not just use bGStat, since then the simulation results
-         * would depend on nstenergy and nstlog or step_nscheck.
+	/* With all integrators, except VV, we need to retain the pressure
+         * at the current step for coupling at the next step.
          */
-        if (((state->flags & (1<<estPRES_PREV)) ||
-             (state->flags & (1<<estSVIR_PREV)) ||
-             (state->flags & (1<<estFVIR_PREV))) &&
+        if ((state->flags & (1<<estPRES_PREV)) &&
             (bGStatEveryStep ||
-             (ir->nstlist > 0 && step % ir->nstlist == 0) ||
-             (ir->nstlist < 0 && nlh.nabnsb > 0) ||
-             (ir->nstlist == 0 && bGStat)))
+             (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.
              */
-            if (state->flags & (1<<estPRES_PREV))
-            {
-                copy_mat(pres,state->pres_prev);
-            }
+            copy_mat(pres,state->pres_prev);
         }
 
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */
@@ -4291,20 +4283,20 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {
-			"g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position",
+			"[TT]g_membed[tt] embeds a membrane protein into an equilibrated lipid bilayer at the position",
 			"and orientation specified by the user.\n",
 			"\n",
 			"SHORT MANUAL\n------------\n",
 			"The user should merge the structure files of the protein and membrane (+solvent), creating a",
 			"single structure file with the protein overlapping the membrane at the desired position and",
 			"orientation. Box size should be taken from the membrane structure file. The corresponding topology",
-			"files should also be merged. Consecutively, create a tpr file (input for g_membed) from these files,"
-			"with the following options included in the mdp file.\n",
-			" - integrator      = md\n",
-			" - energygrp       = Protein (or other group that you want to insert)\n",
-			" - freezegrps      = Protein\n",
-			" - freezedim       = Y Y Y\n",
-			" - energygrp_excl  = Protein Protein\n",
+			"files should also be merged. Consecutively, create a [TT].tpr[tt] file (input for [TT]g_membed[tt]) from these files,"
+			"with the following options included in the [TT].mdp[tt] file.\n",
+			" - [TT]integrator      = md[tt][BR]",
+			" - [TT]energygrp       = Protein[tt] (or other group that you want to insert)[BR]",
+			" - [TT]freezegrps      = Protein[tt][BR]",
+			" - [TT]freezedim       = Y Y Y[tt][BR]",
+			" - [TT]energygrp_excl  = Protein Protein[tt][BR]",
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
 			"solvent molecules will be updated to match the new structure file.\n",
@@ -4452,7 +4444,7 @@ int gmx_membed(int argc,char *argv[])
   { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
     "HIDDENCheck for all bonded interactions with DD" },
   { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
-    "HIDDENUse special bonded atom communication when -rdd > cut-off" },
+    "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
   { "-rdd",     FALSE, etREAL, {&rdd},
     "HIDDENThe maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
   { "-rcon",    FALSE, etREAL, {&rconstr},
@@ -4484,17 +4476,17 @@ int gmx_membed(int argc,char *argv[])
   { "-reseed",  FALSE, etINT, {&repl_ex_seed},
     "HIDDENSeed for replica exchange, -1 is generate a seed" },
   { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
-    "HIDDENRecalculate virtual site coordinates with -rerun" },
+    "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
   { "-ionize",  FALSE, etBOOL,{&bIonize},
     "HIDDENDo a simulation including the effect of an X-Ray bombardment on your system" },
   { "-confout", TRUE, etBOOL, {&bConfout},
-    "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
+    "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
   { "-stepout", FALSE, etINT, {&nstepout},
     "HIDDENFrequency of writing the remaining runtime" },
   { "-resetstep", FALSE, etINT, {&resetstep},
     "HIDDENReset cycle counters after these many time steps" },
   { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-    "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
+    "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" },
   { "-v",       FALSE, etBOOL,{&bVerbose},
     "Be loud and noisy" },
   { "-maxh",   FALSE, etREAL, {&max_hours},

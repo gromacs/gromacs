@@ -311,7 +311,7 @@ void list_trx(const char *fn,gmx_bool bXVG)
   else if ((ftp == efTRR) || (ftp == efTRJ))
     list_trn(fn);
   else
-    fprintf(stderr,"File %s not supported. Try using more %s\n",
+    fprintf(stderr,"File %s is of an unsupported type. Try using the command\n 'less %s'\n",
 	    fn,fn);
 }
 
@@ -459,7 +459,7 @@ static void list_mtx(const char *fn)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "gmxdump reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
+    "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
     "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
     "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
     "and prints that to standard output in a readable format.",

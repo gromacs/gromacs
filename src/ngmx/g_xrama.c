@@ -307,11 +307,11 @@ static void mk_gly(t_app *app)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "xrama shows a Ramachandran movie, that is, it shows",
+    "[TT]g_xrama[tt] shows a Ramachandran movie, that is, it shows",
     "the Phi/Psi angles as a function of time in an X-Window.[PAR]"
-    "Static Phi/Psi plots for printing can be made with g_rama.[PAR]",
+    "Static Phi/Psi plots for printing can be made with [TT]g_rama[tt].[PAR]",
     "Some of the more common X command line options can be used:[BR]",
-    "-bg, -fg change colors, -font fontname, changes the font."
+    "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt], changes the font."
   };
 
   output_env_t oenv;

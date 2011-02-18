@@ -173,7 +173,7 @@ const char *egb_names[egbNR+1] = {
 };
 
 const char *esa_names[esaNR+1] = {
-  "No", "Ace-approximation", "Still", NULL
+  "Ace-approximation", "None", "Still", NULL
 };
 
 const char *ewt_names[ewtNR+1] = {

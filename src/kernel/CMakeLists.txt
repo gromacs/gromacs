@@ -40,23 +40,18 @@ set(MDRUN_SOURCES
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 set_target_properties(gmxpreprocess PROPERTIES OUTPUT_NAME "gmxpreprocess${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
-set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
 
 if(GMX_OPENMM) 
     add_subdirectory(gmx_gpu_utils)
-    include_directories(gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
-    link_directories(${OpenMM_LIBRARY_DIR})
-    # only define if this is a local build not a release 
-    # we assume that the auto-generated version is not used && 
-    # version string does not contain "-dev" => it's a release build
-    if(NOT USE_VERSION_H AND NOT PROJECT_VERSION MATCHES ".*-dev.*")  
-        add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
-    else()
-        add_definitions( -DOPENMM_PLUGIN_DIR="" )
-    endif()
-    add_library(openmm_api_wrapper openmm_wrapper.cpp)
-#    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
+    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
+    link_directories(${OpenMM_LIBRARY_DIR}) 
+    # with this define no evn.var. is needed with OPENMM_PLUGIN_DIR
+    # if the same OpenMM installation is used for running and building 
+    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
+    file(TO_CMAKE_PATH ${OpenMM_PLUGIN_DIR} _path)
+    add_library(openmm_api_wrapper STATIC openmm_wrapper.cpp)
+    target_link_libraries(openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})
     set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
 endif(GMX_OPENMM)
 
@@ -106,13 +101,7 @@ set_target_properties(gmxcheck PROPERTIES OUTPUT_NAME "gmxcheck${GMX_BINARY_SUFF
 
 add_executable(mdrun ${MDRUN_SOURCES})
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
-# set binary name to mdrun-gpu
-if(GMX_OPENMM OR GMX_GPU)
-    set(_mdrun_exec_name "mdrun-gpu${GMX_BINARY_SUFFIX}")    
-else()
-    set(_mdrun_exec_name "mdrun${GMX_BINARY_SUFFIX}")
-endif()
-set_target_properties(mdrun PROPERTIES OUTPUT_NAME "${_mdrun_exec_name}")
+set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
 
 # this is to circumvent the following MSVC error: 
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
@@ -122,6 +111,8 @@ if(GMX_OPENMM AND MSVC)
 endif()
 
 
+install(TARGETS gmxpreprocess DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 install(TARGETS 
         grompp
         tpbconv
@@ -131,20 +122,31 @@ install(TARGETS
         gmxdump
         g_x2top
         gmxcheck
-        mdrun
-	gmxpreprocess DESTINATION ${LIB_INSTALL_DIR}
+        COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
-
-get_target_property(MDRUN_PATH mdrun LOCATION)
-add_custom_target(install-mdrun
-        COMMAND ${CMAKE_COMMAND} -E copy "${MDRUN_PATH}" 
-            "${CMAKE_INSTALL_PREFIX}/bin/${_mdrun_exec_name}"
-        DEPENDS mdrun
+# Create the custom install-mdrun target
+if (BUILD_SHARED_LIBS)
+    # If shared libraries are used, we need to install the libraries in
+    # addition to the mdrun binary.
+    add_custom_target(install-mdrun
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=libraries
+                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=mdrun
+                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
         COMMENT "Installing mdrun")
+else (BUILD_SHARED_LIBS)
+    add_custom_target(install-mdrun
+        COMMAND ${CMAKE_COMMAND} -DCOMPONENT=mdrun
+                -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+        COMMENT "Installing mdrun")
+endif (BUILD_SHARED_LIBS)
+add_dependencies(install-mdrun mdrun)
 
 endif(GMX_FAHCORE)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgmxpreprocess.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig 
-  RENAME "libgmxpreprocess${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgmxpreprocess.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libgmxpreprocess${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)

@@ -302,7 +302,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
 		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
-                       ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
+                       ir->gb_algorithm,ir->sa_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
     }
 
 #ifdef GMX_MPI
@@ -529,6 +529,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     if (flags & GMX_FORCE_VIRIAL)
                     {
                         pme_flags |= GMX_PME_CALC_ENER_VIR;
+                    }
+                    if (fr->n_tpi > 0)
+                    {
+                        /* We don't calculate f, but we do want the potential */
+                        pme_flags |= GMX_PME_CALC_POT;
                     }
                     wallcycle_start(wcycle,ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,

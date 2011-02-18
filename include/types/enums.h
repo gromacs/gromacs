@@ -205,7 +205,7 @@ enum {
 };
 
 enum {
-  esaNO, esaAPPROX, esaSTILL, esaNR
+  esaAPPROX, esaNO, esaSTILL, esaNR
 };
 
 /* Wall types */

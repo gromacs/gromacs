@@ -677,11 +677,11 @@ static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 int gmx_sham(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
-    "g_sham reads one or more xvg files and analyzes data sets.",
-    "g_sham basic purpose is plotting Gibbs free energy landscapes",
+    "[TT]g_sham[tt] makes multi-dimensional free-energy, enthalpy and entropy plots.",
+    "[TT]g_sham[tt] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+    "The basic purpose of [TT]g_sham[tt] is to plot Gibbs free energy landscapes",
     "(option [TT]-ls[tt])",
-    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt])",
+    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",
     "but it can also",
     "make enthalpy (option [TT]-lsh[tt]) and entropy (option [TT]-lss[tt])",
     "plots. The histograms can be made for any quantities the user supplies.",
@@ -699,12 +699,12 @@ int gmx_sham(int argc,char *argv[])
     "[PAR]",
     "Option [TT]-ene[tt] can be used to supply a file with energies.",
     "These energies are used as a weighting function in the single",
-    "histogram analysis method due to Kumar et. al. When also temperatures",
-    "are supplied (as a second column in the file) an experimental",
+    "histogram analysis method by Kumar et. al. When temperatures",
+    "are supplied (as a second column in the file), an experimental",
     "weighting scheme is applied. In addition the vales",
     "are used for making enthalpy and entropy plots.",
     "[PAR]",
-    "With option [TT]-dim[tt] dimensions can be gives for distances.",
+    "With option [TT]-dim[tt], dimensions can be gives for distances.",
     "When a distance is 2- or 3-dimensional, the circumference or surface",
     "sampled by two particles increases with increasing distance.",
     "Depending on what one would like to show, one can choose to correct",
@@ -713,7 +713,7 @@ int gmx_sham(int argc,char *argv[])
     "respectively.",
     "A value of -1 is used to indicate an angle in degrees between two",
     "vectors: a sin(angle) normalization will be applied.",
-    "Note that for angles between vectors the inner-product or cosine",
+    "[BB]Note[bb] that for angles between vectors the inner-product or cosine",
     "is the natural quantity to use, as it will produce bins of the same",
     "volume."
   };
@@ -851,10 +851,10 @@ int gmx_sham(int argc,char *argv[])
   if (fn_ene && et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
-  snew(idim,nset);
-  snew(ibox,nset);
-  snew(rmin,nset);
-  snew(rmax,nset);
+  snew(idim,3);
+  snew(ibox,3);
+  snew(rmin,3);
+  snew(rmax,3);
   for(i=0; (i<min(3,nset)); i++) {
     idim[i] = nrdim[i];
     ibox[i] = nrbox[i];

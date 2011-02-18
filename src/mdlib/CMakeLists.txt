@@ -10,7 +10,7 @@ if(GMX_GPU)
             ${MDLIB_GPU_SOURCES}
             DEBUG -g -D_DEBUG_=1)
     else()
-        CUDA_ADD_LIBRARY(md_gpu 
+        CUDA_ADD_LIBRARY(md_cuda 
             ${MDLIB_GPU_SOURCES})
     endif()
 
@@ -27,14 +27,16 @@ list(REMOVE_ITEM MDLIB_SOURCES ${NOT_MDLIB_SOURCES})
 add_library(md ${MDLIB_SOURCES})
 
 if(GMX_GPU)
-    target_link_libraries(md md_gpu gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
+    target_link_libraries(md md_cuda gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
 else()
     target_link_libraries(md gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
 endif()
+set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
-set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION})
-
-install(TARGETS md DESTINATION ${LIB_INSTALL_DIR})
+install(TARGETS md DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libmd.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libmd.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libmd.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig RENAME "libmd${GMX_LIBS_SUFFIX}.pc")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libmd.pc
+        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+        RENAME "libmd${GMX_LIBS_SUFFIX}.pc"
+        COMPONENT development)

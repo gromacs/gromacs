@@ -184,12 +184,7 @@ const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf)
     }
     else
     {
-#if (defined( _WIN32 ) || defined( _WIN64 ) )
-        /* windows doesn't do standard C */
-#define snprintf sprintf_s
-#endif
-        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", 
-                 fio->comment ? fio->comment : "", desc);
+        snprintf(buf, GMX_FIO_BUFLEN, "  ; %s %s", fio->comment ? fio->comment : "", desc);
     }
     return buf;
 }
@@ -254,14 +249,14 @@ static void gmx_fio_set_iotype(t_fileio *fio)
 void gmx_fio_lock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_lock(&(fio->mtx));
+    tMPI_Lock_lock(&(fio->mtx));
 #endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
 #ifdef GMX_THREADS
-    tMPI_Spinlock_unlock(&(fio->mtx));
+    tMPI_Lock_unlock(&(fio->mtx));
 #endif
 }
 
@@ -276,7 +271,7 @@ static void gmx_fio_make_dummy(void)
         open_files->next=open_files;
         open_files->prev=open_files;
 #ifdef GMX_THREADS
-        tMPI_Spinlock_init(&(open_files->mtx));
+        tMPI_Lock_init(&(open_files->mtx));
 #endif
     }
 }
@@ -491,7 +486,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
 
     snew(fio, 1);
 #ifdef GMX_THREADS
-    tMPI_Spinlock_init(&(fio->mtx));
+    tMPI_Lock_init(&(fio->mtx));
 #endif
     bRead = (newmode[0]=='r' && newmode[1]!='+');
     bReadWrite = (newmode[1]=='+');
@@ -1087,7 +1082,7 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     gmx_fio_lock(fio);
     if (fio->fp)
     {
-        gmx_fseek(fio->fp, fpos, SEEK_SET);
+        rc = gmx_fseek(fio->fp, fpos, SEEK_SET);
     }
     else
     {

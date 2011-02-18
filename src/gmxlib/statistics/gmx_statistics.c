@@ -180,11 +180,6 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             return estatsNO_POINTS;
         }
       
-        if (weight != elsqWEIGHT_NONE)
-        {
-            return estatsNOT_IMPLEMENTED;
-        }
-        
         xx = xx_nw = 0;
         yy = yy_nw = 0;
         yx = yx_nw = 0;

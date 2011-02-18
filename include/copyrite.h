@@ -55,8 +55,8 @@ static const char *
 CopyrightText[] = {
   "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
   "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
-  "Gerrit Groenhof, Peter Kasson, Per Larsson, Peiter Meulenhoff, ",
-  "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schultz, ",
+  "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
+  "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
   "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
   "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
   "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
