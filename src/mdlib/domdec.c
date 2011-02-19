@@ -1477,7 +1477,7 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state_local->flags & (1<<est))
+        if (EST_DISTR(est) && (state_local->flags & (1<<est)))
         {
             switch (est) {
             case estX:
@@ -1559,7 +1559,7 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
     
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state->flags & (1<<est))
+        if (EST_DISTR(est) && (state->flags & (1<<est)))
         {
             switch(est) {
             case estX:
@@ -1752,7 +1752,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     }
     for(i=0; i<estNR; i++)
     {
-        if (EST_DISTR(i) && state_local->flags & (1<<i))
+        if (EST_DISTR(i) && (state_local->flags & (1<<i)))
         {
             switch (i) {
             case estX:
@@ -4125,7 +4125,7 @@ static void rotate_state_atom(t_state *state,int a)
 
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state->flags & (1<<est)) {
+        if (EST_DISTR(est) && (state->flags & (1<<est))) {
             switch (est) {
             case estX:
                 /* Rotate the complete state; for a rectangular box only */
@@ -7983,7 +7983,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     /* Reorder the state */
     for(i=0; i<estNR; i++)
     {
-        if (EST_DISTR(i) && state->flags & (1<<i))
+        if (EST_DISTR(i) && (state->flags & (1<<i)))
         {
             switch (i)
             {

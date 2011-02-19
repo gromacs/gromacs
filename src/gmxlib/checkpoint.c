@@ -1659,7 +1659,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         cp_error();
     }
     *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
-                  (flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE)));
+                  ((flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE))));
     
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);

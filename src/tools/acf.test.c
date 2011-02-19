@@ -109,6 +109,7 @@ int main(int argc,char *argv[])
 	data[i] = 1;
       else
 	data[i] = sin(x)/(x);
+      break;
     default:
       /* Data remains 0.0 */
       break;
