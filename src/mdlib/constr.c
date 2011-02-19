@@ -1038,8 +1038,13 @@ gmx_constr_t init_constraints(FILE *fplog,
                 } 
                 else if (ilist[F_SETTLE].iatoms[i] != settle_type) 
                 {
-                    gmx_fatal(FARGS,"More than one settle type.\n"
-                              "Suggestion: change the least use settle constraints into 3 normal constraints.");
+                    gmx_fatal(FARGS,
+                              "The [molecules] section of your topology specifies more than one block of\n"
+                              "a [moleculetype] with a [settles] block. Only one such is allowed. If you\n"
+                              "are trying to partition your solvent into different *groups* (e.g. for\n"
+                              "freezing, T-coupling, etc.) then you are using the wrong approach. Index\n"
+                              "files specify groups. Otherwise, you may wish to change the least-used\n"
+                              "block of molecules with SETTLE constraints into 3 normal constraints.");
                 }
             }
         }
