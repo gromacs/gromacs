@@ -337,7 +337,7 @@ typedef struct gmx_domdec_comm
     double load_pme;
 
     /* The last partition step */
-    gmx_large_int_t partition_step;
+    gmx_large_int_t globalcomm_step;
 
     /* Debugging */
     int  nstDDDump;
@@ -6576,7 +6576,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         check_dd_restrictions(cr,dd,ir,fplog);
     }
 
-    comm->partition_step = INT_MIN;
+    comm->globalcomm_step = INT_MIN;
     dd->ddp_count = 0;
 
     clear_dd_cycle_counts(dd);
@@ -8180,8 +8180,8 @@ void dd_partition_system(FILE            *fplog,
     bBoxChanged = (bMasterState || DEFORM(*ir));
     if (ir->epc != epcNO)
     {
-        /* With nstcalcenery > 1 pressure coupling happens.
-         * one step after calculating the energies.
+        /* With nstpcouple > 1 pressure coupling happens.
+         * one step after calculating the pressure.
          * Box scaling happens at the end of the MD step,
          * after the DD partitioning.
          * We therefore have to do DLB in the first partitioning
@@ -8189,7 +8189,7 @@ void dd_partition_system(FILE            *fplog,
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */
-        n = ir->nstcalcenergy;
+        n = ir->nstpcouple;
         if (n == 1)
         {
             step_pcoupl = step - 1;
@@ -8198,13 +8198,13 @@ void dd_partition_system(FILE            *fplog,
         {
             step_pcoupl = ((step - 1)/n)*n + 1;
         }
-        if (step_pcoupl >= comm->partition_step)
+        if (step_pcoupl >= comm->globalcomm_step)
         {
             bBoxChanged = TRUE;
         }
     }
 
-    bNStGlobalComm = (step >= comm->partition_step + nstglobalcomm);
+    bNStGlobalComm = (step >= comm->globalcomm_step + nstglobalcomm);
 
     if (!comm->bDynLoadBal)
     {
@@ -8610,8 +8610,11 @@ void dd_partition_system(FILE            *fplog,
                      -1,state_local->x,state_local->box);
     }
 
-    /* Store the partitioning step */
-    comm->partition_step = step;
+    if (bNStGlobalComm)
+    {
+        /* Store the global communication step */
+        comm->globalcomm_step = step;
+    }
     
     /* Increase the DD partitioning counter */
     dd->ddp_count++;
