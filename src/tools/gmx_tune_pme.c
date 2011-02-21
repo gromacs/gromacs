@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  *
@@ -934,10 +935,13 @@ static void make_benchmark_tprs(
         gmx_large_int_t statesteps, /* Step counter in checkpoint file               */
         real upfac,                 /* Scale rcoulomb inbetween downfac and upfac    */
         real downfac,
-        int ntprs,              /* No. of TPRs to write, each with a different rcoulomb and fourierspacing */
-        real fourierspacing,    /* Basic fourierspacing from tpr input file */
-        t_inputinfo *info,      /* Contains information about mdp file options */
-        FILE *fp)               /* Write the output here */
+        gmx_bool ScaleRvdw,
+        int *ntprs,                 /* No. of TPRs to write, each with a different
+                                       rcoulomb and fourierspacing. If not enough
+                                       grids are found, ntprs is reduced accordingly */
+        real fourierspacing,        /* Basic fourierspacing from tpr input file      */
+        t_inputinfo *info,          /* Contains information about mdp file options   */
+        FILE *fp)                   /* Write the output here                         */
 {
     int          i,j,d;
     t_inputrec   *ir;
@@ -981,6 +985,12 @@ static void make_benchmark_tprs(
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to or smaller than rlist (%f)",
                 EELTYPE(ir->coulombtype), ir->rcoulomb, ir->rlist);
+    }
+
+    if (ScaleRvdw && ir->rvdw != ir->rcoulomb)
+    {
+        fprintf(stdout,"NOTE: input rvdw != rcoulomb, will not scale rvdw\n");
+        ScaleRvdw = FALSE;
     }
 
     /* Reduce the number of steps for the benchmarks */
@@ -1074,10 +1084,17 @@ static void make_benchmark_tprs(
                 ir->rlist = ir->rcoulomb + nlist_buffer;
             }
 
-            if (evdwCUT == ir->vdwtype)
+            if (ScaleRvdw)
             {
-                /* For vdw cutoff, rvdw >= rlist */
-                ir->rvdw = max(info->rvdw[0], ir->rlist);
+                ir->rvdw = info->rvdw[0]*pmegrid[j].fac;
+            }
+            else 
+            {
+                if (evdwCUT == ir->vdwtype)
+                {
+                    /* For vdw cutoff, rvdw >= rlist */    
+                    ir->rvdw = max(info->rvdw[0], ir->rlist);
+                }
             }
 
             ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
@@ -2036,6 +2053,7 @@ int gmx_tune_pme(int argc,char *argv[])
     int        npme_fixed=-2;             /* If >= -1, use only this number
                                            * of PME-only nodes                */
     real       downfac=1.0,upfac=1.2;
+    gmx_bool   ScaleRvdw=TRUE;
     int        ntprs=0;
     real       fs=0.0;                    /* 0 indicates: not set by the user */
     gmx_large_int_t bench_nsteps=BENCHSTEPS;
@@ -2183,6 +2201,8 @@ int gmx_tune_pme(int argc,char *argv[])
         "Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling)" },
       { "-downfac",  FALSE, etREAL, {&downfac},
         "Lower limit for rcoulomb scaling factor" },
+      { "-scalevdw",  FALSE, etBOOL, {&ScaleRvdw},
+        "Scale rvdw along with rcoulomb"},
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of [TT].tpr[tt] files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
       { "-four",     FALSE, etREAL, {&fs},
@@ -2435,7 +2455,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* It can be that ntprs is reduced by make_benchmark_tprs if not enough
      * different grids could be found. */
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps,
-            cpt_steps, upfac, downfac, ntprs, fs, info, fp);
+            cpt_steps, upfac, downfac, ScaleRvdw, &ntprs, fs, info, fp);
 
 
     /********************************************************************************/
