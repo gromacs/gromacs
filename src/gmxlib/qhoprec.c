@@ -17,8 +17,13 @@ extern t_qhoprec *mk_qhoprec(void)
 /* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
 static void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
 {
-  int i;
+  int i, j;
   t_qhop_atom *a;
+  qhop_db *db;
+
+  db = qr->db;
+
+  /* Should probably set the massT array too. */
 
   for (i=0; i < qr->nr_qhop_atoms; i++)
     {
@@ -26,12 +31,20 @@ static void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
 
       md->bqhopacceptor[a->atom_id] = (a->state & eQACC) != 0;
       md->bqhopdonor[a->atom_id]    = (a->state & eQDON) != 0;
+
+      for (j=0; j < a->nr_protons; j++)
+	{
+	  if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] != 0)
+	    {
+	      md->massT[a->protons[j]] = 0;
+	    }
+	}
     }
 }
 
 /* Sets the interactions according to the hydrogen exstence map.
  * This requires a finalized t_mdatoms. */
-extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, t_mdatoms *md)
+extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, gmx_localtop_t *top, t_mdatoms *md, t_commrec *cr)
 {
   int i, j, nb, ft, target;
   qhop_db *db;
@@ -46,8 +59,7 @@ extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, t_mdatoms *md
       /* What flavour of the residue shall we set it to? */
       target = which_subRes(mtop, qhoprec, db, i);
       qres->res = target;
-      set_interactions(qhoprec, db, md, qhoprec->qhop_atoms, qres);
-
+      
       /* Alocate memory for the bonded index. */
       /* This should probably go to qhop_toputil.c */
       snew(qres->bindex.ilist_pos, F_NRE);
@@ -66,6 +78,9 @@ extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, t_mdatoms *md
 	      snew((qres->bindex.indexed[ft]), nb);
 	    }
 	}
+
+      set_interactions(qhoprec, db, top, md, qres, cr);
+
     }
 
   qhop_atoms2md(md, qhoprec);

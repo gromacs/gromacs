@@ -24,7 +24,8 @@ typedef struct {
     acceptor_id,
     proton_id,
     regime;
-  real E12,
+  real E12_0,
+    E12,
     DE_MM,
     Eb,
     rda,
@@ -40,6 +41,8 @@ typedef struct {
      in this more "object oriented" approach. The latter
      goes for most of the real data members here. */
   gmx_bool bFlip;
+  rvec xold, /* Where the acceptor proton used to be */
+    xnew;    /* Where the acceptor proton may end up */
 } t_hop;
 
 
@@ -119,7 +122,12 @@ typedef struct {
   t_qhop_residue *qhop_residues;
   qhop_db_s      db;
   gmx_rng_t      rng, rng_int;
-  gmx_bool       bFreshNlists;
+  gmx_bool       bFreshNlists, bHaveEbefore;
+  rvec           *f; /* Use this to avoid stupid segfaults that occur,
+		      * but shouldn't have to occur, when do_force() is
+		      * called with f==NULL */
+  real Ebefore_all,  /* These two are the same for all hops in a given qhop step, */
+    Ebefore_self;    /* Hence, we can do it once per step and store them here.    */
   int nr_hops,
     nr_qhop_residues,
     nr_qhop_atoms,

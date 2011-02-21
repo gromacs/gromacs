@@ -14,7 +14,7 @@ extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
   int n, i, nvdwparam, nti, ti;
   real *vdwparam, c[3];
 
-  /* Since we ran grompp with -nurenum we know that
+  /* Since we ran grompp with -norenum we know that
    * the last atomtype is the inert hydrogen.
    * This may change in future versions, however. */
 
@@ -38,7 +38,6 @@ extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 	  c[0]               = vdwparam[ti];
 	  c[1]               = vdwparam[ti+1];
 	  c[2]               = vdwparam[ti+2];
-	  
 	}
       else
 	{
@@ -59,6 +58,21 @@ extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
   return n;
 }
 
+extern void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
+{
+  int rt, r, bt, b, p, ft, btype, nr;
+  qhop_res *res;
+
+  nr = top->idef.ntypes + db->rb.ni;
+
+  srenew(top->idef.iparams,  nr);
+  srenew(top->idef.functype, nr);
+
+  memcpy(&(top->idef.iparams[top->idef.ntypes]),  db->rb.ilib,  db->rb.ni * sizeof(t_iparams));
+  memcpy(&(top->idef.functype[top->idef.ntypes]), db->rb.ftlib, db->rb.ni * sizeof(t_functype));
+
+  top->idef.ntypes = nr;
+}
 
 extern void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present)
 {
@@ -78,21 +92,23 @@ extern void unindex_ilists(t_qhop_residue *qres)
   for (i=0; i<F_NRE; i++)
     {
 	{
-	  for (j=0; j < qres->bindex.nr[F_NRE]; j++)
+	  for (j=0; j < qres->bindex.nr[i]; j++)
 	    {
-	      qres->bindex.indexed[F_NRE] = FALSE;
+	      qres->bindex.indexed[i][j] = FALSE;
 	    }
 	}
     }
   qres->nr_indexed = 0;
 }
 
-extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
-			 const gmx_localtop_t *top, const t_commrec *cr)
+extern void index_ilists(t_qhop_residue *qres,
+			 const qhop_db *db,
+			 const gmx_localtop_t *top,
+			 const t_commrec *cr)
 {
-  int b, i, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
+  int rt, b, i, prev, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
   gmx_bool bMatch, bDD;
-
+  
   const t_ilist *ilist = top->idef.il;;
 
   if (db->rb.bWater[qres->rtype])
@@ -100,19 +116,25 @@ extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
       return;
     }
 
-/* #define ASSUME_ORDERED_BONDS */
+  if (top == NULL)
+    {
+      gmx_fatal(FARGS, "NULL topology passed to index_ilists().");
+    }
 
-  bDD = DOMAINDECOMP(cr);
+  /* bDD = DOMAINDECOMP(cr); */
 
-  l2g = bDD ? cr->dd->gatindex : NULL; /* local to global atom translation */
+  rt = qres->rtype;
+
+  /* l2g = bDD ? cr->dd->gatindex : NULL; /\* local to global atom translation *\/ */
 
   unindex_ilists(qres);
 
+  /* Do the local top */
   for (bt=0; bt < ebtsNR; bt++)
     {
 
       itype = db->rb.btype[bt];
-      if (itype <= 0)
+      if (itype < 0)
 	{
 	  /* No bondeds of this type */
 	  continue;
@@ -120,17 +142,74 @@ extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
 
       nia = interaction_function[itype].nratoms;
 
-      i = 0;
-
       for (b=0; b < qres->bindex.nr[itype]; b++)
 	{
 	  /* get residue-local atom numbers */
-	  ra = db->rb.ba[qres->rtype][bt][b];
+	  ra = db->rb.ba[rt][bt][b];
 	  
 	  /* Loop the ilist */
-#ifndef ASSUME_ORDERED_BONDS
-	  i = 0; /* Start from the beginning for this next interaction. */
-#endif
+
+	  i=0;
+
+	  if (itype == F_PDIHS)
+	    {
+	      /* If we have dihedrals of type 9 we may
+	       * have several instances of the same
+	       * set of atoms. We can avoid indexing the
+	       * same ilist entry by starting our search
+	       * at the previous instace if there is one,
+	       * or at 0 if there is none.
+	       */
+	      bMatch = FALSE;
+
+	      for (prev=b-1; prev>=0; prev--)
+		{
+		  bMatch = TRUE;
+
+		  for (j=0; j<nia; j++)
+		    {
+		      if (ra[j] != db->rb.ba[rt][bt][prev][j])
+			{
+			  bMatch = FALSE;
+			  break;
+			}
+		    }
+
+		  if (!bMatch)
+		    {
+		      /* No? Try the atoms in reverse order. */
+		      bMatch = TRUE;
+		      for (j=0; j<nia; j++)
+			{
+			  if (ra[j] != db->rb.ba[rt][bt][prev][nia-j-1])
+			    {
+			      bMatch = FALSE;
+			      break;
+			    }
+			}
+		    }
+
+		  if (bMatch)
+		    {
+		      i = qres->bindex.ilist_pos[itype][prev] + nia + 1;
+		      break;
+		    }
+
+		} /* i-loop */
+
+	      if (!bMatch)
+		{
+		  /* No, we didn't find that set of atoms.
+		   * Start search from the beginning. */
+		  i = 0;
+		}
+
+	    }
+	  else
+	    {
+	      i = 0; /* Start from the beginning for this next interaction. */
+	    }
+
 	  bMatch = FALSE;
 
 	  while((i < ilist[itype].nr) && !bMatch)
@@ -142,8 +221,8 @@ extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
 	      for (j=0; j<nia; j++)
 		{
 		  /* Translate atoms in ilist to residue local numbers */
-		  ia = bDD ?
-		    l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0] : /* local != global*/
+		  ia = /* bDD ? */
+/* 		    l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0] : /\* local != global*\/ */
 		    ilist[itype].iatoms[i+j] - qres->atoms[0];       /* local != global*/
 
 		  if (ia != ra[j])
@@ -156,15 +235,15 @@ extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
 
 	      if (!bMatch)
 		{
-		  /* Test the other order */
+		  /* Test the atoms in reverse order */
 
 		  bMatch = TRUE;
 
 		  for (j=0; j<nia; j++)
 		    {
 		      /* Translate atoms in ilist to residue local numbers */
-		      ia = bDD ?
-			l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0] : /* local != global*/
+		      ia = /* bDD ? */
+/* 			l2g[ilist[itype].iatoms[i+j]] - qres->atoms[0] : /\* local != global*\/ */
 			ilist[itype].iatoms[i+j] - qres->atoms[0];       /* local != global*/
 
 		      if (ia != ra[nia-j-1])
@@ -174,38 +253,40 @@ extern void index_ilists(t_qhop_residue *qres, const qhop_db *db,
 			  break;
 			}
 		    }
-
 		}
 
-	      if (!bMatch)
+	      if (bMatch)
 		{ 
-		  i += (nia); /* proceed with next interaction */
-		}
-	      else
-		{
 		  /* Ok, we've found it */
 		  break;
 		}
 
-	    } /* while */
+	      i += (nia); /* proceed with next interaction */
+
+	    } /* while-loop over the ilist */
 
 	  if (bMatch)
 	    {
 	      /* interaction found. */
-	      qres->bindex.ilist_pos[itype][b] = (t_iatom)i;
-	      /* Should one store ft somewhere? */
+	      qres->bindex.ilist_pos[itype][b] = (t_iatom)(i-1); /* Must be -1 since we want the parameter
+								  * index that preceeds the atoms too. */
+	      /* Should one store ft somewhere? No it never changes. */
 	      qres->bindex.indexed[itype][b] = TRUE;
 	      qres->nr_indexed++;
 	    }
 	  else
 	    {
-	      gmx_fatal(FARGS, "Interaction not found in ilist");
+	      /* Constraints may be absent from the ilists */
+	      if (itype != F_CONSTR)
+		{
+		  gmx_fatal(FARGS, "Interaction not found in ilist");
+		}
 	    }
 
+	} /* bonded (b) loop */
 
-	} /* bonded loop*/
+    } /* bonded type (bt) loop */
 
-    }
 }
 
 /* returns the index in top->idef.il[?].iatom[] where bond to this proton is found. */
@@ -287,12 +368,14 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
       return;
     }
 
-  qhop_get_proton_bond_params(db, qr, qatom, top, proton_id, cr);
+  params =
+    qhop_get_proton_bond_params(db, qr, qatom, top, proton_id, cr)  /* position in ilib */
+    + top->idef.ntypes - db->rb.ni;                                 /* plus the offset */
   
-  if (DOMAINDECOMP(cr))
-    {
-      g2l = cr->dd->gatindex; /* use this to map global to local atomnumbers below */
-    }
+  /* if (DOMAINDECOMP(cr)) */
+/*     { */
+/*       g2l = cr->dd->gatindex; /\* use this to map global to local atomnumbers below *\/ */
+/*     } */
 
   /* Make a new entry at the end of the constraint ilist. */
   nr = top->idef.il[F_CONSTR].nr;
@@ -305,8 +388,8 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
     }
 
   top->idef.il[F_CONSTR].iatoms[nr]   = params;
-  top->idef.il[F_CONSTR].iatoms[nr+1] = DOMAINDECOMP(cr) ? g2l[heavy] : heavy;
-  top->idef.il[F_CONSTR].iatoms[nr+2] = DOMAINDECOMP(cr) ? g2l[h]     : h;
+  top->idef.il[F_CONSTR].iatoms[nr+1] = /* DOMAINDECOMP(cr) ? g2l[heavy] : */ heavy;
+  top->idef.il[F_CONSTR].iatoms[nr+2] = /* DOMAINDECOMP(cr) ? g2l[h]     : */ h;
   top->idef.il[F_CONSTR].nr += 3;
 
   /* Update bonded index */
@@ -527,48 +610,6 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 			    }
 			}
 
-
-		      /* How do we know the number of protons? We'll have to scan the rtp. */
-/* 		      for (b=0; b < db->rtp[reac->rtp].rb[ebtsBONDS].nb; b++) */
-/* 			{ */
-/* 			  rtp = &(db->rtp[reac->rtp]); */
-/* 			  n_H2[nDA2] = 0; */
-/* 			  for (a=0; a<2; a++) */
-/* 			    { */
-/* 			      /\* If the bond is between the donor and a H* then we ++ the hydrogen count *\/ */
-/* 			      DAname = rtp->rb[ebtsBONDS].b[b].a[a%2]; */
-/* 			      Hname  = rtp->rb[ebtsBONDS].b[b].a[(a+1)%2]; */
-
-/* 			      if ((strcmp(DAname, DAlist2[nDA2]) == 0) && */
-/* 				  (strncmp(Hname, "H", 1) == 0)) */
-/* 				{ */
-/* 				  /\* Yes, this H was connected to this donor/acceptor *\/ */
-/* 				  n_H2[nDA2]++; */
-/* 				} */
-/* 			    } */
-/* 			} */
-
-
-/* 		      /\* Is the proton count the same for the titrating_sites[] in qhop_residue? *\/ */
-/* 		      bMatch = FALSE; */
-/* 		      for (i=0; i<nDA; i++) */
-/* 			{ */
-/* 			  if (strcmp(DAlist2[nDA2], DAlist[i]) == 0) */
-/* 			    { */
-/* 			      /\* Same donor/acceptor *\/ */
-/* 			      if (n_H2[nDA2] == n_H[i]) */
-/* 				{ */
-/* 				  /\* Same proton count *\/ */
-/* 				  bMatch = TRUE; */
-/* 				} */
-/* 			    } */
-/* 			} */
-
-/* 		      if (!bMatch) */
-/* 			{ */
-/* 			  break; */
-/* 			} */
-
 		      nDA2++;
 		    }
 		}
@@ -695,47 +736,64 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
     }
 
   return r;
-
- 
-  /* Here's the other method, matching H-names exactly to the
-     residue subtypes. Makes gromacs a bit too strict perhaps. */
-
-  /* Make a list of all hydrogens for this restype */
-/*   qrtp = db->rb.rtp[qres->rtype]; /\* The rtp data *\/ */
-/*   natoms = db->rtp[qrtp].natom; */
-
-/*   for (i=0, nH=0; */
-/*        i < natoms; */
-/*        i++) */
-/*     { */
-/*       if (db->rtp[qrtp].atom[i].atomnumber == 1) */
-/* 	{ */
-/* 	  srenew(Hlist, nH+1); */
-/* 	  Hlist[nH] = *(db->rtp[qrtp].atomname[i]); */
-/* 	  nH++; */
-/* 	} */
-/*     } */
-
-  /* Loop over the residue subtypes and see which one matches */
-  /* for (r=0; r<nres; r++) */
-/*     { */
-/*       /\* scan the rtp *\/ */
-/*       for (j=0; j < db->nrtp; j++) */
-/* 	{ */
-/* 	  if (gmx_strcasecmp(db->rtp[j].resname, */
-/* 			     db->rb.res[qres->rtype][r]) == 0) */
-/* 	    { /\* Mathcing resnames! Now look at the protons. *\/ */
-/* 	      bSameRes = TRUE; */
-/* 	    } */
-/* 	} */
-/*     } */
 }
 
-extern void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod)
+extern void qhop_swap_bondeds(t_qhop_residue *swapres,
+			      qhop_res *prod,
+			      qhop_db *db,
+			      gmx_localtop_t *top,
+			      t_commrec *cr)
 {
-  /* placeholder. */
-  int i;
-  i=0;
+  int i, bt, b, bp, p, it, offset;
+  t_restp *rtp, *rtpr;
+  qhop_res *qres;
+
+
+  if (swapres->nr_indexed == 0)
+    {
+      index_ilists(swapres, db, top, cr);
+    }
+
+  qres = &(db->rb.res[swapres->rtype][swapres->res]);
+
+  rtp  = &(db->rtp[db->rb.rtp[swapres->rtype]]);
+  rtpr = &(db->rtp[qres->rtp]);
+
+  /* rb->ilib and top->idef.functype are offset by this much: */
+  offset = top->idef.ntypes - db->rb.ni;
+
+  for (bt=0; bt < ebtsNR; bt++)
+    {
+      it = db->rb.btype[bt]; /* Which ilist */
+
+      for (b=0; b < rtp->rb[bt].nb; b++)
+	{
+	  /* Which bonded is this in the subtype? */
+
+	  p = db->rb.inull[bt]; /* Point to the dummy parameter.
+				 * If this bond isn't present in the
+				 * biMap, then it should be a dummy interaction. */
+
+	  for (bp=0; bp < rtpr->rb[bt].nb; bp++)
+	    {
+	      if (qres->biMap[bt][bp] == b)
+		{
+		  p = prod->findex[bt][bp]; /* Parameter index */
+		  break;
+		}
+	    }
+
+	  /* Change bonded parameters */
+
+	  /* We need this check, since all constraints may not be
+	   * present in the ilists and may therefore be unindexed. */
+	  if (swapres->bindex.indexed[it][b])
+	    {
+	      top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]] =
+		p + offset;
+	    }
+	}
+    }
   
 }
 
@@ -790,7 +848,7 @@ static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int 
     {
       md->massA[atomid] = m;
     }
-
+  md->massT[atomid] = m;
   md->invmass[atomid] = (m==0 ? 0 : 1/m);
   
 }
@@ -862,6 +920,12 @@ extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 	md->massA[qa->protons[4]] = 0; /* vsite */
 	md->massA[qa->atom_id]    = 15.9994 + (nH-2)*1.008;
       }
+      md->massT[qa->protons[0]] = 1.008;
+      md->massT[qa->protons[1]] = 1.008;
+      md->massT[qa->protons[2]] = 0; /* vsite */
+      md->massT[qa->protons[3]] = 0; /* vsite */
+      md->massT[qa->protons[4]] = 0; /* vsite */
+      md->massT[qa->atom_id]    = 15.9994 + (nH-2)*1.008;
 
       md->invmass[qa->protons[0]] = 1/1.008;
       md->invmass[qa->protons[1]] = 1/1.008;
@@ -874,17 +938,24 @@ extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
 }
 
-extern void set_interactions(t_qhoprec *qr, const qhop_db *qdb, t_mdatoms *md, t_qhop_atom *QA, t_qhop_residue *qres)
+extern void set_interactions(t_qhoprec *qr,
+			     qhop_db *qdb,
+			     gmx_localtop_t *top,
+			     t_mdatoms *md,
+			     t_qhop_residue *qres,
+			     t_commrec *cr)
 {
   int i, j, k, nri, bt, b, Gr, RB, R;
   qhop_res *reac;
   t_restp *res;
+  t_qhop_atom *QA;
   
   /* point pointers at the right residue */
   Gr   = qres->res_nr; /* global res id. */
   RB   = qres->rtype;
   R    = qres->res;
   reac = &(qdb->rb.res[RB][R]);
+  QA = qr->qhop_atoms;
 
   for (i=0; i<qres->nr_titrating_sites; i++)
     {
@@ -917,7 +988,7 @@ extern void set_interactions(t_qhoprec *qr, const qhop_db *qdb, t_mdatoms *md, t
 	}
     }
 
-  qhop_swap_bondeds(qres, reac);
+  qhop_swap_bondeds(qres, reac, qdb, top, cr);
   qhop_swap_vdws(qres, reac, md, qdb);
   qhop_swap_m_and_q(qres, reac, md, qdb, qr);
   

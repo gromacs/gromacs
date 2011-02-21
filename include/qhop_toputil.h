@@ -10,6 +10,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
 /* Find the inert hydrogen (zero vdw params).
  * Finding it is trivial (it's the last atomtype),
@@ -35,6 +38,10 @@ extern void index_ilists(t_qhop_residue *qres,
    * wipe the ilist locations, but only marks them as obsolete. */
 extern void unindex_ilists(t_qhop_residue *qres);
 
+/* Attaches the ilib in db->rb to the end of top->idef.iparams
+ * and extends top->idef.functype accordingly. */
+extern void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db);
+
   /* Returns the index in top->idef.il[?].iatoms where the
    * parameters for the bond involving proton_id are found. */
 extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
@@ -51,7 +58,11 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 
 /*   Exchanges the current bonded interactions*/
 /*   for the ones defined by prod. */
-extern void qhop_swap_bondeds(t_qhop_residue *swapres, qhop_res *prod);
+extern void qhop_swap_bondeds(t_qhop_residue *swapres,
+			      qhop_res *prod,
+			      qhop_db *db,
+			      gmx_localtop_t *top,
+			      t_commrec *cr);
 
 /*   Exchanges the current vdw interactions
 /*   for the ones defined by prod by changing the atomtypes. */
@@ -69,12 +80,15 @@ extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
 /* Set the interaction parameters and
  * determine whether titraing sites are
- * acceptors, donors, or both. */
+ * acceptors, donors, or both.
+ * This function is only called when 
+ * initializing qhop. */
 extern void set_interactions(t_qhoprec *qr,
-			     const qhop_db *qdb,
+			     qhop_db *qdb,
+			     gmx_localtop_t *top,
 			     t_mdatoms *md,
-			     t_qhop_atom *QA,
-			     t_qhop_residue *qres);
+			     t_qhop_residue *qres,
+			     t_commrec *cr);
 
 /* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
 /* extern void qhop_atoms2md(t_mdatoms *md, */
@@ -94,10 +108,9 @@ extern int which_subRes(const gmx_mtop_t *top,
 			qhop_db *db,
 			const int resnr);
 
-
-  /* Put the interaction parameters in top.params */
-extern int insert_ilib_in_localtop(qhop_db *db, gmx_localtop_t *top);
-
+#if 0
+{
+#endif
 #ifdef __cplusplus
 }
 #endif

@@ -91,10 +91,16 @@ typedef struct qhop_res {
   /*   int nft; */
   int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
 
-  /* Here's an array that indexes functypes/parameters.
+  /* Here are arrays that indexes functypes/parameters.
    * it must match the rtp data.
+   * Since the ilib is attached to the end of the existing
+   * t_iparams* in the local topology, findex is indirectly
+   * an index to the parameters in the local topology:
+   * ilib[i] = top->idef.iparams[i + top->idef.ntypes - db->rb.ni]
+
    * findex[bt][b] */
-  t_functype **findex;
+  int       **findex; /* indexes the parameters in the ilib...  */
+  int      **mfindex; /* ... and the molecular topology.        */
 } qhop_res;
 
 typedef struct qhop_resblocks {
@@ -103,6 +109,7 @@ typedef struct qhop_resblocks {
   int *nres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
   qhop_res **res; /* has size [nrestypes][nres[i]] */
   gmx_bool *bWater; /* has size nrestypes */
+  gmx_bool *bInTop; /* has size nrestypes */
   int *rtp;       /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
 		   * Note that this is for the "residue families" only, e.g. qLYS.
 		   * Every related residue has its own index to the t_restp-array in qhop_reactant. */
@@ -110,9 +117,6 @@ typedef struct qhop_resblocks {
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.
    * They are needed to switch between protonation states. */
-/*   int ****iatoms;   /\* atoms involved in the interactions. iatoms[restype][bt][bi][...]*\/ */
-/*   int ***ft;        /\* index in rb.ilib. Matches the t_bondeds in qhop_db.rtp *\/ */
-/*   int ***mtop_ft;   /\* index in the mtop->ffparams.functype and ...iparams *\/ */
 
   char **files;     /* extra files containg additional parameters. */
   int  nf;          /* number of extra files */
@@ -123,19 +127,21 @@ typedef struct qhop_resblocks {
 		      * inner dimension  == bond/angle/dihedral
 		      * Matches the bonded interactions in the rtp-data */
 
-  int btype[ebtsNR]; /* which forcetype
-		      * correpond to the bonded interactions
-		      * in the rtp data? */
+  int btype[ebtsNR]; /* which forcetype correpond to the bonded interactions
+		      * in the rtp data? E.g. F_ANGLE ... */
+  int ftype[ebtsNR]; /* Which functype correpond to the bonded interactions
+		      * in the rtp data? E.g. dihedral type 9 */
 
-  int ni;           /* Size of ilib below. */
+  int ni;            /* Size of ilib below. */
 
-  /* t_ilist ilist[]; */
-  t_iparams *ilib;  /* The actual interaction parameters.
-		     * ilib[0] to ilib[ni-1] are real interactions,
-		     * the last two are dummy interactions with zeroed force constants;
-		     * one for bonds with a 0.1 nm reference distance, and one with only zeroes.
-		     * ilib will be appended to the iparams in some central t_idef.*/
-  int ft_null;      /* Here is the the dummy interaction in ilib. Perhaps we don't need to keep track of it, but let's do that for now. */
+  t_iparams *ilib;   /* The actual interaction parameters.
+		      * ilib will be appended to the iparams
+		      * in a gmx_localtop_t.idef */
+  t_functype *ftlib; /* Functypes for all parameters in ilib. */
+  int inull[ebtsNR];      /* Here are the the dummy interactions in ilib. 
+			   * We need one per bonded type since the functypes
+			   * differ for the dummy interactions although their
+			   * parameters are the same. */
 } qhop_resblocks;
 
 

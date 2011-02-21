@@ -30,19 +30,23 @@ extern qhop_resblocks_t qhop_resblock_init()
 
 /* btype is ebtsBONDS, ebtsANGLES, ...
  * bflavour specifies the functype. See the npbon[] in gmx_qhop_parm.h */
-extern int qhop_add_iparam(t_iparams **params, int *nparams, t_iparams *interaction, int btype, int bflavor)
+static int qhop_add_iparam(t_iparams **params, t_functype **ft, int *nparams, t_iparams *interaction, int btype, int bflavor, int ftype)
 {
   int p, np, i;
-
+  t_iparams par;
   gmx_bool bMatch;
 
   np = *nparams;
 
+  par = *interaction;
+  
   if (np == 0)
     {
       snew((*params), 1);
+      snew((*ft), 1);
       *nparams = 1;
-      (*params)[0] = *interaction; /* copy params */
+      (*params)[0] = par; /* copy params */
+      (*ft)[0] = ftype;
        return 0;
     }
 
@@ -52,11 +56,11 @@ extern int qhop_add_iparam(t_iparams **params, int *nparams, t_iparams *interact
       /* Assume that the params are type real.
        * This means that the following types of params are disallowed:
        *   tab, vsiten, disres, dihres, orires, and cmap */
-      for (i=0; i < npbon[btype][bflavor][0]; i++)
+      for (i=0; i < npbon[btype][bflavor-1][1]; i++)
 	{
-	  if (!(((real*)interaction)[i] != ((real*)&(params[p]))[p]))
+	  if (par.generic.buf[i] != (*params)[p].generic.buf[i])
 	    {
-	      bMatch == FALSE;
+	      bMatch = FALSE;
 
 	      break;
 	    }
@@ -70,9 +74,11 @@ extern int qhop_add_iparam(t_iparams **params, int *nparams, t_iparams *interact
     }
 
   /* It was not found, let's add it. */
-  srenew((*params), np+1);      /* expand the list */
+  srenew((*params), np+1);      /* expand the paramarray*/
+  srenew((*ft), np+1);          /* expand the functypearray */
   (*nparams)++;
   (*params)[np] = *interaction; /* copy params */
+  (*ft)[np]     = ftype;
   return np;
 }
 
@@ -84,13 +90,13 @@ static real read_next_param(const char *s, int *pos)
   real r;
 
   
-  n = sscanf(&(s[*pos]), "%d", &d);
+  n = sscanf(&(s[*pos]), "%lg", &d);
   r = (real)d;
     
   if (n <= 0)
     {
       /* No parameters read */
-      *pos = -1;
+      *pos = -2;
       return r;
     }
 
@@ -100,20 +106,31 @@ static real read_next_param(const char *s, int *pos)
   /* find next space */
   while (s[p] != '\0')
     {
+      if (s[p] == ' ')
+	{
+	  break;
+	}
+      p++;
+    }
+  
+  /* find next param */
+  while (s[p] != '\0')
+    {
       if (s[p] != ' ')
 	{
 	  /* Here starts the next param. */
 	  *pos = p;
 	  return r;
 	}
+      p++;
     }
-
+  
   /* We've reached the end of the string */
   *pos = -1;
   return r;
 }
 
-static t_iparams str2iparams(const char *s, int bt)
+static t_iparams str2iparams(const char *s, int bt, int ft, int *nread)
 {
   int i, pos, np;
   t_iparams params;
@@ -124,19 +141,28 @@ static t_iparams str2iparams(const char *s, int bt)
       gmx_fatal(FARGS, "Interaction parameters were empty.");
     }
 
+  memset(&params, 0, sizeof(t_iparams));
+
   pos = 0;
   np = 0;
+
   /* Keep reading until end of string or to last parameter in string */
-  while(pos >= 0 && i < MAXFORCEPARAM)
+  while(pos >= 0 && np < MAXFORCEPARAM)
     {
       p[np++] = read_next_param(s, &pos);
+
+      if (pos==-2)
+	{
+	  /* No parameters were read. */
+	  p[--np]=0;
+	}
     }
 
-  if (bt==ebtsBONDS)
-    {
-      /* make it a constraint. */
-      np = 1;
-    }
+/*   if (bt==ebtsBONDS) */
+/*     { */
+/*       /\* make it a constraint. *\/ */
+/*       np = 2; */
+/*     } */
 
   /* copy to params */
   for (i=0; i<np; i++)
@@ -144,56 +170,183 @@ static t_iparams str2iparams(const char *s, int bt)
       params.generic.buf[i] = p[i];
     }
 
+  if (ft == 8)
+    {
+      /* It's a table */
+      params.tab.table  = (int)p[0];
+      params.tab.kA     = (int)p[1];
+      params.tab.kB     = (np==3) ? (int)p[2] : (int)p[1];
+    }
+
+  if ((bt == ebtsPDIHS && (ft==1 || ft==9)) ||
+      (bt == ebtsIDIHS && ft==4))
+    {
+      params.pdihs.phiA  = p[0];
+      params.pdihs.cpA   = p[1];
+      params.pdihs.mult  = (int)p[2];
+      params.pdihs.phiB  = (np==5) ? p[3] : p[1];
+      params.pdihs.cpB   = (np==5) ? p[4] : p[2];
+    }
+
+  *nread = np;
   return params;
+}
+
+/* Copies A to B parameters (when needed) */
+static void postprocess_params(t_iparams *params, int nread, int bt, int ft)
+{
+  t_iparams p, op;
+  int i;
+
+  op = *params;
+  p = op;
+
+  switch (bt)
+    {
+    case ebtsBONDS:
+      switch (ft)
+	{
+	case 1: /* bond */
+	case 2: /* G96 bond */
+	case 6: /* harmonic */
+	  if (nread == 2)
+	    {
+	      p.harmonic.rB   = op.harmonic.rA;
+	      p.harmonic.krB  = op.harmonic.krA;
+	    }
+	  break;
+
+	case 10: /* restraint */
+	  if (nread == 4)
+	    {
+	      p.restraint.lowB  = op.restraint.lowA;
+	      p.restraint.up1B  = op.restraint.up1A;
+	      p.restraint.up2B  = op.restraint.up2A;
+	      p.restraint.kB    = op.restraint.kA;
+	    }
+	  break;
+	  
+	default:
+	  break;
+	}
+
+    case ebtsANGLES:
+      switch (ft)
+	{
+	case 1: /* angle */
+	case 2: /* G96 angle */
+	  if (nread == 2)
+	    {
+	      p.harmonic.rB   = op.harmonic.rA;
+	      p.harmonic.krB  = op.harmonic.krA;
+	    }
+	  break;
+
+	default:
+	  break;
+	}
+
+    case ebtsPDIHS:
+    case ebtsIDIHS:
+      switch (ft)
+	{
+	case 2: /* improper */
+	  if (nread == 2)
+	    {
+	      p.harmonic.rB   = op.harmonic.rA;
+	      p.harmonic.krB  = op.harmonic.krA;
+	    }
+	  break;
+
+	case 3: /* RB */
+	  if (nread == 6)
+	    {
+	      for (i=0; i<NR_RBDIHS; i++)
+		{
+		  p.rbdihs.rbcB[i] = p.rbdihs.rbcA[i];
+		}
+	    }
+	  break;
+
+	case 5: /* Fourier */
+	  if (nread == 4)
+	    {
+	      for (i=0; i<4; i++)
+		{
+		  p.rbdihs.rbcB[i] = p.rbdihs.rbcA[i];
+		}
+	    }
+	  break;
+	  
+	default:
+	  break;
+	}
+
+    }
+
+  *params = p;
 }
 
 /* Makes a library of bonded interaction parameters from rtp-data. */
 extern void make_ilib(qhop_db *db)
 {
-  int rt, r, bt, b, btype,  bf, np, fi;
-  t_restp *rtp;
+  int rt, r, bt, b, bf, np[ebtsNR], nptot, fi, i, nread;
+  int btype[ebtsNR] = {
+    ebtypeBOND,
+    ebtypeANGLE,
+    ebtypeDIHEDRAL,
+    ebtypeDIHEDRAL,
+    -1,
+    -1
+  }; /* must reflect the enums in hackblock.h */
 
-  t_iparams *ilib, params;
+  for (bt=0; bt<ebtsNR; bt++)
+    {
+      np[bt] = 0;
+    }
+
+  t_restp *rtp;
+  t_iparams *ilib, **il, params;
+  t_functype *ftlib, **ft;
 
   /* Start with an empty ilib */
-  ilib = NULL;
-  np = 0;
+  ilib  = NULL;
+  ftlib = NULL;
+  il = NULL;
+  ft = NULL;
+
+  snew(il, ebtsNR);
+  snew(ft, ebtsNR);
 
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
+      if ((db->rb.bWater[rt] && db->constrain!=0) || !db->rb.bInTop[rt])
+	{
+	  continue;
+	}
+
       for (r=0; r < db->rb.nres[rt]; r++)
 	{
 	  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
-
-	  switch (bt)
-	    {
-	    case ebtsBONDS:
-	      btype = ebtypeBOND;
-	      break;
-	    case ebtsANGLES:
-	      btype = ebtypeANGLE;
-	      break;
-	    case ebtsPDIHS:
-	    case ebtsIDIHS:
-	      btype = ebtypeDIHEDRAL;
-	      break;
-	    default:
-	      gmx_fatal(FARGS, "Bonded type not supported. bt = %i", bt);
-	    }
 
 	  for (bt=0; bt < ebtsNR; bt++)
 	    {
 	      for (b=0; b < rtp->rb[bt].nb; b++)
 		{
-		  params = str2iparams(rtp->rb[bt].b[b].s, bt);
-		  fi =  qhop_add_iparam(&ilib, &np, &params, btype, db->rb.btype[bt]);
-		  db->rb.res[rt][r].findex[bt][b] = fi;
-
-		  /* Was it a new parameter? */
-		  if (fi == db->rb.ni)
+		  if (btype[bt] == -1)
 		    {
-		      db->rb.ni++;
+		      gmx_fatal(FARGS, "Bonded type not supported. bt = %i", bt);
 		    }
+
+		  params = str2iparams(rtp->rb[bt].b[b].s, bt, db->rb.ftype[bt], &nread);
+
+		  /* Sometimes not all parameters are perturbable,
+		   * so we may have to shuffle around the params
+		   * a bit */
+		  postprocess_params(&params, nread, bt, db->rb.ftype[bt]);
+
+		  fi =  qhop_add_iparam(&(il[bt]), &(ft[bt]), &(np[bt]), &params, btype[bt], db->rb.ftype[bt], db->rb.btype[bt]);
+		  db->rb.res[rt][r].findex[bt][b] = fi;
 		}
 	    }
 	}
@@ -234,15 +387,57 @@ extern void make_ilib(qhop_db *db)
 /*   We really just need one null interaction. */
   memset(&params, 0, sizeof(t_iparams));
 
-  fi = qhop_add_iparam(&ilib, &np, &params, btype, db->rb.btype[bt]);
-  db->rb.ft_null = fi;
-  if (fi == db->rb.ni)
+  /* Stitch together the ilib and ftlib while adding dummy interactions. */
+  for (bt=0, nptot=0; bt < ebtsNR; bt++)
     {
-      db->rb.ni++;
+      db->rb.inull[bt] = NOTSET;
+
+      if (bt <= ebtsIDIHS)
+	{
+	  db->rb.inull[bt] = qhop_add_iparam(&(il[bt]), &(ft[bt]), &(np[bt]), &params, btype[bt], db->rb.ftype[bt], db->rb.btype[bt]) + nptot;
+
+	  /* Must shift the findex, now that we know how many params we have for each btype */
+	  for (rt=0; rt < db->rb.nrestypes; rt++)
+	    {
+	      if ((db->rb.bWater[rt] && db->constrain!=0) || !db->rb.bInTop[rt])
+		{
+		  continue;
+		}
+	      
+	      for (r=0; r < db->rb.nres[rt]; r++)
+		{
+		  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
+
+		  for (b=0; b < rtp->rb[bt].nb; b++)
+		    {
+		      db->rb.res[rt][r].findex[bt][b] += nptot;
+		    }
+		}
+	    }
+
+
+	  nptot += np[bt];
+
+	  srenew(ilib,  nptot);
+	  srenew(ftlib, nptot);
+
+	  for (i=0; i<np[bt]; i++)
+	    {
+	      /* memcpy(&(ilib[nptot-np[bt]]),  &(il[bt]), np[bt]*sizeof(t_iparams)); */
+	      /* memcpy(&(ftlib[nptot-np[bt]]), &(ft[bt]), np[bt]*sizeof(t_functype)); */
+	      ilib[nptot - np[bt] + i]  = il[bt][i];
+	      ftlib[nptot - np[bt] + i] = ft[bt][i];
+	    }
+
+	  sfree(il[bt]);
+	  sfree(ft[bt]);
+	}
     }
 
-  db->rb.ilib = ilib;
-  db->rb.ni = np;
+
+  db->rb.ilib  = ilib;
+  db->rb.ftlib = ftlib;
+  db->rb.ni = nptot;
 }
 
 #if 0
@@ -755,4 +950,5 @@ extern void qhop_done(qhop_t gqh)
     sfree(gqh->donor);
   if (gqh->acceptor)
     sfree(gqh->acceptor);
+
 }

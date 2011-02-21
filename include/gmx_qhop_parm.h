@@ -37,6 +37,8 @@ extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, in
 extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
 				 const atom_id H);
 
+extern void make_ilib(qhop_db *db);
+
 /* **********************
  * qhop parameter stuff *
  * ********************** */

@@ -433,6 +433,37 @@ static void clear_qhop_H_exist(qhop_H_exist Hext)
   sfree(Hext.atomid2H);
 }
 
+/* goes through the topology and tries to find which restypes are present.
+ * This helps avoiding trying to read parameters that aren't in the rtp. */
+static void flag_present_resblocks(qhop_db *db, gmx_mtop_t *top)
+{
+  int rt, molnr, resnr;
+  char *resname;
+  gmx_bool bNext;
+
+  snew(db->rb.bInTop, db->rb.nrestypes);
+
+  for (rt=0; rt < db->rb.nrestypes; rt++)
+    {
+      bNext = FALSE;
+
+      for (molnr=0; !bNext && molnr < top->nmoltype; molnr++)
+	{
+	  for (resnr=0; !bNext && resnr < top->moltype[molnr].atoms.nres; resnr++)
+	    {
+	      resname = *(top->moltype[molnr].atoms.resinfo[resnr].name);
+
+	      if (strcmp(resname, db->rb.restype[rt]) == 0)
+		{
+		  db->rb.bInTop[rt] = TRUE;
+		  bNext = TRUE;
+		  break;
+		}
+	    }
+	}
+    }
+}
+
 /* These routines link to invalid dependencies in kernel/resall.c! */
 /* Not anymore they don't! */
 static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
@@ -666,6 +697,9 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   
   done_atomtype(atype);
   sfree(fn);
+
+  flag_present_resblocks(qdb, top);
+
   return qdb;
 }
 
@@ -813,8 +847,16 @@ static int get_interaction_type(int bt, int type)
   switch (bt)
     {
     case ebtsBONDS:
-      /* For now, always do constraints */
-      it = F_CONSTR;
+      
+      if (type == -1)
+	{
+	  /* Use constraints. */
+	  it = F_CONSTR;
+	}
+      else
+	{
+	  it = type-1;
+	}
       break;
       
     case ebtsANGLES:
@@ -911,6 +953,12 @@ extern void qhop_db_names2nrs(qhop_db *db)
        * And since we're looping, we might as well translate all the atoms
        * in the bonded interactions to residue local atom indices. */
 
+      if (!db->rb.bInTop[rt])
+	{
+	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
+	  continue;
+	}
+
       fprintf(stderr, "Making bonded atom index for restype %i\n", rt);
 
       if (db->rb.ba[rt] == NULL)
@@ -932,6 +980,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	  it = get_interaction_type(bt, rtp->rb[bt].type);
 	  
 	  db->rb.btype[bt] = it;
+	  db->rb.ftype[bt] = rtp->rb[bt].type;
 	}
 
       /* Now translate atomnames to residue local atomnumbers. */
@@ -984,6 +1033,12 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
   /* Restypes */
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
+      if (!db->rb.bInTop[rt])
+	{
+	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
+	  continue;
+	}
+
       rtprt = &(db->rtp[db->rb.rtp[rt]]);
 
       /* Residue subtypes */
@@ -1016,14 +1071,20 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 
 extern void qhop_db_map_subres_bondeds(qhop_db *db)
 {
-  int rt, r, bt, br, brt, a, i, **map;
+  int rt, r, bt, br, brt, a, i, bprev, **map;
   gmx_bool bMatch;
   t_restp *rtpr, *rtprt;
   
 
   /* Restypes */
   for (rt=0; rt < db->rb.nrestypes; rt++)
-    {
+    {      
+      if (!db->rb.bInTop[rt])
+	{
+	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
+	  continue;
+	}
+
       rtprt = &(db->rtp[db->rb.rtp[rt]]);
 
       /* Residue subtypes */
@@ -1040,12 +1101,37 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
 	      snew(db->rb.res[rt][r].biMap[bt],  rtpr->rb[bt].nb);
 	      snew(db->rb.res[rt][r].findex[bt], rtpr->rb[bt].nb);
 
+	      bMatch = FALSE;
+
 	      /* Loop over bondeds in residue subtype r */
 	      for (br=0; br < rtpr->rb[bt].nb; br++)
 		{
 
+		  /* Dihedral type 9 are addative, so we
+		   * may find the same set of atoms several
+		   * times with different parameters. */
+		  for (bprev = br-1; bprev >= 0; bprev--)
+		    {
+		      bMatch = TRUE;
+		      for (a=0; a < btsNiatoms[bt]; a++)
+			{
+			  if(strcmp(rtpr-> rb[bt].b[br]. a[a],
+				    rtprt->rb[bt].b[brt].a[a]) != 0)
+			    {
+			      bMatch = FALSE;
+			      break;
+			    }
+			}
+		      if (bMatch)
+			{
+			  break;
+			}
+		    }
+
 		  /* Find counterpart in the restype. */
-		  for (brt=0; brt < rtprt->rb[bt].nb; brt++)
+		  for (brt = bMatch ? bprev+1 : 0;
+		       brt < rtprt->rb[bt].nb;
+		       brt++)
 		    {
 		      bMatch = TRUE;
 
