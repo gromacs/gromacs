@@ -59,7 +59,6 @@
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
-// #define NBS_BB_SSE4_1
 #ifdef GMX_SSE4_1
 #include <smmintrin.h>
 #endif
@@ -73,6 +72,15 @@
 #define NNBSBB_B  (2*NNBSBB_C)
 /* Neighbor search box upper and lower bound in z only. */
 #define NNBSBB_D  2
+
+#define SIMD_WIDTH       4
+#define SIMD_WIDTH_2LOG  2
+
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#define GMX_NBS_BBXXXX
+
+#define NNBSBB_XXXX      (NNBSBB_D*DIM*SIMD_WIDTH)
+#endif
 
 #define NSBOX_SHIFT_BACKWARD
 
@@ -90,6 +98,8 @@ typedef struct gmx_nbl_work {
     real *x_ci;        /* The coordinates, pbc shifted, for each atom       */
     int  sj_ind;       /* The current sj_ind index for the current list     */
     int  sj4_init;     /* The first unitialized sj4 block                   */
+
+    float *d2;         /* Bounding box distance work array                  */
 
     gmx_cache_protect_t cp1;
 } gmx_nbl_work_t;
@@ -127,6 +137,8 @@ typedef struct {
 
     int  *sort_work;
     int  sort_work_nalloc;
+
+    float *bb_tmp;
 
     gmx_nbs_cc_t cc[enbsCCnr];
 
@@ -296,15 +308,21 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,int natoms_subcell)
     }
 #endif
 
-    nbs->print_cycles = (getenv("GMX_NBS_CYCLE") != 0);
-    nbs_cycle_clear(nbs->cc);
-
+    /* Initialize the work data structures for each thread */
     snew(nbs->work,nbs->nthread_max);
     for(t=0; t<nbs->nthread_max; t++)
     {
         nbs->work[t].sort_work   = NULL;
         nbs->work[t].sort_work_nalloc = 0;
 
+        snew_aligned(nbs->work[t].bb_tmp,SIMD_WIDTH*NNBSBB_D,16);
+    }
+
+    /* Initialize detailed nbsearch cycle counting */
+    nbs->print_cycles = (getenv("GMX_NBS_CYCLE") != 0);
+    nbs_cycle_clear(nbs->cc);
+    for(t=0; t<nbs->nthread_max; t++)
+    {
         nbs_cycle_clear(nbs->work[t].cc);
     }
 }
@@ -363,7 +381,15 @@ static int set_grid_size_xy(gmx_nbsearch_t nbs,int n,matrix box)
         srenew(nbs->a,nbs->nc_nalloc*nbs->napc);
         srenew(nbs->nsubc,nbs->nc_nalloc);
         srenew(nbs->bbcz,nbs->nc_nalloc*NNBSBB_D);
+#ifdef GMX_NBS_BBXXXX
+        if (NSUBCELL % SIMD_WIDTH != 0)
+        {
+            gmx_incons("NSUBCELL is not a multiple of SIMD_WITH");
+        }
+        srenew(nbs->bb,nbs->nc_nalloc*NSUBCELL/SIMD_WIDTH*NNBSBB_XXXX);
+#else  
         srenew(nbs->bb,nbs->nc_nalloc*NSUBCELL*NNBSBB_B);
+#endif
     }
 
     nbs->sx = box[XX][XX]/nbs->ncx;
@@ -506,9 +532,40 @@ static void calc_bounding_box(int na,int stride,const real *x,real *bb)
     bb[6] = zh;
 }
 
+static void calc_bounding_box_xxxx(int na,int stride,const real *x,real *bb)
+{
+    int  i,j;
+    real xl,xh,yl,yh,zl,zh;
+
+    i = 0;
+    xl = x[i+XX];
+    xh = x[i+XX];
+    yl = x[i+YY];
+    yh = x[i+YY];
+    zl = x[i+ZZ];
+    zh = x[i+ZZ];
+    i += stride;
+    for(j=1; j<na; j++)
+    {
+        xl = min(xl,x[i+XX]);
+        xh = max(xh,x[i+XX]);
+        yl = min(yl,x[i+YY]);
+        yh = max(yh,x[i+YY]);
+        zl = min(zl,x[i+ZZ]);
+        zh = max(zh,x[i+ZZ]);
+        i += stride;
+    }
+    bb[ 0] = xl;
+    bb[ 4] = yl;
+    bb[ 8] = zl;
+    bb[12] = xh;
+    bb[16] = yh;
+    bb[20] = zh;
+}
+
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
 
-static void calc_bounding_box_sse(int na,const real *x,real *bb)
+static void calc_bounding_box_sse(int na,const real *x,float *bb)
 {
     __m128 bb_0_SSE,bb_1_SSE;
     __m128 x_SSE;
@@ -527,6 +584,20 @@ static void calc_bounding_box_sse(int na,const real *x,real *bb)
 
     _mm_store_ps(bb  ,bb_0_SSE);
     _mm_store_ps(bb+4,bb_1_SSE);
+}
+
+static void calc_bounding_box_xxxx_sse(int na,const real *x,
+                                       float *bb_tmp,
+                                       real *bb)
+{
+    calc_bounding_box_sse(na,x,bb_tmp);
+
+    bb[ 0] = bb_tmp[0];
+    bb[ 4] = bb_tmp[1];
+    bb[ 8] = bb_tmp[2];
+    bb[12] = bb_tmp[4];
+    bb[16] = bb_tmp[5];
+    bb[20] = bb_tmp[6];
 }
 
 #endif
@@ -662,6 +733,7 @@ static void sort_columns(gmx_nbsearch_t nbs,
     int  subdiv_y,sub_y,na_y,ash_y;
     int  subdiv_x,sub_x,na_x,ash_x;
     real *xnb;
+    real *bb_ptr;
 
     subdiv_x = nbs->naps;
     subdiv_y = NSUBCELL_X*subdiv_x;
@@ -745,18 +817,36 @@ static void sort_columns(gmx_nbsearch_t nbs,
                                                nbs->naps*(cy*NSUBCELL_Y+sub_y),
                                                nbs->naps*sub_z);
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef GMX_NBS_BBXXXX
+                        /* Store the bounding boxes in a format convenient
+                         * for SSE calculations: xxxxyyyyzzzz...
+                         */
+                        bb_ptr =
+                            nbs->bb +
+                            (ash_x>>(nbs->naps2log+SIMD_WIDTH_2LOG))*NNBSBB_XXXX +
+                            ((ash_x>>nbs->naps2log) & (SIMD_WIDTH-1));
+
+                        /* There is something wrong with this
+                         * calc_bounding_box_xxxx_sse function or call.
+                         * the results are incorrect.
                         if (nbat->XFormat == nbatXYZQ)
                         {
-                            calc_bounding_box_sse(na_x,xnb,
-                                                  nbs->bb+(ash_x>>nbs->naps2log)*NNBSBB_B);
+                            calc_bounding_box_xxxx_sse(na_x,xnb,
+                                                       nbs->work->bb_tmp,
+                                                       bb_ptr);
                         }
                         else
-#endif
+                        */
                         {
-                        calc_bounding_box(na_x,nbat->xstride,xnb,
-                                          nbs->bb+(ash_x>>nbs->naps2log)*NNBSBB_B);
+                            calc_bounding_box_xxxx(na_x,nbat->xstride,xnb,
+                                                   bb_ptr);
                         }
+#else
+                        /* Store the bounding boxes as xyz.xyz. */
+                        bb_ptr = nbs->bb+(ash_x>>nbs->naps2log)*NNBSBB_B;
+
+                        calc_bounding_box(na_x,nbat->xstride,xnb,
+                                          bb_ptr);
 
                         if (gmx_debug_at)
                         {
@@ -769,6 +859,7 @@ static void sort_columns(gmx_nbsearch_t nbs,
                                     (nbs->bb+(ash_x/nbs->naps)*NNBSBB_B)[2],
                                     (nbs->bb+(ash_x/nbs->naps)*NNBSBB_B)[6]);
                         }
+#endif
                     }
                     else
                     {
@@ -1140,7 +1231,77 @@ static real subc_bb_dist2_sse(int naps,
     return d2_align[0] + d2_align[1] + d2_align[2];
 }
 
-#ifdef NBS_BB_SSE4_1
+static void subc_bb_dist2_sse_xxxx(const real *bb_j,
+                                   int nsi,const real *bb_i,
+                                   float *d2)
+{
+    int si;
+    int shi;
+
+    __m128 xj_l,yj_l,zj_l;
+    __m128 xj_h,yj_h,zj_h;
+    __m128 xi_l,yi_l,zi_l;
+    __m128 xi_h,yi_h,zi_h;
+
+    __m128 dx_0,dy_0,dz_0;
+    __m128 dx_1,dy_1,dz_1;
+
+    __m128 mx,my,mz;
+    __m128 m0x,m0y,m0z;
+
+    __m128 d2x,d2y,d2z;
+    __m128 d2s,d2t;
+
+    __m128 zero;
+
+    zero = _mm_setzero_ps();
+
+    xj_l = _mm_load1_ps(bb_j+0*SIMD_WIDTH);
+    yj_l = _mm_load1_ps(bb_j+1*SIMD_WIDTH);
+    zj_l = _mm_load1_ps(bb_j+2*SIMD_WIDTH);
+    xj_h = _mm_load1_ps(bb_j+3*SIMD_WIDTH);
+    yj_h = _mm_load1_ps(bb_j+4*SIMD_WIDTH);
+    zj_h = _mm_load1_ps(bb_j+5*SIMD_WIDTH);
+
+    for(si=0; si<nsi; si+=SIMD_WIDTH)
+    {
+        shi = si*NNBSBB_D*DIM;
+
+        xi_l = _mm_load_ps(bb_i+shi+0*SIMD_WIDTH);
+        yi_l = _mm_load_ps(bb_i+shi+1*SIMD_WIDTH);
+        zi_l = _mm_load_ps(bb_i+shi+2*SIMD_WIDTH);
+        xi_h = _mm_load_ps(bb_i+shi+3*SIMD_WIDTH);
+        yi_h = _mm_load_ps(bb_i+shi+4*SIMD_WIDTH);
+        zi_h = _mm_load_ps(bb_i+shi+5*SIMD_WIDTH);
+
+        dx_0 = _mm_sub_ps(xi_l,xj_h);
+        dy_0 = _mm_sub_ps(yi_l,yj_h);
+        dz_0 = _mm_sub_ps(zi_l,zj_h);
+
+        dx_1 = _mm_sub_ps(xj_l,xi_h);
+        dy_1 = _mm_sub_ps(yj_l,yi_h);
+        dz_1 = _mm_sub_ps(zj_l,zi_h);
+
+        mx   = _mm_max_ps(dx_0,dx_1);
+        my   = _mm_max_ps(dy_0,dy_1);
+        mz   = _mm_max_ps(dz_0,dz_1);
+
+        m0x  = _mm_max_ps(mx,zero);
+        m0y  = _mm_max_ps(my,zero);
+        m0z  = _mm_max_ps(mz,zero);
+
+        d2x  = _mm_mul_ps(m0x,m0x);
+        d2y  = _mm_mul_ps(m0y,m0y);
+        d2z  = _mm_mul_ps(m0z,m0z);
+
+        d2s  = _mm_add_ps(d2x,d2y);
+        d2t  = _mm_add_ps(d2s,d2z);
+
+        _mm_store_ps(d2+si,d2t);
+    }
+}
+
+#ifdef GMX_SSE4_1
 static real subc_bb_dist2_sse4_1(int naps,
                                  int si,const real *bb_i_ci,
                                  int csj,const real *bb_j_all)
@@ -1441,8 +1602,13 @@ void gmx_nblist_init(gmx_nblist_t *nbl,
     set_no_excls(&nbl->excl[0]);
 
     snew(nbl->work,1);
+#ifdef GMX_NBS_BBXXXX
+    snew_aligned(nbl->work->bb_ci,NSUBCELL/SIMD_WIDTH*NNBSBB_XXXX,16);
+#else
     snew_aligned(nbl->work->bb_ci,NSUBCELL*NNBSBB_B,16);
+#endif
     snew_aligned(nbl->work->x_ci,NBL_NAPC_MAX*DIM,16);
+    snew_aligned(nbl->work->d2,NSUBCELL,16);
 }
 
 static void print_nblist_statistics(FILE *fp,const gmx_nblist_t *nbl,
@@ -1582,13 +1748,14 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
     unsigned imask;
     gmx_nbl_sj4_t *sj4;
     const real *bb_ci,*x_ci;
-    real d2;
+    float *d2l,d2;
     int  w;
 #define GMX_PRUNE_NBL_CPU_ONE
 #ifdef GMX_PRUNE_NBL_CPU_ONE
     int  si_last=-1;
-    real d2_last=0;
 #endif
+
+    d2l = nbl->work->d2;
 
     bb_ci = nbl->work->bb_ci;
     x_ci  = nbl->work->x_ci;
@@ -1616,23 +1783,20 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
             si1 = nbs->nsubc[ci];
         }
 
+#ifdef GMX_NBS_BBXXXX
+        /* Determine all si1 bb distances in one call with SSE */
+        subc_bb_dist2_sse_xxxx(nbs->bb+(csj>>SIMD_WIDTH_2LOG)*NNBSBB_XXXX+(csj & (SIMD_WIDTH-1)),
+                               si1,bb_ci,d2l);
+#endif
+
         npair = 0;
         for(si=0; si<si1; si++)
         {
-            csi = ci*NSUBCELL + si;
-
-            /* These calls should be selected at run time based on the CPU,
-             * not at compile time.
-             */
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-#ifdef NBS_BB_SSE4_1
-            d2 = subc_bb_dist2_sse4_1(naps,si,bb_ci,csj,nbs->bb);
-#else
-            d2 = subc_bb_dist2_sse(naps,si,bb_ci,csj,nbs->bb);
+#ifndef GMX_NBS_BBXXXX
+            /* Determine the bb distance between csi and csj */
+            d2l[si] = subc_bb_dist2(naps,si,bb_ci,csj,nbs->bb);
 #endif
-#else
-            d2 = subc_bb_dist2(naps,si,bb_ci,csj,nbs->bb);
-#endif
+            d2 = d2l[si];
 
 /* #define GMX_PRUNE_NBL_CPU */
 #ifdef GMX_PRUNE_NBL_CPU
@@ -1655,7 +1819,6 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
 
 #ifdef GMX_PRUNE_NBL_CPU_ONE
                 si_last = si;
-                d2_last = d2;
 #endif
 
                 npair++;
@@ -1666,7 +1829,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
         /* If we only found 1 pair, check if any atoms are actually
          * within the cut-off, so we could get rid of it.
          */
-        if (npair == 1 && d2_last >= rbb2)
+        if (npair == 1 && d2l[si_last] >= rbb2)
         {
             if (!nbs->subc_dc(naps,si_last,x_ci,csj,stride,x,rl2))
             {
@@ -1930,8 +2093,23 @@ static void set_supcell_i_bb(const real *bb,int ci,
                              real shx,real shy,real shz,
                              real *bb_ci)
 {
-    int ia,i;
+    int ia,m,i;
     
+#ifdef GMX_NBS_BBXXXX
+    ia = ci*(NSUBCELL>>SIMD_WIDTH_2LOG)*NNBSBB_XXXX;
+    for(m=0; m<(NSUBCELL>>SIMD_WIDTH_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
+    {
+        for(i=0; i<SIMD_WIDTH; i++)
+        {
+            bb_ci[m+ 0+i] = bb[ia+m+ 0+i] + shx;
+            bb_ci[m+ 4+i] = bb[ia+m+ 4+i] + shy;
+            bb_ci[m+ 8+i] = bb[ia+m+ 8+i] + shz;
+            bb_ci[m+12+i] = bb[ia+m+12+i] + shx;
+            bb_ci[m+16+i] = bb[ia+m+16+i] + shy;
+            bb_ci[m+20+i] = bb[ia+m+20+i] + shz;
+        }
+    }
+#else
     ia = ci*NSUBCELL*NNBSBB_B;
     for(i=0; i<NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
     {
@@ -1942,6 +2120,7 @@ static void set_supcell_i_bb(const real *bb,int ci,
         bb_ci[i+5] = bb[ia+i+5] + shy;
         bb_ci[i+6] = bb[ia+i+6] + shz;
     }
+#endif
 }
 
 static void supcell_set_i_x(const gmx_nbsearch_t nbs,int ci,
