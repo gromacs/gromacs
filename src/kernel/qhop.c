@@ -1196,6 +1196,8 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
 
   db->inertH = find_inert_atomtype(mtop, fr);
 
+  qhoprec->db->constrain = ir->qhopconstr;
+
   qhoprec->hop = NULL;
   qhoprec->db = db;
 

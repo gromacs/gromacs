@@ -1025,6 +1025,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("qhop-mode", ir->qhopmode, qhop_names);
   STYPE ("qhop-hydrogens",  qhopH,          NULL);
   ITYPE ("qhopfreq",  ir->qhopfreq,         10);
+  EETYPE("qhop-mode", ir->qhopconstr, constraints);
 
 
 

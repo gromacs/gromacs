@@ -292,6 +292,7 @@ typedef struct {
   gmx_bool bqhop;
   int   qhopfreq;
   int   qhopmode;
+  int   qhopconstr;
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
