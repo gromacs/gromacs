@@ -1534,8 +1534,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if(fr->bqhop)
     {
 /*         init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms, &qhop_database); */
-
-        finalize_qhoprec(fr->qhoprec, top_global, mdatoms);
+        /* Finalize qhoprec and mdatoms, extend the topology */
+        make_ilib(fr->qhoprec->db);
+        qhop_attach_ilib(top, fr->qhoprec->db);
+        finalize_qhoprec(fr->qhoprec, top_global, top, mdatoms, cr);
 
         if (fr->qhoprec->db == NULL)
             gmx_fatal(FARGS, "qhop_database not set");
