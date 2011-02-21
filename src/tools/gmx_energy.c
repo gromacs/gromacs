@@ -1216,6 +1216,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
+    gmx_bool changing_lambda;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)
@@ -1244,6 +1245,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
             delta_time =   fr->block[i].sub[0].dval[2];
             start_lambda = fr->block[i].sub[0].dval[3];
             delta_lambda = fr->block[i].sub[0].dval[4];
+            changing_lambda = (delta_lambda != 0);
         }
     }
 
@@ -1272,7 +1274,14 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         }
         *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
                                oenv);
-        sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+        if (! changing_lambda)
+        {
+            sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+        }
+        else
+        {
+            sprintf(buf,"T = %g (K)", temp);
+        }
         xvgr_subtitle(*fp_dhdl,buf,oenv);
         first=TRUE;
     }
@@ -1318,8 +1327,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
 
                     if (!derivative)
                     {
-                        sprintf(legend,
-                                "N(%s(%s=%g) | %s=%g)",
+                        sprintf(legend, "N(%s(%s=%g) | %s=%g)",
                                 deltag, lambda, foreign_lambda, 
                                 lambda, start_lambda);
                     }
@@ -1362,7 +1370,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         char **setnames=NULL;
         int nnames=nblock_dh;
 
-        if (fabs(delta_lambda) > 1e-9)
+        if (changing_lambda)
         {
             nnames++;
         }
@@ -1372,7 +1380,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         }
         j=0;
 
-        if (fabs(delta_lambda) > 1e-9)
+        if ( changing_lambda && first)
         {
             /* lambda is a plotted value */
             setnames[j]=gmx_strdup(lambda);
@@ -1400,8 +1408,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     }
                     else
                     {
-                        sprintf(buf, "%s %s %g",deltag,lambda,
-                                foreign_lambda);
+                        sprintf(buf, "%s %s %g",deltag,lambda, foreign_lambda);
                     }
                     setnames[j] = gmx_strdup(buf);
                     j++;
@@ -1415,8 +1422,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                 {
                     if (len!=blk->sub[2].nr)
                     {
-                        gmx_fatal(FARGS, 
-                                  "Length inconsistency in dhdl data");
+                        gmx_fatal(FARGS, "Length inconsistency in dhdl data");
                     }
                 }
             }

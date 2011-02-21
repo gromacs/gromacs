@@ -1161,7 +1161,7 @@ int gmx_trjconv(int argc,char *argv[])
             file_nr  =  0;  
             frame    =  0;
             outframe =  0;
-            model_nr = -1;
+            model_nr =  0;
             bDTset   = FALSE;
 
             /* Main loop over frames */

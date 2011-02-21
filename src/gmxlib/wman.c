@@ -1011,6 +1011,7 @@ static void write_py(FILE *out,const char *program,
       for(j=2; (pa[i].u.c[j] != NULL); j++)
 	fprintf(out,",'%s'",pa[i].u.c[j]);
       fprintf(out,"],%d))\n",is_hidden(&(pa[i])));
+      break;
     default:
       break;
     }

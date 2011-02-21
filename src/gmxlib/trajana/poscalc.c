@@ -1094,7 +1094,8 @@ void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
     gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
-    if (!(pc->flags & POS_DYNAMIC))
+    /* Only do the static optimization when there is no completion */
+    if (!(pc->flags & POS_DYNAMIC) && pc->b.nra == pc->gmax.isize)
     {
         gmx_ana_indexmap_set_static(&p->m, &pc->b);
     }

@@ -2846,7 +2846,7 @@ void calc_bonds_lambda(FILE *fplog,
   for(ftype=0; (ftype<F_NRE); ftype++) {
       if(ftype<F_GB12 || ftype>F_GB14) {
           
-          if (interaction_function[ftype].flags & IF_BOND &&
+          if ((interaction_function[ftype].flags & IF_BOND) &&
               !(ftype == F_CONNBONDS || ftype == F_POSRES)) 
           {
               nbonds_np = idef->il[ftype].nr_nonperturbed;
