@@ -312,6 +312,10 @@ typedef struct gmx_domdec_comm
 #ifdef GMX_MPI
     MPI_Comm *mpi_comm_load;
 #endif
+
+    /* Maximum DLB scaling per load balancing step in percent */
+    int dlb_scale_lim;
+
     /* Cycle counters */
     float cycl[ddCyclNr];
     int   cycl_n[ddCyclNr];
@@ -3180,12 +3184,15 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     real *cell_size;
     real load_aver,load_i,imbalance,change,change_max,sc;
     real cellsize_limit_f,dist_min_f,dist_min_f_hard,space;
-    real change_limit = 0.1;
+    real change_limit;
     real relax = 0.5;
     gmx_bool bPBC;
     int range[] = { 0, 0 };
 
     comm = dd->comm;
+
+    /* Convert the maximum change from the input percentage to a fraction */
+    change_limit = comm->dlb_scale_lim*0.01;
 
     ncd = dd->nc[dim];
 
@@ -6193,6 +6200,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     dd->bScrewPBC = (ir->ePBC == epbcSCREW);
     
     dd->bSendRecv2      = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
+    comm->dlb_scale_lim = dd_nst_env(fplog,"GMX_DLB_MAX",10);
     comm->eFlop         = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
     recload             = dd_nst_env(fplog,"GMX_DD_LOAD",1);
     comm->nstSortCG     = dd_nst_env(fplog,"GMX_DD_SORT",1);
