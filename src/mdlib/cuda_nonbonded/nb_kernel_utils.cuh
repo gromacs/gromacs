@@ -1,4 +1,5 @@
-#include "cudatype_utils.h"
+#ifndef _NB_KERNEL_UTILS_CUH_
+#define _NB_KERNEL_UTILS_CUH_
 
 #define CELL_SIZE_2         (CELL_SIZE * CELL_SIZE)
 #define STRIDE_DIM          (CELL_SIZE_2)
@@ -11,8 +12,8 @@ texture<float, 1, cudaReadModeElementType> tex_nbfp;
 /* texture reference bound to the cudata.coulomb_tab array */
 texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
 
-/* source: OpenMM */
-inline __device__ float interpolate_coulomb_force_r(float r, float scale)
+/* Original idea: OpenMM */
+static inline __device__ float interpolate_coulomb_force_r(float r, float scale)
 {  
     float   normalized = scale * r;
     int     index = (int) normalized;
@@ -23,7 +24,7 @@ inline __device__ float interpolate_coulomb_force_r(float r, float scale)
             + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
 }
 
-inline __device__ void reduce_force_i_generic_strided(float *fbuf, float4 *fout,
+static inline __device__ void reduce_force_i_generic(float *fbuf, float4 *fout,
         int tidxi, int tidxj, int aidx)
 {
     if (tidxj == 0)
@@ -42,7 +43,7 @@ inline __device__ void reduce_force_i_generic_strided(float *fbuf, float4 *fout,
     }
 }
 
-inline __device__ void reduce_force_j_generic_strided(float *fbuf, float4 *fout,
+static inline __device__ void reduce_force_j_generic(float *fbuf, float4 *fout,
         int tidxi, int tidxj, int aidx)
 {
     if (tidxi == 0)
@@ -62,7 +63,7 @@ inline __device__ void reduce_force_j_generic_strided(float *fbuf, float4 *fout,
 }
 
 /* 8x8 */
-__device__ void reduce_force_i_8_strided(volatile float *fbuf, float4 *fout,
+static __device__ void reduce_force_i_8(volatile float *fbuf, float4 *fout,
         int tidxi, int tidxj, int aidx)
 {
     float4 f = make_float4(0.0f);
@@ -95,7 +96,7 @@ __device__ void reduce_force_i_8_strided(volatile float *fbuf, float4 *fout,
     }
 }
 
-inline __device__ void reduce_force_i_pow2_strided(volatile float *fbuf, float4 *fout,
+static inline __device__ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
         int tidxi, int tidxj, int aidx)
 {
     int     i, j; 
@@ -130,7 +131,7 @@ inline __device__ void reduce_force_i_pow2_strided(volatile float *fbuf, float4 
     }
 }
 
-inline __device__ void reduce_energy_pow2(volatile float *buf,
+static inline __device__ void reduce_energy_pow2(volatile float *buf,
                                           float *e_lj, float *e_el,
                                           unsigned int tidx)
 {
@@ -162,17 +163,17 @@ inline __device__ void reduce_energy_pow2(volatile float *buf,
     }
 }
 
-inline __device__ void reduce_force_i_strided(float *forcebuf, float4 *f,
+static inline __device__ void reduce_force_i(float *forcebuf, float4 *f,
         int tidxi, int tidxj, int ai)
 {    
     
     if ((CELL_SIZE & (CELL_SIZE - 1)))
     {
-        reduce_force_i_generic_strided(forcebuf, f, tidxi, tidxj, ai);
+        reduce_force_i_generic(forcebuf, f, tidxi, tidxj, ai);
     }             
     else    
     {
-        reduce_force_i_pow2_strided(forcebuf, f, tidxi, tidxj, ai);
+        reduce_force_i_pow2(forcebuf, f, tidxi, tidxj, ai);
     }
 }
 
@@ -196,3 +197,5 @@ inline __device__ float coulomb(float q1,
     return res;
 }
 #endif 
+
+#endif /*_NB_KERNEL_UTILS_CUH_*/ 

@@ -68,12 +68,6 @@
 #include <omp.h>
 #endif
 
-#ifdef GMX_GPU
-#include "cutypedefs_ext.h"
-#include "gpu_nb.h"
-#endif
-
-
 void ns(FILE *fp,
         t_forcerec *fr,
         rvec       x[],

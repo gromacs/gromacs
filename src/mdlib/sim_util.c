@@ -99,8 +99,8 @@
 #include "qmmm.h"
 
 #ifdef GMX_GPU
-#include "gpu_data.h"
-#include "gpu_nb.h" 
+#include "cuda_data_mgmt.h"
+#include "cuda_nb.h" 
 #endif
 
 #if 0
@@ -439,10 +439,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     real   e,v,dvdl;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
-    t_cudata d_data = fr->gpu_data;
 
 #ifdef GMX_GPU    
-    gpu_times_t *gpu_t = get_gpu_times(d_data);
+    cu_timings_t *gpu_t = get_gpu_times(fr->gpu_nb);
     gmx_bool    gpu_debug_print = getenv("GMX_GPU_DEBUG_PRINT") != NULL;
 #endif
     
@@ -654,7 +653,7 @@ void do_force(FILE *fplog,t_commrec *cr,
             /* initialize the gpu atom datastructures */
             if (fr->useGPU)
             {
-                init_cudata_atoms(fr->gpu_data, fr->nbat, fr->nbl[0], fr->streamGPU);
+                init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->nbl[0], fr->streamGPU);
             }
 #endif
         }
@@ -678,7 +677,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* wait for the atomdata trasfer to be finished */
         if (bNS)
         {
-            cu_blockwait_atomdata(d_data);
+            cu_blockwait_atomdata(fr->gpu_nb);
             
             if (gpu_debug_print && gpu_t->nb_count % 1000 == 0)
             {
@@ -691,7 +690,7 @@ void do_force(FILE *fplog,t_commrec *cr,
            Both copying to/from device and kernel execution is asynchronous */
         wallcycle_start(wcycle,ewcSEND_X_GPU);
      
-        cu_stream_nb(fr->gpu_data, fr->nbat, (flags & GMX_FORCE_VIRIAL), !fr->streamGPU);
+        cu_stream_nb(fr->gpu_nb, fr->nbat, (flags & GMX_FORCE_VIRIAL), !fr->streamGPU);
 
         wallcycle_stop(wcycle,ewcSEND_X_GPU);
     }
@@ -837,7 +836,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->useGPU)
         {
 #ifdef GMX_GPU
-            cu_blockwait_nb(fr->gpu_data, (flags & GMX_FORCE_VIRIAL),
+            cu_blockwait_nb(fr->gpu_nb, (flags & GMX_FORCE_VIRIAL),
                             enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR]);
             if (gpu_debug_print && (!(gpu_t->nb_count % 500) || gpu_t->nb_count == 5001))
             {
@@ -1483,7 +1482,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                gpu_times_t *gputimes,
+                cu_timings_t *gputimes,
                 gmx_bool bWriteStat)
 {
   int    i,j;

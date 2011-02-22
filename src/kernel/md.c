@@ -96,9 +96,6 @@
 #ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
-#ifdef GMX_GPU
-#include "gpu_data.h"
-#endif
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

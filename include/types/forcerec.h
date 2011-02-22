@@ -398,8 +398,8 @@ typedef struct {
   /* Exclusion load distribution over the threads */
   int  *excl_load;
 
-  /* GPU data structure */
-  t_cudata  gpu_data;
+  /* CUDA nonbonded data structure */
+  cu_nonbonded_t gpu_nb; /*gpu_data*/
   gmx_bool  emulateGPU;
   gmx_bool  streamGPU;
 } t_forcerec;

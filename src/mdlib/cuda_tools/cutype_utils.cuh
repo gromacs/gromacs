@@ -1,5 +1,7 @@
-/**** float3 ****/
+#ifndef _CUDATYPE_UTILS_CUH_
+#define _CUDATYPE_UTILS_CUH_
 
+/**** float3 ****/
 inline __host__ __device__ float3 make_float3(float s)
 {
     return make_float3(s, s, s);
@@ -93,3 +95,5 @@ inline __host__ __device__ float dist3(float4 a, float4 b)
 {
     return norm(b - a);
 }
+
+#endif /* _CUDATYPE_UTILS_CUH_ */

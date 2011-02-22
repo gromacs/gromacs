@@ -56,9 +56,7 @@
 #ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
-#ifdef GMX_GPU
-#include "gpu_data.h"
-#endif
+
 #define DDRANK(dd,rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 

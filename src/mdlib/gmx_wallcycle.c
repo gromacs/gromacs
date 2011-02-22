@@ -52,7 +52,7 @@
 #endif
 
 #ifdef GMX_GPU
-#include "gpu_data.h"
+#include "cuda_data_mgmt.h"
 #endif
 
 typedef struct
@@ -409,7 +409,7 @@ static void print_gputimes(FILE *fplog, const char *name,
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-		     gmx_wallcycle_t wc, double cycles[], gpu_times_t *gputimes)
+		     gmx_wallcycle_t wc, double cycles[], cu_timings_t *gpu_t)
 {
     double c2t,tot,tot_gpu,tot_cpu_overlap,sum,tot_k;
     int    i,j,npp;
@@ -498,11 +498,11 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     }
 
     /* print GPU timing summary */
-    if (gputimes)
+    if (gpu_t)
     {
-        tot_gpu = gputimes->atomdt_h2d_total_time + 
-                  gputimes->nb_h2d_time + 
-                  gputimes->nb_d2h_time;
+        tot_gpu = gpu_t->atomdt_h2d_total_time + 
+                  gpu_t->nb_h2d_time + 
+                  gpu_t->nb_d2h_time;
 
         /* add up the kernel timings */
         tot_k = 0.0;
@@ -510,7 +510,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for(j = 0; j < 2; j++)
             {
-                tot_k += gputimes->k_time[i][j].t;
+                tot_k += gpu_t->k_time[i][j].t;
             }
         }
         tot_gpu += tot_k;
@@ -527,9 +527,9 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog, "%s\n", myline);
         // " %-19s %4d %10s %12.3f %10.1f   %5.1f\n"
         print_gputimes(fplog, "Neighborlist H2D",
-                gputimes->atomdt_count, gputimes->atomdt_h2d_total_time, tot_gpu);
+                gpu_t->atomdt_count, gpu_t->atomdt_h2d_total_time, tot_gpu);
          print_gputimes(fplog, "Nonbonded H2D", 
-                gputimes->nb_count, gputimes->nb_h2d_time, tot_gpu);
+                gpu_t->nb_count, gpu_t->nb_h2d_time, tot_gpu);
 
         char *k_log_str[2][2] = {
                 {"Nonbonded k.", "Nonbonded k.+ene"}, 
@@ -538,24 +538,22 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for(j = 0; j < 2; j++)
             {
-                if (gputimes->k_time[i][j].c)
+                if (gpu_t->k_time[i][j].c)
                 {
                     print_gputimes(fplog, k_log_str[i][j],
-                            gputimes->k_time[i][j].c,
-                            gputimes->k_time[i][j].t,                            
-                            tot_gpu);
+                            gpu_t->k_time[i][j].c, gpu_t->k_time[i][j].t, tot_gpu);
                 }
             }
         }        
 
         print_gputimes(fplog, "Nonbonded D2H",
-                   gputimes->nb_count, gputimes->nb_d2h_time, tot_gpu);
+                   gpu_t->nb_count, gpu_t->nb_d2h_time, tot_gpu);
         fprintf(fplog, "%s\n", myline);
-        print_gputimes(fplog, "Total ", gputimes->nb_count, tot_gpu, tot_gpu);
+        print_gputimes(fplog, "Total ", gpu_t->nb_count, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", myline);
 
         fprintf(fplog, "\n Force evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
-                tot_gpu/gputimes->nb_count, tot_cpu_overlap/wc->wcc[ewcFORCE].n, 
+                tot_gpu/gpu_t->nb_count, tot_cpu_overlap/wc->wcc[ewcFORCE].n, 
                 tot_gpu/tot_cpu_overlap);
         fprintf(fplog, " For optimal performance this ratio should be 1!\n");
     }

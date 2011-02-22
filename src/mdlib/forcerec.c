@@ -75,7 +75,7 @@
 
 #ifdef GMX_GPU
 #include "cutypedefs_ext.h"
-#include "gpu_data.h"
+#include "cuda_data_mgmt.h"
 #include "cupmalloc.h"
 #endif
 
@@ -2033,7 +2033,7 @@ void init_forcerec(FILE *fp,
 
             fr->streamGPU = (getenv("GMX_GPU_DONT_STREAM") == NULL);
 #ifdef GMX_GPU
-            init_cudata_ff(fp, &(fr->gpu_data), fr);
+            init_cudata_ff(fp, &(fr->gpu_nb), fr);
 #endif
         }
     }

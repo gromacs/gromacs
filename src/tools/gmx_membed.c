@@ -4337,7 +4337,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_times(fr->gpu_data) :
+               fr->useGPU ? get_gpu_times(fr->gpu_nb) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
@@ -4361,7 +4361,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         int gpu_device_id = 0; /* TODO get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->gpu_data);
+        destroy_cudata(fplog, fr->gpu_nb);
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {

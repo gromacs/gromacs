@@ -100,7 +100,7 @@
 
 #ifdef GMX_GPU
 #include "gmx_gpu_utils.h"
-#include "gpu_data.h"
+#include "cuda_data_mgmt.h"
 #endif
 
 typedef struct { 
@@ -944,7 +944,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_times(fr->gpu_data) :
+               fr->useGPU ? get_gpu_times(fr->gpu_nb) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
@@ -975,7 +975,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         int gpu_device_id = 0; /* TODO get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->gpu_data);
+        destroy_cudata(fplog, fr->gpu_nb);
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {
