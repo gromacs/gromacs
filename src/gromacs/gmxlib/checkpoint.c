@@ -998,8 +998,8 @@ static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
                 case eenhENERGY_DELTA_H_STARTTIME: 
                     ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_time), list); break;
                 case eenhENERGY_DELTA_H_STARTLAMBDA: 
-                    ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_lambda), list); break;
                     enerhist->dht->start_lambda_set=TRUE;
+                    ret=do_cpte_double(xd, 2, i, fflags, &(enerhist->dht->start_lambda), list); break;
                 default:
                     gmx_fatal(FARGS,"Unknown energy history entry %d\n"
                               "You are probably reading a new checkpoint file with old code",i);

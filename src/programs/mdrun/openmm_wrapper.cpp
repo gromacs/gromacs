@@ -602,6 +602,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         if (!(i == F_CONSTR ||
             i == F_SETTLE   ||
             i == F_BONDS    ||            
+            i == F_HARMONIC ||
             i == F_UREY_BRADLEY ||
             i == F_ANGLES   ||
             i == F_PDIHS    ||
@@ -851,6 +852,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         const int numConstraints = idef.il[F_CONSTR].nr/3;
         const int numSettle = idef.il[F_SETTLE].nr/2;
         const int numBonds = idef.il[F_BONDS].nr/3;
+        const int numHarmonic = idef.il[F_HARMONIC].nr/3;
         const int numUB = idef.il[F_UREY_BRADLEY].nr/4;
         const int numAngles = idef.il[F_ANGLES].nr/4;
         const int numPeriodic = idef.il[F_PDIHS].nr/5;
@@ -879,6 +881,17 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             int type = bondAtoms[offset++];
             int atom1 = bondAtoms[offset++];
             int atom2 = bondAtoms[offset++];
+            bondForce->addBond(atom1, atom2,
+                               idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
+        }
+
+        const int* harmonicAtoms = (int*) idef.il[F_HARMONIC].iatoms;
+        offset = 0;
+        for (int i = 0; i < numHarmonic; ++i)
+        {
+            int type = harmonicAtoms[offset++];
+            int atom1 = harmonicAtoms[offset++];
+            int atom2 = harmonicAtoms[offset++];
             bondForce->addBond(atom1, atom2,
                                idef.iparams[type].harmonic.rA, idef.iparams[type].harmonic.krA);
         }
