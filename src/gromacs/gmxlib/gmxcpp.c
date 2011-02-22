@@ -213,7 +213,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     }
   }
   if (debug)
-    fprintf(debug,"Added %d command line arguments",i);
+    fprintf(debug,"GMXCPP: added %d command line arguments\n",i);
   
   snew(cpp,1);
   *handle      = cpp;
@@ -247,6 +247,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   {
     gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
   }
+  if (NULL != debug) {
+    fprintf(debug,"GMXCPP: cpp file open %s\n",cpp->fn);
+  }
   /* If the file name has a path component, we need to change to that
    * directory. Note that we - just as C - always use UNIX path separators
    * internally in include file names.
@@ -275,6 +278,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       _chdir(cpp->path);
 #else
       pdum=getcwd(cpp->cwd,STRLEN);
+      if (NULL != debug) {
+	fprintf(debug,"GMXCPP: cwd %s\n",cpp->cwd);
+      }
       if (-1 == chdir(cpp->path))
 	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
 		  cpp->path,strerror(errno));
@@ -292,6 +298,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   cpp->child   = NULL;
   cpp->parent  = NULL;
   if (cpp->fp == NULL) {
+    if (NULL != debug) {
+      fprintf(debug,"GMXCPP: opening file %s\n",cpp->fn);
+    }
     cpp->fp = fopen(cpp->fn, "r");
   }
   if (cpp->fp == NULL) {
@@ -573,7 +582,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
   if (debug)
-    fprintf(debug,"Closing file %s\n",handle->fn);
+    fprintf(debug,"GMXCPP: closing file %s\n",handle->fn);
   fclose(handle->fp);
   if (NULL != handle->cwd) {
     if (NULL != debug)

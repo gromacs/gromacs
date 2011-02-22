@@ -39,6 +39,7 @@
 
 #include <string2.h>
 
+#include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/select.h"
 
@@ -55,6 +56,7 @@ struct module_map_t
 
 const module_map_t modules[] =
 {
+    {gmx::analysismodules::angle,    Angle::create},
     {gmx::analysismodules::distance, Distance::create},
     {gmx::analysismodules::select,   Select::create},
     {NULL,                           NULL},

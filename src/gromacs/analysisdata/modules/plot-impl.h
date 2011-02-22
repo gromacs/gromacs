@@ -59,6 +59,7 @@ class AbstractPlotModule::Impl
         FILE                   *fp;
 
         bool                    bPlain;
+        bool                    bOmitX;
         output_env_t            oenv;
         SelectionCollection    *sel;
         std::string             title;

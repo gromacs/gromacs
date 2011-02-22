@@ -28,8 +28,8 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 
 #include <string>
 #include <vector>
@@ -41,26 +41,23 @@
 namespace gmx
 {
 
-class AnalysisDataPlotModule;
 class Selection;
 
 namespace analysismodules
 {
 
-class Select : public TrajectoryAnalysisModule
+class Angle : public TrajectoryAnalysisModule
 {
     public:
-        Select();
-        virtual ~Select();
+        Angle();
+        virtual ~Angle();
 
         static TrajectoryAnalysisModule *create();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings);
         virtual int initAnalysis(const TopologyInformation &top);
 
-        virtual int startFrames(AnalysisDataParallelOptions opt,
-                                const SelectionCollection &selections,
-                                TrajectoryAnalysisModuleData **pdatap);
         virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                  TrajectoryAnalysisModuleData *pdata);
 
@@ -68,33 +65,34 @@ class Select : public TrajectoryAnalysisModule
         virtual int writeOutput();
 
     private:
-        class ModuleData;
+        int checkSelections(const std::vector<Selection *> &sel1,
+                            const std::vector<Selection *> &sel2) const;
 
-        Options                  _options;
-        std::vector<Selection *> _sel;
+        Options                 _options;
 
-        std::string              _fnSize;
-        std::string              _fnFrac;
-        std::string              _fnIndex;
-        std::string              _fnNdx;
-        std::string              _fnMask;
-        bool                     _bDump;
-        bool                     _bTotNorm;
-        bool                     _bFracNorm;
-        bool                     _bResInd;
-        std::string              _resNumberType;
+        std::vector<Selection *> _sel1;
+        std::vector<Selection *> _sel2;
+        std::string             _fnAngle;
+        std::string             _fnDump;
 
-        t_topology              *_top;
-        int                     *_totsize;
-        AnalysisData             _sdata;
-        AnalysisData             _cdata;
-        AnalysisData             _idata;
-        AnalysisData             _mdata;
-        std::vector<std::string> _modnames;
+        std::string             _g1type;
+        std::string             _g2type;
+        bool                    _bSplit1;
+        bool                    _bSplit2;
+        bool                    _bMulti;
+        bool                    _bAll;
+        bool                    _bDumpDist;
+
+        AnalysisData            _data;
+        int                     _natoms1;
+        int                     _natoms2;
+        rvec                   *_vt0;
+
+        // Copy and assign disallowed by base.
 };
 
-} // namespace analysismodules
+} // namespace modules
 
-} // namespace gmx
+} // namespace gmxana
 
 #endif

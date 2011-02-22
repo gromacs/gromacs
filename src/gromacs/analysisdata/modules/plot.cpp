@@ -68,7 +68,7 @@ namespace gmx
  */
 
 AbstractPlotModule::Impl::Impl(const Options &options)
-    : fp(NULL), bPlain(false),
+    : fp(NULL), bPlain(false), bOmitX(false),
       oenv(options.globalProperties().output_env()),
       sel(options.globalProperties().selectionCollection())
 {
@@ -127,6 +127,13 @@ void
 AbstractPlotModule::setPlainOutput(bool bPlain)
 {
     _impl->bPlain = bPlain;
+}
+
+
+void
+AbstractPlotModule::setOmitX(bool bOmitX)
+{
+    _impl->bOmitX = bOmitX;
 }
 
 
@@ -257,7 +264,10 @@ AbstractPlotModule::frameStarted(real x, real dx)
     {
         return 0;
     }
-    std::fprintf(_impl->fp, _impl->xfmt, x);
+    if (!_impl->bOmitX)
+    {
+        std::fprintf(_impl->fp, _impl->xfmt, x);
+    }
     return 0;
 }
 
