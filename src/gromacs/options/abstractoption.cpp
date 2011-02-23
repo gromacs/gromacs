@@ -30,18 +30,18 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::AbstractOptionStorage.
+ * Implements classes in abstractoption.h and abstractoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/abstractoption.h"
 
 #include <cassert>
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
-#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
 
 namespace gmx
