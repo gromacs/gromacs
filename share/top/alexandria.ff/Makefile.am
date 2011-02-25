@@ -5,7 +5,7 @@
 topoldir = ${pkgdatadir}/top/alexandria.ff
 
 topol_DATA = \
-gentop.dat	forcefield.doc
+gentop.dat	forcefield.doc	forcefield.itp
 
 EXTRA_DIST = ${topol_DATA}
 

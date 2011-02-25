@@ -1,0 +1,5 @@
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1		3		yes		1	1
+
