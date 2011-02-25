@@ -921,6 +921,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
         gmx_fio_do_int(fio,ir->qhopmode);
         gmx_fio_do_int(fio,ir->qhopfreq);
         gmx_fio_do_int(fio,ir->opts.ngqhopH);
+        gmx_fio_do_int(fio,ir->qhopconstr);
         /* gmx_fio_do_int(fio,ir->opts.ngqhopdonors); */
         /* gmx_fio_do_int(fio,ir->opts.ngqhopacceptors); */
     }
