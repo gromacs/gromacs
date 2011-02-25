@@ -1926,6 +1926,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if(!bFirstStep)
         {
             if(fr->bqhop && do_per_step(step,ir->qhopfreq)){ 
+                fr->qhoprec->constr = constr;
 
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                         mdatoms,fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
