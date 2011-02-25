@@ -1678,8 +1678,8 @@ static void check_input(
         }
         if ((npme_fixed > 0) && (5*npme_fixed < nnodes))
         {
-            fprintf(stderr, "WARNING: Only %f percent of the nodes are assigned to do PME.\n",
-                             (real)npme_fixed / (real)nnodes);
+            fprintf(stderr, "WARNING: Only %g percent of the nodes are assigned as PME-only nodes.\n",
+                             100.0*((real)npme_fixed / (real)nnodes));
         }
         if (opt2parg_bSet("-min",npargs,pa) || opt2parg_bSet("-max",npargs,pa))
         {
