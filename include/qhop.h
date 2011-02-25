@@ -10,6 +10,7 @@
 #include "tgroup.h"
 #include "gmx_qhop_db.h"
 #include "resall.h"
+/* #include "constr.h" */
 
 /* t_qhoprec *mk_qhoprec(void); */
 
@@ -26,7 +27,7 @@
  *   - Reads in the hopping and force field parameters.
  * \return The number of titrating atoms.
  */
-extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, t_forcerec *fr,
+extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, const t_forcerec *fr,
 	      /* rvec *x, */matrix box, t_mdatoms *md);
 
 /** \brief Identifies potential hops calculates probabilities.
@@ -56,7 +57,7 @@ do_qhop(FILE *fplog,
 	/*gmx_genborn_t *born,*/ 
 	gmx_bool bBornRadii,
 	real T,
-	int step,
+	gmx_large_int_t step,
 	tensor force_vir
 	);
 
@@ -70,10 +71,17 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
  * 
  * The qatom is protonated.  
  */
-extern void qhop_protonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+extern void qhop_protonate(qhop_db *db, t_qhoprec *qr,
+			   const t_inputrec *ir,
+			   const t_commrec *cr, gmx_localtop_t *top,
+			   gmx_constr_t constr,
+			   t_qhop_atom *qatom,
 			   t_mdatoms *md, gmx_bool bWater, gmx_bool bSwapBondeds);
 
-extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr, t_qhop_atom *qatom,
+extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
+			     const t_inputrec *ir, const t_commrec *cr,
+			     gmx_localtop_t *top, gmx_constr_t constr,
+			     t_qhop_atom *qatom,
 			     t_mdatoms *md, gmx_bool bWater, gmx_bool bSwapBondeds);
 
 /* Goes through the t_ilist and finds the bonded interactions
