@@ -6,7 +6,8 @@
 #include "types/qhoprec.h"
 #include "hackblock.h"
 #include "types/gmx_qhop_types.h"
-
+#include "types/constr.h"
+#include "types/inputrec.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,11 +51,11 @@ extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
 
   /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
    * Use it when activating a proton. */
-extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr);
+extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr);
 
   /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
    * Use it when deactivating a proton. */
-extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr);
+extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr);
 
 /*   Exchanges the current bonded interactions*/
 /*   for the ones defined by prod. */
@@ -62,7 +63,7 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 			      qhop_res *prod,
 			      qhop_db *db,
 			      gmx_localtop_t *top,
-			      t_commrec *cr);
+			      const t_commrec *cr);
 
 /*   Exchanges the current vdw interactions
 /*   for the ones defined by prod by changing the atomtypes. */

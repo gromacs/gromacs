@@ -8,6 +8,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "types/commrec.h"
+#include "types/constr.h"
 
 extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 {
@@ -327,17 +328,13 @@ extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t
   gmx_fatal(FARGS, "Constraint not found!");
 }
 
-extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
+extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
 {
   int nr, nalloc, heavy, h, rt, r, b, bi, i, params, ai, *g2l, *iatoms;
   const int niatoms = 3;
-
   gmx_bool bMatch;
-
   char *heavyname, *hname;
-
   t_qhop_atom *qatom;
-
   t_restp *rtp;
 
   bMatch = FALSE;
@@ -359,6 +356,10 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
 	      bMatch = TRUE;
 	      break;
 	    }
+	}
+      if (bMatch)
+	{
+	  break;
 	}
     }
 
@@ -389,7 +390,7 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
 
   top->idef.il[F_CONSTR].iatoms[nr]   = params;
   top->idef.il[F_CONSTR].iatoms[nr+1] = /* DOMAINDECOMP(cr) ? g2l[heavy] : */ heavy;
-  top->idef.il[F_CONSTR].iatoms[nr+2] = /* DOMAINDECOMP(cr) ? g2l[h]     : */ h;
+  top->idef.il[F_CONSTR].iatoms[nr+2] = /* DOMAINDECOMP(cr) ? g2l[h]     : */ proton_id;
   top->idef.il[F_CONSTR].nr += 3;
 
   /* Update bonded index */
@@ -408,13 +409,17 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
       if (h == iatoms[0] || h == iatoms[1])
 	{
 	  qres->bindex.ilist_pos[F_CONSTR][b] = nr;
-	  return;
+	  break;
 	}
     }
-  gmx_fatal(FARGS, "Could not find the constraint in the rtp data.");
+
+  /* Now hack the t_gmx_constr */
+  set_constraints(constr, top, ir, md, cr);
+
+  /* gmx_fatal(FARGS, "Could not find the constraint in the rtp data."); */
 }
 
-extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
+extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
 {
   int b, ip, *iatoms;
   const int niatoms = 3;
@@ -444,7 +449,7 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 	  /* Here the ilist is shifted by niatoms to erase the constraint in question. */
 	  memmove((void*)&(iatoms[0]),
 		  (void*)&(iatoms[niatoms]),
-		  top->idef.il[F_CONSTR].nr-ip-niatoms);
+		  (top->idef.il[F_CONSTR].nr-ip-niatoms) * sizeof(int));
 
 	  top->idef.il[F_CONSTR].nr -= niatoms;
 
@@ -452,7 +457,10 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 
 	  break;
 	}
-    }  
+    }
+
+  /* Now hack the t_gmx_constr */
+  set_constraints(constr, top, ir, md, cr);
 }
 
 
@@ -742,7 +750,7 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 			      qhop_res *prod,
 			      qhop_db *db,
 			      gmx_localtop_t *top,
-			      t_commrec *cr)
+			      const t_commrec *cr)
 {
   int i, bt, b, bp, p, it, offset;
   t_restp *rtp, *rtpr;
