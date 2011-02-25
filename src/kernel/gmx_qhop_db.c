@@ -977,7 +977,8 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	      continue;
 	    }
 
-	  it = get_interaction_type(bt, rtp->rb[bt].type);
+	  it = get_interaction_type(bt, (bt==ebtsBONDS && db->constrain != 0) ?
+				    -1 : rtp->rb[bt].type);
 	  
 	  db->rb.btype[bt] = it;
 	  db->rb.ftype[bt] = rtp->rb[bt].type;
