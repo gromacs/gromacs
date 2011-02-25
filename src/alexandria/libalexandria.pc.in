@@ -1,8 +1,8 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libmd
-Description: Gromacs md lib
+Name: libalexandria
+Description: Gromacs alexandria lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
 Requires: libmd@LIBSUFFIX@ libgmx@LIBSUFFIX@ @PKG_FFT@ @PKG_XML@
