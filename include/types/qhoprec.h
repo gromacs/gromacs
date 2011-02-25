@@ -7,6 +7,7 @@
 /* #include "atoms.h" */
 #include "idef.h"
 #include "../gmx_random.h"
+#include "constr.h"
 /* #endif */
 
 enum {eQNONE=0, eQACC=1, eQDON=2, eQACCDON=3, eQNR=4};
@@ -117,6 +118,8 @@ typedef struct {
 
 typedef struct {
 
+  gmx_constr_t   constr; /* for some reason we can't pass constr as an
+			  * argument to do_qhop(). It turns into 0x0. */
   t_hop          *hop;
   t_qhop_atom    *qhop_atoms;
   t_qhop_residue *qhop_residues;
