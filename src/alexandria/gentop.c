@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
         "information about file formats. By default the forcefield selection",
         "is interactive, but you can use the [TT]-ff[tt] option to specify",
         "one of the short names above on the command line instead. In that",
-        "case pdb2gmx just looks for the corresponding file.[PAR]",
+        "case gentop just looks for the corresponding file.[PAR]",
     };
     const char *bugs[] = {
         "No force constants for impropers are generated"
