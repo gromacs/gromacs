@@ -1272,7 +1272,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
     {
         if (nblock_dh>0)
         {
-            /* we have standard dat -- call open_dhdl to open the file */
+            /* we have standard, non-histogram data -- call open_dhdl to open the file */
             *fp_dhdl=open_dhdl(filename,ir,oenv);
         }
         else
@@ -1372,24 +1372,6 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
         int len=0;
         char **setnames=NULL;
         int nnames=nblock_dh;
-
-        if (changing_lambda)
-        {
-            nnames++;
-        }
-        if (first)
-        {
-            snew(setnames, nnames);
-        }
-        j=0;
-
-        if ( changing_lambda && first)
-        {
-            /* lambda is a plotted value */
-            setnames[j]=gmx_strdup(lambda);
-            j++;
-        }
-
 
         for(i=0;i<fr->nblock;i++)
         {
@@ -2010,11 +1992,11 @@ int gmx_energy(int argc,char *argv[])
        * Store energies for analysis afterwards... 
        */
       if (!bDisRe && !bDHDL && (fr->nre > 0)) {
-	if (edat.nframes % 1000 == 0) {
-	  srenew(time,edat.nframes+1000);
-	}
-	time[edat.nframes] = fr->t;
-	edat.nframes++;
+          if (edat.nframes % 1000 == 0) {
+              srenew(time,edat.nframes+1000);
+          }
+          time[edat.nframes] = fr->t;
+          edat.nframes++;
       }
       /* 
        * Printing time, only when we do not want to skip frames
@@ -2194,7 +2176,13 @@ int gmx_energy(int argc,char *argv[])
               }
               else 
               {
-                  do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), bDp,oenv);
+                  if (fp_dhdl) {
+                      do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), bDp,oenv);
+                  } 
+                  else
+                  {
+                      gmx_fatal(FARGS,"Can't generate dhdl file from the edr file if no tpr is given");
+                  }
               }
           }
 	}
