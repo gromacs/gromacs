@@ -126,7 +126,7 @@ int tMPI_Comm_compare(tMPI_Comm comm1, tMPI_Comm comm2, int *result)
     {
         if (comm1->grp.peers[i] != comm2->grp.peers[i])
         {
-            gmx_bool found=FALSE;
+            tmpi_bool found=FALSE;
 
             *result=TMPI_SIMILAR;
             for(j=0;j<comm2->grp.N;j++)
@@ -171,32 +171,6 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
     /* initialize the main barrier */
     tMPI_Barrier_init(&(ret->barrier), N);
-
-#if 0
-    {
-        /* calculate the number of reduce barriers */
-        int Nbarriers=0;
-        int Nred=N;
-        while(Nred>1) {
-            Nbarriers+=1;
-            Nred = Nred/2 + Nred%2;
-        } 
-
-        ret->Nreduce_barriers=Nbarriers;
-        ret->reduce_barrier=(tMPI_Barrier_t*)
-                  tMPI_Malloc(sizeof(tMPI_Barrier_t)*(Nbarriers+1));
-        ret->N_reduce_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
-        Nred=N;
-        for(i=0;i<Nbarriers;i++)
-        {
-            tMPI_Barrier_init( &(ret->reduce_barrier[i]), Nred);
-            ret->N_reduce_barrier[i]=Nred;
-            /* Nred is now Nred/2 + a rest term because solitary 
-               process at the end of the list must still be accounter for */
-            Nred = Nred/2 + Nred%2;
-        }
-    }
-#endif
 
     /* the reduce barriers */
     {
@@ -397,7 +371,7 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
                               int *group)
 {
     int i,j;
-    gmx_bool found;
+    tmpi_bool found;
 
     /* reset groups */
     for(i=0;i<N;i++)
@@ -450,7 +424,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
                                                 the threads actually suplies 
                                                 these arrays to the comm 
                                                 structure) */
-    gmx_bool i_am_first=FALSE;
+    tmpi_bool i_am_first=FALSE;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
 

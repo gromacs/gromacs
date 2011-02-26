@@ -432,46 +432,64 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
     int  ngtc,n;
     real y;
     
-  snew(sd,1);
+    snew(sd,1);
 
-  /* Initiate random number generator for langevin type dynamics,
-   * for BD, SD or velocity rescaling temperature coupling.
-   */
-  sd->gaussrand = gmx_rng_init(ir->ld_seed);
+    /* Initiate random number generator for langevin type dynamics,
+     * for BD, SD or velocity rescaling temperature coupling.
+     */
+    sd->gaussrand = gmx_rng_init(ir->ld_seed);
 
-  ngtc = ir->opts.ngtc;
+    ngtc = ir->opts.ngtc;
 
-  if (ir->eI == eiBD) {
-    snew(sd->bd_rf,ngtc);
-  } else if (EI_SD(ir->eI)) {
-    snew(sd->sdc,ngtc);
-    snew(sd->sdsig,ngtc);
-    
-    sdc = sd->sdc;
-    for(n=0; n<ngtc; n++) {
-      sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
-      sdc[n].eph = exp(sdc[n].gdt/2);
-      sdc[n].emh = exp(-sdc[n].gdt/2);
-      sdc[n].em  = exp(-sdc[n].gdt);
-      if (sdc[n].gdt >= 0.05) {
-	sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1) 
-	  - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
-	sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-	sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
-      } else {
-	y = sdc[n].gdt/2;
-	/* Seventh order expansions for small y */
-	sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-	sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-	sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
-      }
-      if(debug)
-	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
-		n,sdc[n].b,sdc[n].c,sdc[n].d);
+    if (ir->eI == eiBD)
+    {
+        snew(sd->bd_rf,ngtc);
     }
-  }
+    else if (EI_SD(ir->eI))
+    {
+        snew(sd->sdc,ngtc);
+        snew(sd->sdsig,ngtc);
+    
+        sdc = sd->sdc;
+        for(n=0; n<ngtc; n++)
+        {
+            if (ir->opts.tau_t[n] > 0)
+            {
+                sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
+                sdc[n].eph = exp(sdc[n].gdt/2);
+                sdc[n].emh = exp(-sdc[n].gdt/2);
+                sdc[n].em  = exp(-sdc[n].gdt);
+            }
+            else
+            {
+                /* No friction and noise on this group */
+                sdc[n].gdt = 0;
+                sdc[n].eph = 1;
+                sdc[n].emh = 1;
+                sdc[n].em  = 1;
+            }
+            if (sdc[n].gdt >= 0.05)
+            {
+                sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1) 
+                    - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
+                sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
+                sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
+            }
+            else
+            {
+                y = sdc[n].gdt/2;
+                /* Seventh order expansions for small y */
+                sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
+                sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
+                sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
+            }
+            if(debug)
+                fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
+                        n,sdc[n].b,sdc[n].c,sdc[n].d);
+        }
+    }
 
-  return sd;
+    return sd;
 }
 
 void get_stochd_state(gmx_update_t upd,t_state *state)

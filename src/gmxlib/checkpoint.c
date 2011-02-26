@@ -103,7 +103,8 @@ enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
        eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM,
        eenhENERGY_NSTEPS, eenhENERGY_NSTEPS_SIM, 
        eenhENERGY_DELTA_H_NN,
-       eenhENERGY_DELTA_H_LIST, eenhENERGY_DELTA_H_STARTTIME, 
+       eenhENERGY_DELTA_H_LIST, 
+       eenhENERGY_DELTA_H_STARTTIME, 
        eenhENERGY_DELTA_H_STARTLAMBDA, 
        eenhNR };
 
@@ -113,7 +114,8 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim", 
     "energy_delta_h_nn",
-    "energy_delta_h_list", "energy_delta_h_start_time", 
+    "energy_delta_h_list", 
+    "energy_delta_h_start_time", 
     "energy_delta_h_start_lambda"
 };
 
@@ -1019,6 +1021,7 @@ static int do_cpt_enerhist(XDR *xd,gmx_bool bRead,
             snew(enerhist->dht,1);
             enerhist->dht->ndh = NULL;
             enerhist->dht->dh = NULL;
+            enerhist->dht->start_lambda_set=FALSE;
         }
     }
 
@@ -1327,7 +1330,8 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         {
             flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
                            (1<< eenhENERGY_DELTA_H_LIST) | 
-                           (1<< eenhENERGY_DELTA_H_STARTTIME) );
+                           (1<< eenhENERGY_DELTA_H_STARTTIME) |
+                           (1<< eenhENERGY_DELTA_H_STARTLAMBDA) );
         }
     }
 
@@ -1570,23 +1574,32 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  natoms,ngtc,nnhpres,nhchainlength,nlambda,fflags,flags_eks,flags_enh,flags_dfh;
     int  d;
     int  ret;
-	gmx_file_position_t *outputfiles;
-	int  nfiles;
-	t_fileio *chksum_file;
-	FILE* fplog = *pfplog;
-	unsigned char digest[16];
+    gmx_file_position_t *outputfiles;
+    int  nfiles;
+    t_fileio *chksum_file;
+    FILE* fplog = *pfplog;
+    unsigned char digest[16];
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-	struct flock fl = { 0, SEEK_SET, 0,       F_WRLCK,     0 }; 
+    struct flock fl;  /* don't initialize here: the struct order is OS 
+                         dependent! */
 #endif
-	
+
     const char *int_warn=
-        "WARNING: The checkpoint file was generator with integrator %s,\n"
-        "         while the simulation uses integrator %s\n\n";
+              "WARNING: The checkpoint file was generated with integrator %s,\n"
+              "         while the simulation uses integrator %s\n\n";
     const char *sd_note=
         "NOTE: The checkpoint file was for %d nodes doing SD or BD,\n"
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+    fl.l_type=F_WRLCK;
+    fl.l_whence=SEEK_SET;
+    fl.l_start=0;
+    fl.l_len=0;
+    fl.l_pid=0;
+#endif
+
     if (PARTDECOMP(cr))
     {
         gmx_fatal(FARGS,
@@ -1718,9 +1731,16 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 						  "You can try with the -noappend option, and get more info in the log file.\n");
 			}
 			
-            fprintf(stderr,
-                    "WARNING: The checkpoint state entries do not match the simulation,\n"
-                    "         see the log file for details\n\n");
+            if (getenv("GMX_ALLOW_CPT_MISMATCH") == NULL)
+            {
+                gmx_fatal(FARGS,"You seem to have switched ensemble, integrator, T and/or P-coupling algorithm between the cpt and tpr file. The recommended way of doing this is passing the cpt file to grompp (with option -t) instead of to mdrun. If you know what you are doing, you can override this error by setting the env.var. GMX_ALLOW_CPT_MISMATCH");
+            }
+            else
+            {
+                fprintf(stderr,
+                        "WARNING: The checkpoint state entries do not match the simulation,\n"
+                        "         see the log file for details\n\n");
+            }
         }
 		
 		if(fplog)
@@ -1854,8 +1874,16 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    gmx_fatal(FARGS,"Failed to lock: %s. Already running "
-                        "simulation?", outputfiles[i].filename);
+                    if (errno!=EACCES && errno!=EAGAIN)
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
+                    }
+                    else 
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. Already running "
+                                  "simulation?", outputfiles[i].filename);
+                    }
                 }
             }
             
@@ -1863,16 +1891,19 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             if (outputfiles[i].chksum_size != -1)
             {
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
-                                     digest) != outputfiles[i].chksum_size)
+                                     digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
                     gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
             } 
-            else if (i==0)  /*log file need to be seeked even when not reading md5*/
+            if (i==0)  /*log file needs to be seeked in case we need to truncate (other files are truncated below)*/
             {
-                gmx_fio_seek(chksum_file,outputfiles[i].offset);
+                if (gmx_fio_seek(chksum_file,outputfiles[i].offset))
+                {
+                	gmx_fatal(FARGS,"Seek error! Failed to truncate log-file: %s.", strerror(errno));
+                }
             }
 #endif
             

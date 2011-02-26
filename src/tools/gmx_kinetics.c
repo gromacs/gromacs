@@ -668,7 +668,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 int gmx_kinetics(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_kinetics reads two xvg files, each one containing data for N replicas.",
+    "[TT]g_kinetics[tt] reads two [TT].xvg[tt] files, each one containing data for N replicas.",
     "The first file contains the temperature of each replica at each timestep,",
     "and the second contains real values that can be interpreted as",
     "an indicator for folding. If the value in the file is larger than",
@@ -676,13 +676,13 @@ int gmx_kinetics(int argc,char *argv[])
     "From these data an estimate of the forward and backward rate constants",
     "for folding is made at a reference temperature. In addition,",
     "a theoretical melting curve and free energy as a function of temperature",
-    "are printed in an xvg file.[PAR]",
+    "are printed in an [TT].xvg[tt] file.[PAR]",
     "The user can give a max value to be regarded as intermediate",
     "([TT]-ucut[tt]), which, when given will trigger the use of an intermediate state",
     "in the algorithm to be defined as those structures that have",
     "cutoff < DATA < ucut. Structures with DATA values larger than ucut will",
     "not be regarded as potential folders. In this case 8 parameters are optimized.[PAR]",
-    "The average fraction foled is printed in an xvg file together with the fit to it.", 
+    "The average fraction foled is printed in an [TT].xvg[tt] file together with the fit to it.", 
     "If an intermediate is used a further file will show the build of the intermediate and the fit to that process.[PAR]",
     "The program can also be used with continuous variables (by setting",
     "[TT]-nodiscrete[tt]). In this case kinetics of other processes can be",
@@ -743,7 +743,7 @@ int gmx_kinetics(int argc,char *argv[])
     { "-tol",     FALSE, etREAL,{&tol},
       "Absolute tolerance for convergence of the Nelder and Mead simplex algorithm" },
     { "-skip",    FALSE, etINT, {&skip},
-      "Skip points in the output xvg file" },
+      "Skip points in the output [TT].xvg[tt] file" },
     { "-split",   FALSE, etBOOL,{&bSplit},
       "Estimate error by splitting the number of replicas in two and refitting" },
     { "-sum",     FALSE, etBOOL,{&bSum},
@@ -890,7 +890,7 @@ int gmx_kinetics(int argc,char *argv[])
 #else
 int gmx_kinetics(int argc,char *argv[])
 {
-  gmx_fatal(FARGS,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.");
+  fprintf(stderr,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
   
   return 0;
 }

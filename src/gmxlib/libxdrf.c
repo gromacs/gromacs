@@ -152,7 +152,7 @@ void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
         xdr_fortran_lock();
-	*ret = xdr_gmx_bool(xdridptr[*xdrid], pb);
+	*ret = xdr_bool(xdridptr[*xdrid], pb);
 	cnt += XDR_INT_SIZE;
         xdr_fortran_unlock();
 }

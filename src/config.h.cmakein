@@ -146,6 +146,9 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
+/* Use the PowerPC hardware 1/sqrt(x) */
+#cmakedefine GMX_POWERPC_INVSQRT
+
 /* Compile with dlopen */
 #cmakedefine GMX_DLOPEN
 
@@ -211,6 +214,9 @@
 
 /* Define to 1 if you have the mkl library (-lmkl). */
 #cmakedefine HAVE_LIBMKL
+
+/* Define to 1 if you have the gsl library (-lgsl). */
+#cmakedefine HAVE_LIBGSL
 
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2

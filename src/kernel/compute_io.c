@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -73,7 +73,58 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
   cio += (1.0*nste)*nrener*3*sizeof(real);
   
   if (ir->efep != efepNO) {
-    cio += (1 + nsteps)/ir->nstdhdl*20; /* roughly 20 chars per line */
+    int ndh=ir->fepvals->n_lambda;
+    int ndhdl=0;
+    for (i=0;i<efptNR;i++)
+      {
+	if (ir->fepvals->separate_dvdl[i])
+	  {
+	    ndhdl+=1;
+	  }
+      }
+
+    if (ir->fepvals->separate_dhdl_file==sepdhdlfileYES)
+      {
+  
+          int nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry,
+                                                dH data ~10 chars/entry */
+          
+          if (ir->fepvals->elmcmove > elmcmoveNO)
+          {
+              nchars += 5;   /* alchemical state */
+          }
+          
+          if (ir->fepvals->bPrintEnergy)
+          {
+              nchars += 12; /* energy for dhdl */
+          }
+          
+          cio += ((1 + nsteps)/ir->nstdhdl)*nchars; 
+      }
+    else
+    {
+        /* dH output to ener.edr: */
+        if (ir->fepvals->dh_hist_size <= 0) 
+        {
+            int ndh_tot = ndh+ndhdl;
+            if (ir->fepvals->elmcmove > elmcmoveNO)
+            {
+                ndh_tot += 1;
+            }
+            if (ir->fepvals->bPrintEnergy)
+            {
+                ndh_tot += 1;
+            }
+            /* as data blocks: 1 real per dH point */
+            cio += ((1 + nsteps)/ir->nstdhdl)*(ndh+ndhdl)*sizeof(real); 
+        }
+        else
+        {
+            /* as histograms: dh_hist_size ints per histogram */
+            cio += ((1 + nsteps)/ir->nstenergy)*
+                sizeof(int)*ir->fepvals->dh_hist_size*ndh;
+        }
+    }
   }
   if (ir->pull != NULL) {
     if (ir->pull->nstxout > 0) {

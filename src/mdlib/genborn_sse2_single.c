@@ -1344,34 +1344,31 @@ float calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float
 	/* Loop to get the proper form for the Born radius term, sse style */
 	offset=natoms%4;
 	
-    n0 = md->start;
-    n1 = md->start+md->homenr+1+natoms/2;
-    
+  n0 = 0;
+  n1 = natoms;
+  
 	if(gb_algorithm==egbSTILL) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = (2 * rbi * rbi * dvda[k])/ONE_4PI_EPS0;
+      rbi   = born->bRad[i];
+			rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
 		}
 	}
 	else if(gb_algorithm==egbHCT) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * dvda[i];
 		}
 	}
 	else if(gb_algorithm==egbOBC) 
 	{
 		for(i=n0;i<n1;i++)
 		{
-            k = i % natoms;
-			rbi   = born->bRad[k];
-			rb[k] = rbi * rbi * born->drobc[k] * dvda[k];
+      rbi   = born->bRad[i];
+			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
 		}
 	}
     

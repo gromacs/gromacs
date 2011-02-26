@@ -594,7 +594,7 @@ void chk_enx(const char *fn)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+    "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
     "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
     "or an index file ([TT].ndx[tt])",
     "and prints out useful information about them.[PAR]",
@@ -606,11 +606,11 @@ int main(int argc,char *argv[])
     "no problem). If velocities are present, an estimated temperature",
     "will be calculated from them.[PAR]",
     "If an index file, is given its contents will be summarized.[PAR]",
-    "If both a trajectory and a tpr file are given (with [TT]-s1[tt])",
+    "If both a trajectory and a [TT].tpr[tt] file are given (with [TT]-s1[tt])",
     "the program will check whether the bond lengths defined in the tpr",
     "file are indeed correct in the trajectory. If not you may have",
     "non-matching files due to e.g. deshuffling or due to problems with",
-    "virtual sites. With these flags, gmxcheck provides a quick check for such problems.[PAR]",
+    "virtual sites. With these flags, [TT]gmxcheck[tt] provides a quick check for such problems.[PAR]",
     "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",

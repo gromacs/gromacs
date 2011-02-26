@@ -166,7 +166,8 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   int  *ibuf,p;
   gmx_bool bCompatible;
 
-  fprintf(log,"Multi-checking %s ... ",name);
+  if (NULL != log)
+      fprintf(log,"Multi-checking %s ... ",name);
   
   if (ms == NULL)
     gmx_fatal(FARGS,
@@ -181,12 +182,19 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
     bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
   
   if (bCompatible) 
-    fprintf(log,"OK\n");
-  else {
-    fprintf(log,"\n%s is not equal for all subsystems\n",name);
-    for(p=0; p<ms->nsim; p++)
-      fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
-    gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
+  {
+      if (NULL != log)
+          fprintf(log,"OK\n");
+  }
+  else 
+  {
+      if (NULL != log)
+      {
+          fprintf(log,"\n%s is not equal for all subsystems\n",name);
+          for(p=0; p<ms->nsim; p++)
+              fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
+      }
+      gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
   }
   
   sfree(ibuf);
@@ -238,13 +246,13 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
   
     debug_gmx();
 
-    if (!bMasterOnly)
+    if (!bMasterOnly && !MASTER(cr))
     {
         /* Since log always ends with '.log' let's use this info */
         par_fn(tmpnm,efLOG,cr,FALSE,!bMasterOnly,buf,255);
         fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
     }
-    else
+    else if (!bAppend)
     {
         fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
     }

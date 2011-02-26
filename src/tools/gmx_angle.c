@@ -93,16 +93,16 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
 int gmx_g_angle(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "g_angle computes the angle distribution for a number of angles",
+    "[TT]g_angle[tt] computes the angle distribution for a number of angles",
     "or dihedrals. This way you can check whether your simulation",
-    "is correct. With option -ov you can plot the average angle of",
-    "a group of angles as a function of time. With the -all option",
+    "is correct. With option [TT]-ov[tt] you can plot the average angle of",
+    "a group of angles as a function of time. With the [TT]-all[tt] option",
     "the first graph is the average, the rest are the individual angles.[PAR]",
-    "With the -of option g_angle also calculates the fraction of trans",
+    "With the [TT]-of[tt] option, [TT]g_angle[tt] also calculates the fraction of trans",
     "dihedrals (only for dihedrals) as function of time, but this is",
     "probably only fun for a selected few.[PAR]",
-    "With option -oc a dihedral correlation function is calculated.[PAR]",
-    "It should be noted that the indexfile should contain",
+    "With option [TT]-oc[tt] a dihedral correlation function is calculated.[PAR]",
+    "It should be noted that the index file should contain",
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash.[PAR]",
     "With option [TT]-or[tt] a trajectory file is dumped containing cos and",
@@ -122,7 +122,7 @@ int gmx_g_angle(int argc,char *argv[])
     { "-periodic", FALSE, etBOOL, {&bPBC},
       "Print dihedral angles modulo 360 degrees" },
     { "-chandler", FALSE,  etBOOL, {&bChandler},
-      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
+      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };

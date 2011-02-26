@@ -74,7 +74,7 @@ static int search_str2(int nstr,char **str,char *key)
 int gmx_enemat(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_enemat extracts an energy matrix from the energy file ([TT]-f[tt]).",
+    "[TT]g_enemat[tt] extracts an energy matrix from the energy file ([TT]-f[tt]).",
     "With [TT]-groups[tt] a file must be supplied with on each",
     "line a group of atoms to be used. For these groups matrix of",
     "interaction energies will be extracted from the energy file",
@@ -117,7 +117,7 @@ int gmx_enemat(int argc,char *argv[])
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
     { "-mean", FALSE, etBOOL, {&bMeanEmtx},
-      "with -groups extracts matrix of mean energies instead of "
+      "with [TT]-groups[tt] extracts matrix of mean energies instead of "
       "matrix for each timestep" },
     { "-nlevels", FALSE, etINT, {&nlevels},"number of levels for matrix colors"},
     { "-max",FALSE, etREAL, {&cutmax},"max value for energies"},

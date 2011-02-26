@@ -275,7 +275,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
         struct tmpi_datatype_ *lt=tmpi_global->usertypes[i];
         if (lt->committed && lt->N_comp==dt->N_comp)
         {
-            gmx_bool found=TRUE;
+            tmpi_bool found=TRUE;
             for(j=0;j<lt->N_comp;j++)
             {
                 if ( (lt->comps[j].type  != dt->comps[j].type) ||
@@ -293,7 +293,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
     }
     if (dt != *datatype)
     {
-        gmx_bool found=FALSE;
+        tmpi_bool found=FALSE;
         /* we remove the old one from the list */
         for(i=0;i<tmpi_global->N_usertypes;i++)
         {

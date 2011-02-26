@@ -778,9 +778,9 @@ int gmx_order(int argc,char *argv[])
     "parameters however, which only work for water anyway).[PAR]",
     "The program can also give all",
     "diagonal elements of the order tensor and even calculate the deuterium",
-    "order parameter Scd (default). If the option -szonly is given, only one",
-    "order tensor component (specified by the -d option) is given and the",
-    "order parameter per slice is calculated as well. If -szonly is not",
+    "order parameter Scd (default). If the option [TT]-szonly[tt] is given, only one",
+    "order tensor component (specified by the [TT]-d[tt] option) is given and the",
+    "order parameter per slice is calculated as well. If [TT]-szonly[tt] is not",
     "selected, all diagonal elements and the deuterium order parameter is",
     "given.[PAR]"
     "The tetrahedrality order parameters can be determined",
@@ -804,7 +804,7 @@ int gmx_order(int argc,char *argv[])
       "Calculate order parameter as function of boxlength, dividing the box"
       " in #nr slices." },
     { "-szonly", FALSE, etBOOL,{&bSzonly},
-      "Only give Sz element of order tensor. (axis can be specified with -d)" },
+      "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
     { "-unsat",  FALSE, etBOOL,{&bUnsat},
       "Calculate order parameters for unsaturated carbons. Note that this can"
       "not be mixed with normal order parameters." },

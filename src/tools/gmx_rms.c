@@ -94,7 +94,7 @@ int gmx_rms(int argc, char *argv[])
     const char
         *desc[] =
             {
-                "g_rms compares two structures by computing the root mean square",
+                "[TT]g_rms[tt] compares two structures by computing the root mean square",
                 "deviation (RMSD), the size-independent 'rho' similarity parameter",
                 "(rho) or the scaled rho (rhosc), ",
                 "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
@@ -123,7 +123,7 @@ int gmx_rms(int argc, char *argv[])
 
                 "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
                 "If you select the option (default) and ",
-                "supply a valid tpr file masses will be taken from there, ",
+                "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
                 "otherwise the masses will be deduced from the atommass.dat file in",
                 "the GROMACS library directory. This is fine for proteins but not",
                 "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",
@@ -212,7 +212,7 @@ int gmx_rms(int argc, char *argv[])
             { "-aver", FALSE, etINT,
                 { &avl },
                 "HIDDENAverage over this distance in the RMSD matrix" } };
-    int natoms, natoms2;
+    int natoms_trx, natoms_trx2, natoms;
     int i, j, k, m, teller, teller2, tel_mat, tel_mat2;
 #define NFRAME 5000
     int maxframe = NFRAME, maxframe2 = NFRAME;
@@ -449,11 +449,12 @@ int gmx_rms(int argc, char *argv[])
         norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
 
     /* read first frame */
-    natoms=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
-    if (natoms != top.atoms.nr) 
+    natoms_trx=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
+    if (natoms_trx != top.atoms.nr) 
         fprintf(stderr,
                 "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
-                top.atoms.nr,natoms);
+                top.atoms.nr,natoms_trx);
+    natoms = min(top.atoms.nr,natoms_trx);
     if (bMat || bBond || bPrev) {
         snew(mat_x,NFRAME);
 
@@ -598,7 +599,7 @@ int gmx_rms(int argc, char *argv[])
                 for(j=0; (j<nrms); j++) 
                     srenew(rlsm[j],maxframe);
         }
-    } while (read_next_x(oenv,status,&t,natoms,x,box));
+    } while (read_next_x(oenv,status,&t,natoms_trx,x,box));
     close_trj(status);
 
     if (bFile2) {
@@ -606,11 +607,12 @@ int gmx_rms(int argc, char *argv[])
 
         fprintf(stderr,"\nWill read second trajectory file\n");
         snew(mat_x2,NFRAME);
-        natoms2=read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
-        if ( natoms2 != natoms )
+        natoms_trx2 =
+	  read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
+        if ( natoms_trx2 != natoms_trx )
             gmx_fatal(FARGS,
                       "Second trajectory (%d atoms) does not match the first one"
-                      " (%d atoms)", natoms2, natoms);
+                      " (%d atoms)", natoms_trx2, natoms_trx);
         tel_mat2 = 0;
         teller2 = 0;
         do {
@@ -645,7 +647,7 @@ int gmx_rms(int argc, char *argv[])
                 maxframe2 +=NFRAME;
                 srenew(time2,maxframe2);
             }
-        } while (read_next_x(oenv,status,&t,natoms,x,box));
+        } while (read_next_x(oenv,status,&t,natoms_trx2,x,box));
         close_trj(status);
     } else {
         mat_x2=mat_x;

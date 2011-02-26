@@ -63,8 +63,10 @@ static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
 static const char *boxs_nm[] = { "Box-X", "Box-Y", "Box-Z" };
 
-static const char *tricl_boxs_nm[] = { "Box-XX", "Box-YX", "Box-YY",
-    "Box-ZX", "Box-ZY", "Box-ZZ" };
+static const char *tricl_boxs_nm[] = { 
+    "Box-XX", "Box-YY", "Box-ZZ",
+    "Box-YX", "Box-ZX", "Box-ZY" 
+};
 
 static const char *vol_nm[] = { "Volume" };
 
@@ -179,7 +181,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->bEInd[i]=FALSE;
     }
 
-    for(i=0; i<F_NRE; i++) {
+#ifndef GMX_OPENMM
+    for(i=0; i<F_NRE; i++)
+    {
         md->bEner[i] = FALSE;
         if (i == F_LJ)
             md->bEner[i] = !bBHAM;
@@ -243,18 +247,14 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else
             md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
     }
+#else
+    /* OpenMM always produces only the following 4 energy terms */
+    md->bEner[F_EPOT] = TRUE;
+    md->bEner[F_EKIN] = TRUE;
+    md->bEner[F_ETOT] = TRUE;
+    md->bEner[F_TEMP] = TRUE;
+#endif
 
-    md->f_nre=0;
-    for(i=0; i<F_NRE; i++)
-    {
-        if (md->bEner[i])
-        {
-            /* FIXME: The constness should not be cast away */
-            /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
-            ener_nm[md->f_nre]=interaction_function[i].longname;
-            md->f_nre++;
-        }
-    }
     md->f_nre=0;
     for(i=0; i<F_NRE; i++)
     {
@@ -295,8 +295,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     if (md->bDynBox)
     {
-        md->ib    = get_ebin_space(md->ebin, md->bTricl ? NTRICLBOXS :
-                                   NBOXS, md->bTricl ? tricl_boxs_nm : boxs_nm,
+        md->ib    = get_ebin_space(md->ebin, 
+                                   md->bTricl ? NTRICLBOXS : NBOXS, 
+                                   md->bTricl ? tricl_boxs_nm : boxs_nm,
                                    unit_length);
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
@@ -475,7 +476,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                         grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
                     }
                 }
-                md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
+                md->itc=get_ebin_space(md->ebin,md->mde_n,
+                                       (const char **)grpnms,unit_invtime);
                 if (md->bMTTK) 
                 {
                     for(i=0; (i<md->nTCP); i++) 
@@ -563,6 +565,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         md->fp_dhdl = fp_dhdl;
     }
+    //md->dhdl_derivatives = (ir->dhdl_derivatives==dhdlderivativesYES);
     return md;
 }
 
@@ -648,9 +651,9 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         s+=1;
     }
     
-    if (fep->n_lambda > 0) 
+    if ((fep->n_lambda > 0) && (fep->elmcmove > elmcmoveNO))
     {
-        /* state for the fep_vals */
+        /* state for the fep_vals, if we have alchemical sampling */
         sprintf(buf,"%s","Alchemical state");
         setname[s] = strdup(buf);
         s+=1;
@@ -765,20 +768,23 @@ void upd_mdebin(t_mdebin *md,
     }
     if (md->bDynBox)
     {
+        int nboxs;
         if(md->bTricl)
         {
             bs[0] = box[XX][XX];
-            bs[1] = box[YY][XX];
-            bs[2] = box[YY][YY];
-            bs[3] = box[ZZ][XX];
-            bs[4] = box[ZZ][YY];
-            bs[5] = box[ZZ][ZZ];
+            bs[1] = box[YY][YY];
+            bs[2] = box[ZZ][ZZ];
+            bs[3] = box[YY][XX];
+            bs[4] = box[ZZ][XX];
+            bs[5] = box[ZZ][YY];
+            nboxs=NTRICLBOXS;
         }
         else
         {
             bs[0] = box[XX][XX];
             bs[1] = box[YY][YY];
             bs[2] = box[ZZ][ZZ];
+            nboxs=NBOXS;
         }
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
@@ -800,7 +806,8 @@ void upd_mdebin(t_mdebin *md,
                 }
             }
         }
-        add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
+
+        add_ebin(md->ebin,md->ib   ,nboxs,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
         add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
@@ -834,7 +841,7 @@ void upd_mdebin(t_mdebin *md,
         add_ebin(md->ebin,md->ivcos,1,&(ekind->cosacc.vcos),bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *vol*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*vol*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin,md->ivisc,1,&tmp,bSum);    
     }
     if (md->nE > 1)
@@ -937,8 +944,11 @@ void upd_mdebin(t_mdebin *md,
     {
         fprintf(md->fp_dhdl,"%.4f ",time);
         /* the current free energy state */
-        fprintf(md->fp_dhdl,"%4d",state->fep_state);
-
+        
+        /* print the current state if we are doing expanded ensemble */
+        if (fepvals->elmcmove > elmcmoveNO) {
+            fprintf(md->fp_dhdl,"%4d",state->fep_state);
+        }
         /* total energy (for if the temperature changes */
         if (fepvals->bPrintEnergy) 
         {
@@ -1291,21 +1301,6 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
         }
     }
 
-}
-
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
-
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
-
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
 }
 
 void update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)

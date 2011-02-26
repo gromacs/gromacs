@@ -237,7 +237,7 @@ static void init_table(FILE *fp,int n,int nx0,
     snew(td->v,td->nx);
     snew(td->f,td->nx);
   }
-  for(i=td->nx0; (i<td->nx); i++)
+  for(i=0; (i<td->nx); i++)
     td->x[i] = i/tabscale;
 }
 
@@ -568,7 +568,11 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     r     = td->x[i];
     r2    = r*r;
     r6    = 1.0/(r2*r2*r2);
-    r12   = r6*r6;
+    if (gmx_within_tol(reppow,12.0,10*GMX_DOUBLE_EPS)) {
+      r12 = r6*r6;
+    } else {
+      r12 = pow(r,-reppow);   
+    }
     Vtab  = 0.0;
     Ftab  = 0.0;
     if (bSwitch) {
@@ -600,7 +604,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 #endif
 
     rc6 = rc*rc*rc;
-	rc6 = 1.0/(rc6*rc6);
+    rc6 = 1.0/(rc6*rc6);
 
     switch (tp) {
     case etabLJ6:
@@ -723,6 +727,14 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     /* Convert to single precision when we store to mem */
     td->v[i]  = Vtab;
     td->f[i]  = Ftab;
+  }
+
+  /* Continue the table linearly from nx0 to 0.
+   * These values are only required for energy minimization with overlap or TPI.
+   */
+  for(i=td->nx0-1; i>=0; i--) {
+    td->v[i] = td->v[i+1] + td->f[i+1]*(td->x[i+1] - td->x[i]);
+    td->f[i] = td->f[i+1];
   }
 
 #ifdef DEBUG_SWITCH

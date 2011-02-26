@@ -1649,7 +1649,10 @@ static void do_merge(t_hbdata *hb,int ntmp,
         srenew(hb0->h[0],4+nnframes/hb->wordlen);
         srenew(hb0->g[0],4+nnframes/hb->wordlen);  
     }
-    clearPshift(&(hb->per->pHist[a1][a2]));
+    if (NULL != hb->per->pHist)
+    {
+        clearPshift(&(hb->per->pHist[a1][a2]));
+    }
 
     /* Copy temp array to target array */
     for(m=0; (m<=nnframes); m++) {
@@ -1820,9 +1823,9 @@ static void do_hblife(const char *fn,t_hbdata *hb,gmx_bool bMerge,gmx_bool bCont
     }
     fprintf(stderr,"\n");
     if (bContact)
-        fp = xvgropen(fn,"Uninterrupted contact lifetime","Time (ps)","()",oenv);
+        fp = xvgropen(fn,"Uninterrupted contact lifetime",output_env_get_xvgr_tlabel(oenv),"()",oenv);
     else
-        fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()",
+        fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime",output_env_get_xvgr_tlabel(oenv),"()",
                       oenv);
 
     xvgr_legend(fp,asize(leg),leg,oenv);
@@ -2498,7 +2501,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 /*             printf("\nNumber of data points is less than the number of parameters to fit\n." */
 /*                    "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
 
-        fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
+        fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)");
         xvgr_legend(fp,asize(legNN),legNN);
       
         for(j=0; (j<nn); j++)
@@ -2735,9 +2738,9 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     
 
         if (bContact)
-            fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Contact Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         else
-            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         xvgr_legend(fp,asize(legGem),(const char**)legGem,oenv);
 
         for(j=0; (j<nn); j++)
@@ -2874,9 +2877,9 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 
 
         if (bContact)
-            fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Contact Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         else
-            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         xvgr_legend(fp,asize(legLuzar),legLuzar, oenv);
 
       
@@ -2936,7 +2939,7 @@ static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
     if (!fn)
         return;
     if (!fp) {
-        fp = xvgropen(fn,"Donor properties","Time (ps)","Number",oenv);
+        fp = xvgropen(fn,"Donor properties",output_env_get_xvgr_tlabel(oenv),"Number",oenv);
         xvgr_legend(fp,asize(leg),leg,oenv);
     }
     nbound = 0;
@@ -3081,7 +3084,7 @@ static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
 int gmx_hbond(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
+        "[TT]g_hbond[tt] computes and analyzes hydrogen bonds. Hydrogen bonds are",
         "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
         "(zero is extended) and the distance Hydrogen - Acceptor.",
         "OH and NH groups are regarded as donors, O is an acceptor always,",
@@ -3093,7 +3096,7 @@ int gmx_hbond(int argc,char *argv[])
         "identical or non-overlapping. All hydrogen bonds between the two",
         "groups are analyzed.[PAR]",
     
-        "If you set -shell, you will be asked for an additional index group",
+        "If you set [TT]-shell[tt], you will be asked for an additional index group",
         "which should contain exactly one atom. In this case, only hydrogen",
         "bonds between atoms within the shell distance from the one atom are",
         "considered.[PAR]",
@@ -3158,7 +3161,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-da",   FALSE,  etBOOL, {&bDA},
           "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
         { "-r2",   FALSE,  etREAL, {&r2cut},
-          "Second cutoff radius. Mainly useful with -contact and -ac"},
+          "Second cutoff radius. Mainly useful with [TT]-contact[tt] and [TT]-ac[tt]"},
         { "-abin", FALSE,  etREAL, {&abin},
           "Binwidth angle distribution (degrees)" },
         { "-rbin", FALSE,  etREAL, {&rbin},
@@ -3171,15 +3174,15 @@ int gmx_hbond(int argc,char *argv[])
           "when > 0, only calculate hydrogen bonds within # nm shell around "
           "one particle" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With -gemfit we suggest -fitstart 0" },
+          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With [TT]-gemfit[tt] we suggest [TT]-fitstart 0[tt]" },
         { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with -gemfit)" },
+          "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
           "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
         { "-dump",  FALSE, etINT, {&nDump},
-          "Dump the first N hydrogen bond ACFs in a single xvg file for debugging" },
+          "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb",FALSE, etREAL, {&maxnhb},
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},
@@ -3192,24 +3195,6 @@ int gmx_hbond(int argc,char *argv[])
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
 #endif
-        /* The ballistic/geminate fitting will be taken away temporarily sue to problems with stability. */
-/*         { "-NN", FALSE, etENUM, {NNtype}, */
-/*           "HIDDENDo a full all vs all loop and estimate the interaction energy instead of having a binary existence function for hydrogen bonds. NOT FULLY TESTED YET! DON'T USE IT!"}, */
-/*         { "-gemfit", FALSE, etBOOL, {&bGemFit}, */
-/*           "With -gemainate != none: fit ka and kd to the ACF"}, */
-/*         { "-gemlogstart", FALSE, etREAL, {&logAfterTime}, */
-/*           "HIDDENWith -gemfit: After this time (ps) the data points fitted to will be equidistant in log-time."}, */
-/*         { "-gemnp", FALSE, etINT, {&nFitPoints}, */
-/*           "HIDDENNuber of points in the ACF used to fit rev. gem. recomb. model"}, */
-/*         { "-ballistic", FALSE, etBOOL, {&bBallistic}, */
-/*           "Calculate and remove ultrafast \"ballistic\" component in the ACF"}, */
-/*         { "-ballisticlen", FALSE, etREAL, {&gemBallistic}, */
-/*           "HIDDENFitting interval for the ultrafast \"ballistic\" component in ACF"}, */
-/*         { "-nbalexp", FALSE, etINT, {&nBalExp}, */
-/*           "HIDDENNumber of exponentials to fit when removing the ballistic component"}, */
-/*         { "-ballisticDt", FALSE, etBOOL, {&bBallisticDt}, */
-/*           "HIDDENIf TRUE, finding of the fastest ballistic component will be based on the time derivative at t=0, " */
-/*           "while if FALSE, it will be based on the exponent alone (like in Markovitch 2008)"} */
     };
     const char *bugs[] = {
         "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
@@ -3250,9 +3235,9 @@ int gmx_hbond(int argc,char *argv[])
     atom_id **index;
     rvec    *x,hbox;
     matrix  box;
-    real    t,ccut,dist,ang;
+    real    t,ccut,dist=0.0,ang=0.0;
     double  max_nhb,aver_nhb,aver_dist;
-    int     h,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
+    int     h=0,i,j,k=0,l,start,end,id,ja,ogrp,nsel;
     int     xi,yi,zi,ai;
     int     xj,yj,zj,aj,xjj,yjj,zjj;
     int     xk,yk,zk,ak,xkk,ykk,zkk;
@@ -3280,7 +3265,7 @@ int gmx_hbond(int argc,char *argv[])
     npargs = asize(pa);  
     ppa    = add_acf_pargs(&npargs,pa);
   
-    parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,npargs,
+    parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,NFILE,fnm,npargs,
                       ppa,asize(desc),desc,asize(bugs),bugs,&oenv);
 
     /* NN-loop? If so, what estimator to use ?*/
@@ -3336,23 +3321,25 @@ int gmx_hbond(int argc,char *argv[])
                 bMerge = TRUE;
             }
         }
-    } else
-        printf("No geminate recombination.\n");
-
+    } 
+    
     /* process input */
-    bSelected = opt2bSet("-sel",NFILE,fnm);
+    bSelected = FALSE;
     ccut = cos(acut*DEG2RAD);
   
     if (bContact) {
         if (bSelected)
-            gmx_fatal(FARGS,"Can not analyze selected contacts: turn off -sel");
+            gmx_fatal(FARGS,"Can not analyze selected contacts.");
         if (!bDA) {
             gmx_fatal(FARGS,"Can not analyze contact between H and A: turn off -noda");
         }
     }
 
 #ifndef HAVE_LIBGSL
-    printf("NO GSL! Can't find and take away ballistic term in ACF without GSL\n.");
+    /* Don't pollute stdout with information about external libraries.
+     *
+     * printf("NO GSL! Can't find and take away ballistic term in ACF without GSL\n.");
+     */
 #endif
   
     /* Initiate main data structure! */
@@ -3363,7 +3350,11 @@ int gmx_hbond(int argc,char *argv[])
               bGem);
   
 #ifdef HAVE_OPENMP
-    printf("Compiled with OpenMP (%i)\n", _OPENMP);
+    /* Same thing here. There is no reason whatsoever to write the specific version of
+     * OpenMP used for compilation to stdout for normal usage.
+     *
+     * printf("Compiled with OpenMP (%i)\n", _OPENMP);
+     */
 #endif
 
     /*   if (bContact && bGem) */
@@ -3372,7 +3363,7 @@ int gmx_hbond(int argc,char *argv[])
     if (opt2bSet("-nhbdist",NFILE,fnm)) {
         const char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
         fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
-                         "Number of donor-H with N HBs","Time (ps)","N",oenv);
+                         "Number of donor-H with N HBs",output_env_get_xvgr_tlabel(oenv),"N",oenv);
         xvgr_legend(fpnhb,asize(leg),leg,oenv);
     }
   
@@ -3658,7 +3649,7 @@ int gmx_hbond(int argc,char *argv[])
                     dump_grid(debug, ngrid, grid);
                 
                 add_frames(hb,nframes);
-                init_hbframe(hb,nframes,t);
+                init_hbframe(hb,nframes,output_env_conv_time(oenv,t));
 	
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
@@ -3859,7 +3850,7 @@ int gmx_hbond(int argc,char *argv[])
                 trrStatus = (read_next_x(oenv,status,&t,natoms,x,box));
                 nframes++;      /*    +   */
             }      /*                 +   */
-#ifdef HAVE_OPENMP /* ++++++++++++++++´   */
+#ifdef HAVE_OPENMP /* +++++++++++++++++   */
 #pragma omp barrier
 #endif
         } while (trrStatus);
@@ -3892,6 +3883,10 @@ int gmx_hbond(int argc,char *argv[])
     sfree(p_rdist);
 #endif
   
+    if(nframes <2 && (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm)))
+    {
+        gmx_fatal(FARGS,"Cannot calculate autocorrelation of life times with less than two frames");
+    }
   
     free_grid(ngrid,&grid);
   
@@ -3935,7 +3930,7 @@ int gmx_hbond(int argc,char *argv[])
     aver_nhb  = 0;    
     aver_dist = 0;
     fp = xvgropen(opt2fn("-num",NFILE,fnm),bContact ? "Contacts" :
-                  "Hydrogen Bonds","Time","Number",oenv);
+                  "Hydrogen Bonds",output_env_get_xvgr_tlabel(oenv),"Number",oenv);
     snew(leg,2);
     snew(leg[0],STRLEN);
     snew(leg[1],STRLEN);
@@ -3988,7 +3983,7 @@ int gmx_hbond(int argc,char *argv[])
     /* Print HB in alpha-helix */
     if (opt2bSet("-hx",NFILE,fnm)) {
         fp = xvgropen(opt2fn("-hx",NFILE,fnm),
-                      "Hydrogen Bonds","Time(ps)","Count",oenv);
+                      "Hydrogen Bonds",output_env_get_xvgr_tlabel(oenv),"Count",oenv);
         xvgr_legend(fp,NRHXTYPES,hxtypenames,oenv);
         for(i=0; i<nframes; i++) {
             fprintf(fp,"%10g",hb->time[i]);
@@ -4069,7 +4064,7 @@ int gmx_hbond(int argc,char *argv[])
             sprintf(mat.title,bContact ? "Contact Existence Map":
                     "Hydrogen Bond Existence Map");
             sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
-            sprintf(mat.label_x,"Time (ps)");
+            sprintf(mat.label_x,output_env_get_xvgr_tlabel(oenv));
             sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
             mat.bDiscrete=TRUE;
             mat.nmap=2;
@@ -4120,7 +4115,7 @@ int gmx_hbond(int argc,char *argv[])
 #define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) )
     
         fp = xvgropen(opt2fn("-dan",NFILE,fnm),
-                      "Donors and Acceptors","Time(ps)","Count",oenv);
+                      "Donors and Acceptors",output_env_get_xvgr_tlabel(oenv),"Count",oenv);
         nleg = (bTwo?2:1)*2;
         snew(legnames,nleg);
         i=0;

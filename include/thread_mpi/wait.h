@@ -87,12 +87,12 @@ files.
 #else /* !TMPI_WAIT_FOR_NO_ONE */
 
 /* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
+#define TMPI_YIELD_WAIT_DATA 
 /* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data)
+#define TMPI_YIELD_WAIT_DATA_INIT(data) 
 
 /* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  
+#define TMPI_YIELD_WAIT(data)  tMPI_Atomic_memory_barrier()
 
 
 #endif /* !TMPI_WAIT_FOR_NO_ONE */

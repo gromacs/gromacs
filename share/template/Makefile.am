@@ -10,7 +10,7 @@ templatedir = ${pkgdatadir}/template
 # template makefile Template.mak, and rename it to Makefile when installing.
 # We add the GMX_DOUBLE define to CPPFLAGS, so users can do without config.h
 XLDFLAGS = -L@libdir@ @LDFLAGS@
-XLIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
+XLIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @FFT_LIBS@ @XML_LIBS@ @GSL_LIBS@ @LIBS@ 
 XCC = @CC@
 if GMX_DOUBLE
 MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DGMX_DOUBLE
@@ -23,7 +23,7 @@ template_DATA = template.c README Makefile.@host@_double Makefile.pkg
 else
 template_DATA = template.c README Makefile.@host@ Makefile.pkg
 endif
-EXTRA_DIST = template.c template_doc.c README Template.mak Makefile.pkg
+EXTRA_DIST = template.c template_doc.c README Template.mak Makefile.pkg CMakeLists.txt.template
 
 BUILT_SOURCES = gromacs
 

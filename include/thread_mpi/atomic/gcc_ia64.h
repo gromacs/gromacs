@@ -116,10 +116,10 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 #define tMPI_Atomic_memory_barrier() __sync_synchronize()
 /* ia64 cmpxchg */
 #define tMPI_Atomic_cas(a, oldval, newval) \
-          _InterlockedCompareExchange(&((a)->value),newval,oldval)
+          (_InterlockedCompareExchange(&((a)->value),newval,oldval) == oldval)
 /* ia64 pointer cmpxchg */
 #define tMPI_Atomic_ptr_cas(a, oldval, newval) \
-          _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
+          (_InterlockedCompareExchangePointer(&((a)->value),newval,oldval)==oldval)
 
 /*#define tMPI_Atomic_ptr_cas(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
 
@@ -145,15 +145,15 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
     asm volatile ("cmpxchg4.acq %0=[%1],%2,ar.ccv":                    
                   "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
                           
-    return res;
+    return res==oldval;
 #else
-    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
+    return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 #endif
 }
 
 /* ia64 ptr cmpxchg */
-static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *oldval, 
-                                        void *newval)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *oldval, 
+                                      void *newval)
 {
 #if GCC_VERSION < 40200
     void* volatile* res;
@@ -161,9 +161,9 @@ static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *oldval,
     asm volatile ("cmpxchg8.acq %0=[%1],%2,ar.ccv":                    
                   "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
                           
-    return (void*)res;
+    return ((void*)res)==oldval;
 #else
-    return (void*)__sync_val_compare_and_swap( &(a->value), oldval, newval);
+    return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 #endif
 }
 
@@ -209,7 +209,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
+        while(!tMPI_Atomic_cas(a,oldval,newval));
     }
     return (int)newval;
 }
@@ -240,7 +240,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
+        while(!tMPI_Atomic_cas(a,oldval,newval));
     }
     return (int)oldval;
 }
@@ -262,9 +262,9 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     tMPI_Atomic_t *a = (tMPI_Atomic_t *) x;
-    unsigned long value;                                                 
-    value = tMPI_Atomic_cas(a, 0, 1);                             
-    if (value)                                                           
+    int succeeded;                                                 
+    succeeded = tMPI_Atomic_cas(a, 0, 1);                             
+    if (!succeeded)                                                           
     {                                                                    
         do                                                               
         {                                                                
@@ -272,16 +272,16 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
             {                                                            
                 tMPI_Atomic_memory_barrier();                             
             }                                                            
-            value = tMPI_Atomic_cas(a, 0, 1);                       
+            succeeded = tMPI_Atomic_cas(a, 0, 1);                       
         }                                                                
-        while (value);                                                   
+        while (!succeeded);                                                   
     }                                                                    
 } 
 
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    return (tMPI_Atomic_cas( ((tMPI_Atomic_t *)x), 0, 1) != 0);
+    return (tMPI_Atomic_cas( ((tMPI_Atomic_t *)x), 0, 1));
 }
 
 

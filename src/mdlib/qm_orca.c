@@ -1,5 +1,4 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: gmx_matrix.c,v 1.4 2008/12/02 18:27:57 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -72,6 +71,7 @@ void init_orca(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
  char
    *buf;
  snew(buf,200);    
+ /* ORCA settings on the system */
  buf = getenv("BASENAME");
  if (buf){
      snew(qm->orca_basename,200);
@@ -79,6 +79,20 @@ void init_orca(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
  }
  else
      gmx_fatal(FARGS,"no $BASENAME\n");
+
+ /* ORCA directory on the system */
+ snew(buf,200);
+ buf = getenv("ORCA_PATH");
+ fprintf(stderr,"%s",buf);
+
+ if (buf){
+   snew(qm->orca_dir,200);
+   sscanf(buf,"%s",qm->orca_dir);
+ }
+ else
+   gmx_fatal(FARGS,"no $ORCA_PATH, check manual\n");
+
+ fprintf(stderr,"%s...\n",qm->orca_dir);
  fprintf(stderr,"orca initialised...\n");
  /* since we append the output to the BASENAME.out file,
  we should delete an existent old out-file here. */
@@ -375,7 +389,7 @@ real read_orca_output(rvec QMgrad[],rvec MMgrad[],int step,t_forcerec *fr,
  return(QMener);  
 }
 
-void do_orca(int step,char *exe, char *basename)
+void do_orca(int step,char *exe, char *orca_dir, char *basename)
 {
 
  /* make the call to the orca binary through system()
@@ -384,7 +398,8 @@ void do_orca(int step,char *exe, char *basename)
   */
  char
    buf[100];
- sprintf(buf,"%s %s.inp >> %s.out",
+ sprintf(buf,"%s/%s %s.inp >> %s.out",
+             orca_dir,
              "orca",
              basename,
              basename);
@@ -414,7 +429,7 @@ real call_orca(t_commrec *cr,  t_forcerec *fr,
  snew(MMgrad,mm->nrMMatoms);
 
  write_orca_input(step,fr,qm,mm);
- do_orca(step,exe,qm->orca_basename);
+ do_orca(step,exe,qm->orca_dir,qm->orca_basename);
  QMener = read_orca_output(QMgrad,MMgrad,step,fr,qm,mm);
  /* put the QMMM forces in the force array and to the fshift
   */

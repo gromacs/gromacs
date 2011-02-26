@@ -87,7 +87,7 @@ tMPI_Thread_key_t id_key; /* the key to get the thread id */
 
 /* whether MPI has finalized (we need this to distinguish pre-inited from
        post-finalized states */
-static gmx_bool tmpi_finalized=FALSE;
+static tmpi_bool tmpi_finalized=FALSE;
 
 /* misc. global information about MPI */
 struct tmpi_global *tmpi_global=NULL;
@@ -100,7 +100,7 @@ struct tmpi_global *tmpi_global=NULL;
 
 
 /* start N threads with argc, argv (used by tMPI_Init)*/
-void tMPI_Start_threads(gmx_bool main_returns, int N, int *argc, char ***argv, 
+void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg,
                         int (*start_fn_main)(int, char**));
 
@@ -193,7 +193,7 @@ struct tmpi_thread *tMPI_Get_thread(tMPI_Comm comm, int rank)
 }
 #endif
 
-gmx_bool tMPI_Is_master(void)
+tmpi_bool tMPI_Is_master(void)
 {
     /* if there are no other threads, we're the main thread */
     if ( (!TMPI_COMM_WORLD) || TMPI_COMM_WORLD->grp.N==0)
@@ -201,7 +201,7 @@ gmx_bool tMPI_Is_master(void)
 
     /* otherwise we know this through thread specific data: */
     /* whether the thread pointer points to the head of the threads array */
-    return (gmx_bool)(tMPI_Get_current() == threads); 
+    return (tmpi_bool)(tMPI_Get_current() == threads); 
 }
 
 tMPI_Comm tMPI_Get_comm_self(void)
@@ -376,7 +376,7 @@ static void* tMPI_Thread_starter(void *arg)
 }
 
 
-void tMPI_Start_threads(gmx_bool main_returns, int N, int *argc, char ***argv, 
+void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg,
                         int (*start_fn_main)(int, char**))
 {

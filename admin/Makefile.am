@@ -5,4 +5,5 @@
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff.pl  mktex 
 
-EXTRA_DIST    = gromacs.spec  programs.txt README.patches $(EXTRA_SCRIPTS)
+EXTRA_DIST    = gromacs.spec	programs.txt		README.patches $(EXTRA_SCRIPTS)\
+				InstallInfo.txt	InstallLicense.txt	InstallWelcome.txt 

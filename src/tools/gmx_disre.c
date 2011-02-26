@@ -543,9 +543,9 @@ static void dump_disre_matrix(const char *fn,t_dr_result *dr,int ndr,
 int gmx_disre(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_disre computes violations of distance restraints.",
-    "If necessary all protons can be added to a protein molecule ",
-    "using the protonate program.[PAR]",
+    "[TT]g_disre[tt] computes violations of distance restraints.",
+    "If necessary, all protons can be added to a protein molecule ",
+    "using the [TT]g_protonate[tt] program.[PAR]",
     "The program always",
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",
@@ -553,7 +553,7 @@ int gmx_disre(int argc,char *argv[])
     "the time averaged values per restraint are given in the log file.[PAR]",
     "An index file may be used to select specific restraints for",
     "printing.[PAR]",
-    "When the optional[TT]-q[tt] flag is given a pdb file coloured by the",
+    "When the optional [TT]-q[tt] flag is given a [TT].pdb[tt] file coloured by the",
     "amount of average violations.[PAR]",
     "When the [TT]-c[tt] option is given, an index file will be read",
     "containing the frames in your trajectory corresponding to the clusters",
