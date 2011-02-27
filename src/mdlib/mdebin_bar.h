@@ -47,6 +47,7 @@ extern "C" {
 typedef struct 
 {
     real *dh; /* the raw energy difference data -- actually, store more in here. */
+    float *dhf; /* raw difference data -- in floats, for storage. */
     unsigned int ndh; /* number of data points */
     unsigned int ndhmax; /* the maximum number of points */
     

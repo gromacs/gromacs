@@ -69,6 +69,8 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     }
     
     snew(dh->dh, ndhmax);
+    snew(dh->dhf,ndhmax);
+
     if ( nbins <= 0 || dx<GMX_REAL_EPS*10 )
     {
         dh->nhist=0;
@@ -216,12 +218,20 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 
         /* subblock 3 */
         /* check if there's actual data to be written. */
-        if (dh->ndh > 1)
+        //if (dh->ndh > 1)
+        if (dh->ndh > 0)
         {
             blk->sub[2].nr=dh->ndh;
+/* For F@H for now. */
+#undef GMX_DOUBLE
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
-            blk->sub[2].fval=dh->dh;
+            int i;
+            for(i=0;i<dh->ndh;i++)
+            {
+                dh->dhf[i] = (float)dh->dh[i];
+            }
+            blk->sub[2].fval=dh->dhf;
 #else
             blk->sub[2].type=xdr_datatype_double;
             blk->sub[2].dval=dh->dh;
@@ -233,6 +243,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             blk->sub[2].nr=0;
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
+            blk->sub[2].fval=NULL;
 #else
             blk->sub[2].type=xdr_datatype_double;
 #endif

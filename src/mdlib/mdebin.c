@@ -942,36 +942,36 @@ void upd_mdebin(t_mdebin *md,
     /* BAR + thermodynamic integration values */
     if (md->fp_dhdl && bDoDHDL)
     {
-        fprintf(md->fp_dhdl,"%.4f ",time);
+        fprintf(md->fp_dhdl,"%.4f",time);
         /* the current free energy state */
         
         /* print the current state if we are doing expanded ensemble */
         if (fepvals->elmcmove > elmcmoveNO) {
-            fprintf(md->fp_dhdl,"%4d",state->fep_state);
+            fprintf(md->fp_dhdl," %4d",state->fep_state);
         }
         /* total energy (for if the temperature changes */
         if (fepvals->bPrintEnergy) 
         {
             store_energy = enerd->term[F_ETOT];
-            fprintf(md->fp_dhdl," %.4f ",store_energy);
+            fprintf(md->fp_dhdl," %#.8g",store_energy);
         }
 
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
             {
-                fprintf(md->fp_dhdl," %.4f",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
+                fprintf(md->fp_dhdl," %#.8g",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
             }
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(md->fp_dhdl," %#.5g",
+            fprintf(md->fp_dhdl," %#.8g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
             
         }
         if (md->epc!=epcNO) 
         {
-            fprintf(md->fp_dhdl," %.4f",pv);
+            fprintf(md->fp_dhdl," #%.8g",pv);
         }
         fprintf(md->fp_dhdl,"\n");
         /* and the binary free energy output */
@@ -1165,7 +1165,13 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
                 {
                     mde_delta_h_coll_handle_block(md->dhc, &fr, fr.nblock);
                 }
-
+                
+                /* we can now free & reset the data in the blocks */
+                if (md->dhc)
+                {
+                    mde_delta_h_coll_reset(md->dhc);
+                }
+                
                 /* do the actual I/O */
                 do_enx(fp_ene,&fr);
                 gmx_fio_check_file_position(enx_file_pointer(fp_ene));
@@ -1173,12 +1179,6 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
                 {
                     /* We have stored the sums, so reset the sum history */
                     reset_ebin_sums(md->ebin);
-                }
-
-                /* we can now free & reset the data in the blocks */
-                if (md->dhc)
-                {
-                    mde_delta_h_coll_reset(md->dhc);
                 }
             }
             free_enxframe(&fr);
