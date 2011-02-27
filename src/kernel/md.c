@@ -1367,7 +1367,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * free the allocated memory and reset the counts.
                  */
                 done_energyhistory(&state_global->enerhist);
-                init_state_energyhistory(&state_global->enerhist);
+                init_energyhistory(&state_global->enerhist);
             }
         }
         /* Set the initial energy history in state by updating once */

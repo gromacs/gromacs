@@ -436,7 +436,7 @@ static void init_state_ekinstate(ekinstate_t *eks)
   eks->mvcos          = 0;
 }
 
-void init_state_energyhistory(energyhistory_t * enerhist)
+void init_energyhistory(energyhistory_t * enerhist)
 {
     enerhist->nener = 0;
 
@@ -565,7 +565,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
 
   init_state_ekinstate(&state->ekinstate);
 
-  init_state_energyhistory(&state->enerhist);
+  init_energyhistory(&state->enerhist);
 
   init_df_history(&state->dfhist,nlambda,0);
 
