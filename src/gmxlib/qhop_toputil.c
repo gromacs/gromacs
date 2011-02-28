@@ -15,7 +15,7 @@ extern void qhop_tautomer_swap(const t_qhoprec *qr,
 			       rvec x[], rvec v[],
 			       int prim, int sec)
 {
-  rvec tmp, *;
+  rvec tmp;
   int i, xv;
   t_qhop_atom *qprim, *qsec;
 
