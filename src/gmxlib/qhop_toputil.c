@@ -10,6 +10,7 @@
 #include "types/commrec.h"
 #include "types/constr.h"
 #include "vec.h"
+#include "constr.h"
 
 extern void qhop_tautomer_swap(const t_qhoprec *qr,
 			       rvec x[], rvec v[],
