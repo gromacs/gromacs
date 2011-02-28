@@ -256,7 +256,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             }
         }
     }
-    fprintf(fplog,"Repl   ");
     for(i=0; i<re->nrepl; i++)
     {
         fprintf(fplog," %3d  ",re->ind[i]);
@@ -274,7 +273,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         fprintf(fplog,"\nRepl  l");
         for(i=0; i<re->nrepl; i++)
         {
-            fprintf(fplog," %5.3f",re->q[re->ind[i]]);
+            fprintf(fplog," %3d",re->q[re->ind[i]]);
         }
         break;
     default:
@@ -917,10 +916,6 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
             fprintf(fplog,"Repl %d <-> %d",re->repl,exchange);
         }
     }
-    
-    print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
-    print_prob(fplog,"pr",re->nrepl,prob);
-    fprintf(fplog,"\n");
     
     sfree(bEx);
     sfree(prob);
