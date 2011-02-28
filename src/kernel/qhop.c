@@ -1987,7 +1987,7 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   }
 #endif
 
-  etot = enerd->term[F_EPOT];
+  etot = enerd->term[F_EPOT] - enerd->term[F_COUL14] - enerd->term[F_LJ14];
   sfree(enerd);
   return(etot);
 } /* evaluate_energy */
