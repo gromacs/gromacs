@@ -149,31 +149,41 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
    * the residue name.
    */
 
-  char *donor_name, *acceptor_name;
+  char *donor_name, *acceptor_name,
+    *donor_atom, *acceptor_atom;
+  
   qhop_parameters
     *q;
 
   snew(q,1);
 
-  donor_name    = db->rb.res
-    [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
-    [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
-  acceptor_name = db->rb.res
-    [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype]
-    [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].res].name;
-
-/* 		      [(qhoprec->qhop_atoms[hop->donor_id].res)].name
-
-#ifdef VERBOSE_QHOP
-  fprintf(stderr, "--- PARAMETERS FOR DONOR %s - ACCEPTOR %s ---\n",
-	  donor_name, acceptor_name);
-#endif /* VERBOSE_QHOP */
-  
   if (db == NULL)
-    gmx_fatal(FARGS, "Qhop database not initialized.");
+    {
+      gmx_fatal(FARGS, "Qhop database not initialized.");
+    }
   else
-    if (qhop_db_get_parameters(db,donor_name,acceptor_name,q) != 1)
-      gmx_fatal(FARGS, "Parameters not found in qhop database.");
+    {
+#ifdef VERBOSE_QHOP
+      fprintf(stderr, "--- PARAMETERS FOR DONOR %s (%s) - ACCEPTOR %s (%s) ---\n",
+	      donor_name, donor_atom, acceptor_name, acceptor_atom);
+#endif /* VERBOSE_QHOP */
+
+      donor_name    = db->rb.res
+	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
+	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
+
+      acceptor_name = db->rb.res
+	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype]
+	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].res].name;
+
+      donor_atom    = qr->qhop_atoms[hop->primary_d].atomname;
+      acceptor_atom = qr->qhop_atoms[hop->primary_a].atomname;
+
+      if (qhop_db_get_parameters(db, donor_name, acceptor_name,
+				 donor_atom, acceptor_atom, q) != 1)
+	gmx_fatal(FARGS, "Parameters not found in qhop database.");
+    }
+
 #ifdef VERBOSE_QHOP
   qhop_db_print(q);
 #endif /* VERBOSE_QHOP */
