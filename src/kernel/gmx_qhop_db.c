@@ -591,12 +591,6 @@ void qhop_db_print (qhop_parameters *qhp)
   dump_qhp(stderr, qhp);
 }
 
-/* static void fill_resblocks(qhop_parameters *qhp, qhop_resblocks_t rb) */
-/* { */
-/*   int i; */
-/*   i = 0; */
-/* } */
-
 qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 {
   qhop_db_t qdb;
@@ -614,13 +608,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 
   snew(qdb,1);
   open_symtab(&(qdb->tab));
-  /*  sprintf(buf,"%s-qhop",
-      forcefield);*/
   atype = read_atype(forcefield,stab);
-  /* read_resall has changed a lot! Rework this part. */
-  /* nrtp = read_resall(forcefield,qdb->bts,&(bigrtp),atype, */
-/* 		     stab,&(qdb->bAllDih), */
-/* 		     &(qdb->nrexcl),&(qdb->bHH14),&(qdb->bRemoveDih)); */
   sprintf(buf, "%s/aminoacids.rtp", forcefield);
   read_resall(buf, &nrtp, &bigrtp, atype, stab, FALSE);
 
@@ -629,10 +617,6 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   /* Read termini database too.
    * Not implemented yet, which is why amber is the
    * first forcefield to play with. */
-
-  
-
-  /* snew(qdb->resinfo,qdb->nrtp); */
 
   /* I'm redoing this part from scratch in a new manner.
    * No longer reading a special file; rather, the usual
@@ -678,10 +662,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   done_symtab(stab);
 
   set_reactant_products(qdb);
-  /* qhop_build_interaction_lib(forcefield, qdb, &atype, &stab); */
 
-  /* This should be coded into the xml read instead. */
-  //  move_strings_to_symtab(qdb); /* Copy names to reduced symtab in qdb->tab*/
   printf("free the redundant rtp parts.\n");
   for(i=0; i<nrtp; i++) /* Can't use free_t_restp. Not entirely sure why, though.*/
     {
