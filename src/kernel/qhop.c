@@ -82,6 +82,66 @@ extern void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[])
     }
 }
 
+/* *secname holds the name of the acceptor/donor. If this is indeed
+ * the primary titratable site, then this function returns the
+ * qhop_atom id of that atom. If not, it returns the qhop_atom id
+ * of the primary site. */
+static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom *qatom, char *secname, int DA)
+{
+  qhop_db *db;
+  char *name;
+  int rt, r, a, reac, t;
+  gmx_bool bMatch;
+  qhop_res *qres;
+  qhop_reactant *qreac;
+  t_restp *rtp;
+
+  if (DA != eQDON && DA != eQACC)
+    {
+      gmx_fatal(FARGS, "Called qhop_get_primary() with DA != eQDON || eQACC");
+    }
+
+  db = qr->db;
+
+  rt = qhopres->rtype;
+  r  = qhopres->res;
+  qres = &(db->rb.res[rt][r]);
+
+  name = qatom->atomname;
+  
+  rtp = &(db->rtp[db->rb.rtp[rt]]);
+
+  for (reac=0;
+       reac < (DA == eQACC) ? qres->na : qres->nd;
+       reac++)
+    {
+      qreac = (DA == eQACC) ?
+	&(qres->acc[reac]) :
+	&(qres->don[reac]);
+
+      for (t=0; t < qreac->nname; t++)
+	{
+	  if (strcmp(qreac->name[t], name) == 0)
+	    {
+	      bMatch = TRUE;
+	      break;
+	    }
+	}
+    }
+
+  for (a=0; a < qhopres->nr_titrating_sites; a++)
+    {
+      if (strcmp(qreac->name[0], qr->qhop_atoms[qhopres->titrating_sites[a]].atomname) == 0)
+	{
+	  return qhopres->titrating_sites[a];
+	}
+    }
+
+  /* If we've gotten this far, then something is wrong. */
+  gmx_fatal(FARGS, "Primary tautomeric site could not be determined.");
+
+}
+
 static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
 {/* (char *donor_name,char *acceptor_name, qhop_db_t db){ */
 
