@@ -21,7 +21,7 @@ extern "C" {
  * If v==NULL then velocities will remain unchanged */
 extern void qhop_tautomer_swap(const t_qhoprec *qr,
 			       rvec x[], rvec v[],
-			       int prim, int sec)
+			       int prim, int sec);
 
 /* Find the inert hydrogen (zero vdw params).
  * Finding it is trivial (it's the last atomtype),
