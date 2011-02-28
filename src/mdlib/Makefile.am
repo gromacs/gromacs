@@ -24,7 +24,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	edsam.c		ewald.c         \
 	force.c  	forcerec.c	\
 	ghat.c		init.c		\
-	mdatom.c	mdebin.c	minimize.c	\
+	mdatom.c	mdebin.c	\
 	mvxvf.c		ns.c		nsgrid.c	\
 	perf_est.c	genborn.c			\
 	genborn_sse2_single.c				\
