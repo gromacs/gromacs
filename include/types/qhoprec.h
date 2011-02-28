@@ -25,7 +25,10 @@ typedef struct {
     acceptor_id,
     proton_id,
     regime,
-    tautomer[2];
+    primary_d,     /* These is used for proton tautomerism. */
+    primary_a;     /* if primary != donor/acceptor then
+	            * we swap the coordinates of the primary
+	            * and donor/acceptor when titrating.*/
   real E12_0,
     E12,
     DE_MM,
