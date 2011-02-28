@@ -15,6 +15,14 @@ extern "C" {
 }
 #endif
 
+/* Exchanges the qhopatoms indexed by prim and sec
+ * when sec is being titrated. Since prim holds the
+ * titrating hydrogen the two must be exchanged.
+ * If v==NULL then velocities will remain unchanged */
+extern void qhop_tautomer_swap(const t_qhoprec *qr,
+			       rvec x[], rvec v[],
+			       int prim, int sec)
+
 /* Find the inert hydrogen (zero vdw params).
  * Finding it is trivial (it's the last atomtype),
  * But this function also checks that the vdw interactions

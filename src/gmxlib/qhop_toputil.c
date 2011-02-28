@@ -15,8 +15,8 @@ extern void qhop_tautomer_swap(const t_qhoprec *qr,
 			       rvec x[], rvec v[],
 			       int prim, int sec)
 {
-  rvec tmp;
-  int i;
+  rvec tmp, *;
+  int i, xv;
   t_qhop_atom *qprim, *qsec;
 
   qprim = &qr->qhop_atoms[prim];
@@ -31,12 +31,26 @@ extern void qhop_tautomer_swap(const t_qhoprec *qr,
   copy_rvec(x[qprim->atom_id], tmp);
   copy_rvec(x[qsec->atom_id], x[qprim->atom_id]);
   copy_rvec(tmp, x[qsec->atom_id]);
-
-  /* swap hydrogens */
-  
   if (v != NULL)
     {
-      /* Swap velocities. This is a real hop */
+      copy_rvec(x[qprim->atom_id], tmp);
+      copy_rvec(x[qsec->atom_id], x[qprim->atom_id]);
+      copy_rvec(tmp, x[qsec->atom_id]);
+    }
+
+  /* swap hydrogens */
+  for (i=0; i < qsec->nr_protons; i++)
+    {
+      copy_rvec(x[qprim->protons[i]], tmp);
+      copy_rvec(x[qsec->protons[i]], x[qprim->protons[i]]);
+      copy_rvec(tmp, x[qsec->protons[i]]);
+      
+      if (v != NULL)
+	{
+	  copy_rvec(v[qprim->protons[i]], tmp);
+	  copy_rvec(v[qsec->protons[i]], v[qprim->protons[i]]);
+	  copy_rvec(tmp, v[qsec->protons[i]]);
+	}
     }
 }
 
