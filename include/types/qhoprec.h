@@ -24,7 +24,8 @@ typedef struct {
   int donor_id,
     acceptor_id,
     proton_id,
-    regime;
+    regime,
+    tautomer[2];
   real E12_0,
     E12,
     DE_MM,

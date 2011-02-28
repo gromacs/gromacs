@@ -9,6 +9,36 @@
 #include "smalloc.h"
 #include "types/commrec.h"
 #include "types/constr.h"
+#include "vec.h"
+
+extern void qhop_tautomer_swap(const t_qhoprec *qr,
+			       rvec x[], rvec v[],
+			       int prim, int sec)
+{
+  rvec tmp;
+  int i;
+  t_qhop_atom *qprim, *qsec;
+
+  qprim = &qr->qhop_atoms[prim];
+  qsec  = &qr->qhop_atoms[sec];
+
+  if (prim == sec)
+    {
+      return;
+    }
+
+  /* Swap titrating atom */
+  copy_rvec(x[qprim->atom_id], tmp);
+  copy_rvec(x[qsec->atom_id], x[qprim->atom_id]);
+  copy_rvec(tmp, x[qsec->atom_id]);
+
+  /* swap hydrogens */
+  
+  if (v != NULL)
+    {
+      /* Swap velocities. This is a real hop */
+    }
+}
 
 extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 {
