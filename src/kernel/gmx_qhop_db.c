@@ -799,24 +799,29 @@ int qhop_db_set_charges(qhop_db_t qdb,char *resname,int state,
   return 0;
 }
 
-int qhop_db_get_parameters(qhop_db_t qdb,
-			       char *donor,char *acceptor,
-			       qhop_parameters *qp)
+extern int qhop_db_get_parameters(const qhop_db_t qdb,
+				  const char *donor, const char *acceptor,
+				  const char *donor_atom, const char *acceptor_atom,
+				  qhop_parameters *qp)
 {
   qhop_db_t db = qdb;
-  char *aa,*dd;
+  char *aa,*dd, *aatom, *datom;
   int i;
   
   for(i=0; (i<db->ngqh); i++) {
-    aa = qhop_get_acceptor(db->gqh[i]);
-    dd = qhop_get_donor(db->gqh[i]);
-    if (strncmp(donor,dd,3) == 0) {
-      if (strncmp(acceptor,aa,3) == 0) {
+    aa    = qhop_get_acceptor(db->gqh[i]);
+    aatom = qhop_get_acceptor(db->gqh[i]);
+    dd    = qhop_get_donor(db->gqh[i]);
+    datom = qhop_get_acceptor(db->gqh[i]);
+    if (strncmp(donor,dd,3) == 0           &&
+	strncmp(acceptor,aa,3) == 0        &&
+	strncmp(donor_atom,datom,3) == 0   &&
+	strncmp(acceptor_atom,aatom,3) == 0)
+      {
 	memcpy(qp,&(db->qhop_param[i]),sizeof(*qp));
 	
 	return 1;
       }
-    }
   }
   return 0;
 }

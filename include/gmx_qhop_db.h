@@ -55,8 +55,10 @@ extern int qhop_db_set_charges(qhop_db_t qdb,char *resname,int state,
 
 /* Fill the qhop_parameters for a given donor/acceptor pair. Returns 1
    if OK or 0 if either donor or acceptor does not exist. */
-extern int qhop_db_get_parameters(qhop_db_t qdb,
-				  char *donor,char *acceptor,
+extern int qhop_db_get_parameters(const qhop_db_t qdb,
+				  const char *donor, const char *acceptor,
+				  const char *donor_atom,
+				  const char *acceptor_atom,
 				  qhop_parameters *qp);
 
 /* Build a list of residue-local atom indices fro the bonded interactions.

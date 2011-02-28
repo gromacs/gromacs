@@ -47,17 +47,21 @@ extern void make_ilib(qhop_db *db);
 extern qhop_t qhop_init();
 
 /* These function get and set the obvious */
-extern void qhop_set_donor(qhop_t gqh,char *donor);
+extern void qhop_set_donor(qhop_t gqh, const char *donor);
 
-extern void qhop_set_acceptor(qhop_t gqh,char *acceptor);
+extern void qhop_set_acceptor(qhop_t gqh, const char *acceptor);
 
-extern void qhop_set_don_atom(qhop_t gqh,char *donor);
+extern void qhop_set_don_atom(qhop_t gqh, const char *donor);
 
-extern void qhop_set_acc_atom(qhop_t gqh,char *acceptor);
+extern void qhop_set_acc_atom(qhop_t gqh, const char *acceptor);
 
-extern char *qhop_get_donor(qhop_t gqh);
+extern char *qhop_get_don_atom(const qhop_t gqh);
 
-extern char *qhop_get_acceptor(qhop_t gqh);
+extern char *qhop_get_acc_atom(const qhop_t gqh);
+
+extern char *qhop_get_donor(const qhop_t gqh);
+
+extern char *qhop_get_acceptor(const qhop_t gqh);
 
 /* Add parameter to gqh, return 1 if OK, 0 if not OK */
 extern int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit);

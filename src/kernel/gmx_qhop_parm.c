@@ -825,7 +825,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   /* NOW SWAP INTERACTIONS */
 }
 
-extern int qhop_get_residue_subtype(t_qhop_residue *qres)
+extern int qhop_get_residue_subtype(const t_qhop_residue *qres)
 {
   return qres->res;
 }
@@ -840,7 +840,7 @@ extern qhop_t qhop_init()
   return qht;
 }
 
-extern void qhop_set_donor(qhop_t gqh,char *donor)
+extern void qhop_set_donor(qhop_t gqh, const char *donor)
 {
   if (donor != NULL) {
     printf(" donor %s,", donor);
@@ -848,7 +848,7 @@ extern void qhop_set_donor(qhop_t gqh,char *donor)
   }
 }
 
-extern void qhop_set_acceptor(qhop_t gqh,char *acceptor)
+extern void qhop_set_acceptor(qhop_t gqh, const char *acceptor)
 {
   if (acceptor != NULL) {
     printf(" acceptor %s\n", acceptor);
@@ -856,7 +856,7 @@ extern void qhop_set_acceptor(qhop_t gqh,char *acceptor)
   }
 }
 
-extern void qhop_set_don_atom(qhop_t gqh,char *don_atom)
+extern void qhop_set_don_atom(qhop_t gqh, const char *don_atom)
 {
   if (don_atom != NULL)
     {
@@ -865,7 +865,7 @@ extern void qhop_set_don_atom(qhop_t gqh,char *don_atom)
     }
 }
 
-extern void qhop_set_acc_atom(qhop_t gqh,char *acc_atom)
+extern void qhop_set_acc_atom(qhop_t gqh, const char *acc_atom)
 {
   if (acc_atom != NULL)
     {
@@ -874,13 +874,22 @@ extern void qhop_set_acc_atom(qhop_t gqh,char *acc_atom)
     }
 }
 
+extern char *qhop_get_donor_atom(const qhop_t gqh)
+{
+  return gqh->don_atom;
+}
 
-extern char *qhop_get_donor(qhop_t gqh)
+extern char *qhop_get_acceptor_atom(const qhop_t gqh)
+{
+  return gqh->acc_atom;
+}
+
+extern char *qhop_get_donor(const qhop_t gqh)
 {
   return gqh->donor;
 }
 
-extern char *qhop_get_acceptor(qhop_t gqh)
+extern char *qhop_get_acceptor(const qhop_t gqh)
 {
   return gqh->acceptor;
 }
