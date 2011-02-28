@@ -38,7 +38,7 @@
 
     <residue_type name="qHAC" water="FALSE">
       <res name="AC-">
-        <acceptor name="OC2" product="HAC"/>
+        <acceptor name="OC2 OC1" product="HAC"/>
       </res>
       <res name="HAC">
         <donor name="OC2" product="AC-"/>
