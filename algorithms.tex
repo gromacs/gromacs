@@ -2126,9 +2126,9 @@ where ${\bf e}_j$ is the unit vector in direction $j$.
 It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
 the energy prior to computation of the Hessian.
-What tolerance is required depends on the type of system,
+The tolerance required depends on the type of system,
 but a rough indication is 0.001 kJ mol$^{-1}$.
-This should be done with conjugate gradients or l-bfgs in double precision.
+Minimization should be done with conjugate gradients or L-BFGS in double precision.
 
 A number of {\gromacs} programs are involved in these
 calculations. First, the energy should be minimized using {\tt mdrun}.
@@ -2151,14 +2151,15 @@ analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 \section{Free energy calculations}
 \label{sec:fecalc}
 \index{free energy calculations}
+\subsection{\normindex{Slow-growth methods}}
 Free energy calculations can be performed
-in {\gromacs} using slow-growth methods. An example problem might be:
-calculate the difference in free energy of binding of an inhibitor {\bf I}
-to an enzyme {\bf E} and to a mutated enzyme {\bf E'}.%$\prime$}. 
-It is not feasible with computer simulations to perform a docking
+in {\gromacs} using  a number of methods, including ``slow-growth.'' An example problem 
+might be calculating the difference in free energy of binding of an inhibitor {\bf I}
+to an enzyme {\bf E} and to a mutated enzyme {\bf E$^{\prime}$}. It 
+is not feasible with computer simulations to perform a docking
 calculation for such a large complex, or even releasing the inhibitor from
 the enzyme in a reasonable amount of computer time with reasonable accuracy.
-However, if we consider the free energy cycle in (\figref{free}A)
+However, if we consider the free energy cycle in~\figref{free}A
 we can write:
 \beq
 \Delta G_1 - \Delta G_2 =       \Delta G_3 - \Delta G_4
@@ -2171,14 +2172,14 @@ the right-hand term.
 \caption[Free energy cycles.]{Free energy cycles. {\bf A:} to
 calculate $\Delta G_{12}$, the free energy difference between the
 binding of inhibitor {\bf I} to enzymes {\bf E} respectively {\bf
-E'}. {\bf B:} to calculate $\Delta G_{12}$, the free energy
-difference for binding of inhibitors {\bf I} respectively {\bf I'} to
+E$^{\prime}$}. {\bf B:} to calculate $\Delta G_{12}$, the free energy
+difference for binding of inhibitors {\bf I} respectively {\bf I$^{\prime}$} to
 enzyme {\bf E}.}
 \label{fig:free}
 \end{figure}
 
 If we want to compute the difference in free energy of binding of two
-inhibitors {\bf I} and {\bf I'} to an enzyme {\bf E} (\figref{free}B)
+inhibitors {\bf I} and {\bf I$^{\prime}$} to an enzyme {\bf E} (\figref{free}B)
 we can again use \eqnref{ddg} to compute the desired property.
 
 \newcommand{\sA}{^{\mathrm{A}}}
@@ -2265,12 +2266,13 @@ additional pressure of as much as 22 bar, but a correction to the
 Helmholtz free energy of just -1 kJ mol$^{-1}$. %-20 J/mol.
 
 In Cartesian coordinates, the kinetic energy term in the Hamiltonian
-depends only on the momenta, and can be separately integrated and in
-fact removed from the equations. When masses do not change, there is
+depends only on the momenta, and can be separately integrated and, in
+fact, removed from the equations. When masses do not change, there is
 no contribution from the kinetic energy at all; otherwise the
 integrated contribution to the free energy is $-\frac{3}{2} k_BT \ln
 (m\sB/m\sA)$. {\bf Note} that this is only true in the absence of constraints.
-  
+
+\subsection{\normindex{Thermodynamic integration and BAR}}  
 {\gromacs} offers the possibility to integrate eq.~\ref{eq:delA} or
 eq. \ref{eq:delG} in one simulation over the full range from A to
 B. However, if the change is large and insufficient sampling can be
@@ -2282,6 +2284,10 @@ equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
 \lambda$. The total free energy change is then determined afterward
 by an appropriate numerical integration procedure.
+
+{\gromacs} now also supports the use of Bennett's Acceptance Ratio~\cite{Bennett1976}
+for calculating values of $\Delta$G for transformations from state A to state B using
+the program {\tt \normindex{g_bar}}.
 
 The $\lambda$-dependence for the force-field contributions is
 described in detail in section \secref{feia}.
