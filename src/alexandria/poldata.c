@@ -283,6 +283,15 @@ char *gmx_poldata_get_gt_type(gmx_poldata_t pd,char *gt_atom)
     return NULL;
 }
 
+static gmx_bool strcasestr_start(char *needle,char *haystack)
+{
+    char *ptr;
+    
+    ptr = strcasestr(haystack,needle);
+    
+    return (ptr == haystack);
+}
+
 static int count_neighbors(t_ffatype *spoel,int nbond,char *nbhybrid[])
 {
     int i,j,ni=0,*jj,i_found;
@@ -293,10 +302,12 @@ static int count_neighbors(t_ffatype *spoel,int nbond,char *nbhybrid[])
         i_found = 0;
         for(j=0; (j<nbond); j++) 
         {
-            if ((NULL != nbhybrid[j]) &&
+            if (
+                (NULL != nbhybrid[j]) &&
                 (jj[j] == 0) &&
                 (i_found == 0) &&
-                (NULL != strcasestr(nbhybrid[j],spoel->nb[i])))
+                strcasestr_start(spoel->nb[i],nbhybrid[j])
+                )
             {
                 i_found = 1;
                 jj[j] = j+1;

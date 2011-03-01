@@ -191,7 +191,7 @@ int nm2type(FILE *fp,char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
                     fprintf(debug,"Geometry = %s (atom %s with %d bonds)\n",
                             geoms[geom],aname_i,nb);
                 if ((gt_atom = gmx_poldata_get_gt_atom(pd,elem_i,nb,nbhybrid,
-                                                     geoms[geom])) != NULL)
+                                                       geoms[geom])) != NULL)
                 {
                     if (debug)
                         fprintf(debug,"Selected %s\n",gt_atom);
