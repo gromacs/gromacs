@@ -1964,10 +1964,9 @@ static double gettime()
 {
 #ifdef HAVE_GETTIMEOFDAY
     struct timeval t;
-    struct timezone tz = { 0,0 };
     double seconds;
-    
-    gettimeofday(&t,&tz);
+
+    gettimeofday(&t,NULL);
     
     seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
     
