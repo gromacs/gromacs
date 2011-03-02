@@ -43,9 +43,6 @@
 #include "lambertw.h"
 #include "qhop_toputil.h"
 
-/* #define VERBOSE_QHOP */
-
-
 #define DOO   0.35
 #define BOND  0.15
 #define HBOND  0.2
@@ -163,11 +160,6 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
     }
   else
     {
-#ifdef VERBOSE_QHOP
-      fprintf(stderr, "--- PARAMETERS FOR DONOR %s (%s) - ACCEPTOR %s (%s) ---\n",
-	      donor_name, donor_atom, acceptor_name, acceptor_atom);
-#endif /* VERBOSE_QHOP */
-
       donor_name    = db->rb.res
 	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
 	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
@@ -179,14 +171,18 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
       donor_atom    = qr->qhop_atoms[hop->primary_d].atomname;
       acceptor_atom = qr->qhop_atoms[hop->primary_a].atomname;
 
+      if (NULL != debug)
+	fprintf(debug, "--- PARAMETERS FOR DONOR %s (%s) - ACCEPTOR %s (%s) ---\n",
+		donor_name, donor_atom, acceptor_name, acceptor_atom);
+
       if (qhop_db_get_parameters(db, donor_name, acceptor_name,
 				 donor_atom, acceptor_atom, q) != 1)
-	gmx_fatal(FARGS, "Parameters not found in qhop database.");
+	gmx_fatal(FARGS, "Parameters not found in qhop database for donor %s-%s acceptor %s-%s.",donor_name,donor_atom,
+		  acceptor_name,acceptor_atom);
     }
 
-#ifdef VERBOSE_QHOP
   qhop_db_print(q);
-#endif /* VERBOSE_QHOP */
+  
   return (q);
 }
 
