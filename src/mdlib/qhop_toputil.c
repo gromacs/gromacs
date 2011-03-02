@@ -335,7 +335,7 @@ extern void index_ilists(t_qhop_residue *qres,
 
 }
 
-/* returns the index in top->idef.il[?].iatom[] where bond to this proton is found. */
+/* returns the index in the ilib where bond to this proton is found. */
 extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_atom *qatom, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
 {
   int b, bi, i, ai;

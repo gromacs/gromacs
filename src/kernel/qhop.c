@@ -1677,23 +1677,20 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
     }
   else
     {
-      if (bDonor)
-	{
-	  if (db->constrain != 0)
-	    {
-	      qhop_deconstrain(qres, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
-	    }
-	}
-      else
-	{
-	  if (db->constrain != 0)
-	    {
-	      qhop_constrain(qres, qr, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
-	    }
-	}
-
       if (bSwapBondeds)
 	{
+	  if (db->constrain != 0)
+	    {
+	      if (bDonor)
+		{
+		  qhop_deconstrain(qres, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
+		}	    
+	      else
+		{
+		  qhop_constrain(qres, qr, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
+		}
+	    }
+
 	  unindex_ilists(qres); /* Why? For serial code this would be redundant */
 	  qhop_swap_bondeds(qres, prod_res, db, top, cr);
 	}
@@ -2001,8 +1998,10 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, t_qhopre
 	  /* We can safely assume that all protons on the
 	   * acceptor are equal with respect to bonded params,
 	   * so we just pick the first one. */
-	  p = top->idef.il[ft].iatoms[qhop_get_proton_bond_params(db, qhoprec, acceptor_atom, top,
-								  acceptor_atom->protons[ap], cr)];
+	  p = qhop_get_proton_bond_params(db, qhoprec, acceptor_atom, top, /*   \                  */
+					  acceptor_atom->protons[ap], cr)  /*   _ position in ilib */
+	    + top->idef.ntypes - db->rb.ni;                                /*   + offset           */
+
 	  d = top->idef.iparams[p].harmonic.rA;
 
 	  svmul(d, x_tmp, x_tmp);
