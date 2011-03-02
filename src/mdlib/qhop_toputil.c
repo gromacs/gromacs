@@ -40,6 +40,7 @@ extern void qhop_tautomer_swap(const t_qhoprec *qr,
 
   /* swap hydrogens */
   for (i=0; i < qsec->nr_protons; i++)
+    /* qsec->nr_protons <= qprim->nr_protons */
     {
       copy_rvec(x[qprim->protons[i]], tmp);
       copy_rvec(x[qsec->protons[i]], x[qprim->protons[i]]);

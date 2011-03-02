@@ -133,8 +133,10 @@ typedef struct {
   rvec           *f; /* Use this to avoid stupid segfaults that occur,
 		      * but shouldn't have to occur, when do_force() is
 		      * called with f==NULL */
-  real Ebefore_all,  /* These two are the same for all hops in a given qhop step, */
-    Ebefore_self;    /* Hence, we can do it once per step and store them here.    */
+  real Ebefore_all,  /* The energies are the same for all hops in a given qhop step, */
+    Ebefore_coul,
+    Ebefore_self,    /* Hence, we can do them once per step and store them here.    */
+    Ebefore_self_coul;
   int nr_hops,
     nr_qhop_residues,
     nr_qhop_atoms,
