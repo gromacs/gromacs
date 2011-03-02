@@ -332,6 +332,7 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	      srenew(qdb->rb.rtp, rt+1);
 	      qdb->rb.rtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
+	      qdb->nrtp++;
 	      break;
 	    }
 
@@ -343,6 +344,7 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 		  fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
 		  qdb->rb.res[rt][r].rtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+		  qdb->nrtp++;
 		}
 	    }
 	}
@@ -951,6 +953,11 @@ extern void qhop_db_names2nrs(qhop_db *db)
       if (db->rb.ba[rt] == NULL)
 	{
 	  snew(db->rb.ba[rt], ebtsNR);
+	}
+
+      if (db->rb.rtp[rt] >= db->nrtp)
+	{
+	  gmx_fatal(FARGS, "Trying to read outside of the rtp data.");
 	}
 
       rtp = &(db->rtp[db->rb.rtp[rt]]);
