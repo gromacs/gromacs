@@ -588,7 +588,8 @@ static void dump_qhp(FILE *fp,qhop_parameters *qhp)
 
 void qhop_db_print (qhop_parameters *qhp)
 {
-  dump_qhp(stderr, qhp);
+  if (NULL != debug)
+    dump_qhp(debug, qhp);
 }
 
 qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)

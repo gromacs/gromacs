@@ -430,7 +430,8 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
       fprintf(out," %d",opts->egp_flags[opts->ngener*i+m]);
     fprintf(out,"\n");
   }
-
+  pr_indent(out,indent);
+  fprintf(out,"ngqhopH: %d\n",opts->ngqhopH);
   fflush(out);
 }
 
@@ -675,6 +676,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("userreal2",ir->userreal2);
     PR("userreal3",ir->userreal3);
     PR("userreal4",ir->userreal4);
+    PS("qhop",BOOL(ir->bqhop));
+    PI("qhopfreq",ir->qhopfreq);
+    PI("qhopmode",ir->qhopmode);
+    PI("qhopconstr",ir->qhopconstr);
     pr_grp_opts(fp,indent,"grpopts",&(ir->opts),bMDPformat);
     pr_cosine(fp,indent,"efield-x",&(ir->ex[XX]),bMDPformat);
     pr_cosine(fp,indent,"efield-xt",&(ir->et[XX]),bMDPformat);
