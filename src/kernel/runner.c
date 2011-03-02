@@ -72,6 +72,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "qhop.h"
 
 #include "md_openmm.h"
 
