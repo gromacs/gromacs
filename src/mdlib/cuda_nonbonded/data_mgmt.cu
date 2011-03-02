@@ -21,34 +21,34 @@
 
 static const char * const nb_k1_names[NUM_NB_KERNELS] = 
 {
-    "_Z21k_calc_nb_RF_forces_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z24k_calc_nb_ewald_forces_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z25k_calc_nb_cutoff_forces_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z30k_calc_nb_RF_forces_energies_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z30k_calc_nb_RF_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z33k_calc_nb_ewald_forces_energies_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z33k_calc_nb_ewald_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z34k_calc_nb_cutoff_forces_energies_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z34k_calc_nb_cutoff_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z39k_calc_nb_RF_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblist"
+    "_Z21k_calc_nb_RF_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z24k_calc_nb_ewald_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z25k_calc_nb_cutoff_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z30k_calc_nb_RF_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z30k_calc_nb_RF_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z33k_calc_nb_ewald_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z33k_calc_nb_ewald_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z34k_calc_nb_cutoff_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z34k_calc_nb_cutoff_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z39k_calc_nb_RF_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti"
 };
 
 static const char * const nb_k2_names[NUM_NB_KERNELS] = 
 {
-    "_Z21k_calc_nb_RF_forces_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z24k_calc_nb_ewald_forces_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z25k_calc_nb_cutoff_forces_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z30k_calc_nb_RF_forces_energies_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z30k_calc_nb_RF_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z33k_calc_nb_ewald_forces_energies_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z33k_calc_nb_ewald_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z34k_calc_nb_cutoff_forces_energies_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z34k_calc_nb_cutoff_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z39k_calc_nb_RF_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist",
-    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblist"
+    "_Z21k_calc_nb_RF_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z24k_calc_nb_ewald_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z25k_calc_nb_cutoff_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z30k_calc_nb_RF_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z30k_calc_nb_RF_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z33k_calc_nb_ewald_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z33k_calc_nb_ewald_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z34k_calc_nb_cutoff_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z34k_calc_nb_cutoff_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z39k_calc_nb_RF_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti"
 };
 
 __device__ __global__ void k_empty_test(){}
@@ -115,6 +115,9 @@ void init_atomdata(cu_atomdata_t *ad, int ntypes)
     stat = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec"); 
     ad->shift_vec_copied = FALSE;
+
+    stat = cudaMalloc((void**)&ad->f_shift, SHIFTS*sizeof(*ad->f_shift));
+    CU_RET_ERR(stat, "cudaMalloc failed on ad->f_shift");
 
     stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_lj");
@@ -276,9 +279,11 @@ void init_cudata_ff(FILE *fplog,
     init_nblist(nb->nblist);
     init_timers(nb->timers);
     init_timings(nb->timings);
+
     /* init tmpdata */
     pmalloc((void**)&nb->tmpdata.e_lj, sizeof(*nb->tmpdata.e_lj));
     pmalloc((void**)&nb->tmpdata.e_el, sizeof(*nb->tmpdata.e_el));
+    pmalloc((void**)&nb->tmpdata.f_shift, SHIFTS * sizeof(*nb->tmpdata.f_shift));
 
     nb->streamGPU   = fr->streamGPU;
     *p_cu_nb = nb;
@@ -459,6 +464,8 @@ void destroy_cudata(FILE *fplog, cu_nonbonded_t cu_nb)
 
     stat = cudaFree(atomdata->shift_vec);
     CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->shift_vec");
+    stat = cudaFree(atomdata->f_shift);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->f_shift");
 
     stat = cudaFree(atomdata->e_lj);
     CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->e_lj");

@@ -24,8 +24,9 @@ typedef struct gpu_tmp_data gpu_tmp_data_t;
  * */
 struct nb_tmp_data
 {
-    float *e_lj;    /* */
-    float *e_el;    /* electrostatic energy */
+    float   *e_lj;      /* LJ energy */
+    float   *e_el;      /* electrostatic energy */
+    float4  *f_shift;   /* shift forces */
 };
 
 struct cu_atomdata
@@ -39,6 +40,8 @@ struct cu_atomdata
     /* TODO: try float2 for the energies */
     float   *e_lj,      /* LJ energy output, size 1                 */
             *e_el;      /* Electrostatics energy intput, size 1     */
+
+    float4  *f_shift;   /* shift forces */
 
     int     ntypes;     /* number of atom types             */
     int     *atom_types;/* atom type indices, size natoms   */

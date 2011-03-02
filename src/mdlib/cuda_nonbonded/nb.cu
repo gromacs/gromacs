@@ -1,12 +1,12 @@
 #include "stdlib.h"
 
 #include "smalloc.h"
-
+#include "force.h"
 #include "types/simple.h" 
 #include "types/nblist_box.h"
+
 #include "cutypedefs.h"
 #include "cudautils.h"
-
 #include "cuda_nb.h"
 #include "cuda_data_mgmt.h"
 #include "cupmalloc.h"
@@ -37,9 +37,10 @@
 #undef PRUNE_NBL
 
 /*! nonbonded kernel function pointer type */
-typedef void (*p_k_calc_nb) (const cu_atomdata_t,
-                        const cu_nb_params_t, 
-                        const cu_nblist_t);
+typedef void (*p_k_calc_nb)(const cu_atomdata_t,
+                            const cu_nb_params_t, 
+                            const cu_nblist_t,
+                            gmx_bool /*calc virial*/);
 
 /* XXX
     if GMX_GPU_ENE env var set it always runs the energy kernel unless the 
@@ -160,7 +161,7 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
 
         default: 
             gmx_incons("The provided electrostatics type does not exist in the  CUDA implementation!");
-    }    
+    }
     return k;
 }
 
@@ -180,10 +181,11 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
  */
 void cu_stream_nb(cu_nonbonded_t cu_nb,
                   const gmx_nb_atomdata_t *nbatom,                                    
-                  gmx_bool calc_ene,
+                  // gmx_bool calc_ene,
+                  int flags,
                   gmx_bool sync)
 {
-    cu_atomdata_t   *atomdata = cu_nb->atomdata;
+    cu_atomdata_t   *adat = cu_nb->atomdata;
     cu_nb_params_t  *nb_params = cu_nb->nb_params;
     cu_nblist_t     *nblist = cu_nb->nblist;
     cu_timers_t     *timers = cu_nb->timers;
@@ -192,6 +194,9 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     int     nb_blocks = calc_nb_blocknr(nblist->nci);
     dim3    dim_block(CELL_SIZE, CELL_SIZE, 1); 
     dim3    dim_grid(nb_blocks, 1, 1); 
+
+    gmx_bool calc_ene   = flags & GMX_FORCE_VIRIAL;
+    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
     gmx_bool time_trans = timers->time_transfers; 
 
     p_k_calc_nb nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
@@ -219,28 +224,34 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     }
 
     /* 0 the force output array */
-    cudaMemsetAsync(atomdata->f, 0, atomdata->natoms * sizeof(*atomdata->f), 0);
+    cudaMemsetAsync(adat->f, 0, adat->natoms * sizeof(*adat->f), 0);
 
     /* HtoD x, q */    
-    upload_cudata_async(atomdata->xq, nbatom->x, atomdata->natoms * sizeof(*atomdata->xq), 0);
+    upload_cudata_async(adat->xq, nbatom->x, adat->natoms * sizeof(*adat->xq), 0);
 
     /* HtoD shift vec if we have a dynamic box */
-    if (nbatom->dynamic_box || !atomdata->shift_vec_copied)
+    if (nbatom->dynamic_box || !adat->shift_vec_copied)
     {
-        upload_cudata_async(atomdata->shift_vec, nbatom->shift_vec, SHIFTS * sizeof(*atomdata->shift_vec), 0);   
-        atomdata->shift_vec_copied = TRUE;
+        upload_cudata_async(adat->shift_vec, nbatom->shift_vec, SHIFTS * sizeof(*adat->shift_vec), 0);
+        adat->shift_vec_copied = TRUE;
     }
-    
-    if (time_trans)
+
+    /* set the shift force output to 0 */
+    if (calc_fshift)
     {
-        cudaEventRecord(timers->stop_nb_h2d, 0);
+        cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), 0);
     }
 
     /* set energy outputs to 0 */
     if (calc_ene)
     {
-        cudaMemsetAsync(atomdata->e_lj, 0, sizeof(*atomdata->e_lj), 0);
-        cudaMemsetAsync(atomdata->e_el, 0, sizeof(*atomdata->e_el), 0);
+        cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), 0);
+        cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), 0);
+    }
+
+    if (time_trans)
+    {
+        cudaEventRecord(timers->stop_nb_h2d, 0);
     }
 
     /* launch async nonbonded calculations */        
@@ -251,7 +262,8 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
      
     nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
                                  nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
-    nb_kernel<<<dim_grid, dim_block, shmem, 0>>>(*atomdata, *nb_params, *nblist);
+    nb_kernel<<<dim_grid, dim_block, shmem, 0>>>(*adat, *nb_params, *nblist, 
+                                                 calc_fshift);
 
     if (sync)
     {
@@ -269,12 +281,20 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     }
 
     /* DtoH f */
-    download_cudata_async(nbatom->f, atomdata->f, atomdata->natoms*sizeof(*atomdata->f), 0);
+    download_cudata_async(nbatom->f, adat->f, adat->natoms*sizeof(*adat->f), 0);
+
+    /* DtoH f_shift */
+    if (calc_fshift)
+    {
+        download_cudata_async(cu_nb->tmpdata.f_shift, adat->f_shift, 
+                              SHIFTS * sizeof(*cu_nb->tmpdata.f_shift), 0);
+    }
+
     /* DtoH energies */
     if (calc_ene)
     {
-        download_cudata_async(cu_nb->tmpdata.e_lj, atomdata->e_lj, sizeof(*cu_nb->tmpdata.e_lj), 0);
-        download_cudata_async(cu_nb->tmpdata.e_el, atomdata->e_el, sizeof(*cu_nb->tmpdata.e_el), 0);
+        download_cudata_async(cu_nb->tmpdata.e_lj, adat->e_lj, sizeof(*cu_nb->tmpdata.e_lj), 0);
+        download_cudata_async(cu_nb->tmpdata.e_el, adat->e_el, sizeof(*cu_nb->tmpdata.e_el), 0);
     }
 
     if (time_trans)
@@ -285,15 +305,19 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     cudaEventRecord(timers->stop_nb, 0);
 }
 
-
 /*! Blocking wait for the asynchrounously launched nonbonded calculations to finish. */
-void cu_blockwait_nb(cu_nonbonded_t cu_nb, gmx_bool calc_ene, 
-                     float *e_lj, float *e_el)
+void cu_blockwait_nb(cu_nonbonded_t cu_nb, int flags, 
+                     float *e_lj, float *e_el, rvec *fshift)
 {    
-    cudaError_t s;
-    float t_tot, t;
-    cu_timers_t *timers     = cu_nb->timers;
-    cu_timings_t *timings   = cu_nb->timings;
+    cudaError_t     s;
+    int             i;
+    float           t_tot, t;
+    gmx_bool        calc_ene   = flags & GMX_FORCE_VIRIAL;
+    gmx_bool        calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    cu_timers_t     *timers  = cu_nb->timers;
+    cu_timings_t    *timings = cu_nb->timings;
+    nb_tmp_data     td = cu_nb->tmpdata;    
 
     cu_blockwait_event(timers->stop_nb, timers->start_nb, &t_tot);
     timings->nb_count++;
@@ -322,8 +346,18 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb, gmx_bool calc_ene,
 
     if (calc_ene)
     {
-        *e_lj += *cu_nb->tmpdata.e_lj;
-        *e_el += *cu_nb->tmpdata.e_el;
+        *e_lj += *td.e_lj;
+        *e_el += *td.e_el;
+    }
+
+    if (calc_fshift)
+    {
+        for (i = 0; i < SHIFTS; i++)
+        {
+            fshift[i][0] += td.f_shift[i].x;
+            fshift[i][1] += td.f_shift[i].y;
+            fshift[i][2] += td.f_shift[i].z;
+        }
     }
 }
 

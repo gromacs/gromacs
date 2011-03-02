@@ -690,7 +690,7 @@ void do_force(FILE *fplog,t_commrec *cr,
            Both copying to/from device and kernel execution is asynchronous */
         wallcycle_start(wcycle,ewcSEND_X_GPU);
      
-        cu_stream_nb(fr->gpu_nb, fr->nbat, (flags & GMX_FORCE_VIRIAL), !fr->streamGPU);
+        cu_stream_nb(fr->gpu_nb, fr->nbat, flags, !fr->streamGPU);
 
         wallcycle_stop(wcycle,ewcSEND_X_GPU);
     }
@@ -836,8 +836,9 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->useGPU)
         {
 #ifdef GMX_GPU
-            cu_blockwait_nb(fr->gpu_nb, (flags & GMX_FORCE_VIRIAL),
-                            enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR]);
+            cu_blockwait_nb(fr->gpu_nb, flags, 
+                            enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                            fr->fshift);
             if (gpu_debug_print && (!(gpu_t->nb_count % 500) || gpu_t->nb_count == 5001))
             {
                 if (gpu_t->nb_h2d_time > 0)

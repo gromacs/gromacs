@@ -24,27 +24,9 @@ static inline __device__ float interpolate_coulomb_force_r(float r, float scale)
             + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
 }
 
-static inline __device__ void reduce_force_i_generic(float *fbuf, float4 *fout,
-        int tidxi, int tidxj, int aidx)
-{
-    if (tidxj == 0)
-    {
-        float4 f = make_float4(0.0f);
-        for (int j = tidxi; j < CELL_SIZE_2; j += CELL_SIZE)
-        {
-            f.x += fbuf[                 j];
-            f.y += fbuf[    STRIDE_DIM + j];
-            f.z += fbuf[2 * STRIDE_DIM + j];
-        }
-
-        atomicAdd(&fout[aidx].x, f.x);
-        atomicAdd(&fout[aidx].y, f.y);
-        atomicAdd(&fout[aidx].z, f.z);
-    }
-}
-
-static inline __device__ void reduce_force_j_generic(float *fbuf, float4 *fout,
-        int tidxi, int tidxj, int aidx)
+static inline __device__ 
+void reduce_force_j_generic(float *fbuf, float4 *fout, 
+                            int tidxi, int tidxj, int aidx)
 {
     if (tidxi == 0)
     {
@@ -62,42 +44,38 @@ static inline __device__ void reduce_force_j_generic(float *fbuf, float4 *fout,
     }
 }
 
-/* 8x8 */
-static __device__ void reduce_force_i_8(volatile float *fbuf, float4 *fout,
-        int tidxi, int tidxj, int aidx)
+static inline __device__ 
+void reduce_force_i_generic(float *fbuf, float4 *fout, 
+                            float3 *fbuf_shift, gmx_bool calc_fshift, 
+                            int tidxi, int tidxj, int aidx)
 {
-    float4 f = make_float4(0.0f);
-
-    /* 64 -> 32: 8x4 threads */
-    if (tidxj < CELL_SIZE/2)
+    if (tidxj == 0)
     {
-        fbuf[                 tidxj * CELL_SIZE + tidxi] += fbuf[                 (tidxj + CELL_SIZE/2) * CELL_SIZE + tidxi];
-        fbuf[    STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[    STRIDE_DIM + (tidxj + CELL_SIZE/2) * CELL_SIZE + tidxi];
-        fbuf[2 * STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[2 * STRIDE_DIM + (tidxj + CELL_SIZE/2) * CELL_SIZE + tidxi];
-    }
-    /* 32 -> 16: 8x2 threads */
-    if (tidxj < CELL_SIZE/4)
-    {
-        fbuf[                 tidxj * CELL_SIZE + tidxi] += fbuf[                 (tidxj + CELL_SIZE/4) * CELL_SIZE + tidxi];
-        fbuf[    STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[    STRIDE_DIM + (tidxj + CELL_SIZE/4) * CELL_SIZE + tidxi];
-        fbuf[2 * STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[2 * STRIDE_DIM + (tidxj + CELL_SIZE/4) * CELL_SIZE + tidxi];
-    }
-    /* 16 ->  8: 8 threads */
-    if (tidxj < CELL_SIZE/8)
-    {
-
-        f.x = fbuf[                 tidxj * CELL_SIZE + tidxi] + fbuf[                 (tidxj + CELL_SIZE/8) * CELL_SIZE + tidxi];
-        f.y = fbuf[    STRIDE_DIM + tidxj * CELL_SIZE + tidxi] + fbuf[    STRIDE_DIM + (tidxj + CELL_SIZE/8) * CELL_SIZE + tidxi];
-        f.z = fbuf[2 * STRIDE_DIM + tidxj * CELL_SIZE + tidxi] + fbuf[2 * STRIDE_DIM + (tidxj + CELL_SIZE/8) * CELL_SIZE + tidxi];
+        float4 f = make_float4(0.0f);
+        for (int j = tidxi; j < CELL_SIZE_2; j += CELL_SIZE)
+        {
+            f.x += fbuf[                 j];
+            f.y += fbuf[    STRIDE_DIM + j];
+            f.z += fbuf[2 * STRIDE_DIM + j];
+        }
 
         atomicAdd(&fout[aidx].x, f.x);
         atomicAdd(&fout[aidx].y, f.y);
         atomicAdd(&fout[aidx].z, f.z);
+
+        if (calc_fshift)
+        {
+            fbuf_shift->x += f.x;
+            fbuf_shift->y += f.y;
+            fbuf_shift->z += f.z;
+        }
     }
 }
 
-static inline __device__ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
-        int tidxi, int tidxj, int aidx)
+static inline __device__ 
+void reduce_force_i_pow2(volatile float *fbuf, float4 *fout, 
+                         float3 *fbuf_shift, gmx_bool calc_fshift, 
+                         int tidxi, int tidxj, int aidx)
 {
     int     i, j; 
     float4  f = make_float4(0.0f);
@@ -128,6 +106,28 @@ static inline __device__ void reduce_force_i_pow2(volatile float *fbuf, float4 *
         atomicAdd(&fout[aidx].x, f.x);
         atomicAdd(&fout[aidx].y, f.y);
         atomicAdd(&fout[aidx].z, f.z);
+
+        if (calc_fshift)
+        {
+            fbuf_shift->x += f.x;
+            fbuf_shift->y += f.y;
+            fbuf_shift->z += f.z;
+        }
+    }
+}
+
+static inline __device__ 
+void reduce_force_i(float *fbuf, float4 *f,
+                    float3 *fbuf_shift, gmx_bool calc_fshift, 
+                    int tidxi, int tidxj, int ai)
+{
+    if ((CELL_SIZE & (CELL_SIZE - 1)))
+    {
+        reduce_force_i_generic(fbuf, f, fbuf_shift, calc_fshift, tidxi, tidxj, ai);
+    }
+    else
+    {
+        reduce_force_i_pow2(fbuf, f, fbuf_shift, calc_fshift, tidxi, tidxj, ai);
     }
 }
 
@@ -136,7 +136,6 @@ static inline __device__ void reduce_energy_pow2(volatile float *buf,
                                           unsigned int tidx)
 {
     int     i, j; 
-    float4  f = make_float4(0.0f);
     float   e1, e2;
 
     i = CELL_SIZE_2/2;
@@ -162,21 +161,6 @@ static inline __device__ void reduce_energy_pow2(volatile float *buf,
         atomicAdd(e_el, e2); 
     }
 }
-
-static inline __device__ void reduce_force_i(float *forcebuf, float4 *f,
-        int tidxi, int tidxj, int ai)
-{    
-    
-    if ((CELL_SIZE & (CELL_SIZE - 1)))
-    {
-        reduce_force_i_generic(forcebuf, f, tidxi, tidxj, ai);
-    }             
-    else    
-    {
-        reduce_force_i_pow2(forcebuf, f, tidxi, tidxj, ai);
-    }
-}
-
 
 /*********************************************************************************/
 /* Old stuff  */

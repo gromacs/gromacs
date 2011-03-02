@@ -19,7 +19,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_energies_2)
 __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
 #endif
 #endif
-    (const cu_atomdata_t atomdata, const cu_nb_params_t nb_params, const cu_nblist_t nblist)
+            (const cu_atomdata_t atomdata, 
+            const cu_nb_params_t nb_params, 
+            const cu_nblist_t nblist,
+            gmx_bool calc_fshift)
 {
     /* convenience variables */
     const gmx_nbl_ci_t *nbl_ci = nblist.ci;
@@ -78,7 +81,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
     float4  xqbuf;
     float3  xi, xj, rv;
     float3  shift;
-    float3  f_ij, fsj_buf;
+    float3  f_ij, fsj_buf, fbuf_shift;
     gmx_nbl_ci_t nb_ci;
     unsigned int wexcl, excl_bit;
     int wexcl_idx;
@@ -106,6 +109,14 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
     E_lj = 0.0f;
     E_el = 0.0f;
 #endif
+
+    /* skip central shifts when summing shift forces */
+    if (nb_ci.shift == CENTRAL)
+    {
+        calc_fshift = FALSE;
+    }
+
+    fbuf_shift = make_float3(0.0f);
 
     /* loop over the j sub-cells = seen by any of the atoms in the current cell */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
@@ -258,8 +269,18 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
         forcebuf[    STRIDE_DIM + tidx] = fsi_buf[si_offset].y;
         forcebuf[2 * STRIDE_DIM + tidx] = fsi_buf[si_offset].z;
         __syncthreads();
-        reduce_force_i(forcebuf, f, tidxi, tidxj, ai);        
+        reduce_force_i(forcebuf, f,
+                       &fbuf_shift, calc_fshift,
+                       tidxi, tidxj, ai);
         __syncthreads();
+    }
+
+    /* add up local shift forces */
+    if (calc_fshift && tidxj == 0)
+    {
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].x, fbuf_shift.x);
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].y, fbuf_shift.y);
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].z, fbuf_shift.z);
     }
 
 #ifdef CALC_ENERGIES

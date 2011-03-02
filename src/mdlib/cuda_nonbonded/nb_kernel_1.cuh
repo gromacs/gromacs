@@ -23,7 +23,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_energies_1)
 __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
 #endif
 #endif
-    (const cu_atomdata_t atomdata, const cu_nb_params_t nb_params, const cu_nblist_t nblist)
+            (const cu_atomdata_t atomdata,
+            const cu_nb_params_t nb_params,
+            const cu_nblist_t nblist,
+            gmx_bool calc_fshift)
 {
     /* convenience variables */
     const gmx_nbl_ci_t *nbl_ci  = nblist.ci;
@@ -78,11 +81,11 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
 #ifdef CALC_ENERGIES
           E_lj, E_el,
 #endif
-          F_invr;
+          F_invr; 
     float4  xqbuf;
     float3  xi, xj, rv;
     float3  shift;
-    float3  f_ij, fsj_buf;
+    float3  f_ij, fsj_buf, fbuf_shift;
     gmx_nbl_ci_t nb_ci;
     unsigned int wexcl, excl_bit;
     int wexcl_idx;
@@ -111,6 +114,14 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
     E_lj = 0.0f;
     E_el = 0.0f;
 #endif
+
+    /* skip central shifts when summing shift forces */
+    if (nb_ci.shift == CENTRAL)
+    {
+        calc_fshift = FALSE;
+    }
+
+    fbuf_shift = make_float3(0.0f);
 
     /* loop over the j sub-cells = seen by any of the atoms in the current cell */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
@@ -198,7 +209,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
 
                             F_invr      = inv_r6 * (12.0f * c12 * inv_r6 - 6.0f * c6) * inv_r2;
-
+ 
 #ifdef CALC_ENERGIES
                             E_lj        += inv_r6 * (c12 * inv_r6 - c6);
 #endif
@@ -262,7 +273,17 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
     for(si_offset = 0; si_offset < NSUBCELL; si_offset++)
     {
         ai  = (ci * NSUBCELL + si_offset) * CELL_SIZE + tidxi;  /* i atom index */
-        reduce_force_i(forcebuf + (1 + si_offset) * STRIDE_SI, f, tidxi, tidxj, ai);
+        reduce_force_i(forcebuf + (1 + si_offset) * STRIDE_SI, f,
+                       &fbuf_shift, calc_fshift,
+                       tidxi, tidxj, ai);
+    }
+
+    /* add up local shift forces */
+    if (calc_fshift && tidxj == 0)
+    {
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].x, fbuf_shift.x);
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].y, fbuf_shift.y);
+        atomicAdd(&atomdata.f_shift[nb_ci.shift].z, fbuf_shift.z);
     }
 
 #ifdef CALC_ENERGIES
