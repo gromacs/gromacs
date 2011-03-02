@@ -66,6 +66,39 @@ static const char *exml_names[exmlNR] = {
   "name", "value", "unit", "don_atom", "acc_atom"
 };
 
+static char *strip_spaces(char *s)
+{
+  int i, j;
+
+  i = 0;
+  while (s[i] != '\0')
+    {
+      if (s[i] != ' ')
+	{
+	  break;
+	}
+      i++;
+    }
+
+  if (s[i] == '\0')
+    {
+      return s;
+    }
+
+  j = i;
+  while (s[j] != '\0')
+    {
+      if (s[j] == ' ')
+	{
+	  s[j] = '\0';
+	  return &(s[i]);
+	}
+      j++;
+    }
+
+  gmx_fatal(FARGS, "String could not be stripped of spaces.");
+}
+
 static int find_elem(char *name,int nr,const char *names[])
 {
   int i;
@@ -444,8 +477,8 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
 				 int indent, xmlrec_t xml, currentRes *ri)
 {
   int elem, i;
-  char buf[100];
-  
+  char buf[100], tmp[10];
+
   elem = find_elem((char *)tree->name,exmlNR,exml_names);
   if (fp)
     fprintf(fp,"%sElement node name %s\n",sp(indent,buf,99),
@@ -501,12 +534,14 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
 
     case exmlDON_ATOM:
       /* This is a child of qhop. */
-      qhop_set_don_atom(xml->gqh[xml->nqh-1], (char*)(tree->children->content));
+      sprintf(tmp, "%s", (char*)(tree->children->content));
+      qhop_set_don_atom(xml->gqh[xml->nqh-1], strip_spaces(tmp));
       break;
 
     case exmlACC_ATOM:
       /* This is a child of qhop. */
-      qhop_set_acc_atom(xml->gqh[xml->nqh-1], (char*)(tree->children->content));
+      sprintf(tmp, "%s", (char*)(tree->children->content));
+      qhop_set_acc_atom(xml->gqh[xml->nqh-1], strip_spaces(tmp));
       break;
 
     default:

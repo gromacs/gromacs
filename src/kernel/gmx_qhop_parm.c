@@ -874,12 +874,12 @@ extern void qhop_set_acc_atom(qhop_t gqh, const char *acc_atom)
     }
 }
 
-extern char *qhop_get_donor_atom(const qhop_t gqh)
+extern char *qhop_get_don_atom(const qhop_t gqh)
 {
   return gqh->don_atom;
 }
 
-extern char *qhop_get_acceptor_atom(const qhop_t gqh)
+extern char *qhop_get_acc_atom(const qhop_t gqh)
 {
   return gqh->acc_atom;
 }

@@ -69,20 +69,24 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
 /**
  * \brief Protonates the qatom.
  * 
- * The qatom is protonated.  
+ * The qatom is protonated.
  */
 extern void qhop_protonate(qhop_db *db, t_qhoprec *qr,
 			   const t_inputrec *ir,
 			   const t_commrec *cr, gmx_localtop_t *top,
 			   gmx_constr_t constr,
 			   t_qhop_atom *qatom,
-			   t_mdatoms *md, gmx_bool bWater, gmx_bool bSwapBondeds);
+			   t_mdatoms *md, gmx_bool bWater,
+			   gmx_bool bSwapBondeds,
+			   gmx_bool bRealHop);
 
 extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
 			     const t_inputrec *ir, const t_commrec *cr,
 			     gmx_localtop_t *top, gmx_constr_t constr,
 			     t_qhop_atom *qatom,
-			     t_mdatoms *md, gmx_bool bWater, gmx_bool bSwapBondeds);
+			     t_mdatoms *md, gmx_bool bWater,
+			     gmx_bool bSwapBondeds,
+			     gmx_bool bRealHop);
 
 /* Goes through the t_ilist and finds the bonded interactions
  * that can be changed */

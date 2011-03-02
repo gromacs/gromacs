@@ -806,14 +806,14 @@ extern int qhop_db_get_parameters(const qhop_db_t qdb,
 				  qhop_parameters *qp)
 {
   qhop_db_t db = qdb;
-  char *aa,*dd, *aatom, *datom;
+  char *aa, *dd, *aatom, *datom;
   int i;
   
   for(i=0; (i<db->ngqh); i++) {
     aa    = qhop_get_acceptor(db->gqh[i]);
-    aatom = qhop_get_acceptor(db->gqh[i]);
+    aatom = qhop_get_acc_atom(db->gqh[i]);
     dd    = qhop_get_donor(db->gqh[i]);
-    datom = qhop_get_acceptor(db->gqh[i]);
+    datom = qhop_get_don_atom(db->gqh[i]);
     if (strncmp(donor,dd,3) == 0           &&
 	strncmp(acceptor,aa,3) == 0        &&
 	strncmp(donor_atom,datom,3) == 0   &&
