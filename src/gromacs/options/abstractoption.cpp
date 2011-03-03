@@ -168,7 +168,7 @@ int AbstractOptionStorage::setMinValueCount(int count,
     {
         if (_maxValueCount == -1 || valueCount() <= _maxValueCount)
         {
-            errors->error("Too many values");
+            errors->error("Too few values");
         }
         return eeInconsistentInput;
     }
@@ -185,7 +185,7 @@ int AbstractOptionStorage::setMaxValueCount(int count,
     {
         if (hasFlag(efDontCheckMinimumCount) || valueCount() >= _minValueCount)
         {
-            errors->error("Too few values");
+            errors->error("Too many values");
         }
         return eeInconsistentInput;
     }

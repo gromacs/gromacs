@@ -169,7 +169,8 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 }
 
 
-int TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
+int TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/,
+                                              AbstractErrorReporter * /*errors*/)
 {
     return 0;
 }
