@@ -388,7 +388,7 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
     {
       index_ilists(qres, db, top, cr);
     }
-
+#if 0
   for (heavy=0; (heavy < qres->nr_titrating_sites) && (!bMatch); heavy++)
     {
       qatom = &(qr->qhop_atoms[qres->titrating_sites[heavy]]);
@@ -457,7 +457,7 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
 	  break;
 	}
     }
-
+#endif
   /* Now hack the t_gmx_constr */
   set_constraints(constr, top, ir, md, cr);
 
@@ -468,7 +468,7 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 {
   int b, ip, *iatoms;
   const int niatoms = 3;
-
+#if 0
   if (qres->nr_indexed == 0)
     {
       index_ilists(qres, db, top, cr);
@@ -503,7 +503,7 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 	  break;
 	}
     }
-
+#endif
   /* Now hack the t_gmx_constr */
   set_constraints(constr, top, ir, md, cr);
 }
