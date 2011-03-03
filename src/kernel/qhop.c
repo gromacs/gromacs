@@ -46,7 +46,7 @@
 #define DOO   0.35
 #define BOND  0.15
 #define HBOND  0.2
-#define HOPANG 120
+#define MAXHOPANG 60
 
 extern void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[])
 {
@@ -1324,7 +1324,7 @@ extern int init_qhop(FILE *fplog,
 } /* init_hop */
 
 
-static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
+static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 			     int *nr, t_mdatoms *md, qhop_H_exist *Hmap){
   /* using the qhop nblists with i particles the donor atoms and
      j-particles the acceptor atoms, we search which of the acceptor
@@ -1350,7 +1350,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
   gmx_bool 
     found_proton;
   real 
-    ang, r_close;
+    ang, ang2,r_close;
   qhoprec = fr->qhoprec;
   qhoplist = fr->qhopnblist;
   snew(hop, max_hops);
@@ -1412,17 +1412,19 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 
 	      if(found_proton)
 		{
-		  /* compute DHA angels */
+		  /* compute DHA angle */
 		  /* use gmx_angle() instead? */
 		  pbc_dx(&pbc, x[donor.atom_id],    x[donor.protons[k]], veca);
 		  pbc_dx(&pbc, x[donor.protons[k]], x[acceptor.atom_id], vecb);
 		  pbc_dx(&pbc, x[acceptor.atom_id], x[donor.atom_id],    vecc);
 		
-		  /* ang = gmx_angle(veca, vecb); */
-		  ang = acos( (norm2(vecb) + norm2(veca) - norm2(vecc) )/
-			      (2 * norm(veca) * norm(vecb)));
+		  /*ang2 = RAD2DEG*gmx_angle(vecc, veca);*/
+		  ang = RAD2DEG*acos( (norm2(vecb) + norm2(veca) - norm2(vecc) )/
+				      (2 * norm(veca) * norm(vecb)));
+		  /*fprintf(fplog,"ang = %g, ang2 = %g\n",ang,ang2);*/
 		  /* ((M_PI-ang)*180.0/(M_PI) >= (HOPANG)) */
-		  if ((ang)*180.0/(M_PI) >= (HOPANG))
+		  /*		  if ((ang)*180.0/(M_PI) >= (HOPANG))*/
+		  if (ang > 180-MAXHOPANG)
 		    {
 		      /* the geometric conditions are right for a hop to take place
 		       */
@@ -3187,7 +3189,7 @@ void do_qhop(FILE *fplog,
       qr->rng_int = gmx_rng_init(12/*start_seed*/);
     } 
 
-  qr->hop = find_acceptors(cr, fr, state->x, pbc, &(qr->nr_hops), md, &(db->H_map));
+  qr->hop = find_acceptors(fplog,cr, fr, state->x, pbc, &(qr->nr_hops), md, &(db->H_map));
 
   if(qr->nr_hops > 0)
     {
@@ -3264,7 +3266,7 @@ void do_qhop(FILE *fplog,
 	      if(MASTER(cr) && bHop)
 		{
 		  gmx_step_str(step, stepstr);
-		  fprintf(fplog,"\n\nP-hop at step %s. E12 = %8.3f, hopper: %2d don: %5d (%5s) acc: %5d (%5s)\n",
+		  fprintf(fplog,"\n\nP-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)\n",
 			  stepstr,qr->hop[i].E12, i,
 			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
 			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,
