@@ -39,13 +39,17 @@
 #ifndef GMX_SELECTION_SELECTIONOPTION_H
 #define GMX_SELECTION_SELECTIONOPTION_H
 
+#include <cassert>
+
 #include "../options/abstractoption.h"
 #include "selectionenums.h"
 
 namespace gmx
 {
 
+class AbstractErrorReporter;
 class Selection;
+class SelectionOptionAdjuster;
 class SelectionOptionStorage;
 
 /*! \brief
@@ -58,7 +62,8 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
 {
     public:
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name) : MyBase(name)
+        explicit SelectionOption(const char *name)
+            : MyBase(name), _adjuster(NULL)
         { }
 
         /*! \brief
@@ -98,6 +103,14 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         MyClass &dynamicOnlyWhole()
         { _selectionFlags.set(efDynamicOnlyWhole); return me(); }
 
+        /*! \brief
+         * Get an adjuster that can be used to alter the option after creation.
+         *
+         * \see SelectionOptionAdjuster
+         */
+        MyClass &getAdjuster(SelectionOptionAdjuster **adjusterp)
+        { _adjuster = adjusterp; return me(); }
+
     private:
         // Disable default value because it is impossible to provide a
         // Selection object.
@@ -108,12 +121,163 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
                                          AbstractOptionStorage **storage) const;
 
         SelectionFlags          _selectionFlags;
+        SelectionOptionAdjuster **_adjuster;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without
          * otherwise unnecessary accessors.
          */
         friend class SelectionOptionStorage;
+};
+
+
+/*! \brief
+ * Allows changes to a selection option after creation.
+ *
+ * This class provides the necessary interface for changing, e.g., the number
+ * of allowed selections for a selection option after the option has been
+ * created with Options::addOption().  This is needed if the number or other
+ * flags are only known after other options have been parsed.  The main
+ * advantage of this class over custom checks is that if used before
+ * interactive selection prompt, the interactive prompt is updated accordingly.
+ *
+ * When using this class, the option should be initially created with the most
+ * permissive flags, and this class should be used to place restrictions where
+ * appropriate.  Otherwise, values that are provided before adjustments will
+ * need to follow the more strict checks.  In most cases in trajectory analysis
+ * (which is the main use case for selection options), the adjustments should
+ * be done in TrajectoryAnalysisModule::initOptionsDone() for them to take
+ * place before interactive selection prompts.
+ *
+ * An instance of this class for a selection option can be obtained with
+ * SelectionOption::getAdjuster() when the option is created.
+ *
+ * Example use:
+ * \code
+std::vector<Selection *> sel;
+Options options("example", "Example options");
+SelectionOptionAdjuster *adjuster;
+options.addOption(SelectionOption("sel").storeVector(&sel)
+                      .multiValue().getAdjuster(&adjuster));
+// < ... assign values to options ...>
+if ( condition )
+{
+    OptionAdjusterErrorContext context(adjuster, errors);
+    // Put limitations on the selections based on the condition,
+    // which can depend on other option values.
+    int rc = adjuster->setValueCount(2);
+    if (rc == 0)
+    {
+        rc = adjuster->setOnlyStatic(true);
+    }
+    if (rc != 0)
+    {
+        return rc;
+    }
+}
+ * \endcode
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class SelectionOptionAdjuster
+{
+    public:
+        /*! \brief
+         * Creates a new adjuster.
+         *
+         * Should only be called internally by the options module.
+         */
+        SelectionOptionAdjuster(SelectionOptionStorage *storage);
+
+        /*! \brief
+         * Sets an error reporter for all subsequent operations.
+         *
+         * \param[in] errors  Error reporter object.
+         * \returns The previously set error reporter (may be NULL).
+         *
+         * Caller must ensure that the error reporter is valid as long as it
+         * is assigned to the adjuster.
+         *
+         * There must be a valid error reporter associated with the adjuster
+         * before any other method in the object is called.
+         *
+         * \see OptionAdjusterErrorContext
+         */
+        AbstractErrorReporter *setErrorReporter(AbstractErrorReporter *errors);
+
+        /*! \brief
+         * Sets the number of selections allowed for the option.
+         *
+         * \param[in] count  Number of allowed selections.
+         * \retval 0 on success.
+         */
+        int setValueCount(int count);
+
+        //! \copydoc SelectionOption::evaluateVelocities()
+        int setEvaluateVelocities(bool bEnabled);
+        //! \copydoc SelectionOption::evaluateForces()
+        int setEvaluateForces(bool bEnabled);
+        //! \copydoc SelectionOption::onlyAtoms()
+        int setOnlyAtoms(bool bEnabled);
+        //! \copydoc SelectionOption::onlyStatic()
+        int setOnlyStatic(bool bEnabled);
+        //! \copydoc SelectionOption::dynamicMask()
+        int setDynamicMask(bool bEnabled);
+        //! \copydoc SelectionOption::dynamicOnlyWhole()
+        int setDynamicOnlyWhole(bool bEnabled);
+
+    private:
+        //! Returns the storage object associated with this adjuster.
+        SelectionOptionStorage &storage() { return _storage; }
+        //! Returns the storage object associated with this adjuster.
+        const SelectionOptionStorage &storage() const { return _storage; }
+        //! Returns the current error reporter object, asserts if there is none.
+        AbstractErrorReporter *errors()
+        { assert(_errors != NULL); return _errors; }
+
+        SelectionOptionStorage &_storage;
+        AbstractErrorReporter  *_errors;
+};
+
+
+/*! \brief
+ * Convenience class for providing an error reporter for an option adjuster.
+ *
+ * This class implements a RAII-type interface over
+ * SelectionOptionAdjuster::setErrorReporter(): the constructor sets a new
+ * error reporter, and the destructor restores the old reporter.
+ *
+ * Example use:
+ * \code
+{
+    OptionAdjusterErrorContext context(adjuster, errors);
+    adjuster->setValueCount(2); // Errors are reported using 'errors'.
+}  // Previous reporter is automatically restored on scope exit.
+ * \endcode
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class OptionAdjusterErrorContext
+{
+    public:
+        //! Sets error reporter for an adjuster and stores the old reporter.
+        OptionAdjusterErrorContext(SelectionOptionAdjuster *adjuster,
+                                   AbstractErrorReporter *errors)
+            : _adjuster(adjuster)
+        {
+            _oldReporter = adjuster->setErrorReporter(errors);
+        }
+        //! Restores the old error reporter.
+        ~OptionAdjusterErrorContext()
+        {
+            _adjuster->setErrorReporter(_oldReporter);
+        }
+
+    private:
+        SelectionOptionAdjuster *_adjuster;
+        AbstractErrorReporter   *_oldReporter;
 };
 
 } // namespace gmx

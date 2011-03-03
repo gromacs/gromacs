@@ -157,6 +157,41 @@ int AbstractOptionStorage::finish(AbstractErrorReporter *errors)
     return rc;
 }
 
+int AbstractOptionStorage::setMinValueCount(int count,
+                                            AbstractErrorReporter *errors)
+{
+    assert(!hasFlag(efMulti));
+    assert(count >= 0);
+    _minValueCount = count;
+    if (isSet()
+        && !hasFlag(efDontCheckMinimumCount) && valueCount() < _minValueCount)
+    {
+        if (_maxValueCount == -1 || valueCount() <= _maxValueCount)
+        {
+            errors->error("Too many values");
+        }
+        return eeInconsistentInput;
+    }
+    return 0;
+}
+
+int AbstractOptionStorage::setMaxValueCount(int count,
+                                            AbstractErrorReporter *errors)
+{
+    assert(!hasFlag(efMulti));
+    assert(count >= -1);
+    _maxValueCount = count;
+    if (isSet() && _maxValueCount >= 0 && valueCount() > _maxValueCount)
+    {
+        if (hasFlag(efDontCheckMinimumCount) || valueCount() >= _minValueCount)
+        {
+            errors->error("Too few values");
+        }
+        return eeInconsistentInput;
+    }
+    return 0;
+}
+
 int AbstractOptionStorage::incrementValueCount()
 {
     if (_currentValueCount == -1)

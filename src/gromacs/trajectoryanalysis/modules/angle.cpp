@@ -53,6 +53,7 @@ namespace analysismodules
 
 Angle::Angle()
     : _options("angle", "Angle calculation"),
+      _sel1Adj(NULL), _sel2Adj(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
       _bDumpDist(false), _vt0(NULL)
 {
@@ -137,10 +138,10 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         .description("Write also distances with -od"));
 
     _options.addOption(SelectionOption("group1").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel1)
+        .dynamicOnlyWhole().storeVector(&_sel1).getAdjuster(&_sel1Adj)
         .description("First analysis/vector selection"));
     _options.addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel2)
+        .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2Adj)
         .description("Second analysis/vector selection"));
 
     return &_options;
@@ -157,6 +158,11 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
     {
         GMX_ERROR(eeInconsistentInput,
                   "Cannot use a second group (-g2) with -g1 angle or dihedral");
+    }
+    if (bSingle && _options.isSet("group2"))
+    {
+        GMX_ERROR(eeInconsistentInput,
+                  "Cannot provide a second selection (-group2) with -g1 angle or dihedral");
     }
     if (!bSingle && _g2type[0] == 'n')
     {
@@ -187,7 +193,11 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
     }
     if (_bAll)
     {
-        // TODO: Disable dynamic selections
+        int rc = _sel1Adj->setOnlyStatic(true);
+        if (rc != 0)
+        {
+            return rc;
+        }
     }
 
     // Set up the number of positions per angle.
@@ -211,8 +221,28 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
         default:
             GMX_ERROR(eeInternalError, "invalid -g2 value");
     }
+    if (_natoms2 == 0 && _options.isSet("group2"))
+    {
+        GMX_ERROR(eeInconsistentInput,
+                  "Cannot provide a second selection (-group2) with -g2 t0 or z");
+    }
 
-    // TODO: Set up/check the number of selections.
+    if (!_bMulti)
+    {
+        int rc = _sel1Adj->setValueCount(_bSplit1 ? _natoms1 : 1);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    if (_natoms2 > 0)
+    {
+        int rc = _sel2Adj->setValueCount(_bSplit2 ? _natoms2 : 1);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
 
     return 0;
 }

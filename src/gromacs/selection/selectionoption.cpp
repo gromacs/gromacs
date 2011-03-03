@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
+#include "gromacs/errorreporting/errorcontext.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
@@ -60,6 +61,7 @@ namespace gmx
  */
 
 SelectionOptionStorage::SelectionOptionStorage()
+    : _adjuster(NULL)
 {
     MyBase::setFlag(efNoDefaultValue);
     MyBase::setFlag(efConversionMayNotAddValues);
@@ -67,12 +69,27 @@ SelectionOptionStorage::SelectionOptionStorage()
 }
 
 
+SelectionOptionStorage::~SelectionOptionStorage()
+{
+    delete _adjuster;
+}
+
+
 int SelectionOptionStorage::init(const SelectionOption &settings,
                                  Options *options)
 {
     _selectionFlags = settings._selectionFlags;
-    options->globalProperties().request(eogpSelectionCollection);
-    return MyBase::init(settings, options);
+    int rc = MyBase::init(settings, options);
+    if (rc == 0)
+    {
+        options->globalProperties().request(eogpSelectionCollection);
+        if (settings._adjuster)
+        {
+            _adjuster = new SelectionOptionAdjuster(this);
+            *settings._adjuster = _adjuster;
+        }
+    }
+    return rc;
 }
 
 
@@ -154,12 +171,101 @@ int SelectionOptionStorage::processAll(AbstractErrorReporter *errors)
             hostOptions().globalProperties().selectionCollection();
         assert(sc != NULL);
 
-        sc->_impl->requestSelections(name(), description(),
-                                     maxValueCount(), this);
+        sc->_impl->requestSelections(name(), description(), this);
         setFlag(efSet);
     }
     return MyBase::processAll(errors);
 }
+
+int SelectionOptionStorage::setAllowedValueCount(int count,
+                                                 AbstractErrorReporter *errors)
+{
+    ErrorContext context(errors, "In option '" + name() + "'");
+    int rc = 0;
+    if (count > 0)
+    {
+        rc = setMinValueCount(count, errors);
+        if (rc == 0 && valueCount() > 0 && valueCount() < count)
+        {
+            errors->error("Too few (valid) values provided");
+            rc = eeInvalidInput;
+        }
+    }
+    int rc1 = setMaxValueCount(count, errors);
+    return rc != 0 ? rc : rc1;
+}
+
+int SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet,
+                                             AbstractErrorReporter *errors)
+{
+    ErrorContext context(errors, "In option '" + name() + "'");
+    _selectionFlags.set(flag, bSet);
+    ValueList::const_iterator i;
+    for (i = values().begin(); i != values().end(); ++i)
+    {
+        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        {
+            errors->error("Dynamic selections not supported");
+            return eeInvalidInput;
+        }
+        (*i)->setFlags(_selectionFlags);
+    }
+    return 0;
+}
+
+
+/********************************************************************
+ * SelectionOptionAdjuster
+ */
+
+SelectionOptionAdjuster::SelectionOptionAdjuster(SelectionOptionStorage *storage)
+    : _storage(*storage), _errors(NULL)
+{
+}
+
+AbstractErrorReporter *
+SelectionOptionAdjuster::setErrorReporter(AbstractErrorReporter *errors)
+{
+    AbstractErrorReporter *old = _errors;
+    _errors = errors;
+    return old;
+}
+
+int SelectionOptionAdjuster::setValueCount(int count)
+{
+    return storage().setAllowedValueCount(count, errors());
+}
+
+int SelectionOptionAdjuster::setEvaluateVelocities(bool bEnabled)
+{
+    return storage().setSelectionFlag(efEvaluateVelocities, bEnabled, errors());
+}
+
+int SelectionOptionAdjuster::setEvaluateForces(bool bEnabled)
+{
+    return storage().setSelectionFlag(efEvaluateForces, bEnabled, errors());
+}
+
+int SelectionOptionAdjuster::setOnlyAtoms(bool bEnabled)
+{
+    return storage().setSelectionFlag(efOnlyAtoms, bEnabled, errors());
+}
+
+int SelectionOptionAdjuster::setOnlyStatic(bool bEnabled)
+{
+    return storage().setSelectionFlag(efOnlyStatic, bEnabled, errors());
+}
+
+int SelectionOptionAdjuster::setDynamicMask(bool bEnabled)
+{
+    return storage().setSelectionFlag(efDynamicMask, bEnabled, errors());
+}
+
+int SelectionOptionAdjuster::setDynamicOnlyWhole(bool bEnabled)
+{
+    return storage().setSelectionFlag(efDynamicOnlyWhole, bEnabled, errors());
+}
+
 
 /********************************************************************
  * SelectionOption

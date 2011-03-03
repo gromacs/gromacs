@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests selection parsing and compilation.
+ * Tests handling of selection options.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
@@ -133,6 +133,86 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 }
 
 
+TEST_F(SelectionOptionTest, HandlesAdjuster)
+{
+    std::vector<gmx::Selection *> sel;
+    gmx::SelectionOptionAdjuster *adjuster;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
+                           .getAdjuster(&adjuster));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
+    EXPECT_EQ(0, assigner.appendValue("resname RB RC"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
+    EXPECT_EQ(0, adjuster->setValueCount(2));
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
+{
+    gmx::Selection *sel;
+    gmx::SelectionOptionAdjuster *adjuster;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").store(&sel)
+                           .getAdjuster(&adjuster));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("x < 5"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
+    EXPECT_NE(0, adjuster->setOnlyStatic(true));
+}
+
+
+TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
+{
+    std::vector<gmx::Selection *> sel;
+    gmx::SelectionOptionAdjuster *adjuster;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
+                           .getAdjuster(&adjuster));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
+    EXPECT_EQ(0, assigner.appendValue("resname RB RC"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
+    EXPECT_NE(0, adjuster->setValueCount(1));
+    EXPECT_EQ(1, errors.errorCount(gmx::AbstractErrorReporter::etError));
+}
+
+
+TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
+{
+    std::vector<gmx::Selection *> sel;
+    gmx::SelectionOptionAdjuster *adjuster;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
+                           .getAdjuster(&adjuster));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
+    EXPECT_NE(0, adjuster->setValueCount(2));
+    EXPECT_EQ(1, errors.errorCount(gmx::AbstractErrorReporter::etError));
+}
+
+
 TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
 {
     gmx::Selection *sel = NULL;
@@ -176,6 +256,25 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     EXPECT_EQ(0, _options.finish(&errors));
     EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB", &errors));
     ASSERT_TRUE(sel != NULL);
+}
+
+
+TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
+{
+    std::vector<gmx::Selection *> sel;
+    gmx::SelectionOptionAdjuster *adjuster;
+    using gmx::SelectionOption;
+    _options.addOption(SelectionOption("sel").storeVector(&sel).valueCount(3)
+                           .getAdjuster(&adjuster));
+
+    gmx::EmptyErrorReporter errors;
+    gmx::OptionsAssigner assigner(&_options, &errors);
+    ASSERT_EQ(0, assigner.startOption("sel"));
+    EXPECT_EQ(0, assigner.finish());
+    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
+    EXPECT_EQ(0, adjuster->setValueCount(2));
+    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB; resname RB RC", &errors));
 }
 
 } // namespace
