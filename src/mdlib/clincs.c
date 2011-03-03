@@ -497,7 +497,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
             }
             len2 = len*len;
             dlen2 = 2*len2 - norm2(dx);
-            if (dlen2 < wfac*len2 && (nlocat==NULL || nlocat[b]))
+            if (blc[0] > 0 && dlen2 < wfac*len2 && (nlocat==NULL || nlocat[b]))
             {
                 *warn = b;
             }
@@ -602,6 +602,11 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
     {
         a1 = li->bla[2*i];
         a2 = li->bla[2*i+1];
+        if (invmass[a1] == 0 || invmass[a2] == 0)
+        {
+            li->blc[i]  = 0;
+            li->blc1[i] = 0;
+        }
         li->blc[i]  = gmx_invsqrt(invmass[a1] + invmass[a2]);
         li->blc1[i] = invsqrt2;
     }
