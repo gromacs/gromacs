@@ -306,7 +306,8 @@ static int qhop_stash_rtp_entry(qhop_db *qdb, t_restp *src)
 /* Takes a rtp database and picks out the residues found in qdb->rb->res[][].
  * The resulting slice is stored in qdb->rtp, and its size in qdb->nrtp.
  * Move strings to symtab in qdb. */
-static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
+static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb, 
+		      t_restp *bigrtp, int nbigrtp)
 {
   printf("trim the rtp\n");
   int i, rt, r, a, nrt;
@@ -328,7 +329,8 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	  /* Add the resblock. */
 	  if (strcmp(bigrtp[i].resname, qdb->rb.restype[rt]) == 0 && !bRtypeAdded[rt])
 	    {
-	      fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
+	      if (NULL != fplog)
+		fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 	      srenew(qdb->rb.irtp, rt+1);
 	      qdb->rb.irtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
@@ -341,7 +343,8 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	    {
 	      if (bMatch = ((strcmp(bigrtp[i].resname, qdb->rb.res[rt][r].name) == 0)))
 		{
-		  fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
+		  if (NULL != fplog)
+		    fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
 		  qdb->rb.res[rt][r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 		  //  qdb->nrtp++;
@@ -652,7 +655,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   snew(qdb->qhop_param,qdb->ngqh);
   for(i=0; (i<qdb->ngqh); i++) {
     fill_qhp(&(qdb->qhop_param[i]),qdb->gqh[i]);
-    if (debug) {
+    if (NULL != debug) {
       fprintf(debug,"Donor: %s  Acceptor: %s\n",
 	      qhop_get_donor(qdb->gqh[i]),
 	      qhop_get_acceptor(qdb->gqh[i]));
@@ -661,7 +664,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   }
 
   /* Must process the resblocks stuff */
-  strip_rtp(forcefield, qdb, bigrtp, nrtp); /* Take away stuff not found in ffXXX-qhop.dat */
+  strip_rtp(debug,forcefield, qdb, bigrtp, nrtp); /* Take away stuff not found in ffXXX-qhop.dat */
   /* done_symtab(stab);*/
 
   set_reactant_products(qdb);

@@ -4,6 +4,7 @@
 #ifdef HAVE_IDENT
 #ident	"@(#) qhop.h 1 28/2/01"
 #endif /* HAVE_IDENT */
+#include <stdio.h>
 #include "typedefs.h"
 #include "pbc.h"
 #include "network.h"
@@ -27,8 +28,9 @@
  *   - Reads in the hopping and force field parameters.
  * \return The number of titrating atoms.
  */
-extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, const t_forcerec *fr,
-	      /* rvec *x, */matrix box, t_mdatoms *md);
+extern int init_qhop(FILE *fplog,t_commrec *cr, gmx_mtop_t *mtop, 
+		     t_inputrec *ir, const t_forcerec *fr,
+		     matrix box, t_mdatoms *md);
 
 /** \brief Identifies potential hops calculates probabilities.
  *

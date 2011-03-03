@@ -536,7 +536,8 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
 
 /* This function now makes get_qhop_residue obsolete. */
 /* remove commrec? */
-static int get_qhop_atoms(t_commrec *cr,
+static int get_qhop_atoms(FILE *fplog,
+			  t_commrec *cr,
 			  gmx_mtop_t *mtop,
 			  t_qhoprec *qhoprec,
 			  t_inputrec *ir,
@@ -586,7 +587,7 @@ static int get_qhop_atoms(t_commrec *cr,
 
   ngrps = ir->opts.ngqhopH;
 
-  fprintf(stderr, "ir->opts.ngqhopH = %d", ir->opts.ngqhopH);
+  fprintf(fplog, "ir->opts.ngqhopH = %d\n", ir->opts.ngqhopH);
 
   aloop = gmx_mtop_atomloop_all_init(mtop);
 
@@ -712,7 +713,7 @@ static int get_qhop_atoms(t_commrec *cr,
       }
   }
 
-  fprintf(stderr,"nr qhop donors = %d\n", q_atoms_nr);
+  fprintf(fplog,"There are %d qhop donors\n", q_atoms_nr);
 
   /* Assign atoms to each qhop_residue */
   aloop = gmx_mtop_atomloop_all_init(mtop);
@@ -1266,7 +1267,8 @@ static void qhop_connect_rtp_library(qhop_db *db)
   qhop_db_map_subres_bondeds(db); /* ditto. */
 }
 
-extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
+extern int init_qhop(FILE *fplog,
+		     t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
 		     const t_forcerec *fr/* , const rvec *x */, matrix box, t_mdatoms *md)
 {
 
@@ -1304,7 +1306,7 @@ extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   snew(qhoprec->global_atom_to_qhop_atom, mtop->natoms);
   snew(qhoprec->f, mtop->natoms);
 
-  nr_qhop_atoms = get_qhop_atoms(cr, mtop, qhoprec ,ir, db);
+  nr_qhop_atoms = get_qhop_atoms(fplog,cr, mtop, qhoprec ,ir, db);
 
   /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
   scan_for_H(qhoprec, db);
@@ -3145,7 +3147,7 @@ void do_qhop(FILE *fplog,
   char
     stepstr[STEPSTRSIZE];
   int
-    i,j,a,ix;
+    i,j,a;
   t_pbc
     pbc;
   gmx_bool
@@ -3192,15 +3194,14 @@ void do_qhop(FILE *fplog,
       for(i=0; i<qr->nr_hops; i++)
 	{
 	  qr->hop[i].T = T;
-	  ix = 0;
-	  if (qr->qhopmode == etQhopModeOne)
+	  /*if (qr->qhopmode == etQhopModeOne)
 	    {
 	      ix = (int) floor (qr->nr_hops * (gmx_rng_uniform_uint32(qr->rng_int))/4294967296.0);
 	    }
-	
-	  get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,(gmx_constr_t)constr,groups,state,md,
-		       fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
-		       &(qr->hop[ix]),
+	  */
+	  get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+		       fcd,graph,fr,vsite,mu_tot,
+		       &(qr->hop[i]),
 		       fr->qhoprec,pbc,step, db);
 	  
 	  if (qr->qhopmode == etQhopModeOne)
@@ -3234,8 +3235,9 @@ void do_qhop(FILE *fplog,
 		  /* hoppenmaar! */
       
 		  /* Move the actual hopping to update() */
-		  bHop = do_hop(cr, ir, fr->qhoprec, db, md, &(qr->hop[i]), state->x, state->v, mtop, top, (gmx_constr_t)constr, &pbc);
-		  fprintf(stderr,"hopping!\n");
+		  bHop = do_hop(cr,ir,fr->qhoprec,db,md,&(qr->hop[i]), 
+				state->x,state->v,mtop,top,constr,&pbc);
+		  
 		  /*      scale_velocities();*/
 
 		  if (qr->qhopmode != etQhopModeOne)
@@ -3262,7 +3264,7 @@ void do_qhop(FILE *fplog,
 	      if(MASTER(cr) && bHop)
 		{
 		  gmx_step_str(step, stepstr);
-		  fprintf(fplog,"\n\nQ-hop is TRUE at step %s!\nE12 = %f, hopper: %d don: %d (%s) acc: %d (%s)\n",
+		  fprintf(fplog,"\n\nP-hop at step %s. E12 = %8.3f, hopper: %2d don: %5d (%5s) acc: %5d (%5s)\n",
 			  stepstr,qr->hop[i].E12, i,
 			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
 			  fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,

@@ -797,7 +797,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             || integrator[inputrec->eI].func == do_steep
             || integrator[inputrec->eI].func == do_cg)
         {
-            init_qhop(cr,mtop,inputrec,fr,/* state->x, */state->box,mdatoms);
+            init_qhop(fplog,cr,mtop,inputrec,fr,state->box,mdatoms);
         }
         
     }
