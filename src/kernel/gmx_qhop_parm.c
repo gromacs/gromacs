@@ -327,7 +327,7 @@ extern void make_ilib(qhop_db *db)
 
       for (r=0; r < db->rb.nres[rt]; r++)
 	{
-	  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
+	  rtp = &(db->rtp[db->rb.res[rt][r].irtp]);
 
 	  for (bt=0; bt < ebtsNR; bt++)
 	    {
@@ -406,7 +406,7 @@ extern void make_ilib(qhop_db *db)
 	      
 	      for (r=0; r < db->rb.nres[rt]; r++)
 		{
-		  rtp = &(db->rtp[db->rb.res[rt][r].rtp]);
+		  rtp = &(db->rtp[db->rb.res[rt][r].irtp]);
 
 		  for (b=0; b < rtp->rb[bt].nb; b++)
 		    {
@@ -771,6 +771,8 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   qhop_reactant *qreac;
   const qhop_resblocks *rb = &(db->rb);
   
+  qreac = NULL;
+  j  =-1;
   rt = qres->rtype;
   
   if (db->H_map.atomid2H < 0)
@@ -800,7 +802,8 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
     gmx_fatal(FARGS, "In qhop_set_protonation(): "
 	      "Hydrogen %s not found in residue %s!",
 	      Hname, res->name);
-
+  if (NULL == qreac)
+    gmx_fatal(FARGS,"qreac was never initialized!");
   product = &(qreac->productdata[j]);
 
   /* Must find the index to this residue subtype

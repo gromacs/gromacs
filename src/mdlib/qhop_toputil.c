@@ -349,7 +349,7 @@ extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t
 
   qres = &(qr->qhop_residues[qatom->qres_id]);
 
-  rtp  = &(db->rtp[db->rb.res[qres->rtype][qres->res].rtp]);
+  rtp  = &(db->rtp[db->rb.res[qres->rtype][qres->res].irtp]);
 
   /* find the parameters for this constraint.
    * We assume that there's only one constraint
@@ -447,7 +447,7 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
     {
       bi = db->rb.res[qres->rtype][qres->res].biMap[ebtsBONDS][b]; /* Map to restype bondeds */
 
-      rtp = &(db->rtp[db->rb.res[qres->rtype][qres->res].rtp]);
+      rtp = &(db->rtp[db->rb.res[qres->rtype][qres->res].irtp]);
 
       iatoms = db->rb.ba[qres->rtype][ebtsBONDS][bi];
 
@@ -638,7 +638,7 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 		      n_H2[nDA2] = 0;
 		      DAlist2[nDA2] = reac->name[t];
 		      
-		      rtp = &(db->rtp[db->rb.res[qres->rtype][r].rtp]);
+		      rtp = &(db->rtp[db->rb.res[qres->rtype][r].irtp]);
 		      for (a=0; a<rtp->natom; a++)
 			{
 			  if (strcmp(reac->name[t], *(rtp->atomname[a])) == 0)
@@ -744,7 +744,7 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	    }
 	  
 	  /* Go through the rtp */
-	  rtp = &(db->rtp[db->rb.res[qres->rtype][r].rtp]);
+	  rtp = &(db->rtp[db->rb.res[qres->rtype][r].irtp]);
 	  
 	  for (i=0; i < rtp->natom; i++)
 	    {
@@ -809,8 +809,8 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 
   qres = &(db->rb.res[swapres->rtype][swapres->res]);
 
-  rtp  = &(db->rtp[db->rb.rtp[swapres->rtype]]);
-  rtpr = &(db->rtp[qres->rtp]);
+  rtp  = &(db->rtp[db->rb.irtp[swapres->rtype]]);
+  rtpr = &(db->rtp[qres->irtp]);
 
   /* rb->ilib and top->idef.functype are offset by this much: */
   offset = top->idef.ntypes - db->rb.ni;
@@ -863,7 +863,7 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
 /*   if (db->rb.bWater[swapres->rtype]) */
 /*       {return;} */
   
-  rtp = &(db->rtp[prod->rtp]);
+  rtp = &(db->rtp[prod->irtp]);
 
   /* For now, assume that all atomtypes are present, e.g. that grompp was run with -norenum */
 
@@ -923,7 +923,7 @@ extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
   bWater = db->rb.bWater[swapres->rtype];
   
-  rtp = &(db->rtp[prod->rtp]);
+  rtp = &(db->rtp[prod->irtp]);
 
   /* Compare atomnames with atomnames in rtp.
    * Change m and q upon match. */

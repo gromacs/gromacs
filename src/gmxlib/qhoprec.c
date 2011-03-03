@@ -34,7 +34,7 @@ static void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
 
       for (j=0; j < a->nr_protons; j++)
 	{
-	  if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] != 0)
+	  if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] == 0)
 	    {
 	      md->massT[a->protons[j]] = 0;
 	    }
@@ -70,7 +70,7 @@ extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, gmx_localtop_
 	  
 	  if (ft >= 0)
 	    {
-	      nb = db->rtp[db->rb.rtp[qres->rtype]].rb[j].nb;
+	      nb = db->rtp[db->rb.irtp[qres->rtype]].rb[j].nb;
 	      qres->bindex.nr[ft] = nb;
 
 	      snew((qres->bindex.ilist_pos[ft]), nb);
@@ -78,9 +78,7 @@ extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, gmx_localtop_
 	      snew((qres->bindex.indexed[ft]), nb);
 	    }
 	}
-
       set_interactions(qhoprec, db, top, md, qres, cr);
-
     }
 
   qhop_atoms2md(md, qhoprec);

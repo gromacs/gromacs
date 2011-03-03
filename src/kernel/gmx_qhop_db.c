@@ -140,7 +140,7 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
       dest->atom[i].atomnumber  = anum;
       strncpy(dest->atom[i].elem, elem, 4);
 
-      snew(dest->atomname[i],1);
+      /*snew(dest->atomname[i],1); Not needed. */
       dest->atomname[i] = put_symtab(tab, *(src->atomname[i]));
 
     }
@@ -300,7 +300,7 @@ static int qhop_stash_rtp_entry(qhop_db *qdb, t_restp *src)
 
   rtpi = (qdb->nrtp)++;
 
-  return rtpi;
+  return qdb->nrtp-1;
 }
 
 /* Takes a rtp database and picks out the residues found in qdb->rb->res[][].
@@ -329,10 +329,10 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 	  if (strcmp(bigrtp[i].resname, qdb->rb.restype[rt]) == 0 && !bRtypeAdded[rt])
 	    {
 	      fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
-	      srenew(qdb->rb.rtp, rt+1);
-	      qdb->rb.rtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+	      srenew(qdb->rb.irtp, rt+1);
+	      qdb->rb.irtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
-	      qdb->nrtp++;
+	      //	      qdb->nrtp++;
 	      break;
 	    }
 
@@ -343,8 +343,8 @@ static void strip_rtp(char *ff, qhop_db *qdb, t_restp *bigrtp, int nbigrtp)
 		{
 		  fprintf(stderr, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
-		  qdb->rb.res[rt][r].rtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
-		  qdb->nrtp++;
+		  qdb->rb.res[rt][r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+		  //  qdb->nrtp++;
 		}
 	    }
 	}
@@ -662,7 +662,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 
   /* Must process the resblocks stuff */
   strip_rtp(forcefield, qdb, bigrtp, nrtp); /* Take away stuff not found in ffXXX-qhop.dat */
-  done_symtab(stab);
+  /* done_symtab(stab);*/
 
   set_reactant_products(qdb);
 
@@ -732,7 +732,8 @@ int qhop_db_done(qhop_db_t qdb)
   t_restp *rtp;
 
   /* Free a ton of structures. */
-
+  return 0;
+  
   rtp = (qdb->rtp);
   
   for(i=0; i<rtp[i].natom; i++) {
@@ -831,7 +832,7 @@ extern int qhop_db_get_parameters(const qhop_db_t qdb,
 
 static int get_interaction_type(int bt, int type)
 {
-  int it;
+  int it=-1;
 
   switch (bt)
     {
@@ -955,12 +956,12 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	  snew(db->rb.ba[rt], ebtsNR);
 	}
 
-      if (db->rb.rtp[rt] >= db->nrtp)
+      if (db->rb.irtp[rt] >= db->nrtp)
 	{
 	  gmx_fatal(FARGS, "Trying to read outside of the rtp data.");
 	}
 
-      rtp = &(db->rtp[db->rb.rtp[rt]]);
+      rtp = &(db->rtp[db->rb.irtp[rt]]);
 
       for (bt=0; bt < ebtsNR; bt++)
 	{
@@ -1034,12 +1035,12 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 	  continue;
 	}
 
-      rtprt = &(db->rtp[db->rb.rtp[rt]]);
+      rtprt = &(db->rtp[db->rb.irtp[rt]]);
 
       /* Residue subtypes */
       for (r=0; r < db->rb.nres[rt]; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
+	  rtpr = &(db->rtp[db->rb.res[rt][r].irtp]);
 
 	  snew(db->rb.res[rt][r].iatomMap, rtpr->natom);
 	  db->rb.res[rt][r].niatom = rtpr->natom;
@@ -1070,7 +1071,7 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
   gmx_bool bMatch;
   t_restp *rtpr, *rtprt;
   
-
+  brt = -1;
   /* Restypes */
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {      
@@ -1080,12 +1081,12 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
 	  continue;
 	}
 
-      rtprt = &(db->rtp[db->rb.rtp[rt]]);
+      rtprt = &(db->rtp[db->rb.irtp[rt]]);
 
       /* Residue subtypes */
       for (r=0; r < db->rb.nres[rt]; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
+	  rtpr = &(db->rtp[db->rb.res[rt][r].irtp]);
 	  snew(db->rb.res[rt][r].biMap, ebtsNR);
 	  snew(db->rb.res[rt][r].findex, ebtsNR);
 	  map = db->rb.res[rt][r].biMap;

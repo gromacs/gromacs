@@ -72,7 +72,7 @@ typedef struct qhop {
 
 typedef struct qhop_reactant {
   int nname;     /* Length of **name */
-  /* Move to qhop_res? */  int rtp;       /* indexes the t_restp-array rtp in qhop_db. */
+  /* Move to qhop_res? */  int irtp;       /* indexes the t_restp-array rtp in qhop_db. */
   char **name;   /* A list of acceptor/donor atoms, due to proton tautomerism, eg. the two oxygens in a carbonyl. */
   char *product; /* What will the res turn into when this donor/aceptor reacts? */
   qhop_res_t productdata; /* Pointer to the product qhop_res */
@@ -89,7 +89,7 @@ typedef struct qhop_res {
 		  * Matches the rtp data. */
   int niatom;    /* = db->rtp[rtp].natom */
   /*   int nft; */
-  int rtp;      /* indexes the t_restp-array rtp in qhop_db. */
+  int irtp;      /* indexes the t_restp-array rtp in qhop_db. */
 
   /* Here are arrays that indexes functypes/parameters.
    * it must match the rtp data.
@@ -110,7 +110,7 @@ typedef struct qhop_resblocks {
   qhop_res **res; /* has size [nrestypes][nres[i]] */
   gmx_bool *bWater; /* has size nrestypes */
   gmx_bool *bInTop; /* has size nrestypes */
-  int *rtp;       /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
+  int *irtp;      /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
 		   * Note that this is for the "residue families" only, e.g. qLYS.
 		   * Every related residue has its own index to the t_restp-array in qhop_reactant. */
 

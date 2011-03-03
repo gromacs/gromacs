@@ -1386,6 +1386,7 @@ static t_hop *find_acceptors(t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
 	       */
 	      found_proton = FALSE;
 	      r_close = 100000;
+	      closest = -1;
 	      for (k=0; k < donor.nr_protons; k++)
 		{
 		  if(get_proton_presence(Hmap, donor.protons[k]) /* md->chargeA[donor.protons[k]] > 0.000001 */)
@@ -2643,13 +2644,13 @@ static real get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
 	{
 	  gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
 	}
+      hop->DE_MM = Eafter_all - qhoprec->Ebefore_all;
     }
   else
     {
       fprintf(stderr, "change_protonation() returned FALSE!");
     }
   
-  hop->DE_MM = Eafter_all - qhoprec->Ebefore_all;
 
   free(p);
 }
@@ -3058,7 +3059,7 @@ static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
 {
   int       i, j, r, hops_left;
   gmx_bool  bSorted;
-  t_hop     *new_hop, tmp_hop;
+  t_hop     *new_hop=NULL, tmp_hop;
 
   switch (mode)
     {
@@ -3144,7 +3145,7 @@ void do_qhop(FILE *fplog,
   char
     stepstr[STEPSTRSIZE];
   int
-    nr_hops,i,j,a;
+    i,j,a,ix;
   t_pbc
     pbc;
   gmx_bool
@@ -3191,14 +3192,15 @@ void do_qhop(FILE *fplog,
       for(i=0; i<qr->nr_hops; i++)
 	{
 	  qr->hop[i].T = T;
+	  ix = 0;
 	  if (qr->qhopmode == etQhopModeOne)
 	    {
-	      i = (int) floor (nr_hops * (gmx_rng_uniform_uint32(qr->rng_int))/4294967296.0);
+	      ix = (int) floor (qr->nr_hops * (gmx_rng_uniform_uint32(qr->rng_int))/4294967296.0);
 	    }
 	
 	  get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,(gmx_constr_t)constr,groups,state,md,
 		       fcd,graph,fr,vsite,mu_tot,/*born,bBornRadii,*/
-		       &(qr->hop[i]),
+		       &(qr->hop[ix]),
 		       fr->qhoprec,pbc,step, db);
 	  
 	  if (qr->qhopmode == etQhopModeOne)
@@ -3387,17 +3389,18 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
   /* WE NEED TO DETERMINE THE FUNCTYPE ft !!!!*/
 
   t_iparams params;
-
+  
+  ft = -1;
   nrt = db->rb.nrestypes;
   for (rt=0; rt < nrt; rt++)
     {
       nres = db->rb.nres[rt];
-      rtprt = &(db->rtp[db->rb.rtp[rt]]);
+      rtprt = &(db->rtp[db->rb.irtp[rt]]);
       /* nqatoms = rtp->natom; */
 
       for (r=0; r < nres; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.res[rt][r].rtp]);
+	  rtpr = &(db->rtp[db->rb.res[rt][r].irtp]);
 	  /* rtpIndex = db->rb.res[rt][res].rtp; */
 
 	  /* Now map the atoms in the residue subtype (XXX)
