@@ -705,8 +705,8 @@ int qhop_db_write(char *fn,qhop_db *qdb)
 
 static void clear_qhop_res(qhop_res res)
 {
-  if (res.acc != NULL) sfree(res.acc);
-  if (res.don != NULL) sfree(res.don);
+  if (res.na > 0) sfree(res.acc);
+  if (res.nd > 0) sfree(res.don);
 /*   if (res.ft  != NULL) sfree(res.ft); */
 }
 
@@ -735,7 +735,7 @@ int qhop_db_done(qhop_db_t qdb)
 
   rtp = (qdb->rtp);
   
-  for(i=0; i<qdb->nrtp; i++) {
+  for(i=0; i<rtp[i].natom; i++) {
     sfree(rtp[i].atom);
     sfree(rtp[i].atomname);
     sfree(rtp[i].cgnr);
