@@ -34,7 +34,7 @@ static void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
 
       for (j=0; j < a->nr_protons; j++)
 	{
-	  if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] != 0)
+	  if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] == 0)
 	    {
 	      md->massT[a->protons[j]] = 0;
 	    }
