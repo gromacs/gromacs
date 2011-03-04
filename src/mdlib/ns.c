@@ -564,7 +564,8 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
         
         srenew(nlist->jjnr    ,nlist->maxnrj);
         srenew(nlist->jjnr_end,nlist->maxnrj);
-        srenew(nlist->excl    ,nlist->maxnrj*MAX_CGCGSIZE);
+        /* Important: This structure can get very large, so make sure the size is 64-bit! */
+        srenew(nlist->excl    ,(size_t)nlist->maxnrj*(size_t)MAX_CGCGSIZE);
     }
 
     nlist->jjnr[nrj]     = j_start;

@@ -140,7 +140,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
-             excl             = &nlist->excl[k*MAX_CGCGSIZE];
+             excl             = nlist->excl+k*MAX_CGCGSIZE;
 
              jxave = jyave = jzave = 0;
              for(aj=aj0;aj<aj1;aj++)
