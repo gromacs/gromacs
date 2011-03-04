@@ -426,6 +426,7 @@ int main(int argc,char *argv[])
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
   real localpgridspacing=0.1;
+  int  nstlocalp=1000;
 
   t_pargs pa[] = {
 
@@ -487,8 +488,10 @@ int main(int argc,char *argv[])
       "Seed for replica exchange, -1 is generate a seed" },
     { "-localpgrid",  FALSE, etREAL, {&localpgridspacing},
       "Spacing for local pressure grid" },
-    { "-cglocalp",  FALSE, etREAL, {&CGlocalp},
+    { "-cglocalp",  FALSE, etBOOL, {&CGlocalp},
       "Charge-group based local pressure (rather than atom sites)" },
+    { "-nstlp",  FALSE, etINT, {&nstlocalp},
+       "Frequency of writing local pressure grid to file" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
       "HIDDENRecalculate virtual site coordinates with -rerun" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
@@ -655,7 +658,7 @@ int main(int argc,char *argv[])
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                pforce, cpt_period,max_hours,deviceOptions,localpgridspacing,Flags);
+                pforce, cpt_period,max_hours,deviceOptions,localpgridspacing,nstlocalp,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

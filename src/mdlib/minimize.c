@@ -885,6 +885,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              const char *deviceOptions,
              unsigned long Flags,
              real localpgridspacing,
+             int nstlocalp,
              gmx_runtime_t *runtime)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
@@ -1407,6 +1408,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 const char *deviceOptions,
                 unsigned long Flags,
                 real localpgridspacing,
+                int nstlocalp,
                 gmx_runtime_t *runtime)
 {
   static const char *LBFGS="Low-Memory BFGS Minimizer";
@@ -2043,6 +2045,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 const char *deviceOptions,
                 unsigned long Flags,
                 real localpgridspacing,
+                int nstlocalp,
                 gmx_runtime_t *runtime)
 { 
   const char *SD="Steepest Descents";
@@ -2249,6 +2252,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              const char *deviceOptions,
              unsigned long Flags,
              real localpgridspacing,
+             int nstlocalp,
              gmx_runtime_t *runtime)
 {
     const char *NM = "Normal Mode Analysis";

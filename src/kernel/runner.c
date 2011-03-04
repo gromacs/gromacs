@@ -140,6 +140,7 @@ struct mdrunner_arglist
     real max_hours;
     const char *deviceOptions;
     real localpgridspacing;
+    int  nstlocalp;
     unsigned long Flags;
     int ret; /* return value */
 };
@@ -174,7 +175,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
                       mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
-                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.localpgridspacing, mc.Flags);
+                      mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.localpgridspacing, mc.nstlocalp, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including 
@@ -190,7 +191,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
               int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
               int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
-              const char *deviceOptions, real localpgridspacing, unsigned long Flags)
+              const char *deviceOptions, real localpgridspacing, int nstlocalp, unsigned long Flags)
 {
     int ret;
     struct mdrunner_arglist *mda;
@@ -235,6 +236,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->max_hours=max_hours;
     mda->deviceOptions=deviceOptions;
     mda->localpgridspacing=localpgridspacing;
+    mda->nstlocalp=nstlocalp;
     mda->Flags=Flags;
 
     fprintf(stderr, "Starting %d threads\n",nthreads);
@@ -340,7 +342,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions, real localpgridspacing, unsigned long Flags)
+             const char *deviceOptions, real localpgridspacing, int nstlocalp, unsigned long Flags)
 {
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
@@ -406,7 +408,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       nstepout, resetstep, nmultisim, 
                                       repl_ex_nst, repl_ex_seed, pforce, 
                                       cpt_period, max_hours, deviceOptions,
-                                      localpgridspacing,
+                                      localpgridspacing, nstlocalp,
                                       Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
@@ -830,6 +832,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       deviceOptions,
                                       Flags,
                                       localpgridspacing,
+                                      nstlocalp,
                                       &runtime);
 
         if (inputrec->ePull != epullNO)

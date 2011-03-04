@@ -823,6 +823,56 @@ static int lcd4(int i1,int i2,int i3,int i4)
     return nst;
 }
 
+void localp_initialize(gmx_localp_grid_t *localp_grid, int ngrid, real spacing)
+{
+    int i,j,k;
+    
+    for(i=0;i<ngrid;i++)
+    {
+        for(j=0;j<DIM;j++)
+            for(k=0;k<DIM;k++)
+                localp_grid->sum_grid[i][j][k] =0;
+    }
+    localp_grid->nframes = 0;
+    localp_grid->spacing = spacing;
+}
+
+int write_localp_grid(int nfile,const t_filenm fnm[],gmx_localp_grid_t *localp_grid, t_state *state,int frameindex)
+{
+    int i,j,k,ngrid;
+    char buf[1024];
+    FILE *fplocal;
+    real ccc;
+    
+    snprintf(buf,1024,"%s%d",opt2fn("-olp",nfile,fnm),frameindex);
+    
+    printf("\n\nDumping local pressure based on %d frames to %s...\n",
+           localp_grid->nframes,buf);
+    fplocal=fopen(buf,"w"); /* localpressure.dat by default */
+    i=(sizeof(real)==sizeof(double)) ? 1 : 0;
+    fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
+    fwrite(&localp_grid->box,sizeof(real),9,fplocal);
+    fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
+    fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
+    fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
+    ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+    ccc = ngrid*PRESFAC*2.0/det(state->box)/localp_grid->nframes;
+    
+    for(i=0;i<ngrid;i++)
+    {
+        for(j=0;j<DIM;j++)
+            for(k=0;k<DIM;k++)
+                localp_grid->sum_grid[i][j][k]*=ccc;
+    }
+    
+    fwrite(localp_grid->sum_grid,sizeof(matrix),ngrid,fplocal);
+    fclose(fplocal);
+    return frameindex;
+}
+
+
+
+
 static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
                                int nstglobalcomm,t_inputrec *ir)
 {
@@ -1101,6 +1151,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const char *deviceOptions,
              unsigned long Flags,
              real localpgridspacing,
+             int nstlocalp,
              gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;
@@ -1179,6 +1230,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     real ccc;
     rvec box_size;
     rvec *v_old;
+    int        localp_frame_index=0;
+
     
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -1409,7 +1462,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         printf("\n\n-------------------------------------------\n");
         printf("LOCAL PRESSURE VERSION OF GROMACS 4.5\n\n");
-        printf("Peter Kasson & Erik Lindahl, 2008-2010\n\n");
+        printf("Peter Kasson & Erik Lindahl, 2008-2011\n\n");
         printf("This Gromacs version will do 3D local pressure calculation on a grid\n");
         printf("with spacing set by the -localpgrid argument to mdrun, and write the result\n");
         printf("in binary formation to the file local_pressure.dat\n\n");
@@ -1477,15 +1530,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         snew(localp_grid->sum_grid,ngrid);
         
-        for(i=0;i<ngrid;i++)
-        {
-            for(j=0;j<DIM;j++)
-                for(k=0;k<DIM;k++)
-                    localp_grid->sum_grid[i][j][k] =0;
-        }
-                
-        localp_grid->nframes = 0;
-        localp_grid->spacing = localpgridspacing;
+        localp_initialize(localp_grid,ngrid,localpgridspacing);
+
         localp_grid->CGlocalp = ((Flags & MD_NBLISTCG) != 0);
         copy_mat(state->box,localp_grid->box);
         calc_recipbox(state->box,localp_grid->invbox);
@@ -2902,6 +2948,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         localp_grid->sum_grid[i][j][k] += localp_grid->current_grid[i][j][k];
             }
             localp_grid->nframes++;
+            if (do_per_step(step,nstlocalp))
+            {
+                write_localp_grid(nfile,fnm,localp_grid, state,localp_frame_index);
+                localp_initialize(localp_grid, ngrid, localpgridspacing);
+                localp_frame_index++;
+            }
             
         }
         
@@ -2925,29 +2977,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
-    
-    printf("\n\nDumping local pressure based on %d frames to %s...\n",
-		   localp_grid->nframes,opt2fn("-olp",nfile,fnm));
-	fplocal=fopen(opt2fn("-olp",nfile,fnm),"w"); /* localpressure.dat by default */
-	i=(sizeof(real)==sizeof(double)) ? 1 : 0;
-	fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
-	fwrite(&localp_grid->box,sizeof(real),9,fplocal);
-	fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
-	fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
-	fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
-	ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
-	ccc = ngrid*PRESFAC*2.0/det(state->box)/localp_grid->nframes;
-	
-    for(i=0;i<ngrid;i++)
-	{
-		for(j=0;j<DIM;j++)
-			for(k=0;k<DIM;k++)
-				localp_grid->sum_grid[i][j][k]*=ccc;
-	}
-	
-	fwrite(localp_grid->sum_grid,sizeof(matrix),ngrid,fplocal);
-	fclose(fplocal);
-	/* release it */
+    write_localp_grid(nfile,fnm,localp_grid, state,localp_frame_index);
+    /* release it */
 	sfree(localp_grid->sum_grid);
 	sfree(localp_grid->current_grid);
 	sfree(localp_grid);

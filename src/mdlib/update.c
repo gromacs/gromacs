@@ -793,100 +793,179 @@ static void calc_ke_part_normal(rvec x[],rvec v_old[],rvec v[],
                                 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
                                 gmx_bool bSaveEkinOld,gmx_localp_grid_t *localp,t_block *cgs)
 {
-  int          start=md->start,homenr=md->homenr;
-  int          ix,iy,iz,nx,ny,nz;
-  int          g,d,n,m,ga=0,gt=0;
-  rvec         v_corrt;
-  real         hm;
-  t_grp_tcstat *tcstat=ekind->tcstat;
-  t_grp_acc    *grpstat=ekind->grpstat;
-  real         dekindl;
-
-  /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
+    int          start=md->start,homenr=md->homenr;
+    int          icg,natcg;
+    int          ix,iy,iz,nx,ny,nz;
+    int          g,d,n,m,ga=0,gt=0;
+    rvec         v_corrt;
+    real         hm,hmcg;
+    t_grp_tcstat *tcstat=ekind->tcstat;
+    t_grp_acc    *grpstat=ekind->grpstat;
+    real         dekindl;
+    rvec         v_ave,v_old_ave;
+    
+    /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
      an option, but not supported now.  Additionally, if we are doing iterations.  
      bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
      bSavEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't copy over the ekinh_old.  
      If FALSE, we overrwrite it.
-  */
-
-  /* group velocities are calculated in update_ekindata and
-   * accumulated in acumulate_groups.
-   * Now the partial global and groups ekin.
-   */
-  for(g=0; (g<opts->ngtc); g++) 
-  {
-      
-      if (!bSaveEkinOld) {
-          copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
-      } 
-      if(bEkinAveVel) {
-          clear_mat(tcstat[g].ekinf);
-      } else {
-          clear_mat(tcstat[g].ekinh);
-      }
-      if (bEkinAveVel) {
-          tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
-      }
-  }
-  ekind->dekindl_old = ekind->dekindl;
-  
-  dekindl = 0;
-  for(n=start; (n<start+homenr); n++) 
-  {
-      if (md->cACC)
-      {
-          ga = md->cACC[n];
-      }
-      if (md->cTC)
-      {
-          gt = md->cTC[n];
-      }
-      hm   = 0.5*md->massT[n];
-      
-      for(d=0; (d<DIM); d++) 
-      {
-          v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
-      }
-      for(d=0; (d<DIM); d++) 
-      {
-          for (m=0;(m<DIM); m++) 
-          {
-              /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bEkinAveVel) 
-              {
-                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              } 
-              else 
-              {
-                  tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d]; 
-              }
-          }
-      }
-      
-      if(localp!=NULL && localp->calc_localp)
-      {
-          nx = localp->nx;
-          ny = localp->ny;
-          nz = localp->nz;
-          grid_lookup(localp,x[n],&ix,&iy,&iz);
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
-      }
-      
-      if (md->nMassPerturbed && md->bPerturbed[n]) 
-      {
-          dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
-      }
-  }
-  ekind->dekindl = dekindl;
-  inc_nrnb(nrnb,eNR_EKIN,homenr);
+     */
+    
+    /* group velocities are calculated in update_ekindata and
+     * accumulated in acumulate_groups.
+     * Now the partial global and groups ekin.
+     */
+    for(g=0; (g<opts->ngtc); g++) 
+    {
+        
+        if (!bSaveEkinOld) {
+            copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
+        } 
+        if(bEkinAveVel) {
+            clear_mat(tcstat[g].ekinf);
+        } else {
+            clear_mat(tcstat[g].ekinh);
+        }
+        if (bEkinAveVel) {
+            tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
+        }
+    }
+    ekind->dekindl_old = ekind->dekindl;
+    
+    dekindl = 0;
+    
+    if(localp->CGlocalp)
+    {
+        for(icg=0; icg<cgs->nr; icg++) 
+        {
+            clear_rvec(v_ave);
+            clear_rvec(v_old_ave);
+            
+            natcg = cgs->index[icg+1] - cgs->index[icg];
+            hmcg  = 0;
+            
+            for(n=cgs->index[icg];n<cgs->index[icg+1];n++)
+            {
+                if (md->cACC)
+                {
+                    ga = md->cACC[n];
+                }
+                if (md->cTC)
+                {
+                    gt = md->cTC[n];
+                }
+                hm    = 0.5*md->massT[n];
+                hmcg += hm;
+                
+                for(d=0; (d<DIM); d++) 
+                {
+                    v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
+                }
+                for(d=0; (d<DIM); d++) 
+                {
+                    for (m=0;(m<DIM); m++) 
+                    {
+                        /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                        if (bEkinAveVel) 
+                        {
+                            tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                        } 
+                        else 
+                        {
+                            tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d]; 
+                        }
+                    }
+                }
+                
+                if (md->nMassPerturbed && md->bPerturbed[n]) 
+                {
+                    dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+                }
+                
+                for(d=0;d<DIM;d++)
+                {
+                    v_ave[d]     += v_corrt[d]   / natcg;
+                    v_old_ave[d] += v_old[n][XX] / natcg;
+                }
+            } 
+            
+            if(localp!=NULL && localp->calc_localp)
+            {
+                nx = localp->nx;
+                ny = localp->ny;
+                nz = localp->nz;
+                grid_lookup(localp,x[n],&ix,&iy,&iz);
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hmcg * 0.5 * (v_ave[XX] * v_ave[XX] + v_old_ave[XX] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hmcg * 0.5 * (v_ave[XX] * v_ave[YY] + v_old_ave[XX] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hmcg * 0.5 * (v_ave[XX] * v_ave[ZZ] + v_old_ave[XX] * v_old_ave[ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hmcg * 0.5 * (v_ave[YY] * v_ave[XX] + v_old_ave[YY] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hmcg * 0.5 * (v_ave[YY] * v_ave[YY] + v_old_ave[YY] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hmcg * 0.5 * (v_ave[YY] * v_ave[ZZ] + v_old_ave[YY] * v_old_ave[ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[XX] + v_old_ave[ZZ] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[YY] + v_old_ave[ZZ] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[ZZ] + v_old_ave[ZZ] * v_old_ave[ZZ] );
+            }
+        }
+    }
+    else
+    {
+        for(n=start; (n<start+homenr); n++) 
+        {
+            if (md->cACC)
+            {
+                ga = md->cACC[n];
+            }
+            if (md->cTC)
+            {
+                gt = md->cTC[n];
+            }
+            hm   = 0.5*md->massT[n];
+            
+            for(d=0; (d<DIM); d++) 
+            {
+                v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
+            }
+            for(d=0; (d<DIM); d++) 
+            {
+                for (m=0;(m<DIM); m++) 
+                {
+                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                    if (bEkinAveVel) 
+                    {
+                        tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                    } 
+                    else 
+                    {
+                        tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d]; 
+                    }
+                }
+            }
+            
+            if(localp!=NULL && localp->calc_localp)
+            {
+                nx = localp->nx;
+                ny = localp->ny;
+                nz = localp->nz;
+                grid_lookup(localp,x[n],&ix,&iy,&iz);
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
+            }
+            
+            if (md->nMassPerturbed && md->bPerturbed[n]) 
+            {
+                dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+            }
+        }
+    }
+    ekind->dekindl = dekindl;
+    inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
@@ -895,86 +974,168 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[],rvec v[],
                               t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld,
                               gmx_localp_grid_t *localp,t_block  *cgs)
 {
-  int          start=md->start,homenr=md->homenr;
-  int          ix,iy,iz,nx,ny,nz;
-  int          g,d,n,m,gt=0;
-  rvec         v_corrt;
-  real         hm;
-  t_grp_tcstat *tcstat=ekind->tcstat;
-  t_cos_acc    *cosacc=&(ekind->cosacc);
-  real         dekindl;
-  real         fac,cosz;
-  double       mvcos;
+    int          start=md->start,homenr=md->homenr;
+    int          ix,iy,iz,nx,ny,nz;
+    int          icg,natcg;
+    int          g,d,n,m,gt=0;
+    rvec         v_corrt;
+    real         hm,hmcg;
+    t_grp_tcstat *tcstat=ekind->tcstat;
+    t_cos_acc    *cosacc=&(ekind->cosacc);
+    real         dekindl;
+    real         fac,cosz;
+    double       mvcos;
+    rvec         v_ave,v_old_ave;
+    
+    for(g=0; g<opts->ngtc; g++) 
+    {
+        copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
+        clear_mat(ekind->tcstat[g].ekinh);
+    }
+    ekind->dekindl_old = ekind->dekindl;
+    
+    fac = 2*M_PI/box[ZZ][ZZ];
+    mvcos = 0;
+    dekindl = 0;
+    
+    
+    if(localp->CGlocalp)
+    {
+        for(icg=0; icg<cgs->nr; icg++) 
+        {
+            clear_rvec(v_ave);
+            clear_rvec(v_old_ave);
+            
+            natcg = cgs->index[icg+1] - cgs->index[icg];
+            hmcg  = 0;
+            
+            for(n=cgs->index[icg];n<cgs->index[icg+1];n++)
+            {
+                if (md->cTC) 
+                {
+                    gt = md->cTC[n];
+                }
+                hm    = 0.5*md->massT[n];
+                hmcg += hm;
 
-  for(g=0; g<opts->ngtc; g++) 
-  {
-      copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
-      clear_mat(ekind->tcstat[g].ekinh);
-  }
-  ekind->dekindl_old = ekind->dekindl;
+                /* Note that the times of x and v differ by half a step */
+                /* MRS -- would have to be changed for VV */
+                cosz         = cos(fac*x[n][ZZ]);
+                /* Calculate the amplitude of the new velocity profile */
+                mvcos       += 2*cosz*md->massT[n]*v[n][XX];
+                
+                copy_rvec(v[n],v_corrt);
+                /* Subtract the profile for the kinetic energy */
+                v_corrt[XX] -= cosz*cosacc->vcos;
+                for (d=0; (d<DIM); d++) 
+                {
+                    for (m=0; (m<DIM); m++) 
+                    {
+                        /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                        if (bEkinAveVel) 
+                        {
+                            tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                        } 
+                        else 
+                        {
+                            tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                        }
+                    }
+                }
+                
+                if(md->nPerturbed && md->bPerturbed[n]) 
+                {
+                    dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+                }
+                
+                for(d=0;d<DIM;d++)
+                {
+                    v_ave[d]     += v_corrt[d]   / natcg;
+                    v_old_ave[d] += v_old[n][XX] / natcg;
+                }                
+            }
+                
+            if(localp!=NULL && localp->calc_localp)
+            {
+                nx = localp->nx;
+                ny = localp->ny;
+                nz = localp->nz;
+                grid_lookup(localp,x[n],&ix,&iy,&iz);
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hmcg * 0.5 * (v_ave[XX] * v_ave[XX] + v_old_ave[XX] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hmcg * 0.5 * (v_ave[XX] * v_ave[YY] + v_old_ave[XX] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hmcg * 0.5 * (v_ave[XX] * v_ave[ZZ] + v_old_ave[XX] * v_old_ave[ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hmcg * 0.5 * (v_ave[YY] * v_ave[XX] + v_old_ave[YY] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hmcg * 0.5 * (v_ave[YY] * v_ave[YY] + v_old_ave[YY] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hmcg * 0.5 * (v_ave[YY] * v_ave[ZZ] + v_old_ave[YY] * v_old_ave[ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[XX] + v_old_ave[ZZ] * v_old_ave[XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[YY] + v_old_ave[ZZ] * v_old_ave[YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hmcg * 0.5 * (v_ave[ZZ] * v_ave[ZZ] + v_old_ave[ZZ] * v_old_ave[ZZ] );
+            }
+        }
+    }
+    else
+    {
 
-  fac = 2*M_PI/box[ZZ][ZZ];
-  mvcos = 0;
-  dekindl = 0;
-  for(n=start; n<start+homenr; n++) 
-  {
-      if (md->cTC) 
-      {
-          gt = md->cTC[n];
-      }
-      hm   = 0.5*md->massT[n];
-      
-      /* Note that the times of x and v differ by half a step */
-      /* MRS -- would have to be changed for VV */
-      cosz         = cos(fac*x[n][ZZ]);
-      /* Calculate the amplitude of the new velocity profile */
-      mvcos       += 2*cosz*md->massT[n]*v[n][XX];
-      
-      copy_rvec(v[n],v_corrt);
-      /* Subtract the profile for the kinetic energy */
-      v_corrt[XX] -= cosz*cosacc->vcos;
-      for (d=0; (d<DIM); d++) 
-      {
-          for (m=0; (m<DIM); m++) 
-          {
-              /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bEkinAveVel) 
-              {
-                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              } 
-              else 
-              {
-                  tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              }
-          }
-      }
-      
-      if(localp!=NULL)
-      {
-          nx = localp->nx;
-          ny = localp->ny;
-          nz = localp->nz;
-          grid_lookup(localp,x[n],&ix,&iy,&iz);
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
-          localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
-      }
-      
-      if(md->nPerturbed && md->bPerturbed[n]) 
-      {
-          dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
-      }
-  }
-  ekind->dekindl = dekindl;
-  cosacc->mvcos = mvcos;
-  
-  inc_nrnb(nrnb,eNR_EKIN,homenr);
+        for(n=start; n<start+homenr; n++) 
+        {
+            if (md->cTC) 
+            {
+                gt = md->cTC[n];
+            }
+            hm   = 0.5*md->massT[n];
+            
+            /* Note that the times of x and v differ by half a step */
+            /* MRS -- would have to be changed for VV */
+            cosz         = cos(fac*x[n][ZZ]);
+            /* Calculate the amplitude of the new velocity profile */
+            mvcos       += 2*cosz*md->massT[n]*v[n][XX];
+            
+            copy_rvec(v[n],v_corrt);
+            /* Subtract the profile for the kinetic energy */
+            v_corrt[XX] -= cosz*cosacc->vcos;
+            for (d=0; (d<DIM); d++) 
+            {
+                for (m=0; (m<DIM); m++) 
+                {
+                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                    if (bEkinAveVel) 
+                    {
+                        tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                    } 
+                    else 
+                    {
+                        tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                    }
+                }
+            }
+            
+            if(localp!=NULL)
+            {
+                nx = localp->nx;
+                ny = localp->ny;
+                nz = localp->nz;
+                grid_lookup(localp,x[n],&ix,&iy,&iz);
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][XX] += hm * 0.5 * (v_corrt[XX] * v_corrt[XX] + v_old[n][XX] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][YY] += hm * 0.5 * (v_corrt[XX] * v_corrt[YY] + v_old[n][XX] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][XX][ZZ] += hm * 0.5 * (v_corrt[XX] * v_corrt[ZZ] + v_old[n][XX] * v_old[n][ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][XX] += hm * 0.5 * (v_corrt[YY] * v_corrt[XX] + v_old[n][YY] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][YY] += hm * 0.5 * (v_corrt[YY] * v_corrt[YY] + v_old[n][YY] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][YY][ZZ] += hm * 0.5 * (v_corrt[YY] * v_corrt[ZZ] + v_old[n][YY] * v_old[n][ZZ] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][XX] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[XX] + v_old[n][ZZ] * v_old[n][XX] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][YY] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[YY] + v_old[n][ZZ] * v_old[n][YY] );
+                localp->current_grid[ix*nz*ny+iy*nz+iz][ZZ][ZZ] += hm * 0.5 * (v_corrt[ZZ] * v_corrt[ZZ] + v_old[n][ZZ] * v_old[n][ZZ] );
+            }
+            
+            if(md->nPerturbed && md->bPerturbed[n]) 
+            {
+                dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+            }
+        }
+    }
+    ekind->dekindl = dekindl;
+    cosacc->mvcos = mvcos;
+    
+    inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
 void calc_ke_part(t_state *state,rvec *v_old,t_grpopts *opts,t_mdatoms *md,

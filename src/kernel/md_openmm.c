@@ -215,6 +215,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     const char *deviceOptions,
                     unsigned long Flags,
                     real localpgridspacing,
+                    int nstlocalp,
                     gmx_runtime_t *runtime)
 {
     gmx_mdoutf_t *outf;

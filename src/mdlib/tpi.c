@@ -132,6 +132,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
               const char *deviceOptions,
               unsigned long Flags,        
               real localpgridspacing,
+              int nstlocalp,
               gmx_runtime_t *runtime)
 {
   const char *TPI="Test Particle Insertion"; 

@@ -45,20 +45,20 @@
 #include "nb_generic_cg.h"
 #include "localpressure.h"
 
- void
- gmx_nb_generic_cg_kernel(t_nblist *           nlist,
-                          t_forcerec *         fr,
-                          t_mdatoms *          mdatoms,
-                          real *               x,
-                          real *               f,
-                          real *               fshift,
-                          real *               Vc,
-                          real *               Vvdw,
-                          real                 tabscale,  
-                          real *               VFtab,
-                          int *                outeriter,
-                          int *                inneriter,
-                          gmx_localp_grid_t *  localp_grid)
+void
+gmx_nb_generic_cg_kernel(t_nblist *           nlist,
+                         t_forcerec *         fr,
+                         t_mdatoms *          mdatoms,
+                         real *               x,
+                         real *               f,
+                         real *               fshift,
+                         real *               Vc,
+                         real *               Vvdw,
+                         real                 tabscale,  
+                         real *               VFtab,
+                         int *                outeriter,
+                         int *                inneriter,
+                         gmx_localp_grid_t *  localp_grid)
 {
      int           nri,ntype,table_nelements,icoul,ivdw;
      real          facel,gbtabscale;
@@ -86,28 +86,28 @@
      int *         type;
      t_excl *      excl;
      real          ixave,iyave,izave,jxave,jyave,jzave,fxsum,fysum,fzsum;
-       
+
      icoul               = nlist->icoul;
      ivdw                = nlist->ivdw;
-     
+
      /* avoid compiler warnings for cases that cannot happen */
      nnn                 = 0;
      vcoul               = 0.0;
      eps                 = 0.0;
      eps2                = 0.0;
-     
+
      /* 3 VdW parameters for buckingham, otherwise 2 */
      nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
      table_nelements     = (icoul==3) ? 4 : 0;
      table_nelements    += (ivdw==3) ? 8 : 0;
-     
+
      charge              = mdatoms->chargeA;
      type                = mdatoms->typeA;
      facel               = fr->epsfac;
      shiftvec            = fr->shift_vec[0];
      vdwparam            = fr->nbfp;
      ntype               = fr->ntype;
-     
+
      for(n=0; (n<nlist->nri); n++)
      {
          is3              = 3*nlist->shift[n];     
@@ -127,9 +127,10 @@
          ixave = iyave = izave = 0;
          for(ai=ai0;ai<ai1;ai++)
          {
-             ixave += shX + x[ai*3+0];
-             iyave += shY + x[ai*3+1];
-             izave += shZ + x[ai*3+2];
+             i3           = ai*3;
+             ixave += shX + x[i3+0];
+             iyave += shY + x[i3+1];
+             izave += shZ + x[i3+2];
          }
          ixave /= ai1-ai0;
          iyave /= ai1-ai0;
@@ -144,9 +145,10 @@
              jxave = jyave = jzave = 0;
              for(aj=aj0;aj<aj1;aj++)
              {
-                 jxave += x[aj*3+0];
-                 jyave += x[aj*3+1];
-                 jzave += x[aj*3+2];
+                 j3           = aj*3;
+                 jxave += x[j3+0];
+                 jyave += x[j3+1];
+                 jzave += x[j3+2];
              }
              jxave /= aj1-aj0;
              jyave /= aj1-aj0;
@@ -315,7 +317,6 @@
                          }
                      } /* end VdW interactions */
                      
-                     
                      tx               = fscal*dx;     
                      ty               = fscal*dy;     
                      tz               = fscal*dz;    
@@ -323,6 +324,11 @@
                      fxsum += tx;
                      fysum += ty;
                      fzsum += tz;
+                     
+                     gmx_spread_local_virial_on_grid(localp_grid,
+                                                     ix,iy,iz,
+                                                     jx,jy,jz,
+                                                     tx,ty,tz);             
                      
                      f[i3+0]         += tx;
                      f[i3+1]         += ty;
@@ -335,10 +341,6 @@
                      fiz             += tz;
                  }
              }
-             gmx_spread_local_virial_on_grid(localp_grid,
-                                             ixave,iyave,izave,
-                                             jxave,jyave,jzave,
-                                             fxsum,fysum,fzsum);             
          }
 
          fshift[is3]     += fix;
