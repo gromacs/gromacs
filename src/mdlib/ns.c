@@ -318,10 +318,12 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr,gmx_localp_grid_t *l
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
        }
+/*
        if (!fr->bExcl_IntraCGAll_InterCGNone)
        {
            gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded and no inter-cg exclusions, this is not the case for this system.");
        }
+ */
    }
    
    if (fr->solvent_opt == esolTIP4P) {
