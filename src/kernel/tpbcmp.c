@@ -462,6 +462,7 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol, real
     cmp_rvec(fp,"inputrec->grpopts.acc",i,opt1->acc[i],opt2->acc[i],ftol,abstol);
   for(i=0; (i<min(opt1->ngfrz,opt2->ngfrz)); i++)
     cmp_ivec(fp,"inputrec->grpopts.nFreeze",i,opt1->nFreeze[i],opt2->nFreeze[i]);
+  cmp_int(fp,"inputrec->grpopts.ngqhopH",-1,opt1->ngqhopH,opt2->ngqhopH);
 }
 
 static void cmp_cosines(FILE *fp,const char *s,t_cosines c1[DIM],t_cosines c2[DIM],real ftol, real abstol)
@@ -636,6 +637,14 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_grpopts(fp,&(ir1->opts),&(ir2->opts),ftol,abstol);
   cmp_cosines(fp,"ex",ir1->ex,ir2->ex,ftol,abstol);
   cmp_cosines(fp,"et",ir1->et,ir2->et,ftol,abstol);
+  cmp_bool(fp,"inputrec->bQMMM",-1,ir1->bQMMM,ir2->bQMMM);
+  cmp_int(fp,"inputrec->QMconstraints",-1,ir1->QMconstraints,ir2->QMconstraints);
+  cmp_int(fp,"inputrec->QMMMscheme",-1,ir1->QMMMscheme,ir2->QMMMscheme);
+  cmp_int(fp,"inputrec->scalefactor",-1,ir1->scalefactor,ir2->scalefactor);
+  cmp_bool(fp,"inputrec->bqhop",-1,ir1->bqhop,ir2->bqhop);
+  cmp_int(fp,"inputrec->qhopfreq",-1,ir1->qhopfreq,ir2->qhopfreq);
+  cmp_int(fp,"inputrec->qhopmode",-1,ir1->qhopmode,ir2->qhopmode);
+  cmp_int(fp,"inputrec->qhopconstr",-1,ir1->qhopconstr,ir2->qhopconstr);
 }
 
 static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol)
