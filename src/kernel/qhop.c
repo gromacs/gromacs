@@ -104,12 +104,12 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
 /*       rtp = &(db->rtp[db->rb.res[rt][r].rtp]); */
 
       for (reac=0;
-	   reac < (DA==eQACC) ? db->rb.res[rt][r].na :  db->rb.res[rt][r].nd;
+	   reac < (DA==eQACC) ? db->rb.subres[rt][r].na :  db->rb.subres[rt][r].nd;
 	   reac++)
 	{
 	  R = (DA==eQACC) ?
-	    &(db->rb.res[rt][r].acc[reac]) :
-	    &(db->rb.res[rt][r].don[reac]);
+	    &(db->rb.subres[rt][r].acc[reac]) :
+	    &(db->rb.subres[rt][r].don[reac]);
 	  if (strcmp(qatom->atomname, R->name[0]) == 0)
 	    {
 	      /* This is the primary. Collect the tautomers. */
@@ -157,7 +157,7 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
 
   rt = qhopres->rtype;
   r  = qhopres->res;
-  qres = &(db->rb.res[rt][r]);
+  qres = &(db->rb.subres[rt][r]);
 
   name = qatom->atomname;
   
@@ -210,11 +210,11 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
     }
   else
     {
-      donor_name    = db->rb.res
+      donor_name    = db->rb.subres
 	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
 	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
 
-      acceptor_name = db->rb.res
+      acceptor_name = db->rb.subres
 	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype]
 	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].res].name;
 
@@ -637,13 +637,13 @@ static int get_qhop_atoms(FILE *fplog,
 	    /* We have a matching res(block) */
 	    bMatchRB = TRUE;
 
-	    for (r=0; r < qdb->rb.nres[rb] && !bMatch; r++)
+	    for (r=0; r < qdb->rb.nsubres[rb] && !bMatch; r++)
 	      {
 		/* Is the atom found among the donors/acceptors ?*/
-		nreac[0] = qdb->rb.res[rb][r].na;
-		nreac[1] = qdb->rb.res[rb][r].nd;
-		qreac[0] = qdb->rb.res[rb][r].acc;
-		qreac[1] = qdb->rb.res[rb][r].don;
+		nreac[0] = qdb->rb.subres[rb][r].na;
+		nreac[1] = qdb->rb.subres[rb][r].nd;
+		qreac[0] = qdb->rb.subres[rb][r].acc;
+		qreac[1] = qdb->rb.subres[rb][r].don;
 
 		/* AD==0 => acceptors, 1 => donors. This enables looping over both. */
 		for (AD=0;
@@ -1366,6 +1366,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
 	}
 
       don      = qhoprec->global_atom_to_qhop_atom[qhoplist.iinr[i]];
+      range_check(don,0,qhoprec->nr_qhop_atoms);
       donor    = qhoprec->qhop_atoms[don];
 
       for(j = qhoplist.jindex[i];
@@ -1378,6 +1379,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
 	    }
 
 	  acc =  qhoprec->global_atom_to_qhop_atom[qhoplist.jjnr[j]];
+	  range_check(acc,0,qhoprec->nr_qhop_atoms);
 	  acceptor = qhoprec->qhop_atoms[acc];
 
 	  /* check whether the acceptor can take one of the donor's protons
@@ -1542,21 +1544,21 @@ static gmx_bool is_DA(qhop_db *db, t_qhop_residue *qr, t_qhop_atom *qa, int prod
   rt = qr[qa->qres_id].rtype;
 
   if ((DA == eQACC ?
-       db->rb.res[rt][prod].na :
-       db->rb.res[rt][prod].nd)
+       db->rb.subres[rt][prod].na :
+       db->rb.subres[rt][prod].nd)
       > 1)
     {
       /* Loop over acceptors on this residue */
       for (i=0;
 	   i < (DA == eQACC ?
-		db->rb.res[rt][prod].na :
-		db->rb.res[rt][prod].nd);
+		db->rb.subres[rt][prod].na :
+		db->rb.subres[rt][prod].nd);
 	   i++)
 	{
 	  /* Loop over tautomers */
 	  qres =  (DA == eQACC) ?
-	    &(db->rb.res[rt][prod].acc[i]) :
-	    &(db->rb.res[rt][prod].don[i]);
+	    &(db->rb.subres[rt][prod].acc[i]) :
+	    &(db->rb.subres[rt][prod].don[i]);
 
 	  /* See if an atom matches */
 	  for (j=0; j < qres->nname; j++)
@@ -1619,25 +1621,25 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 
   /* Loop over acceptors or donors */
   for (reactant = 0;
-       (reactant < bDonor ? (db->rb.res[rt][r].nd) : (db->rb.res[rt][r].na))
+       (reactant < bDonor ? (db->rb.subres[rt][r].nd) : (db->rb.subres[rt][r].na))
 	 && prod_res==NULL;
        reactant++)
     {
       /* Loop over tautomers */
       for (t = 0;
-	   t < bDonor ? (db->rb.res[rt][r].don[reactant].nname) : (db->rb.res[rt][r].acc[reactant].nname);
+	   t < bDonor ? (db->rb.subres[rt][r].don[reactant].nname) : (db->rb.subres[rt][r].acc[reactant].nname);
 	   t++)
 	{
 	  /* Is this the reactant? */
 	  if (!strcasecmp(bDonor ?
-			  db->rb.res[rt][r].don[reactant].name[t] :
-			  db->rb.res[rt][r].acc[reactant].name[t],
+			  db->rb.subres[rt][r].don[reactant].name[t] :
+			  db->rb.subres[rt][r].acc[reactant].name[t],
 			  qatom->atomname));
 	    {
 	      /* This is the reactant! */
 	      prod_res = bDonor ?
-		db->rb.res[rt][r].don[reactant].productdata :
-		db->rb.res[rt][r].acc[reactant].productdata;
+		db->rb.subres[rt][r].don[reactant].productdata :
+		db->rb.subres[rt][r].acc[reactant].productdata;
 	      break;
 	    }
 	}
@@ -1649,16 +1651,16 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
     }
 
   /* Find the index in db->rb.res[rt][] */
-  for (i=0; i<db->rb.nres[rt]; i++)
+  for (i=0; i<db->rb.nsubres[rt]; i++)
     {
       if (strcmp(prod_res->name,
-		 db->rb.res[rt][i].name) == 0)
+		 db->rb.subres[rt][i].name) == 0)
 	{
 	  break;
 	}
     }
 
-  if (i == db->rb.nres[rt])
+  if (i == db->rb.nsubres[rt])
     {
       gmx_fatal(FARGS, "Could not find the product for this reaction.");
     }
@@ -1790,7 +1792,9 @@ extern void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
 
       /* Is it still a donor? */
       isdon = is_donor(db, qr->qhop_residues, qa, prod);
-      md->bqhopdonor[qatom->atom_id] = isdon;
+      /* md->bqhopdonor[qatom->atom_id] = isdon; 
+	 Changed to below DvdS 2011-03-05 */
+      md->bqhopdonor[qa->atom_id] = isdon;
 
       if (isdon)
 	{
@@ -3305,7 +3309,7 @@ static void str2bonded(const char *paramStr,
    * 1 for the '\0'
    */
   memset(p, 0, sizeof(real)*MAXFORCEPARAM);
-  memset(&params, 0, sizeof(t_iparams)); /* zap the params to zero */
+  memset(params, 0, sizeof(params[0])); /* zap the params to zero */
   strOffset = btsNiatoms[bts]*2+1; /* +1 for the initial whitespace, *2 for the "%i" */
   sprintf(format," %s","%i%i%i%i%i%i%i"); /* the atoms */
   for (i=0; i<MAXFORCEPARAM; i++)
@@ -3399,13 +3403,13 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
   nrt = db->rb.nrestypes;
   for (rt=0; rt < nrt; rt++)
     {
-      nres = db->rb.nres[rt];
+      nres = db->rb.nsubres[rt];
       rtprt = &(db->rtp[db->rb.irtp[rt]]);
       /* nqatoms = rtp->natom; */
 
       for (r=0; r < nres; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.res[rt][r].irtp]);
+	  rtpr = &(db->rtp[db->rb.subres[rt][r].irtp]);
 	  /* rtpIndex = db->rb.res[rt][res].rtp; */
 
 	  /* Now map the atoms in the residue subtype (XXX)
@@ -3457,7 +3461,7 @@ extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop)
 		   * to the start of the residue, so they must be offset when
 		   * actually adding this stuff to the ilist. */
 		  for (i=0; i < btsNiatoms[bt]; i++)
-		    ilistEntry[i+1] = db->rb.res[rt][r].iatomMap[iatoms[i]];
+		    ilistEntry[i+1] = db->rb.subres[rt][r].iatomMap[iatoms[i]];
 		}
 	    } /* bt */
 	} /* res */

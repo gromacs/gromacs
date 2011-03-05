@@ -325,9 +325,9 @@ extern void make_ilib(qhop_db *db)
 	  continue;
 	}
 
-      for (r=0; r < db->rb.nres[rt]; r++)
+      for (r=0; r < db->rb.nsubres[rt]; r++)
 	{
-	  rtp = &(db->rtp[db->rb.res[rt][r].irtp]);
+	  rtp = &(db->rtp[db->rb.subres[rt][r].irtp]);
 
 	  for (bt=0; bt < ebtsNR; bt++)
 	    {
@@ -346,7 +346,7 @@ extern void make_ilib(qhop_db *db)
 		  postprocess_params(&params, nread, bt, db->rb.ftype[bt]);
 
 		  fi =  qhop_add_iparam(&(il[bt]), &(ft[bt]), &(np[bt]), &params, btype[bt], db->rb.ftype[bt], db->rb.btype[bt]);
-		  db->rb.res[rt][r].findex[bt][b] = fi;
+		  db->rb.subres[rt][r].findex[bt][b] = fi;
 		}
 	    }
 	}
@@ -404,13 +404,13 @@ extern void make_ilib(qhop_db *db)
 		  continue;
 		}
 	      
-	      for (r=0; r < db->rb.nres[rt]; r++)
+	      for (r=0; r < db->rb.nsubres[rt]; r++)
 		{
-		  rtp = &(db->rtp[db->rb.res[rt][r].irtp]);
+		  rtp = &(db->rtp[db->rb.subres[rt][r].irtp]);
 
 		  for (b=0; b < rtp->rb[bt].nb; b++)
 		    {
-		      db->rb.res[rt][r].findex[bt][b] += nptot;
+		      db->rb.subres[rt][r].findex[bt][b] += nptot;
 		    }
 		}
 	    }
@@ -423,8 +423,6 @@ extern void make_ilib(qhop_db *db)
 
 	  for (i=0; i<np[bt]; i++)
 	    {
-	      /* memcpy(&(ilib[nptot-np[bt]]),  &(il[bt]), np[bt]*sizeof(t_iparams)); */
-	      /* memcpy(&(ftlib[nptot-np[bt]]), &(ft[bt]), np[bt]*sizeof(t_functype)); */
 	      ilib[nptot - np[bt] + i]  = il[bt][i];
 	      ftlib[nptot - np[bt] + i] = ft[bt][i];
 	    }
@@ -697,24 +695,31 @@ t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
 #endif
 
 /* Add a res to a restype. Requires a set of residues collected in a qhop_res_t. */
-extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres)
+extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, 
+			 qhop_res_t res, int nres)
 {
   int i,n;
-  if (!rb->res)
-    snew(rb->res, 1);
-  else
-    /* Let's not assume that we're adding stuff to a new resblock. */
-    if (resblocknr > rb->nrestypes+1)
-      srenew(rb->res,rb->nrestypes+1);
   
+  if (NULL == rb->subres)
+    snew(rb->subres, 1);
+  else
+    {
+      /* Let's not assume that we're adding stuff to a new resblock. */
+      if (resblocknr > rb->nrestypes+1)
+	{
+	  srenew(rb->subres,resblocknr+1);
+	  for(i=rb->nrestypes+1; (i<resblocknr+1); i++)
+	    memset(&(rb->subres[i]),0,sizeof(rb->subres[i]));
+	}
+    }
   /* The following allows for addition of residues to a non-empty resblock. */
-  n = rb->nres[resblocknr];
+  n = rb->nsubres[resblocknr];
   if (n > 0)
     n--;
 
   for (i=0; i<nres; i++) {
-    rb->res[resblocknr][i + n] = res[i];
-    rb->nres[resblocknr]++;
+    rb->subres[resblocknr][i + n] = res[i];
+    rb->nsubres[resblocknr]++;
   }
 }
 
@@ -735,10 +740,10 @@ extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res
   }
 
   /* (re)allocate nres */
-  if (!rb->nres)
-    snew(rb->nres, 1);
+  if (!rb->nsubres)
+    snew(rb->nsubres, 1);
   else
-    srenew(rb->nres, i);
+    srenew(rb->nsubres, i);
 
   /*rb->nres[rb->nrestypes] = nres;*/
 
@@ -767,7 +772,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   gmx_bool bNotFound = TRUE;
   int rt, Hloc, i, j, reactant;
   char *Hname;
-  qhop_res *res, *product;
+  qhop_res *subres, *product;
   qhop_reactant *qreac;
   const qhop_resblocks *rb = &(db->rb);
   
@@ -783,12 +788,12 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   Hname = *(db->rtp[rt].atomname[Hloc]);
  
   /* What residue subtype will this result in? */
-  res = &(rb->res[qres->rtype][qres->res]);
+  subres = &(rb->subres[qres->rtype][qres->res]);
   for (reactant=0;
-       reactant<bON ? res->na : res->nd;
+       reactant<bON ? subres->na : subres->nd;
        reactant++)
     {
-      qreac = bON ? &(res->acc[reactant]) : &(res->don[reactant]);
+      qreac = bON ? &(subres->acc[reactant]) : &(subres->don[reactant]);
       for (j=0; j<qreac->nH; j++)
 	{
 	  if (gmx_strcasecmp(Hname, qreac->H[j]) == 0)
@@ -801,7 +806,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   if (bNotFound)
     gmx_fatal(FARGS, "In qhop_set_protonation(): "
 	      "Hydrogen %s not found in residue %s!",
-	      Hname, res->name);
+	      Hname, subres->name);
   if (NULL == qreac)
     gmx_fatal(FARGS,"qreac was never initialized!");
   product = &(qreac->productdata[j]);
@@ -810,9 +815,9 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
    * Reuse bNotFound */
 
   bNotFound = TRUE;
-  for (j=0; j<rb->nres[rt]; j++)
+  for (j=0; j<rb->nsubres[rt]; j++)
     {
-      if (gmx_strcasecmp(product->name, rb->res[rt][j].name) == 0)
+      if (gmx_strcasecmp(product->name, rb->subres[rt][j].name) == 0)
 	{
 	  bNotFound = FALSE;
 	  break;

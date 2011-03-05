@@ -97,7 +97,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      t_mdatoms *md)
 {
   t_atoms   *atoms_mol;
-  int       i,g,ag,as,ae,molb;
+  int       i,k,g,ag,as,ae,molb;
   real      mA,mB,fac;
   t_atom    *atom;
   t_grpopts *opts;
@@ -167,6 +167,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     if (ir->bqhop){
       srenew(md->bqhopdonor,md->nalloc);
       srenew(md->bqhopacceptor,md->nalloc);
+      for(k=md->nr; (k<md->nalloc); k++) {
+	md->bqhopdonor[k] = FALSE;
+	md->bqhopacceptor[k] = FALSE;
+      }
     }
     
   }

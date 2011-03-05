@@ -106,8 +106,8 @@ typedef struct qhop_res {
 typedef struct qhop_resblocks {
   int nrestypes;  /* Number of restypes */
   char **restype; /* Name of the "residue family", e.g. qLYS. */
-  int *nres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
-  qhop_res **res; /* has size [nrestypes][nres[i]] */
+  int *nsubres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
+  qhop_res **subres; /* has size [nrestypes][nsubres[i]] */
   gmx_bool *bWater; /* has size nrestypes */
   gmx_bool *bInTop; /* has size nrestypes */
   int *irtp;      /* indexes the t_restp-array rtp in qhop_db. One element for each restype.

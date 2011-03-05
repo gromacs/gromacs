@@ -229,9 +229,9 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char
 	  srenew(rb->irtp, rb->nrestypes+1);
 	  rb->irtp[rb->nrestypes] = -1;
 	  /* End added */
-	  srenew(rb->nres, rb->nrestypes+1);          /* Make new resindex */
-	  rb->nres[rb->nrestypes] = 0;
-	  srenew(rb->res, rb->nrestypes+1);  /* Make new resarray for this resblock */	    
+	  srenew(rb->nsubres, rb->nrestypes+1);          /* Make new resindex */
+	  rb->nsubres[rb->nrestypes] = 0;
+	  srenew(rb->subres, rb->nrestypes+1);  /* Make new resarray for this resblock */	    
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
@@ -254,20 +254,20 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab
       printf("Adding res %s\n", name);
       /* Have we seen this res before for this resblock? */
       found = FALSE;
-      for (i=0; i < rb->nres[ri->rt] && !found; i++)
-	if (strcmp(rb->res[ri->rt][i].name, name) == 0)
+      for (i=0; i < rb->nsubres[ri->rt] && !found; i++)
+	if (strcmp(rb->subres[ri->rt][i].name, name) == 0)
 	  found = TRUE;
 
       if (!found)
 	{
-	  ri->r = rb->nres[ri->rt];
+	  ri->r = rb->nsubres[ri->rt];
 	  if (ri->r != 0)
-	    srenew(rb->res[ri->rt], (rb->nres[ri->rt])+1);
+	    srenew(rb->subres[ri->rt], (rb->nsubres[ri->rt])+1);
 	  else
-	    snew(rb->res[ri->rt], 1);
-	  rb->res[ri->rt][ri->r].na = 0;
-	  rb->res[ri->rt][ri->r].nd = 0;
-	  rb->res[ri->rt][rb->nres[ri->rt]++].name = strdup(name);
+	    snew(rb->subres[ri->rt], 1);
+	  rb->subres[ri->rt][ri->r].na = 0;
+	  rb->subres[ri->rt][ri->r].nd = 0;
+	  rb->subres[ri->rt][rb->nsubres[ri->rt]++].name = strdup(name);
 	  /* *(put_symtab(tab, name));*/ /*trim_strndup(name, 6);*/
 	  /*add_to_record(name, &(rb->res[ri->rt][ri->r].name),
 	    &(rb->nres[ri->rt]), RNMLEN, eUPDATE_INDEX);*/
@@ -462,11 +462,11 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
     break;
 
   case exmlACCEPTOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]),
+    rb_add_name_product(&(xml->rb->subres[ri->rt][ri->r]),
 			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
   case exmlDONOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->res[ri->rt][ri->r]),
+    rb_add_name_product(&(xml->rb->subres[ri->rt][ri->r]),
 			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
 

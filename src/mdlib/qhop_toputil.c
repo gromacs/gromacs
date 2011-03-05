@@ -349,7 +349,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
 
   qres = &(qr->qhop_residues[qatom->qres_id]);
 
-  rtp  = &(db->rtp[db->rb.res[qres->rtype][qres->res].irtp]);
+  rtp  = &(db->rtp[db->rb.subres[qres->rtype][qres->res].irtp]);
 
   /* find the parameters for this constraint.
    * We assume that there's only one constraint
@@ -358,7 +358,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
   for (b=0; b < rtp->rb[ebtsBONDS].nb; b++)
     {
       /* bi will index the list of bonded interactions of qres->rtype*/
-      bi = db->rb.res[qres->rtype][qres->res].biMap[ebtsBONDS][b];
+      bi = db->rb.subres[qres->rtype][qres->res].biMap[ebtsBONDS][b];
 
       for (i=0; i < (niatoms-1); i++)
 	{
@@ -366,7 +366,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
 	  ai = proton_id - qres->atoms[0]; /* residue local atom id of the proton. */
 	  if (db->rb.ba[qres->rtype][ebtsBONDS][bi][i] == ai)
 	    {
-	      return db->rb.res[qres->rtype][qres->res].findex[ebtsBONDS][bi];
+	      return db->rb.subres[qres->rtype][qres->res].findex[ebtsBONDS][bi];
 	    }
 	}
     }
@@ -542,7 +542,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
     *rtp;
 
   qres = &(qr->qhop_residues[resnr]);
-  nres = db->rb.nres[qres->rtype];
+  nres = db->rb.nsubres[qres->rtype];
 
 
   /* To better handle the tautomerism, maybe one should
@@ -606,14 +606,14 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	  /* Go through the donors and acceptors and make a list */
 	  for (j=0;
 	       (j < (DA==0 ?
-		     db->rb.res[qres->rtype][r].na :
-		     db->rb.res[qres->rtype][r].nd))
+		     db->rb.subres[qres->rtype][r].na :
+		     db->rb.subres[qres->rtype][r].nd))
 		 && bMatch;
 	       j++)
 	    {
 	      reac = (DA==0 ?
-		      &(db->rb.res[qres->rtype][r].acc[j]) :
-		      &(db->rb.res[qres->rtype][r].don[j]));
+		      &(db->rb.subres[qres->rtype][r].acc[j]) :
+		      &(db->rb.subres[qres->rtype][r].don[j]));
 
 	      /* Tautomer loop. There may be chemically equivalent
 	       * sites, e.g. the oxygens in a carboxylate. */
@@ -638,7 +638,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 		      n_H2[nDA2] = 0;
 		      DAlist2[nDA2] = reac->name[t];
 		      
-		      rtp = &(db->rtp[db->rb.res[qres->rtype][r].irtp]);
+		      rtp = &(db->rtp[db->rb.subres[qres->rtype][r].irtp]);
 		      for (a=0; a<rtp->natom; a++)
 			{
 			  if (strcmp(reac->name[t], *(rtp->atomname[a])) == 0)
@@ -691,14 +691,14 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	{
 	  for (j=0;
 	       (j < (DA==0 ?
-		     db->rb.res[qres->rtype][r].na :
-		     db->rb.res[qres->rtype][r].nd))
+		     db->rb.subres[qres->rtype][r].na :
+		     db->rb.subres[qres->rtype][r].nd))
 		 && bSameRes;
 	       j++)
 	    {
 	      reac = (DA==0 ?
-		      &(db->rb.res[qres->rtype][r].acc[j]) :
-		      &(db->rb.res[qres->rtype][r].don[j]));
+		      &(db->rb.subres[qres->rtype][r].acc[j]) :
+		      &(db->rb.subres[qres->rtype][r].don[j]));
 
 	      nH = 0;
 	      
@@ -744,7 +744,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	    }
 	  
 	  /* Go through the rtp */
-	  rtp = &(db->rtp[db->rb.res[qres->rtype][r].irtp]);
+	  rtp = &(db->rtp[db->rb.subres[qres->rtype][r].irtp]);
 	  
 	  for (i=0; i < rtp->natom; i++)
 	    {
@@ -813,7 +813,7 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
       index_ilists(swapres, db, top, cr);
     }
 
-  qres = &(db->rb.res[swapres->rtype][swapres->res]);
+  qres = &(db->rb.subres[swapres->rtype][swapres->res]);
 
   rtp  = &(db->rtp[db->rb.irtp[swapres->rtype]]);
   rtpr = &(db->rtp[qres->irtp]);
@@ -1013,7 +1013,7 @@ void set_interactions(t_qhoprec *qr,
   Gr   = qres->res_nr; /* global res id. */
   RB   = qres->rtype;
   R    = qres->res;
-  reac = &(qdb->rb.res[RB][R]);
+  reac = &(qdb->rb.subres[RB][R]);
   QA = qr->qhop_atoms;
 
   for (i=0; i<qres->nr_titrating_sites; i++)
