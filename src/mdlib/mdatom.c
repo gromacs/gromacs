@@ -266,6 +266,12 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
+    if (ir->bqhop)
+      {
+	md->bqhopdonor[i]    = FALSE;
+	md->bqhopacceptor[i] = FALSE;
+      }
+
 /*     if (ir->bqhop){ */
 /*       gmx_fatal(FARGS, "Must fix this thing in atoms2md() where md->bqhopdonor[] and ->bqhopacceptors are set."); */
 /*       if (groups->grpnr[egcqhopdonors] == 0 ||  */
