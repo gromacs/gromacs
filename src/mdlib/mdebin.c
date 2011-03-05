@@ -971,7 +971,7 @@ void upd_mdebin(t_mdebin *md,
         }
         if (md->epc!=epcNO) 
         {
-            fprintf(md->fp_dhdl," #%.8g",pv);
+            fprintf(md->fp_dhdl," %#.8g",pv);
         }
         fprintf(md->fp_dhdl,"\n");
         /* and the binary free energy output */
