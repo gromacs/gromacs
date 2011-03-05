@@ -587,7 +587,8 @@ static int get_qhop_atoms(FILE *fplog,
 
   ngrps = ir->opts.ngqhopH;
 
-  fprintf(fplog, "ir->opts.ngqhopH = %d\n", ir->opts.ngqhopH);
+  if (NULL != fplog)
+    fprintf(fplog, "ir->opts.ngqhopH = %d\n", ir->opts.ngqhopH);
 
   aloop = gmx_mtop_atomloop_all_init(mtop);
 
@@ -712,8 +713,8 @@ static int get_qhop_atoms(FILE *fplog,
 	  }
       }
   }
-
-  fprintf(fplog,"There are %d qhop donors\n", q_atoms_nr);
+  if (NULL != fplog)
+    fprintf(fplog,"There are %d qhop donors\n", q_atoms_nr);
 
   /* Assign atoms to each qhop_residue */
   aloop = gmx_mtop_atomloop_all_init(mtop);
