@@ -223,13 +223,19 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char
 	{
 	  srenew(rb->restype, rb->nrestypes+1);       /* Make new resblock */
 	  srenew(rb->bWater, rb->nrestypes+1);        /* Make new bWater */
+	  /* Added DvdS 2011-03-05 */
+	  srenew(rb->bInTop, rb->nrestypes+1);
+	  rb->bInTop[rb->nrestypes] = FALSE;
+	  srenew(rb->irtp, rb->nrestypes+1);
+	  rb->irtp[rb->nrestypes] = -1;
+	  /* End added */
 	  srenew(rb->nres, rb->nrestypes+1);          /* Make new resindex */
 	  rb->nres[rb->nrestypes] = 0;
 	  srenew(rb->res, rb->nrestypes+1);  /* Make new resarray for this resblock */	    
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
-	  rb->restype[rb->nrestypes] = *(put_symtab(tab, name));/*trim_strndup(name, 6);*/
+	  rb->restype[rb->nrestypes] = strdup(name); //*(put_symtab(tab, name));/*trim_strndup(name, 6);*/
 	  rb->bWater[rb->nrestypes] = (strcasecmp(water, "TRUE") == 0);
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
 	  rb->nrestypes++;
@@ -618,9 +624,9 @@ void qhops_read(char *fn, qhop_db_t qdb)
   qhop_process_tree(NULL,doc->children,0,0,xml,&ri);
   
   xmlFreeDoc(doc);
-  if (fna)
+  /*  if (fna)
     sfree(fn);
-
+  */
   qdb->ngqh = xml->nqh;
   qdb->gqh = xml->gqh;
 }

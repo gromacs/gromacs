@@ -331,7 +331,7 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
 	    {
 	      if (NULL != fplog)
 		fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
-	      srenew(qdb->rb.irtp, rt+1);
+	      /* srenew(qdb->rb.irtp, rt+1); This srenew is now in the gmx_qhop_xml.c file */
 	      qdb->rb.irtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
 	      //	      qdb->nrtp++;
@@ -806,10 +806,10 @@ int qhop_db_set_charges(qhop_db_t qdb,char *resname,int state,
   return 0;
 }
 
-extern int qhop_db_get_parameters(const qhop_db_t qdb,
-				  const char *donor, const char *acceptor,
-				  const char *donor_atom, const char *acceptor_atom,
-				  qhop_parameters *qp)
+int qhop_db_get_parameters(const qhop_db_t qdb,
+			   const char *donor, const char *acceptor,
+			   const char *donor_atom, const char *acceptor_atom,
+			   qhop_parameters *qp)
 {
   qhop_db_t db = qdb;
   char *aa, *dd, *aatom, *datom;
@@ -952,7 +952,8 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	  continue;
 	}
 
-      fprintf(stderr, "Making bonded atom index for restype %i\n", rt);
+      fprintf(stderr, "Making bonded atom index for restype %i out of %d\n",
+	      rt,db->nrtp);
 
       if (db->rb.ba[rt] == NULL)
 	{
