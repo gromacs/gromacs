@@ -592,7 +592,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 
   /* Loop over residue subtypes */
   bSameRes = FALSE;
-  for (r=0; r<nres && !bSameRes; r++)
+  for (r=0; (r<nres) && !bSameRes; r++)
     {
       n_H2 = NULL;
       DAlist2 = NULL;

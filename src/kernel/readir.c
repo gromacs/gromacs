@@ -2505,6 +2505,11 @@ void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,warninp_t wi)
       }
     }
   }
+  if (ir->bqhop && (ir->userreal1 <= 0)) 
+  {
+      sprintf(warn_buf,"When using qhop you should have ir->userreal around 0.7, rather than setting it to %g",ir->userreal1);
+      warning_error(wi,warn_buf);
+  }
 }
 
 void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,

@@ -267,7 +267,8 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab
 	    snew(rb->res[ri->rt], 1);
 	  rb->res[ri->rt][ri->r].na = 0;
 	  rb->res[ri->rt][ri->r].nd = 0;
-	  rb->res[ri->rt][rb->nres[ri->rt]++].name = *(put_symtab(tab, name)); /*trim_strndup(name, 6);*/
+	  rb->res[ri->rt][rb->nres[ri->rt]++].name = strdup(name);
+	  /* *(put_symtab(tab, name));*/ /*trim_strndup(name, 6);*/
 	  /*add_to_record(name, &(rb->res[ri->rt][ri->r].name),
 	    &(rb->nres[ri->rt]), RNMLEN, eUPDATE_INDEX);*/
 	}

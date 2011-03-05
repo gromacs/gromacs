@@ -952,18 +952,15 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	  continue;
 	}
 
-      fprintf(stderr, "Making bonded atom index for restype %i out of %d\n",
-	      rt,db->nrtp);
+      printf("Making bonded atom index for restp %d out of %d\n",
+	     rt,db->nrtp);
 
       if (db->rb.ba[rt] == NULL)
 	{
 	  snew(db->rb.ba[rt], ebtsNR);
 	}
 
-      if (db->rb.irtp[rt] >= db->nrtp)
-	{
-	  gmx_fatal(FARGS, "Trying to read outside of the rtp data.");
-	}
+      range_check(db->rb.irtp[rt],0,db->nrtp);
 
       rtp = &(db->rtp[db->rb.irtp[rt]]);
 
