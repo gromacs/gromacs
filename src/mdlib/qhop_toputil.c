@@ -772,6 +772,11 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 	  sfree(n_H2);
 	}
       
+      if (n_H != NULL)
+	{
+	  sfree(n_H);
+	}
+      
       if (DAlist2 != NULL)
 	{
 	  sfree(DAlist2);
@@ -785,7 +790,8 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 
   if (r >= nres)
     {
-      gmx_fatal(FARGS, "Didn't find the subres. r = %d, nres = %d, resnr = %d",r,nres,resnr);
+      gmx_fatal(FARGS, "Didn't find the subres. r = %d, nres = %d, resnr = %d",
+		r,nres,resnr);
     }
 
   return r;
