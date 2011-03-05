@@ -1360,7 +1360,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
       /* every qhop atom should be a unique i
 	 particle I think  */
 
-      if(!md->bqhopdonor[qhoplist.iinr[i]])
+      if(qhoplist.iinr[i] < 0 || !md->bqhopdonor[qhoplist.iinr[i]])
 	{
 	  continue;
 	}
