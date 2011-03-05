@@ -7,6 +7,6 @@ URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
 Requires:
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
-Libs: -L${libdir} -lgmx@LIBSUFFIX@
+Libs: -L${libdir} -lgmx@GMX_LIBS_SUFFIX@
 Cflags: -I${includedir} @PKG_CFLAGS@
 

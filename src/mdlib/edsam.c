@@ -103,7 +103,7 @@ typedef struct
 typedef struct
 { 
     real deltaF0;
-    gmx_bool bHarmonic;       /* Use flooding for harmonic restraint on eigenvector */
+    gmx_bool bHarmonic; /* Use flooding for harmonic restraint on eigenvector */
     real tau;
     real deltaF;
     real Efl;
@@ -145,8 +145,8 @@ typedef struct gmx_edx
 typedef struct edpar
 {
     int            nini;           /* total Nr of atoms                    */
-    gmx_bool           fitmas;         /* true if trans fit with cm            */
-    gmx_bool           pcamas;         /* true if mass-weighted PCA            */
+    gmx_bool       fitmas;         /* true if trans fit with cm            */
+    gmx_bool       pcamas;         /* true if mass-weighted PCA            */
     int            presteps;       /* number of steps to run without any   
                                     *    perturbations ... just monitoring */
     int            outfrq;         /* freq (in steps) of writing to edo    */
@@ -155,7 +155,7 @@ typedef struct edpar
     /* all gmx_edx datasets are copied to all nodes in the parallel case   */
     struct gmx_edx sref;           /* reference positions, to these fitting
                                     * will be done                         */
-    gmx_bool           bRefEqAv;       /* If true, reference & average indices
+    gmx_bool       bRefEqAv;       /* If true, reference & average indices
                                     * are the same. Used for optimization  */
     struct gmx_edx sav;            /* average positions                    */
     struct gmx_edx star;           /* target positions                     */
@@ -164,7 +164,7 @@ typedef struct edpar
     t_edvecs       vecs;           /* eigenvectors                         */
     real           slope;          /* minimal slope in acceptance radexp   */
 
-    gmx_bool           bNeedDoEdsam;   /* if any of the options mon, linfix, ...
+    gmx_bool       bNeedDoEdsam;   /* if any of the options mon, linfix, ...
                                     * is used (i.e. apart from flooding)   */
     t_edflood      flood;          /* parameters especially for flooding   */
     struct t_ed_buffer *buf;       /* handle to local buffers              */
@@ -179,8 +179,8 @@ typedef struct gmx_edsam
     const char    *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
-    gmx_bool          bFirst;
-    gmx_bool          bStartFromCpt;
+    gmx_bool      bFirst;
+    gmx_bool      bStartFromCpt;
 } t_gmx_edsam;
 
 
@@ -198,7 +198,7 @@ struct t_do_edsam
     ivec *extra_shifts_xcoll;  /* xcoll shift changes since last NS step */
     ivec *shifts_xc_ref;       /* Shifts for xc_ref */
     ivec *extra_shifts_xc_ref; /* xc_ref shift changes since last NS step */
-    gmx_bool bUpdateShifts;        /* TRUE in NS steps to indicate that the 
+    gmx_bool bUpdateShifts;    /* TRUE in NS steps to indicate that the
                                   ED shifts for this ED dataset need to 
                                   be updated */
 };
@@ -1342,39 +1342,42 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj)
         for(i=0; (i < tvec->neig); i++)
         {
             fgets2 (line,STRLEN,in);
-            if (bReadRefproj) /* only when using flooding as harmonic restraint */
+            if (bReadRefproj) /* ONLY when using flooding as harmonic restraint */
             {
                 nscan = sscanf(line,"%d%lf%lf%lf",&idum,&rdum,&refproj_dum,&refprojslope_dum);
-                if (4 == nscan)
+                /* Zero out values which were not scanned */
+                switch(nscan)
                 {
-                    fprintf(stdout, "ED: Will add %15.8e to the reference projection of eigenvector %d at each time step.\n",
-                            refprojslope_dum, i);
+                    case 4:
+                        /* Every 4 values read */
+                        break;
+                    case 3:
+                        /* No value for slope, set to 0 */
+                        refprojslope_dum = 0.0;
+                        break;
+                    case 2:
+                        /* No values for reference projection and slope, set to 0 */
+                        refproj_dum      = 0.0;
+                        refprojslope_dum = 0.0;
+                        break;
+                    default:
+                        gmx_fatal(FARGS,"Expected 2 - 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n", nscan);
+                        break;
                 }
-                else
-                {
-                    refprojslope_dum = 0.0;
-                    if (nscan != 3)
-                    {
-                        /* Neither 3, nor 4 values found */
-                        gmx_fatal(FARGS,"Expected 4 (not %d) values for flooding vec: <nr> <spring const> <refproj> <refproj-slope>\n",
-                                nscan);
-                    }
-                }
-                tvec->ieig[i]=idum;
-                tvec->stpsz[i]=rdum;
                 tvec->refproj[i]=refproj_dum;
                 tvec->refproj0[i]=refproj_dum;
                 tvec->refprojslope[i]=refprojslope_dum;
             }
-            else
+            else /* Normal flooding */
             {
                 nscan = sscanf(line,"%d%lf",&idum,&rdum);
                 if (nscan != 2)
                     gmx_fatal(FARGS,"Expected 2 values for flooding vec: <nr> <stpsz>\n");
-                tvec->ieig[i]=idum;
-                tvec->stpsz[i]=rdum;
             }
-        }
+            tvec->ieig[i]=idum;
+            tvec->stpsz[i]=rdum;
+        } /* end of loop over eigenvectors */
+
         for(i=0; (i < tvec->neig); i++)
         {
             snew(tvec->vec[i],nr);
@@ -1438,7 +1441,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     if (readmagic != magic)
     {
         if (readmagic==666 || readmagic==667 || readmagic==668)
-            gmx_fatal(FARGS,"wrong magic number: Use newest version of make_edi to produce edi file");
+            gmx_fatal(FARGS,"Wrong magic number: Use newest version of make_edi to produce edi file");
         else
             gmx_fatal(FARGS,"Wrong magic number %d in %s",readmagic,ed->edinam);
     }
@@ -2032,10 +2035,6 @@ static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, gmx_large_int_t 
             fprintf(ed->edo,"  contracting radius     = %f\n", calc_radius(&edi->vecs.radcon));
         }
     }
-    else
-    {
-        fprintf(ed->edo, "  NOTE: none of the ED options mon/linfix/linacc/radfix/radacc/radcon were chosen for dataset #%d!\n", nr_edi);
-    }
 }
 
 /* Returns if any constraints are switched on */
@@ -2166,6 +2165,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             /* process target structure, if required */
             if (edi->star.nr > 0)
             {
+                fprintf(stderr, "ED: Fitting target structure to reference structure\n");
                 /* get translation & rotation for fit of target structure to reference structure */
                 fit_to_reference(edi->star.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
@@ -2175,8 +2175,11 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 rad_project(edi, xstart, &edi->vecs.radcon, cr);
 
             /* process structure that will serve as origin of expansion circle */
+            if (eEDflood == ed->eEDtype)
+                fprintf(stderr, "ED: Setting center of flooding potential (0 = average structure)\n");
             if (edi->sori.nr > 0)
             {
+                fprintf(stderr, "ED: Fitting origin structure to reference structure\n");
                 /* fit this structure to reference structure */
                 fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi);
                 /* do the fit */
@@ -2185,23 +2188,40 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 rad_project(edi, edi->sori.x, &edi->vecs.radfix, cr);
                 if (ed->eEDtype == eEDflood) 
                 {
+                    fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
                     rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
                 }
             }
-            else
+            else /* No origin structure given */
             {
                 rad_project(edi, xstart, &edi->vecs.radacc, cr);
                 rad_project(edi, xstart, &edi->vecs.radfix, cr);
                 if (ed->eEDtype == eEDflood)
                 {
-                    /* Set center of flooding potential to the center of the covariance matrix,
-                     * i.e. the average structure, i.e. zero in the projected system */
-                    for (i=0; i<edi->flood.vecs.neig; i++)
+                    if (edi->flood.bHarmonic)
                     {
-                        if (!edi->flood.bHarmonic)
+                        fprintf(stderr, "ED: A (possibly changing) ref. projection will define the flooding potential center.\n");
+                        for (i=0; i<edi->flood.vecs.neig; i++)
+                            edi->flood.vecs.refproj[i] = edi->flood.vecs.refproj0[i];
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ED: The AVERAGE structure will define the flooding potential center.\n");
+                        /* Set center of flooding potential to the center of the covariance matrix,
+                         * i.e. the average structure, i.e. zero in the projected system */
+                        for (i=0; i<edi->flood.vecs.neig; i++)
                             edi->flood.vecs.refproj[i] = 0.0;
                     }
+                }
+            }
+            /* For convenience, output the center of the flooding potential for the eigenvectors */
+            if (eEDflood == ed->eEDtype)
+            {
+                for (i=0; i<edi->flood.vecs.neig; i++)
+                {
+                    fprintf(stdout, "ED: EV %d flooding potential center: %11.4e (adding %11.4e/timestep)\n",
+                            i, edi->flood.vecs.refproj[i], edi->flood.vecs.refprojslope[i]);
                 }
             }
 
@@ -2330,7 +2350,7 @@ void do_edsam(t_inputrec  *ir,
     struct t_do_edsam *buf;
     t_edpar *edi;
     real    rmsdev=-1;      /* RMSD from reference structure prior to applying the constraints */
-    gmx_bool    bSuppress=FALSE; /* Write .edo file on master? */
+    gmx_bool bSuppress=FALSE; /* Write .edo file on master? */
 
 
     /* Check if ED sampling has to be performed */

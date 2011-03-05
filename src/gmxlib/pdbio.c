@@ -260,7 +260,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   else
     bOccup = FALSE;
 
-  fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
+  fprintf(out,"MODEL %8d\n",model_nr>0 ? model_nr : 1);
 
   lastchainresind   = -1;
   lastchainnum      = -1;

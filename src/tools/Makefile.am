@@ -80,7 +80,7 @@ bin_PROGRAMS = \
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 	=  	options
+EXTRA_PROGRAMS 	=  	g_options
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la

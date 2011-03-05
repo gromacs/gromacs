@@ -52,6 +52,22 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 #must come after all cpack settings!
 include(CPack)
 
+########################################################################
+# Check and warn if cache generated on a different host is being reused
+########################################################################
+if(CMAKE_HOST_UNIX)
+    execute_process(COMMAND hostname
+                    OUTPUT_VARIABLE TMP_HOSTNAME
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
+        message(WARNING "
+            The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
+            is being reused! This could lead to inconsitencies; therefore, it is
+            recommended to regenerate the cache!")
+    endif()
+    set(GMX_BUILD_HOSTNAME "${TMP_HOSTNAME}" CACHE INTERNAL
+            "Hostname of the machine where the cache was generated.")
+endif()
 
 ########################################################################
 # Fix stupid flags on MSVC
