@@ -11,9 +11,9 @@
 #include "types/constr.h"
 #include "vec.h"
 
-extern void qhop_tautomer_swap(const t_qhoprec *qr,
-			       rvec x[], rvec v[],
-			       int prim, int sec)
+void qhop_tautomer_swap(const t_qhoprec *qr,
+			rvec x[], rvec v[],
+			int prim, int sec)
 {
   rvec tmp;
   int i, xv;
@@ -55,7 +55,7 @@ extern void qhop_tautomer_swap(const t_qhoprec *qr,
     }
 }
 
-extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
+int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 {
   int n, i, nvdwparam, nti, ti;
   real *vdwparam, c[3];
@@ -104,7 +104,7 @@ extern int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
   return n;
 }
 
-extern void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
+void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
 {
   int rt, r, bt, b, p, ft, btype, nr;
   qhop_res *res;
@@ -120,17 +120,17 @@ extern void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
   top->idef.ntypes = nr;
 }
 
-extern void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present)
+void set_proton_presence(qhop_H_exist *Hext, const int atomid, const gmx_bool present)
 {
   Hext->H[Hext->atomid2H[atomid]] = present ? (char)1: (char)0;
 }
 
-extern gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid)
+gmx_bool get_proton_presence(const qhop_H_exist *Hext, const int atomid)
 {
   return Hext->H[Hext->atomid2H[atomid]] == (char)1;
 }
 
-extern void unindex_ilists(t_qhop_residue *qres)
+void unindex_ilists(t_qhop_residue *qres)
 {
   int i, j;
   
@@ -147,10 +147,10 @@ extern void unindex_ilists(t_qhop_residue *qres)
   qres->nr_indexed = 0;
 }
 
-extern void index_ilists(t_qhop_residue *qres,
-			 const qhop_db *db,
-			 const gmx_localtop_t *top,
-			 const t_commrec *cr)
+void index_ilists(t_qhop_residue *qres,
+		  const qhop_db *db,
+		  const gmx_localtop_t *top,
+		  const t_commrec *cr)
 {
   int rt, b, i, prev, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
   gmx_bool bMatch, bDD;
@@ -336,7 +336,7 @@ extern void index_ilists(t_qhop_residue *qres,
 }
 
 /* returns the index in the ilib where bond to this proton is found. */
-extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_atom *qatom, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
+int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_atom *qatom, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
 {
   int b, bi, i, ai;
   const int niatoms = 3;
@@ -373,7 +373,7 @@ extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t
   gmx_fatal(FARGS, "Constraint not found!");
 }
 
-extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
+void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
 {
   int nr, nalloc, heavy, h, rt, r, b, bi, i, params, ai, *g2l, *iatoms;
   const int niatoms = 3;
@@ -464,7 +464,7 @@ extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *d
   /* gmx_fatal(FARGS, "Could not find the constraint in the rtp data."); */
 }
 
-extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
+void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
 {
   int b, ip, *iatoms;
   const int niatoms = 3;
@@ -518,8 +518,8 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
  * titrating sites in the qhop_res and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
-extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
-			qhop_db *db, const int resnr)
+int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
+		 qhop_db *db, const int resnr)
 {
   int
     h, i, j, k, t, nH, *nHres, a, r, b, aa,
@@ -797,11 +797,11 @@ extern int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
   return r;
 }
 
-extern void qhop_swap_bondeds(t_qhop_residue *swapres,
-			      qhop_res *prod,
-			      qhop_db *db,
-			      gmx_localtop_t *top,
-			      const t_commrec *cr)
+void qhop_swap_bondeds(t_qhop_residue *swapres,
+		       qhop_res *prod,
+		       qhop_db *db,
+		       gmx_localtop_t *top,
+		       const t_commrec *cr)
 {
   int i, bt, b, bp, p, it, offset;
   t_restp *rtp, *rtpr;
@@ -857,10 +857,10 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 }
 
 /* We change vdv by changing atomtype. */
-extern void qhop_swap_vdws(const t_qhop_residue *swapres,
-			   const qhop_res *prod,
-			   t_mdatoms *md,
-			   const qhop_db *db)
+void qhop_swap_vdws(const t_qhop_residue *swapres,
+		    const qhop_res *prod,
+		    t_mdatoms *md,
+		    const qhop_db *db)
 {
 
   int i, j;
@@ -916,10 +916,10 @@ static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int 
  * charges of swapres match those of prod.
  * Works on an atomname basis
  */
-extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
-			      const qhop_res *prod,
-			      t_mdatoms *md,
-			      const qhop_db *db, t_qhoprec *qr)
+void qhop_swap_m_and_q(const t_qhop_residue *swapres,
+		       const qhop_res *prod,
+		       t_mdatoms *md,
+		       const qhop_db *db, t_qhoprec *qr)
 {
   int i, j, nH;
   t_restp *rtp;
@@ -997,12 +997,12 @@ extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 
 }
 
-extern void set_interactions(t_qhoprec *qr,
-			     qhop_db *qdb,
-			     gmx_localtop_t *top,
-			     t_mdatoms *md,
-			     t_qhop_residue *qres,
-			     t_commrec *cr)
+void set_interactions(t_qhoprec *qr,
+		      qhop_db *qdb,
+		      gmx_localtop_t *top,
+		      t_mdatoms *md,
+		      t_qhop_residue *qres,
+		      t_commrec *cr)
 {
   int i, j, k, nri, bt, b, Gr, RB, R;
   qhop_res *reac;
