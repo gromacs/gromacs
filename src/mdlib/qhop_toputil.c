@@ -97,7 +97,7 @@ int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 	  (c[1] != 0.0) ||
 	  (c[2] != 0.0))
 	{
-	  gmx_fatal(FARGS, "Atomtype %i is not inert!", n+1);
+	  gmx_fatal(FARGS, "Atomtype %d is not inert!", n+1);
 	}
     }
 
