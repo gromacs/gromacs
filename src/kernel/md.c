@@ -1087,7 +1087,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0[efptNR];
-    gmx_bool   bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres,bExpandedEnsemble;
+    gmx_bool   bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres,bExpandedEnsemble,bEnergyHere;
     gmx_bool   bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -2518,7 +2518,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                    cr,nrnb,wcycle,upd,constr,
                                    bInitStep,FALSE,bCalcEnerPres,state->veta);  
                 
-                if (ir->eI==eiVVAK) 
+                if (ir->eI==eiVVAK)
                 {
                     /* erase F_EKIN and F_TEMP here? */
                     /* just compute the kinetic energy at the half step to perform a trotter step */
@@ -2591,6 +2591,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 gs.sig[eglsNABNSB] = nlh.nabnsb;
             }
+            bEnergyHere = (!EI_VV(ir->eI) || (EI_VV(ir->eI) && bRerunMD)); /* this is not quite working for vv and rerun! fails for running rerun on multiple threads. always use nt -1 */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,
@@ -2598,9 +2599,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
-                            | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
+                            | (bEnergyHere ? CGLO_ENERGY : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
-                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
+                            | (bEnergyHere || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                             | CGLO_CONSTRAINT 
