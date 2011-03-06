@@ -139,7 +139,7 @@
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </qhop>
 
-  <qhop donor="qNH4" acceptor="qH2O">
+  <qhop donor="NH4" acceptor="qH2O">
     <don_atom> NZ </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->

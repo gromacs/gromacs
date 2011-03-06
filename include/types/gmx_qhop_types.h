@@ -35,9 +35,9 @@ static const char *qhopregimes[] = {"NONE", "SE", "Intermediate", "TST"};
 /* } t_hop; */
 
 typedef struct qhop_H_exist {
-  int nH;   /* Number of hydrogens. Length of H. */
-  char *H;  /* existence function for all hydrogens.
-	     * I chose char since it's compact. */
+  int      nH;   /* Number of hydrogens. Length of H. */
+  char *H;   /* existence function for all hydrogens.
+	      * I chose char since it's compact. */
   atom_id *H2atomid;   /* maps the elements in H to atom_id */
   int     *atomid2H;   /* the inverse function */
 } qhop_H_exist;

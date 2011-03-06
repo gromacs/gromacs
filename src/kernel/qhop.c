@@ -3089,7 +3089,10 @@ static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
 	    new_hop[i] = hop[r];
 
 	    /* Remove that hop from the list */
-	    hop[r] = hop[nr_hops-i-1];
+	    if (r != nr_hops-i-1)
+	      {
+		hop[r] = hop[nr_hops-i-1];
+	      }
 	  }
 
 	sfree(hop);

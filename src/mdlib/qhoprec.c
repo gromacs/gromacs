@@ -5,7 +5,7 @@
 #include "types/mdatom.h"
 #include "types/topology.h"
 
-extern t_qhoprec *mk_qhoprec(void)
+t_qhoprec *mk_qhoprec(void)
 {
   t_qhoprec *qr;
 
@@ -44,7 +44,8 @@ static void qhop_atoms2md(t_mdatoms *md, const t_qhoprec *qr)
 
 /* Sets the interactions according to the hydrogen exstence map.
  * This requires a finalized t_mdatoms. */
-extern void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, gmx_localtop_t *top, t_mdatoms *md, t_commrec *cr)
+void finalize_qhoprec(t_qhoprec *qhoprec, gmx_mtop_t *mtop, gmx_localtop_t *top, 
+		      t_mdatoms *md, t_commrec *cr)
 {
   int i, j, nb, ft, target;
   qhop_db *db;

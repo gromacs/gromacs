@@ -523,7 +523,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 {
   int
     h, i, j, k, t, nH, *nHres, a, r, b, aa,
-    atomid, nres, natoms, qrtp;
+    atomid, nsubres, natoms, qrtp;
   char
     *Hname, *DAname;
   t_atom
@@ -541,8 +541,11 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
   t_restp
     *rtp;
 
-  qres = &(qr->qhop_residues[resnr]);
-  nres = db->rb.nsubres[qres->rtype];
+  range_check(resnr,0,qr->nr_qhop_residues);
+  qres    = &(qr->qhop_residues[resnr]);
+
+  range_check(qres->rtype,0,db->rb.nrestypes);
+  nsubres = db->rb.nsubres[qres->rtype];
 
 
   /* To better handle the tautomerism, maybe one should
@@ -592,7 +595,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
 
   /* Loop over residue subtypes */
   bSameRes = FALSE;
-  for (r=0; (r<nres) && !bSameRes; r++)
+  for (r=0; (r<nsubres) && !bSameRes; r++)
     {
       n_H2 = NULL;
       DAlist2 = NULL;
@@ -788,10 +791,10 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
       sfree(n_H);
     }
       
-  if (r >= nres)
+  if (r >= nsubres)
     {
-      gmx_fatal(FARGS, "Didn't find the subres. r = %d, nres = %d, resnr = %d",
-		r,nres,resnr);
+      gmx_fatal(FARGS, "Didn't find the subres. r = %d, nsubres = %d, resnr = %d",
+		r,nsubres,resnr);
     }
 
   return r;
