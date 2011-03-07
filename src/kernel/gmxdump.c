@@ -310,7 +310,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
       /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
       pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
       pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
-      if (state,tpx.bF) {
+      if (tpx.bF) {
 	pr_rvecs(stdout,indent,"f",f,state.natoms);
       }
     }

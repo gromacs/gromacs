@@ -10,6 +10,8 @@
 #include "hackblock.h"
 #include "resall.h"
 #include "mdatoms.h"
+#include "mtop_util.h"
+#include "h_db.h"
 #include "types/gmx_qhop_types.h"
 #include "gmx_qhop_parm.h"
 #include "gmx_qhop_xml.h"
@@ -341,7 +343,8 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
 	  /* Add a res? */
 	  for (r=0; r<qdb->rb.nsubres[rt] && !bMatch; r++) /* res */
 	    {
-	      if (bMatch = ((strcmp(bigrtp[i].resname, qdb->rb.subres[rt][r].name) == 0)))
+	      bMatch = (strcmp(bigrtp[i].resname, qdb->rb.subres[rt][r].name) == 0);
+	      if (bMatch)
 		{
 		  if (NULL != fplog)
 		    fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
@@ -1156,7 +1159,8 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
 				{
 				  /* Ok, we already have this one in the map, so we
 				   * need to find the next one having these atoms. */
-				  bMatch == FALSE;
+				  //bMatch == FALSE; Changed DvdS 2011-03-07
+				  bMatch = FALSE;
 				}
 			    }
 

@@ -788,7 +788,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   Hname = *(db->rtp[rt].atomname[Hloc]);
  
   /* What residue subtype will this result in? */
-  subres = &(rb->subres[qres->rtype][qres->res]);
+  subres = &(rb->subres[qres->rtype][qres->subres]);
   for (reactant=0;
        reactant<bON ? subres->na : subres->nd;
        reactant++)
@@ -835,7 +835,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
 
 extern int qhop_get_residue_subtype(const t_qhop_residue *qres)
 {
-  return qres->res;
+  return qres->subres;
 }
 
 /* Return a new qhop structure */

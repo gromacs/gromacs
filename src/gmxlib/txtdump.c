@@ -1423,6 +1423,17 @@ void pr_top(FILE *fp,int indent,const char *title,t_topology *top, gmx_bool bSho
   }
 }
 
+void pr_ltop(FILE *fp,int indent,const char *title,gmx_localtop_t *top, gmx_bool bShowNumbers)
+{
+  if (available(fp,top,indent,title)) {
+    indent=pr_title(fp,indent,title);
+    pr_atomtypes(fp,indent,"atomtypes",&(top->atomtypes),bShowNumbers);
+    pr_block(fp,indent,"cgs",&top->cgs, bShowNumbers);
+    pr_blocka(fp,indent,"excls",&top->excls, bShowNumbers);
+    pr_idef(fp,indent,"idef",&top->idef,bShowNumbers);
+  }
+}
+
 void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
 {
   char buf[22];

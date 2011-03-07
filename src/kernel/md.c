@@ -89,7 +89,10 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "qhop.h"
+#include "qhoprec.h"
 #include "gmx_qhop_db.h"
+#include "gmx_qhop_parm.h"
+#include "qhop_toputil.h"
 #include "genborn.h"
 #include "sighandler.h"
 
@@ -1537,7 +1540,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Finalize qhoprec and mdatoms, extend the topology */
         make_ilib(fr->qhoprec->db);
         qhop_attach_ilib(top, fr->qhoprec->db);
-        finalize_qhoprec(fr->qhoprec, top_global, top, mdatoms, cr);
+        finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
 
         if (fr->qhoprec->db == NULL)
             gmx_fatal(FARGS, "qhop_database not set");
@@ -1928,8 +1931,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if(fr->bqhop && do_per_step(step,ir->qhopfreq)){ 
                 fr->qhoprec->constr = constr;
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
-                        mdatoms,fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
-                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir);
+                        mdatoms,fcd,graph,fr,vsite,mu_tot,bBornRadii,
+                        enerd->term[F_TEMP],step,force_vir);
             }
         }
         

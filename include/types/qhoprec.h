@@ -95,7 +95,7 @@ typedef struct {
 typedef struct {
   /* rtype and res are needed to switch between interaction parameters. */
   int    rtype; /* index in qhop_db.restype[]  and qhop_db.res[]. Will not change upon (de)protonation */
-  int    res;   /* index in qhop_db.res[rtype][]. Changes upon (de)protonation. */
+  int    subres;   /* index in qhop_db.res[rtype][]. Changes upon (de)protonation. */
 
   int    *atoms; /* global atom numbers belonging to the residue */
   int    nr_atoms;

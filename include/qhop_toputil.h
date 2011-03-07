@@ -74,7 +74,7 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 			      const t_commrec *cr);
 
 /*   Exchanges the current vdw interactions
-/*   for the ones defined by prod by changing the atomtypes. */
+ *   for the ones defined by prod by changing the atomtypes. */
 extern void qhop_swap_vdws(const t_qhop_residue *swapres,
 			   const qhop_res *prod,
 			   t_mdatoms *md,
@@ -112,8 +112,7 @@ extern void set_interactions(t_qhoprec *qr,
  * titrating sites in the qhop_res and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
-extern int which_subRes(const gmx_mtop_t *top,
-			const t_qhoprec *qr,
+extern int which_subRes(const t_qhoprec *qr,
 			qhop_db *db,
 			const int resnr);
 

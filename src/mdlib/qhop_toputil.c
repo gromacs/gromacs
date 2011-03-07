@@ -9,6 +9,7 @@
 #include "smalloc.h"
 #include "types/commrec.h"
 #include "types/constr.h"
+#include "constr.h"
 #include "vec.h"
 
 void qhop_tautomer_swap(const t_qhoprec *qr,
@@ -155,7 +156,7 @@ void index_ilists(t_qhop_residue *qres,
   int rt, b, i, prev, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
   gmx_bool bMatch, bDD;
   
-  const t_ilist *ilist = top->idef.il;;
+  const t_ilist *ilist = top->idef.il;
 
   if (db->rb.bWater[qres->rtype])
     {
@@ -349,7 +350,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
 
   qres = &(qr->qhop_residues[qatom->qres_id]);
 
-  rtp  = &(db->rtp[db->rb.subres[qres->rtype][qres->res].irtp]);
+  rtp  = &(db->rtp[db->rb.subres[qres->rtype][qres->subres].irtp]);
 
   /* find the parameters for this constraint.
    * We assume that there's only one constraint
@@ -358,7 +359,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
   for (b=0; b < rtp->rb[ebtsBONDS].nb; b++)
     {
       /* bi will index the list of bonded interactions of qres->rtype*/
-      bi = db->rb.subres[qres->rtype][qres->res].biMap[ebtsBONDS][b];
+      bi = db->rb.subres[qres->rtype][qres->subres].biMap[ebtsBONDS][b];
 
       for (i=0; i < (niatoms-1); i++)
 	{
@@ -366,11 +367,13 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
 	  ai = proton_id - qres->atoms[0]; /* residue local atom id of the proton. */
 	  if (db->rb.ba[qres->rtype][ebtsBONDS][bi][i] == ai)
 	    {
-	      return db->rb.subres[qres->rtype][qres->res].findex[ebtsBONDS][bi];
+	      return db->rb.subres[qres->rtype][qres->subres].findex[ebtsBONDS][bi];
 	    }
 	}
     }
   gmx_fatal(FARGS, "Constraint not found!");
+  
+  return 0;
 }
 
 void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
@@ -459,7 +462,7 @@ void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_
     }
 #endif
   /* Now hack the t_gmx_constr */
-  set_constraints(constr, top, ir, md, cr);
+  set_constraints(constr, top,(t_inputrec *)ir, md,(t_commrec *)cr);
 
   /* gmx_fatal(FARGS, "Could not find the constraint in the rtp data."); */
 }
@@ -505,7 +508,7 @@ void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *t
     }
 #endif
   /* Now hack the t_gmx_constr */
-  set_constraints(constr, top, ir, md, cr);
+  set_constraints(constr, top, (t_inputrec *)ir, md,(t_commrec *)cr);
 }
 
 
@@ -518,7 +521,7 @@ void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *t
  * titrating sites in the qhop_res and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
-int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
+int which_subRes(const t_qhoprec *qr,
 		 qhop_db *db, const int resnr)
 {
   int
@@ -796,7 +799,7 @@ int which_subRes(const gmx_mtop_t *top, const t_qhoprec *qr,
       gmx_fatal(FARGS, "Didn't find the subres. r = %d, nsubres = %d, resnr = %d",
 		r,nsubres,resnr);
     }
-
+  printf("subres %d\n",r);
   return r;
 }
 
@@ -811,19 +814,21 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
   qhop_res *qres;
 
 
-  if (swapres->nr_indexed == 0)
+  if  (swapres->nr_indexed == 0)
     {
       index_ilists(swapres, db, top, cr);
     }
 
-  qres = &(db->rb.subres[swapres->rtype][swapres->res]);
+  qres = &(db->rb.subres[swapres->rtype][swapres->subres]);
 
   rtp  = &(db->rtp[db->rb.irtp[swapres->rtype]]);
   rtpr = &(db->rtp[qres->irtp]);
 
   /* rb->ilib and top->idef.functype are offset by this much: */
   offset = top->idef.ntypes - db->rb.ni;
-
+  
+  //printf("ntypes = %d, rb.ni = %d, offset = %d\n",top->idef.ntypes,db->rb.ni,offset);
+  
   for (bt=0; bt < ebtsNR; bt++)
     {
       it = db->rb.btype[bt]; /* Which ilist */
@@ -851,6 +856,9 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
 	   * present in the ilists and may therefore be unindexed. */
 	  if (swapres->bindex.indexed[it][b])
 	    {
+	      printf("Changing functype from %d to %d\n",
+		     top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]],
+		     p+offset);
 	      top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]] =
 		p + offset;
 	    }
@@ -1015,7 +1023,7 @@ void set_interactions(t_qhoprec *qr,
   /* point pointers at the right residue */
   Gr   = qres->res_nr; /* global res id. */
   RB   = qres->rtype;
-  R    = qres->res;
+  R    = qres->subres;
   reac = &(qdb->rb.subres[RB][R]);
   QA = qr->qhop_atoms;
 
@@ -1049,10 +1057,8 @@ void set_interactions(t_qhoprec *qr,
 	    }
 	}
     }
-
   qhop_swap_bondeds(qres, reac, qdb, top, cr);
   qhop_swap_vdws(qres, reac, md, qdb);
   qhop_swap_m_and_q(qres, reac, md, qdb, qr);
-  
     /* Non-bonded */
 }

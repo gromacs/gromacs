@@ -2,7 +2,10 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <string.h>
 #include <math.h>
+#include <stdlib.h>
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -23,16 +26,14 @@
 #include "mshift.h"
 #include "txtdump.h"
 #include "copyrite.h"
-#include <stdio.h>
-#include <string.h>
 #include "gmx_fatal.h"
 #include "typedefs.h"
-#include <stdlib.h>
 #include "mtop_util.h"
 #include "qhop.h"
 #include "random.h"
 #include "gmx_random.h"
 #include "constr.h"
+#include "mdrun.h"
 /* #include "types/constr.h" */
 #include "types/idef.h"
 #include "types/ifunc.h"
@@ -94,7 +95,7 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
   qatom = &(qr->qhop_atoms[ai]);
   qres  = &(qr->qhop_residues[qatom->qres_id]);
   rt    = qres->rtype;
-  r     = qres->res;
+  r     = qres->subres;
   
   snew(t, ++nt);
   t[0] = ai;
@@ -156,7 +157,7 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
   db = qr->db;
 
   rt = qhopres->rtype;
-  r  = qhopres->res;
+  r  = qhopres->subres;
   qres = &(db->rb.subres[rt][r]);
 
   name = qatom->atomname;
@@ -186,7 +187,8 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
 
   /* If we've gotten this far, then something is wrong. */
   gmx_fatal(FARGS, "Primary tautomeric site could not be determined.");
-
+  
+  return -1;
 }
 
 static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
@@ -212,11 +214,11 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
     {
       donor_name    = db->rb.subres
 	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype]
-	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].res].name;
+	[qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].subres].name;
 
       acceptor_name = db->rb.subres
 	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype]
-	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].res].name;
+	[qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].subres].name;
 
       donor_atom    = qr->qhop_atoms[hop->primary_d].atomname;
       acceptor_atom = qr->qhop_atoms[hop->primary_a].atomname;
@@ -680,7 +682,7 @@ static int get_qhop_atoms(FILE *fplog,
 				    /* New residue. */
 				    q_atoms[q_atoms_nr].qres_id                = q_residue_nr;
 				    q_residue[q_residue_nr].rtype              = rb;
-				    q_residue[q_residue_nr].res                = NOTSET;     /* To be decided. */
+				    q_residue[q_residue_nr].subres             = NOTSET;     /* To be decided. */
 				    q_residue[q_residue_nr].atoms              = NULL;     /* To be set. */
 				    q_residue[q_residue_nr].atomnames          = NULL;     /* To be set. */
 				    q_residue[q_residue_nr].nr_atoms           = 0;     /* To be decided. */
@@ -1612,7 +1614,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 
   qres = &(qr->qhop_residues[qatom->qres_id]);
   rt = qres->rtype;
-  r = qres->res;
+  r = qres->subres;
 
   prod_res = NULL;
 
@@ -1666,7 +1668,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
     }
 
   /* Set the residue subtype */
-  qres->res = i;
+  qres->subres = i;
 
   /* Change interactions */
   /* For water we don't change any bonded or VdW. For now. */
@@ -2072,9 +2074,9 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
   if (PAR(cr))
     {
     //    wallcycle_start(wcycle,ewcMoveE);
-
-      global_stat(NULL,cr,enerd,NULL,NULL,mu_tot,
-		  ir,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate);
+      gmx_impl("qhop in parallel");
+      /* global_stat(NULL,cr,enerd,NULL,NULL,mu_tot,
+	 ir,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate); */
 
     //    wallcycle_stop(wcycle,ewcMoveE);
   }
@@ -2544,7 +2546,7 @@ static void compute_E12(const qhop_parameters *p, t_hop *hop, real dE)
   hop->E12 = hop->E12_0 + dE;
 }
 
-static real get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
+static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
 			 gmx_wallcycle_t wcycle, 
 			 gmx_localtop_t *top,gmx_mtop_t *mtop,
 			 gmx_constr_t constr,
@@ -2660,8 +2662,7 @@ static real get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
       fprintf(stderr, "change_protonation() returned FALSE!");
     }
   
-
-  free(p);
+  sfree(p);
 }
 
 /* redundant */

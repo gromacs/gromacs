@@ -94,4 +94,6 @@ extern real LambertW(const real z) {
   
   /* should never get here */
   gmx_fatal(FARGS,"LambertW: No convergence at z=%g, exiting.",z);
+  
+  return 0;
 }

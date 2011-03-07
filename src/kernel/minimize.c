@@ -76,6 +76,9 @@
 #include "gmxfio.h"
 #include "pme.h"
 #include "qhop.h"
+#include "qhoprec.h"
+#include "qhop_toputil.h"
+#include "gmx_qhop_parm.h"
 
 typedef struct {
   t_state s;
@@ -932,7 +935,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
       /* Complete the t_mdatoms and qhoprec, extend the topology. */
       make_ilib(fr->qhoprec->db);
       qhop_attach_ilib(top, fr->qhoprec->db);
-      finalize_qhoprec(fr->qhoprec, top_global, top, mdatoms, cr);
+      finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
       
       if (fr->qhoprec->db == NULL)
           gmx_fatal(FARGS, "qhop_database not set");
@@ -2112,7 +2115,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
       /* Complete the t_mdatoms and qhoprec, extend the topology. */
       make_ilib(fr->qhoprec->db);
       qhop_attach_ilib(top, fr->qhoprec->db);
-      finalize_qhoprec(fr->qhoprec, top_global, top, mdatoms, cr);
+      finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
       
       if (fr->qhoprec->db == NULL)
           gmx_fatal(FARGS, "qhop_database not set");

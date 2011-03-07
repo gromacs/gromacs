@@ -97,6 +97,8 @@ static char *strip_spaces(char *s)
     }
 
   gmx_fatal(FARGS, "String could not be stripped of spaces.");
+  
+  return (char *)NULL;
 }
 
 static int find_elem(char *name,int nr,const char *names[])
