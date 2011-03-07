@@ -632,14 +632,14 @@ static int get_qhop_atoms(FILE *fplog,
     bMatch = FALSE;
     qhoprec->global_atom_to_qhop_atom[i] = NOTSET;
 
-    for (rb=0; rb < qdb->rb.nrestypes && !bMatchRB; rb++)
+    for (rb=0; (rb < qdb->rb.nrestypes) && !bMatchRB; rb++)
       {
 	if (strcmp(qdb->rb.restype[rb], resname) == 0)
 	  {
 	    /* We have a matching res(block) */
 	    bMatchRB = TRUE;
 
-	    for (r=0; r < qdb->rb.nsubres[rb] && !bMatch; r++)
+	    for (r=0; (r < qdb->rb.nsubres[rb]) && !bMatch; r++)
 	      {
 		/* Is the atom found among the donors/acceptors ?*/
 		nreac[0] = qdb->rb.subres[rb][r].na;
@@ -691,6 +691,10 @@ static int get_qhop_atoms(FILE *fplog,
 				    q_residue[q_residue_nr].res_nr             = resnr-1;
 
 				    q_residue_nr++;
+				  }
+				else 
+				  {
+				    q_atoms[q_atoms_nr].qres_id = q_atoms[q_atoms_nr-1].qres_id;
 				  }
 
 				if (q_residue_nr > 0)

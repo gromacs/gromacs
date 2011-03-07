@@ -799,7 +799,7 @@ int which_subRes(const t_qhoprec *qr,
       gmx_fatal(FARGS, "Didn't find the subres. r = %d, nsubres = %d, resnr = %d",
 		r,nsubres,resnr);
     }
-  printf("subres %d\n",r);
+  /* printf("subres %d\n",r);*/
   return r;
 }
 
@@ -827,7 +827,7 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
   /* rb->ilib and top->idef.functype are offset by this much: */
   offset = top->idef.ntypes - db->rb.ni;
   
-  //printf("ntypes = %d, rb.ni = %d, offset = %d\n",top->idef.ntypes,db->rb.ni,offset);
+  /* printf("ntypes = %d, rb.ni = %d, offset = %d\n",top->idef.ntypes,db->rb.ni,offset); */
   
   for (bt=0; bt < ebtsNR; bt++)
     {
@@ -856,9 +856,9 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
 	   * present in the ilists and may therefore be unindexed. */
 	  if (swapres->bindex.indexed[it][b])
 	    {
-	      printf("Changing functype from %d to %d\n",
-		     top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]],
-		     p+offset);
+	      /* printf("Changing functype from %d to %d\n",
+		 top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]],
+		 p+offset); */
 	      top->idef.il[it].iatoms[swapres->bindex.ilist_pos[it][b]] =
 		p + offset;
 	    }
