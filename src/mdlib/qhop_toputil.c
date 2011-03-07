@@ -33,9 +33,9 @@ void qhop_tautomer_swap(const t_qhoprec *qr,
   copy_rvec(tmp, x[qsec->atom_id]);
   if (v != NULL)
     {
-      copy_rvec(x[qprim->atom_id], tmp);
-      copy_rvec(x[qsec->atom_id], x[qprim->atom_id]);
-      copy_rvec(tmp, x[qsec->atom_id]);
+      copy_rvec(v[qprim->atom_id], tmp);
+      copy_rvec(v[qsec->atom_id], v[qprim->atom_id]);
+      copy_rvec(tmp, v[qsec->atom_id]);
     }
 
   /* swap hydrogens */
