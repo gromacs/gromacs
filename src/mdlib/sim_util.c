@@ -441,7 +441,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
 
 #ifdef GMX_GPU    
-    cu_timings_t *gpu_t = get_gpu_times(fr->gpu_nb);
+    cu_timings_t *gpu_t = get_gpu_timings(fr->gpu_nb);
     gmx_bool    gpu_debug_print = getenv("GMX_GPU_DEBUG_PRINT") != NULL;
 #endif
     

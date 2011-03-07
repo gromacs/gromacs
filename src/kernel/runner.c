@@ -944,7 +944,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_times(fr->gpu_nb) :
+               fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));

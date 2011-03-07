@@ -4337,7 +4337,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_times(fr->gpu_nb) :
+               fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));

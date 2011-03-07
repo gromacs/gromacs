@@ -555,30 +555,36 @@ static void realloc_cudata_array(void **d_dest, void *h_src, size_t type_size,
 
 /*! Blocking waits until the atom data gets copied to the GPU and times the transfer.
  */
-void cu_blockwait_atomdata(cu_nonbonded_t nb_cu)
+void cu_blockwait_atomdata(cu_nonbonded_t cu_nb)
 {   
     float t;
-    cu_blockwait_event(nb_cu->timers->stop_atdat, nb_cu->timers->start_atdat, &t);
-    nb_cu->timings->atomdt_h2d_total_time += t;
+    cu_blockwait_event(cu_nb->timers->stop_atdat, cu_nb->timers->start_atdat, &t);
+    cu_nb->timings->atomdt_h2d_total_time += t;
 }
 
-/*! Returns the GPU timing structure or NULL if nb_cu is NULL. */
-cu_timings_t * get_gpu_times(cu_nonbonded_t nb_cu)
+/*! Returns the GPU timing structure or NULL if cu_nb is NULL. */
+cu_timings_t * get_gpu_timings(cu_nonbonded_t cu_nb)
 {
-    return nb_cu != NULL ? nb_cu->timings : NULL;
+    return cu_nb != NULL ? cu_nb->timings : NULL;
+}
+
+/*! Resets GPU timers. */
+void reset_gpu_timings(cu_nonbonded_t cu_nb)
+{
+    init_timings(cu_nb->timings);
 }
 
 /*** Old stuff ***/
-int cu_upload_X(cu_nonbonded_t nb_cu, real *h_x) 
+int cu_upload_X(cu_nonbonded_t cu_nb, real *h_x) 
 {
-    cu_atomdata_t *ad = nb_cu->atomdata;
+    cu_atomdata_t *ad = cu_nb->atomdata;
 
     return upload_cudata(ad->xq, h_x, ad->natoms*sizeof(*ad->xq));
 }
 
-int cu_download_F(real *h_f, cu_nonbonded_t nb_cu)
+int cu_download_F(real *h_f, cu_nonbonded_t cu_nb)
 {
-    cu_atomdata_t *ad = nb_cu->atomdata;
+    cu_atomdata_t *ad = cu_nb->atomdata;
 
     return download_cudata(h_f, ad->f, ad->natoms*sizeof(*ad->f));
 }

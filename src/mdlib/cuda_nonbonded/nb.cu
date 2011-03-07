@@ -239,8 +239,8 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     /* set energy outputs to 0 */
     if (calc_ene)
     {
-        cudaMemsetAsync(atomdata->e_lj, 0.0f, sizeof(*atomdata->e_lj), 0);
-        cudaMemsetAsync(atomdata->e_el, 0.0f, sizeof(*atomdata->e_el), 0);
+        cudaMemsetAsync(atomdata->e_lj, 0, sizeof(*atomdata->e_lj), 0);
+        cudaMemsetAsync(atomdata->e_el, 0, sizeof(*atomdata->e_el), 0);
     }
 
     /* launch async nonbonded calculations */        

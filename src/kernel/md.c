@@ -97,6 +97,10 @@
 #include "tmpi.h"
 #endif
 
+#ifdef GMX_GPU
+#include "cuda_data_mgmt.h"
+#endif
+
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -744,7 +748,8 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_large_int_t step,
                                gmx_large_int_t *step_rel,t_inputrec *ir,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
-                               gmx_runtime_t *runtime)
+                               gmx_runtime_t *runtime,
+                               cu_nonbonded_t gpu_nb)
 {
     char buf[STRLEN],sbuf[STEPSTRSIZE];
 
@@ -752,6 +757,13 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     sprintf(buf,"Step %s: resetting all time and cycle counters\n",
             gmx_step_str(step,sbuf));
     md_print_warning(cr,fplog,buf);
+
+#ifdef GMX_GPU
+    if (gpu_nb)
+    {
+        reset_gpu_timings(gpu_nb);
+    }
+#endif 
 
     wallcycle_stop(wcycle,ewcRUN);
     wallcycle_reset_all(wcycle);
@@ -2744,7 +2756,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,
+                        fr->useGPU ? fr->gpu_nb : NULL);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
             max_hours -= run_time/(60.0*60.0);
