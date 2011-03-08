@@ -1926,9 +1926,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        (bDoDHDL ? GMX_FORCE_DHDL : 0)
             );
 
-        if(!bFirstStep)
+        if (!bFirstStep)
         {
-            if(fr->bqhop && do_per_step(step,ir->qhopfreq)){ 
+            if (fr->bqhop && do_per_step(step,ir->qhopfreq))
+            { 
                 fr->qhoprec->constr = constr;
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                         mdatoms,fcd,graph,fr,vsite,mu_tot,bBornRadii,

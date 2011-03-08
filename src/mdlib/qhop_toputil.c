@@ -328,7 +328,7 @@ void index_ilists(t_qhop_residue *qres,
 	      /* Constraints may be absent from the ilists */
 	      if (itype != F_CONSTR)
 		{
-		  gmx_fatal(FARGS, "Interaction not found in ilist");
+		  gmx_fatal(FARGS, "Interaction type %d not found in ilist",itype);
 		}
 	    }
 

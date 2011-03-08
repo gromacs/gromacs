@@ -1446,6 +1446,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
 		      hop[nr_hops].acceptor_id = acc;
 		      hop[nr_hops].proton_id   = k;
 		      hop[nr_hops].rda         = norm(vecc);
+		      hop[nr_hops].ang         = ang;
 		      hop[nr_hops].prob        = 0;
 		      nr_hops++;
 		    }
@@ -3236,11 +3237,12 @@ void do_qhop(FILE *fplog,
 	      if(MASTER(cr)){
 		/* some printing to the log file */
 		fprintf(fplog,
-			"\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)", i,
+			"\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)", i,
 			fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
 			fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
 			qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
-			qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].El, qr->hop[i].Er,
+			qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].ang,
+			qr->hop[i].El, qr->hop[i].Er,
 			qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
 	      }
  

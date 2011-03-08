@@ -34,6 +34,7 @@ typedef struct {
     DE_MM,
     Eb,
     rda,
+    ang,
     prob,
     hbo,
     kappa,
