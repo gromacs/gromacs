@@ -216,7 +216,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
                             F_invr      += qi * qj_f * (inv_r2 * inv_r - two_k_rf);
 #endif
 #ifdef EL_EWALD
-                            F_invr      += qi * qj_f * interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale);
+                            F_invr      += qi * qj_f * interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale) * inv_r;
 #endif
 
 #ifdef CALC_ENERGIES

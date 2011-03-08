@@ -3,6 +3,7 @@
 
 #include "gmx_fatal.h"
 #include "smalloc.h"
+#include "force.h"
 
 #include "cutypedefs.h"
 #include "cudautils.h"
@@ -10,7 +11,7 @@
 #include "cupmalloc.h"
 
 #define USE_CUDA_EVENT_BLOCKING_SYNC FALSE /* makes the CPU thread busy-wait! */
-#define EWALD_COULOMB_FORCE_TABLE_SIZE 1536   /* size chosen such we do not run out of texture cache */
+#define EWALD_COULOMB_FORCE_TABLE_SIZE (1536)   /* size chosen such we do not run out of texture cache */
 
 #define MY_PI               (3.1415926535897932384626433832795)
 #define TWO_OVER_SQRT_PI    (2.0/sqrt(MY_PI))
@@ -59,22 +60,19 @@ static void destroy_cudata_array(void * d_ptr,
 static void realloc_cudata_array(void **d_dest, void *h_src, size_t type_size, 
                                  int *curr_size, int *curr_alloc_size, 
                                  int req_size, gmx_bool doStream);                                
-static void tabulate_ewald_coulomb_force_r(cu_nb_params_t *nb_params);
+static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params);
 
-/*! Tabulates the Ewald Coulomb force.
- *  Idea borrowed from OpenMM (https://simtk.org/home/openmm).
+/*! Tabulates the Ewald Coulomb force and initializes the related GPU resources. 
  */
-static void tabulate_ewald_coulomb_force_r(cu_nb_params_t *nb_params)
+static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params)
 {
     float       *ftmp;
-    double      beta, r, x;
-    int         i, tabsize;
-    cudaError_t stat;    
+    int         tabsize;
+    cudaError_t stat;
 
     cudaChannelFormatDesc   cd;
     const textureReference  *tex_coulomb_tab;
 
-    beta        = nb_params->ewald_beta;
     tabsize     = EWALD_COULOMB_FORCE_TABLE_SIZE;
 
     nb_params->coulomb_tab_size    = tabsize;
@@ -82,14 +80,8 @@ static void tabulate_ewald_coulomb_force_r(cu_nb_params_t *nb_params)
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
-    for (i = 1; i < tabsize; i++)
-    {
-        r       = i / nb_params->coulomb_tab_scale;
-        x       = r * beta;
-        ftmp[i] = (float) ((erfc(x) / r + beta * TWO_OVER_SQRT_PI * exp(-x * x)) / (r * r));
-    }
-
-    ftmp[0] = ftmp[1];
+    table_spline3_fill_ewald_force(ftmp, tabsize, 1/nb_params->coulomb_tab_scale, 
+                                   nb_params->ewald_beta);
 
     stat = cudaMalloc((void **)&nb_params->coulomb_tab, 
                       tabsize*sizeof(*nb_params->coulomb_tab));
@@ -105,6 +97,7 @@ static void tabulate_ewald_coulomb_force_r(cu_nb_params_t *nb_params)
 
     pfree(ftmp);
 }
+
 
 /*! Initilizes the atomdata (XXX) data structure. */
 void init_atomdata(cu_atomdata_t *ad, int ntypes)
@@ -162,7 +155,7 @@ void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
     {
         nbp->eeltype = cu_eelEWALD;
     }
-   else 
+    else 
     {
         gmx_fatal(FARGS, "The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
     }
@@ -170,7 +163,7 @@ void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
     /* generate table for PME */
     if (nbp->eeltype == cu_eelEWALD)
     {
-        tabulate_ewald_coulomb_force_r(nbp);
+        init_ewald_coulomb_force_table(nbp);
     }
 
     stat = cudaMalloc((void **)&nbp->nbfp, 2*ntypes*ntypes*sizeof(*(nbp->nbfp)));
@@ -371,8 +364,7 @@ void init_cudata_atoms(cu_nonbonded_t cu_nb,
 
         d_atomd->nalloc = nalloc;
     }
-    /* XXX for the moment we just set all 8 values to the same value... 
-       ATM not, we"ll do that later */    
+    
     d_atomd->natoms = natoms;
 
     if(doStream)

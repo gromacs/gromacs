@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -123,6 +124,104 @@ typedef struct {
 #define pow3(x) ((x)*(x)*(x))
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
+
+
+static double v_ewald(double beta,double r)
+{
+    return erfc(beta*r)/r;
+}
+
+void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
+                                    real beta)
+{
+    real tab_max;
+    int i;
+    double dc,dc_new;
+    gmx_bool OutOfRange;
+    double v_r0,v_r1,a0,a1,a2dx;
+    double x_r0;
+
+    if (ntab < 2)
+    {
+        gmx_fatal(FARGS,"Can not make a spline table with less than 2 points");
+    }
+
+    /* We need some margin to be able to divide by r in the kernel
+     * and also to do the integration arithmetics without going out of range.
+     * Furthemore, we divide by dx below.
+     */
+    tab_max = GMX_REAL_MAX*0.0001;
+
+    /* This function produces a table with maximum force error V'''*dx*dx/12.
+     * The rms force error is the max error times 1/sqrt(5)=0.45.
+     */
+
+    OutOfRange = FALSE;
+    dc = 0;
+    for(i=ntab-1; i>0; i--)
+    {
+        x_r0 = i*dx;
+
+        v_r0 = v_ewald(beta,x_r0);
+        v_r1 = v_ewald(beta,x_r0-dx);
+
+        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
+        {
+            OutOfRange = TRUE;
+        }
+
+        if (!OutOfRange)
+        {
+            /* Calculate the average second derivative times dx over interval i-1 to i.
+             * Using the function values at the end points and in the middle.
+             */
+            a2dx = (v_r0+ v_r1 - 2*v_ewald(beta,x_r0-0.5*dx))/(0.25*dx);
+            /* Set the derivative of the spline to match the difference in potential
+             * over the interval plus the average effect of the quadratic term.
+             * This is the essential step for minimizing the error in the force.
+             */
+            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
+        }
+
+        if (i == ntab - 1)
+        {
+            /* Fill the table with the force, minus the derivative of the spline */
+            tab[i] = -dc;
+        }
+        else
+        {
+            /* tab[i] will contain the average of the splines over the two intervals */
+            tab[i] += -0.5*dc;
+        }
+
+        if (!OutOfRange)
+        {
+            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
+             * matching the potential at the two end points
+             * and the derivative dc at the end point xr.
+             */
+            a0   = v_r0;
+            a1   = dc;
+            a2dx = (a1*dx + v_r1 - a0)*2/dx;
+
+            /* Set dc to the derivative at the next point */
+            dc_new = a1 - a2dx;
+                
+            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
+            {
+                OutOfRange = TRUE;
+            }
+            else
+            {
+                dc = dc_new;
+            }
+        }
+
+        tab[i-1] = -0.5*dc;
+    }
+    /* Currently the last value only contains half the force: double it */
+    tab[0] *= 2;
+}
 
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.

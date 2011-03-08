@@ -97,6 +97,14 @@ t_forcerec *mk_forcerec(void);
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
+void table_spline3_fill_ewald_force(real *tab,int ntab,real dr,
+				    real beta);
+/* Fill table tab of size ntab with spacing dr with the ewald force.
+ * This function interpolates the Ewald particle-particle potential
+ * with coefficient beta using a quadratic spline.
+ * The force can then be interpolated linearly.
+ */
+
 t_forcetable make_tables(FILE *fp,const output_env_t oenv,
                                 const t_forcerec *fr, gmx_bool bVerbose,
                                 const char *fn, real rtab,int flags);
