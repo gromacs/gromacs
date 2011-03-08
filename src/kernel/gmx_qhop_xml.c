@@ -376,10 +376,15 @@ static void rb_add_name_product(qhop_res_t res, const char *name, const char *pr
 			acc ? "Acceptor":"Donor", s[k]);
 
       if (nda != 0)
-	srenew(da, nda+1);
+	{
+	  srenew(da, nda+1);
+	  memset(&(da[nda]), 0, sizeof(qhop_reactant));
+	}
       else
-	snew(da, 1);
-      
+	{
+	  snew(da, 1);
+	}
+
       srenew(da[nda].name, nnames);
       da[nda].nname = nnames;
       for (i=0; i<nnames; i++)
