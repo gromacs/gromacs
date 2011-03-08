@@ -157,6 +157,7 @@ void index_ilists(t_qhop_residue *qres,
 {
   int rt, b, i, prev, ni, *ra, ia, ft, itype, nia, *l2g, bt, j;
   gmx_bool bMatch, bDD;
+  char buf[128], *bp;
   
   const t_ilist *ilist = top->idef.il;
 
@@ -328,7 +329,13 @@ void index_ilists(t_qhop_residue *qres,
 	      /* Constraints may be absent from the ilists */
 	      if (itype != F_CONSTR)
 		{
-		  gmx_fatal(FARGS, "Interaction not found in ilist");
+		  bp = buf;
+		  for (j=0; j<nia; j++)
+		    {
+		      bp = &(bp[sprintf(bp, " %d%c", ra[j], (j==nia-1) ? '.', ',')]);
+		    }
+
+		  gmx_fatal(FARGS, "Interaction of type %d not found in ilist.\nResidue-local atom indices are%s", itype, buf);
 		}
 	    }
 
