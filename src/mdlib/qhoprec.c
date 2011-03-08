@@ -53,7 +53,7 @@ void finalize_qhoprec(t_qhoprec *qhoprec, gmx_localtop_t *top,
   int i, j, nb, ft;
   qhop_db *db;
   t_qhop_residue *qres;
-#define DUMPTOP 1
+  /* #define DUMPTOP 1 */
 #ifdef DUMPTOP 
   FILE *fp;
   if (NULL != (fp=ffopen("before.txt","w"))) 

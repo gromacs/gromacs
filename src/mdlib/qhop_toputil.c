@@ -107,7 +107,7 @@ int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 
 void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
 {
-  int rt, r, bt, b, p, ft, btype, nr;
+  int nr, i;
   qhop_res *res;
 
   nr = top->idef.ntypes + db->rb.ni;
@@ -115,8 +115,10 @@ void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
   srenew(top->idef.iparams,  nr);
   srenew(top->idef.functype, nr);
 
-  memcpy(&(top->idef.iparams[top->idef.ntypes]),  db->rb.ilib,  db->rb.ni * sizeof(t_iparams));
-  memcpy(&(top->idef.functype[top->idef.ntypes]), db->rb.ftlib, db->rb.ni * sizeof(t_functype));
+  for(i=0; (i<db->rb.ni); i++) {
+    top->idef.iparams[top->idef.ntypes + i] = db->rb.ilib[i];
+    top->idef.functype[top->idef.ntypes + i] = db->rb.ftlib[i];
+  }
 
   top->idef.ntypes = nr;
 }
