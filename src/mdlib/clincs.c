@@ -607,8 +607,11 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
             li->blc[i]  = 0;
             li->blc1[i] = 0;
         }
-        li->blc[i]  = gmx_invsqrt(invmass[a1] + invmass[a2]);
-        li->blc1[i] = invsqrt2;
+        else
+        {
+            li->blc[i]  = gmx_invsqrt(invmass[a1] + invmass[a2]);
+            li->blc1[i] = invsqrt2;
+        }
     }
     
     /* Construct the coupling coefficient matrix blmf */
