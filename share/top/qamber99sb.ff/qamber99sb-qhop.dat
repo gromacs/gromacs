@@ -34,10 +34,15 @@
         <donor name="OC2" product="AC-"/>
       </res>
     </residue_type>
-    
+
+    <!-- 
+        #######
+        NH4+
+        #######
+      -->
     <residue_type name="qNH4" water="FALSE">
       <res name="NH3">
-	<acceptor name="NZ" product="NH4"/>
+        <acceptor name="NZ" product="NH4"/>
       </res>
       <res name="NH4">
         <donor name="NZ" product="NH3"/>
