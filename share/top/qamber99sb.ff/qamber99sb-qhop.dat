@@ -22,20 +22,10 @@
     </residue_type>
 
     <!--
-        #######
-        GLH
-        #######
-
-    <residue_type name="qGLU" water="FALSE">
-      <res name="GLU">
-        <acceptor name="OE2" product="GLH"/>
-      </res>
-      <res name="GLH">
-        <donor name="OE2" product="GLU"/>
-      </res>
-    </residue_type>
+	#######
+	HAC
+	#######
       -->
-
     <residue_type name="qHAC" water="FALSE">
       <res name="AC-">
         <acceptor name="OC2 OC1" product="HAC"/>
@@ -53,6 +43,81 @@
         <donor name="NZ" product="NH3"/>
       </res>
     </residue_type>
+
+    <!-- 
+        #######
+        LYS
+        #######
+      -->
+    <residue_type name="qLYN" water="FALSE">
+      <res name="LYN">
+        <acceptor name="NZ" product="LYS"/>
+      </res>
+      <res name="LYS">
+        <donor name="NZ" product="LYN"/>
+      </res>
+    </residue_type>
+
+    <!--
+        #######
+        HIP
+        #######
+      -->
+    <residue_type name="qHIS" water="FALSE">
+      <res name="HID">
+        <acceptor name="NE2" product="HIP"/>
+      </res>
+      <res name="HIP">
+        <donor name="NE2" product="HID"/>
+	<donor name="ND1" product="HIE"/>
+      </res>
+      <res name="HIE">
+	<acceptor name="ND1" product="HIP"/>
+      </res>
+    </residue_type>
+    
+    <!--
+        #######
+        GLH
+        #######
+      -->
+    <residue_type name="qGLU" water="FALSE">
+      <res name="GLU">
+        <acceptor name="OE2 OE1" product="GLH"/>
+      </res>
+      <res name="GLH">
+        <donor name="OE2" product="GLU"/>
+      </res>
+    </residue_type>
+
+    <!--
+        #######
+        ASH
+        #######
+      -->
+    <residue_type name="qASP" water="FALSE">
+      <res name="ASP">
+        <acceptor name="OD2 OD1" product="ASH"/>
+      </res>
+      <res name="ASH">
+        <donor name="OD2" product="ASP"/>
+      </res>
+    </residue_type>
+
+    <!--
+        #######
+        CYS
+        #######
+      -->
+    <residue_type name="qCYM" water="FALSE">
+      <res name="CYM">
+        <acceptor name="SG" product="CYS"/>
+      </res>
+      <res name="CYS">
+        <donor name="SG" product="CYM"/>
+      </res>
+    </residue_type>
+
   </resblocks>
   <!--
       ##################
@@ -272,6 +337,1046 @@
     <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="34.36" unit=""/>
     <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="qH3O" acceptor="LYN">
+    <don_atom> OW </don_atom>
+    <acc_atom> NZ </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="688.747" unit="kJ/mol"/>
+    <parameter name="beta"  value="-4435.78" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="5683.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+ 
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+ <qhop donor="qH3O" acceptor="HID">
+    <don_atom> OW </don_atom>
+    <acc_atom> NE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="570.758" unit="kJ/mol"/>
+    <parameter name="beta"  value="-3607.07" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="4486.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+   
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+ <qhop donor="qH3O" acceptor="HIE">
+    <don_atom> OW </don_atom>
+    <acc_atom> ND1 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="570.758" unit="kJ/mol"/>
+    <parameter name="beta"  value="-3607.07" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="4486.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+   
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="qH3O" acceptor="GLU">
+    <don_atom> OW </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="1159.740" unit="kJ/mol"/>
+    <parameter name="beta"  value="-7169.49" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="8325.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="qH3O" acceptor="ASP">
+    <don_atom> OW </don_atom>
+    <acc_atom> OD2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="1159.740" unit="kJ/mol"/>
+    <parameter name="beta"  value="-7169.49" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="8325.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+ <qhop donor="LYS" acceptor="qH2O">
+    <don_atom> NZ </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-688.747" unit="kJ/mol"/>
+    <parameter name="beta"  value="4435.78" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-5683.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="LYS" acceptor="GLU">
+    <don_atom> NZ </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="561.828" unit="kJ/mol"/>
+    <parameter name="beta"  value="-3205.22" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="3251.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="LYS" acceptor="ASP">
+    <don_atom> NZ </don_atom>
+    <acc_atom> OD2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="561.828" unit="kJ/mol"/>
+    <parameter name="beta"  value="-3205.22" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="3251.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="qH2O">
+    <don_atom> NE2 </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-570.758" unit="kJ/mol"/>
+    <parameter name="beta"  value="3607.07" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-4486.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="qH2O">
+    <don_atom> ND1 </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-570.758" unit="kJ/mol"/>
+    <parameter name="beta"  value="3607.07" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-4486.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="GLU">
+    <don_atom> NE2 </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="-4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="GLU">
+    <don_atom> ND1 </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="-4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="ASP">
+    <don_atom> NE2 </don_atom>
+    <acc_atom> OD2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="-4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="HIP" acceptor="ASP">
+    <don_atom> ND1 </don_atom>
+    <acc_atom> OD2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="-4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
+    <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="27.94" unit=""/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
+    <parameter name="m_3"   value="-23.54" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.4737" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-8.3303349" unit="kJ/mol"/>
+    <parameter name="g"     value="0.020907197513152" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="18.61128006" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.33" unit=""/>
+    <parameter name="q_1"   value="0.821855571496891" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003696795791487" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.59349593495935e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="qH2O">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-1159.740" unit="kJ/mol"/>
+    <parameter name="beta"  value="7169.49" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-8325.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="LYN">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> NZ </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-561.828" unit="kJ/mol"/>
+    <parameter name="beta"  value="3205.22" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-3215.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="HID">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> NE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="HIE">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> ND1 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="GLU">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="0.0" unit="kJ/mol"/>
+    <parameter name="beta"  value="0.0" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="0.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="GLH" acceptor="ASP">
+    <don_atom> OE2 </don_atom>
+    <acc_atom> OD2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="0.0" unit="kJ/mol"/>
+    <parameter name="beta"  value="0.0" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="0.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="qH2O">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> OW </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-1159.740" unit="kJ/mol"/>
+    <parameter name="beta"  value="7169.49" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-8325.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="LYN">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> NZ </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-561.828" unit="kJ/mol"/>
+    <parameter name="beta"  value="3205.22" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-3251.9" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="HID">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> NE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="HIE">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> ND1 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="-722.964" unit="kJ/mol"/>
+    <parameter name="beta"  value="4445.59" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="-5081.8" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
+    <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="45.4942" unit=""/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
+    <parameter name="m_3"   value="-41.10" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="9894.15198" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.20702" unit="nm"/>
+    <parameter name="v_A"   value="-28.4994936" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5263" unit=""/>
+    <parameter name="s_C"   value="9.795384983261597" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="106.300" unit="1/nm"/>
+    <parameter name="v_C"   value="0.000432807269249" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.30" unit=""/>
+    <parameter name="q_1"   value="0.826159732185557" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.003718316594931" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.629363940698231e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="GLU">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="0.0" unit="kJ/mol"/>
+    <parameter name="beta"  value="0.0" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="0.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
+    <parameter name="m_3"   value="-30.43" unit=""/>
+
+    <!-- {S, T, V} => E_b = E_b(E_12) -->
+    <parameter name="s_A"   value="8304.824700000001" unit="(kJ/mol)/(nm^2)"/>
+    <parameter name="t_A"   value="0.17509" unit="nm"/>
+    <parameter name="v_A"   value="-56.979750000000003" unit="kJ/mol"/>
+    <parameter name="s_B"   value="0.5000" unit=""/>
+    <parameter name="s_C"   value="1.6441893830703012" unit="1/(kJ/mol)"/>
+    <parameter name="t_C"   value="91.103" unit="1/nm"/>
+    <parameter name="v_C"   value="0.00016260162601626016" unit="1/(kJ/mol)"/>
+
+    <!-- hbar omega/2 (ground state vibration) -->
+    <parameter name="f"     value="-9.3303765600000013" unit="kJ/mol"/>
+    <parameter name="g"     value="0.018517312290769965" unit="1/(kJ/mol)"/>
+    <parameter name="h"     value="20.079454800000001" unit="kJ/mol"/>
+
+    <!-- \kappa(E_M) (Tunneling) -->
+    <parameter name="p_1"   value="0.45" unit=""/>
+    <parameter name="q_1"   value="0.83596365375418458" unit="1/(kJ/mol)"/>
+    <parameter name="q_2"   value="-0.0038522238163558103" unit="1/(K*kJ/mol)"/>
+    <parameter name="q_3"   value="4.8421807747489236e-06" unit="1/(K^2*kJ/mol)"/>
+    <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
+    <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
+    <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
+  </qhop>
+
+  <qhop donor="ASH" acceptor="ASP">
+    <don_atom> OD2 </don_atom>
+    <acc_atom> OE2 </acc_atom>
+    <!-- E_12,0 -->
+    <parameter name="alpha" value="0.0" unit="kJ/mol"/>
+    <parameter name="beta"  value="0.0" unit="(kJ/mol)/nm"/>
+    <parameter name="gamma" value="0.0" unit="(kJ/mol)/(nm^2)"/>
+
+    <!-- p_SE -->
+    <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
+    <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
+    <parameter name="m_1"   value="34.36" unit=""/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
     <parameter name="m_3"   value="-30.43" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
