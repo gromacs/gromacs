@@ -805,6 +805,19 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 			groups->grpnr[i]=new_egrp[i];
 		}
 	}
+
+        /* remove empty molblocks */
+        int RMmolblock=0;
+        for (i=0;i<mtop->nmolblock;i++)
+        {
+           if(mtop->molblock[i].nmol==0)
+           {
+             RMmolblock++;
+           } else {
+             mtop->molblock[i-RMmolblock]=mtop->molblock[i];
+           }
+        }
+        mtop->nmolblock-=RMmolblock;
 }
 
 int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
