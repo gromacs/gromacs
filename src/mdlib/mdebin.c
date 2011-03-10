@@ -610,12 +610,12 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         if (ir->dhdl_derivatives == dhdlderivativesYES)
         {
             sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
-            setname[nsi++] = strdup(buf);
+            setname[nsi++] = gmx_strdup(buf);
         }
         for(s=0; s<ir->n_flambda; s++)
         {
             sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s]);
-            setname[nsi++] = strdup(buf);
+            setname[nsi++] = gmx_strdup(buf);
         }
         xvgr_legend(fp,nsets,(const char**)setname,oenv);
 
