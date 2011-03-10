@@ -1480,6 +1480,11 @@ int main (int argc, char *argv[])
       check_bonds_timestep(sys,ir->delta_t,wi);
   }
 
+  if (EI_ENERGY_MINIMIZATION(ir->eI) && 0 == ir->nsteps)
+  {
+      warning_note(wi,"Zero-step energy minimization will alter the coordinates before calculating the energy. If you just want the energy of a single point, try zero-step MD (with unconstrained_start = yes). To do multiple single-point energy evaluations of different configurations of the same topology, use mdrun -rerun.");
+  }
+
   check_warning_error(wi,FARGS);
 	
   if (bVerbose) 

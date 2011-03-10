@@ -370,13 +370,13 @@ static char *backup_fn(const char *file,int count_max)
      * a '\0' to end the directory string .
      */
     if (i > 0) {
-        directory    = strdup(file);
+        directory    = gmx_strdup(file);
         directory[i] = '\0';
-        fn           = strdup(file+i+1);
+        fn           = gmx_strdup(file+i+1);
     }
     else {
-        directory    = strdup(".");
-        fn           = strdup(file);
+        directory    = gmx_strdup(".");
+        fn           = gmx_strdup(file);
     }
     do {
         sprintf(buf,"%s/#%s.%d#",directory,fn,count);
@@ -870,7 +870,7 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
     ret = NULL;
     if (bAddCWD && gmx_fexist(file))
     {
-        ret = strdup(file);
+        ret = gmx_strdup(file);
     }
     else 
     {
@@ -881,7 +881,7 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
             sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
             if (gmx_fexist(buf))
             {
-                ret = strdup(buf);
+                ret = gmx_strdup(buf);
             }
         }
         if (ret == NULL && bFatal) 

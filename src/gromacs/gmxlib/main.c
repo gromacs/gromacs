@@ -235,13 +235,13 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
         }
         else
         {
-            tmpnm=strdup(lognm);
+            tmpnm=gmx_strdup(lognm);
         }
         gmx_bcast(len*sizeof(*tmpnm),tmpnm,cr);
     }
     else
     {
-        tmpnm=strdup(lognm);
+        tmpnm=gmx_strdup(lognm);
     }
   
     debug_gmx();
@@ -440,7 +440,7 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
                 ftp = fn2ftp(fnm[i].fns[0]);
                 par_fn(fnm[i].fns[0],ftp,cr,TRUE,FALSE,buf,255);
                 sfree(fnm[i].fns[0]);
-                fnm[i].fns[0] = strdup(buf);
+                fnm[i].fns[0] = gmx_strdup(buf);
             }
         }
     }
