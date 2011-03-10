@@ -371,7 +371,8 @@ int main(int argc,char *argv[])
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
-    { efNDX, "-dn",     "dipole",   ffOPTWR }
+    { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efRND, "-multidir",NULL,      ffOPTRDMULT}
   };
 #define NFILE asize(fnm)
 
@@ -498,6 +499,7 @@ int main(int argc,char *argv[])
   const char *part_suffix=".part";
   char     suffix[STRLEN];
   int      rc;
+  char **multidir=NULL;
 
 
   cr = init_par(&argc,&argv);
@@ -524,6 +526,8 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
+
+
   /* we set these early because they might be used in init_multisystem() 
      Note that there is the potential for npme>nnodes until the number of
      threads is set later on, if there's thread parallelization. That shouldn't
@@ -535,13 +539,25 @@ int main(int argc,char *argv[])
   nthreads=1;
 #endif
 
+  /* now check the -multi and -multidir option */
+  if (opt2bSet("-multidir", NFILE, fnm))
+  {
+      int i;
+      if (nmultisim > 0)
+      {
+          gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
+      }
+      nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+  }
+
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   if (nmultisim > 1) {
 #ifndef GMX_THREADS
-    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+    gmx_bool bParFn = (multidir == NULL);
+    init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
     gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif

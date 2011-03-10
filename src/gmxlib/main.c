@@ -343,8 +343,8 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   debug_gmx();
 }
 
-void init_multisystem(t_commrec *cr,int nsim, int nfile,
-                      const t_filenm fnm[],gmx_bool bParFn)
+void init_multisystem(t_commrec *cr,int nsim, char **multidirs,
+                      int nfile, const t_filenm fnm[],gmx_bool bParFn)
 {
     gmx_multisim_t *ms;
     int  nnodes,nnodpersim,sim,i,ftp;
@@ -425,7 +425,21 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
         fprintf(debug,"\n\n");
     }
 
-    if (bParFn)
+    if (multidirs)
+    {
+        int ret;
+        if (debug)
+        {
+            fprintf(debug,"Changing to directory %s\n",multidirs[cr->ms->sim]);
+        }
+        if (chdir(multidirs[cr->ms->sim]) != 0)
+        {
+            gmx_fatal(FARGS, "Couldn't change directory to %s: %s",
+                      multidirs[cr->ms->sim],
+                      strerror(errno));
+        }
+    }
+    else if (bParFn)
     {
         /* Patch output and tpx, cpt and rerun input file names */
         for(i=0; (i<nfile); i++)

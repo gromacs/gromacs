@@ -805,19 +805,6 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 			groups->grpnr[i]=new_egrp[i];
 		}
 	}
-
-        /* remove empty molblocks */
-        int RMmolblock=0;
-        for (i=0;i<mtop->nmolblock;i++)
-        {
-           if(mtop->molblock[i].nmol==0)
-           {
-             RMmolblock++;
-           } else {
-             mtop->molblock[i-RMmolblock]=mtop->molblock[i];
-           }
-        }
-        mtop->nmolblock-=RMmolblock;
 }
 
 int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
@@ -4373,7 +4360,8 @@ int gmx_membed(int argc,char *argv[])
 			{ efXVG, "-px",     "pullx",    ffOPTWR },
 			{ efXVG, "-pf",     "pullf",    ffOPTWR },
 			{ efMTX, "-mtx",    "nm",       ffOPTWR },
-			{ efNDX, "-dn",     "dipole",   ffOPTWR }
+			{ efNDX, "-dn",     "dipole",   ffOPTWR },
+                        { efRND, "-multidir",NULL,      ffOPTRDMULT}
 	};
 #define NFILE asize(fnm)
 
@@ -4520,7 +4508,7 @@ int gmx_membed(int argc,char *argv[])
 	const char *part_suffix=".part";
 	char     suffix[STRLEN];
 	int      rc;
-
+        char **multidir=NULL;
 
 	cr = init_par(&argc,&argv);
 
@@ -4561,13 +4549,25 @@ int gmx_membed(int argc,char *argv[])
 	nthreads=1;
 #endif
 
+        /* now check the -multi and -multidir option */
+        if (opt2bSet("-multidir", NFILE, fnm))
+        {
+            int i;
+            if (nmultisim > 0)
+            {
+                gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually     exclusive.");
+            }
+            nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+        }
+
 
 	if (repl_ex_nst != 0 && nmultisim < 2)
 		gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
 	if (nmultisim > 1) {
 #ifndef GMX_THREADS
-		init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+                gmx_bool bParFn = (multidir == NULL);
+		init_multisystem(cr,nmultisim,multidir,NFILE,fnm,TRUE);
 #else
 		gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif

@@ -70,8 +70,8 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,
  * if the val's don't match.
  */
 
-void init_multisystem(t_commrec *cr,int nsim,int nfile,
-                             const t_filenm fnm[], gmx_bool bParFn);
+void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
+                      int nfile, const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations
  * and creates a communication structure between the master
  * these simulations.
