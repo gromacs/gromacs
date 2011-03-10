@@ -747,6 +747,19 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 			groups->grpnr[i]=new_egrp[i];
 		}
 	}
+
+        /* remove empty molblocks */
+        int RMmolblock=0;
+        for (i=0;i<mtop->nmolblock;i++)
+        {
+           if(mtop->molblock[i].nmol==0)
+           {
+             RMmolblock++;
+           } else {
+             mtop->molblock[i-RMmolblock]=mtop->molblock[i];
+           }
+        }
+        mtop->nmolblock-=RMmolblock;
 }
 
 int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
@@ -1148,7 +1161,7 @@ void init_membed(FILE *fplog, gmx_membed_t *membed, int nfile, const t_filenm fn
 			gmx_fatal(FARGS,"Too many warnings.\nIf you are sure these warnings are harmless, you can increase -maxwarn");
 
 		if (ftp2bSet(efTOP,nfile,fnm))
-			top_update(opt2fn("-p",nfile,fnm),ins,rm_p,mtop);
+			top_update(opt2fn("-mp",nfile,fnm),ins,rm_p,mtop);
 
 		sfree(pbc);
 		sfree(rest_at);
