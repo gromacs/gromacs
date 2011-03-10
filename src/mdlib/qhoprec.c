@@ -81,7 +81,7 @@ void finalize_qhoprec(t_qhoprec *qhoprec, gmx_localtop_t *top,
 	  
 	  if (ft >= 0)
 	    {
-	      nb = db->rtp[db->rb.irtp[qres->rtype]].rb[j].nb;
+	      nb = db->rtp[db->rb.qrt[qres->rtype].irtp].rb[j].nb;
 	      qres->bindex.nr[ft] = nb;
 
 	      snew((qres->bindex.ilist_pos[ft]), nb);

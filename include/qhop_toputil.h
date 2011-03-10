@@ -68,7 +68,7 @@ extern void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localt
 /*   Exchanges the current bonded interactions*/
 /*   for the ones defined by prod. */
 extern void qhop_swap_bondeds(t_qhop_residue *swapres,
-			      qhop_res *prod,
+			      qhop_subres *prod,
 			      qhop_db *db,
 			      gmx_localtop_t *top,
 			      const t_commrec *cr);
@@ -76,14 +76,14 @@ extern void qhop_swap_bondeds(t_qhop_residue *swapres,
 /*   Exchanges the current vdw interactions
  *   for the ones defined by prod by changing the atomtypes. */
 extern void qhop_swap_vdws(const t_qhop_residue *swapres,
-			   const qhop_res *prod,
+			   const qhop_subres *prod,
 			   t_mdatoms *md,
 			   const qhop_db *db);
 
 /*   Exchanges the current masses, invmasses and charges */
 /*   for the ones defined by prod. */
 extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
-			      const qhop_res *prod,
+			      const qhop_subres *prod,
 			      t_mdatoms *md,
 			      const qhop_db *db, t_qhoprec *qr);
 
@@ -109,7 +109,7 @@ extern void set_interactions(t_qhoprec *qr,
  * This function is used to set the correct protonation states
  * at the start of the simulation.
  * Right now matching is based on counting the protons on
- * titrating sites in the qhop_res and in the rtp. Thus,
+ * titrating sites in the qhop_subres and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
 extern int which_subRes(const t_qhoprec *qr,

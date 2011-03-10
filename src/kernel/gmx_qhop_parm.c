@@ -16,7 +16,7 @@
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
 
 /* Return a new qhop_resblocks structure */
-extern qhop_resblocks_t qhop_resblock_init()
+qhop_resblocks_t qhop_resblock_init()
 {
   qhop_resblocks *rb;
   snew(rb,1);
@@ -288,7 +288,7 @@ static void postprocess_params(t_iparams *params, int nread, int bt, int ft)
 }
 
 /* Makes a library of bonded interaction parameters from rtp-data. */
-extern void make_ilib(qhop_db *db)
+void make_ilib(qhop_db *db)
 {
   int rt, r, bt, b, bf, np[ebtsNR], nptot, fi, i, nread;
   int btype[ebtsNR] = {
@@ -320,14 +320,15 @@ extern void make_ilib(qhop_db *db)
 
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
-      if ((db->rb.bWater[rt] && db->constrain!=0) || !db->rb.bInTop[rt])
+      if ((db->rb.qrt[rt].bWater && db->constrain!=0) || 
+	  !db->rb.qrt[rt].bInTop)
 	{
 	  continue;
 	}
 
-      for (r=0; r < db->rb.nsubres[rt]; r++)
+      for (r=0; r < db->rb.qrt[rt].nsubres; r++)
 	{
-	  rtp = &(db->rtp[db->rb.subres[rt][r].irtp]);
+	  rtp = &(db->rtp[db->rb.qrt[rt].subres[r].irtp]);
 
 	  for (bt=0; bt < ebtsNR; bt++)
 	    {
@@ -346,7 +347,7 @@ extern void make_ilib(qhop_db *db)
 		  postprocess_params(&params, nread, bt, db->rb.ftype[bt]);
 
 		  fi =  qhop_add_iparam(&(il[bt]), &(ft[bt]), &(np[bt]), &params, btype[bt], db->rb.ftype[bt], db->rb.btype[bt]);
-		  db->rb.subres[rt][r].findex[bt][b] = fi;
+		  db->rb.qrt[rt].subres[r].findex[bt][b] = fi;
 		}
 	    }
 	}
@@ -399,18 +400,19 @@ extern void make_ilib(qhop_db *db)
 	  /* Must shift the findex, now that we know how many params we have for each btype */
 	  for (rt=0; rt < db->rb.nrestypes; rt++)
 	    {
-	      if ((db->rb.bWater[rt] && db->constrain!=0) || !db->rb.bInTop[rt])
+	      if ((db->rb.qrt[rt].bWater && db->constrain!=0) || 
+		  !db->rb.qrt[rt].bInTop)
 		{
 		  continue;
 		}
 	      
-	      for (r=0; r < db->rb.nsubres[rt]; r++)
+	      for (r=0; r < db->rb.qrt[rt].nsubres; r++)
 		{
-		  rtp = &(db->rtp[db->rb.subres[rt][r].irtp]);
+		  rtp = &(db->rtp[db->rb.qrt[rt].subres[r].irtp]);
 
 		  for (b=0; b < rtp->rb[bt].nb; b++)
 		    {
-		      db->rb.subres[rt][r].findex[bt][b] += nptot;
+		      db->rb.qrt[rt].subres[r].findex[bt][b] += nptot;
 		    }
 		}
 	    }
@@ -695,56 +697,59 @@ t_idef* qhop_build_interaction_lib(char *ff, qhop_db *qdb, gpp_atomtype_t atype)
 #endif
 
 /* Add a res to a restype. Requires a set of residues collected in a qhop_res_t. */
-extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, 
-			 qhop_res_t res, int nres)
+void qhop_add_res(qhop_resblocks_t rb, int resblocknr, 
+		  qhop_subres_t res, int nres)
 {
   int i,n;
   
-  if (NULL == rb->subres)
-    snew(rb->subres, 1);
+  if (NULL == rb->qrt)
+    snew(rb->qrt, 1);
   else
     {
       /* Let's not assume that we're adding stuff to a new resblock. */
-      if (resblocknr > rb->nrestypes+1)
+      if (resblocknr > rb->nrestypes)
 	{
-	  srenew(rb->subres,resblocknr+1);
-	  for(i=rb->nrestypes+1; (i<resblocknr+1); i++)
-	    memset(&(rb->subres[i]),0,sizeof(rb->subres[i]));
+	  srenew(rb->qrt,resblocknr+1);
+	  for(i=rb->nrestypes; (i<resblocknr+1); i++)
+	    memset(&(rb->qrt[i]),0,sizeof(rb->qrt[i]));
 	}
     }
   /* The following allows for addition of residues to a non-empty resblock. */
-  n = rb->nsubres[resblocknr];
+  fprintf(stderr,"Strange code %s, line %d\n",__FILE__,__LINE__);
+  n = rb->qrt[resblocknr].nsubres;
   if (n > 0)
     n--;
 
   for (i=0; i<nres; i++) {
-    rb->subres[resblocknr][i + n] = res[i];
-    rb->nsubres[resblocknr]++;
+    rb->qrt[resblocknr].subres[i + n] = res[i];
+    rb->qrt[resblocknr].nsubres++;
   }
 }
 
 /* Add a restype. Requires a set of residues collected in a qhop_res_t. */
-extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res_t res)
+void qhop_add_restype(qhop_resblocks_t rb, char *name, 
+		      int nres, qhop_subres_t res)
 {
   int i, j;
+  
   if (!rb)
     gmx_fatal(FARGS,"The resblock is not initialized!\n");
 
   /* (re)allocate restype */
-  if (!rb->restype) {
-    snew(rb->restype,1);
+  if (!rb->qrt) {
+    snew(rb->qrt,1);
     i = 1;
   } else {
     i = rb->nrestypes+1;
-    srenew(rb->restype, i);
+    srenew(rb->qrt, i);
   }
 
   /* (re)allocate nres */
-  if (!rb->nsubres)
+  /*  if (!rb->nsubres)
     snew(rb->nsubres, 1);
   else
     srenew(rb->nsubres, i);
-
+  */
   /*rb->nres[rb->nrestypes] = nres;*/
 
   qhop_add_res(rb, rb->nrestypes, res, nres);
@@ -765,14 +770,14 @@ static void qhop_change_interactions(t_ilist *ilist, qhop_db *db, t_qhop_residue
 }
 
 /* H is global atom number */
-extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
-				 const atom_id H)
+void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
+			  const atom_id H)
 {
   const gmx_bool bON = db->H_map.H[db->H_map.atomid2H[H]] == 0; /* if it's zero, then the proton will appear */
   gmx_bool bNotFound = TRUE;
   int rt, Hloc, i, j, reactant;
   char *Hname;
-  qhop_res *subres, *product;
+  qhop_subres *subres, *product;
   qhop_reactant *qreac;
   const qhop_resblocks *rb = &(db->rb);
   
@@ -788,7 +793,7 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   Hname = *(db->rtp[rt].atomname[Hloc]);
  
   /* What residue subtype will this result in? */
-  subres = &(rb->subres[qres->rtype][qres->subres]);
+  subres = &(rb->qrt[qres->rtype].subres[qres->subres]);
   for (reactant=0;
        reactant<bON ? subres->na : subres->nd;
        reactant++)
@@ -815,9 +820,9 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
    * Reuse bNotFound */
 
   bNotFound = TRUE;
-  for (j=0; j<rb->nsubres[rt]; j++)
+  for (j=0; j<rb->qrt[rt].nsubres; j++)
     {
-      if (gmx_strcasecmp(product->name, rb->subres[rt][j].name) == 0)
+      if (gmx_strcasecmp(product->name, rb->qrt[rt].subres[j].name) == 0)
 	{
 	  bNotFound = FALSE;
 	  break;
@@ -827,19 +832,19 @@ extern void qhop_set_protonation(const qhop_db *db, t_qhop_residue *qres,
   if (bNotFound)
     gmx_fatal(FARGS, "In qhop_set_protonation(): "
 	      "Product %s not found among the residue subtypes of %s!",
-	      product->name, rb->restype[rt]);
+	      product->name, rb->qrt[rt].restype);
 
   set_H_exist(&db->H_map, H, bON);
   /* NOW SWAP INTERACTIONS */
 }
 
-extern int qhop_get_residue_subtype(const t_qhop_residue *qres)
+int qhop_get_residue_subtype(const t_qhop_residue *qres)
 {
   return qres->subres;
 }
 
 /* Return a new qhop structure */
-extern qhop_t qhop_init()
+qhop_t qhop_init()
 {
   struct qhop *qht;
   
@@ -848,62 +853,66 @@ extern qhop_t qhop_init()
   return qht;
 }
 
-extern void qhop_set_donor(qhop_t gqh, const char *donor)
+void qhop_set_donor(qhop_t gqh, const char *donor)
 {
   if (donor != NULL) {
-    printf(" donor %s,", donor);
+    if (NULL != debug)
+      fprintf(debug," donor %s,", donor);
     gqh->donor = strdup(donor);
   }
 }
 
-extern void qhop_set_acceptor(qhop_t gqh, const char *acceptor)
+void qhop_set_acceptor(qhop_t gqh, const char *acceptor)
 {
   if (acceptor != NULL) {
-    printf(" acceptor %s\n", acceptor);
+    if (NULL != debug)
+      fprintf(debug," acceptor %s\n", acceptor);
     gqh->acceptor = strdup(acceptor);
   }
 }
 
-extern void qhop_set_don_atom(qhop_t gqh, const char *don_atom)
+void qhop_set_don_atom(qhop_t gqh, const char *don_atom)
 {
   if (don_atom != NULL)
     {
-      printf("Setting don_atom %s\n", don_atom);
+      if (NULL != debug)
+	fprintf(debug,"Setting don_atom %s\n", don_atom);
       gqh->don_atom = strdup(don_atom);
     }
 }
 
-extern void qhop_set_acc_atom(qhop_t gqh, const char *acc_atom)
+void qhop_set_acc_atom(qhop_t gqh, const char *acc_atom)
 {
   if (acc_atom != NULL)
     {
-      printf("Setting acc_atom %s\n", acc_atom);
+      if (NULL != debug)
+	fprintf(debug,"Setting acc_atom %s\n", acc_atom);
       gqh->acc_atom = strdup(acc_atom);
     }
 }
 
-extern char *qhop_get_don_atom(const qhop_t gqh)
+char *qhop_get_don_atom(const qhop_t gqh)
 {
   return gqh->don_atom;
 }
 
-extern char *qhop_get_acc_atom(const qhop_t gqh)
+char *qhop_get_acc_atom(const qhop_t gqh)
 {
   return gqh->acc_atom;
 }
 
-extern char *qhop_get_donor(const qhop_t gqh)
+char *qhop_get_donor(const qhop_t gqh)
 {
   return gqh->donor;
 }
 
-extern char *qhop_get_acceptor(const qhop_t gqh)
+char *qhop_get_acceptor(const qhop_t gqh)
 {
   return gqh->acceptor;
 }
 
 /* Add parameter to gqh, return 1 if OK, 0 if not OK */
-extern int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
+int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
 {
   srenew(gqh->name,gqh->nparam+1);
   srenew(gqh->value,gqh->nparam+1);
@@ -918,7 +927,7 @@ extern int qhop_add_param(qhop_t gqh,char *name,char *value,char *unit)
 
 /* Lists the parameters, one by one on repeatedly calling the
    function. Returns 1 if OK, 0 if not OK */
-extern int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
+int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
 {
   if (gqh->nparam_c < gqh->nparam) {
     assign_str(name,gqh->name[gqh->nparam_c]);
@@ -935,7 +944,7 @@ extern int qhop_get_param(qhop_t gqh,char **name,char **value,char **unit)
 }
 
 /* Return a value corresponding to name */
-extern int qhop_get_value(qhop_t gqh,char *name,double *x)
+int qhop_get_value(qhop_t gqh,char *name,double *x)
 {
   int i;
   
@@ -949,7 +958,7 @@ extern int qhop_get_value(qhop_t gqh,char *name,double *x)
 }
 
 /* Liberate memory */
-extern void qhop_done(qhop_t gqh)
+void qhop_done(qhop_t gqh)
 {
   int i;
   

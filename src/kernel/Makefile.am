@@ -29,6 +29,7 @@ genhydro.c	genhydro.h	\
 gmx_qhop_db.c\
 gmx_qhop_parm.c\
 gmx_qhop_xml.c\
+gmx_xml.h	gmx_xml.c	\
 qhop.c\
 gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\

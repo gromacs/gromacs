@@ -3,14 +3,31 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "futil.h"
+#include "string2.h"
 #include "types/gmx_qhop_types.h"
 #include "gmx_qhop_parm.h"
 #include "gmx_qhop_db.h"
+#include "gmx_xml.h"
 
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 	
+typedef struct xmlrec *xmlrec_t;
+
+/*********************
+ * From gmx_qhop_xml *
+ *                   */
+
+typedef struct xmlrec {
+  int        nqh;
+  qhop       **gqh;         /* Hopping parameters */
+  qhop_resblocks_t    rb;   /* Bunches of related residues
+			     * and their interaction parameters */
+  t_symtab   tab;
+} xmlrec;
+
+
 extern int xmlDoValidityCheckingDefaultValue;
 	
 #define NN(x) (NULL != (x))
@@ -114,57 +131,6 @@ static int find_elem(char *name,int nr,const char *names[])
   return i;
 }
 
-void add_xml_int(xmlNodePtr ptr,const char *name,int val)
-{
-  xmlChar buf[32];
-  
-  sprintf((char *)buf,"%d",val);
-  if (xmlSetProp(ptr,(xmlChar *)name,buf) == 0)
-    gmx_fatal(FARGS,"Setting",(char *)name);
-}
-
-void add_xml_double(xmlNodePtr ptr,const char *name,double val)
-{
-  xmlChar buf[32];
-  
-  sprintf((char *)buf,"%g",val);
-  if (xmlSetProp(ptr,(xmlChar *)name,buf) == 0)
-    gmx_fatal(FARGS,"Setting",(char *)name);
-}
-
-void add_xml_char(xmlNodePtr ptr,const char *name,char *val)
-{
-  if (xmlSetProp(ptr,(xmlChar *)name,(xmlChar *)val) == 0)
-    gmx_fatal(FARGS,"Setting",(char *)name);
-}
-
-xmlNodePtr add_xml_child(xmlNodePtr parent,const char *type)
-{
-  xmlNodePtr child;
-  
-  if ((child = xmlNewChild(parent,NULL,(xmlChar *)type,NULL)) == NULL)
-    gmx_fatal(FARGS,"Creating element",(char *)type);
-  
-  return child;
-}
-
-xmlNodePtr add_xml_comment(xmlDocPtr doc,
-			   xmlNodePtr prev,char *comment)
-{
-  xmlNodePtr comm,ptr;
-  
-  if ((comm = xmlNewComment((xmlChar *)comment)) == NULL)
-    gmx_fatal(FARGS,"Creating doc comment element","");
-  ptr = prev;
-  while (ptr->next != NULL)
-    ptr=ptr->next;
-  ptr->next    = comm;
-  comm->prev   = ptr;
-  comm->doc    = doc;
-  
-  return comm;
-}
-
 static char *sp(int n, char buf[], int maxindent)
 {
   int i;
@@ -217,28 +183,27 @@ static void rb_add_file(qhop_resblocks *rb, char *f, t_symtab *tab)
 static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char *water, t_symtab *tab)
 {
   char *s;
+  int  i;
+  
   if NN(name)
     {
-      printf("Adding restype %s\n", name);
+      if (NULL != debug)
+	fprintf(debug,"Adding restype %s\n", name);
       /* Is this a new resblock? If not, make a new one. */
-      if ((ri->rt = qhop_find_name(rb->restype, name, ri->r)) < 0)
+      for(i=0; (i<rb->nrestypes); i++) {
+	if (strcmp(rb->qrt[i].restype,name) == 0)
+	  break;
+      }
+      if (i == rb->nrestypes) 
 	{
-	  srenew(rb->restype, rb->nrestypes+1);       /* Make new resblock */
-	  srenew(rb->bWater, rb->nrestypes+1);        /* Make new bWater */
-	  /* Added DvdS 2011-03-05 */
-	  srenew(rb->bInTop, rb->nrestypes+1);
-	  rb->bInTop[rb->nrestypes] = FALSE;
-	  srenew(rb->irtp, rb->nrestypes+1);
-	  rb->irtp[rb->nrestypes] = -1;
-	  /* End added */
-	  srenew(rb->nsubres, rb->nrestypes+1);          /* Make new resindex */
-	  rb->nsubres[rb->nrestypes] = 0;
-	  srenew(rb->subres, rb->nrestypes+1);  /* Make new resarray for this resblock */	    
+	  srenew(rb->qrt, rb->nrestypes+1);       /* Make new resblock */
+	  memset(&rb->qrt[rb->nrestypes],0,sizeof(rb->qrt[rb->nrestypes]));
+	  
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
-	  rb->restype[rb->nrestypes] = strdup(name); //*(put_symtab(tab, name));/*trim_strndup(name, 6);*/
-	  rb->bWater[rb->nrestypes] = (strcasecmp(water, "TRUE") == 0);
+	  rb->qrt[rb->nrestypes].restype = strdup(name); //*(put_symtab(tab, name));/*trim_strndup(name, 6);*/
+	  rb->qrt[rb->nrestypes].bWater = (strcasecmp(water, "TRUE") == 0);
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
 	  rb->nrestypes++;
 	}
@@ -253,23 +218,24 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab
   int i;
   if NN(name)
     {
-      printf("Adding res %s\n", name);
+      if (NULL != debug)
+	fprintf(debug,"Adding res %s\n", name);
       /* Have we seen this res before for this resblock? */
       found = FALSE;
-      for (i=0; i < rb->nsubres[ri->rt] && !found; i++)
-	if (strcmp(rb->subres[ri->rt][i].name, name) == 0)
+      for (i=0; i < rb->qrt[ri->rt].nsubres && !found; i++)
+	if (strcmp(rb->qrt[ri->rt].subres[i].name, name) == 0)
 	  found = TRUE;
 
       if (!found)
 	{
-	  ri->r = rb->nsubres[ri->rt];
+	  ri->r = rb->qrt[ri->rt].nsubres;
 	  if (ri->r != 0)
-	    srenew(rb->subres[ri->rt], (rb->nsubres[ri->rt])+1);
+	    srenew(rb->qrt[ri->rt].subres, rb->qrt[ri->rt].nsubres+1);
 	  else
-	    snew(rb->subres[ri->rt], 1);
-	  rb->subres[ri->rt][ri->r].na = 0;
-	  rb->subres[ri->rt][ri->r].nd = 0;
-	  rb->subres[ri->rt][rb->nsubres[ri->rt]++].name = strdup(name);
+	    snew(rb->qrt[ri->rt].subres, 1);
+	  rb->qrt[ri->rt].subres[ri->r].na = 0;
+	  rb->qrt[ri->rt].subres[ri->r].nd = 0;
+	  rb->qrt[ri->rt].subres[rb->qrt[ri->rt].nsubres++].name = strdup(name);
 	  /* *(put_symtab(tab, name));*/ /*trim_strndup(name, 6);*/
 	  /*add_to_record(name, &(rb->res[ri->rt][ri->r].name),
 	    &(rb->nres[ri->rt]), RNMLEN, eUPDATE_INDEX);*/
@@ -284,7 +250,8 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab
 
 }
 
-static void rb_add_proton(qhop_res **res, currentRes *ri, char *name, t_symtab *tab)
+static void rb_add_proton(qhop_subres **res, currentRes *ri, char *name,
+			  t_symtab *tab)
 {
   qhop_reactant *r;
   int nr;
@@ -315,7 +282,9 @@ static void rb_add_proton(qhop_res **res, currentRes *ri, char *name, t_symtab *
 
 /* adds a qhop_reactant with name and product to a qhop_res 'res'.
  * If acc_or_don == exmlACCEPTOR then this is an acceptor, otherwise a donor. */
-static void rb_add_name_product(qhop_res_t res, const char *name, const char *product, currentRes *ri, t_symtab *tab)
+static void rb_add_name_product(qhop_subres_t res, const char *name,
+				const char *product, currentRes *ri, 
+				t_symtab *tab)
 {
   /* Now, the argument 'name' may be a list of atoms,
    * because of proton tautomerism. */
@@ -326,7 +295,8 @@ static void rb_add_name_product(qhop_res_t res, const char *name, const char *pr
   
   if (NN(name) && NN(product))
     {
-      printf("Adding name(s) %s and product %s \n", name, product);
+      if (NULL != debug)
+	fprintf(debug,"Adding name(s) %s and product %s \n", name, product);
 
       /* Split the name line. */
       buf=strdup(name);
@@ -445,17 +415,14 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
   switch (elem) {
   case exmlQHOP:
     if (NN(xbuf[exmlDONOR]) && NN(xbuf[exmlACCEPTOR])) {
-      /*      gmx_qhop_set_donor(xml->qht,xbuf[exmlDONOR]);
-	      gmx_qhop_set_acceptor(xml->qht,xbuf[exmlACCEPTOR]);*/
-      printf("Adding qhop: ");
+      if (NULL != debug)
+	fprintf(debug,"Adding qhop: ");
       qhop_set_donor(xml->gqh[xml->nqh-1],xbuf[exmlDONOR]);
       qhop_set_acceptor(xml->gqh[xml->nqh-1],xbuf[exmlACCEPTOR]);
     }
     break;
   case exmlPARAM:
     if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlUNIT]) && NN(xbuf[exmlVALUE])) {
-      /*      gmx_qhop_add_param(xml->qht,xbuf[exmlNAME],xbuf[exmlVALUE],
-			 xbuf[exmlUNIT]);*/
       qhop_add_param(xml->gqh[xml->nqh-1],xbuf[exmlNAME],xbuf[exmlVALUE],
 			 xbuf[exmlUNIT]);
     }
@@ -469,11 +436,11 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
     break;
 
   case exmlACCEPTOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->subres[ri->rt][ri->r]),
+    rb_add_name_product(&(xml->rb->qrt[ri->rt].subres[ri->r]),
 			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
   case exmlDONOR: /* 'name', 'product' */
-    rb_add_name_product(&(xml->rb->subres[ri->rt][ri->r]),
+    rb_add_name_product(&(xml->rb->qrt[ri->rt].subres[ri->r]),
 			xbuf[exmlNAME], xbuf[exmlPRODUCT], ri, &(xml->tab));
     break;
 
@@ -491,7 +458,7 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
 				 int indent, xmlrec_t xml, currentRes *ri)
 {
   int elem, i;
-  char buf[100], tmp[10];
+  char buf[100], tmp[100],*ptr;
 
   elem = find_elem((char *)tree->name,exmlNR,exml_names);
   if (fp)
@@ -549,13 +516,21 @@ static void qhop_process_element(FILE *fp, xmlNodePtr tree, int parent,
     case exmlDON_ATOM:
       /* This is a child of qhop. */
       sprintf(tmp, "%s", (char*)(tree->children->content));
-      qhop_set_don_atom(xml->gqh[xml->nqh-1], strip_spaces(tmp));
+      while (NULL != (ptr = strchr(tmp,'\n'))) {
+	*ptr = ' ';
+      }
+      trim(tmp);
+      qhop_set_don_atom(xml->gqh[xml->nqh-1],tmp);
       break;
 
     case exmlACC_ATOM:
       /* This is a child of qhop. */
       sprintf(tmp, "%s", (char*)(tree->children->content));
-      qhop_set_acc_atom(xml->gqh[xml->nqh-1], strip_spaces(tmp));
+      while (NULL != (ptr = strchr(tmp,'\n'))) {
+	*ptr = ' ';
+      }
+      trim(tmp);
+      qhop_set_acc_atom(xml->gqh[xml->nqh-1],tmp);
       break;
 
     default:
@@ -599,14 +574,15 @@ static void qhop_process_tree(FILE *fp, xmlNodePtr tree, int parent,
   }
 }
 
-void qhops_read(char *fn, qhop_db_t qdb)
+qhop_db_t qhops_read(char *fn)
 {
   xmlDocPtr     doc;
   int           i,npd;
   xmlrec        *xml;
-  const char *db="qhops.dat";
-  gmx_bool fna=FALSE;
+  const char    *db="qhops.dat";
+  gmx_bool      fna=FALSE;
   currentRes    ri;
+  qhop_db_t     qdb;
   
   ri.Acc = FALSE;
   ri.rt  = -1;
@@ -625,6 +601,8 @@ void qhops_read(char *fn, qhop_db_t qdb)
       exit(1);
     }
 
+  snew(qdb,1);
+  open_symtab(&(qdb->tab));
   snew(xml,1);
   xml->rb = &(qdb->rb);
   xml->rb->nf = 0;
@@ -632,11 +610,11 @@ void qhops_read(char *fn, qhop_db_t qdb)
   qhop_process_tree(NULL,doc->children,0,0,xml,&ri);
   
   xmlFreeDoc(doc);
-  /*  if (fna)
-    sfree(fn);
-  */
+
   qdb->ngqh = xml->nqh;
   qdb->gqh = xml->gqh;
+  
+  return qdb;
 }
 
 static void add_xml_qhop(xmlNodePtr parent,qhop_t qht)
@@ -644,10 +622,13 @@ static void add_xml_qhop(xmlNodePtr parent,qhop_t qht)
   xmlNodePtr ptr,child,grandchild,comp;
   char   *name,*type,*value,*unit;
   
-  ptr = add_xml_child(parent,exml_names[exmlQHOP]);
+  ptr = add_xml_child(parent,(char *)exml_names[exmlQHOP]);
   add_xml_char(ptr,exml_names[exmlDONOR],qhop_get_donor(qht));
   add_xml_char(ptr,exml_names[exmlACCEPTOR],qhop_get_acceptor(qht));
-  
+  child = add_xml_child_val(ptr,exml_names[exmlDON_ATOM],
+			    qhop_get_don_atom(qht));
+  child = add_xml_child_val(ptr,exml_names[exmlACC_ATOM],
+			    qhop_get_acc_atom(qht));
   while (qhop_get_param(qht,&name,&value,&unit) == 1) {
     child = add_xml_child(ptr,exml_names[exmlPARAM]);
     add_xml_char(child,exml_names[exmlNAME],name);
@@ -659,7 +640,47 @@ static void add_xml_qhop(xmlNodePtr parent,qhop_t qht)
   }
 }
 
-void qhops_write(char *fn,int nqhop,qhop_t qht[])
+static void add_xml_resblocks(xmlNodePtr parent,qhop_resblocks_t qdb)
+{
+  xmlNodePtr rb,res,subres,ad;
+  int        i,j,k,l;
+  
+  rb = add_xml_child(parent,exml_names[exmlRESBLOCKS]);
+  for(i=0; (i<qdb->nrestypes); i++) 
+    {
+      res = add_xml_child(rb,exml_names[exmlRESIDUE_TYPE]);
+      add_xml_char(res,exml_names[exmlNAME],qdb->qrt[i].restype);
+      if (qdb->qrt[i].bWater)
+	add_xml_char(res,exml_names[exmlBWATER],"TRUE");
+      else
+	add_xml_char(res,exml_names[exmlBWATER],"FALSE");
+      for(j=0; (j<qdb->qrt[i].nsubres); j++) 
+	{
+	  subres = add_xml_child(res,exml_names[exmlRES]);
+	  add_xml_char(subres,exml_names[exmlNAME],qdb->qrt[i].subres[j].name);
+	  for(k=0; (k<qdb->qrt[i].subres[j].na); k++) 
+	    {
+	      for(l=0; (l<qdb->qrt[i].subres[j].acc[k].nname); l++) 
+		{
+		  ad = add_xml_child(subres,exml_names[exmlACCEPTOR]);
+		  add_xml_char(ad,exml_names[exmlNAME],qdb->qrt[i].subres[j].acc[k].name[l]);
+		  add_xml_char(ad,exml_names[exmlPRODUCT],qdb->qrt[i].subres[j].acc[k].product);
+		}
+	    }
+	  for(k=0; (k<qdb->qrt[i].subres[j].nd); k++) 
+	    {
+	      for(l=0; (l<qdb->qrt[i].subres[j].don[k].nname); l++) 
+		{
+		  ad = add_xml_child(subres,exml_names[exmlDONOR]);
+		  add_xml_char(ad,exml_names[exmlNAME],qdb->qrt[i].subres[j].don[k].name[l]);
+		  add_xml_char(ad,exml_names[exmlPRODUCT],qdb->qrt[i].subres[j].don[k].product);
+		}
+	    }
+	}
+    }
+}
+
+void qhops_write(char *fn,qhop_db_t qdb)
 {
   xmlDocPtr  doc;
   xmlDtdPtr  dtd;
@@ -683,13 +704,14 @@ void qhops_write(char *fn,int nqhop,qhop_t qht[])
   myroot->prev = (xmlNodePtr) dtd;
     
   /* Add molecule definitions */
-  for(i=0; (i<nqhop); i++)
-    add_xml_qhop(myroot,qht[i]);
+  add_xml_resblocks(myroot,&(qdb->rb));
+  for(i=0; (i<qdb->ngqh); i++)
+    add_xml_qhop(myroot,qdb->gqh[i]);
 
   xmlSetDocCompressMode(doc,0);
   xmlIndentTreeOutput = 1;
   if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
-    gmx_fatal(FARGS,"Saving file",fn);
+    gmx_fatal(FARGS,"Saving qhop xml file",fn);
   xmlFreeDoc(doc);
 }
 

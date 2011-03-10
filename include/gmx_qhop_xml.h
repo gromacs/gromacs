@@ -6,8 +6,8 @@
 #include "gmx_qhop_db.h"*/
 
 
-extern void qhops_read(char *fn, qhop_db_t qdb);
+extern qhop_db_t qhops_read(char *fn);
 
-extern void qhops_write(char *fn,int nqhop,qhop_t qht[]);
+extern void qhops_write(char *fn,qhop_db_t);
 
 #endif

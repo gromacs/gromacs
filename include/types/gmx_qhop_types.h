@@ -2,6 +2,7 @@
 #define _GMX_QHOP_TYPES_H
 
 #include "resall.h"
+#include "gpp_atomtype.h"
 
 /* -------      Nomenclature      ------- *
  * All types with the suffix _t are       *
@@ -13,31 +14,22 @@
 /* I tried to strip the gmx_ suffix from the type names 
  * whenever possible, to keep the names a bit shorter. */
 
-typedef struct xmlrec *xmlrec_t;
-
-typedef gpp_atomtype_t t_atomtype;
 typedef struct qhop_db *qhop_db_t;
 
 typedef struct qhop *qhop_t;
 typedef struct qhop_resblocks *qhop_resblocks_t;
-typedef struct qhop_res *qhop_res_t;
+typedef struct qhop_subres *qhop_subres_t;
 typedef struct qhop_interactions *qhop_interactions_t;
 typedef struct qhop_H_exist *qhop_H_exist_t;
 
-
-/* enum {etQhopModeOne, etQhopModeList, etQhopModeGillespie, etQhopModeNR}; */
 enum {etQhopNONE, etQhopSE, etQhopI, etQhopTST};
+
 static const char *qhopregimes[] = {"NONE", "SE", "Intermediate", "TST"};
 
-/* typedef struct { */
-/*   int donor_id,acceptor_id,proton_id, regime; */
-/*   real rda,prob; */
-/* } t_hop; */
-
 typedef struct qhop_H_exist {
-  int      nH;   /* Number of hydrogens. Length of H. */
-  char *H;   /* existence function for all hydrogens.
-	      * I chose char since it's compact. */
+  int     nH;   /* Number of hydrogens. Length of H. */
+  char    *H;   /* existence function for all hydrogens.
+	          * I chose char since it's compact. */
   atom_id *H2atomid;   /* maps the elements in H to atom_id */
   int     *atomid2H;   /* the inverse function */
 } qhop_H_exist;
@@ -71,16 +63,17 @@ typedef struct qhop {
 } qhop;
 
 typedef struct qhop_reactant {
-  int nname;     /* Length of **name */
-  /* Move to qhop_res? */  int irtp;       /* indexes the t_restp-array rtp in qhop_db. */
-  char **name;   /* A list of acceptor/donor atoms, due to proton tautomerism, eg. the two oxygens in a carbonyl. */
-  char *product; /* What will the res turn into when this donor/aceptor reacts? */
-  qhop_res_t productdata; /* Pointer to the product qhop_res */
-  int  nH;       /* Number of protons */
-  char **H    ;  /* Proton names */
+  int nname;      /* Length of **name */
+  char **name;    /* A list of acceptor/donor atoms, due to proton 
+		     tautomerism, eg. the two oxygens in a carbonyl. */
+  char *product;  /* What will the res turn into when this 
+		     donor/aceptor reacts? */
+  qhop_subres_t productdata; /* Pointer to the product qhop_subres */
+  int  nH;        /* Number of protons */
+  char **H    ;   /* Proton names */
 } qhop_reactant;
 
-typedef struct qhop_res {
+typedef struct qhop_subres {
   char *name;    /* Name of the residue */
   int na, nd;    /* Number of acceptors and donors */
   qhop_reactant *acc, *don;
@@ -101,31 +94,38 @@ typedef struct qhop_res {
    * findex[bt][b] */
   int       **findex; /* indexes the parameters in the ilib...  */
   int      **mfindex; /* ... and the molecular topology.        */
-} qhop_res;
+} qhop_subres;
+
+typedef struct {
+  char *restype;       /* Name of the "residue family", e.g. qLYS. */
+  int  nsubres;        /* Number of related residues, e.g. 2 for 
+			  qLYS: {LYS, LYSH} */
+  qhop_subres *subres; /* has size [nsubres[i] */
+  gmx_bool bWater;     /* Is this a water? */
+  gmx_bool bInTop;     /* Is this present in the topology? */
+  int irtp;            /* The root of all evil:
+			  indexes the t_restp-array rtp in qhop_db. One element 
+			  for each restype. Note that this is for the "residue 
+			  families" only, e.g. qLYS. Every related residue 
+			  has its own index to the t_restp-array in 
+			  qhop_reactant. */
+  int **ba[ebtsNR];  /* Residue local atom numbers for the bonded interactions
+		      * first dimension == ebtsNR
+		      * second dimension  == bond/angle/dihedral
+		      * Matches the bonded interactions in the rtp-data */
+} qhop_restype;
 
 typedef struct qhop_resblocks {
-  int nrestypes;  /* Number of restypes */
-  char **restype; /* Name of the "residue family", e.g. qLYS. */
-  int *nsubres;      /* Number of related residues, e.g. 2 for qLYS: {LYS, LYSH}*/
-  qhop_res **subres; /* has size [nrestypes][nsubres[i]] */
-  gmx_bool *bWater; /* has size nrestypes */
-  gmx_bool *bInTop; /* has size nrestypes */
-  int *irtp;      /* indexes the t_restp-array rtp in qhop_db. One element for each restype.
-		   * Note that this is for the "residue families" only, e.g. qLYS.
-		   * Every related residue has its own index to the t_restp-array in qhop_reactant. */
+  int nrestypes;     /* Number of restypes */
+  qhop_restype *qrt; /* The actual restypes */
 
   /* The following is for the interaction library *
    * It stores the interaction parameters for a residue.
    * They are needed to switch between protonation states. */
 
-  char **files;     /* extra files containg additional parameters. */
-  int  nf;          /* number of extra files */
+  int  nf;           /* number of extra files */
+  char **files;      /* extra files containg additional parameters. */
 
-  int ****ba;        /* Reisue local atom numbers for the bonded interactions
-		      * outer dimension  == nrestypes,
-		      * second dimension == ebtsNR
-		      * inner dimension  == bond/angle/dihedral
-		      * Matches the bonded interactions in the rtp-data */
 
   int btype[ebtsNR]; /* which forcetype correpond to the bonded interactions
 		      * in the rtp data? E.g. F_ANGLE ... */
@@ -138,24 +138,12 @@ typedef struct qhop_resblocks {
 		      * ilib will be appended to the iparams
 		      * in a gmx_localtop_t.idef */
   t_functype *ftlib; /* Functypes for all parameters in ilib. */
-  int inull[ebtsNR];      /* Here are the the dummy interactions in ilib. 
-			   * We need one per bonded type since the functypes
-			   * differ for the dummy interactions although their
-			   * parameters are the same. */
+  int inull[ebtsNR]; /* Here are the the dummy interactions in ilib. 
+		      * We need one per bonded type since the functypes
+		      * differ for the dummy interactions although their
+		      * parameters are the same. */
 } qhop_resblocks;
 
-
-/*********************
- * From gmx_qhop_xml *
- *                   */
-
-typedef struct xmlrec {
-  int        nqh;
-  qhop       **gqh;         /* Hopping parameters */
-  qhop_resblocks_t    rb;   /* Bunches of related residues
-			     * and their interaction parameters */
-  t_symtab   tab;
-} xmlrec;
 
 typedef struct currentRes {
   int Acc;  /* Is it an acceptor? If Acc==exmlACCEPTOR then yes. */
@@ -165,23 +153,24 @@ typedef struct currentRes {
 } currentRes;
 
 typedef struct qhop_db {
-  int                     inertH; /* The atomtype for the inert hydrogen. */
-  int                     constrain; /* What do we constrain? none=0, h-bonds=1, all-bonds=2, */
-  int                     nrtp;
-  t_restp                 *rtp;
+  int              inertH;    /* The atomtype for the inert hydrogen. */
+  int              constrain; /* What do we constrain? none=0, h-bonds=1, 
+				 all-bonds=2, */
+  int              nrtp;
+  t_restp          *rtp;
   /* Replacing resinfo with more elaborate structures */
   /*qhop_resinfo_t    *resinfo; */
-  int                     bts[4];
-  int                     nrexcl;
-  gmx_bool                bAllDih,bHH14,bRemoveDih;
-  t_atomtype              atype;
-  t_symtab                tab;
-  int                     ngqh;
-  qhop_t                  *gqh;
-  qhop_resblocks          rb;
-  qhop_parameters         *qhop_param;
-  int                     nres;
-  qhop_H_exist            H_map;
-  t_idef                  *idef; /* Must point to the idef used by the integrator. */
+  int              bts[4];
+  int              nrexcl;
+  gmx_bool         bAllDih,bHH14,bRemoveDih;
+  gpp_atomtype_t   atype;
+  t_symtab         tab;
+  int              ngqh;
+  qhop_t           *gqh;
+  qhop_resblocks   rb;
+  qhop_parameters  *qhop_param;
+  int              nres;
+  qhop_H_exist     H_map;
+  t_idef           *idef; /* Must point to the idef used by the integrator. */
 } qhop_db;
 #endif

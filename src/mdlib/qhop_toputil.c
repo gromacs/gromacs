@@ -2,13 +2,14 @@
 #include "types/mdatom.h"
 #include "types/topology.h"
 #include "types/idef.h"
-#include "hackblock.h"
 #include "types/qhoprec.h"
 #include "types/gmx_qhop_types.h"
-#include "gmx_fatal.h"
-#include "smalloc.h"
 #include "types/commrec.h"
 #include "types/constr.h"
+#include "hackblock.h"
+#include "qhop_toputil.h"
+#include "gmx_fatal.h"
+#include "smalloc.h"
 #include "constr.h"
 #include "vec.h"
 
@@ -108,7 +109,7 @@ int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
 void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
 {
   int nr, i;
-  qhop_res *res;
+  qhop_subres *res;
 
   nr = top->idef.ntypes + db->rb.ni;
 
@@ -161,7 +162,7 @@ void index_ilists(t_qhop_residue *qres,
   
   const t_ilist *ilist = top->idef.il;
 
-  if (db->rb.bWater[qres->rtype])
+  if (db->rb.qrt[qres->rtype].bWater)
     {
       return;
     }
@@ -195,7 +196,7 @@ void index_ilists(t_qhop_residue *qres,
       for (b=0; b < qres->bindex.nr[itype]; b++)
 	{
 	  /* get residue-local atom numbers */
-	  ra = db->rb.ba[rt][bt][b];
+	  ra = db->rb.qrt[rt].ba[bt][b];
 	  
 	  /* Loop the ilist */
 
@@ -218,7 +219,7 @@ void index_ilists(t_qhop_residue *qres,
 
 		  for (j=0; j<nia; j++)
 		    {
-		      if (ra[j] != db->rb.ba[rt][bt][prev][j])
+		      if (ra[j] != db->rb.qrt[rt].ba[bt][prev][j])
 			{
 			  bMatch = FALSE;
 			  break;
@@ -231,7 +232,7 @@ void index_ilists(t_qhop_residue *qres,
 		      bMatch = TRUE;
 		      for (j=0; j<nia; j++)
 			{
-			  if (ra[j] != db->rb.ba[rt][bt][prev][nia-j-1])
+			  if (ra[j] != db->rb.qrt[rt].ba[bt][prev][nia-j-1])
 			    {
 			      bMatch = FALSE;
 			      break;
@@ -336,7 +337,7 @@ void index_ilists(t_qhop_residue *qres,
 		      strncat(buf,b2,STRLEN-1-strlen(buf));
 		    }
 
-		  gmx_fatal(FARGS, "Interaction of type %d not found in ilist.\nResidue-local atom indices are %s", itype, buf);
+		  gmx_fatal(FARGS, "Interaction of type %s not found in ilist.\nResidue-local atom indices are %s", interaction_function[itype].name, buf);
 		}
 	    }
 
@@ -347,7 +348,9 @@ void index_ilists(t_qhop_residue *qres,
 }
 
 /* returns the index in the ilib where bond to this proton is found. */
-int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_atom *qatom, gmx_localtop_t *top, int proton_id, const t_commrec *cr)
+int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, 
+				t_qhop_atom *qatom, gmx_localtop_t *top, 
+				int proton_id, const t_commrec *cr)
 {
   int b, bi, i, ai;
   const int niatoms = 3;
@@ -360,7 +363,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
 
   qres = &(qr->qhop_residues[qatom->qres_id]);
 
-  rtp  = &(db->rtp[db->rb.subres[qres->rtype][qres->subres].irtp]);
+  rtp  = &(db->rtp[db->rb.qrt[qres->rtype].subres[qres->subres].irtp]);
 
   /* find the parameters for this constraint.
    * We assume that there's only one constraint
@@ -369,15 +372,15 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, t_qhop_a
   for (b=0; b < rtp->rb[ebtsBONDS].nb; b++)
     {
       /* bi will index the list of bonded interactions of qres->rtype*/
-      bi = db->rb.subres[qres->rtype][qres->subres].biMap[ebtsBONDS][b];
+      bi = db->rb.qrt[qres->rtype].subres[qres->subres].biMap[ebtsBONDS][b];
 
       for (i=0; i < (niatoms-1); i++)
 	{
 	  /* Assume global atom numbering. CHANGE!*/
 	  ai = proton_id - qres->atoms[0]; /* residue local atom id of the proton. */
-	  if (db->rb.ba[qres->rtype][ebtsBONDS][bi][i] == ai)
+	  if (db->rb.qrt[qres->rtype].ba[ebtsBONDS][bi][i] == ai)
 	    {
-	      return db->rb.subres[qres->rtype][qres->subres].findex[ebtsBONDS][bi];
+	      return db->rb.qrt[qres->rtype].subres[qres->subres].findex[ebtsBONDS][bi];
 	    }
 	}
     }
@@ -558,7 +561,7 @@ int which_subRes(const t_qhoprec *qr,
   qres    = &(qr->qhop_residues[resnr]);
 
   range_check(qres->rtype,0,db->rb.nrestypes);
-  nsubres = db->rb.nsubres[qres->rtype];
+  nsubres = db->rb.qrt[qres->rtype].nsubres;
 
 
   /* To better handle the tautomerism, maybe one should
@@ -622,14 +625,14 @@ int which_subRes(const t_qhoprec *qr,
 	  /* Go through the donors and acceptors and make a list */
 	  for (j=0;
 	       (j < (DA==0 ?
-		     db->rb.subres[qres->rtype][r].na :
-		     db->rb.subres[qres->rtype][r].nd))
+		     db->rb.qrt[qres->rtype].subres[r].na :
+		     db->rb.qrt[qres->rtype].subres[r].nd))
 		 && bMatch;
 	       j++)
 	    {
 	      reac = (DA==0 ?
-		      &(db->rb.subres[qres->rtype][r].acc[j]) :
-		      &(db->rb.subres[qres->rtype][r].don[j]));
+		      &(db->rb.qrt[qres->rtype].subres[r].acc[j]) :
+		      &(db->rb.qrt[qres->rtype].subres[r].don[j]));
 
 	      /* Tautomer loop. There may be chemically equivalent
 	       * sites, e.g. the oxygens in a carboxylate. */
@@ -654,7 +657,7 @@ int which_subRes(const t_qhoprec *qr,
 		      n_H2[nDA2] = 0;
 		      DAlist2[nDA2] = reac->name[t];
 		      
-		      rtp = &(db->rtp[db->rb.subres[qres->rtype][r].irtp]);
+		      rtp = &(db->rtp[db->rb.qrt[qres->rtype].subres[r].irtp]);
 		      for (a=0; a<rtp->natom; a++)
 			{
 			  if (strcmp(reac->name[t], *(rtp->atomname[a])) == 0)
@@ -707,14 +710,14 @@ int which_subRes(const t_qhoprec *qr,
 	{
 	  for (j=0;
 	       (j < (DA==0 ?
-		     db->rb.subres[qres->rtype][r].na :
-		     db->rb.subres[qres->rtype][r].nd))
+		     db->rb.qrt[qres->rtype].subres[r].na :
+		     db->rb.qrt[qres->rtype].subres[r].nd))
 		 && bSameRes;
 	       j++)
 	    {
 	      reac = (DA==0 ?
-		      &(db->rb.subres[qres->rtype][r].acc[j]) :
-		      &(db->rb.subres[qres->rtype][r].don[j]));
+		      &(db->rb.qrt[qres->rtype].subres[r].acc[j]) :
+		      &(db->rb.qrt[qres->rtype].subres[r].don[j]));
 
 	      nH = 0;
 	      
@@ -760,7 +763,7 @@ int which_subRes(const t_qhoprec *qr,
 	    }
 	  
 	  /* Go through the rtp */
-	  rtp = &(db->rtp[db->rb.subres[qres->rtype][r].irtp]);
+	  rtp = &(db->rtp[db->rb.qrt[qres->rtype].subres[r].irtp]);
 	  
 	  for (i=0; i < rtp->natom; i++)
 	    {
@@ -814,14 +817,14 @@ int which_subRes(const t_qhoprec *qr,
 }
 
 void qhop_swap_bondeds(t_qhop_residue *swapres,
-		       qhop_res *prod,
+		       qhop_subres *prod,
 		       qhop_db *db,
 		       gmx_localtop_t *top,
 		       const t_commrec *cr)
 {
   int i, bt, b, bp, p, it, offset;
   t_restp *rtp, *rtpr;
-  qhop_res *qres;
+  qhop_subres *qres;
 
 
   if  (swapres->nr_indexed == 0)
@@ -829,9 +832,9 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
       index_ilists(swapres, db, top, cr);
     }
 
-  qres = &(db->rb.subres[swapres->rtype][swapres->subres]);
+  qres = &(db->rb.qrt[swapres->rtype].subres[swapres->subres]);
 
-  rtp  = &(db->rtp[db->rb.irtp[swapres->rtype]]);
+  rtp  = &(db->rtp[db->rb.qrt[swapres->rtype].irtp]);
   rtpr = &(db->rtp[qres->irtp]);
 
   /* rb->ilib and top->idef.functype are offset by this much: */
@@ -879,7 +882,7 @@ void qhop_swap_bondeds(t_qhop_residue *swapres,
 
 /* We change vdv by changing atomtype. */
 void qhop_swap_vdws(const t_qhop_residue *swapres,
-		    const qhop_res *prod,
+		    const qhop_subres *prod,
 		    t_mdatoms *md,
 		    const qhop_db *db)
 {
@@ -938,7 +941,7 @@ static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int 
  * Works on an atomname basis
  */
 void qhop_swap_m_and_q(const t_qhop_residue *swapres,
-		       const qhop_res *prod,
+		       const qhop_subres *prod,
 		       t_mdatoms *md,
 		       const qhop_db *db, t_qhoprec *qr)
 {
@@ -948,7 +951,7 @@ void qhop_swap_m_and_q(const t_qhop_residue *swapres,
   gmx_bool bWater;
   t_qhop_atom *qa;
 
-  bWater = db->rb.bWater[swapres->rtype];
+  bWater = db->rb.qrt[swapres->rtype].bWater;
   
   rtp = &(db->rtp[prod->irtp]);
 
@@ -1026,7 +1029,7 @@ void set_interactions(t_qhoprec *qr,
 		      t_commrec *cr)
 {
   int i, j, k, nri, bt, b, Gr, RB, R;
-  qhop_res *reac;
+  qhop_subres *reac;
   t_restp *res;
   t_qhop_atom *QA;
   
@@ -1034,7 +1037,7 @@ void set_interactions(t_qhoprec *qr,
   Gr   = qres->res_nr; /* global res id. */
   RB   = qres->rtype;
   R    = qres->subres;
-  reac = &(qdb->rb.subres[RB][R]);
+  reac = &(qdb->rb.qrt[RB].subres[R]);
   QA = qr->qhop_atoms;
 
   for (i=0; i<qres->nr_titrating_sites; i++)

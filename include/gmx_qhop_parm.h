@@ -27,9 +27,11 @@ enum {eAstate, eBstate};
 /* Returns a pointer to fresh qhop_resblock */
 extern qhop_resblocks_t qhop_resblock_init();
 
-extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, qhop_res_t res);
+extern void qhop_add_restype(qhop_resblocks_t rb, char *name, int nres, 
+			     qhop_subres_t res);
 
-extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, qhop_res_t res, int nres);
+extern void qhop_add_res(qhop_resblocks_t rb, int resblocknr, 
+			 qhop_subres_t res, int nres);
 
 /* Sets the interactions of qres according to the (de)protonation at hydrogen H.
  * If H is not present, it's protonation, otherwise deprotonaton.

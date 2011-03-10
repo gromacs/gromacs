@@ -45,46 +45,57 @@
 #include <libxml/tree.h>
 #include "gmx_xml.h"
 	
-void add_xml_int(xmlNodePtr ptr,xmlChar *name,int val)
+void add_xml_int(xmlNodePtr ptr,const char *name,int val)
 {
-  xmlChar buf[32];
+  char buf[32];
   
   sprintf((char *)buf,"%d",val);
-  if (xmlSetProp(ptr,name,buf) == 0)
-    gmx_fatal(FARGS,"Setting %s",(char *)name);
+  if (xmlSetProp(ptr,(xmlChar*) name,(xmlChar*) buf) == 0)
+    gmx_fatal(FARGS,"Setting %s",name);
 }
 
-void add_xml_double(xmlNodePtr ptr,xmlChar *name,double val)
+void add_xml_double(xmlNodePtr ptr,const char *name,double val)
 {
-  xmlChar buf[32];
+  char buf[32];
   
   sprintf((char *)buf,"%g",val);
-  if (xmlSetProp(ptr,name,buf) == 0)
-    gmx_fatal(FARGS,"Setting %s",(char *)name);
+  if (xmlSetProp(ptr,(xmlChar*) name,(xmlChar*) buf) == 0)
+    gmx_fatal(FARGS,"Setting %s",name);
 }
 
-void add_xml_char(xmlNodePtr ptr,xmlChar *name,char *val)
+void add_xml_char(xmlNodePtr ptr,const char *name,const char *val)
 {
-  if (xmlSetProp(ptr,name,(xmlChar *)val) == 0)
-    gmx_fatal(FARGS,"Setting %s",(char *)name);
+  if (xmlSetProp(ptr,(xmlChar*) name,(xmlChar*) val) == 0)
+    gmx_fatal(FARGS,"Setting %s",name);
 }
 
-xmlNodePtr add_xml_child(xmlNodePtr parent,char *type)
+xmlNodePtr add_xml_child_val(xmlNodePtr parent,const char *type,const char *value)
 {
   xmlNodePtr child;
   
-  if ((child = xmlNewChild(parent,NULL,(xmlChar *)type,NULL)) == NULL)
-    gmx_fatal(FARGS,"Creating element %s",(char *)type);
+  if ((child = xmlNewChild(parent,NULL,(xmlChar*) type,(xmlChar*) value)) == NULL)
+    gmx_fatal(FARGS,"Creating element",type);
+  
+  return child;
+}
+
+
+xmlNodePtr add_xml_child(xmlNodePtr parent,const char *type)
+{
+  xmlNodePtr child;
+  
+  if ((child = xmlNewChild(parent,NULL,(xmlChar*) type,NULL)) == NULL)
+    gmx_fatal(FARGS,"Creating element %s",type);
   
   return child;
 }
 
 xmlNodePtr add_xml_comment(xmlDocPtr doc,
-			   xmlNodePtr prev,xmlChar *comment)
+                           xmlNodePtr prev,const char *comment)
 {
   xmlNodePtr comm,ptr;
   
-  if ((comm = xmlNewComment(comment)) == NULL)
+  if ((comm = xmlNewComment((xmlChar*) comment)) == NULL)
     gmx_fatal(FARGS,"Creating doc comment element");
   ptr = prev;
   while (ptr->next != NULL)

@@ -257,23 +257,25 @@ void set_reactant_products(qhop_db *qdb)
 {
   int rb, r, p, reac, nreac[2], i;
   qhop_reactant *da;
+  
   for (rb=0; rb<qdb->rb.nrestypes; rb++)
     {
-      for (r=0; r<qdb->rb.nsubres[rb]; r++)
+      for (r=0; r<qdb->rb.qrt[rb].nsubres; r++)
 	{
-	  nreac[0] = qdb->rb.subres[rb][r].na;
-	  nreac[1] = qdb->rb.subres[rb][r].nd;
+	  nreac[0] = qdb->rb.qrt[rb].subres[r].na;
+	  nreac[1] = qdb->rb.qrt[rb].subres[r].nd;
 
 	  for (i=0; i<2; i++) /* Acceptors and donors */
 	    {
-	      da = (i==0) ? qdb->rb.subres[rb][r].acc : qdb->rb.subres[rb][r].don;
-	      for (reac=0; reac<nreac[i]; reac++)
-		for (p=0; p<qdb->rb.nsubres[rb]; p++)
+	      da = (i==0) ? qdb->rb.qrt[rb].subres[r].acc : 
+		qdb->rb.qrt[rb].subres[r].don;
+	      for (reac=0; (reac<nreac[i]); reac++)
+		for (p=0; p<qdb->rb.qrt[rb].nsubres; p++)
 		  if (p!=r)
-		    if (strcmp(da[reac].product, qdb->rb.subres[rb][p].name) == 0)
+		    if (strcmp(da[reac].product, qdb->rb.qrt[rb].subres[p].name) == 0)
 		      { /* This is the product. Set the pointer and proceed
 			 * with the other acceptors/donors */
-			da[reac].productdata = &(qdb->rb.subres[rb][p]);
+			da[reac].productdata = &(qdb->rb.qrt[rb].subres[p]);
 			break;
 		      }
 	    }
@@ -311,16 +313,16 @@ static int qhop_stash_rtp_entry(qhop_db *qdb, t_restp *src)
 static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb, 
 		      t_restp *bigrtp, int nbigrtp)
 {
-  printf("trim the rtp\n");
   int i, rt, r, a, nrt;
   gmx_bool bMatch, *bRtypeAdded;
 
+  if (NULL != debug)
+    fprintf(debug,"stripping the rtp\n");
   qdb->nrtp = 0;
 
   nrt = qdb->rb.nrestypes;
 
   snew(bRtypeAdded, nrt);
-  memset(bRtypeAdded, 0, sizeof(gmx_bool)*nrt);
 
   for (i=0; i<nbigrtp; i++)
     {
@@ -329,27 +331,28 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
       for (rt=0; rt<nrt && !bMatch; rt++) /* resblock */
 	{
 	  /* Add the resblock. */
-	  if (strcmp(bigrtp[i].resname, qdb->rb.restype[rt]) == 0 && !bRtypeAdded[rt])
+	  if (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].restype) == 0 && 
+	      !bRtypeAdded[rt])
 	    {
 	      if (NULL != fplog)
 		fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 	      /* srenew(qdb->rb.irtp, rt+1); This srenew is now in the gmx_qhop_xml.c file */
-	      qdb->rb.irtp[rt] = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+	      qdb->rb.qrt[rt].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
 	      //	      qdb->nrtp++;
 	      break;
 	    }
 
 	  /* Add a res? */
-	  for (r=0; r<qdb->rb.nsubres[rt] && !bMatch; r++) /* res */
+	  for (r=0; r<qdb->rb.qrt[rt].nsubres && !bMatch; r++) /* res */
 	    {
-	      bMatch = (strcmp(bigrtp[i].resname, qdb->rb.subres[rt][r].name) == 0);
+	      bMatch = (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].subres[r].name) == 0);
 	      if (bMatch)
 		{
 		  if (NULL != fplog)
 		    fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
-		  qdb->rb.subres[rt][r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+		  qdb->rb.qrt[rt].subres[r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 		  //  qdb->nrtp++;
 		}
 	    }
@@ -359,7 +362,7 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
   sfree(bRtypeAdded);
 }
 
-/* extern static correct_water_masses(qhop_db *db) */
+/* static correct_water_masses(qhop_db *db) */
 /* { */
 /*   int rt, r, nH, h, a; */
 /*   t_restp *rtp; */
@@ -449,8 +452,6 @@ static void flag_present_resblocks(qhop_db *db, gmx_mtop_t *top)
   char *resname;
   gmx_bool bNext;
 
-  snew(db->rb.bInTop, db->rb.nrestypes);
-
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
       bNext = FALSE;
@@ -461,9 +462,9 @@ static void flag_present_resblocks(qhop_db *db, gmx_mtop_t *top)
 	    {
 	      resname = *(top->moltype[molnr].atoms.resinfo[resnr].name);
 
-	      if (strcmp(resname, db->rb.restype[rt]) == 0)
+	      if (strcmp(resname, db->rb.qrt[rt].restype) == 0)
 		{
-		  db->rb.bInTop[rt] = TRUE;
+		  db->rb.qrt[rt].bInTop = TRUE;
 		  bNext = TRUE;
 		  break;
 		}
@@ -512,7 +513,7 @@ static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
   ri->charge = qtot;
 }
 
-/* extern int count_protons(qhop_reactant *reac) */
+/* int count_protons(qhop_reactant *reac) */
 /* { */
 /*   int t; */
 
@@ -607,7 +608,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   char *fn;
   int i,j,nrtp=0, nah;
   double qtot;
-  t_atomtype atype;
+  gpp_atomtype_t atype;
   t_restp *bigrtp=NULL;
   t_symtab *stab=NULL;
   t_hackblock *ah=NULL;
@@ -615,8 +616,6 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   snew(stab,1);
   open_symtab(stab);
 
-  snew(qdb,1);
-  open_symtab(&(qdb->tab));
   atype = read_atype(forcefield,stab);
   sprintf(buf, "%s/aminoacids.rtp", forcefield);
   read_resall(buf, &nrtp, &bigrtp, atype, stab, FALSE);
@@ -652,9 +651,9 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   sprintf(buf,"%s/%s-qhop.dat",forcefield, buf2);
   fn = (char *)gmxlibfn(buf);
   /* Read the xml data file */
-  qhops_read(fn, qdb);
+  qdb = qhops_read(fn);
   sprintf(buf,"%s-qhop-debug.dat",forcefield);
-  qhops_write(buf,qdb->ngqh,qdb->gqh);
+  qhops_write(buf,qdb);
   snew(qdb->qhop_param,qdb->ngqh);
   for(i=0; (i<qdb->ngqh); i++) {
     fill_qhp(&(qdb->qhop_param[i]),qdb->gqh[i]);
@@ -667,13 +666,16 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   }
 
   /* Must process the resblocks stuff */
-  strip_rtp(debug,forcefield, qdb, bigrtp, nrtp); /* Take away stuff not found in ffXXX-qhop.dat */
+  strip_rtp(debug,forcefield, qdb, bigrtp, nrtp); 
+  /* Take away stuff not found in ffXXX-qhop.dat */
   /* done_symtab(stab);*/
 
   set_reactant_products(qdb);
 
-  printf("free the redundant rtp parts.\n");
-  for(i=0; i<nrtp; i++) /* Can't use free_t_restp. Not entirely sure why, though.*/
+  if (NULL != debug)
+    fprintf(debug,"free the redundant rtp parts.\n");
+  for(i=0; i<nrtp; i++) 
+    /* Can't use free_t_restp. Not entirely sure why, though.*/
     {
       sfree(bigrtp[i].resname);
       sfree(bigrtp[i].atom);
@@ -709,7 +711,7 @@ int qhop_db_write(char *fn,qhop_db *qdb)
   return 1;
 }
 
-static void clear_qhop_res(qhop_res res)
+static void clear_qhop_res(qhop_subres res)
 {
   if (res.na > 0) sfree(res.acc);
   if (res.nd > 0) sfree(res.don);
@@ -720,14 +722,14 @@ static void clear_qhop_rb(qhop_resblocks rb)
 {
   /* All stings point to a symtab, so don't bother sfreeing them here */
   int rt, r, f;
+  
   for (rt=0; rt<rb.nrestypes; rt++)
     {
-      for (r=0; r<rb.nsubres[rt]; r++)
+      for (r=0; r<rb.qrt[rt].nsubres; r++)
 	{
-	  clear_qhop_res(rb.subres[rt][r]);
+	  clear_qhop_res(rb.qrt[rt].subres[r]);
 	}
     }
-  if (rb.restype != NULL) sfree(rb.restype);
   if (rb.files != NULL) sfree(rb.files);
   if (rb.ilib != NULL) sfree(rb.ilib);
 }
@@ -925,7 +927,7 @@ static int get_interaction_type(int bt, int type)
   return it;
 }
 
-extern void qhop_db_names2nrs(qhop_db *db)
+void qhop_db_names2nrs(qhop_db *db)
 {
   int rt, bt, b, it, a, ia;
   t_restp *rtp;
@@ -934,8 +936,6 @@ extern void qhop_db_names2nrs(qhop_db *db)
     {
       gmx_fatal(FARGS, "Empty RTP data in qhop database.");
     }
-
-  snew(db->rb.ba, db->rb.nrestypes);
 
   for (bt=0; bt < ebtsNR; bt++)
     {
@@ -950,24 +950,20 @@ extern void qhop_db_names2nrs(qhop_db *db)
        * And since we're looping, we might as well translate all the atoms
        * in the bonded interactions to residue local atom indices. */
 
-      if (!db->rb.bInTop[rt])
+      if (!db->rb.qrt[rt].bInTop)
 	{
-	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
+	  /* This resblock is not in the topology. 
+	     We don't need to map its bonds nor atoms */
 	  continue;
 	}
 
-      printf("Making bonded atom index for restp %d out of %d\n",
-	     rt,db->nrtp);
+      printf("Making bonded atom index for %s (restp %d out of %d)\n",
+	     db->rb.qrt[rt].restype,rt,db->nrtp);
 
-      if (db->rb.ba[rt] == NULL)
-	{
-	  snew(db->rb.ba[rt], ebtsNR);
-	}
+      range_check(db->rb.qrt[rt].irtp,0,db->nrtp);
 
-      range_check(db->rb.irtp[rt],0,db->nrtp);
-
-      rtp = &(db->rtp[db->rb.irtp[rt]]);
-
+      rtp = &(db->rtp[db->rb.qrt[rt].irtp]);
+      
       for (bt=0; bt < ebtsNR; bt++)
 	{
 	  if ((rtp->rb[bt].nb == 0)          /* No bondeds of this type, */
@@ -992,19 +988,19 @@ extern void qhop_db_names2nrs(qhop_db *db)
 	      continue;
 	    }
 
-	  if (db->rb.ba[rt][bt] == NULL)
+	  if (db->rb.qrt[rt].ba[bt] == NULL)
 	    {
-	      snew(db->rb.ba[rt][bt], rtp->rb[bt].nb);
+	      snew(db->rb.qrt[rt].ba[bt], rtp->rb[bt].nb);
 	    }
 
 	  for (b=0; b < rtp->rb[bt].nb; b++)
 	    {
-	      if (db->rb.ba[rt][bt][b] == NULL)
+	      if (db->rb.qrt[rt].ba[bt][b] == NULL)
 		{
-		  snew(db->rb.ba[rt][bt][b], btsNiatoms[bt]);
+		  snew(db->rb.qrt[rt].ba[bt][b], btsNiatoms[bt]);
 		}
 
-	      /* Loop over atoms in the intearction */
+	      /* Loop over atoms in the interaction */
 	      for (ia=0; ia < btsNiatoms[bt]; ia++)
 		{
 		  /* Loop over atoms in the residue */
@@ -1013,7 +1009,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 		      if (strcmp(rtp->rb[bt].b[b].a[ia], *(rtp->atomname[a])) == 0)
 			{
 			  /* store the residue local index of this interacting atom */
-			  db->rb.ba[rt][bt][b][ia] = a;
+			  db->rb.qrt[rt].ba[bt][b][ia] = a;
 
 			  /* Proceed with next interacting atom */
 			  break;
@@ -1026,7 +1022,7 @@ extern void qhop_db_names2nrs(qhop_db *db)
 }
 
 /* Maps atoms in subresidues to the ones in the restype */
-extern void qhop_db_map_subres_atoms(qhop_db *db)
+void qhop_db_map_subres_atoms(qhop_db *db)
 {
   int rt, r, ra, rta;
   t_restp *rtpr, *rtprt;
@@ -1034,21 +1030,21 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
   /* Restypes */
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
-      if (!db->rb.bInTop[rt])
+      if (!db->rb.qrt[rt].bInTop)
 	{
 	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
 	  continue;
 	}
 
-      rtprt = &(db->rtp[db->rb.irtp[rt]]);
+      rtprt = &(db->rtp[db->rb.qrt[rt].irtp]);
 
       /* Residue subtypes */
-      for (r=0; r < db->rb.nsubres[rt]; r++)
+      for (r=0; r < db->rb.qrt[rt].nsubres; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.subres[rt][r].irtp]);
+	  rtpr = &(db->rtp[db->rb.qrt[rt].subres[r].irtp]);
 
-	  snew(db->rb.subres[rt][r].iatomMap, rtpr->natom);
-	  db->rb.subres[rt][r].niatom = rtpr->natom;
+	  snew(db->rb.qrt[rt].subres[r].iatomMap, rtpr->natom);
+	  db->rb.qrt[rt].subres[r].niatom = rtpr->natom;
 
 	  /* Loop over atoms in subresidue */
 	  for (ra=0; ra < rtpr->natom; ra++)
@@ -1059,7 +1055,7 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
 		  if (strcmp(*(rtpr->atomname[ra]), *(rtprt->atomname[rta])) == 0)
 		    {
 		      /* We have a match. */
-		      db->rb.subres[rt][r].iatomMap[ra] = rta;
+		      db->rb.qrt[rt].subres[r].iatomMap[ra] = rta;
 
 		      /* Move on to next atom */
 		      break;
@@ -1070,7 +1066,7 @@ extern void qhop_db_map_subres_atoms(qhop_db *db)
     } /* rt */
 }
 
-extern void qhop_db_map_subres_bondeds(qhop_db *db)
+void qhop_db_map_subres_bondeds(qhop_db *db)
 {
   int rt, r, bt, br, brt, a, i, bprev, **map;
   gmx_bool bMatch;
@@ -1080,27 +1076,27 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
   /* Restypes */
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {      
-      if (!db->rb.bInTop[rt])
+      if (!db->rb.qrt[rt].bInTop)
 	{
 	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
 	  continue;
 	}
 
-      rtprt = &(db->rtp[db->rb.irtp[rt]]);
+      rtprt = &(db->rtp[db->rb.qrt[rt].irtp]);
 
       /* Residue subtypes */
-      for (r=0; r < db->rb.nsubres[rt]; r++)
+      for (r=0; r < db->rb.qrt[rt].nsubres; r++)
 	{
-	  rtpr = &(db->rtp[db->rb.subres[rt][r].irtp]);
-	  snew(db->rb.subres[rt][r].biMap, ebtsNR);
-	  snew(db->rb.subres[rt][r].findex, ebtsNR);
-	  map = db->rb.subres[rt][r].biMap;
+	  rtpr = &(db->rtp[db->rb.qrt[rt].subres[r].irtp]);
+	  snew(db->rb.qrt[rt].subres[r].biMap, ebtsNR);
+	  snew(db->rb.qrt[rt].subres[r].findex, ebtsNR);
+	  map = db->rb.qrt[rt].subres[r].biMap;
 
 	  /* Loop over bonded types */
 	  for (bt=0; bt < ebtsNR; bt++)
 	    {
-	      snew(db->rb.subres[rt][r].biMap[bt],  rtpr->rb[bt].nb);
-	      snew(db->rb.subres[rt][r].findex[bt], rtpr->rb[bt].nb);
+	      snew(db->rb.qrt[rt].subres[r].biMap[bt],  rtpr->rb[bt].nb);
+	      snew(db->rb.qrt[rt].subres[r].findex[bt], rtpr->rb[bt].nb);
 
 	      bMatch = FALSE;
 
@@ -1167,7 +1163,7 @@ extern void qhop_db_map_subres_bondeds(qhop_db *db)
 			  if (bMatch)
 			    {
 			      /*We've found it. Let's move on. */
-			      db->rb.subres[rt][r].biMap[bt][br] = brt;
+			      db->rb.qrt[rt].subres[r].biMap[bt][br] = brt;
 			      break;
 			    }
 			}

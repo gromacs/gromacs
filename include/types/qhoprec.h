@@ -56,7 +56,7 @@ typedef struct {
    We use it to quickly change bonded interactions for a residue
    upon (de)protonation. */
 typedef struct {
-  int     nb;
+  //  int     nb;
   t_iatom **ilist_pos; /* dimensions: [F_NRE][#bonded_of this type] */
 
   int nr[F_NRE]; /* How many interactions in ilist_pos[] arrays? */
