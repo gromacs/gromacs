@@ -61,6 +61,7 @@ struct cu_nb_params
     float   ewald_beta; 
     float   cutoff_sq;  /* cut-off */
     float   rlist_sq;   /* neighborlist cut-off */
+    float   lj_shift;   /* LJ potential correction term */
 
     float   *nbfp;      /* nonbonded parameters C12, C6 */
 

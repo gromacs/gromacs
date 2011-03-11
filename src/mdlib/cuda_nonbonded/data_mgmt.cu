@@ -142,7 +142,9 @@ void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
     nbp->c_rf        = fr->c_rf;
     nbp->cutoff_sq   = fr->rcut_nsbox * fr->rcut_nsbox;
     nbp->rlist_sq    = fr->rlist_nsbox * fr->rlist_nsbox;
-    
+    nbp->lj_shift    = (getenv("GMX_LJ_SHIFT") == NULL) ?
+             0.0 : -1/(nbp->cutoff_sq * nbp->cutoff_sq * nbp->cutoff_sq);
+
     if (fr->eeltype == eelCUT)
     {
         nbp->eeltype = cu_eelCUT;

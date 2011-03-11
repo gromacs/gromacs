@@ -52,6 +52,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
 #endif
 
 #ifdef CALC_ENERGIES
+    float lj_shift = nb_params.lj_shift;
 #ifdef EL_EWALD
     float beta = nb_params.ewald_beta;
 #endif
@@ -211,7 +212,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             F_invr      = inv_r6 * (12.0f * c12 * inv_r6 - 6.0f * c6) * inv_r2;
  
 #ifdef CALC_ENERGIES
-                            E_lj        += inv_r6 * (c12 * inv_r6 - c6);
+                            E_lj        += (inv_r6 + lj_shift) * (c12 * (inv_r6 + lj_shift) - c6);
 #endif
 
 #ifdef EL_CUTOFF
