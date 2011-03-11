@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 73;
+static const int tpx_version = 74;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -323,6 +323,14 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
+    if (file_version >= 74)
+    {
+        gmx_fio_do_int(fio,ir->cutoff_scheme);
+    }
+    else
+    {
+        ir->cutoff_scheme = ecutsOLD;
+    }
     gmx_fio_do_int(fio,ir->ns_type);
     gmx_fio_do_int(fio,ir->nstlist);
     gmx_fio_do_int(fio,ir->ndelta);
@@ -464,7 +472,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 		ir->sa_surface_tension = 2.092;
 	}
 
-	  
+	 
+    if (file_version >= 74)
+    {
+        gmx_fio_do_real(fio,ir->fourier_spacing); 
+    }
+    else
+    {
+        ir->fourier_spacing = 0.0;
+    }
     gmx_fio_do_int(fio,ir->nkx); 
     gmx_fio_do_int(fio,ir->nky); 
     gmx_fio_do_int(fio,ir->nkz);

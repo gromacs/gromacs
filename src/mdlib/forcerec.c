@@ -1376,75 +1376,33 @@ gmx_bool gmx_check_use_gpu(FILE *fp)
     return (useGPU || emulateGPU);
 }
 
-void remove_chargegroups(gmx_mtop_t *mtop)
-{
-    int mt;
-    t_block *cgs;
-    int i;
-
-    for(mt=0; mt<mtop->nmoltype; mt++)
-    {
-        cgs = &mtop->moltype[mt].cgs;
-        if (cgs->nr < mtop->moltype[mt].atoms.nr)
-        {
-            cgs->nr = mtop->moltype[mt].atoms.nr;
-            srenew(cgs->index,cgs->nr+1);
-            for(i=0; i<cgs->nr+1; i++)
-            {
-                cgs->index[i] = i;
-            }
-        }
-    }
-}
-
 static void set_nsbox_cutoffs(FILE *fp,t_forcerec *fr,real nblist_lifetime)
 {
-    /* Temporary code for cut-off setup */
+    char   *env;
     double rbuf;
 
-    if (fr->rcoulomb == fr->rlist && fr->rvdw == fr->rlist)
+    fr->rcut_nsbox  = fr->rcoulomb;
+    fr->rlist_nsbox = fr->rlist;
+    env = getenv("GMX_NSBOX_BUF");
+    if (env != NULL)
     {
-        char *env;
+        double dbl;
+        sscanf(env,"%lf",&rbuf);
 
-        fr->rcut_nsbox  = fr->rcoulomb;
-                
-        env = getenv("GMX_NSBOX_BUF");
-        if (env != NULL)
-        {
-            double dbl;
-            sscanf(env,"%lf",&rbuf);
-        }
-        else
-        {
-            /* Buffer size for the probably of less than 2e-5
-             * that an atom pair in SPC water at 298 K crosses
-             * the buffer region.
-             * Atoms in SPC water are probably the fastest moving
-             * particles in bio-molecular simulations.
-             * Note that the probability of a missed interaction
-             * (which would still be very small at the cut-off)
-             * is much smaller, because many atoms pairs outside
-             * this buffer radius are still in the buffer due to
-             * it being based on groups of atoms.
-             */
-            rbuf = 3.0*pow(nblist_lifetime,0.75);
-        }
         fr->rlist_nsbox = fr->rcut_nsbox + rbuf;
     }
-    else
+
+    if (fr->rcoulomb > fr->rlist || fr->rvdw > fr->rlist)
     {
-        if (fr->rcoulomb > fr->rlist || fr->rvdw > fr->rlist)
-        {
-            gmx_fatal(FARGS,"nsbox does not support twin-range forces");
-        }
-        if (fr->rcoulomb != fr->rvdw)
-        {
-            gmx_fatal(FARGS,"nsbox does not support rcoulomb != rvdw");
-        }
-        fr->rcut_nsbox  = fr->rcoulomb;
-        fr->rlist_nsbox = fr->rlist;
-        rbuf = fr->rlist_nsbox - fr->rcut_nsbox;
+        gmx_fatal(FARGS,"nsbox does not support twin-range forces");
     }
+    if (fr->rcoulomb != fr->rvdw)
+    {
+        gmx_fatal(FARGS,"nsbox does not support rcoulomb != rvdw");
+    }
+    fr->rcut_nsbox  = fr->rcoulomb;
+    rbuf = fr->rlist_nsbox - fr->rcut_nsbox;
+
     if (fp != NULL)
     {
         fprintf(fp,
@@ -1966,7 +1924,7 @@ void init_forcerec(FILE *fp,
     
     snew(fr->excl_load,fr->nthreads+1);
 
-    if (!useGPU)
+    if (ir->cutoff_scheme == ecutsOLD)
     {
         fr->useGPU     = FALSE;
         fr->emulateGPU = FALSE;
@@ -1978,6 +1936,12 @@ void init_forcerec(FILE *fp,
 
         env = getenv("GMX_EMULATE_GPU");
         fr->emulateGPU = (env != NULL);
+#ifndef GMX_GPU
+        if (!fr->emulateGPU)
+        {
+            gmx_fatal(FARGS,"No GPU support compiled into mdrun whereas a Verlet has been requested. There is currently no efficient cut-off scheme available for this. If you have a GPU, compile mdrun with GPU support. (Very slow emulation on the CPU is possible by setting the env.var. GMX_EMULATE_GPU)");
+        }
+#endif
         fr->useGPU = !fr->emulateGPU;
         if (fr->emulateGPU)
         {

@@ -613,7 +613,7 @@ void do_force(FILE *fplog,t_commrec *cr,
             clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
-        if (!(fr->useGPU || fr->emulateGPU))
+        if (inputrec->cutoff_scheme == ecutsOLD)
         {
             /* Do the actual neighbour searching and if twin range electrostatics
             * also do the calculation of long range forces and energies.

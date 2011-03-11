@@ -71,6 +71,10 @@ enum {
   erscNO, erscALL, erscCOM, erscNR
 };
 
+enum { 
+  ecutsOLD, ecutsVERLET, ecutsNR
+};
+
 /*
  * eelNOTUSED1 used to be GB, but to enable generalized born with different
  * forms of electrostatics (RF, switch, etc.) in the future it is now selected

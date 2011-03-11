@@ -135,8 +135,6 @@ forcerec_set_ranges(t_forcerec *fr,
 gmx_bool gmx_check_use_gpu(FILE *fp);
 /* Return if we will a GPU or GPU emulation */
 
-void remove_chargegroups(gmx_mtop_t *mtop);
-
 gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                              gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.

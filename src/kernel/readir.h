@@ -56,7 +56,6 @@ static const char *couple_lam[ecouplamNR+1]    = {
 typedef struct {
   int warnings;
   int nshake;
-  real fourierspacing;
   char *include;
   char *define;
   gmx_bool bGenVel;

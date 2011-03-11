@@ -164,29 +164,69 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   set_warning_line(wi,mdparin,-1);
 
-  /* BASIC CUT-OFF STUFF */
-  if (ir->rlist == 0 ||
-      !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
-        (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
-    /* No switched potential and/or no twin-range:
-     * we can set the long-range cut-off to the maximum of the other cut-offs.
-     */
-    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
-  } else if (ir->rlistlong < 0) {
-    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
-    sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
-	    ir->rlistlong);
-    warning(wi,warn_buf);
-  }
-  if (ir->rlistlong == 0 && ir->ePBC != epbcNONE) {
-      warning_error(wi,"Can not have an infinite cut-off with PBC");
-  }
-  if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist)) {
-      warning_error(wi,"rlistlong can not be shorter than rlist");
-  }
-  if (IR_TWINRANGE(*ir) && ir->nstlist <= 0) {
-      warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
-  }
+    if (ir->cutoff_scheme == ecutsOLD)
+    {
+        /* BASIC CUT-OFF STUFF */
+        if (ir->rlist == 0 ||
+            !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
+              (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
+            /* No switched potential and/or no twin-range:
+             * we can set the long-range cut-off to the maximum of the other cut-offs.
+             */
+            ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+        }
+        else if (ir->rlistlong < 0)
+        {
+            ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+            sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
+                    ir->rlistlong);
+            warning(wi,warn_buf);
+        }
+        if (ir->rlistlong == 0 && ir->ePBC != epbcNONE)
+        {
+            warning_error(wi,"Can not have an infinite cut-off with PBC");
+        }
+        if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist))
+        {
+            warning_error(wi,"rlistlong can not be shorter than rlist");
+        }
+        if (IR_TWINRANGE(*ir) && ir->nstlist <= 0)
+        {
+            warning_error(wi,"Can not have nstlist<=0 with twin-range interactions");
+        }
+    }
+    else
+    {
+        /* Normal Verlet type neighbor-list, currently only limited feature support */
+        if (ir->rcoulomb != ir->rvdw)
+        {
+            warning_error(wi,"With Verlet lists rcoulomb!=rvdw is not supported");
+        }
+        if (ir->vdwtype != evdwCUT)
+        {
+            warning_error(wi,"With Verlet lists only cut-off LJ interactions are supported");
+        }
+        if (!(ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype) || EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
+        {
+            warning_error(wi,"With Verlet lists only cut-off, reaction-field, PME and EWALD electrostatics are supported");
+        }
+
+        if (ir->nstlist <= 0)
+        {
+             warning_error(wi,"With Verlet lists nstlist should be larger than 0");
+        }
+
+        ir->rlist = max(ir->rcoulomb,ir->rvdw);
+        if (EI_DYNAMICS(ir->eI) && ir->nstlist > 1)
+        {
+            /* Temporarily hard-coded buffer size which work well for water
+             * and thus for all atomistic bio-molecular, polymer and organic systems
+             * at 300 K.
+             */
+            ir->rlist += 9.0*(ir->nstlist - 1)*ir->delta_t;
+        }
+        ir->rlistlong = ir->rlist;
+    }
 
     /* GENERAL INTEGRATOR STUFF */
     if (!(ir->eI == eiMD || EI_VV(ir->eI)))
@@ -513,9 +553,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
   } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rlist > ir->rcoulomb);
+      if (ir->cutoff_scheme == ecutsOLD) {
+          sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
+                  eel_names[ir->coulombtype]);
+          CHECK(ir->rlist > ir->rcoulomb);
+      }
   }
 
   if (EEL_FULL(ir->coulombtype)) {
@@ -524,7 +566,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
-    } else {
+    } else if (ir->cutoff_scheme == ecutsOLD) {
       if (ir->coulombtype == eelPME) {
 	sprintf(err_buf,
 		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
@@ -561,8 +603,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
   } else if (ir->vdwtype == evdwCUT) {
-    sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
-    CHECK(ir->rlist > ir->rvdw);
+      if (ir->cutoff_scheme == ecutsOLD) {
+          sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
+          CHECK(ir->rlist > ir->rvdw);
+      }
   }
   if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
       && (ir->rlistlong <= ir->rcoulomb)) {
@@ -891,6 +935,8 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* Neighbor searching */  
   CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
+  CTYPE ("cut-off scheme (old: using charge groups or Verlet: particle based cut-off's)");
+  EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
@@ -927,7 +973,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Seperate tables between energy group pairs");
   STYPE ("energygrp_table", egptable,   NULL);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
-  RTYPE ("fourierspacing", opts->fourierspacing,0.12);
+  RTYPE ("fourierspacing", ir->fourier_spacing,0.12);
   CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
   ITYPE ("fourier_nx",  ir->nkx,         0);
   ITYPE ("fourier_ny",  ir->nky,         0);

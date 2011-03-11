@@ -94,6 +94,27 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
+static void remove_chargegroups(gmx_mtop_t *mtop)
+{
+    int mt;
+    t_block *cgs;
+    int i;
+
+    for(mt=0; mt<mtop->nmoltype; mt++)
+    {
+        cgs = &mtop->moltype[mt].cgs;
+        if (cgs->nr < mtop->moltype[mt].atoms.nr)
+        {
+            cgs->nr = mtop->moltype[mt].atoms.nr;
+            srenew(cgs->index,cgs->nr+1);
+            for(i=0; i<cgs->nr+1; i++)
+            {
+                cgs->index[i] = i;
+            }
+        }
+    }
+}
+
 static int check_atom_names(const char *fn1, const char *fn2, 
 			    gmx_mtop_t *mtop, t_atoms *at)
 {
@@ -1333,6 +1354,15 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
+
+    if (ir->cutoff_scheme == ecutsVERLET)
+    {
+        fprintf(stderr,"Removing all charge groups because cutoff-scheme=%s\n",
+                ecutscheme_names[ir->cutoff_scheme]);
+
+        /* Remove all charge groups */
+        remove_chargegroups(sys);
+    }
   
   if (count_constraints(sys,mi,wi) && (ir->eConstrAlg == econtSHAKE)) {
     if (ir->eI == eiCG || ir->eI == eiLBFGS) {
@@ -1519,7 +1549,7 @@ int main (int argc, char *argv[])
         clear_rvec(state.box[ZZ]);
     }
   
-    if (ir->rlist > 0)
+    if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
     {
         set_warning_line(wi,mdparin,-1);
         check_chargegroup_radii(sys,ir,state.x,wi);
@@ -1530,7 +1560,17 @@ int main (int argc, char *argv[])
     copy_mat(state.box,box);
     if (ir->ePBC==epbcXY && ir->nwall==2)
       svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
-    max_spacing = calc_grid(stdout,box,opts->fourierspacing,
+    if (ir->nkx > 0 && ir->nky > 0 && ir->nkz > 0)
+    {
+        /* Mark fourier_spacing as not used */
+        ir->fourier_spacing = 0;
+    }
+    else if (ir->nkx != 0 && ir->nky != 0 && ir->nkz != 0)
+    {
+        set_warning_line(wi,mdparin,-1);
+        warning_error(wi,"Some but not old fourier grid sizes have been set.");
+    }
+    max_spacing = calc_grid(stdout,box,ir->fourier_spacing,
                             &(ir->nkx),&(ir->nky),&(ir->nkz));
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
         set_warning_line(wi,mdparin,-1);
