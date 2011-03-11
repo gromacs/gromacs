@@ -687,9 +687,16 @@ extern struct tmpi_global *tmpi_global;
 void tMPI_Trace_print(const char *fmt, ...);
 #endif
 
-/* error-checking malloc/realloc: */
+/* error-checking malloc/realloc/free: */
 void *tMPI_Malloc(size_t size);
 void *tMPI_Realloc(void *p, size_t size);
+void tMPI_Free(void *p);
+
+/*
+//use the following instead of the above function definition for debugging mis- matched allocate/free calls.
+#include <smalloc.h>
+#define tMPI_Free(a) sfree(a)
+*/
 
 
 /* get the current thread structure pointer */
