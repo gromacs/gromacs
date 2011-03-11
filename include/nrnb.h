@@ -66,7 +66,8 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 		       gmx_large_int_t nsteps,real delta_t,
-		       double nbfs,double mflop);
+		       double nbfs,double mflop,
+                       int omp_nth_pp);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
 void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);

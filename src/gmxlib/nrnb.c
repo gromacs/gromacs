@@ -362,7 +362,8 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
 		gmx_large_int_t nsteps,real delta_t,
-		double nbfs,double mflop)
+		double nbfs,double mflop,
+                int omp_nth_pp)
 {
   real runtime;
 
@@ -382,30 +383,56 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
   }
 #endif
 
-  if ((nodetime > 0) && (realtime > 0)) {
+  if ((nodetime > 0) && (realtime > 0)) 
+  {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
-	    nodetime, realtime, 100.0*nodetime/realtime);
-    if (nodetime > 60) {
+	    nodetime/omp_nth_pp, realtime, 100.0*nodetime/realtime/omp_nth_pp);
+    if (nodetime > 60) 
+    {
       fprintf(out,"%12s %10s","","");
       pr_difftime(out,nodetime);
     }
-    if (delta_t > 0) {
+    if (delta_t > 0) 
+    {
       mflop = mflop/realtime;
       runtime = nsteps*delta_t;
-      fprintf(out,"%12s %10s %10s %10s %10s\n",
-	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	      "(ns/day)","(hour/ns)");
-      fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      runtime*24*3.6/realtime,1000*nodetime/(3600*runtime));
-    } else {
-      fprintf(out,"%12s %10s %10s %14s\n",
-	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	      "(steps/hour)");
-      fprintf(out,"%12s %10.3f %10.3f %14.1f\n","Performance:",
+
+      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+      {
+          fprintf(out,"%12s %10s %10s\n",
+                  "","(ns/day)","(hour/ns)");
+          fprintf(out,"%12s %10.3f %10.3f\n","Performance:",
+                  runtime*24*3.6/realtime,1000*nodetime/(3600*runtime));
+      }
+      else
+      {
+        fprintf(out,"%12s %10s %10s %10s %10s\n",
+	        "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	        "(ns/day)","(hour/ns)");
+        fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
+	        nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
+	        runtime*24*3.6/realtime,1000*nodetime/(3600*runtime));
+      }
+    } 
+    else 
+    {
+      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+      {
+          fprintf(out,"%12s %14s\n",
+                  "","(steps/hour)");
+          fprintf(out,"%12s %14.1f\n","Performance:",
+                  nsteps*3600.0/realtime);
+      }
+      else
+      {
+          fprintf(out,"%12s %10s %10s %14s\n",
+	          "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	          "(steps/hour)");
+          fprintf(out,"%12s %10.3f %10.3f %14.1f\n","Performance:",
 	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
 	      nsteps*3600.0/realtime);
+      }
     }
   }
 }

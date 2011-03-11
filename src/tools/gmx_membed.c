@@ -4340,7 +4340,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
 #endif
                NULL,
-               EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+               EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr),
+               omp_nthreads_pp);
 
     /* Does what it says */
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);

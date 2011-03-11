@@ -1484,6 +1484,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
                 cu_timings_t *gputimes,
+                int omp_nth_pp,
                 gmx_bool bWriteStat)
 {
   int    i,j;
@@ -1556,12 +1557,14 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     if (fplog) {
         print_perf(fplog,runtime->proctime,runtime->realtime,
                    cr->nnodes-cr->npmenodes,
-                   runtime->nsteps_done,delta_t,nbfs,mflop);
+                   runtime->nsteps_done,delta_t,nbfs,mflop,
+                   omp_nth_pp);
     }
     if (bWriteStat) {
         print_perf(stderr,runtime->proctime,runtime->realtime,
                    cr->nnodes-cr->npmenodes,
-                   runtime->nsteps_done,delta_t,nbfs,mflop);
+                   runtime->nsteps_done,delta_t,nbfs,mflop,
+                   omp_nth_pp);
     }
 
     /*

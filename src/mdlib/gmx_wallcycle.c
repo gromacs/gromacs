@@ -360,23 +360,30 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 #endif
 }
 
-static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
+static void print_cycles(FILE *fplog, double c2t, const char *name, 
+                         int nnodes, int nthreads,
                          int n, double c, double tot)
 {
     char num[11];
+    char thstr[6];
   
     if (c > 0)
     {
         if (n > 0)
         {
             sprintf(num,"%10d",n);
+            if (nthreads < 0)
+                sprintf(thstr, "N/A");
+            else
+                sprintf(thstr, "%4d", nthreads);
         }
         else
         {
             sprintf(num,"          ");
+            sprintf(thstr, "    ");
         }
-        fprintf(fplog," %-19s %4d %10s %12.3f %10.1f   %5.1f\n",
-                name,nnodes,num,c*1e-9,c*c2t,100*c/tot);
+        fprintf(fplog," %-19s %4d %4s %10s %10.1f %12.3f   %5.1f\n",
+                name,nnodes,thstr,num,c*c2t,c*1e-9,100*c/tot);
     }
 }
 
@@ -398,12 +405,12 @@ static void print_gputimes(FILE *fplog, const char *name,
     }
     if (t != tot_t)
     {
-        fprintf(fplog, " %-24s %10s %12.2f %s   %5.1f\n", 
+        fprintf(fplog, " %-29s %10s %12.2f %s   %5.1f\n", 
                 name, num, t/1000, avg_perf, 100 * t/tot_t); 
     }
     else
     {
-         fprintf(fplog, " %-24s %10s %12.2f %s  %5.1f\n", 
+         fprintf(fplog, " %-29s %10s %12.2f %s   %5.1f\n", 
                name, "", t/1000, avg_perf, 100.0); 
     }
 }
@@ -411,11 +418,14 @@ static void print_gputimes(FILE *fplog, const char *name,
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 		     gmx_wallcycle_t wc, double cycles[], cu_timings_t *gpu_t)
 {
-    double c2t,tot,tot_gpu,tot_cpu_overlap,sum,tot_k;
-    int    i,j,npp;
+    double c2t,tot,tot_gpu,tot_cpu_overlap,gpu_cpu_ratio,sum,tot_k;
+    int    i,j,npp,nth_pp,nth_pme;
     char   buf[STRLEN];
-    const char *myline = "-----------------------------------------------------------------------";
-        
+    const char *hline = "----------------------------------------------------------------------------";
+    
+    nth_pp  = wc->omp_nthreads_pp;
+    nth_pme = wc->omp_nthreads_pme;
+
     if (wc == NULL)
     {
         return;
@@ -435,9 +445,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
     {
-        // printf("npp=%d/%dT, npme=%d/%dT, realtime=%.3f, tot=%.3f\n",
-        //        npp, wc->omp_nthreads_pp, npme, wc->omp_nthreads_pme, realtime, tot );
-        c2t = (npp*wc->omp_nthreads_pp + npme*wc->omp_nthreads_pme)*realtime/tot/2;
+        c2t = (npp*nth_pp + npme*nth_pme)*realtime/tot/2;
     }
     else
     {
@@ -446,8 +454,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
     fprintf(fplog,"\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
-    fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
-    fprintf(fplog,"%s\n",myline);
+    fprintf(fplog," Computing:         Nodes   Th.     Count     Seconds    G-Cycles       %c\n",'%');
+    fprintf(fplog,"%s\n",hline);
     sum = 0;
     for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
     {
@@ -455,6 +463,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             print_cycles(fplog,c2t,wcn[i],
                          (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
+                         (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp, 
                          wc->wcc[i].n,cycles[i],tot);
             sum += cycles[i];
         }
@@ -471,30 +480,32 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 buf[19] = '\0';
                 print_cycles(fplog,c2t,buf,
                              (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
+                             (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp,
                              wc->wcc_all[i*ewcNR+j].n,
                              wc->wcc_all[i*ewcNR+j].c,
                              tot);
             }
         }
     }
-    print_cycles(fplog,c2t,"Rest",npp,0,tot-sum,tot);
-    fprintf(fplog,"%s\n",myline);
-    print_cycles(fplog,c2t,"Total",nnodes,0,tot,tot);
-    fprintf(fplog,"%s\n",myline);
+    print_cycles(fplog,c2t,"Rest",npp,-1,0,tot-sum,tot);
+    fprintf(fplog,"%s\n",hline);
+    print_cycles(fplog,c2t,"Total",nnodes,-1,0,tot,tot);
+    fprintf(fplog,"%s\n",hline);
     
     if (wc->wcc[ewcPMEMESH].n > 0)
     {
-        fprintf(fplog,"%s\n",myline);
+        fprintf(fplog,"%s\n",hline);
         for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
         {
             if (pme_subdivision(i))
             {
                 print_cycles(fplog,c2t,wcn[i],
                              (i>=ewcPMEMESH || i<=ewcPME_SOLVE) ? npme : npp,
+                             (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp,
                              wc->wcc[i].n,cycles[i],tot);
             }
         }
-        fprintf(fplog,"%s\n",myline);
+        fprintf(fplog,"%s\n",hline);
     }
 
     /* print GPU timing summary */
@@ -515,16 +526,16 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
         tot_gpu += tot_k;
     
-        tot_cpu_overlap = wc->wcc[ewcFORCE].c/wc->omp_nthreads_pp;
+        tot_cpu_overlap = wc->wcc[ewcFORCE].c/nth_pp;
         if (wc->wcc[ewcPMEMESH].n > 0)
         {
-            tot_cpu_overlap += wc->wcc[ewcPMEMESH].c/wc->omp_nthreads_pme;
+            tot_cpu_overlap += wc->wcc[ewcPMEMESH].c/nth_pme;
         }
         tot_cpu_overlap *= c2t * 1000; /* convert s to ms */
 
-        fprintf(fplog, "\n GPU timings\n%s\n", myline);
-        fprintf(fplog," Computing:                   Number      Seconds    ms/step     %c\n",'%');
-        fprintf(fplog, "%s\n", myline);
+        fprintf(fplog, "\n GPU timings\n%s\n", hline);
+        fprintf(fplog," Computing:                         Count      Seconds    ms/step       %c\n",'%');
+        fprintf(fplog, "%s\n", hline);
         // " %-19s %4d %10s %12.3f %10.1f   %5.1f\n"
         print_gputimes(fplog, "Neighborlist H2D",
                 gpu_t->atomdt_count, gpu_t->atomdt_h2d_total_time, tot_gpu);
@@ -532,8 +543,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 gpu_t->nb_count, gpu_t->nb_h2d_time, tot_gpu);
 
         char *k_log_str[2][2] = {
-                {"Nonbonded k.", "Nonbonded k.+ene"}, 
-                {"Nonbonded k.+prune", "Nonbonded k.+ene+prune"}};
+                {"Nonbonded F kernel", "Nonbonded F+Ene k."}, 
+                {"Nonbonded F+prune k.", "Nonbonded F+ene+prune k."}};
         for (i = 0; i < 2; i++)
         {
             for(j = 0; j < 2; j++)
@@ -548,14 +559,36 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
         print_gputimes(fplog, "Nonbonded D2H",
                    gpu_t->nb_count, gpu_t->nb_d2h_time, tot_gpu);
-        fprintf(fplog, "%s\n", myline);
+        fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Total ", gpu_t->nb_count, tot_gpu, tot_gpu);
-        fprintf(fplog, "%s\n", myline);
+        fprintf(fplog, "%s\n", hline);
 
+        gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
         fprintf(fplog, "\n Force evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
                 tot_gpu/gpu_t->nb_count, tot_cpu_overlap/wc->wcc[ewcFORCE].n, 
-                tot_gpu/tot_cpu_overlap);
+                gpu_cpu_ratio);
         fprintf(fplog, " For optimal performance this ratio should be 1!\n");
+        /* print note if the imbalance is dangerously high */
+        if (gpu_cpu_ratio < 0.75 || gpu_cpu_ratio > 1.2)
+        {
+            if (gpu_cpu_ratio < 0.75)
+            {
+                sprintf(buf,
+                        "NOTE: The GPU has >25%% less load than the CPU. As this imbalance causes\n"
+                        "        a considerable performance loss, tuning the cutoff is advised.");
+            }
+            if (gpu_cpu_ratio > 1.2)
+            {
+                sprintf(buf,
+                        "NOTE: The GPU has >20%% more load than the CPU. As this imbalance causes\n"
+                        "        a considerable performance loss, tuning the cutoff is advised.");
+            }
+            if (fplog)
+            {
+                fprintf(fplog,"\n%s\n",buf);
+            }
+            fprintf(stderr,"\n\n%s\n",buf);
+        }
     }
 
     if (cycles[ewcMoveE] > tot*0.05)
