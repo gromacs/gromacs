@@ -3267,7 +3267,8 @@ void do_qhop(FILE *fplog,
 			      qr->hop[j].acceptor_id == qr->hop[i].donor_id)
 			    {
 			      qr->hop[j].regime = etQhopNONE;
-			      fprintf(stderr, " * Zapping hop number %i *\n", j);
+			      if (NULL != debug)
+				fprintf(debug," * Zapping hop number %i *\n", j);
 			    }
 			}
 		    }

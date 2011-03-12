@@ -98,6 +98,7 @@ typedef struct qhop_subres {
 
 typedef struct {
   char *restype;       /* Name of the "residue family", e.g. qLYS. */
+  char *description;   /* Descriptive comment */
   int  nsubres;        /* Number of related residues, e.g. 2 for 
 			  qLYS: {LYS, LYSH} */
   qhop_subres *subres; /* has size [nsubres[i] */

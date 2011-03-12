@@ -70,7 +70,7 @@ enum {
   exmlRESBLOCKS,
   exmlRESIDUE_TYPE, exmlFILE, exmlRES, exmlPROTON, exmlPRODUCT,
   exmlBWATER, exmlQHOP, exmlDONOR, exmlACCEPTOR,
-  exmlPARAM, exmlNAME, exmlVALUE, 
+  exmlPARAM, exmlNAME, exmlVALUE, exmlDESCRIPTION,
   exmlUNIT, exmlDON_ATOM, exmlACC_ATOM,
   exmlNR 
 };
@@ -80,7 +80,7 @@ static const char *exml_names[exmlNR] = {
   "resblocks",
   "residue_type", "file", "res", "proton", "product",
   "water", "qhop", "donor", "acceptor", "parameter", 
-  "name", "value", "unit", "don_atom", "acc_atom"
+  "name", "value", "description", "unit", "don_atom", "acc_atom"
 };
 
 static char *strip_spaces(char *s)
@@ -180,7 +180,8 @@ static void rb_add_file(qhop_resblocks *rb, char *f, t_symtab *tab)
     gmx_fatal(FARGS, "No filename found.");
 }
 
-static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char *water, t_symtab *tab)
+static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, 
+			   char *description,char *name, char *water, t_symtab *tab)
 {
   char *s;
   int  i;
@@ -188,7 +189,7 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char
   if NN(name)
     {
       if (NULL != debug)
-	fprintf(debug,"Adding restype %s\n", name);
+	fprintf(debug,"Adding restype %s (%s)\n", name,description);
       /* Is this a new resblock? If not, make a new one. */
       for(i=0; (i<rb->nrestypes); i++) {
 	if (strcmp(rb->qrt[i].restype,name) == 0)
@@ -202,7 +203,8 @@ static void rb_add_restype(qhop_resblocks_t rb, currentRes *ri, char *name, char
 	  ri->rt = rb->nrestypes;            /* Make this resblock the current one */
 	  ri->r  = -1;                       /* just to be sure... */
 	  ri->da = -1;
-	  rb->qrt[rb->nrestypes].restype = strdup(name); //*(put_symtab(tab, name));/*trim_strndup(name, 6);*/
+	  rb->qrt[rb->nrestypes].restype = strdup(name); 
+	  rb->qrt[rb->nrestypes].description = strdup(description); 
 	  rb->qrt[rb->nrestypes].bWater = (strcasecmp(water, "TRUE") == 0);
 	  /*add_to_record(name, &(rb->restype[rb->nrestypes]), &(rb->nrestypes), RNMLEN, eUPDATE_INDEX);*/
 	  rb->nrestypes++;
@@ -424,12 +426,12 @@ static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
   case exmlPARAM:
     if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlUNIT]) && NN(xbuf[exmlVALUE])) {
       qhop_add_param(xml->gqh[xml->nqh-1],xbuf[exmlNAME],xbuf[exmlVALUE],
-			 xbuf[exmlUNIT]);
+		     xbuf[exmlUNIT]);
     }
     break;
     /* Here's where some resblocks stuff needs to be implemented. */
   case exmlRESIDUE_TYPE: /* 'name' */
-    rb_add_restype(xml->rb, ri, xbuf[exmlNAME], xbuf[exmlBWATER], &(xml->tab));
+    rb_add_restype(xml->rb, ri, xbuf[exmlDESCRIPTION], xbuf[exmlNAME], xbuf[exmlBWATER], &(xml->tab));
     break;
   case exmlRES: /* 'name' */
     rb_add_res(xml->rb, ri, xbuf[exmlNAME],&(xml->tab));
@@ -649,6 +651,7 @@ static void add_xml_resblocks(xmlNodePtr parent,qhop_resblocks_t qdb)
   for(i=0; (i<qdb->nrestypes); i++) 
     {
       res = add_xml_child(rb,exml_names[exmlRESIDUE_TYPE]);
+      add_xml_char(res,exml_names[exmlDESCRIPTION],qdb->qrt[i].description);
       add_xml_char(res,exml_names[exmlNAME],qdb->qrt[i].restype);
       if (qdb->qrt[i].bWater)
 	add_xml_char(res,exml_names[exmlBWATER],"TRUE");

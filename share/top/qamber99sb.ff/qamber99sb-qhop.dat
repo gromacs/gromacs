@@ -7,12 +7,7 @@
 -->
 <qhops>
   <resblocks>
-    <!--
-	#######
-	SPC
-	#######
-      -->
-    <residue_type name="qSOL" water="TRUE">
+    <residue_type description="water" name="qSOL" water="TRUE">
       <res name="qH2O">
 	<acceptor name="OW" product="qH3O"/>
       </res>
@@ -21,12 +16,7 @@
       </res>
     </residue_type>
 
-    <!--
-	#######
-	HAC
-	#######
-      -->
-    <residue_type name="qHAC" water="FALSE">
+    <residue_type description="acetic acid" name="qHAC" water="FALSE">
       <res name="AC-">
         <acceptor name="OC2 OC1" product="HAC"/>
       </res>
@@ -35,12 +25,7 @@
       </res>
     </residue_type>
 
-    <!-- 
-        #######
-        NH4+
-        #######
-      -->
-    <residue_type name="qNH4" water="FALSE">
+    <residue_type description="ammonium" name="qNH4" water="FALSE">
       <res name="NH3">
         <acceptor name="NZ" product="NH4"/>
       </res>
@@ -49,12 +34,7 @@
       </res>
     </residue_type>
 
-    <!-- 
-        #######
-        LYS
-        #######
-      -->
-    <residue_type name="qLYN" water="FALSE">
+    <residue_type description="lysine" name="qLYN" water="FALSE">
       <res name="LYN">
         <acceptor name="NZ" product="LYS"/>
       </res>
@@ -63,12 +43,7 @@
       </res>
     </residue_type>
 
-    <!--
-        #######
-        HIP
-        #######
-      -->
-    <residue_type name="qHIS" water="FALSE">
+    <residue_type description="histidine" name="qHIS" water="FALSE">
       <res name="HID">
         <acceptor name="NE2" product="HIP"/>
       </res>
@@ -81,12 +56,7 @@
       </res>
     </residue_type>
     
-    <!--
-        #######
-        GLH
-        #######
-      -->
-    <residue_type name="qGLU" water="FALSE">
+    <residue_type description="glutamic acid" name="qGLU" water="FALSE">
       <res name="GLU">
         <acceptor name="OE2 OE1" product="GLH"/>
       </res>
@@ -95,12 +65,7 @@
       </res>
     </residue_type>
 
-    <!--
-        #######
-        ASH
-        #######
-      -->
-    <residue_type name="qASP" water="FALSE">
+    <residue_type description="aspartic acid" name="qASP" water="FALSE">
       <res name="ASP">
         <acceptor name="OD2 OD1" product="ASH"/>
       </res>
@@ -109,12 +74,7 @@
       </res>
     </residue_type>
 
-    <!--
-        #######
-        CYS
-        #######
-      -->
-    <residue_type name="qCYM" water="FALSE">
+    <residue_type description="cysteine" name="qCYM" water="FALSE">
       <res name="CYM">
         <acceptor name="SG" product="CYS"/>
       </res>
