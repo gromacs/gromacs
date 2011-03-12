@@ -303,7 +303,7 @@ SelectionCollection::initOptions()
                           .store(&_impl->_spost).defaultValue(postypes[1])
                           .description("Default selection output positions"));
     assert(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4);
-    options.addOption(StringOption("seldebug").hidden()
+    options.addOption(StringOption("seldebug").hidden(_impl->_debugLevel == 0)
                           .enumValue(debug_levels)
                           .defaultValue(debug_levels[_impl->_debugLevel])
                           .storeEnumIndex(&_impl->_debugLevel)
