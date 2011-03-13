@@ -642,7 +642,7 @@ int main(int argc,char *argv[])
   static gmx_bool bRMSD=FALSE;
   static real ftol=0.001;
   static real abstol=0.001;
-  static gmx_bool bCompAB=FALSE;
+  static gmx_bool bCompAB=FALSE,bVerbose=FALSE;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},
@@ -660,18 +660,21 @@ int main(int argc,char *argv[])
     { "-ab",     FALSE, etBOOL, {&bCompAB},
       "Compare the A and B topology from one file" }, 
     { "-lastener",FALSE, etSTR,  {&lastener},
-      "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
+      "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." },
+    { "-v",  FALSE, etBOOL, {&bVerbose},
+      "Be noisy" }
   };
 
-  CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,PCA_QUIET,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL,&oenv);
+  if (bVerbose)
+    CopyRight(stdout,argv[0]);
 
   fn1 = opt2fn_null("-f",NFILE,fnm);
   fn2 = opt2fn_null("-f2",NFILE,fnm);
   tex = opt2fn_null("-m",NFILE,fnm);
   if (fn1 && fn2)
-    comp_trx(oenv,fn1,fn2,bRMSD,ftol,abstol);
+    comp_trx(oenv,fn1,fn2,bRMSD,ftol,abstol,bVerbose);
   else if (fn1)
     chk_trj(oenv,fn1,opt2fn_null("-s1",NFILE,fnm),ftol);
   else if (fn2)
@@ -685,7 +688,7 @@ int main(int argc,char *argv[])
 	gmx_fatal(FARGS,"With -ab you need to set the -s1 option");
       fn2 = NULL;
     }
-    comp_tpx(fn1,fn2,bRMSD,ftol,abstol);
+    comp_tpx(fn1,fn2,bRMSD,ftol,abstol,bVerbose);
   } else if (fn1 && tex)
     tpx2methods(fn1,tex);
   else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2)) {
@@ -696,7 +699,7 @@ int main(int argc,char *argv[])
   fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
-    comp_enx(fn1,fn2,ftol,abstol,lastener);
+    comp_enx(fn1,fn2,ftol,abstol,lastener,bVerbose);
   else if (fn1)
     chk_enx(ftp2fn(efEDR,NFILE,fnm));
   else if (fn2)
@@ -708,7 +711,8 @@ int main(int argc,char *argv[])
   if (ftp2bSet(efNDX,NFILE,fnm))
     chk_ndx(ftp2fn(efNDX,NFILE,fnm));
     
-  thanx(stderr);
+  if (bVerbose)
+    thanx(stderr);
   
   return 0;
 }

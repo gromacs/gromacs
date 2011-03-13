@@ -206,12 +206,13 @@ static void cmp_ivec(FILE *fp,const char *s,int index,ivec i1,ivec i2)
   }
 }
 
-static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
+static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2,gmx_bool bVerbose)
 {
   int i;
   char buf[256];
  
-  fprintf(fp,"comparing ilist %s\n",interaction_function[ftype].name);
+  if (bVerbose)
+    fprintf(fp,"comparing ilist %s\n",interaction_function[ftype].name);
   sprintf(buf,"%s->nr",interaction_function[ftype].name);
   cmp_int(fp,buf,-1,il1->nr,il2->nr);
   sprintf(buf,"%s->iatoms",interaction_function[ftype].name);
@@ -268,12 +269,14 @@ void cmp_iparm_AB(FILE *fp,const char *s,t_functype ft,t_iparams ip1,real ftol,r
   }
 }
 
-static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol,real abstol)
+static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol,real abstol,
+		     gmx_bool bVerbose)
 {
   int i;
   char buf1[64],buf2[64];
   
-  fprintf(fp,"comparing idef\n");
+  if (bVerbose)
+    fprintf(fp,"comparing idef\n");
   if (id2) {
     cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
     cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
@@ -286,29 +289,33 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol,real abstol)
     }
     cmp_real(fp,"fudgeQQ",-1,id1->fudgeQQ,id2->fudgeQQ,ftol,abstol);
     for(i=0; (i<F_NRE); i++)
-      cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
+      cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]),bVerbose);
   } else {
     for(i=0; (i<id1->ntypes); i++)
       cmp_iparm_AB(fp,"idef->iparam",id1->functype[i],id1->iparams[i],ftol,abstol);
   }
 }
 
-static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s)
+static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s,
+		      gmx_bool bVerbose)
 {
   int i,j,k;
   char buf[32];
   
-  fprintf(fp,"comparing block %s\n",s);
+  if (bVerbose)
+    fprintf(fp,"comparing block %s\n",s);
   sprintf(buf,"%s.nr",s);
   cmp_int(fp,buf,-1,b1->nr,b2->nr);
 } 
 
-static void cmp_blocka(FILE *fp,t_blocka *b1,t_blocka *b2,const char *s)
+static void cmp_blocka(FILE *fp,t_blocka *b1,t_blocka *b2,const char *s,
+		       gmx_bool bVerbose)
 {
   int i,j,k;
   char buf[32];
   
-  fprintf(fp,"comparing blocka %s\n",s);
+  if (bVerbose)
+    fprintf(fp,"comparing blocka %s\n",s);
   sprintf(buf,"%s.nr",s);
   cmp_int(fp,buf,-1,b1->nr,b2->nr);
   sprintf(buf,"%s.nra",s);
@@ -337,11 +344,13 @@ static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2,real ftol,real abs
   }
 }
 
-static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol, real abstol)
+static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol, real abstol,
+		      gmx_bool bVerbose)
 {
   int i;
   
-  fprintf(fp,"comparing atoms\n");
+  if (bVerbose)
+    fprintf(fp,"comparing atoms\n");
 
   if (a2) {
     cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
@@ -353,30 +362,34 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol, real abstol)
   }
 }
 
-static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol, real abstol)
+static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol, real abstol,
+		    gmx_bool bVerbose)
 {
   int i;
   
-  fprintf(fp,"comparing top\n");
+  if (bVerbose)
+    fprintf(fp,"comparing top\n");
   if (t2) {
-    cmp_idef(fp,&(t1->idef),&(t2->idef),ftol,abstol);
-    cmp_atoms(fp,&(t1->atoms),&(t2->atoms),ftol,abstol);
-    cmp_block(fp,&t1->cgs,&t2->cgs,"cgs");
-    cmp_block(fp,&t1->mols,&t2->mols,"mols");
-    cmp_blocka(fp,&t1->excls,&t2->excls,"excls");
+    cmp_idef(fp,&(t1->idef),&(t2->idef),ftol,abstol,bVerbose);
+    cmp_atoms(fp,&(t1->atoms),&(t2->atoms),ftol,abstol,bVerbose);
+    cmp_block(fp,&t1->cgs,&t2->cgs,"cgs",bVerbose);
+    cmp_block(fp,&t1->mols,&t2->mols,"mols",bVerbose);
+    cmp_blocka(fp,&t1->excls,&t2->excls,"excls",bVerbose);
   } else {
-    cmp_idef(fp,&(t1->idef),NULL,ftol,abstol);
-    cmp_atoms(fp,&(t1->atoms),NULL,ftol,abstol);
+    cmp_idef(fp,&(t1->idef),NULL,ftol,abstol,bVerbose);
+    cmp_atoms(fp,&(t1->atoms),NULL,ftol,abstol,bVerbose);
   }
 }
 
 static void cmp_groups(FILE *fp,gmx_groups_t *g0,gmx_groups_t *g1,
-		       int natoms0,int natoms1)
+		       int natoms0,int natoms1,
+		       gmx_bool bVerbose)
 {
   int  i,j,ndiff;
   char buf[32];
 
-  fprintf(fp,"comparing groups\n");
+  if (bVerbose)
+    fprintf(fp,"comparing groups\n");
 
   for(i=0; i<egcNR; i++) {
     sprintf(buf,"grps[%d].nr",i);
@@ -485,11 +498,13 @@ static void cmp_pull(FILE *fp,t_pull *pull1,t_pull *pull2,real ftol, real abstol
   fprintf(fp,"WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
 
-static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)
+static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol,
+			 gmx_bool bVerbose)
 {
   int i;
 
-  fprintf(fp,"comparing inputrec\n");
+  if (bVerbose)
+    fprintf(fp,"comparing inputrec\n");
 
   /* gcc 2.96 doesnt like these defines at all, but issues a huge list
    * of warnings. Maybe it will change in future versions, but for the
@@ -647,39 +662,49 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->qhopconstr",-1,ir1->qhopconstr,ir2->qhopconstr);
 }
 
-static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol)
+static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol,
+			 gmx_bool bVerbose)
 {
   int i;
 
   for(i=0; i<pull->ngrp+1; i++) {
-    fprintf(fp,"comparing pull group %d\n",i);
+    if (bVerbose)
+      fprintf(fp,"comparing pull group %d\n",i);
     cmp_real(fp,"pullgrp->k",-1,pull->grp[i].k,pull->grp[i].kB,ftol,abstol);
   }
 }
 
 static void comp_state(t_state *st1, t_state *st2,
-		       gmx_bool bRMSD,real ftol,real abstol)
+		       gmx_bool bRMSD,real ftol,real abstol,
+		       gmx_bool bVerbose)
 {
   int i,j,nc;
 
-  fprintf(stdout,"comparing flags\n");
+  if (bVerbose)
+    fprintf(stdout,"comparing flags\n");
   cmp_int(stdout,"flags",-1,st1->flags,st2->flags);
-  fprintf(stdout,"comparing box\n");
+  if (bVerbose)
+    fprintf(stdout,"comparing box\n");
   cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,FALSE,ftol,abstol);
-  fprintf(stdout,"comparing box_rel\n");
+  if (bVerbose)
+    fprintf(stdout,"comparing box_rel\n");
   cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,FALSE,ftol,abstol);
-  fprintf(stdout,"comparing boxv\n");
+  if (bVerbose)
+    fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
   if (st1->flags & (1<<estSVIR_PREV)) {
-    fprintf(stdout,"comparing shake vir_prev\n");
+    if (bVerbose)
+      fprintf(stdout,"comparing shake vir_prev\n");
     cmp_rvecs(stdout,"svir_prev",DIM,st1->svir_prev,st2->svir_prev,FALSE,ftol,abstol);
   }
   if (st1->flags & (1<<estFVIR_PREV)) {
-    fprintf(stdout,"comparing force vir_prev\n");
+    if (bVerbose)
+      fprintf(stdout,"comparing force vir_prev\n");
     cmp_rvecs(stdout,"fvir_prev",DIM,st1->fvir_prev,st2->fvir_prev,FALSE,ftol,abstol);
   }
   if (st1->flags & (1<<estPRES_PREV)) {
-    fprintf(stdout,"comparing prev_pres\n");
+    if (bVerbose)
+      fprintf(stdout,"comparing prev_pres\n");
     cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
@@ -707,18 +732,20 @@ static void comp_state(t_state *st1, t_state *st2,
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {
     if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX))) {
-      fprintf(stdout,"comparing x\n");
+      if (bVerbose)
+	fprintf(stdout,"comparing x\n");
       cmp_rvecs(stdout,"x",st1->natoms,st1->x,st2->x,bRMSD,ftol,abstol);
     }
     if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV))) {
-      fprintf(stdout,"comparing v\n");
+      if (bVerbose)
+	fprintf(stdout,"comparing v\n");
       cmp_rvecs(stdout,"v",st1->natoms,st1->v,st2->v,bRMSD,ftol,abstol);
     }
   }
 }
 
 void comp_tpx(const char *fn1,const char *fn2,
-	      gmx_bool bRMSD,real ftol,real abstol)
+	      gmx_bool bRMSD,real ftol,real abstol,gmx_bool bVerbose)
 {
   const char  *ff[2];
   t_tpxheader sh[2];
@@ -734,36 +761,36 @@ void comp_tpx(const char *fn1,const char *fn2,
     read_tpx_state(ff[i],&(ir[i]),&state[i],NULL,&(mtop[i]));
   }
   if (fn2) {
-    cmp_inputrec(stdout,&ir[0],&ir[1],ftol,abstol);
+    cmp_inputrec(stdout,&ir[0],&ir[1],ftol,abstol,bVerbose);
     /* Convert gmx_mtop_t to t_topology.
      * We should implement direct mtop comparison,
      * but it might be useful to keep t_topology comparison as an option.
      */
     top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
     top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
-    cmp_top(stdout,&top[0],&top[1],ftol,abstol);
+    cmp_top(stdout,&top[0],&top[1],ftol,abstol,bVerbose);
     cmp_groups(stdout,&mtop[0].groups,&mtop[1].groups,
-	       mtop[0].natoms,mtop[1].natoms);
-    comp_state(&state[0],&state[1],bRMSD,ftol,abstol);
+	       mtop[0].natoms,mtop[1].natoms,bVerbose);
+    comp_state(&state[0],&state[1],bRMSD,ftol,abstol,bVerbose);
   } else {
     if (ir[0].efep == efepNO) {
       fprintf(stdout,"inputrec->efep = %s\n",efep_names[ir[0].efep]);
     } else {
       if (ir[0].ePull != epullNO) {
-	comp_pull_AB(stdout,ir->pull,ftol,abstol);
+	comp_pull_AB(stdout,ir->pull,ftol,abstol,bVerbose);
       }
       /* Convert gmx_mtop_t to t_topology.
        * We should implement direct mtop comparison,
        * but it might be useful to keep t_topology comparison as an option.
        */
       top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-      cmp_top(stdout,&top[0],NULL,ftol,abstol);
+      cmp_top(stdout,&top[0],NULL,ftol,abstol,bVerbose);
     }
   }
 }
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
-		gmx_bool bRMSD, real ftol,real abstol)
+		gmx_bool bRMSD, real ftol,real abstol,gmx_bool bVerbose)
 {
   fprintf(fp,"\n");
   cmp_int(fp,"flags",-1,fr1->flags,fr2->flags);
@@ -780,7 +807,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
   if (cmp_bool(fp,"bLambda",-1,fr1->bLambda,fr2->bLambda)) 
     cmp_real(fp,"lambda",-1,fr1->lambda,fr2->lambda,ftol,abstol);
   if (cmp_bool(fp,"bAtoms",-1,fr1->bAtoms,fr2->bAtoms))
-    cmp_atoms(fp,fr1->atoms,fr2->atoms,ftol,abstol);
+    cmp_atoms(fp,fr1->atoms,fr2->atoms,ftol,abstol,bVerbose);
   if (cmp_bool(fp,"bPrec",-1,fr1->bPrec,fr2->bPrec))
     cmp_real(fp,"prec",-1,fr1->prec,fr2->prec,ftol,abstol);
   if (cmp_bool(fp,"bX",-1,fr1->bX,fr2->bX))
@@ -794,7 +821,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
 }
 
 void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2, 
-              gmx_bool bRMSD,real ftol,real abstol)
+              gmx_bool bRMSD,real ftol,real abstol,gmx_bool bVerbose)
 {
   int i;
   const char *fn[2];
@@ -804,13 +831,14 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
   
   fn[0]=fn1;
   fn[1]=fn2;
-  fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
+  if (bVerbose) 
+    fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
     b[i] = read_first_frame(oenv,&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
   
   if (b[0] && b[1]) { 
     do {
-      comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
+      comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol,bVerbose);
       
       for (i=0; i<2; i++)
 	b[i] = read_next_frame(oenv,status[i],&fr[i]);
@@ -1049,7 +1077,8 @@ static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol, real abstol)
     }
 }
 
-void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *lastener)
+void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *lastener,
+	      gmx_bool bVerbose)
 {
   int        nre,nre1,nre2,block;
   ener_file_t in1, in2;
@@ -1059,7 +1088,8 @@ void comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,const char *
   t_enxframe *fr1,*fr2;
   gmx_bool       b1,b2;
   
-  fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
+  if (bVerbose)
+    fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
   in1 = open_enx(fn1,"r");
   in2 = open_enx(fn2,"r");
