@@ -975,7 +975,8 @@ static void make_benchmark_tprs(
                 EELTYPE(eelPME));
     
     /* Check if rcoulomb == rlist, which is necessary for plain PME. */
-    if (  (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist) )
+    if (  (ir->cutoff_scheme != ecutsVERLET) && 
+          (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
     {
         gmx_fatal(FARGS, "%s requires rcoulomb (%f) to be equal to rlist (%f).",
                 EELTYPE(eelPME), ir->rcoulomb, ir->rlist);
@@ -1009,10 +1010,19 @@ static void make_benchmark_tprs(
         box_size[d] = sqrt(box_size[d]);
     }
 
-    /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
-    info->fsx[0] = box_size[XX]/ir->nkx;
-    info->fsy[0] = box_size[YY]/ir->nky;
-    info->fsz[0] = box_size[ZZ]/ir->nkz;
+    if (ir->fourier_spacing > 0)
+    {
+        info->fsx[0] = ir->fourier_spacing;
+        info->fsy[0] = ir->fourier_spacing;
+        info->fsz[0] = ir->fourier_spacing;
+    }
+    else
+    {
+        /* Reconstruct fourierspacing per dimension from the number of grid points and box size */
+        info->fsx[0] = box_size[XX]/ir->nkx;
+        info->fsy[0] = box_size[YY]/ir->nky;
+        info->fsz[0] = box_size[ZZ]/ir->nkz;
+    }
 
     /* Put the input grid as first entry into the grid list */
     snew(pmegrid, *ntprs);
@@ -1073,16 +1083,8 @@ static void make_benchmark_tprs(
             ir->rcoulomb = info->rcoulomb[0]*pmegrid[j].fac;
 
             /* Adjust other radii since various conditions neet to be fulfilled */
-            if (eelPME == ir->coulombtype)
-            {
-                /* plain PME, rcoulomb must be equal to rlist */
-                ir->rlist = ir->rcoulomb;
-            }
-            else
-            {
-                /* rlist must be >= rcoulomb, we keep the size of the buffer region */
-                ir->rlist = ir->rcoulomb + nlist_buffer;
-            }
+            /* rlist must be >= rcoulomb, we keep the size of the buffer region */
+            ir->rlist = ir->rcoulomb + nlist_buffer;
 
             if (ScaleRvdw)
             {

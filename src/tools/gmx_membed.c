@@ -3658,15 +3658,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
         
-        if (useGPU)
-        {
-            if (fplog)
-            {
-                fprintf(fplog,"Removing all charge groups because of GPU\n");
-            }
-            remove_chargegroups(mtop);
-        }
-
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
 #endif
