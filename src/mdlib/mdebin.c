@@ -644,13 +644,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     }
     snew(setname,nsetsextend); 
     
-    if (fep->bPrintEnergy)  
-    { 
-        sprintf(buf,"%s (%s)","Energy",unit_energy);
-        setname[s] = strdup(buf);
-        s+=1;
-    }
-    
     if ((fep->n_lambda > 0) && (fep->elmcmove > elmcmoveNO))
     {
         /* state for the fep_vals, if we have alchemical sampling */
@@ -659,6 +652,13 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         s+=1;
     }
 
+    if (fep->bPrintEnergy)  
+    { 
+        sprintf(buf,"%s (%s)","Energy",unit_energy);
+        setname[s] = strdup(buf);
+        s+=1;
+    }
+    
     for (i=0;i<efptNR;i++) 
     {
         if (fep->separate_dvdl[i]) { 
