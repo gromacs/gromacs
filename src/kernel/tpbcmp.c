@@ -40,6 +40,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "main.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -226,8 +227,8 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2,gmx_bool bVer
       cmp_int(fp,buf,i,il1->iatoms[i],il2->iatoms[i]);
 }
 
-void cmp_iparm(FILE *fp,const char *s,t_functype ft,
-	       t_iparams ip1,t_iparams ip2,real ftol,real abstol) 
+gmx_bool cmp_iparm(FILE *fp,const char *s,t_functype ft,
+		   t_iparams ip1,t_iparams ip2,real ftol,real abstol) 
 {
   int i;
   gmx_bool bDiff;
@@ -241,6 +242,7 @@ void cmp_iparm(FILE *fp,const char *s,t_functype ft,
     fprintf(fp,"%s2: ",s);
     pr_iparams(fp,ft,&ip2);
   }
+  return bDiff;
 }
 
 void cmp_iparm_AB(FILE *fp,const char *s,t_functype ft,t_iparams ip1,real ftol,real abstol) 
@@ -269,6 +271,81 @@ void cmp_iparm_AB(FILE *fp,const char *s,t_functype ft,t_iparams ip1,real ftol,r
   }
 }
 
+static int my_nra=0;
+static t_iparams *my_ip;
+static int cmp_ilist_qsort(const void *a,const void *b)
+{
+  t_iatom *ia = (t_iatom *)a;
+  t_iatom *ib = (t_iatom *)b;
+  int j,idiff;
+  real diff;
+  
+  for(j=1; (j<my_nra); j++) {
+    idiff = ia[j]-ib[j];
+    if (idiff != 0)
+      return idiff;
+  }
+  for(j=0; (j<MAXFORCEPARAM); j++) {
+    diff = my_ip[ia[0]].generic.buf[j] - my_ip[ib[0]].generic.buf[j];
+    if (diff < 0)
+      return -1;
+    else if (diff > 0)
+      return 1;
+  }
+  return 0;
+}
+
+static gmx_bool cmp_bondeds(FILE *fp,t_idef *id1,t_idef *id2,
+			    real ftol,real abstol,gmx_bool bVerbose)
+{
+  int i,j,k,ft1,ft2;
+  gmx_bool cb = FALSE,atok;
+  char buf[STRLEN];
+  
+  for(i=0; (i<F_NRE); i++) {
+    cmp_int(fp,"idef->il[i].nr",-1,id1->il[i].nr,id2->il[i].nr);
+    if (id1->il[i].nr != id2->il[i].nr) {
+      if (NULL != fp)
+	fprintf(fp,"Radically different topologies. Skipping to next interaction.\n");
+      cb = TRUE;
+      continue;
+    }
+    if (id1->il[i].nr == 0)
+      continue;
+    /* Sort the ilists! */
+    my_nra = interaction_function[i].nratoms+1;
+    my_ip = id1->iparams;
+    qsort(id1->il[i].iatoms,id1->il[i].nr/my_nra,my_nra*sizeof(id1->il[i].iatoms[0]),
+	  cmp_ilist_qsort);
+    my_ip = id2->iparams;
+    qsort(id2->il[i].iatoms,id2->il[i].nr/my_nra,my_nra*sizeof(id2->il[i].iatoms[0]),
+	  cmp_ilist_qsort);
+    for(j=0; (j<id1->il[i].nr); j+=my_nra) {
+      ft1 = id1->il[i].iatoms[j];
+      ft2 = id2->il[i].iatoms[j];
+      atok = TRUE;
+      for(k=1; (k<my_nra); k++)
+	atok = atok && (id1->il[i].iatoms[j+k] == id2->il[i].iatoms[j+k]);
+      if (atok) {
+	sprintf(buf,"Logical comparison %s entry %d/%d ",
+		interaction_function[i].name,j,id1->il[i].nr);
+	cb = cb || cmp_iparm(fp,buf,i,
+			     id1->iparams[ft1],id2->iparams[ft2],
+			     ftol,abstol);
+      }
+      else {
+	fprintf(fp,"Atoms different for %s ",interaction_function[i].name);
+	for(k=0; (k<interaction_function[i].nratoms); k++)
+	  fprintf(fp,"  %d - %d",id1->il[i].iatoms[j+1+k],
+		  id2->il[i].iatoms[j+1+k]);
+	fprintf(fp,"\n");
+	cb = TRUE; 
+      }
+    }
+  }
+  return cb;
+}
+
 static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol,real abstol,
 		     gmx_bool bVerbose)
 {
@@ -280,16 +357,19 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol,real abstol,
   if (id2) {
     cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
     cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
-    for(i=0; (i<id1->ntypes); i++) {
-      sprintf(buf1,"idef->functype[%d]",i);
-      sprintf(buf2,"idef->iparam[%d]",i);
-      cmp_int(fp,buf1,i,(int)id1->functype[i],(int)id2->functype[i]);
-      cmp_iparm(fp,buf2,id1->functype[i],
-		id1->iparams[i],id2->iparams[i],ftol,abstol);
-    }
     cmp_real(fp,"fudgeQQ",-1,id1->fudgeQQ,id2->fudgeQQ,ftol,abstol);
-    for(i=0; (i<F_NRE); i++)
-      cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]),bVerbose);
+    if (cmp_bondeds(fp,id1,id2,ftol,abstol,bVerbose)) {
+      fprintf(fp,"Logical differences in topologies. Detailed check next.\n");
+      for(i=0; (i<id1->ntypes); i++) {
+	sprintf(buf1,"idef->functype[%d]",i);
+	sprintf(buf2,"idef->iparam[%d]",i);
+	cmp_int(fp,buf1,i,(int)id1->functype[i],(int)id2->functype[i]);
+	cmp_iparm(fp,buf2,id1->functype[i],
+		  id1->iparams[i],id2->iparams[i],ftol,abstol);
+      }
+      for(i=0; (i<F_NRE); i++)
+	cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]),bVerbose);
+    }
   } else {
     for(i=0; (i<id1->ntypes); i++)
       cmp_iparm_AB(fp,"idef->iparam",id1->functype[i],id1->iparams[i],ftol,abstol);
