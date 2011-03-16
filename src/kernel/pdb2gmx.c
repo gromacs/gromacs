@@ -532,36 +532,45 @@ static int read_pdball(const char *inf, const char *outf,char *title,
 }
 
 void process_chain(t_atoms *pdba, rvec *x, 
-		   gmx_bool bTrpU,gmx_bool bPheU,gmx_bool bTyrU,
-		   gmx_bool bLysMan,gmx_bool bAspMan,gmx_bool bGluMan,
-		   gmx_bool bHisMan,gmx_bool bArgMan,gmx_bool bGlnMan,
-		   real angle,real distance,t_symtab *symtab,
-		   int nrr,const rtprename_t *rr)
+                   gmx_bool bTrpU,gmx_bool bPheU,gmx_bool bTyrU,
+                   gmx_bool bLysMan,gmx_bool bAspMan,gmx_bool bGluMan,
+                   gmx_bool bHisMan,gmx_bool bArgMan,gmx_bool bGlnMan,
+                   real angle,real distance,t_symtab *symtab,
+                   int nrr,const rtprename_t *rr,gmx_bool bAllProtonated)
 {
   /* Rename aromatics, lys, asp and histidine */
   if (bTyrU) rename_bb(pdba,"TYR","TYRU",FALSE,symtab);
   if (bTrpU) rename_bb(pdba,"TRP","TRPU",FALSE,symtab);
   if (bPheU) rename_bb(pdba,"PHE","PHEU",FALSE,symtab);
-  if (bLysMan) 
-    rename_bbint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
-  if (bArgMan) 
-    rename_bbint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
-  if (bGlnMan) 
-    rename_bbint(pdba,"GLN",get_glntp,FALSE,symtab,nrr,rr);
-  if (bAspMan) 
-    rename_bbint(pdba,"ASP",get_asptp,FALSE,symtab,nrr,rr);
+  if (bAllProtonated)
+  {
+      rename_bb(pdba,"ASP","ASPH",FALSE,symtab);
+      rename_bb(pdba,"GLU","GLUH",FALSE,symtab);
+      rename_bb(pdba,"HIS","HISH",FALSE,symtab);
+      /* Need to add something for C-terminus as well */
+  }
   else
-    rename_bb(pdba,"ASPH","ASP",FALSE,symtab);
-  if (bGluMan) 
-    rename_bbint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
-  else
-    rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
+  {
+      if (bLysMan) 
+          rename_bbint(pdba,"LYS",get_lystp,FALSE,symtab,nrr,rr);
+      if (bArgMan) 
+          rename_bbint(pdba,"ARG",get_argtp,FALSE,symtab,nrr,rr);
+      if (bGlnMan) 
+          rename_bbint(pdba,"GLN",get_glntp,FALSE,symtab,nrr,rr);
+      if (bAspMan) 
+          rename_bbint(pdba,"ASP",get_asptp,FALSE,symtab,nrr,rr);
+      else
+          rename_bb(pdba,"ASPH","ASP",FALSE,symtab);
+      if (bGluMan) 
+          rename_bbint(pdba,"GLU",get_glutp,FALSE,symtab,nrr,rr);
+      else
+          rename_bb(pdba,"GLUH","GLU",FALSE,symtab);
 
-  if (!bHisMan)
-    set_histp(pdba,x,angle,distance);
-  else
-    rename_bbint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
-
+      if (!bHisMan)
+          set_histp(pdba,x,angle,distance);
+      else
+          rename_bbint(pdba,"HIS",get_histp,TRUE,symtab,nrr,rr);
+  }
   /* Initialize the rtp builing block names with the residue names
    * for the residues that have not been processed above.
    */
@@ -1123,7 +1132,7 @@ int main(int argc, char *argv[])
 
   /* Command line arguments must be static */
   static gmx_bool bNewRTP=FALSE;
-  static gmx_bool bInter=FALSE, bCysMan=FALSE; 
+  static gmx_bool bInter=FALSE, bCysMan=FALSE, bAllProtons=FALSE; 
   static gmx_bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static gmx_bool bGlnMan=FALSE, bArgMan=FALSE;
   static gmx_bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
@@ -1156,6 +1165,8 @@ int main(int argc, char *argv[])
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
       "Interactive termini selection, iso charged" },
+    { "-allprotons", FALSE, etBOOL, {&bAllProtons},
+      "Add all protons to possible protonation centers (ASP, GLU, C-terminus)" },
     { "-lys",    FALSE, etBOOL, {&bLysMan}, 
       "Interactive Lysine selection, iso charged" },
     { "-arg",    FALSE, etBOOL, {&bArgMan}, 
@@ -1565,8 +1576,8 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
       
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
-		  nrtprename,rtprename);
+                  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab,
+                  nrtprename,rtprename,bAllProtons);
       
         cc->chainstart[cc->nterpairs] = pdba->nres;
         j = 0;
@@ -1668,16 +1679,29 @@ int main(int argc, char *argv[])
             }
             else 
             {
-                if(bTerMan && ntdblist>1)
+                /* Default choice */
+                cc->ctdb[i] = tdblist[0];
+                if (bAllProtons) 
                 {
-                    sprintf(select,"Select end terminus type for %s-%d",
-                            *pdba->resinfo[cc->r_end[i]].name,
-                            pdba->resinfo[cc->r_end[i]].nr);
-                    cc->ctdb[i] = choose_ter(ntdblist,tdblist,select);
+                    /* Look for COOH */
+                    for(k=0; (k<ntdblist); k++)
+                    {
+                        if (strstr((*tdblist)[k].name,"COOH") != NULL)
+                        {
+                            cc->ctdb[i] = tdblist[k];
+                            break;
+                        }
+                    }
                 }
-                else
+                else 
                 {
-                    cc->ctdb[i] = tdblist[0];
+                    if(bTerMan && ntdblist>1)
+                    {
+                        sprintf(select,"Select end terminus type for %s-%d",
+                                *pdba->resinfo[cc->r_end[i]].name,
+                                pdba->resinfo[cc->r_end[i]].nr);
+                        cc->ctdb[i] = choose_ter(ntdblist,tdblist,select);
+                    }
                 }
                 printf("End terminus %s-%d: %s\n",
                        *pdba->resinfo[cc->r_end[i]].name,
