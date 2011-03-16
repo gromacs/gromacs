@@ -65,6 +65,8 @@ void gmx_log_close(FILE *fp);
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 			    int val,const char *name);
+void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
+                           gmx_large_int_t val,const char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.

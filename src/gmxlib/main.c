@@ -200,6 +200,54 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
+void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
+                           gmx_large_int_t val, const char *name)
+{
+  gmx_large_int_t  *ibuf;
+  int p;
+  gmx_bool bCompatible;
+
+  if (NULL != log)
+      fprintf(log,"Multi-checking %s ... ",name);
+  
+  if (ms == NULL)
+    gmx_fatal(FARGS,
+	      "check_multi_int called with a NULL communication pointer");
+
+  snew(ibuf,ms->nsim);
+  ibuf[ms->sim] = val;
+  gmx_sumli_sim(ms->nsim,ibuf,ms);
+  
+  bCompatible = TRUE;
+  for(p=1; p<ms->nsim; p++)
+    bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+  
+  if (bCompatible) 
+  {
+      if (NULL != log)
+          fprintf(log,"OK\n");
+  }
+  else 
+  {
+      if (NULL != log)
+      {
+          fprintf(log,"\n%s is not equal for all subsystems\n",name);
+          for(p=0; p<ms->nsim; p++)
+          {
+              char strbuf[255];
+              /* first make the format string */
+              snprintf(strbuf, 255, "  subsystem %%d: %s\n", 
+                       gmx_large_int_pfmt);
+              fprintf(log,strbuf,p,ibuf[p]);
+          }
+      }
+      gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
+  }
+  
+  sfree(ibuf);
+}
+
+
 void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
                    unsigned long Flags, FILE** fplog)
 {

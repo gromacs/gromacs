@@ -124,58 +124,41 @@ typedef struct {
 static gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
                                            gmx_large_int_t nsteps)
 {
-    int steps_out;
+    gmx_large_int_t steps_out;
 
     if MASTER(cr)
     {
-        int *buf;
+        gmx_large_int_t *buf;
         int s;
-        int nsteps_int;
-        gmx_bool set=FALSE;
         int s_smallest;
 
         snew(buf,cr->ms->nsim);
 
-        nsteps_int=(int)nsteps;
-        if (nsteps > INT_MAX)
-        {
-            nsteps_int=INT_MAX-1;
-        }
-        else if(nsteps<INT_MIN)
-        {
-            nsteps_int=-1;
-        }
-        buf[cr->ms->sim] = nsteps_int;
-        /* TODO: fix this to be gmx_large_int_t */
-        gmx_sumi_sim(cr->ms->nsim, buf, cr->ms);
+        buf[cr->ms->sim] = nsteps;
+        gmx_sumli_sim(cr->ms->nsim, buf, cr->ms);
 
-        steps_out=INT_MAX-1;
+        steps_out=-1;
         for(s=0; s<cr->ms->nsim; s++)
         {
             /* find the smallest positive number */
-            if (buf[s]>= 0 && buf[s]<steps_out)
+            if (buf[s]>= 0 && ((steps_out < 0) || (buf[s]<steps_out)) )
             {
                 steps_out=buf[s];
                 s_smallest=s;
-                set=TRUE;
             }
         }
         sfree(buf);
 
         /* if we're the limiting simulation, don't do anything */
-        if (!set ) /*|| (s_smallest == cr->ms->sim) )*/
+        if ((steps_out>=0 && steps_out<nsteps) && (s_smallest != cr->ms->sim) )
         {
-            steps_out=-1;
-        }
-        else if ((steps_out>=0 && steps_out<nsteps) && (s_smallest != cr->ms->sim) )
-        {
-            fprintf(stderr, 
-                    "Will stop simulation %d after %d steps (because another simulation will end then).\n", 
-                    cr->ms->sim, steps_out);
+            char strbuf[255];
+            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
+            fprintf(stderr, strbuf, cr->ms->sim, steps_out);
         }
     }
     /* broadcast to non-masters */
-    gmx_bcast(sizeof(int), &steps_out, cr);
+    gmx_bcast(sizeof(gmx_large_int_t), &steps_out, cr);
     return steps_out;
 }
 
