@@ -124,7 +124,7 @@ static void calc_angle(int ePBC,matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h1,center1);  /* center is geometric mean */
       break;
     default:          /* group 1 does none of the above */
-      gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
+      gmx_fatal(FARGS,"Something wrong with contents of index file. Groups should contain 2 or 3 atoms.\n");
     }
 
   switch(gnx2)
