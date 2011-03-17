@@ -2612,7 +2612,7 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
 				    md, top, state->x, pbc, fr, &Eafter_self_coul);
       Eafter = Eafter_all - Eafter_self;
       Edelta_coul = (Eafter_coul - qhoprec->Ebefore_coul) - (Eafter_self_coul - qhoprec->Ebefore_self_coul);
-      Edelta = (Eafter-Ebefore) + (ir->titration_epsilon_r - 1.0) * Edelta_coul;
+      Edelta = (Eafter-Ebefore) + (1.0/ir->titration_epsilon_r - 1.0) * Edelta_coul;
 
       compute_E12(p, hop, Edelta);
 
