@@ -588,10 +588,10 @@ static int get_qhop_atoms(FILE *fplog,
     
   groups = &mtop->groups;
 
-  ngrps = ir->opts.ngqhopH;
+  ngrps = ir->opts.ngTitrationH;
 
   if (NULL != fplog)
-    fprintf(fplog, "ir->opts.ngqhopH = %d\n", ir->opts.ngqhopH);
+    fprintf(fplog, "ir->opts.ngTitrationH = %d\n", ir->opts.ngTitrationH);
 
   aloop = gmx_mtop_atomloop_all_init(mtop);
 
@@ -604,14 +604,14 @@ static int get_qhop_atoms(FILE *fplog,
     /* group loop */
     for(j=0; j<ngrps; j++)
       {
-	if (ggrpnr(groups, egcqhopH ,i) == j)
+	if (ggrpnr(groups, egcTitrationH ,i) == j)
 	  {
 	    qdb->H_map.H[qdb->H_map.atomid2H[i]]        = 1;
 	  }
       }
 
     /* *********************
-       Find the qhop atoms */
+       Find the Titration atoms */
 
     /* Do the resname and atomname show up in the qhop_resblocks? */
 
@@ -721,7 +721,7 @@ static int get_qhop_atoms(FILE *fplog,
       }
   }
   if (NULL != fplog)
-    fprintf(fplog,"There are %d qhop donors\n", q_atoms_nr);
+    fprintf(fplog,"There are %d Titration donors\n", q_atoms_nr);
 
   /* Assign atoms to each qhop_residue */
   aloop = gmx_mtop_atomloop_all_init(mtop);
@@ -1294,11 +1294,6 @@ int init_qhop(FILE *fplog,
   nr_qhop_atoms    = 0;
   nr_qhop_residues = 0;
 
-  if (ir->qhopmode == etQhopNONE)
-    {
-      return 0;
-    }
-
   if ((db = qhop_db_read("qamber99sb.ff", mtop)) == NULL)
     {
       gmx_fatal(FARGS,"Can not read qhop database information");
@@ -1308,8 +1303,8 @@ int init_qhop(FILE *fplog,
 
   qhoprec = fr->qhoprec;
 
-  qhoprec->qhopfreq = ir->qhopfreq;
-  qhoprec->qhopmode = ir->qhopmode;
+  qhoprec->qhopfreq = ir->titration_freq;
+  qhoprec->qhopmode = ir->titration_mode;
 
   snew(qhoprec->global_atom_to_qhop_atom, mtop->natoms);
   snew(qhoprec->f, mtop->natoms);
@@ -1319,8 +1314,10 @@ int init_qhop(FILE *fplog,
   /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
   scan_for_H(qhoprec, db);
 
-  db->constrain = ir->qhopconstr;
-
+  db->constrain = FALSE;
+  if (NULL != fplog)
+    fprintf(fplog,"Turning off constraint treatmet in Titration MD calculation\n");
+  
   qhop_connect_rtp_library(db);
 
   db->inertH = find_inert_atomtype(mtop, fr);
@@ -2615,7 +2612,7 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
 				    md, top, state->x, pbc, fr, &Eafter_self_coul);
       Eafter = Eafter_all - Eafter_self;
       Edelta_coul = (Eafter_coul - qhoprec->Ebefore_coul) - (Eafter_self_coul - qhoprec->Ebefore_self_coul);
-      Edelta = (Eafter-Ebefore) + (ir->userreal1 - 1.0) * Edelta_coul;
+      Edelta = (Eafter-Ebefore) + (ir->titration_epsilon_r - 1.0) * Edelta_coul;
 
       compute_E12(p, hop, Edelta);
 
@@ -3077,12 +3074,12 @@ static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
 
   switch (mode)
     {
-    case etQhopModeOne:
-    case etQhopModeGillespie:
+    case eTitrationModeOne:
+    case eTitrationModeGillespie:
       new_hop = hop;
       break;
 
-    case etQhopModeRandlist:
+    case eTitrationModeRandlist:
 
       /* make random order */
       {
@@ -3105,7 +3102,7 @@ static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
 	break;
       }
 
-    case etQhopModeList:
+    case eTitrationModeList:
 
       /* Sort according to probability
        * There's not gonna be a lot of hops, so just bubble sort them. */
@@ -3219,7 +3216,7 @@ void do_qhop(FILE *fplog,
 		       &(qr->hop[i]),
 		       fr->qhoprec,pbc,step, db);
 	  
-	  if (qr->qhopmode == etQhopModeOne)
+	  if (qr->qhopmode == eTitrationModeOne)
 	    {
 	      break;
 	    }
@@ -3256,7 +3253,7 @@ void do_qhop(FILE *fplog,
 		  
 		  /*      scale_velocities();*/
 
-		  if (qr->qhopmode != etQhopModeOne)
+		  if (qr->qhopmode != eTitrationModeOne)
 		    {
 		      /* Zap all hops whose reactants just was consumed. */
 		      for (j = i+1; j < qr->nr_hops; j++)

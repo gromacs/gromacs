@@ -130,7 +130,7 @@ const char *ecomb_names[eCOMB_NR+1] = {
 const char *gtypes[egcNR+1] = {
   "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
   "User1", "User2", "VCM", "XTC", "Or. Res. Fit", "QMMM", 
-  "qhop-H", NULL 
+  "Titration-H", NULL 
 };
 
 const char *efep_names[efepNR+1] = {
@@ -210,6 +210,10 @@ const char *eMultentOpt_names[eMultentOptNR+1] = {
   "multiple_entries", "no", "use_last", NULL
 };
 
-const char *qhop_names[etQhopModeNR+1] = {
-  "none", "one", "list", "randlist", "gillespie", NULL
+const char *eTitrationAlg_names[eTitrationAlgNR+1] = {
+  "none", "ITMD", "Qhop", NULL
+};
+
+const char *eTitrationMode_names[eTitrationModeNR+1] = {
+  "randlist", "one", "list", "gillespie", NULL
 };

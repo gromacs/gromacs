@@ -791,7 +791,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         signal_handler_install();
     }
 
-    if (fr->bqhop)
+    if (fr->titration_alg != eTitrationAlgNone)
     {
         if (integrator[inputrec->eI].func == do_md
             || integrator[inputrec->eI].func == do_steep

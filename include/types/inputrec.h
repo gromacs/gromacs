@@ -92,10 +92,8 @@ typedef struct {
   int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
   gmx_bool    *bOPT;
   gmx_bool    *bTS;
-  /* qhop related stuff */
-  int     ngqhopH;
-  /* int     ngqhopdonors; */
-/*   int     ngqhopacceptors; */
+  /* Titration MD related stuff */
+  int     ngTitrationH;
 } t_grpopts; 
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
@@ -136,9 +134,9 @@ typedef struct {
   int        nstfout;     /* Output frequency for pull f */
   int        ePBC;        /* the boundary conditions */
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
-  gmx_bool       bRefAt;      /* do we need reference atoms for a group COM ? */
+  gmx_bool   bRefAt;      /* do we need reference atoms for a group COM ? */
   int        cosdim;      /* dimension for cosine weighting, -1 if none */
-  gmx_bool       bVirial;     /* do we need to add the pull virial? */
+  gmx_bool   bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   rvec       *rbuf;       /* COM calculation buffer */
@@ -289,10 +287,11 @@ typedef struct {
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
 
-  gmx_bool bqhop;
-  int   qhopfreq;
-  int   qhopmode;
-  int   qhopconstr;
+  int   titration_alg;  /* E.g. None, ITMD, Qhop */
+  int   titration_freq; /* In steps */
+  int   titration_mode; /* Method for selecting the hoppable proton */
+  real  titration_vscale_radius; /* Radius around reaction for scaling the velocities */
+  real  titration_epsilon_r; /* For scaling the MM influence on the QM subsystem */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

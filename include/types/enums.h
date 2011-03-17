@@ -246,12 +246,13 @@ enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
 
-enum {etQhopModeNONE,
-      etQhopModeOne,       /* Pick one at random */
-      etQhopModeList,      /* Sort the list according to probability before any hopping attempts */
-      etQhopModeRandlist,  /* Randomize the list of hops */
-      etQhopModeGillespie, /* Do a qhopfreq * delta_t Gillespie simulation */
-      etQhopModeNR
+enum {eTitrationAlgNone, eTitrationAlgITMD, eTitrationAlgQhop, eTitrationAlgNR };
+
+enum {eTitrationModeRandlist,  /* Randomize the list of hops */
+      eTitrationModeOne,       /* Pick one at random */
+      eTitrationModeList,      /* Sort the list according to probability before any hopping attempts */
+      eTitrationModeGillespie, /* Do a titration_freq * delta_t Gillespie simulation */
+      eTitrationModeNR
 };
 
 #ifdef __cplusplus

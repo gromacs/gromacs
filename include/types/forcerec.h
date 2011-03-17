@@ -351,8 +351,8 @@ typedef struct {
   /* QM-MM neighborlists */
   t_nblist QMMMlist;
 
-  /* qhop stuff */
-  gmx_bool    bqhop;
+  /* Titration MD stuff */
+  int         titration_alg;
   t_qhoprec   *qhoprec;
   t_nblist    qhopnblist;
   gmx_bool    bDo_qhop;

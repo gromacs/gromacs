@@ -1761,11 +1761,11 @@ void init_forcerec(FILE *fp,
     fr->bQMMM      = ir->bQMMM;   
     fr->qr         = mk_QMMMrec();
     
-    if (ir->bqhop)
+    if (ir->titration_alg != eTitrationAlgNone)
     {
-        fprintf(stderr, "qhop computation requested. Good luck....\n");
+        fprintf(stderr, "Titration MD computation requested. May the force be with you....\n");
     }
-    fr->bqhop = ir->bqhop;
+    fr->titration_alg = ir->titration_alg;
     fr->qhoprec = mk_qhoprec();
 
     /* Set all the static charge group info */

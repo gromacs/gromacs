@@ -375,7 +375,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        init_nblist(&fr->QMMMlist,NULL,
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
-   if(fr->bqhop)
+   if(fr->titration_alg != eTitrationAlgNone)
    {
        init_nblist(&fr->qhopnblist,NULL,
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
@@ -416,7 +416,7 @@ static void reset_neighbor_list(t_forcerec *fr,gmx_bool bLR,int nls,int eNL)
             /* only reset the short-range nblist */
             reset_nblist(&(fr->QMMMlist));
         }
-        if (fr->bqhop)
+        if (fr->titration_alg != eTitrationAlgNone)
         { 
             /* only reset the short-range nblist */
             reset_nblist(&(fr->qhopnblist));
@@ -2791,7 +2791,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                                    bDoLongRange,bDoForces,f,
                                    TRUE,FALSE);
         }
-        if (fr->bqhop )
+        if (fr->titration_alg != eTitrationAlgNone)
         {
             nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                                    grid,x,ns->bexcl,ns->bExcludeAlleg,

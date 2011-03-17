@@ -1534,9 +1534,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         fprintf(fplog,"\n");
     }
-    if(fr->bqhop)
+    if (fr->titration_alg != eTitrationAlgNone)
     {
-/*         init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms, &qhop_database); */
         /* Finalize qhoprec and mdatoms, extend the topology */
         make_ilib(fr->qhoprec->db);
         qhop_attach_ilib(top, fr->qhoprec->db);
@@ -1928,7 +1927,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (!bFirstStep)
         {
-            if (fr->bqhop && do_per_step(step,ir->qhopfreq))
+            if ((fr->titration_alg != eTitrationAlgNone) && do_per_step(step,ir->titration_freq))
             { 
                 fr->qhoprec->constr = constr;
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
@@ -1938,7 +1937,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         /* Keep inactive hydrogens from drifting away. */
-        if (fr->bqhop)
+        if (fr->titration_alg != eTitrationAlgNone)
         {
             fold_inactive_protons(fr->qhoprec, state->x, state->v);
         }

@@ -173,7 +173,7 @@ static void rb_add_file(qhop_resblocks *rb, char *f, t_symtab *tab)
 	  printf("Adding file %s\n", f);
 	  /* Copy the filename to the array in rb.*/
 	  srenew(rb->files, rb->nf+1);
-	  rb->files[rb->nf++] = *(put_symtab(tab, f));/*trim_strndup(f, 256);*/
+	  rb->files[rb->nf++] = *(put_symtab(tab, f));
 	}
     }
   else
@@ -231,14 +231,15 @@ static void rb_add_res(qhop_resblocks_t rb, currentRes *ri, char *name, t_symtab
       if (!found)
 	{
 	  ri->r = rb->qrt[ri->rt].nsubres;
-	  if (ri->r != 0)
-	    srenew(rb->qrt[ri->rt].subres, rb->qrt[ri->rt].nsubres+1);
-	  else
+	  if (ri->r == 0)
 	    snew(rb->qrt[ri->rt].subres, 1);
-	  rb->qrt[ri->rt].subres[ri->r].na = 0;
-	  rb->qrt[ri->rt].subres[ri->r].nd = 0;
+	  else
+	    {	  
+	      srenew(rb->qrt[ri->rt].subres, rb->qrt[ri->rt].nsubres+1);
+	      memset(&(rb->qrt[ri->rt].subres[ri->r]),0,sizeof(rb->qrt[ri->rt].subres[ri->r]));
+	    }
 	  rb->qrt[ri->rt].subres[rb->qrt[ri->rt].nsubres++].name = strdup(name);
-	  /* *(put_symtab(tab, name));*/ /*trim_strndup(name, 6);*/
+	  rb->qrt[ri->rt].subres[ri->r].irtp = NOTSET;
 	  /*add_to_record(name, &(rb->res[ri->rt][ri->r].name),
 	    &(rb->nres[ri->rt]), RNMLEN, eUPDATE_INDEX);*/
 	}

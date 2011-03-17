@@ -164,7 +164,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
-    if (ir->bqhop){
+    if (ir->titration_alg != eTitrationAlgNone){
       srenew(md->bqhopdonor,md->nalloc);
       srenew(md->bqhopacceptor,md->nalloc);
       for(k=md->nr; (k<md->nalloc); k++) {
@@ -266,7 +266,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
-    if (ir->bqhop)
+    if (ir->titration_alg != eTitrationAlgNone)
       {
 	md->bqhopdonor[i]    = FALSE;
 	md->bqhopacceptor[i] = FALSE;

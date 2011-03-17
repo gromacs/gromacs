@@ -555,7 +555,7 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol, real
     cmp_rvec(fp,"inputrec->grpopts.acc",i,opt1->acc[i],opt2->acc[i],ftol,abstol);
   for(i=0; (i<min(opt1->ngfrz,opt2->ngfrz)); i++)
     cmp_ivec(fp,"inputrec->grpopts.nFreeze",i,opt1->nFreeze[i],opt2->nFreeze[i]);
-  cmp_int(fp,"inputrec->grpopts.ngqhopH",-1,opt1->ngqhopH,opt2->ngqhopH);
+  cmp_int(fp,"inputrec->grpopts.ngTitrationH",-1,opt1->ngTitrationH,opt2->ngTitrationH);
 }
 
 static void cmp_cosines(FILE *fp,const char *s,t_cosines c1[DIM],t_cosines c2[DIM],real ftol, real abstol)
@@ -736,10 +736,13 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->QMconstraints",-1,ir1->QMconstraints,ir2->QMconstraints);
   cmp_int(fp,"inputrec->QMMMscheme",-1,ir1->QMMMscheme,ir2->QMMMscheme);
   cmp_int(fp,"inputrec->scalefactor",-1,ir1->scalefactor,ir2->scalefactor);
-  cmp_bool(fp,"inputrec->bqhop",-1,ir1->bqhop,ir2->bqhop);
-  cmp_int(fp,"inputrec->qhopfreq",-1,ir1->qhopfreq,ir2->qhopfreq);
-  cmp_int(fp,"inputrec->qhopmode",-1,ir1->qhopmode,ir2->qhopmode);
-  cmp_int(fp,"inputrec->qhopconstr",-1,ir1->qhopconstr,ir2->qhopconstr);
+  cmp_int(fp,"inputrec->titration_alg",-1,ir1->titration_alg,ir2->titration_alg);
+  cmp_int(fp,"inputrec->titration_freq",-1,ir1->titration_freq,ir2->titration_freq);
+  cmp_int(fp,"inputrec->titration_mode",-1,ir1->titration_mode,ir2->titration_mode);
+  cmp_real(fp,"inputrec->titration_vscale_radius",-1,ir1->titration_vscale_radius,
+	   ir2->titration_vscale_radius,ftol,abstol);
+  cmp_real(fp,"inputrec->titration_epsilon_r",-1,ir1->titration_epsilon_r,
+	   ir2->titration_epsilon_r,ftol,abstol);
 }
 
 static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol,

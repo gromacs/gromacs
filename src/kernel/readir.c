@@ -77,7 +77,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],
-  qhopH[STRLEN];
+  titration_H[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -1019,14 +1019,14 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("bOPT",          bOPT, NULL);
   STYPE ("bTS",          bTS, NULL);
 
-  /* qhop */
-  CCTYPE ("Options for qhop simulations");
-  EETYPE("qhop", ir->bqhop, yesno_names); /* , nerror, TRUE); */
-  EETYPE("qhop-mode", ir->qhopmode, qhop_names);
-  STYPE ("qhop-hydrogens",  qhopH,          NULL);
-  ITYPE ("qhopfreq",  ir->qhopfreq,         10);
-  EETYPE("qhop-constraints", ir->qhopconstr, constraints);
-
+  /* Titration MD */
+  CCTYPE ("Options for titration MD simulations");
+  EETYPE("titration", ir->titration_alg, eTitrationAlg_names); /* , nerror, TRUE); */
+  EETYPE("titration-mode", ir->titration_mode, eTitrationMode_names);
+  STYPE ("titration-hydrogens", titration_H,          NULL);
+  ITYPE ("titration-freq",  ir->titration_freq,         10);
+  RTYPE ("titration-epsilon-r", ir->titration_epsilon_r, 0.7);
+  RTYPE ("titration-vscale_radius", ir->titration_vscale_radius, 1);
 
 
   /* Simulated annealing */
@@ -1789,7 +1789,7 @@ void do_index(const char* mdparin, const char *ndx,
   real    SAtime;
   gmx_bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS,nqhopH;	
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS,nTitration_H;	
   char    warn_buf[STRLEN];
 
   if (bVerbose)
@@ -2097,18 +2097,12 @@ void do_index(const char* mdparin, const char *ndx,
   do_numbering(natoms,groups,nofg,ptr1,grps,gnames,egcORFIT,
                restnm,egrptpALL_GENREST,bVerbose,wi);
 
-  /* qhop input processing */
-  nqhopH =  str_nelem(qhopH,MAXPTR,ptr1);
-  fprintf(stderr,"nqhopH = %d\n",nqhopH);
-  do_numbering(natoms,groups,nqhopH,ptr1,grps,
-	       gnames,egcqhopH,
+  /* Titration MD input processing */
+  nTitration_H =  str_nelem(titration_H,MAXPTR,ptr1);
+  do_numbering(natoms,groups,nTitration_H,ptr1,grps,
+               gnames,egcTitrationH,
                restnm,egrptpALL_GENREST,bVerbose,wi);
-  ir->opts.ngqhopH = nqhopH;
-/*   nqhopacceptorsg  =  str_nelem(qhopacc,MAXPTR,ptr1); */
-/*   do_numbering(natoms,groups,nqhopacceptorsg,ptr1, */
-/* 	       grps,gnames,egcqhopacceptors, */
-/*                restnm,egrptpALL_GENREST,bVerbose,wi); */
-/*   ir->opts.ngqhopacceptors = nqhopacceptorsg; */
+  ir->opts.ngTitrationH = nTitration_H;
   
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
@@ -2505,9 +2499,9 @@ void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,warninp_t wi)
       }
     }
   }
-  if (ir->bqhop && (ir->userreal1 <= 0)) 
+  if ((ir->titration_alg  != eTitrationAlgNone) && (ir->titration_epsilon_r <= 0)) 
   {
-      sprintf(warn_buf,"When using qhop you should have ir->userreal around 0.7, rather than setting it to %g",ir->userreal1);
+      sprintf(warn_buf,"When using titration MD you should set titration_epsilon_r around 0.7, rather than setting it to %g",ir->titration_epsilon_r);
       warning_error(wi,warn_buf);
   }
 }

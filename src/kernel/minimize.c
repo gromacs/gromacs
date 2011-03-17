@@ -926,12 +926,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
           nfile,fnm,&outf,&mdebin);
 
-  if(fr->bqhop)
+  if (fr->titration_alg != eTitrationAlgNone)
   {
-      /* init_qhop(cr, top_global, inputrec, fr,
-                state_global->x, state_global->box,
-                mdatoms, &qhop_database); */
-
       /* Complete the t_mdatoms and qhoprec, extend the topology. */
       make_ilib(fr->qhoprec->db);
       qhop_attach_ilib(top, fr->qhoprec->db);
@@ -2106,12 +2102,8 @@ double do_steep(FILE *fplog,t_commrec *cr,
   if (fplog)
     sp_header(fplog,SD,inputrec->em_tol,nsteps);
 
-  if(fr->bqhop)
+  if (fr->titration_alg != eTitrationAlgNone)
   {
-      /* init_qhop(cr, top_global, inputrec, fr,
-                state_global->x, state_global->box,
-                mdatoms, &qhop_database);*/
-
       /* Complete the t_mdatoms and qhoprec, extend the topology. */
       make_ilib(fr->qhoprec->db);
       qhop_attach_ilib(top, fr->qhoprec->db);

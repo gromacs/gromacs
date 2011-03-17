@@ -606,19 +606,29 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   qhop_db_t qdb;
   char buf[256], buf2[256];
   char *fn;
-  int i,j,nrtp=0, nah;
+  int i,j,nrtp, nah;
   double qtot;
   gpp_atomtype_t atype;
-  t_restp *bigrtp=NULL;
+  t_restp *bigrtp;
   t_symtab *stab=NULL;
   t_hackblock *ah=NULL;
+  int        nrtpf;
+  char       **rtpf;
+  char       rtp[STRLEN];
 
   snew(stab,1);
   open_symtab(stab);
 
   atype = read_atype(forcefield,stab);
-  sprintf(buf, "%s/aminoacids.rtp", forcefield);
-  read_resall(buf, &nrtp, &bigrtp, atype, stab, FALSE);
+  printf("Reading residue database... (%s)\n",forcefield);
+  nrtpf  = fflib_search_file_end(forcefield,".rtp",TRUE,&rtpf);
+  nrtp   = 0;
+  bigrtp = NULL;
+  for(i=0; (i<nrtpf); i++) {
+    read_resall(rtpf[i],&nrtp,&bigrtp,atype,stab,FALSE);
+    sfree(rtpf[i]);
+  }
+  sfree(rtpf);
 
   nah=read_h_db(forcefield,&ah);
 
@@ -1041,6 +1051,9 @@ void qhop_db_map_subres_atoms(qhop_db *db)
       /* Residue subtypes */
       for (r=0; r < db->rb.qrt[rt].nsubres; r++)
 	{
+	  if (NOTSET == db->rb.qrt[rt].subres[r].irtp)
+	    gmx_fatal(FARGS,"db->rb.qrt[%d].subres[%d].irtp not set properly for %s.\nMaybe your rtp file is not correct?",
+		      rt,r,db->rb.qrt[rt].subres[r].name);
 	  rtpr = &(db->rtp[db->rb.qrt[rt].subres[r].irtp]);
 
 	  snew(db->rb.qrt[rt].subres[r].iatomMap, rtpr->natom);
