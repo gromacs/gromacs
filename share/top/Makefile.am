@@ -31,7 +31,7 @@ topol_DATA = \
 	flexspce.itp	flexwat-ferguson.itp		ions.itp	\
 	spc.itp		spce.itp	tip3p.itp	tip4p.itp	\
 	dgsolv.dat	electroneg.dat	\
-	spc216.gro	tip4p.gro	\
+	spc-hydronium.gro	spc216.gro	tip4p.gro	\
 	residuetypes.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
 	cb-shift.dat	co-shift.dat	edissoc.dat			\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\

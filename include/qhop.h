@@ -11,9 +11,6 @@
 #include "tgroup.h"
 #include "gmx_qhop_db.h"
 #include "resall.h"
-/* #include "constr.h" */
-
-/* t_qhoprec *mk_qhoprec(void); */
 
 /*! \brief Initializes the qhoprec.
  * 
@@ -28,7 +25,8 @@
  *   - Reads in the hopping and force field parameters.
  * \return The number of titrating atoms.
  */
-extern int init_qhop(FILE *fplog,t_commrec *cr, gmx_mtop_t *mtop, 
+extern int init_qhop(FILE *fplog,const char *ff,
+		     t_commrec *cr, gmx_mtop_t *mtop, 
 		     t_inputrec *ir, const t_forcerec *fr,
 		     matrix box, t_mdatoms *md);
 
@@ -56,7 +54,6 @@ do_qhop(FILE *fplog,
 	t_forcerec *fr,
 	gmx_vsite_t *vsite,
 	rvec mu_tot,
-	/*gmx_genborn_t *born,*/ 
 	gmx_bool bBornRadii,
 	real T,
 	gmx_large_int_t step,

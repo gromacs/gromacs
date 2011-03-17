@@ -341,7 +341,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-	     const char *deviceOptions, unsigned long Flags);
+	     const char *deviceOptions, unsigned long Flags,
+	     const char *forcefield);
 /* Driver routine, that calls the different methods */
 
 void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);

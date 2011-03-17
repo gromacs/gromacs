@@ -34,7 +34,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="lysine" name="qLYN" water="FALSE">
+    <residue_type description="lysine" name="qLYS" water="FALSE">
       <res name="LYN">
         <acceptor name="NZ" product="LYS"/>
       </res>

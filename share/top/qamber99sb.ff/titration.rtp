@@ -260,3 +260,401 @@
 ; qHAC              |
 ;-------------------'
 
+[ qASP ]
+ [ atoms ]
+    N      N     -0.4157   10
+    H      H      0.2719   11
+   CA     CT      0.0341   12
+   HA     H1      0.0864   13
+   CB     CT     -0.0316   14
+  HB1     HC      0.0488   15
+  HB2     HC      0.0488   16
+   CG      C      0.6462   17
+  OD1      O     -0.5554   18
+  OD2     OH     -0.6376   19
+  HD2     HO      0.4747   20
+    C      C      0.5973   21
+    O      O     -0.5679   22
+ [ bonds ]
+  -C  N    0.13350  410032.0  ;  7,(1986),230;  AA
+  N  H    0.10100  363171.2  ;  7,(1986),230;  AA
+  N  CA    0.14490  282001.6  ;  7,(1986),230;  AA
+  CA  HA    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  RIBOSE
+  CA  CB    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CA  C    0.15220  265265.6  ;  7,(1986),230;  AA
+  CB  HB1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  HB2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  CG    0.15220  265265.6  ;  7,(1986),230;  AA
+  CG  OD1    0.12290  476976.0  ;  7,(1986),230;  AA,CYT,GUA,THY,URA
+  CG  OD2    0.13640  376560.0  ;  7,(1986),230;  TYR
+  OD2  HD2    0.09600  462750.4  ;  7,(1986),230;  SUGARS,SER,TYR
+  C  O    0.12290  476976.0  ;  7,(1986),230;  AA,CYT,GUA,THY,URA
+  C  +N    0.13350  410032.0  ;  7,(1986),230;  AA
+ [ angles ]
+  -C  N  H    120.000  418.400  ;  new99  general,  gln,  asn,changed  based  on  NMA  nmodes
+  -C  N  CA    121.900  418.400  ;  AA  general
+  H  N  CA    118.040  418.400  ;  new99  general,  changed  based  on  NMA  nmodes
+  N  CA  HA    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  N  CA  CB    109.700  669.440  ;  AA  ala,  general  (JACS  94,  2657)
+  N  CA  C    110.100  527.184  ;  AA  general
+  HA  CA  CB    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HA  CA  C    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  CB  CA  C    111.100  527.184  ;  AA  general
+  CA  CB  HB1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  HB2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  CG    111.100  527.184  ;  AA  general
+  HB1  CB  HB2    109.500  292.880  ;
+  HB1  CB  CG    109.500  418.400  ;  AA  gln  changed  based  on  NMA  nmodes
+  HB2  CB  CG    109.500  418.400  ;  AA  gln  changed  based  on  NMA  nmodes
+  CB  CG  OD1    120.400  669.440  ;
+  CB  CG  OD2    110.000  669.440  ;  new99
+  OD1  CG  OD2    120.000  669.440  ;
+  CG  OD2  HD2    113.000  418.400  ;  new99
+  CA  C  O    120.400  669.440  ;
+  CA  C  +N    116.600  585.760  ;  AA  general
+  O  C  +N    122.900  669.440  ;  AA  general
+ [ dihedrals ]
+  -CA  -C  N  H    180.0  10.46000  2  ;  AA,NMA
+  -CA  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -O  -C  N  H    180.0  10.46000  2  ;  JCC,7,(1986),230
+  -O  -C  N  H    0.0  8.36800  1  ;  J.C.cistrans-NMA  DE
+  -O  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -C  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  -C  N  CA  CB    0.0  8.36800  1  ;  new  for  99sb
+  -C  N  CA  CB    0.0  8.36800  2  ;  new  for  99sb
+  -C  N  CA  CB    0.0  1.67360  3  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.12968  2  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.75728  3  ;  new  for  99sb
+  H  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  CB    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  C    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  C  +N    180.0  1.88280  1  ;  new  for  99sb
+  N  CA  C  +N    180.0  6.61072  2  ;  new  for  99sb
+  N  CA  C  +N    180.0  2.30120  3  ;  new  for  99sb
+  HA  CA  C  O    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HA  CA  C  O    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HA  CA  C  +N    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  +N    0.0  0.83680  1  ;  new  for  99sb
+  CB  CA  C  +N    0.0  0.83680  2  ;  new  for  99sb
+  CB  CA  C  +N    0.0  1.67360  3  ;  new  for  99sb
+  CA  CB  CG  OD1    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CA  CB  CG  OD2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  HB1  CB  CG  OD1    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HB1  CB  CG  OD1    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HB1  CB  CG  OD2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  HB2  CB  CG  OD1    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HB2  CB  CG  OD1    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  OD2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CG  OD2  HD2    180.0  9.62320  2  ;  Junmei  et  al,  1999
+  OD1  CG  OD2  HD2    180.0  9.62320  2  ;  Junmei  et  al,  1999
+  OD1  CG  OD2  HD2    0.0  7.94960  1  ;  Junmei  et  al,  1999
+ [ impropers ]
+  -C  CA  N  H    180.00  4.60240  2  ;  new99
+  CA  +N  C  O    180.00  43.93200  2  ;  JCC,7,(1986),230
+  CB  OD1  CG  OD2    180.00  43.93200  2  ;
+  
+[ qGLU ]
+ [ atoms ]
+    N      N     -0.4157   10
+    H      H      0.2719   11
+   CA     CT      0.0145   12
+   HA     H1      0.0779   13
+   CB     CT     -0.0071   14
+  HB1     HC      0.0256   15
+  HB2     HC      0.0256   16
+   CG     CT     -0.0174   17
+  HG1     HC       0.043   18
+  HG2     HC       0.043   19
+   CD      C      0.6801   20
+  OE1      O     -0.5838   21
+  OE2     OH     -0.6511   22
+  HE2     HO      0.4641   23
+    C      C      0.5973   24
+    O      O     -0.5679   25
+ [ bonds ]
+  -C  N    0.13350  410032.0  ;  7,(1986),230;  AA
+  N  H    0.10100  363171.2  ;  7,(1986),230;  AA
+  N  CA    0.14490  282001.6  ;  7,(1986),230;  AA
+  CA  HA    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  RIBOSE
+  CA  CB    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CA  C    0.15220  265265.6  ;  7,(1986),230;  AA
+  CB  HB1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  HB2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  CG    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CG  HG1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CG  HG2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CG  CD    0.15220  265265.6  ;  7,(1986),230;  AA
+  CD  OE1    0.12290  476976.0  ;  7,(1986),230;  AA,CYT,GUA,THY,URA
+  CD  OE2    0.13640  376560.0  ;  7,(1986),230;  TYR
+  OE2  HE2    0.09600  462750.4  ;  7,(1986),230;  SUGARS,SER,TYR
+  C  O    0.12290  476976.0  ;  7,(1986),230;  AA,CYT,GUA,THY,URA
+  C  +N    0.13350  410032.0  ;  7,(1986),230;  AA
+ [ angles ]
+  -C  N  H    120.000  418.400  ;  new99  general,  gln,  asn,changed  based  on  NMA  nmodes
+  -C  N  CA    121.900  418.400  ;  AA  general
+  H  N  CA    118.040  418.400  ;  new99  general,  changed  based  on  NMA  nmodes
+  N  CA  HA    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  N  CA  CB    109.700  669.440  ;  AA  ala,  general  (JACS  94,  2657)
+  N  CA  C    110.100  527.184  ;  AA  general
+  HA  CA  CB    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HA  CA  C    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  CB  CA  C    111.100  527.184  ;  AA  general
+  CA  CB  HB1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  HB2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  CG    109.500  334.720  ;
+  HB1  CB  HB2    109.500  292.880  ;
+  HB1  CB  CG    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HB2  CB  CG    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  HG1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  HG2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  CD    111.100  527.184  ;  AA  general
+  HG1  CG  HG2    109.500  292.880  ;
+  HG1  CG  CD    109.500  418.400  ;  AA  gln  changed  based  on  NMA  nmodes
+  HG2  CG  CD    109.500  418.400  ;  AA  gln  changed  based  on  NMA  nmodes
+  CG  CD  OE1    120.400  669.440  ;
+  CG  CD  OE2    110.000  669.440  ;  new99
+  OE1  CD  OE2    120.000  669.440  ;
+  CD  OE2  HE2    113.000  418.400  ;  new99
+  CA  C  O    120.400  669.440  ;
+  CA  C  +N    116.600  585.760  ;  AA  general
+  O  C  +N    122.900  669.440  ;  AA  general
+ [ dihedrals ]
+  -CA  -C  N  H    180.0  10.46000  2  ;  AA,NMA
+  -CA  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -O  -C  N  H    180.0  10.46000  2  ;  JCC,7,(1986),230
+  -O  -C  N  H    0.0  8.36800  1  ;  J.C.cistrans-NMA  DE
+  -O  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -C  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  -C  N  CA  CB    0.0  8.36800  1  ;  new  for  99sb
+  -C  N  CA  CB    0.0  8.36800  2  ;  new  for  99sb
+  -C  N  CA  CB    0.0  1.67360  3  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.12968  2  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.75728  3  ;  new  for  99sb
+  H  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  CB    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  C    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  C  +N    180.0  1.88280  1  ;  new  for  99sb
+  N  CA  C  +N    180.0  6.61072  2  ;  new  for  99sb
+  N  CA  C  +N    180.0  2.30120  3  ;  new  for  99sb
+  HA  CA  C  O    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HA  CA  C  O    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HA  CA  C  +N    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  +N    0.0  0.83680  1  ;  new  for  99sb
+  CB  CA  C  +N    0.0  0.83680  2  ;  new  for  99sb
+  CB  CA  C  +N    0.0  1.67360  3  ;  new  for  99sb
+  CA  CB  CG  HG1    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CA  CB  CG  HG2    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CA  CB  CG  CD    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HB1  CB  CG  HG1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB1  CB  CG  HG2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB1  CB  CG  CD    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HB2  CB  CG  HG1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  HG2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  CD    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CB  CG  CD  OE1    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CG  CD  OE2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  HG1  CG  CD  OE1    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HG1  CG  CD  OE1    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HG1  CG  CD  OE2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  HG2  CG  CD  OE1    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HG2  CG  CD  OE1    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HG2  CG  CD  OE2    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CG  CD  OE2  HE2    180.0  9.62320  2  ;  Junmei  et  al,  1999
+  OE1  CD  OE2  HE2    180.0  9.62320  2  ;  Junmei  et  al,  1999
+  OE1  CD  OE2  HE2    0.0  7.94960  1  ;  Junmei  et  al,  1999
+ [ impropers ]
+  -C  CA  N  H    180.00  4.60240  2  ;  new99
+  CA  +N  C  O    180.00  43.93200  2  ;  JCC,7,(1986),230
+  CG  OE1  CD  OE2    180.00  43.93200  2  ;
+
+[ qLYS ]
+ [ atoms ]
+    N      N     -0.3479   10
+    H      H      0.2747   11
+   CA     CT       -0.24   12
+   HA     H1      0.1426   13
+   CB     CT     -0.0094   14
+  HB1     HC      0.0362   15
+  HB2     HC      0.0362   16
+   CG     CT      0.0187   17
+  HG1     HC      0.0103   18
+  HG2     HC      0.0103   19
+   CD     CT     -0.0479   20
+  HD1     HC      0.0621   21
+  HD2     HC      0.0621   22
+   CE     CT     -0.0143   23
+  HE1     HP      0.1135   24
+  HE2     HP      0.1135   25
+   NZ     N3     -0.3854   26
+  HZ1      H        0.34   27
+  HZ2      H        0.34   28
+  HZ3      H        0.34   29
+    C      C      0.7341   30
+    O      O     -0.5894   31
+ [ bonds ]
+  -C  N    0.13350  410032.0  ;  7,(1986),230;  AA
+  N  H    0.10100  363171.2  ;  7,(1986),230;  AA
+  N  CA    0.14490  282001.6  ;  7,(1986),230;  AA
+  CA  HA    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  RIBOSE
+  CA  CB    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CA  C    0.15220  265265.6  ;  7,(1986),230;  AA
+  CB  HB1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  HB2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CB  CG    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CG  HG1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CG  HG2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CG  CD    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CD  HD1    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CD  HD2    0.10900  284512.0  ;  ged  from  331  bsd  on  NMA  nmodes;  AA,  SUGARS
+  CD  CE    0.15260  259408.0  ;  7,(1986),230;  AA,  SUGARS
+  CE  HE1    0.10900  284512.0  ;  nged  from  331;  AA-lysine,  methyl  ammonium  cation
+  CE  HE2    0.10900  284512.0  ;  nged  from  331;  AA-lysine,  methyl  ammonium  cation
+  CE  NZ    0.14710  307105.6  ;  7,(1986),230;  LYS
+  NZ  HZ1    0.10100  363171.2  ;  7,(1986),230;  LYS
+  NZ  HZ2    0.10100  363171.2  ;  7,(1986),230;  LYS
+  NZ  HZ3    0.10100  363171.2  ;  7,(1986),230;  LYS
+  C  O    0.12290  476976.0  ;  7,(1986),230;  AA,CYT,GUA,THY,URA
+  C  +N    0.13350  410032.0  ;  7,(1986),230;  AA
+ [ angles ]
+  -C  N  H    120.000  418.400  ;  new99  general,  gln,  asn,changed  based  on  NMA  nmodes
+  -C  N  CA    121.900  418.400  ;  AA  general
+  H  N  CA    118.040  418.400  ;  new99  general,  changed  based  on  NMA  nmodes
+  N  CA  HA    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  N  CA  CB    109.700  669.440  ;  AA  ala,  general  (JACS  94,  2657)
+  N  CA  C    110.100  527.184  ;  AA  general
+  HA  CA  CB    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HA  CA  C    109.500  418.400  ;  AA  general  changed  based  on  NMA  nmodes
+  CB  CA  C    111.100  527.184  ;  AA  general
+  CA  CB  HB1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  HB2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CA  CB  CG    109.500  334.720  ;
+  HB1  CB  HB2    109.500  292.880  ;
+  HB1  CB  CG    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HB2  CB  CG    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  HG1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  HG2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CB  CG  CD    109.500  334.720  ;
+  HG1  CG  HG2    109.500  292.880  ;
+  HG1  CG  CD    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HG2  CG  CD    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CG  CD  HD1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CG  CD  HD2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CG  CD  CE    109.500  334.720  ;
+  HD1  CD  HD2    109.500  292.880  ;
+  HD1  CD  CE    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  HD2  CD  CE    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CD  CE  HE1    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CD  CE  HE2    109.500  418.400  ;  changed  based  on  NMA  nmodes
+  CD  CE  NZ    111.200  669.440  ;  AA  lys  (JCP  76,  1439)
+  HE1  CE  HE2    109.500  292.880  ;  AA  lys,  ch3nh4+
+  HE1  CE  NZ    109.500  418.400  ;  AA  lys,  ch3nh3+,  changed  based  on  NMA  nmodes
+  HE2  CE  NZ    109.500  418.400  ;  AA  lys,  ch3nh3+,  changed  based  on  NMA  nmodes
+  CE  NZ  HZ1    109.500  418.400  ;  AA  lys,  changed  based  on  NMA  nmodes
+  CE  NZ  HZ2    109.500  418.400  ;  AA  lys,  changed  based  on  NMA  nmodes
+  CE  NZ  HZ3    109.500  418.400  ;  AA  lys,  changed  based  on  NMA  nmodes
+  HZ1  NZ  HZ2    109.500  292.880  ;  AA  lys,  AA(end)
+  HZ1  NZ  HZ3    109.500  292.880  ;  AA  lys,  AA(end)
+  HZ2  NZ  HZ3    109.500  292.880  ;  AA  lys,  AA(end)
+  CA  C  O    120.400  669.440  ;
+  CA  C  +N    116.600  585.760  ;  AA  general
+  O  C  +N    122.900  669.440  ;  AA  general
+ [ dihedrals ]
+  -CA  -C  N  H    180.0  10.46000  2  ;  AA,NMA
+  -CA  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -O  -C  N  H    180.0  10.46000  2  ;  JCC,7,(1986),230
+  -O  -C  N  H    0.0  8.36800  1  ;  J.C.cistrans-NMA  DE
+  -O  -C  N  CA    180.0  10.46000  2  ;  AA,NMA
+  -C  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  -C  N  CA  CB    0.0  8.36800  1  ;  new  for  99sb
+  -C  N  CA  CB    0.0  8.36800  2  ;  new  for  99sb
+  -C  N  CA  CB    0.0  1.67360  3  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.12968  2  ;  new  for  99sb
+  -C  N  CA  C    0.0  1.75728  3  ;  new  for  99sb
+  H  N  CA  HA    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  CB    0.0  0.00000  0  ;  JCC,7,(1986),230
+  H  N  CA  C    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HA  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  HB2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  C  CA  CB  CG    0.0  0.65084  3  ;  JCC,7,(1986),230
+  N  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  N  CA  C  +N    180.0  1.88280  1  ;  new  for  99sb
+  N  CA  C  +N    180.0  6.61072  2  ;  new  for  99sb
+  N  CA  C  +N    180.0  2.30120  3  ;  new  for  99sb
+  HA  CA  C  O    0.0  3.34720  1  ;  Junmei  et  al,  1999
+  HA  CA  C  O    180.0  0.33472  3  ;  Junmei  et  al,  1999
+  HA  CA  C  +N    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  O    0.0  0.00000  0  ;  JCC,7,(1986),230
+  CB  CA  C  +N    0.0  0.83680  1  ;  new  for  99sb
+  CB  CA  C  +N    0.0  0.83680  2  ;  new  for  99sb
+  CB  CA  C  +N    0.0  1.67360  3  ;  new  for  99sb
+  CA  CB  CG  HG1    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CA  CB  CG  HG2    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CA  CB  CG  CD    0.0  0.75312  3  ;  Junmei  et  al,  1999
+  CA  CB  CG  CD    180.0  1.04600  2  ;  Junmei  et  al,  1999
+  CA  CB  CG  CD    180.0  0.83680  1  ;  Junmei  et  al,  1999
+  HB1  CB  CG  HG1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB1  CB  CG  HG2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB1  CB  CG  CD    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  HG1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  HG2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HB2  CB  CG  CD    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CB  CG  CD  HD1    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CB  CG  CD  HD2    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CB  CG  CD  CE    0.0  0.75312  3  ;  Junmei  et  al,  1999
+  CB  CG  CD  CE    180.0  1.04600  2  ;  Junmei  et  al,  1999
+  CB  CG  CD  CE    180.0  0.83680  1  ;  Junmei  et  al,  1999
+  HG1  CG  CD  HD1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HG1  CG  CD  HD2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HG1  CG  CD  CE    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  HG2  CG  CD  HD1    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HG2  CG  CD  HD2    0.0  0.62760  3  ;  Junmei  et  al,  1999
+  HG2  CG  CD  CE    0.0  0.66944  3  ;  Junmei  et  al,  1999
+  CG  CD  CE  HE1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CG  CD  CE  HE2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CG  CD  CE  NZ    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD1  CD  CE  HE1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD1  CD  CE  HE2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD1  CD  CE  NZ    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD2  CD  CE  HE1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD2  CD  CE  HE2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HD2  CD  CE  NZ    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CD  CE  NZ  HZ1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CD  CE  NZ  HZ2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  CD  CE  NZ  HZ3    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE1  CE  NZ  HZ1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE1  CE  NZ  HZ2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE1  CE  NZ  HZ3    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE2  CE  NZ  HZ1    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE2  CE  NZ  HZ2    0.0  0.65084  3  ;  JCC,7,(1986),230
+  HE2  CE  NZ  HZ3    0.0  0.65084  3  ;  JCC,7,(1986),230
+ [ impropers ]
+  -C  CA  N  H    180.00  4.60240  2  ;  new99
+  CA  +N  C  O    180.00  43.93200  2  ;  JCC,7,(1986),230

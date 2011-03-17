@@ -13,7 +13,8 @@ topol_DATA = \
 	aminoacids.r2b   ffbonded.itp     tip3p.itp	   urea.itp	\
 	aminoacids.rtp   ions.itp         tip4p.itp	   \
 	tip4pew.itp	 tip5p.itp	  watermodels.dat  gbsa.itp	\
-	spc.itp		 spce.itp         qamber99sb-qhop.dat
+	spc.itp		 spce.itp         	\
+	spc-hydronium.itp	titration.dat
 
 EXTRA_DIST = ${topol_DATA}
 

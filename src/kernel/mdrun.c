@@ -401,7 +401,7 @@ int main(int argc,char *argv[])
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char *dddlb_opt[] =
+  const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
@@ -411,6 +411,7 @@ int main(int argc,char *argv[])
   gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
+  const char *forcefield = "amber99sb";
 
   t_pargs pa[] = {
 
@@ -481,7 +482,9 @@ int main(int argc,char *argv[])
     { "-resetstep", FALSE, etINT, {&resetstep},
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-      "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
+      "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" },
+    { "-forcefield", FALSE, etSTR, {&forcefield},
+      "The force field used for Titration MD." }
 #ifdef GMX_OPENMM
     ,
     { "-device",  FALSE, etSTR, {&deviceOptions},
@@ -641,7 +644,8 @@ int main(int argc,char *argv[])
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
-                pforce, cpt_period,max_hours,deviceOptions,Flags);
+                pforce, cpt_period,max_hours,deviceOptions,Flags,
+                forcefield);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

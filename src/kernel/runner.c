@@ -338,7 +338,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
              int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions, unsigned long Flags)
+             const char *deviceOptions, unsigned long Flags,
+             const char *forcefield)
 {
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
@@ -797,7 +798,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             || integrator[inputrec->eI].func == do_steep
             || integrator[inputrec->eI].func == do_cg)
         {
-            init_qhop(fplog,cr,mtop,inputrec,fr,state->box,mdatoms);
+            init_qhop(fplog,forcefield,cr,mtop,inputrec,fr,state->box,mdatoms);
         }
         
     }

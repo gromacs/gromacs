@@ -1275,9 +1275,9 @@ static void qhop_connect_rtp_library(qhop_db *db)
   qhop_db_map_subres_bondeds(db); /* ditto. */
 }
 
-int init_qhop(FILE *fplog,
-		     t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
-		     const t_forcerec *fr/* , const rvec *x */, matrix box, t_mdatoms *md)
+int init_qhop(FILE *fplog,const char *ff,
+	      t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
+	      const t_forcerec *fr, matrix box, t_mdatoms *md)
 {
 
   int 
@@ -1294,7 +1294,7 @@ int init_qhop(FILE *fplog,
   nr_qhop_atoms    = 0;
   nr_qhop_residues = 0;
 
-  if ((db = qhop_db_read("qamber99sb.ff", mtop)) == NULL)
+  if ((db = qhop_db_read((char *)ff, mtop)) == NULL)
     {
       gmx_fatal(FARGS,"Can not read qhop database information");
     }

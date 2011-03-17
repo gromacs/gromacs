@@ -614,14 +614,16 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   t_hackblock *ah=NULL;
   int        nrtpf;
   char       **rtpf;
+  char       ffdir[STRLEN];
   char       rtp[STRLEN];
 
   snew(stab,1);
   open_symtab(stab);
 
-  atype = read_atype(forcefield,stab);
+  sprintf(ffdir,"%s.ff",forcefield);
+  atype = read_atype(ffdir,stab);
   printf("Reading residue database... (%s)\n",forcefield);
-  nrtpf  = fflib_search_file_end(forcefield,".rtp",TRUE,&rtpf);
+  nrtpf  = fflib_search_file_end(ffdir,".rtp",TRUE,&rtpf);
   nrtp   = 0;
   bigrtp = NULL;
   for(i=0; (i<nrtpf); i++) {
@@ -630,7 +632,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
   }
   sfree(rtpf);
 
-  nah=read_h_db(forcefield,&ah);
+  nah=read_h_db(ffdir,&ah);
 
   /* Read termini database too.
    * Not implemented yet, which is why amber is the
@@ -658,7 +660,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
 	'\0' : forcefield[i];
     }
   
-  sprintf(buf,"%s/%s-qhop.dat",forcefield, buf2);
+  sprintf(buf,"%s.ff/titration.dat",forcefield, buf2);
   fn = (char *)gmxlibfn(buf);
   /* Read the xml data file */
   qdb = qhops_read(fn);
