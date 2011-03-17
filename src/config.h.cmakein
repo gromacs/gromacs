@@ -293,6 +293,9 @@
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
 
+/* Define to 1 if yo have the <direct.h> header file. */
+#cmakedefine HAVE_DIRECT_H
+
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
 

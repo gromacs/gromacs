@@ -47,6 +47,11 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_DIRECT_H
+/* windows-specific include for _chdir() */
+#include <direct.h>
+#endif
+
 
 #include "smalloc.h"
 #include "gmx_fatal.h"

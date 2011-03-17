@@ -89,6 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "string2.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -130,7 +131,6 @@ static gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
     {
         gmx_large_int_t *buf;
         int s;
-        int s_smallest;
 
         snew(buf,cr->ms->nsim);
 
@@ -144,13 +144,12 @@ static gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
             if (buf[s]>= 0 && ((steps_out < 0) || (buf[s]<steps_out)) )
             {
                 steps_out=buf[s];
-                s_smallest=s;
             }
         }
         sfree(buf);
 
         /* if we're the limiting simulation, don't do anything */
-        if ((steps_out>=0 && steps_out<nsteps) && (s_smallest != cr->ms->sim) )
+        if (steps_out>=0 && steps_out<nsteps) 
         {
             char strbuf[255];
             snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
@@ -1708,26 +1707,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             t = t0 + step*ir->delta_t;
         }
 
-        /* check whether we should stop because another simulation has 
-           stopped */
-        if (MULTISIM(cr))
-        {
-            if ( (multisim_nsteps >= 0) && (step_rel >= multisim_nsteps))
-            {
-                if (bNS)
-                {
-                    if (MASTER(cr))
-                    {
-                        fprintf(stderr, 
-                                "Stopping simulation %d because another one has finished\n",
-                                cr->ms->sim);
-                    }
-                    bLastStep=TRUE;
-                    gs.sig[eglsCHKPT] = 1;
-                }
-            }
-        }
-
         if (ir->efep != efepNO)
         {
             if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
@@ -1838,6 +1817,27 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 set_nlistheuristics(&nlh,bFirstStep || bExchanged,step);
             }
         } 
+
+        /* check whether we should stop because another simulation has 
+           stopped. */
+        if (MULTISIM(cr))
+        {
+            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&  
+                 (multisim_nsteps != ir->nsteps) )  
+            {
+                if (bNS)
+                {
+                    if (MASTER(cr))
+                    {
+                        fprintf(stderr, 
+                                "Stopping simulation %d because another one has finished\n",
+                                cr->ms->sim);
+                    }
+                    bLastStep=TRUE;
+                    gs.sig[eglsCHKPT] = 1;
+                }
+            }
+        }
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
         if ( (gs.set[eglsSTOPCOND] < 0 ) ||
