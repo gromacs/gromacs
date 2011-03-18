@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?><!-- -*- mode: nxml-*- -->
-<!DOCTYPE qhops PUBLIC "../" "qhops.dtd">
+<!DOCTYPE titration PUBLIC "../" "titration.dtd">
 <!--
   I removed the proton element for now. It is in principle redundant.
   Also note that the name of an acceptor may hold several atoms,
