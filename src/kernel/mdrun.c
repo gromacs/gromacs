@@ -411,7 +411,7 @@ int main(int argc,char *argv[])
   gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
-  const char *forcefield = "amber99sb";
+  const char *forcefield = "qamber99sb";
 
   t_pargs pa[] = {
 
