@@ -110,14 +110,11 @@ void read_ab(char *line,const char *fn,t_hack *hack)
     hack->newx[i]=NOTSET;
 }
 
-static void dump_h_db(const char *fn,int nah,t_hackblock *ah)
+static void dump_h_db(FILE *fp,int nah,t_hackblock *ah)
 {
-  FILE *fp;
-  char buf[STRLEN],nname[STRLEN];
+  char nname[STRLEN];
   int  i,j,k;
   
-  sprintf(buf,"%s_new.hdb",fn);
-  fp = gmx_fio_fopen(buf,"w");
   for(i=0; (i<nah); i++) {
     fprintf(fp,"%-8s%-8d\n",ah[i].name,ah[i].nhack);
     for(k=0; (k<ah[i].nhack); k++) {
@@ -126,7 +123,6 @@ static void dump_h_db(const char *fn,int nah,t_hackblock *ah)
       print_ab(fp,&ah[i].hack[k],nname);
     }
   }
-  gmx_fio_fclose(fp);
 }
 
 static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
@@ -136,7 +132,8 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   int    i, n, nab, nah;
   t_hackblock *aah;
 
-  if (debug) fprintf(debug,"Hydrogen Database (%s):\n",hfn);
+  if (NULL != debug) 
+    fprintf(debug,"Hydrogen Database (%s):\n",hfn);
 
   fflib_filename_base(hfn,filebase,STRLEN);
   /* Currently filebase is read and set, but not used.
@@ -183,8 +180,8 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   /* Sort the list (necessary to be able to use bsearch */
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
-  if (debug)
-    dump_h_db(hfn,nah,aah);
+  if (NULL != debug)
+    dump_h_db(debug,ah,aah);
   
   *nahptr = nah;
   *ah     = aah;

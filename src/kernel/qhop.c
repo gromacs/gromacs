@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * $Id: poldata.c,v 1.20 2009/05/17 13:56:55 spoel Exp $
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.0.99
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -34,7 +69,6 @@
 #include "gmx_random.h"
 #include "constr.h"
 #include "mdrun.h"
-/* #include "types/constr.h" */
 #include "types/idef.h"
 #include "types/ifunc.h"
 #include "hackblock.h"
@@ -118,7 +152,7 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
 	      for (a=1; a < R->nname; a++)
 		{
 		  srenew(t, nt+1);
-		  
+		  memset(&(t[nt]),0,sizeof(t[nt]));
 		  for (t_nr=0; t_nr < qres->nr_titrating_sites; t_nr++)
 		    {
 		      if (strcmp(qr->qhop_atoms[qres->titrating_sites[t_nr]].atomname, R->name[a]) == 0)
@@ -606,7 +640,9 @@ static int get_qhop_atoms(FILE *fplog,
       {
 	if (ggrpnr(groups, egcTitrationH ,i) == j)
 	  {
-	    qdb->H_map.H[qdb->H_map.atomid2H[i]]        = 1;
+	    if (NOTSET == qdb->H_map.atomid2H[i])
+	      gmx_fatal(FARGS,"Inconsistency in h_exist: atom %d is not a hydrogen",i+1);
+	    qdb->H_map.H[qdb->H_map.atomid2H[i]] = 1;
 	  }
       }
 
@@ -619,12 +655,14 @@ static int get_qhop_atoms(FILE *fplog,
       {
 	q_atoms_max += 1000;
 	srenew(q_atoms,q_atoms_max);
+    memset(&(q_atoms[q_atoms_max-1000]),0,1000*sizeof(q_atoms[0]));
       }
 
     if(q_residue_nr >= q_residue_max)
       {
 	q_residue_max += 1000;
 	srenew(q_residue,q_residue_max);
+    memset(&(q_residue[q_residue_max-1000]),0,1000*sizeof(q_residue[0]));
       }
 
     gmx_mtop_atomloop_all_names(aloop, &atomname, &resnr, &resname);

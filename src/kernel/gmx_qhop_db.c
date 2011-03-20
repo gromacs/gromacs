@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * $Id: poldata.c,v 1.20 2009/05/17 13:56:55 spoel Exp $
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.0.99
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +52,6 @@
 #include "gmx_qhop_xml.h"
 #include "gmx_qhop_db.h"
 
-#define _ERIKS_SPARKLING_NEW_CODE
 #define BUFSIZE 1000
 /* First of all, a safe strdup, more or less copied from hackblock.c. */
 char *safe_strdup(const char *s)
@@ -51,7 +85,7 @@ char *trim_strndup(const char *s, int maxlen)
 }
 
 
-/* It seems we need afew special copy routines here, since
+/* It seems we need a few special copy routines here, since
  * copy_t_restp() doesn't seem to work for our purpouses. */
 
 static void qhop_copy_t_rbondeds(t_rbondeds *s, t_rbondeds *d, t_symtab *tab)
@@ -100,14 +134,8 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
     
   for (i=0; i<dest->natom; i++)
     {
-      dest->atom[i].m           = src->atom[i].m;
-      dest->atom[i].q           = src->atom[i].q;
-      dest->atom[i].type        = src->atom[i].type;
-      dest->atom[i].typeB       = src->atom[i].typeB;
-      dest->atom[i].ptype       = src->atom[i].ptype;
-      dest->atom[i].resind      = src->atom[i].resind;
+      dest->atom[i] = src->atom[i];
       dest->cgnr[i] = src->cgnr[i];
-
 
       /* Atomnumbers and element names are not in the newly read rtp.
        * They may be used for spotting hydrogens at some point,
@@ -144,7 +172,6 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
 
       /*snew(dest->atomname[i],1); Not needed. */
       dest->atomname[i] = put_symtab(tab, *(src->atomname[i]));
-
     }
 
   qhop_copy_t_rbondeds(src->rb, dest->rb, tab);
@@ -336,14 +363,12 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
 	    {
 	      if (NULL != fplog)
 		fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
-	      /* srenew(qdb->rb.irtp, rt+1); This srenew is now in the gmx_qhop_xml.c file */
 	      qdb->rb.qrt[rt].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
 	      bRtypeAdded[rt] = TRUE;
-	      //	      qdb->nrtp++;
 	      break;
 	    }
 
-	  /* Add a res? */
+	  /* Add a subres? */
 	  for (r=0; r<qdb->rb.qrt[rt].nsubres && !bMatch; r++) /* res */
 	    {
 	      bMatch = (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].subres[r].name) == 0);
@@ -353,7 +378,6 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
 		    fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
 		  /* Keep this entry */
 		  qdb->rb.qrt[rt].subres[r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
-		  //  qdb->nrtp++;
 		}
 	    }
 	}
@@ -397,44 +421,37 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
 /*     } */
 /* } */
 
-static int init_qhop_H_exist(gmx_mtop_t *top, qhop_H_exist *Hext)
+static void init_qhop_H_exist(gmx_mtop_t *top, qhop_H_exist *Hext)
 {
   
   int a, nH = 0, n;
-  char *H;
-  atom_id *H2atomid;
-  int *atomid2H;
   t_atom *atom;
 
   n = top->natoms;
-  H = NULL;
-  H2atomid = NULL;
-  atomid2H = NULL;
-  atom = NULL;
-
-  snew(atomid2H, n);
-    
-
+  snew(Hext->atomid2H, n);
+  snew(Hext->H,n);
+  snew(Hext->H2atomid,n);
+  
   /* Find the hydrogens */  
-  for (a=0; a<n; a++)
+  for (a=0; a<n; a++) 
     {
-      atomid2H[a] = NOTSET;
+      Hext->atomid2H[a] = NOTSET;
       gmx_mtop_atomnr_to_atom(top,a,&atom);
       
-      if (atom->atomnumber == 1 || (atom->atomnumber == NOTSET && atom->elem[0] == 'H' ))
+      if ((atom->atomnumber == 1) ||
+	  (atom->atomnumber == NOTSET && atom->elem[0] == 'H' ))
 	{ /* It's a H allright. */
-	  srenew(H, nH+1);
-	  srenew(H2atomid, nH+1);
-	  H[nH] = (char)0;
-	  H2atomid[nH] = a;
-	  atomid2H[a] = nH;
+	  Hext->H2atomid[nH] = a;
+	  Hext->atomid2H[a] = nH;
 	  nH++;
 	}
     }
-  Hext->H = H;
-  Hext->H2atomid = H2atomid;
-  Hext->atomid2H = atomid2H;
-  return nH;
+  for(a=nH; (a<n); a++) 
+    {
+      Hext->H[a] = 0;
+      Hext->H2atomid[a] = NOTSET;
+    }
+  Hext->nH = nH;
 }
 
 static void clear_qhop_H_exist(qhop_H_exist Hext)
@@ -697,7 +714,7 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
     }
 
   /* init the hydrogen existence array. */
-  qdb->H_map.nH = init_qhop_H_exist(top, &(qdb->H_map));
+  init_qhop_H_exist(top, &(qdb->H_map));
   
   done_atomtype(atype);
   sfree(fn);
@@ -1014,6 +1031,8 @@ void qhop_db_names2nrs(qhop_db *db)
 
 	      /* Loop over atoms in the interaction */
 	      for (ia=0; ia < btsNiatoms[bt]; ia++)
+		db->rb.qrt[rt].ba[bt][b][ia] = NOTSET;
+	      for (ia=0; ia < btsNiatoms[bt]; ia++)
 		{
 		  /* Loop over atoms in the residue */
 		  for (a=0; a < rtp->natom; a++)
@@ -1096,7 +1115,7 @@ void qhop_db_map_subres_bondeds(qhop_db *db)
 	  /* This resblock is not in the topology. We don't need to map its bonds nor atoms */
 	  continue;
 	}
-
+      range_check(db->rb.qrt[rt].irtp,0,db->nrtp);
       rtprt = &(db->rtp[db->rb.qrt[rt].irtp]);
 
       /* Residue subtypes */
@@ -1118,7 +1137,8 @@ void qhop_db_map_subres_bondeds(qhop_db *db)
 	      /* Loop over bondeds in residue subtype r */
 	      for (br=0; br < rtpr->rb[bt].nb; br++)
 		{
-
+		  db->rb.qrt[rt].subres[r].biMap[bt][br] = NOTSET;
+		  
 		  /* Dihedral type 9 are addative, so we
 		   * may find the same set of atoms several
 		   * times with different parameters. */
