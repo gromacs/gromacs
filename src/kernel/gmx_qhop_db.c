@@ -177,109 +177,6 @@ static void qhop_copy_t_restp(t_restp *src, t_restp *dest, t_symtab *tab)
     qhop_copy_t_rbondeds(src->rb, dest->rb, tab);
 }
 
-/* Checks to see if name refers to an entry in the symtab,
- * not checking the content but the pointer itself.
- * Then moves the entry to the symtab, frees the old string data
- * and has name point to the entry in the symtab.
- * NOT safe if name points to another symtab, cuz that symtab may be messed up.
- * USE WITH CARE! */
-/* ****************<  Redundant now. >*************** */
-/* static void safe_move_to_symtab(t_symtab *tab, char *name) */
-/* { */
-/*   t_symbuf *sb=tab->symbuf; */
-/*   bool hit = FALSE; */
-/*   char **newname; */
-/*   if (name[0] != '\0') */
-/*     { */
-/*       fprintf(stderr, "   '%s' encountered\n", name); */
-/*       while (!hit && sb != NULL) */
-/* 	{ */
-/* 	  hit = (*sb->buf == name); */
-/* 	  sb = sb->next; */
-/* 	} */
-/*       /\* Hmm. What if it points to ANOTHER symtab? Make sure that is not the case first. *\/ */
-/*       if (!hit) */
-/* 	{ */
-/* 	  newname = put_symtab(tab, name); */
-/* 	  sfree(name); */
-/* 	  name = *newname; */
-/* 	} */
-/*     } */
-/* } */
-
-/* Moves strings from atomnames and resnames and such to
- * the symtab if they're not there already.
- * Will NOT work if some names point to the symtab from the beginning. */
-/* *******************< This is redundant nowadays. >****************** */
-/* static void move_strings_to_symtab(qhop_db_t qdb) */
-/* { */
-/*   t_restp *r; */
-/*   t_symtab *tab = &(qdb->tab); */
-/*   t_symbuf *sb; */
-/*   qhop_resblocks    *rb = &(qdb->rb); */
-/*   qhop_reactant     *qr; */
-/*   int i,j,k,l; */
-/*   bool points_to_tab; */
-/*   pr_symtab(stderr, 2, "Before the move\n", tab); */
-/*   fprintf(stderr, " -- RESIDUES --\n"); */
-/*   /\* Residues *\/ */
-/*   for (i=0; i<qdb->nrtp; i++) */
-/*     { */
-/*       r = &(qdb->rtp[i]); */
-/*       safe_move_to_symtab(tab, r->resname); */
-/*       for (j=0; j<r->natom; j++) */
-/* 	safe_move_to_symtab(tab, *(r->atomname[j])); */
-/*     } */
-
-/*   fprintf(stderr, " -- INTERACTIONS --\n"); */
-/*   /\* Interactions *\/ */
-
-/*   for (i=0; i<rb->nf; i++) */
-/*     safe_move_to_symtab(tab, rb->files[i]); */
-  
-/*   /\* Resblocks *\/ */
-
-/*   for (i=0; i<rb->nrestypes; i++) */
-/*     { */
-/*       safe_move_to_symtab(tab, rb->restype[i]); */
-/*       for (j=0; j<rb->nres[i]; j++) */
-/* 	{ */
-/* 	  /\* Qhop_res *\/ */
-/* 	  safe_move_to_symtab(tab, rb->res[i][j].name); */
-
-/* 	  /\* Acceptors *\/ */
-/* 	  for (k=0; k<rb->res[i][j].na; k++) */
-/* 	    { */
-/* 	      qr = &(rb->res[i][j].acc[k]); */
-
-/* 	      /\*safe_move_to_symtab(tab, qr[k].name);*\/ */
-/* 	      safe_move_to_symtab(tab, qr[k].product); */
-/* 	      for (l=0; l<qr[k].nH; l++) */
-/* 		{ */
-/* 		  /\* Acceptor hydrogens *\/ */
-/* 		  safe_move_to_symtab(tab, qr[k].H[l]); */
-/* 		} */
-/* 	    } */
-
-/* 	  /\* Donors *\/ */
-/* 	  for (k=0; k<rb->res[i][j].nd; k++) */
-/* 	    { */
-/* 	      qr = &(rb->res[i][j].don[k]); */
-	  
-/* 	      /\*safe_move_to_symtab(tab, qr[k].name);*\/ */
-/* 	      safe_move_to_symtab(tab, qr[k].product); */
-/* 	      for (l=0; l<qr[k].nH; l++) */
-/* 		{ */
-/* 		  /\* Donor hydrogens *\/ */
-/* 		  safe_move_to_symtab(tab, qr[k].H[l]); */
-/* 		} */
-/* 	    } */
-	    
-/* 	} */
-/*     } */
-/*   pr_symtab(stderr, 2, "After the move\n", tab); */
-/* } */
-
 void set_reactant_products(qhop_db *qdb)
 {
     int rb, r, p, reac, nreac[2], i;
@@ -681,8 +578,11 @@ qhop_db_t qhop_db_read(char *forcefield, gmx_mtop_t *top)
     fn = (char *)gmxlibfn(buf);
     /* Read the xml data file */
     qdb = qhops_read(fn);
-    sprintf(buf,"%s-qhop-debug.dat",forcefield);
-    qhops_write(buf,qdb);
+    if (NULL != debug)
+    {
+        sprintf(buf,"%s-itmd-debug.dat",forcefield);
+        qhops_write(buf,qdb);
+    }
     snew(qdb->qhop_param,qdb->ngqh);
     for(i=0; (i<qdb->ngqh); i++) {
         fill_qhp(&(qdb->qhop_param[i]),qdb->gqh[i]);
