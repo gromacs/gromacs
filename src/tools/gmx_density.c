@@ -141,7 +141,7 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
 }
 
 void calc_electron_density(const char *fn, atom_id **index, int gnx[], 
-			   double ***slDensity, int *nslices, t_topology *top,
+			   real ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
 			   t_electron eltab[], int nr,gmx_bool bCenter,
@@ -239,7 +239,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 }
 
 void calc_density(const char *fn, atom_id **index, int gnx[], 
-		  double ***slDensity, int *nslices, t_topology *top, int ePBC,
+		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   const output_env_t oenv)
 {
