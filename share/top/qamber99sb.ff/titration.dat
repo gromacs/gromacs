@@ -5,18 +5,18 @@
   Also note that the name of an acceptor may hold several atoms,
   which reflects proton tautomerism. This needs to be taken care of in md.c.
 -->
-<qhops>
+<titrations>
   <resblocks>
-    <residue_type description="water" name="qSOL" water="TRUE">
-      <res name="qH2O">
-	<acceptor name="OW" product="qH3O"/>
+    <residue_type description="water" name="SOL" protonated="H3O" water="TRUE">
+      <res name="H2O">
+	<acceptor name="OW" product="H3O"/>
       </res>
-      <res name="qH3O">
-	<donor name="OW" product="qH2O"/>
+      <res name="H3O">
+	<donor name="OW" product="H2O"/>
       </res>
     </residue_type>
 
-    <residue_type description="acetic acid" name="qHAC" water="FALSE">
+    <residue_type description="acetic acid" name="HAC" protonated="HAC" water="FALSE">
       <res name="AC-">
         <acceptor name="OC2 OC1" product="HAC"/>
       </res>
@@ -25,7 +25,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="ammonium" name="qNH4" water="FALSE">
+    <residue_type description="ammonium" name="NH4" protonated="NH4" water="FALSE">
       <res name="NH3">
         <acceptor name="NZ" product="NH4"/>
       </res>
@@ -34,7 +34,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="lysine" name="qLYS" water="FALSE">
+    <residue_type description="lysine" name="LYS" protonated="LYS" water="FALSE">
       <res name="LYN">
         <acceptor name="NZ" product="LYS"/>
       </res>
@@ -43,7 +43,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="histidine" name="qHIS" water="FALSE">
+    <residue_type description="histidine" name="HIS" protonated="HIP" water="FALSE">
       <res name="HID">
         <acceptor name="NE2" product="HIP"/>
       </res>
@@ -56,7 +56,7 @@
       </res>
     </residue_type>
     
-    <residue_type description="glutamic acid" name="qGLU" water="FALSE">
+    <residue_type description="glutamic acid" name="GLU" protonated="GLH" water="FALSE">
       <res name="GLU">
         <acceptor name="OE2 OE1" product="GLH"/>
       </res>
@@ -65,7 +65,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="aspartic acid" name="qASP" water="FALSE">
+    <residue_type description="aspartic acid" name="ASP" protonated="ASH" water="FALSE">
       <res name="ASP">
         <acceptor name="OD2 OD1" product="ASH"/>
       </res>
@@ -74,7 +74,7 @@
       </res>
     </residue_type>
 
-    <residue_type description="cysteine" name="qCYM" water="FALSE">
+    <residue_type description="cysteine" name="CYS" protonated="CYS" water="FALSE">
       <res name="CYM">
         <acceptor name="SG" product="CYS"/>
       </res>
@@ -89,7 +89,7 @@
       Hopping parameters
       ##################
     -->
-  <qhop donor="qH3O" acceptor="qH2O">
+  <titration donor="H3O" acceptor="H2O">
     <don_atom> OW </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -127,9 +127,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HAC" acceptor="AC-">
+  <titration donor="HAC" acceptor="AC-">
     <don_atom> OC2 </don_atom>
     <acc_atom> OC2 </acc_atom>
     <!-- E_12,0 -->
@@ -167,9 +167,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="NH4" acceptor="qH2O">
+  <titration donor="NH4" acceptor="H2O">
     <don_atom> NZ </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -207,9 +207,9 @@
     <parameter name="r_1"   value="0.00251870819830656" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.81026791278969e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.52271068579535e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="qH3O" acceptor="NH3">
+  <titration donor="H3O" acceptor="NH3">
     <don_atom> OW </don_atom>
     <acc_atom> NZ </acc_atom>
     <!-- E_12,0 -->
@@ -247,8 +247,8 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.7982604503233e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.48668829839619e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
-  <qhop donor="qH3O" acceptor="AC-">
+  </titration>
+  <titration donor="H3O" acceptor="AC-">
     <don_atom> OW </don_atom>
     <acc_atom> OC2 </acc_atom>
     <!-- E_12,0 -->
@@ -286,9 +286,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HAC" acceptor="qH2O">
+  <titration donor="HAC" acceptor="H2O">
     <don_atom> OC2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -326,9 +326,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="qH3O" acceptor="LYN">
+  <titration donor="H3O" acceptor="LYN">
     <don_atom> OW </don_atom>
     <acc_atom> NZ </acc_atom>
     <!-- E_12,0 -->
@@ -366,9 +366,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
- <qhop donor="qH3O" acceptor="HID">
+ <titration donor="H3O" acceptor="HID">
     <don_atom> OW </don_atom>
     <acc_atom> NE2 </acc_atom>
     <!-- E_12,0 -->
@@ -406,9 +406,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
- <qhop donor="qH3O" acceptor="HIE">
+ <titration donor="H3O" acceptor="HIE">
     <don_atom> OW </don_atom>
     <acc_atom> ND1 </acc_atom>
     <!-- E_12,0 -->
@@ -446,9 +446,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="qH3O" acceptor="GLU">
+  <titration donor="H3O" acceptor="GLU">
     <don_atom> OW </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -486,9 +486,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="qH3O" acceptor="ASP">
+  <titration donor="H3O" acceptor="ASP">
     <don_atom> OW </don_atom>
     <acc_atom> OD2 </acc_atom>
     <!-- E_12,0 -->
@@ -526,9 +526,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
- <qhop donor="LYS" acceptor="qH2O">
+ <titration donor="LYS" acceptor="H2O">
     <don_atom> NZ </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -566,9 +566,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="LYS" acceptor="GLU">
+  <titration donor="LYS" acceptor="GLU">
     <don_atom> NZ </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -606,9 +606,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="LYS" acceptor="ASP">
+  <titration donor="LYS" acceptor="ASP">
     <don_atom> NZ </don_atom>
     <acc_atom> OD2 </acc_atom>
     <!-- E_12,0 -->
@@ -646,9 +646,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="qH2O">
+  <titration donor="HIP" acceptor="H2O">
     <don_atom> NE2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -686,9 +686,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="qH2O">
+  <titration donor="HIP" acceptor="H2O">
     <don_atom> ND1 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -726,9 +726,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="GLU">
+  <titration donor="HIP" acceptor="GLU">
     <don_atom> NE2 </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -766,9 +766,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="GLU">
+  <titration donor="HIP" acceptor="GLU">
     <don_atom> ND1 </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -806,9 +806,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="ASP">
+  <titration donor="HIP" acceptor="ASP">
     <don_atom> NE2 </don_atom>
     <acc_atom> OD2 </acc_atom>
     <!-- E_12,0 -->
@@ -846,9 +846,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="HIP" acceptor="ASP">
+  <titration donor="HIP" acceptor="ASP">
     <don_atom> ND1 </don_atom>
     <acc_atom> OD2 </acc_atom>
     <!-- E_12,0 -->
@@ -886,9 +886,9 @@
     <parameter name="r_1"   value="0.002518708198307" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.810267912789686e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="qH2O">
+  <titration donor="GLH" acceptor="H2O">
     <don_atom> OE2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -926,9 +926,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="LYN">
+  <titration donor="GLH" acceptor="LYN">
     <don_atom> OE2 </don_atom>
     <acc_atom> NZ </acc_atom>
     <!-- E_12,0 -->
@@ -966,9 +966,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="HID">
+  <titration donor="GLH" acceptor="HID">
     <don_atom> OE2 </don_atom>
     <acc_atom> NE2 </acc_atom>
     <!-- E_12,0 -->
@@ -1006,9 +1006,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="HIE">
+  <titration donor="GLH" acceptor="HIE">
     <don_atom> OE2 </don_atom>
     <acc_atom> ND1 </acc_atom>
     <!-- E_12,0 -->
@@ -1046,9 +1046,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="GLU">
+  <titration donor="GLH" acceptor="GLU">
     <don_atom> OE2 </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -1086,9 +1086,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="GLH" acceptor="ASP">
+  <titration donor="GLH" acceptor="ASP">
     <don_atom> OE2 </don_atom>
     <acc_atom> OD2 </acc_atom>
     <!-- E_12,0 -->
@@ -1126,9 +1126,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="qH2O">
+  <titration donor="ASH" acceptor="H2O">
     <don_atom> OD2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -1166,9 +1166,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="LYN">
+  <titration donor="ASH" acceptor="LYN">
     <don_atom> OD2 </don_atom>
     <acc_atom> NZ </acc_atom>
     <!-- E_12,0 -->
@@ -1206,9 +1206,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="HID">
+  <titration donor="ASH" acceptor="HID">
     <don_atom> OD2 </don_atom>
     <acc_atom> NE2 </acc_atom>
     <!-- E_12,0 -->
@@ -1246,9 +1246,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="HIE">
+  <titration donor="ASH" acceptor="HIE">
     <don_atom> OD2 </don_atom>
     <acc_atom> ND1 </acc_atom>
     <!-- E_12,0 -->
@@ -1286,9 +1286,9 @@
     <parameter name="r_1"   value="0.002500411112643" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.798260450323298e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.486688298396192e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="GLU">
+  <titration donor="ASH" acceptor="GLU">
     <don_atom> OD2 </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -1326,9 +1326,9 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
+  </titration>
 
-  <qhop donor="ASH" acceptor="ASP">
+  <titration donor="ASH" acceptor="ASP">
     <don_atom> OD2 </don_atom>
     <acc_atom> OE2 </acc_atom>
     <!-- E_12,0 -->
@@ -1366,5 +1366,5 @@
     <parameter name="r_1"   value="0.0024346559610418446" unit="1/(kJ/mol)^2"/>
     <parameter name="r_2"   value="-1.4671975566071803e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
-  </qhop>
-</qhops>
+  </titration>
+</titrations>

@@ -334,7 +334,7 @@ static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
 
   for (i=0; i<qr->nr_qhop_residues; i++)
     {
-      if (strcmp(rname, db->rb.qrt[qr->qhop_residues[i].rtype].restype) == 0)
+        if (strcmp(rname, db->rb.qrt[qr->qhop_residues[i].rtype].canonical) == 0)
 	{
 	  return i;
 	}
@@ -673,7 +673,7 @@ static int get_qhop_atoms(FILE *fplog,
 
     for (rb=0; (rb < qdb->rb.nrestypes) && !bMatchRB; rb++)
       {
-	if (strcmp(qdb->rb.qrt[rb].restype, resname) == 0)
+	if (strcmp(qdb->rb.qrt[rb].canonical, resname) == 0)
 	  {
 	    /* We have a matching res(block) */
 	    bMatchRB = TRUE;
@@ -703,7 +703,7 @@ static int get_qhop_atoms(FILE *fplog,
 			    if (strcmp(qreac[AD][reac].name[a], atomname) == 0)
 			      {
 				bMatch = TRUE;
-				q_atoms[q_atoms_nr].resname      = qdb->rb.qrt[rb].restype;
+				q_atoms[q_atoms_nr].resname      = qdb->rb.qrt[rb].protonated;
 				q_atoms[q_atoms_nr].atomname     = qreac[AD][reac].name[a];
 				q_atoms[q_atoms_nr].res_id       = resnr-1;
 				q_atoms[q_atoms_nr].atom_id      = i;
@@ -1309,7 +1309,7 @@ static void qhop_connect_rtp_library(qhop_db *db)
 {
   /* make tables of interacting atoms for the bonded rtp data. */
   qhop_db_names2nrs(db);          /* So we don't have to go via atomnames all the time */
-  qhop_db_map_subres_atoms(db);   /* So we can superimpose the subresidues on the rseidue type */
+  qhop_db_map_subres_atoms(db);   /* So we can superimpose the subresidues on the residue type */
   qhop_db_map_subres_bondeds(db); /* ditto. */
 }
 

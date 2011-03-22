@@ -544,11 +544,11 @@ void process_chain(t_atoms *pdba, rvec *x,
   if (bPheU) rename_bb(pdba,"PHE","PHEU",FALSE,symtab);
   if (bAllProtonated)
   {
-      rename_bb(pdba,"ASP","qASP",FALSE,symtab);
-      rename_bb(pdba,"GLU","qGLU",FALSE,symtab);
-      rename_bb(pdba,"HIS","qHIS",FALSE,symtab);
-      rename_bb(pdba,"LYS","qLYS",FALSE,symtab);
-      /* Need to add something for C-terminus as well */
+      rename_bb(pdba,"ASP","ASH",FALSE,symtab);
+      rename_bb(pdba,"GLU","GLH",FALSE,symtab);
+      rename_bb(pdba,"HIS","HIP",FALSE,symtab);
+      rename_bb(pdba,"LYS","LYS",FALSE,symtab);
+      /* Need to add something for Arg & C-terminus as well */
   }
   else
   {

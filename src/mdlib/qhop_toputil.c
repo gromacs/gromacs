@@ -842,8 +842,8 @@ int which_subRes(const t_qhoprec *qr,
       
     if (r >= nsubres)
     {
-        gmx_fatal(FARGS, "Didn't find the subres of %s, most likely due to inconsistencies in\nforce field files. r = %d, nsubres = %d, resnr = %d",
-                  db->rb.qrt[qres->rtype].restype,r,nsubres,resnr);
+        gmx_fatal(FARGS, "Didn't find a subres of %s, most likely due to inconsistencies in\nforce field files. r = %d, nsubres = %d, resnr = %d",
+                  db->rb.qrt[qres->rtype].canonical,r,nsubres,resnr);
     }
     /* printf("subres %d\n",r);*/
     return r;

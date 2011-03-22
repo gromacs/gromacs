@@ -211,24 +211,28 @@ void set_reactant_products(qhop_db *qdb)
 /* Returns the index in qdb->rtp where the entry is stashed. */
 static int qhop_stash_rtp_entry(qhop_db *qdb, t_restp *src)
 {
-    int rtpi;
+    int i;
 
-    if (qdb->nrtp == 0)
+    for(i=0; (i<qdb->nrtp); i++) 
     {
-        snew(qdb->rtp,1);
+        if (strcmp(qdb->rtp[i].resname,src->resname) == 0)
+            break;
     }
-    else
+    if (i == qdb->nrtp) 
     {
-        srenew(qdb->rtp, (qdb->nrtp)+1);
+        if (qdb->nrtp == 0)
+        {
+            snew(qdb->rtp,1);
+        }
+        else
+        {
+            srenew(qdb->rtp,qdb->nrtp+1);
+            memset((void*)(&(qdb->rtp[qdb->nrtp])), 0, sizeof(t_restp));
+        }
+        qhop_copy_t_restp(src, &(qdb->rtp[qdb->nrtp]), &(qdb->tab));
+        qdb->nrtp++;
     }
-
-    memset((void*)(&(qdb->rtp[qdb->nrtp])), 0, sizeof(t_restp));
-  
-    qhop_copy_t_restp(src, &(qdb->rtp[qdb->nrtp]), &(qdb->tab));
-
-    rtpi = (qdb->nrtp)++;
-
-    return qdb->nrtp-1;
+    return i;
 }
 
 /* Takes a rtp database and picks out the residues found in qdb->rb->res[][].
@@ -255,14 +259,15 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
         for (rt=0; rt<nrt && !bMatch; rt++) /* resblock */
         {
             /* Add the resblock. */
-            if (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].restype) == 0 && 
+            if (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].protonated) == 0 && 
                 !bRtypeAdded[rt])
             {
-                if (NULL != fplog)
-                    fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
                 qdb->rb.qrt[rt].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
                 bRtypeAdded[rt] = TRUE;
-                break;
+                //if (NULL != fplog)
+                    fprintf(stderr, "rtp entry no %i FOUND: %s. irtp = %d\n",
+                            i,bigrtp[i].resname,qdb->rb.qrt[rt].irtp);
+                //break;
             }
 
             /* Add a subres? */
@@ -271,10 +276,11 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
                 bMatch = (strcmp(bigrtp[i].resname, qdb->rb.qrt[rt].subres[r].name) == 0);
                 if (bMatch)
                 {
-                    if (NULL != fplog)
-                        fprintf(fplog, "Rtp entry no %i FOUND: %s\n", i, bigrtp[i].resname);
                     /* Keep this entry */
                     qdb->rb.qrt[rt].subres[r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
+                    //if (NULL != fplog)
+                        fprintf(stderr, "subres entry no %i FOUND: %s. irtp = %d\n",
+                                i,bigrtp[i].resname,qdb->rb.qrt[rt].subres[r].irtp);
                 }
             }
         }
@@ -376,7 +382,7 @@ static void flag_present_resblocks(qhop_db *db, gmx_mtop_t *top)
             {
                 resname = *(top->moltype[molnr].atoms.resinfo[resnr].name);
 
-                if (strcmp(resname, db->rb.qrt[rt].restype) == 0)
+                if (strcmp(resname, db->rb.qrt[rt].canonical) == 0)
                 {
                     db->rb.qrt[rt].bInTop = TRUE;
                     bNext = TRUE;
@@ -887,7 +893,7 @@ void qhop_db_names2nrs(qhop_db *db)
         }
 
         printf("Making bonded atom index for %s (restp %d out of %d)\n",
-               db->rb.qrt[rt].restype,rt,db->nrtp);
+               db->rb.qrt[rt].canonical,rt,db->nrtp);
 
         range_check(db->rb.qrt[rt].irtp,0,db->nrtp);
 
@@ -1034,13 +1040,15 @@ void qhop_db_map_subres_bondeds(qhop_db *db)
                 snew(db->rb.qrt[rt].subres[r].findex[bt], rtpr->rb[bt].nb);
 
                 bMatch = FALSE;
-
+                /* if (rtpr->rb[bt].nb != rtprt->rb[bt].nb)
+                    gmx_fatal(FARGS,"Number of bonded types in rtpr = %d, in rtprt = %d.",
+                    rtpr->rb[bt].nb,rtprt->rb[bt].nb);*/
                 /* Loop over bondeds in residue subtype r */
                 for (br=0; br < rtpr->rb[bt].nb; br++)
                 {
                     db->rb.qrt[rt].subres[r].biMap[bt][br] = NOTSET;
 		  
-                    /* Dihedral type 9 are addative, so we
+                    /* Dihedral type 9 are additive, so we
                      * may find the same set of atoms several
                      * times with different parameters. */
                     for (bprev = br-1; bprev >= 0; bprev--)

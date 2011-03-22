@@ -5,7 +5,7 @@
 
 [ moleculetype ]
 ; molname       nrexcl
-qSOL             2
+SOL             2
 
 [ atoms ]
 ; id    at type res nr  residu name     at name      cg nr   charge   mass

@@ -132,7 +132,8 @@ typedef struct qhop_subres {
 } qhop_subres;
 
 typedef struct {
-  char *restype;       /* Name of the "residue family", e.g. qLYS. */
+    char *canonical;     /* Name of the "residue family", e.g. ASP */
+    char *protonated;    /* Name of the fully protonated variant, e.g. ASH */
   char *description;   /* Descriptive comment */
   int  nsubres;        /* Number of related residues, e.g. 2 for 
 			  qLYS: {LYS, LYSH} */

@@ -193,7 +193,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
               int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
               int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
               const char *deviceOptions, unsigned long Flags,
-              char *forcefield)
+              const char *forcefield)
 {
     int ret;
     struct mdrunner_arglist *mda;
