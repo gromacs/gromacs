@@ -921,12 +921,10 @@ What is needed as well is a transition state optimizer.
 
 \section{{\gromacs} on GPUs}
 
-{\gromacs} 4.5 provides an initial support for GPU acceleration through 
+{\gromacs} 4.5 provides support for GPU acceleration through 
 the \href{https://simtk.org/home/openmm}{OpenMM library}. 
-Although limited in functionality and can only surpass by a large margin 
-the CPU algorithms of standard GROMACS, {\gromacs}-GPU gives a preview 
-of GPU-accelerated MD which we expect to be an important direction in the 
-future. 
+Although limited in functionality compared to the CPU algorithms of standard GROMACS,
+{\gromacs}-GPU gives a preview of GPU-accelerated MD which we expect to be an important direction in the future. 
 The following should be noted before using the accelerated {\tt mdrun-gpu}:
 \begin{itemize}
 \item The current release runs only on modern, CUDA compatible NVIDIA GPU hardware 
@@ -941,9 +939,9 @@ It is strongly recommended that a full memory check of the cards is done at leas
 (using option {\tt memtest=full}). A partial memory check (using option {\tt memtest=15}) 
 before and after the simulation run would help spot problems resulting from overheating 
 of the graphics card.
-\item The maximum size of the simulated systems depends on the GPU used. With a 
+\item The maximum size of the simulated systems depends on the GPU used. With
 high-end cards, like GeForce GTX 480 or Tesla 2050, systems of size up to 200.000 atoms 
-has been successfully simulated.
+have been successfully simulated.
 \item In order to take a full advantage of the GPU platform features, many algorithms
 have been implemented in a very different way than they are on the CPUs.
 Therefore, numerical correspondence between some properties of the system's state
@@ -953,7 +951,7 @@ should produce comparable statistical averages.
 \item Frequent retrieval of system state information such as
 trajectory coordinates and energies can greatly influence the performance
 of the program due the overhead of CPU$\leftrightarrow$GPU communication.
-\item MD algorithms are complex and often does not translate very well onto the streaming architectures.
+\item MD algorithms are complex and often do not translate very well onto streaming architectures.
 Realistic expectations about the achievable speed-up from tests with a GeForce 400 series card:
 for small protein systems in implicit solvent using all-vs-all kernels the speedup 
 can be up to 10-15x, but in most other setups involving cutoffs and PME, 
