@@ -63,7 +63,7 @@ extern int qhop_db_get_parameters(const qhop_db_t qdb,
 
 /* Build a list of residue-local atom indices fro the bonded interactions.
  * Will save time when searching through the ilists. */
-extern void qhop_db_names2nrs(qhop_db *db);
+extern void qhop_db_names2nrs(FILE *fplog,qhop_db *db);
 
 /* Maps the atoms in the residue subtypes onto the restypes. */
 extern void qhop_db_map_subres_atoms(qhop_db *db);

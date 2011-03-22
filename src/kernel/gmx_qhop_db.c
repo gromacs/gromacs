@@ -264,10 +264,9 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
             {
                 qdb->rb.qrt[rt].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
                 bRtypeAdded[rt] = TRUE;
-                //if (NULL != fplog)
-                    fprintf(stderr, "rtp entry no %i FOUND: %s. irtp = %d\n",
+                if (NULL != fplog)
+                    fprintf(fplog, "rtp entry no %i FOUND: %s. irtp = %d\n",
                             i,bigrtp[i].resname,qdb->rb.qrt[rt].irtp);
-                //break;
             }
 
             /* Add a subres? */
@@ -278,8 +277,8 @@ static void strip_rtp(FILE *fplog,char *ff, qhop_db *qdb,
                 {
                     /* Keep this entry */
                     qdb->rb.qrt[rt].subres[r].irtp = qhop_stash_rtp_entry(qdb, &(bigrtp[i]));
-                    //if (NULL != fplog)
-                        fprintf(stderr, "subres entry no %i FOUND: %s. irtp = %d\n",
+                    if (NULL != fplog)
+                        fprintf(fplog, "subres entry no %i FOUND: %s. irtp = %d\n",
                                 i,bigrtp[i].resname,qdb->rb.qrt[rt].subres[r].irtp);
                 }
             }
@@ -862,7 +861,7 @@ static int get_interaction_type(int bt, int type)
     return it;
 }
 
-void qhop_db_names2nrs(qhop_db *db)
+void qhop_db_names2nrs(FILE *fplog,qhop_db *db)
 {
     int rt, bt, b, it, a, ia;
     t_restp *rtp;
@@ -891,9 +890,9 @@ void qhop_db_names2nrs(qhop_db *db)
                We don't need to map its bonds nor atoms */
             continue;
         }
-
-        printf("Making bonded atom index for %s (restp %d out of %d)\n",
-               db->rb.qrt[rt].canonical,rt,db->nrtp);
+        if (NULL != fplog)
+            fprintf(fplog,"Making bonded atom index for %s (restp %d out of %d)\n",
+                    db->rb.qrt[rt].canonical,rt,db->nrtp);
 
         range_check(db->rb.qrt[rt].irtp,0,db->nrtp);
 
@@ -1040,9 +1039,6 @@ void qhop_db_map_subres_bondeds(qhop_db *db)
                 snew(db->rb.qrt[rt].subres[r].findex[bt], rtpr->rb[bt].nb);
 
                 bMatch = FALSE;
-                /* if (rtpr->rb[bt].nb != rtprt->rb[bt].nb)
-                    gmx_fatal(FARGS,"Number of bonded types in rtpr = %d, in rtprt = %d.",
-                    rtpr->rb[bt].nb,rtprt->rb[bt].nb);*/
                 /* Loop over bondeds in residue subtype r */
                 for (br=0; br < rtpr->rb[bt].nb; br++)
                 {

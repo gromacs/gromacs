@@ -1112,205 +1112,18 @@ static void get_protons(t_commrec *cr, gmx_mtop_t *mtop,
   srenew(qhop_atom->protons, nr_protons);
 } /* get_protons */ 
 
-/* Obsolete*/
-/* This must go! */
-/* static void create_res_links(t_commrec *cr, t_qhoprec *qhoprec){ */
-/*   /\* if a residue has more than one titratable atoms (stored in the */
-/*      qhop_atom, we need to connect these residues, such that we can */
-/*      modifiy the state and charges simultaneously if one of the atoms */
-/*      changes protonation state.  */
-/*   *\/ */
-/*   int */
-/*     i,j; */
-  
-/*   /\* we also quicksort the qhop atoms, which is important later on */
-/*      when we want to find out what chargeset we are supposed to use */
-/*      for the residue *\/ */
-  
-/*   qsort(qhoprec->qhop_atoms,qhoprec->nr_qhop_atoms, */
-/* 	(size_t)sizeof(qhoprec->qhop_atoms[0]),qhop_atom_comp); */
-  
-
-/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
-/*     qhoprec->global_atom_to_qhop_atom[qhoprec->qhop_atoms[i].atom_id]=i; */
-/* /\*     qhoprec->qhop_atoms[i].nr_links=0; *\/ */
-/* /\*     snew(qhoprec->qhop_atoms[i].links,qhoprec->nr_qhop_atoms); *\/ */
-/*   } */
-/*   /\* double loop, there might be more efficient ways, but I do not */
-/*      care... ;-) */
-/*    *\/ */
-/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
-/*     for(j=i+1;j<qhoprec->nr_qhop_atoms;j++){ */
-/*       if (qhoprec->qhop_atoms[i].res_id==qhoprec->qhop_atoms[j].res_id){ */
-/* /\* 	qhoprec->qhop_atoms[i].links[qhoprec->qhop_atoms[i].nr_links++] *\/ */
-/* /\* 	  = j; *\/ */
-/* /\* 	qhoprec->qhop_atoms[j].links[qhoprec->qhop_atoms[j].nr_links++] *\/ */
-/* /\* 	  = i; *\/ */
-/*       } */
-/*     } */
-/*   }   */
-/*   /\* clean up some memory */
-/*    *\/ */
-/*   for(i=0;i<qhoprec->nr_qhop_atoms;i++){ */
-/* /\*     srenew(qhoprec->qhop_atoms[i].links,qhoprec->qhop_atoms[i].nr_links); *\/ */
-/* /\*     qhoprec->qhop_residues[i].nr_titrating_sites =  *\/ */
-/* /\*       qhoprec->qhop_atoms[i].nr_links+1; *\/ */
-/*   } */
-/* } /\* create_res_links *\/ */
-
-
-/* Obsolete */
-/* static void get_chargesets(t_commrec *cr, t_qhoprec *qhoprec){ */
-
-/*   int  */
-/*     i,j,k,l,states; */
-/*   FILE */
-/*     *in; */
-/*   char */
-/*     filename[4],file[8],line[300],atomname[3]; */
-
-/*   for (i=0; i < qhoprec->nr_qhop_atoms; i++) */
-/*     { */
-/*       states = 1; */
-/* /\*     for(j=0;j<qhoprec->qhop_atoms[i].nr_links+1;j++){ *\/ */
-/* /\*       states*=2; *\/ */
-/* /\*     } *\/ */
-/* /\*     qhoprec->qhop_residues[i].max_state = states; *\/ */
-/* /\*   for(i=0;i<qhoprec->nr_qhop_atoms;i+=(qhoprec->qhop_atoms[i].nr_links+1)){ *\/ */
-/*     /\* each unique residue is visited once in this loop */
-/*      *\/ */
-/*     /\* open db file, GG style  */
-/*      *\/ */
-
-    
-/*     strncpy(filename, qhoprec->qhop_atoms[i].resname, 3); */
-/*     sprintf(file, "%3s.dat",qhoprec->qhop_atoms[i].resname); */
-/*     //  fprintf(stderr,"trying to open %s for reading\n",file); */
-
-/*     in = fopen (file,"r"); */
-    
-/*     /\* allocate the chargesets, one for each protonation state  */
-/*      *\/  */
-/* /\*     for(j=0;j<qhoprec->qhop_atoms[i].nr_links+1;j++){ *\/ */
-/* /\*       snew(qhoprec->qhop_residues[i+j].charge_set, *\/ */
-/* /\* 	   qhoprec->qhop_residues[i+j].max_state); *\/ */
-/* /\*       for(k=0;k<qhoprec->qhop_residues[i+j].max_state;k++){ *\/ */
-/* /\*       	snew(qhoprec->qhop_residues[i+j].charge_set[k], *\/ */
-/* /\* 	     qhoprec->qhop_residues[i+j].nr_atoms); *\/ */
-/* /\* 	/\\* read in the chargesets *\\/ *\/ */
-/* /\* 	for(l=0;l<qhoprec->qhop_residues[i+j].nr_atoms;l++){ *\/ */
-/* /\* 	  /\\* copy the charges from the qhop database SOMEHOW *\\/ *\/ */
-/* /\* 	  fgets(line,200,in); *\/ */
-/* /\* 	  sscanf(line,"%s%f",atomname, *\/ */
-/* /\* 		 &qhoprec->qhop_residues[i+j].charge_set[k][l]); *\/ */
-/* /\* 	} *\/ */
-/* /\* 	fgets(line,200,in);/\\* read in a white line after every charges *\/ */
-/* /\* 			      section *\\/ *\/ */
-/* /\*       } *\/ */
-/* /\*     } *\/ */
-/*     fclose(in); */
-/*   } */
-/* } /\* get_chargesets *\/ */
-
-/* Obsolete */
-/* static void get_protonation_state(t_commrec *cr, t_qhoprec *qhoprec){ */
-/*   /\* Here we can find out the state of the residue: We make use */
-/*      of the order to decide what the state is.... We use a the bit */
-/*      definition to decide on the protonation state.  In case of three */
-/*      sites, there are 8 possibilites, and therefore 8 chargesets to be */
-/*      retreived from file. */
-
-/*      0 1 2 3 4 5 6 7  */
-/*      --------------- */
-/*      0 1 0 1 0 1 0 1 */
-/*      0 0 1 1 0 0 1 1 */
-/*      0 0 0 0 1 1 1 1 */
-/*      --------------- */
-     
-/*      Thus, if the second titrating atom (in global atom numbering) is */
-/*      protonated and the third one too, we take the seventh (6, C */
-/*      counting) row of charges from the external qhop data base. */
-/*      Anyway, something like this should work I hope. We need to make */
-/*      sure there is a good manual chapter explaining this if someone */
-/*      wants to add a new residue. */
-/*   *\/ */
-
-
-/*   int  */
-/*     i,j,k,states; */
-/*   int */
-/*     nr_protons; */
-/*   gmx_bool */
-/*     *protonated; */
-  
-/*   /\* now we need to decide the protonation state of the residue and */
-/*      retreive the charges. The qhop_atoms are sorted already. */
-/*   *\/ */
-/* /\*   for(i=0;i<qhoprec->nr_qhop_atoms;i+=(qhoprec->qhop_atoms[i].nr_links+1)){ *\/ */
-/* /\*     snew(protonated,qhoprec->qhop_atoms[i].nr_links+1); *\/ */
-/* /\*     nr_protons = 0; *\/ */
-/* /\*     /\\* for(j=0;j<qhoprec->qhop_atoms[i].nr_links+1;j++){ *\\/ *\/ */
-/* /\* /\\*       protonated[j]=qhoprec->qhop_atoms[i+j].bdonor; *\\/ *\/ */
-/* /\* /\\*       nr_protons+=qhoprec->qhop_atoms[i+j].bdonor; *\\/ *\/ */
-/* /\* /\\*     } *\\/ *\/ */
-/* /\*     for(j=0;j<qhoprec->qhop_atoms[i].nr_links+1;j++){ *\/ */
-/* /\*       srenew(qhoprec->qhop_residues[j+i].protonated, *\/ */
-/* /\* 	   qhoprec->qhop_atoms[i].nr_links+1); *\/ */
-/* /\*       for(k=0;k<qhoprec->qhop_atoms[i].nr_links+1;k++){ *\/ */
-/* /\* 	qhoprec->qhop_residues[j+i].protonated[k]=protonated[k]; *\/ */
-/* /\*       } *\/ */
-/* /\*       /\\* compute the integer corresponding to the proton byte, or pryte  *\/ */
-/* /\*        *\\/ *\/ */
-/* /\*       qhoprec->qhop_residues[i+j].pryte =  *\/ */
-/* /\* 	qhop_get_protonation_state(qhoprec->qhop_atoms[i].nr_links+1,  *\/ */
-/* /\* 				       protonated); *\/ */
-/* /\*     } *\/ */
-/* /\*     /\\* with the pryte, we can decide what chargeset to use during the *\/ */
-/* /\*        simulation: charge[pryte][.] *\/ */
-/* /\*      *\\/  *\/ */
-/* /\*     free(protonated); *\/ */
-/* /\*   } *\/ */
-/* } /\* get_protonation_state *\/ */
- 
-
-/* THIS ONE MOVED TO src/gmxlib/qhoprec.c */
-/* t_qhoprec *mk_qhoprec(void) */
-/* { */
-/*   t_qhoprec *qr; */
-
-/*   snew(qr,1); */
-/*   memset((void *)qr, 0, sizeof(t_qhoprec)); /\* Just in case *\/ */
-/*   return (qr); */
-/* }  /\* mk_qhoprec *\/ */
-
-
-/* OBSOLETE! */
-/* static void set_charges(t_commrec *cr, t_qhoprec *qhoprec, t_mdatoms *md) */
-/* { */
-/*   /\* check and correct the charges of the donors etc, using the pryte */
-/*    *\/ */
-/*   t_qhop_residue */
-/*     *res; */
-/*   int */
-/*     i,j; */
-  
-/*   for(i=0; i < qhoprec->nr_qhop_residues; i++) */
-/*     { */
-/*       res = &qhoprec->qhop_residues[i]; */
-/*       for(j=0; j < res->nr_atoms; j++){ */
-/* 	/\*       md->chargeA[res->atoms[j]] = res->charge_set[res->pryte][j]; *\/ */
-/*       } */
-/*     } */
-/* } /\* set_charges *\/ */
 
 /* Related functions wrapped up in a new function
  * to de-clutter init_qhop(). */
-static void qhop_connect_rtp_library(qhop_db *db)
+static void qhop_connect_rtp_library(FILE *fplog,qhop_db *db)
 {
-  /* make tables of interacting atoms for the bonded rtp data. */
-  qhop_db_names2nrs(db);          /* So we don't have to go via atomnames all the time */
-  qhop_db_map_subres_atoms(db);   /* So we can superimpose the subresidues on the residue type */
-  qhop_db_map_subres_bondeds(db); /* ditto. */
+    /* Make tables of interacting atoms for the bonded rtp data
+       so we don't have to go via atomnames all the time */    
+    qhop_db_names2nrs(fplog,db);
+    /* So we can superimpose the subresidues on the residue type */
+    qhop_db_map_subres_atoms(db);   
+    /* ditto. */
+    qhop_db_map_subres_bondeds(db); 
 }
 
 int init_qhop(FILE *fplog,const char *ff,
@@ -1356,7 +1169,7 @@ int init_qhop(FILE *fplog,const char *ff,
   if (NULL != fplog)
     fprintf(fplog,"Turning off constraint treatmet in Titration MD calculation\n");
   
-  qhop_connect_rtp_library(db);
+  qhop_connect_rtp_library(fplog,db);
 
   db->inertH = find_inert_atomtype(mtop, fr);
 
