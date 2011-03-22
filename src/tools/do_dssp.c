@@ -390,7 +390,7 @@ int main(int argc,char *argv[])
     "calling the dssp program. If you do not have the dssp program,",
     "get it. [TT]do_dssp[tt] assumes that the dssp executable is",
     "/usr/local/bin/dssp. If this is not the case, then you should",
-    "set an environment variable [BB]DSSP[bb] pointing to the dssp",
+    "set an environment variable [TT]DSSP[tt] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
     "The structure assignment for each residue and time is written to an",

@@ -124,9 +124,9 @@ int gmx_rms(int argc, char *argv[])
                 "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
                 "If you select the option (default) and ",
                 "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
-                "otherwise the masses will be deduced from the atommass.dat file in",
-                "the GROMACS library directory. This is fine for proteins but not",
-                "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",
+                "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
+                "[TT]GMXLIB[tt]. This is fine for proteins, but not",
+                "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
                 "is assigned to unknown atoms. You can check whether this happend by",
                 "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
 

@@ -122,14 +122,14 @@ void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 int gmx_helix(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]g_helix[tt] computes all kind of helix properties. First, the peptide",
-    "is checked to find the longest helical part. This is determined by",
-    "Hydrogen bonds and Phi/Psi angles.",
+    "[TT]g_helix[tt] computes all kinds of helix properties. First, the peptide",
+    "is checked to find the longest helical part, as determined by",
+    "hydrogen bonds and Phi/Psi angles.",
     "That bit is fitted",
     "to an ideal helix around the Z-axis and centered around the origin.",
     "Then the following properties are computed:[PAR]",
     "[BB]1.[bb] Helix radius (file [TT]radius.xvg[tt]). This is merely the",
-    "RMS deviation in two dimensions for all Calpha atoms.",
+    "RMS deviation in two dimensions for all C-alpha atoms.",
     "it is calced as sqrt((SUM i(x^2(i)+y^2(i)))/N), where N is the number",
     "of backbone atoms. For an ideal helix the radius is 0.23 nm[BR]",
     "[BB]2.[bb] Twist (file [TT]twist.xvg[tt]). The average helical angle per",
@@ -145,12 +145,12 @@ int gmx_helix(int argc,char *argv[])
     "number of helical residues (see below).[BR]",
     "[BB]5.[bb] Number of helical residues (file [TT]n-ahx.xvg[tt]). The title says",
     "it all.[BR]",
-    "[BB]6.[bb] Helix Dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
-    "[BB]7.[bb] RMS deviation from ideal helix, calculated for the Calpha",
+    "[BB]6.[bb] Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
+    "[BB]7.[bb] RMS deviation from ideal helix, calculated for the C-alpha",
     "atoms only (file [TT]rms-ahx.xvg[tt]).[BR]",
-    "[BB]8.[bb] Average Calpha-Calpha dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
+    "[BB]8.[bb] Average C-alpha - C-alpha dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
     "[BB]9.[bb] Average Phi and Psi angles (file [TT]phipsi.xvg[tt]).[BR]",
-    "[BB]10.[bb] Ellipticity at 222 nm according to [IT]Hirst and Brooks[it]",
+    "[BB]10.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
     "[PAR]"
   };
   static const char *ppp[efhNR+2] = { 
