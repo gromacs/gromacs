@@ -627,8 +627,8 @@ int gmx_genbox(int argc,char *argv[])
     "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
     "successful the same van der Waals criterium is used as for removal of ",
-    "solvent molecules. When no appropriately ",
-    "sized holes (holes that can hold an extra molecule) are available the ",
+    "solvent molecules. When no appropriately-sized ",
+    "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
 

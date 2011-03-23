@@ -95,19 +95,19 @@ int gmx_rms(int argc, char *argv[])
         *desc[] =
             {
                 "[TT]g_rms[tt] compares two structures by computing the root mean square",
-                "deviation (RMSD), the size-independent 'rho' similarity parameter",
-                "(rho) or the scaled rho (rhosc), ",
-                "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
+                "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
+                "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
+                "see Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).",
                 "This is selected by [TT]-what[tt].[PAR]"
 
-                    "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
+                "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
                 "reference structure. The reference structure",
                 "is taken from the structure file ([TT]-s[tt]).[PAR]",
 
                 "With option [TT]-mir[tt] also a comparison with the mirror image of",
                 "the reference structure is calculated.",
                 "This is useful as a reference for 'significant' values, see",
-                "Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).[PAR]",
+                "Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).[PAR]",
 
                 "Option [TT]-prev[tt] produces the comparison with a previous frame",
                 "the specified number of frames ago.[PAR]",

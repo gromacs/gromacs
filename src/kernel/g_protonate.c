@@ -55,7 +55,7 @@ int main (int argc,char *argv[])
     "[TT]g_protonate[tt] reads (a) conformation(s) and adds all missing",
     "hydrogens as defined in [TT]gmx2.ff/aminoacids.hdb[tt]. If only [TT]-s[tt] is",
     "specified, this conformation will be protonated, if also [TT]-f[tt]",
-    "is specified, the conformation(s) will be read from this file",
+    "is specified, the conformation(s) will be read from this file, ",
     "which can be either a single conformation or a trajectory.",
     "[PAR]",
     "If a [TT].pdb[tt] file is supplied, residue names might not correspond to",

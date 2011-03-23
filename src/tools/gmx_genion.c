@@ -341,7 +341,7 @@ int gmx_genion(int argc, char *argv[])
     "[PAR]Ions which can have multiple charge states get the multiplicity",
     "added, without sign, for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
-    "in a [TT].pdb[tt] file (for visualisation using e.g. rasmol).",
+    "in a [TT].pdb[tt] file (for visualisation using e.g. Rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
     "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."

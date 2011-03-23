@@ -445,7 +445,7 @@ int gmx_sgangle(int argc,char *argv[])
     "If [TT]-one[tt] is set, only one group should be specified in the index",
     "file and the angle between this group at time 0 and t will be computed.",
     "The angles calculated depend on the order in which the atoms are ",
-    "given. Giving for instance 5 6 will rotate the vector 5-6 with ",
+    "given. Giving, for instance, 5 6 will rotate the vector 5-6 with ",
     "180 degrees compared to giving 6 5. [PAR]If three atoms are given, ",
     "the normal on the plane spanned by those three atoms will be",
     "calculated, using the formula  P1P2 x P1P3.",
@@ -470,7 +470,7 @@ int gmx_sgangle(int argc,char *argv[])
     { "-one", FALSE, etBOOL, {&bOne},
       "Only one group compute angle between vector at time zero and time t"},
     { "-z", FALSE, etBOOL, {&bZ},
-        "Use the Z-axis as reference" }
+        "Use the [IT]z[it]-axis as reference" }
   };
 #define NPA asize(pa)
 

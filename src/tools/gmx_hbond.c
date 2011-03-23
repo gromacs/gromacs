@@ -3180,7 +3180,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
-          "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
+          "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
         { "-dump",  FALSE, etINT, {&nDump},
           "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb",FALSE, etREAL, {&maxnhb},
@@ -3190,7 +3190,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-geminate", FALSE, etENUM, {gemType},
           "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
         { "-diff", FALSE, etREAL, {&D},
-          "Dffusion coefficient to use in the rev. gem. recomb. kinetic model. If non-positive, then it will be fitted to the ACF along with ka and kd."},
+          "Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
 #ifdef HAVE_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},

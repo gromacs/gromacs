@@ -79,7 +79,7 @@ int gmx_enemat(int argc,char *argv[])
     "line a group of atoms to be used. For these groups matrix of",
     "interaction energies will be extracted from the energy file",
     "by looking for energy groups with names corresponding to pairs",
-    "of groups of atoms. E.g. if your [TT]-groups[tt] file contains:[BR]",
+    "of groups of atoms, e.g. if your [TT]-groups[tt] file contains:[BR]",
     "[TT]2[tt][BR]",
     "[TT]Protein[tt][BR]",
     "[TT]SOL[tt][BR]",
