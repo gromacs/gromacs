@@ -181,7 +181,7 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
   if (NULL != debug)
-    dump_h_db(debug,ah,aah);
+    dump_h_db(debug,nah,aah);
   
   *nahptr = nah;
   *ah     = aah;

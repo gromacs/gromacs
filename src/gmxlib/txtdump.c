@@ -678,7 +678,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("userreal4",ir->userreal4);
     PS("titration",eTitrationAlg_names[ir->titration_alg]);
     PI("titration_freq",ir->titration_freq);
-    PI("titration_mode",ir->titration_mode);
+    PS("titration_mode",eTitrationMode_names[ir->titration_mode]);
     PR("titration_vscale_radius",ir->titration_vscale_radius);
     PR("titration_epsilon_r",ir->titration_epsilon_r);
     pr_grp_opts(fp,indent,"grpopts",&(ir->opts),bMDPformat);

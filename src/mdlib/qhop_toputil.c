@@ -585,7 +585,7 @@ int which_subRes(const t_qhoprec *qr,
     char
         **DAlist, **DAlist2;
     int
-        *n_H, *n_H2, nDA, nDA2, DA;
+        *n_H, *n_H2, nHtot, nDA, nDA2, DA;
     qhop_reactant
         *reac;
     t_restp
@@ -613,6 +613,7 @@ int which_subRes(const t_qhoprec *qr,
     */
 
     /* loop over donors/acceptors in the residue */
+    nHtot = 0;
     for (i=0; i < nDA; i++)
     {
         k = qres->titrating_sites[i];
@@ -630,6 +631,7 @@ int which_subRes(const t_qhoprec *qr,
             if (get_proton_presence(&(db->H_map), h))
             {
                 n_H[i]++;
+                nHtot++;
             }
         }
     }
@@ -842,8 +844,8 @@ int which_subRes(const t_qhoprec *qr,
       
     if (r >= nsubres)
     {
-        gmx_fatal(FARGS, "Didn't find a subres of %s, most likely due to inconsistencies in\nforce field files. r = %d, nsubres = %d, resnr = %d",
-                  db->rb.qrt[qres->rtype].canonical,r,nsubres,resnr);
+        gmx_fatal(FARGS, "Didn't find the subres of %s with %d H, most likely due to inconsistencies in\nforce field files. r = %d, nsubres = %d, resnr = %d",
+                  db->rb.qrt[qres->rtype].canonical,nHtot,r,nsubres,resnr);
     }
     /* printf("subres %d\n",r);*/
     return r;

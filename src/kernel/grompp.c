@@ -1348,7 +1348,7 @@ int main (int argc, char *argv[])
   }
   if (ir->titration_alg != eTitrationAlgNone) 
   {
-      sprintf(warn_buf,"Turning off renumber of force parameters when using titration");
+      sprintf(warn_buf,"Turning off renumbering of atomtypes when using titration");
       warning_note(wi,warn_buf);
       bRenum = FALSE;
   }
