@@ -92,6 +92,8 @@ class OptionInfo
         // Disallow copy and assign.
         OptionInfo(const OptionInfo &);
         void operator =(const OptionInfo &);
+
+        friend class OptionsIterator;
 };
 
 /*! \libinternal \brief
