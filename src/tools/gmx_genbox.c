@@ -494,7 +494,7 @@ static char *read_prot(const char *confin,t_atoms *atoms,rvec **x,rvec **v,
 }
 
 static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
-		       gmx_atomprop_t aps)
+		       gmx_atomprop_t aps,const char *solname)
 {
 #define TEMP_FILENM "temp.top"
   FILE   *fpin,*fpout;
@@ -526,7 +526,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
   fprintf(stderr,"Volume                 :  %10g (nm^3)\n",vol);
   fprintf(stderr,"Density                :  %10g (g/l)\n",
 	  (mtot*1e24)/(AVOGADRO*vol));
-  fprintf(stderr,"Number of SOL molecules:  %5d   \n\n",nsol);
+  fprintf(stderr,"Number of %s molecules:  %5d   \n\n",solname,nsol);
   
   /* open topology file and append sol molecules */
   topinout  = ftp2fn(efTOP,NFILE,fnm);
@@ -586,7 +586,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
     if ( nsol ) {
       fprintf(stdout,"Adding line for %d solvent molecules to "
 	      "topology file (%s)\n",nsol,topinout);
-      fprintf(fpout,"%-15s %5d\n","SOL",nsol);
+      fprintf(fpout,"%-15s %5d\n",solname,nsol);
     }
     ffclose(fpout);
     /* use ffopen to generate backup of topinout */
@@ -705,6 +705,7 @@ int gmx_genbox(int argc,char *argv[])
   static rvec new_box={0.0,0.0,0.0};
   static gmx_bool bReadV=FALSE;
   static int  max_sol = 0;
+  static char *solname = "SOL";
   output_env_t oenv;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {new_box},   
@@ -722,7 +723,9 @@ int gmx_genbox(int argc,char *argv[])
     { "-maxsol", FALSE, etINT,  {&max_sol},
       "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "keep velocities from input solute and solvent" }
+      "keep velocities from input solute and solvent" },
+    { "-solname", FALSE, etSTR, {&solname},
+      "Name of the solvent molecule type to be added in the topology file" }
   };
 
   CopyRight(stderr,argv[0]);
@@ -805,7 +808,7 @@ int gmx_genbox(int argc,char *argv[])
   /* print size of generated configuration */
   fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",
 	  atoms.nr,atoms.nres);
-  update_top(&atoms,box,NFILE,fnm,aps);
+  update_top(&atoms,box,NFILE,fnm,aps,solname);
 	  
   gmx_atomprop_destroy(aps);
   

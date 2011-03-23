@@ -10,11 +10,10 @@ topol_DATA = \
 	aminoacids.hdb   forcefield.doc   dna.rtp	   dna.r2b	dna.arn		dna.hdb \
 	aminoacids.n.tdb forcefield.itp   rna.rtp	   rna.r2b	rna.arn		rna.hdb	\
 	titration.rtp	\
-	aminoacids.r2b   ffbonded.itp     tip3p.itp	   urea.itp	\
-	aminoacids.rtp   ions.itp         tip4p.itp	   \
-	tip4pew.itp	 tip5p.itp	  watermodels.dat  gbsa.itp	\
-	spc.itp		 spce.itp         	\
-	spc-hydronium.itp	titration.dat
+	aminoacids.r2b   ffbonded.itp     urea.itp	\
+	aminoacids.rtp   ions.itp         	   \
+	watermodels.dat  gbsa.itp	\
+	tip3p-hydronium.itp	titration.dat
 
 EXTRA_DIST = ${topol_DATA}
 

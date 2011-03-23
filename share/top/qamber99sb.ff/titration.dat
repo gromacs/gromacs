@@ -7,12 +7,12 @@
 -->
 <titrations>
   <resblocks>
-    <residue_type description="water" name="H2O" protonated="H3O" water="TRUE">
-      <res name="H2O">
+    <residue_type description="water" name="HOH" protonated="H3O" water="TRUE">
+      <res name="HOH">
 	<acceptor name="OW" product="H3O"/>
       </res>
       <res name="H3O">
-	<donor name="OW" product="H2O"/>
+	<donor name="OW" product="HOH"/>
       </res>
     </residue_type>
 
@@ -89,7 +89,7 @@
       Hopping parameters
       ##################
     -->
-  <titration donor="H3O" acceptor="H2O">
+  <titration donor="H3O" acceptor="HOH">
     <don_atom> OW </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -169,7 +169,7 @@
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="NH4" acceptor="H2O">
+  <titration donor="NH4" acceptor="HOH">
     <don_atom> NZ </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -288,7 +288,7 @@
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="HAC" acceptor="H2O">
+  <titration donor="HAC" acceptor="HOH">
     <don_atom> OC2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -528,7 +528,7 @@
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
- <titration donor="LYS" acceptor="H2O">
+ <titration donor="LYS" acceptor="HOH">
     <don_atom> NZ </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -648,7 +648,7 @@
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="HIP" acceptor="H2O">
+  <titration donor="HIP" acceptor="HOH">
     <don_atom> NE2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -688,7 +688,7 @@
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="HIP" acceptor="H2O">
+  <titration donor="HIP" acceptor="HOH">
     <don_atom> ND1 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -888,7 +888,7 @@
     <parameter name="r_3"   value="2.522710685795355e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="GLH" acceptor="H2O">
+  <titration donor="GLH" acceptor="HOH">
     <don_atom> OE2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->
@@ -1128,7 +1128,7 @@
     <parameter name="r_3"   value="1.84057246091914e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
 
-  <titration donor="ASH" acceptor="H2O">
+  <titration donor="ASH" acceptor="HOH">
     <don_atom> OD2 </don_atom>
     <acc_atom> OW </acc_atom>
     <!-- E_12,0 -->

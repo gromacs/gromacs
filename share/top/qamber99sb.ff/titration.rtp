@@ -55,29 +55,31 @@
 ; Titratable spc. 
 ; At this point we only support one water model. It should be changed to TIP3P though.
 ; If you tinker with this stuff all bets are off.
-[ H2O ]
+[ HOH ]
  [ atoms ]
-    OW   OW_spc       -0.82     0
-    HW1  HW_spc        0.41     0
-    HW2  HW_spc        0.41     0
+    OW   OW       -0.834     0
+    HW1  HW        0.417     0
+    HW2  HW        0.417     0
  [ bonds ]
-    OW   HW1	0.1   345000
-    OW   HW2	0.1   345000
+    OW   HW1	0.09572   462750.4
+    OW   HW2	0.09572   462750.4
 ;   The rest are vsites
  [ angles ]
-    HW1  OW   HW2   109.47    383
+    HW1  OW   HW2   104.52    836.8
 
 [ H3O ]
  [ atoms ]
-    OW   OW_spc       -0.59     0
-    HW1  HW_spc        0.53     0
-    HW2  HW_spc        0.53     0
-    HW3  HW_spc        0.53     0
+    OW   OW       -0.59     0
+    HW1  HW        0.53     0
+    HW2  HW        0.53     0
+    HW3  HW        0.53     0
 [ bonds ]
-    OW   HW1	0.1   345000
-    OW   HW2	0.1   345000
+    OW   HW1	0.09572   462750.4
+    OW   HW2	0.09572   462750.4
  [ angles ]
-    HW1  OW   HW2   109.47    383
+    HW1  OW   HW2   112    836.8
+    HW1  OW   HW3   112    836.8
+    HW3  OW   HW2   112    836.8
 
 ; ------------------
 ; Titrable acetic acid. 
