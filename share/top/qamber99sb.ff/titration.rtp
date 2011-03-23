@@ -52,8 +52,8 @@
     H1   NZ   H3    109.500    292.880
     H2   NZ   H3    109.500    292.880	
 ; ------------------
-; Titratable spc. 
-; At this point we only support one water model. It should be changed to TIP3P though.
+; Titratable TIP3P. 
+; At this point we only support one water model. 
 ; If you tinker with this stuff all bets are off.
 [ HOH ]
  [ atoms ]
@@ -78,8 +78,8 @@
     OW   HW2	0.09572   462750.4
  [ angles ]
     HW1  OW   HW2   112    836.8
-    HW1  OW   HW3   112    836.8
-    HW3  OW   HW2   112    836.8
+;    HW1  OW   HW3   112    836.8
+;    HW3  OW   HW2   112    836.8
 
 ; ------------------
 ; Titrable acetic acid. 
