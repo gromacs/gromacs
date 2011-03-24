@@ -92,6 +92,7 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
     {
         int ndh=ir->fepvals->n_lambda;
         int ndhdl=0;
+        int nchars=0;
         
         for (i=0;i<efptNR;i++)
         {
@@ -102,10 +103,8 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
         }
         
         if (ir->fepvals->separate_dhdl_file==sepdhdlfileYES)
-            int nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry,
-                                                  dH data ~10 chars/entry */
-        
         {
+            nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
             if (ir->fepvals->elmcmove > elmcmoveNO)
             {
                 nchars += 5;   /* alchemical state */
@@ -115,9 +114,7 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
             {
                 nchars += 12; /* energy for dhdl */
             }
-            
             cio += ((1 + nsteps)/ir->nstdhdl)*nchars; 
-            
         }
         else
         {
