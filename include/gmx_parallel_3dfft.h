@@ -52,6 +52,7 @@ gmx_parallel_3dfft_t;
  *  \param bReproducible  Try to avoid FFT timing optimizations and other stuff
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
+ *  \param nthreads       Run in parallel using n threads
  *    
  *  \return 0 or a standard error code.
  */
@@ -63,7 +64,8 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
-                           gmx_bool                      bReproducible);
+                           gmx_bool                  bReproducible,
+                           int                       nthreads);
 
 
 

@@ -2995,7 +2995,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                             &pme->fftgridA,&pme->cfftgridA,
                             pme->mpi_comm_d,
                             pme->overlap[0].s2g0,pme->overlap[1].s2g0,
-                            bReproducible);
+                            bReproducible,pme->nthread);
     
     if (bFreeEnergy)
     {
@@ -3010,7 +3010,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                                 &pme->fftgridB,&pme->cfftgridB,
                                 pme->mpi_comm_d,
                                 pme->overlap[0].s2g0,pme->overlap[1].s2g0,
-                                bReproducible);
+                                bReproducible,pme->nthread);
     }
     else 
     {
