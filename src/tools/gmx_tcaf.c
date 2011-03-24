@@ -219,7 +219,7 @@ int gmx_tcaf(int argc,char *argv[])
   const char *desc[] = {
     "[TT]g_tcaf[tt] computes tranverse current autocorrelations.",
     "These are used to estimate the shear viscosity, [GRK]eta[grk].",
-    "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
+    "For details see: Palmer, Phys. Rev. E 49 (1994) pp 359-366.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the [IT]y[it]- and [IT]z[it]-direction,",
     "(1,1,0) and (1,-1,0) each also in the 2 other planes (these vectors",
