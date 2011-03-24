@@ -93,7 +93,7 @@ static void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grpn, real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices,int *tblock, t_topology *top, int ePBC, int axis,gmx_bool bCenter, const output_env_t oenv)
+static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grpn, real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices,int *tblock, t_topology *top, int ePBC, int axis,gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
 
 {
 /*  
@@ -142,7 +142,11 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 
 	*zslices=1+FLOOR(box[axis][axis]/bwz);
 	*yslices=1+FLOOR(box[ax2][ax2]/bw);
-	*xslices=1+FLOOR(box[ax1][ax1]/bw);  
+	*xslices=1+FLOOR(box[ax1][ax1]/bw);
+	if(bps1d){
+		if(*xslices<*yslices) *xslices=1;
+		else *yslices=1; 
+		}  
 	fprintf(stderr,
 	"\nDividing the box in %5d x %5d x %5d slices with binw %f along axis %d\n",*xslices,*yslices,*zslices,bw,axis );
 	
@@ -290,7 +294,25 @@ fprintf(stderr,"Total density [kg/m^3]  %8f",totdens);
 ffclose(fldH);
 }
 
-	
+static void periodic_running_average(int npoints,real *x,int naver)
+{
+  int i,j,nj;
+  real *aver;
+  
+  snew(aver,npoints);
+  for(i=0; (i<npoints); i++)  {
+    nj = 0;
+    for(j=i-naver/2; (j<i+naver/2); j++) {
+      aver[i] += x[(j+npoints) % npoints];
+      nj++;
+    }
+    aver[i] /= nj;
+  }
+  for(i=0; (i<npoints); i++) 
+    x[i] = aver[i];
+  sfree(aver);
+}
+
 static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslices,int tblocks,int ftsize)
 {
  real *kernel;
@@ -303,13 +325,16 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
  snew(kernel,ftsize);
  gausskernel(kernel,ftsize,var);
  for(n=0;n<tblocks;n++){	
-	for(i=0;i<xslices;i++){
-		for (j=0;j<yslices;j++){
- 			snew(output,zslices);
-			convolve1D( Densmap[n][i][j],output,zslices,kernel,ftsize );
-			Densmap[n][i][j]=output;
-		}
-	}
+   for(i=0;i<xslices;i++){
+     for (j=0;j<yslices;j++){
+       if (0) {
+	 snew(output,zslices);
+	 convolve1D( Densmap[n][i][j],output,zslices,kernel,ftsize );
+	 Densmap[n][i][j]=output;
+       }
+       periodic_running_average(zslices,Densmap[n][i][j],ftsize);
+     }
+   }
  }
 }
 
@@ -587,6 +612,7 @@ int gmx_densorder(int argc,char *argv[])
   static gmx_bool bAvgt  = FALSE;
   static gmx_bool bRawOut=FALSE;
   static gmx_bool bOut=FALSE;
+  static gmx_bool b1d=FALSE;
   static int nlevels=100;
 //Densitymap - Densmap[t][x][y][z]
   real ****Densmap=NULL;
@@ -602,6 +628,8 @@ int gmx_densorder(int argc,char *argv[])
 t_pargs pa[] = {
     { "-tavg", FALSE, etBOOL, {&bAvgt},
       "Plot time averaged interface profile"},
+    { "-1d", FALSE, etBOOL, {&b1d},
+      "Pseudo-1d interface geometry"},
     { "-bw",FALSE,etREAL,{&binw},
 	"Binwidth of density distribution tangential to interface"},
     { "-bwn", FALSE, etREAL, {&binwz},
@@ -656,7 +684,7 @@ snew(ngx,ngrps);
 
 get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,ngx,index,grpname);
 
-density_in_time(ftp2fn(efTRX,NFILE,fnm),index,ngx,ngrps,binw,binwz,nsttblock,&Densmap,&xslices,&yslices,&zslices,&tblock,top,ePBC,axis,bCenter,oenv);
+density_in_time(ftp2fn(efTRX,NFILE,fnm),index,ngx,ngrps,binw,binwz,nsttblock,&Densmap,&xslices,&yslices,&zslices,&tblock,top,ePBC,axis,bCenter,b1d,oenv);
 if (debug){
 outputfield("Density_4D.dat",Densmap,xslices,yslices,zslices,tblock);
 }
