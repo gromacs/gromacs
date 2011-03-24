@@ -1063,7 +1063,7 @@ static int qhop_atom_comp(const void *a, const void *b){
 static void get_protons(t_commrec *cr, gmx_mtop_t *mtop, 
                         t_qhop_atom    *qhop_atom,
                         t_qhop_residue *qhop_residue,
-                        rvec *x, t_pbc pbc){
+                        rvec *x, t_pbc *pbc){
     /* searching through the residue atoms to find the protons. By using
        a distance criteriumm we avoid the graph (don't know if there is
        such thing with v-sites, which we eventually want to use for
@@ -1090,7 +1090,7 @@ static void get_protons(t_commrec *cr, gmx_mtop_t *mtop,
         if (atom->atomnumber <= 1)
         {
             /* we need  v-sites as well */
-            pbc_dx(&pbc,
+            pbc_dx(pbc,
                    x[qhop_atom->atom_id],
                    x[qhop_residue->atoms[i]],
                    vec);
@@ -1110,7 +1110,7 @@ static void get_protons(t_commrec *cr, gmx_mtop_t *mtop,
     }
 
     qhop_atom->nr_protons = nr_protons;
-    srenew(qhop_atom->protons, nr_protons);
+    //srenew(qhop_atom->protons, nr_protons);
 } /* get_protons */ 
 
 
@@ -1136,8 +1136,6 @@ int init_qhop(FILE *fplog,const char *ff,
         nr_qhop_atoms, nr_qhop_residues, i, j, target, ft, nb;
     t_qhoprec
         *qhoprec; 
-    t_pbc
-        pbc;
     t_qhop_residue
         *qres;
     qhop_db *db;
@@ -1151,12 +1149,7 @@ int init_qhop(FILE *fplog,const char *ff,
         gmx_fatal(FARGS,"Can not read qhop database information");
     }
 
-    set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, box);
-
     qhoprec = fr->qhoprec;
-
-    qhoprec->qhopfreq = ir->titration_freq;
-    qhoprec->qhopmode = ir->titration_mode;
 
     snew(qhoprec->global_atom_to_qhop_atom, mtop->natoms);
     snew(qhoprec->f, mtop->natoms);
@@ -1166,7 +1159,7 @@ int init_qhop(FILE *fplog,const char *ff,
     /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
     scan_for_H(qhoprec, db);
 
-    db->constrain = FALSE;
+    db->constrain = 0;
     if (NULL != fplog)
         fprintf(fplog,"Turning off constraint treatment in Titration MD calculation\n");
   
@@ -1183,8 +1176,8 @@ int init_qhop(FILE *fplog,const char *ff,
 } /* init_hop */
 
 
-static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x, t_pbc pbc,
-                             int *nr, t_mdatoms *md, qhop_H_exist *Hmap)
+static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x, 
+                           t_pbc *pbc, t_mdatoms *md, qhop_H_exist *Hmap)
 {
     /* using the qhop nblists with i particles the donor atoms and
        j-particles the acceptor atoms, we search which of the acceptor
@@ -1193,32 +1186,22 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
        angles. The acceptor atoms are stored in acceptor arrays of each
        of the donor atoms.
     */
-    int
-        i,j,jmax=100,k,acc,don;
-    t_nblist
-        qhoplist;
-    t_qhoprec
-        *qhoprec;
-    t_qhop_atom
-        donor,acceptor;
-    t_hop
-        *hop;
-    rvec
-        dx,veca,vecb,vecc;
-    int
-        nr_hops=0,max_hops=10, closest;
-    gmx_bool 
-        found_proton;
-    real 
-        ang, ang2,r_close;
-    qhoprec = fr->qhoprec;
+    int         i,j,jmax=100,k,acc,don;
+    t_nblist    qhoplist;
+    t_qhoprec   *qhoprec;
+    t_qhop_atom donor,acceptor;
+    rvec        dx,veca,vecb,vecc;
+    int         nr_hop=0,closest;
+    gmx_bool    found_proton;
+    real        ang, ang2,r_close;
+    
+    qhoprec  = fr->qhoprec;
     qhoplist = fr->qhopnblist;
-    snew(hop, max_hops);
+    
     for(i=0; i < qhoplist.nri; i++)
     {
         /* every qhop atom should be a unique i
            particle I think  */
-
         if(qhoplist.iinr[i] < 0 || !md->bqhopdonor[qhoplist.iinr[i]])
         {
             continue;
@@ -1243,7 +1226,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
 
             /* check whether the acceptor can take one of the donor's protons
              */
-            pbc_dx(&pbc, x[acceptor.atom_id], x[donor.atom_id], dx);
+            pbc_dx(pbc, x[acceptor.atom_id], x[donor.atom_id], dx);
             if (norm(dx) <= DOO)
             {
                 /* find the proton that can go. I assume that there can only be one!
@@ -1255,7 +1238,7 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                 {
                     if(get_proton_presence(Hmap, donor.protons[k]) /* md->chargeA[donor.protons[k]] > 0.000001 */)
                     {
-                        pbc_dx(&pbc, x[donor.protons[k]], x[acceptor.atom_id], dx);
+                        pbc_dx(pbc, x[donor.protons[k]], x[acceptor.atom_id], dx);
                         /* if(norm(dx)< HBOND) */
                         {
                             found_proton = TRUE;
@@ -1276,9 +1259,9 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                 {
                     /* compute DHA angle */
                     /* use gmx_angle() instead? */
-                    pbc_dx(&pbc, x[donor.atom_id],    x[donor.protons[k]], veca);
-                    pbc_dx(&pbc, x[donor.protons[k]], x[acceptor.atom_id], vecb);
-                    pbc_dx(&pbc, x[acceptor.atom_id], x[donor.atom_id],    vecc);
+                    pbc_dx(pbc, x[donor.atom_id],    x[donor.protons[k]], veca);
+                    pbc_dx(pbc, x[donor.protons[k]], x[acceptor.atom_id], vecb);
+                    pbc_dx(pbc, x[acceptor.atom_id], x[donor.atom_id],    vecc);
 		
                     /*ang2 = RAD2DEG*gmx_angle(vecc, veca);*/
                     ang = RAD2DEG*acos( (norm2(vecb) + norm2(veca) - norm2(vecc) )/
@@ -1290,29 +1273,27 @@ static t_hop *find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                     {
                         /* the geometric conditions are right for a hop to take place
                          */
-                        if(nr_hops>=max_hops)
+                        if (nr_hop >= qhoprec->max_nr_hop)
                         {
-                            max_hops += 10;
-                            srenew(hop, max_hops);
+                            qhoprec->max_nr_hop++;
+                            srenew(qhoprec->hop,qhoprec->max_nr_hop);
                         }
-                        hop[nr_hops].donor_id    = don;
-                        hop[nr_hops].acceptor_id = acc;
-                        hop[nr_hops].proton_id   = k;
-                        hop[nr_hops].rda         = norm(vecc);
-                        hop[nr_hops].ang         = ang;
-                        hop[nr_hops].prob        = 0;
-                        nr_hops++;
+                        memset(&(qhoprec->hop[nr_hop]),0,sizeof(qhoprec->hop[0]));
+                        qhoprec->hop[nr_hop].donor_id    = don;
+                        qhoprec->hop[nr_hop].acceptor_id = acc;
+                        qhoprec->hop[nr_hop].proton_id   = k;
+                        qhoprec->hop[nr_hop].rda         = norm(vecc);
+                        qhoprec->hop[nr_hop].ang         = ang;
+                        qhoprec->hop[nr_hop].prob        = 0;
+                        nr_hop++;
                     }
                 }
             }
         }
     }
 
-    /* clean up some memory */
+    qhoprec->nr_hop = nr_hop;
 
-    srenew(hop,nr_hops);
-    *nr = nr_hops;
-    return (hop);
 } /* find_acceptors */
 
 
@@ -1672,8 +1653,9 @@ void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
 static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec, 
                                    t_mdatoms *md, t_hop *hop, rvec *x,
                                    gmx_bool bUndo,gmx_mtop_t *mtop,
-                                   gmx_localtop_t *top, gmx_constr_t constr, t_pbc *pbc,
-                                   qhop_db *db){
+                                   gmx_localtop_t *top, gmx_constr_t constr,
+                                   t_pbc *pbc,qhop_db *db)
+{
     /* alters the topology in order to evaluate the new energy. In case
        of hydronium donating a proton, we might have to change the
        position of the resulting HW1, and HW2 in order to create a
@@ -1885,9 +1867,8 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
                             t_mdatoms *md,t_fcdata *fcd,
                             t_graph *graph,
                             t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-                            /*gmx_genborn_t *born,*/
-                            /* gmx_bool bBornRadii, */int step,
-                            real *Ecoul){
+                            gmx_large_int_t step,real *Ecoul)
+{
     real 
         t,etot;
     real 
@@ -1979,7 +1960,7 @@ void print_hop(t_hop hop)
 static real get_self_energy(t_commrec *cr, t_qhop_residue donor, 
                             t_qhop_residue acceptor, t_mdatoms *md, 
                             gmx_localtop_t *top,
-                            rvec *x, t_pbc pbc, t_forcerec *fr, real *Eself_coul){
+                            rvec *x, t_pbc *pbc, t_forcerec *fr, real *Eself_coul){
     /* the internal energy of the hoppers together Is difficult because
        the internal energy of the individal residues, eg. if part of
        protein, will also change upon hopping. For water does not
@@ -2045,7 +2026,7 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
             /* Coulomb */
             qq = qa * md->chargeA[ja];
 
-            pbc_dx(&pbc, x[ia], x[ja], vec);
+            pbc_dx(pbc, x[ia], x[ja], vec);
             drsq = norm2(vec);
             rinv = gmx_invsqrt(drsq);
             rinvsq = rinv*rinv;
@@ -2129,7 +2110,7 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
                 /* Coulomb */
                 qq = qa * md->chargeA[ja];
 
-                pbc_dx(&pbc, x[ia], x[ja], vec);
+                pbc_dx(pbc, x[ia], x[ja], vec);
                 drsq = norm2(vec);
                 rinv = gmx_invsqrt(drsq);
                 rinvsq = rinv*rinv;
@@ -2313,20 +2294,18 @@ static real compute_rate_TST(qhop_parameters *p, ///< Pointer to qhop_parameters
     )
 {
     real
-        Q, R, kappa, half_hbar_omega, ETST, pTST, E_M, Eb, E12, rda, T;
+        Q, R, kappa, half_hbar_omega, ETST, pTST, E_M, rda, T;
 
     rda = hop->rda;
-    E12 = hop->E12;
-    Eb = hop->Eb;
     T = hop->T;
 
-    if(E12 > 0.0)
+    if (hop->E12 > 0.0)
     {
-        E_M  = Eb - E12;
+        E_M  = hop->Eb - hop->E12;
     }
     else
     {
-        E_M = Eb;
+        E_M = hop->Eb;
     }
 
     Q =
@@ -2342,8 +2321,8 @@ static real compute_rate_TST(qhop_parameters *p, ///< Pointer to qhop_parameters
     kappa =
         exp(p->p_1 + Q*E_M + R*E_M*E_M);
 
-    half_hbar_omega = p->f * exp(-p->g * Eb) + p->h;
-    ETST =-(Eb-half_hbar_omega)/(BOLTZ * T);
+    half_hbar_omega = p->f * exp(-p->g * hop->Eb) + p->h;
+    ETST =-(hop->Eb-half_hbar_omega)/(BOLTZ * T);
     pTST = (kappa*BOLTZMANN*T/(PLANCK1 * 1e12)) * exp(ETST) * 0.01;
 
     hop->hbo = half_hbar_omega;
@@ -2410,11 +2389,10 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
                          t_mdatoms *md,t_fcdata *fcd,
                          t_graph *graph,
                          t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-                         /* gmx_genborn_t *born, gmx_bool bBornRadii, */
-                         t_hop *hop, t_qhoprec *qhoprec,t_pbc pbc,int step, qhop_db *db){
-  
-    /* compute the hopping probability based on the Q-hop criteria
-     */
+                         t_hop *hop, t_qhoprec *qhoprec,
+                         t_pbc *pbc,gmx_large_int_t step, qhop_db *db)
+{
+    /* compute the hopping probability based on the Q-hop criteria */
     real
         Ebefore, Ebefore_self,
         Eafter_all, Eafter_coul,
@@ -2442,7 +2420,7 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
     {
         qhoprec->Ebefore_all = evaluate_energy(cr, ir, nrnb, wcycle,top, mtop,
                                                groups, state, md, fcd, graph,
-                                               fr,vsite,mu_tot, /* born, bBornRadii, */
+                                               fr,vsite,mu_tot,
                                                step, &(qhoprec->Ebefore_coul));
         qhoprec->bHaveEbefore = TRUE;
     }
@@ -2457,10 +2435,11 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
     qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_d, hop->donor_id);
     qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-    if(change_protonation(cr, ir, fr->qhoprec, md, hop, state->x, FALSE, mtop, top, constr, &pbc, db))
+    if(change_protonation(cr, ir, fr->qhoprec, md, hop, state->x, 
+                          FALSE, mtop, top, constr, pbc, db))
     {
         Eafter_all = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-                                     fcd,graph,fr,vsite,mu_tot,/*  born, bBornRadii, */
+                                     fcd,graph,fr,vsite,mu_tot,
                                      step, &Eafter_coul);
         Eafter_self = get_self_energy(cr, qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->donor_id].qres_id],
                                       qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->acceptor_id].qres_id],
@@ -2475,7 +2454,6 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
     
         compute_E12_left (p, hop);
         hop->Eb        = compute_Eb(p,hop);
-        /* fprintf(stderr,"E12 = %f\n",hop->E12); */
 
         r_TST = compute_rate_TST(p, hop);
         r_SE  = compute_rate_SE (p, hop);
@@ -2483,7 +2461,7 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
         if(hop->E12 > hop->Er)
         {
             /* Classical TST regime */
-            hop->prob = poisson_prob(r_TST, (ir->delta_t * qhoprec->qhopfreq)); /* (1-pow((1-r_TST),fr->qhoprec->qhopfreq)); */
+            hop->prob = poisson_prob(r_TST, (ir->delta_t * ir->titration_freq));
             hop->regime = etQhopTST;
         }
         else 
@@ -2491,14 +2469,14 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
             if (hop->E12 < hop->El)
             {
                 /* Schroedinger regime */
-                hop->prob = poisson_prob(r_SE, (ir->delta_t * qhoprec->qhopfreq));
+                hop->prob = poisson_prob(r_SE, (ir->delta_t * ir->titration_freq));
                 hop->regime = etQhopSE;
             }
             else
             {
                 /* intermediate regime */
                 r_log = compute_rate_log(p, hop);
-                hop->prob = poisson_prob(r_log, (ir->delta_t * qhoprec->qhopfreq));
+                hop->prob = poisson_prob(r_log, (ir->delta_t * ir->titration_freq));
                 hop->regime = etQhopI;
             }
         }
@@ -2507,11 +2485,11 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
         qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_d, hop->donor_id);
         qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-        if(!change_protonation(cr, ir, qhoprec, md, hop, state->x, TRUE, mtop, top, constr, &pbc, db))
+        if(!change_protonation(cr, ir, qhoprec, md, hop, state->x, TRUE, mtop, top, constr, pbc, db))
         {
             gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
         }
-        hop->DE_MM = Eafter_all - qhoprec->Ebefore_all;
+        hop->DE_MM = Eafter-Ebefore; //Eafter_all - qhoprec->Ebefore_all;
     }
     else
     {
@@ -2578,7 +2556,8 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
 static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
                        qhop_db *db,
                        t_mdatoms *md, t_hop *hop, rvec *x, rvec *v,
-                       gmx_mtop_t *mtop, gmx_localtop_t *top, gmx_constr_t constr, t_pbc *pbc){
+                       gmx_mtop_t *mtop, gmx_localtop_t *top, gmx_constr_t constr, 
+                       t_pbc *pbc){
     /* change the state of the system, such that it corresponds to the
        situation after a proton transfer between hop.donor_id and
        hop.acceptor_id. For hops from hydronium to water we swap donor
@@ -2692,34 +2671,32 @@ static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
     return(bOk);
 }
 
-real distance_dependence(rvec x, rvec c, real rc, t_pbc pbc){
-    real
-        r,f;
-    rvec
-        dx;
+real distance_dependence(rvec x, rvec c, real rc, t_pbc *pbc)
+{
+    real r,f;
+    rvec dx;
   
     f = 0;
-
-    pbc_dx(&pbc, x, c, dx);
+    
+    pbc_dx(pbc, x, c, dx);
     r = norm(dx);
 
-    if(r < rc)
+    if (r < rc)
     {
         f = 1 - exp(-r/rc);
     }
-    return(f);
+    return f;
 }  /* distance_dependence */
 
 
 
 
-static real check_ekin(rvec *v, t_mdatoms *md){
-    int
-        i,j;
-    real
-        vsq,    ekin;
+static real check_ekin(rvec *v, t_mdatoms *md)
+{
+    int  i,j;
+    real vsq,    ekin=0;
 
-    for(i=0;i<md->nalloc;i++){
+    for(i=0;i<md->nr;i++){
         vsq = 0;
         for(j=0;j<DIM;j++){
             vsq += (v[i][j]*v[i][j]);
@@ -2727,33 +2704,22 @@ static real check_ekin(rvec *v, t_mdatoms *md){
         ekin += 0.5*md->massT[i]*vsq;
     }
   
-    return(ekin);
+    return ekin;
 } /* check_ekin */
 
 /* Scales the velocities within radius rc. */
-static void scale_v(rvec *x, rvec *v, t_mdatoms *md, 
+static void scale_v(FILE *fplog,
+                    rvec *x, rvec *v, t_mdatoms *md, 
                     int donor_atom, int acceptor_atom,
-                    real rc, real DE,t_pbc pbc){
+                    real rc, real DE,t_pbc *pbc){
     /* computes new velocities, to get ridf of the DE. Returns the new
        kinetic energy;
     */
-    real
-        Cinv, C, a, b, c, *f, f2, mass, lambda;
-    rvec
-        center, p, q, dv;
-    int
-        i, j;
+    real Cinv, C, a0, a1, a2, mfi2, v2, C2, p2, q2, lambda, mass;
+    rvec center, p, q, dv;
+    real *fi;
+    int  i, j;
 
-    /* make sure everythins is set to zero 
-     */
-    Cinv = 0;
-    a = 0;
-    b = 0;
-    c = 0;
-    clear_rvec(p);
-    clear_rvec(q);
-    clear_rvec(dv);
-    snew(f, md->nr);
 
     /* compute the center of the reactants. 
      */
@@ -2762,17 +2728,24 @@ static void scale_v(rvec *x, rvec *v, t_mdatoms *md,
         center[j] = 0.5*(x[donor_atom][j] + x[acceptor_atom][j]);
     }
 
-    /* first compute C, p and q */  
+    /* first compute f, C, p and q */  
+    snew(fi, md->nr);
+    Cinv = 0;
+    clear_rvec(p);
+    clear_rvec(q);
     for(i=0; i < md->nr; i++)
     {
-        mass = md->massT[i];
-        f[i] = distance_dependence(x[i], center, rc, pbc);
-        Cinv += mass*f[i];
-        for(j=0; j < DIM; j++)
+        fi[i] = distance_dependence(x[i], center, rc, pbc);
+        if (fi[i] > 0) 
         {
-            p[j] += mass * v[i][j];
-            q[j] += mass * v[i][j] * f[i];
-        }	
+            mass = md->massT[i];
+            Cinv += mass*fi[i];
+            for(j=0; j < DIM; j++)
+            {
+                p[j] += mass * v[i][j];
+                q[j] += mass * v[i][j] * fi[i];
+            }	
+        }
     }
 
     C = 1/Cinv;
@@ -2781,87 +2754,88 @@ static void scale_v(rvec *x, rvec *v, t_mdatoms *md,
        the solution for the quadratic equation of David and Erik M.
     */
 
-    a = 0;
-    b = 0;
-    c = 2*DE;
-    for(i=0; i < md->nr; i++) /* Changing md->nalloc to md->nr */
+    a0 = 2*DE;
+    a1 = 0;
+    a2 = 0;
+    p2 = iprod(p,p);
+    q2 = iprod(q,q);
+    for(i=0; i < md->nr; i++) 
     {
         mass = md->massT[i];
-        f2 = f[i]*f[i];
-        a += mass * f2 * ( iprod(v[i], v[i])
-                           - 2 * C * iprod(v[i], q)
-                           + C * C * iprod(q, q));
-    
-        b -= 2 * mass * f2 * ( C * C * iprod(p, q)
-                               - C * iprod(v[i], p));
-    
-        c += mass * ( f2 * C * C * iprod(p, p)
-                      - iprod(v[i], v[i]));
-    }
-  
-    /* with a,b,c we can find lambda. We need only the positive solution : */
-    lambda = (-b + sqrt(b*b - 4*a*c))/(2*a);
-
-    if(lambda < 0.0000000 )
-    {
-        free(f);
-        return;
-    }
-
-    /* with lambda, we compute dv:
-     */
-  
-    for(j=0; j<DIM; j++)
-    {
-        dv[j] = C * (p[j] - lambda*q[j]) / lambda;
-    }
-
-    /* with lambda and dv we scale the velocities of all particles
-     */
-    for(i=0; i < md->nalloc; i++)
-    {
-        for(j=0; j < DIM; j++)
+        mfi2 = mass * fi[i] * fi[i];
+        if (fi[i] > 0) 
         {
-            v[i][j] = lambda * f[i] * (v[i][j] + dv[j]);
+            v2 = iprod(v[i],v[i]);
+            C2 = C*C;
+            a0 += mass * ( fi[i]*fi[i]*C2 * p2 - v2);
+            a1 += 2 * mfi2 * ( C * iprod(v[i], p) - C2 * iprod(p, q));
+            a2 += mfi2 * ( v2 - 2 * C * iprod(v[i], q) + C2 * q2);
         }
     }
+  
+    /* with a2,a1,a0 we can find lambda. We need only the positive solution : */
+    lambda = (-a1 + sqrt(a1*a1 - 4*a2*a0))/(2*a2);
 
-    free(f);
+    if (lambda < 0.0 )
+    {
+        if (NULL != fplog)
+            fprintf(fplog,"ITMD: lambda = %g. a2 = %g a1 = %g, a0 = %g\n",
+                    lambda,a2,a1,a0);
+    }
+    else
+    {
+        /* with lambda, we compute dv: */
+        for(j=0; j<DIM; j++)
+        {
+            dv[j] = C * (p[j] - lambda*q[j]) / lambda;
+        }
+        
+        /* with lambda and dv we scale the velocities of all particles */
+        for(i=0; i < md->nr; i++)
+        {
+            if (fi[i] > 0) 
+            {
+                for(j=0; j < DIM; j++)
+                {
+                    v[i][j] = lambda * fi[i] * (v[i][j] + dv[j]);
+                }
+            }
+        }
+    }
+    sfree(fi);
 } /* scale_v */
 
-static gmx_bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
+static gmx_bool scale_velocities(FILE *fplog,
+                                 t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
                                  gmx_wallcycle_t wcycle,  gmx_localtop_t *top,
                                  gmx_mtop_t *mtop, gmx_groups_t *groups,
                                  t_state *state,  t_mdatoms *md, 
-                                 t_qhoprec *qhoprec,int step,
-                                 gmx_constr_t constr,real DE,t_pbc pbc,  
+                                 t_qhoprec *qhoprec,gmx_large_int_t step,
+                                 gmx_constr_t constr,t_pbc *pbc,  
                                  t_hop *hop,gmx_ekindata_t *ekindata,
-                                 gmx_bool bPscal,real veta,real vetanew)
+                                 real veta,real vetanew)
 {
     /* takes as input the total MM potential energy change for the hop
        and alters the kinetic energy so that the total energy remains
        constant.
     */
-    gmx_bool
-        bConverged, bConstrain;
-    int
-        donor_atom, acceptor_atom, iter;
-    real
-        ekin_old, ekin_new, dvdl;
-    real
-        ekin_before, DEpot;
+    gmx_bool bPscal, bConverged, bConstrain;
+    int      donor_atom, acceptor_atom, iter;
+    real     ekin_old, ekin_new, dvdl, ekin_before, DE;
+    char     stepstr[STEPSTRSIZE];
 
+    if (ir->titration_vscale_radius <= 0)
+        return;
+        
     iter = 0;
     bConverged = FALSE;
-    bConstrain = FALSE;
-
+   
+    bPscal = (ir->epc != epcNO) && ((step % ir->nstpcouple) == 0);
+    
     /* iterate until the velocities satisfy both constraints and
      * energy/momentum conservation
      */
-    if (constr != NULL)
-    {
-        bConstrain=TRUE;
-    }
+    bConstrain = (constr != NULL);
 
     donor_atom    = qhoprec->qhop_atoms[hop->donor_id].atom_id;
     acceptor_atom = qhoprec->qhop_atoms[hop->acceptor_id].atom_id;
@@ -2869,23 +2843,21 @@ static gmx_bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     ekin_before = check_ekin(state->v,md);
     ekin_old = ekin_before;
 
-    /* copy the old velocities 
-     */
-    DEpot = DE;
+    DE = hop->DE_MM;
     do
     {
-
-        scale_v(state->x, state->v,
+        scale_v(fplog,state->x, state->v,
                 md, donor_atom, acceptor_atom,
-                qhoprec->qhop_rc, DE, pbc);
+                ir->titration_vscale_radius, 
+                DE, pbc);
     
         /* constrain the velocities 
          */ 
-        fprintf(stderr,"before constr. ekin_new = %f\n",
-                check_ekin(state->v ,md));
-
         if(bConstrain)
         {
+            if (NULL != fplog)
+                fprintf(fplog,"ITMD: Before constr. ekin_old = %f\n",ekin_old);
+
             constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
                       step,1,md,state->x,state->v,state->v,state->box,
                       state->lambda,&dvdl,
@@ -2899,95 +2871,72 @@ static gmx_bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
         }
 
         ekin_new = check_ekin(state->v ,md);   
-        fprintf(stderr,"iteration %d, ekin_new = %f, ekin_old = %f\n",
-                iter,ekin_new,ekin_old);
-
-
-        DE = DE - (ekin_new - ekin_old);
+        if (NULL != fplog)
+            fprintf(fplog,"ITMD: iteration %d, ekin_new = %f, ekin_old = %f. DE_MM = %f\n",
+                    iter,ekin_new,ekin_old,hop->DE_MM);
+        
+        DE = DE + (ekin_new - ekin_old);
         ekin_old = ekin_new;
         bConverged = (DE*DE < 0.001);/* hard coded treshold.... */
-    } while( !bConverged && iter < 100 );
+    } while (!bConverged && (iter < 10));
 
-    fprintf(stderr,"totat energy correction: %f, DE_MM: %f\n",
-            ekin_new-ekin_before, DEpot);
-
+    if (NULL != fplog)
+    {
+        gmx_step_str(step, stepstr);
+        fprintf(fplog,"ITMD: Energy correction at step %s: %f, DE_MM: %f\n",
+                stepstr,ekin_new-ekin_before,hop->DE_MM);
+    }
     return (bConverged);
 } /* scale_velocities */
+
+static int hopcomp(const void *a,const void *b)
+{
+    t_hop *ha = (t_hop *)a;
+    t_hop *hb = (t_hop *)b;
+    real dd;
+    if ((dd = (ha->prob-hb->prob)) < 0)
+        return -1;
+    else if (dd > 0)
+        return 1;
+    return 0;
+}
   
 /**
  * Changes the order of the hops
  */
-static t_hop* scramble_hops(t_hop *hop,    ///< List of hops
-                            int nr_hops,   ///< Number of hops in the list
-                            int mode,      ///< etQhopMode????
-                            gmx_rng_t rng  ///< Random number generator
+static void scramble_hops(t_qhoprec *qr,
+                          int mode,      ///< etQhopMode????
+                          gmx_rng_t rng  ///< Random number generator
     )
 {
-    int       i, j, r, hops_left;
-    gmx_bool  bSorted;
-    t_hop     *new_hop=NULL, tmp_hop;
+    int   i,r;
+    t_hop tmp_hop;
 
     switch (mode)
     {
     case eTitrationModeOne:
     case eTitrationModeGillespie:
-        new_hop = hop;
         break;
 
     case eTitrationModeRandlist:
-
-        /* make random order */
-    {
-        snew(new_hop, nr_hops);
-        for (i=0; i<nr_hops; i++)
+        /* Shuffle the hops! */
+        for (i=0; i<qr->nr_hop-1; i++)
         {
-            r = gmx_rng_uniform_uint32(rng) % (nr_hops - i);
-
-            new_hop[i] = hop[r];
-
-            /* Remove that hop from the list */
-            if (r != nr_hops-i-1)
-            {
-                hop[r] = hop[nr_hops-i-1];
-            }
+            r = i+gmx_rng_uniform_uint32(rng) % (qr->nr_hop - i);
+            tmp_hop = qr->hop[i];
+            qr->hop[i] = qr->hop[r];
+            qr->hop[r] = tmp_hop;
         }
-
-        sfree(hop);
-
         break;
-    }
 
     case eTitrationModeList:
-
-        /* Sort according to probability
-         * There's not gonna be a lot of hops, so just bubble sort them. */
-    {
-        bSorted = FALSE;
-        while (!bSorted)
-        {
-            bSorted = TRUE;
-            for (i=0; i<nr_hops-1; i++)
-            {
-                if (hop[i].prob < hop[i+1].prob)
-                {
-                    tmp_hop  = hop[i];
-                    hop[i]   = hop[i+1];
-                    hop[i+1] = tmp_hop;
-                    bSorted = FALSE;
-                }
-            }
-        }
-
-        new_hop = hop;
-
+        /* Sort according to probability */
+        qsort(qr->hop,qr->nr_hop,sizeof(qr->hop[0]),hopcomp);
         break;
-    }
 
     default:
-        gmx_fatal(FARGS, "That qhopMode is unsupported: %i", mode);
+        gmx_fatal(FARGS, "That titration_mode is unsupported: %i", mode);
     }
-
-    return new_hop;   
 }
 
 void do_qhop(FILE *fplog,
@@ -3005,39 +2954,41 @@ void do_qhop(FILE *fplog,
              t_forcerec *fr,
              gmx_vsite_t *vsite,
              rvec mu_tot,
-             /*gmx_genborn_t *born, */
              gmx_bool bBornRadii,
              real T,
              gmx_large_int_t step,
-             tensor force_vir){
-
+             gmx_ekindata_t *ekindata,
+             tensor force_vir)
+{
     char
         stepstr[STEPSTRSIZE];
     int
         i,j,a;
-    t_pbc
-        pbc;
     gmx_bool
         bAgain,bHop;
     real 
         rnr;
     int 
         start_seed=0;
+    t_pbc pbc;
     t_qhoprec
         *qr;
     qhop_db
         *db;
     gmx_constr_t constr;
-
+    real
+        veta, vetanew;
+        
     qr = fr->qhoprec;
     db = qr->db;
 
     constr = qr->constr;
-    qr->bFreshNlists = FALSE; /* We need to regenerate the hop nlists only when needed. Doesn't work yet though. */
+    set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, state->box);
+    
+    /* We need to regenerate the hop nlists only when needed. Doesn't work yet though. */
+    qr->bFreshNlists = FALSE; 
     qr->bHaveEbefore = FALSE;
 
-    set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,state->box);
-  
     if(qr->rng == NULL)
     {
         if(MASTER(cr))
@@ -3054,41 +3005,31 @@ void do_qhop(FILE *fplog,
         qr->rng_int = gmx_rng_init(12/*start_seed*/);
     } 
 
-    qr->hop = find_acceptors(fplog,cr, fr, state->x, pbc, &(qr->nr_hops), md, &(db->H_map));
+    find_acceptors(fplog,cr, fr, state->x, &pbc, md, &(db->H_map));
 
-    if(qr->nr_hops > 0)
+    if(qr->nr_hop > 0)
     {
-        for(i=0; i<qr->nr_hops; i++)
+        for(i=0; i<qr->nr_hop; i++)
         {
             qr->hop[i].T = T;
-            /*if (qr->qhopmode == etQhopModeOne)
-              {
-              ix = (int) floor (qr->nr_hops * (gmx_rng_uniform_uint32(qr->rng_int))/4294967296.0);
-              }
-            */
             get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                          fcd,graph,fr,vsite,mu_tot,
                          &(qr->hop[i]),
-                         fr->qhoprec,pbc,step, db);
-	  
-            if (qr->qhopmode == eTitrationModeOne)
-            {
-                break;
-            }
-
+                         fr->qhoprec,&pbc,step, db);
         }
     
-        qr->hop = scramble_hops(qr->hop, qr->nr_hops, qr->qhopmode, qr->rng);
+        //scramble_hops(qr, ir->titration_mode, qr->rng);
 
-        for(i=0; i <qr-> nr_hops; i++)
+        for(i=0; i <qr-> nr_hop; i++)
         {
             if (qr->hop[i].regime != etQhopNONE)
             {
                 rnr = gmx_rng_uniform_real(qr->rng); 
-                if(MASTER(cr)){
+                if (NULL != fplog)
+                {
                     /* some printing to the log file */
                     fprintf(fplog,
-                            "\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)", i,
+                            "\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
                             fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
                             fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
                             qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
@@ -3106,12 +3047,18 @@ void do_qhop(FILE *fplog,
                     bHop = do_hop(cr,ir,fr->qhoprec,db,md,&(qr->hop[i]), 
                                   state->x,state->v,mtop,top,constr,&pbc);
 		  
-                    /*      scale_velocities();*/
-
-                    if (qr->qhopmode != eTitrationModeOne)
+                    if (bHop)
+                    {
+                        veta = 0;
+                        vetanew = 0;
+                        scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
+                                         state,md,fr->qhoprec,step,(db->constrain > 0) ? constr : NULL,
+                                         &pbc,&(qr->hop[i]),ekindata,veta,vetanew);
+                    }
+                    if (ir->titration_mode != eTitrationModeOne)
                     {
                         /* Zap all hops whose reactants just was consumed. */
-                        for (j = i+1; j < qr->nr_hops; j++)
+                        for (j = i+1; j < qr->nr_hop; j++)
                         {
                             if (qr->hop[j].donor_id    == qr->hop[i].donor_id    ||
                                 qr->hop[j].acceptor_id == qr->hop[i].acceptor_id ||
@@ -3130,10 +3077,10 @@ void do_qhop(FILE *fplog,
                     bHop = FALSE;
                 }
 
-                if(MASTER(cr) && bHop)
+                if((NULL != fplog) && bHop)
                 {
                     gmx_step_str(step, stepstr);
-                    fprintf(fplog,"\n\nP-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)\n",
+                    fprintf(fplog,"ITMD: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)\n",
                             stepstr,qr->hop[i].E12, i,
                             fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
                             fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,
@@ -3142,7 +3089,6 @@ void do_qhop(FILE *fplog,
                 }
             }
         }
-        fprintf(fplog,"\n");
     }  
 }
 

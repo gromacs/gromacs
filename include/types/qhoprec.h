@@ -56,7 +56,6 @@ typedef struct {
    We use it to quickly change bonded interactions for a residue
    upon (de)protonation. */
 typedef struct {
-  //  int     nb;
   t_iatom **ilist_pos; /* dimensions: [F_NRE][#bonded_of this type] */
 
   int nr[F_NRE]; /* How many interactions in ilist_pos[] arrays? */
@@ -122,11 +121,13 @@ typedef struct {
 
 
 typedef struct {
-
   gmx_constr_t   constr; /* for some reason we can't pass constr as an
 			  * argument to do_qhop(). It turns into 0x0. */
+  int            nr_hop,max_nr_hop;
   t_hop          *hop;
+  int            nr_qhop_atoms;
   t_qhop_atom    *qhop_atoms;
+  int            nr_qhop_residues;
   t_qhop_residue *qhop_residues;
   qhop_db_s      db;
   gmx_rng_t      rng, rng_int;
@@ -134,17 +135,10 @@ typedef struct {
   rvec           *f; /* Use this to avoid stupid segfaults that occur,
 		      * but shouldn't have to occur, when do_force() is
 		      * called with f==NULL */
-  real Ebefore_all,  /* The energies are the same for all hops in a given qhop step, */
+  real Ebefore_all,  /* The energies are the same for all hops in a given qhop step */
     Ebefore_coul,
     Ebefore_self,    /* Hence, we can do them once per step and store them here.    */
     Ebefore_self_coul;
-  int nr_hops,
-    nr_qhop_residues,
-    nr_qhop_atoms,
-    *global_atom_to_qhop_atom,
-    qhopfreq,
-    qhopmode,
-    qhop_rc; /* cut of for the sphere in which veolicites will be scaled */
-
+  int *global_atom_to_qhop_atom;
 } t_qhoprec;
 #endif

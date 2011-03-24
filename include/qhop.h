@@ -57,6 +57,7 @@ do_qhop(FILE *fplog,
 	gmx_bool bBornRadii,
 	real T,
 	gmx_large_int_t step,
+	gmx_ekindata_t *ekindata,
 	tensor force_vir
 	);
 

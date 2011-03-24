@@ -1932,7 +1932,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 fr->qhoprec->constr = constr;
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                         mdatoms,fcd,graph,fr,vsite,mu_tot,bBornRadii,
-                        enerd->term[F_TEMP],step,force_vir);
+                        enerd->term[F_TEMP],step,ekind,force_vir);
             }
         }
         
