@@ -1229,11 +1229,11 @@ int gmx_xpm2ps(int argc,char *argv[])
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
-  fprintf(stderr,"There are %d matrices in %s\n",nmat,fn);
+  fprintf(stderr,"There %s %d matri%s in %s\n",(nmat>1)?"are":"is",nmat,(nmat>1)?"ces":"x",fn);
   fn=opt2fn_null("-f2",NFILE,fnm);
   if (fn) {
     nmat2=read_xpm_matrix(fn,&mat2);
-    fprintf(stderr,"There are %d matrices in %s\n",nmat2,fn);
+    fprintf(stderr,"There %s %d matri%s in %s\n",(nmat2>1)?"are":"is",nmat2,(nmat2>1)?"ces":"x",fn);
     if (nmat != nmat2) {
       fprintf(stderr,"Different number of matrices, using the smallest number.\n");
       nmat=nmat2=min(nmat,nmat2);

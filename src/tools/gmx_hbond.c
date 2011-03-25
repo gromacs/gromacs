@@ -1823,9 +1823,9 @@ static void do_hblife(const char *fn,t_hbdata *hb,gmx_bool bMerge,gmx_bool bCont
     }
     fprintf(stderr,"\n");
     if (bContact)
-        fp = xvgropen(fn,"Uninterrupted contact lifetime","Time (ps)","()",oenv);
+        fp = xvgropen(fn,"Uninterrupted contact lifetime",output_env_get_xvgr_tlabel(oenv),"()",oenv);
     else
-        fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()",
+        fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime",output_env_get_xvgr_tlabel(oenv),"()",
                       oenv);
 
     xvgr_legend(fp,asize(leg),leg,oenv);
@@ -2501,7 +2501,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 /*             printf("\nNumber of data points is less than the number of parameters to fit\n." */
 /*                    "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
 
-        fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
+        fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)");
         xvgr_legend(fp,asize(legNN),legNN);
       
         for(j=0; (j<nn); j++)
@@ -2738,9 +2738,9 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     
 
         if (bContact)
-            fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Contact Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         else
-            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         xvgr_legend(fp,asize(legGem),(const char**)legGem,oenv);
 
         for(j=0; (j<nn); j++)
@@ -2877,9 +2877,9 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 
 
         if (bContact)
-            fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Contact Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         else
-            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+            fp = xvgropen(fn, "Hydrogen Bond Autocorrelation",output_env_get_xvgr_tlabel(oenv),"C(t)",oenv);
         xvgr_legend(fp,asize(legLuzar),legLuzar, oenv);
 
       
@@ -2939,7 +2939,7 @@ static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
     if (!fn)
         return;
     if (!fp) {
-        fp = xvgropen(fn,"Donor properties","Time (ps)","Number",oenv);
+        fp = xvgropen(fn,"Donor properties",output_env_get_xvgr_tlabel(oenv),"Number",oenv);
         xvgr_legend(fp,asize(leg),leg,oenv);
     }
     nbound = 0;
@@ -3265,7 +3265,7 @@ int gmx_hbond(int argc,char *argv[])
     npargs = asize(pa);  
     ppa    = add_acf_pargs(&npargs,pa);
   
-    parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,npargs,
+    parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,NFILE,fnm,npargs,
                       ppa,asize(desc),desc,asize(bugs),bugs,&oenv);
 
     /* NN-loop? If so, what estimator to use ?*/
@@ -3363,7 +3363,7 @@ int gmx_hbond(int argc,char *argv[])
     if (opt2bSet("-nhbdist",NFILE,fnm)) {
         const char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
         fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
-                         "Number of donor-H with N HBs","Time (ps)","N",oenv);
+                         "Number of donor-H with N HBs",output_env_get_xvgr_tlabel(oenv),"N",oenv);
         xvgr_legend(fpnhb,asize(leg),leg,oenv);
     }
   
@@ -3649,7 +3649,7 @@ int gmx_hbond(int argc,char *argv[])
                     dump_grid(debug, ngrid, grid);
                 
                 add_frames(hb,nframes);
-                init_hbframe(hb,nframes,t);
+                init_hbframe(hb,nframes,output_env_conv_time(oenv,t));
 	
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
@@ -3930,7 +3930,7 @@ int gmx_hbond(int argc,char *argv[])
     aver_nhb  = 0;    
     aver_dist = 0;
     fp = xvgropen(opt2fn("-num",NFILE,fnm),bContact ? "Contacts" :
-                  "Hydrogen Bonds","Time","Number",oenv);
+                  "Hydrogen Bonds",output_env_get_xvgr_tlabel(oenv),"Number",oenv);
     snew(leg,2);
     snew(leg[0],STRLEN);
     snew(leg[1],STRLEN);
@@ -3983,7 +3983,7 @@ int gmx_hbond(int argc,char *argv[])
     /* Print HB in alpha-helix */
     if (opt2bSet("-hx",NFILE,fnm)) {
         fp = xvgropen(opt2fn("-hx",NFILE,fnm),
-                      "Hydrogen Bonds","Time(ps)","Count",oenv);
+                      "Hydrogen Bonds",output_env_get_xvgr_tlabel(oenv),"Count",oenv);
         xvgr_legend(fp,NRHXTYPES,hxtypenames,oenv);
         for(i=0; i<nframes; i++) {
             fprintf(fp,"%10g",hb->time[i]);
@@ -4064,7 +4064,7 @@ int gmx_hbond(int argc,char *argv[])
             sprintf(mat.title,bContact ? "Contact Existence Map":
                     "Hydrogen Bond Existence Map");
             sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
-            sprintf(mat.label_x,"Time (ps)");
+            sprintf(mat.label_x,output_env_get_xvgr_tlabel(oenv));
             sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
             mat.bDiscrete=TRUE;
             mat.nmap=2;
@@ -4115,7 +4115,7 @@ int gmx_hbond(int argc,char *argv[])
 #define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) )
     
         fp = xvgropen(opt2fn("-dan",NFILE,fnm),
-                      "Donors and Acceptors","Time(ps)","Count",oenv);
+                      "Donors and Acceptors",output_env_get_xvgr_tlabel(oenv),"Count",oenv);
         nleg = (bTwo?2:1)*2;
         snew(legnames,nleg);
         i=0;

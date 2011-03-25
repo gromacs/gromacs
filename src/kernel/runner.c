@@ -639,11 +639,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         if (MASTER(cr))
         {
             char *ptr;
-            omp_nthreads = omp_get_max_threads();
             if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
             {
                 sscanf(ptr,"%d",&omp_nthreads);
             }
+            omp_set_num_threads(omp_nthreads);
             if (fplog!=NULL)
             {
                 fprintf(fplog,"Using %d threads for PME\n",omp_nthreads);
@@ -653,6 +653,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
         }
+        /* Set the number of threads.
+         * This is only done here currently because fft5d_plan_3d
+         * does not get the number of threads passed yet.
+         */
+        omp_set_num_threads(omp_nthreads);
     }
 #endif
 
