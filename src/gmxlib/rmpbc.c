@@ -64,7 +64,10 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc,int ePBC,int natoms)
     int           i;
     rmpbc_graph_t *gr;
 
-    if (ePBC == epbcNONE || gpbc->idef->ntypes <= 0)
+    if (ePBC == epbcNONE
+        || NULL == gpbc
+        || NULL == gpbc->idef
+        || gpbc->idef->ntypes <= 0)
     {
         return NULL;
     }
@@ -128,19 +131,22 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
 {
     int i;
 
-    for(i=0; i<gpbc->ngraph; i++)
+    if (NULL != gpbc)
     {
-        done_graph(gpbc->graph[i].gr);
-    }
-    if (gpbc->graph != NULL)
-    {
-        sfree(gpbc->graph);
+        for(i=0; i<gpbc->ngraph; i++)
+        {
+            done_graph(gpbc->graph[i].gr);
+        }
+        if (gpbc->graph != NULL)
+        {
+            sfree(gpbc->graph);
+        }
     }
 }
 
 static int gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc,matrix box)
 {
-    if (gpbc->ePBC >= 0)
+    if (NULL != gpbc && gpbc->ePBC >= 0)
     {
         return gpbc->ePBC;
     }
