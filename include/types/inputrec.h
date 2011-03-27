@@ -292,6 +292,7 @@ typedef struct {
   int   titration_mode; /* Method for selecting the hoppable proton */
   real  titration_vscale_radius; /* Radius around reaction for scaling the velocities */
   real  titration_epsilon_r; /* For scaling the MM influence on the QM subsystem */
+  int   titration_random_seed; /* For randomizing the order of proton transfers */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

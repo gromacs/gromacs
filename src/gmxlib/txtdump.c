@@ -681,6 +681,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("titration_mode",eTitrationMode_names[ir->titration_mode]);
     PR("titration_vscale_radius",ir->titration_vscale_radius);
     PR("titration_epsilon_r",ir->titration_epsilon_r);
+    PI("titration_random_seed",ir->titration_random_seed);
     pr_grp_opts(fp,indent,"grpopts",&(ir->opts),bMDPformat);
     pr_cosine(fp,indent,"efield-x",&(ir->ex[XX]),bMDPformat);
     pr_cosine(fp,indent,"efield-xt",&(ir->et[XX]),bMDPformat);

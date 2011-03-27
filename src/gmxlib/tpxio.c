@@ -923,6 +923,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
         gmx_fio_do_int(fio,ir->opts.ngTitrationH);
         gmx_fio_do_real(fio,ir->titration_vscale_radius);
         gmx_fio_do_real(fio,ir->titration_epsilon_r);
+        gmx_fio_do_int(fio,ir->titration_random_seed);
     }
 }
 

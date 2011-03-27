@@ -11,42 +11,32 @@
 /* #endif */
 
 enum {eQNONE=0, eQACC=1, eQDON=2, eQACCDON=3, eQNR=4};
-/* Trivial. But note that eQACCDON = eQACC|eQDON */
+/* Trivial. But note that eQACCDON = eQACC | eQDON */
 
 enum {eQIDEF, eQBONLIB}; /* use the first to get the pointer to the idef,
-			   the other for the bonded stuff stored for a
-			   certain residue. */
+			    the other for the bonded stuff stored for a
+			    certain residue. */
 
-typedef struct qhop_db *qhop_db_s; /* Symbolic name for qhop_db. We can't include
-				    * gmx_qhop_types.h since that breaks compilation. */
+/* Symbolic name for qhop_db. We can't include
+ * gmx_qhop_types.h since that breaks compilation. */
+typedef struct qhop_db *qhop_db_s; 
 
 typedef struct {
-  int donor_id,
-    acceptor_id,
-    proton_id,
-    regime,
-    primary_d,     /* These is used for proton tautomerism. */
-    primary_a;     /* if primary != donor/acceptor then
-	            * we swap the coordinates of the primary
-	            * and donor/acceptor when titrating.*/
-  real E12_0,
-    E12,
-    DE_MM,
-    Eb,
-    rda,
-    ang,
-    prob,
-    hbo,
-    kappa,
-    Er,
-    El,
-    T;
+  int donor_id, acceptor_id, proton_id,
+    regime, primary_d, primary_a;     
+  /* These is used for proton tautomerism
+     if primary != donor/acceptor then
+     we swap the coordinates of the primary
+     and donor/acceptor when titrating. */
+  real E12_0, E12, DE_MM, Eb,
+    rda, ang, prob, hbo, kappa,
+    Er, El, T;
   /* We put temperature T here, partially because one might
      want local temperatures in the future, but mainly to
      reduce the number of function arguments passed around
      in this more "object oriented" approach. The latter
      goes for most of the real data members here. */
-  gmx_bool bFlip;
+  gmx_bool bFlip,bDonated;
   rvec xold, /* Where the acceptor proton used to be */
     xnew;    /* Where the acceptor proton may end up */
 } t_hop;
@@ -114,12 +104,6 @@ typedef struct {
   int nr_indexed;      /* are the ilists indexed? */
 } t_qhop_residue;
 
-/* This enum can probably go, because thigns are now explicit in the xml input. */
-/* enum {OO,ON,NN}; /\* parameters, we'll probably have to expand for */
-/* 		    specific resisues */
-/* 		 *\/ */
-
-
 typedef struct {
   gmx_constr_t   constr; /* for some reason we can't pass constr as an
 			  * argument to do_qhop(). It turns into 0x0. */
@@ -135,10 +119,6 @@ typedef struct {
   rvec           *f; /* Use this to avoid stupid segfaults that occur,
 		      * but shouldn't have to occur, when do_force() is
 		      * called with f==NULL */
-  real Ebefore_all,  /* The energies are the same for all hops in a given qhop step */
-    Ebefore_coul,
-    Ebefore_self,    /* Hence, we can do them once per step and store them here.    */
-    Ebefore_self_coul;
   int *global_atom_to_qhop_atom;
 } t_qhoprec;
 #endif

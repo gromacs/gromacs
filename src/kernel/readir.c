@@ -1027,7 +1027,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   ITYPE ("titration-freq",  ir->titration_freq,         10);
   RTYPE ("titration-epsilon-r", ir->titration_epsilon_r, 0.7);
   RTYPE ("titration-vscale_radius", ir->titration_vscale_radius, 1);
-
+  ITYPE ("titration-random-seed", ir->titration_random_seed, 1993);
 
   /* Simulated annealing */
   CCTYPE("SIMULATED ANNEALING");
@@ -2499,10 +2499,19 @@ void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,warninp_t wi)
       }
     }
   }
-  if ((ir->titration_alg  != eTitrationAlgNone) && (ir->titration_epsilon_r <= 0)) 
-  {
-      sprintf(warn_buf,"When using titration MD you should set titration_epsilon_r around 0.7, rather than setting it to %g",ir->titration_epsilon_r);
-      warning_error(wi,warn_buf);
+  /* Check for titration relates issues */
+  if (ir->titration_alg  != eTitrationAlgNone)
+  { 
+      if (ir->titration_epsilon_r <= 0)
+      {
+          sprintf(warn_buf,"When using titration MD you should set titration_epsilon_r around 0.7, rather than setting it to %g",ir->titration_epsilon_r);
+          warning_error(wi,warn_buf);
+      }
+      if ((ir->titration_vscale_radius > 0) && !EI_VV(ir->eI)) 
+      {
+          sprintf(warn_buf,"When using velocity scaling in titration MD (recommended) you should use a velocity verlet integrator (%s or %s)",EI(eiVV),EI(eiVVAK));
+          warning_error(wi,warn_buf);
+      }
   }
 }
 

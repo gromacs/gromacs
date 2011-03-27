@@ -1285,6 +1285,7 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                         qhoprec->hop[nr_hop].rda         = norm(vecc);
                         qhoprec->hop[nr_hop].ang         = ang;
                         qhoprec->hop[nr_hop].prob        = 0;
+                        qhoprec->hop[nr_hop].bDonated    = FALSE;
                         nr_hop++;
                     }
                 }
@@ -1650,7 +1651,8 @@ void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
 }
 
 
-static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec, 
+static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, 
+                                   t_qhoprec *qhoprec, 
                                    t_mdatoms *md, t_hop *hop, rvec *x,
                                    gmx_bool bUndo,gmx_mtop_t *mtop,
                                    gmx_localtop_t *top, gmx_constr_t constr,
@@ -1860,25 +1862,20 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, t_qhopre
     return TRUE; /* Ok, this is not very good for error checking. */
 } /* change_protonation */
 
-static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
+static void evaluate_energy(FILE *fplog,
+                            t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
                             gmx_wallcycle_t wcycle, 
                             gmx_localtop_t *top,gmx_mtop_t *mtop, 
                             gmx_groups_t *groups,t_state *state,
                             t_mdatoms *md,t_fcdata *fcd,
                             t_graph *graph,
                             t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-                            gmx_large_int_t step,real *Ecoul)
+                            gmx_large_int_t step,
+                            gmx_enerdata_t *enerd)
 {
-    real 
-        t,etot;
-    real 
-        terminate;
-    gmx_enerdata_t 
-        *enerd;
-    tensor 
-        force_vir;
-    int
-        forceflags;
+    real t,etot,terminate;
+    tensor force_vir;
+    int forceflags;
 
     forceflags = GMX_FORCE_STATECHANGED;
     if (!fr->qhoprec->bFreshNlists)
@@ -1887,8 +1884,6 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     }
 
     terminate = 0;
-    snew  (enerd,1);
-    init_enerdata(groups->grps[egcENER].nr, ir->n_flambda, enerd);
 
     if (vsite)
     {
@@ -1897,13 +1892,12 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
                          fr->ePBC,fr->bMolPBC,graph,cr,state->box);
     }
   
-    do_force(stderr,cr,ir,step,nrnb,wcycle,top,mtop,groups,
+    do_force(fplog,cr,ir,step,nrnb,wcycle,top,mtop,groups,
              state->box,state->x,&state->hist,
-             /*NULL,*/fr->qhoprec->f,force_vir,md,enerd,fcd,
+             fr->qhoprec->f,force_vir,md,enerd,fcd,
              state->lambda,graph,
-             fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,/*born*//* bBornRadii */ FALSE,
-             /* forceflags */ GMX_FORCE_STATECHANGED|GMX_FORCE_NS/* |GMX_FORCE_BONDED */);
-    //	   GMX_FORCE_ALLFORCES | (GMX_FORCE_VIRIAL ));
+             fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,FALSE,
+             GMX_FORCE_VIRIAL|GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
 
     fr->qhoprec->bFreshNlists = TRUE;
 
@@ -1920,13 +1914,6 @@ static real evaluate_energy(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
         //    wallcycle_stop(wcycle,ewcMoveE);
     }
 #endif
-
-    etot = enerd->term[F_EPOT] - enerd->term[F_COUL14] - enerd->term[F_LJ14];
-
-    *Ecoul  = enerd->term[F_COUL_SR] + enerd->term[F_COUL_LR];
-
-    sfree(enerd);
-    return(etot);
 } /* evaluate_energy */
 
 static void print_qhop_info(t_qhoprec *qhoprec){
@@ -1957,10 +1944,12 @@ void print_hop(t_hop hop)
             hop.donor_id,hop.acceptor_id,hop.proton_id);
 } /* print_hop */
 
-static real get_self_energy(t_commrec *cr, t_qhop_residue donor, 
+static void get_self_energy(t_commrec *cr, t_qhop_residue donor, 
                             t_qhop_residue acceptor, t_mdatoms *md, 
                             gmx_localtop_t *top,
-                            rvec *x, t_pbc *pbc, t_forcerec *fr, real *Eself_coul){
+                            rvec *x, t_pbc *pbc, t_forcerec *fr, 
+                            real *Ecoul_self,real *Evdw_self)
+{
     /* the internal energy of the hoppers together Is difficult because
        the internal energy of the individal residues, eg. if part of
        protein, will also change upon hopping. For water does not
@@ -2154,10 +2143,10 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
 
     Ecoul *= eps;
 
-    *Eself_coul = Ecoul;
+    *Ecoul_self = Ecoul;
+    *Evdw_self  = Evdw;
 
     /* reaction field correction STILL needed!!!! nu even geen zin in*/
-    return(Ecoul + Evdw);
 } /* get_self_energy */
 
 static real calc_S(const qhop_parameters *p,
@@ -2346,6 +2335,18 @@ static real compute_rate_SE(qhop_parameters *p, ///< Pointer to qhop_parameters
     return(pSE);
 } /* compute_prob_SE */
 
+static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e)
+{
+    int k;
+    
+    if (NULL != fplog)
+    {
+        for(k=0; (k<F_ECONSERVED); k++)
+            if (e->term[k] != 0)
+                fprintf(fplog,"%s: %s %g\n",s,interaction_function[k].name,
+                        e->term[k]);
+    }
+}
 
 /**
  * Calculates the transfer probability for the intermediate regime over a 10 fs time window.
@@ -2381,7 +2382,8 @@ static void compute_E12(const qhop_parameters *p, t_hop *hop, real dE)
     hop->E12 = hop->E12_0 + dE;
 }
 
-static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
+static void get_hop_prob(FILE *fplog,
+                         t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
                          gmx_wallcycle_t wcycle, 
                          gmx_localtop_t *top,gmx_mtop_t *mtop,
                          gmx_constr_t constr,
@@ -2389,72 +2391,91 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
                          t_mdatoms *md,t_fcdata *fcd,
                          t_graph *graph,
                          t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-                         t_hop *hop, t_qhoprec *qhoprec,
-                         t_pbc *pbc,gmx_large_int_t step, qhop_db *db)
+                         t_hop *hop, t_pbc *pbc,gmx_large_int_t step, qhop_db *db,
+                         gmx_bool *bHaveEbefore,
+                         gmx_enerdata_t *Ebefore,gmx_enerdata_t *Eafter)
 {
     /* compute the hopping probability based on the Q-hop criteria */
-    real
-        Ebefore, Ebefore_self,
-        Eafter_all, Eafter_coul,
-        Eafter_self, Eafter_self_coul,
-        Eafter, Edelta, Edelta_coul,
+    real Ebefore_mm, Ebefore_self,
+        Eafter_mm, Eafter_self,
+        Ebefore_self_coul, Ebefore_self_vdw,
+        Eafter_self_coul, Eafter_self_vdw,
+        Edelta, Edelta_coul,
         r_TST, r_SE, r_log;
-    qhop_parameters 
-        *p;
-
+    qhop_parameters *p;
+    t_qhoprec *qr;
+    
+    /* Short cut */
+    qr = fr->qhoprec;
+    
     /* Is this the primary titrating site, or do we need swapping? */
-    hop->primary_d = qhop_get_primary(qhoprec,
-                                      &(qhoprec->qhop_residues[(qhoprec->qhop_atoms[hop->donor_id].qres_id)]),
-                                      &(qhoprec->qhop_atoms[hop->donor_id]),
-                                      qhoprec->qhop_atoms[hop->donor_id].atomname,
+    hop->primary_d = qhop_get_primary(qr,
+                                      &(qr->qhop_residues[(qr->qhop_atoms[hop->donor_id].qres_id)]),
+                                      &(qr->qhop_atoms[hop->donor_id]),
+                                      qr->qhop_atoms[hop->donor_id].atomname,
                                       eQDON);
-    hop->primary_a = qhop_get_primary(qhoprec,
-                                      &(qhoprec->qhop_residues[(qhoprec->qhop_atoms[hop->acceptor_id].qres_id)]),
-                                      &(qhoprec->qhop_atoms[hop->acceptor_id]),
-                                      qhoprec->qhop_atoms[hop->acceptor_id].atomname,
+    hop->primary_a = qhop_get_primary(qr,
+                                      &(qr->qhop_residues[(qr->qhop_atoms[hop->acceptor_id].qres_id)]),
+                                      &(qr->qhop_atoms[hop->acceptor_id]),
+                                      qr->qhop_atoms[hop->acceptor_id].atomname,
                                       eQACC);
 
-    p = get_qhop_params(qhoprec, hop, db);
+    p = get_qhop_params(qr, hop, db);
 
-    if (!qhoprec->bHaveEbefore)
+    if (!(*bHaveEbefore))
     {
-        qhoprec->Ebefore_all = evaluate_energy(cr, ir, nrnb, wcycle,top, mtop,
-                                               groups, state, md, fcd, graph,
-                                               fr,vsite,mu_tot,
-                                               step, &(qhoprec->Ebefore_coul));
-        qhoprec->bHaveEbefore = TRUE;
+        evaluate_energy(fplog,cr, ir, nrnb, wcycle,top, mtop,
+                        groups, state, md, fcd, graph,
+                        fr,vsite,mu_tot,step,Ebefore);
+        dump_enerd(debug,"ITMD Before",Ebefore);
+        *bHaveEbefore = TRUE;
     }
+    /* This needs to be evaluated for each possible hop */
+    get_self_energy(cr,qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id],
+                    qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id],
+                    md, top, state->x, pbc, fr, 
+                    &Ebefore_self_coul,&Ebefore_self_vdw);
+    Ebefore_mm = (Ebefore->term[F_EPOT] - 
+                  (Ebefore->term[F_COUL14] + Ebefore->term[F_LJ14]));
+    Ebefore_self = (Ebefore_self_coul + Ebefore_self_vdw); 
 
-    qhoprec->Ebefore_self = get_self_energy(cr,
-                                            qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->donor_id].qres_id],
-                                            qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->acceptor_id].qres_id],
-                                            md, top, state->x, pbc, fr, &(qhoprec->Ebefore_self_coul));
+    qhop_tautomer_swap(qr, state->x, NULL, hop->primary_d, hop->donor_id);
+    qhop_tautomer_swap(qr, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-    Ebefore = qhoprec->Ebefore_all - qhoprec->Ebefore_self;
-
-    qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_d, hop->donor_id);
-    qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_a, hop->acceptor_id);
-
-    if(change_protonation(cr, ir, fr->qhoprec, md, hop, state->x, 
-                          FALSE, mtop, top, constr, pbc, db))
+    if (change_protonation(cr, ir, qr, md, hop, state->x, 
+                           FALSE, mtop, top, constr, pbc, db))
     {
-        Eafter_all = evaluate_energy(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-                                     fcd,graph,fr,vsite,mu_tot,
-                                     step, &Eafter_coul);
-        Eafter_self = get_self_energy(cr, qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->donor_id].qres_id],
-                                      qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->acceptor_id].qres_id],
-                                      md, top, state->x, pbc, fr, &Eafter_self_coul);
-        Eafter = Eafter_all - Eafter_self;
-        Edelta_coul = (Eafter_coul - qhoprec->Ebefore_coul) - (Eafter_self_coul - qhoprec->Ebefore_self_coul);
-        Edelta = (Eafter-Ebefore) + (1.0/ir->titration_epsilon_r - 1.0) * Edelta_coul;
+        evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
+                        fcd,graph,fr,vsite,mu_tot,step, Eafter);
+        dump_enerd(debug,"ITMD After ",Eafter);
+        get_self_energy(cr, qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id],
+                        qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id],
+                        md,top,state->x,pbc,fr,&Eafter_self_coul,&Eafter_self_vdw);
+        Eafter_mm = (Eafter->term[F_EPOT] - 
+                     (Eafter->term[F_COUL14] + Eafter->term[F_LJ14]));
+        Eafter_self = (Eafter_self_coul + Eafter_self_vdw); 
+        
+        /* Correction for electronic polarization. If epsilon_r = 1, this term is 0 */
+        Edelta_coul = (((Eafter->term[F_COUL_SR] + 
+                         Eafter->term[F_COUL_LR] + 
+                         Eafter->term[F_RF_EXCL] + 
+                         Eafter->term[F_COUL_RECIP]) -
+                        (Ebefore->term[F_COUL_SR] + 
+                         Ebefore->term[F_COUL_LR] + 
+                         Ebefore->term[F_RF_EXCL] +
+                         Ebefore->term[F_COUL_RECIP])) * 
+                       (1.0/ir->titration_epsilon_r - 1.0));
+                       
+        Edelta = ((Eafter_mm - Eafter_self) - (Ebefore_mm - Ebefore_self) +
+                  Edelta_coul);
+        
+        hop->DE_MM = Eafter_mm - Ebefore_mm; 
 
         compute_E12(p, hop, Edelta);
-
         compute_E12_right(p, hop);
-    
         compute_E12_left (p, hop);
         hop->Eb        = compute_Eb(p,hop);
-
+        
         r_TST = compute_rate_TST(p, hop);
         r_SE  = compute_rate_SE (p, hop);
 
@@ -2482,14 +2503,14 @@ static void get_hop_prob(t_commrec *cr, t_inputrec *ir, t_nrnb *nrnb,
         }
 
         /* now undo the move */
-        qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_d, hop->donor_id);
-        qhop_tautomer_swap(qhoprec, state->x, NULL, hop->primary_a, hop->acceptor_id);
+        qhop_tautomer_swap(qr, state->x, NULL, hop->primary_d, hop->donor_id);
+        qhop_tautomer_swap(qr, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-        if(!change_protonation(cr, ir, qhoprec, md, hop, state->x, TRUE, mtop, top, constr, pbc, db))
+        if (!change_protonation(cr, ir, qr, md, hop, state->x, 
+                                TRUE, mtop, top, constr, pbc, db))
         {
             gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
         }
-        hop->DE_MM = Eafter-Ebefore; //Eafter_all - qhoprec->Ebefore_all;
     }
     else
     {
@@ -2904,10 +2925,7 @@ static int hopcomp(const void *a,const void *b)
 /**
  * Changes the order of the hops
  */
-static void scramble_hops(t_qhoprec *qr,
-                          int mode,      ///< etQhopMode????
-                          gmx_rng_t rng  ///< Random number generator
-    )
+static void scramble_hops(t_qhoprec *qr, int mode)      ///< etQhopMode????
 {
     int   i,r;
     t_hop tmp_hop;
@@ -2922,7 +2940,7 @@ static void scramble_hops(t_qhoprec *qr,
         /* Shuffle the hops! */
         for (i=0; i<qr->nr_hop-1; i++)
         {
-            r = i+gmx_rng_uniform_uint32(rng) % (qr->nr_hop - i);
+            r = i+gmx_rng_uniform_uint32(qr->rng) % (qr->nr_hop - i);
             tmp_hop = qr->hop[i];
             qr->hop[i] = qr->hop[r];
             qr->hop[r] = tmp_hop;
@@ -2976,6 +2994,8 @@ void do_qhop(FILE *fplog,
     qhop_db
         *db;
     gmx_constr_t constr;
+    gmx_bool bHaveEbefore;
+    gmx_enerdata_t *Ebefore,*Eafter;
     real
         veta, vetanew;
         
@@ -2985,7 +3005,13 @@ void do_qhop(FILE *fplog,
     constr = qr->constr;
     set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, state->box);
     
-    /* We need to regenerate the hop nlists only when needed. Doesn't work yet though. */
+    snew(Ebefore,1);
+    snew(Eafter,1);
+    init_enerdata(groups->grps[egcENER].nr, ir->n_flambda, Ebefore);
+    init_enerdata(groups->grps[egcENER].nr, ir->n_flambda, Eafter);
+
+    /* We need to regenerate the hop nlists only when needed. 
+       Doesn't work yet though. */
     qr->bFreshNlists = FALSE; 
     qr->bHaveEbefore = FALSE;
 
@@ -2993,7 +3019,7 @@ void do_qhop(FILE *fplog,
     {
         if(MASTER(cr))
         {
-            start_seed = gmx_rng_make_seed();
+            start_seed = ir->titration_random_seed;
         }
 #ifdef GMX_MPI
         if(PAR(cr))
@@ -3001,29 +3027,43 @@ void do_qhop(FILE *fplog,
             MPI_Bcast(&start_seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         }
 #endif
-        qr->rng     = gmx_rng_init(12/*start_seed*/);
-        qr->rng_int = gmx_rng_init(12/*start_seed*/);
+        qr->rng     = gmx_rng_init(start_seed);
+        qr->rng_int = gmx_rng_init(start_seed);
     } 
 
     find_acceptors(fplog,cr, fr, state->x, &pbc, md, &(db->H_map));
 
     if(qr->nr_hop > 0)
     {
-        for(i=0; i<qr->nr_hop; i++)
+        bHaveEbefore = FALSE;
+        if (ir->titration_mode == eTitrationModeList) 
         {
-            qr->hop[i].T = T;
-            get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
-                         fcd,graph,fr,vsite,mu_tot,
-                         &(qr->hop[i]),
-                         fr->qhoprec,&pbc,step, db);
-        }
-    
-        //scramble_hops(qr, ir->titration_mode, qr->rng);
-
-        for(i=0; i <qr-> nr_hop; i++)
-        {
-            if (qr->hop[i].regime != etQhopNONE)
+            /* For this Q-hop style mode we have to compute all probabilities 
+               first. That could mean unnecessary work! */
+            for(i=0; i<qr->nr_hop; i++)
             {
+                qr->hop[i].T = T;
+                get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                             fcd,graph,fr,vsite,mu_tot,
+                             &(qr->hop[i]),&pbc,step, db,
+                             &bHaveEbefore,Ebefore,Eafter);
+            }
+        }
+        scramble_hops(qr, ir->titration_mode);
+        
+        for(i=0; (i <qr->nr_hop); i++)
+        {
+            if (!qr->hop[i].bDonated)
+            {
+                if (ir->titration_mode != eTitrationModeList) 
+                {
+                    qr->hop[i].T = T;
+                    get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                                 fcd,graph,fr,vsite,mu_tot,
+                                 &(qr->hop[i]),&pbc,step, db,
+                                 &bHaveEbefore,Ebefore,Eafter);
+                }
+            
                 rnr = gmx_rng_uniform_real(qr->rng); 
                 if (NULL != fplog)
                 {
@@ -3044,7 +3084,7 @@ void do_qhop(FILE *fplog,
                     /* hoppenmaar! */
       
                     /* Move the actual hopping to update() */
-                    bHop = do_hop(cr,ir,fr->qhoprec,db,md,&(qr->hop[i]), 
+                    bHop = do_hop(cr,ir,qr,db,md,&(qr->hop[i]), 
                                   state->x,state->v,mtop,top,constr,&pbc);
 		  
                     if (bHop)
@@ -3066,6 +3106,7 @@ void do_qhop(FILE *fplog,
                                 qr->hop[j].acceptor_id == qr->hop[i].donor_id)
                             {
                                 qr->hop[j].regime = etQhopNONE;
+                                qr->hop[j].bDonated = TRUE;
                                 if (NULL != debug)
                                     fprintf(debug," * Zapping hop number %i *\n", j);
                             }
