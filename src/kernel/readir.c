@@ -852,6 +852,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
   CTYPE ("Friction coefficient (amu/ps) and random seed");
   RTYPE ("bd-fric",     ir->bd_fric,    0.0);
+  CTYPE("The Langevin dynamics seed is also used to seed the random nubmber generator");
+  CTYPE("for the v-rescale thermostat.");
   ITYPE ("ld-seed",     ir->ld_seed,    1993);
   
   /* Em stuff */
@@ -966,8 +968,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("sa_surface_tension", ir->sa_surface_tension, -1);
 		 
   /* Coupling stuff */
-  CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
-  CTYPE ("Temperature coupling");
+  CCTYPE ("OPTIONS FOR TEMPERATURE AND PRESSURE COUPLING ALGORITHMS");
+  CTYPE ("Temperature coupling. See also comments near the ld-seed parameter.");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names);
   ITYPE ("nsttcouple", ir->nsttcouple,  -1);
   ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);

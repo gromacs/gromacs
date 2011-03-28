@@ -2056,7 +2056,7 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
         }
     }
 
-    /* Now remove inramolecular non-bonded stuff */
+    /* Now remove intramolecular non-bonded stuff */
     for (DA=0; DA<2; DA++)
     {
         /*  DA==0 => DONOR
@@ -2459,17 +2459,24 @@ static void get_hop_prob(FILE *fplog,
         Edelta_coul = (((Eafter->term[F_COUL_SR] + 
                          Eafter->term[F_COUL_LR] + 
                          Eafter->term[F_RF_EXCL] + 
-                         Eafter->term[F_COUL_RECIP]) -
+                         Eafter->term[F_COUL_RECIP] -
+                         Eafter_self_coul) -
                         (Ebefore->term[F_COUL_SR] + 
                          Ebefore->term[F_COUL_LR] + 
                          Ebefore->term[F_RF_EXCL] +
-                         Ebefore->term[F_COUL_RECIP])) * 
+                         Ebefore->term[F_COUL_RECIP] - 
+                         Ebefore_self_coul)) * 
                        (1.0/ir->titration_epsilon_r - 1.0));
                        
         Edelta = ((Eafter_mm - Eafter_self) - (Ebefore_mm - Ebefore_self) +
                   Edelta_coul);
+        hop->DE_MM = Eafter_mm - Ebefore_mm;
         
-        hop->DE_MM = Eafter_mm - Ebefore_mm; 
+        if (NULL != fplog)
+            fprintf(fplog,"ITMD: Edelta %g, Eafter_mm %g, Eafter_self %g, Ebefore_mm %g, Ebefore_self %g, Edelta_coul %g, DE_MM %g, DE_Self %g\nITMD: Eafter_self_coul %g, Ebefore_self_coul %g, Eafter_self_vdw %g, Ebefore_self_vdw %g\n",
+                    Edelta,Eafter_mm,Eafter_self,Ebefore_mm,Ebefore_self,Edelta_coul,
+                    hop->DE_MM,Eafter_self-Ebefore_self,
+                    Eafter_self_coul,Ebefore_self_coul,Eafter_self_vdw, Ebefore_self_vdw);
 
         compute_E12(p, hop, Edelta);
         compute_E12_right(p, hop);
@@ -2519,66 +2526,13 @@ static void get_hop_prob(FILE *fplog,
   
     sfree(p);
 }
-
-/* redundant */
-/* static gmx_bool swap_waters(t_commrec *cr, t_qhoprec *qhoprec,  */
-/* 			    t_mdatoms *md, t_hop *hop, rvec *x, */
-/* 			    gmx_mtop_t *mtop, t_pbc *pbc){ */
-/*   int */
-/*     i; */
-/*   rvec */
-/*     temp_vec; */
-  
-/*   /\* swap the donor and acceptor atom */
-/*    *\/   */
-/*   /\* assumuming the user uses the correct water topology..... *\/ */
-/*   switch (hop->proton_id) */
-/*     { */
-/*     case 3: */
-/*       rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]),-120, md); */
-/*       break; */
-/*     case 4: */
-/*       rotate_water(pbc, x, &(qhoprec->qhop_atoms[hop->donor_id]), 120, md); */
-/*       break; */
-/*     default: */
-/*       break; */
-/*     } */
-  
-/*   copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].atom_id], */
-/* 	    temp_vec); */
-/*   copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id], */
-/* 	    x[qhoprec->qhop_atoms[hop->donor_id].atom_id]); */
-/*   copy_rvec(temp_vec, */
-/* 	    x[qhoprec->qhop_atoms[hop->acceptor_id].atom_id]); */
-  
-/*   if(qhoprec->qhop_atoms[hop->donor_id].nr_protons == */
-/*      qhoprec->qhop_atoms[hop->acceptor_id].nr_protons) */
-/*     { */
-/*       for(i=0; i < qhoprec->qhop_atoms[hop->donor_id].nr_protons; i++) */
-/* 	{ */
-/* 	  copy_rvec(x[qhoprec->qhop_atoms[hop->donor_id].protons[i]], */
-/* 		    temp_vec); */
-/* 	  copy_rvec(x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]], */
-/* 		    x[qhoprec->qhop_atoms[hop->donor_id].protons[i]]); */
-/* 	  copy_rvec(temp_vec, */
-/* 		    x[qhoprec->qhop_atoms[hop->acceptor_id].protons[i]]); */
-/* 	} */
-
-/*       return(TRUE); */
-	
-/*     } */
-/*   else */
-/*     { */
-/*       gmx_fatal(FARGS,"Oops, donor and acceptor do not have same number of protons!\n"); */
-/*       return(FALSE); */
-/*     } */
-/* } */
 	    
 static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
                        qhop_db *db,
                        t_mdatoms *md, t_hop *hop, rvec *x, rvec *v,
                        gmx_mtop_t *mtop, gmx_localtop_t *top, gmx_constr_t constr, 
-                       t_pbc *pbc){
+                       t_pbc *pbc)
+{
     /* change the state of the system, such that it corresponds to the
        situation after a proton transfer between hop.donor_id and
        hop.acceptor_id. For hops from hydronium to water we swap donor
@@ -3043,7 +2997,7 @@ void do_qhop(FILE *fplog,
             for(i=0; i<qr->nr_hop; i++)
             {
                 qr->hop[i].T = T;
-                get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                              fcd,graph,fr,vsite,mu_tot,
                              &(qr->hop[i]),&pbc,step, db,
                              &bHaveEbefore,Ebefore,Eafter);
@@ -3058,17 +3012,17 @@ void do_qhop(FILE *fplog,
                 if (ir->titration_mode != eTitrationModeList) 
                 {
                     qr->hop[i].T = T;
-                    get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                    get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                                  fcd,graph,fr,vsite,mu_tot,
                                  &(qr->hop[i]),&pbc,step, db,
                                  &bHaveEbefore,Ebefore,Eafter);
                 }
             
                 rnr = gmx_rng_uniform_real(qr->rng); 
-                if (NULL != fplog)
+                if (NULL != debug)
                 {
                     /* some printing to the log file */
-                    fprintf(fplog,
+                    fprintf(debug,
                             "\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
                             fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
                             fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
@@ -3092,7 +3046,8 @@ void do_qhop(FILE *fplog,
                         veta = 0;
                         vetanew = 0;
                         scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
-                                         state,md,fr->qhoprec,step,(db->constrain > 0) ? constr : NULL,
+                                         state,md,fr->qhoprec,step,
+                                         (db->constrain > 0) ? constr : NULL,
                                          &pbc,&(qr->hop[i]),ekindata,veta,vetanew);
                     }
                     if (ir->titration_mode != eTitrationModeOne)
@@ -3118,7 +3073,7 @@ void do_qhop(FILE *fplog,
                     bHop = FALSE;
                 }
 
-                if((NULL != fplog) && bHop)
+                if ((NULL != fplog) && bHop)
                 {
                     gmx_step_str(step, stepstr);
                     fprintf(fplog,"ITMD: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)\n",
@@ -3127,6 +3082,14 @@ void do_qhop(FILE *fplog,
                             fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,
                             fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
                             fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].resname);
+                    fprintf(fplog,
+                            "ITMD: %d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
+                            fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
+                            fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
+                            qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
+                            qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].ang,
+                            qr->hop[i].El, qr->hop[i].Er,
+                            qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
                 }
             }
         }
