@@ -75,10 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
-#include "qhop.h"
-#include "qhoprec.h"
-#include "qhop_toputil.h"
-#include "gmx_qhop_parm.h"
+#include "titration.h"
 
 typedef struct {
   t_state s;
@@ -926,15 +923,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
           nfile,fnm,&outf,&mdebin);
 
-  if (fr->titration_alg != eTitrationAlgNone)
+  if (fr->bTitration)
   {
-      /* Complete the t_mdatoms and qhoprec, extend the topology. */
-      make_ilib(fr->qhoprec->db);
-      qhop_attach_ilib(top, fr->qhoprec->db);
-      finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
-      
-      if (fr->qhoprec->db == NULL)
-          gmx_fatal(FARGS, "qhop_database not set");
+      finalize_titration(fr->titration,top,mdatoms,cr);
   }
   
   /* Print to log file */
@@ -2073,7 +2064,6 @@ double do_steep(FILE *fplog,t_commrec *cr,
   int    steps_accepted=0; 
   /* not used */
   real   terminate=0;
-  qhop_db_t   qhop_database=NULL;
 
   s_min = init_em_state();
   s_try = init_em_state();
@@ -2102,15 +2092,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
   if (fplog)
     sp_header(fplog,SD,inputrec->em_tol,nsteps);
 
-  if (fr->titration_alg != eTitrationAlgNone)
+  if (fr->bTitration)
   {
-      /* Complete the t_mdatoms and qhoprec, extend the topology. */
-      make_ilib(fr->qhoprec->db);
-      qhop_attach_ilib(top, fr->qhoprec->db);
-      finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
-      
-      if (fr->qhoprec->db == NULL)
-          gmx_fatal(FARGS, "qhop_database not set");
+      finalize_titration(fr->titration, top, mdatoms, cr);
   }
     
   /**** HERE STARTS THE LOOP ****

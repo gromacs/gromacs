@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
 #include "confio.h"
 #include "constr.h"
 #include "copyrite.h"

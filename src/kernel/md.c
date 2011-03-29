@@ -88,11 +88,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
-#include "qhop.h"
-#include "qhoprec.h"
-#include "gmx_qhop_db.h"
-#include "gmx_qhop_parm.h"
-#include "qhop_toputil.h"
+#include "titration.h"
 #include "genborn.h"
 #include "sighandler.h"
 
@@ -1153,7 +1149,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq; 
-    /* qhop_db_t   qhop_database=NULL; */
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
@@ -1534,17 +1529,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         fprintf(fplog,"\n");
     }
-    if (fr->titration_alg != eTitrationAlgNone)
+    if (fr->bTitration)
     {
-        /* Finalize qhoprec and mdatoms, extend the topology */
-        make_ilib(fr->qhoprec->db);
-        qhop_attach_ilib(top, fr->qhoprec->db);
-        finalize_qhoprec(fr->qhoprec, top, mdatoms, cr);
-
-        if (fr->qhoprec->db == NULL)
-            gmx_fatal(FARGS, "qhop_database not set");
+        /* Finalize titration and mdatoms, extend the topology */
+        finalize_titration(fr->titration, top, mdatoms, cr);
     }
- 
 
     /* Set and write start time */
     runtime_start(runtime);
@@ -1927,19 +1916,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (!bFirstStep)
         {
-            if ((fr->titration_alg != eTitrationAlgNone) && do_per_step(step,ir->titration_freq))
+            if (fr->bTitration && do_per_step(step,ir->titration_freq))
             { 
-                fr->qhoprec->constr = constr;
-                do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
-                        mdatoms,fcd,graph,fr,vsite,mu_tot,bBornRadii,
-                        enerd->term[F_TEMP],step,ekind,force_vir);
+                do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
+                             mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
+                             enerd->term[F_TEMP],step,ekind,force_vir);
             }
         }
         
         /* Keep inactive hydrogens from drifting away. */
-        if (fr->titration_alg != eTitrationAlgNone)
+        if (fr->bTitration)
         {
-            fold_inactive_protons(fr->qhoprec, state->x, state->v);
+            fold_inactive_protons(fr->titration, state->x, state->v);
         }
 
         if (shellfc)
@@ -2800,8 +2788,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
-    if (fr->qhoprec->db != NULL)
-        qhop_db_done(fr->qhoprec->db);
+    qhop_db_done(fr->titration);
 
     /* Stop the time */
     runtime_end(runtime);

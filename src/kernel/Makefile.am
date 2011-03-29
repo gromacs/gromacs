@@ -26,11 +26,13 @@ fflibutil.c	fflibutil.h	\
 gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
-gmx_qhop_db.c\
-gmx_qhop_parm.c\
-gmx_qhop_xml.c\
 gmx_xml.h	gmx_xml.c	\
-qhop.c\
+titrationrec.h	\
+titration_db.c		titration_db.h	\
+titration_parm.c	titration_parm.h\
+titration_db_xml.c	titration_db_xml.h\
+titration.c		titration.h\
+titration_util.c	titration_util.h	\
 gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
@@ -68,6 +70,10 @@ mdrun_SOURCES = \
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	runner.c	md.c		mdrun.c		\
 	genalg.c	genalg.h	md_openmm.h	md_openmm.c
+
+EXTRA_PROGRAMS = titration_db_test
+
+titration_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la

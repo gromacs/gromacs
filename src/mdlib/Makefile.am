@@ -52,15 +52,9 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
 	gmx_fft_mkl.c	qm_orca.c	mdebin_bar.c		\
-	mdebin_bar.h	qhop_toputil.c	qhoprec.c
-#	gmx_qhop_parm.c	gmx_qhop_parm.h
-#	gmx_qhop_xml.c	gmx_qhop_xml.h
+	mdebin_bar.h
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
-
-EXTRA_PROGRAMS = gmx_qhop_db_test
-
-gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*

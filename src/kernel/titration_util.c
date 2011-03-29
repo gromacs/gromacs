@@ -34,21 +34,21 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <string.h>
-#include "types/mdatom.h"
-#include "types/topology.h"
-#include "types/idef.h"
-#include "types/qhoprec.h"
-#include "types/gmx_qhop_types.h"
-#include "types/commrec.h"
-#include "types/constr.h"
+#include "smalloc.h"
+#include "typedefs.h"
 #include "hackblock.h"
-#include "qhop_toputil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "constr.h"
 #include "vec.h"
+#include "txtdump.h"
+#include "futil.h"
+#include "titration_util.h"
+#include "titration_parm.h"
 
-void qhop_tautomer_swap(const t_qhoprec *qr,
+const char *qhopregimes[etQhopNR] = { "NONE", "SE", "Intermediate", "TST" };
+
+void qhop_tautomer_swap(const titration_t T,
                         rvec x[], rvec v[],
                         int prim, int sec)
 {
@@ -56,8 +56,8 @@ void qhop_tautomer_swap(const t_qhoprec *qr,
     int i, xv;
     t_qhop_atom *qprim, *qsec;
 
-    qprim = &qr->qhop_atoms[prim];
-    qsec  = &qr->qhop_atoms[sec];
+    qprim = &T->qhop_atoms[prim];
+    qsec  = &T->qhop_atoms[sec];
 
     if (prim == sec)
     {
@@ -385,7 +385,7 @@ void index_ilists(t_qhop_residue *qres,
 }
 
 /* returns the index in the ilib where bond to this proton is found. */
-int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr, 
+int qhop_get_proton_bond_params(const qhop_db *db, const titration_t T,
                                 t_qhop_atom *qatom, gmx_localtop_t *top, 
                                 int proton_id, const t_commrec *cr)
 {
@@ -395,7 +395,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
     t_restp *rtp;
     t_qhop_residue *qres;
 
-    qres = &(qr->qhop_residues[qatom->qres_id]);
+    qres = &(T->qhop_residues[qatom->qres_id]);
 
     rtp  = &(db->rtp[db->rb.qrt[qres->rtype].subres[qres->subres].irtp]);
 
@@ -423,7 +423,7 @@ int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
     return 0;
 }
 
-void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
+void qhop_constrain(t_qhop_residue *qres, titration_t T, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr)
 {
     int nr, nalloc, heavy, h, rt, r, b, bi, i, params, ai, *g2l, *iatoms;
     const int niatoms = 3;
@@ -441,7 +441,7 @@ void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_
 #if 0
     for (heavy=0; (heavy < qres->nr_titrating_sites) && (!bMatch); heavy++)
     {
-        qatom = &(qr->qhop_atoms[qres->titrating_sites[heavy]]);
+        qatom = &(T->qhop_atoms[qres->titrating_sites[heavy]]);
         for (h=0; h < qatom->nr_protons; h++)
         {
             if (qatom->protons[h] == proton_id)
@@ -568,7 +568,7 @@ void qhop_deconstrain(t_qhop_residue *qres, const qhop_db *db, gmx_localtop_t *t
  * titrating sites in the qhop_res and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
-int which_subRes(const t_qhoprec *qr,
+int which_subRes(const titration_t T,
                  qhop_db *db, const int resnr)
 {
     int
@@ -591,8 +591,8 @@ int which_subRes(const t_qhoprec *qr,
     t_restp
         *rtp;
 
-    range_check(resnr,0,qr->nr_qhop_residues);
-    qres    = &(qr->qhop_residues[resnr]);
+    range_check(resnr,0,T->nr_qhop_residues);
+    qres    = &(T->qhop_residues[resnr]);
 
     range_check(qres->rtype,0,db->rb.nrestypes);
     nsubres = db->rb.qrt[qres->rtype].nsubres;
@@ -619,13 +619,13 @@ int which_subRes(const t_qhoprec *qr,
         k = qres->titrating_sites[i];
 
         /* Stash the donor/acceptor name */
-        DAlist[i] = qr->qhop_atoms[k].atomname;
+        DAlist[i] = T->qhop_atoms[k].atomname;
 
         /* Proton roll call */
-        for (j=0; j < qr->qhop_atoms[k].nr_protons; j++)
+        for (j=0; j < T->qhop_atoms[k].nr_protons; j++)
         {
             /* get the atom id of the protons */
-            h = qr->qhop_atoms[k].protons[j];
+            h = T->qhop_atoms[k].protons[j];
 
             /* is it present? */
             if (get_proton_presence(&(db->H_map), h))
@@ -790,10 +790,10 @@ int which_subRes(const t_qhoprec *qr,
             /* Zero all hydrogens */
             for (i=0; i < qres->nr_titrating_sites; i++)
             {
-                for (j=0; j < qr->qhop_atoms[qres->titrating_sites[i]].nr_protons; j++)
+                for (j=0; j < T->qhop_atoms[qres->titrating_sites[i]].nr_protons; j++)
                 {
                     set_proton_presence(&(db->H_map),
-                                        qr->qhop_atoms[qres->titrating_sites[i]].protons[j],
+                                        T->qhop_atoms[qres->titrating_sites[i]].protons[j],
                                         FALSE);
                 }
             }
@@ -975,7 +975,7 @@ static void low_level_swap_m_and_q(t_mdatoms *md, const t_atom *atom, const int 
 void qhop_swap_m_and_q(const t_qhop_residue *swapres,
                        const qhop_subres *prod,
                        t_mdatoms *md,
-                       const qhop_db *db, t_qhoprec *qr)
+                       const qhop_db *db, titration_t T)
 {
     int i, j, nH;
     t_restp *rtp;
@@ -1013,7 +1013,7 @@ void qhop_swap_m_and_q(const t_qhop_residue *swapres,
     if (bWater)
     {
         /* Masses are different for water. */
-        qa = &(qr->qhop_atoms[swapres->titrating_sites[0]]);
+        qa = &(T->qhop_atoms[swapres->titrating_sites[0]]);
         nH = 0;
 
         for (i=0; i<qa->nr_protons; i++)
@@ -1050,7 +1050,7 @@ void qhop_swap_m_and_q(const t_qhop_residue *swapres,
     }
 }
 
-void set_interactions(t_qhoprec *qr,
+void set_interactions(titration_t T,
                       qhop_db *qdb,
                       gmx_localtop_t *top,
                       t_mdatoms *md,
@@ -1067,7 +1067,7 @@ void set_interactions(t_qhoprec *qr,
     RB   = qres->rtype;
     R    = qres->subres;
     reac = &(qdb->rb.qrt[RB].subres[R]);
-    QA = qr->qhop_atoms;
+    QA = T->qhop_atoms;
 
     for (i=0; i<qres->nr_titrating_sites; i++)
     {
@@ -1101,6 +1101,101 @@ void set_interactions(t_qhoprec *qr,
     }
     qhop_swap_bondeds(qres, reac, qdb, top, cr);
     qhop_swap_vdws(qres, reac, md, qdb);
-    qhop_swap_m_and_q(qres, reac, md, qdb, qr);
+    qhop_swap_m_and_q(qres, reac, md, qdb, T);
     /* Non-bonded */
+}
+
+/* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
+static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
+{
+    int i, j;
+    t_qhop_atom *a;
+    qhop_db *db;
+
+    db = T->db;
+
+    /* Should probably set the massT array too. */
+
+    for (i=0; i < T->nr_qhop_atoms; i++)
+    {
+        a = &(T->qhop_atoms[i]);
+
+        md->bqhopacceptor[a->atom_id] = (a->state & eQACC) != 0;
+        md->bqhopdonor[a->atom_id]    = (a->state & eQDON) != 0;
+
+        for (j=0; j < a->nr_protons; j++)
+        {
+            if (db->H_map.H[db->H_map.atomid2H[a->protons[j]]] == 0)
+            {
+                md->massT[a->protons[j]] = 0;
+            }
+        }
+    }
+}
+
+/* Sets the interactions according to the hydrogen existence map.
+ * This requires a finalized t_mdatoms. */
+void finalize_qhoprec(titration_t T, gmx_localtop_t *top, 
+                      t_mdatoms *md, t_commrec *cr)
+{
+    int i, j, nb, ft;
+    qhop_db *db;
+    t_qhop_residue *qres;
+    /* #define DUMPTOP 1 */
+#ifdef DUMPTOP 
+    FILE *fp;
+    if (NULL != (fp=ffopen("before.txt","w"))) 
+    {
+        pr_ltop(fp,0,"before",top,TRUE);
+        fclose(fp);
+    }
+#endif
+    db = T->db;
+
+    for (i=0; i < T->nr_qhop_residues; i++)
+    {
+        qres = &(T->qhop_residues[i]);
+
+        /* What flavour of the residue shall we set it to? */
+        qres->subres = which_subRes(T, db, i);
+      
+        /* Alocate memory for the bonded index. */
+        /* This should probably go to qhop_toputil.c */
+        snew(qres->bindex.ilist_pos, F_NRE);
+        snew(qres->bindex.indexed,   F_NRE);
+        for (j=0; j < ebtsNR; j++)
+        {
+            ft = db->rb.btype[j];
+	  
+            if (ft >= 0)
+            {
+                nb = db->rtp[db->rb.qrt[qres->rtype].irtp].rb[j].nb;
+                qres->bindex.nr[ft] = nb;
+
+                snew((qres->bindex.ilist_pos[ft]), nb);
+
+                snew((qres->bindex.indexed[ft]), nb);
+            }
+        }
+        set_interactions(T, db, top, md, qres, cr);
+    }
+#ifdef DUMPTOP 
+    if (NULL != (fp=ffopen("after.txt","w"))) 
+    {
+        pr_ltop(fp,0,"after",top,TRUE);
+        fclose(fp);
+    }
+#endif
+
+    qhop_atoms2md(md, T);
+}
+
+
+void finalize_titration(titration_t T,gmx_localtop_t *top,t_mdatoms *mdatoms,
+                        t_commrec *cr)
+{
+    /* Complete the t_mdatoms and qhoprec, extend the topology. */
+    make_ilib(T->db);
+    qhop_attach_ilib(top, T);
+    finalize_qhoprec(T, top, mdatoms, cr);
 }

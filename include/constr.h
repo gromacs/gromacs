@@ -33,6 +33,8 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
+#ifndef _CONSTR_H
+#define _CONSTR_H
 
 #include "typedefs.h"
 
@@ -252,4 +254,5 @@ gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 
 #ifdef __cplusplus
 }
+#endif
 #endif

@@ -12,6 +12,5 @@ pkgincludetypes_HEADERS = \
 	enums.h   	group.h     	ishift.h    	\
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	trx.h		state.h		\
-	pbc.h		qmmmrec.h	shellfc.h	genborn.h	\
-	qhoprec.h	gmx_qhop_types.h
+	pbc.h		qmmmrec.h	shellfc.h	genborn.h
 

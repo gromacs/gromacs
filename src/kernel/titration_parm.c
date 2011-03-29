@@ -43,9 +43,8 @@
 #include "hackblock.h"
 #include "resall.h"
 #include "gpp_atomtype.h"
-#include "types/gmx_qhop_types.h"
-#include "types/idef.h"
-#include "gmx_qhop_parm.h"
+#include "typedefs.h"
+#include "titration_parm.h"
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
@@ -64,7 +63,7 @@ qhop_resblocks_t qhop_resblock_init()
 /* Returns the index in params where it was found or inserted. */
 
 /* btype is ebtsBONDS, ebtsANGLES, ...
- * bflavour specifies the functype. See the npbon[] in gmx_qhop_parm.h */
+ * bflavour specifies the functype. See the npbon[] in titration_parm.h */
 static int qhop_add_iparam(t_iparams **params, t_functype **ft, int *nparams, t_iparams *interaction, int btype, int bflavor, int ftype)
 {
   int p, np, i;

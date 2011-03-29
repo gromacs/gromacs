@@ -48,9 +48,6 @@ gmx_ga2la.h \
 gmx_lapack.h \
 gmx_matrix.h \
 gmx_parallel_3dfft.h \
-gmx_qhop_db.h \
-gmx_qhop_parm.h \
-gmx_qhop_xml.h \
 gmx_random.h \
 gmx_sort.h \
 gmx_sse2_single.h \
@@ -109,8 +106,6 @@ position.h \
 pppm.h \
 princ.h \
 pull.h \
-qhop.h \
-qhop_toputil.h \
 qmmm.h \
 random.h \
 rbin.h \
@@ -167,5 +162,4 @@ vmddlopen.h \
 vmdplugin.h \
 oenv.h \
 sighandler.h \
-gmx_sse2_double.h \
-qhoprec.h
+gmx_sse2_double.h

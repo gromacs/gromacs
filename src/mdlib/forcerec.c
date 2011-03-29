@@ -61,15 +61,11 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
-#include "qhoprec.h"
-
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
 #include <intrin.h>
 #endif
-
-
 
 t_forcerec *mk_forcerec(void)
 {
@@ -1761,12 +1757,7 @@ void init_forcerec(FILE *fp,
     fr->bQMMM      = ir->bQMMM;   
     fr->qr         = mk_QMMMrec();
     
-    if (ir->titration_alg != eTitrationAlgNone)
-    {
-        fprintf(stderr, "Titration MD computation requested. May the force be with you....\n");
-    }
-    fr->titration_alg = ir->titration_alg;
-    fr->qhoprec = mk_qhoprec();
+    fr->bTitration = (ir->titration_alg != eTitrationAlgNone);
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,

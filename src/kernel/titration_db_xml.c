@@ -39,9 +39,9 @@
 #include "macros.h"
 #include "futil.h"
 #include "string2.h"
-#include "types/gmx_qhop_types.h"
-#include "gmx_qhop_parm.h"
-#include "gmx_qhop_db.h"
+#include "typedefs.h"
+#include "titration_parm.h"
+#include "titration_db.h"
 #include "gmx_xml.h"
 
 #ifdef HAVE_LIBXML2

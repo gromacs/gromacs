@@ -47,10 +47,10 @@
 #include "mdatoms.h"
 #include "mtop_util.h"
 #include "h_db.h"
-#include "types/gmx_qhop_types.h"
-#include "gmx_qhop_parm.h"
-#include "gmx_qhop_xml.h"
-#include "gmx_qhop_db.h"
+#include "typedefs.h"
+#include "titration_parm.h"
+#include "titration_db_xml.h"
+#include "titration_db.h"
 
 #define BUFSIZE 1000
 /* First of all, a safe strdup, more or less copied from hackblock.c. */

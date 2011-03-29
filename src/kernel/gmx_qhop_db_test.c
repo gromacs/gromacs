@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include "gmx_fatal.h"
 #include "macros.h"
-#include "gmx_qhop_db.h"
+#include "titration_db.h"
 
 int main(int argc,char *argv[])
 {

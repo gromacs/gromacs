@@ -73,7 +73,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
-#include "qhop.h"
+#include "titration.h"
 
 #include "md_openmm.h"
 
@@ -797,15 +797,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         signal_handler_install();
     }
 
-    if (fr->titration_alg != eTitrationAlgNone)
+    if (fr->bTitration)
     {
         if (integrator[inputrec->eI].func == do_md
             || integrator[inputrec->eI].func == do_steep
             || integrator[inputrec->eI].func == do_cg)
         {
-            init_qhop(fplog,forcefield,cr,mtop,inputrec,fr,state->box,mdatoms);
+            init_titration(fplog,forcefield,cr,mtop,inputrec,fr,state->box,mdatoms);
         }
-        
     }
 
     if (cr->duty & DUTY_PP)

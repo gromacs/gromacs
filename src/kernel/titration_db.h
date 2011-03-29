@@ -1,10 +1,9 @@
-#ifndef _GMX_QHOP_DB_H
-#define _GMX_QHOP_DB_H
+#ifndef _TITRATION_DB_H
+#define _TITRATION_DB_H
 
 #include "resall.h"
-//#include "mdatoms.h"
-#include "types/gmx_qhop_types.h"
 #include "hackblock.h"
+#include "titrationrec.h"
 
 //typedef struct gmx_qhop_db_t *gmx_qhop_db;
 

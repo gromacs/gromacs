@@ -1,13 +1,10 @@
-#ifndef QHOP_TOPUTIL_H
-#define QHOP_TOPUTIL_H
+#ifndef TITRATION_UTIL_H
+#define TITRATION_UTIL_H
 
-#include "types/mdatom.h"
-#include "types/topology.h"
-#include "types/qhoprec.h"
 #include "hackblock.h"
-#include "types/gmx_qhop_types.h"
-#include "types/constr.h"
-#include "types/inputrec.h"
+#include "typedefs.h"
+#include "titrationrec.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,11 +12,18 @@ extern "C" {
 }
 #endif
 
+/* Initiate the data structure */
+extern titration mk_titration(void);
+
+/* Sets the interactions according to the hydrogen exstence map.
+ * This requires a finalized t_mdatoms. */
+extern void finalize_titration(titration_t T, gmx_localtop_t *top, t_mdatoms *md,t_commrec *cr);
+
 /* Exchanges the qhopatoms indexed by prim and sec
  * when sec is being titrated. Since prim holds the
  * titrating hydrogen the two must be exchanged.
  * If v==NULL then velocities will remain unchanged */
-extern void qhop_tautomer_swap(const t_qhoprec *qr,
+extern void qhop_tautomer_swap(const titration_t T,
 			       rvec x[], rvec v[],
 			       int prim, int sec);
 
@@ -47,19 +51,15 @@ extern void index_ilists(t_qhop_residue *qres,
    * wipe the ilist locations, but only marks them as obsolete. */
 extern void unindex_ilists(t_qhop_residue *qres);
 
-/* Attaches the ilib in db->rb to the end of top->idef.iparams
- * and extends top->idef.functype accordingly. */
-extern void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db);
-
   /* Returns the index in top->idef.il[?].iatoms where the
    * parameters for the bond involving proton_id are found. */
-extern int qhop_get_proton_bond_params(const qhop_db *db, const t_qhoprec *qr,
+extern int qhop_get_proton_bond_params(const qhop_db *db, const titration_t T,
 				       t_qhop_atom *qatom, gmx_localtop_t *top,
 				       int proton_id, const t_commrec *cr);
 
   /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
    * Use it when activating a proton. */
-extern void qhop_constrain(t_qhop_residue *qres, t_qhoprec *qr, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr);
+extern void qhop_constrain(t_qhop_residue *qres, titration_t T, const qhop_db *db, gmx_localtop_t *top, t_mdatoms *md, int proton_id, gmx_constr_t constr, const t_inputrec *ir, const t_commrec *cr);
 
   /* Adds a constrain between the hydrogen (proton_id) and the heavy atom it's connected to.
    * Use it when deactivating a proton. */
@@ -85,14 +85,14 @@ extern void qhop_swap_vdws(const t_qhop_residue *swapres,
 extern void qhop_swap_m_and_q(const t_qhop_residue *swapres,
 			      const qhop_subres *prod,
 			      t_mdatoms *md,
-			      const qhop_db *db, t_qhoprec *qr);
+			      const qhop_db *db, titration_t T);
 
 /* Set the interaction parameters and
  * determine whether titraing sites are
  * acceptors, donors, or both.
  * This function is only called when 
  * initializing qhop. */
-extern void set_interactions(t_qhoprec *qr,
+extern void set_interactions(titration_t T,
 			     qhop_db *qdb,
 			     gmx_localtop_t *top,
 			     t_mdatoms *md,
@@ -101,7 +101,7 @@ extern void set_interactions(t_qhoprec *qr,
 
 /* Sets the bqhopdonor[] and bqhopacceptor[] arrays in a t_mdatoms. */
 /* extern void qhop_atoms2md(t_mdatoms *md, */
-/* 			  const t_qhoprec *qr); */
+/* 			  const titration_t T); */
 
 /* Reads the info in the db->qhop_H_exist and finds the corresponding
  * residue subtype in the qhop_db.
@@ -112,7 +112,7 @@ extern void set_interactions(t_qhoprec *qr,
  * titrating sites in the qhop_subres and in the rtp. Thus,
  * the existence map may need slight reshuffling to really
  * represent the global protonation state. */
-extern int which_subRes(const t_qhoprec *qr,
+extern int which_subRes(const titration_t T,
 			qhop_db *db,
 			const int resnr);
 

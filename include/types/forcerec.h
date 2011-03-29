@@ -36,7 +36,6 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
-#include "qhoprec.h"
 #include "idef.h"
 
 #ifdef __cplusplus
@@ -126,6 +125,8 @@ typedef struct {
   int *cginfo;
 } cginfo_mb_t;
 
+/* Abstract type for titration code */
+typedef struct titration *titration_t;
 
 /* ewald table type */
 typedef struct ewald_tab *ewald_tab_t; 
@@ -352,10 +353,10 @@ typedef struct {
   t_nblist QMMMlist;
 
   /* Titration MD stuff */
-  int         titration_alg;
-  t_qhoprec   *qhoprec;
-  t_nblist    qhopnblist;
-  gmx_bool    bDo_qhop;
+  gmx_bool    bTitration;
+  t_nblist    titration_nblist;
+  titration_t titration;
+  
   /* Limit for printing large forces, negative is don't print */
   real print_force;
 

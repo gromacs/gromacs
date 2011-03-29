@@ -64,42 +64,39 @@
 #include "gmx_fatal.h"
 #include "typedefs.h"
 #include "mtop_util.h"
-#include "qhop.h"
 #include "random.h"
 #include "gmx_random.h"
 #include "constr.h"
 #include "mdrun.h"
-#include "types/idef.h"
-#include "types/ifunc.h"
+#include "typedefs.h"
 #include "hackblock.h"
-#include "gmx_qhop_db.h"
-#include "types/qhoprec.h"
-#include "types/gmx_qhop_types.h"
 #include "lambertw.h"
-#include "qhop_toputil.h"
+#include "titration_db.h"
+#include "titration.h"
+#include "titration_util.h"
 
 #define DOO   0.35
 #define BOND  0.15
 #define HBOND  0.2
 #define MAXHOPANG 60
 
-void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[])
+void fold_inactive_protons(const titration_t T, rvec x[], rvec v[])
 {
     int r, t, h;
     t_qhop_residue *qres;
     t_qhop_atom *qatom;
     qhop_db *db;
 
-    db = qr->db;
+    db = T->db;
 
-    for (r=0; r < qr->nr_qhop_residues; r++)
+    for (r=0; r < T->nr_qhop_residues; r++)
     {
-        qres = &(qr->qhop_residues[r]);
+        qres = &(T->qhop_residues[r]);
         if (!db->rb.qrt[qres->rtype].bWater)
         {
             for (t=0; t < qres->nr_titrating_sites; t++)
             {
-                qatom = &(qr->qhop_atoms[qres->titrating_sites[t]]);
+                qatom = &(T->qhop_atoms[qres->titrating_sites[t]]);
 
                 for (h=0; h < qatom->nr_protons; h++)
                 {
@@ -116,7 +113,7 @@ void fold_inactive_protons(const t_qhoprec *qr, rvec x[], rvec v[])
 
 /* Makes a list of tautomeric sites and returns its length.
  * ai is the qhop_atom id of the primary site. */
-static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, int **tautomers, int DA)
+static int get_tautomeric_sites(const qhop_db *db, const titration_t T, int ai, int **tautomers, int DA)
 {
     int i, nt, *t, rt, t_nr, r, reac, a;
     t_qhop_residue *qres;
@@ -126,8 +123,8 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
 
     t = NULL;
     nt = 0;
-    qatom = &(qr->qhop_atoms[ai]);
-    qres  = &(qr->qhop_residues[qatom->qres_id]);
+    qatom = &(T->qhop_atoms[ai]);
+    qres  = &(T->qhop_residues[qatom->qres_id]);
     rt    = qres->rtype;
     r     = qres->subres;
   
@@ -155,7 +152,7 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
                     memset(&(t[nt]),0,sizeof(t[nt]));
                     for (t_nr=0; t_nr < qres->nr_titrating_sites; t_nr++)
                     {
-                        if (strcmp(qr->qhop_atoms[qres->titrating_sites[t_nr]].atomname, R->name[a]) == 0)
+                        if (strcmp(T->qhop_atoms[qres->titrating_sites[t_nr]].atomname, R->name[a]) == 0)
                         {
                             t[nt++] = qres->titrating_sites[t_nr];
                             break;
@@ -176,7 +173,7 @@ static int get_tautomeric_sites(const qhop_db *db, const t_qhoprec *qr, int ai, 
  * the primary titratable site, then this function returns the
  * qhop_atom id of that atom. If not, it returns the qhop_atom id
  * of the primary site. */
-static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom *qatom, char *secname, int DA)
+static int qhop_get_primary(titration_t T, t_qhop_residue *qhopres, t_qhop_atom *qatom, char *secname, int DA)
 {
     qhop_db *db;
     char *name;
@@ -189,7 +186,7 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
         gmx_fatal(FARGS, "Called qhop_get_primary() with DA != eQDON || eQACC");
     }
 
-    db = qr->db;
+    db = T->db;
 
     rt = qhopres->rtype;
     r  = qhopres->subres;
@@ -211,7 +208,7 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
             {
                 for (a=0; a < qhopres->nr_titrating_sites; a++)
                 {
-                    if (strcmp(qreac->name[0], qr->qhop_atoms[qhopres->titrating_sites[a]].atomname) == 0)
+                    if (strcmp(qreac->name[0], T->qhop_atoms[qhopres->titrating_sites[a]].atomname) == 0)
                     {
                         return qhopres->titrating_sites[a];
                     }
@@ -226,7 +223,7 @@ static int qhop_get_primary(t_qhoprec *qr, t_qhop_residue *qhopres, t_qhop_atom 
     return -1;
 }
 
-static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
+static qhop_parameters *get_qhop_params (titration_t T,t_hop *hop, qhop_db_t db)
 {/* (char *donor_name,char *acceptor_name, qhop_db_t db){ */
 
     /* parameters of the current donor acceptor combination are based on 
@@ -248,15 +245,15 @@ static qhop_parameters *get_qhop_params (t_qhoprec *qr,t_hop *hop, qhop_db_t db)
     else
     {
         donor_name    = db->rb.qrt
-            [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].rtype].subres
-            [qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id].subres].name;
+            [T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id].rtype].subres
+            [T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id].subres].name;
 
         acceptor_name = db->rb.qrt
-            [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].rtype].subres
-            [qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id].subres].name;
+            [T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id].rtype].subres
+            [T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id].subres].name;
 
-        donor_atom    = qr->qhop_atoms[hop->primary_d].atomname;
-        acceptor_atom = qr->qhop_atoms[hop->primary_a].atomname;
+        donor_atom    = T->qhop_atoms[hop->primary_d].atomname;
+        acceptor_atom = T->qhop_atoms[hop->primary_a].atomname;
 
         if (NULL != debug)
             fprintf(debug, "--- PARAMETERS FOR DONOR %s (%s) - ACCEPTOR %s (%s) ---\n",
@@ -308,12 +305,12 @@ static int ilist_iterator(const t_ilist *ilist, const int itype, int *index, t_i
 /* Is atom id among the qhop_atoms?
  * Returns the matching qhop_atom,
  * or -1 if not found.*/
-static int is_qhopatom(const t_qhoprec *qr, const int id)
+static int is_qhopatom(const titration_t T, const int id)
 {
     int i;
-    for (i=0; i<qr->nr_qhop_atoms; i++)
+    for (i=0; i<T->nr_qhop_atoms; i++)
     {
-        if (qr->qhop_atoms[i].atom_id == id)
+        if (T->qhop_atoms[i].atom_id == id)
         {
             return i;
         }
@@ -323,7 +320,7 @@ static int is_qhopatom(const t_qhoprec *qr, const int id)
 }
 
 /* returns the restype for residue with name rname */
-static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
+static int is_restype(const qhop_db *db, const titration_t T, const char *rname)
 {
     int i;
 
@@ -332,9 +329,9 @@ static int is_restype(const qhop_db *db, const t_qhoprec *qr, const char *rname)
         return -1;
     }
 
-    for (i=0; i<qr->nr_qhop_residues; i++)
+    for (i=0; i<T->nr_qhop_residues; i++)
     {
-        if (strcmp(rname, db->rb.qrt[qr->qhop_residues[i].rtype].canonical) == 0)
+        if (strcmp(rname, db->rb.qrt[T->qhop_residues[i].rtype].canonical) == 0)
         {
             return i;
         }
@@ -361,7 +358,7 @@ static void attach_proton(t_qhop_atom *qatom, const int id)
 }
 
 /* Finds the hydrogens connected to the t_qhop_atoms in qr. */
-static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
+static void scan_for_H(titration_t T, const qhop_db *db)
 {
 
 #ifdef COMPLICATED_SCAN
@@ -399,20 +396,20 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
                 if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1) /* Make sure atomnumber is set! */
                 {
                     /* is it connected to a t_qhop_atom? */
-                    for (i=0; i<qr->nr_qhop_residues; i++)
+                    for (i=0; i<T->nr_qhop_residues; i++)
                     {
-                        if (qr->qhop_residues[i].rtype = rt)
+                        if (T->qhop_residues[i].rtype = rt)
                         {
                             for (tsite = 0;
-                                 tsite<qr->qhop_residues[i].nr_titrating_sites;
+                                 tsite<T->qhop_residues[i].nr_titrating_sites;
                                  tsite++)
                             {
                                 a2 = atom[a%2 + 1];
-                                qa = qr->qhop_residues[i].titrating_sites[tsite];
-                                if (strcmp(qr->qhop_atoms[qa].atomname,
+                                qa = T->qhop_residues[i].titrating_sites[tsite];
+                                if (strcmp(T->qhop_atoms[qa].atomname,
                                            *(mtop->moltype[mt].atoms.atomname[a2])) == 0)
                                 {
-                                    attach_proton(&(qr->qhop_atoms[qa]), a2);
+                                    attach_proton(&(T->qhop_atoms[qa]), a2);
                                     break;
                                 }
                             }
@@ -428,20 +425,20 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
             a2 = atom[2]; /* H */
             a3 = atom[3]; /* H */
 
-            for (i=0; i<qr->nr_qhop_residues; i++)
+            for (i=0; i<T->nr_qhop_residues; i++)
             {
-                if (qr->qhop_residues[i].rtype = rt)
+                if (T->qhop_residues[i].rtype = rt)
                 {
                     for (tsite = 0;
-                         tsite<qr->qhop_residues[i].nr_titrating_sites;
+                         tsite<T->qhop_residues[i].nr_titrating_sites;
                          tsite++)
                     {
-                        qa = qr->qhop_residues[i].titrating_sites[tsite];
-                        if (strcmp(qr->qhop_atoms[qa].atomname,
+                        qa = T->qhop_residues[i].titrating_sites[tsite];
+                        if (strcmp(T->qhop_atoms[qa].atomname,
                                    *(mtop->moltype[mt].atoms.atomname[a1])) == 0)
                         {
-                            attach_proton(&(qr->qhop_atoms[qa]), a2);
-                            attach_proton(&(qr->qhop_atoms[qa]), a3);
+                            attach_proton(&(T->qhop_atoms[qa]), a2);
+                            attach_proton(&(T->qhop_atoms[qa]), a3);
                         }
                     }
                 }
@@ -455,22 +452,22 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
             if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1)
             {
                 /* is it connected to a t_qhop_atom? */
-                for (i=0; i<qr->nr_qhop_residues; i++)
+                for (i=0; i<T->nr_qhop_residues; i++)
                 {
-                    if (qr->qhop_residues[i].rtype = rt)
+                    if (T->qhop_residues[i].rtype = rt)
                     {
                         for (tsite = 0;
-                             tsite<qr->qhop_residues[i].nr_titrating_sites;
+                             tsite<T->qhop_residues[i].nr_titrating_sites;
                              tsite++)
                         {
                             for (a=2; a<=3; a++)
                             {
                                 a2 = atom[a];
-                                qa = qr->qhop_residues[i].titrating_sites[tsite];
-                                if (strcmp(qr->qhop_atoms[qa].atomname,
+                                qa = T->qhop_residues[i].titrating_sites[tsite];
+                                if (strcmp(T->qhop_atoms[qa].atomname,
                                            *(mtop->moltype[mt].atoms.atomname[a2])) == 0)
                                 {
-                                    attach_proton(&(qr->qhop_atoms[qa]), a2);
+                                    attach_proton(&(T->qhop_atoms[qa]), a2);
                                     break;
                                 }
                             }
@@ -489,16 +486,16 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
             if (mtop->moltype[mt].atoms.atom[a1].atomnumber = 1)
             {
                 /* is it connected to a t_qhop_atom? */
-                for (i=0; i<qr->nr_qhop_residues; i++)
+                for (i=0; i<T->nr_qhop_residues; i++)
                 {
-                    if (qr->qhop_residues[i].rtype = rt)
+                    if (T->qhop_residues[i].rtype = rt)
                     {
                         for (tsite = 0;
-                             tsite<qr->qhop_residues[i].nr_titrating_sites;
+                             tsite<T->qhop_residues[i].nr_titrating_sites;
                              tsite++)
                         {
                             a2 = atom[2];
-                            qa = qr->qhop_residues[i].titrating_sites[tsite];
+                            qa = T->qhop_residues[i].titrating_sites[tsite];
                         }
                     }
                 }
@@ -510,7 +507,7 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
                 tsite = is_qhopatom(qr, atom[2]);
                 if (tsite != -1)
                 {
-                    attach_proton(&(qr->qhop_atoms[tsite]), atom[1]);
+                    attach_proton(&(T->qhop_atoms[tsite]), atom[1]);
                     break;
                 }
             }
@@ -531,10 +528,10 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
     t_qhop_atom *qatoms;
     t_qhop_residue *qresidues;
 
-    qatoms = qr->qhop_atoms;
-    qresidues = qr->qhop_residues;
+    qatoms = T->qhop_atoms;
+    qresidues = T->qhop_residues;
 
-    for (qa=0; qa < qr->nr_qhop_atoms; qa++)
+    for (qa=0; qa < T->nr_qhop_atoms; qa++)
     {
         bNext = FALSE;
         r = qatoms[qa].qres_id;
@@ -576,7 +573,7 @@ static void scan_for_H(t_qhoprec *qr, const qhop_db *db)
 static int get_qhop_atoms(FILE *fplog,
                           t_commrec *cr,
                           gmx_mtop_t *mtop,
-                          t_qhoprec *qhoprec,
+                          titration_t T,
                           t_inputrec *ir,
                           qhop_db *qdb){
 
@@ -669,7 +666,7 @@ static int get_qhop_atoms(FILE *fplog,
 
         bMatchRB = FALSE;
         bMatch = FALSE;
-        qhoprec->global_atom_to_qhop_atom[i] = NOTSET;
+        T->global_atom_to_qhop_atom[i] = NOTSET;
 
         for (rb=0; (rb < qdb->rb.nrestypes) && !bMatchRB; rb++)
         {
@@ -711,7 +708,7 @@ static int get_qhop_atoms(FILE *fplog,
                                     q_atoms[q_atoms_nr].protons      = NULL;
                                     q_atoms[q_atoms_nr].nr_acceptors = NOTSET;
                                     q_atoms[q_atoms_nr].acceptors    = NULL;
-                                    qhoprec->global_atom_to_qhop_atom[i]   = q_atoms_nr;
+                                    T->global_atom_to_qhop_atom[i]   = q_atoms_nr;
 
                                     /* Short circuiting makes this conditional valid */
                                     if ((q_atoms_nr==0)
@@ -821,10 +818,10 @@ static int get_qhop_atoms(FILE *fplog,
 
     srenew(q_atoms, q_atoms_nr);     /* size it down, as it is most likely oversized. */
     srenew(q_residue, q_residue_nr); /* size it down, as it is most likely oversized. */
-    qhoprec->qhop_atoms       = q_atoms;
-    qhoprec->qhop_residues    = q_residue;
-    qhoprec->nr_qhop_atoms    = q_atoms_nr;
-    qhoprec->nr_qhop_residues = q_residue_nr;
+    T->qhop_atoms       = q_atoms;
+    T->qhop_residues    = q_residue;
+    T->nr_qhop_atoms    = q_atoms_nr;
+    T->nr_qhop_residues = q_residue_nr;
 
 
     /* Scan the idef for the hydrogens we may have missed. */
@@ -867,18 +864,18 @@ static int get_qhop_atoms(FILE *fplog,
 /* 			  a1 = ilist[i]->iatoms[j+1]; */
 /* 			  a2 = ilist[i]->iatoms[j+2]; */
 /* 			  a3 = ilist[i]->iatoms[j+3]; */
-/* 			  for (k=0; k < qhoprec->nr_qhop_residues; k++) */
+/* 			  for (k=0; k < T->nr_qhop_residues; k++) */
 /* 			    { */
-/* 			      if (qhoprec->qhop_residues[k] == rt) */
+/* 			      if (T->qhop_residues[k] == rt) */
 /* 				{ */
-/* 				  for (a=0; a < qhoprec->qhop_residues[k].nr_titratable_sites; a++) */
+/* 				  for (a=0; a < T->qhop_residues[k].nr_titratable_sites; a++) */
 /* 				    { */
-/* 				      qa = qhoprec->qhop_residues[k].titratable_sites[a]; */
-/* 				      if (strcmp(qr->qhop_atoms[qa], */
+/* 				      qa = T->qhop_residues[k].titratable_sites[a]; */
+/* 				      if (strcmp(T->qhop_atoms[qa], */
 /* 						 *(mtop->moltype[mt].t_atoms.atomname[a1])) == 0) */
 /* 					{ */
-/* 					  attach_proton(&(qhoprec->qhop_atoms[qa]), a2); */
-/* 					  attach_proton(&(qhoprec->qhop_atoms[qa]), a3); */
+/* 					  attach_proton(&(T->qhop_atoms[qa]), a2); */
+/* 					  attach_proton(&(T->qhop_atoms[qa]), a3); */
 /* 					} */
 /* 				    } */
 /* 				} */
@@ -894,17 +891,17 @@ static int get_qhop_atoms(FILE *fplog,
 /* 			      a2 = ilist[i]->iatoms[j+1+((o+1)%2)]; */
 /* 			      if (mtop->moltype[mt].t_atoms.atom[a1].atomnumber = 1) */
 /* 				{ */
-/* 				  for (k=0; k < qhoprec->nr_qhop_residues; k++) */
+/* 				  for (k=0; k < T->nr_qhop_residues; k++) */
 /* 				    { */
-/* 				      if (qhoprec->qhop_residues[k] == rt) */
+/* 				      if (T->qhop_residues[k] == rt) */
 /* 					{ */
-/* 					  for (a=0; a < qhoprec->qhop_residues[k].nr_titratable_sites; a++) */
+/* 					  for (a=0; a < T->qhop_residues[k].nr_titratable_sites; a++) */
 /* 					    { */
-/* 					      qa = qhoprec->qhop_residues[k].titratable_sites[a]; */
-/* 					      if (strcmp(qr->qhop_atoms[qa], */
+/* 					      qa = T->qhop_residues[k].titratable_sites[a]; */
+/* 					      if (strcmp(T->qhop_atoms[qa], */
 /* 							 *(mtop->moltype[mt].t_atoms.atomname[a2])) == 0) */
 /* 						{ */
-/* 						  attach_proton(&(qhoprec->qhop_atoms[qa]), a1); */
+/* 						  attach_proton(&(T->qhop_atoms[qa]), a1); */
 /* 						} */
 /* 					    } */
 /* 					} */
@@ -1017,10 +1014,10 @@ static int qhop_atom_comp(const void *a, const void *b){
 /*   gmx_mtop_atomloop_all_t aloop; */
 /*   t_atom    *atom; */
 
-/*   for (r=0; r<qhoprec->nr_qhop_residues; r++) */
-/*     if (resnr = qhoprec->qhop_residues[r].res_nr) */
+/*   for (r=0; r<T->nr_qhop_residues; r++) */
+/*     if (resnr = T->qhop_residues[r].res_nr) */
 /*       { */
-/* 	res = &(qhoprec->qhop_residues[r]); */
+/* 	res = &(T->qhop_residues[r]); */
 /* 	break; */
 /*       } */
   
@@ -1127,20 +1124,22 @@ static void qhop_connect_rtp_library(FILE *fplog,qhop_db *db)
     qhop_db_map_subres_bondeds(db); 
 }
 
-int init_qhop(FILE *fplog,const char *ff,
-              t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
-              const t_forcerec *fr, matrix box, t_mdatoms *md)
+void init_titration(FILE *fplog,const char *ff,
+                    t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
+                    t_forcerec *fr, matrix box, t_mdatoms *md)
 {
-
     int 
         nr_qhop_atoms, nr_qhop_residues, i, j, target, ft, nb;
-    t_qhoprec
-        *qhoprec; 
     t_qhop_residue
         *qres;
     qhop_db *db;
-  
-    qhoprec = NULL;
+    titration_t T;
+    
+    fprintf(stderr, "Titration MD computation requested. May the force be with you....\n");
+
+    snew(T,1);
+    fr->titration = T;
+    
     nr_qhop_atoms    = 0;
     nr_qhop_residues = 0;
 
@@ -1148,16 +1147,14 @@ int init_qhop(FILE *fplog,const char *ff,
     {
         gmx_fatal(FARGS,"Can not read qhop database information");
     }
+    
+    snew(T->global_atom_to_qhop_atom, mtop->natoms);
+    snew(T->f, mtop->natoms);
 
-    qhoprec = fr->qhoprec;
+    nr_qhop_atoms = get_qhop_atoms(fplog,cr, mtop, T ,ir, db);
 
-    snew(qhoprec->global_atom_to_qhop_atom, mtop->natoms);
-    snew(qhoprec->f, mtop->natoms);
-
-    nr_qhop_atoms = get_qhop_atoms(fplog,cr, mtop, qhoprec ,ir, db);
-
-    /* Find hydrogens and fill out the qr->qhop_atoms[].protons */
-    scan_for_H(qhoprec, db);
+    /* Find hydrogens and fill out the T->qhop_atoms[].protons */
+    scan_for_H(T, db);
 
     db->constrain = 0;
     if (NULL != fplog)
@@ -1169,14 +1166,13 @@ int init_qhop(FILE *fplog,const char *ff,
     if (NULL != fplog)
         fprintf(fplog,"Inert hydrogen for titration calculations has type %d\n",db->inertH);
 
-    qhoprec->hop = NULL;
-    qhoprec->db = db;
-
-    return (nr_qhop_atoms);
-} /* init_hop */
+    T->hop = NULL;
+    T->db = db;
+} /* init_titration */
 
 
-static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x, 
+static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, 
+                           titration_t T,rvec *x, 
                            t_pbc *pbc, t_mdatoms *md, qhop_H_exist *Hmap)
 {
     /* using the qhop nblists with i particles the donor atoms and
@@ -1188,15 +1184,13 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
     */
     int         i,j,jmax=100,k,acc,don;
     t_nblist    qhoplist;
-    t_qhoprec   *qhoprec;
     t_qhop_atom donor,acceptor;
     rvec        dx,veca,vecb,vecc;
     int         nr_hop=0,closest;
     gmx_bool    found_proton;
     real        ang, ang2,r_close;
     
-    qhoprec  = fr->qhoprec;
-    qhoplist = fr->qhopnblist;
+    qhoplist = fr->titration_nblist;
     
     for(i=0; i < qhoplist.nri; i++)
     {
@@ -1207,9 +1201,9 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
             continue;
         }
 
-        don      = qhoprec->global_atom_to_qhop_atom[qhoplist.iinr[i]];
-        range_check(don,0,qhoprec->nr_qhop_atoms);
-        donor    = qhoprec->qhop_atoms[don];
+        don      = T->global_atom_to_qhop_atom[qhoplist.iinr[i]];
+        range_check(don,0,T->nr_qhop_atoms);
+        donor    = T->qhop_atoms[don];
 
         for(j = qhoplist.jindex[i];
             j < qhoplist.jindex[i+1];
@@ -1220,9 +1214,9 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                 continue;
             }
 
-            acc =  qhoprec->global_atom_to_qhop_atom[qhoplist.jjnr[j]];
-            range_check(acc,0,qhoprec->nr_qhop_atoms);
-            acceptor = qhoprec->qhop_atoms[acc];
+            acc =  T->global_atom_to_qhop_atom[qhoplist.jjnr[j]];
+            range_check(acc,0,T->nr_qhop_atoms);
+            acceptor = T->qhop_atoms[acc];
 
             /* check whether the acceptor can take one of the donor's protons
              */
@@ -1273,19 +1267,19 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
                     {
                         /* the geometric conditions are right for a hop to take place
                          */
-                        if (nr_hop >= qhoprec->max_nr_hop)
+                        if (nr_hop >= T->max_nr_hop)
                         {
-                            qhoprec->max_nr_hop++;
-                            srenew(qhoprec->hop,qhoprec->max_nr_hop);
+                            T->max_nr_hop++;
+                            srenew(T->hop,T->max_nr_hop);
                         }
-                        memset(&(qhoprec->hop[nr_hop]),0,sizeof(qhoprec->hop[0]));
-                        qhoprec->hop[nr_hop].donor_id    = don;
-                        qhoprec->hop[nr_hop].acceptor_id = acc;
-                        qhoprec->hop[nr_hop].proton_id   = k;
-                        qhoprec->hop[nr_hop].rda         = norm(vecc);
-                        qhoprec->hop[nr_hop].ang         = ang;
-                        qhoprec->hop[nr_hop].prob        = 0;
-                        qhoprec->hop[nr_hop].bDonated    = FALSE;
+                        memset(&(T->hop[nr_hop]),0,sizeof(T->hop[0]));
+                        T->hop[nr_hop].donor_id    = don;
+                        T->hop[nr_hop].acceptor_id = acc;
+                        T->hop[nr_hop].proton_id   = k;
+                        T->hop[nr_hop].rda         = norm(vecc);
+                        T->hop[nr_hop].ang         = ang;
+                        T->hop[nr_hop].prob        = 0;
+                        T->hop[nr_hop].bDonated    = FALSE;
                         nr_hop++;
                     }
                 }
@@ -1293,7 +1287,7 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr, rvec *x,
         }
     }
 
-    qhoprec->nr_hop = nr_hop;
+    T->nr_hop = nr_hop;
 
 } /* find_acceptors */
 
@@ -1430,7 +1424,7 @@ static gmx_bool is_acceptor(qhop_db *db, t_qhop_residue *qr, t_qhop_atom *qa, in
  * if DA==eQDON, makes a deprotonation and,
  * if DA==eQACC, a protonation.
  * Returns the subres being the product. */
-static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
+static int qhop_titrate(qhop_db *db, titration_t T,
                         const t_inputrec *ir,
                         const t_commrec *cr, gmx_localtop_t *top,
                         gmx_constr_t constr,
@@ -1452,7 +1446,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
   
     bDonor = (DA & eQDON);
 
-    qres = &(qr->qhop_residues[qatom->qres_id]);
+    qres = &(T->qhop_residues[qatom->qres_id]);
     rt = qres->rtype;
     r = qres->subres;
 
@@ -1533,7 +1527,7 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
                 }	    
                 else
                 {
-                    qhop_constrain(qres, qr, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
+                    qhop_constrain(qres, T, db, top, md, qatom->protons[qatom->nr_protons-1], constr, ir, cr);
                 }
             }
 
@@ -1548,14 +1542,14 @@ static int qhop_titrate(qhop_db *db, t_qhoprec *qr,
 
     qhop_swap_vdws(qres, prod_res, md, db);
 
-    qhop_swap_m_and_q(qres, prod_res, md, db, qr);
+    qhop_swap_m_and_q(qres, prod_res, md, db, T);
 
 
     return i;
 }
 
 /* Wrappers for qhop_titrate() */
-void qhop_protonate(qhop_db *db, t_qhoprec *qr,
+void qhop_protonate(qhop_db *db, titration_t T,
                     const t_inputrec *ir,
                     const t_commrec *cr, gmx_localtop_t *top,
                     gmx_constr_t constr,
@@ -1567,7 +1561,7 @@ void qhop_protonate(qhop_db *db, t_qhoprec *qr,
     gmx_bool isacc;
     t_qhop_atom *qa;
 
-    prod = qhop_titrate(db, qr, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQACC);
+    prod = qhop_titrate(db, T, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQACC);
   
     if (!bRealHop)
     {
@@ -1577,17 +1571,17 @@ void qhop_protonate(qhop_db *db, t_qhoprec *qr,
     /* Since it just got a proton it must become a donor. */
 
     /* Also make tautomeric sites donors */
-    nt = get_tautomeric_sites(db, qr, qr->global_atom_to_qhop_atom[qatom->atom_id], &t, eQDON);
+    nt = get_tautomeric_sites(db, T, T->global_atom_to_qhop_atom[qatom->atom_id], &t, eQDON);
 
     for (i=0; i<nt; i++)
     {
-        qa = &(qr->qhop_atoms[t[i]]);
+        qa = &(T->qhop_atoms[t[i]]);
 
         md->bqhopdonor[qa->atom_id] = TRUE;
         qa->state |= eQDON;
 
         /* Is is still an acceptor? */
-        isacc =  is_acceptor(db, qr->qhop_residues, qa, prod);
+        isacc =  is_acceptor(db, T->qhop_residues, qa, prod);
         md->bqhopacceptor[qa->atom_id] = isacc;
 
         if (isacc)
@@ -1601,7 +1595,7 @@ void qhop_protonate(qhop_db *db, t_qhoprec *qr,
     }
 }
 
-void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
+void qhop_deprotonate(qhop_db *db, titration_t T,
                       const t_inputrec *ir,
                       const t_commrec *cr, gmx_localtop_t *top,
                       gmx_constr_t constr,
@@ -1613,7 +1607,7 @@ void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
     gmx_bool isdon;
     t_qhop_atom *qa;
 
-    prod = qhop_titrate(db, qr, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQDON);
+    prod = qhop_titrate(db, T, ir, cr, top, constr, qatom, md, bWater, bSwapBondeds, eQDON);
 
     if (!bRealHop)
     {
@@ -1623,17 +1617,17 @@ void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
     /* Since it just lost a proton it must become an acceptor. */
 
     /* Also make tautomeric sites acceptors */
-    nt = get_tautomeric_sites(db, qr, qr->global_atom_to_qhop_atom[qatom->atom_id], &t, eQACC);
+    nt = get_tautomeric_sites(db, T, T->global_atom_to_qhop_atom[qatom->atom_id], &t, eQACC);
 
     for (i=0; i<nt; i++)
     {
-        qa = &(qr->qhop_atoms[t[i]]);
+        qa = &(T->qhop_atoms[t[i]]);
 
         md->bqhopacceptor[qa->atom_id] = TRUE;
         qa->state |= eQACC;
 
         /* Is it still a donor? */
-        isdon = is_donor(db, qr->qhop_residues, qa, prod);
+        isdon = is_donor(db, T->qhop_residues, qa, prod);
         /* md->bqhopdonor[qatom->atom_id] = isdon; 
            Changed to below DvdS 2011-03-05 */
         md->bqhopdonor[qa->atom_id] = isdon;
@@ -1652,7 +1646,7 @@ void qhop_deprotonate(qhop_db *db, t_qhoprec *qr,
 
 
 static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, 
-                                   t_qhoprec *qhoprec, 
+                                   titration_t T, 
                                    t_mdatoms *md, t_hop *hop, rvec *x,
                                    gmx_bool bUndo,gmx_mtop_t *mtop,
                                    gmx_localtop_t *top, gmx_constr_t constr,
@@ -1697,10 +1691,10 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
          * See if we can avoid this hardcoding. */
         out_of_plane_proton = 2;
 
-    donor_atom    = &qhoprec->qhop_atoms[hop->primary_d];/* donor_id]; */
-    acceptor_atom = &qhoprec->qhop_atoms[hop->primary_a];/* acceptor_id]; */
-    donor         = &qhoprec->qhop_residues[donor_atom->qres_id];
-    acceptor      = &qhoprec->qhop_residues[acceptor_atom->qres_id];
+    donor_atom    = &T->qhop_atoms[hop->primary_d];/* donor_id]; */
+    acceptor_atom = &T->qhop_atoms[hop->primary_a];/* acceptor_id]; */
+    donor         = &T->qhop_residues[donor_atom->qres_id];
+    acceptor      = &T->qhop_residues[acceptor_atom->qres_id];
 
     bAccWater = db->rb.qrt[acceptor->rtype].bWater;
     bDonWater = db->rb.qrt[donor->rtype].bWater;
@@ -1810,13 +1804,13 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     {
         if (bUndo)
         {
-            qhop_protonate  (db, qhoprec, ir, cr, top, constr, donor_atom,    md, bDonWater, FALSE, FALSE);
-            qhop_deprotonate(db, qhoprec, ir, cr, top, constr, acceptor_atom, md, bAccWater, FALSE, FALSE);
+            qhop_protonate  (db, T, ir, cr, top, constr, donor_atom,    md, bDonWater, FALSE, FALSE);
+            qhop_deprotonate(db, T, ir, cr, top, constr, acceptor_atom, md, bAccWater, FALSE, FALSE);
         }
         else
         {
-            qhop_protonate  (db, qhoprec, ir, cr, top, constr, acceptor_atom, md, bAccWater, FALSE, FALSE);
-            qhop_deprotonate(db, qhoprec, ir, cr, top, constr, donor_atom,    md, bDonWater, FALSE, FALSE);
+            qhop_protonate  (db, T, ir, cr, top, constr, acceptor_atom, md, bAccWater, FALSE, FALSE);
+            qhop_deprotonate(db, T, ir, cr, top, constr, donor_atom,    md, bDonWater, FALSE, FALSE);
         }
     }
   
@@ -1848,7 +1842,7 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
             /* We can safely assume that all protons on the
              * acceptor are equal with respect to bonded params,
              * so we just pick the first one. */
-            p = qhop_get_proton_bond_params(db, qhoprec, acceptor_atom, top, /*   \                  */
+            p = qhop_get_proton_bond_params(db, T, acceptor_atom, top, /*   \                  */
                                             acceptor_atom->protons[ap], cr)  /*   _ position in ilib */
                 + top->idef.ntypes - db->rb.ni;                                /*   + offset           */
 
@@ -1868,17 +1862,20 @@ static void evaluate_energy(FILE *fplog,
                             gmx_localtop_t *top,gmx_mtop_t *mtop, 
                             gmx_groups_t *groups,t_state *state,
                             t_mdatoms *md,t_fcdata *fcd,
-                            t_graph *graph,
-                            t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+                            t_graph *graph, t_forcerec *fr, 
+                            gmx_vsite_t *vsite,rvec mu_tot,
                             gmx_large_int_t step,
                             gmx_enerdata_t *enerd)
 {
     real t,etot,terminate;
     tensor force_vir;
     int forceflags;
-
+    titration_t T;
+    
+    T = fr->titration;
+    
     forceflags = GMX_FORCE_STATECHANGED;
-    if (!fr->qhoprec->bFreshNlists)
+    if (!T->bFreshNlists)
     {
         forceflags |= GMX_FORCE_NS;
     }
@@ -1894,12 +1891,12 @@ static void evaluate_energy(FILE *fplog,
   
     do_force(fplog,cr,ir,step,nrnb,wcycle,top,mtop,groups,
              state->box,state->x,&state->hist,
-             fr->qhoprec->f,force_vir,md,enerd,fcd,
+             T->f,force_vir,md,enerd,fcd,
              state->lambda,graph,
              fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,FALSE,
              GMX_FORCE_VIRIAL|GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
 
-    fr->qhoprec->bFreshNlists = TRUE;
+    T->bFreshNlists = TRUE;
 
     /* Communicate stuff when parallel */
 #ifdef GMX_MPI
@@ -1916,23 +1913,23 @@ static void evaluate_energy(FILE *fplog,
 #endif
 } /* evaluate_energy */
 
-static void print_qhop_info(t_qhoprec *qhoprec){
+static void print_qhop_info(titration_t T){
     int
         i,j,k;
     /* print qhop atoms */
-    for(i=0; i < qhoprec->nr_qhop_atoms; i++)
+    for(i=0; i < T->nr_qhop_atoms; i++)
     {
         fprintf(stderr,"qhop atom [%d], atom_id [%d], res [%d] bDonor = %d, %d protons\n",i,
-                qhoprec->qhop_atoms[i].atom_id,
-                qhoprec->qhop_atoms[i].res_id,
-                /*qhoprec->qhop_atoms[i].bdonor*/0,
-                qhoprec->qhop_atoms[i].nr_protons);
+                T->qhop_atoms[i].atom_id,
+                T->qhop_atoms[i].res_id,
+                /*T->qhop_atoms[i].bdonor*/0,
+                T->qhop_atoms[i].nr_protons);
     }
-    for(i=0; i < qhoprec->nr_qhop_residues; i++)
+    for(i=0; i < T->nr_qhop_residues; i++)
     {
-        for(k=0; k < qhoprec->qhop_residues[i].nr_atoms; k++)
+        for(k=0; k < T->qhop_residues[i].nr_atoms; k++)
         {
-            fprintf(stderr,"%3d ",qhoprec->qhop_residues[i].atoms[k]);
+            fprintf(stderr,"%3d ",T->qhop_residues[i].atoms[k]);
             fprintf(stderr,"\n");
         }
     }
@@ -1967,8 +1964,10 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
     rvec
         vec;
     t_qhop_residue res;
-
-    db = fr->qhoprec->db;
+    titration_t T;
+    
+    T = fr->titration;                        
+    db = T->db;
 
     Ecoul = 0.0;
     Evdw  = 0.0;
@@ -2389,8 +2388,8 @@ static void get_hop_prob(FILE *fplog,
                          gmx_constr_t constr,
                          gmx_groups_t *groups,t_state *state,
                          t_mdatoms *md,t_fcdata *fcd,
-                         t_graph *graph,
-                         t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+                         t_graph *graph, t_forcerec *fr, 
+                         gmx_vsite_t *vsite,rvec mu_tot,
                          t_hop *hop, t_pbc *pbc,gmx_large_int_t step, qhop_db *db,
                          gmx_bool *bHaveEbefore,
                          gmx_enerdata_t *Ebefore,gmx_enerdata_t *Eafter)
@@ -2403,24 +2402,23 @@ static void get_hop_prob(FILE *fplog,
         Edelta, Edelta_coul,
         r_TST, r_SE, r_log;
     qhop_parameters *p;
-    t_qhoprec *qr;
+    titration_t T;
     
-    /* Short cut */
-    qr = fr->qhoprec;
+    T = fr->titration;
     
     /* Is this the primary titrating site, or do we need swapping? */
-    hop->primary_d = qhop_get_primary(qr,
-                                      &(qr->qhop_residues[(qr->qhop_atoms[hop->donor_id].qres_id)]),
-                                      &(qr->qhop_atoms[hop->donor_id]),
-                                      qr->qhop_atoms[hop->donor_id].atomname,
+    hop->primary_d = qhop_get_primary(T,
+                                      &(T->qhop_residues[(T->qhop_atoms[hop->donor_id].qres_id)]),
+                                      &(T->qhop_atoms[hop->donor_id]),
+                                      T->qhop_atoms[hop->donor_id].atomname,
                                       eQDON);
-    hop->primary_a = qhop_get_primary(qr,
-                                      &(qr->qhop_residues[(qr->qhop_atoms[hop->acceptor_id].qres_id)]),
-                                      &(qr->qhop_atoms[hop->acceptor_id]),
-                                      qr->qhop_atoms[hop->acceptor_id].atomname,
+    hop->primary_a = qhop_get_primary(T,
+                                      &(T->qhop_residues[(T->qhop_atoms[hop->acceptor_id].qres_id)]),
+                                      &(T->qhop_atoms[hop->acceptor_id]),
+                                      T->qhop_atoms[hop->acceptor_id].atomname,
                                       eQACC);
 
-    p = get_qhop_params(qr, hop, db);
+    p = get_qhop_params(T, hop, db);
 
     if (!(*bHaveEbefore))
     {
@@ -2431,25 +2429,25 @@ static void get_hop_prob(FILE *fplog,
         *bHaveEbefore = TRUE;
     }
     /* This needs to be evaluated for each possible hop */
-    get_self_energy(cr,qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id],
-                    qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id],
-                    md, top, state->x, pbc, fr, 
+    get_self_energy(cr,T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
+                    T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
+                    md, top, state->x, pbc, fr,
                     &Ebefore_self_coul,&Ebefore_self_vdw);
     Ebefore_mm = (Ebefore->term[F_EPOT] - 
                   (Ebefore->term[F_COUL14] + Ebefore->term[F_LJ14]));
     Ebefore_self = (Ebefore_self_coul + Ebefore_self_vdw); 
 
-    qhop_tautomer_swap(qr, state->x, NULL, hop->primary_d, hop->donor_id);
-    qhop_tautomer_swap(qr, state->x, NULL, hop->primary_a, hop->acceptor_id);
+    qhop_tautomer_swap(T, state->x, NULL, hop->primary_d, hop->donor_id);
+    qhop_tautomer_swap(T, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-    if (change_protonation(cr, ir, qr, md, hop, state->x, 
+    if (change_protonation(cr, ir, T, md, hop, state->x, 
                            FALSE, mtop, top, constr, pbc, db))
     {
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
                         fcd,graph,fr,vsite,mu_tot,step, Eafter);
         dump_enerd(debug,"ITMD After ",Eafter);
-        get_self_energy(cr, qr->qhop_residues[qr->qhop_atoms[hop->donor_id].qres_id],
-                        qr->qhop_residues[qr->qhop_atoms[hop->acceptor_id].qres_id],
+        get_self_energy(cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
+                        T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
                         md,top,state->x,pbc,fr,&Eafter_self_coul,&Eafter_self_vdw);
         Eafter_mm = (Eafter->term[F_EPOT] - 
                      (Eafter->term[F_COUL14] + Eafter->term[F_LJ14]));
@@ -2510,10 +2508,10 @@ static void get_hop_prob(FILE *fplog,
         }
 
         /* now undo the move */
-        qhop_tautomer_swap(qr, state->x, NULL, hop->primary_d, hop->donor_id);
-        qhop_tautomer_swap(qr, state->x, NULL, hop->primary_a, hop->acceptor_id);
+        qhop_tautomer_swap(T, state->x, NULL, hop->primary_d, hop->donor_id);
+        qhop_tautomer_swap(T, state->x, NULL, hop->primary_a, hop->acceptor_id);
 
-        if (!change_protonation(cr, ir, qr, md, hop, state->x, 
+        if (!change_protonation(cr, ir, T, md, hop, state->x, 
                                 TRUE, mtop, top, constr, pbc, db))
         {
             gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
@@ -2527,7 +2525,7 @@ static void get_hop_prob(FILE *fplog,
     sfree(p);
 }
 	    
-static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
+static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, titration_t T,
                        qhop_db *db,
                        t_mdatoms *md, t_hop *hop, rvec *x, rvec *v,
                        gmx_mtop_t *mtop, gmx_localtop_t *top, gmx_constr_t constr, 
@@ -2551,25 +2549,25 @@ static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
     t_qhop_atom *donor_atom, *acceptor_atom;
     t_qhop_residue *qra, *qrd;
 
-    qhop_tautomer_swap(qhoprec, x, v, hop->primary_d, hop->donor_id);
-    qhop_tautomer_swap(qhoprec, x, v, hop->primary_a, hop->acceptor_id);
+    qhop_tautomer_swap(T, x, v, hop->primary_d, hop->donor_id);
+    qhop_tautomer_swap(T, x, v, hop->primary_a, hop->acceptor_id);
 
-    qra = &(qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->primary_a/* acceptor_id */].qres_id]);
-    qrd = &(qhoprec->qhop_residues[qhoprec->qhop_atoms[hop->primary_d/* donor_id */].qres_id]);
+    qra = &(T->qhop_residues[T->qhop_atoms[hop->primary_a/* acceptor_id */].qres_id]);
+    qrd = &(T->qhop_residues[T->qhop_atoms[hop->primary_d/* donor_id */].qres_id]);
 
     bAccWater = db->rb.qrt[qra->rtype].bWater;
     bDonWater = db->rb.qrt[qrd->rtype].bWater;
 
-/*   if(qhoprec->qhop_atoms[hop->donor_id].bWater &&  */
-/*      qhoprec->qhop_atoms[hop->acceptor_id].bWater ){ */
+/*   if(T->qhop_atoms[hop->donor_id].bWater &&  */
+/*      T->qhop_atoms[hop->acceptor_id].bWater ){ */
 
-/*     if(qhoprec->qhop_atoms[hop->donor_id].bdonor && */
-/*        !qhoprec->qhop_atoms[hop->acceptor_id].bdonor ){ */
+/*     if(T->qhop_atoms[hop->donor_id].bdonor && */
+/*        !T->qhop_atoms[hop->acceptor_id].bdonor ){ */
 /*           fprintf(stderr,"swappen maar!!!\n");   */
-/* 	  //      b = qhoprec->qhop_atoms[hop->donor_id].bdonor; */
-/* 	  //    qhoprec->qhop_atoms[hop->donor_id].bdonor    =  */
-/* 	  //	qhoprec->qhop_atoms[hop->acceptor_id].bdonor; */
-/* 	  // qhoprec->qhop_atoms[hop->acceptor_id].bdonor = b; */
+/* 	  //      b = T->qhop_atoms[hop->donor_id].bdonor; */
+/* 	  //    T->qhop_atoms[hop->donor_id].bdonor    =  */
+/* 	  //	T->qhop_atoms[hop->acceptor_id].bdonor; */
+/* 	  // T->qhop_atoms[hop->acceptor_id].bdonor = b; */
 /* 	  bOk = swap_waters(cr, qhoprec, md, hop, x,mtop); */
 /*     } */
 /*     else bOk=FALSE; */
@@ -2579,8 +2577,8 @@ static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
 /* 			     x,FALSE,mtop); */
 /*   } */
 
-    donor_atom    = &(qhoprec->qhop_atoms[hop->primary_d/* donor_id */]);
-    acceptor_atom = &(qhoprec->qhop_atoms[hop->primary_a/* acceptor_id */]);
+    donor_atom    = &(T->qhop_atoms[hop->primary_d/* donor_id */]);
+    acceptor_atom = &(T->qhop_atoms[hop->primary_a/* acceptor_id */]);
 
     if (bDonWater)
     {
@@ -2637,8 +2635,8 @@ static gmx_bool do_hop(t_commrec *cr, const t_inputrec *ir, t_qhoprec *qhoprec,
             copy_rvec(hop->xnew, x[acceptor_atom->protons[acceptor_atom->nr_protons-1]]);
         }
 
-        qhop_deprotonate(db, qhoprec, ir, cr, top, constr, donor_atom, md, bDonWater, TRUE, TRUE);
-        qhop_protonate  (db, qhoprec, ir, cr, top, constr, acceptor_atom, md, bAccWater, TRUE, TRUE);
+        qhop_deprotonate(db, T, ir, cr, top, constr, donor_atom, md, bDonWater, TRUE, TRUE);
+        qhop_protonate  (db, T, ir, cr, top, constr, acceptor_atom, md, bAccWater, TRUE, TRUE);
     }
   
     bOk = TRUE;
@@ -2785,7 +2783,7 @@ static gmx_bool scale_velocities(FILE *fplog,
                                  gmx_wallcycle_t wcycle,  gmx_localtop_t *top,
                                  gmx_mtop_t *mtop, gmx_groups_t *groups,
                                  t_state *state,  t_mdatoms *md, 
-                                 t_qhoprec *qhoprec,gmx_large_int_t step,
+                                 titration_t T,gmx_large_int_t step,
                                  gmx_constr_t constr,t_pbc *pbc,  
                                  t_hop *hop,gmx_ekindata_t *ekindata,
                                  real veta,real vetanew)
@@ -2812,8 +2810,8 @@ static gmx_bool scale_velocities(FILE *fplog,
      */
     bConstrain = (constr != NULL);
 
-    donor_atom    = qhoprec->qhop_atoms[hop->donor_id].atom_id;
-    acceptor_atom = qhoprec->qhop_atoms[hop->acceptor_id].atom_id;
+    donor_atom    = T->qhop_atoms[hop->donor_id].atom_id;
+    acceptor_atom = T->qhop_atoms[hop->acceptor_id].atom_id;
 
     ekin_before = check_ekin(state->v,md);
     ekin_old = ekin_before;
@@ -2879,7 +2877,7 @@ static int hopcomp(const void *a,const void *b)
 /**
  * Changes the order of the hops
  */
-static void scramble_hops(t_qhoprec *qr, int mode)      ///< etQhopMode????
+static void scramble_hops(titration_t T, int mode)      ///< etQhopMode????
 {
     int   i,r;
     t_hop tmp_hop;
@@ -2892,18 +2890,18 @@ static void scramble_hops(t_qhoprec *qr, int mode)      ///< etQhopMode????
 
     case eTitrationModeRandlist:
         /* Shuffle the hops! */
-        for (i=0; i<qr->nr_hop-1; i++)
+        for (i=0; i<T->nr_hop-1; i++)
         {
-            r = i+gmx_rng_uniform_uint32(qr->rng) % (qr->nr_hop - i);
-            tmp_hop = qr->hop[i];
-            qr->hop[i] = qr->hop[r];
-            qr->hop[r] = tmp_hop;
+            r = i+gmx_rng_uniform_uint32(T->rng) % (T->nr_hop - i);
+            tmp_hop = T->hop[i];
+            T->hop[i] = T->hop[r];
+            T->hop[r] = tmp_hop;
         }
         break;
 
     case eTitrationModeList:
         /* Sort according to probability */
-        qsort(qr->hop,qr->nr_hop,sizeof(qr->hop[0]),hopcomp);
+        qsort(T->hop,T->nr_hop,sizeof(T->hop[0]),hopcomp);
         break;
 
     default:
@@ -2911,26 +2909,27 @@ static void scramble_hops(t_qhoprec *qr, int mode)      ///< etQhopMode????
     }
 }
 
-void do_qhop(FILE *fplog,
-             t_commrec *cr,
-             t_inputrec *ir,
-             t_nrnb *nrnb,
-             gmx_wallcycle_t wcycle, 
-             gmx_localtop_t *top,
-             gmx_mtop_t *mtop,
-             gmx_groups_t *groups,
-             t_state *state,
-             t_mdatoms *md,
-             t_fcdata *fcd,
-             t_graph *graph,
-             t_forcerec *fr,
-             gmx_vsite_t *vsite,
-             rvec mu_tot,
-             gmx_bool bBornRadii,
-             real T,
-             gmx_large_int_t step,
-             gmx_ekindata_t *ekindata,
-             tensor force_vir)
+void do_titration(FILE *fplog,
+                  t_commrec *cr,
+                  t_inputrec *ir,
+                  t_nrnb *nrnb,
+                  gmx_wallcycle_t wcycle, 
+                  gmx_localtop_t *top,
+                  gmx_mtop_t *mtop,
+                  gmx_groups_t *groups,
+                  t_state *state,
+                  t_mdatoms *md,
+                  t_fcdata *fcd,
+                  t_graph *graph,
+                  t_forcerec *fr,
+                  gmx_constr_t constr,
+                  gmx_vsite_t *vsite,
+                  rvec mu_tot,
+                  gmx_bool bBornRadii,
+                  real Temperature,
+                  gmx_large_int_t step,
+                  gmx_ekindata_t *ekindata,
+                  tensor force_vir)
 {
     char
         stepstr[STEPSTRSIZE];
@@ -2943,20 +2942,17 @@ void do_qhop(FILE *fplog,
     int 
         start_seed=0;
     t_pbc pbc;
-    t_qhoprec
-        *qr;
     qhop_db
         *db;
-    gmx_constr_t constr;
     gmx_bool bHaveEbefore;
     gmx_enerdata_t *Ebefore,*Eafter;
     real
         veta, vetanew;
-        
-    qr = fr->qhoprec;
-    db = qr->db;
+    titration_t T;
+    
+    T = fr->titration;
+    db = T->db;
 
-    constr = qr->constr;
     set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL, FALSE, state->box);
     
     snew(Ebefore,1);
@@ -2966,10 +2962,10 @@ void do_qhop(FILE *fplog,
 
     /* We need to regenerate the hop nlists only when needed. 
        Doesn't work yet though. */
-    qr->bFreshNlists = FALSE; 
-    qr->bHaveEbefore = FALSE;
+    T->bFreshNlists = FALSE; 
+    T->bHaveEbefore = FALSE;
 
-    if(qr->rng == NULL)
+    if(T->rng == NULL)
     {
         if(MASTER(cr))
         {
@@ -2981,64 +2977,64 @@ void do_qhop(FILE *fplog,
             MPI_Bcast(&start_seed, 1, MPI_INT, 0, MPI_COMM_WORLD);
         }
 #endif
-        qr->rng     = gmx_rng_init(start_seed);
-        qr->rng_int = gmx_rng_init(start_seed);
+        T->rng     = gmx_rng_init(start_seed);
+        T->rng_int = gmx_rng_init(start_seed);
     } 
 
-    find_acceptors(fplog,cr, fr, state->x, &pbc, md, &(db->H_map));
+    find_acceptors(fplog,cr, fr, T, state->x, &pbc, md, &(db->H_map));
 
-    if(qr->nr_hop > 0)
+    if(T->nr_hop > 0)
     {
         bHaveEbefore = FALSE;
         if (ir->titration_mode == eTitrationModeList) 
         {
             /* For this Q-hop style mode we have to compute all probabilities 
                first. That could mean unnecessary work! */
-            for(i=0; i<qr->nr_hop; i++)
+            for(i=0; i<T->nr_hop; i++)
             {
-                qr->hop[i].T = T;
+                T->hop[i].T = Temperature;
                 get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                              fcd,graph,fr,vsite,mu_tot,
-                             &(qr->hop[i]),&pbc,step, db,
+                             &(T->hop[i]),&pbc,step, db,
                              &bHaveEbefore,Ebefore,Eafter);
             }
         }
-        scramble_hops(qr, ir->titration_mode);
+        scramble_hops(T, ir->titration_mode);
         
-        for(i=0; (i <qr->nr_hop); i++)
+        for(i=0; (i <T->nr_hop); i++)
         {
-            if (!qr->hop[i].bDonated)
+            if (!T->hop[i].bDonated)
             {
                 if (ir->titration_mode != eTitrationModeList) 
                 {
-                    qr->hop[i].T = T;
+                    T->hop[i].T = Temperature;
                     get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                                  fcd,graph,fr,vsite,mu_tot,
-                                 &(qr->hop[i]),&pbc,step, db,
+                                 &(T->hop[i]),&pbc,step, db,
                                  &bHaveEbefore,Ebefore,Eafter);
                 }
             
-                rnr = gmx_rng_uniform_real(qr->rng); 
+                rnr = gmx_rng_uniform_real(T->rng); 
                 if (NULL != debug)
                 {
                     /* some printing to the log file */
                     fprintf(debug,
                             "\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
-                            qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
-                            qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].ang,
-                            qr->hop[i].El, qr->hop[i].Er,
-                            qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
+                            T->qhop_atoms[T->hop[i].donor_id].res_id,
+                            T->qhop_atoms[T->hop[i].acceptor_id].res_id,
+                            T->hop[i].E12, T->hop[i].DE_MM, T->hop[i].Eb,
+                            T->hop[i].hbo, T->hop[i].rda, T->hop[i].ang,
+                            T->hop[i].El, T->hop[i].Er,
+                            T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
                 }
  
                 /* Attempt hop */
-                if(qr->hop[i].prob > rnr)
+                if(T->hop[i].prob > rnr)
                 {
                     /* hoppenmaar! */
       
                     /* Move the actual hopping to update() */
-                    bHop = do_hop(cr,ir,qr,db,md,&(qr->hop[i]), 
+                    bHop = do_hop(cr,ir,T,db,md,&(T->hop[i]), 
                                   state->x,state->v,mtop,top,constr,&pbc);
 		  
                     if (bHop)
@@ -3046,22 +3042,22 @@ void do_qhop(FILE *fplog,
                         veta = 0;
                         vetanew = 0;
                         scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
-                                         state,md,fr->qhoprec,step,
+                                         state,md,T,step,
                                          (db->constrain > 0) ? constr : NULL,
-                                         &pbc,&(qr->hop[i]),ekindata,veta,vetanew);
+                                         &pbc,&(T->hop[i]),ekindata,veta,vetanew);
                     }
                     if (ir->titration_mode != eTitrationModeOne)
                     {
                         /* Zap all hops whose reactants just was consumed. */
-                        for (j = i+1; j < qr->nr_hop; j++)
+                        for (j = i+1; j < T->nr_hop; j++)
                         {
-                            if (qr->hop[j].donor_id    == qr->hop[i].donor_id    ||
-                                qr->hop[j].acceptor_id == qr->hop[i].acceptor_id ||
-                                qr->hop[j].donor_id    == qr->hop[i].acceptor_id ||
-                                qr->hop[j].acceptor_id == qr->hop[i].donor_id)
+                            if (T->hop[j].donor_id    == T->hop[i].donor_id    ||
+                                T->hop[j].acceptor_id == T->hop[i].acceptor_id ||
+                                T->hop[j].donor_id    == T->hop[i].acceptor_id ||
+                                T->hop[j].acceptor_id == T->hop[i].donor_id)
                             {
-                                qr->hop[j].regime = etQhopNONE;
-                                qr->hop[j].bDonated = TRUE;
+                                T->hop[j].regime = etQhopNONE;
+                                T->hop[j].bDonated = TRUE;
                                 if (NULL != debug)
                                     fprintf(debug," * Zapping hop number %i *\n", j);
                             }
@@ -3076,20 +3072,20 @@ void do_qhop(FILE *fplog,
                 if ((NULL != fplog) && bHop)
                 {
                     gmx_step_str(step, stepstr);
-                    fprintf(fplog,"ITMD: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)\n",
-                            stepstr,qr->hop[i].E12, i,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].resname,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].resname);
+                    fprintf(fplog,"ITMD: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
+                            stepstr,T->hop[i].E12, i,
+                            T->qhop_atoms[T->hop[i].donor_id].res_id,
+                            T->qhop_atoms[T->hop[i].donor_id].resname,
+                            T->qhop_atoms[T->hop[i].acceptor_id].res_id,
+                            T->qhop_atoms[T->hop[i].acceptor_id].resname);
                     fprintf(fplog,
-                            "ITMD: %d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].donor_id].res_id,
-                            fr->qhoprec->qhop_atoms[qr->hop[i].acceptor_id].res_id,
-                            qr->hop[i].E12, qr->hop[i].DE_MM, qr->hop[i].Eb,
-                            qr->hop[i].hbo, qr->hop[i].rda, qr->hop[i].ang,
-                            qr->hop[i].El, qr->hop[i].Er,
-                            qr->hop[i].prob, rnr, qhopregimes[qr->hop[i].regime]);
+                            " %d. don %d acc %d DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
+                            T->qhop_atoms[T->hop[i].donor_id].res_id,
+                            T->qhop_atoms[T->hop[i].acceptor_id].res_id,
+                            T->hop[i].DE_MM, T->hop[i].Eb,
+                            T->hop[i].hbo, T->hop[i].rda, T->hop[i].ang,
+                            T->hop[i].El, T->hop[i].Er,
+                            T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
                 }
             }
         }

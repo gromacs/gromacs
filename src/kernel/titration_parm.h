@@ -1,7 +1,7 @@
 #ifndef _GMX_QHOP_PARM_H
 #define _GMX_QHOP_PARM_H
 
-#include "types/gmx_qhop_types.h"
+#include "titrationrec.h"
 
 /* npbon[][][] contains the number of parameters for a certain type of bonded interacion.
  * The outmost dimension denotes the A- and B-state respectively. */

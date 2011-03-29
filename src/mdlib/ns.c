@@ -375,9 +375,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        init_nblist(&fr->QMMMlist,NULL,
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
-   if(fr->titration_alg != eTitrationAlgNone)
+   if (fr->bTitration)
    {
-       init_nblist(&fr->qhopnblist,NULL,
+       init_nblist(&fr->titration_nblist,NULL,
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
    fr->ns.nblist_initialized=TRUE;
@@ -416,10 +416,10 @@ static void reset_neighbor_list(t_forcerec *fr,gmx_bool bLR,int nls,int eNL)
             /* only reset the short-range nblist */
             reset_nblist(&(fr->QMMMlist));
         }
-        if (fr->titration_alg != eTitrationAlgNone)
+        if (fr->bTitration)
         { 
             /* only reset the short-range nblist */
-            reset_nblist(&(fr->qhopnblist));
+            reset_nblist(&(fr->titration_nblist));
         }
         
     }
@@ -508,7 +508,7 @@ static inline void close_nblist(t_nblist *nlist)
 static inline void close_neighbor_list(t_forcerec *fr,
                                        gmx_bool bLR,int nls,int eNL, 
                                        gmx_bool bMakeQMMMnblist,
-                                       gmx_bool bMakeqhopnblist)
+                                       gmx_bool bMakeTitrationNblist)
 {
     int n,i;
     
@@ -518,9 +518,9 @@ static inline void close_neighbor_list(t_forcerec *fr,
             close_nblist(&(fr->QMMMlist));
         }
     }
-    else if(bMakeqhopnblist)
+    else if (bMakeTitrationNblist)
     {
-        close_nblist(&(fr->qhopnblist));
+        close_nblist(&(fr->titration_nblist));
     }
     else 
     {
@@ -1149,7 +1149,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 }
 
 static void
-put_in_list_qhop(gmx_bool          bHaveVdW[],
+put_in_list_titration(gmx_bool          bHaveVdW[],
                  int               ngid,
                  t_mdatoms *       md,
                  int               icg,
@@ -1175,7 +1175,7 @@ put_in_list_qhop(gmx_bool          bHaveVdW[],
     /* Get the i charge group info */
     igid   = GET_CGINFO_GID(fr->cginfo[icg]);
     
-    coul = &fr->qhopnblist;
+    coul = &fr->titration_nblist;
     
     /* Loop over atoms in the ith charge group */
     for (i=0;i<nicg;i++)
@@ -1990,7 +1990,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
                        gmx_bool bDoLongRange,gmx_bool bDoForces,rvec *f,
-                       gmx_bool bMakeQMMMnblist,gmx_bool bMakeqhopnblist)
+                       gmx_bool bMakeQMMMnblist,gmx_bool bMakeTitrationNblist)
 {
     gmx_ns_t *ns;
     atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr;
@@ -2047,7 +2047,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         rm2 = rl2;
         rs2 = rl2;
     }
-    if (bMakeqhopnblist )
+    if (bMakeTitrationNblist )
     {
         rs2 = rm2;
         rl2 = rm2;
@@ -2199,7 +2199,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
             jcg1    = icg + naaj;
             max_jcg = cgsnr;       
         } 
-        else if (bMakeqhopnblist)
+        else if (bMakeTitrationNblist)
         {
             if(md->bqhopdonor[i0]==FALSE)
             {
@@ -2493,7 +2493,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     debug_gmx();
     
     /* Close off short range neighbourlists */
-    close_neighbor_list(fr,FALSE,-1,-1,bMakeQMMMnblist,bMakeqhopnblist);
+    close_neighbor_list(fr,FALSE,-1,-1,bMakeQMMMnblist,bMakeTitrationNblist);
     
     return nns;
 }
@@ -2791,12 +2791,12 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                                    bDoLongRange,bDoForces,f,
                                    TRUE,FALSE);
         }
-        if (fr->titration_alg != eTitrationAlgNone)
+        if (fr->bTitration)
         {
             nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                                    grid,x,ns->bexcl,ns->bExcludeAlleg,
                                    nrnb,md,lambda,dvdlambda,grppener,
-                                   put_in_list_qhop,ns->bHaveVdW,
+                                   put_in_list_titration,ns->bHaveVdW,
                                    bDoLongRange,bDoForces,f,
                                    FALSE,TRUE);
         }
