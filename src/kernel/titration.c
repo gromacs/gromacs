@@ -173,21 +173,23 @@ static int get_tautomeric_sites(const qhop_db *db, const titration_t T, int ai, 
  * the primary titratable site, then this function returns the
  * qhop_atom id of that atom. If not, it returns the qhop_atom id
  * of the primary site. */
-static int qhop_get_primary(titration_t T, t_qhop_residue *qhopres, t_qhop_atom *qatom, char *secname, int DA)
+static int qhop_get_primary(titration_t T, int hop_id, int DA)
 {
     qhop_db *db;
     char *name;
     int rt, r, a, reac, t;
     qhop_subres *qres;
     qhop_reactant *qreac;
-  
+    t_qhop_residue *qhopres = &(T->qhop_residues[T->qhop_atoms[hop_id].qres_id]);
+    t_qhop_atom *qatom = &(T->qhop_atoms[hop_id]);
+    char *secname = T->qhop_atoms[hop_id].atomname;
+    
     if (DA != eQDON && DA != eQACC)
     {
         gmx_fatal(FARGS, "Called qhop_get_primary() with DA != eQDON || eQACC");
     }
 
     db = T->db;
-
     rt = qhopres->rtype;
     r  = qhopres->subres;
     qres = &(db->rb.qrt[rt].subres[r]);
@@ -2407,16 +2409,8 @@ static void get_hop_prob(FILE *fplog,
     T = fr->titration;
     
     /* Is this the primary titrating site, or do we need swapping? */
-    hop->primary_d = qhop_get_primary(T,
-                                      &(T->qhop_residues[(T->qhop_atoms[hop->donor_id].qres_id)]),
-                                      &(T->qhop_atoms[hop->donor_id]),
-                                      T->qhop_atoms[hop->donor_id].atomname,
-                                      eQDON);
-    hop->primary_a = qhop_get_primary(T,
-                                      &(T->qhop_residues[(T->qhop_atoms[hop->acceptor_id].qres_id)]),
-                                      &(T->qhop_atoms[hop->acceptor_id]),
-                                      T->qhop_atoms[hop->acceptor_id].atomname,
-                                      eQACC);
+    hop->primary_d = qhop_get_primary(T,hop->donor_id,eQDON);
+    hop->primary_a = qhop_get_primary(T,hop->acceptor_id,eQACC);
 
     p = get_qhop_params(T, hop, db);
 
@@ -2993,7 +2987,7 @@ void do_titration(FILE *fplog,
             for(i=0; i<T->nr_hop; i++)
             {
                 T->hop[i].T = Temperature;
-                get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                              fcd,graph,fr,vsite,mu_tot,
                              &(T->hop[i]),&pbc,step, db,
                              &bHaveEbefore,Ebefore,Eafter);
@@ -3008,7 +3002,7 @@ void do_titration(FILE *fplog,
                 if (ir->titration_mode != eTitrationModeList) 
                 {
                     T->hop[i].T = Temperature;
-                    get_hop_prob(debug,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
+                    get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                                  fcd,graph,fr,vsite,mu_tot,
                                  &(T->hop[i]),&pbc,step, db,
                                  &bHaveEbefore,Ebefore,Eafter);

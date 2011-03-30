@@ -76,10 +76,11 @@
 [ bonds ]
     OW   HW1	0.09572   462750.4
     OW   HW2	0.09572   462750.4
- [ angles ]
+    OW   HW3	0.09572   462750.4
+[ angles ]
     HW1  OW   HW2   112    836.8
-;    HW1  OW   HW3   112    836.8
-;    HW3  OW   HW2   112    836.8
+    HW1  OW   HW3   112    836.8
+    HW3  OW   HW2   112    836.8
 
 ; ------------------
 ; Titrable acetic acid. 

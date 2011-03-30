@@ -13,9 +13,9 @@ HOH             2
 1       OW     1      HOH              OW     1      -0.834  15.9994
 2       HW     1      HOH             HW1     1       0.417   1.008
 3       HW     1      HOH             HW2     1       0.417   1.008
-4       HW     1      HOH             H31     2       0.0      0.0
-5       HW     1      HOH             H32     2       0.0      0.0
-6       HW     1      HOH             H33     2       0.0      0.0
+4       HW     1      HOH             HW3     2       0.0      0.0
+5       HW     1      HOH             HW4     2       0.0      0.0
+6       HW     1      HOH             HW5     2       0.0      0.0
 
 [ settles ]
 ; i     funct   doh     dhh
