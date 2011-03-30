@@ -69,7 +69,7 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
     rvec spacing;
     real max_spacing;
 
-    if (gr_sp <= 0)
+    if ((*nx <= 0 || *ny <= 0 || *nz <= 0) && gr_sp <= 0)
     {
         gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
     }
