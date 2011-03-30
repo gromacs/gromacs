@@ -1196,6 +1196,6 @@ void finalize_titration(titration_t T,gmx_localtop_t *top,t_mdatoms *mdatoms,
 {
     /* Complete the t_mdatoms and qhoprec, extend the topology. */
     make_ilib(T->db);
-    qhop_attach_ilib(top, T);
+    qhop_attach_ilib(top, T->db);
     finalize_qhoprec(T, top, mdatoms, cr);
 }
