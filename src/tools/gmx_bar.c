@@ -56,6 +56,11 @@
 #include "gmx_ana.h"
 #include "maths.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef isdigit
+#endif
 
 /* the dhdl.xvg data from a simulation (actually obsolete, but still
     here for reading the dhdl.xvg file*/

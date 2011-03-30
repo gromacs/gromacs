@@ -64,6 +64,11 @@
 #include "eigio.h"
 #include "index.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef isdigit
+#endif
 
 typedef struct
 {

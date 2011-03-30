@@ -444,6 +444,10 @@ if(APPLE)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
 
+if(CYGWIN)
+    set(GMX_CYGWIN 1)
+endif(CYGWIN)
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
