@@ -141,7 +141,7 @@ int find_inert_atomtype(const gmx_mtop_t *mtop, const t_forcerec *fr)
     return n;
 }
 
-void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
+static void qhop_attach_ilib(gmx_localtop_t *top, const qhop_db *db)
 {
     int nr, i;
     qhop_subres *res;
@@ -1135,8 +1135,8 @@ static void qhop_atoms2md(t_mdatoms *md, const titration_t T)
 
 /* Sets the interactions according to the hydrogen existence map.
  * This requires a finalized t_mdatoms. */
-void finalize_qhoprec(titration_t T, gmx_localtop_t *top, 
-                      t_mdatoms *md, t_commrec *cr)
+static void finalize_titration_t(titration_t T, gmx_localtop_t *top, 
+                                 t_mdatoms *md, t_commrec *cr)
 {
     int i, j, nb, ft;
     qhop_db *db;
@@ -1197,5 +1197,5 @@ void finalize_titration(titration_t T,gmx_localtop_t *top,t_mdatoms *mdatoms,
     /* Complete the t_mdatoms and qhoprec, extend the topology. */
     make_ilib(T->db);
     qhop_attach_ilib(top, T->db);
-    finalize_qhoprec(T, top, mdatoms, cr);
+    finalize_titration_t(T, top, mdatoms, cr);
 }
