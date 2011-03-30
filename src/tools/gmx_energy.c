@@ -1480,7 +1480,7 @@ int gmx_energy(int argc,char *argv[])
     
     "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
-    "select the energy terms she wants.[PAR]",
+    "select the desired energy terms.[PAR]",
     
     "Average, RMSD, and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
@@ -1544,8 +1544,9 @@ int gmx_energy(int argc,char *argv[])
     "When a second energy file is specified ([TT]-f2[tt]), a free energy",
     "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
     "where EA and EB are the energies from the first and second energy",
-    "files, and the average is over the ensemble A. [BB]Note[bb] that",
-    "the energies must both be calculated from the same trajectory."
+    "files, and the average is over the ensemble A. The running average",
+    "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
+    "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
     
   };
   static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
