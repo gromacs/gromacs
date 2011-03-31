@@ -87,7 +87,8 @@ static gmx_bool in_box(t_pbc *pbc,rvec x)
   rvec box_center,dx;
   int  shift;
   
-  calc_box_center(ecenterTRIC,pbc->box,box_center);
+  /* pbc_dx_aiuc only works correctly with the rectangular box center */
+  calc_box_center(ecenterRECT,pbc->box,box_center);
   
   shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
