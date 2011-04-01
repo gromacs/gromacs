@@ -68,7 +68,7 @@
 typedef struct
 { 
     real        deltaF0;
-    gmx_bool        bHarmonic;
+    gmx_bool    bHarmonic;
     real        tau;
     real        deltaF;
     real        kT; 
@@ -91,8 +91,8 @@ typedef struct edix
 typedef struct edipar
 {
     int         nini;           /* total Nr of atoms                    */
-    gmx_bool        fitmas;         /* true if trans fit with cm            */
-    gmx_bool        pcamas;         /* true if mass-weighted PCA            */
+    gmx_bool    fitmas;         /* true if trans fit with cm            */
+    gmx_bool    pcamas;         /* true if mass-weighted PCA            */
     int         presteps;       /* number of steps to run without any   
                                  *    perturbations ... just monitoring */
     int         outfrq;         /* freq (in steps) of writing to edo    */
@@ -339,7 +339,6 @@ int read_conffile(const char *confin,char *title,rvec *x[])
   else {*/
     /* make space for coordinates and velocities */
     init_t_atoms(&confat,natoms,FALSE);
-    printf("init_t\n");
     snew(*x,natoms);
     read_stx_conf(confin,title,&confat,*x,NULL,NULL,box);
     return natoms;
@@ -699,7 +698,7 @@ int main(int argc,char *argv[])
     
     /* print the interpreted list of eigenvectors - to give some feedback*/
     for (ev_class=0; ev_class<evEND; ++ev_class) {
-        printf("list %s consist of the indices:",evOptions[ev_class]);
+        printf("Eigenvector list %7s consists of the indices: ",evOptions[ev_class]);
         i=0;
         while(listen[ev_class][i])
             printf("%d ",listen[ev_class][i++]);
@@ -786,22 +785,35 @@ int main(int argc,char *argv[])
   make_t_edx(&edi_params.sav,natoms,xav1,index);
 
                                                          
-  /*store target positions in edi_params*/
-  if (opt2bSet("-tar",NFILE,fnm)) {
-    get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,
-                   ifit,natoms,index);
- } else
+  /* Store target positions in edi_params */
+  if (opt2bSet("-tar",NFILE,fnm))
+  {
+      if (0 != listen[evFLOOD][0])
+      {
+          fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
+                          "      You may want to use -ori to define the flooding potential center.\n\n");
+      }
+      get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,natoms,index);
+  }
+  else
+  {
       make_t_edx(&edi_params.star,0,NULL,index);
-     /*store origin positions*/
- if (opt2bSet("-ori",NFILE,fnm)) {
-     get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,
-                   ifit,natoms,index);
- } else
+  }
+
+  /* Store origin positions */
+  if (opt2bSet("-ori",NFILE,fnm))
+  {
+      get_structure(atoms,indexfile,OriginFile,&edi_params.sori,nfit,ifit,natoms,index);
+  }
+  else
+  {
       make_t_edx(&edi_params.sori,0,NULL,index);
-  
-  /*write edi-file*/
+  }
+
+  /* Write edi-file */
   write_the_whole_thing(ffopen(EdiFile,"w"), &edi_params, eigvec1,nvec1, listen, evStepList);
   thanx(stderr);
+
   return 0;
 }
 

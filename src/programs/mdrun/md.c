@@ -2236,27 +2236,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
-        /* Determine the pressure:
-         * always when we want exact averages in the energy file,
-         * at ns steps when we have pressure coupling,
-         * otherwise only at energy output steps (set below).
-         */
-    
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
-        
-        /* Do we need global communication ? */
-        bGStat = (bGStatEveryStep || bStopCM || bNS ||
-                  (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
-        
-        do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
-        
-        if (do_ene || do_log)
-        {
-            bCalcEnerPres = TRUE;
-            bGStat        = TRUE;
-        }
-
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
 

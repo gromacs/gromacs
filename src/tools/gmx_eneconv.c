@@ -770,7 +770,8 @@ int gmx_eneconv(int argc,char *argv[])
 	noutfr++;
       }
     }
-
+    if (f == nfile)
+      f--;
     printf("\nLast step written from %s: t %g, step %s\n",
 	   fnms[f],last_t,gmx_step_str(laststep,buf));
     lastfilestep = laststep;

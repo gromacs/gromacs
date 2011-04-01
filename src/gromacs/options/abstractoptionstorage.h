@@ -185,6 +185,39 @@ class AbstractOptionStorage
         int minValueCount() const { return _minValueCount; }
         //! Returns the maximum allowed number of values in one set (-1 = no limit).
         int maxValueCount() const { return _maxValueCount; }
+        /*! \brief
+         * Sets a new minimum number of values required in one set.
+         *
+         * \param[in] count  New minimum number of values (must be > 0).
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * If values have already been provided, it is checked that there are
+         * enough.  If called together with setMaxValueCount(), only
+         * one of them will log an error in \p errors even if both fail, but
+         * the return value is not affected.
+         *
+         * Cannot be called for options with ::efMulti set, because it is
+         * impossible to check the requirement after the values have been set.
+         */
+        int setMinValueCount(int count, AbstractErrorReporter *errors);
+        /*! \brief
+         * Sets a new maximum number of values required in one set.
+         *
+         * \param[in] count  New maximum number of values
+         *                   (must be > 0, or -1 for no limit).
+         * \param[in] errors Error reporter for errors.
+         * \retval 0 on success.
+         *
+         * If values have already been provided, it is checked that there are
+         * not too many.  If called together with setMinValueCount(), only
+         * one of them will log an error in \p errors even if both fail, but
+         * the return value is not affected.
+         *
+         * Cannot be called for options with ::efMulti set, because it is
+         * impossible to check the requirement after the values have been set.
+         */
+        int setMaxValueCount(int count, AbstractErrorReporter *errors);
 
         //! Returns the Options object that houses the option.
         Options &hostOptions() { return *_options; }

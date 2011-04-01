@@ -79,6 +79,11 @@ namespace gmx
  * SelectionCollection::Impl
  */
 
+int SelectionCollection::Impl::SelectionRequest::count() const
+{
+    return storage->maxValueCount();
+}
+
 SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     : _options("selection", "Common selection control"),
       _debugLevel(0), _grps(NULL)
@@ -162,9 +167,9 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
 
 void SelectionCollection::Impl::requestSelections(
         const std::string &name, const std::string &descr,
-        int count, SelectionOptionStorage *storage)
+        SelectionOptionStorage *storage)
 {
-    _requests.push_back(SelectionRequest(name, descr, count, storage));
+    _requests.push_back(SelectionRequest(name, descr, storage));
 }
 
 
@@ -298,7 +303,7 @@ SelectionCollection::initOptions()
                           .store(&_impl->_spost).defaultValue(postypes[1])
                           .description("Default selection output positions"));
     assert(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4);
-    options.addOption(StringOption("seldebug").hidden()
+    options.addOption(StringOption("seldebug").hidden(_impl->_debugLevel == 0)
                           .enumValue(debug_levels)
                           .defaultValue(debug_levels[_impl->_debugLevel])
                           .storeEnumIndex(&_impl->_debugLevel)
@@ -425,25 +430,25 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive,
         if (bInteractive)
         {
             std::fprintf(stderr, "\nSpecify ");
-            if (request.count < 0)
+            if (request.count() < 0)
             {
                 std::fprintf(stderr, "any number of selections");
             }
-            else if (request.count == 1)
+            else if (request.count() == 1)
             {
                 std::fprintf(stderr, "a selection");
             }
             else
             {
-                std::fprintf(stderr, "%d selections", request.count);
+                std::fprintf(stderr, "%d selections", request.count());
             }
             std::fprintf(stderr, " for option '%s' (%s):\n",
                          request.name.c_str(), request.descr.c_str());
             std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
-                         request.count < 0 ? ", Ctrl-D to end" : "");
+                         request.count() < 0 ? ", Ctrl-D to end" : "");
         }
         std::vector<Selection *> selections;
-        rc = parseFromStdin(request.count, bInteractive, errors, &selections);
+        rc = parseFromStdin(request.count(), bInteractive, errors, &selections);
         if (rc != 0)
         {
             break;
@@ -475,15 +480,15 @@ SelectionCollection::parseRequestedFromString(const std::string &str,
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
     {
         const Impl::SelectionRequest &request = *i;
-        if (request.count > 0)
+        if (request.count() > 0)
         {
-            if (selections.end() - first < request.count)
+            if (selections.end() - first < request.count())
             {
                 errors->error("Too few selections provided");
                 rc = eeInvalidInput;
                 break;
             }
-            last = first + request.count;;
+            last = first + request.count();
         }
         else
         {

@@ -49,6 +49,7 @@ namespace gmx
 {
 
 class AbstractAnalysisData;
+class AbstractErrorReporter;
 class AnalysisData;
 class AnalysisDataHandle;
 class Options;
@@ -188,7 +189,8 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings,
+                                    AbstractErrorReporter *errors);
         /*! \brief
          * Initializes the analysis.
          *

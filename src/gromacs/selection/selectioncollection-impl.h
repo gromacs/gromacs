@@ -100,13 +100,14 @@ class SelectionCollection::Impl
         struct SelectionRequest
         {
             SelectionRequest(const std::string &name, const std::string &descr,
-                             int count, SelectionOptionStorage *storage)
-                : name(name), descr(descr), count(count), storage(storage)
+                             SelectionOptionStorage *storage)
+                : name(name), descr(descr), storage(storage)
             { }
+
+            int count() const;
 
             std::string                 name;
             std::string                 descr;
-            int                         count;
             SelectionOptionStorage     *storage;
         };
 
@@ -152,7 +153,7 @@ class SelectionCollection::Impl
                       std::vector<Selection *> *output);
         void requestSelections(const std::string &name,
                                const std::string &descr,
-                               int count, SelectionOptionStorage *storage);
+                               SelectionOptionStorage *storage);
         int resolveExternalGroups(struct t_selelem *root);
 
         //! Internal data, used for interfacing with old C code.

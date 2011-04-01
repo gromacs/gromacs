@@ -46,6 +46,7 @@ namespace gmx
 
 class Selection;
 class SelectionOption;
+class SelectionOptionAdjuster;
 
 /*! \internal \brief
  * Converts, validates, and stores selection values.
@@ -56,6 +57,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
 {
     public:
         SelectionOptionStorage();
+        virtual ~SelectionOptionStorage();
 
         /*! \brief
          * Initializes the storage from option settings.
@@ -86,6 +88,36 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         int addSelections(const std::vector<Selection *> &selections,
                           bool bFullValue, AbstractErrorReporter *errors);
 
+        // Required to access the number of values in selection requests.
+        // See SelectionCollection::Impl.
+        using MyBase::maxValueCount;
+        /*! \brief
+         * Sets the number of selections allowed for this selection.
+         *
+         * \param[in] count       Required number of selections for this option.
+         * \param[in] errors      Error reporter object.
+         * \retval 0 on success.
+         *
+         * If values have already been provided, it is checked that a correct
+         * number has been provided.  If requests have already been made, but
+         * have not yet been processed, they are also affected.
+         */
+        int setAllowedValueCount(int count, AbstractErrorReporter *errors);
+        /*! \brief
+         * Alters flags for the selections created by this option.
+         *
+         * \param[in] flag        Flag to change.
+         * \param[in] bSet        Whether to set or clear the flag.
+         * \param[in] errors      Error reporter object.
+         * \retval 0 on success.
+         *
+         * If values have already been provided, it is checked that they match
+         * the limitations enforced by the flags.  If requests have already
+         * been made, but have not yet been processed, they are also affected.
+         */
+        int setSelectionFlag(SelectionFlag flag, bool bSet,
+                             AbstractErrorReporter *errors);
+
     private:
         virtual int convertValue(const std::string &value,
                                  AbstractErrorReporter *errors);
@@ -93,6 +125,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual int processAll(AbstractErrorReporter *errors);
 
         SelectionFlags          _selectionFlags;
+        //! Pointer to the adjuster (there can be only one, can be NULL).
+        SelectionOptionAdjuster *_adjuster;
 };
 
 } // namespace gmx

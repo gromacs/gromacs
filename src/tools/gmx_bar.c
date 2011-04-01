@@ -2552,7 +2552,7 @@ int gmx_bar(int argc,char *argv[])
         "ensemble of lambda_A (and vice versa for s_B), is a ", 
         "measure of the 'distance' between Boltzmann distributions of ",
         "the two states, that goes to zero for identical distributions. See ",
-        "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information.",
+        "Wu & Kofke, J. Chem. Phys. 123 084109 (2005) for more information.",
         "[PAR]",
         "The estimate of the expected per-sample standard deviation, as given ",
         "in Bennett's original BAR paper: Bennett, J. Comp. Phys. 22, p 245 (1976).", 

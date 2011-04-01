@@ -75,6 +75,8 @@
 #include "options.h"
 #include "selection.h"
 
+#include "errorreporting/abstracterrorreporter.h"
+#include "errorreporting/errorcontext.h"
 #include "trajectoryanalysis/analysismodule.h"
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"

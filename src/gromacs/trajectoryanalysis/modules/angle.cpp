@@ -39,6 +39,7 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -53,6 +54,7 @@ namespace analysismodules
 
 Angle::Angle()
     : _options("angle", "Angle calculation"),
+      _sel1Adj(NULL), _sel2Adj(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
       _bDumpDist(false), _vt0(NULL)
 {
@@ -136,11 +138,11 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
     _options.addOption(BooleanOption("dumpd").store(&_bDumpDist)
         .description("Write also distances with -od"));
 
-    _options.addOption(SelectionOption("group1").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel1)
+    _options.addOption(SelectionOption("group1").multiValue().required()
+        .dynamicOnlyWhole().storeVector(&_sel1).getAdjuster(&_sel1Adj)
         .description("First analysis/vector selection"));
     _options.addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel2)
+        .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2Adj)
         .description("Second analysis/vector selection"));
 
     return &_options;
@@ -148,46 +150,56 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
 
 
 int
-Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
+Angle::initOptionsDone(TrajectoryAnalysisSettings *settings,
+                       AbstractErrorReporter *errors)
 {
     // Validity checks.
     bool bSingle = (_g1type[0] == 'a' || _g1type[0] == 'd');
 
     if (bSingle && _g2type[0] != 'n')
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "Cannot use a second group (-g2) with -g1 angle or dihedral");
+        errors->error("Cannot use a second group (-g2) with -g1 angle or dihedral");
+        return eeInconsistentInput;
+    }
+    if (bSingle && _options.isSet("group2"))
+    {
+        errors->error("Cannot provide a second selection (-group2) with "
+                      "-g1 angle or dihedral");
+        return eeInconsistentInput;
     }
     if (!bSingle && _g2type[0] == 'n')
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "Should specify a second group (-g2) if the first group "
-                  "is not an angle or a dihedral");
+        errors->error("Should specify a second group (-g2) if the first group "
+                      "is not an angle or a dihedral");
+        return eeInconsistentInput;
     }
     if (bSingle && _bDumpDist)
     {
-        fprintf(stderr,
-                "\nWARNING: Cannot calculate distances with -g1 angle or dihedral");
+        errors->warning("Cannot calculate distances with -g1 angle or dihedral");
         _bDumpDist = false;
     }
     if (_bMulti && _bSplit1)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "-mult can only be combined with -g1 angle or dihedral");
+        errors->error("-mult can only be combined with -g1 angle or dihedral");
+        return eeInconsistentInput;
     }
     if (!bSingle && _bMulti)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "-mult can only be combined with -g1 angle or dihedral");
+        errors->error("-mult can only be combined with -g1 angle or dihedral");
+        return eeInconsistentInput;
     }
     if (_bMulti && _bAll)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "-mult and -all are mutually exclusive options");
+        errors->error("-mult and -all are mutually exclusive options");
+        return eeInconsistentInput;
     }
     if (_bAll)
     {
-        // TODO: Disable dynamic selections
+        int rc = _sel1Adj->setOnlyStatic(true);
+        if (rc != 0)
+        {
+            return rc;
+        }
     }
 
     // Set up the number of positions per angle.
@@ -211,8 +223,30 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
         default:
             GMX_ERROR(eeInternalError, "invalid -g2 value");
     }
+    if (_natoms2 == 0 && _options.isSet("group2"))
+    {
+        errors->error("Cannot provide a second selection (-group2) with -g2 t0 or z");
+        return eeInconsistentInput;
+    }
 
-    // TODO: Set up/check the number of selections.
+    if (!_bMulti)
+    {
+        OptionAdjusterErrorContext context(_sel1Adj, errors);
+        int rc = _sel1Adj->setValueCount(_bSplit1 ? _natoms1 : 1);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
+    if (_natoms2 > 0)
+    {
+        OptionAdjusterErrorContext context(_sel2Adj, errors);
+        int rc = _sel2Adj->setValueCount(_bSplit2 ? _natoms2 : 1);
+        if (rc != 0)
+        {
+            return rc;
+        }
+    }
 
     return 0;
 }

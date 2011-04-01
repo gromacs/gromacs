@@ -171,9 +171,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     {
         return rc;
     }
-    rc = _module->initOptionsDone(settings);
+    rc = _module->initOptionsDone(settings, &errors);
     if (rc != 0)
     {
+        if (rc == eeInconsistentInput)
+        {
+            GMX_ERROR(rc, "Invalid options provided, "
+                          "see above for detailed error messages");
+        }
         return rc;
     }
 

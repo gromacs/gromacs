@@ -128,6 +128,8 @@ class AbstractOption
         void setFlag(OptionFlag flag) { _flags.set(flag); }
         //! Clears a flag for the option.
         void clearFlag(OptionFlag flag) { _flags.clear(flag); }
+        //! Sets or clears a flag for the option.
+        void setFlag(OptionFlag flag, bool bSet) { _flags.set(flag, bSet); }
         //! Returns true if the option is vector-valued.
         bool isVector() const { return hasFlag(efVector); }
         //! Sets the option to be vector-valued.
@@ -217,11 +219,14 @@ class OptionTemplate : public AbstractOption
         MyClass &description(const char *descr)
         { setDescription(descr); return me(); }
         //! Hides the option from normal help output.
-        MyClass &hidden() { setFlag(efHidden); return me(); }
+        MyClass &hidden(bool bHidden = true)
+        { setFlag(efHidden, bHidden); return me(); }
         //! Requires the option to be specified explicitly.
-        MyClass &required() { setFlag(efRequired); return me(); }
+        MyClass &required(bool bRequired = true)
+        { setFlag(efRequired, bRequired); return me(); }
         //! Allows the option to be specified multiple times.
-        MyClass &allowMultiple() { setFlag(efMulti); return me(); }
+        MyClass &allowMultiple(bool bMulti = true)
+        { setFlag(efMulti, bMulti); return me(); }
         //! Requires exactly \p count values for the option.
         MyClass &valueCount(int count) { setValueCount(count); return me(); }
         //! Allows any number of values for the option.

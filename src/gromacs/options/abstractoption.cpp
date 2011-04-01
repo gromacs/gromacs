@@ -30,18 +30,18 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::AbstractOptionStorage.
+ * Implements classes in abstractoption.h and abstractoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/abstractoption.h"
 
 #include <cassert>
 
 #include "gromacs/errorreporting/abstracterrorreporter.h"
 #include "gromacs/fatalerror/fatalerror.h"
-#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
 
 namespace gmx
@@ -155,6 +155,41 @@ int AbstractOptionStorage::finish(AbstractErrorReporter *errors)
         rc = eeInconsistentInput;
     }
     return rc;
+}
+
+int AbstractOptionStorage::setMinValueCount(int count,
+                                            AbstractErrorReporter *errors)
+{
+    assert(!hasFlag(efMulti));
+    assert(count >= 0);
+    _minValueCount = count;
+    if (isSet()
+        && !hasFlag(efDontCheckMinimumCount) && valueCount() < _minValueCount)
+    {
+        if (_maxValueCount == -1 || valueCount() <= _maxValueCount)
+        {
+            errors->error("Too few values");
+        }
+        return eeInconsistentInput;
+    }
+    return 0;
+}
+
+int AbstractOptionStorage::setMaxValueCount(int count,
+                                            AbstractErrorReporter *errors)
+{
+    assert(!hasFlag(efMulti));
+    assert(count >= -1);
+    _maxValueCount = count;
+    if (isSet() && _maxValueCount >= 0 && valueCount() > _maxValueCount)
+    {
+        if (hasFlag(efDontCheckMinimumCount) || valueCount() >= _minValueCount)
+        {
+            errors->error("Too many values");
+        }
+        return eeInconsistentInput;
+    }
+    return 0;
 }
 
 int AbstractOptionStorage::incrementValueCount()

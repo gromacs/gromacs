@@ -42,6 +42,7 @@ namespace gmx
 {
 
 class Selection;
+class SelectionOptionAdjuster;
 
 namespace analysismodules
 {
@@ -55,7 +56,8 @@ class Angle : public TrajectoryAnalysisModule
         static TrajectoryAnalysisModule *create();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
-        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings,
+                                    AbstractErrorReporter *errors);
         virtual int initAnalysis(const TopologyInformation &top);
 
         virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
@@ -72,6 +74,8 @@ class Angle : public TrajectoryAnalysisModule
 
         std::vector<Selection *> _sel1;
         std::vector<Selection *> _sel2;
+        SelectionOptionAdjuster *_sel1Adj;
+        SelectionOptionAdjuster *_sel2Adj;
         std::string             _fnAngle;
         std::string             _fnDump;
 
