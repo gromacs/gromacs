@@ -201,7 +201,7 @@ static void pick_minima(const char *logfile,int *ibox,int ndim,int len,real W[])
 {
   FILE *fp;
   int  i,j,k,ijk,nmin;
-  bool bMin;
+  gmx_bool bMin;
   t_minimum *mm;
   
   snew(mm,len);
@@ -268,13 +268,13 @@ static void do_sham(const char *fn,const char *ndx,
 		    const char *xpm3,const char *xpm4,const char *pdb,
                     const char *logf,
 		    int n,int neig,real **eig,
-		    bool bGE,int nenerT,real **enerT,
+		    gmx_bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
 		    real Tref,
 		    real pmax,real gmax,
 		    real *emin,real *emax,int nlevels,real pmin,
-		    const char *mname,bool bSham,int *idim,int *ibox,
-		    bool bXmin,real *xmin,bool bXmax,real *xmax)
+		    const char *mname,gmx_bool bSham,int *idim,int *ibox,
+		    gmx_bool bXmin,real *xmin,gmx_bool bXmax,real *xmax)
 {
   FILE    *fp;
   real    *min_eig,*max_eig;
@@ -288,7 +288,7 @@ static void do_sham(const char *fn,const char *ndx,
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
   int     *nxyz,maxbox;
   t_blocka *b;
-  bool    bOutside;
+  gmx_bool    bOutside;
   unsigned int flags;
   t_rgb   rlo  = { 0, 0, 0 };
   t_rgb   rhi  = { 1, 1, 1 };
@@ -313,8 +313,7 @@ static void do_sham(const char *fn,const char *ndx,
      */
     if (bXmax) {
       if (max_eig[i] > xmax[i]) {
-	sprintf(warn_buf,"Your xmax[%d] value %f is smaller than the largest data point %f",i,xmax[i],max_eig[i]);
-	warning(NULL);
+	gmx_warning("Your xmax[%d] value %f is smaller than the largest data point %f",i,xmax[i],max_eig[i]);
       }
       max_eig[i] = xmax[i];
     }
@@ -323,8 +322,7 @@ static void do_sham(const char *fn,const char *ndx,
     
     if (bXmin) {
       if (min_eig[i] < xmin[i]) {
-	sprintf(warn_buf,"Your xmin[%d] value %f is larger than the smallest data point %f",i,xmin[i],min_eig[i]);
-	warning(NULL);
+	gmx_warning("Your xmin[%d] value %f is larger than the smallest data point %f",i,xmin[i],min_eig[i]);
       }
       min_eig[i] = xmin[i];
     }
@@ -679,19 +677,19 @@ static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 int gmx_sham(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
-    "g_sham reads one or more xvg files and analyzes data sets.",
-    "g_sham basic purpose is plotting Gibbs free energy landscapes",
+    "[TT]g_sham[tt] makes multi-dimensional free-energy, enthalpy and entropy plots.",
+    "[TT]g_sham[tt] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+    "The basic purpose of [TT]g_sham[tt] is to plot Gibbs free energy landscapes",
     "(option [TT]-ls[tt])",
-    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt])",
+    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",
     "but it can also",
     "make enthalpy (option [TT]-lsh[tt]) and entropy (option [TT]-lss[tt])",
     "plots. The histograms can be made for any quantities the user supplies.",
     "A line in the input file may start with a time",
-    "(see option [TT]-time[tt]) and any number of y values may follow.",
+    "(see option [TT]-time[tt]) and any number of [IT]y[it]-values may follow.",
     "Multiple sets can also be",
-    "read when they are seperated by & (option [TT]-n[tt]),",
-    "in this case only one y value is read from each line.",
+    "read when they are separated by & (option [TT]-n[tt]),",
+    "in this case only one [IT]y[it]-value is read from each line.",
     "All lines starting with # and @ are skipped.",
     "[PAR]",
     "Option [TT]-ge[tt] can be used to supply a file with free energies",
@@ -701,28 +699,28 @@ int gmx_sham(int argc,char *argv[])
     "[PAR]",
     "Option [TT]-ene[tt] can be used to supply a file with energies.",
     "These energies are used as a weighting function in the single",
-    "histogram analysis method due to Kumar et. al. When also temperatures",
-    "are supplied (as a second column in the file) an experimental",
+    "histogram analysis method by Kumar et al. When temperatures",
+    "are supplied (as a second column in the file), an experimental",
     "weighting scheme is applied. In addition the vales",
     "are used for making enthalpy and entropy plots.",
     "[PAR]",
-    "With option [TT]-dim[tt] dimensions can be gives for distances.",
+    "With option [TT]-dim[tt], dimensions can be gives for distances.",
     "When a distance is 2- or 3-dimensional, the circumference or surface",
     "sampled by two particles increases with increasing distance.",
     "Depending on what one would like to show, one can choose to correct",
     "the histogram and free-energy for this volume effect.",
-    "The probability is normalized by r and r^2 for a dimension of 2 and 3",
+    "The probability is normalized by r and r^2 for dimensions of 2 and 3, ",
     "respectively.",
     "A value of -1 is used to indicate an angle in degrees between two",
     "vectors: a sin(angle) normalization will be applied.",
-    "Note that for angles between vectors the inner-product or cosine",
+    "[BB]Note[bb] that for angles between vectors the inner-product or cosine",
     "is the natural quantity to use, as it will produce bins of the same",
     "volume."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
-  static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
-  static bool bShamEner=TRUE,bSham=TRUE; 
+  static gmx_bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
+  static gmx_bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
+  static gmx_bool bShamEner=TRUE,bSham=TRUE; 
   static real Tref=298.15,pmin=0,ttol=0,pmax=0,gmax=0,emin=0,emax=0;
   static rvec nrdim = {1,1,1};
   static rvec nrbox = {32,32,32};
@@ -739,7 +737,7 @@ int gmx_sham(int argc,char *argv[])
     { "-ttol",     FALSE, etREAL, {&ttol},
       "Tolerance on time in appropriate units (usually ps)" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets seperated by &" },
+      "Read # sets separated by &" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-bw",      FALSE, etREAL, {&binwidth},
@@ -853,10 +851,10 @@ int gmx_sham(int argc,char *argv[])
   if (fn_ene && et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
-  snew(idim,nset);
-  snew(ibox,nset);
-  snew(rmin,nset);
-  snew(rmax,nset);
+  snew(idim,3);
+  snew(ibox,3);
+  snew(rmin,3);
+  snew(rmax,3);
   for(i=0; (i<min(3,nset)); i++) {
     idim[i] = nrdim[i];
     ibox[i] = nrbox[i];

@@ -64,15 +64,41 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
   if (ir->nstlog > 0)
     nstlog = 1 + nsteps / ir->nstlog;
   if (ir->nstenergy > 0)
-    nste = 3 + nsteps % ir->nstenergy;
+    nste = 3 + nsteps / ir->nstenergy;
   cio  = 80*natoms;
   cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
   cio += nstxtc*(14*4 + nxtcatoms*5.0); /* roughly 5 bytes per atom */
   cio += nstlog*(nrener*16*2.0); /* 16 bytes per energy term plus header */
-  cio += (1.0*nste)*nrener*sizeof(t_energy);
+  /* t_energy contains doubles, but real is written to edr */
+  cio += (1.0*nste)*nrener*3*sizeof(real);
   
   if (ir->efep != efepNO) {
-    cio += (1 + nsteps)*20; /* roughly 20 chars per line */
+      int ndh=ir->n_flambda;
+      if (ir->dhdl_derivatives == dhdlderivativesYES)
+      {
+          ndh += 1;
+      }   
+      if (ir->separate_dhdl_file==sepdhdlfileYES)
+      {
+          int nchars = 8 + ndh*10; /* time data ~8 chars/line,
+                                        dH data ~10 chars/line */
+          cio += ((1 + nsteps)/ir->nstdhdl)*nchars; 
+      }
+      else
+      {
+          /* dH output to ener.edr: */
+          if (ir->dh_hist_size <= 0) 
+          {
+              /* as data blocks: 1 real per dH point */
+              cio += ((1 + nsteps)/ir->nstdhdl)*ndh*sizeof(real); 
+          }
+          else
+          {
+              /* as histograms: dh_hist_size ints per histogram */
+              cio += ((1 + nsteps)/ir->nstenergy)*
+                        sizeof(int)*ir->dh_hist_size*ndh;
+          }
+      }
   }
   if (ir->pull != NULL) {
     if (ir->pull->nstxout > 0) {

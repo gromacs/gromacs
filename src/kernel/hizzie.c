@@ -59,7 +59,7 @@ static int in_strings(char *key,int nstr,const char **str)
   return -1;
 }
 
-static bool hbond(rvec x[],int i,int j,real distance)
+static gmx_bool hbond(rvec x[],int i,int j,real distance)
 {
   real tol = distance*distance;
   rvec   tmp;
@@ -70,7 +70,7 @@ static bool hbond(rvec x[],int i,int j,real distance)
 }
 
 static void chk_allhb(t_atoms *pdba,rvec x[],t_blocka *hb,
-		      bool donor[],bool accept[],real dist)
+		      gmx_bool donor[],gmx_bool accept[],real dist)
 {
   int i,j,k,ii,natom;
   
@@ -117,11 +117,11 @@ static void pr_hbonds(FILE *fp,t_blocka *hb,t_atoms *pdba)
   }
 }
 
-static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
-		       bool ad[],bool hbond[],rvec xh,
+static gmx_bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
+		       gmx_bool ad[],gmx_bool hbond[],rvec xh,
 		       real angle,real dist)
 {
-  bool bHB;
+  gmx_bool bHB;
   int  j,aj,ri,natom;
   real d2,dist2,a;
   rvec nh,oh;
@@ -184,12 +184,12 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   };
 #define NPD asize(prot_don)
   
-  bool *donor,*acceptor;
-  bool *hbond,bHaveH=FALSE;
-  bool bHDd,bHEd;
+  gmx_bool *donor,*acceptor;
+  gmx_bool *hbond,bHaveH=FALSE;
+  gmx_bool bHDd,bHEd;
   rvec xh1,xh2;
   int  natom;
-  int  i,j,nd,na,aj,hisind,his0,type=-1;
+  int  i,nd,na,aj,hisind,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
   t_blocka *hb;
   real d;
@@ -221,7 +221,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   /* Now do the HIS stuff */
   hisind=-1;
   for(i=0; (i<natom); ) {
-    if (strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
+    if (gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
       i++;
     else {
       if (pdba->atom[i].resind != hisind) {
@@ -229,18 +229,20 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	
 	/* Find the  atoms in the ring */
 	nd1=ne2=cg=cd2=ce1=-1;
-	for(j=i; (pdba->atom[j].resind==hisind) && (j<natom); j++) {
-	  atomnm=*pdba->atomname[j];
+	while (i<natom && pdba->atom[i].resind==hisind) {
+	  atomnm = *pdba->atomname[i];
 	  if (strcmp(atomnm,"CD2") == 0)
-	    cd2=j;
+	    cd2 = i;
 	  else if (strcmp(atomnm,"CG") == 0)
-	    cg=j;
+	    cg  = i;
 	  else if (strcmp(atomnm,"CE1") == 0)
-	    ce1=j;
+	    ce1 = i;
 	  else if (strcmp(atomnm,"ND1") == 0)
-	    nd1=j;
+	    nd1 = i;
 	  else if (strcmp(atomnm,"NE2") == 0)
-	    ne2=j;
+	    ne2 = i;
+
+	  i++;
 	}
 	
 	if (!((cg == -1 ) || (cd2 == -1) || (ce1 == -1) ||
@@ -268,8 +270,8 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	  gmx_fatal(FARGS,"Incomplete ring in HIS%d",
 		    pdba->resinfo[hisind].nr);
 	
-	sfree(*pdba->resinfo[hisind].name);
-	*pdba->resinfo[hisind].name = strdup(hh[type]);
+	snew(pdba->resinfo[hisind].rtp,1);
+	*pdba->resinfo[hisind].rtp = strdup(hh[type]);
       }
     }
   }

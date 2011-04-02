@@ -66,6 +66,7 @@
 #include "constr.h"
 #include "checkpoint.h"
 #include "mdrun.h"
+#include "xvgr.h"
 
 typedef struct gmx_global_stat
 {
@@ -95,169 +96,321 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
+static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
+                            gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner) {
+    int i,to,from;
+
+    from = 0;
+    to   = 0;
+    for (i=0;i<F_NRE;i++)
+    {
+        if (bToBuffer)
+        {
+            from = i;
+        }
+        else
+        {
+            to = i;
+        }
+        switch (i) {
+        case F_EKIN:
+        case F_TEMP:
+        case F_DKDL:
+            if (bTemp)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        case F_PRES:    
+        case F_PDISPCORR:
+        case F_VTEMP:
+            if (bPres)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        default:
+            if (bEner)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        }
+    }
+
+    return to;
+}
+
 void global_stat(FILE *fplog,gmx_global_stat_t gs,
-		 t_commrec *cr,gmx_enerdata_t *enerd,
-		 tensor fvir,tensor svir,rvec mu_tot,
-		 t_inputrec *inputrec,
-		 gmx_ekindata_t *ekind,bool bSumEkinhOld,
-		 gmx_constr_t constr,
-		 t_vcm *vcm,int *nabnsb,
-		 real *chkpt,real *terminate,
-		 gmx_mtop_t *top_global, t_state *state_local)
+                 t_commrec *cr,gmx_enerdata_t *enerd,
+                 tensor fvir,tensor svir,rvec mu_tot,
+                 t_inputrec *inputrec,
+                 gmx_ekindata_t *ekind,gmx_constr_t constr,
+                 t_vcm *vcm,
+                 int nsig,real *sig,
+                 gmx_mtop_t *top_global, t_state *state_local, 
+                 gmx_bool bSumEkinhOld, int flags)
+/* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;
-  int    ie,ifv,isv,irmsd=0,imu=0;
+  int    ie=0,ifv=0,isv=0,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
-  int    ibnsb=-1,ichkpt=-1,iterminate;
+  int    isig=-1;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
-  int    j;
-  real   *rmsd_data,rbnsb;
+  real   copyenerd[F_NRE];
+  int    nener,j;
+  real   *rmsd_data=NULL;
   double nb;
-  
+  gmx_bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
+
+  bVV           = EI_VV(inputrec->eI);
+  bTemp         = flags & CGLO_TEMPERATURE;
+  bEner         = flags & CGLO_ENERGY;
+  bPres         = (flags & CGLO_PRESSURE); 
+  bConstrVir    = (flags & CGLO_CONSTRAINT);
+  bFirstIterate = (flags & CGLO_FIRSTITERATE);
+  bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && bPres));
+  bReadEkin     = (flags & CGLO_READEKIN);
+
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
+  
 
   reset_bin(rb);
-
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
    */
-  where();
-  ie  = add_binr(rb,F_NRE,enerd->term);
-  where();
-  ifv = add_binr(rb,DIM*DIM,fvir[0]);
-  where();
-  isv = add_binr(rb,DIM*DIM,svir[0]);
-  where();
-  if (constr) {
-    rmsd_data = constr_rmsd_data(constr);
-    if (rmsd_data)
-      irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
-  } else {
-    rmsd_data = NULL;
-  }
-  if (!NEED_MUTOT(*inputrec)) {
-    imu = add_binr(rb,DIM,mu_tot);
-    where();
-  }
-  if (ekind) {
-    for(j=0; (j<inputrec->opts.ngtc); j++) {
-      if (bSumEkinhOld) {
-	itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
-      }
-      itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
-    }
-    where();
-    idedl = add_binr(rb,1,&(ekind->dekindl));
-    where();
-    ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
-    where();
-  }
-  for(j=0; (j<egNR); j++)
-    inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
-  where();
-  if (inputrec->efep != efepNO) {
-    idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
-    idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
-    if (enerd->n_lambda > 0) {
-      iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
-    }
-  }
-  if (vcm) {
-    icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
-    where();
-    imass = add_binr(rb,vcm->nr,vcm->group_mass);
-    where();
-    if (vcm->mode == ecmANGULAR) {
-      icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
-      where();
-      icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
-      where();
-      ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-      where();
-    }
-  }
-  if (DOMAINDECOMP(cr)) {
-    nb = cr->dd->nbonded_local;
-    inb = add_bind(rb,1,&nb);
-  }
-  where();
-  if (nabnsb) {
-    rbnsb = *nabnsb;
-    ibnsb = add_binr(rb,1,&rbnsb);
-  }
-  if (chkpt)
-    ichkpt   = add_binr(rb,1,chkpt);
-  iterminate = add_binr(rb,1,terminate);
+
+  /* First, we neeed to identify which enerd->term should be
+     communicated.  Temperature and pressure terms should only be
+     communicated and summed when they need to be, to avoid repeating
+     the sums and overcounting. */
+
+  nener = filter_enerdterm(enerd->term,TRUE,copyenerd,bTemp,bPres,bEner);
   
+  /* First, the data that needs to be communicated with velocity verlet every time
+     This is just the constraint virial.*/
+  if (bConstrVir) {
+      isv = add_binr(rb,DIM*DIM,svir[0]);
+      where();
+  }
+  
+/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+  if (bTemp || !bVV)
+  {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
+              if (bSumEkinhOld) 
+              {
+                  itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+              }
+              if (bEkinAveVel && !bReadEkin) 
+              {
+                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinf[0]);
+              } 
+              else if (!bReadEkin)
+              {
+                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
+              }
+          }
+          /* these probably need to be put into one of these categories */
+          where();
+          idedl = add_binr(rb,1,&(ekind->dekindl));
+          where();
+          ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
+          where();
+      }  
+  }      
+  where();
+  
+  if ((bPres || !bVV) && bFirstIterate)
+  {
+      ifv = add_binr(rb,DIM*DIM,fvir[0]);
+  }
+
+
+  if (bEner) 
+  { 
+      where();
+      if (bFirstIterate) 
+      {
+          ie  = add_binr(rb,nener,copyenerd);
+      }
+      where();
+      if (constr) 
+      {
+          rmsd_data = constr_rmsd_data(constr);
+          if (rmsd_data) 
+          {
+              irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
+      } 
+      if (!NEED_MUTOT(*inputrec)) 
+      {
+          imu = add_binr(rb,DIM,mu_tot);
+          where();
+      }
+      
+      if (bFirstIterate) 
+      {
+          for(j=0; (j<egNR); j++)
+          {
+              inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
+          }
+          where();
+          if (inputrec->efep != efepNO) 
+          {
+              idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) 
+              {
+                  iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
+              }
+          }
+      }
+
+      if (vcm) 
+      {
+          icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+          where();
+          imass = add_binr(rb,vcm->nr,vcm->group_mass);
+          where();
+          if (vcm->mode == ecmANGULAR) 
+          {
+              icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
+              where();
+              icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
+              where();
+              ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+              where();
+          }
+      }
+  }
+  if (DOMAINDECOMP(cr)) 
+  {
+      nb = cr->dd->nbonded_local;
+      inb = add_bind(rb,1,&nb);
+      }
+  where();
+  if (nsig > 0) 
+  {
+      isig = add_binr(rb,nsig,sig);
+  }
+
   /* Global sum it all */
   if (debug)
-    fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  {
+      fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  }
   sum_bin(rb,cr);
   where();
-  
-  /* Extract all the data locally */
-  extract_binr(rb,ie  ,F_NRE,enerd->term);
-  extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
-  extract_binr(rb,isv ,DIM*DIM,svir[0]);
-  if (rmsd_data)
-    extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
-  if (!NEED_MUTOT(*inputrec))
-    extract_binr(rb,imu,DIM,mu_tot);
-  if (ekind) {
-    for(j=0; (j<inputrec->opts.ngtc); j++) {
-      if (bSumEkinhOld)
-	extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
-      extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);
-    }
-    extract_binr(rb,idedl,1,&(ekind->dekindl));
-    extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
-    where();
-  }
-  for(j=0; (j<egNR); j++)
-    extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
-  if (inputrec->efep != efepNO) {
-    extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
-    extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
-    if (enerd->n_lambda > 0) {
-      extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
-    }
-  }
-  if (vcm) {
-    extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
-    where();
-    extract_binr(rb,imass,vcm->nr,vcm->group_mass);
-    where();
-    if (vcm->mode == ecmANGULAR) {
-      extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
-      where();
-      extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
-      where();
-      extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-      where();
-    }
-  }
-  if (DOMAINDECOMP(cr)) {
-    extract_bind(rb,inb,1,&nb);
-    if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-      dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
-  }
-  where();
-  if (nabnsb) {
-    extract_binr(rb,ibnsb,1,&rbnsb);
-    *nabnsb = (int)(rbnsb + 0.5);
-  }
-  where();
-  if (chkpt)
-    extract_binr(rb,ichkpt,1,chkpt);
-  extract_binr(rb,iterminate,1,terminate);
-  where();
 
-  /* Small hack for temp only */
-  enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+  /* Extract all the data locally */
+
+  if (bConstrVir) 
+  {
+      extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  }
+
+  /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+  if (bTemp || !bVV)
+  {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
+              if (bSumEkinhOld)
+              {
+                  extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+              }
+              if (bEkinAveVel && !bReadEkin) {
+                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinf[0]);
+              }
+              else if (!bReadEkin)
+              {
+                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);              
+              }
+          }
+          extract_binr(rb,idedl,1,&(ekind->dekindl));
+          extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
+          where();
+      }
+  }
+  if ((bPres || !bVV) && bFirstIterate)
+  {
+      extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
+  }
+
+  if (bEner) 
+  {
+      if (bFirstIterate) 
+      {
+          extract_binr(rb,ie,nener,copyenerd);
+          if (rmsd_data) 
+          {
+              extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
+          if (!NEED_MUTOT(*inputrec))
+          {
+              extract_binr(rb,imu,DIM,mu_tot);
+          }
+
+          for(j=0; (j<egNR); j++)
+          {
+              extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
+          }
+          if (inputrec->efep != efepNO) 
+          {
+              extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) 
+              {
+                  extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
+              }
+          }
+          /* should this be here, or with ekin?*/
+          if (vcm) 
+          {
+              extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
+              where();
+              extract_binr(rb,imass,vcm->nr,vcm->group_mass);
+              where();
+              if (vcm->mode == ecmANGULAR) 
+              {
+                  extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+                  where();
+                  extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+                  where();
+                  extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+                  where();
+              }
+          }
+          if (DOMAINDECOMP(cr)) 
+          {
+              extract_bind(rb,inb,1,&nb);
+              if ((int)(nb + 0.5) != cr->dd->nbonded_global) 
+              {
+                  dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
+              }
+          }
+          where();
+
+          filter_enerdterm(copyenerd,FALSE,enerd->term,bTemp,bPres,bEner);    
+/* Small hack for temp only - not entirely clear if still needed?*/
+          /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
+      }
+  }
+
+  if (nsig > 0) 
+  {
+      extract_binr(rb,isig,nsig,sig);
+  }
+  where();
 }
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)
@@ -278,12 +431,122 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
+gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
+                          const t_commrec *cr,const t_inputrec *ir,
+                          const output_env_t oenv)
+{
+    gmx_mdoutf_t *of;
+    char filemode[3];
+    gmx_bool bAppendFiles;
+
+    snew(of,1);
+
+    of->fp_trn   = NULL;
+    of->fp_ene   = NULL;
+    of->fp_xtc   = NULL;
+    of->fp_dhdl  = NULL;
+    of->fp_field = NULL;
+    
+    of->eIntegrator     = ir->eI;
+    of->simulation_part = ir->simulation_part;
+
+    if (MASTER(cr))
+    {
+        bAppendFiles = (mdrun_flags & MD_APPENDFILES);
+
+        of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
+
+        sprintf(filemode, bAppendFiles ? "a+" : "w+");  
+        
+        if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
+#ifndef GMX_FAHCORE
+            &&
+            !(EI_DYNAMICS(ir->eI) &&
+              ir->nstxout == 0 &&
+              ir->nstvout == 0 &&
+              ir->nstfout == 0)
+#endif
+	    )
+        {
+            of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
+        }
+        if (EI_DYNAMICS(ir->eI) &&
+            ir->nstxtcout > 0)
+        {
+            of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
+            of->xtc_prec = ir->xtcprec;
+        }
+        if (EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+        }
+        of->fn_cpt = opt2fn("-cpo",nfile,fnm);
+        
+        if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            (ir->separate_dhdl_file == sepdhdlfileYES ) && 
+            EI_DYNAMICS(ir->eI))
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
+            }
+            else
+            {
+                of->fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
+            }
+        }
+        
+        if (opt2bSet("-field",nfile,fnm) &&
+            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-field",nfile,fnm),
+                                            filemode);
+            }
+            else
+            {				  
+                of->fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+                                        "Applied electric field","Time (ps)",
+                                        "E (V/nm)",oenv);
+            }
+        }
+    }
+
+    return of;
+}
+
+void done_mdoutf(gmx_mdoutf_t *of)
+{
+    if (of->fp_ene != NULL)
+    {
+        close_enx(of->fp_ene);
+    }
+    if (of->fp_xtc)
+    {
+        close_xtc(of->fp_xtc);
+    }
+    if (of->fp_trn)
+    {
+        close_trn(of->fp_trn);
+    }
+    if (of->fp_dhdl != NULL)
+    {
+        gmx_fio_fclose(of->fp_dhdl);
+    }
+    if (of->fp_field != NULL)
+    {
+        gmx_fio_fclose(of->fp_field);
+    }
+
+    sfree(of);
+}
+
 void write_traj(FILE *fplog,t_commrec *cr,
-                int fp_trn,bool bX,bool bV,bool bF,
-                int fp_xtc,bool bXTC,int xtc_prec,
-                const char *fn_cpt,bool bCPT,
+                gmx_mdoutf_t *of,
+                int mdof_flags,
                 gmx_mtop_t *top_global,
-                int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
+                gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc)
@@ -291,49 +554,61 @@ void write_traj(FILE *fplog,t_commrec *cr,
     int     i,j;
     gmx_groups_t *groups;
     rvec    *xxtc;
+    rvec *local_v;
+    rvec *global_v;
     
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
+
+    /* MRS -- defining these variables is to manage the difference
+     * between half step and full step velocities, but there must be a better way . . . */
+
+    local_v  = state_local->v;
+    global_v = state_global->v;
     
     if (DOMAINDECOMP(cr))
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             dd_collect_state(cr->dd,state_local,state_global);
         }
         else
         {
-            if (bX || bXTC)
+            if (mdof_flags & (MDOF_X | MDOF_XTC))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
             }
-            if (bV)
+            if (mdof_flags & MDOF_V)
             {
-                dd_collect_vec(cr->dd,state_local,state_local->v,
-                               state_global->v);
+                dd_collect_vec(cr->dd,state_local,local_v,
+                               global_v);
             }
         }
-        if (bF)
+        if (mdof_flags & MDOF_F)
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
     }
     else
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             /* All pointers in state_local are equal to state_global,
              * but we need to copy the non-pointer entries.
              */
             state_global->lambda = state_local->lambda;
+            state_global->veta = state_local->veta;
+            state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
+            copy_mat(state_local->svir_prev,state_global->svir_prev);
+            copy_mat(state_local->fvir_prev,state_global->fvir_prev);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
         }
         if (cr->nnodes > 1)
         {
             /* Particle decomposition, collect the data on the master node */
-            if (bCPT)
+            if (mdof_flags & MDOF_CPT)
             {
                 if (state_local->flags & (1<<estX))   MX(state_global->x);
                 if (state_local->flags & (1<<estV))   MX(state_global->v);
@@ -362,31 +637,36 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             else
             {
-                if (bX || bXTC) MX(state_global->x);
-                if (bV)         MX(state_global->v);
+                if (mdof_flags & (MDOF_X | MDOF_XTC)) MX(state_global->x);
+                if (mdof_flags & MDOF_V)              MX(global_v);
             }
-            if (bF)         MX(f_global);
-        }
-    }
-    
-    if (MASTER(cr)) {
-        if (bCPT) {
-            write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
-        }
-        
-        if (bX || bV || bF) {
-            fwrite_trn(fp_trn,step,t,state_local->lambda,
+            if (mdof_flags & MDOF_F) MX(f_global);
+         }
+     }
+
+     if (MASTER(cr))
+     {
+         if (mdof_flags & MDOF_CPT)
+         {
+             write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
+                              fplog,cr,of->eIntegrator,
+                              of->simulation_part,step,t,state_global);
+         }
+
+         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
+         {
+            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
                        state_local->box,top_global->natoms,
-                       bX ? state_global->x : NULL,
-                       bV ? state_global->v : NULL,
-                       bF ? f_global : NULL);
-            if(gmx_fio_flush(fp_trn) != 0)
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
+            if (gmx_fio_flush(of->fp_trn) != 0)
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_trn);
+            gmx_fio_check_file_position(of->fp_trn);
         }      
-        if (bXTC) {
+        if (mdof_flags & MDOF_XTC) {
             groups = &top_global->groups;
             if (*n_xtc == -1)
             {
@@ -419,12 +699,12 @@ void write_traj(FILE *fplog,t_commrec *cr,
                     }
                 }
             }
-            if (write_xtc(fp_xtc,*n_xtc,step,t,
-                          state_local->box,xxtc,xtc_prec) == 0)
+            if (write_xtc(of->fp_xtc,*n_xtc,step,t,
+                          state_local->box,xxtc,of->xtc_prec) == 0)
             {
                 gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_xtc);
+            gmx_fio_check_file_position(of->fp_xtc);
         }
     }
 }

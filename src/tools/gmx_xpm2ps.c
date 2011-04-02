@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include "string2.h"
 #include "copyrite.h"
@@ -58,7 +60,7 @@ typedef struct {
   real major;
   real minor;
   real offset;
-  bool first;
+  gmx_bool first;
   int  lineatzero;
   real majorticklen;
   real minorticklen;
@@ -73,12 +75,12 @@ typedef struct {
   int  bw;
   real linewidth;
   real xoffs,yoffs;
-  bool bTitle;
-  bool bTitleOnce;
-  bool bYonce;
+  gmx_bool bTitle;
+  gmx_bool bTitleOnce;
+  gmx_bool bYonce;
   real titfontsize;
   char titfont[STRLEN];
-  bool legend;
+  gmx_bool legend;
   real legfontsize;
   char legfont[STRLEN];
   char leglabel[STRLEN];
@@ -100,22 +102,26 @@ enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
 
 void get_params(const char *mpin,const char *mpout,t_psrec *psr)
 {
-  static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
+  static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
   static const char *colors[] = { "none", "black", "white", NULL };
+  warninp_t wi;
   t_inpfile *inp;
   const char *tmp;
   int       ninp=0;
-  
-  if (mpin)
-    inp = read_inpfile(mpin,&ninp,NULL);
-  else
+
+  wi = init_warning(FALSE,0);
+
+  if (mpin != NULL) {
+    inp = read_inpfile(mpin,&ninp,NULL,wi);
+  } else {
     inp = NULL;
-  ETYPE("black&white",    psr->bw,             bools);
+  }
+  ETYPE("black&white",    psr->bw,             gmx_bools);
   RTYPE("linewidth",      psr->linewidth,      1.0);
   STYPE("titlefont",      psr->titfont,        "Helvetica");
   RTYPE("titlefontsize",  psr->titfontsize,    20.0);
-  ETYPE("legend",         psr->legend,         bools);
+  ETYPE("legend",         psr->legend,         gmx_bools);
   STYPE("legendfont",     psr->legfont,        psr->titfont);
   STYPE("legendlabel",    psr->leglabel,       "");
   STYPE("legend2label",   psr->leg2label,      psr->leglabel);
@@ -132,7 +138,7 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   RTYPE("x-major",        psr->X.major,        NOTSET);
   RTYPE("x-minor",        psr->X.minor,        NOTSET);
   RTYPE("x-firstmajor",   psr->X.offset,       0.0);
-  ETYPE("x-majorat0",     psr->X.first,        bools);
+  ETYPE("x-majorat0",     psr->X.first,        gmx_bools);
   RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);
   RTYPE("x-minorticklen", psr->X.minorticklen, 4.0);
   STYPE("x-label",        psr->X.label,        "");
@@ -144,7 +150,7 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   RTYPE("y-major",        psr->Y.major,        psr->X.major);
   RTYPE("y-minor",        psr->Y.minor,        psr->X.minor);
   RTYPE("y-firstmajor",   psr->Y.offset,       psr->X.offset);
-  ETYPE("y-majorat0",     psr->Y.first,        bools);
+  ETYPE("y-majorat0",     psr->Y.first,        gmx_bools);
   RTYPE("y-majorticklen", psr->Y.majorticklen, psr->X.majorticklen);
   RTYPE("y-minorticklen", psr->Y.minorticklen, psr->X.minorticklen);
   STYPE("y-label",        psr->Y.label,        psr->X.label);
@@ -152,8 +158,12 @@ void get_params(const char *mpin,const char *mpout,t_psrec *psr)
   STYPE("y-font",         psr->Y.font,         psr->X.font);
   RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
   STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
-  if (mpout)
-    write_inpfile(mpout,ninp,inp,TRUE);
+
+  if (mpout != NULL) {
+    write_inpfile(mpout,ninp,inp,TRUE,wi);
+  }
+  
+  done_warning(wi,FARGS);
 }
 
 t_rgb black = { 0, 0, 0 };
@@ -164,10 +174,10 @@ t_rgb blue  = { 0, 0, 1 };
 /* this must correspond to *colors[] in get_params */
 t_rgb *linecolors[] = { NULL, &black, &white, NULL };
 
-bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
+gmx_bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
 {
   int i;
-  bool bDiff,bColDiff=FALSE;
+  gmx_bool bDiff,bColDiff=FALSE;
 
   if (nmap1 != nmap2) 
       bDiff=TRUE;
@@ -277,7 +287,7 @@ static real box_dh(t_psrec *psr)
 }
 
 #define IS_ONCE (i==nmat-1)
-static real box_dh_top(bool bOnce, t_psrec *psr)
+static real box_dh_top(gmx_bool bOnce, t_psrec *psr)
 {
   real dh;
   
@@ -289,12 +299,12 @@ static real box_dh_top(bool bOnce, t_psrec *psr)
   return  dh;
 }
 
-static bool box_do_all_x_maj_ticks(t_psrec *psr)
+static gmx_bool box_do_all_x_maj_ticks(t_psrec *psr)
 {
   return (psr->boxspacing>(1.5*psr->X.majorticklen));
 }
 
-static bool box_do_all_x_min_ticks(t_psrec *psr)
+static gmx_bool box_do_all_x_min_ticks(t_psrec *psr)
 {
   return (psr->boxspacing>(1.5*psr->X.minorticklen));
 }
@@ -302,7 +312,7 @@ static bool box_do_all_x_min_ticks(t_psrec *psr)
 static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
-  char   buf[12];
+  char   buf[128];
   char   *mylab;
   real   xxx;
   char   **xtick,**ytick;
@@ -464,7 +474,7 @@ static void draw_zerolines(t_psdata out,real x0,real y0,real w,
 }
 
 static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
-		    int elegend,bool bFrame,
+		    int elegend,gmx_bool bFrame,
 		    real *w,real *h,real *dw,real *dh)
 {
   int i,maxytick;
@@ -553,7 +563,7 @@ int add_maps(t_mapping **newmap,
 }
 
 void xpm_mat(const char *outf, int nmat,t_matrix *mat,t_matrix *mat2,
-             bool bDiag,bool bFirstDiag)
+             gmx_bool bDiag,gmx_bool bFirstDiag)
 {
   FILE   *out;
   char   buf[100];
@@ -597,7 +607,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 			 real *major, real *minor)
 {
   real space;
-  bool bTryAgain,bFive;
+  gmx_bool bTryAgain,bFive;
   int  i,j,t,f=0,ten;
 #define NFACT 4
   real major_fact[NFACT] = {5, 4, 2, 1};
@@ -632,8 +642,8 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 }
 
 void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
-	    bool bFrame,bool bDiag,bool bFirstDiag,
-	    bool bTitle,bool bTitleOnce,bool bYonce,int elegend,
+	    gmx_bool bFrame,gmx_bool bDiag,gmx_bool bFirstDiag,
+	    gmx_bool bTitle,gmx_bool bTitleOnce,gmx_bool bYonce,int elegend,
 	    real size,real boxx,real boxy,const char *m2p,const char *m2pout,
 	    int mapoffset)
 {
@@ -647,10 +657,10 @@ void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   real   w,h,dw,dh;
   int       nmap1=0,nmap2=0,leg_nmap;
   t_mapping *map1=NULL,*map2=NULL,*leg_map;
-  bool   bMap1,bNextMap1,bDiscrete;
+  gmx_bool   bMap1,bNextMap1,bDiscrete;
  
   /* memory leak: */
-  libm2p = m2p ? libfn(m2p) : m2p;
+  libm2p = m2p ? gmxlibfn(m2p) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;
@@ -977,8 +987,8 @@ void write_combined_matrix(int ecombine, const char *fn,
 }
 
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
-	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
-	    bool bTitleOnce,bool bYonce,int elegend,
+	    gmx_bool bFrame,gmx_bool bZeroLine,gmx_bool bDiag,gmx_bool bFirstDiag,gmx_bool bTitle,
+	    gmx_bool bTitleOnce,gmx_bool bYonce,int elegend,
 	    real size,real boxx,real boxy,
 	    const char *epsfile,const char *xpmfile,const char *m2p,
             const char *m2pout,int skip, int mapoffset)
@@ -1035,7 +1045,7 @@ void gradient_mat(rvec grad, int nmat, t_matrix mat[])
     gradient_map(grad, mat[m].nmap, mat[m].map);
 }
 
-void rainbow_map(bool bBlue, int nmap, t_mapping map[])
+void rainbow_map(gmx_bool bBlue, int nmap, t_mapping map[])
 {
   int i;
   real c,r,g,b;
@@ -1069,7 +1079,7 @@ void rainbow_map(bool bBlue, int nmap, t_mapping map[])
   }
 }
 
-void rainbow_mat(bool bBlue, int nmat, t_matrix mat[])
+void rainbow_mat(gmx_bool bBlue, int nmat, t_matrix mat[])
 {
   int m;
   
@@ -1080,24 +1090,24 @@ void rainbow_mat(bool bBlue, int nmat, t_matrix mat[])
 int gmx_xpm2ps(int argc,char *argv[])
 {
   const char *desc[] = {
-    "xpm2ps makes a beautiful color plot of an XPixelMap file.",
+    "[TT]xpm2ps[tt] makes a beautiful color plot of an XPixelMap file.",
     "Labels and axis can be displayed, when they are supplied",
     "in the correct matrix format.",
-    "Matrix data may be generated by programs such as do_dssp, g_rms or",
-    "g_mdmat.[PAR]",
-    "Parameters are set in the [TT]m2p[tt] file optionally supplied with",
-    "[TT]-di[tt]. Reasonable defaults are provided. Settings for the y-axis",
-    "default to those for the x-axis. Font names have a defaulting hierarchy:",
+    "Matrix data may be generated by programs such as [TT]do_dssp[tt], [TT]g_rms[tt] or",
+    "[TT]g_mdmat[tt].[PAR]",
+    "Parameters are set in the [TT].m2p[tt] file optionally supplied with",
+    "[TT]-di[tt]. Reasonable defaults are provided. Settings for the [IT]y[it]-axis",
+    "default to those for the [IT]x[it]-axis. Font names have a defaulting hierarchy:",
     "titlefont -> legendfont; titlefont -> (xfont -> yfont -> ytickfont)",
     "-> xtickfont, e.g. setting titlefont sets all fonts, setting xfont",
     "sets yfont, ytickfont and xtickfont.[PAR]",
-    "When no [TT]m2p[tt] file is supplied, many setting are set by",
-    "command line options. The most important option is [TT]-size[tt]",
+    "When no [TT].m2p[tt] file is supplied, many settings are taken from",
+    "command line options. The most important option is [TT]-size[tt],",
     "which sets the size of the whole matrix in postscript units.",
     "This option can be overridden with the [TT]-bx[tt] and [TT]-by[tt]",
-    "options (and the corresponding parameters in the [TT]m2p[tt] file),",
+    "options (and the corresponding parameters in the [TT].m2p[tt] file),",
     "which set the size of a single matrix element.[PAR]",
-    "With [TT]-f2[tt] a 2nd matrix file can be supplied, both matrix",
+    "With [TT]-f2[tt] a second matrix file can be supplied. Both matrix",
     "files will be read simultaneously and the upper left half of the",
     "first one ([TT]-f[tt]) is plotted together with the lower right",
     "half of the second one ([TT]-f2[tt]). The diagonal will contain",
@@ -1109,14 +1119,14 @@ int gmx_xpm2ps(int argc,char *argv[])
     "If the color coding and legend labels of both matrices are identical,",
     "only one legend will be displayed, else two separate legends are",
     "displayed.",
-    "With [TT]-combine[tt] an alternative operation can be selected",
+    "With [TT]-combine[tt], an alternative operation can be selected",
     "to combine the matrices. The output range is automatically set",
     "to the actual range of the combined matrix. This can be overridden",
     "with [TT]-cmin[tt] and [TT]-cmax[tt].[PAR]",
     "[TT]-title[tt] can be set to [TT]none[tt] to suppress the title, or to",
     "[TT]ylabel[tt] to show the title in the Y-label position (alongside",
-    "the Y-axis).[PAR]",
-    "With the [TT]-rainbow[tt] option dull grey-scale matrices can be turned",
+    "the [IT]y[it]-axis).[PAR]",
+    "With the [TT]-rainbow[tt] option, dull grayscale matrices can be turned",
     "into attractive color pictures.[PAR]",
     "Merged or rainbowed matrices can be written to an XPixelMap file with",
     "the [TT]-xpm[tt] option."
@@ -1126,8 +1136,8 @@ int gmx_xpm2ps(int argc,char *argv[])
   const char *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2,etitle,elegend,ediag,erainbow,ecombine;
   t_matrix *mat=NULL,*mat2=NULL;
-  bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;
-  static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE,bAdd=FALSE;
+  gmx_bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;
+  static gmx_bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE,bAdd=FALSE;
   static real size=400,boxx=0,boxy=0,cmin=0,cmax=0;
   static rvec grad={0,0,0};
   enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
@@ -1152,7 +1162,7 @@ int gmx_xpm2ps(int argc,char *argv[])
     { "-size",    FALSE, etREAL, {&size},
       "Horizontal size of the matrix in ps units" },
     { "-bx",      FALSE, etREAL, {&boxx},
-      "Element x-size, overrides -size (also y-size when -by is not set)" },
+      "Element x-size, overrides [TT]-size[tt] (also y-size when [TT]-by[tt] is not set)" },
     { "-by",      FALSE, etREAL, {&boxy},   "Element y-size" },
     { "-rainbow", FALSE, etENUM, {rainbow},
       "Rainbow colors, convert white to" },
@@ -1161,9 +1171,9 @@ int gmx_xpm2ps(int argc,char *argv[])
     { "-skip",    FALSE, etINT,  {&skip},
       "only write out every nr-th row and column" },
     { "-zeroline",FALSE, etBOOL, {&bZeroLine},
-      "insert line in xpm matrix where axis label is zero"},
+      "insert line in [TT].xpm[tt] matrix where axis label is zero"},
     { "-legoffset", FALSE, etINT, {&mapoffset},
-      "Skip first N colors from xpm file for the legend" },
+      "Skip first N colors from [TT].xpm[tt] file for the legend" },
     { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
     { "-cmin",    FALSE, etREAL, {&cmin}, "Minimum for combination output" },
     { "-cmax",    FALSE, etREAL, {&cmax}, "Maximum for combination output" }
@@ -1219,11 +1229,11 @@ int gmx_xpm2ps(int argc,char *argv[])
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
-  fprintf(stderr,"There are %d matrices in %s\n",nmat,fn);
+  fprintf(stderr,"There %s %d matri%s in %s\n",(nmat>1)?"are":"is",nmat,(nmat>1)?"ces":"x",fn);
   fn=opt2fn_null("-f2",NFILE,fnm);
   if (fn) {
     nmat2=read_xpm_matrix(fn,&mat2);
-    fprintf(stderr,"There are %d matrices in %s\n",nmat2,fn);
+    fprintf(stderr,"There %s %d matri%s in %s\n",(nmat2>1)?"are":"is",nmat2,(nmat2>1)?"ces":"x",fn);
     if (nmat != nmat2) {
       fprintf(stderr,"Different number of matrices, using the smallest number.\n");
       nmat=nmat2=min(nmat,nmat2);

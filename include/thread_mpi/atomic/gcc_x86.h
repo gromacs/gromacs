@@ -84,9 +84,16 @@ typedef struct tMPI_Spinlock
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-/* do the intrinsics. icc on windows doesn't have them. */
-#if ( (TMPI_GCC_VERSION >= 40100) && (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) )  ) ) )
-
+/* do the intrinsics. 
+   
+   We disable this for 32-bit builds because the target may be 80386, 
+   which didn't have cmpxchg, etc (they were introduced as only as 'recently' 
+   as the 486, and gcc on some Linux versions still target 80386 by default). 
+  
+   We also specifically check for icc, because intrinsics are not always
+   supported there. */
+#if ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
+     !defined(__INTEL_COMPILER) ) 
 #include "gcc_intrinsics.h"
 
 #else
@@ -114,19 +121,19 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
-    unsigned long prev;
+    unsigned int prev;
     
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
     
-    return prev;
+    return prev==oldval;
 }
 
-static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
-                                                  void *oldval,
-                                                  void *newval)
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
+                                      void *oldval,
+                                      void *newval)
 {
     void* prev;
 #ifndef __x86_64__ 
@@ -140,7 +147,7 @@ static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
 #endif
-    return prev;
+    return prev==oldval;
 }
 
 #endif /* end of check for gcc intrinsics */
@@ -246,7 +253,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 
  
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     return ( (*((volatile int*)(&(x->lock)))) != 0);
 }
@@ -261,6 +268,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
                          "\tpause\n"              /* otherwise: small pause
                                                      as recommended by Intel */
                          "\tjmp 1b\n"             /* and jump back */  
+                         "2:\tnop\n"              /* jump target for end 
+                                                     of wait */
                          : "=m"(x->lock)         /* input & output var */
                          : 
                          : "memory"/* we changed memory */

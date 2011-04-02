@@ -45,21 +45,27 @@
 extern "C" {
 #endif
 
-extern t_restp *search_rtp(char *key,int nrtp,t_restp rtp[]);
-/* Search for an entry in the rtp database */
+char *search_rtp(const char *key,int nrtp,t_restp rtp[]);
+/* Search for an entry in the rtp database, returns the rtp residue name.
+ * A mismatch of one character is allowed, if there is only one nearly
+ * matching entry in the database, a warning will be generated.
+ */
 
-extern gpp_atomtype_t read_atype(const char *adb,t_symtab *tab);
-/* read atom type database */
+t_restp *get_restp(const char *rtpname,int nrtp,t_restp rtp[]);
+/* Return the entry in the rtp database with rtp name rtpname.
+ * Generates a fatal error when rtpname is not found.
+ */
 
-extern int read_resall(char *resdb, int bts[], t_restp **rtp, 
-		       gpp_atomtype_t atype, t_symtab *tab,
-		       bool *bAlldih, int *nrexcl,
-		       bool *HH14, bool *bRemoveDih);
-/* read rtp database */
+gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
+/* read atom type database(s) */
 
-extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[], 
-			 gpp_atomtype_t atype, bool bAlldih, int nrexcl,
-			 bool HH14, bool remove_dih);
+void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
+		 gpp_atomtype_t atype, t_symtab *tab,
+		 gmx_bool bAllowOverrideRTP);
+/* read rtp database, append to the existing database */
+
+void print_resall(FILE *out, int nrtp, t_restp rtp[], 
+			 gpp_atomtype_t atype);
 /* write rtp database */
 #ifdef __cplusplus
 }

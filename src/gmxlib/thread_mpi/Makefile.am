@@ -9,10 +9,19 @@ AM_CPPFLAGS= -I$(top_srcdir)/include
 
 noinst_LTLIBRARIES = libthread_mpi.la
 
-# Note that not all .c files are compiled directly: some of them 
-# are #included (some multiple times) from other source files.
-libthread_mpi_la_SOURCES = threads.c tmpi_init.c errhandler.c type.c group.c\
-			   comm.c topology.c send_recv.c collective.c list.c
+# again, we assume that we're using pthreads if we're using autotools.
+libthread_mpi_la_SOURCES = alltoall.c      impl.h          pthreads.h \
+			   barrier.c       list.c          reduce.c \
+			   bcast.c         lock.c          reduce_fast.c \
+			   collective.c    once.c          scatter.c \
+			   collective.h    p2p.h           settings.h \
+			   comm.c          p2p_protocol.c  tmpi_init.c \
+			   errhandler.c    p2p_send_recv.c tmpi_ops.h \
+			   event.c         p2p_wait.c      topology.c \
+			   gather.c        profile.c       type.c \
+			   group.c         profile.h       winthreads.c \
+			   hwinfo.c        pthreads.c      winthreads.h
+
 
 CLEANFILES     = *.la *~ \\\#*
 

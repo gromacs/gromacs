@@ -35,9 +35,14 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -50,11 +55,7 @@ files.
 #include <string.h>
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
-
+#include "impl.h"
 
 
 /* topology functions */
@@ -98,7 +99,7 @@ int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims)
 
 
 int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
-                 int *coords)
+                  int *coords)
 {
     int i;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
@@ -134,7 +135,7 @@ int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
     int i,mul=1,ret=0;
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);, 
+    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);
 #endif
     if (!comm)
     {
@@ -195,13 +196,13 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords)
         rank_left /= comm->cart->dims[i];
     }   
 
-    return 0;
+    return TMPI_SUCCESS;
 }
 
 
 
 int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
-                 int *newrank)
+                  int *newrank)
 {
     /* this function doesn't actually do anything beyond returning the current 
        rank (or TMPI_UNDEFINED if it doesn't fit in the new topology */
@@ -241,21 +242,63 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
 }
 
 
+/* initialize Cartesian topology info in comm. If ndims==0, dims and periods
+   are not referenced */
+static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims, 
+                           int *periods)
+{
+    int newrank=-1;
+    int i;
+
+    if (*comm_cart)
+    {
+        tMPI_Comm_rank(*comm_cart, &newrank);
+    }
+
+    if (newrank==0)
+    {
+        (*comm_cart)->cart=(struct cart_topol*)tMPI_Malloc(
+                                            sizeof(struct cart_topol));
+        (*comm_cart)->cart->dims=(int*)tMPI_Malloc(ndims*sizeof(int));
+        (*comm_cart)->cart->periods=(int*)tMPI_Malloc(ndims*sizeof(int));
+        (*comm_cart)->cart->ndims=ndims;
+        for(i=0;i<ndims;i++)
+        {
+            (*comm_cart)->cart->dims[i]=dims[i];
+            (*comm_cart)->cart->periods[i]=periods[i];
+        }
+    }
+
+    /* and we add a barrier to make sure the cart object is seen by 
+       every thread that is part of the new communicator */
+    if (*comm_cart)
+    {
+        tMPI_Barrier_wait( &( (*comm_cart)->barrier) );
+    }
+}
+
+void tMPI_Cart_destroy(struct cart_topol *cart)
+{
+    if (cart)
+    {
+        free(cart->dims);
+        free(cart->periods);
+    }
+}
 
 int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
-                    int reorder, tMPI_Comm *comm_cart)
+                     int reorder, tMPI_Comm *comm_cart)
 {
     int myrank=tMPI_Comm_seek_rank(comm_old, tMPI_Get_current());
     int key=myrank;
-    int newrank=-1;
     int color=0;
     int Ntot=1;
     int i;
     
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm, ndims, 
-                     dims, periods, reorder, comm_cart);
+    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm_old, 
+                     ndims, dims, periods, reorder, comm_cart);
 #endif
     if (!comm_old)
     {
@@ -290,36 +333,65 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
 
     tMPI_Comm_split(comm_old, color, key, comm_cart);
 
-    if (*comm_cart)
-    {
-        tMPI_Comm_rank(*comm_cart, &newrank);
-    }
+    tMPI_Cart_init(comm_cart, ndims, dims, periods);
 
-    if (newrank==0)
+    return TMPI_SUCCESS;
+}
+
+
+int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm)
+{
+    int myrank;
+    int ndims=0;
+    int *dims=NULL;
+    int *periods=NULL;
+    int *oldcoords=NULL;
+    int i;
+    int ndims_notused=1;
+    int color_notused=0;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_sub(%p, %p, %p)", comm, remain_dims, newcomm);
+#endif
+    tMPI_Comm_rank(comm, &myrank);
+    if ( comm->cart )
     {
-        (*comm_cart)->cart=(struct cart_topol*)tMPI_Malloc(
-                                            sizeof(struct cart_topol));
-        (*comm_cart)->cart->dims=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->periods=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->ndims=ndims;
-        for(i=0;i<ndims;i++)
+        oldcoords=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        dims=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        periods=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+
+        /* get old coordinates */
+        tMPI_Cart_coords(comm, myrank, comm->cart->ndims, oldcoords);
+
+        for(i=0;i<comm->cart->ndims;i++)
         {
-            (*comm_cart)->cart->dims[i]=dims[i];
-            (*comm_cart)->cart->periods[i]=periods[i];
+            if (remain_dims[i])
+            {
+                /* for the remaining dimensions, copy dimensionality data */
+                dims[ndims]=comm->cart->dims[i];
+                periods[ndims]=comm->cart->periods[i];
+                ndims++;
+            }
+            else
+            {
+                /* base color on not used coordinates. We keep a 
+                   ndims_notused index multiplier.*/
+                color_notused += oldcoords[i]*ndims_notused;
+                ndims_notused *= comm->cart->dims[i];
+            }
         }
     }
 
-    /* and we add a barrier to make sure the cart object is seen by 
-       every thread that is part of the new communicator */
-    if (*comm_cart)
-    {
-#ifndef TMPI_NO_BUSY_WAIT
-        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#else
-        tMPI_Thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#endif
-    }
+    /* key=myrank, because we want the order to remain the same */
+    tMPI_Comm_split(comm, color_notused, myrank, newcomm);
+    tMPI_Cart_init(newcomm, ndims, dims, periods);
 
+    if (oldcoords)
+        free(oldcoords);
+    if (dims)
+        free(dims);
+    if (periods)
+        free(periods);
 
     return TMPI_SUCCESS;
 }

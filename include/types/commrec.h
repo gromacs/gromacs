@@ -32,15 +32,19 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef _commrec_h
+#define _commrec_h
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
-#endif
+#else
 #ifdef GMX_THREADS
-#include "tmpi.h"
+#include "../tmpi.h"
+#else
+typedef void* MPI_Comm;
+typedef void* MPI_Request;
+typedef void* MPI_Group;
+#endif
 #endif
 
 #include "idef.h"
@@ -105,11 +109,10 @@ typedef struct {
 } gmx_ddbox_t;
 
 
-#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
 typedef struct {
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
-  float *ibuf; /* for ints */
+  int *ibuf; /* for ints */
   int ibuf_alloc;
 
   float *fbuf; /* for floats */
@@ -118,7 +121,6 @@ typedef struct {
   double *dbuf; /* for doubles */
   int dbuf_alloc;
 } mpi_in_place_buf_t;
-#endif
 
 
 typedef struct {
@@ -127,11 +129,9 @@ typedef struct {
    * defined in dd->comm in domdec.c
    */
   int  nnodes;
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_all;
-#endif
   /* Use MPI_Sendrecv communication instead of non-blocking calls */
-  bool bSendRecv2;
+  gmx_bool bSendRecv2;
   /* The local DD cell index and rank */
   ivec ci;
   int  rank;
@@ -139,25 +139,23 @@ typedef struct {
   int  masterrank;
   /* Communication with the PME only nodes */
   int  pme_nodeid;
-  bool pme_receive_vir_ener;
+  gmx_bool pme_receive_vir_ener;
   gmx_pme_comm_n_box_p_t cnb;
-#ifdef GMX_MPI
   int  nreq_pme;
   MPI_Request req_pme[4];
-#endif
   
 
   /* The communication setup, identical for each cell, cartesian index */
   ivec nc;
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
-  bool bGridJump;
+  gmx_bool bGridJump;
 
   /* PBC from dim 0 to npbcdim */
   int npbcdim;
 
   /* Screw PBC? */
-  bool bScrewPBC;
+  gmx_bool bScrewPBC;
 
   /* Forward and backward neighboring cells, indexed by 0 to ndim */
   int  neighbor[DIM][2];
@@ -166,7 +164,7 @@ typedef struct {
   gmx_domdec_master_p_t ma;
 
   /* Are there inter charge group constraints */
-  bool bInterCGcons;
+  gmx_bool bInterCGcons;
 
   /* Global atom number to interaction list */
   gmx_reverse_top_p_t reverse_top;
@@ -223,15 +221,11 @@ typedef struct gmx_partdec *gmx_partdec_p_t;
 typedef struct {
   int nsim;
   int sim;
-#ifdef GMX_MPI
   MPI_Group mpi_group_masters;
   MPI_Comm mpi_comm_masters;
-#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
   mpi_in_place_buf_t *mpb;
-#endif
-#endif
 } gmx_multisim_t;
 
 #define DUTY_PP  (1<<0)
@@ -239,11 +233,9 @@ typedef struct {
 
 typedef struct {
   int      bUse;
-#ifdef GMX_MPI
   MPI_Comm comm_intra;
   int      rank_intra;
   MPI_Comm comm_inter;
-#endif
   
 } gmx_nodecomm_t;
 
@@ -252,18 +244,18 @@ typedef struct {
 } gmx_commrec_thread_t;
 
 typedef struct {
-  /* The nodids in one sim are numbered sequentially from 0.
+  /* The nodeids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
    */
   int sim_nodeid,nnodes,npmenodes;
-  int threadid,nthreads;
+
+  /* thread numbers: */
+  /* Not used yet: int threadid, nthreads; */
   /* The nodeid in the PP/PME, PP or PME group */
   int nodeid;
-#ifdef GMX_MPI
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
-#endif
 
 #ifdef GMX_THREAD_SHM_FDECOMP
   gmx_commrec_thread_t thread;
@@ -282,20 +274,20 @@ typedef struct {
 
   gmx_multisim_t *ms;
 
-#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
   mpi_in_place_buf_t *mpb;
-#endif
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
-#define MASTERTHREAD(cr)   ((cr)->threadid == 0)
-#define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr))
+  /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
+  /* #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr)) */
+#define MASTER(cr)         MASTERNODE(cr)
 #define SIMMASTER(cr)      (MASTER(cr) && ((cr)->duty & DUTY_PP))
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
-#define THREADPAR(cr)      ((cr)->nthreads > 1)
-#define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))
+  /* #define THREADPAR(cr)      ((cr)->nthreads > 1) */
+  /* #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr)) */
+#define PAR(cr)            NODEPAR(cr)
 #define RANK(cr,nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
@@ -314,4 +306,4 @@ typedef struct {
 #ifdef __cplusplus
 }
 #endif
-
+#endif

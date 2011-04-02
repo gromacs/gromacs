@@ -1,0 +1,8 @@
+; rtp residue to rtp building block table
+;GMX   Force-field
+CYS    CYSH
+HISD   HISA
+HISE   HISB
+LYS    LYSH
+LYSN   LYS
+HEM    HEME

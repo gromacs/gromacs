@@ -351,7 +351,7 @@ bool_t
 xdr_opaque (XDR *xdrs, char *cp, unsigned int cnt)
 {
   unsigned int rndup;
-  static char crud[BYTES_PER_XDR_UNIT];
+  char crud[BYTES_PER_XDR_UNIT];
 
   /*
    * if no data we are done
@@ -515,8 +515,14 @@ xdr_double(xdrs, dp)
   /* Windows and some other systems dont define double-precision
    * word order in the header files, so unfortunately we have
    * to calculate it!
+   *
+   * For thread safety, we calculate it every time: locking this would
+   * be more expensive.
    */
-  static int LSW=-1; /* Least significant fp word */
+  /*static int LSW=-1;*/ /* Least significant fp word */
+  int LSW=-1; /* Least significant fp word */
+  
+
   int *ip;
   xdr_int32_t tmp[2];
 

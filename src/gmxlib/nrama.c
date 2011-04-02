@@ -71,21 +71,24 @@ static void calc_dihs(t_xrama *xr)
 {
   int    i,t1,t2,t3;
   rvec   r_ij,r_kj,r_kl,m,n;
-  real   cos_phi,sign;
+  real   sign;
   t_dih  *dd;
-
-  rm_pbc(xr->idef,xr->ePBC,xr->natoms,xr->box,xr->x,xr->x);
+  gmx_rmpbc_t  gpbc=NULL;
+  
+  gpbc = gmx_rmpbc_init(xr->idef,xr->ePBC,xr->natoms,xr->box);
+  gmx_rmpbc(gpbc,xr->natoms,xr->box,xr->x);
+  gmx_rmpbc_done(gpbc);
 
   for(i=0; (i<xr->ndih); i++) {
     dd=&(xr->dih[i]);
     dd->ang=dih_angle(xr->x[dd->ai[0]],xr->x[dd->ai[1]],
 		      xr->x[dd->ai[2]],xr->x[dd->ai[3]],
 		      NULL,
-		      r_ij,r_kj,r_kl,m,n,&cos_phi,&sign,&t1,&t2,&t3);
+		      r_ij,r_kj,r_kl,m,n,&sign,&t1,&t2,&t3);
   }
 }
 
-bool new_data(t_xrama *xr)
+gmx_bool new_data(t_xrama *xr)
 {
   if (!read_next_x(xr->oenv,xr->traj,&xr->t,xr->natoms,xr->x,xr->box))
     return FALSE;
@@ -151,7 +154,7 @@ static void get_dih(t_xrama *xr,t_atoms *atoms)
 static int search_ff(int thisff[NPP],int ndih,int **ff)
 {
   int  j,k;
-  bool bFound=FALSE;
+  gmx_bool bFound=FALSE;
   
   for(j=0; (j<ndih); j++) {
     bFound=TRUE;
@@ -205,18 +208,18 @@ static void get_dih2(t_xrama *xr,t_functype functype[],
       
       for(j=0; (j<NPP); j++)
 	thisff[j]=-1;
-      if (strcasecmp(cai,"C") == 0) {
+      if (gmx_strcasecmp(cai,"C") == 0) {
 	/* May be a Phi angle */
-	if ((strcasecmp(caj,"N") == 0) &&
-	    (strcasecmp(cak,"CA") == 0) &&
-	    (strcasecmp(cal,"C") == 0))
+	if ((gmx_strcasecmp(caj,"N") == 0) &&
+	    (gmx_strcasecmp(cak,"CA") == 0) &&
+	    (gmx_strcasecmp(cal,"C") == 0))
 	  thisff[0]=ai,thisff[1]=aj,thisff[2]=ak,thisff[3]=al;
       }
-      else if (strcasecmp(cai,"N") == 0) {
+      else if (gmx_strcasecmp(cai,"N") == 0) {
 	/* May be a Psi angle */
-	if ((strcasecmp(caj,"CA") == 0) &&
-	    (strcasecmp(cak,"C") == 0) &&
-	    (strcasecmp(cal,"N") == 0))
+	if ((gmx_strcasecmp(caj,"CA") == 0) &&
+	    (gmx_strcasecmp(cak,"C") == 0) &&
+	    (gmx_strcasecmp(cal,"N") == 0))
 	  thisff[1]=ai,thisff[2]=aj,thisff[3]=ak,thisff[4]=al;
       }
       if (thisff[1] != -1) {

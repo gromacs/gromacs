@@ -78,7 +78,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 
 static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
+    return __sync_lock_test_and_set(&(x->lock), 1) ;
 }
 
 
@@ -87,7 +87,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
     __sync_lock_release(&(x->lock));
 }
  
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *  x)
 {
     __sync_synchronize();
     return ( x->lock == 1 );
@@ -97,8 +97,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do
     {
-        __sync_synchronize();
     } while (x->lock == 1);
+    __sync_synchronize();
 }
 
 

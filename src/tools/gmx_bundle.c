@@ -84,7 +84,7 @@ static void rotate_ends(t_bundle *bun,rvec axis,int c0,int c1)
 }
 
 static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
-		      bool bRot,t_bundle *bun)
+		      gmx_bool bRot,t_bundle *bun)
 {
   int  end,i,div,d;
   real *mtot,m;
@@ -135,7 +135,8 @@ static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
   }
 }
 
-static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
+static void dump_axes(t_trxstatus *status,t_trxframe *fr,t_atoms *outat,
+                      t_bundle *bun)
 {
   t_trxframe  frout;
   static rvec *xout=NULL;
@@ -160,13 +161,13 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
   frout.natoms = outat->nr;
   frout.atoms  = outat;
   frout.x      = xout;
-  write_trxframe(fp,&frout,NULL);
+  write_trxframe(status,&frout,NULL);
 }
 
 int gmx_bundle(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_bundle analyzes bundles of axes. The axes can be for instance",
+    "[TT]g_bundle[tt] analyzes bundles of axes. The axes can be for instance",
     "helix axes. The program reads two index groups and divides both",
     "of them in [TT]-na[tt] parts. The centers of mass of these parts",
     "define the tops and bottoms of the axes.",
@@ -183,22 +184,23 @@ int gmx_bundle(int argc,char *argv[])
     "[PAR]",
     "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
     "and bottom points of each axis",
-    "are written to a pdb file each frame. The residue numbers correspond",
-    "to the axis numbers. When viewing this file with [TT]rasmol[tt], use the",
+    "are written to a [TT].pdb[tt] file each frame. The residue numbers correspond",
+    "to the axis numbers. When viewing this file with Rasmol, use the",
     "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
     "display the reference axis."
   };
   static int  n=0;
-  static bool bZ=FALSE;
+  static gmx_bool bZ=FALSE;
   t_pargs pa[] = {
     { "-na", FALSE, etINT, {&n},
 	"Number of axes" },
     { "-z", FALSE, etBOOL, {&bZ},
-	"Use the Z-axis as reference iso the average axis" }
+	"Use the [IT]z[it]-axis as reference instead of the average axis" }
   };
   FILE       *out,*flen,*fdist,*fz,*ftilt,*ftiltr,*ftiltl;
   FILE       *fkink=NULL,*fkinkr=NULL,*fkinkl=NULL;
-  int        status,fpdb;
+  t_trxstatus *status;
+  t_trxstatus *fpdb;
   t_topology top;
   int        ePBC;
   rvec       *xtop;
@@ -213,9 +215,11 @@ int gmx_bundle(int argc,char *argv[])
   int        i,j,gnx[MAX_ENDS];
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;
-  bool       bKink;
+  gmx_bool       bKink;
   rvec       va,vb,vc,vr,vl;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
+  
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
@@ -267,27 +271,27 @@ int gmx_bundle(int argc,char *argv[])
   snew(bun.len,n);
 
   flen   = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   fdist  = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   fz     = xvgropen(opt2fn("-oz",NFILE,fnm),"Z-shift of axis centers",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   ftilt  = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   
   if (bKink) {
     fkink  = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
-    if (get_print_xvgr_codes(oenv))
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
+    if (output_env_get_print_xvgr_codes(oenv))
       fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   }
 
   if (opt2bSet("-oa",NFILE,fnm)) {
@@ -302,14 +306,15 @@ int gmx_bundle(int argc,char *argv[])
     }
     fpdb = open_trx(opt2fn("-oa",NFILE,fnm),"w");
   } else
-    fpdb = -1;
+    fpdb = NULL;
   
   read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
-  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,fr.natoms,fr.box);
+
   do {
-    rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
+    gmx_rmpbc_trxfr(gpbc,&fr);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
-    t = conv_time(oenv,fr.time);
+    t = output_env_conv_time(oenv,fr.time);
     fprintf(flen," %10g",t);
     fprintf(fdist," %10g",t);
     fprintf(fz," %10g",t);
@@ -361,13 +366,14 @@ int gmx_bundle(int argc,char *argv[])
       fprintf(fkinkr,"\n");
       fprintf(fkinkl,"\n");
     }
-    if (fpdb >= 0)
+    if (fpdb )
       dump_axes(fpdb,&fr,&outatoms,&bun);
   } while(read_next_frame(oenv,status,&fr));
+  gmx_rmpbc_done(gpbc);
 
   close_trx(status);
   
-  if (fpdb >= 0)
+  if (fpdb )
     close_trx(fpdb);
   ffclose(flen);
   ffclose(fdist);

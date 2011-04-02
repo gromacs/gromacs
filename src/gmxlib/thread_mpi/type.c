@@ -35,9 +35,15 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -51,104 +57,102 @@ files.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
-/* this is where all the tMPI_Reduce ops are included from thread_tmpi_ops.c */
+/* this is where all the tMPI_Reduce ops are included from tmpi_ops.h */
 #define THREAD_MPI_OPS 1
 
 #define TYPE char
 #define TYPENM CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE short
 #define TYPENM SHORT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE int
 #define TYPENM INT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long
 #define TYPENM LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE long long
 #define TYPENM L_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long long int
 #define TYPENM L_L_INT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #endif
 
 #define TYPE signed char
 #define TYPENM S_CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned char
 #define TYPENM U_CHAR
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned short
 #define TYPENM U_SHORT
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned 
 #define TYPENM UNSIGNED
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE unsigned long
 #define TYPENM U_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #ifdef SIZEOF_LONG_LONG_INT
 
 #define TYPE unsigned long long
 #define TYPENM U_L_LONG
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #endif
 
 #define TYPE float
 #define TYPENM FLOAT
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE double
 #define TYPENM DOUBLE
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE long double
 #define TYPENM L_DOUBLE
 #define INTTYPE 0
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 #define TYPE char
 #define TYPENM BYTE
 #define INTTYPE 1
-#include "tmpi_ops.c"
+#include "tmpi_ops.h"
 
 
+/* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
 tmpi_dt tmpi_short   ={sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
 tmpi_dt tmpi_int     ={sizeof(int),               oplist_INT,      0,NULL,TRUE};
@@ -173,7 +177,7 @@ tmpi_dt tmpi_pointer ={sizeof(void*),             NULL,            0,NULL,TRUE};
 
 
 
-
+/* the variable types as they are referred to from MPI */
 const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
 const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
 const tMPI_Datatype TMPI_INT                = &tmpi_int;
@@ -271,7 +275,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
         struct tmpi_datatype_ *lt=tmpi_global->usertypes[i];
         if (lt->committed && lt->N_comp==dt->N_comp)
         {
-            bool found=TRUE;
+            tmpi_bool found=TRUE;
             for(j=0;j<lt->N_comp;j++)
             {
                 if ( (lt->comps[j].type  != dt->comps[j].type) ||
@@ -289,7 +293,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype)
     }
     if (dt != *datatype)
     {
-        bool found=FALSE;
+        tmpi_bool found=FALSE;
         /* we remove the old one from the list */
         for(i=0;i<tmpi_global->N_usertypes;i++)
         {

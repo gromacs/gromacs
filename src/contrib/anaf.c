@@ -66,7 +66,7 @@ static void list_trn(char *fn)
   real        mmm,len;
   matrix      box;
   t_trnheader trn;
-  bool        bOK;
+  gmx_bool        bOK;
 
   printf("Going to open %s\n",fn);
   fpread  = open_trn(fn,"r"); 
@@ -138,7 +138,7 @@ static void list_trn(char *fn)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gmxdump reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
+    "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
     "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]) or an energy",
     "file ([TT].ene[tt]/[TT].edr[tt]) and prints that to standard",
     "output in a readable format. This program is essential for",

@@ -92,8 +92,8 @@ static void dump_top(FILE *fp,t_topology *top,char *tpr)
   sfree(types);
 }
 
-static void list_tpx(const char *fn, bool bShowNumbers,const char *mdpfn,
-                     bool bSysTop)
+static void list_tpx(const char *fn, gmx_bool bShowNumbers,const char *mdpfn,
+                     gmx_bool bSysTop)
 {
   FILE *gp;
   int         fp,indent,i,j,**gcount,atot;
@@ -139,7 +139,12 @@ static void list_tpx(const char *fn, bool bShowNumbers,const char *mdpfn,
       pr_rvecs(stdout,indent,"box_rel",tpx.bBox ? state.box_rel : NULL,DIM);
       pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
       pr_rvecs(stdout,indent,"pres_prev",tpx.bBox ? state.pres_prev : NULL,DIM);
-      pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
+      pr_rvecs(stdout,indent,"svir_prev",tpx.bBox ? state.svir_prev : NULL,DIM);
+      pr_rvecs(stdout,indent,"fvir_prev",tpx.bBox ? state.fvir_prev : NULL,DIM);
+      /* leave nosehoover_xi in for now to match the tpr version */
+      pr_doubles(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
+      /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
+      /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
       pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
       pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
       if (state,tpx.bF) {
@@ -202,12 +207,13 @@ static void list_top(const char *fn)
 
 static void list_trn(const char *fn)
 {
-  int         fpread,fpwrite,nframe,indent;
+  t_fileio    *fpread, *fpwrite;
+  int         nframe,indent;
   char        buf[256];
   rvec        *x,*v,*f;
   matrix      box;
   t_trnheader trn;
-  bool        bOK;
+  gmx_bool        bOK;
 
   fpread  = open_trn(fn,"r"); 
   fpwrite = open_tpx(NULL,"w");
@@ -254,15 +260,16 @@ static void list_trn(const char *fn)
   close_trn(fpread);
 }
 
-void list_xtc(const char *fn, bool bXVG)
+void list_xtc(const char *fn, gmx_bool bXVG)
 {
-  int    xd,indent;
+  t_fileio *xd;
+  int    indent;
   char   buf[256];
   rvec   *x;
   matrix box;
   int    nframe,natoms,step;
   real   prec,time;
-  bool   bOK;
+  gmx_bool   bOK;
   
   xd = open_xtc(fn,"r");
   read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec,&bOK);
@@ -294,7 +301,7 @@ void list_xtc(const char *fn, bool bXVG)
   close_xtc(xd);
 }
 
-void list_trx(const char *fn,bool bXVG)
+void list_trx(const char *fn,gmx_bool bXVG)
 {
   int ftp;
   
@@ -304,75 +311,113 @@ void list_trx(const char *fn,bool bXVG)
   else if ((ftp == efTRR) || (ftp == efTRJ))
     list_trn(fn);
   else
-    fprintf(stderr,"File %s not supported. Try using more %s\n",
+    fprintf(stderr,"File %s is of an unsupported type. Try using the command\n 'less %s'\n",
 	    fn,fn);
 }
 
 void list_ene(const char *fn)
 {
-  int        ndr;
-  ener_file_t in;
-  bool       bCont;
-  gmx_enxnm_t *enm=NULL;
-  t_enxframe *fr;
-  int        i,nre,b;
-  real       rav,minthird;
-  char       buf[22];
+    int        ndr;
+    ener_file_t in;
+    gmx_bool       bCont;
+    gmx_enxnm_t *enm=NULL;
+    t_enxframe *fr;
+    int        i,j,nre,b;
+    real       rav,minthird;
+    char       buf[22];
 
-  printf("gmxdump: %s\n",fn);
-  in = open_enx(fn,"r");
-  do_enxnms(in,&nre,&enm);
-  
-  printf("energy components:\n");
-  for(i=0; (i<nre); i++) 
-    printf("%5d  %-24s (%s)\n",i,enm[i].name,enm[i].unit);
-    
-  minthird=-1.0/3.0;
-  snew(fr,1);
-  do {
-    bCont=do_enx(in,fr);
-    
-    if (bCont) {
-      printf("\n%24s  %12.5e  %12s  %12s\n","time:",
-	     fr->t,"step:",gmx_step_str(fr->step,buf));
-      printf("%24s  %12s  %12s  %12s\n",
-	     "","","nsteps:",gmx_step_str(fr->nsteps,buf));
-      printf("%24s  %12s  %12s  %12s\n",
-	     "","","sum steps:",gmx_step_str(fr->nsum,buf));
-      if (fr->nre == nre) {
-	printf("%24s  %12s  %12s  %12s\n",
-	       "Component","Energy","Av. Energy","Sum Energy");
-	if (fr->nsum > 0) {
-	  for(i=0; (i<nre); i++) 
-	    printf("%24s  %12.5e  %12.5e  %12.5e\n",
-		   enm[i].name,fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
-	} else {
-	  for(i=0; (i<nre); i++) 
-	    printf("%24s  %12.5e\n",
-		   enm[i].name,fr->ener[i].e);
-	}
-      }
-      if (fr->ndisre > 0) {
-	printf("Distance restraint %8s  %8s\n","r(t)","<r^-3>^-3");
-	for(i=0; i<fr->ndisre; i++) {
-	  rav=pow(fr->disre_rm3tav[i],minthird);
-	  printf("%17d  %8.4f  %8.4f\n",i,fr->disre_rt[i],rav);
-	}
-      }
-      for(b=0; b<fr->nblock; b++)
-	if (fr->nr[b] > 0) {
-	  printf("Block data %2d (%4d elm.) %8s\n",b,fr->nr[b],"value");
-	  for(i=0; i<fr->nr[b]; i++)
-	    printf("%24d  %8.4f\n",i,fr->block[b][i]);
-	}
-    }
-  } while (bCont);
-  
-  close_enx(in);
+    printf("gmxdump: %s\n",fn);
+    in = open_enx(fn,"r");
+    do_enxnms(in,&nre,&enm);
 
-  free_enxframe(fr);
-  sfree(fr);
-  sfree(enm);
+    printf("energy components:\n");
+    for(i=0; (i<nre); i++) 
+        printf("%5d  %-24s (%s)\n",i,enm[i].name,enm[i].unit);
+
+    minthird=-1.0/3.0;
+    snew(fr,1);
+    do {
+        bCont=do_enx(in,fr);
+
+        if (bCont) 
+        {
+            printf("\n%24s  %12.5e  %12s  %12s\n","time:",
+                   fr->t,"step:",gmx_step_str(fr->step,buf));
+            printf("%24s  %12s  %12s  %12s\n",
+                   "","","nsteps:",gmx_step_str(fr->nsteps,buf));
+            printf("%24s  %12.5e  %12s  %12s\n",
+                   "delta_t:",fr->dt,"sum steps:",gmx_step_str(fr->nsum,buf));
+            if (fr->nre == nre) {
+                printf("%24s  %12s  %12s  %12s\n",
+                       "Component","Energy","Av. Energy","Sum Energy");
+                if (fr->nsum > 0) {
+                    for(i=0; (i<nre); i++) 
+                        printf("%24s  %12.5e  %12.5e  %12.5e\n",
+                               enm[i].name,fr->ener[i].e,fr->ener[i].eav,
+                               fr->ener[i].esum);
+                } else {
+                    for(i=0; (i<nre); i++) 
+                        printf("%24s  %12.5e\n",
+                               enm[i].name,fr->ener[i].e);
+                }
+            }
+            for(b=0; b<fr->nblock; b++)
+            {
+                const char *typestr="";
+
+                t_enxblock *eb=&(fr->block[b]);
+                printf("Block data %2d (%3d subblocks, id=%d)\n",
+		       b, eb->nsub, eb->id);
+
+                if (eb->id < enxNR)
+                    typestr=enx_block_id_name[eb->id];
+                printf("  id='%s'\n", typestr);
+                for(i=0;i<eb->nsub;i++)
+                {
+                    t_enxsubblock *sb=&(eb->sub[i]);
+                    printf("  Sub block %3d (%5d elems, type=%s) values:\n", 
+                           i, sb->nr, xdr_datatype_names[sb->type]);
+
+                    switch(sb->type)
+                    {
+                        case xdr_datatype_float:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d   %8.4f\n",j, sb->fval[j]);
+                            break;
+                        case xdr_datatype_double:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d   %10.6f\n",j, sb->dval[j]);
+                            break;
+                        case xdr_datatype_int:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d %10d\n",j, sb->ival[j]);
+                            break;
+                        case xdr_datatype_large_int:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d %s\n",
+				       j, gmx_step_str(sb->lval[j],buf));
+                            break;
+                        case xdr_datatype_char:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d %1c\n",j, sb->cval[j]);
+                            break;
+                        case xdr_datatype_string:
+                            for(j=0;j<sb->nr;j++)
+                                printf("%14d %80s\n",j, sb->sval[j]);
+                            break;
+                        default:
+                            gmx_incons("Unknown subblock type");
+                    }
+                }
+            }
+        }
+    } while (bCont);
+
+    close_enx(in);
+
+    free_enxframe(fr);
+    sfree(fr);
+    sfree(enm);
 }
 
 static void list_mtx(const char *fn)
@@ -414,14 +459,14 @@ static void list_mtx(const char *fn)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "gmxdump reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
+    "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
     "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
     "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
     "and prints that to standard output in a readable format.",
     "This program is essential for checking your run input file in case of",
     "problems.[PAR]",
     "The program can also preprocess a topology to help finding problems.",
-    "Note that currently setting GMXLIB is the only way to customize",
+    "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
     "directories used for searching include files.",
   };
   t_filenm fnm[] = {
@@ -437,9 +482,9 @@ int main(int argc,char *argv[])
 
   output_env_t oenv;
   /* Command line options */
-  static bool bXVG=FALSE;
-  static bool bShowNumbers=TRUE;
-  static bool bSysTop=FALSE;
+  static gmx_bool bXVG=FALSE;
+  static gmx_bool bShowNumbers=TRUE;
+  static gmx_bool bSysTop=FALSE;
   t_pargs pa[] = {
     { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
     { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },

@@ -55,7 +55,7 @@
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_anavel computes temperature profiles in a sample. The sample",
+    "[TT]g_anavel[tt] computes temperature profiles in a sample. The sample",
     "can be analysed radial, i.e. the temperature as a function of",
     "distance from the center, cylindrical, i.e. as a function of distance",
     "from the vector (0,0,1) through the center of the box, or otherwise",
@@ -88,7 +88,7 @@ int main(int argc,char *argv[])
   int        d,m,n;
   matrix     box;
   atom_id    *sysindex;
-  bool       bHaveV,bReadV;
+  gmx_bool       bHaveV,bReadV;
   t_rgb      rgblo = { 0, 0, 1 },rgbhi = { 1, 0, 0 };
   int        flags = TRX_READ_X | TRX_READ_V;
   t_trxframe fr;

@@ -54,7 +54,7 @@
 #include "mtop_util.h"
 
 void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
-                 t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,
+                 t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
                  t_fcdata *fcd,t_state *state)
 {
     int          fa,nmol,i,npair,np;
@@ -179,50 +179,38 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
      */
     snew(dd->Rt_6,2*dd->nres);
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
-    if (cr->ms)
+
+    ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+    if (cr->ms != NULL && ptr != NULL)
     {
-        ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
 #ifdef GMX_MPI
-        if (ptr == NULL)
+        dd->nsystems = 0;
+        sscanf(ptr,"%d",&dd->nsystems);
+        if (fplog)
         {
-            dd->nsystems          = cr->ms->nsim;
-            dd->mpi_comm_ensemble = cr->ms->mpi_comm_masters;
-            if (fplog)
-            {
-                fprintf(fplog,"Will apply ensemble averaging over %d systems\n",
-                        dd->nsystems);
-            }
+            fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
         }
-        else
+        check_multi_int(fplog,cr->ms,dd->nsystems,
+                        "the number of systems per ensemble");
+        if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
         {
-            dd->nsystems = 0;
-            sscanf(ptr,"%d",&dd->nsystems);
-            if (fplog)
-            {
-                fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
-            }
-            check_multi_int(fplog,cr->ms,dd->nsystems,
-                            "the number of systems per ensemble");
-            if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
-            {
-                gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
-            }
-            /* Split the inter-master communicator into different ensembles */
-            MPI_Comm_split(cr->ms->mpi_comm_masters,
-                           cr->ms->sim/dd->nsystems,
-                           cr->ms->sim,
-                           &dd->mpi_comm_ensemble);
-            if (fplog)
-            {
-                fprintf(fplog,"Our ensemble consists of systems:");
-                for(i=0; i<dd->nsystems; i++)
-                {
-                    fprintf(fplog," %d",
-                            (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
-                }
-                fprintf(fplog,"\n");
-            }
+            gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
         }
+        /* Split the inter-master communicator into different ensembles */
+        MPI_Comm_split(cr->ms->mpi_comm_masters,
+                       cr->ms->sim/dd->nsystems,
+                       cr->ms->sim,
+                       &dd->mpi_comm_ensemble);
+        if (fplog)
+        {
+            fprintf(fplog,"Our ensemble consists of systems:");
+            for(i=0; i<dd->nsystems; i++)
+            {
+                fprintf(fplog," %d",
+                        (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
+            }
+            fprintf(fplog,"\n");
+            }
         snew(dd->Rtl_6,dd->nres);
 #endif
     }
@@ -261,7 +249,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
     ivec        it,jt,dt;
     t_disresdata *dd;
     real        ETerm,ETerm1,cf1=0,cf2=0,invn=0;
-    bool        bTav;
+    gmx_bool        bTav;
 
     dd = &(fcd->disres);
     bTav         = (dd->dr_tau != 0);
@@ -380,11 +368,11 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     real        tav_viol,instant_viol,mixed_viol,violtot,vtot;
     real        tav_viol_Rtav7,instant_viol_Rtav7;
     real        up1,up2,low;
-    bool        bConservative,bMixed,bViolation;
+    gmx_bool        bConservative,bMixed,bViolation;
     ivec        it,jt,dt;
     t_disresdata *dd;
     int         dr_weighting;
-    bool        dr_bMixed;
+    gmx_bool        dr_bMixed;
     
     dd = &(fcd->disres);
     dr_weighting = dd->dr_weighting;

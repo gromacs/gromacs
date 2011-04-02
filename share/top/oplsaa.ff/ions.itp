@@ -1,0 +1,107 @@
+;
+; See literature references in forcefield.itp and atomtypes.atp
+;
+
+[ moleculetype ]
+; molname	nrexcl
+CU  		1
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name  cg nr	charge   mass
+1	Cu2+	1	CU  		CU	 1	2	 63.54600
+
+[ moleculetype ]
+; molname	nrexcl
+ZN  		1
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name  cg nr	charge   mass
+1	Zn2+	1	ZN  		ZN	 1	2	 65.37000
+
+[ moleculetype ]
+; molname	nrexcl
+MG  		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_411	1	MG  		MG	 1	2	 24.30500
+
+[ moleculetype ]
+; molname	nrexcl
+CA  		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_412	1	CA  		CA	 1	2	 40.08000
+
+[ moleculetype ]
+; molname	nrexcl
+LI 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_406	1	LI 		NA	 1	1	6.941
+
+[ moleculetype ]
+; molname	nrexcl
+NA		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_407	1	NA		NA	 1	1	22.98977	 
+
+[ moleculetype ]
+; molname	nrexcl
+K 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_408	1	K 		K	 1	1	 39.0983
+
+[ moleculetype ]
+; molname	nrexcl
+RB 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_409	1	RB 		RB	 1	1	85.4678
+
+[ moleculetype ]
+; molname	nrexcl
+CS 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_410	1	CS 		CS	 1	1	132.9054
+
+[ moleculetype ]
+; molname	nrexcl
+F 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_400	1	F 		F	 1	-1	 18.9984
+
+[ moleculetype ]
+; molname	nrexcl
+CL		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_401	1	CL-		CL	 1	-1	 35.45300
+
+[ moleculetype ]
+; molname	nrexcl
+BR 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_402	1	BR 		BR	 1	-1	 79.904
+
+[ moleculetype ]
+; molname	nrexcl
+I 		1
+
+[ atoms ]
+; id	at type		res nr 	residu name	at name  cg nr	charge   mass
+1	opls_403	1	I 		I	 1	-1	 126.9045

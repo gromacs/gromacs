@@ -55,6 +55,7 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "macros.h"
+#include "gmx_fatal.h"
 #include "gmxcpp.h"
 #include "history.h"
 
@@ -83,7 +84,7 @@ typedef struct gmx_cpp {
   struct   gmx_cpp *child,*parent;
 } gmx_cpp;
 
-static bool is_word_end(char c)
+static gmx_bool is_word_end(char c)
 {
   return !(isalnum(c) || c == '_');
 }
@@ -104,7 +105,7 @@ static const char *strstrw(const char *buf,const char *word)
   return NULL;
 }
 
-static bool find_directive(char *buf, char **name, char **val)
+static gmx_bool find_directive(char *buf, char **name, char **val)
 {
   /* Skip initial whitespace */
   while (isspace(*buf)) ++buf;
@@ -129,7 +130,7 @@ static bool find_directive(char *buf, char **name, char **val)
   return TRUE;
 }
 
-static bool is_ifdeffed_out(gmx_cpp_t handle)
+static gmx_bool is_ifdeffed_out(gmx_cpp_t handle)
 {
   return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE));
 }
@@ -151,18 +152,10 @@ static void add_include(const char *include)
   }
 }
 
-static void add_define(const char *define)
+static void add_define(const char *name, const char *value)
 {
   int  i;
-  const char *ptr;
-  char name[256];
-  
-  sscanf(define,"%s%n",name,&i);
-  ptr = define + i;
-  
-  while ((*ptr != '\0') && isspace(*ptr))
-    ptr++;
-    
+
   for(i=0; (i<ndef); i++) {
     if (strcmp(defs[i].name,name) == 0) {
       break;
@@ -179,8 +172,8 @@ static void add_define(const char *define)
       fprintf(debug,"Overriding define %s\n",name);
     sfree(defs[i].def);
   }
-  if (strlen(ptr) > 0)
-    defs[i].def  = strdup(ptr);
+  if (value && strlen(value) > 0)
+    defs[i].def  = strdup(value);
   else
     defs[i].def  = NULL;
 }
@@ -191,10 +184,10 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf,*pdum;
-  const char *ptr;
+  char *ptr, *ptr2;
   int i;
   unsigned int i1;
-  
+    
   /* First process options, they might be necessary for opening files
      (especially include statements). */  
   i  = 0;
@@ -203,24 +196,81 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       if (strstr(cppopts[i],"-I") == cppopts[i])
 	add_include(cppopts[i]+2);
       if (strstr(cppopts[i],"-D") == cppopts[i])
-	add_define(cppopts[i]+2);
+      {
+        /* If the option contains a =, split it into name and value. */
+        ptr = strchr(cppopts[i], '=');
+        if (ptr)
+        {
+          buf = gmx_strndup(cppopts[i] + 2, ptr - cppopts[i] - 2);
+          add_define(buf, ptr + 1);
+          sfree(buf);
+        }
+        else
+        {
+          add_define(cppopts[i] + 2, NULL);
+        }
+      }
       i++;
     }
   }
   if (debug)
-    fprintf(debug,"Added %d command line arguments",i);
+    fprintf(debug,"GMXCPP: added %d command line arguments\n",i);
   
   snew(cpp,1);
   *handle      = cpp;
-  ptr = strrchr(filenm,'/');
-  if (NULL == ptr) {
+  cpp->fn      = NULL;
+  /* Find the file. First check whether it is in the current directory. */
+  if (gmx_fexist(filenm))
+  {
+    cpp->fn = strdup(filenm);
+  }
+  else
+  {
+    /* If not, check all the paths given with -I. */
+    for (i = 0; i < nincl; ++i)
+    {
+      snew(buf, strlen(incl[i]) + strlen(filenm) + 2);
+      sprintf(buf, "%s/%s", incl[i], filenm);
+      if (gmx_fexist(buf))
+      {
+          cpp->fn = buf;
+        break;
+      }
+      sfree(buf);
+    }
+    /* If still not found, check the Gromacs library search path. */
+    if (!cpp->fn)
+    {
+      cpp->fn = low_gmxlibfn(filenm, FALSE, FALSE);
+    }
+  }
+  if (!cpp->fn)
+  {
+    gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
+  }
+  if (NULL != debug) {
+    fprintf(debug,"GMXCPP: cpp file open %s\n",cpp->fn);
+  }
+  /* If the file name has a path component, we need to change to that
+   * directory. Note that we - just as C - always use UNIX path separators
+   * internally in include file names.
+   */
+  ptr  = strrchr(cpp->fn, '/');
+  ptr2 = strrchr(cpp->fn, DIR_SEPARATOR);
+    
+  if (ptr == NULL || (ptr2 != NULL && ptr2 > ptr))
+  {
+      ptr = ptr2;
+  }
+  if(ptr==NULL)
+  {
     cpp->path = NULL;
     cpp->cwd  = NULL;
-    cpp->fn   = strdup(filenm);
   }
-  else {
-    cpp->path = strdup(filenm);
-    cpp->path[ptr-filenm] = '\0';
+  else
+  {
+    cpp->path = cpp->fn;
+    *ptr      = '\0';
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
       
@@ -229,6 +279,9 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       _chdir(cpp->path);
 #else
       pdum=getcwd(cpp->cwd,STRLEN);
+      if (NULL != debug) {
+	fprintf(debug,"GMXCPP: cwd %s\n",cpp->cwd);
+      }
       if (-1 == chdir(cpp->path))
 	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
 		  cpp->path,strerror(errno));
@@ -245,20 +298,12 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   cpp->ifdefs  = NULL;
   cpp->child   = NULL;
   cpp->parent  = NULL;
-  i = 0;
-  while (((cpp->fp = fopen(cpp->fn,"r")) == NULL) && (i<nincl)) {
-    snew(buf,strlen(incl[i])+strlen(filenm)+2);
-    sprintf(buf,"%s/%s",incl[i],filenm);
-    sfree(cpp->fn);
-    cpp->fn = strdup(buf);
-    sfree(buf);
-    i++;
-  }
   histopenfile(cpp->fp,cpp->fn,"r");
   if (cpp->fp == NULL) {
-    sfree(cpp->fn);
-    cpp->fn = strdup(filenm);
-    cpp->fp = libopen(filenm);
+    if (NULL != debug) {
+      fprintf(debug,"GMXCPP: opening file %s\n",cpp->fn);
+    }
+    cpp->fp = fopen(cpp->fn, "r");
   }
   if (cpp->fp == NULL) {
     switch(errno) {
@@ -277,6 +322,7 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
   int  i,i0,len,status;
   unsigned int i1;
   char *inc_fn,*name;
+  const char *ptr;
   int  bIfdef,bIfndef;
 
   /* #ifdef or ifndef statement */
@@ -347,6 +393,9 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
       else if (len >= 0)
 	len++;
     }
+    if (len == -1) {
+      return eCPP_SYNTAX;
+    }
     snew(inc_fn,len+1);
     strncpy(inc_fn,dval+i0,len);
     inc_fn[len] = '\0';
@@ -370,7 +419,17 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
   
   /* #define statement */
   if (strcmp(dname,"define") == 0) {
-    add_define(dval);
+    /* Split it into name and value. */
+    ptr = dval;
+    while ((*ptr != '\0') && !isspace(*ptr))
+      ptr++;
+    name = gmx_strndup(dval, ptr - dval);
+
+    while ((*ptr != '\0') && isspace(*ptr))
+      ptr++;
+
+    add_define(name, ptr);
+    sfree(name);
     return eCPP_OK;
   }
   
@@ -411,15 +470,34 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   const char *ptr, *ptr2;
   char *name;
   char *dname, *dval;
-  
+  gmx_bool bEOF;
+
   if (!handle)
     return eCPP_INVALID_HANDLE;
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
-    
-  if (feof(handle->fp) || (fgets2(buf,n-1,handle->fp) == NULL)) {
-    if (handle->parent == NULL)
+
+  bEOF = feof(handle->fp);
+  if (!bEOF) {
+    /* Read the actual line now. */
+    if (fgets2(buf,n-1,handle->fp) == NULL) {
+      /* Recheck EOF, since we could have been at the end before
+       * the fgets2 call, but we need to read past the end to know.
+       */
+       bEOF = feof(handle->fp);
+       if (!bEOF) {
+	 /* Something strange happened, fgets returned NULL,
+	  * but we are not at EOF.
+	  */
+	 return eCPP_UNKNOWN;
+       }
+    }
+  }
+
+  if (bEOF) {
+    if (handle->parent == NULL) {
       return eCPP_EOF;
+    }
     cpp_close_file(handlep);
     *handlep = handle->parent;
     handle->child = NULL;
@@ -436,7 +514,6 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   /* Now we've read a line! */
   if (debug) 
     fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
-  set_warning_line(handle->fn,handle->line_nr);
 
   /* Process directives if this line contains one */
   if (find_directive(buf, &dname, &dval))
@@ -486,6 +563,16 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   return eCPP_OK;
 }
 
+char *cpp_cur_file(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->fn;
+}
+
+int cpp_cur_linenr(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->line_nr;
+}
+
 /* Close the file! Return integer status. */
 int cpp_close_file(gmx_cpp_t *handlep)
 {
@@ -497,7 +584,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
   if (debug)
-    fprintf(debug,"Closing file %s\n",handle->fn);
+    fprintf(debug,"GMXCPP: closing file %s\n",handle->fn);
   histclosefile(&handle->fp);
   fclose(handle->fp);
   if (NULL != handle->cwd) {

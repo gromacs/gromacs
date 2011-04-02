@@ -58,7 +58,8 @@
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
                          real dt)
 {
-  int    i,j,k,l,m,na,trn;
+  int    i,j,k,l,m,na;
+  t_fileio *trn;
   rvec   *x;
   matrix box = {{2,0,0},{0,2,0},{0,0,2}};  
   
@@ -89,27 +90,27 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
   sfree(x);
 }
 
-int gmx_angle(int argc,char *argv[])
+int gmx_g_angle(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "g_angle computes the angle distribution for a number of angles",
+    "[TT]g_angle[tt] computes the angle distribution for a number of angles",
     "or dihedrals. This way you can check whether your simulation",
-    "is correct. With option -ov you can plot the average angle of",
-    "a group of angles as a function of time. With the -all option",
+    "is correct. With option [TT]-ov[tt] you can plot the average angle of",
+    "a group of angles as a function of time. With the [TT]-all[tt] option",
     "the first graph is the average, the rest are the individual angles.[PAR]",
-    "With the -of option g_angle also calculates the fraction of trans",
+    "With the [TT]-of[tt] option, [TT]g_angle[tt] also calculates the fraction of trans",
     "dihedrals (only for dihedrals) as function of time, but this is",
     "probably only fun for a selected few.[PAR]",
-    "With option -oc a dihedral correlation function is calculated.[PAR]",
-    "It should be noted that the indexfile should contain",
+    "With option [TT]-oc[tt] a dihedral correlation function is calculated.[PAR]",
+    "It should be noted that the index file should contain",
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash.[PAR]",
-    "With option [TT]-or[tt] a trajectory file is dumped containing cos and"
+    "With option [TT]-or[tt] a trajectory file is dumped containing cos and",
     "sin of selected dihedral angles which subsequently can be used as",
     "input for a PCA analysis using [TT]g_covar[tt]."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
+  static gmx_bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
@@ -121,7 +122,7 @@ int gmx_angle(int argc,char *argv[])
     { "-periodic", FALSE, etBOOL, {&bPBC},
       "Print dihedral angles modulo 360 degrees" },
     { "-chandler", FALSE,  etBOOL, {&bChandler},
-      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
+      "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };
@@ -138,7 +139,7 @@ int gmx_angle(int argc,char *argv[])
   unsigned long mode;
   int        nframes,maxangstat,mult,*angstat;
   int        i,j,total,nangles,natoms,nat2,first,last,angind;
-  bool       bAver,bRb,bPeriodic,
+  gmx_bool       bAver,bRb,bPeriodic,
     bFrac,          /* calculate fraction too?  */
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
@@ -294,7 +295,7 @@ int gmx_angle(int argc,char *argv[])
       
       if (bChandler) {
 	real dval,sixty=DEG2RAD*60;
-	bool bTest;
+	gmx_bool bTest;
 
 	for(i=0; (i<nangles); i++)
 	  for(j=0; (j<nframes); j++) {
@@ -352,7 +353,7 @@ int gmx_angle(int argc,char *argv[])
   bPeriodic=(mult==4) && (first==0) && (last==maxangstat-1);
   
   out=xvgropen(opt2fn("-od",NFILE,fnm),title,"Degrees","",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(out,"@    subtitle \"average angle: %g\\So\\N\"\n",aver);
   norm_fac=1.0/(nangles*nframes*binwidth);
   if (bPeriodic) {

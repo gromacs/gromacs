@@ -22,24 +22,11 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include <gmx_sse2_single.h>
+
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-
-/* to extract single integers from a __m128i datatype */
-#define _mm_extract_epi32(x, imm) \
-_mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
-
-static inline __m128
-my_invrsq_ps(__m128 x)
-{
-	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
-	
-	__m128 t1 = _mm_rsqrt_ps(x);
-	
-	return _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
-}
 
 void nb_kernel430_sse2_single(int *           p_nri,
 						   int *           iinr,
@@ -82,7 +69,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	int           tj,tj2,tj3,tj4;
 	gmx_gbdata_t *gbdata;
 	float *        gpol;
-
+	
 	__m128   iq,qq,q,isai;
 	__m128   ix,iy,iz;
 	__m128   jx,jy,jz;
@@ -100,27 +87,39 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
 	
 	__m128i  n0, nnn;
-	__m128  mask,mask0001,mask0011,mask0111;
+	const __m128 neg    = _mm_set1_ps(-1.0f);
+	const __m128 zero   = _mm_set1_ps(0.0f);
+    const __m128 half   = _mm_set1_ps(0.5f);
+	const __m128 two    = _mm_set1_ps(2.0f);
+	const __m128 three  = _mm_set1_ps(3.0f);
+	const __m128 six    = _mm_set1_ps(6.0f);
+    const __m128 twelwe = _mm_set1_ps(12.0f);
+	
+	__m128i four        = _mm_set1_epi32(4);
+	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
+	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
 	
 	float vct,vdwt,vgbt,dva,isai_f;
 	
-	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
-	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
-	const __m128 half   = {0.5f,0.5f,0.5f,0.5f};
-	const __m128 two    = {2.0f,2.0f,2.0f,2.0f};
-	const __m128 three  = {3.0f,3.0f,3.0f,3.0f};
-	const __m128 six    = {6.0f,6.0f,6.0f,6.0f};
-	const __m128 twelwe = {12.0f,12.0f,12.0f,12.0f};
-	
-	__m128i four        = _mm_set_epi32(4,4,4,4); 
-	
-	mask0001 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	mask0011 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	mask0111 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+	gbdata          = (gmx_gbdata_t *)work;
+	gpol            = gbdata->gpol;
+		
+	nri              = *p_nri;         
+    ntype            = *p_ntype;       
+    nthreads         = *p_nthreads;    
+    facel            = (*p_facel) * ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent));       
+    krf              = *p_krf;         
+    crf              = *p_crf;         
+    tabscale         = *p_tabscale;    
+    gbtabscale       = *p_gbtabscale;  
+    nj1              = 0;
 
-	gbdata     = (gmx_gbdata_t *)work;
-	gpol       = gbdata->gpol;
-
+	/* Splat variables */
+	fac_sse        = _mm_load1_ps(&facel);
+	tabscale_sse   = _mm_load1_ps(&tabscale);
+	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
+	
+	
 	/* Keep the compiler happy */
 	Vvdwtmp = _mm_setzero_ps();
 	dvdatmp = _mm_setzero_ps();
@@ -135,21 +134,6 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	xmm4    = _mm_setzero_ps();
 	j23     = j33  = 0;
 	jnr2    = jnr3 = 0;
-	
-	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
-	
-	/* Splat variables */
-	fac_sse        = _mm_load1_ps(&facel);
-	tabscale_sse   = _mm_load1_ps(&tabscale);
-	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
 	
     for(n=0; (n<nri); n++)
     {
@@ -226,7 +210,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			xmm1    = _mm_load_ss(invsqrta+jnr); 
 			xmm2    = _mm_load_ss(invsqrta+jnr2);
@@ -272,7 +256,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm3    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); /* c121 c122 c121 c122 */
 			xmm4    = _mm_shuffle_ps(xmm2,xmm2,_MM_SHUFFLE(3,1,3,1)); /* c123 c124 c123 c124 */
 			c12     = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(1,0,1,0)); /* c121 c122 c123 c124 */		
-			
+				
 			xmm1    = _mm_load_ss(dvda+jnr); 
 			xmm2    = _mm_load_ss(dvda+jnr2); 
 			xmm3    = _mm_load_ss(dvda+jnr3);
@@ -292,12 +276,12 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			eps2    = _mm_mul_ps(eps,eps);
 			nnn     = _mm_slli_epi32(n0,2);
-			
+		
 			/* the tables are 16-byte aligned, so we can use _mm_load_ps */			
-			xmm1    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -355,12 +339,12 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			eps     = _mm_sub_ps(rt,n0f);
 			eps2    = _mm_mul_ps(eps,eps);
 			nnn     = _mm_slli_epi32(n0,3);
-			
+
 			/* Tabulated VdW interaction - disperion */			
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -382,17 +366,17 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(two,Heps2);
 			FF      = _mm_add_ps(Fp,Geps);
 			FF      = _mm_add_ps(FF,xmm1);
-			
+
 			Vvdw6   = _mm_mul_ps(c6,VV);
 			fijD    = _mm_mul_ps(c6,FF);
 			
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
 			
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -427,7 +411,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_sub_ps(xmm1,fscal);
 			fscal   = _mm_mul_ps(xmm1,neg);
 			fscal   = _mm_mul_ps(fscal,rinv);
-			
+	
 			t1      = _mm_mul_ps(fscal,dx1);
 			t2      = _mm_mul_ps(fscal,dy1);
 			t3      = _mm_mul_ps(fscal,dz1);
@@ -504,7 +488,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				c6    = _mm_load_ss(vdwparam+tj);
 				c12   = _mm_load_ss(vdwparam+tj+1);
 				
-				mask  = mask0001;
+				mask  =  _mm_set_epi32(0,0,0,0xffffffff);
 				
 			}
 			else if(offset==2)
@@ -552,7 +536,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				c6    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				c12   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
 				
-				mask  = mask0011;
+				mask  = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
 			}
 			else
 			{
@@ -619,18 +603,18 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				xmm3  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
 				c12   = _mm_shuffle_ps(xmm3,xmm2,_MM_SHUFFLE(1,1,1,0));
 				
-				mask  = mask0111;
+				mask  = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
 			}
 			
-			jx      = _mm_and_ps( mask, xmm6);
-			jy      = _mm_and_ps( mask, xmm4);
-			jz      = _mm_and_ps( mask, xmm5);
+			jx      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm6);
+			jy      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm4);
+			jz      = _mm_and_ps( gmx_mm_castsi128_ps(mask), xmm5);
 			
-			c6      = _mm_and_ps( mask, c6);
-			c12     = _mm_and_ps( mask, c12);
-			dvdaj   = _mm_and_ps( mask, dvdaj);
-			isaj    = _mm_and_ps( mask, isaj);			
-			q       = _mm_and_ps( mask, q);
+			c6      = _mm_and_ps( gmx_mm_castsi128_ps(mask), c6);
+			c12     = _mm_and_ps( gmx_mm_castsi128_ps(mask), c12);
+			dvdaj   = _mm_and_ps( gmx_mm_castsi128_ps(mask), dvdaj);
+			isaj    = _mm_and_ps( gmx_mm_castsi128_ps(mask), isaj);			
+			q       = _mm_and_ps( gmx_mm_castsi128_ps(mask), q);
 			
 			dx1     = _mm_sub_ps(ix,jx);
 			dy1     = _mm_sub_ps(iy,jy);
@@ -643,7 +627,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
 			
-			rinv    = my_invrsq_ps(rsq);
+			rinv    = gmx_mm_invsqrt_ps(rsq);
 			
 			isaprod = _mm_mul_ps(isai,isaj);
 			qq      = _mm_mul_ps(iq,q);
@@ -666,10 +650,10 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,2);
 			
 			/* the tables are 16-byte aligned, so we can use _mm_load_ps */			
-			xmm1    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+			xmm1    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(GBtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -707,12 +691,12 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(xmm1,isaj);
 			dvdaj   = _mm_add_ps(dvdaj,xmm1);
 			
-			vcoul   = _mm_and_ps( mask, vcoul);
-			vgb     = _mm_and_ps( mask, vgb);
+			vcoul   = _mm_and_ps( gmx_mm_castsi128_ps(mask), vcoul);
+			vgb     = _mm_and_ps( gmx_mm_castsi128_ps(mask), vgb);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-			
+						
 			/* Calculate VDW table index */
 			rt      = _mm_mul_ps(r,tabscale_sse);
 			n0      = _mm_cvttps_epi32(rt);
@@ -722,11 +706,11 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			nnn     = _mm_slli_epi32(n0,3);
 			
 			/* Tabulated VdW interaction - disperion */	
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
-			
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+		
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
 			xmm6    = _mm_unpacklo_ps(xmm3,xmm4); /* Y3,Y4,F3,F4 */
@@ -753,11 +737,11 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
-			
-			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
-			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
-			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
-			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
+					
+			xmm1    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
+			xmm2    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
+			xmm3    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
+			xmm4    = _mm_load_ps(VFtab+(gmx_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
 			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
@@ -894,9 +878,9 @@ void nb_kernel430_sse2_single(int *           p_nri,
 				_mm_store_ss(faction+j33+2,xmm7); 
 			}
 			
-			t1 = _mm_and_ps( mask, t1);
-			t2 = _mm_and_ps( mask, t2);
-			t3 = _mm_and_ps( mask, t3);
+			t1 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t1);
+			t2 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t2);
+			t3 = _mm_and_ps( gmx_mm_castsi128_ps(mask), t3);
 			
 			fix = _mm_add_ps(fix,t1);
 			fiy = _mm_add_ps(fiy,t2);
@@ -921,7 +905,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		
 		xmm2    = _mm_unpacklo_ps(fix,fiy); /* fx, fy, - - */
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
-		xmm2    = _mm_and_ps( mask0111, xmm2);
+		xmm2    = _mm_and_ps( gmx_mm_castsi128_ps(maski), xmm2);
 		
 		/* load i force from memory */
 		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));
@@ -936,7 +920,19 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
-        ggid             = gid[n];         
+    /* Load, add and store i shift forces */
+    xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+    xmm5 = _mm_load1_ps(fshift+is3+2);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+      
+    xmm4 = _mm_add_ps(xmm4,xmm2);
+      
+    _mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
+    xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+    _mm_store_ss(fshift+is3+2,xmm4);
+      
+    /* Coulomb potential */
+    ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
 		vctot   = _mm_add_ps(vctot,vcoul);
@@ -985,7 +981,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel430nf_sse2_single(
+void nb_kernel430nf_x86_64_sse(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,

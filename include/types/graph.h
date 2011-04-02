@@ -32,11 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
-#include "gmx_fatal.h"
+#include "idef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,7 +49,7 @@ typedef struct {
   int      end;		/* The last atom in this graph			*/
   int      *nedge;	/* For each node the number of edges		*/
   atom_id  **edge;	/* For each node, the actual edges (bidirect.)	*/
-  bool     bScrewPBC;   /* Screw boundary conditions                    */
+  gmx_bool     bScrewPBC;   /* Screw boundary conditions                    */
   ivec     *ishift;	/* Shift for each particle              	*/
   int      negc;         
   egCol   *egc;         /* color of each node */

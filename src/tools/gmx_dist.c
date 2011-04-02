@@ -69,9 +69,9 @@ static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 int gmx_dist(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_dist can calculate the distance between the centers of mass of two",
+    "[TT]g_dist[tt] can calculate the distance between the centers of mass of two",
     "groups of atoms as a function of time. The total distance and its",
-    "x, y and z components are plotted.[PAR]",
+    "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-components are plotted.[PAR]",
     "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
     "closer than a certain distance to the center of mass of group 1.[PAR]",
     "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
@@ -87,7 +87,7 @@ int gmx_dist(int argc,char *argv[])
   real t,t0,cut2,dist2;
   rvec *x=NULL,*v=NULL,dx;
   matrix box;
-  int status;
+  t_trxstatus *status;
   int natoms;
 
   int g,d,i,j,res,teller=0;
@@ -100,13 +100,14 @@ int gmx_dist(int argc,char *argv[])
   rvec    *com;
   real    *mass;
   FILE    *fp=NULL,*fplt=NULL;
-  bool    bCutoff,bPrintDist,bLifeTime;
+  gmx_bool    bCutoff,bPrintDist,bLifeTime;
   t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
   
-  char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
+  const char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
   
@@ -181,21 +182,26 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
-      for(d=0;(d<DIM);d++) {
-	com[g][d]=0;
-	for(i=0;(i<isize[g]);i++) {
-	  com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+      if (isize[g] == 1) {
+	copy_rvec(x[index[g][0]],com[g]);
+      } else {
+	for(d=0;(d<DIM);d++) {
+	  com[g][d]=0;
+	  for(i=0;(i<isize[g]);i++) {
+	    com[g][d] += x[index[g][i]][d] * top->atoms.atom[index[g][i]].m;
+	  }
+	  com[g][d] /= mass[g];
 	}
-	com[g][d] /= mass[g];
       }
     }
     
@@ -243,6 +249,7 @@ int gmx_dist(int argc,char *argv[])
     
     teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
+  gmx_rmpbc_done(gpbc);
 
   if (!bCutoff)
     ffclose(fp);

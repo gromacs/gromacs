@@ -64,7 +64,7 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
 {
   int     i;
   atom_id inda0,inda1;
-  bool    bFound;
+  gmx_bool    bFound;
 
   inda0 = a0 - g->start;
   inda1 = a1 - g->start;
@@ -189,8 +189,15 @@ static void calc_1se(t_graph *g,int ftype,t_ilist *il,
 	if (iaa >= at_start && iaa < at_end) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  /*if (interaction_function[tp].flags & IF_CHEMBOND)*/
-	  nbond[iaa]++;
+	  /* When making the graph we (might) link all atoms in an interaction
+	   * sequentially. Therefore the end atoms add 1 to the count,
+	   * the middle atoms 2.
+	   */
+	  if (k == 1 || k == nratoms) {
+	    nbond[iaa] += 1;
+	  } else {
+	    nbond[iaa] += 2;
+	  }
 	}
       }
     }
@@ -244,10 +251,17 @@ static void compact_graph(FILE *fplog,t_graph *g)
   max_nedge = 0;
   n = 0;
   for(i=0; i<g->nnodes; i++) {
-    srenew(g->edge[i],g->nedge[i]);
+    for(j=0; j<g->nedge[i]; j++) {
+      g->edge[0][n++] = g->edge[i][j];
+    }
     max_nedge = max(max_nedge,g->nedge[i]);
-    n+=g->nedge[i];
   }
+  srenew(g->edge[0],n);
+  /* set pointers after srenew because edge[0] might move */
+  for(i=1; i<g->nnodes; i++) {
+    g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+  }
+
   if (fplog) {
     fprintf(fplog,"Max number of graph edges per atom is %d\n",
 	    max_nedge);
@@ -255,12 +269,12 @@ static void compact_graph(FILE *fplog,t_graph *g)
   }
 }
 
-static bool determine_graph_parts(t_graph *g,int *part)
+static gmx_bool determine_graph_parts(t_graph *g,int *part)
 {
   int  i,e;
   int  nchanged;
   atom_id at_i,*at_i2;
-  bool bMultiPart;
+  gmx_bool bMultiPart;
 
   /* Initialize the part array with all entries different */
   for(at_i=g->start; at_i<g->end; at_i++) {
@@ -299,12 +313,12 @@ static bool determine_graph_parts(t_graph *g,int *part)
 
 void mk_graph_ilist(FILE *fplog,
 		    t_ilist *ilist,int at_start,int at_end,
-		    bool bShakeOnly,bool bSettle,
+		    gmx_bool bShakeOnly,gmx_bool bSettle,
 		    t_graph *g)
 {
   int     *nbond;
   int     i,nbtot;
-  bool    bMultiPart;
+  gmx_bool    bMultiPart;
 
   snew(nbond,at_end);
   nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
@@ -318,8 +332,11 @@ void mk_graph_ilist(FILE *fplog,
     snew(g->ishift,g->nnodes);
     snew(g->nedge,g->nnodes);
     snew(g->edge,g->nnodes);
-    for(i=0; (i<g->nnodes); i++)
-      snew(g->edge[i],nbond[g->start+i]);
+    /* Allocate a single array and set pointers into it */
+    snew(g->edge[0],nbtot);
+    for(i=1; (i<g->nnodes); i++) {
+      g->edge[i] = g->edge[i-1] + nbond[g->start+i-1];
+    }
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
@@ -372,7 +389,7 @@ void mk_graph_ilist(FILE *fplog,
 
 t_graph *mk_graph(FILE *fplog,
 		  t_idef *idef,int at_start,int at_end,
-		  bool bShakeOnly,bool bSettle)
+		  gmx_bool bShakeOnly,gmx_bool bSettle)
 {
   t_graph *g;
 
@@ -391,8 +408,7 @@ void done_graph(t_graph *g)
   if (g->nnodes > 0) {
     sfree(g->ishift);
     sfree(g->nedge);
-    for(i=0; (i<g->nnodes); i++)
-      sfree(g->edge[i]);
+    sfree(g->edge[0]);
     sfree(g->edge);
     sfree(g->egc);
   }
@@ -498,7 +514,7 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 {
   int      m,j,ng,ai,aj,g0;
   rvec     dx,hbox;
-  bool     bTriclinic;
+  gmx_bool     bTriclinic;
   ivec     is_aj;
   t_pbc    pbc;
    
@@ -834,47 +850,3 @@ void unshift_self(t_graph *g,matrix box,rvec x[])
   }
 }
 #undef GCHECK
-
-#ifdef DEBUGMSHIFT
-void main(int argc,char *argv[])
-{
-  FILE         *out;
-  t_args       targ;
-  t_topology   top;
-  t_statheader sh;
-  rvec         *x;
-  ivec         *mshift;
-  matrix       box;
-
-  t_graph      *g;
-  int          i,idum,pid;
-  real         rdum;
-
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,&targ,PCA_NEED_INOUT,NULL);
-  if (argc > 1)
-    pid=strtol(argv[1], NULL, 10);
-  else
-    pid=0;
-  
-  read_status_header(targ.infile,&sh);
-  snew(x,sh.natoms);
-  snew(mshift,sh.natoms);
-
-  fprintf(stderr,"Reading Status %s\n",targ.infile);
-  read_status(targ.infile,&idum,&rdum,&rdum,NULL,
-	      box,NULL,NULL,&idum,x,NULL,NULL,&idum,NULL,&top);
-
-  fprintf(stderr,"Making Graph Structure...\n");
-  g=mk_graph(&(top.idef),top.atoms.nr,FALSE,FALSE);
-
-  out=gmx_fio_fopen(targ.outfile,"w");
-
-  fprintf(stderr,"Making Shift...\n");
-  mk_mshift(out,g,box,x,mshift);
-
-  p_graph(out,"In Den Haag daar woont een graaf...",g);
-  gmx_fio_fclose(out);
-}
-#endif
-

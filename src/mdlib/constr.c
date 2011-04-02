@@ -82,6 +82,48 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
+static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal) 
+{
+    t_vetavars *vars;
+    double g;
+    int i;
+
+    snew(vars,1);
+    snew(vars->vscale_nhc,ir->opts.ngtc);
+    /* first, set the alpha integrator variable */
+    if ((ir->opts.nrdf[0] > 0) && bPscal) 
+    {
+        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);  
+    } else {
+        vars->alpha = 1.0;
+    }
+    g = 0.5*veta*ir->delta_t;
+    vars->rscale = exp(g)*series_sinhx(g);
+    g = -0.25*vars->alpha*veta*ir->delta_t;
+    vars->vscale = exp(g)*series_sinhx(g);
+    vars->rvscale = vars->vscale*vars->rscale;
+    vars->veta = vetanew;
+    if ((ekind==NULL) || (!bPscal))
+    {
+        for (i=0;i<ir->opts.ngtc;i++)
+        {
+            vars->vscale_nhc[i] = 1;
+        }
+    } else {
+        for (i=0;i<ir->opts.ngtc;i++)
+        {
+            vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
+        }
+    }
+    return vars;
+}
+
+static void free_vetavars(t_vetavars *vars) 
+{
+    sfree(vars->vscale_nhc);
+    sfree(vars);
+}
+
 static int pcomp(const void *p1, const void *p2)
 {
   int     db;
@@ -142,50 +184,60 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
 }
 
 static void write_constr_pdb(const char *fn,const char *title,
-			     gmx_mtop_t *mtop,
-			     int start,int homenr,t_commrec *cr,
-			     rvec x[],matrix box)
+                             gmx_mtop_t *mtop,
+                             int start,int homenr,t_commrec *cr,
+                             rvec x[],matrix box)
 {
-  char fname[STRLEN],format[STRLEN];
-  FILE *out;
-  int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
-  gmx_domdec_t *dd;
-  char *anm,*resnm;
+    char fname[STRLEN],format[STRLEN];
+    FILE *out;
+    int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
+    gmx_domdec_t *dd;
+    char *anm,*resnm;
   
-  dd = NULL;
-  if (PAR(cr)) {
-    sprintf(fname,"%s_n%d.pdb",fn,cr->sim_nodeid);
-    if (DOMAINDECOMP(cr)) {
-      dd = cr->dd;
-      dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
-      start = 0;
-      homenr = dd_ac1;
+    dd = NULL;
+    if (PAR(cr))
+    {
+        sprintf(fname,"%s_n%d.pdb",fn,cr->sim_nodeid);
+        if (DOMAINDECOMP(cr))
+        {
+            dd = cr->dd;
+            dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
+            start = 0;
+            homenr = dd_ac1;
+        }
     }
-  } else {
-    sprintf(fname,"%s.pdb",fn);
-  }
-  sprintf(format,"%s\n",pdbformat);
-
-  out = gmx_fio_fopen(fname,"w");
-
-  fprintf(out,"TITLE     %s\n",title);
-  gmx_write_pdb_box(out,-1,box);
-  for(i=start; i<start+homenr; i++) {
-    if (dd) {
-      if (i >= dd->nat_home && i < dd_ac0)
-	continue;
-      ii = dd->gatindex[i];
-    } else {
-      ii = i;
+    else
+    {
+        sprintf(fname,"%s.pdb",fn);
     }
-    gmx_mtop_atominfo_global(mtop,ii,&anm,&resnr,&resnm);
-    fprintf(out,format,"ATOM",(ii+1)%100000,
-	    anm,resnm,' ',(resnr+1)%10000,' ',
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
-  }
-  fprintf(out,"TER\n");
+    sprintf(format,"%s\n",pdbformat);
+    
+    out = gmx_fio_fopen(fname,"w");
+    
+    fprintf(out,"TITLE     %s\n",title);
+    gmx_write_pdb_box(out,-1,box);
+    for(i=start; i<start+homenr; i++)
+    {
+        if (dd != NULL)
+        {
+            if (i >= dd->nat_home && i < dd_ac0)
+            {
+                continue;
+            }
+            ii = dd->gatindex[i];
+        }
+        else
+        {
+            ii = i;
+        }
+        gmx_mtop_atominfo_global(mtop,ii,&anm,&resnr,&resnm);
+        fprintf(out,format,"ATOM",(ii+1)%100000,
+                anm,resnm,' ',resnr%10000,' ',
+                10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+    }
+    fprintf(out,"TER\n");
 
-  gmx_fio_fclose(out);
+    gmx_fio_fclose(out);
 }
 			     
 static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,
@@ -196,7 +248,7 @@ static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,
  
   char *env=getenv("GMX_SUPPRESS_DUMP");
   if (env)
-    return; 
+      return; 
   
   sprintf(buf,"step%sb",gmx_step_str(step,buf2));
   write_constr_pdb(buf,"initial coordinates",
@@ -205,7 +257,9 @@ static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,
   write_constr_pdb(buf,"coordinates after constraining",
 		   mtop,start,homenr,cr,xprime,box);
   if (fplog)
-    fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
+  {
+      fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
+  }
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
@@ -220,28 +274,30 @@ static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-bool constrain(FILE *fplog,bool bLog,bool bEner,
+gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                struct gmx_constr *constr,
-               t_idef *idef,t_inputrec *ir,
+               t_idef *idef,t_inputrec *ir,gmx_ekindata_t *ekind,
                t_commrec *cr,
                gmx_large_int_t step,int delta_step,
                t_mdatoms *md,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq)
+               t_nrnb *nrnb,int econq,gmx_bool bPscal,real veta, real vetanew)
 {
-    bool    bOK,bDump;
-    int     start,homenr;
-    int     i,j;
+    gmx_bool    bOK,bDump;
+    int     start,homenr,nrend;
+    int     i,j,d;
     int     ncons,error;
     tensor  rmdr;
+    rvec    *vstor;
     real    invdt,vir_fac,t;
     t_ilist *settle;
     int     nsettle;
     t_pbc   pbc;
     char    buf[22];
-    
+    t_vetavars *vetavar;
+
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
         gmx_incons("constrain called for forces displacements while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -252,6 +308,11 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     
     start  = md->start;
     homenr = md->homenr;
+    nrend = start+homenr;
+
+    /* set constants for pressure control integration */ 
+    vetavar = init_vetavars(veta,vetanew,ir,ekind,bPscal);
+
     if (ir->delta_t == 0)
     {
         invdt = 0;
@@ -295,16 +356,26 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     
     if (constr->nblocks > 0)
     {
-        if (econq != econqCoord)
-        {
+        switch (econq) {
+        case (econqCoord):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,xprime,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+            break;
+        case (econqVeloc):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,min_proj,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+            break;
+        default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+            break;
         }
-        
-        bOK = bshakef(fplog,constr->shaked,
-                      homenr,md->invmass,constr->nblocks,constr->sblock,
-                      idef,ir,box,x,xprime,nrnb,
-                      constr->lagr,lambda,dvdlambda,
-                      invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
+
         if (!bOK && constr->maxwarn >= 0)
         {
             if (fplog != NULL)
@@ -315,7 +386,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             bDump = TRUE;
         }
     }
-    
+        
     settle  = &idef->il[F_SETTLE];
     if (settle->nr > 0)
     {
@@ -326,7 +397,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         case econqCoord:
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error);
+                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
             if (v != NULL)
             {
@@ -342,10 +413,9 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             {
                 char buf[256];
                 sprintf(buf,
-                        "\nt = %.3f ps: Water molecule starting at atom %d can not be "
-                        "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
-                        ir->init_t+step*ir->delta_t,
-                        ddglatnr(cr->dd,settle->iatoms[error*2+1]));
+                        "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
+                        "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
+                        step,ddglatnr(cr->dd,settle->iatoms[error*2+1]));
                 if (fplog)
                 {
                     fprintf(fplog,"%s",buf);
@@ -364,8 +434,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             case econqForceDispl:
                 settle_proj(fplog,constr->settled,econq,
                             nsettle,settle->iatoms,x,
-                            xprime,min_proj,vir!=NULL,rmdr);
-                
+                            xprime,min_proj,vir!=NULL,rmdr,vetavar);
                 /* This is an overestimate */
                 inc_nrnb(nrnb,eNR_SETTLE,nsettle);
                 break;
@@ -378,6 +447,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         }
     }
 
+    free_vetavars(vetavar);
+    
     if (vir != NULL)
     {
         switch (econq)
@@ -386,7 +457,6 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             vir_fac = 0.5/(ir->delta_t*ir->delta_t);
             break;
         case econqVeloc:
-            /* Assume that these are velocities */
             vir_fac = 0.5/ir->delta_t;
             break;
         case econqForce:
@@ -396,6 +466,11 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         default:
             vir_fac = 0;
             gmx_incons("Unsupported constraint quantity for virial");
+        }
+        
+        if (EI_VV(ir->eI))
+        {
+            vir_fac *= 2;  /* only constraining over half the distance here */
         }
         for(i=0; i<DIM; i++)
         {
@@ -444,7 +519,7 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     return NULL;
 }
 
-real constr_rmsd(struct gmx_constr *constr,bool bSD2)
+real constr_rmsd(struct gmx_constr *constr,gmx_bool bSD2)
 {
   if (constr->lincsd)
     return lincs_rmsd(constr->lincsd,bSD2);
@@ -576,12 +651,12 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
 
 t_blocka make_at2con(int start,int natoms,
 		     t_ilist *ilist,t_iparams *iparams,
-		     bool bDynamics,int *nflexiblecons)
+		     gmx_bool bDynamics,int *nflexiblecons)
 {
   int *count,ncon,con,con_tot,nflexcon,ftype,i,a;
   t_iatom  *ia;
   t_blocka at2con;
-  bool bFlexCon;
+  gmx_bool bFlexCon;
   
   snew(count,natoms);
   nflexcon = 0;
@@ -702,12 +777,12 @@ void set_constraints(struct gmx_constr *constr,
     /* Make a selection of the local atoms for essential dynamics */
     if (constr->ed && cr->dd)
     {
-        dd_make_local_ed_indices(cr->dd,constr->ed,md);
+        dd_make_local_ed_indices(cr->dd,constr->ed);
     }
 }
 
 static void constr_recur(t_blocka *at2con,
-			 t_ilist *ilist,t_iparams *iparams,bool bTopB,
+			 t_ilist *ilist,t_iparams *iparams,gmx_bool bTopB,
 			 int at,int depth,int nc,int *path,
 			 real r0,real r1,real *r2max,
 			 int *count)
@@ -715,7 +790,7 @@ static void constr_recur(t_blocka *at2con,
   int  ncon1;
   t_iatom *ia1,*ia2;
   int  c,con,a1;
-  bool bUse;
+  gmx_bool bUse;
   t_iatom *ia;
   real len,rn0,rn1;
 
@@ -861,126 +936,157 @@ gmx_constr_t init_constraints(FILE *fplog,
                               gmx_edsam_t ed,t_state *state,
                               t_commrec *cr)
 {
-  int  ncon,nset,nmol,settle_type,i,natoms,mt,nflexcon;
-  struct gmx_constr *constr;
-  char *env;
-  t_ilist *ilist;
-  gmx_mtop_ilistloop_t iloop;
-  
-  ncon =
-    gmx_mtop_ftype_count(mtop,F_CONSTR) +
-    gmx_mtop_ftype_count(mtop,F_CONSTRNC);
-  nset = gmx_mtop_ftype_count(mtop,F_SETTLE);
-
-  if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL) {
-    return NULL;
-  }
-
-  snew(constr,1);
-  
-  constr->ncon_tot = ncon;
-  constr->nflexcon = 0;
-  if (ncon > 0) {
-    constr->n_at2con_mt = mtop->nmoltype;
-    snew(constr->at2con_mt,constr->n_at2con_mt);
-    for(mt=0; mt<mtop->nmoltype; mt++) {
-      constr->at2con_mt[mt] = make_at2con(0,mtop->moltype[mt].atoms.nr,
-					  mtop->moltype[mt].ilist,
-					  mtop->ffparams.iparams,
-					  EI_DYNAMICS(ir->eI),&nflexcon);
-      for(i=0; i<mtop->nmolblock; i++) {
-	if (mtop->molblock[i].type == mt) {
-	  constr->nflexcon += mtop->molblock[i].nmol*nflexcon;
-	}
-      }
+    int  ncon,nset,nmol,settle_type,i,natoms,mt,nflexcon;
+    struct gmx_constr *constr;
+    char *env;
+    t_ilist *ilist;
+    gmx_mtop_ilistloop_t iloop;
+    
+    ncon =
+        gmx_mtop_ftype_count(mtop,F_CONSTR) +
+        gmx_mtop_ftype_count(mtop,F_CONSTRNC);
+    nset = gmx_mtop_ftype_count(mtop,F_SETTLE);
+    
+    if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL) 
+    {
+        return NULL;
     }
     
-    if (constr->nflexcon > 0) {
-      if (fplog) {
-	fprintf(fplog,"There are %d flexible constraints\n",
-		constr->nflexcon);
-	if (ir->fc_stepsize == 0) {
-	  fprintf(fplog,"\n"
-		  "WARNING: step size for flexible constraining = 0\n"
-		  "         All flexible constraints will be rigid.\n"
-		  "         Will try to keep all flexible constraints at their original length,\n"
-		  "         but the lengths may exhibit some drift.\n\n");
-	  constr->nflexcon = 0;
-	}
-      }
-      if (constr->nflexcon > 0)
-	please_cite(fplog,"Hess2002");
+    snew(constr,1);
+    
+    constr->ncon_tot = ncon;
+    constr->nflexcon = 0;
+    if (ncon > 0) 
+    {
+        constr->n_at2con_mt = mtop->nmoltype;
+        snew(constr->at2con_mt,constr->n_at2con_mt);
+        for(mt=0; mt<mtop->nmoltype; mt++) 
+        {
+            constr->at2con_mt[mt] = make_at2con(0,mtop->moltype[mt].atoms.nr,
+                                                mtop->moltype[mt].ilist,
+                                                mtop->ffparams.iparams,
+                                                EI_DYNAMICS(ir->eI),&nflexcon);
+            for(i=0; i<mtop->nmolblock; i++) 
+            {
+                if (mtop->molblock[i].type == mt) 
+                {
+                    constr->nflexcon += mtop->molblock[i].nmol*nflexcon;
+                }
+            }
+        }
+        
+        if (constr->nflexcon > 0) 
+        {
+            if (fplog) 
+            {
+                fprintf(fplog,"There are %d flexible constraints\n",
+                        constr->nflexcon);
+                if (ir->fc_stepsize == 0) 
+                {
+                    fprintf(fplog,"\n"
+                            "WARNING: step size for flexible constraining = 0\n"
+                            "         All flexible constraints will be rigid.\n"
+                            "         Will try to keep all flexible constraints at their original length,\n"
+                            "         but the lengths may exhibit some drift.\n\n");
+                    constr->nflexcon = 0;
+                }
+            }
+            if (constr->nflexcon > 0) 
+            {
+                please_cite(fplog,"Hess2002");
+            }
+        }
+        
+        if (ir->eConstrAlg == econtLINCS) 
+        {
+            constr->lincsd = init_lincs(fplog,mtop,
+                                        constr->nflexcon,constr->at2con_mt,
+                                        DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
+                                        ir->nLincsIter,ir->nProjOrder);
+        }
+        
+        if (ir->eConstrAlg == econtSHAKE) {
+            if (DOMAINDECOMP(cr) && cr->dd->bInterCGcons)
+            {
+                gmx_fatal(FARGS,"SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
+            }
+            if (constr->nflexcon) 
+            {
+                gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
+            }
+            please_cite(fplog,"Ryckaert77a");
+            if (ir->bShakeSOR) 
+            {
+                please_cite(fplog,"Barth95a");
+            }
+        }
+    }
+  
+    if (nset > 0) {
+        please_cite(fplog,"Miyamoto92a");
+        
+        /* Check that we have only one settle type */
+        settle_type = -1;
+        iloop = gmx_mtop_ilistloop_init(mtop);
+        while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol)) 
+        {
+            for (i=0; i<ilist[F_SETTLE].nr; i+=2) 
+            {
+                if (settle_type == -1) 
+                {
+                    settle_type = ilist[F_SETTLE].iatoms[i];
+                } 
+                else if (ilist[F_SETTLE].iatoms[i] != settle_type) 
+                {
+                    gmx_fatal(FARGS,
+                              "The [molecules] section of your topology specifies more than one block of\n"
+                              "a [moleculetype] with a [settles] block. Only one such is allowed. If you\n"
+                              "are trying to partition your solvent into different *groups* (e.g. for\n"
+                              "freezing, T-coupling, etc.) then you are using the wrong approach. Index\n"
+                              "files specify groups. Otherwise, you may wish to change the least-used\n"
+                              "block of molecules with SETTLE constraints into 3 normal constraints.");
+                }
+            }
+        }
     }
     
-    if (ir->eConstrAlg == econtLINCS) {
-      constr->lincsd = init_lincs(fplog,mtop,
-				  constr->nflexcon,constr->at2con_mt,
-				  DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
-				  ir->nLincsIter,ir->nProjOrder);
+    constr->maxwarn = 999;
+    env = getenv("GMX_MAXCONSTRWARN");
+    if (env) 
+    {
+        constr->maxwarn = 0;
+        sscanf(env,"%d",&constr->maxwarn);
+        if (fplog) 
+        {
+            fprintf(fplog,
+                    "Setting the maximum number of constraint warnings to %d\n",
+                    constr->maxwarn);
+        }
+        if (MASTER(cr)) 
+        {
+            fprintf(stderr,
+                    "Setting the maximum number of constraint warnings to %d\n",
+                    constr->maxwarn);
+        }
+    }
+    if (constr->maxwarn < 0 && fplog) 
+    {
+        fprintf(fplog,"maxwarn < 0, will not stop on constraint errors\n");
+    }
+    constr->warncount_lincs  = 0;
+    constr->warncount_settle = 0;
+    
+    /* Initialize the essential dynamics sampling.
+     * Put the pointer to the ED struct in constr */
+    constr->ed = ed;
+    if (ed != NULL) 
+    {
+        init_edsam(mtop,ir,cr,ed,state->x,state->box);
     }
     
-    if (ir->eConstrAlg == econtSHAKE) {
-      if (DOMAINDECOMP(cr) && cr->dd->bInterCGcons)
-	gmx_fatal(FARGS,"SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
-      
-      if (constr->nflexcon)
-	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
-      please_cite(fplog,"Ryckaert77a");
-      if (ir->bShakeSOR) 
-	please_cite(fplog,"Barth95a");
-    }
-  }
-  
-  if (nset > 0) {
-    please_cite(fplog,"Miyamoto92a");
+    constr->warn_mtop = mtop;
     
-    /* Check that we have only one settle type */
-    settle_type = -1;
-    iloop = gmx_mtop_ilistloop_init(mtop);
-    while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol)) {
-      for (i=0; i<ilist[F_SETTLE].nr; i+=2) {
-	if (settle_type == -1) {
-	  settle_type = ilist[F_SETTLE].iatoms[i];
-	} else if (ilist[F_SETTLE].iatoms[i] != settle_type) {
-	  gmx_fatal(FARGS,"More than one settle type.\n"
-		    "Suggestion: change the least use settle constraints into 3 normal constraints.");
-	}
-      }
-    }
-  }
-  
-  constr->maxwarn = 999;
-  env = getenv("GMX_MAXCONSTRWARN");
-  if (env) {
-    constr->maxwarn = 0;
-    sscanf(env,"%d",&constr->maxwarn);
-    if (fplog) {
-      fprintf(fplog,
-	      "Setting the maximum number of constraint warnings to %d\n",
-	      constr->maxwarn);
-    }
-    if (MASTER(cr)) {
-      fprintf(stderr,
-	      "Setting the maximum number of constraint warnings to %d\n",
-	      constr->maxwarn);
-    }
-  }
-  if (constr->maxwarn < 0 && fplog) {
-    fprintf(fplog,"maxwarn < 0, will not stop on constraint errors\n");
-  }
-  constr->warncount_lincs  = 0;
-  constr->warncount_settle = 0;
-  
-  /* Initialize the essential dynamics sampling.
-   * Put the pointer to the ED struct in constr */
-  constr->ed = ed;
-  if (ed != NULL) {
-    init_edsam(mtop,ir,cr,ed,state->x,state->box);
-  }
-
-  constr->warn_mtop = mtop;
-
-  return constr;
+    return constr;
 }
 
 t_blocka *atom2constraints_moltype(gmx_constr_t constr)
@@ -988,14 +1094,15 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr)
   return constr->at2con_mt;
 }
 
-bool inter_charge_group_constraints(gmx_mtop_t *mtop)
+
+gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 {
   const gmx_moltype_t *molt;
   const t_block *cgs;
   const t_ilist *il;
   int  mb;
   int  nat,*at2cg,cg,a,ftype,i;
-  bool bInterCG;
+  gmx_bool bInterCG;
 
   bInterCG = FALSE;
   for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++) {

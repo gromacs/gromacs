@@ -119,10 +119,10 @@ static void fill_ft_ind(int nft,int *ft,t_idef *idef,
 
 static void fill_ang(int nft,int *ft,int fac,
 		     int nr[],int *index[],int ft_ind[],t_topology *top,
-		     bool bNoH,real hq)
+		     gmx_bool bNoH,real hq)
 {
   int     f,ftype,i,j,indg,nr_fac;
-  bool    bUse;
+  gmx_bool    bUse;
   t_idef  *idef;
   t_atom  *atom;
   t_iatom *ia;
@@ -205,12 +205,12 @@ static int *select_ftype(const char *opt,int *nft,int *mult)
 int main(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "mk_angndx makes an index file for calculation of",
+    "[TT]mk_angndx[tt] makes an index file for calculation of",
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bH=TRUE;
+  static gmx_bool bH=TRUE;
   static real hq=-1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},

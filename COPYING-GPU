@@ -1,0 +1,51 @@
+GROMACS is free software, distributed under the GNU General Public License. 
+The GROMACS-GPU release however includes / relies on code covered by several 
+different licences as described below.
+
+
+1. GROMACS source 
+
+The major parts of the GROMACS source are covered by the GNU General Public 
+License, a copy of this license can be found in the file COPYING.
+
+
+2. The memtestG80 library
+
+The memtestG80 library, written by Imran Haque, is Copyright 2009 Stanford University, 
+covered by the LGPL license. It may be used under the following terms: 
+
+IN NO EVENT SHALL STANFORD UNIVERSITY BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF STANFORD UNIVERSITY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+STANFORD UNIVERSITY SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE AND ACCOMPANYING DOCUMENTATION PROVIDED HEREUNDER IS PROVIDED "AS IS". Folding@home HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+
+Restrictions:
+
+You may use this software on a computer system only if you own the system or have the written permission of the owner.
+
+You may not alter the software or associated data files. 
+
+Certain builds of this software incorporate by linkage code from the libintl
+and libiconv libraries, which are covered by the Library GNU Public License,
+available at http://www.gnu.org/licenses/lgpl-3.0.txt.
+
+
+3. OpenMM (binary distributions only)
+
+There are several licenses which cover different parts of OpenMM as described
+in the file openmm/licenses/Licenses.txt accompanying the binary distribution.
+
+
+4. FindCUDA.cmake script 
+
+The FindCUDA.cmake script may be used under the terms of the MIT License:
+
+  James Bigler, NVIDIA Corp (nvidia.com - jbigler)
+  Abe Stephens, SCI Institute -- http://www.sci.utah.edu/~abe/FindCuda.html
+
+  Copyright (c) 2008 - 2009 NVIDIA Corporation.  All rights reserved.
+
+  Copyright (c) 2007-2009
+  Scientific Computing and Imaging Institute, University of Utah
+
+  This code is licensed under the MIT License.  See the FindCUDA.cmake script
+  for the text of the license.

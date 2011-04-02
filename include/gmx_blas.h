@@ -35,12 +35,13 @@
 #ifndef _GMX_BLAS_H_
 #define _GMX_BLAS_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #include "types/simple.h"
+
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef toupper
+#endif
 
 
 /** @file

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -67,8 +68,10 @@ static char *int_title(const char *title,int nodeid,char buf[], int size)
   return buf;
 }
 
-static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
+void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
 {
+  int nnhpres;
+
   /* The entries in the state in the tpx file might not correspond
    * with what is needed, so we correct this here.
    */
@@ -90,9 +93,15 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       snew(state->sd_X,state->nalloc);
     }
   }
-  if (ir->eI == eiCG) {
-    state->flags |= (1<<estCGP);
-  }
+    if (ir->eI == eiCG)
+    {
+        state->flags |= (1<<estCGP);
+        if (state->cg_p == NULL)
+        {
+            /* cg_p is not stored in the tpx file, so we need to allocate it */
+            snew(state->cg_p,state->nalloc);
+        }
+    }
   if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE) {
     state->nrng  = gmx_rng_n();
     state->nrngi = 1;
@@ -107,81 +116,55 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   } else {
     state->nrng = 0;
   }
+  state->nnhpres = 0;
   if (ir->ePBC != epbcNONE) {
     state->flags |= (1<<estBOX);
     if (PRESERVE_SHAPE(*ir)) {
       state->flags |= (1<<estBOX_REL);
     }
-    if (ir->epc == epcPARRINELLORAHMAN) {
+    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) {
       state->flags |= (1<<estBOXV);
     }
     if (ir->epc != epcNO) {
-      state->flags |= (1<<estPRES_PREV);
+      if (IR_NPT_TROTTER(ir)) {
+	state->nnhpres = 1;
+	state->flags |= (1<<estNHPRES_XI);
+	state->flags |= (1<<estNHPRES_VXI);
+	state->flags |= (1<<estSVIR_PREV);
+	state->flags |= (1<<estFVIR_PREV);
+	state->flags |= (1<<estVETA);
+	state->flags |= (1<<estVOL0);
+      } else {
+	state->flags |= (1<<estPRES_PREV);
+      }
     }
-    if (ir->etc == etcNOSEHOOVER) {
-      state->flags |= (1<<estNH_XI);
-    }
-  }
-  if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
-    state->flags |= (1<<estTC_INT);
   }
 
+  if (ir->etc == etcNOSEHOOVER) {
+    state->flags |= (1<<estNH_XI);
+    state->flags |= (1<<estNH_VXI);
+  }
+  
+  if (ir->etc == etcVRESCALE) {
+    state->flags |= (1<<estTC_INT);
+  }
+  
+  init_gtc_state(state,state->ngtc,state->nnhpres,ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);
 }
 
-void init_single(FILE *fplog,t_inputrec *inputrec,
-		 const char *tpxfile,gmx_mtop_t *mtop, 
-                 t_state *state)
-{
-  read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
-  set_state_entries(state,inputrec,1);
 
-  if (fplog)
-    pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
-}
-
-void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
-		   t_inputrec *inputrec,gmx_mtop_t *mtop,
-		   t_state *state,
-		   int list)
+void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+                   gmx_mtop_t *mtop)
 {
-  char buf[256];
-  
-  if (MASTER(cr)) {
-    init_inputrec(inputrec);
-    read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
-    /* When we will be doing domain decomposition with separate PME nodes
-     * the rng entries will be too large, we correct for this later.
-     */
-    set_state_entries(state,inputrec,cr->nnodes);
-  }
   bcast_ir_mtop(cr,inputrec,mtop);
+
 
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
     inputrec->ld_seed += cr->nodeid;
-  }
-  
-  /* Printing */
-  if (list!=0 && log!=NULL) 
-  {
-	  if (list&LIST_INPUTREC)
-		  pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,"box",state->box,DIM);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,"box_rel",state->box_rel,DIM);
-	  if (list&LIST_V)
-		  pr_rvecs(log,0,"boxv",state->boxv,DIM);
-	  if (list&LIST_X)
-		  pr_rvecs(log,0,int_title("x",0,buf,255),state->x,state->natoms);
-	  if (list&LIST_V)
-		  pr_rvecs(log,0,int_title("v",0,buf,255),state->v,state->natoms);
-	  if (list&LIST_TOP)
-		  pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
-	  fflush(log);
   }
 }
 

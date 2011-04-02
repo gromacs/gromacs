@@ -68,19 +68,20 @@
 static void clust_size(const char *ndx,const char *trx,const char *xpm,
 		       const char *xpmw,const char *ncl,const char *acl, 
 		       const char *mcl,const char *histo,const char *tempf,
-		       const char *mcn,bool bMol,bool bPBC,const char *tpr,
+		       const char *mcn,gmx_bool bMol,gmx_bool bPBC,const char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi,int ndf,
                        const output_env_t oenv)
 {
   FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;
-  int     nindex,natoms,status;
+  int     nindex,natoms;
+  t_trxstatus *status;
   rvec    *x=NULL,*v=NULL,dx;
   t_pbc   pbc;
   char    *gname;
   char    timebuf[32];
-  bool    bSame,bTPRwarn=TRUE;
+  gmx_bool    bSame,bTPRwarn=TRUE;
   /* Topology stuff */
   t_trxframe  fr;
   t_tpxheader tpxh;
@@ -98,8 +99,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   clear_trxframe(&fr,TRUE);
-  sprintf(timebuf,"Time (%s)",get_time_unit(oenv));
-  tf     = get_time_factor(oenv);
+  sprintf(timebuf,"Time (%s)",output_env_get_time_unit(oenv));
+  tf     = output_env_get_time_factor(oenv);
   fp     = xvgropen(ncl,"Number of clusters",timebuf,"N",oenv);
   gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules",oenv);
   hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules",oenv);
@@ -253,7 +254,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
     if (fr.bV) {
       if (!tpr) {
 	if (bTPRwarn) {
-	  printf("You need a tpr file to analyse temperatures\n");
+	  printf("You need a [TT].tpr[tt] file to analyse temperatures\n");
 	  bTPRwarn = FALSE;
 	}
       }
@@ -355,18 +356,18 @@ int gmx_clustsize(int argc,char *argv[])
 {
   const char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",
-    "the gas phase. The output is given in the form of a XPM file.",
-    "The total number of clusters is written to a XVG file.[PAR]",
+    "the gas phase. The output is given in the form of an [TT].xpm[tt] file.",
+    "The total number of clusters is written to an [TT].xvg[tt] file.[PAR]",
     "When the [TT]-mol[tt] option is given clusters will be made out of",
     "molecules rather than atoms, which allows clustering of large molecules.",
     "In this case an index file would still contain atom numbers",
-    "or your calculcation will die with a SEGV.[PAR]",
+    "or your calculation will die with a SEGV.[PAR]",
     "When velocities are present in your trajectory, the temperature of",
-    "the largest cluster will be printed in a separate xvg file assuming",
+    "the largest cluster will be printed in a separate [TT].xvg[tt] file assuming",
     "that the particles are free to move. If you are using constraints,",
     "please correct the temperature. For instance water simulated with SHAKE",
     "or SETTLE will yield a temperature that is 1.5 times too low. You can",
-    "compensate for this with the -ndf option. Remember to take the removal",
+    "compensate for this with the [TT]-ndf[tt] option. Remember to take the removal",
     "of center of mass motion into account.[PAR]",
     "The [TT]-mc[tt] option will produce an index file containing the",
     "atom numbers of the largest cluster."
@@ -376,8 +377,8 @@ int gmx_clustsize(int argc,char *argv[])
   static int  nskip    = 0;
   static int  nlevels  = 20;
   static int  ndf      = -1;
-  static bool bMol     = FALSE;
-  static bool bPBC     = TRUE;
+  static gmx_bool bMol     = FALSE;
+  static gmx_bool bPBC     = TRUE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
   static rvec rhi      = { 0.0, 0.0, 1.0 };
 
@@ -387,15 +388,15 @@ int gmx_clustsize(int argc,char *argv[])
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Largest distance (nm) to be considered in a cluster" },
     { "-mol",      FALSE, etBOOL, {&bMol},
-      "Cluster molecules rather than atoms (needs tpr file)" },
+      "Cluster molecules rather than atoms (needs [TT].tpr[tt] file)" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions" },
     { "-nskip",    FALSE, etINT,  {&nskip},
       "Number of frames to skip between writing" },
     { "-nlevels",  FALSE, etINT,  {&nlevels},
-      "Number of levels of grey in xpm output" },
+      "Number of levels of grey in [TT].xpm[tt] output" },
     { "-ndf",      FALSE, etINT,  {&ndf},
-      "Number of degrees of freedom of the entire system for temperature calculation. If not set the number of atoms times three is used." },
+      "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
     { "-rgblo",    FALSE, etRVEC, {rlo},
       "RGB values for the color of the lowest occupied cluster size" },
     { "-rgbhi",    FALSE, etRVEC, {rhi},
@@ -403,7 +404,7 @@ int gmx_clustsize(int argc,char *argv[])
   };
 #define NPA asize(pa)
   const char *fnNDX,*fnTPR;
-  bool       bSQ,bRDF;
+  gmx_bool       bSQ,bRDF;
   t_rgb      rgblo,rgbhi;
   
   t_filenm   fnm[] = {

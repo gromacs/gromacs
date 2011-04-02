@@ -36,6 +36,7 @@
 #endif
 
 #include <ctype.h>
+#include <stdarg.h>
 
 #include <macros.h>
 #include <string2.h>
@@ -72,7 +73,8 @@ extern gmx_ana_selmethod_t sm_all;
 extern gmx_ana_selmethod_t sm_none;
 extern gmx_ana_selmethod_t sm_atomnr;
 extern gmx_ana_selmethod_t sm_resnr;
-extern gmx_ana_selmethod_t sm_resind;
+extern gmx_ana_selmethod_t sm_resindex;
+extern gmx_ana_selmethod_t sm_molindex;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
@@ -101,39 +103,59 @@ extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
+/*! \brief
+ * Helper structure for defining selection methods.
+ */
+typedef struct {
+    /*! \brief
+     * Name to register the method under.
+     *
+     * If NULL, use the actual name of the method.
+     * This field is used for defining synonyms.
+     */
+    const char            *name;
+    /** Method data structure to register. */
+    gmx_ana_selmethod_t   *method;
+} t_register_method;
+
 /** Array of selection methods defined in the library. */
-static gmx_ana_selmethod_t *const smtable_def[] = {
-    &sm_cog,
-    &sm_com,
+static const t_register_method smtable_def[] = {
+    {NULL,         &sm_cog},
+    {NULL,         &sm_com},
 
-    &sm_all,
-    &sm_none,
-    &sm_atomnr,
-    &sm_resnr,
-    &sm_resind,
-    &sm_atomname,
-    &sm_atomtype,
-    &sm_resname,
-    &sm_insertcode,
-    &sm_chain,
-    &sm_mass,
-    &sm_charge,
-    &sm_altloc,
-    &sm_occupancy,
-    &sm_betafactor,
-    &sm_x,
-    &sm_y,
-    &sm_z,
+    {NULL,         &sm_all},
+    {NULL,         &sm_none},
+    {NULL,         &sm_atomnr},
+    {NULL,         &sm_resnr},
+    {"resid",      &sm_resnr},
+    {NULL,         &sm_resindex},
+    {"residue",    &sm_resindex},
+    {NULL,         &sm_molindex},
+    {"mol",        &sm_molindex},
+    {"molecule",   &sm_molindex},
+    {NULL,         &sm_atomname},
+    {NULL,         &sm_atomtype},
+    {NULL,         &sm_resname},
+    {NULL,         &sm_insertcode},
+    {NULL,         &sm_chain},
+    {NULL,         &sm_mass},
+    {NULL,         &sm_charge},
+    {NULL,         &sm_altloc},
+    {NULL,         &sm_occupancy},
+    {NULL,         &sm_betafactor},
+    {NULL,         &sm_x},
+    {NULL,         &sm_y},
+    {NULL,         &sm_z},
 
-    &sm_distance,
-    &sm_mindistance,
-    &sm_within,
-    &sm_insolidangle,
-    &sm_same,
+    {NULL,         &sm_distance},
+    {NULL,         &sm_mindistance},
+    {NULL,         &sm_within},
+    {NULL,         &sm_insolidangle},
+    {NULL,         &sm_same},
 
-    &sm_merge,
-    &sm_plus,
-    &sm_permute,
+    {NULL,         &sm_merge},
+    {NULL,         &sm_plus},
+    {NULL,         &sm_permute},
 };
 
 /*! \brief
@@ -179,7 +201,7 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * \param[in]     name    Name of the method (used for error messages).
  * \param[in]     nparams Number of parameters in \p param.
  * \param[in,out] param   Parameter array
- *   (only the \c flags field of boolean parameters may be modified).
+ *   (only the \c flags field of gmx_boolean parameters may be modified).
  * \param[in]     symtab  Symbol table (used for checking overlaps).
  * \returns       TRUE if there are no problems with the parameters,
  *   FALSE otherwise.
@@ -192,11 +214,11 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * If you remove a check, make sure that the parameter parser can handle the
  * resulting parameters.
  */
-static bool
+static gmx_bool
 check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
              gmx_sel_symtab_t *symtab)
 {
-    bool              bOk = TRUE;
+    gmx_bool              bOk = TRUE;
     gmx_sel_symrec_t *sym;
     int               i, j;
 
@@ -227,7 +249,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             {
                 continue;
             }
-            if (!strcasecmp(param[i].name, param[j].name))
+            if (!gmx_strcasecmp(param[i].name, param[j].name))
             {
                 report_error(fp, name, "error: duplicate parameter name '%s'", param[i].name);
                 bOk = FALSE;
@@ -286,21 +308,21 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
                 bOk = FALSE;
             }
         }
-        /* Check boolean parameters */
+        /* Check gmx_boolean parameters */
         if (param[i].val.type == NO_VALUE)
         {
             if (param[i].val.nr != 0)
             {
-                report_param_error(fp, name, param[i].name, "error: number of values should be zero for boolean parameters");
+                report_param_error(fp, name, param[i].name, "error: number of values should be zero for gmx_boolean parameters");
                 bOk = FALSE;
             }
-            /* The boolean parameters should always be optional, so set the
+            /* The gmx_boolean parameters should always be optional, so set the
              * flag for convenience. */
             param[i].flags |= SPAR_OPTIONAL;
             /* Any other flags should not be specified */
             if (param[i].flags & ~SPAR_OPTIONAL)
             {
-                report_param_error(fp, name, param[i].name, "error: boolean parameter should not have any flags set");
+                report_param_error(fp, name, param[i].name, "error: gmx_boolean parameter should not have any flags set");
                 bOk = FALSE;
             }
         }
@@ -391,12 +413,11 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
  * This function checks that all the required callbacks are defined, i.e.,
  * not NULL, to find programming errors.
  */
-static bool
+static gmx_bool
 check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
-    bool         bOk = TRUE;
-    bool         bNeedInit;
-    bool         bNeedFree;
+    gmx_bool         bOk = TRUE;
+    gmx_bool         bNeedInit;
     int          i;
 
     /* Make some checks on init_data and free */
@@ -418,10 +439,6 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Warn of dynamic callbacks in static methods */
     if (!(method->flags & SMETH_MODIFIER))
     {
-        if (method->init_frame && !(method->flags & SMETH_DYNAMIC))
-        {
-            report_error(fp, method->name, "warning: init_frame not used because the method is static");
-        }
         if (method->pupdate && !(method->flags & SMETH_DYNAMIC))
         {
             report_error(fp, method->name, "warning: pupdate not used because the method is static");
@@ -437,30 +454,18 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Loop through the parameters to determine if initialization callbacks
      * are needed. */
     bNeedInit = FALSE;
-    bNeedFree = FALSE;
     for (i = 0; i < method->nparams; ++i)
     {
-        if (method->param[i].val.type == POS_VALUE
-            || method->param[i].val.type == GROUP_VALUE)
-        {
-            bNeedFree = TRUE;
-        }
         if (method->param[i].val.type != POS_VALUE
             && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             bNeedInit = TRUE;
-            bNeedFree = TRUE;
         }
     }
     /* Check that the callbacks required by the parameters are present */
     if (bNeedInit && !method->init)
     {
         report_error(fp, method->name, "error: init should be provided");
-        bOk = FALSE;
-    }
-    if (bNeedFree && !method->free)
-    {
-        report_error(fp, method->name, "error: free should be provided");
         bOk = FALSE;
     }
     return bOk;
@@ -479,10 +484,10 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
+static gmx_bool
 check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    bool         bOk = TRUE;
+    gmx_bool         bOk = TRUE;
 
     /* Check the type */
     if (method->type == NO_VALUE)
@@ -549,10 +554,10 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
+static gmx_bool
 check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    bool         bOk = TRUE;
+    gmx_bool         bOk = TRUE;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
@@ -612,7 +617,7 @@ int
 gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
                            const char *name, gmx_ana_selmethod_t *method)
 {
-    bool bOk;
+    gmx_bool bOk;
 
     /* Check the method */
     if (method->flags & SMETH_MODIFIER)
@@ -649,12 +654,21 @@ gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
 {
     size_t i;
     int  rc;
-    bool bOk;
+    gmx_bool bOk;
 
     bOk = TRUE;
     for (i = 0; i < asize(smtable_def); ++i)
     {
-        rc = gmx_ana_selmethod_register(sc, smtable_def[i]->name, smtable_def[i]);
+        gmx_ana_selmethod_t *method = smtable_def[i].method;
+
+        if (smtable_def[i].name == NULL)
+        {
+            rc = gmx_ana_selmethod_register(sc, method->name, method);
+        }
+        else
+        {
+            rc = gmx_ana_selmethod_register(sc, smtable_def[i].name, method);
+        }
         if (rc != 0)
         {
             bOk = FALSE;

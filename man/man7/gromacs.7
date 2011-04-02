@@ -150,26 +150,26 @@ individual man pages for further details.
 .IX Subsection "Generating topologies and coordinates"
 .Vb 7
 \&  pdb2gmx     converts pdb files to topology and coordinate files
-\&  x2top       generates a primitive topology from coordinates
+\&  g_x2top     generates a primitive topology from coordinates
 \&  editconf    edits the box and writes subgroups
 \&  genbox      solvates a system
 \&  genion      generates mono atomic ions on energetically favorable positions
 \&  genconf     multiplies a conformation in 'random' orientations
-\&  protonate   protonates structures
+\&  g_protonate protonates structures
 .Ve
 .Sh "Running a simulation"
 .IX Subsection "Running a simulation"
 .Vb 4
 \&  grompp      makes a run input file
 \&  tpbconv     makes a run input file for restarting a crashed run
-\&  mdrun       performs a simulation
-\&  mdrun_mpi   performs a sim across multiple CPUs or systems (in separate package)
+\&  mdrun       performs a simulation, do a normal mode analysis or an energy minimization
+\&  mdrun_mpi   performs a sim across multiple CPUs or systems
 .Ve
 .Sh "Viewing trajectories"
 .IX Subsection "Viewing trajectories"
 .Vb 3
 \&  ngmx        displays a trajectory
-\&  trjconv     converts trajectories to e.g. pdb which can be viewed with e.g. rasmol
+\&  g_highway   X Window System gadget for highway simulations
 \&  g_nmtraj    generate a virtual trajectory from an eigenvector
 .Ve                      
 .Sh "Processing energies"
@@ -181,13 +181,13 @@ individual man pages for further details.
 .Ve
 .Sh "Converting files"
 .IX Subsection "Converting files"
-.Vb 5
+.Vb 6
 \&  editconf    converts and manipulates structure files
 \&  trjconv     converts and manipulates trajectory files
 \&  trjcat      concatenates trajectory files
 \&  eneconv     converts energy files
 \&  xpm2ps      converts XPM matrices to encapsulated postscript (or XPM)
-\&  sigeps      convert c6/12 or c6/cn combinations to and from sigma/epsilon
+\&  g_sigeps    convert c6/12 or c6/cn combinations to and from sigma/epsilon
 .Ve
 .Sh "Tools"
 .IX Subsection "Tools"
@@ -199,17 +199,17 @@ individual man pages for further details.
 \&  g_traj      plots x, v and f of selected atoms/groups (and more) from a trajectory
 \&  g_analyze   analyzes data sets
 \&  trjorder    orders molecules according to their distance to a group
-\&  genrestr    generate topology include file with position restraints
 \&  g_filter    frequency filters trajectories, useful for making smooth movies
 \&  g_lie       free energy estimate from linear combinations
 \&  g_dyndom    interpolate and extrapolate structure rotations
 \&  g_morph     linear interpolation of conformations
 \&  g_wham      weighted histogram analysis after umbrella sampling
 \&  xpm2ps      convert XPM (XPixelMap) file to postscript
-\&  g_densmap   compute 2D number-density maps and generate plots
 \&  g_sham      read/write xmgr and xvgr data sets
 \&  g_spatial   calculates the spatial distribution function (more control than g_sdf)
 \&  g_sdf       calculates the spatial distribution function (faster than g_spatial)
+\&  g_select    selects groups of atoms based on flexible textual selections
+\&  g_tune_pme  time mdrun as a function of PME nodes to optimize settings
 .Ve
 .Sh "Distances between structures"
 .IX Subsection "Distances between structures"
@@ -221,21 +221,25 @@ individual man pages for further details.
 .Ve
 .Sh "Distances in structures over time"
 .IX Subsection "Distances in structures over time"
-.Vb 5
+.Vb 6
 \&  g_mindist   calculates the minimum distance between two groups
 \&  g_dist      calculates the distances between the centers of mass of two groups
 \&  g_bond      calculates distances between atoms
 \&  g_mdmat     calculates residue contact maps
+\&  g_polystat  calculates static properties of polymers
 \&  g_rmsdist   calculates atom pair distances averaged with power \-2, \-3 or \-6
 .Ve
 .Sh "Mass distribution properties over time"
 .IX Subsection "Mass distribution properties over time"
-.Vb 5
+.Vb 8
 \&  g_traj      plots x, v, f, box, temperature and rotational energy
 \&  g_gyrate    calculates the radius of gyration
 \&  g_msd       calculates mean square displacements
+\&  g_polystat  calculates static properties of polymers
 \&  g_rotacf    calculates the rotational correlation function for molecules
 \&  g_rdf       calculates radial distribution functions
+\&  g_rotmat    plots the rotation matrix for fitting to a reference structure
+\&  g_vanhove   calculates Van Hove displacement functions
 .Ve
 .Sh "Analyzing bonded interactions"
 .IX Subsection "Analyzing bonded interactions"
@@ -247,37 +251,42 @@ individual man pages for further details.
 .Ve                      
 .Sh "Structural properties"
 .IX Subsection "Structural properties"
-.Vb 11
+.Vb 14
 \&  g_hbond     computes and analyzes hydrogen bonds
 \&  g_saltbr    computes salt bridges
 \&  g_sas       computes solvent accessible surface area
 \&  g_order     computes the order parameter per atom for carbon tails
+\&  g_principal calculates axes of inertia for a group of atoms
+\&  g_rdf       calculates radial distribution functions
+\&  g_sdf       calculates solvent distribution functions
 \&  g_sgangle   computes the angle and distance between two groups
 \&  g_sorient   analyzes solvent orientation around solutes
+\&  g_spol      analyzes solvent dipole orientation and polarization around solutes
 \&  g_bundle    analyzes bundles of axes, e.g. helices
 \&  g_disre     analyzes distance restraints
 \&  g_clustsize calculate size distributions of atomic clusters
-\&  anadock     cluster structures from Autodock runs
-\&  g_polystat  plot average static properties of polymers
+\&  g_anadock   cluster structures from Autodock runs
 .Ve
 .Sh "Kinetic properties"
 .IX Subsection "Kinetic properties"
-.Vb 7
+.Vb 8
 \&  g_traj      plots x, v, f, box, temperature and rotational energy
 \&  g_velacc    calculates velocity autocorrelation functions
 \&  g_tcaf      calculates viscosities of liquids
 \&  g_kinetics  calculate kinetic rate constants (experimental)
+\&  g_bar       calculates free energy difference estimates through Bennett's acceptance ratio
 \&  g_current   calculate current autocorrelation function of system
 \&  g_vanhove   compute Van Hove correlation function
 \&  g_principal calculate principal axes of inertion for a group of atoms
 .Ve                      
 .Sh "Electrostatic properties"
 .IX Subsection "Electrostatic properties"
-.Vb 5
+.Vb 6
 \&  genion       generates mono atomic ions on energetically favorable positions
 \&  g_potential  calculates the electrostatic potential across the box
 \&  g_dipoles    computes the total dipole plus fluctuations
 \&  g_dielectric calculates frequency dependent dielectric constants
+\&  g_current    calculate current autocorrelation function of system
 \&  g_spol       analyze dipoles around a solute
 .Ve  
 .Sh "Protein specific analysis"
@@ -288,17 +297,18 @@ individual man pages for further details.
 \&  g_helix       calculates everything you want to know about helices
 \&  g_helixorient calculate coordinates/directions of alpha-helix components
 \&  g_rama        computes Ramachandran plots
-\&  xrama         shows animated Ramachandran plots
+\&  g_xrama       shows animated Ramachandran plots
 \&  wheel         plots helical wheels
 .Ve
 .Sh "Interfaces"
 .IX Subsection "Interfaces"
-.Vb 5
+.Vb 6
 \&  g_potential calculates the electrostatic potential across the box
 \&  g_density   calculates the density of the system
 \&  g_order     computes the order parameter per atom for carbon tails
 \&  g_h2order   computes the orientation of water molecules
 \&  g_bundle    analyzes bundles of axes, e.g. transmembrane helices
+\&  g_membed    embeds a protein into a lipid bilayer
 .Ve                      
 .Sh "Covariance analysis"
 .IX Subsection "Covariance analysis"

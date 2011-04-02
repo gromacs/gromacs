@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -81,7 +82,7 @@ typedef struct
 static const char *pdbtp[epdbNR] =
     { "ATOM  ", "HETATM" };
 
-real calc_mass(t_atoms *atoms, bool bGetMass, gmx_atomprop_t aps)
+real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {
     real tmass;
     int i;
@@ -102,7 +103,7 @@ real calc_mass(t_atoms *atoms, bool bGetMass, gmx_atomprop_t aps)
 }
 
 real calc_geom(int isize, atom_id *index, rvec *x, rvec geom_center, rvec min,
-               rvec max, bool bDiam)
+               rvec max, gmx_bool bDiam)
 {
     real diam2, d;
     char *grpnames;
@@ -206,13 +207,12 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 }
 
 void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
-                       double *bfac, int *bfac_nr, bool peratom)
+                       double *bfac, int *bfac_nr, gmx_bool peratom)
 {
     FILE *out;
     real bfac_min, bfac_max;
     int i, n;
-    bool found;
-    char buf[120];
+    gmx_bool found;
 
     bfac_max = -1e10;
     bfac_min = 1e10;
@@ -267,8 +267,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
                 }
             if (!found)
             {
-                sprintf(buf, "Residue nr %d not found\n", bfac_nr[i]);
-                warning(buf);
+                gmx_warning("Residue nr %d not found\n", bfac_nr[i]);
             }
         }
     }
@@ -333,7 +332,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
         atoms.atom[i].resind = i;
         atoms.resinfo[i].name = &ala;
         atoms.resinfo[i].nr = i + 1;
-        atoms.resinfo[i].chain = 'A' + i / NCUCVERT;
+        atoms.resinfo[i].chainid = 'A' + i / NCUCVERT;
     }
     calc_triclinic_images(box, img + 1);
 
@@ -449,12 +448,30 @@ void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
 		rotmatrix[2][0],rotmatrix[2][1],rotmatrix[2][2]);
 }
 
+static void renum_resnr(t_atoms *atoms,int isize,const int *index,
+                        int resnr_start)
+{
+    int i,resind_prev,resind;
+
+    resind_prev = -1;
+    for(i=0; i<isize; i++)
+    {
+        resind = atoms->atom[index == NULL ? i : index[i]].resind;
+        if (resind != resind_prev)
+        {
+            atoms->resinfo[resind].nr = resnr_start;
+            resnr_start++;
+        }
+        resind_prev = resind;
+    }
+}
+
 int gmx_editconf(int argc, char *argv[])
 {
     const char
         *desc[] =
             {
-                "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+                "[TT]editconf[tt] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
                 "or [TT].pdb[tt].",
                 "[PAR]",
                 "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
@@ -463,25 +480,26 @@ int gmx_editconf(int argc, char *argv[])
                 "[PAR]",
                 "Option [TT]-bt[tt] determines the box type: [TT]triclinic[tt] is a",
                 "triclinic box, [TT]cubic[tt] is a rectangular box with all sides equal",
-                "[TT]dodecahedron[tt] represents a rhombic dodecahedron and "
-                    "[TT]octahedron[tt] is a truncated octahedron.",
+                "[TT]dodecahedron[tt] represents a rhombic dodecahedron and",
+                "[TT]octahedron[tt] is a truncated octahedron.",
                 "The last two are special cases of a triclinic box.",
                 "The length of the three box vectors of the truncated octahedron is the",
                 "shortest distance between two opposite hexagons.",
-                "The volume of a dodecahedron is 0.71 and that of a truncated octahedron",
-                "is 0.77 of that of a cubic box with the same periodic image distance.",
+                "Relative to a cubic box with some periodic image distance, the volume of a ",
+                "dodecahedron with this same periodic distance is 0.71 times that of the cube, ",
+                "and that of a truncated octahedron is 0.77 times.",
                 "[PAR]",
                 "Option [TT]-box[tt] requires only",
-                "one value for a cubic box, dodecahedron and a truncated octahedron.",
+                "one value for a cubic, rhombic dodecahedral, or truncated octahedral box.",
                 "[PAR]",
-                "With [TT]-d[tt] and a [TT]triclinic[tt] box the size of the system in the x, y",
-                "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
+                "With [TT]-d[tt] and a [TT]triclinic[tt] box the size of the system in the [IT]x[it]-, [IT]y[it]-,",
+                "and [IT]z[it]-directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
                 "[TT]dodecahedron[tt] or [TT]octahedron[tt] boxes, the dimensions are set",
                 "to the diameter of the system (largest distance between atoms) plus twice",
                 "the specified distance.",
                 "[PAR]",
                 "Option [TT]-angles[tt] is only meaningful with option [TT]-box[tt] and",
-                "a triclinic box and can not be used with option [TT]-d[tt].",
+                "a triclinic box and cannot be used with option [TT]-d[tt].",
                 "[PAR]",
                 "When [TT]-n[tt] or [TT]-ndef[tt] is set, a group",
                 "can be selected for calculating the size and the geometric center,",
@@ -490,19 +508,20 @@ int gmx_editconf(int argc, char *argv[])
                 "[TT]-rotate[tt] rotates the coordinates and velocities.",
                 "[PAR]",
                 "[TT]-princ[tt] aligns the principal axes of the system along the",
-                "coordinate axes, this may allow you to decrease the box volume,",
+                "coordinate axes, with the longest axis aligned with the [IT]x[it]-axis. ",
+                "This may allow you to decrease the box volume,",
                 "but beware that molecules can rotate significantly in a nanosecond.",
                 "[PAR]",
                 "Scaling is applied before any of the other operations are",
                 "performed. Boxes and coordinates can be scaled to give a certain density (option",
-                "[TT]-density[tt]). Note that this may be inaccurate in case a gro",
-                "file is given as input. A special feature of the scaling option, when the",
+                "[TT]-density[tt]). Note that this may be inaccurate in case a [TT].gro[tt]",
+                "file is given as input. A special feature of the scaling option is that when the",
                 "factor -1 is given in one dimension, one obtains a mirror image,",
-                "mirrored in one of the plains, when one uses -1 in three dimensions",
+                "mirrored in one of the planes. When one uses -1 in three dimensions, ",
                 "a point-mirror image is obtained.[PAR]",
                 "Groups are selected after all operations have been applied.[PAR]",
                 "Periodicity can be removed in a crude manner.",
-                "It is important that the box sizes at the bottom of your input file",
+                "It is important that the box vectors at the bottom of your input file",
                 "are correct when the periodicity is to be removed.",
                 "[PAR]",
                 "When writing [TT].pdb[tt] files, B-factors can be",
@@ -516,34 +535,35 @@ int gmx_editconf(int argc, char *argv[])
                 "a row of CA atoms with B-factors ranging from the minimum to the",
                 "maximum value found, effectively making a legend for viewing.",
                 "[PAR]",
-                "With the option -mead a special pdb (pqr) file for the MEAD electrostatics",
+                "With the option [TT]-mead[tt] a special [TT].pdb[tt] ([TT].pqr[tt])",
+                "file for the MEAD electrostatics",
                 "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
                 "is that the input file is a run input file.",
                 "The B-factor field is then filled with the Van der Waals radius",
                 "of the atoms while the occupancy field will hold the charge.",
                 "[PAR]",
-                "The option -grasp is similar, but it puts the charges in the B-factor",
+                "The option [TT]-grasp[tt] is similar, but it puts the charges in the B-factor",
                 "and the radius in the occupancy.",
                 "[PAR]",
                 "Option [TT]-align[tt] allows alignment",
                 "of the principal axis of a specified group against the given vector, ",
 				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
                 "[PAR]",
-                "Finally with option [TT]-label[tt] editconf can add a chain identifier",
-                "to a pdb file, which can be useful for analysis with e.g. rasmol."
-                    "[PAR]",
+                "Finally, with option [TT]-label[tt], [TT]editconf[tt] can add a chain identifier",
+                "to a [TT].pdb[tt] file, which can be useful for analysis with e.g. Rasmol.",
+                "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
-                "a cubic box with the corners cut off (such as Gromos) use:[BR]",
-                "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
+                "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
+                "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
                 "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
     const char *bugs[] =
         {
             "For complex molecules, the periodicity removal routine may break down, "
-                "in that case you can use trjconv" };
+                "in that case you can use [TT]trjconv[tt]." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
-    static bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
+    static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;
-    static bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead =
+    static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead =
         FALSE, bGrasp = FALSE, bSig56 = FALSE;
     static rvec scale =
         { 1, 1, 1 }, newbox =
@@ -561,6 +581,7 @@ int gmx_editconf(int argc, char *argv[])
         *label = "A";
     static rvec visbox =
         { 0, 0, 0 };
+    static int resnr_start = -1;
     t_pargs
         pa[] =
             {
@@ -599,10 +620,13 @@ int gmx_editconf(int argc, char *argv[])
                         { scale }, "Scaling factor" },
                     { "-density", FALSE, etREAL,
                         { &rho },
-                        "Density (g/l) of the output box achieved by scaling" },
+                        "Density (g/L) of the output box achieved by scaling" },
                     { "-pbc", FALSE, etBOOL,
                         { &bRMPBC },
                         "Remove the periodicity (make molecule whole again)" },
+                    { "-resnr", FALSE, etINT,
+                        { &resnr_start },
+                        " Renumber residues starting from resnr" },
                     { "-grasp", FALSE, etBOOL,
                         { &bGrasp },
                         "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
@@ -626,7 +650,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add CONECT records to a pdb file when written. Can only be done when a topology is present" } };
+                        "Add CONECT records to a [TT].pdb[tt] file when written. Can only be done when a topology is present" } };
 #define NPA asize(pa)
 
     FILE *out;
@@ -644,8 +668,8 @@ int gmx_editconf(int argc, char *argv[])
     int ePBC;
     matrix box,rotmatrix,trans;
 	rvec princd,tmpvec;
-    bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter, bAlign;
-    bool bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
+    gmx_bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter, bAlign;
+    gmx_bool bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
     real xs, ys, zs, xcent, ycent, zcent, diam = 0, mass = 0, d, vdw;
     gmx_atomprop_t aps;
     gmx_conect conect;
@@ -1023,7 +1047,7 @@ int gmx_editconf(int argc, char *argv[])
                 "vector might be somewhat smaller than your specified value %f.\n"
                 "You can check the actual value with g_mindist -pi\n",dist);
         }
-        else
+        else if (!opt2parg_bSet("-bt", NPA, pa))
         {
             printf("\nWARNING: No boxtype specified - distance condition applied in each dimension.\n"
                 "If the molecule rotates the actual distance will be smaller. You might want\n"
@@ -1039,20 +1063,40 @@ int gmx_editconf(int argc, char *argv[])
         fprintf(stderr,"\nSelect a group for output:\n");
         get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
                   1,&isize,&index,&grpname);
-        if (opt2bSet("-bf",NFILE,fnm))
-            gmx_fatal(FARGS,"combination not implemented: -bf -n  or -bf -ndef");
-        else {
-            if (outftp == efPDB) {
-                out=ffopen(outfile,"w");
-                write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect);
-                ffclose(out);
-            }
-            else
-                write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
-                    isize,index); 
+
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,isize,index,resnr_start);
+        }
+
+        if (opt2parg_bSet("-label",NPA,pa)) {
+            for(i=0; (i<atoms.nr); i++) 
+                atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
+        }
+                
+        if (opt2bSet("-bf",NFILE,fnm) || bLegend)
+        {
+            gmx_fatal(FARGS,"Sorry, cannot do bfactors with an index group.");
+        }
+
+        if (outftp == efPDB) 
+        {
+            out=ffopen(outfile,"w");
+            write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect,TRUE);
+            ffclose(out);
+        }
+        else
+        {
+            write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,isize,index); 
         }
     }
-    else {
+    else
+    {
+        if (resnr_start >= 0)
+        {
+            renum_resnr(&atoms,atoms.nr,NULL,resnr_start);
+        }
+
         if ((outftp == efPDB) || (outftp == efPQR)) {
             out=ffopen(outfile,"w");
             if (bMead) {
@@ -1076,9 +1120,9 @@ int gmx_editconf(int argc, char *argv[])
             }
             if (opt2parg_bSet("-label",NPA,pa)) {
                 for(i=0; (i<atoms.nr); i++) 
-                    atoms.resinfo[atoms.atom[i].resind].chain=label[0];
+                    atoms.resinfo[atoms.atom[i].resind].chainid=label[0];
             }
-            write_pdbfile(out,title,&atoms,x,ePBC,box,0,-1,conect);
+            write_pdbfile(out,title,&atoms,x,ePBC,box,' ',-1,conect,TRUE);
             if (bLegend)
                 pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
             if (visbox[0] > 0)

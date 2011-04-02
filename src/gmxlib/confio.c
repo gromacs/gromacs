@@ -67,7 +67,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 			t_trxframe *fr)
 {
   t_atoms *atoms;
-  bool   bEnd;
+  gmx_bool   bEnd;
   int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
@@ -105,9 +105,9 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	      resnr = oldres;
 	    else {
 	      resnr    = 1;
-	      strcpy(resnm,"???"); 
+	      strncpy(resnm,"???",sizeof(resnm)-1); 
 	    }
-	    strcpy(anm,"???"); 
+	    strncpy(anm,"???",sizeof(anm)-1); 
 	  }
 	  atoms->atomname[natoms]=put_symtab(symtab,anm);
 	  if (resnr != oldres) {
@@ -120,7 +120,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	    if (newres+1 > atoms->nres) {
 	      atoms->nres = newres+1;
 	    }
-	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',' ');
+	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',0,' ');
 	  } else {
 	    atoms->atom[natoms].resind = newres;
 	  }
@@ -147,7 +147,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 static int read_g96_vel(char line[],FILE *fp,const char *infile,
 			t_trxframe *fr)
 {
-  bool   bEnd;
+  gmx_bool   bEnd;
   int    nwanted,natoms=-1,shift;
   double db1,db2,db3;
 
@@ -188,10 +188,9 @@ static int read_g96_vel(char line[],FILE *fp,const char *infile,
 
 int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
 {
-  static t_symtab *symtab=NULL;
-  static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
-		               * Gromos96 trajectories at the same time */  
-  bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
+  t_symtab *symtab=NULL;
+  char line[STRLEN+1]; 
+  gmx_bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
   int    natoms,nbp;
   double db1,db2,db3,db4,db5,db6,db7,db8,db9;
 
@@ -282,7 +281,7 @@ int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
     }
   } while (!bFinished && fgets2(line,STRLEN,fp));
   
-  close_symtab(symtab);
+  free_symtab(symtab);
 
   fr->natoms = natoms;
   
@@ -446,13 +445,13 @@ const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f",
 static void read_espresso_conf(const char *infile,
 			       t_atoms *atoms,rvec x[],rvec *v,matrix box)
 {
-  static t_symtab *symtab=NULL;
+  t_symtab *symtab=NULL;
   FILE *fp;
   char word[STRLEN],buf[STRLEN];
   int  natoms,level,npar,r,nprop,p,i,m,molnr;
   int  prop[32];
   double d;
-  bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
+  gmx_bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
 
   if (!symtab) {
     snew(symtab,1);
@@ -540,9 +539,10 @@ static void read_espresso_conf(const char *infile,
 		  atoms->resinfo[atoms->atom[i-1].resind].nr != molnr) {
 		atoms->atom[i].resind =
 		  (i == 0 ? 0 : atoms->atom[i-1].resind+1); 
-		atoms->resinfo[atoms->atom[i].resind].nr    = molnr;
-		atoms->resinfo[atoms->atom[i].resind].ic    = ' ';
-		atoms->resinfo[atoms->atom[i].resind].chain = ' ';
+		atoms->resinfo[atoms->atom[i].resind].nr      = molnr;
+		atoms->resinfo[atoms->atom[i].resind].ic      = ' ';
+		atoms->resinfo[atoms->atom[i].resind].chainid = ' ';
+        atoms->resinfo[atoms->atom[i].resind].chainnum = molnr; /* Not sure if this is right? */
 	      } else {
 		atoms->atom[i].resind = atoms->atom[i-1].resind;
 	      }
@@ -567,7 +567,7 @@ static void read_espresso_conf(const char *infile,
 	      sprintf(buf,"T%c%c",
 		      'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
 	    }
-	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',' ');
+	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',0,' ');
 	  }	  
 
 	  if (r == 3)
@@ -613,7 +613,7 @@ static int get_espresso_coordnum(const char *infile)
   FILE *fp;
   char word[STRLEN];
   int  natoms,level,r;
-  bool bFoundParticles;
+  gmx_bool bFoundParticles;
 
   natoms = 0;
   
@@ -657,8 +657,9 @@ static void write_espresso_conf_indexed(FILE *out,const char *title,
   int i,j;
 
   fprintf(out,"# %s\n",title);
-  if (TRICLINIC(box))
-    fprintf(stderr,"\nWARNING: the Espresso format does not support triclinic unit-cells\n\n");
+  if (TRICLINIC(box)) {
+    gmx_warning("The Espresso format does not support triclinic unit-cells");
+  }
   fprintf(out,"{variable {box_l %f %f %f}}\n",box[0][0],box[1][1],box[2][2]);
   
   fprintf(out,"{particles {id pos type q%s}\n",v ? " v" : "");
@@ -698,17 +699,17 @@ static void get_coordnum (const char *infile,int *natoms)
   gmx_fio_fclose (in);
 }
 
-static bool get_w_conf(FILE *in,const char *infile,char *title,
+static gmx_bool get_w_conf(FILE *in,const char *infile,char *title,
 		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
 {
-  static t_symtab *symtab=NULL;
+  t_symtab *symtab=NULL;
   char   name[6];
   char   line[STRLEN+1],*ptr;
   char   buf[256];
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
   int    natoms,i,m,resnr,newres,oldres,ddist,c;
-  bool   bFirst,bVel;
+  gmx_bool   bFirst,bVel;
   char   *p1,*p2,*p3;
   
   newres  = -1;
@@ -776,7 +777,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
 	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
       atoms->atom[i].resind = newres;
-      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',' ');
+      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',0,' ');
     } else {
       atoms->atom[i].resind = newres;
     }
@@ -826,8 +827,7 @@ static bool get_w_conf(FILE *in,const char *infile,char *title,
   /* box */
   fgets2 (line,STRLEN,in);
   if (sscanf (line,"%lf%lf%lf",&x1,&y1,&z1) != 3) {
-    sprintf(buf,"Bad box in file %s",infile);
-    warning(buf);
+    gmx_warning("Bad box in file %s",infile);
     
     /* Generate a cubic box */
     for(m=0; (m<DIM); m++)
@@ -896,7 +896,7 @@ static void get_conf(FILE *in,char *title,int *natoms,
   sfree(atoms.atomname);
 }
 
-bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
+gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms atoms;
   char    title[STRLEN],*p;
@@ -965,7 +965,7 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   return fr->natoms;
 }
 
-static void make_hconf_format(int pr,bool bVel,char format[])
+static void make_hconf_format(int pr,gmx_bool bVel,char format[])
 {
   int l,vpr;
 
@@ -1027,19 +1027,19 @@ void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
     ai=index[i];
     
     resind = atoms->atom[ai].resind;
-    strcpy(resnm," ??? ");
+    strncpy(resnm," ??? ",sizeof(resnm)-1);
     if (resind < atoms->nres) {
-      strcpy(resnm,*atoms->resinfo[resind].name);
+      strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
       resnr = atoms->resinfo[resind].nr;
     } else {
-      strcpy(resnm," ??? ");
+      strncpy(resnm," ??? ",sizeof(resnm)-1);
       resnr = resind + 1;
     }
     
     if (atoms->atom)
-      strcpy(nm,*atoms->atomname[ai]);
+      strncpy(nm,*atoms->atomname[ai],sizeof(nm)-1);
     else
-      strcpy(nm," ??? ");
+      strncpy(nm," ??? ",sizeof(nm)-1);
 
     fprintf(out,"%5d%-5.5s%5.5s%5d",resnr%100000,resnm,nm,(ai+1)%100000);
     /* next fprintf uses built format string */
@@ -1163,7 +1163,7 @@ void write_sto_conf_indexed(const char *outfile,const char *title,
   case efENT:
   case efPQR:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index,NULL);
+    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,' ',-1,nindex,index,NULL,TRUE);
     gmx_fio_fclose(out);
     break;
   case efESP:
@@ -1247,7 +1247,7 @@ void write_sto_conf(const char *outfile,const char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1,NULL);
+    write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1,NULL,TRUE);
     gmx_fio_fclose(out);
     break;
   case efESP:
@@ -1450,6 +1450,11 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     tpx_make_chain_identifiers(atoms,&top.mols);
 		
     sfree(mtop);
+    /* The strings in the symtab are still in use in the returned t_atoms
+     * structure, so we should not free them. But there is no place to put the
+     * symbols; the only choice is to leak the memory...
+     * So we clear the symbol table before freeing the topology structure. */
+    open_symtab(&top.symtab);
     done_top(&top);
 		  
     break;

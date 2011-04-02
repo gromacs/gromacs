@@ -67,6 +67,10 @@ void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
     od->nex = 0;
     od->S   = NULL;
 
+    od->M=NULL;
+    od->eig=NULL;
+    od->v=NULL;
+
     od->nr = gmx_mtop_ftype_count(mtop,F_ORIRES);
     if (od->nr == 0)
     {
@@ -111,13 +115,13 @@ void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
     {
         od->Dtav = od->Dins;
         od->edt  = 0.0;
-        od->edt1 = 1.0;
+        od->edt_1= 1.0;
     }
     else
     {
         snew(od->Dtav,od->nr);
         od->edt  = exp(-ir->delta_t/ir->orires_tau);
-        od->edt1 = 1.0 - od->edt;
+        od->edt_1= 1.0 - od->edt;
 
         /* Extend the state with the orires history */
         state->flags |= (1<<estORIRE_INITF);
@@ -235,20 +239,19 @@ void diagonalize_orires_tensors(t_oriresdata *od)
 {
     int           ex,i,j,nrot,ord[DIM],t;
     matrix        S,TMP;
-    static double **M=NULL,*eig,**v;
     
-    if (M == NULL)
+    if (od->M == NULL)
     {
-        snew(M,DIM);
+        snew(od->M,DIM);
         for(i=0; i<DIM; i++)
         {
-            snew(M[i],DIM);
+            snew(od->M[i],DIM);
         }
-        snew(eig,DIM);
-        snew(v,DIM);
+        snew(od->eig_diag,DIM);
+        snew(od->v,DIM);
         for(i=0; i<DIM; i++)
         {
-            snew(v[i],DIM);
+            snew(od->v[i],DIM);
         }
     }
 
@@ -261,11 +264,11 @@ void diagonalize_orires_tensors(t_oriresdata *od)
         {
             for(j=0; j<DIM; j++)
             {
-                M[i][j] = S[i][j];
+                od->M[i][j] = S[i][j];
             }
         }
         
-        jacobi(M,DIM,eig,v,&nrot);
+        jacobi(od->M,DIM,od->eig_diag,od->v,&nrot);
         
         for(i=0; i<DIM; i++)
         {
@@ -275,7 +278,7 @@ void diagonalize_orires_tensors(t_oriresdata *od)
         {
             for(j=i+1; j<DIM; j++)
             {
-                if (sqr(eig[ord[j]]) > sqr(eig[ord[i]]))
+                if (sqr(od->eig_diag[ord[j]]) > sqr(od->eig_diag[ord[i]]))
                 {
                     t = ord[i];
                     ord[i] = ord[j];
@@ -286,13 +289,13 @@ void diagonalize_orires_tensors(t_oriresdata *od)
             
         for(i=0; i<DIM; i++)
         {
-            od->eig[ex*12 + i] = eig[ord[i]];
+            od->eig[ex*12 + i] = od->eig_diag[ord[i]];
         }
         for(i=0; i<DIM; i++)
         {
             for(j=0; j<DIM; j++)
             {
-                od->eig[ex*12 + 3 + 3*i + j] = v[j][ord[i]];
+                od->eig[ex*12 + 3 + 3*i + j] = od->v[j][ord[i]];
             }
         }
     }
@@ -328,14 +331,14 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                      t_fcdata *fcd,history_t *hist)
 {
     int          fa,d,i,j,type,ex,nref;
-    real         edt,edt1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
+    real         edt,edt_1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
     tensor       *S,R,TMP;
     rvec5        *Dinsl,*Dins,*Dtav,*rhs;
     real         *mref,***T;
     double       mtot;
     rvec         *xref,*xtmp,com,r_unrot,r;
     t_oriresdata *od;
-    bool         bTAV;
+    gmx_bool         bTAV;
     const real   two_thr=2.0/3.0;
     
     od = &(fcd->orires);
@@ -348,7 +351,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     
     bTAV = (od->edt != 0);
     edt  = od->edt;
-    edt1 = od->edt1;
+    edt_1= od->edt_1;
     S    = od->S;
     Dinsl= od->Dinsl;
     Dins = od->Dins;
@@ -475,7 +478,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
              */
             for(i=0; i<5; i++)
             {
-                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt1*Dins[d][i];
+                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt_1*Dins[d][i];
             }
         }
         
@@ -592,7 +595,7 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     rvec         r,Sr,fij;
     real         vtot;
     const t_oriresdata *od;
-    bool         bTAV;
+    gmx_bool         bTAV;
     
     vtot = 0;
     od = &(fcd->orires);

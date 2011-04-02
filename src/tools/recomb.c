@@ -55,7 +55,7 @@ real *read_gammaf(char *fn,int nframes)
     gf[i]=y;
   }
   ffclose(in);
-  fprintf(stderr,"Succesfully read gamma\n");
+  fprintf(stderr,"Successfully read gamma\n");
   return gf;
 }
 

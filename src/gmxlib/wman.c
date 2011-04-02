@@ -69,20 +69,37 @@ const t_sandr_const sandrTeX[] = {
   { "[IT]", "{\\em " },
   { "[it]", "}"      },
   { "[PAR]","\n\n"   },
+  /* Escaping underscore for LaTeX is no longer necessary, and it breaks
+   * text searching and the index if you do. */
+  /*
   { "_",    "\\_"    },
+  */
   { "$",    "\\$"    },
-  { "<",    "$<$"    },
-  { ">",    "$>$"    },
-  { "^",    "\\^"    },
-  { "\\^2",   "$^2$" },
-  { "\\^3",   "$^3$" },
-  { "\\^6",   "$^6$" },
+  { "<=",   "\\ensuremath{\\leq{}}"},
+  { ">=",   "\\ensuremath{\\geq{}}"},
+  { "<",    "\\textless{}" },
+  { ">",    "\\textgreater{}" },
+  { "^",    "\\^{}"    },
+  { "\\^{}t", "\\ensuremath{^t}" },
+  { "\\^{}a", "\\ensuremath{^a}" },
+  { "\\^{}b", "\\ensuremath{^b}" },
+  { "\\^{}2", "\\ensuremath{^2}" },
+  { "\\^{}3", "\\ensuremath{^3}" },
+  { "\\^{}6", "\\ensuremath{^6}" },
   { "#",    "\\#"    },
   { "[BR]", "\\\\"   },
   { "%",    "\\%"    },
   { "&",    "\\&"    },
-  { "||",    "or"    },
-  { "|",     "or"    }
+  /* The next couple of lines allow true Greek symbols to be written to the 
+     manual, which makes it look pretty */
+  { "[GRK]", "$\\"   },
+  { "[grk]", "$"     },
+  /* The next two lines used to substitute "|" and "||" to "or", but only
+   * g_angle used that functionality, so that was changed to a textual
+   * "or" there, so that other places could use those symbols to indicate
+   * magnitudes. */
+  { "||",    "\\textbar{}\\textbar"    },
+  { "|",     "\\textbar{}"    }
 };
 #define NSRTEX asize(sandrTeX)
 
@@ -94,7 +111,9 @@ const t_sandr_const sandrTty[] = {
   { "[IT]", "" },
   { "[it]", "" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRTTY asize(sandrTty)
 
@@ -141,7 +160,9 @@ const t_sandr_const sandrHTML[] = {
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
   { "[PAR]","<p>" },
-  { "[BR]", "<br>" }
+  { "[BR]", "<br>" },
+  { "[GRK]", "&"  },
+  { "[grk]", ";"  }
 };
 #define NSRHTML asize(sandrHTML)
 
@@ -167,32 +188,38 @@ static void mynum(char *buf,int n)
     sprintf(buf,"0%1d",n);
 }
 
-static char *mydate(char buf[], int maxsize,bool bWiki)
+static char *mydate(char buf[], int maxsize,gmx_bool bWiki)
 {
   const char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 			 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
   const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
   const char *num[] = { "01", "02", "03", "04", "05", "06","07", "08", "09" }; 
   time_t now;
-  struct tm *tm;
+  struct tm tm;
   
-  (void) time(&now);
-  tm = localtime(&now);
+  time(&now);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  /* Native windows */
+  localtime_s(&tm,&now);
+#else
+  localtime_r(&now,&tm);
+#endif
+
   /* subtract one from maxsize, so we have room for \0. */
   if (bWiki) {
     char dd[8],mm[8],ss[8],hh[8],mn[8];
     
-    mynum(dd,tm->tm_mday);
-    mynum(mm,tm->tm_mon);
-    mynum(ss,tm->tm_sec);
-    mynum(hh,tm->tm_hour);
-    mynum(mn,tm->tm_min);
+    mynum(dd,tm.tm_mday);
+    mynum(mm,tm.tm_mon);
+    mynum(ss,tm.tm_sec);
+    mynum(hh,tm.tm_hour);
+    mynum(mn,tm.tm_min);
     sprintf(buf,"%4d-%2s-%2sT%2s:%2s:%2sZ",
-	     tm->tm_year+1900,mm,dd,hh,mn,ss);
+	     tm.tm_year+1900,mm,dd,hh,mn,ss);
   }
   else
-    sprintf(buf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
-	     mon[tm->tm_mon],tm->tm_year+1900);
+    sprintf(buf,"%s %d %s %d",day[tm.tm_wday],tm.tm_mday,
+	     mon[tm.tm_mon],tm.tm_year+1900);
   
   return buf;
 }
@@ -233,7 +260,7 @@ static char *repall(const char *s,int nsr,const t_sandr_const sa[])
   /* Copy input to a non-constant char buffer.
    * buf1 is allocated here 
    */
-  buf1=strdup(s); 
+  buf1=gmx_strdup(s); 
   
   for(i=0; (i<nsr); i++) {
     /* Replace in buffer1, put result in buffer2.
@@ -255,7 +282,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
   /* Copy input to a non-constant char buffer.
    * buf1 is allocated here 
    */
-  buf1=strdup(s); 
+  buf1=gmx_strdup(s); 
   
   for(i=0; (i<nsr); i++) {
     /* Replace in buffer1, put result in buffer2.
@@ -268,7 +295,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
   return buf1;
 }
 
-static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki)
+static char *html_xref(char *s,const char *program, t_linkdata *links,gmx_bool bWiki)
 {
   char   buf[256],**filestr;
   int    i,j,n;
@@ -278,13 +305,13 @@ static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki
     links->nsr=n;
     snew(links->sr,n);
     for(i=0,j=0; (i<n); i++) {
-      if (!program || (strcasecmp(program,filestr[i])  != 0)) {
-	links->sr[j].search=strdup(filestr[i]);
+      if (!program || (gmx_strcasecmp(program,filestr[i])  != 0)) {
+	links->sr[j].search=gmx_strdup(filestr[i]);
 	if (bWiki)
 	  sprintf(buf,"[[%s]]",filestr[i]);
 	else
 	  sprintf(buf,"<a href=\"%s.html\">%s</a>",filestr[i],filestr[i]);
-	links->sr[j].replace=strdup(buf);
+	links->sr[j].replace=gmx_strdup(buf);
 	j++;
       }
     }
@@ -370,7 +397,7 @@ static void write_texman(FILE *out,const char *program,
   int i;
   char tmp[256];
   
-  fprintf(out,"\\section{\\normindex{%s}}\n\n",check_tex(program));
+  fprintf(out,"\\section{\\normindex{%s}}\\label{%s}\n\n",check_tex(program),check_tex(program));
   
   if (nldesc > 0)
     for(i=0; (i<nldesc); i++) 
@@ -511,7 +538,7 @@ char *check_tty(const char *s)
 
 void
 print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
-                    t_linkdata *links,const char *program,bool bWiki)
+                    t_linkdata *links,const char *program,gmx_bool bWiki)
 {
   char *buf;
   char *temp;
@@ -546,7 +573,7 @@ static void write_ttyman(FILE *out,
 			 int nldesc,const char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
-			 int nbug,const char **bugs,bool bHeader,
+			 int nbug,const char **bugs,gmx_bool bHeader,
 			 t_linkdata *links)
 {
   int i;
@@ -582,7 +609,7 @@ static void write_ttyman(FILE *out,
 }
 
 static void pr_html_files(FILE *out,int nfile,t_filenm fnm[],
-			  const char *program,t_linkdata *links,bool bWiki)
+			  const char *program,t_linkdata *links,gmx_bool bWiki)
 { 
   int  i;
   char link[10],tmp[255];
@@ -631,7 +658,7 @@ static void write_wikiman(FILE *out,
 			  int nldesc,const char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
-			  int nbug,const char **bugs,bool bHeader,
+			  int nbug,const char **bugs,gmx_bool bHeader,
 			  t_linkdata *links)
 {
   int i;
@@ -930,7 +957,7 @@ static void write_py(FILE *out,const char *program,
 		     int nbug,const char **bugs,
 		     t_linkdata *links)
 {
-  bool bHidden;
+  gmx_bool bHidden;
   const char *cls = program;
   char *tmp;
   int  i,j;
@@ -979,7 +1006,7 @@ static void write_py(FILE *out,const char *program,
       break;
     case etSTR:
     case etBOOL:
-      fprintf(out,"        flags.append(pca_bool(\"%s\",\"%s\",%d,%d))\n",
+      fprintf(out,"        flags.append(pca_gmx_bool(\"%s\",\"%s\",%d,%d))\n",
 	      pa[i].option,pa[i].desc,*pa[i].u.b,is_hidden(&(pa[i])));
       break;
     case etRVEC:
@@ -1014,7 +1041,7 @@ void write_man(FILE *out,const char *mantp,
 	       int nfile,t_filenm *fnm,
 	       int npargs,t_pargs *pa,
 	       int nbug,const char **bugs,
-	       bool bHidden)
+	       gmx_bool bHidden)
 {
   const char *pr;
   int     i,npar;
@@ -1042,7 +1069,7 @@ void write_man(FILE *out,const char *mantp,
       }
   }
   
-  if ((pr=strrchr(program,'/')) == NULL)
+  if ((pr=strrchr(program,DIR_SEPARATOR)) == NULL)
     pr=program;
   else
     pr+=1;

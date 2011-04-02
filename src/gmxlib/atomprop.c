@@ -51,19 +51,20 @@
 #include "copyrite.h"
 
 typedef struct {
-  bool   bSet;
+  gmx_bool   bSet;
   int    nprop,maxprop;
   char   *db;
   double def;
   char   **atomnm;
   char   **resnm;
-  bool   *bAvail;
+  gmx_bool   *bAvail;
   real   *value;
 } aprop_t;
 
 typedef struct gmx_atomprop {
+  gmx_bool       bWarned;
   aprop_t    prop[epropNR];
-  t_aa_names *aan;
+  gmx_residuetype_t restype;
 } gmx_atomprop;
 
 
@@ -86,16 +87,16 @@ static int dbcmp_len(char *search, char *database)
   return i;
 }
 
-static int get_prop_index(aprop_t *ap,t_aa_names *aan,
+static int get_prop_index(aprop_t *ap,gmx_residuetype_t restype,
 			  char *resnm,char *atomnm,
-			  bool *bExact)
+			  gmx_bool *bExact)
 {
   int  i,j=NOTFOUND;
   long int alen,rlen;
   long int malen,mrlen;
-  bool bProtein,bProtWild;
+  gmx_bool bProtein,bProtWild;
   
-  bProtein  = is_protein(aan,resnm);
+  bProtein  = gmx_residuetype_is_protein(restype,resnm);
   bProtWild = (strcmp(resnm,"AAA")==0);
   malen = NOTFOUND;
   mrlen = NOTFOUND;
@@ -127,21 +128,21 @@ static int get_prop_index(aprop_t *ap,t_aa_names *aan,
   if (debug) {
     fprintf(debug,"searching residue: %4s atom: %4s\n",resnm,atomnm);
     if (j == NOTFOUND)
-      fprintf(debug," not succesful\n");
+      fprintf(debug," not successful\n");
     else
       fprintf(debug," match: %4s %4s\n",ap->resnm[j],ap->atomnm[j]);
   }
   return j;
 }
 
-static void add_prop(aprop_t *ap,t_aa_names *aan,
+static void add_prop(aprop_t *ap,gmx_residuetype_t restype,
 		     char *resnm,char *atomnm,
 		     real p,int line) 
 {
   int  i,j;
-  bool bExact;
+  gmx_bool bExact;
   
-  j = get_prop_index(ap,aan,resnm,atomnm,&bExact);
+  j = get_prop_index(ap,restype,resnm,atomnm,&bExact);
   
   if (!bExact) {
     if (ap->nprop >= ap->maxprop) {
@@ -198,7 +199,7 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
     line_no++;
     if (sscanf(line,"%s %s %lf",resnm,atomnm,&pp) == 3) {
       pp *= factor;
-      add_prop(ap,aps->aan,resnm,atomnm,pp,line_no);
+      add_prop(ap,aps->restype,resnm,atomnm,pp,line_no);
     }
     else 
       fprintf(stderr,"WARNING: Error in file %s at line %d ignored\n",
@@ -211,13 +212,6 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
   ap->bSet = TRUE;
 }
 
-static void atomprop_name_warning(const char *type)
-{
-  printf("WARNING: %s will be determined based on residue and atom names,\n"
-	 "         this can deviate from the real mass of the atom type\n",
-	 type);
-}
-
 static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
   gmx_atomprop *ap2 = (gmx_atomprop*) aps;
@@ -226,20 +220,24 @@ static void set_prop(gmx_atomprop_t aps,int eprop)
   double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
   aprop_t *ap;
 
-  if (eprop == epropMass) {
-    atomprop_name_warning("masses");
-  }
-  if (eprop == epropVDW) {
-    atomprop_name_warning("vdwradii");
-  }
-  
-
   ap = &ap2->prop[eprop];
-  ap->db  = strdup(fns[eprop]);
-  ap->def = def[eprop];
-  read_prop(aps,eprop,fac[eprop]);
+  if (!ap->bSet) {
+    ap->db  = strdup(fns[eprop]);
+    ap->def = def[eprop];
+    read_prop(aps,eprop,fac[eprop]);
+    
+    if (debug)
+      fprintf(debug,"Entries in %s: %d\n",ap->db,ap->nprop);
 
-  printf("Entries in %s: %d\n",ap->db,ap->nprop);
+    if ( ( (!aps->bWarned) && (eprop == epropMass) ) || (eprop == epropVDW)) {
+      printf("\n");
+      printf("WARNING: masses and atomic (Van der Waals) radii will be determined\n");
+      printf("         based on residue and atom names. These numbers can deviate\n");
+      printf("         from the correct mass and radius of the atom type.\n");
+      printf("\n");
+      aps->bWarned = TRUE;
+    }
+  }
 }
 
 gmx_atomprop_t gmx_atomprop_init(void)
@@ -249,10 +247,8 @@ gmx_atomprop_t gmx_atomprop_init(void)
 
   snew(aps,1);
 
-  aps->aan = get_aa_names();
-
-  for(p=0; p<epropNR; p++) 
-    set_prop(aps,p);
+  gmx_residuetype_init(&aps->restype);
+  aps->bWarned = FALSE;
 
   return (gmx_atomprop_t)aps;
 }
@@ -261,16 +257,18 @@ static void destroy_prop(aprop_t *ap)
 {
   int i;
 
-  sfree(ap->db);
-
-  for(i=0; i<ap->nprop; i++) {
-    sfree(ap->atomnm[i]);
-    sfree(ap->resnm[i]);
+  if (ap->bSet) {
+    sfree(ap->db);
+    
+    for(i=0; i<ap->nprop; i++) {
+      sfree(ap->atomnm[i]);
+      sfree(ap->resnm[i]);
+    }
+    sfree(ap->atomnm);
+    sfree(ap->resnm);
+    sfree(ap->bAvail);
+    sfree(ap->value);
   }
-  sfree(ap->atomnm);
-  sfree(ap->resnm);
-  sfree(ap->bAvail);
-  sfree(ap->value);
 }
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps)
@@ -287,12 +285,12 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
     destroy_prop(&ap->prop[p]);
   }
 
-  done_aa_names(&ap->aan);
+  gmx_residuetype_destroy(ap->restype);
 
   sfree(ap);
 }
 
-bool gmx_atomprop_query(gmx_atomprop_t aps,
+gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
 			int eprop,const char *resnm,const char *atomnm,
 			real *value)
 {
@@ -301,8 +299,9 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
   int  j;
 #define MAXQ 32
   char atomname[MAXQ],resname[MAXQ];
-  bool bExact;
+  gmx_bool bExact;
 
+  set_prop(aps,eprop);
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
     if (debug)
       fprintf(debug,"WARNING: will only compare first %d characters\n",
@@ -312,7 +311,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
     /* put digit after atomname */
     for (i=1; (i<min(MAXQ-1,strlen(atomnm))); i++)
       atomname[i-1] = atomnm[i];
-    atomname[i++] = atomnm[0];
+    atomname[i-1] = atomnm[0];
     atomname[i]   = '\0';
   } 
   else { 
@@ -322,7 +321,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
   strncpy(resname,resnm,MAXQ-1);
   upstring(resname);
   
-  j = get_prop_index(&(ap->prop[eprop]),ap->aan,resname,
+  j = get_prop_index(&(ap->prop[eprop]),ap->restype,resname,
 		     atomname,&bExact);
   
   if (j >= 0) {
@@ -340,6 +339,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber)
   gmx_atomprop *ap = (gmx_atomprop*) aps;
   int i;
   
+  set_prop(aps,epropElement);
   for(i=0; (i<ap->prop[epropElement].nprop); i++) {
     if (gmx_nint(ap->prop[epropElement].value[i]) == atomnumber) {
       return ap->prop[epropElement].atomnm[i];
@@ -353,8 +353,9 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *elem)
   gmx_atomprop *ap = (gmx_atomprop*) aps;
   int i;
   
+  set_prop(aps,epropElement);
   for(i=0; (i<ap->prop[epropElement].nprop); i++) {
-    if (strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
+    if (gmx_strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
       return gmx_nint(ap->prop[epropElement].value[i]);
     }
   }

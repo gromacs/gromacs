@@ -54,13 +54,14 @@
 #include "copyrite.h"
 #include "shellfc.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 
 typedef struct {
   int     nnucl;
   atom_id shell;	        /* The shell id				*/
   atom_id nucl1,nucl2,nucl3;	/* The nuclei connected to the shell	*/
-  /* bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
+  /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
   real    k;		        /* force constant		        */
   real    k_1;		        /* 1 over force constant		*/
   rvec    xold;
@@ -72,12 +73,12 @@ typedef struct gmx_shellfc {
   int     nshell_gl;       /* The number of shells in the system       */
   t_shell *shell_gl;       /* All the shells (for DD only)             */
   int     *shell_index_gl; /* Global shell index (for DD only)         */
-  bool    bInterCG;        /* Are there inter charge-group shells?     */
+  gmx_bool    bInterCG;        /* Are there inter charge-group shells?     */
   int     nshell;          /* The number of local shells               */
   t_shell *shell;          /* The local shells                         */
   int     shell_nalloc;    /* The allocation size of shell             */
-  bool    bPredict;        /* Predict shell positions                  */
-  bool    bForceInit;      /* Force initialization of shell positions  */
+  gmx_bool    bPredict;        /* Predict shell positions                  */
+  gmx_bool    bForceInit;      /* Force initialization of shell positions  */
   int     nflexcon;        /* The number of flexible constraints       */
   rvec    *x[2];           /* Array for iterative minimization         */
   rvec    *f[2];           /* Array for iterative minimization         */
@@ -111,7 +112,7 @@ static void pr_shell(FILE *fplog,int ns,t_shell s[])
 
 static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 			   int ns,t_shell s[],
-			   real mass[],gmx_mtop_t *mtop,bool bInit)
+			   real mass[],gmx_mtop_t *mtop,gmx_bool bInit)
 {
   int  i,m,s1,n1,n2,n3;
   real dt_1,dt_2,dt_3,fudge,tm,m1,m2,m3;
@@ -193,7 +194,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 {
   struct gmx_shellfc *shfc;
   t_shell     *shell;
-  int         *shell_index,*at2cg;
+  int         *shell_index=NULL,*at2cg;
   t_atom      *atom;
   int         n[eptNR],ns,nshell,nsi;
   int         i,j,nmol,type,mb,mt,a_offset,cg,mol,ftype,nra;
@@ -202,6 +203,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
 #define NBT asize(bondtypes)
   t_iatom     *ia;
+  gmx_mtop_atomloop_block_t aloopb;
   gmx_mtop_atomloop_all_t aloop;
   gmx_ffparams_t *ffparams;
   gmx_molblock_t *molb;
@@ -212,29 +214,11 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   for(i=0; (i<eptNR); i++) {
     n[i] = 0;
   }
-  snew(shell_index,mtop->natoms);
 
-  aloop = gmx_mtop_atomloop_all_init(mtop);
-  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-    if (atom->ptype == eptShell) {
-      shell_index[i] = n[atom->ptype];
-    }
-    n[atom->ptype]++;
+  aloopb = gmx_mtop_atomloop_block_init(mtop);
+  while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+    n[atom->ptype] += nmol;
   }
-  
-  /*
-  snew(shell_index,end-start);
-  snew(at2cg,end-start);
-  nsi = 0;
-  for(cg=cg0; (cg<cg1); cg++) {
-    for(i=cgindex[cg]; i<cgindex[cg+1]; i++) {
-      n[atom[i].ptype]++;
-      if (atom[i].ptype == eptShell)
-	shell_index[i-start] = nsi++;
-      at2cg[i-start] = cg;
-    }
-  }
-  */
 
   if (fplog) {
     /* Print the number of each particle type */  
@@ -244,12 +228,10 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
       }
     }
   }
-  
+
   nshell = n[eptShell];
-
+  
   if (nshell == 0 && nflexcon == 0) {
-    sfree(shell_index);
-
     return NULL;
   }
 
@@ -257,13 +239,23 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   shfc->nflexcon = nflexcon;
 
   if (nshell == 0) {
-    sfree(shell_index);
-
     return shfc;
   }
 
+  /* We have shells: fill the shell data structure */
+
+  /* Global system sized array, this should be avoided */
+  snew(shell_index,mtop->natoms);
+
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  nshell = 0;
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+    if (atom->ptype == eptShell) {
+      shell_index[i] = nshell++;
+    }
+  }
+
   snew(shell,nshell);
-  shfc->nflexcon = nflexcon;
   
   /* Initiate the shell structures */    
   for(i=0; (i<nshell); i++) {
@@ -726,12 +718,12 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
       }
     }
   }
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnold-start,NULL,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord);
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnew-start,NULL,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord);
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
 
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
@@ -743,15 +735,15 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon); 
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
-int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
+int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
 			gmx_large_int_t mdstep,t_inputrec *inputrec,
-			bool bDoNS,int force_flags,
-			bool bStopCM,
+			gmx_bool bDoNS,int force_flags,
+			gmx_bool bStopCM,
 			gmx_localtop_t *top,
 			gmx_mtop_t* mtop,
 			gmx_constr_t constr,
@@ -764,9 +756,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			gmx_groups_t *groups,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
-			bool bBornRadii,
+			gmx_bool bBornRadii,
 			double t,rvec mu_tot,
-			int natoms,bool *bConverged,
+			int natoms,gmx_bool *bConverged,
 			gmx_vsite_t *vsite,
 			FILE *fp_field)
 {
@@ -779,7 +771,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   real   sf_dir,invdt;
   real   ftol,xiH,xiS,dum=0;
   char   sbuf[22];
-  bool   bCont,bInit;
+  gmx_bool   bCont,bInit;
   int    nat,dd_ac0,dd_ac1=0,i;
   int    start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
   int    nflexcon,g,number_steps,d,Min=0,count=0;

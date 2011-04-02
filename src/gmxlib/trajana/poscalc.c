@@ -138,7 +138,7 @@ struct gmx_ana_poscalc_coll_t
     /** Pointer to the last data structure. */
     gmx_ana_poscalc_t        *last;
     /** Whether the collection has been initialized for evaluation. */
-    bool                      bInit;
+    gmx_bool                      bInit;
 };
 
 /*! \internal \brief
@@ -190,7 +190,7 @@ struct gmx_ana_poscalc_t
     gmx_ana_pos_t            *p;
 
     /** TRUE if the positions have been evaluated for the current frame. */
-    bool                      bEval;
+    gmx_bool                      bEval;
     /*! \brief
      * Base position data for this calculation.
      *
@@ -330,7 +330,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
  * be used with Gromacs command-line parsing.
  */
 const char **
-gmx_ana_poscalc_create_type_enum(bool bAtom)
+gmx_ana_poscalc_create_type_enum(gmx_bool bAtom)
 {
     const char **pcenum;
     size_t       i;
@@ -626,7 +626,7 @@ remove_poscalc(gmx_ana_poscalc_t *pc)
  * \p bBase affects on how the \p pc->gmax field is initialized.
  */
 static void
-set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
+set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
 {
     gmx_ana_index_make_block(&pc->b, pc->coll->top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
@@ -665,7 +665,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
  * \returns   TRUE if \p pc can use a base and gets some benefit out of it,
  *   FALSE otherwise.
  */
-static bool
+static gmx_bool
 can_use_base(gmx_ana_poscalc_t *pc)
 {
     /* For atoms, it should be faster to do a simple copy, so don't use a
@@ -702,7 +702,7 @@ can_use_base(gmx_ana_poscalc_t *pc)
  * \returns   TRUE if the two calculations should be merged to use a common
  *   base, FALSE otherwise.
  */
-static bool
+static gmx_bool
 should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
              gmx_ana_index_t *g1, gmx_ana_index_t *g)
 {
@@ -796,6 +796,7 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
     int              isize, bnr;
     int              i, j, bi, bj, bo;
 
+    base->flags |= pc->flags & (POS_VELOCITIES | POS_FORCES);
     gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
     gmx_ana_index_set(&gb, base->b.nra, base->b.a, NULL, 0);
     isize = gmx_ana_index_difference_size(&gp, &gb);
@@ -1093,9 +1094,22 @@ void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
     gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
+    /* Only do the static optimization when there is no completion */
+    if (!(pc->flags & POS_DYNAMIC) && pc->b.nra == pc->gmax.isize)
+    {
+        gmx_ana_indexmap_set_static(&p->m, &pc->b);
+    }
     gmx_ana_pos_reserve(p, p->m.nr, 0);
+    if (pc->flags & POS_VELOCITIES)
+    {
+        gmx_ana_pos_reserve_velocities(p);
+    }
+    if (pc->flags & POS_FORCES)
+    {
+        gmx_ana_pos_reserve_forces(p);
+    }
     gmx_ana_pos_set_nr(p, p->m.nr);
-    p->g = &pc->gmax;
+    gmx_ana_pos_set_evalgrp(p, &pc->gmax);
 }
 
 /*!
@@ -1147,7 +1161,7 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
  * \returns   TRUE if \p pc requires topology for initialization and/or
  *   evaluation, FALSE otherwise.
  */
-bool
+gmx_bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
     if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL)
@@ -1201,12 +1215,18 @@ gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc)
             }
         }
         /* Free the block data for dynamic calculations */
-        if ((pc->flags & POS_DYNAMIC) && pc->b.nalloc_index > 0)
+        if (pc->flags & POS_DYNAMIC)
         {
-            sfree(pc->b.index);
-            sfree(pc->b.a);
-            pc->b.nalloc_index = 0;
-            pc->b.nalloc_a     = 0;
+            if (pc->b.nalloc_index > 0)
+            {
+                sfree(pc->b.index);
+                pc->b.nalloc_index = 0;
+            }
+            if (pc->b.nalloc_a > 0)
+            {
+                sfree(pc->b.a);
+                pc->b.nalloc_a = 0;
+            }
         }
         pc = pc->next;
     }
@@ -1249,7 +1269,7 @@ gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc)
  * \param[in,out] p    Output positions, initialized previously with
  *   gmx_ana_poscalc_init_pos() using \p pc.
  * \param[in]     g    Index group to use for the update.
- * \param[in]     x    Current positions of the atoms.
+ * \param[in]     fr   Current frame.
  * \param[in]     pbc  PBC data, or NULL if no PBC should be used.
  *
  * gmx_ana_poscalc_init_frame() should be called for each frame before calling
@@ -1257,7 +1277,7 @@ gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc)
  */
 void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
-                       gmx_ana_index_t *g, rvec x[], t_pbc *pbc)
+                       gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
     int  i, j, bi, bj;
     
@@ -1267,7 +1287,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     }
     if (pc->sbase)
     {
-        gmx_ana_poscalc_update(pc->sbase, NULL, NULL, x, pbc);
+        gmx_ana_poscalc_update(pc->sbase, NULL, NULL, fr, pbc);
     }
     if (!p)
     {
@@ -1308,6 +1328,22 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 bj = pc->baseid[p->m.refid[bi]];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
             }
+            if (p->v)
+            {
+                for (bi = 0; bi < p->nr; ++bi)
+                {
+                    bj = pc->baseid[p->m.refid[bi]];
+                    copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
+                }
+            }
+            if (p->f)
+            {
+                for (bi = 0; bi < p->nr; ++bi)
+                {
+                    bj = pc->baseid[p->m.refid[bi]];
+                    copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
+                }
+            }
         }
         else
         {
@@ -1315,6 +1351,22 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             {
                 bj = pc->baseid[bi];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
+            }
+            if (p->v)
+            {
+                for (bi = 0; bi < p->nr; ++bi)
+                {
+                    bj = pc->baseid[bi];
+                    copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
+                }
+            }
+            if (p->f)
+            {
+                for (bi = 0; bi < p->nr; ++bi)
+                {
+                    bj = pc->baseid[bi];
+                    copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
+                }
             }
         }
     }
@@ -1327,6 +1379,20 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             pc->b.nra   = g->isize;
             pc->b.a     = g->index;
         }
+        if (p->v && !fr->bV)
+        {
+            for (i = 0; i < pc->b.nra; ++i)
+            {
+                clear_rvec(p->v[i]);
+            }
+        }
+        if (p->f && !fr->bF)
+        {
+            for (i = 0; i < pc->b.nra; ++i)
+            {
+                clear_rvec(p->f[i]);
+            }
+        }
         /* Here, we assume that the topology has been properly initialized,
          * and do not check the return values of gmx_calc_comg*(). */
         switch (pc->type)
@@ -1334,17 +1400,64 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         case POS_ATOM:
             for (i = 0; i < pc->b.nra; ++i)
             {
-                copy_rvec(x[pc->b.a[i]], p->x[i]);
+                copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
+            }
+            if (p->v && fr->bV)
+            {
+                for (i = 0; i < pc->b.nra; ++i)
+                {
+                    copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                }
+            }
+            if (p->f && fr->bF)
+            {
+                for (i = 0; i < pc->b.nra; ++i)
+                {
+                    copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                }
             }
             break;
         case POS_ALL:
-            gmx_calc_comg(pc->coll->top, x, pc->b.nra, pc->b.a, pc->flags & POS_MASS, p->x[0]);
+            gmx_calc_comg(pc->coll->top, fr->x, pc->b.nra, pc->b.a,
+                          pc->flags & POS_MASS, p->x[0]);
+            if (p->v && fr->bV)
+            {
+                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
+                              pc->flags & POS_MASS, p->v[0]);
+            }
+            if (p->f && fr->bF)
+            {
+                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
+                                pc->flags & POS_MASS, p->f[0]);
+            }
             break;
         case POS_ALL_PBC:
-            gmx_calc_comg_pbc(pc->coll->top, x, pbc, pc->b.nra, pc->b.a, pc->flags & POS_MASS, p->x[0]);
+            gmx_calc_comg_pbc(pc->coll->top, fr->x, pbc, pc->b.nra, pc->b.a,
+                              pc->flags & POS_MASS, p->x[0]);
+            if (p->v && fr->bV)
+            {
+                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
+                              pc->flags & POS_MASS, p->v[0]);
+            }
+            if (p->f && fr->bF)
+            {
+                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
+                                pc->flags & POS_MASS, p->f[0]);
+            }
             break;
         default:
-            gmx_calc_comg_blocka(pc->coll->top, x, &pc->b, pc->flags & POS_MASS, p->x);
+            gmx_calc_comg_blocka(pc->coll->top, fr->x, &pc->b,
+                                 pc->flags & POS_MASS, p->x);
+            if (p->v && fr->bV)
+            {
+                gmx_calc_comg_blocka(pc->coll->top, fr->v, &pc->b,
+                                     pc->flags & POS_MASS, p->v);
+            }
+            if (p->f && fr->bF)
+            {
+                gmx_calc_comg_blocka(pc->coll->top, fr->f, &pc->b,
+                                     pc->flags & POS_MASS, p->f);
+            }
             break;
         }
     }

@@ -187,10 +187,18 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
-  
-  MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
-               recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
-               cr->mpi_comm_mygroup,&stat);
+
+  if (send_bufsize > 0 && recv_bufsize > 0) {
+    MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
+		 recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
+		 cr->mpi_comm_mygroup,&stat);
+  } else if (send_bufsize > 0) {
+    MPI_Send(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
+	     cr->mpi_comm_mygroup);
+  } else if (recv_bufsize > 0) {
+    MPI_Recv(recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
+	     cr->mpi_comm_mygroup,&stat);
+  }
 #undef mpi_type
 #endif
 }
@@ -793,7 +801,7 @@ static void
 add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
 {
         int  i,idx;
-        bool found;
+        gmx_bool found;
         
         found = FALSE;
         idx = *nitem;
@@ -810,12 +818,12 @@ add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
         }
 }
 
-bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
+gmx_bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
                                                    t_comm_vsites *vsitecomm)
 {
         int i,j,ftype;
         int nra;
-        bool do_comm;
+        gmx_bool do_comm;
         t_iatom   *ia;
         gmx_partdec_t *pd;
         int  iconstruct;

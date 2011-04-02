@@ -2,7 +2,9 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-onlinedir = ${pkgdatadir}/html/online
+htmldir = ${pkgdatadir}/html
+
+onlinedir = ${htmldir}/online
 
 online_DATA = \
   cpt.html	\

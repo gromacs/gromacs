@@ -34,9 +34,28 @@ inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 
-/* this file is to be #included from collective.c */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+#include "collective.h"
+
 
 /* broadcast */
 int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
@@ -46,16 +65,21 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
-#ifdef TMPI_TRACE
-    tMPI_Profile_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype,
-                       root, comm);
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur); 
 #endif
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
+                     root, comm);
+#endif
+
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -64,7 +88,7 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     {
         /* first set up the data */
         tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
-                        count*datatype->size, buffer, comm->grp.N-1, synct);
+                        count*datatype->size, buffer, comm->grp.N-1, synct, -1);
         /* and wait until everybody is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
@@ -72,10 +96,13 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     {
         size_t bufsize=count*datatype->size;
         /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Wait_for_data(cur, cev, myrank);
         tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
                        buffer, &ret);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
+#endif
     return ret;
 }
 

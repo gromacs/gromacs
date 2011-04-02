@@ -1,5 +1,4 @@
 /*
- * $Id: ehanal.c,v 1.9.2.3 2008/02/29 07:02:43 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -131,7 +130,7 @@ void dump_histo(t_histo *h,char *fn,char *title,char *xaxis,char *yaxis,
  *
  *******************************************************************/	
 
-void add_scatter_event(t_ana_scat *scatter,rvec pos,bool bInel,
+void add_scatter_event(t_ana_scat *scatter,rvec pos,gmx_bool bInel,
 		       real t,real ekin)
 {
   int np = scatter->np;

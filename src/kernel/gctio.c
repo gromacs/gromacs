@@ -46,6 +46,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "readinp.h"
+#include "readir.h"
 #include "filenm.h"
 #include "names.h"
 #include "gmxfio.h"
@@ -64,7 +65,7 @@ static int Name2eo(char *s)
   res=-1;
   
   for(i=0; (i<eoNR); i++)
-    if (strcasecmp(s,eoNames[i]) == 0) {
+    if (gmx_strcasecmp(s,eoNames[i]) == 0) {
       res=i;
       fprintf(stderr,"Coupling to observable %d (%s)\n",res,eoNames[res]);
       break;
@@ -275,7 +276,7 @@ void write_gct(const char *fn,t_coupl_rec *tcr,t_idef *idef)
   gmx_fio_fclose(fp);
 }
 
-static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])
+static gmx_bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,gmx_bool bObsUsed[])
 {
   int       j,ati,atj,eo;
   char      buf[256];
@@ -312,7 +313,7 @@ static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])
   return FALSE;
 }
 
-static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,bool bObsUsed[])
+static gmx_bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,gmx_bool bObsUsed[])
 {
   int       j,ati,atj,eo;
   char      buf[256];
@@ -350,7 +351,7 @@ static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,bool bObsUsed[])
   return FALSE;
 }
 
-static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype,bool bObsUsed[])
+static gmx_bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype,gmx_bool bObsUsed[])
 {
   int    i,eo,type;
   char   buf[256];
@@ -393,7 +394,7 @@ static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype,bool bObsUse
   return FALSE;
 }
 
-static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
+static gmx_bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,gmx_bool bObsUsed[])
 {
   int       j,ati,eo;
   char      buf[256];
@@ -427,11 +428,15 @@ static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
 
 void read_gct(const char *fn,t_coupl_rec *tcr)
 {
+  warninp_t wi;
   t_inpfile *inp;
   int       i,j,ninp,nQ,nLJ,nBU,nIP;
-  bool      bWrong;
+  gmx_bool      bWrong;
   
-  inp=read_inpfile(fn,&ninp,NULL);
+  wi = init_warning(FALSE,0);
+
+  inp=read_inpfile(fn,&ninp,NULL,wi);
+
   for(i=0; (i<eoObsNR); i++) {
     tcr->bObsUsed[i] = FALSE;
     RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);
@@ -448,13 +453,13 @@ void read_gct(const char *fn,t_coupl_rec *tcr)
   
   for(i=0; (i<ninp); i++) {
     bWrong=FALSE;
-    if (strcasecmp(inp[i].name,"LJ") == 0) 
+    if (gmx_strcasecmp(inp[i].name,"LJ") == 0) 
       bWrong=add_lj(&nLJ,&(tcr->tcLJ),inp[i].value,tcr->bObsUsed);
-    else if (strcasecmp(inp[i].name,"BU") == 0) 
+    else if (gmx_strcasecmp(inp[i].name,"BU") == 0) 
       bWrong=add_bu(&nBU,&(tcr->tcBU),inp[i].value,tcr->bObsUsed);
-    else if (strcasecmp(inp[i].name,"Q") == 0) 
+    else if (gmx_strcasecmp(inp[i].name,"Q") == 0) 
       bWrong=add_q(&nQ,&(tcr->tcQ),inp[i].value,tcr->bObsUsed);
-    else if (strcasecmp(inp[i].name,"Bonds") == 0)
+    else if (gmx_strcasecmp(inp[i].name,"Bonds") == 0)
       bWrong=add_ip(&nIP,&(tcr->tIP),inp[i].value,F_BONDS,tcr->bObsUsed);
       
     if (bWrong)
@@ -493,5 +498,7 @@ void read_gct(const char *fn,t_coupl_rec *tcr)
   tcr->nIP = nIP;
   
   sfree(inp);
+
+  done_warning(wi,FARGS);
 }
 

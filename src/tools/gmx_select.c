@@ -47,12 +47,13 @@
 #include <string2.h>
 #include <trajana.h>
 #include "gmx_ana.h"
+#include "gmx_fatal.h"
 
 
 typedef struct
 {
-    bool                bDump;
-    bool                bFracNorm;
+    gmx_bool                bDump;
+    gmx_bool                bFracNorm;
     const char         *routt;
     int                *size;
     FILE               *sfp;
@@ -174,7 +175,7 @@ int
 gmx_select(int argc, char *argv[])
 {
     const char *desc[] = {
-        "g_select writes out basic data about dynamic selections.",
+        "[TT]g_select[tt] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
@@ -201,7 +202,7 @@ gmx_select(int argc, char *argv[])
         "of positions is omitted from the output. In this case, only one",
         "selection can be given.[PAR]",
         "With [TT]-on[tt], the selected atoms are written as a index file",
-        "compatible with make_ndx and the analyzing tools. Each selection",
+        "compatible with [TT]make_ndx[tt] and the analyzing tools. Each selection",
         "is written as a selection group and for dynamic selections a",
         "group is written for each frame.[PAR]",
         "For residue numbers, the output of [TT]-oi[tt] can be controlled",
@@ -219,9 +220,9 @@ gmx_select(int argc, char *argv[])
         "With [TT]-dump[tt], the frame time is omitted from the output.",
     };
 
-    bool                bDump     = FALSE;
-    bool                bFracNorm = FALSE;
-    bool                bTotNorm  = FALSE;
+    gmx_bool                bDump     = FALSE;
+    gmx_bool                bFracNorm = FALSE;
+    gmx_bool                bTotNorm  = FALSE;
     const char         *routt[] = {NULL, "number", "index", NULL};
     t_pargs             pa[] = {
         {"-dump",   FALSE, etBOOL, {&bDump},
@@ -320,14 +321,14 @@ gmx_select(int argc, char *argv[])
     {
         d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
         xvgr_selections(d.sfp, trj);
-        xvgr_legend(d.sfp, ngrps, grpnames, oenv);
+        xvgr_legend(d.sfp, ngrps, (const char**)grpnames, oenv);
     }
     if (fnFrac)
     {
         d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction",
                          oenv);
         xvgr_selections(d.cfp, trj);
-        xvgr_legend(d.cfp, ngrps, grpnames, oenv);
+        xvgr_legend(d.cfp, ngrps, (const char**)grpnames, oenv);
     }
     if (fnIndex)
     {

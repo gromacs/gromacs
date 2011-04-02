@@ -32,12 +32,12 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
 
 #ifndef _idef_h
 #define _idef_h
+
+#include "simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +64,7 @@ enum {
   F_FENEBONDS,
   F_TABBONDS,
   F_TABBONDSNC,
+  F_RESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
@@ -81,6 +82,8 @@ enum {
   F_GB12,
   F_GB13,
   F_GB14,
+  F_GBPOL,
+  F_NPSOLVATION,
   F_LJ14,
   F_COUL14,
   F_LJC14_Q,
@@ -125,6 +128,7 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
+  F_VTEMP,
   F_PDISPCORR,
   F_PRES,
   F_DVDL,
@@ -142,7 +146,8 @@ typedef union
    * bonds, angles and improper dihedrals
    */
   struct {real a,b,c;	                                   } bham;
-  struct {real rA,krA,rB,krB;           	           } harmonic; 
+  struct {real rA,krA,rB,krB;           	           } harmonic;
+  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } restraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real bm,kb;                                      } fene;
@@ -240,6 +245,7 @@ typedef struct
   t_iparams  *iparams;
   double     reppow;     /* The repulsion power for VdW: C12*r^-reppow   */
   real       fudgeQQ;    /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+  gmx_cmap_t cmap_grid;  /* The dihedral correction maps                 */
 } gmx_ffparams_t;
 
 enum {
@@ -253,6 +259,7 @@ typedef struct
   t_functype *functype;
   t_iparams  *iparams;
   real fudgeQQ;
+  gmx_cmap_t cmap_grid;
   t_iparams  *iparams_posres;
   int iparams_posres_nalloc;
 
@@ -276,10 +283,17 @@ typedef struct
  *      function to use. Every "bond" with the same function but different 
  *	force parameters is a different force type. The type identifier in the 
  *	forceatoms[] array is an index in this array.
-     t_iparams *iparams;
+ *   t_iparams *iparams
  *	array of length ntypes, defines the parameters for every interaction
  *      type. The type identifier in the actual interaction list
- *      (bondeds.iatoms[] or shakes.iatoms[]) is an index in this array.
+ *      (ilist[ftype].iatoms[]) is an index in this array.
+ *   gmx_cmap_t cmap_grid
+ *      the grid for the dihedral pair correction maps.
+ *   t_iparams *iparams_posres
+ *	defines the parameters for position restraints only.
+ *      Position restraints are the only interactions that have different
+ *      parameters (reference positions) for different molecules
+ *      of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
  *   t_ilist il[F_NRE]
  *      The list of interactions for each type. Note that some,
  *      such as LJ and COUL will have 0 entries.

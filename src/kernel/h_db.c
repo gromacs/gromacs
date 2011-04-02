@@ -45,6 +45,8 @@
 #include "symtab.h"
 #include "h_db.h"
 #include "gmxfio.h"
+#include "fflibutil.h"
+#include "gmx_fatal.h"
 
 /* There are 11 types of adding hydrogens, numbered from
  * 1 thru 11. Each of these has a specific number of
@@ -61,7 +63,7 @@ int compaddh(const void *a,const void *b)
 
   ah=(t_hackblock *)a;
   bh=(t_hackblock *)b;
-  return strcasecmp(ah->name,bh->name);
+  return gmx_strcasecmp(ah->name,bh->name);
 }
 
 void print_ab(FILE *out,t_hack *hack,char *nname)
@@ -75,7 +77,7 @@ void print_ab(FILE *out,t_hack *hack,char *nname)
 }
 
 
-void read_ab(char *line,char *fn,t_hack *hack)
+void read_ab(char *line,const char *fn,t_hack *hack)
 {
   int  i,nh,tp,ns;
   char a[4][12];
@@ -93,19 +95,22 @@ void read_ab(char *line,char *fn,t_hack *hack)
   hack->nctl = ns - 3;
   if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     gmx_fatal(FARGS,"Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n",fn,hack->nctl,ncontrol[hack->tp],line);
-  for(i=0; (i<hack->nctl); i++) 
+  for(i=0; (i<hack->nctl); i++) {
     hack->a[i]=strdup(a[i]);
-  for(   ; i<4; i++)
+  }
+  for(   ; i<4; i++) {
     hack->a[i]=NULL;
+  }
   hack->oname=NULL;
   hack->nname=strdup(hn);
   hack->atom=NULL;
   hack->cgnr=NOTSET;
+  hack->bXSet=FALSE;
   for(i=0; i<DIM; i++)
     hack->newx[i]=NOTSET;
 }
 
-void dump_h_db(char *fn,int nah,t_hackblock *ah)
+static void dump_h_db(const char *fn,int nah,t_hackblock *ah)
 {
   FILE *fp;
   char buf[STRLEN],nname[STRLEN];
@@ -124,18 +129,25 @@ void dump_h_db(char *fn,int nah,t_hackblock *ah)
   gmx_fio_fclose(fp);
 }
 
-int read_h_db(char *fn,t_hackblock **ah)
+static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
 {	
   FILE   *in;
-  char   hfn[STRLEN], line[STRLEN], buf[STRLEN];
+  char   filebase[STRLEN],line[STRLEN], buf[STRLEN];
   int    i, n, nab, nah;
   t_hackblock *aah;
 
-  sprintf(hfn,"%s.hdb",fn);
-  in=libopen(hfn);
   if (debug) fprintf(debug,"Hydrogen Database (%s):\n",hfn);
-  nah=0;
-  aah=NULL;
+
+  fflib_filename_base(hfn,filebase,STRLEN);
+  /* Currently filebase is read and set, but not used.
+   * hdb entries from any hdb file and be applied to rtp entries
+   * in any rtp file.
+   */
+
+  in = fflib_open(hfn);
+
+  nah = *nahptr;
+  aah = *ah;
   while (fgets2(line,STRLEN-1,in)) {
     if (sscanf(line,"%s%n",buf,&n) != 1) {
       fprintf(stderr,"Error in hdb file: nah = %d\nline = '%s'\n",
@@ -145,7 +157,8 @@ int read_h_db(char *fn,t_hackblock **ah)
     if (debug) fprintf(debug,"%s",buf);
     srenew(aah,nah+1);
     clear_t_hackblock(&aah[nah]);
-    aah[nah].name=strdup(buf);
+    aah[nah].name     = strdup(buf);
+    aah[nah].filebase = strdup(filebase);
     
     if (sscanf(line+n,"%d",&nab) == 1) {
       if (debug) fprintf(debug,"  %d\n",nab);
@@ -158,7 +171,7 @@ int read_h_db(char *fn,t_hackblock **ah)
 		      nab, i-1, aah[nah].name, hfn);
 	if(NULL==fgets(buf, STRLEN, in))
         {
-	  gmx_fatal(FARGS,"Error reading from file %s",fn);
+	  gmx_fatal(FARGS,"Error reading from file %s",hfn);
 	}
 	read_ab(buf,hfn,&(aah[nah].hack[i]));
       }
@@ -171,9 +184,31 @@ int read_h_db(char *fn,t_hackblock **ah)
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
   if (debug)
-    dump_h_db(fn,nah,aah);
+    dump_h_db(hfn,nah,aah);
   
-  *ah=aah;
+  *nahptr = nah;
+  *ah     = aah;
+}
+
+int read_h_db(const char *ffdir,t_hackblock **ah)
+{
+  int  nhdbf,f;
+  char **hdbf;
+  int  nah;
+  FILE *fp;
+
+  /* Read the hydrogen database file(s).
+   * Do not generate an error when no files are found.
+   */
+  nhdbf = fflib_search_file_end(ffdir,".hdb",FALSE,&hdbf);
+  nah = 0;
+  *ah = NULL;
+  for(f=0; f<nhdbf; f++) {
+    read_h_db_file(hdbf[f],&nah,ah);
+    sfree(hdbf[f]);
+  }
+  sfree(hdbf);
+
   return nah;
 }
 

@@ -1,0 +1,21 @@
+
+               Welcome to the official version of GROMACS-GPU!
+
+
+GROMACS-GPU provides GPU-accelerated MD simulations.
+The current release uses the OpenMM library. 
+
+This release is targeted at developers and advanced users,
+and care should be taken before production use. 
+
+Installation instructions are available in the INSTALL-GPU file. 
+More details on the GPU accelerated release are available on the 
+GROMACS-GPU website: http://www.gromacs.org/gpu.
+
+See also the README file for general GROMACS information.
+
+                               * * * * *
+
+GROMACS is free software, distributed under the GNU General Public License.
+The GROMACS-GPU release however includes / relies on code covered by several 
+different licences. For details see the COPYING-GPU file.

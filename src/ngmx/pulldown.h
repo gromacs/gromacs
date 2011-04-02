@@ -69,7 +69,7 @@ extern t_pulldown *init_pd(t_x11 *x11,Window Parent,int width,int height,
 extern void hide_pd(t_x11 *x11,t_pulldown *pd);
 /* Hides any menu that is still on the screen when it shouldn't */
 
-extern void check_pd_item(t_pulldown *pd,int nreturn,bool bStatus);
+extern void check_pd_item(t_pulldown *pd,int nreturn,gmx_bool bStatus);
 /* Set the bChecked field in the pd item with return code
  * nreturn to bStatus. This function must always be called when
  * the bChecked flag has to changed.

@@ -79,9 +79,10 @@ static t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
       cg[ncg].cg=i;
       anr=cgs->index[i];
       resnr=atoms->atom[anr].resind;
-      sprintf(buf,"%s%d",
+      sprintf(buf,"%s%d-%d",
 	      *(atoms->resinfo[resnr].name),
-	      atoms->resinfo[resnr].nr);
+	      atoms->resinfo[resnr].nr,
+	      anr+1);
       cg[ncg].label=strdup(buf);
       ncg++;
     }
@@ -119,14 +120,16 @@ static real calc_dist(t_pbc *pbc,rvec x[],t_block *cgs,int icg,int jcg)
 int gmx_saltbr(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_saltbr plots the distance between all combination of charged groups",
-    "as a function of time. The groups are combined in different ways."
-    "A minimum distance can be given, (eg. the cut-off), then groups",
-    "that are never closer than that distance will not be plotted.[BR]",
-    "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
-    "and plus-plus.xvg, or files for every individual ion-pair if selected"
+    "[TT]g_saltbr[tt] plots the distance between all combination of charged groups",
+    "as a function of time. The groups are combined in different ways.",
+    "A minimum distance can be given (i.e. a cut-off), such that groups",
+    "that are never closer than that distance will not be plotted.[PAR]",
+    "Output will be in a number of fixed filenames, [TT]min-min.xvg[tt], [TT]plus-min.xvg[tt]",
+    "and [TT]plus-plus.xvg[tt], or files for every individual ion pair if the [TT]-sep[tt]",
+    "option is selected. In this case, files are named as [TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
+    "There may be [BB]many[bb] such files."
   };
-  static bool bSep=FALSE;
+  static gmx_bool bSep=FALSE;
   static real truncate=1000.0;
   t_pargs pa[] = {
     { "-t",   FALSE, etREAL, {&truncate},
@@ -156,7 +159,8 @@ int gmx_saltbr(int argc,char *argv[])
   t_topology *top;
   int        ePBC;
   char       *buf;
-  int        status,i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
+  t_trxstatus *status;
+  int        i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
   real       t,*time,qi,qj;
   t_charge   *cg;
   real       ***cgdist;
@@ -242,12 +246,13 @@ int gmx_saltbr(int argc,char *argv[])
 	    nnn=1;
 	  
 	  if (nset[nnn] == 0) 
-	    xvgr_legend(out[nnn],1,&buf,oenv);
+	    xvgr_legend(out[nnn],1,(const char**)&buf,oenv);
 	  else {
-	    if (use_xmgr())
+	    if (output_env_get_xvg_format(oenv) == exvgXMGR) {
 	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);
-	    else
+	    } else if (output_env_get_xvg_format(oenv) == exvgXMGRACE) {
 	      fprintf(out[nnn],"@ s%d legend \"%s\"\n",nset[nnn],buf);
+	    }
 	  }
 	  nset[nnn]++;
 	  nWithin[i][j]=nnn+1;

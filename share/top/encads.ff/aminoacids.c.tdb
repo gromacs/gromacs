@@ -1,0 +1,44 @@
+[ None ]
+
+[ COO- ]
+[ replace ]
+C	C	Abis	12.011	 0.84
+O  	O1	Obis	15.9994	-0.92
+OXT	O2	Obis	15.9994	-0.92
+[ add ]
+2	8	O	C	CA	N
+	Obis	15.9994	-0.92
+[ dihedrals ]
+N	CA	C	O2	
+[ impropers ]
+CA	O2	C	O1	improper_X_X_A_X
+N	C	CA	CB	improper_X_X_C_X
+
+[ Gly-COO- ]
+[ replace ]
+C	C	Abis	12.011	 0.84
+O	O	Obis	15.9994	-0.92
+OXT	O2	Obis	15.9994	-0.92
+[ add ]
+2	8	O	C	CA	N
+	Obis	15.9994	-0.92
+[ dihedrals ]
+N	CA	C	O2	
+[ impropers ]
+CA	O2	C	O1	improper_X_X_A_X
+
+[ COOH ]
+[ replace ]
+C	C	Aprime	12.011	 0.38
+O	O	OH	15.9994	-0.38
+OXT	OT	O	15.9994	-0.433
+[ add ]
+1	2	OT	C	CA	N
+	O	15.9994	-0.433
+1	2	HO	O	C	CA
+	HO	1.008	0.433
+[ dihedrals ]
+N	CA	C	O	
+[ impropers ]
+OT	CA	C	O	improper_X_X_A_X
+

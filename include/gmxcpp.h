@@ -41,18 +41,44 @@ enum { eCPP_OK, eCPP_FILE_NOT_FOUND, eCPP_EOF, eCPP_SYNTAX, eCPP_INTERRUPT,
        eCPP_INVALID_HANDLE,
        eCPP_FILE_NOT_OPEN, eCPP_UNKNOWN, eCPP_NR };
 
+/* THESE FUNCTIONS ARE NOT THREAD SAFE!! */
+
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. The cppopt variable (null terminated)
-   can hold cpp options like -IXXX and -DXXX. Return integer status. */
-extern int cpp_open_file(const char *filenm,gmx_cpp_t *handlep, char **cppopts);
+   can hold cpp options like -IXXX and -DXXX. Return integer status. 
+   
+   NOT THREAD SAFE 
+   */
+int cpp_open_file(const char *filenm,gmx_cpp_t *handlep, char **cppopts);
 
 /* Return one whole line from the file into buf which holds at most n
-   characters, for subsequent processing. Returns integer status. */
-extern int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[]);
+   characters, for subsequent processing. Returns integer status. 
+   
+   NOT THREAD SAFE 
+   */
+int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[]);
 
-/* Close the file! Return integer status. */
-extern int cpp_close_file(gmx_cpp_t *handlep);
+/* Return the file currently being read. 
+   
+   NOT THREAD SAFE 
+   */
+char *cpp_cur_file(const gmx_cpp_t *handlep);
+
+/* Return the current line number. 
+   
+   NOT THREAD SAFE 
+   */
+int cpp_cur_linenr(const gmx_cpp_t *handlep);
+
+/* Close the file! Return integer status. 
+   
+   NOT THREAD SAFE 
+   */
+int cpp_close_file(gmx_cpp_t *handlep);
 
 /* Return a string containing the error message coresponding to status
-   variable. */
-extern char *cpp_error(gmx_cpp_t *handlep,int status);
+   variable. 
+   
+   NOT THREAD SAFE 
+   */
+char *cpp_error(gmx_cpp_t *handlep,int status);

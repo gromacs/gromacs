@@ -36,9 +36,6 @@
 #ifndef _xdrf_h
 #define _xdrf_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -58,13 +55,28 @@
 extern "C" {
 #endif
 
+
+/* THESE 3 FUNCTIONS (xdropen, xdrclose and xdr_get_fp) ARE NOW OBSOLETE 
+   AND ONLY PROVIDED FOR BACKWARD COMPATIBILITY OF 3D PARTY TOOLS. 
+   THEY SHOULD NOT BE USED ANYWHERE IN GROMACS ITSELF. 
 int xdropen(XDR *xdrs, const char *filename, const char *type);
-
-
 int xdrclose(XDR *xdrs);
+*/
 
-FILE * xdr_get_fp(int xdrid);
+/* the xdr data types; note that there is no data type 'real' because
+   here we deal with the types as they are actually written to disk.  */
+typedef enum
+{
+    xdr_datatype_int,
+    xdr_datatype_float,
+    xdr_datatype_double,
+    xdr_datatype_large_int,
+    xdr_datatype_char,
+    xdr_datatype_string
+} xdr_datatype;
 
+/* names corresponding to the xdr_datatype enum */
+extern const char *xdr_datatype_names[];
 
 /* Read or write reduced precision *float* coordinates */
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
@@ -78,7 +90,7 @@ int xdr_real(XDR *xdrs,real *r);
 int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
-extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
+int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
 /* Read or write a gmx_large_int_t value.
  * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
  * lead to values out of int range.
@@ -88,7 +100,7 @@ extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
-float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 
@@ -96,10 +108,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
-float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 
-int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 
 #ifdef __cplusplus
 }

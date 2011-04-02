@@ -43,7 +43,7 @@
 #include "popup.h"
 #include "pulldown.h"
 
-static bool PDCallBack(t_x11 *x11,XEvent *event,Window w,void *data)
+static gmx_bool PDCallBack(t_x11 *x11,XEvent *event,Window w,void *data)
 {
   t_pulldown *pd;
   int        i,x,x1,y,nsel;
@@ -119,7 +119,7 @@ void hide_pd(t_x11 *x11,t_pulldown *pd)
   pd->nsel=-1;
 }
 
-void check_pd_item(t_pulldown *pd,int nreturn,bool bStatus)
+void check_pd_item(t_pulldown *pd,int nreturn,gmx_bool bStatus)
 {
   int i;
 

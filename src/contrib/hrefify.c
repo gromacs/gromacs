@@ -50,7 +50,7 @@
 #include "pdbio.h"
 #include "strdb.h"
 
-bool isword(char c)
+gmx_bool isword(char c)
 {
   return (isalnum(c) || (c=='-') || (c=='_'));
 }
@@ -70,10 +70,10 @@ char *strncasestr(char *line,char *str)
   return dum;
 }
 
-char *strstr_href(char *line,bool *bInHREF,int *i_dat,int n_dat,char **dat)
+char *strstr_href(char *line,gmx_bool *bInHREF,int *i_dat,int n_dat,char **dat)
 {
   char *start,*found,*href=NULL;
-  bool bIn;
+  gmx_bool bIn;
   int i;
 
   found=NULL;
@@ -119,7 +119,7 @@ char *strstr_href(char *line,bool *bInHREF,int *i_dat,int n_dat,char **dat)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "hrefify adds href's for all the words in the input file which are not",
+    "[TT]hrefify[tt] adds href's for all the words in the input file which are not",
     "already hyperlinked and which appear in the file specified with the",
     "option [TT]-l[tt].[PAR]",
     "If the href's should call a script, text can be added",
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
   char **text,**str,line[1024],*ptr,*ref,
     start[STRLEN],word[STRLEN],end[STRLEN];
   int n_text,n_str,i_str;
-  bool bInHREF,bIn;
+  gmx_bool bInHREF,bIn;
   
   FILE    *fp;
   char    title[STRLEN];
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static char *in=NULL,*out=NULL,*excl=NULL,*link_text=NULL;
-  static bool peratom=FALSE;
+  static gmx_bool peratom=FALSE;
   t_pargs pa[] = {
     { "-f", FALSE, etSTR, { &in } , "HTML input" },
     { "-o", FALSE, etSTR, { &out } , "HTML output" },

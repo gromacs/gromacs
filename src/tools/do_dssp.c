@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -55,12 +56,12 @@
 #include "viewit.h"
 
 static int strip_dssp(char *dsspfile,int nres,
-		       bool bPhobres[],real t,
+		       gmx_bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[],
                        const output_env_t oenv)
 {
-  static bool bFirst=TRUE;
+  static gmx_bool bFirst=TRUE;
   static char *ssbuf;
   FILE *tapeout;
   static int xsize,frame;
@@ -129,7 +130,7 @@ static int strip_dssp(char *dsspfile,int nres,
     
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
-    sprintf(mat->label_x,"%s",get_time_label(oenv));
+    sprintf(mat->label_x,"%s",output_env_get_time_label(oenv));
     sprintf(mat->label_y,"Residue");
     mat->bDiscrete=TRUE;
     mat->ny=nr;
@@ -167,11 +168,11 @@ static int strip_dssp(char *dsspfile,int nres,
   return nr;
 }
 
-bool *bPhobics(t_atoms *atoms)
+gmx_bool *bPhobics(t_atoms *atoms)
 {
   int  i,nb;
   char **cb;
-  bool *bb;
+  gmx_bool *bb;
   
   nb=get_strings("phbres.dat",&cb);
   snew(bb,atoms->nres);
@@ -195,6 +196,8 @@ static void check_oo(t_atoms *atoms)
     if (strcmp(*(atoms->atomname[i]),"OXT")==0)
        *atoms->atomname[i]=OOO;
     else if (strcmp(*(atoms->atomname[i]),"O1")==0)
+      *atoms->atomname[i]=OOO;
+    else if (strcmp(*(atoms->atomname[i]),"OC1")==0)
       *atoms->atomname[i]=OOO;
   }
 }
@@ -228,7 +231,7 @@ static void norm_acc(t_atoms *atoms, int nres,
 
 void prune_ss_legend(t_matrix *mat)
 {
-  bool *present;
+  gmx_bool *present;
   int  *newnum;
   int i,r,f,newnmap;
   t_mapping *newmap;
@@ -286,69 +289,115 @@ void write_sas_mat(const char *fn,real **accr,int nframe,int nres,t_matrix *mat)
 void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
                 const output_env_t oenv)
 {
-  FILE *fp;
-  t_mapping *map;
-  int s,f,r,*count,ss_count;
-  char **leg;
-  
-  map=mat->map;
-  snew(count,mat->nmap);
-  snew(leg,mat->nmap+1);
-  leg[0]="Structure";
-  for(s=0; s<mat->nmap; s++)
-    leg[s+1]=strdup(map[s].desc);
-  
-  fp=xvgropen(outfile,"Secondary Structure",
-	      get_xvgr_tlabel(oenv),"Number of Residues",oenv);
-  if (get_print_xvgr_codes(oenv))
-    fprintf(fp,"@ subtitle \"Structure = ");
-  for(s=0; s<strlen(ss_string); s++) {
-    if (s>0)
-      fprintf(fp," + ");
-    for(f=0; f<mat->nmap; f++)
-      if (ss_string[s]==map[f].code.c1)
-	fprintf(fp,"%s",map[f].desc);
-  }
-  fprintf(fp,"\"\n");
-  xvgr_legend(fp,mat->nmap+1,leg,oenv);
-  
-  for(f=0; f<mat->nx; f++) {
-    ss_count=0;
+    FILE *fp;
+    t_mapping *map;
+    int f,r,*count,*total,ss_count,total_count;
+    size_t s;
+    const char** leg;
+    
+    map=mat->map;
+    snew(count,mat->nmap);
+    snew(total,mat->nmap);
+    snew(leg,mat->nmap+1);
+    leg[0]="Structure";
     for(s=0; s<mat->nmap; s++)
-      count[s]=0;
-    for(r=0; r<mat->ny; r++)
-      count[mat->matrix[f][r]]++;
-    for(s=0; s<mat->nmap; s++) {
-      if (strchr(ss_string,map[s].code.c1))
-	ss_count+=count[s];
+    {
+        leg[s+1]=strdup(map[s].desc);
     }
-    fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
+    
+    fp=xvgropen(outfile,"Secondary Structure",
+                output_env_get_xvgr_tlabel(oenv),"Number of Residues",oenv);
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        fprintf(fp,"@ subtitle \"Structure = ");
+    }
+    for(s=0; s<strlen(ss_string); s++)
+    {
+        if (s>0)
+        {
+            fprintf(fp," + ");
+        }
+        for(f=0; f<mat->nmap; f++)
+        {
+            if (ss_string[s]==map[f].code.c1)
+            {
+                fprintf(fp,"%s",map[f].desc);
+            }
+        }
+    }
+    fprintf(fp,"\"\n");
+    xvgr_legend(fp,mat->nmap+1,leg,oenv);
+    
+    total_count = 0;
     for(s=0; s<mat->nmap; s++)
-      fprintf(fp," %5d",count[s]);
+    {
+        total[s]=0;
+    }
+    for(f=0; f<mat->nx; f++)
+    {
+        ss_count=0;
+        for(s=0; s<mat->nmap; s++)
+        {
+            count[s]=0;
+        }
+        for(r=0; r<mat->ny; r++)
+        {
+            count[mat->matrix[f][r]]++;
+            total[mat->matrix[f][r]]++;
+        }
+        for(s=0; s<mat->nmap; s++)
+        {
+            if (strchr(ss_string,map[s].code.c1))
+            {
+                ss_count+=count[s];
+                total_count += count[s];
+            }
+        }
+        fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
+        for(s=0; s<mat->nmap; s++)
+        {
+            fprintf(fp," %5d",count[s]);
+        }
+        fprintf(fp,"\n");
+    }
+    /* now print column totals */
+    fprintf(fp, "%-8s %5d", "# Totals", total_count);
+    for(s=0; s<mat->nmap; s++)
+    {
+        fprintf(fp," %5d",total[s]);
+    }
     fprintf(fp,"\n");
-  }
-  
-  ffclose(fp);
-  sfree(leg);
-  sfree(count);
+
+    /* now print percentages */
+    fprintf(fp, "%-8s %5.2f", "# SS %", total_count / (real) (mat->nx * mat->ny));
+    for(s=0; s<mat->nmap; s++)
+    {
+        fprintf(fp," %5.2f",total[s] / (real) (mat->nx * mat->ny));
+    }
+    fprintf(fp,"\n");
+    
+    ffclose(fp);
+    sfree(leg);
+    sfree(count);
 }
 
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "do_dssp ", 
+    "[TT]do_dssp[tt] ", 
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. do_dssp assumes that the dssp executable is",
-    "/usr/local/bin/dssp. If this is not the case, then you should",
-    "set an environment variable [BB]DSSP[bb] pointing to the dssp",
+    "get it from http://swift.cmbi.ru.nl/gv/dssp. [TT]do_dssp[tt] assumes ",
+    "that the dssp executable is located in ",
+    "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
+    "set an environment variable [TT]DSSP[tt] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
-    "Individual chains are separated by light grey lines in the xpm and",
+    "Individual chains are separated by light grey lines in the [TT].xpm[tt] and",
     "postscript files.",
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",
@@ -364,7 +413,7 @@ int main(int argc,char *argv[])
     "these two programs can be used to analyze dihedral properties as a",
     "function of secondary structure type."
   };
-  static bool bVerbose;
+  static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
@@ -373,19 +422,19 @@ int main(int argc,char *argv[])
       "Secondary structures for structure count"}
   };
   
-  int        status;
+  t_trxstatus *status;
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   const char *fnSCount,*fnArea,*fnTArea,*fnAArea;
-  char *leg[] = { "Phobic", "Phylic" };
+  const char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr,nres_plus_separators;
-  bool       *bPhbres,bDoAccSurf;
+  gmx_bool       *bPhbres,bDoAccSurf;
   real       t;
-  int        i,natoms,nframe=0;
+  int        i,j,natoms,nframe=0;
   matrix     box;
   int        gnx;
   char       *grpnm,*ss_str;
@@ -397,7 +446,7 @@ int main(int argc,char *argv[])
   char       dssp[256];
   const char *dptr;
   output_env_t oenv;
-  
+  gmx_rmpbc_t  gpbc=NULL;
   
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
@@ -473,7 +522,7 @@ int main(int argc,char *argv[])
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
-		    get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"Area (nm\\S2\\N)",oenv);
     xvgr_legend(fTArea,2,leg,oenv);
   } else
     fTArea=NULL;
@@ -493,17 +542,19 @@ int main(int argc,char *argv[])
   snew(norm_av_area, atoms->nres);
   accr=NULL;
   naccr=0;
+  
+  gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
   do {
-    t = conv_time(oenv,t);
+    t = output_env_conv_time(oenv,t);
     if (bDoAccSurf && nframe>=naccr) {
       naccr+=10;
       srenew(accr,naccr);
       for(i=naccr-10; i<naccr; i++)
         snew(accr[i],2*atoms->nres-1);
     }
-    rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     tapein=ffopen(pdbfile,"w");
-    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index,NULL);
+    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,' ',-1,gnx,index,NULL,TRUE);
     ffclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
@@ -533,7 +584,8 @@ int main(int argc,char *argv[])
   close_trj(status);
   if (fTArea)
     ffclose(fTArea);
-  
+  gmx_rmpbc_done(gpbc);
+
   prune_ss_legend(&mat);
   
   ss=opt2FILE("-o",NFILE,fnm,"w");
@@ -541,15 +593,22 @@ int main(int argc,char *argv[])
   write_xpm_m(ss,mat);
   ffclose(ss);
   
-  if (opt2bSet("-ssdump",NFILE,fnm)) {
-    snew(ss_str,nres+1);
-    for(i=0; (i<nres); i++)
-      ss_str[i] = mat.map[mat.matrix[0][i]].code.c1;
-    ss_str[i] = '\0';
-    ss = opt2FILE("-ssdump",NFILE,fnm,"w");
-    fprintf(ss,"%d\n%s\n",nres,ss_str);
-    ffclose(ss);
-    sfree(ss_str);
+  if (opt2bSet("-ssdump",NFILE,fnm))
+  {
+      ss = opt2FILE("-ssdump",NFILE,fnm,"w");
+      snew(ss_str,nres+1);
+      fprintf(ss,"%d\n",nres);
+      for(j=0; j<mat.nx; j++)
+      {
+          for(i=0; (i<mat.ny); i++)
+          {
+              ss_str[i] = mat.map[mat.matrix[j][i]].code.c1;
+          }
+          ss_str[i] = '\0';
+          fprintf(ss,"%s\n",ss_str);
+      }
+      ffclose(ss);
+      sfree(ss_str);
   }
   analyse_ss(fnSCount,&mat,ss_string,oenv);
 

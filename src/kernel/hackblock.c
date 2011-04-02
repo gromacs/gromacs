@@ -156,10 +156,10 @@ static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
   d->s = safe_strdup(s->s);
 }
 
-static bool contains_char(t_rbonded *s,char c)
+static gmx_bool contains_char(t_rbonded *s,char c)
 {
   int i;
-  bool bRet;
+  gmx_bool bRet;
   
   bRet = FALSE;
   for(i=0; i<MAXATOMLIST; i++)
@@ -168,11 +168,14 @@ static bool contains_char(t_rbonded *s,char c)
   
   return bRet;
 }
-void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],bool bMin,bool bPlus)
+
+gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],gmx_bool bMin,gmx_bool bPlus)
 {
   int i, j;
+  gmx_bool bBondsRemoved;
   
-  for(i=0; i < ebtsNR; i++)
+  bBondsRemoved = FALSE;
+  for(i=0; i < ebtsNR; i++) {
     if ( s[i].nb > 0 ) {
       /* make space */
       srenew(d[i].b, d[i].nb + s[i].nb);
@@ -181,8 +184,13 @@ void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[],bool bMin,bool bPlus)
 	    && !(bPlus && contains_char(&s[i].b[j],'+'))) {
 	  copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
 	  d[i].nb ++;
+	} else if (i == ebtsBONDS) {
+	  bBondsRemoved = TRUE;
 	}
     }
+  }
+
+  return bBondsRemoved;
 }
 
 void copy_t_restp(t_restp *s, t_restp *d)
@@ -203,6 +211,7 @@ void copy_t_restp(t_restp *s, t_restp *d)
   for(i=0; i < s->natom; i++)
     d->cgnr[i] = s->cgnr[i];
   for(i=0; i < ebtsNR; i++) {
+    d->rb[i].type = s->rb[i].type;
     d->rb[i].nb = 0;
     d->rb[i].b = NULL;
   }

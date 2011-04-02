@@ -49,6 +49,7 @@
 #include "convparm.h"
 #include "names.h"
 #include "gpp_atomtype.h"
+#include "maths.h"
 
 static int round_check(real r,int limit,int ftype,const char *name)
 {
@@ -95,9 +96,10 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
   real tmp;
 
   /* Set to zero */
-  for(j=0; (j<MAXFORCEPARAM); j++)
-    newparam->generic.buf[j]=0.0;
-    
+  for(j=0; (j<MAXFORCEPARAM); j++) 
+    {
+      newparam->generic.buf[j]=0.0;
+    }
   switch (ftype) {
   case F_G96ANGLES:
     /* Post processing of input data: store cosine iso angle itself */
@@ -116,6 +118,16 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
   case F_FENEBONDS:
     newparam->fene.bm=old[0];
     newparam->fene.kb=old[1];
+    break;
+  case F_RESTRBONDS:
+    newparam->restraint.lowA = old[0];
+    newparam->restraint.up1A = old[1];
+    newparam->restraint.up2A = old[2];
+    newparam->restraint.kA   = old[3];
+    newparam->restraint.lowB = old[4];
+    newparam->restraint.up1B = old[5];
+    newparam->restraint.up2B = old[6];
+    newparam->restraint.kB   = old[7];
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -212,17 +224,33 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     set_ljparams(comb,reppow,old[0],old[1],&newparam->lj.c6,&newparam->lj.c12);
     break;
   case F_PDIHS:
+  case F_PIDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
     newparam->pdihs.phiA = old[0];
     newparam->pdihs.cpA  = old[1];
 		  
-    /* Dont do any checks if all parameters are zero (such interactions will be removed) */
-    tmp=fabs(old[0])+fabs(old[1])+fabs(old[2])+fabs(old[3])+fabs(old[4]);
-    newparam->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],1,ftype,"multiplicity");
-		  
+    /* Dont do any checks if all parameters are zero (such interactions will be removed).
+     * Change 20100720: Amber occasionally uses negative multiplicities (mathematically OK),
+     * so I have changed the lower limit to -99 /EL
+     *
+     * Second, if the force constant is zero in both A and B states, we set the phase
+     * and multiplicity to zero too so the interaction gets removed during clean-up.
+     */	
     newparam->pdihs.phiB = old[3];
     newparam->pdihs.cpB  = old[4];
+          
+    if( fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN )
+    {
+        newparam->pdihs.phiA = 0.0; 
+        newparam->pdihs.phiB = 0.0; 
+        newparam->pdihs.mult = 0; 
+    } 
+    else
+    {
+        newparam->pdihs.mult = round_check(old[2],-99,ftype,"multiplicity");
+    }
+          
     break;
   case F_POSRES:
     newparam->posres.fcA[XX]   = old[0];
@@ -322,27 +350,27 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->vsiten.a = old[1];
     break;
   case F_CMAP:
-	newparam->cmap.cmapA=old[0];
-	newparam->cmap.cmapB=old[1];
-	break;
-      case F_GB12:
-      case F_GB13:
-      case F_GB14:
-          newparam->gb.sar  = old[0];
-          newparam->gb.st   = old[1];
-          newparam->gb.pi   = old[2];
-          newparam->gb.gbr  = old[3];
-          newparam->gb.bmlt = old[4];
-          break;
+    newparam->cmap.cmapA=old[0];
+    newparam->cmap.cmapB=old[1];
+    break;
+  case F_GB12:
+  case F_GB13:
+  case F_GB14:
+    newparam->gb.sar  = old[0];
+    newparam->gb.st   = old[1];
+    newparam->gb.pi   = old[2];
+    newparam->gb.gbr  = old[3];
+    newparam->gb.bmlt = old[4];
+    break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
-		ftype,__FILE__,__LINE__);
+	      ftype,__FILE__,__LINE__);
   }
 }
 
 static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 			real forceparams[MAXFORCEPARAM],int comb,real reppow,
-			int start,bool bAppend)
+			int start,gmx_bool bAppend)
 {
   t_iparams newparam;
   int       type;
@@ -351,8 +379,22 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
   if (!bAppend) {
     for (type=start; (type<ffparams->ntypes); type++) {
       if (ffparams->functype[type]==ftype) {
+	if (F_GB13 == ftype) {
+	  /* Occasionally, the way the 1-3 reference distance is
+	   * computed can lead to non-binary-identical results, but I
+	   * don't know why. */
+	  if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6)) &&
+	      (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6)) &&
+	      (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6)) &&
+	      (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6)) &&
+	      (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6))) {
+	    return type;
+	  }
+	}
+	else {
 	if (memcmp(&newparam,&ffparams->iparams[type],(size_t)sizeof(newparam)) == 0)
 	  return type;
+	}
       }
     }
   }
@@ -386,7 +428,7 @@ static void append_interaction(t_ilist *ilist,
 static void enter_function(t_params *p,t_functype ftype,int comb,real reppow,
                            gmx_ffparams_t *ffparams,t_ilist *il,
 			   int *maxtypes,
-			   bool bNB,bool bAppend)
+			   gmx_bool bNB,gmx_bool bAppend)
 {
   int     k,type,nr,nral,delta,start;
   

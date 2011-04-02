@@ -68,8 +68,9 @@ int get_atomtype_type(const char *str,gpp_atomtype_t ga)
 {
   int i;
 
+  /* Atom types are always case sensitive */
   for (i=0; (i<ga->nr); i++)
-    if (strcasecmp(str,*(ga->atomname[i])) == 0)
+    if (strcmp(str,*(ga->atomname[i])) == 0)
       return i;
   
   return NOTSET;
@@ -261,20 +262,33 @@ int add_atomtype(gpp_atomtype_t ga,t_symtab *tab,
 		 real radius,real vol,real surftens,real atomnumber,
 		 real gb_radius, real S_hct)
 {
-  ga->nr++;
-  srenew(ga->atom,ga->nr);
-  srenew(ga->atomname,ga->nr);
-  srenew(ga->nb,ga->nr);
-  srenew(ga->bondatomtype,ga->nr);
-  srenew(ga->radius,ga->nr);
-  srenew(ga->vol,ga->nr);
-  srenew(ga->surftens,ga->nr);
-  srenew(ga->atomnumber,ga->nr);
-  srenew(ga->gb_radius,ga->nr);
-  srenew(ga->S_hct,ga->nr);
-
-  return set_atomtype(ga->nr-1,ga,tab,a,name,nb,bondatomtype,radius,
-		      vol,surftens,atomnumber,gb_radius,S_hct);
+  int i;
+  
+  for(i=0; (i<ga->nr); i++) {
+    if (strcmp(*ga->atomname[i],name) == 0) {
+      if (NULL != debug)
+	fprintf(debug,"Trying to add atomtype %s again. Skipping it.\n",name);
+      break;
+    }
+  }
+  if (i == ga->nr) {
+    ga->nr++;
+    srenew(ga->atom,ga->nr);
+    srenew(ga->atomname,ga->nr);
+    srenew(ga->nb,ga->nr);
+    srenew(ga->bondatomtype,ga->nr);
+    srenew(ga->radius,ga->nr);
+    srenew(ga->vol,ga->nr);
+    srenew(ga->surftens,ga->nr);
+    srenew(ga->atomnumber,ga->nr);
+    srenew(ga->gb_radius,ga->nr);
+    srenew(ga->S_hct,ga->nr);
+    
+    return set_atomtype(ga->nr-1,ga,tab,a,name,nb,bondatomtype,radius,
+			vol,surftens,atomnumber,gb_radius,S_hct);
+  }
+  else
+    return i;
 }
 
 void print_at (FILE * out, gpp_atomtype_t ga)
@@ -316,7 +330,7 @@ static int search_atomtypes(gpp_atomtype_t ga,int *n,int typelist[],
 			    t_param param[],int ftype)
 {
   int i,nn,nrfp,j,k,ntype,tli;
-  bool bFound=FALSE;
+  gmx_bool bFound=FALSE;
   
   nn    = *n;
   nrfp  = NRFP(ftype);
@@ -372,7 +386,7 @@ static int search_atomtypes(gpp_atomtype_t ga,int *n,int typelist[],
 
 void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 		int *wall_atomtype,
-		gpp_atomtype_t ga,bool bVerbose)
+		gpp_atomtype_t ga,gmx_bool bVerbose)
 {
   int      i,j,k,l,molt,mi,mj,nat,nrfp,ftype,ntype;
   t_atoms  *atoms;

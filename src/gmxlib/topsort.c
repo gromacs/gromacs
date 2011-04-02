@@ -41,10 +41,11 @@
 #include "typedefs.h"
 #include "topsort.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 
-static bool ip_pert(int ftype,t_iparams *ip)
+static gmx_bool ip_pert(int ftype,const t_iparams *ip)
 {
-    bool bPert;
+    gmx_bool bPert;
     int  i;
 
     if (NRFPB(ftype) == 0)
@@ -60,8 +61,15 @@ static bool ip_pert(int ftype,t_iparams *ip)
     case F_ANGLES:
     case F_G96ANGLES:
     case F_IDIHS:
+    case F_PIDIHS:
         bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                  ip->harmonic.krA != ip->harmonic.krB);
+        break;
+    case F_RESTRBONDS:
+        bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
+                 ip->restraint.up1A  != ip->restraint.up1B ||
+                 ip->restraint.up2A  != ip->restraint.up2B ||
+                 ip->restraint.kA    != ip->restraint.kB);
         break;
     case F_PDIHS:
     case F_ANGRES:
@@ -109,11 +117,26 @@ static bool ip_pert(int ftype,t_iparams *ip)
     return bPert;
 }
 
-bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
+static gmx_bool ip_q_pert(int ftype,const t_iatom *ia,
+                      const t_iparams *ip,const real *qA,const real *qB)
+{
+    /* 1-4 interactions do not have the charges stored in the iparams list,
+     * so we need a separate check for those.
+     */
+    return (ip_pert(ftype,ip+ia[0]) || 
+            (ftype == F_LJ14 && (qA[ia[1]] != qB[ia[1]] ||
+                                 qA[ia[2]] != qB[ia[2]])));
+}
+
+gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 {
     const gmx_ffparams_t *ffparams;
     int  i,ftype;
-    bool bPert;
+    int  mb;
+    t_atom  *atom;
+    t_ilist *il;
+    t_iatom *ia;
+    gmx_bool bPert;
 
     ffparams = &mtop->ffparams;
     
@@ -131,18 +154,39 @@ bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
         }
     }
 
+    /* Check perturbed charges for 1-4 interactions */
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
+        atom = mtop->moltype[mtop->molblock[mb].type].atoms.atom;
+        il   = &mtop->moltype[mtop->molblock[mb].type].ilist[F_LJ14];
+        ia   = il->iatoms;
+        for(i=0; i<il->nr; i+=3)
+        {
+            if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||
+                atom[ia[i+2]].q != atom[ia[i+2]].qB)
+            {
+                bPert = TRUE;
+            }
+        }
+    }
+
     return (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
 }
 
-void gmx_sort_ilist_fe(t_idef *idef)
+void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
 {
     int  ftype,nral,i,ic,ib,a;
     t_iparams *iparams;
     t_ilist *ilist;
     t_iatom *iatoms;
-    bool bPert;
+    gmx_bool bPert;
     t_iatom *iabuf;
     int  iabuf_nalloc;
+
+    if (qB == NULL)
+    {
+        qB = qA;
+    }
 
     iabuf_nalloc = 0;
     iabuf        = NULL;
@@ -161,8 +205,8 @@ void gmx_sort_ilist_fe(t_idef *idef)
             i  = 0;
             while (i < ilist->nr)
             {
-                /* The first element of ia gives the type */
-                if (ip_pert(ftype,&iparams[iatoms[i]]))
+                /* Check if this interaction is perturbed */
+                if (ip_q_pert(ftype,iatoms+i,iparams,qA,qB))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)

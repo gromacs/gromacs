@@ -56,11 +56,11 @@
 typedef struct {
   unsigned long mode;
   int  nrestart,nout,P,fitfn,nskip;
-  bool bFour,bNormalize;
+  gmx_bool bFour,bNormalize;
   real tbeginfit,tendfit;
 } t_acf;
 
-static bool  bACFinit = FALSE;
+static gmx_bool  bACFinit = FALSE;
 static t_acf acf;
 
 enum { enNorm, enCos, enSin };
@@ -78,7 +78,7 @@ int sffn2effn(const char **sffn)
 }
 
 static void low_do_four_core(int nfour,int nframes,real c1[],real cfour[],
-			     int nCos,bool bPadding)
+			     int nCos,gmx_bool bPadding)
 {
   int  i=0;
   real aver,*ans;
@@ -239,7 +239,7 @@ void normalize_acf(int nout,real corr[])
   }
 }
 
-void average_acf(bool bVerbose,int n,int nitem,real **c1)
+void average_acf(gmx_bool bVerbose,int n,int nitem,real **c1)
 {
   real c0;
   int  i,j;
@@ -505,13 +505,13 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,const output_env_t oenv,gmx_bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
-  real    tStart,tail_corr,sum,sumtot=0,ct_estimate,*sig;
+  real    tStart,tail_corr,sum,sumtot=0,c_start,ct_estimate,*sig;
   int     i,j,jmax,nf_int;
-  bool    bPrint;
+  gmx_bool    bPrint;
 
   bPrint = bVerbose || bDebugMode();
 
@@ -542,28 +542,54 @@ real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
 	   "Fit from","Integral","Tail Value","Sum (ps)"," a1 (ps)",
 	   (nfp_ffn[fitfn]>=2) ? " a2 ()" : "",
 	   (nfp_ffn[fitfn]>=3) ? " a3 (ps)" : "");
-  if (tbeginfit > 0)
-    jmax = 3;
-  else
-    jmax = 1;
-  if (fitfn == effnEXP3) {
-    fitparm[0] = 0.002*ncorr*dt;
-    fitparm[1] = 0.95;
-    fitparm[2] = 0.2*ncorr*dt;
-  } else {
-    /* Good initial guess, this increases the probability of convergence */
-    fitparm[0] = ct_estimate;
-    fitparm[1] = 1.0;
-    fitparm[2] = 1.0;
-  }
 
-  /* Generate more or less appropriate sigma's */
   snew(sig,ncorr);
-  for(i=0; i<ncorr; i++)
-    sig[i] = sqrt(ct_estimate+dt*i);
 
-  for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
-    /* Use the previous fitparm as starting values for the next fit */
+  if (tbeginfit > 0) {
+    jmax = 3;
+  } else {
+    jmax = 1;
+  }
+  for(j=0; ((j<jmax) && (tStart < tendfit) && (tStart < ncorr*dt)); j++) {
+    /* Estimate the correlation time for better fitting */
+    c_start = -1;
+    ct_estimate = 0;
+    for(i=0; (i<ncorr) && (dt*i < tStart || c1[i]>0); i++) {
+      if (c_start < 0) {
+	if (dt*i >= tStart) {
+	  c_start     = c1[i];
+	  ct_estimate = 0.5*c1[i];
+	}
+      } else {
+	ct_estimate += c1[i];
+      }
+    }
+    if (c_start > 0) {
+      ct_estimate *= dt/c_start;
+    } else {
+      /* The data is strange, so we need to choose somehting */
+      ct_estimate = tendfit;
+    }
+    if (debug) {
+      fprintf(debug,"tStart %g ct_estimate: %g\n",tStart,ct_estimate);
+    }
+    
+    if (fitfn == effnEXP3) {
+      fitparm[0] = 0.002*ncorr*dt;
+      fitparm[1] = 0.95;
+      fitparm[2] = 0.2*ncorr*dt;
+    } else {
+      /* Good initial guess, this increases the probability of convergence */
+      fitparm[0] = ct_estimate;
+      fitparm[1] = 1.0;
+      fitparm[2] = 1.0;
+    }
+
+    /* Generate more or less appropriate sigma's */
+    for(i=0; i<ncorr; i++) {
+      sig[i] = sqrt(ct_estimate+dt*i);
+    }
+
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
     tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,oenv,
@@ -588,8 +614,8 @@ real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
 void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
-		     bool bAver,bool bNormalize,
-		     bool bVerbose,real tbeginfit,real tendfit,
+		     gmx_bool bAver,gmx_bool bNormalize,
+		     gmx_bool bVerbose,real tbeginfit,real tendfit,
 		     int eFitFn,int nskip)
 {
   FILE    *fp,*gp=NULL;
@@ -597,10 +623,10 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   real    *csum;
   real    *ctmp,*fit;
   real    c0,sum,Ct2av,Ctav;
-  bool    bFour = acf.bFour;
+  gmx_bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
-  /*  nout = get_acfnout();*/
+  nout = get_acfnout();
   if (nout == -1)
     nout = acf.nout = (nframes+1)/2;
   else if (nout > nframes)
@@ -732,7 +758,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Length of the ACF, default is half the number of frames" },
     { "-normalize",FALSE, etBOOL, {&acf.bNormalize},
       "Normalize ACF" },
-    { "-fft",      FALSE, etBOOL, {&acf.bFour},
+    { "-fftcorr",  FALSE, etBOOL, {&acf.bFour},
       "HIDDENUse fast fourier transform for correlation function" },
     { "-nrestart", FALSE, etINT,  {&acf.nrestart},
       "HIDDENNumber of frames between time origins for ACF when no FFT is used" },
@@ -745,7 +771,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
     { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, {&acf.tendfit},
-      "Time where to end the exponential fit of the correlation function, -1 is till the end" },
+      "Time where to end the exponential fit of the correlation function, -1 is until the end" },
    };
 #define NPA asize(acfpa)
   t_pargs *ppa;
@@ -775,7 +801,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 
 void do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		 int nframes,int nitem,real **c1,
-		 real dt,unsigned long mode,bool bAver)
+		 real dt,unsigned long mode,gmx_bool bAver)
 {
   if (!bACFinit) {
     printf("ACF data structures have not been initialised. Call add_acf_pargs\n");

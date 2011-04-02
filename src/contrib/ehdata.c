@@ -1,5 +1,4 @@
 /*
- * $Id: ehdata.c,v 1.11.2.3 2008/02/29 07:02:43 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -186,7 +185,7 @@ static t_pq_inel *read_pq(char *fn)
   return pq;
 }
 
-static int my_bsearch(real val,int ndata,real data[],bool bLower)
+static int my_bsearch(real val,int ndata,real data[],gmx_bool bLower)
 {
   int ilo,ihi,imed;
 

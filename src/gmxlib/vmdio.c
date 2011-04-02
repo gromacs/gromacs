@@ -15,6 +15,11 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 
 /* Derived from PluginMgr.C and catdcd.c */
 
@@ -107,7 +112,7 @@ static int register_cb(void *v, vmdplugin_t *p) {
 }
 
 static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdplugin) {
-    // Open the dll; try to execute the init function.
+    /* Open the dll; try to execute the init function. */
     void *handle, *ifunc, *registerfunc; 
     handle = vmddlopen(fullpath);
     if (!handle) {
@@ -128,7 +133,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
         vmddlclose(handle);
         return 0;
     } else {
-        // Load plugins from the library.
+        /* Load plugins from the library.*/
         ((regfunc)registerfunc)(vmdplugin, register_cb);
     } 
     
@@ -142,7 +147,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
 }
 
 /*return: 1: success, 0: last frame, -1: error*/
-bool read_next_vmd_frame(int status,t_trxframe *fr)
+gmx_bool read_next_vmd_frame(int status,t_trxframe *fr)
 {
     int rc,i;
     rvec vec, angle;
@@ -206,12 +211,19 @@ bool read_next_vmd_frame(int status,t_trxframe *fr)
 #endif
 
     fr->bX = 1;
-    vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.B;
+    fr->bBox = 1;
+    vec[0] = .1*ts.A; vec[1] = .1*ts.B; vec[2] = .1*ts.C;
     angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma; 
     matrix_convert(fr->box,vec,angle);
-    fr->bTime = 1;
-    fr->time = ts.physical_time;
-
+    if (fr->vmdplugin.api->abiversion>10)
+    {
+        fr->bTime = TRUE;
+        fr->time = ts.physical_time;
+    }
+    else
+    {
+        fr->bTime = FALSE;
+    }
 
 
     return 1;
@@ -222,7 +234,8 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
     const char *err;
-    uint i,ret=0;
+    int i;
+    int ret=0;
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
     const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
@@ -278,7 +291,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     do
     {
         sprintf(filename,"%s\\%s",pathenv,ffd.cFileName);
-        ret|=load_sharedlibrary_plugins(filename,&vmdplugin);
+        ret|=load_sharedlibrary_plugins(filename,vmdplugin);
     }
     while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL );
     FindClose(hFind);
@@ -328,16 +341,22 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         return 0;
     }
 
-    if (fr->natoms < 1) {
-        fprintf(stderr, "\nNo atoms found by VMD plugin in %s.\n"
-            "Or format does not record number of atoms.\n", fn );
+    if (fr->natoms == MOLFILE_NUMATOMS_UNKNOWN) {
+        fprintf(stderr, "\nFormat of file %s does not record number of atoms.\n", fn);
+        return 0;
+    } else if (fr->natoms == MOLFILE_NUMATOMS_NONE) {
+        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn );
+        return 0;
+    } else if (fr->natoms < 1) { /*should not be reached*/
+        fprintf(stderr, "\nUnknown number of atoms %d for VMD plugin opening file %s.\n",
+                fr->natoms, fn );
         return 0;
     }
     
     snew(fr->x,fr->natoms);
 
     fr->vmdplugin.bV = 0;
-    if (fr->vmdplugin.api->read_timestep_metadata) 
+    if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
     {
         fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
         fr->vmdplugin.bV = metadata->has_velocities; 

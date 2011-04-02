@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -48,6 +49,7 @@
 #include "txtdump.h"
 #include "math.h"
 #include "assert.h"
+#include "gmx_fatal.h"
 #include "splitter.h"
 
 typedef struct {
@@ -152,21 +154,22 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 			node_low      = min(node_low_ai,node_low_aj);
 			node_high     = max(node_high_ai,node_high_aj);
 			
-			if( (node_high-nodeid)>1 || (nodeid-node_low)>1 )
+            if (node_high-nodei > 1 || nodei-node_low > 1 ||
+                node_high-nodej > 1 || nodej-node_low > 1 )
 			{
 				gmx_fatal(FARGS,"Constraint dependencies further away than next-neighbor\n"
 						  "in particle decomposition. Constraint between atoms %d--%d evaluated\n"
-						  "on node %d, but atom %d has connections within %d bonds (lincs_order)\n"
+						  "on node %d and %d, but atom %d has connections within %d bonds (lincs_order)\n"
 						  "of node %d, and atom %d has connections within %d bonds of node %d.\n"
 						  "Reduce the # nodes, lincs_order, or\n"
-						  "try domain decomposition.",ai,aj,nodeid,ai,ir->nProjOrder,node_low,aj,ir->nProjOrder,node_high);
+						  "try domain decomposition.",ai,aj,nodei,nodej,ai,ir->nProjOrder,node_low,aj,ir->nProjOrder,node_high);
 			}
 			
-			if(node_low<nodeid)
+			if (node_low < nodei || node_low < nodej)
 			{
 				right_range[node_low] = max(right_range[node_low],aj);
 			}
-			if(node_high>nodeid)
+			if (node_high > nodei || node_high > nodej)
 			{
 				left_range[node_high] = min(left_range[node_high],ai);
 			}
@@ -174,7 +177,7 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 		else 
 		{
 			/* Shake */
-			if (hid[ilist->iatoms[i+2]] != nodeid) 
+			if (hid[ilist->iatoms[i+2]] != nodei) 
 				gmx_fatal(FARGS,"Shake block crossing node boundaries\n"
 						  "constraint between atoms (%d,%d) (try LINCS instead!)",
 						  ilist->iatoms[i+1]+1,ilist->iatoms[i+2]+1);
@@ -330,7 +333,7 @@ void set_bor(t_border *b,int atom,int ic,int is)
   b->is   = is;
 }
 
-static bool is_bor(atom_id ai[],int i)
+static gmx_bool is_bor(atom_id ai[],int i)
 {
   return ((ai[i] != ai[i-1]) || ((ai[i] == NO_ATID) && (ai[i-1] == NO_ATID)));
 }
@@ -418,14 +421,15 @@ static void split_blocks(FILE *fp,t_inputrec *ir, int nnodes,
   t_border *border;
   double   tload,tcap;
   
-  bool    bSHK;
+  gmx_bool    bSHK;
   atom_id *shknum,*cgsnum;
   
   natoms = cgs->index[cgs->nr];
 	
-  if (debug) {
+  if (NULL != debug) {
     pr_block(debug,0,"cgs",cgs,TRUE);
     pr_blocka(debug,0,"sblock",sblock,TRUE);
+    fflush(debug);
   }
 
   cgsnum = make_invblock(cgs,natoms+1);	
@@ -748,7 +752,7 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
 
 void gen_sblocks(FILE *fp,int at_start,int at_end,
 				 t_idef *idef,t_blocka *sblock,
-				 bool bSettle)
+				 gmx_bool bSettle)
 {
   t_graph *g;
   int     i,i0,j,k,istart,n;

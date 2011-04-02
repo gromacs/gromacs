@@ -41,11 +41,13 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "gstat.h"
+#include "gmx_fatal.h"
+#include "index.h"
 	
 t_dlist *mk_dlist(FILE *log, 
 		  t_atoms *atoms, int *nlist,
-		  bool bPhi, bool bPsi, bool bChi, bool bHChi,
-		  int maxchi,int r0,int naa,char **aa)
+		  gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
+		  int maxchi, int r0, gmx_residuetype_t rt)
 {
   int     ires,i,j,k,ii;
   t_dihatms atm,prev;
@@ -166,11 +168,7 @@ t_dlist *mk_dlist(FILE *log,
       }
       if ((atm.minC != -1) && (atm.minO != -1))
 	nc[6]++;
-      for(k=0; (k<naa); k++) {
-	if (strcasecmp(aa[k],thisres) == 0)
-	  break;
-      }
-      dl[nl].index=k;
+      dl[nl].index=gmx_residuetype_get_index(rt,thisres);
       
       sprintf(dl[nl].name,"%s%d",thisres,ires+r0);
       nl++;
@@ -212,9 +210,9 @@ t_dlist *mk_dlist(FILE *log,
   return dl;
 }
 
-bool has_dihedral(int Dih,t_dlist *dl)
+gmx_bool has_dihedral(int Dih,t_dlist *dl)
 {
-  bool b = FALSE;
+  gmx_bool b = FALSE;
   int  ddd;
   
   switch (Dih) {
@@ -259,7 +257,7 @@ static void pr_ntr_s2(FILE *fp,t_dlist *dl,int nDih,real dt)
 }
 
 void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt, int printtype, 
-bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi)
+gmx_bool bPhi, gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, int maxchi)
 {
   int i, Xi;
 

@@ -114,6 +114,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_ERR_OP_FN               TMPI_ERR_OP_FN
 #define MPI_ERR_ENVELOPES           TMPI_ERR_ENVELOPES
 #define MPI_ERR_REQUESTS            TMPI_ERR_REQUESTS
+#define MPI_ERR_IN_STATUS           TMPI_ERR_IN_STATUS
 #define MPI_FAILURE                 TMPI_FAILURE
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR
@@ -132,6 +133,13 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 /* miscelaneous defines */
 #define MPI_ANY_SOURCE          TMPI_ANY_SOURCE
 #define MPI_ANY_TAG             TMPI_ANY_TAG
+
+/* comm_compare defines */
+#define MPI_IDENT               TMPI_IDENT
+#define MPI_CONGRUENT           TMPI_CONGRUENT
+#define MPI_SIMILAR             TMPI_SIMILAR
+#define MPI_UNEQUAL             TMPI_UNEQUAL
+
 
 /* topology test defines */
 #define MPI_CART                TMPI_CART
@@ -199,6 +207,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #define MPI_Comm_size               tMPI_Comm_size
 #define MPI_Comm_rank               tMPI_Comm_rank
+#define MPI_Comm_compare            tMPI_Comm_compare
 #define MPI_Comm_free               tMPI_Comm_free
 #define MPI_Comm_create             tMPI_Comm_create
 #define MPI_Comm_split              tMPI_Comm_split
@@ -211,6 +220,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_Cart_coords             tMPI_Cart_coords
 #define MPI_Cart_map                tMPI_Cart_map
 #define MPI_Cart_create             tMPI_Cart_create
+#define MPI_Cart_sub                tMPI_Cart_sub
 
 #define MPI_Type_contiguous         tMPI_Type_contiguous
 #define MPI_Type_commit             tMPI_Type_commit

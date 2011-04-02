@@ -1,5 +1,4 @@
 /*
- * $Id: ehdata.h,v 1.8 2003/11/17 21:50:46 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -86,11 +85,11 @@ typedef struct {
   int  np,maxp;
   real *time;
   real *ekin;
-  bool *bInel;
+  gmx_bool *bInel;
   rvec *pos;
 } t_ana_scat;
 
-extern void add_scatter_event(t_ana_scat *scatter,rvec pos,bool bInel,
+extern void add_scatter_event(t_ana_scat *scatter,rvec pos,gmx_bool bInel,
 			      real t,real ekin);
 			      
 extern void reset_ana_scat(t_ana_scat *scatter);

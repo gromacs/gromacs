@@ -45,7 +45,7 @@
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy)
+t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,gmx_bool bFreeEnergy)
 {
   int    mb,a,g,nmol;
   double tmA,tmB;
@@ -110,7 +110,11 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 
   molblock = mtop->molblock;
 
-  if (index == NULL) {
+  /* Index==NULL indicates particle decomposition,
+   * unless we have an empty DD node, so also check for homenr and start.
+   * This should be signaled properly with an extra parameter or nindex==-1.
+   */
+  if (index == NULL && (homenr > 0 || start > 0)) {
     md->nr = mtop->natoms;
   } else {
     md->nr = nindex;

@@ -124,7 +124,7 @@ static void calc_angle(int ePBC,matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h1,center1);  /* center is geometric mean */
       break;
     default:          /* group 1 does none of the above */
-      gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
+      gmx_fatal(FARGS,"Something wrong with contents of index file. Groups should contain 2 or 3 atoms.\n");
     }
 
   switch(gnx2)
@@ -196,10 +196,13 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     distance,            /* distance between two groups. */
     distance1,           /* distance between plane and one of two atoms */
     distance2;           /* same for second of two atoms */
-  int        status,natoms,teller=0;
+  t_trxstatus *status;
+  int        natoms,teller=0;
   rvec       *x0;   /* coordinates, and coordinates corrected for pb */
   matrix     box;        
   char       buf[256];   /* for xvgr title */
+  gmx_rmpbc_t  gpbc=NULL;
+  
 
   if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
@@ -222,11 +225,13 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)",oenv);
   }
 
+  gpbc = gmx_rmpbc_init(&(top->idef),ePBC,natoms,box);
+  
   do 
     {
       teller++;
 
-      rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
+      gmx_rmpbc(gpbc,natoms,box,x0);
       
       calc_angle(ePBC,box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
@@ -240,7 +245,9 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
 	fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
 
     } while (read_next_x(oenv,status,&t,natoms,x0,box));
-  
+    
+  gmx_rmpbc_done(gpbc);
+
   fprintf(stderr,"\n");
   close_trj(status);
   ffclose(sg_angle);
@@ -355,13 +362,16 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
     distance,            /* distance between two groups. */
     distance1,           /* distance between plane and one of two atoms */
     distance2;           /* same for second of two atoms */
-  int        status,natoms,teller=0;
+  t_trxstatus *status;
+  int        natoms,teller=0;
   int        i;
   rvec       *x0;   /* coordinates, and coordinates corrected for pb */
   rvec       *xzero;
   matrix     box;        
   char       buf[256];   /* for xvgr title */
+  gmx_rmpbc_t  gpbc=NULL;
   
+
   if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
@@ -384,11 +394,12 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   }
   
   snew(xzero,natoms);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
 
   do {
     teller++;
     
-    rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
+    gmx_rmpbc(gpbc,natoms,box,x0);
     if (teller==1) {
       for(i=0;i<natoms;i++)
 	copy_rvec(x0[i],xzero[i]);
@@ -408,6 +419,7 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
       fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
     
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
+  gmx_rmpbc_done(gpbc);
   
   fprintf(stderr,"\n");
   close_trj(status);
@@ -430,20 +442,20 @@ int gmx_sgangle(int argc,char *argv[])
     "Compute the angle and distance between two groups. ",
     "The groups are defined by a number of atoms given in an index file and",
     "may be two or three atoms in size.",
-    "If -one is set, only one group should be specified in the index",
+    "If [TT]-one[tt] is set, only one group should be specified in the index",
     "file and the angle between this group at time 0 and t will be computed.",
     "The angles calculated depend on the order in which the atoms are ",
-    "given. Giving for instance 5 6 will rotate the vector 5-6 with ",
+    "given. Giving, for instance, 5 6 will rotate the vector 5-6 with ",
     "180 degrees compared to giving 6 5. [PAR]If three atoms are given, ",
     "the normal on the plane spanned by those three atoms will be",
     "calculated, using the formula  P1P2 x P1P3.",
     "The cos of the angle is calculated, using the inproduct of the two",
     "normalized vectors.[PAR]",
     "Here is what some of the file options do:[BR]",
-    "-oa: Angle between the two groups specified in the index file. If a group contains three atoms the normal to the plane defined by those three atoms will be used. If a group contains two atoms, the vector defined by those two atoms will be used.[BR]",
-    "-od: Distance between two groups. Distance is taken from the center of one group to the center of the other group.[BR]",
-    "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given seperately.[BR]",
-    "-od2: For two planes this option has no meaning."
+    "[TT]-oa[tt]: Angle between the two groups specified in the index file. If a group contains three atoms the normal to the plane defined by those three atoms will be used. If a group contains two atoms, the vector defined by those two atoms will be used.[BR]",
+    "[TT]-od[tt]: Distance between two groups. Distance is taken from the center of one group to the center of the other group.[BR]",
+    "[TT]-od1[tt]: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given separately.[BR]",
+    "[TT]-od2[tt]: For two planes this option has no meaning."
   };
 
   output_env_t oenv;
@@ -453,12 +465,12 @@ int gmx_sgangle(int argc,char *argv[])
   t_topology *top;                		/* topology 		*/ 
   int       ePBC;
   atom_id   *index[2];            		
-  static bool bOne = FALSE, bZ=FALSE;
+  static gmx_bool bOne = FALSE, bZ=FALSE;
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, {&bOne},
       "Only one group compute angle between vector at time zero and time t"},
     { "-z", FALSE, etBOOL, {&bZ},
-        "Use the Z-axis as reference" }
+        "Use the [IT]z[it]-axis as reference" }
   };
 #define NPA asize(pa)
 

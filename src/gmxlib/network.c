@@ -59,7 +59,7 @@
 /* The source code in this file should be thread-safe. 
       Please keep it that way. */
 
-bool gmx_mpi_initialized(void)
+gmx_bool gmx_mpi_initialized(void)
 {
   int n;
 #ifndef GMX_MPI
@@ -220,9 +220,11 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   }
   MPE_Init_log();
 #endif
-  
+ 
+#ifdef GMX_LIB_MPI 
   fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
+#endif
   
   *nnodes=mpi_num_nodes;
   
@@ -357,15 +359,25 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #ifndef GMX_MPI
   gmx_call("gmx_abort");
 #else
+#ifdef GMX_THREADS
+  fprintf(stderr,"Halting program %s\n",ShortProgram());
+  thanx(stderr);
+  exit(1);
+#else
   if (nnodes > 1)
-    fprintf(stderr,"Halting parallel program %s on CPU %d out of %d\n",
-	    ShortProgram(),noderank,nnodes);
+  {
+      fprintf(stderr,"Halting parallel program %s on CPU %d out of %d\n",
+              ShortProgram(),noderank,nnodes);
+  }
   else
-    fprintf(stderr,"Halting program %s\n",ShortProgram());
+  {
+      fprintf(stderr,"Halting program %s\n",ShortProgram());
+  }
 
   thanx(stderr);
   MPI_Abort(MPI_COMM_WORLD,errorno);
   exit(1);
+#endif
 #endif
 }
 
@@ -546,6 +558,63 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #endif
 }
 
+void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr)
+{
+#ifndef GMX_MPI
+    gmx_call("gmx_sumli");
+#else
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+    if (cr->nc.bUse) {
+        /* Use two step summing */
+        if (cr->nc.rank_intra == 0) 
+        {
+            MPI_Reduce(MPI_IN_PLACE,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,0,
+                       cr->nc.comm_intra);
+            /* Sum with the buffers reversed */
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                          cr->nc.comm_inter);
+        }
+        else
+        {
+            /* This is here because of the silly MPI specification
+                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+            MPI_Reduce(r,NULL,nr,GMX_MPI_LARGE_INT,MPI_SUM,0,cr->nc.comm_intra);
+        }
+        MPI_Bcast(r,nr,GMX_MPI_LARGE_INT,0,cr->nc.comm_intra);
+    } 
+    else 
+    {
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,cr->mpi_comm_mygroup);
+    }
+#else
+    int i;
+
+    if (nr > cr->mpb->ibuf_alloc) {
+        cr->mpb->ibuf_alloc = nr;
+        srenew(cr->mpb->ibuf,cr->mpb->ibuf_alloc);
+    }
+    if (cr->nc.bUse) {
+        /* Use two step summing */
+        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                      cr->nc.comm_intra);
+        if (cr->nc.rank_intra == 0) {
+            /* Sum with the buffers reversed */
+            MPI_Allreduce(cr->mpb->ibuf,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                          cr->nc.comm_inter);
+        }
+        MPI_Bcast(r,nr,GMX_MPI_LARGE_INT,0,cr->nc.comm_intra);
+    } else {
+        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                      cr->mpi_comm_mygroup);
+        for(i=0; i<nr; i++)
+            r[i] = cr->mpb->ibuf[i];
+    }
+#endif
+#endif
+}
+
+
+
 #ifdef GMX_MPI
 void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 {
@@ -576,7 +645,7 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
     /* this function is only used in code that is not performance critical,
        (during setup, when comm_rec is not the appropriate communication  
        structure), so this isn't as bad as it looks. */
-    double *buf;
+    float *buf;
     int i;
 
     snew(buf, nr);
@@ -591,7 +660,7 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_sumd");
+  gmx_call("gmx_sumd_sim");
 #else
   gmx_sumd_comm(nr,r,ms->mpi_comm_masters);
 #endif
@@ -600,7 +669,7 @@ void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
 void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_sumf");
+  gmx_call("gmx_sumf_sim");
 #else
   gmx_sumf_comm(nr,r,ms->mpi_comm_masters);
 #endif
@@ -609,7 +678,7 @@ void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
 void gmx_sumi_sim(int nr,int r[], const gmx_multisim_t *ms)
 {
 #ifndef GMX_MPI
-    gmx_call("gmx_sumd");
+    gmx_call("gmx_sumi_sim");
 #else
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
@@ -627,6 +696,31 @@ void gmx_sumi_sim(int nr,int r[], const gmx_multisim_t *ms)
 #endif
 #endif
 }
+
+void gmx_sumli_sim(int nr,gmx_large_int_t r[], const gmx_multisim_t *ms)
+{
+#ifndef GMX_MPI
+    gmx_call("gmx_sumli_sim");
+#else
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+    MPI_Allreduce(MPI_IN_PLACE,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                  ms->mpi_comm_masters);
+#else
+    /* this is thread-unsafe, but it will do for now: */
+    int i;
+
+    if (nr > ms->mpb->ibuf_alloc) {
+        ms->mpb->ibuf_alloc = nr;
+        srenew(ms->mpb->ibuf,ms->mpb->ibuf_alloc);
+    }
+    MPI_Allreduce(r,ms->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+                  ms->mpi_comm_masters);
+    for(i=0; i<nr; i++)
+        r[i] = ms->mpb->ibuf[i];
+#endif
+#endif
+}
+
 
 void gmx_finalize(void)
 {

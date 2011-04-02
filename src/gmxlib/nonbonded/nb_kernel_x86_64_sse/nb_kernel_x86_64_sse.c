@@ -180,7 +180,7 @@ static jmp_buf
 nb_kernel_x86_64_sse_testprog;
 
 /*! Result of x86_64 SSE test */
-static bool      
+static gmx_bool      
 nb_kernel_x86_64_sse_present;
 
 
@@ -208,7 +208,7 @@ nb_kernel_x86_64_sse_test(FILE *                log)
 #endif
     
     if(log)
-        fprintf(log,"Testing x86_64 SSE support...");
+        fprintf(log,"Testing x86_64 SSE2 support...");
 
 	nb_kernel_x86_64_sse_present = TRUE;
 	signal(SIGILL,nb_kernel_x86_64_sse_sigill_handler);

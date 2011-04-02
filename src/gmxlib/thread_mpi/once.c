@@ -35,11 +35,14 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-
+#ifdef HAVE_TMPI_CONFIG_H
+#include "tmpi_config.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -51,11 +54,7 @@ files.
 #include <stdarg.h>
 #include <string.h>
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "thread_mpi/collective.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
 /* once */
@@ -85,7 +84,7 @@ int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param,
     if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
                                          If it is a later number, we can't 
                                          have been the first to arrive here. */
-        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         function(param);
@@ -119,13 +118,14 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
 
     /* now do a compare-and-swap on the current_syncc */
     syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
+    tMPI_Atomic_memory_barrier_acq();
     if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
                                          If it is a later number, we can't 
                                          have been the first to arrive here. 
                                          Calculating the difference instead
                                          of comparing directly avoids ABA 
                                          problems. */
-        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         ret=function(param);
@@ -135,7 +135,7 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
         /* broadcast the output data */
         cev->coll.res=ret;
 
-        tMPI_Atomic_memory_barrier();
+        tMPI_Atomic_memory_barrier_rel();
         /* signal that we're done */
         tMPI_Atomic_fetch_add(&(cev->coll.current_sync), 1);
         /* we need to keep being in sync */
@@ -147,10 +147,11 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
         csync->syncs++;
         do
         {
-            tMPI_Atomic_memory_barrier();
+            /*tMPI_Atomic_memory_barrier();*/
             syncs=tMPI_Atomic_get( &(cev->coll.current_sync) );
         } while (csync->syncs - syncs > 0); /* difference again due to ABA 
                                                problems */
+        tMPI_Atomic_memory_barrier_acq();
         ret=cev->coll.res;
     }
     return ret;

@@ -55,44 +55,47 @@ files.
 
 
 /* the number of envelopes to allocate per thread-to-thread path */
-#define N_EV_ALLOC 8
+#define N_EV_ALLOC 16
 
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll
     allocate/deallocate arrays, so no problems will arise). */
-#define MAX_PREALLOC_THREADS 32
+#define MAX_PREALLOC_THREADS 64
 
-/* Whether to use lock&wait-free lists using compare-and-swap (cmpxchg on x86)
+/* Whether to use lock-free lists using compare-and-swap (cmpxchg on x86)
    pointer functions. Message passing using blocking Send/Recv, and multicasts 
    are is still blocking, of course. */
 #define TMPI_LOCK_FREE_LISTS
 
-/* Whether disable busy waiting, and use the OS-provided locks
-   for waits. Busy-waiting has the advantage of low latency and faster 
-   transmissions, while the OS-provided locks are friendlier on the 
-   scheduler and CPU usage. 
+/* Whether to disable yielding to the OS scheduler during waits. Disabling
+   this improves performance very slightly if Nthreads<=Ncores on an 
+   otherwise idle system because waits have slightly lower latencies, but
+   causes very poor performance if threads are competing for CPU time (for
+   example, when Nthreads>Ncores, or another process is running on the 
+   system.
 
    This option can be set with cmake. */
-/*#define TMPI_NO_BUSY_WAIT*/
+/*#define TMPI_WAIT_FOR_NO_ONE */ 
 
 
-/* whether to disable double-copying (where the sender copies data to an 
+
+/* whether to enable double-copying (where the sender copies data to an 
    intermediate buffer for small enough buffers, allowing it to return
    from a blocking send call early. The receiver is free to copy from the
    original buffer while the sender is copying, possibly allowing them to
    work in parallel). 
    
    This option can be set with cmake. */
-/*#define TMPI_NO_COPY_BUFFER*/
+/*#define TMPI_COPY_BUFFER*/
 
 
 /* The size (in bytes) of the maximum transmission size for which double 
    copying is allowed (i.e. the sender doesn't wait for the receiver to 
    become ready, but posts a copied buffer in its envelope).
 
-   A size of 1024 bytes was chosen after some testing with Gromacs. */
-#define COPY_BUFFER_SIZE 1024
-#ifndef TMPI_NO_COPY_BUFFER
+   A size of 8192 bytes was chosen after some testing with Gromacs. */
+#define COPY_BUFFER_SIZE 8192
+#ifdef TMPI_COPY_BUFFER
 /* We can separately specify whether we want copy buffers for send/recv or
    multicast communications: */
 #define USE_SEND_RECV_COPY_BUFFER
@@ -105,11 +108,17 @@ files.
    take place per comm object. If TMPI_NO_COPY_BUFFER is set, simultaneous
    collective communications don't happen and 2 is the right value.  */
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-#define N_COLL_ENV 8
+#define N_COLL_ENV 12
 #else
 #define N_COLL_ENV 2
 #endif
 
 
+/* Whether to do profiling of the number of MPI communication calls. A 
+    report with the total number of calls for each communication function
+    will be generated at MPI_Finalize(). 
+    
+    This option can be set with cmake.*/
+/*#define TMPI_PROFILE*/
 
 

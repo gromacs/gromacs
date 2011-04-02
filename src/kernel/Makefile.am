@@ -6,15 +6,23 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la 
 
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libgmxpreprocess@LIBSUFFIX@.pc
+
+EXTRA_DIST = libgmxpreprocess.pc.cmakein
+
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
+libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
+
+libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@ $(PTHREAD_LIBS)
 
 libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
 compute_io.c	compute_io.h	\
 convparm.c 	convparm.h	\
+fflibutil.c	fflibutil.h	\
 gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
@@ -23,7 +31,7 @@ gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
 hackblock.c		\
 hizzie.c	hizzie.h	\
-pdb2top.h	pdb2top.c	\
+pdb2top.c	\
 pgutil.c	pgutil.h	\
 readir.c	readir.h	\
 readpull.c	\
@@ -44,17 +52,17 @@ xlate.c		xlate.h
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
-	protonate	luck		gmxdump				\
-	gmxcheck	x2top
+	g_protonate	g_luck		gmxdump				\
+	gmxcheck	g_x2top
 
-x2top_SOURCES = x2top.c nm2type.c x2top.h
+g_x2top_SOURCES = g_x2top.c nm2type.c g_x2top.h
 
 mdrun_SOURCES = \
 	gctio.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
-	xutils.c	md.c		mdrun.c		\
-	genalg.c	genalg.h
+	xutils.c	runner.c	md.c		mdrun.c		\
+	genalg.c	genalg.h	md_openmm.h	md_openmm.c
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la

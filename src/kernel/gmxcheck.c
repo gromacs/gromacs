@@ -108,7 +108,7 @@ static void tpx2params(FILE *fp,t_inputrec *ir)
   fprintf(fp,"\\subsection{Simulation settings}\n");
   fprintf(fp,"A total of %g ns were simulated with a time step of %g fs.\n",
 	  ir->nsteps*ir->delta_t*0.001,1000*ir->delta_t);
-  fprintf(fp,"Neighborsearching was performed every %d steps.\n",ir->nstlist);
+  fprintf(fp,"Neighbor searching was performed every %d steps.\n",ir->nstlist);
   fprintf(fp,"The %s algorithm was used for electrostatic interactions.\n",
 	  EELTYPE(ir->coulombtype));
   fprintf(fp,"with a cut-off of %g nm.\n",ir->rcoulomb);  
@@ -244,10 +244,10 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
   t_count      count;
   t_fr_time    first,last;
   int          j=-1,new_natoms,natoms;
-  off_t        fpos;
+  gmx_off_t    fpos;
   real         rdum,tt,old_t1,old_t2,prec;
-  bool         bShowTimestep=TRUE,bOK,newline=FALSE;
-  int          status;
+  gmx_bool         bShowTimestep=TRUE,bOK,newline=FALSE;
+  t_trxstatus *status;
   gmx_mtop_t   mtop;
   gmx_localtop_t *top;
   t_state      state;
@@ -339,7 +339,7 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
     INC(fr,count,first,last,bF);
     INC(fr,count,first,last,bBox);
 #undef INC
-    fpos = gmx_fio_ftell(status);
+    fpos = gmx_fio_ftell(trx_get_fileio(status));
   } while (read_next_frame(oenv,status,&fr));
   
   fprintf(stderr,"\n");
@@ -371,7 +371,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
   rvec      dx;
   matrix    box;
   t_pbc     pbc;
-  bool      bV,bX,bB,bFirst,bOut;
+  gmx_bool      bV,bX,bB,bFirst,bOut;
   real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
   real      *atom_vdw;
   gmx_atomprop_t aps;
@@ -548,7 +548,7 @@ void chk_enx(const char *fn)
   ener_file_t in;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
-  bool       bShowTStep;
+  gmx_bool       bShowTStep;
   real       t0,old_t1,old_t2;
   char       buf[22];
   
@@ -594,7 +594,7 @@ void chk_enx(const char *fn)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+    "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
     "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
     "or an index file ([TT].ndx[tt])",
     "and prints out useful information about them.[PAR]",
@@ -605,13 +605,13 @@ int main(int argc,char *argv[])
     "radii) and atoms outside the box (these may occur often and are",
     "no problem). If velocities are present, an estimated temperature",
     "will be calculated from them.[PAR]",
-    "If an index file is given it's contents will be sumamrized.[PAR]",
-    "If both a trajectory and a tpr file are given (with [TT]-s1[tt])",
+    "If an index file, is given its contents will be summarized.[PAR]",
+    "If both a trajectory and a [TT].tpr[tt] file are given (with [TT]-s1[tt])",
     "the program will check whether the bond lengths defined in the tpr",
     "file are indeed correct in the trajectory. If not you may have",
     "non-matching files due to e.g. deshuffling or due to problems with",
-    "virtual sites. With these flags, gmxcheck provides a quick check for such problems.[PAR]"
-    "The program can compare run two input ([TT].tpr[tt], [TT].tpb[tt] or",
+    "virtual sites. With these flags, [TT]gmxcheck[tt] provides a quick check for such problems.[PAR]",
+    "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
     "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
@@ -619,7 +619,7 @@ int main(int argc,char *argv[])
     "For free energy simulations the A and B state topology from one",
     "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt].[PAR]",
     "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
-    "consisting a rough outline for a methods section for a paper."
+    "consisting of a rough outline for a methods section for a paper."
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },
@@ -639,10 +639,10 @@ int main(int argc,char *argv[])
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
-  static bool bRMSD=FALSE;
+  static gmx_bool bRMSD=FALSE;
   static real ftol=0.001;
   static real abstol=0.001;
-  static bool bCompAB=FALSE;
+  static gmx_bool bCompAB=FALSE;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},

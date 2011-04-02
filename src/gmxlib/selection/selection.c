@@ -44,11 +44,13 @@
 #include <statutil.h>
 #include <string2.h>
 #include <xvgr.h>
+#include <gmx_fatal.h>
 
 #include <poscalc.h>
 #include <selection.h>
 #include <selmethod.h>
 
+#include "mempool.h"
 #include "selcollection.h"
 #include "selelem.h"
 #include "symrec.h"
@@ -68,6 +70,10 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     snew(sc, 1);
     sc->rpost     = NULL;
     sc->spost     = NULL;
+    sc->bMaskOnly = FALSE;
+    sc->bVelocities = FALSE;
+    sc->bForces   = FALSE;
+    sc->bDebugCompile = FALSE;
     sc->root      = NULL;
     sc->nr        = 0;
     sc->sel       = NULL;
@@ -76,6 +82,7 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     sc->top       = NULL;
     gmx_ana_index_clear(&sc->gall);
     sc->pcc       = pcc;
+    sc->mempool   = NULL;
     _gmx_sel_symtab_create(&sc->symtab);
     *scp = sc;
     return 0;
@@ -106,6 +113,10 @@ gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc)
     }
     sfree(sc->varstrs);
     gmx_ana_index_deinit(&sc->gall);
+    if (sc->mempool)
+    {
+        _gmx_sel_mempool_destroy(sc->mempool);
+    }
     _gmx_selcollection_clear_symtab(sc);
     sfree(sc);
 }
@@ -151,13 +162,37 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type, bool bMaskOnly)
+                                     const char *type, gmx_bool bMaskOnly)
 {
     if (type)
     {
         sc->spost     = type;
     }
     sc->bMaskOnly = bMaskOnly;
+}
+
+/*!
+ * \param[in,out] sc        Selection collection to modify.
+ * \param[in]     bVelOut   If TRUE, selections will also evaluate
+ *      velocities.
+ */
+void
+gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
+                                    gmx_bool bVelOut)
+{
+    sc->bVelocities = bVelOut;
+}
+
+/*!
+ * \param[in,out] sc        Selection collection to modify.
+ * \param[in]     bForceOut If TRUE, selections will also evaluate
+ *      forces.
+ */
+void
+gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
+                                      gmx_bool bForceOut)
+{
+    sc->bForces = bForceOut;
 }
 
 /*!
@@ -242,7 +277,7 @@ gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
  * After gmx_ana_selcollection_parse_*(), the return value also takes into account the
  * selection keywords used.
  */
-bool
+gmx_bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
 {
     t_selelem   *sel;
@@ -288,7 +323,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
  *   are printed as well.
  */
 void
-gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues)
+gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues)
 {
     t_selelem *sel;
 
@@ -355,7 +390,7 @@ gmx_ana_selection_print_info(gmx_ana_selection_t *sel)
  * \returns   TRUE if the covered fraction can be calculated for the selection,
  *   FALSE otherwise.    
  */
-bool
+gmx_bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
 {
     sel->cfractype = type;
@@ -387,7 +422,7 @@ void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
 {
     int  i;
 
-    if (get_print_xvgr_codes(oenv) && sc)
+    if (output_env_get_xvg_format(oenv) != exvgNONE && sc)
     {
         fprintf(out, "# Selections:\n");
         for (i = 0; i < sc->nvars; ++i)

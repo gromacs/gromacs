@@ -96,7 +96,7 @@ static void done_gmx(t_x11 *x11,t_gmx *gmx)
 }
 
 static void move_gmx(t_x11 *x11,t_gmx *gmx,int width,int height,
-		     bool bSizePD)
+		     gmx_bool bSizePD)
 {
   int y0,wl,hl;
 #ifdef DEBUG
@@ -115,7 +115,7 @@ static void move_gmx(t_x11 *x11,t_gmx *gmx,int width,int height,
   XMoveWindow(x11->disp,gmx->logo->wd.self,(width-wl)/2,(height-y0-hl)/2);
 }
 
-static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
+static gmx_bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
 {
   t_pulldown *pd;
   
@@ -235,11 +235,11 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
   return FALSE;
 }
 
-static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
+static gmx_bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 {
   t_gmx *gmx;
   int   nsel,width,height;
-  bool  result;
+  gmx_bool  result;
 
   result = FALSE;
   gmx=(t_gmx *)data;
@@ -267,7 +267,7 @@ static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "ngmx is the Gromacs trajectory viewer. This program reads a",
+    "[TT]ngmx[tt] is the GROMACS trajectory viewer. This program reads a",
     "trajectory file, a run input file and an index file and plots a",
     "3D structure of your molecule on your standard X Window",
     "screen. No need for a high end graphics workstation, it even",
@@ -279,8 +279,8 @@ int main(int argc, char *argv[])
     "runs on MIT-X (real X), open windows and motif,",
     "user friendly menus, option to remove periodicity, option to",
     "show computational box.[PAR]",
-    "Some of the more common X command line options can be used:[BR]",
-    "-bg, -fg change colors, -font fontname, changes the font."
+    "Some of the more common X command line options can be used: ",
+    "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
   };
   const char *bugs[] = {
     "Balls option does not work",
@@ -358,7 +358,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
   int                  ePBC;
   matrix               box;
   t_trxframe           fr;
-  int                  status;
+  t_trxstatus          *status;
   char                 quote[256];
   
   snew(gmx,1);
@@ -399,7 +399,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
   /* The order of creating windows is important here! */
   /* Manager */
   gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,ePBC,box,oenv);
-  gmx->logo = init_logo(x11,gmx->wd->self);
+  gmx->logo = init_logo(x11,gmx->wd->self,FALSE);
 
   /* Now put all windows in the proper place */
   move_gmx(x11,gmx,w0,h0,FALSE);

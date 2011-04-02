@@ -96,7 +96,7 @@ static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
 int gmx_polystat(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_polystat plots static properties of polymers as a function of time",
+    "[TT]g_polystat[tt] plots static properties of polymers as a function of time",
     "and prints the average.[PAR]",
     "By default it determines the average end-to-end distance and radii",
     "of gyration of polymers. It asks for an index group and split this",
@@ -109,10 +109,10 @@ int gmx_polystat(int argc,char *argv[])
     "gyration tensors are written.",
     "With option [TT]-i[tt] the mean square internal distances are",
     "written.[PAR]",
-    "With option [TT]-p[tt] the presistence length is determined.",
+    "With option [TT]-p[tt] the persistence length is determined.",
     "The chosen index group should consist of atoms that are",
     "consecutively bonded in the polymer mainchains.",
-    "The presistence length is then determined from the cosine of",
+    "The persistence length is then determined from the cosine of",
     "the angles between bonds with an index difference that is even,",
     "the odd pairs are not used, because straight polymer backbones",
     "are usually all trans and therefore only every second bond aligns.",
@@ -120,7 +120,7 @@ int gmx_polystat(int argc,char *argv[])
     "the average cos reaches a value of 1/e. This point is determined",
     "by a linear interpolation of log(<cos>)."
   };
-  static bool bMW = TRUE, bPC = FALSE;
+  static gmx_bool bMW = TRUE, bPC = FALSE;
   t_pargs pa[] = {
     { "-mw", FALSE, etBOOL, {&bMW},
       "Use the mass weighting for radii of gyration" },
@@ -144,7 +144,7 @@ int gmx_polystat(int argc,char *argv[])
   int    ePBC;
   int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
-  int    status;
+  t_trxstatus *status;
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;
@@ -158,10 +158,11 @@ int gmx_polystat(int argc,char *argv[])
   double mmol,m;
   char   title[STRLEN];
   FILE   *out,*outv,*outp, *outi;
-  char *leg[8] = { "end to end", "<R\\sg\\N>",
+  const char *leg[8] = { "end to end", "<R\\sg\\N>",
 	 	         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
   char   **legp,buf[STRLEN];
+  gmx_rmpbc_t  gpbc=NULL;
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
@@ -199,13 +200,13 @@ int gmx_polystat(int argc,char *argv[])
 	  nat_min,nat_max);
 
   sprintf(title,"Size of %d polymers",nmol);
-  out = xvgropen(opt2fn("-o",NFILE,fnm),title,get_xvgr_tlabel(oenv),"(nm)",
+  out = xvgropen(opt2fn("-o",NFILE,fnm),title,output_env_get_xvgr_tlabel(oenv),"(nm)",
                 oenv);
   xvgr_legend(out,bPC ? 8 : 5,leg,oenv);
 
   if (opt2bSet("-v",NFILE,fnm)) {
     outv = xvgropen(opt2fn("-v",NFILE,fnm),"Principal components",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
     snew(legp,DIM*DIM);
     for(d=0; d<DIM; d++) {
       for(d2=0; d2<DIM; d2++) {
@@ -213,14 +214,14 @@ int gmx_polystat(int argc,char *argv[])
 	legp[d*DIM+d2] = strdup(buf);
       }
     }
-    xvgr_legend(outv,DIM*DIM,legp,oenv);
+    xvgr_legend(outv,DIM*DIM,(const char**)legp,oenv);
   } else {
     outv = NULL;
   }
 
   if (opt2bSet("-p",NFILE,fnm)) {
     outp = xvgropen(opt2fn("-p",NFILE,fnm),"Persistence length",
-		    get_xvgr_tlabel(oenv),"bonds",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"bonds",oenv);
     snew(bond,nat_max-1);
     snew(sum_inp,nat_min/2);
     snew(ninp,nat_min/2);
@@ -253,8 +254,11 @@ int gmx_polystat(int argc,char *argv[])
   sum_eed2_tot = 0;
   sum_gyro_tot = 0;
   sum_pers_tot = 0;
+  
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  
   do {
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
     
     sum_eed2 = 0;
     for(d=0; d<DIM; d++)
@@ -338,7 +342,7 @@ int gmx_polystat(int argc,char *argv[])
     gyro_eigen(gyr_all,eig,eigv,ord);
 
     fprintf(out,"%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
-	    t*get_time_factor(oenv),
+	    t*output_env_get_time_factor(oenv),
 	    sqrt(sum_eed2),sqrt(sum_gyro),
 	    sqrt(eig[ord[0]]),sqrt(eig[ord[1]]),sqrt(eig[ord[2]]));
     if (bPC) {
@@ -348,7 +352,7 @@ int gmx_polystat(int argc,char *argv[])
     fprintf(out,"\n");
 
     if (outv) {
-      fprintf(outv,"%10.3f",t*get_time_factor(oenv));
+      fprintf(outv,"%10.3f",t*output_env_get_time_factor(oenv));
       for(d=0; d<DIM; d++) {
 	for(d2=0; d2<DIM; d2++)
 	  fprintf(outv," %6.3f",eigv[ord[d]][d2]);
@@ -373,12 +377,14 @@ int gmx_polystat(int argc,char *argv[])
 	pers = i - 2
 	  + 2*(log(sum_inp[i-2]) + 1)/(log(sum_inp[i-2]) - log(sum_inp[i]));
       }
-      fprintf(outp,"%10.3f %8.4f\n",t*get_time_factor(oenv),pers);
+      fprintf(outp,"%10.3f %8.4f\n",t*output_env_get_time_factor(oenv),pers);
       sum_pers_tot += pers;
     }
 
     frame++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
+  
+  gmx_rmpbc_done(gpbc);
 
   close_trx(status);
 

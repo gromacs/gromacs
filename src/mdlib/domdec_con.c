@@ -44,7 +44,7 @@ typedef struct gmx_domdec_specat_comm {
     int  nreq[DIM][2][2];
     /* The atoms to send */
     gmx_specatsend_t spas[DIM][2];
-    bool *bSendAtom;
+    gmx_bool *bSendAtom;
     int   bSendAtom_nalloc;
     /* Send buffers */
     int  *ibuf;
@@ -82,7 +82,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     int  n,n0,n1,d,dim,dir,i;
     ivec vis;
     int  is;
-    bool bPBC,bScrew;
+    gmx_bool bPBC,bScrew;
     
     n = spac->at_end;
     for(d=dd->ndim-1; d>=0; d--)
@@ -208,7 +208,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     gmx_specatsend_t *spas;
     rvec *x,*vbuf,*rbuf;
     int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dim,dir,i;
-    bool bPBC,bScrew=FALSE;
+    gmx_bool bPBC,bScrew=FALSE;
     rvec shift={0,0,0};
     
     nvec = 1;
@@ -454,7 +454,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
     int  nsend[2],nlast,nsend_zero[2]={0,0},*nsend_ptr;
     int  d,dim,ndir,dir,nr,ns,i,nrecv_local,n0,start,ireq,ind,buf[2];
     int  nat_tot_specat,nat_tot_prev,nalloc_old;
-    bool bPBC,bFirst;
+    gmx_bool bPBC,bFirst;
     gmx_specatsend_t *spas;
     
     if (debug)
@@ -474,7 +474,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         /* Pulse the grid forward and backward */
         dim = dd->dim[d];
         bPBC = (dim < dd->npbcdim);
-        if (bPBC && dd->nc[dim] == 2)
+        if (dd->nc[dim] == 2)
         {
             /* Only 2 cells, so we only need to communicate once */
             ndir = 1;
@@ -485,8 +485,10 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         }
         for(dir=0; dir<ndir; dir++)
         {
-            if (!bPBC && ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
-                          (dir == 1 && dd->ci[dim] == 0)))
+            if (!bPBC && 
+                dd->nc[dim] > 2 &&
+                ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
+                 (dir == 1 && dd->ci[dim] == 0)))
             {
                 /* No pbc: the fist/last cell should not request atoms */
                 nsend_ptr = nsend_zero;
@@ -560,7 +562,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                 ireq = spac->ind_req[start+i];
                 ind = -1;
                 /* Check if this is a home atom and if so ind will be set */
-                if (!ga2la_home(dd->ga2la,ireq,&ind))
+                if (!ga2la_get_home(dd->ga2la,ireq,&ind))
                 {
                     /* Search in the communicated atoms */
                     ind = ga2la_specat[ireq];
@@ -709,7 +711,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 static void walk_out(int con,int con_offset,int a,int offset,int nrec,
                      int ncon1,const t_iatom *ia1,const t_iatom *ia2,
                      const t_blocka *at2con,
-                     const gmx_ga2la_t ga2la,bool bHomeConnect,
+                     const gmx_ga2la_t ga2la,gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local)
@@ -739,7 +741,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
         a1_gl = offset + iap[1];
         a2_gl = offset + iap[2];
         /* The following indexing code can probably be optizimed */
-        if (ga2la_home(ga2la,a1_gl,&a_loc))
+        if (ga2la_get_home(ga2la,a1_gl,&a_loc))
         {
             il_local->iatoms[il_local->nr++] = a_loc;
         }
@@ -748,7 +750,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
             /* We set this index later */
             il_local->iatoms[il_local->nr++] = -a1_gl - 1;
         }
-        if (ga2la_home(ga2la,a2_gl,&a_loc))
+        if (ga2la_get_home(ga2la,a2_gl,&a_loc))
         {
             il_local->iatoms[il_local->nr++] = a_loc;
         }
@@ -790,7 +792,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
                 {
                     b = iap[1];
                 }
-                if (!ga2la_home(ga2la,offset+b,&a_loc))
+                if (!ga2la_get_home(ga2la,offset+b,&a_loc))
                 {
                     walk_out(coni,con_offset,b,offset,nrec-1,
                              ncon1,ia1,ia2,at2con,
@@ -862,7 +864,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                 {
                     b_mol = iap[1];
                 }
-                if (ga2la_home(ga2la,offset+b_mol,&a_loc))
+                if (ga2la_get_home(ga2la,offset+b_mol,&a_loc))
                 {
                     /* Add this fully home constraint at the first atom */
                     if (a_mol < b_mol)

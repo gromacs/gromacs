@@ -94,20 +94,20 @@ int gmx_rms(int argc, char *argv[])
     const char
         *desc[] =
             {
-                "g_rms compares two structures by computing the root mean square",
-                "deviation (RMSD), the size-independent 'rho' similarity parameter",
-                "(rho) or the scaled rho (rhosc), ",
-                "see Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).",
+                "[TT]g_rms[tt] compares two structures by computing the root mean square",
+                "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
+                "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
+                "see Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).",
                 "This is selected by [TT]-what[tt].[PAR]"
 
-                    "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
+                "Each structure from a trajectory ([TT]-f[tt]) is compared to a",
                 "reference structure. The reference structure",
                 "is taken from the structure file ([TT]-s[tt]).[PAR]",
 
                 "With option [TT]-mir[tt] also a comparison with the mirror image of",
                 "the reference structure is calculated.",
                 "This is useful as a reference for 'significant' values, see",
-                "Maiorov & Crippen, PROTEINS [BB]22[bb], 273 (1995).[PAR]",
+                "Maiorov & Crippen, Proteins [BB]22[bb], 273 (1995).[PAR]",
 
                 "Option [TT]-prev[tt] produces the comparison with a previous frame",
                 "the specified number of frames ago.[PAR]",
@@ -123,10 +123,10 @@ int gmx_rms(int argc, char *argv[])
 
                 "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
                 "If you select the option (default) and ",
-                "supply a valid tpr file masses will be taken from there, ",
-                "otherwise the masses will be deduced from the atommass.dat file in",
-                "the GROMACS library directory. This is fine for proteins but not",
-                "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",
+                "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
+                "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
+                "[TT]GMXLIB[tt]. This is fine for proteins, but not",
+                "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
                 "is assigned to unknown atoms. You can check whether this happend by",
                 "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
 
@@ -139,8 +139,8 @@ int gmx_rms(int argc, char *argv[])
                 "Option [TT]-bm[tt] produces a matrix of average bond angle deviations",
                 "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
                 "comparison group are considered." };
-    static bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
-    static bool bDeltaLog = FALSE;
+    static gmx_bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
+    static gmx_bool bDeltaLog = FALSE;
     static int prev = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
     static real rmsd_user_max = -1, rmsd_user_min = -1, bond_user_max = -1,
         bond_user_min = -1, delta_maxy = 0.0;
@@ -171,7 +171,7 @@ int gmx_rms(int argc, char *argv[])
     const char *fitgraphlabel[efNR + 1] =
         { NULL, "lsq fit", "translational fit", "no fit" };
     static int nrms = 1;
-    static bool bMassWeighted = TRUE;
+    static gmx_bool bMassWeighted = TRUE;
     t_pargs pa[] =
         {
             { "-what", FALSE, etENUM,
@@ -212,13 +212,13 @@ int gmx_rms(int argc, char *argv[])
             { "-aver", FALSE, etINT,
                 { &avl },
                 "HIDDENAverage over this distance in the RMSD matrix" } };
-    int natoms, natoms2;
+    int natoms_trx, natoms_trx2, natoms;
     int i, j, k, m, teller, teller2, tel_mat, tel_mat2;
 #define NFRAME 5000
     int maxframe = NFRAME, maxframe2 = NFRAME;
     real t, *w_rls, *w_rms, *w_rls_m = NULL, *w_rms_m = NULL;
-    bool bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
-    bool bFit, bReset;
+    gmx_bool bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
+    gmx_bool bFit, bReset;
     t_topology top;
     int ePBC;
     t_iatom *iatom = NULL;
@@ -226,7 +226,7 @@ int gmx_rms(int argc, char *argv[])
     matrix box;
     rvec *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
         vec2;
-    int status;
+    t_trxstatus *status;
     char buf[256], buf2[256];
     int ncons = 0;
     FILE *fp;
@@ -237,7 +237,7 @@ int gmx_rms(int argc, char *argv[])
     real **delta = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
         *delta_tot;
     int delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    bool bA1, bA2, bPrev, bTop, *bInMat = NULL;
+    gmx_bool bA1, bA2, bPrev, bTop, *bInMat = NULL;
     int ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
     atom_id *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
@@ -245,6 +245,8 @@ int gmx_rms(int argc, char *argv[])
     char *gn_fit, **gn_rms;
     t_rgb rlo, rhi;
     output_env_t oenv;
+    gmx_rmpbc_t  gpbc=NULL;
+
     t_filenm fnm[] =
         {
             { efTPS, NULL, NULL, ffREAD },
@@ -429,8 +431,10 @@ int gmx_rms(int argc, char *argv[])
         }
     }
     /* Prepare reference frame */
-    if (bPBC)
-        rm_pbc(&(top.idef),ePBC,top.atoms.nr,box,xp,xp);
+    if (bPBC) {
+      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,box);
+      gmx_rmpbc(gpbc,top.atoms.nr,box,xp);
+    }
     if (bReset)
         reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
     if (bMirror) {
@@ -445,11 +449,12 @@ int gmx_rms(int argc, char *argv[])
         norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
 
     /* read first frame */
-    natoms=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
-    if (natoms != top.atoms.nr) 
+    natoms_trx=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
+    if (natoms_trx != top.atoms.nr) 
         fprintf(stderr,
                 "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
-                top.atoms.nr,natoms);
+                top.atoms.nr,natoms_trx);
+    natoms = min(top.atoms.nr,natoms_trx);
     if (bMat || bBond || bPrev) {
         snew(mat_x,NFRAME);
 
@@ -529,7 +534,7 @@ int gmx_rms(int argc, char *argv[])
     teller = 0;
     do {
         if (bPBC) 
-            rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	  gmx_rmpbc(gpbc,natoms,box,x);
 
         if (bReset)
             reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -582,7 +587,7 @@ int gmx_rms(int argc, char *argv[])
                 rlsm[j][teller] = 
                     calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xm);
         }
-        time[teller]=conv_time(oenv,t);
+        time[teller]=output_env_conv_time(oenv,t);
 
         teller++;
         if (teller >= maxframe) {
@@ -594,7 +599,7 @@ int gmx_rms(int argc, char *argv[])
                 for(j=0; (j<nrms); j++) 
                     srenew(rlsm[j],maxframe);
         }
-    } while (read_next_x(oenv,status,&t,natoms,x,box));
+    } while (read_next_x(oenv,status,&t,natoms_trx,x,box));
     close_trj(status);
 
     if (bFile2) {
@@ -602,16 +607,17 @@ int gmx_rms(int argc, char *argv[])
 
         fprintf(stderr,"\nWill read second trajectory file\n");
         snew(mat_x2,NFRAME);
-        natoms2=read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
-        if ( natoms2 != natoms )
+        natoms_trx2 =
+	  read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
+        if ( natoms_trx2 != natoms_trx )
             gmx_fatal(FARGS,
                       "Second trajectory (%d atoms) does not match the first one"
-                      " (%d atoms)", natoms2, natoms);
+                      " (%d atoms)", natoms_trx2, natoms_trx);
         tel_mat2 = 0;
         teller2 = 0;
         do {
             if (bPBC) 
-                rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
+	      gmx_rmpbc(gpbc,natoms,box,x);
 
             if (bReset)
                 reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -634,14 +640,14 @@ int gmx_rms(int argc, char *argv[])
                 tel_mat2++;
             }
 
-            time2[teller2]=conv_time(oenv,t);
+            time2[teller2]=output_env_conv_time(oenv,t);
 
             teller2++;
             if (teller2 >= maxframe2) {
                 maxframe2 +=NFRAME;
                 srenew(time2,maxframe2);
             }
-        } while (read_next_x(oenv,status,&t,natoms,x,box));
+        } while (read_next_x(oenv,status,&t,natoms_trx2,x,box));
         close_trj(status);
     } else {
         mat_x2=mat_x;
@@ -649,6 +655,7 @@ int gmx_rms(int argc, char *argv[])
         tel_mat2=tel_mat;
         freq2=freq;
     }
+    gmx_rmpbc_done(gpbc);
 
     if (bMat || bBond) {
         /* calculate RMS matrix */
@@ -780,7 +787,7 @@ int gmx_rms(int argc, char *argv[])
                         rmsd_min,rmsd_max);
             sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
             write_xpm(opt2FILE("-m",NFILE,fnm,"w"),0,buf,whatlabel[ewhat],
-                      get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                      output_env_get_time_label(oenv),output_env_get_time_label(oenv),tel_mat,tel_mat2,
                       axis,axis2, rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
             /* Print the distribution of RMSD values */
             if (opt2bSet("-dist",NFILE,fnm)) 
@@ -821,7 +828,7 @@ int gmx_rms(int argc, char *argv[])
                     del_yaxis[i]=delta_maxy*i/del_lev;
                 sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
                 fp = ffopen("delta.xpm","w");
-                write_xpm(fp,0,buf,"density",get_time_label(oenv),whatlabel[ewhat],
+                write_xpm(fp,0,buf,"density",output_env_get_time_label(oenv),whatlabel[ewhat],
                           delta_xsize,del_lev+1,del_xaxis,del_yaxis,
                           delta,0.0,delta_max,rlo,rhi,&nlevels);
                 ffclose(fp);
@@ -848,7 +855,7 @@ int gmx_rms(int argc, char *argv[])
             rhi.r = 0; rhi.g = 0; rhi.b = 0;
             sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
             write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),0,buf,"degrees",
-                      get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                      output_env_get_time_label(oenv),output_env_get_time_label(oenv),tel_mat,tel_mat2,
                       axis,axis2, bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
         }
     }
@@ -860,18 +867,18 @@ int gmx_rms(int argc, char *argv[])
         sprintf(buf,"%s",whatxvgname[ewhat]);
     else
         sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
-                time[prev*freq]-time[0], get_time_label(oenv));
-    fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,get_xvgr_tlabel(oenv),
+                time[prev*freq]-time[0], output_env_get_time_label(oenv));
+    fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,output_env_get_xvgr_tlabel(oenv),
                 whatxvglabel[ewhat], oenv);
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
                 (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
                     bFit     ?" to ":""   , bFit?gn_fit:"");
     if (nrms != 1)
-        xvgr_legend(fp,nrms,gn_rms,oenv);
+        xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
     for(i=0; (i<teller); i++) {
         if ( bSplit && i>0 && 
-            abs(time[bPrev ? freq*i : i]/get_time_factor(oenv))<1e-5 ) 
+            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv))<1e-5 ) 
         {
             fprintf(fp,"&\n");
         }
@@ -889,17 +896,17 @@ int gmx_rms(int argc, char *argv[])
         /* Write the mirror RMSD's to file */
         sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
         sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
-        fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, get_xvgr_tlabel(oenv), 
+        fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, output_env_get_xvgr_tlabel(oenv), 
                     buf2,oenv);
         if (nrms == 1) {
-            if (get_print_xvgr_codes(oenv))
+            if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
                         gn_rms[0],gn_fit);
         }
         else {
-            if (get_print_xvgr_codes(oenv))
+            if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
-            xvgr_legend(fp,nrms,gn_rms,oenv);
+            xvgr_legend(fp,nrms,(const char**)gn_rms,oenv);
         }
         for(i=0; (i<teller); i++) {
             if ( bSplit && i>0 && abs(time[i])<1e-5 ) 

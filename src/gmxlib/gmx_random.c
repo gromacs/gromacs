@@ -1,3 +1,37 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 4.5
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2008, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * Groningen Machine for Chemical Simulation
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -36,7 +70,7 @@
 
 
 struct gmx_rng {
-  unsigned int  mt[624];  
+  unsigned int  mt[RNG_N];
   int           mti;
   int           has_saved;  
   double        gauss_saved;
@@ -173,67 +207,69 @@ gmx_rng_make_seed(void)
 }
 
 
-/* The random number state contains 624 entries that are returned one by
+/* The random number state contains RNG_N entries that are returned one by
  * one as random numbers. When we run out of them, this routine is called to
- * regenerate 624 new entries.
+ * regenerate RNG_N new entries.
  */
 static void
 gmx_rng_update(gmx_rng_t rng)
 {
-  unsigned int lastx,x1,x2,y,*mt;
-  int mti,k;
-  const unsigned int mag01[2]={0x0UL, RNG_MATRIX_A};
+    unsigned int lastx,x1,x2,y,*mt;
+    int mti,k;
+    const unsigned int mag01[2] = {0x0UL, RNG_MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     /* update random numbers */
-  mt=rng->mt;   /* pointer to array - avoid repeated dereferencing */
-  mti=rng->mti;
-  
-  x1=mt[0];
-  for (k=0;k<RNG_N-RNG_M-3;k+=4) {
-    x2=mt[k+1];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+2];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+3];
-    y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+2]= mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+4];
-    y= (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x1=mt[k+1];
-  y=(x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  x2=mt[k+1];
-  y=(x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-  mt[k]= mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  k++;
-  for (;k<RNG_N-1;k+=4) {
-    x1=mt[k+1];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k] = mt[k+(RNG_M-RNG_N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+2];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x1=mt[k+3];
-    y = (x2&RNG_UPPER_MASK)|(x1&RNG_LOWER_MASK);
-    mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
-    x2=mt[k+4];
-    y = (x1&RNG_UPPER_MASK)|(x2&RNG_LOWER_MASK);
-    mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  }
-  y = (x2&RNG_UPPER_MASK)|(mt[0]&RNG_LOWER_MASK);
-  mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
-  
-  rng->mti = 0;
+    mt = rng->mt;   /* pointer to array - avoid repeated dereferencing */
+    mti = rng->mti;
+
+    x1        = mt[0];
+    for (k = 0; k < RNG_N-RNG_M-3; k += 4)
+    {
+        x2      = mt[k+1];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+RNG_M]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+2];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+RNG_M+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+3];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+RNG_M+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+4];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+RNG_M+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x1        = mt[k+1];
+    y         = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    x2        = mt[k+1];
+    y         = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+    mt[k]     = mt[k+RNG_M] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    k++;
+    for (; k < RNG_N-1; k += 4)
+    {
+        x1      = mt[k+1];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k]   = mt[k+(RNG_M-RNG_N)]   ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+2];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+1] = mt[k+(RNG_M-RNG_N)+1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x1      = mt[k+3];
+        y       = (x2 & RNG_UPPER_MASK) | (x1 & RNG_LOWER_MASK);
+        mt[k+2] = mt[k+(RNG_M-RNG_N)+2] ^ (y >> 1) ^ mag01[y & 0x1UL];
+        x2      = mt[k+4];
+        y       = (x1 & RNG_UPPER_MASK) | (x2 & RNG_LOWER_MASK);
+        mt[k+3] = mt[k+(RNG_M-RNG_N)+3] ^ (y >> 1) ^ mag01[y & 0x1UL];
+    }
+    y = (x2 & RNG_UPPER_MASK) | (mt[0] & RNG_LOWER_MASK);
+    mt[RNG_N-1] = mt[RNG_M-1] ^ (y >> 1) ^ mag01[y & 0x1UL];
+
+    rng->mti = 0;
 }
 
 
@@ -272,7 +308,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng)
 {
   unsigned int y;
   
-  if(rng->mti==624) 
+  if(rng->mti==RNG_N)
     gmx_rng_update(rng);
   y=rng->mt[rng->mti++];
   

@@ -58,29 +58,29 @@
 int gmx_helixorient(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_helixorient calculates coordinates and direction of the average",
+    "[TT]g_helixorient[tt] calculates the coordinates and direction of the average",
     "axis inside an alpha helix, and the direction/vectors of both the",
-    "alpha carbon and (optionally) a sidechain atom relative to the axis.[PAR]",
-    "As input, you need to specify an index group with alpha carbon atoms",
-    "corresponding to an alpha helix of continuous residues. Sidechain",
+    "C[GRK]alpha[grk] and (optionally) a sidechain atom relative to the axis.[PAR]",
+    "As input, you need to specify an index group with C[GRK]alpha[grk] atoms",
+    "corresponding to an [GRK]alpha[grk]-helix of continuous residues. Sidechain",
     "directions require a second index group of the same size, containing",
-    "the heavy atom in each residue that should represent the sidechain.[PAR]"
-    "Note that this program does not do any fitting of structures.[PAR]",
-    "We need four Calpha coordinates to define the local direction of the helix",
-    "axis.[PAR]"
+    "the heavy atom in each residue that should represent the sidechain.[PAR]",
+    "[BB]Note[bb] that this program does not do any fitting of structures.[PAR]",
+    "We need four C[GRK]alpha[grk] coordinates to define the local direction of the helix",
+    "axis.[PAR]",
     "The tilt/rotation is calculated from Euler rotations, where we define",
-    "the helix axis as the local X axis, the residues/CA-vector as Y, and the",
-    "Z axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
+    "the helix axis as the local [IT]x[it]-axis, the residues/C[GRK]alpha[grk] vector as [IT]y[it], and the",
+    "[IT]z[it]-axis from their cross product. We use the Euler Y-Z-X rotation, meaning",
     "we first tilt the helix axis (1) around and (2) orthogonal to the residues",
     "vector, and finally apply the (3) rotation around it. For debugging or other",
-    "purposes, we also write out the actual Euler rotation angles as theta1-3.xvg"
+    "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
   
     t_topology *top=NULL;
     real t;
     rvec *x=NULL,dx;
     matrix box;
-    int status;
+    t_trxstatus *status;
     int natoms;
     real theta1,theta2,theta3;
 
@@ -135,9 +135,10 @@ int gmx_helixorient(int argc,char *argv[])
     int ePBC;
 
     output_env_t oenv;
+    gmx_rmpbc_t  gpbc=NULL;
 
-    static  bool bSC=FALSE;
-    static bool bIncremental = FALSE;
+    static  gmx_bool bSC=FALSE;
+    static gmx_bool bIncremental = FALSE;
     
     static t_pargs pa[] = {
         { "-sidechain",      FALSE, etBOOL, {&bSC},
@@ -249,12 +250,14 @@ int gmx_helixorient(int argc,char *argv[])
     unitaxes[1][1]=1;
     unitaxes[2][2]=1;
 
+    gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+
   do 
   {
       /* initialisation for correct distance calculations */
     set_pbc(&pbc,ePBC,box);
       /* make molecules whole again */
-    rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+    gmx_rmpbc(gpbc,natoms,box,x);
       
       /* copy coords to our smaller arrays */
       for(i=0;i<iCA;i++)
@@ -499,7 +502,9 @@ int gmx_helixorient(int argc,char *argv[])
       
       teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-    
+        
+    gmx_rmpbc_done(gpbc);
+
     ffclose(fpaxis);
     ffclose(fpcenter);
     ffclose(fptilt);

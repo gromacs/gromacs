@@ -46,6 +46,12 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <time.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -57,6 +63,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
+#include "futil.h"
 
 int continuing(char *s)
 /* strip trailing spaces and if s ends with a CONTINUE remove that too.
@@ -75,6 +82,8 @@ int continuing(char *s)
     return FALSE;
 }
 
+
+
 char *fgets2(char *line, int n, FILE *stream)
 /* This routine reads a string from stream of max length n
  * and zero terminated, without newlines
@@ -82,9 +91,24 @@ char *fgets2(char *line, int n, FILE *stream)
  */
 {
   char *c;
-  if (fgets(line,n,stream)==NULL) return NULL;
-  if ((c=strchr(line,'\n'))!=NULL) *c=0;
-  if ((c=strchr(line,'\r'))!=NULL) *c=0;
+  if (fgets(line,n,stream) == NULL) {
+    return NULL;
+  }
+  if ((c=strchr(line,'\n')) != NULL) {
+    *c = '\0';
+  } else {
+    /* A line not ending in a newline can only occur at the end of a file,
+     * or because of n being too small.
+     * Since both cases occur very infrequently, we can check for EOF.
+     */
+    if (!gmx_eof(stream)) {
+      gmx_fatal(FARGS,"An input file contains a line longer than %d characters, while the buffer passed to fgets2 has size %d. The line starts with: '%20.20s'",n,n,line);
+    }
+  }
+  if ((c=strchr(line,'\r')) != NULL) {
+    *c = '\0';
+  }
+
   return line;
 }
 
@@ -111,25 +135,27 @@ void upstring (char *str)
 void ltrim (char *str)
 {
   char *tr;
-  int c;
+  int i,c;
 
-  if (!str)
+  if (NULL == str)
     return;
 
-  tr = strdup (str);
-  c  = 0;
-  while ((tr[c] == ' ') || (tr[c] == '\t'))
+  c = 0;
+  while (('\0' != str[c]) && isspace(str[c]))
     c++;
-
-  strcpy (str,tr+c);
-  free (tr);
+  if (c > 0) 
+    {
+      for(i=c; ('\0' != str[i]); i++)
+	str[i-c] = str[i];
+      str[i-c] = '\0';
+    }
 }
 
 void rtrim (char *str)
 {
   int nul;
 
-  if (!str)
+  if (NULL == str)
     return;
 
   nul = strlen(str)-1;
@@ -145,6 +171,23 @@ void trim (char *str)
   rtrim (str);
 }
 
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n)
+{
+    char tmpbuf[STRLEN];
+  
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    /* Windows */
+    ctime_s( tmpbuf, STRLEN, clock );
+#else
+    ctime_r(clock,tmpbuf);
+#endif
+    strncpy(buf,tmpbuf,n-1);
+    buf[n-1]='\0';
+    
+    return buf;
+}
+          
 void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
@@ -153,12 +196,13 @@ void nice_header (FILE *out,const char *fn)
   int    gh;
   uid_t  uid;
   char   buf[256];
+  char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
   struct passwd *pw;
 #endif
 
   /* Print a nice header above the file */
-  clock = time (0);
+  time(&clock);
   fprintf (out,"%c\n",COMMENTSIGN);
   fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
   
@@ -172,15 +216,16 @@ void nice_header (FILE *out,const char *fn)
   gh  = -1;
 #endif
   
+  gmx_ctime_r(&clock,timebuf,STRLEN);
   fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
 	   user ? user : unk,(int) uid);
   fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN,(gh == 0) ? buf : unk);
 
-  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,ctime(&clock));
+  fprintf (out,"%c\tAt date: %s",COMMENTSIGN,timebuf);
   fprintf (out,"%c\n",COMMENTSIGN);
 }
 
-int strcasecmp_min(const char *str1, const char *str2)
+int gmx_strcasecmp_min(const char *str1, const char *str2)
 {
   char ch1,ch2;
   
@@ -198,7 +243,7 @@ int strcasecmp_min(const char *str1, const char *str2)
   return 0; 
 }
 
-int strncasecmp_min(const char *str1, const char *str2, int n)
+int gmx_strncasecmp_min(const char *str1, const char *str2, int n)
 {
   char ch1,ch2;
   char *stri1, *stri2;
@@ -348,14 +393,15 @@ gmx_wcmatch(const char *pattern, const char *str)
         }
         ++pattern;
     }
-    return 0;
+    /* When the pattern runs out, we have a match if the string has ended. */
+    return (*str == 0) ? 0 : GMX_NO_WCMATCH;
 }
 
-char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
+char *wrap_lines(const char *buf,int line_width, int indent,gmx_bool bIndentFirst)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;
-  bool bFirst,bFitsOnLine;
+  gmx_bool bFirst,bFitsOnLine;
 
   /* characters are copied from buf to b2 with possible spaces changed
    * into newlines and extra space added for indentation.

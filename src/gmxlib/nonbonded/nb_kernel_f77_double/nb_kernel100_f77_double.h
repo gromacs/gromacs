@@ -27,10 +27,10 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifndef _NBKERNEL100_F77S_H_
-#define _NBKERNEL100_F77S_H_
+#ifndef _NBKERNEL100_F77D_H_
+#define _NBKERNEL100_F77D_H_
 
-/*! \file  nbkernel100.h
+/*! \file  nb_kernel100_f77_double.h
  *  \brief Nonbonded kernel 100 (Coul)
  *
  *  \internal
@@ -54,10 +54,10 @@ extern "C" {
  *  <b>Forces calculated:</b> Yes <br>
  *
  *  \note All level1 and level2 nonbonded kernels use the same
- *        call sequence. Parameters are documented in nbkernel.h
+ *        call sequence. Parameters are documented in nb_kernel_f77_double.h
  */
 void
-F77_FUNC(nbkernel100f77s,NBKERNEL100F77S)
+nb_kernel100_f77_double
                 (int *         nri,        int           iinr[],     
                  int           jindex[],   int           jjnr[],   
                  int           shift[],    real          shiftvec[],
@@ -84,10 +84,10 @@ F77_FUNC(nbkernel100f77s,NBKERNEL100F77S)
  *  <b>Forces calculated:</b> No <br>
  *
  *  \note All level1 and level2 nonbonded kernels use the same
- *        call sequence. Parameters are documented in nbkernel.h
+ *        call sequence. Parameters are documented in nb_kernel_f77_double.h
  */
 void
-F77_FUNC(nbkernel100nff77s,NBKERNEL100NFF77S)
+nb_kernel100nf_f77_double
                 (int *         nri,        int           iinr[],     
                  int           jindex[],   int           jjnr[],   
                  int           shift[],    real          shiftvec[],
@@ -110,4 +110,4 @@ F77_FUNC(nbkernel100nff77s,NBKERNEL100NFF77S)
 }
 #endif
 
-#endif /* _NBKERNEL100_F77S_H_ */
+#endif /* _NBKERNEL100_F77D_H_ */

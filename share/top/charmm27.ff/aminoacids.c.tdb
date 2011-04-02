@@ -1,0 +1,77 @@
+[ None ]
+
+[ COO- ]
+[ replace ]
+ C	C	CC		12.011	0.34
+ O	OT1	OC		15.9994	-0.67
+ OXT	OT2	OC		15.9994	-0.67	
+[ add ]
+ 2	8	OT	C	CA	N
+	OC	15.9994	-0.67	-1
+[ impropers ]
+ C	CA	OT2	OT1      
+
+
+[ COOH ]
+[ replace ]
+ C	C	CD		12.011	0.72
+ O	OT1	OB		15.9994	-0.55
+ OXT	OT2	OH		15.9994	-0.61
+[ add ]
+ 2	8	OT	C	CA	N
+ 	OB	15.9994	-0.55	-1
+ 1	2	HT2	OT2	C	CA
+ 	H	1.008	0.44	-1
+[ replace ]
+ OT2	OT2	OH1		15.9994	-0.61
+[ impropers ]
+ C	CA	OT2	OT1
+
+
+[ CT2 ]
+[ replace ]
+ C		CC		12.011	0.55
+ O		O		15.9994	-0.55
+[ add ]
+ 1	2	NT	C	CA	N
+ 	NH2	14.0027	-0.62	-1
+ 2	3	HT	NT	C	CA
+ 	H	1.008	0.00	-1
+[ replace ]
+ HT1		H		1.008	0.30	; this one is trans to O
+ HT2		H		1.008	0.32	; this one is cis to O
+[ impropers ]
+ C	NT	CA	O
+ C	CA	NT	O
+ NT	C	HT1	HT2
+ NT	C	HT2	HT1
+[ CT3 ]
+; N-Methylamide C-terminus
+;
+;      |
+;      C=O
+;      |
+;      NT-HNT
+;      |
+; HT1-CAT-HT3
+;      |
+;     HT2
+;
+[ delete ]
+OXT
+[ add ]
+1      8       NT       C      CA      N
+        NH1    14.0027  -0.47  -1
+1      2       HNT      NT     C       O
+        H       1.008   0.31   -1
+1      8       CAT      NT     C       O
+        CT3   12.011  -0.11    -1
+3      4       HT       CAT    NT      C
+        HA      1.008   0.09   -1
+[ bonds ]
+NT    CAT              ; otherwise CAT does not get bonded to other atoms...
+[ impropers ]
+NT     C       CAT      HNT
+C      CA      NT       O
+[ cmap ]
+-C     N       CA      C        NT

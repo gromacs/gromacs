@@ -44,7 +44,7 @@
 #include "gmx_fatal.h"
 #include "strdb.h"
 
-bool get_a_line(FILE *fp,char line[],int n)
+gmx_bool get_a_line(FILE *fp,char line[],int n)
 {
   char *line0;
   char *dum;
@@ -77,7 +77,7 @@ bool get_a_line(FILE *fp,char line[],int n)
   return TRUE;
 }
 
-bool get_header(char line[],char *header)
+gmx_bool get_header(char line[],char *header)
 {
   char temp[STRLEN],*dum;
 
@@ -107,10 +107,8 @@ int get_strings(const char *db,char ***strings)
 
   in=libopen(db);
   
-  set_warning_line(db,1);
   if (fscanf(in,"%d",&nstr) != 1) {
-    sprintf(warn_buf,"File %s is empty",db);
-    warning(NULL);
+    gmx_warning("File %s is empty",db);
     ffclose(in);
     return 0;
   }
@@ -138,7 +136,7 @@ int search_str(int nstr,char **str,char *key)
 
   /* Linear search */
   for(i=0; (i<nstr); i++)
-    if (strcasecmp(str[i],key)==0)
+    if (gmx_strcasecmp(str[i],key)==0)
       return i;
 
   return -1;
@@ -154,8 +152,7 @@ int fget_lines(FILE *in,char ***strings)
   pret = fgets(buf,255,in);  
   if ( pret==NULL  || sscanf(buf,"%d",&nstr) != 1) 
   {
-    sprintf(warn_buf,"File is empty");
-    warning(NULL);
+    gmx_warning("File is empty");
     ffclose(in);
     
     return 0;
@@ -163,7 +160,7 @@ int fget_lines(FILE *in,char ***strings)
   snew(ptr,nstr);
   for(i=0; (i<nstr); i++) {
     fgets2(buf,255,in);
-    ptr[i] = strdup(buf);
+    ptr[i] = gmx_strdup(buf);
   }
   
   (*strings) = ptr;
@@ -176,7 +173,6 @@ int get_lines(const char *db,char ***strings)
   FILE *in;
   int  nstr;
   
-  set_warning_line(db,1);
   in   = libopen(db);
   nstr = fget_lines(in,strings);
   ffclose(in);
@@ -188,13 +184,13 @@ int get_file(const char *db,char ***strings)
 {
   FILE *in;
   char **ptr=NULL;
-  char buf[256];
+  char buf[STRLEN];
   int  i,nstr,maxi;
 
   in=libopen(db);
   
   i=maxi=0;
-  while (fgets2(buf,255,in)) {
+  while (fgets2(buf,STRLEN-1,in)) {
     if (i>=maxi) {
       maxi+=50;
       srenew(ptr,maxi);

@@ -153,7 +153,7 @@ void make_rot_mat(int axis,real theta,matrix t_mat){
   t_mat[i[ZZ]][i[ZZ]]=c;
 }
 
-bool test_linear_mol(rvec d)
+gmx_bool test_linear_mol(rvec d)
 {
   /* d is sorted in descending order */
   if ( (d[ZZ] < TOLERANCE) && (d[XX]-d[YY]) < TOLERANCE ) {
@@ -350,7 +350,7 @@ void pr_M1(FILE *fp,char *msg,int mol,rvec m1,real time)
 }
 
 /* Print the quadrupole moment components */
-void pr_M2(FILE *fp,char *msg,tensor m2,bool bFull)
+void pr_M2(FILE *fp,char *msg,tensor m2,gmx_bool bFull)
 {
   int i,j;
 
@@ -371,7 +371,7 @@ void pr_M2(FILE *fp,char *msg,tensor m2,bool bFull)
 }
 
 /* Print the octopole moment components */
-void pr_M3(FILE *fp,char *msg,tensor3 m3,bool bFull)
+void pr_M3(FILE *fp,char *msg,tensor3 m3,gmx_bool bFull)
 {
   int i,j,k;
 
@@ -396,7 +396,7 @@ void pr_M3(FILE *fp,char *msg,tensor3 m3,bool bFull)
 }
 
 /* Print the hexadecapole moment components */
-void pr_M4(FILE *fp,char *msg,tensor4 m4,bool bFull)
+void pr_M4(FILE *fp,char *msg,tensor4 m4,gmx_bool bFull)
 {
   int i,j,k,l;
 
@@ -607,7 +607,7 @@ rotate_mol(k0,k1,index,x,r_mat);
 }
 
 /* Does the real work */
-void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
+void do_multipoles(char *trjfn,char *topfn,char *molndxfn,gmx_bool bFull)
 {
   int        i;
   int        gnx;
@@ -621,13 +621,14 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   matrix     box;
   real       t0,t1,tq;
   int        teller;
-  bool       bCont;
+  gmx_bool       bCont;
 
   rvec       *x,*m1;
   tensor     *m2;
   tensor3    *m3;
   tensor4    *m4;
   matrix     trans;
+  gmx_rmpbc_t  gpbc=NULL;
 
   top  = read_top(topfn);
   rd_index(molndxfn,1,&gnx,&grpindex,&grpname);
@@ -639,12 +640,13 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   snew(m2,gnx);
   snew(m3,gnx);
   snew(m4,gnx);
-  
+
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
+
   /* Start while loop over frames */
   do {
     /* PvM, bug in rm_pbc??? Does not work for virtual sites ...
-    rm_pbc(&(top->idef),top->atoms.nr,box,x,x_s); */
-
+    gmx_rmpbc(gpbc,box,x,x_s); */
 
     /* Begin loop of all molecules in index file */
     for(i=0; (i<gnx); i++) {
@@ -673,6 +675,9 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
     
     bCont = read_next_x(status,&t,natoms,x,box);
   } while(bCont);
+  gmx_rmpbc_done(gpbc);
+
+  
   
 }
 
@@ -684,7 +689,7 @@ int gmx_multipoles(int argc,char *argv[])
     "The center of mass of the molecule is used as the origin"
   };
 
-  static bool bFull = FALSE;
+  static gmx_bool bFull = FALSE;
   static int  ntb=0;
   t_pargs pa[] = {
     { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; 1=truncated octahedron (only rectangular boxes are fully implemented)"},

@@ -36,17 +36,13 @@
 #ifndef _index_h
 #define _index_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <typedefs.h>
+#include "typedefs.h"
 
 #ifdef __cplusplus
 extern "C" { 
 #endif
 
-extern void check_index(char *gname,int n,atom_id index[],
+void check_index(char *gname,int n,atom_id index[],
 			char *traj,int natoms);
 /* Checks if any index is smaller than zero or larger than natoms,
  * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
@@ -61,9 +57,11 @@ void rd_index(const char *statfile,int ngrps,int isize[],
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
  * nr of groups, total nr of atoms
- * for each group: name nr of element, elements
- * The function opens a file, reads ngrps groups, puts the
- * sizes in isize, the atom_id s in index and the names of
+ * for each group: name nr of element, elements.
+ *
+ * The function opens a file, reads ngrps groups, asks the 
+ * user for group numbers, and puts the resulting sizes in 
+ * isize, the atom_id s in index and the names of
  * the groups in grpnames.
  *
  * It is also assumed, that when ngrps groups are requested
@@ -89,38 +87,72 @@ typedef struct {
   atom_id  *inv_clust;
 } t_cluster_ndx;
 
-extern t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
+t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
   
 typedef struct {
   int n;
-  char **aa;
-} t_aa_names;
+  char **name;
+} t_names;
 
-extern t_aa_names *get_aa_names(void);
-/* Read the database in aminoacids.dat */
+typedef struct gmx_residuetype *
+gmx_residuetype_t;
 
-extern bool is_protein(t_aa_names *aan,char *resnm);
-/* gives true if resnm occurs in aminoacids.dat */
+int
+gmx_residuetype_init(gmx_residuetype_t *rt);
 
-extern void done_aa_names(t_aa_names **aan);
-/* Free memory. Pass address of the pointer youget from get_aa_names */
+int
+gmx_residuetype_destroy(gmx_residuetype_t rt);
 
-extern t_blocka *new_blocka(void);
+int
+gmx_residuetype_get_type(gmx_residuetype_t rt,const char * resname, const char ** p_restype);
+
+int
+gmx_residuetype_add(gmx_residuetype_t rt,const char *newresname, const char *newrestype);
+
+int
+gmx_residuetype_get_alltypes(gmx_residuetype_t    rt,
+                             const char ***       p_typenames,
+                             int *                ntypes);
+
+gmx_bool 
+gmx_residuetype_is_protein(gmx_residuetype_t rt, const char *resnm);
+
+gmx_bool 
+gmx_residuetype_is_dna(gmx_residuetype_t rt, const char *resnm);
+
+gmx_bool 
+gmx_residuetype_is_rna(gmx_residuetype_t rt, const char *resnm);
+
+int
+gmx_residuetype_get_size(gmx_residuetype_t rt);
+
+int
+gmx_residuetype_get_index(gmx_residuetype_t rt, const char *resnm);
+
+const char *
+gmx_residuetype_get_name(gmx_residuetype_t rt, int index);
+
+
+
+
+
+
+t_blocka *new_blocka(void);
 /* allocate new block */
 
-extern void write_index(const char *outf, t_blocka *b,char **gnames);
+void write_index(const char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
 void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
-extern void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
-                    bool bASK,bool bVerb);
+void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
+                    gmx_bool bASK,gmx_bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.
  */
 
-extern int find_group(char s[], int ngrps, char **grpname);
+int find_group(char s[], int ngrps, char **grpname);
 
 
 #ifdef __cplusplus

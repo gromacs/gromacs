@@ -1,0 +1,162 @@
+<HTML>
+<HEAD>
+<TITLE>g_tune_pme</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_tune_pme</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
+Thu 26 Aug 2010</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+For a given number <tt>-np</tt> or <tt>-nt</tt> of processors/threads, this program systematically
+times <a href="mdrun.html">mdrun</a> with various numbers of PME-only nodes and determines
+which setting is fastest. It will also test whether performance can
+be enhanced by shifting load from the reciprocal to the real space
+part of the Ewald sum. 
+Simply pass your <tt>.<a href="tpr.html">tpr</a></tt> file to g_tune_pme together with other options
+for <a href="mdrun.html">mdrun</a> as needed.<p>
+Which executables are used can be set in the environment variables
+MPIRUN and MDRUN. If these are not present, 'mpirun' and '<a href="mdrun.html">mdrun</a>'
+will be used as defaults. Note that for certain MPI frameworks you
+need to provide a machine- or hostfile. This can also be passed
+via the MPIRUN variable, e.g.
+'export MPIRUN="/usr/local/mpirun -machinefile hosts"'<p>
+Please call g_tune_pme with the normal options you would pass to
+<a href="mdrun.html">mdrun</a> and add <tt>-np</tt> for the number of processors to perform the
+tests on, or <tt>-nt</tt> for the number of threads. You can also add <tt>-r</tt>
+to repeat each test several times to get better statistics. <p>
+g_tune_pme can test various real space / reciprocal space workloads
+for you. With <tt>-ntpr</tt> you control how many extra <tt>.<a href="tpr.html">tpr</a></tt> files will be
+written with enlarged cutoffs and smaller fourier grids respectively.
+Typically, the first test (no. 0) will be with the settings from the input
+<tt>.<a href="tpr.html">tpr</a></tt> file; the last test (no. <tt>ntpr</tt>) will have cutoffs multiplied
+by (and at the same time fourier grid dimensions divided by) the scaling
+factor <tt>-fac</tt> (default 1.2). The remaining <tt>.<a href="tpr.html">tpr</a></tt> files will have equally
+spaced values inbetween these extremes. Note that you can set <tt>-ntpr</tt> to 1
+if you just want to find the optimal number of PME-only nodes; in that case
+your input <tt>.<a href="tpr.html">tpr</a></tt> file will remain unchanged.<p>
+For the benchmark runs, the default of 1000 time steps should suffice for most
+MD systems. The dynamic load balancing needs about 100 time steps
+to adapt to local load imbalances, therefore the time step counters
+are by default reset after 100 steps. For large systems
+(&gt;1M atoms) you may have to set <tt>-resetstep</tt> to a higher value.
+From the 'DD' load imbalance entries in the md.<a href="log.html">log</a> output file you
+can tell after how many steps the load is sufficiently balanced.<p>Example call: <tt>g_tune_pme -np 64 -s protein.<a href="tpr.html">tpr</a> -launch</tt><p>
+After calling <a href="mdrun.html">mdrun</a> several times, detailed performance information
+is available in the output file perf.out. 
+Note that during the benchmarks a couple of temporary files are written
+(options -b*), these will be automatically deleted after each test.<p>
+If you want the simulation to be started automatically with the
+optimized parameters, use the command line option <tt>-launch</tt>.<p>
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="out.html">    perf.out</a></tt> </TD><TD> Output </TD><TD> Generic output file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-err</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">  errors.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-so</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   tuned.tpr</a></tt> </TD><TD> Output </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-x</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">    traj.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Input, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Output, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> etc. </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edr.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Energy file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">      md.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dhdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tableb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     tpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> tpidist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Output, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-px</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullx.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  dipole.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   bench.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">   bench.xtc</a></tt> </TD><TD> Output </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bcpo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   bench.cpt</a></tt> </TD><TD> Output </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   bench.gro</a></tt> </TD><TD> Output </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> etc. </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-be</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edr.html">   bench.edr</a></tt> </TD><TD> Output </TD><TD> Energy file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bg</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   bench.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-beo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">   bench.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bdhdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchdhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bfield</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchfld.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-btpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchtpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-btpid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchtpid.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bjo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">   bench.gct</a></tt> </TD><TD> Output, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchgct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bdevout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchdev.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-brunav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">benchrnav.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bpx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> benchpx.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bpf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> benchpf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bmtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">  benchn.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bdn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   bench.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of nodes to run the tests on (must be &gt; 2 for separate PME nodes) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-npstring</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>-np</tt> </TD><TD> Specify the number of processors to $MPIRUN using this string: <tt>-np</tt>, <tt>-n</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of threads to run the tests on (turns MPI & mpirun off) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>2</tt> </TD><TD> Repeat each test this often </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> Max fraction of PME nodes to test with </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-min</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.25  </tt> </TD><TD> Min fraction of PME nodes to test with </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-npme</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Benchmark all possible values for -npme or just the subset that is expected to perform well: <tt>auto</tt>, <tt>all</tt> or <tt>subset</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-upfac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1.2   </tt> </TD><TD> Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-downfac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Lower limit for rcoulomb scaling factor </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ntpr</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of <a href="tpr.html">tpr</a> files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If &lt; 1, automatically choose the number of <a href="tpr.html">tpr</a> files to test </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-four</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Use this fourierspacing value instead of the grid found in the <a href="tpr.html">tpr</a> input file. (Spacing applies to a scaling factor of 1.0 if multiple <a href="tpr.html">tpr</a> files are written) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-steps</tt></b> </TD><TD ALIGN=RIGHT> step </TD><TD ALIGN=RIGHT> <tt>1000</tt> </TD><TD> Take timings for these many steps in the benchmark runs </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-resetstep</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Let dlb equilibrate these many steps before timings are taken (reset cycle counters after these many steps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-simsteps</tt></b> </TD><TD ALIGN=RIGHT> step </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> If non-negative, perform these many steps in the real run (overwrite nsteps from <a href="tpr.html">tpr</a>, add cpt steps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]launch</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Lauch the real simulation after optimization </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options at launch time </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ddorder</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>interleave</tt> </TD><TD> DD node order: <tt>interleave</tt>, <tt>pp_pme</tt> or <tt>cartesian</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ddcheck</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Check for all bonded interactions with DD </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rdd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rcon</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum distance for P-LINCS (nm), 0 is estimate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dlb</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Dynamic load balancing (with DD): <tt>auto</tt>, <tt>no</tt> or <tt>yes</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dds</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.8   </tt> </TD><TD> Minimum allowed dlb scaling of the DD cell size </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-gcom</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Global communication frequency </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Write a compact <a href="log.html">log</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]seppot</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the <a href="log.html">log</a> file(s) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pforce</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Print all forces larger than this (kJ/mol nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]reprod</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Try to avoid optimizations that affect binary reproducibility </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>15    </tt> </TD><TD> Checkpoint interval (minutes) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cpnum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Keep and number checkpoint files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]append</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names (for launch only) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxh</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Terminate after 0.99 times this time (hours) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-multi</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Do multiple simulations in parallel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange every # steps </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-reseed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Seed for replica exchange, -1 is generate a seed </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

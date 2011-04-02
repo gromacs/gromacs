@@ -41,13 +41,20 @@
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-static bool gmx_fft_threads_initialized=FALSE;
+static gmx_bool gmx_fft_threads_initialized=FALSE;
 #define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
 #define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
 #else /* GMX_THREADS */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
 #endif /* GMX_THREADS */
+
+/* We assume here that aligned memory starts at multiple of 16 bytes and unaligned memory starts at multiple of 8 bytes. The later is guranteed for all malloc implementation. 
+   Consequesences:
+   - It is not allowed to use these FFT plans from memory which doesn't have a starting address as a multiple of 8 bytes. 
+     This is OK as long as the memory directly comes from malloc and is not some subarray within alloated memory.
+   - This has to be fixed if any future architecute requires memory to be aligned to multiples of 32 bytes.
+*/
 
 struct gmx_fft
 {
@@ -69,6 +76,16 @@ int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
                 gmx_fft_flag       flags) 
+{
+    return gmx_fft_init_many_1d(pfft,nx,1,flags);
+}
+
+
+int
+gmx_fft_init_many_1d(gmx_fft_t *        pfft,
+		     int                nx,
+		     int                howmany,
+		     gmx_fft_flag       flags) 
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
@@ -97,7 +114,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
+    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany);
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
@@ -105,7 +122,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
         return ENOMEM;
     }
     
-    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
+    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2)*howmany);
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -126,15 +143,20 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     pc += 8; 
     up2 = (FFTWPREFIX(complex) *)pc;
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_BACKWARD,fftw_flags); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_FORWARD,fftw_flags); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_BACKWARD,fftw_flags);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_FORWARD,fftw_flags);  
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_BACKWARD,fftw_flags); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_FORWARD,fftw_flags); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_BACKWARD,fftw_flags); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_FORWARD,fftw_flags); 
-
+    /*                            int rank, const int *n, int howmany,
+                                  fftw_complex *in, const int *inembed,
+                                  int istride, int idist,
+                                  fftw_complex *out, const int *onembed,
+                                  int ostride, int odist,
+                                  int sign, unsigned flags */
+    fft->plan[0][0][0] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,up1,&nx,1,nx,up2,&nx,1,nx,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,up1,&nx,1,nx,up2,&nx,1,nx,FFTW_FORWARD,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,up1,&nx,1,nx,up1,&nx,1,nx,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[0][1][1] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,up1,&nx,1,nx,up1,&nx,1,nx,FFTW_FORWARD,fftw_flags); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,p1,&nx,1,nx,p2,&nx,1,nx,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,p1,&nx,1,nx,p2,&nx,1,nx,FFTW_FORWARD,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,p1,&nx,1,nx,p1,&nx,1,nx,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_many_dft)(1,&nx,howmany,p1,&nx,1,nx,p1,&nx,1,nx,FFTW_FORWARD,fftw_flags); 
 
     for(i=0;i<2;i++)
     {
@@ -169,10 +191,18 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 }
 
 
-
 int
 gmx_fft_init_1d_real(gmx_fft_t *        pfft,
                      int                nx,
+                     gmx_fft_flag       flags) 
+{
+    return gmx_fft_init_many_1d_real(pfft, nx, 1, flags);
+}
+
+int
+gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
+                     int                nx,
+                     int                howmany,
                      gmx_fft_flag       flags) 
 {
     gmx_fft_t              fft;
@@ -202,7 +232,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
+    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
@@ -210,7 +240,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
         return ENOMEM;
     }
     
-    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
+    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx/2+1)*2*howmany + 8);
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -231,17 +261,21 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     pc += 8; 
     up2 = (real *)pc;
     
-    
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up2,fftw_flags); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up2,fftw_flags); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up1,fftw_flags);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up1,fftw_flags);  
+    /*                                int rank, const int *n, int howmany,
+                                      double *in, const int *inembed,
+                                      int istride, int idist,
+                                      fftw_complex *out, const int *onembed,
+                                      int ostride, int odist,
+                                      unsigned flag    */
+    fft->plan[0][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1,&nx,howmany,up1,0,1,(nx/2+1)*2,(FFTWPREFIX(complex) *)up2,0,1,(nx/2+1),fftw_flags); 
+    fft->plan[0][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1,&nx,howmany,up1,0,1,(nx/2+1)*2,(FFTWPREFIX(complex) *)up1,0,1,(nx/2+1),fftw_flags);
+    fft->plan[1][0][1] = FFTWPREFIX(plan_many_dft_r2c)(1,&nx,howmany, p1,0,1,(nx/2+1)*2,(FFTWPREFIX(complex) *)p2 ,0,1,(nx/2+1),fftw_flags);
+    fft->plan[1][1][1] = FFTWPREFIX(plan_many_dft_r2c)(1,&nx,howmany, p1,0,1,(nx/2+1)*2,(FFTWPREFIX(complex) *)p1 ,0,1,(nx/2+1),fftw_flags);
 
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p2,fftw_flags); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p2,fftw_flags); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p1,fftw_flags); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p1,fftw_flags); 
-
+    fft->plan[0][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1,&nx,howmany,(FFTWPREFIX(complex) *)up1,0,1,(nx/2+1),up2,0,1,(nx/2+1)*2,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1,&nx,howmany,(FFTWPREFIX(complex) *)up1,0,1,(nx/2+1),up1,0,1,(nx/2+1)*2,fftw_flags); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_many_dft_c2r)(1,&nx,howmany,(FFTWPREFIX(complex) *) p1,0,1,(nx/2+1), p2,0,1,(nx/2+1)*2,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_many_dft_c2r)(1,&nx,howmany,(FFTWPREFIX(complex) *) p1,0,1,(nx/2+1), p1,0,1,(nx/2+1)*2,fftw_flags); 
 
     for(i=0;i<2;i++)
     {
@@ -716,7 +750,7 @@ gmx_fft_1d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_FORWARD);
     
@@ -735,6 +769,14 @@ gmx_fft_1d               (gmx_fft_t                  fft,
     return 0;
 }
 
+int
+gmx_fft_many_1d               (gmx_fft_t                  fft,
+			       enum gmx_fft_direction     dir,
+			       void *                     in_data,
+			       void *                     out_data)
+{
+    return gmx_fft_1d(fft,dir,in_data,out_data);
+}
 
 int 
 gmx_fft_1d_real          (gmx_fft_t                  fft,
@@ -742,7 +784,7 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
     
@@ -768,6 +810,14 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
     return 0;
 }
 
+int 
+gmx_fft_many_1d_real     (gmx_fft_t                  fft,
+                          enum gmx_fft_direction     dir,
+                          void *                     in_data,
+                          void *                     out_data)
+{
+    return gmx_fft_1d_real(fft,dir,in_data,out_data);
+}
 
 int 
 gmx_fft_2d               (gmx_fft_t                  fft,
@@ -775,7 +825,7 @@ gmx_fft_2d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_FORWARD);
     
@@ -801,7 +851,7 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
     
@@ -837,7 +887,7 @@ gmx_fft_3d               (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_FORWARD);
     
@@ -863,7 +913,7 @@ gmx_fft_3d_real          (gmx_fft_t                  fft,
                           void *                     in_data,
                           void *                     out_data)
 {
-    int           aligned   = (((size_t)in_data & (size_t)out_data & 0xf)==0);
+    int           aligned   = ((((size_t)in_data | (size_t)out_data) & 0xf)==0);
     int           inplace   = (in_data == out_data);
     int           isforward = (dir == GMX_FFT_REAL_TO_COMPLEX);
     
@@ -923,7 +973,13 @@ gmx_fft_destroy(gmx_fft_t      fft)
 
 }
 
+void
+gmx_many_fft_destroy(gmx_fft_t    fft)
+{
+    gmx_fft_destroy(fft);
+}
+
 #else
 int
-gmx_fft_fftw2_empty;
-#endif /* GMX_FFT_FFTW2 */
+gmx_fft_fftw3_empty;
+#endif /* GMX_FFT_FFTW3 */

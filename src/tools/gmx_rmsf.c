@@ -166,31 +166,31 @@ void print_dir(FILE *fp,real *Uaver)
 int gmx_rmsf(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
-    "deviation) of atomic positions ",
-    "after (optionally) fitting to a reference frame.[PAR]",
+    "[TT]g_rmsf[tt] computes the root mean square fluctuation (RMSF, i.e. standard ",
+    "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
+    "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
     "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
-    "values, which are written to a pdb file with the coordinates, of the",
-    "structure file, or of a pdb file when [TT]-q[tt] is specified.",
+    "values, which are written to a [TT].pdb[tt] file with the coordinates, of the",
+    "structure file, or of a [TT].pdb[tt] file when [TT]-q[tt] is specified.",
     "Option [TT]-ox[tt] writes the B-factors to a file with the average",
     "coordinates.[PAR]",
     "With the option [TT]-od[tt] the root mean square deviation with",
     "respect to the reference structure is calculated.[PAR]",
-    "With the option [TT]aniso[tt] g_rmsf will compute anisotropic",
+    "With the option [TT]-aniso[tt], [TT]g_rmsf[tt] will compute anisotropic",
     "temperature factors and then it will also output average coordinates",
-    "and a pdb file with ANISOU records (corresonding to the [TT]-oq[tt]",
+    "and a [TT].pdb[tt] file with ANISOU records (corresonding to the [TT]-oq[tt]",
     "or [TT]-ox[tt] option). Please note that the U values",
-    "are orientation dependent, so before comparison with experimental data",
+    "are orientation-dependent, so before comparison with experimental data",
     "you should verify that you fit to the experimental coordinates.[PAR]",
-    "When a pdb input file is passed to the program and the [TT]-aniso[tt]",
+    "When a [TT].pdb[tt] input file is passed to the program and the [TT]-aniso[tt]",
     "flag is set",
     "a correlation plot of the Uij will be created, if any anisotropic",
-    "temperature factors are present in the pdb file.[PAR]",
+    "temperature factors are present in the [TT].pdb[tt] file.[PAR]",
     "With option [TT]-dir[tt] the average MSF (3x3) matrix is diagonalized.",
     "This shows the directions in which the atoms fluctuate the most and",
     "the least."
   };
-  static bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
+  static gmx_bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
   t_pargs pargs[] = { 
     { "-res", FALSE, etBOOL, {&bRes},
       "Calculate averages for each residue" },
@@ -199,7 +199,8 @@ int gmx_rmsf(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
   };
-  int          step,nre,natom,natoms,i,g,m,teller=0;
+  int          natom;
+  int          step,nre,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
   
   t_tpxheader  header;
@@ -207,11 +208,12 @@ int gmx_rmsf(int argc,char *argv[])
   t_topology   top;
   int          ePBC;
   t_atoms      *pdbatoms,*refatoms;
-  bool         bCont;
+  gmx_bool         bCont;
 
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
-  int          status,npdbatoms,res0;
+  t_trxstatus   *status;
+  int          npdbatoms,res0;
   char         buf[256];
   const char   *label;
   char         title[STRLEN];
@@ -220,7 +222,7 @@ int gmx_rmsf(int argc,char *argv[])
   const char   *devfn,*dirfn;
   int          resind;
 
-  bool         bReadPDB;  
+  gmx_bool         bReadPDB;  
   atom_id      *index;
   int          isize;
   char         *grpnames;
@@ -233,10 +235,11 @@ int gmx_rmsf(int argc,char *argv[])
   int          d;
   real         count=0;
   rvec         xcm;
+  gmx_rmpbc_t  gpbc=NULL;
 
   output_env_t oenv;
 
-  char  *leg[2] = { "MD", "X-Ray" };
+  const char  *leg[2] = { "MD", "X-Ray" };
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },
@@ -299,18 +302,23 @@ int gmx_rmsf(int argc,char *argv[])
     copy_mat(box,pdbbox);
   }
   
-  if (bFit)
+  if (bFit) {
     sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
-  
+  }
+    
   natom = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+
+  if (bFit) {
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natom,box);
+  }
     
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
     if (bFit) {
       /* Remove periodic boundary */
-      rm_pbc(&(top.idef),ePBC,natom,box,x,x);
-      
+      gmx_rmpbc(gpbc,natom,box,x);
+
       /* Set center of mass to zero */
       sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
       
@@ -342,6 +350,10 @@ int gmx_rmsf(int argc,char *argv[])
   } while(read_next_x(oenv,status,&t,natom,x,box));
   close_trj(status);
   
+  if (bFit)
+    gmx_rmpbc_done(gpbc);
+
+
   invcount = 1.0/count;
   snew(Uaver,DIM*DIM);
   totmass = 0;
@@ -445,7 +457,7 @@ int gmx_rmsf(int argc,char *argv[])
   }
 
   if (opt2bSet("-oq",NFILE,fnm)) {
-    /* Write a pdb file with B-factors and optionally anisou records */
+    /* Write a .pdb file with B-factors and optionally anisou records */
     for(i=0; i<isize; i++)
       rvec_inc(xref[index[i]],xcm);
     write_sto_conf_indexed(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,
@@ -456,7 +468,7 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++)
       for(d=0; d<DIM; d++)
 	xref[index[i]][d] = xcm[d] + xav[i*DIM + d];
-    /* Write a pdb file with B-factors and optionally anisou records */
+    /* Write a .pdb file with B-factors and optionally anisou records */
     write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xref,NULL,
 			   ePBC,pdbbox,isize,index);
   }

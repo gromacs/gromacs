@@ -58,12 +58,13 @@
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
-#include "x2top.h"
+#include "g_x2top.h"
+#include "fflibutil.h"
 
-t_nm2type *rd_nm2type(const char *ff,int *nnm)
+static void rd_nm2type_file(const char *fn,int *nnm,t_nm2type **nmp)
 {
   FILE      *fp;
-  bool      bCont;
+  gmx_bool      bCont;
   char      libfilename[128];
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
@@ -71,10 +72,12 @@ t_nm2type *rd_nm2type(const char *ff,int *nnm)
   double    qq,mm,*blen;
   t_nm2type *nm2t=NULL;
   
-  sprintf(libfilename,"%s.n2t",ff);
-  fp = libopen(libfilename);
-  
-  nnnm = 0;
+  fp = fflib_open(fn);
+  if (NULL == fp)
+    gmx_fatal(FARGS,"Can not find %s in library directory",fn);
+    
+  nnnm = *nnm;
+  nm2t = *nmp;
   do {
     /* Read a line from the file */
     bCont = (fgets2(buf,1023,fp) != NULL); 
@@ -115,8 +118,25 @@ t_nm2type *rd_nm2type(const char *ff,int *nnm)
   ffclose(fp);
   
   *nnm = nnnm;
-  
-  return nm2t;
+  *nmp = nm2t;
+}
+
+t_nm2type *rd_nm2type(const char *ffdir,int *nnm)
+{
+  int  nff,f;
+  char **ff;
+  t_nm2type *nm;
+
+  nff = fflib_search_file_end(ffdir,".n2t",FALSE,&ff);
+  *nnm = 0;
+  nm   = NULL;
+  for(f=0; f<nff; f++) {
+    rd_nm2type_file(ff[f],nnm,&nm);
+    sfree(ff[f]);
+  }
+  sfree(ff);
+
+  return nm;
 }
 
 void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
@@ -140,7 +160,7 @@ static int match_str(const char *atom,const char *template_string)
 {
   if (!atom || !template_string)
     return ematchNone;
-  else if (strcasecmp(atom,template_string) == 0) 
+  else if (gmx_strcasecmp(atom,template_string) == 0) 
     return ematchExact;
   else if (atom[0] == template_string[0])
     return ematchElem;

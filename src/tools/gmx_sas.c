@@ -127,7 +127,7 @@ void do_conect(const char *fn,int n,rvec x[])
 }
 
 void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
-		   t_symtab *symtab,int ePBC,matrix box,bool bSave)
+		   t_symtab *symtab,int ePBC,matrix box,gmx_bool bSave)
 {
   static const char *atomnm="DOT";
   static const char *resnm ="DOT";
@@ -144,7 +144,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     srenew(atoms->atomname,atoms->nr+ndots);
     srenew(atoms->resinfo,r0+1);
     atoms->atom[i0].resind = r0;
-    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',' ');
+    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',0,' ');
     srenew(atoms->pdbinfo,atoms->nr+ndots);
     snew(xnew,atoms->nr+ndots);
     for(i=0; (i<atoms->nr); i++)
@@ -170,7 +170,7 @@ void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
   else {
     init_t_atoms(&aaa,ndots,TRUE);
     aaa.atom[0].resind = 0;
-    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',' ');
+    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',0,' ');
     snew(xnew,ndots);
     for(i=k=0; (i<ndots); i++) {
       ii0 = i;
@@ -219,28 +219,31 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,bool bSave,real minarea,bool bPBC,
-	      real dgs_default,bool bFindex, const output_env_t oenv)
+	      real qcut,gmx_bool bSave,real minarea,gmx_bool bPBC,
+	      real dgs_default,gmx_bool bFindex, const output_env_t oenv)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
-  char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
+  const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
-  char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *or_and_oa_legend[] = { "Average (nm\\S2\\N)", "Standard deviation (nm\\S2\\N)" };
   const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
-  int          status,ndefault;
+  gmx_rmpbc_t  gpbc=NULL;
+  t_trxstatus  *status;
+  int          ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *xtop,*x;
   matrix       topbox,box;
   t_topology   top;
   char         title[STRLEN];
   int          ePBC;
-  bool         bTop;
+  gmx_bool         bTop;
   t_atoms      *atoms;
-  bool         *bOut,*bPhobic;
-  bool         bConnelly;
-  bool         bResAt,bITP,bDGsol;
+  gmx_bool         *bOut,*bPhobic;
+  gmx_bool         bConnelly;
+  gmx_bool         bResAt,bITP,bDGsol;
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
@@ -395,10 +398,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     
   gmx_atomprop_destroy(aps);
 
+  if (bPBC)
+    gpbc = gmx_rmpbc_init(&top.idef,ePBC,natoms,box);
+  
   nfr=0;
   do {
     if (bPBC)
-      rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+      gmx_rmpbc(gpbc,natoms,box,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly) {
@@ -473,7 +479,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     }
     nfr++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-  
+
+  if (bPBC)  
+    gmx_rmpbc_done(gpbc);
+
   fprintf(stderr,"\n");
   close_trj(status);
   ffclose(fp);
@@ -491,10 +500,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       atom_area2[i] /= nfr;
     }
     fprintf(stderr,"Printing out areas per atom\n");
-    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
+    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue over the trajectory","Residue",
 		   "Area (nm\\S2\\N)",oenv);
-    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
+    xvgr_legend(fp, asize(or_and_oa_legend),or_and_oa_legend,oenv);
+    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom over the trajectory","Atom #",
 		   "Area (nm\\S2\\N)",oenv);
+    xvgr_legend(fp2, asize(or_and_oa_legend),or_and_oa_legend,oenv);
     if (bITP) {
       fp3 = ftp2FILE(efITP,nfile,fnm,"w");
       fprintf(fp3,"[ position_restraints ]\n"
@@ -554,17 +565,17 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int gmx_sas(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
-    "As a side effect the Connolly surface can be generated as well in",
-    "a pdb file where the nodes are represented as atoms and the vertices",
+    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent accessible surface area.",
+    "As a side effect, the Connolly surface can be generated as well in",
+    "a [TT].pdb[tt] file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records.",
     "The program will ask for a group for the surface calculation",
     "and a group for the output. The calculation group should always",
     "consists of all the non-solvent atoms in the system.",
     "The output group can be the whole or part of the calculation group.",
-    "The area can be plotted",
+    "The average and standard deviation of the area over the trajectory can be plotted",
     "per residue and atom as well (options [TT]-or[tt] and [TT]-oa[tt]).",
-    "In combination with the latter option an [TT]itp[tt] file can be",
+    "In combination with the latter option an [TT].itp[tt] file can be",
     "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
@@ -574,9 +585,9 @@ int gmx_sas(int argc,char *argv[])
     "Please consider whether the normal probe radius is appropriate",
     "in this case or whether you would rather use e.g. 0. It is good",
     "to keep in mind that the results for volume and density are very",
-    "approximate, in e.g. ice Ih one can easily fit water molecules in the",
-    "pores which would yield too low volume, too high surface area and too",
-    "high density."
+    "approximate. For example, in ice Ih, one can easily fit water molecules in the",
+    "pores which would yield a volume that is too low, and surface area and density",
+    "that are both too high."
   };
 
   output_env_t oenv;
@@ -584,7 +595,7 @@ int gmx_sas(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
+  static gmx_bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
   t_pargs pa[] = {
     { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },
@@ -599,9 +610,9 @@ int gmx_sas(int argc,char *argv[])
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
-      "Output the protein to the connelly pdb file too" },
+      "Output the protein to the Connelly [TT].pdb[tt] file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
-      "default value for solvation free energy per area (kJ/mol/nm^2)" }
+      "Default value for solvation free energy per area (kJ/mol/nm^2)" }
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },

@@ -1,0 +1,24 @@
+#define _FF_OPLS
+#define _FF_OPLSAA
+
+; This force field uses a format that requires Gromacs 3.1.4 or later.
+;
+; References for the OPLS-AA force field: 
+;
+; W. L. Jorgensen, D. S. Maxwell, and J. Tirado-Rives,
+; J. Am. Chem. Soc. 118, 11225-11236 (1996).
+; W. L. Jorgensen and N. A. McDonald, Theochem 424, 145-155 (1998).
+; W. L. Jorgensen and N. A. McDonald, J. Phys. Chem. B 102, 8049-8059 (1998).
+; R. C. Rizzo and W. L. Jorgensen, J. Am. Chem. Soc. 121, 4827-4836 (1999).
+; M. L. Price, D. Ostrovsky, and W. L. Jorgensen, J. Comp. Chem. (2001).
+; E. K. Watkins and W. L. Jorgensen, J. Phys. Chem. A 105, 4118-4125 (2001).
+; G. A. Kaminski, R.A. Friesner, J.Tirado-Rives and W.L. Jorgensen, J. Phys. Chem. B 105, 6474 (2001).
+;
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+1		3		yes		0.5	0.5
+
+#include "ffnonbonded.itp"
+#include "ffbonded.itp"
+#include "gbsa.itp"

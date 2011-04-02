@@ -36,9 +36,8 @@
 #ifndef _gmx_ga2la_h
 #define _gmx_ga2la_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "typedefs.h"
+#include "smalloc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +56,7 @@ typedef struct {
 } gmx_lal_t;
 
 typedef struct gmx_ga2la {
-    bool      bAll;
+    gmx_bool      bAll;
     int       mod;
     int       nalloc;
     gmx_laa_t *laa;
@@ -96,7 +95,7 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
 
     /* There are two methods implemented for finding the local atom number
      * belonging to a global atom number:
-     * 1) a simple, direct arrary
+     * 1) a simple, direct array
      * 2) a list of linked lists indexed with the global number modulo mod.
      * Memory requirements:
      * 1) nat_tot*2 ints
@@ -105,7 +104,7 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
      * Method 1 is faster for low parallelization, 2 for high parallelization.
      * We switch to method 2 when it uses less than half the memory method 1.
      */
-    ga2la->bAll = (9*nat_loc >= nat_tot);
+    ga2la->bAll = (nat_tot < 1024 || 9*nat_loc >= nat_tot);
     if (ga2la->bAll)
     {
         ga2la->nalloc = nat_tot;
@@ -113,7 +112,7 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
     }
     else
     {
-        /* Make the direct list twice as large as the number of local atoms.
+        /* Make the direct list twice as long as the number of local atoms.
          * The fraction of entries in the list with:
          * 0   size lists: e^-1/f
          * >=1 size lists: 1 - e^-1/f
@@ -159,7 +158,7 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
         {
             ind++;
         }
-        /* If we are a the end of the list we need to increase the size */
+        /* If we are at the end of the list we need to increase the size */
         if (ind == ga2la->nalloc)
         {
             ga2la->nalloc = over_alloc_dd(ind+1);
@@ -257,7 +256,7 @@ static void ga2la_change_la(gmx_ga2la_t ga2la,int a_gl,int a_loc)
  * in which case it indicates that it is more than one cell away
  * in zone cell - #zones.
  */
-static bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
+static gmx_bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
 {
     int ind;
 
@@ -289,7 +288,7 @@ static bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
 /* Returns if the global atom a_gl is a home atom.
  * Sets the local atom.
  */
-static bool ga2la_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
+static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 {
     int ind;
 
@@ -315,6 +314,31 @@ static bool ga2la_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
             {
                 return FALSE;
             }
+        }
+        ind = ga2la->lal[ind].next;
+    }
+    while (ind >= 0);
+
+    return FALSE;
+}
+
+/* Returns if the global atom a_gl is a home atom.
+ */
+static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la,int a_gl)
+{
+    int ind;
+
+    if (ga2la->bAll)
+    {
+        return (ga2la->laa[a_gl].cell == 0);
+    }
+
+    ind = a_gl % ga2la->mod;
+    do
+    {        
+        if (ga2la->lal[ind].ga == a_gl)
+        {
+            return (ga2la->lal[ind].cell == 0);
         }
         ind = ga2la->lal[ind].next;
     }

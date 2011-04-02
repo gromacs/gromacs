@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct gmx_conect_t {
   int  nconect;
-  bool bSorted;
+  gmx_bool bSorted;
   gmx_conection_t *conect;
 } gmx_conect_t;
 
@@ -69,18 +69,15 @@ static const char *pdbtp[epdbNR]={
   "CONECT"
 };
 
-static bool bTER=FALSE;
-static bool bWideFormat=FALSE;
+
+/* this is not very good, 
+   but these are only used in gmx_trjconv and gmx_editconv */
+static gmx_bool bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
-void set_pdb_wide_format(bool bSet)
+void set_pdb_wide_format(gmx_bool bSet)
 {
   bWideFormat = bSet;
-}
-
-void pdb_use_ter(bool bSet)
-{
-  bTER=bSet;
 }
 
 static void xlate_atomname_pdb2gmx(char *name)
@@ -221,9 +218,9 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
   
 void write_pdbfile_indexed(FILE *out,const char *title,
 			   t_atoms *atoms,rvec x[],
-			   int ePBC,matrix box,char chain,
+			   int ePBC,matrix box,char chainid,
 			   int model_nr, atom_id nindex, atom_id index[],
-			   gmx_conect conect)
+			   gmx_conect conect, gmx_bool bTerSepChains)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   char resnm[6],nm[6],pdbform[128],pukestring[100];
@@ -231,9 +228,16 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   int  resind,resnr,type;
   unsigned char resic,ch;
   real occup,bfac;
-  bool bOccup;
+  gmx_bool bOccup;
   int  nlongname=0;
-
+  int  chainnum,lastchainnum;
+  int  lastresind,lastchainresind;
+  gmx_residuetype_t rt;
+  const char *p_restype;
+  const char *p_lastrestype;
+    
+  gmx_residuetype_init(&rt);  
+    
   bromacs(pukestring,99);
   fprintf(out,"TITLE     %s\n",(title && title[0])?title:pukestring);
   if (bWideFormat) {
@@ -256,23 +260,50 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   else
     bOccup = FALSE;
 
-  if (!bTER)
-    fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
+  fprintf(out,"MODEL %8d\n",model_nr>0 ? model_nr : 1);
+
+  lastchainresind   = -1;
+  lastchainnum      = -1;
+  resind            = -1;
+  p_restype = NULL;
+    
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
+    lastresind = resind;
     resind = atoms->atom[i].resind;
-    strcpy(resnm,*atoms->resinfo[resind].name);
-    strcpy(nm,*atoms->atomname[i]);
+    chainnum = atoms->resinfo[resind].chainnum;
+    p_lastrestype = p_restype;
+    gmx_residuetype_get_type(rt,*atoms->resinfo[resind].name,&p_restype);        
+      
+    /* Add a TER record if we changed chain, and if either the previous or this chain is protein/DNA/RNA. */
+    if( bTerSepChains && ii>0 && chainnum != lastchainnum)
+    {
+        /* Only add TER if the previous chain contained protein/DNA/RNA. */
+        if(gmx_residuetype_is_protein(rt,p_lastrestype) || gmx_residuetype_is_dna(rt,p_lastrestype) || gmx_residuetype_is_rna(rt,p_lastrestype))
+        {
+            fprintf(out,"TER\n");
+        }
+        lastchainnum    = chainnum;
+	lastchainresind = lastresind;
+    }
+      
+    strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
+    strncpy(nm,*atoms->atomname[i],sizeof(nm)-1);
     /* rename HG12 to 2HG1, etc. */
     xlate_atomname_gmx2pdb(nm);
     resnr = atoms->resinfo[resind].nr;
     resic = atoms->resinfo[resind].ic;
-    if (chain) {
-      ch = chain;
-    } else {
-      ch = atoms->resinfo[resind].chain;
-      if (ch == 0) {
-	ch = ' ';
+    if (chainid!=' ') 
+    {
+      ch = chainid;
+    }
+    else
+    {
+      ch = atoms->resinfo[resind].chainid;
+
+      if (ch == 0) 
+      {
+          ch = ' ';
       }
     }
     if (resnr>=10000)
@@ -292,7 +323,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 	     "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
     else {
       /* Check whether atomname is an element name */
-      if ((strlen(nm)<4) && (strcasecmp(nm,atoms->atom[i].elem) != 0))
+      if ((strlen(nm)<4) && (gmx_strcasecmp(nm,atoms->atom[i].elem) != 0))
 	strcpy(pdbform,pdbformat);
       else {
 	strcpy(pdbform,pdbformat4);
@@ -322,8 +353,8 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   }
  
   fprintf(out,"TER\n");
-  if (!bTER)
-    fprintf(out,"ENDMDL\n");
+  fprintf(out,"ENDMDL\n");
+    
   if (NULL != gc) {
     /* Write conect records */
     for(i=0; (i<gc->nconect); i++) {
@@ -333,15 +364,15 @@ void write_pdbfile_indexed(FILE *out,const char *title,
 }
 
 void write_pdbfile(FILE *out,const char *title, t_atoms *atoms,rvec x[],
-		   int ePBC,matrix box,char chain,int model_nr,gmx_conect conect)
+		   int ePBC,matrix box,char chainid,int model_nr,gmx_conect conect,gmx_bool bTerSepChains)
 {
   atom_id i,*index;
 
   snew(index,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     index[i]=i;
-  write_pdbfile_indexed(out,title,atoms,x,ePBC,box,chain,model_nr,
-			atoms->nr,index,conect);
+  write_pdbfile_indexed(out,title,atoms,x,ePBC,box,chainid,model_nr,
+			atoms->nr,index,conect,bTerSepChains);
   sfree(index);
 }
 
@@ -405,9 +436,9 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
 
 void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
-  int  i,atomnumber;
+  int  i,atomnumber,len;
   size_t k;
-  char anm[6],anm_copy[6];
+  char anm[6],anm_copy[6],*ptr;
   char nc='\0';
   real eval;
   
@@ -417,8 +448,9 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
   for(i=0; (i<atoms->nr); i++) {
     strcpy(anm,atoms->pdbinfo[i].atomnm);
     strcpy(anm_copy,atoms->pdbinfo[i].atomnm);
+    len = strlen(anm);
     atomnumber = NOTSET;
-    if (anm[0] != ' ') {
+    if ((anm[0] != ' ') && ((len <=2) || ((len > 2) && !isdigit(anm[2])))) {
       anm_copy[2] = nc;
       if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	atomnumber = gmx_nint(eval);
@@ -438,7 +470,8 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;
-    sprintf(atoms->atom[i].elem,"%2s",gmx_atomprop_element(aps,atomnumber));
+    ptr = gmx_atomprop_element(aps,atomnumber);
+    strncpy(atoms->atom[i].elem,ptr==NULL ? "" : ptr,4);
     if (debug)
       fprintf(debug,"Atomnumber for atom '%s' is %d\n",anm,atomnumber);
   }
@@ -446,14 +479,15 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 
 static int read_atom(t_symtab *symtab,
 		     char line[],int type,int natom,
-		     t_atoms *atoms,rvec x[],bool bChange)
+		     t_atoms *atoms,rvec x[],int chainnum,gmx_bool bChange)
 {
   t_atom *atomn;
   int  j,k;
   char nc='\0';
   char anr[12],anm[12],anm_copy[12],altloc,resnm[12],rnr[12];
   char xc[12],yc[12],zc[12],occup[12],bfac[12];
-  unsigned char resic,chain;
+  unsigned char resic;
+  char chainid;
   int  resnr,atomnumber;
 
   if (natom>=atoms->nr)
@@ -478,7 +512,7 @@ static int read_atom(t_symtab *symtab,
   resnm[k]=nc;
   trim(resnm);
 
-  chain = line[j];
+  chainid = line[j];
   j++;
   
   for(k=0; (k<4); k++,j++) {
@@ -519,7 +553,7 @@ static int read_atom(t_symtab *symtab,
 	atomn->resind = atoms->atom[natom-1].resind + 1;
       }
       atoms->nres = atomn->resind + 1;
-      t_atoms_set_resinfo(atoms,natom,symtab,resnm,resnr,resic,chain);
+      t_atoms_set_resinfo(atoms,natom,symtab,resnm,resnr,resic,chainnum,chainid);
     }
     else
     {
@@ -550,7 +584,7 @@ static int read_atom(t_symtab *symtab,
   return natom;
 }
 
-bool is_hydrogen(const char *nm)
+gmx_bool is_hydrogen(const char *nm)
 {
   char buf[30];
   
@@ -564,7 +598,7 @@ bool is_hydrogen(const char *nm)
   return FALSE;
 }
 
-bool is_dummymass(const char *nm)
+gmx_bool is_dummymass(const char *nm)
 {
   char buf[30];
   
@@ -624,7 +658,7 @@ void gmx_conect_done(gmx_conect conect)
   sfree(gc->conect);
 }
 
-bool gmx_conect_exist(gmx_conect conect,int ai,int aj)
+gmx_bool gmx_conect_exist(gmx_conect conect,int ai,int aj)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   int i;
@@ -657,137 +691,167 @@ void gmx_conect_add(gmx_conect conect,int ai,int aj)
 }
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
-		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
+		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,gmx_bool bChange,
 		 gmx_conect conect)
 {
-  gmx_conect_t *gc = (gmx_conect_t *)conect;
-  static t_symtab symtab;
-  static bool bFirst=TRUE;
-  bool bCOMPND;
-  bool bConnWarn = FALSE;
-  char line[STRLEN+1];
-  int  line_type;
-  char *c,*d;
-  int  natom;
-  bool bStop=FALSE;
+    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    t_symtab symtab;
+    gmx_bool bCOMPND;
+    gmx_bool bConnWarn = FALSE;
+    char line[STRLEN+1];
+    int  line_type;
+    char *c,*d;
+    int  natom,chainnum,nres_ter_prev=0;
+    char chidmax=' ';
+    gmx_bool bStop=FALSE;
 
-  if (ePBC) {
-    /* Only assume pbc when there is a CRYST1 entry */
-    *ePBC = epbcNONE;
-  }
-  if (box != NULL) 
-    clear_mat(box);
-
-  if (bFirst) {
-    open_symtab(&symtab);
-    bFirst=FALSE;
-  }
-
-  bCOMPND=FALSE;
-  title[0]='\0';
-  natom=0;
-  while (!bStop && (fgets2(line,STRLEN,in) != NULL)) {
-    line_type = line2type(line);
-    
-    switch(line_type) {
-    case epdbATOM:
-    case epdbHETATM:
-      natom = read_atom(&symtab,line,line_type,natom,atoms,x,bChange);
-      break;
-      
-    case epdbANISOU:
-      if (atoms->pdbinfo)
-	read_anisou(line,natom,atoms);
-      break;
-
-    case epdbCRYST1:
-      read_cryst1(line,ePBC,box);
-      break;
-
-    case epdbTITLE:
-    case epdbHEADER:
-      if (strlen(line) > 6) {
-	c=line+6;
-	/* skip HEADER or TITLE and spaces */
-	while (c && (c[0]!=' ')) c++;
-	while (c && (c[0]==' ')) c++;
-	/* truncate after title */
-	d=strstr(c,"      ");
-	if (d) {
-	  d[0]='\0';
-	}
-	if (strlen(c)>0)
-	  strcpy(title,c);
-      }
-      break;
-      
-    case epdbCOMPND:
-      if ((!strstr(line,": ")) || (strstr(line+6,"MOLECULE:"))) {
-	if ( !(c=strstr(line+6,"MOLECULE:")) )
-	  c=line;
-	/* skip 'MOLECULE:' and spaces */
-	while (c && (c[0]!=' ')) c++;
-	while (c && (c[0]==' ')) c++;
-	/* truncate after title */
-	d=strstr(c,"   ");
-	if (d) {
-	  while ( (d[-1]==';') && d>c)  d--;
-	  d[0]='\0';
-	}
-	if (strlen(c) > 0) {
-	  if (bCOMPND) {
-	    strcat(title,"; ");
-	    strcat(title,c);
-	  } else
-	    strcpy(title,c);
-	}
-	bCOMPND=TRUE;
-      } 
-      break;
-      
-    case epdbTER:
-      if (bTER)
-	bStop=TRUE;
-      break;
-    case epdbMODEL:
-      if(model_nr)
-	sscanf(line,"%*s%d",model_nr);
-      break;
-    case epdbENDMDL:
-      bStop=TRUE;
-      break;
-    case epdbCONECT:
-      if (gc) 
-	gmx_conect_addline(gc,line);
-      else if (!bConnWarn) {
-	fprintf(stderr,"WARNING: all CONECT records are ignored\n");
-	bConnWarn = TRUE;
-      }
-      break;
-    default:
-      break;
+    if (ePBC) 
+    {
+        /* Only assume pbc when there is a CRYST1 entry */
+        *ePBC = epbcNONE;
     }
-  }
-  
-  return natom;
+    if (box != NULL) 
+    {
+        clear_mat(box);
+    }
+    
+    open_symtab(&symtab);
+
+    bCOMPND=FALSE;
+    title[0]='\0';
+    natom=0;
+    chainnum=0;
+    while (!bStop && (fgets2(line,STRLEN,in) != NULL)) 
+    {
+        line_type = line2type(line);
+        
+        switch(line_type) 
+        {
+            case epdbATOM:
+            case epdbHETATM:
+                natom = read_atom(&symtab,line,line_type,natom,atoms,x,chainnum,bChange);
+                break;
+      
+            case epdbANISOU:
+                if (atoms->pdbinfo)
+                {
+                    read_anisou(line,natom,atoms);
+                }
+                break;
+                
+            case epdbCRYST1:
+                read_cryst1(line,ePBC,box);
+                break;
+                
+            case epdbTITLE:
+            case epdbHEADER:
+                if (strlen(line) > 6) 
+                {
+                    c=line+6;
+                    /* skip HEADER or TITLE and spaces */
+                    while (c && (c[0]!=' ')) c++;
+                    while (c && (c[0]==' ')) c++;
+                    /* truncate after title */
+                    d=strstr(c,"      ");
+                    if (d) 
+                    {
+                        d[0]='\0';
+                    }
+                    if (strlen(c)>0)
+                    {
+                        strcpy(title,c);
+                    }
+                }
+                break;
+      
+            case epdbCOMPND:
+                if ((!strstr(line,": ")) || (strstr(line+6,"MOLECULE:"))) 
+                {
+                    if ( !(c=strstr(line+6,"MOLECULE:")) )
+                    {
+                        c=line;
+                    }
+                    /* skip 'MOLECULE:' and spaces */
+                    while (c && (c[0]!=' ')) c++;
+                    while (c && (c[0]==' ')) c++;
+                    /* truncate after title */
+                    d=strstr(c,"   ");
+                    if (d) 
+                    {
+                        while ( (d[-1]==';') && d>c)  d--;
+                        d[0]='\0';
+                    }
+                    if (strlen(c) > 0)
+                    {
+                        if (bCOMPND) 
+                        {
+                            strcat(title,"; ");
+                            strcat(title,c);
+                        } 
+                        else
+                        {
+                            strcpy(title,c);
+                        }
+                    }
+                    bCOMPND=TRUE;
+                }
+                break;
+      
+            case epdbTER:
+                chainnum++;
+                break;
+                
+            case epdbMODEL:
+                if(model_nr)
+                {
+                    sscanf(line,"%*s%d",model_nr);
+                }
+                break;
+
+            case epdbENDMDL:
+                bStop=TRUE;
+                break;
+            case epdbCONECT:
+                if (gc) 
+                {
+                    gmx_conect_addline(gc,line);
+                }
+                else if (!bConnWarn)
+                {
+                    fprintf(stderr,"WARNING: all CONECT records are ignored\n");
+                    bConnWarn = TRUE;
+                }
+                break;
+                
+            default:
+                break;
+        }
+    }
+
+    free_symtab(&symtab);
+    return natom;
 }
 
 void get_pdb_coordnum(FILE *in,int *natoms)
 {
-  char line[STRLEN];
+    char line[STRLEN];
    
-  *natoms=0;
-  while (fgets2(line,STRLEN,in)) {
-    if ( ( bTER && (strncmp(line,"TER",3) == 0)) ||
-	 (!bTER && (strncmp(line,"ENDMDL",6) == 0)) ) 
-      break;
-    if ((strncmp(line,"ATOM  ",6) == 0) || (strncmp(line,"HETATM",6) == 0))
-      (*natoms)++;
-  }
+    *natoms=0;
+    while (fgets2(line,STRLEN,in)) 
+    {
+        if ( strncmp(line,"ENDMDL",6) == 0 ) 
+        {
+            break;
+        }
+        if ((strncmp(line,"ATOM  ",6) == 0) || (strncmp(line,"HETATM",6) == 0))
+        {
+            (*natoms)++;
+        }
+    }
 }
 
 void read_pdb_conf(const char *infile,char *title, 
-		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
+		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,gmx_bool bChange,
 		   gmx_conect conect)
 {
   FILE *in;

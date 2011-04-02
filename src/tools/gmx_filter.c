@@ -57,15 +57,15 @@
 int gmx_filter(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_filter performs frequency filtering on a trajectory.",
-    "The filter shape is cos(pi t/A) + 1 from -A to +A, where A is given",
+    "[TT]g_filter[tt] performs frequency filtering on a trajectory.",
+    "The filter shape is cos([GRK]pi[grk] t/A) + 1 from -A to +A, where A is given",
     "by the option [TT]-nf[tt] times the time step in the input trajectory.",
     "This filter reduces fluctuations with period A by 85%, with period",
     "2*A by 50% and with period 3*A by 17% for low-pass filtering.",
     "Both a low-pass and high-pass filtered trajectory can be written.[PAR]",
 
     "Option [TT]-ol[tt] writes a low-pass filtered trajectory.",
-    "A frame is written every [TT]nf[tt] input frames.",
+    "A frame is written every [TT]-nf[tt] input frames.",
     "This ratio of filter length and output interval ensures a good",
     "suppression of aliasing of high-frequency motion, which is useful for",
     "making smooth movies. Also averages of properties which are linear",
@@ -76,12 +76,12 @@ int gmx_filter(int argc,char *argv[])
     "Option [TT]-oh[tt] writes a high-pass filtered trajectory.",
     "The high-pass filtered coordinates are added to the coordinates",
     "from the structure file. When using high-pass filtering use [TT]-fit[tt]",
-    "or make sure you use a trajectory which has been fitted on",
+    "or make sure you use a trajectory that has been fitted on",
     "the coordinates in the structure file."
   };
   
   static int nf=10;
-  static bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
+  static gmx_bool bNoJump = TRUE,bFit = FALSE,bLowAll = FALSE;
   t_pargs pa[] = {
     { "-nf", FALSE, etINT, {&nf},
       "Sets the filter length as well as the output interval for low-pass filtering" },
@@ -93,7 +93,7 @@ int gmx_filter(int argc,char *argv[])
       "Fit all frames to a reference structure" }
   };
   const char *topfile,*lowfile,*highfile;
-  bool       bTop=FALSE;
+  gmx_bool       bTop=FALSE;
   t_topology top;
   int        ePBC=-1;
   rvec       *xtop;
@@ -102,12 +102,14 @@ int gmx_filter(int argc,char *argv[])
   int        isize;
   atom_id    *index;
   real       *w_rls=NULL;
-  int        in,outl,outh;
+  t_trxstatus *in;
+  t_trxstatus *outl,*outh;
   int        nffr,i,fr,nat,j,d,m;
   atom_id    *ind;
   real       flen,*filt,sum,*t;
   rvec       xcmtop,xcm,**x,*ptr,*xf,*xn,*xp,hbox;
   output_env_t oenv;
+  gmx_rmpbc_t  gpbc=NULL;
 
 #define NLEG asize(leg)
   t_filenm fnm[] = { 
@@ -131,12 +133,12 @@ int gmx_filter(int argc,char *argv[])
     topfile = ftp2fn_null(efTPS,NFILE,fnm);
     lowfile = opt2fn("-ol",NFILE,fnm);
   }
-
   if (topfile) {
     bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,
 			 &xtop,NULL,topbox,TRUE);
     if (bTop) {
-      rm_pbc(&(top.idef),ePBC,top.atoms.nr,topbox,xtop,xtop);
+      gpbc = gmx_rmpbc_init(&top.idef,ePBC,top.atoms.nr,topbox);
+      gmx_rmpbc(gpbc,top.atoms.nr,topbox,xtop);
     }
   }
 
@@ -212,7 +214,7 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      rm_pbc(&(top.idef),ePBC,nat,box[nffr - 1],xn,xn);
+      gmx_rmpbc(gpbc,nat,box[nffr - 1],xn);
     }
     if (bFit) {
       calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);
@@ -264,6 +266,9 @@ int gmx_filter(int argc,char *argv[])
     fr++;
   } while (read_next_x(oenv,in,&(t[nffr - 1]),nat,x[nffr - 1],box[nffr - 1]));
   
+  if (bTop)
+    gmx_rmpbc_done(gpbc);
+
   if (outh)
     close_trx(outh);
   if (outl)

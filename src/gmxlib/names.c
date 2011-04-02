@@ -53,7 +53,7 @@ const char *ens_names[ensNR+1]=
 
 const char *ei_names[eiNR+1]=
 {
-  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", "sd1", NULL 
+  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", "sd1", "md-vv", "md-vv-avek",NULL 
 };
 
 const char *bool_names[BOOL_NR+1]=
@@ -100,7 +100,7 @@ const char *etcoupl_names[etcNR+1] = {
 }; /* yes is alias for berendsen */
 
 const char *epcoupl_names[epcNR+1] = {
-  "No", "Berendsen", "Parrinello-Rahman", "Isotropic", NULL
+  "No", "Berendsen", "Parrinello-Rahman", "Isotropic", "MTTK", NULL
 }; /* isotropic is alias for berendsen */
 
 const char *epcoupltype_names[epctNR+1] = {
@@ -136,6 +136,14 @@ const char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
 
+const char *separate_dhdl_file_names[sepdhdlfileNR+1] = {
+  "yes", "no", NULL
+};
+
+const char *dhdl_derivatives_names[dhdlderivativesNR+1] = {
+  "yes", "no", NULL
+};
+
 const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };
@@ -165,11 +173,11 @@ const char *egb_names[egbNR+1] = {
 };
 
 const char *esa_names[esaNR+1] = {
-  "No", "Ace-approximation", "Still", NULL
+  "Ace-approximation", "None", "Still", NULL
 };
 
 const char *ewt_names[ewtNR+1] = {
-  "9-3", "10-4", "table", NULL
+  "9-3", "10-4", "table", "12-6", NULL
 };
 
 const char *epull_names[epullNR+1] = { 

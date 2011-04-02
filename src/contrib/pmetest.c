@@ -84,10 +84,10 @@ static int comp_xptr(const void *a,const void *b)
     return 0;
 }
 
-static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
+static void do_my_pme(FILE *fp,real tm,gmx_bool bVerbose,t_inputrec *ir,
 		      rvec x[],rvec xbuf[],rvec f[],
 		      real charge[],real qbuf[],real qqbuf[],
-		      matrix box,bool bSort,
+		      matrix box,gmx_bool bSort,
 		      t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
 		      t_block *excl,real qtot,
 		      t_forcerec *fr,int index[],FILE *fp_xvg,
@@ -200,14 +200,14 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "The pmetest program tests the scaling of the PME code. When only given",
-    "a tpr file it will compute PME for one frame. When given a trajectory",
+    "The [TT]pmetest[tt] program tests the scaling of the PME code. When only given",
+    "a [TT].tpr[tt] file it will compute PME for one frame. When given a trajectory",
     "it will do so for all the frames in the trajectory. Before the PME",
     "routine is called the coordinates are sorted along the X-axis.[PAR]",
     "As an extra service to the public the program can also compute",
     "long-range Coulomb energies for components of the system. When the",
     "[TT]-groups[tt] flag is given to the program the energy groups",
-    "from the tpr file will be read, and half an energy matrix computed."
+    "from the [TT].tpr[tt] file will be read, and half an energy matrix computed."
   };
   t_commrec    *cr,*mcr;
   static t_filenm fnm[] = {
@@ -220,9 +220,9 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  static bool bVerbose=FALSE;
-  static bool bOptFFT=FALSE;
-  static bool bSort=FALSE;
+  static gmx_bool bVerbose=FALSE;
+  static gmx_bool bOptFFT=FALSE;
+  static gmx_bool bSort=FALSE;
   static int  ewald_geometry=eewg3D;
   static int  nnodes=1;
   static int  nthreads=1;
@@ -230,10 +230,10 @@ int main(int argc,char *argv[])
   static rvec grid = { -1, -1, -1 };
   static real rc   = 0.0;
   static real dtol = 0.0;
-  static bool bGroups = FALSE;
+  static gmx_bool bGroups = FALSE;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
-      "Number of nodes, must be the same as used for grompp" },
+      "Number of nodes, must be the same as used for [TT]grompp[tt]" },
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start on each node" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
@@ -241,11 +241,11 @@ int main(int argc,char *argv[])
     { "-sort",    FALSE, etBOOL,{&bSort},  
       "Sort coordinates. Crucial for domain decomposition." },
     { "-grid",    FALSE, etRVEC,{&grid},
-      "Number of grid cells in X, Y, Z dimension (if -1 use from tpr)" },
+      "Number of grid cells in X, Y, Z dimension (if -1 use from [TT].tpr[tt])" },
     { "-order",   FALSE, etINT, {&pme_order},
       "Order of the PME spreading algorithm" },
     { "-groups",  FALSE, etBOOL, {&bGroups},
-      "Compute half an energy matrix based on the energy groups in your tpr file" },
+      "Compute half an energy matrix based on the energy groups in your [TT].tpr[tt] file" },
     { "-rc",      FALSE, etREAL, {&rc},
       "Rcoulomb for Ewald summation" },
     { "-tol",     FALSE, etREAL, {&dtol},
@@ -264,7 +264,7 @@ int main(int argc,char *argv[])
   real        t,lambda,ewaldcoeff,qtot;
   rvec        *x,*f,*xbuf;
   int         *index;
-  bool        bCont;
+  gmx_bool        bCont;
   real        *charge,*qbuf,*qqbuf;
   matrix      box;
   

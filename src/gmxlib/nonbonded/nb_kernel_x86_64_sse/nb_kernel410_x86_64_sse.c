@@ -94,19 +94,19 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 	__m128   rinvsixB,vvdw6B,vvdw12B;
 	__m128   facel,gbtabscale,mask,dvdaj;
     
-    __m128   mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	__m128   mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	__m128   mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+    __m128   mask1 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
 	__m128i  n0, nnn;
 	__m128i  n0B, nnnB;
 	
-	const __m128 neg        = {-1.0f,-1.0f,-1.0f,-1.0f};
-	const __m128 zero       = {0.0f,0.0f,0.0f,0.0f};
-	const __m128 minushalf  = {-0.5f,-0.5f,-0.5f,-0.5f};
-	const __m128 two        = {2.0f,2.0f,2.0f,2.0f};
-	const __m128 six        = {6.0f,6.0f,6.0f,6.0f};
-	const __m128 twelve     = {12.0f,12.0f,12.0f,12.0f};  
+	const __m128 neg        = _mm_set1_ps(-1.0f);
+	const __m128 zero       = _mm_set1_ps(0.0f);
+	const __m128 minushalf  = _mm_set1_ps(-0.5f);
+	const __m128 two        = _mm_set1_ps(2.0f);
+	const __m128 six        = _mm_set1_ps(6.0f);
+	const __m128 twelve     = _mm_set1_ps(12.0f);
 
 	gbdata          = (gmx_gbdata_t *)work;
 	gpol            = gbdata->gpol;
@@ -114,7 +114,7 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 	nri              = *p_nri;         
     ntype            = *p_ntype;       
     
-    gbfactor         = _mm_set1_ps( - (1.0 - (1.0/gbdata->gb_epsilon_solvent)));     
+    gbfactor         = _mm_set1_ps( - ((1.0/gbdata->epsilon_r) - (1.0/gbdata->gb_epsilon_solvent)));     
     gbtabscale       = _mm_load1_ps(p_gbtabscale);  
     facel            = _mm_load1_ps(p_facel);
 
@@ -601,10 +601,10 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
         }
         
         dvdasum = _mm_mul_ps(dvdasum, _mm_mul_ps(isai,isai));
-		gmx_mm_update_iforce_1atom_ps(fix,fiy,fiz,faction+ii3,fshift+is3);
+		gmx_mm_update_iforce_1atom_ps(&fix,&fiy,&fiz,faction+ii3,fshift+is3);
 		
         ggid             = gid[n];         
-		gmx_mm_update_4pot_ps(vctot,vc+ggid,vvdwtot,vvdw+ggid,vgbtot,gpol+ggid,dvdasum,dvda+ii);
+	GMX_MM_UPDATE_4POT_PS(vctot,vc+ggid,vvdwtot,vvdw+ggid,vgbtot,gpol+ggid,dvdasum,dvda+ii);
     }
 	
 	*outeriter       = nri;            

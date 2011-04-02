@@ -111,7 +111,7 @@ static void precalc(t_topology top,real normm[]){
 int gmx_velacc(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_velacc computes the velocity autocorrelation function.",
+    "[TT]g_velacc[tt] computes the velocity autocorrelation function.",
     "When the [TT]-m[tt] option is used, the momentum autocorrelation",
     "function is calculated.[PAR]",
     "With option [TT]-mol[tt] the velocity autocorrelation function of",
@@ -119,7 +119,7 @@ int gmx_velacc(int argc,char *argv[])
     "of molecule numbers instead of atom numbers."
   };
   
-  static bool bM=FALSE,bMol=FALSE;
+  static gmx_bool bM=FALSE,bMol=FALSE;
   t_pargs pa[] = {
     { "-m", FALSE, etBOOL, {&bM},
       "Calculate the momentum autocorrelation function" },
@@ -131,13 +131,14 @@ int gmx_velacc(int argc,char *argv[])
   int        ePBC=-1;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS=FALSE,bTop=FALSE;
+  gmx_bool       bTPS=FALSE,bTop=FALSE;
   int        gnx;
   atom_id    *index;
   char       *grpname;
   char       title[256];
   real       t0,t1,m;
-  int        status,teller,n_alloc,i,j,tel3,k,l;
+  t_trxstatus *status;
+  int        teller,n_alloc,i,j,tel3,k,l;
   rvec       mv_mol;
   real       **c1;
   real	     *normm=NULL;
@@ -161,8 +162,9 @@ int gmx_velacc(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
-  if (bMol)
-    bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
+  if (bMol || bM) {
+    bTPS = ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
+  }
 
   if (bTPS) {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,

@@ -57,6 +57,7 @@
 #include "mvdata.h"
 #include "txtdump.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "vec.h"
 #include "time.h"
 #include "nrnb.h"
@@ -93,7 +94,6 @@
 #include "tmpi.h"
 #endif
 
-
 #include "qmmm.h"
 
 #if 0
@@ -102,16 +102,19 @@ typedef struct gmx_timeprint {
 } t_gmx_timeprint;
 #endif
 
+/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
+char *
+gmx_ctime_r(const time_t *clock,char *buf, int n);
+
 
 double
 gmx_gettime()
 {
 #ifdef HAVE_GETTIMEOFDAY
 	struct timeval t;
-	struct timezone tz = { 0,0 };
 	double seconds;
 	
-	gettimeofday(&t,&tz);
+	gettimeofday(&t,NULL);
 	
 	seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
 	
@@ -131,40 +134,56 @@ gmx_gettime()
 void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,   
                 t_inputrec *ir, t_commrec *cr)
 {
-  time_t finish;
-
-  double dt;
-  char buf[48];
-
+    time_t finish;
+    char   timebuf[STRLEN];
+    double dt;
+    char buf[48];
+    
 #ifndef GMX_THREADS
-  if (!PAR(cr))
+    if (!PAR(cr))
 #endif
-    fprintf(out,"\r");
-  fprintf(out,"step %s",gmx_step_str(step,buf));
-  if ((step >= ir->nstlist)) {
-    if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
-      /* We have done a full cycle let's update time_per_step */
-      runtime->last = gmx_gettime();
-      dt = difftime(runtime->last,runtime->real);
-      runtime->time_per_step = dt/(step - ir->init_step + 1);
+    {
+        fprintf(out,"\r");
     }
-    dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
-
-    if (dt >= 300) {    
-      finish = (time_t) (runtime->last + dt);
-      sprintf(buf,"%s",ctime(&finish));
-      buf[strlen(buf)-1]='\0';
-      fprintf(out,", will finish %s",buf);
+    fprintf(out,"step %s",gmx_step_str(step,buf));
+    if ((step >= ir->nstlist))
+    {
+        if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0))
+        {
+            /* We have done a full cycle let's update time_per_step */
+            runtime->last = gmx_gettime();
+            dt = difftime(runtime->last,runtime->real);
+            runtime->time_per_step = dt/(step - ir->init_step + 1);
+        }
+        dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
+        
+        if (ir->nsteps >= 0)
+        {
+            if (dt >= 300)
+            {    
+                finish = (time_t) (runtime->last + dt);
+                gmx_ctime_r(&finish,timebuf,STRLEN);
+                sprintf(buf,"%s",timebuf);
+                buf[strlen(buf)-1]='\0';
+                fprintf(out,", will finish %s",buf);
+            }
+            else
+                fprintf(out,", remaining runtime: %5d s          ",(int)dt);
+        }
+        else
+        {
+            fprintf(out," performance: %.1f ns/day    ",
+                    ir->delta_t/1000*24*60*60/runtime->time_per_step);
+        }
     }
-    else
-      fprintf(out,", remaining runtime: %5d s          ",(int)dt);
-  }
 #ifndef GMX_THREADS
-  if (PAR(cr))
-    fprintf(out,"\n");
+    if (PAR(cr))
+    {
+        fprintf(out,"\n");
+    }
 #endif
 
-  fflush(out);
+    fflush(out);
 }
 
 #ifdef NO_CLOCK 
@@ -229,26 +248,28 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
                          const gmx_runtime_t *runtime)
 {
     int i;
-    char *ts,time_string[STRLEN];
+    char timebuf[STRLEN];
+    char time_string[STRLEN];
     time_t tmptime;
 
-    if (runtime != NULL)
-    {
-		tmptime = (time_t) runtime->real;
-        ts = ctime(&tmptime);
-    }
-    else
-    {
-        tmptime = (time_t) gmx_gettime();
-        ts = ctime(&tmptime);
-    }
-    for(i=0; ts[i]>=' '; i++)
-    {
-        time_string[i]=ts[i];
-    }
-    time_string[i]='\0';
     if (fplog)
     {
+        if (runtime != NULL)
+        {
+            tmptime = (time_t) runtime->real;
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        else
+        {
+            tmptime = (time_t) gmx_gettime();
+            gmx_ctime_r(&tmptime,timebuf,STRLEN);
+        }
+        for(i=0; timebuf[i]>=' '; i++)
+        {
+            time_string[i]=timebuf[i];
+        }
+        time_string[i]='\0';
+
         fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
     }
 }
@@ -370,12 +391,13 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 {
   int  i;
   real pf2,fn2;
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   pf2 = sqr(pforce);
   for(i=md->start; i<md->start+md->homenr; i++) {
     fn2 = norm2(f[i]);
-    if (fn2 >= pf2) {
+    /* We also catch NAN, if the compiler does not optimize this away. */
+    if (fn2 >= pf2 || fn2 != fn2) {
       fprintf(fp,"step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
 	      gmx_step_str(step,buf),
 	      ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
@@ -397,14 +419,14 @@ void do_force(FILE *fplog,t_commrec *cr,
               real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              bool bBornRadii,
+              gmx_bool bBornRadii,
               int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
     double mu[2*DIM]; 
-    bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
-    bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -505,7 +527,9 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda,step);
+    gmx_pme_send_x(cr,bBS ? boxs : box,x,
+                   mdatoms->nChargePerturbed,lambda,
+                   ( flags & GMX_FORCE_VIRIAL),step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -572,7 +596,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->bTwinRange)
         {
             /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
         }
 
         /* Do the actual neighbour searching and if twin range electrostatics
@@ -594,7 +618,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	
     if (inputrec->implicit_solvent && bNS) 
     {
-        make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm,inputrec->rlist,
+        make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
                        x,box,fr,&top->idef,graph,fr->born);
     }
 	
@@ -647,7 +671,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (bSepLRF)
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force; i++)
+            for(i=0; i<fr->natoms_force_constr; i++)
             {
                 copy_rvec(fr->f_twin[i],f[i]);
             }
@@ -655,7 +679,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         else if (!(fr->bTwinRange && bNS))
         {
             /* Clear the short-range forces */
-            clear_rvecs(fr->natoms_force,f);
+            clear_rvecs(fr->natoms_force_constr,f);
         }
 
         clear_rvec(fr->vir_diag_posres);
@@ -888,124 +912,123 @@ void do_force(FILE *fplog,t_commrec *cr,
 }
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
-                        t_inputrec *inputrec,t_mdatoms *md,
-                        t_state *state,
+                        t_inputrec *ir,t_mdatoms *md,
+                        t_state *state,rvec *f,
                         t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-                        t_forcerec *fr,t_idef *idef)
+                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir)
 {
     int    i,m,start,end;
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
-    real   dt=inputrec->delta_t;
+    real   dt=ir->delta_t;
     real   dvdlambda;
-    rvec   *xcon;
-    char   buf[22];
+    rvec   *savex;
     
+    snew(savex,state->natoms);
+
     start = md->start;
     end   = md->homenr + start;
+    
     if (debug)
-    {
         fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
                 start,md->homenr,end);
-    }
-    snew(xcon,state->nalloc);
-
-    /* Do a first constraining to reset particles... */
-    step = inputrec->init_step;
+    /* Do a first constrain to reset particles... */
+    step = ir->init_step;
     if (fplog)
     {
+        char buf[STEPSTRSIZE];
         fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
                 gmx_step_str(step,buf));
     }
     dvdlambda = 0;
-    constrain(NULL,TRUE,FALSE,constr,idef,
-              inputrec,cr,step,0,md,
+    
+    /* constrain the current position */
+    constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+              ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord);
-    
-    if (EI_STATE_VELOCITY(inputrec->eI)) {
-        for(i=start; (i<end); i++) {
-            for(m=0; (m<DIM); m++) {
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+    if (EI_VV(ir->eI)) 
+    {
+        /* constrain the inital velocity, and save it */
+        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
+        /* might not yet treat veta correctly */
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,NULL,cr,step,0,md,
+                  state->x,state->v,state->v,
+                  state->box,state->lambda,&dvdlambda,
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
+    }
+    /* constrain the inital velocities at t-dt/2 */
+    if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
+    {
+        for(i=start; (i<end); i++) 
+        {
+            for(m=0; (m<DIM); m++) 
+            {
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
-                /* Store the position at t-dt in xcon */
-                xcon[i][m] = state->x[i][m] + dt*state->v[i][m];
+                /* Store the position at t-dt in buf */
+                savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
-        
-        /* Constrain the positions at t=-dt with the positions at t=0
-         * as reference coordinates.
+    /* Shake the positions at t=-dt with the positions at t=0                        
+     * as reference coordinates.                                                     
          */
         if (fplog)
         {
+            char buf[STEPSTRSIZE];
             fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
                     gmx_step_str(step,buf));
         }
         dvdlambda = 0;
-        constrain(NULL,TRUE,FALSE,constr,idef,
-                  inputrec,cr,step,-1,md,
-                  state->x,xcon,NULL,
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,NULL,cr,step,-1,md,
+                  state->x,savex,NULL,
                   state->box,state->lambda,&dvdlambda,
-                  state->v,NULL,nrnb,econqCoord);
-    
-        sfree(xcon);
-
-        for(m=0; (m<4); m++)
-        {
-            vcm[m] = 0;
-        }
-        for(i=start; i<end; i++)
-        {
-            mass = md->massT[i];
-            for(m=0; m<DIM; m++)
-            {
+                  state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+        
+        for(i=start; i<end; i++) {
+            for(m=0; m<DIM; m++) {
                 /* Re-reverse the velocities */
                 state->v[i][m] = -state->v[i][m];
-                vcm[m] += state->v[i][m]*mass;
-            }
-            vcm[3] += mass;
-        }
-        
-        if (inputrec->nstcomm != 0 || debug)
-        {
-            /* Compute the global sum of vcm */
-            if (debug)
-            {
-                fprintf(debug,
-                        "vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",
-                        vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-            }
-            if (PAR(cr))
-            {
-                gmx_sumd(4,vcm,cr);
-            }
-            tmass = vcm[3];
-            for(m=0; (m<DIM); m++)
-            {
-                vcm[m] /= tmass;
-            }
-            if (debug)
-            {
-                fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-            }
-            if (inputrec->nstcomm != 0)
-            {
-                /* Now we have the velocity of center of mass,
-                 * let's remove it.
-                 */
-                for(i=start; (i<end); i++)
-                {
-                    for(m=0; (m<DIM); m++)
-                    {
-                        state->v[i][m] -= vcm[m];
-                    }
-                }
             }
         }
     }
+    
+    for(m=0; (m<4); m++)
+        vcm[m] = 0;
+    for(i=start; i<end; i++) {
+        mass = md->massT[i];
+        for(m=0; m<DIM; m++) {
+            vcm[m] += state->v[i][m]*mass;
+        }
+        vcm[3] += mass;
+    }
+    
+    if (ir->nstcomm != 0 || debug) {
+        /* Compute the global sum of vcm */
+        if (debug)
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+        if (PAR(cr))
+            gmx_sumd(4,vcm,cr);
+        tmass = vcm[3];
+        for(m=0; (m<DIM); m++)
+            vcm[m] /= tmass;
+        if (debug) 
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+        if (ir->nstcomm != 0) {
+            /* Now we have the velocity of center of mass, let's remove it */
+            for(i=start; (i<end); i++) {
+                for(m=0; (m<DIM); m++)
+                    state->v[i][m] -= vcm[m];
+            }
+
+        }
+    }
+    sfree(savex);
 }
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
@@ -1139,66 +1162,69 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_large_int_t step,int natoms,matrix box,real lambda,
-                   tensor pres,tensor virial,gmx_enerdata_t *enerd)
+                   gmx_large_int_t step,int natoms,
+                   matrix box,real lambda,tensor pres,tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
+    gmx_bool bCorrAll,bCorrPres;
     real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
-    enerd->term[F_DISPCORR] = 0.0;
-    enerd->term[F_PDISPCORR] = 0.0;
+    *prescorr = 0;
+    *enercorr = 0;
+    *dvdlcorr = 0;
     
-    if (ir->eDispCorr != edispcNO)
-    {
+    clear_mat(virial);
+    clear_mat(pres);
+    
+    if (ir->eDispCorr != edispcNO) {
         bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                      ir->eDispCorr == edispcAllEnerPres);
         bCorrPres = (ir->eDispCorr == edispcEnerPres ||
                      ir->eDispCorr == edispcAllEnerPres);
         
         invvol = 1/det(box);
-        if (fr->n_tpi)
+        if (fr->n_tpi) 
         {
             /* Only correct for the interactions with the inserted molecule */
             dens = (natoms - fr->n_tpi)*invvol;
             ninter = fr->n_tpi;
-        }
-        else
+        } 
+        else 
         {
             dens = natoms*invvol;
             ninter = 0.5*natoms;
         }
         
-        if (ir->efep == efepNO)
+        if (ir->efep == efepNO) 
         {
             avcsix    = fr->avcsix[0];
             avctwelve = fr->avctwelve[0];
-        }
-        else
+        } 
+        else 
         {
             avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
-    
+        
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        enerd->term[F_DISPCORR] += avcsix*enerdiff;
+        *enercorr += avcsix*enerdiff;
         dvdlambda = 0.0;
-        if (ir->efep != efepNO)
+        if (ir->efep != efepNO) 
         {
             dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
-        
-        if (bCorrAll)
+        if (bCorrAll) 
         {
             enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            enerd->term[F_DISPCORR] += avctwelve*enerdiff;
-            if (fr->efep != efepNO)
+            *enercorr += avctwelve*enerdiff;
+            if (fr->efep != efepNO) 
             {
                 dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
         
-        if (bCorrPres)
+        if (bCorrPres) 
         {
             svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
             if (ir->eDispCorr == edispcAllEnerPres)
@@ -1212,24 +1238,39 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                 virial[m][m] += svir;
                 pres[m][m] += spres;
             }
-            enerd->term[F_PDISPCORR] = spres;
-            enerd->term[F_PRES]     += spres;
+            *prescorr += spres;
+        }
+        
+        /* Can't currently control when it prints, for now, just print when degugging */
+        if (debug)
+        {
+            if (bCorrAll) {
+                fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                        avcsix,avctwelve);
+            }
+            if (bCorrPres) 
+            {
+                fprintf(debug,
+                        "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
+                        *enercorr,spres,svir);
+            }
+            else
+            {
+                fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+            }
         }
         
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
         {
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    enerd->term[F_DISPCORR],dvdlambda);
+                    *enercorr,dvdlambda);
         }
-        
-        enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
-        if (fr->efep != efepNO)
+        if (fr->efep != efepNO) 
         {
-            enerd->dvdl_lin += dvdlambda;
+            *dvdlcorr += dvdlambda;
         }
     }
 }
-
 
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
@@ -1257,7 +1298,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 
 static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			    gmx_mtop_t *mtop,rvec x[],
-			    bool bFirst)
+			    gmx_bool bFirst)
 {
   t_graph *graph;
   int mb,as,mol;
@@ -1312,7 +1353,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                bool bWriteStat)
+                gmx_bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_tot=NULL;
@@ -1344,11 +1385,34 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     print_dd_statistics(cr,inputrec,fplog);
   }
 
-  if (SIMMASTER(cr)) {
-    if (PARTDECOMP(cr)) {
-      pr_load(fplog,cr,nrnb_tot);
-    }
+#ifdef GMX_MPI
+    if (PARTDECOMP(cr))
+    {
+        if (MASTER(cr))
+        {
+            t_nrnb     *nrnb_all;
+            int        s;
+            MPI_Status stat;
 
+            snew(nrnb_all,cr->nnodes);
+            nrnb_all[0] = *nrnb;
+            for(s=1; s<cr->nnodes; s++)
+            {
+                MPI_Recv(nrnb_all[s].n,eNRNB,MPI_DOUBLE,s,0,
+                         cr->mpi_comm_mysim,&stat);
+            }
+            pr_load(fplog,cr,nrnb_all);
+            sfree(nrnb_all);
+        }
+        else
+        {
+            MPI_Send(nrnb->n,eNRNB,MPI_DOUBLE,MASTERRANK(cr),0,
+                     cr->mpi_comm_mysim);
+        }
+    }
+#endif  
+
+  if (SIMMASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
                     wcycle,cycles);
 
@@ -1395,17 +1459,12 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
-             FILE **fp_dhdl,FILE **fp_field,
-             t_mdebin **mdebin,
+             gmx_mdoutf_t **outf,t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
+             gmx_bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;
-    char filemode[3];
-    
-    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a+" : "w+");  
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
@@ -1418,7 +1477,7 @@ void init_md(FILE *fplog,
     {
         *lambda = *lam0   = 0.0;
     } 
-    
+
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
     {
@@ -1432,8 +1491,6 @@ void init_md(FILE *fplog,
     {
         update_annealing_target_temp(&(ir->opts),ir->init_t);
     }
-    
-    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
     
     if (upd)
     {
@@ -1461,49 +1518,10 @@ void init_md(FILE *fplog,
     
     if (nfile != -1)
     {
-        *fp_trn = -1;
-        *fp_ene = NULL;
-        *fp_xtc = -1;
-        
-        if (MASTER(cr)) 
-        {
-            *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
-            if (ir->nstxtcout > 0)
-            {
-                *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
-            }
-            *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
-            *fn_cpt = opt2fn("-cpo",nfile,fnm);
-            
-            if ((fp_dhdl != NULL) && ir->efep != efepNO && ir->nstdhdl > 0)
-            {
-                if(Flags & MD_APPENDFILES)
-                {
-                    *fp_dhdl= gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
-                }
-                else
-                {
-                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
-                }
-            }
-            
-            if ((fp_field != NULL) &&
-                (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
-            {
-                if(Flags & MD_APPENDFILES)
-                {
-                    *fp_dhdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
-                }
-                else
-                {				  
-                    *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
-                                         "Applied electric field","Time (ps)",
-                                         "E (V/nm)",oenv);
-                }
-            }
-        }
-        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? NULL : *fp_ene,
-                                mtop,ir);
+        *outf = init_mdoutf(nfile,fnm,Flags,cr,ir,oenv);
+
+        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
+                              mtop,ir, (*outf)->fp_dhdl);
     }
     
     /* Initiate variables */  

@@ -16,11 +16,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <stdarg.h>
+
 #include "smalloc.h"
 #include "filenm.h"
 #include "futil.h"
 #include "md5.h"
 #include "copyrite.h"
+#include "gmx_fatal.h"
 
 int _argc;
 char **_argv;
@@ -120,7 +123,7 @@ static FILE* print_file(int i)
     md5_byte_t buf[CPT_CHK_LEN+4];
     const char* cmd;
     char digest_str[33];
-    bool bOpened=FALSE;
+    gmx_bool bOpened=FALSE;
     int read_len;
     int j,ret;
     

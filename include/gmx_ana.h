@@ -46,7 +46,7 @@ int
 gmx_anaeig(int argc,char *argv[]);
 
 int 
-gmx_angle(int argc,char *argv[]);
+gmx_g_angle(int argc,char *argv[]);
 
 int 
 gmx_bar(int argc,char *argv[]);
@@ -260,6 +260,15 @@ gmx_wheel(int argc,char *argv[]);
 
 int 
 gmx_xpm2ps(int argc,char *argv[]);
+
+int 
+gmx_membed(int argc,char *argv[]);
+
+int 
+gmx_pme_error(int argc,char *argv[]);
+
+int
+gmx_options(int argc,char *argv[]);
 
 #ifdef __cplusplus
 }

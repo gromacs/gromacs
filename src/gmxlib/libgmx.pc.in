@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libgmx
+Description: Gromacs default lib
+URL: http://www.gromacs.org
+Version: @VERSION@
+Requires:
+Libs: -L${libdir} -lgmx@LIBSUFFIX@ @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ -lm
+Cflags: -I${includedir} @PTHREAD_CFLAGS@ @PKG_CFLAGS@ 
+
