@@ -108,17 +108,22 @@ def find_cmds_lowlevel(md5):
     cmd_list=[]
     input_list=[]
     if out_files.has_key(md5):
-        cmdidx = out_files[md5][-1] #current: no sorting: just last read
-        args = cmds[cmdidx]      
-        for f in args["IN "]:
-            (fn,md5)=f.split(" ")
-            (cmd,input)=find_cmds_lowlevel(md5)
-            if cmd!=[]:
-                cmd_list+=cmd
-                input_list+=input
+        for cmdidx in out_files[md5]: 
+            cmd_list=[]
+            input_list=[]
+            args = cmds[cmdidx]      
+            for f in args["IN "]:
+                (fn,n_md5)=f.split(" ")
+                if n_md5==md5:  break #ignore commands with input=output
+                (cmd,input)=find_cmds_lowlevel(n_md5)
+                if cmd!=[]:
+                    cmd_list+=cmd
+                    input_list+=input
+                else:
+                    input_list+=[f]
             else:
-                input_list+=[f]
-        cmd_list+=[cmdidx]
+                cmd_list+=[cmdidx]
+                break #current: no sorting: just last read
     return cmd_list,input_list
     
 #find all commands used to generate file with md5sum md5 and removes duplicates
@@ -151,9 +156,9 @@ def find_input(md5):
 
 def print_cmd(args):
     if args.has_key('INP'):
-        print "echo",
+        print "echo -e",
         for l in args['INP']:
-            print l,
+            print l,"\\\\n",
         print "|",
     print args['CMD'][0]
     

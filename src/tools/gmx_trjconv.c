@@ -62,6 +62,7 @@
 #include "pbc.h"
 #include "viewit.h"
 #include "xvgr.h"
+#include "futil.h"
 #include "gmx_ana.h"
 #include "gmx_sort.h"
 
@@ -481,10 +482,9 @@ void do_trunc(const char *fn, real t0)
             fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
                     fn,j,t,(long int)fpos);
-            if(1 != scanf("%s",yesno))
-            { 
-                gmx_fatal(FARGS,"Error reading user input");
-            }
+            
+            gmx_fgets(yesno,sizeof(yesno),stdin);
+            
             if (strcmp(yesno,"YES") == 0) {
                 fprintf(stderr,"Once again, I'm gonna DO this...\n");
                 close_trn(in);

@@ -111,7 +111,7 @@ static const char *select_res(int nr,int resnr,
   }
   printf("\nType a number:"); fflush(stdout);
 
-  if (scanf("%d",&sel) != 1)
+  if (gmx_fgeti(&sel,stdin) != 0)
     gmx_fatal(FARGS,"Answer me for res %s %d!",title,resnr+1);
   
   return name[sel];
@@ -1369,7 +1369,7 @@ int main(int argc, char *argv[])
                      prev_resname,prev_resnum,prev_chainid,prev_atomnum,prev_atomname,
                      this_resname,this_resnum,this_chainid,this_atomnum,this_atomname);
               
-              if(NULL==fgets(select,STRLEN-1,stdin))
+              if(NULL==gmx_fgets(select,STRLEN-1,stdin))
               {
                   gmx_fatal(FARGS,"Error reading from stdin");
               }

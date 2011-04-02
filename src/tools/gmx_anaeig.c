@@ -1111,7 +1111,7 @@ int gmx_anaeig(int argc,char *argv[])
     do {
       nout++;
       srenew(iout,nout+1);
-      if(1 != scanf("%d",&iout[nout]))
+      if(0 != gmx_fgeti(&iout[nout],stdin))
       {
 	  gmx_fatal(FARGS,"Error reading user input");
       }

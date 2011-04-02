@@ -75,7 +75,7 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
 
   if (bASK) {
     do {
-      c=toupper(fgetc(stdin));
+      c=toupper(gmx_fgetc(stdin));
     } while ((c != 'Y') && (c != 'N'));
 
     return (c == 'Y');
@@ -1017,7 +1017,8 @@ static int qgroup(int *a, int ngrps, char **grpname)
     do {
         fprintf(stderr,"Select a group: ");
         do {
-            if ( scanf("%s",s)!=1 ) 
+            gmx_fgets(s,sizeof(s),stdin);
+            if ( s[0]==0 ) 
                 gmx_fatal(FARGS,"Cannot read from input");
             trim(s); /* remove spaces */
         } while (strlen(s)==0);

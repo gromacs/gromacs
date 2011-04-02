@@ -118,7 +118,7 @@ static int *select_it(int nre,char *nm[],int *nset)
 
   snew(bE,nre);
   do {
-    if(1 != scanf("%d",&n))
+    if(0 != gmx_fgeti(&n,stdin))
     {
       gmx_fatal(FARGS,"Error reading user input");
     }
@@ -1700,7 +1700,7 @@ int gmx_energy(int argc,char *argv[])
               if (i == nre) {
                   if (gmx_strcasecmp(setnm[j],"Volume")==0) {
                       printf("Enter the box volume (" unit_volume "): ");
-                      if(1 != scanf("%lf",&dbl))
+	    if(0 != gmx_fgetd(&dbl,stdin))
                       {
                           gmx_fatal(FARGS,"Error reading user input");
                       }
@@ -1777,7 +1777,7 @@ int gmx_energy(int argc,char *argv[])
               do {
                   j++;
                   srenew(orsel,j+1);
-                  if(1 != scanf("%d",&(orsel[j])))
+	  if(0 != gmx_fgeti(&(orsel[j]),stdin))
                   {
                       gmx_fatal(FARGS,"Error reading user input");
                   }

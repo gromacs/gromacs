@@ -101,7 +101,10 @@ void histaddinput(char* str)
     char* npos = rindex(str,'\n');
     while(npos && strlen(str)>0)
     {
-        histbuf[nhistbuf++]=make_message("INP: %.*s\n",npos-str,str);
+        if (npos>str)
+        {
+            histbuf[nhistbuf++]=make_message("INP: %.*s\n",npos-str,str);
+        }
         str=npos+1;
         npos = rindex(str,'\n');
     }

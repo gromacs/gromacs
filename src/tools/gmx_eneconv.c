@@ -81,7 +81,7 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
 
   snew(bE,nre);
   do {
-    if(1 != scanf("%d",&n))
+    if(0 != gmx_fgeti(&n,stdin))
     {
       gmx_fatal(FARGS,"Cannot read energy term");
     }
@@ -180,7 +180,7 @@ static int scan_ene_files(char **fnms, int nfiles,
 	fprintf(stderr,
 		"\nContinue conversion using only the first %d terms (n/y)?\n"
 		"(you should be sure that the energy terms match)\n",nremin);
-	if(NULL==fgets(inputstring,STRLEN-1,stdin))
+	if(NULL==gmx_fgets(inputstring,STRLEN-1,stdin))
         { 
 	      gmx_fatal(FARGS,"Error reading user input");
 	}
@@ -233,7 +233,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
       fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
       ok=FALSE;
       do {
-	if(NULL==fgets(inputstring,STRLEN-1,stdin))
+	if(NULL==gmx_fgets(inputstring,STRLEN-1,stdin))
 	{
 	    gmx_fatal(FARGS,"Error reading user input");
 	}

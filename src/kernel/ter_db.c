@@ -467,14 +467,15 @@ t_hackblock **filter_ter(int nrtp,t_restp rtp[],
 
 t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title)
 {
-  int i,sel,ret;
+  int i,ret;
+  int sel;
   
   printf("%s\n",title);
   for(i=0; (i<nb); i++) 
     printf("%2d: %s\n",i,(*tb[i]).name);
   do {
-    ret=fscanf(stdin,"%d",&sel);
-  } while ((ret != 1) || (sel < 0) || (sel >= nb));
+       ret = gmx_fgeti(&sel,stdin);
+  } while (ret || (sel < 0) || (sel >= nb));
   
   return tb[sel];
 }

@@ -999,16 +999,6 @@ int gmx_truncatefile(char *path, gmx_off_t length)
 #endif
 }
     
-int gmx_scanf(const char *format, ...) 
-{
-    va_list ap;
-    int ret;
-    va_start(ap, format);  
-    ret = vscanf(format, ap);
-    va_end(ap);
-    return ret;
-}
-
 char *gmx_fgets(char *s, int size, FILE *stream)
 {
     char* ret;
@@ -1019,6 +1009,39 @@ char *gmx_fgets(char *s, int size, FILE *stream)
     }
     return ret;
 }
+
+int gmx_fgeti(int *i, FILE *stream)
+{
+    char buf[STRLEN];
+    char *bufe;
+    gmx_fgets(buf,STRLEN,stdin);
+    *i = (int)strtol(buf,&bufe,10);
+    return bufe==buf;
+}
+
+int gmx_fgetd(double *d, FILE *stream)
+{
+    char buf[STRLEN];
+    char *bufe;
+    gmx_fgets(buf,STRLEN,stdin);
+    *d = strtod(buf,&bufe);
+    return bufe==buf;
+}
+
+int gmx_fgetc(FILE *stream)
+{
+    int ret;
+    char buf[2];
+    ret = fgetc(stream);
+    if (stream==stdin)
+    {
+        buf[0]=ret;
+        buf[1]=0;
+        histaddinput(buf);
+    }
+    return ret;
+}
+
 
 int gmx_lock(FILE* file)
 {

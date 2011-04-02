@@ -12,5 +12,7 @@ void histopenfile(FILE* file, const char* fn, const char* mode);
 int histclosefile(FILE** file);
 void histaddinput(char* str);
 void print_history();
+char *
+make_message(const char *fmt, ...);
 
 #endif /* HISTORY_H_ */
