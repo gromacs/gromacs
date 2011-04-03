@@ -1,5 +1,31 @@
 So, you want to build the manual?
 
+It used to be a bit inconvenient. It still is, but CMake can take care
+of more of the LaTeX and file-copying monkey work, using the
+UseLaTeX.cmake package. Documentation and source updates for it
+can be found here http://www.itk.org/Wiki/CMakeUserUseLATEX
+
+The UseLaTeX.cmake package requires an "out of source" build, so make
+a new directory somewhere, and from it run "ccmake ${this_directory}".
+Such a directory can be a subdirectory of this package, however. You
+will need to provide values for two CMake cached variables, which
+are the location of installed GROMACS binaries, and the location of
+a GROMACS source distribution. Obviously, these should correspond to
+what you want to build the manual from. This will take care of building
+all of the parts of the manual that are made directly from the source,
+and the parts that are made from the executables themselves.
+
+Those paths should be absolute paths if you want the make dependencies
+to construct correctly. Relative paths will sort-of work, however.
+
+Having told cmake about those locations, it will check that you're
+not obviously wrong. Keep using 'c' for configure until ccmake will
+let you use 'g' for generate. Now "make pdf" will make the PDF
+manual.
+
+Old README contents follow - this are partly out of date.
+--------------
+
 It's not terribly difficult, but before you just run 'make' and let
 LaTeX do the job, we need to create a couple of files from the Gromacs 
 source. 

@@ -1,56 +1,69 @@
-#!/bin/csh -f
+#!/bin/bash
 
-
-if ( $#argv < 1 ) then
-  echo "Error: provide the GROMACS bin directory as first argument."
+if [[ $# != 1 ]]; then
+  echo "Error: usage is 'mkman GMXBIN' where GMXBIN is the .../bin directory where GROMACS binaries are installed"
   exit
-endif
+fi
 
-set BINDIR = $1
+GMXBIN=$1
 
-set THISDIR	= `pwd`
-set MANDIR	= progman
-set TEXMAN	= $THISDIR/$MANDIR
-set INDEX	= $TEXMAN/all.tex
+PROGMAN=progman
+MANDIR=${PROGMAN}
+INDEX=${MANDIR}/all.tex
+OPTIONS_PROGRAM_NAME=g_options
 
-cd $BINDIR
-echo -n "Generating manpage from gromacs binaries in "
-pwd
-set PROGRAMS    = [a-z]*
+PROGRAMS=$(cd ${GMXBIN}; ls)
+echo "Generating manpages from GROMACS binaries in ${GMXBIN}"
 
-if ( ! -d $TEXMAN ) mkdir $TEXMAN
-cd $TEXMAN
-\rm -f *
-touch $INDEX
-foreach program ( $PROGRAMS )
-  set PROG = $BINDIR/$program
-  if ( ( -x $PROG ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) && ( $program != "g_options") ) then
-    echo -n "$program "
-    $PROG -quiet -man tex >& /dev/null
-    endif
-    if ( -f $program.tex ) then
-      grep -v "Use dialog box GUI to edit command line options" $program.tex >! mkman_temp.tex
-      grep -v "Set non blocking priority" mkman_temp.tex >! $program.tex
-      \rm mkman_temp.tex
-      echo "\input{"$MANDIR"/"$program"}" >> $INDEX
-    endif
-  endif
-end
+\rm -rf ${MANDIR}
+mkdir ${MANDIR}
 
-cat >! $TEXMAN.tex << EOD
+touch ${INDEX}
+for PROG in $PROGRAMS; do
+    # strip off .exe suffixes (good for Cygwin)
+    program=${PROG%.exe}
+
+    if [ -x "${GMXBIN}/${PROG}" -a \
+	"$PROG" != "GMXRC" -a \
+        "$PROG" != "GMXRC.bash" -a \
+        "$PROG" != "GMXRC.csh" -a \
+        "$PROG" != "GMXRC.zsh" -a \
+        "$program" != "average" -a \
+        "$program" != "g_luck" -a \
+        "$program" != "${OPTIONS_PROGRAM_NAME}" -a \
+	"$program" != "my_dssp" -a \
+        "$PROG" != "completion.csh" -a \
+        "$PROG" != "completion.zsh" -a \
+        "$PROG" != "completion.bash" -a \
+        "$PROG" != "demux.pl" -a \
+        "$PROG" != "xplor2gmx.pl" ]; then
+	echo -n "$program "
+	${GMXBIN}/$PROG -quiet -man tex >& /dev/null
+	if [ -f ${program}.tex ]; then
+	    grep -v "Use dialog box GUI to edit command line options" ${program}.tex > mkman_temp.tex
+	    grep -v "non blocking priority" mkman_temp.tex > ${program}.tex
+	    \rm mkman_temp.tex
+	    mv ${program}.tex ${MANDIR}/
+	    echo "\input{${MANDIR}/${program}}" >> $INDEX
+	else
+	    echo
+	    echo "${program}.tex was not created"
+	fi
+    fi
+done
+
+cat > ${PROGMAN}.tex << EOD
 \chapter{Manual Pages}
 \label{app:progman}
 
 {\small
-%g_options.tex is created by the GROMACS installed binary g_options
-\input{g_options.tex}
+%${OPTIONS_PROGRAM_NAME}.tex is created by the GROMACS installed binary ${OPTIONS_PROGRAM_NAME}
+\input{${OPTIONS_PROGRAM_NAME}.tex}
 }
 {\small
-\input{$MANDIR/all}
+\input{${MANDIR}/all}
 }
 EOD
 echo ""
-
-cd $THISDIR
 
 #last line
