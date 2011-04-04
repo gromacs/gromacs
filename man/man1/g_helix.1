@@ -1,8 +1,8 @@
-.TH g_helix 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_helix 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_helix - calculates basic properties of alpha helices
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_helix\fP
 .BI "\-s" " topol.tpr "
@@ -29,24 +29,24 @@ g_helix - calculates basic properties of alpha helices
 .SH DESCRIPTION
 \&\fB g_helix\fR computes all kinds of helix properties. First, the peptide
 \&is checked to find the longest helical part, as determined by
-\&hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.
+\&hydrogen bonds and phi/psi angles.
 \&That bit is fitted
 \&to an ideal helix around the \fI z\fR\-axis and centered around the origin.
 \&Then the following properties are computed:
 
 
 \&\fB 1.\fR Helix radius (file \fB radius.xvg\fR). This is merely the
-\&RMS deviation in two dimensions for all C[GRK]alpha[grk] atoms.
+\&RMS deviation in two dimensions for all Calpha atoms.
 \&it is calced as sqrt((SUM i(x2(i)+y2(i)))/N), where N is the number
 \&of backbone atoms. For an ideal helix the radius is 0.23 nm
 
 \&\fB 2.\fR Twist (file \fB twist.xvg\fR). The average helical angle per
-\&residue is calculated. For an [GRK]alpha[grk]\-helix it is 100 degrees,
+\&residue is calculated. For an alpha\-helix it is 100 degrees,
 \&for 3\-10 helices it will be smaller, and 
 \&for 5\-helices it will be larger.
 
 \&\fB 3.\fR Rise per residue (file \fB rise.xvg\fR). The helical rise per
-\&residue is plotted as the difference in \fI z\fR\-coordinate between C[GRK]alpha[grk]
+\&residue is plotted as the difference in \fI z\fR\-coordinate between Calpha
 \&atoms. For an ideal helix, this is 0.15 nm
 
 \&\fB 4.\fR Total helix length (file \fB len\-ahx.xvg\fR). The total length
@@ -59,12 +59,12 @@ g_helix - calculates basic properties of alpha helices
 
 \&\fB 6.\fR Helix dipole, backbone only (file \fB dip\-ahx.xvg\fR).
 
-\&\fB 7.\fR RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]
+\&\fB 7.\fR RMS deviation from ideal helix, calculated for the Calpha
 \&atoms only (file \fB rms\-ahx.xvg\fR).
 
-\&\fB 8.\fR Average C[GRK]alpha[grk] \- C[GRK]alpha[grk] dihedral angle (file \fB phi\-ahx.xvg\fR).
+\&\fB 8.\fR Average Calpha \- Calpha dihedral angle (file \fB phi\-ahx.xvg\fR).
 
-\&\fB 9.\fR Average [GRK]phi[grk] and [GRK]psi[grk] angles (file \fB phipsi.xvg\fR).
+\&\fB 9.\fR Average phi and psi angles (file \fB phipsi.xvg\fR).
 
 \&\fB 10.\fR Ellipticity at 222 nm according to Hirst and Brooks.
 \&
