@@ -356,7 +356,7 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   snew(dum,ma+1);
   for(i=1; (i<ma+1); i++) {
     lista[i] = i;
-    ia[i] = 1; //fixed bug B.S.S 19/11 
+    ia[i] = 1; /* fixed bug B.S.S 19/11  */
     snew(covar[i],ma+1);
     snew(alpha[i],ma+1);
   }

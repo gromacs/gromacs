@@ -45,7 +45,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
 	addconf.c 	addconf.h	gmx_tune_pme.c  gmx_membed.c     \
 	calcpot.c 	calcpot.h 	edittop.c	\
-	linearsearch.c	linearsearch.h	dens_filter.c	dens_filter.h	\
+	dens_filter.c	dens_filter.h	\
 	powerspect.c	powerspect.h	interf.h	\
 	gmx_densorder.c	gmx_hydorder.c	\
 	binsearch.h	binsearch.c

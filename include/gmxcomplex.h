@@ -33,8 +33,8 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-#ifndef _complex_h
-#define _complex_h
+#ifndef _gmxcomplex_h
+#define _gmxcomplex_h
 
 #include <math.h>
 #include "typedefs.h"
