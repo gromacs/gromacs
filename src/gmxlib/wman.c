@@ -128,7 +128,9 @@ const t_sandr_const sandrWiki[] = {
   { "[IT]", "''" },
   { "[it]", "''" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n" },
+  { "[GRK]", "&" },
+  { "[grk]", ";" }
 };
 #define NSRWIKI asize(sandrWiki)
 
@@ -146,7 +148,9 @@ const t_sandr_const sandrNROFF[] = {
   { "^",    "" },
   { "#",    "" },
   { "[BR]", "\n"},
-  { "-",    "\\-"}
+  { "-",    "\\-"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRNROFF asize(sandrNROFF)
 
@@ -176,7 +180,9 @@ const t_sandr_const sandrXML[] = {
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
   { "[PAR]","</par>\n<par>" },
-  { "[BR]", "<br />" }
+  { "[BR]", "<br />" },
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRXML asize(sandrXML)
 
