@@ -5,8 +5,8 @@ Name: libgmxana
 Description: Gromacs analysis lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
-Requires: @PKG_GSL@ libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@
+Requires: @PKG_GSL@ libgmx@GMX_LIBS_SUFFIX@ libmd@GMX_LIBS_SUFFIX@
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
-Libs: -L${libdir} -lgmxana@LIBSUFFIX@
+Libs: -L${libdir} -lgmxana@GMX_LIBS_SUFFIX@
 Cflags: -I${includedir} @PKG_CFLAGS@
 

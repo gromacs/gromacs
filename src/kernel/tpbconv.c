@@ -307,7 +307,7 @@ int main (int argc, char *argv[])
     "of the original run.[PAR]",
     "[BB]3.[bb] by creating a [TT].tpx[tt] file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
-    "your [TT].tpx[tt] file, or when you want to make e.g. a pure Ca [TT].tpx[tt] file.",
+    "your [TT].tpx[tt] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [TT].tpx[tt] file.",
     "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
     "this to work.",
     "[BB]WARNING: this [TT].tpx[tt] file is not fully functional[bb].[PAR]",

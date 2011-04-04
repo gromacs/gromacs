@@ -9,8 +9,6 @@ lib_LTLIBRARIES = libgmxana@LIBSUFFIX@.la
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmxana@LIBSUFFIX@.pc
 
-EXTRA_DIST = libgmxana.pc.cmakein
-
 libgmxana@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
 libgmxana@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
 libgmxana@LIBSUFFIX@_la_LDFLAGS        = -no-undefined -version-info @SHARED_VERSION_INFO@ @GSL_LIBS@
@@ -37,7 +35,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_polystat.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_rotmat.c	gmx_saltbr.c	gmx_sas.c	\
-	gmx_select.c	gmx_pme_error.c	\
+	gmx_select.c	gmx_pme_error.c	gmx_options.c\
 	gmx_sgangle.c	gmx_sorient.c 	gmx_spol.c	gmx_tcaf.c	\
 	gmx_traj.c	gmx_velacc.c	gmx_helixorient.c \
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
@@ -74,13 +72,13 @@ bin_PROGRAMS = \
 	g_rotacf    	g_rotmat	g_saltbr    	g_sas       	\
 	g_select	g_sgangle   	\
 	g_sham 		g_sorient   	g_spol		\
-	g_spatial	g_pme_error	\
+	g_spatial	g_pme_error		g_options	\
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	g_membed      \
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
 	g_sigeps	g_densorder	g_hydorder
 
-EXTRA_PROGRAMS 	=  	options
+EXTRA_DIST		=	libgmxana.pc.cmakein
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la

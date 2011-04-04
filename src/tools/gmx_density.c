@@ -409,7 +409,7 @@ int gmx_density(int argc,char *argv[])
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
   };
   
-  real **density;        /* density per slice          */
+  real **density;      /* density per slice          */
   real slWidth;          /* width of one slice         */
   char **grpname;        /* groupnames                 */
   int  nr_electrons;     /* nr. electrons              */
