@@ -3,7 +3,8 @@
 	
 #include "types/simple.h"
 
-gmx_bool convolve1D(real* in, real* out, int dataSize, real* kernel, int kernelSize);
+gmx_bool convolution(int dataSize, real* in, int kernelSize, real* kernel);
+gmx_bool periodic_convolution(int dsize, real *in, int ksize, real* kernel);
 void gausskernel(real *out, int size, real var);
 
 #endif

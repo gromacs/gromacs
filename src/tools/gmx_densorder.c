@@ -327,12 +327,8 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
  for(n=0;n<tblocks;n++){	
    for(i=0;i<xslices;i++){
      for (j=0;j<yslices;j++){
-       if (0) {
-	 snew(output,zslices);
-	 convolve1D( Densmap[n][i][j],output,zslices,kernel,ftsize );
-	 Densmap[n][i][j]=output;
-       }
-       periodic_running_average(zslices,Densmap[n][i][j],ftsize);
+	 periodic_convolution(zslices,Densmap[n][i][j],ftsize,kernel);
+       	if (0) periodic_running_average(zslices,Densmap[n][i][j],ftsize);
      }
    }
  }
@@ -600,16 +596,16 @@ int gmx_densorder(int argc,char *argv[])
   static real binwz=0.05;
   static real dens1=0.00;
   static real dens2=1000.00;
-  static int ftorder=1;
+  static int ftorder=0;
   static int nsttblock=100;
   static int axis= 2;
   static char *axtitle="Z";
   static int ngrps=1;
   atom_id **index; // Index list for single group
   int xslices, yslices, zslices, tblock;
+  static gmx_bool bGraph=FALSE;
   static gmx_bool bCenter = FALSE;
   static gmx_bool bFourier=FALSE;
-  static gmx_bool bAvgt  = FALSE;
   static gmx_bool bRawOut=FALSE;
   static gmx_bool bOut=FALSE;
   static gmx_bool b1d=FALSE;
@@ -622,12 +618,10 @@ int gmx_densorder(int argc,char *argv[])
  static const char *meth[]={NULL,"bisect","functional",NULL};
  int eMeth;	
 
-  char **outfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
+  char **graphfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
   int nfxpm,nfraw, nfspect; /* # files for interface maps and spectra = # interfaces */
  
 t_pargs pa[] = {
-    { "-tavg", FALSE, etBOOL, {&bAvgt},
-      "Plot time averaged interface profile"},
     { "-1d", FALSE, etBOOL, {&b1d},
       "Pseudo-1d interface geometry"},
     { "-bw",FALSE,etREAL,{&binw},
@@ -635,7 +629,7 @@ t_pargs pa[] = {
     { "-bwn", FALSE, etREAL, {&binwz},
 	"Binwidth of density distribution normal to interface"},
     { "-order", FALSE, etINT,{&ftorder},
-	"Order of Gaussian filter"},
+	"Order of Gaussian filter, order 0 equates to NO filtering"},
     {"-axis", FALSE, etSTR,{&axtitle},
 	"Axis Direction - X, Y or Z"},
     {"-method",FALSE ,etENUM,{meth},
@@ -655,8 +649,9 @@ t_pargs pa[] = {
     { efTPX, "-s",  NULL, ffREAD },   /* this is for the topology */
     { efTRX, "-f", NULL, ffREAD },      /* and this for the trajectory */
     { efNDX, "-n", NULL, ffREAD}, /* this is to select groups */
+    { efDAT, "-o", "Density4D",ffOPTWR}, /* This is for outputting the entire 4D densityfield in binary format */
     { efOUT, "-or", NULL,ffOPTWRMULT}, /* This is for writing out the entire information in the t_interf arrays */
-    { efXPM, "-o" ,"interface",ffOPTWRMULT},/* This is for writing out the interface meshes - one xpm-file per tblock*/ 
+    { efXPM, "-og" ,"interface",ffOPTWRMULT},/* This is for writing out the interface meshes - one xpm-file per tblock*/ 
     { efOUT, "-Spect","intfspect",ffOPTWRMULT}, /* This is for the trajectory averaged Fourier-spectra*/		
   };
   
@@ -673,7 +668,8 @@ t_pargs pa[] = {
 eMeth=nenum(meth);	
 bFourier=opt2bSet("-Spect",NFILE,fnm);
 bRawOut=opt2bSet("-or",NFILE,fnm);
-bOut=opt2bSet("-o",NFILE,fnm);  
+bGraph=opt2bSet("-og",NFILE,fnm);
+bOut=opt2bSet("-o",NFILE,fnm);
 top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
 snew(grpname,ngrps);
 snew(index,ngrps);
@@ -685,26 +681,25 @@ snew(ngx,ngrps);
 get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,ngx,index,grpname);
 
 density_in_time(ftp2fn(efTRX,NFILE,fnm),index,ngx,ngrps,binw,binwz,nsttblock,&Densmap,&xslices,&yslices,&zslices,&tblock,top,ePBC,axis,bCenter,b1d,oenv);
-if (debug){
-outputfield("Density_4D.dat",Densmap,xslices,yslices,zslices,tblock);
+
+if(ftorder>0){
+filterdensmap(Densmap,xslices,yslices,zslices,tblock,2*ftorder+1);
 }
 
-filterdensmap(Densmap,xslices,yslices,zslices,tblock,2*ftorder+1);
-
-if (debug){
-outputfield("Density_4D_filtered.dat",Densmap,xslices,yslices,zslices,tblock);
+if (bOut){
+outputfield(opt2fn("-o",NFILE,fnm),Densmap,xslices,yslices,zslices,tblock);
 }
 
 interfaces_txy(Densmap,xslices,yslices,zslices,tblock,binwz,eMeth,dens1,dens2,&surf1,&surf2,oenv);
 
-if(bOut){
+if(bGraph){
 
 //Output surface-xpms
-   nfxpm=opt2fns(&outfiles,"-o",NFILE,fnm);
+   nfxpm=opt2fns(&graphfiles,"-og",NFILE,fnm);
    if(nfxpm!=2){
 	gmx_fatal(FARGS,"No or not correct number (2) of output-files: %d",nfxpm);
    }
-writesurftoxpms(surf1, surf2, tblock,xslices,yslices,zslices,binw,binwz,outfiles,zslices);
+writesurftoxpms(surf1, surf2, tblock,xslices,yslices,zslices,binw,binwz,graphfiles,zslices);
 }
 
 
@@ -732,7 +727,7 @@ if(bFourier){
 }
 
 sfree(Densmap);
-if(bOut || bFourier || bRawOut){
+if(bGraph || bFourier || bRawOut){
 sfree(surf1);
 sfree(surf2);
 }
