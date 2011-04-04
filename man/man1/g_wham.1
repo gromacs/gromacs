@@ -1,8 +1,8 @@
-.TH g_wham 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_wham 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_wham - weighted histogram analysis after umbrella sampling
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_wham\fP
 .BI "\-ix" " pullx\-files.dat "
@@ -150,13 +150,13 @@ g_wham - weighted histogram analysis after umbrella sampling
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 \&With \fB \-ac\fR, \fB g_wham\fR estimates the integrated autocorrelation 
-\&time (IACT) [GRK]tau[grk] for each umbrella window and weights the respective 
-\&window with 1/[1+2*[GRK]tau[grk]/dt]. The IACTs are written 
+\&time (IACT) tau for each umbrella window and weights the respective 
+\&window with 1/[1+2*tau/dt]. The IACTs are written 
 \&to the file defined with \fB \-oiact\fR. In verbose mode, all 
 \&autocorrelation functions (ACFs) are written to \fB hist_autocorr.xvg\fR. 
 \&Because the IACTs can be severely underestimated in case of limited 
 \&sampling, option \fB \-acsig\fR allows to smooth the IACTs along the 
-\&reaction coordinate with a Gaussian ([GRK]sigma[grk] provided with \fB \-acsig\fR, 
+\&reaction coordinate with a Gaussian (sigma provided with \fB \-acsig\fR, 
 \&see output in \fB iact.xvg\fR). Note that the IACTs are estimated by simple 
 \&integration of the ACFs while the ACFs are larger 0.05.
 \&If you prefer to compute the IACTs by a more sophisticated (but possibly 
@@ -329,7 +329,7 @@ Bootstrapping output:
  Calculate integrated autocorrelation times and use in wham
 
 .BI "\-acsig"  " real" " 0     " 
- Smooth autocorrelation times along reaction coordinate with Gaussian of this [GRK]sigma[grk]
+ Smooth autocorrelation times along reaction coordinate with Gaussian of this sigma
 
 .BI "\-ac\-trestart"  " real" " 1     " 
  When computing autocorrelation functions, restart computing every .. (ps)

@@ -1,8 +1,8 @@
-.TH g_tcaf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_tcaf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_tcaf - calculates viscosities of liquids
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_tcaf\fP
 .BI "\-f" " traj.trr "
@@ -34,7 +34,7 @@ g_tcaf - calculates viscosities of liquids
 .BI "\-endfit" " real "
 .SH DESCRIPTION
 \&\fB g_tcaf\fR computes tranverse current autocorrelations.
-\&These are used to estimate the shear viscosity, [GRK]eta[grk].
+\&These are used to estimate the shear viscosity, eta.
 \&For details see: Palmer, Phys. Rev. E 49 (1994) pp 359\-366.
 
 
@@ -47,10 +47,10 @@ g_tcaf - calculates viscosities of liquids
 \&a total of 16*2*2=64 transverse currents. One autocorrelation is
 \&calculated fitted for each k\-vector, which gives 16 TCAF's. Each of
 \&these TCAF's is fitted to f(t) = exp(\-v)(cosh(Wv) + 1/W sinh(Wv)),
-\&v = \-t/(2 [GRK]tau[grk]), W = sqrt(1 \- 4 [GRK]tau[grk] [GRK]eta[grk]/[GRK]rho[grk] k2), which gives 16 values of [GRK]tau[grk]
-\&and [GRK]eta[grk]. The fit weights decay with time as exp(\-t/wt), and the TCAF and
+\&v = \-t/(2 tau), W = sqrt(1 \- 4 tau eta/rho k2), which gives 16 values of tau
+\&and eta. The fit weights decay with time as exp(\-t/wt), and the TCAF and
 \&fit are calculated up to time 5*wt.
-\&The [GRK]eta[grk] values should be fitted to 1 \- a [GRK]eta[grk](k) k2, from which
+\&The eta values should be fitted to 1 \- a eta(k) k2, from which
 \&one can estimate the shear viscosity at k=0.
 
 
@@ -58,7 +58,7 @@ g_tcaf - calculates viscosities of liquids
 \&averages the TCAF's over all k\-vectors with the same length.
 \&This results in more accurate tcaf's.
 \&Both the cubic TCAF's and fits are written to \fB \-oc\fR
-\&The cubic [GRK]eta[grk] estimates are also written to \fB \-ov\fR.
+\&The cubic eta estimates are also written to \fB \-ov\fR.
 
 
 \&With option \fB \-mol\fR, the transverse current is determined of
@@ -67,7 +67,7 @@ g_tcaf - calculates viscosities of liquids
 
 
 \&The k\-dependent viscosities in the \fB \-ov\fR file should be
-\&fitted to [GRK]eta[grk](k) = [GRK]eta[grk]0 (1 \- a k2) to obtain the viscosity at
+\&fitted to eta(k) = eta0 (1 \- a k2) to obtain the viscosity at
 \&infinite wavelength.
 
 

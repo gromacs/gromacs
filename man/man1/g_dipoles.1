@@ -1,8 +1,8 @@
-.TH g_dipoles 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_dipoles 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_dipoles - computes the total dipole plus fluctuations
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_dipoles\fP
 .BI "\-en" " ener.edr "
@@ -99,7 +99,7 @@ g_dipoles - computes the total dipole plus fluctuations
 \&dipoles using a first order Legendre polynomial of the angle of the
 \&dipole vector and itself a time t later. For this calculation 1001
 \&frames will be used. Further, the dielectric constant will be calculated
-\&using an [GRK]epsilon[grk]RF of infinity (default), temperature of 300 K (default) and
+\&using an epsilonRF of infinity (default), temperature of 300 K (default) and
 \&an average dipole moment of the molecule of 2.273 (SPC). For the
 \&distribution function a maximum of 5.0 will be used.
 .SH FILES
@@ -211,7 +211,7 @@ g_dipoles - computes the total dipole plus fluctuations
  Correlation function to calculate: \fB none\fR, \fB mol\fR, \fB molsep\fR or \fB total\fR
 
 .BI "\-[no]pairs"  "yes   "
- Calculate |cos [GRK]theta[grk]| between all pairs of molecules. May be slow
+ Calculate |cos theta| between all pairs of molecules. May be slow
 
 .BI "\-ncos"  " int" " 1" 
  Must be 1 or 2. Determines whether the cos is computed between all molecules in one group, or between molecules in two different groups. This turns on the \fB \-gkr\fR flag.

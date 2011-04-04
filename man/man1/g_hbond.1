@@ -1,8 +1,8 @@
-.TH g_hbond 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_hbond 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_hbond - computes and analyzes hydrogen bonds
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_hbond\fP
 .BI "\-f" " traj.xtc "
@@ -249,7 +249,7 @@ g_hbond - computes and analyzes hydrogen bonds
  Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming
 
 .BI "\-smooth"  " real" " \-1    " 
- If = 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(\-x/[GRK]tau[grk])
+ If = 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(\-x/tau)
 
 .BI "\-dump"  " int" " 0" 
  Dump the first N hydrogen bond ACFs in a single \fB .xvg\fR file for debugging

@@ -1,8 +1,8 @@
-.TH g_dielectric 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_dielectric 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_dielectric - calculates frequency dependent dielectric constants
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_dielectric\fP
 .BI "\-f" " dipcorr.xvg "
@@ -125,16 +125,16 @@ g_dielectric - calculates frequency dependent dielectric constants
  Start value for fit parameter A
 
 .BI "\-tau1"  " real" " 10    " 
- Start value for fit parameter [GRK]tau[grk]1
+ Start value for fit parameter tau1
 
 .BI "\-tau2"  " real" " 1     " 
- Start value for fit parameter [GRK]tau[grk]2
+ Start value for fit parameter tau2
 
 .BI "\-eps0"  " real" " 80    " 
- [GRK]epsilon[grk]0 of your liquid
+ epsilon0 of your liquid
 
 .BI "\-epsRF"  " real" " 78.5  " 
- [GRK]epsilon[grk] of the reaction field used in your simulation. A value of 0 means infinity.
+ epsilon of the reaction field used in your simulation. A value of 0 means infinity.
 
 .BI "\-fix"  " int" " 0" 
  Fix parameters at their start values, A (2), tau1 (1), or tau2 (4)

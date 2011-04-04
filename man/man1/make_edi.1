@@ -1,8 +1,8 @@
-.TH make_edi 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH make_edi 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 make_edi - generate input files for essential dynamics sampling
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3make_edi\fP
 .BI "\-f" " eigenvec.trr "
@@ -154,7 +154,7 @@ You will be prompted for one or more index groups that correspond to the eigenve
 \&It can be changed with \fB \-ori\fR to an arbitrary position in configurational space.
 \&With \fB \-tau\fR, \fB \-deltaF0\fR, and \fB \-Eflnull\fR you control the flooding behaviour.
 \&Efl is the flooding strength, it is updated according to the rule of adaptive flooding.
-\&Tau is the time constant of adaptive flooding, high [GRK]tau[grk] means slow adaption (i.e. growth). 
+\&Tau is the time constant of adaptive flooding, high tau means slow adaption (i.e. growth). 
 \&DeltaF0 is the flooding strength you want to reach after tau ps of simulation.
 \&To use constant Efl set \fB \-tau\fR to zero.
 \&
@@ -162,9 +162,9 @@ You will be prompted for one or more index groups that correspond to the eigenve
 
 \&\fB \-alpha\fR is a fudge parameter to control the width of the flooding potential. A value of 2 has been found
 \&to give good results for most standard cases in flooding of proteins.
-\&[GRK]alpha[grk] basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
-\&increase, this is mimicked by [GRK]alpha[grk]  1.
-\&For restraining, [GRK]alpha[grk]  1 can give you smaller width in the restraining potential.
+\&alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
+\&increase, this is mimicked by alpha  1.
+\&For restraining, alpha  1 can give you smaller width in the restraining potential.
 \&
 
 

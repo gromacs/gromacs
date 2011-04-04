@@ -1,8 +1,8 @@
-.TH g_energy 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-3c0e5ec"
+.TH g_energy 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_energy - writes energies to xvg files and displays averages
 
-.B VERSION 4.5.4-dev-20110404-3c0e5ec
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_energy\fP
 .BI "\-f" " ener.edr "
@@ -109,9 +109,9 @@ g_energy - writes energies to xvg files and displays averages
 \&With \fB \-fee\fR an estimate is calculated for the free\-energy
 \&difference with an ideal gas state: 
 
-\&  [GRK]Delta[grk] A = A(N,V,T) \- A_idgas(N,V,T) = kT ln  e(Upot/kT) 
+\&  Delta A = A(N,V,T) \- A_idgas(N,V,T) = kT ln  e(Upot/kT) 
 
-\&  [GRK]Delta[grk] G = G(N,p,T) \- G_idgas(N,p,T) = kT ln  e(Upot/kT) 
+\&  Delta G = G(N,p,T) \- G_idgas(N,p,T) = kT ln  e(Upot/kT) 
 
 \&where k is Boltzmann's constant, T is set by \fB \-fetemp\fR and
 \&the average is over the ensemble (or time in a trajectory).
@@ -120,9 +120,9 @@ g_energy - writes energies to xvg files and displays averages
 \&and using the potential energy. This also allows for an entropy
 \&estimate using:
 
-\&  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) \- S_idgas(N,V,T) = (Upot \- [GRK]Delta[grk] A)/T
+\&  Delta S(N,V,T) = S(N,V,T) \- S_idgas(N,V,T) = (Upot \- Delta A)/T
 
-\&  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) \- S_idgas(N,p,T) = (Upot + pV \- [GRK]Delta[grk] G)/T
+\&  Delta S(N,p,T) = S(N,p,T) \- S_idgas(N,p,T) = (Upot + pV \- Delta G)/T
 \&
 
 
