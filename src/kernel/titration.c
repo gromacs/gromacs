@@ -1709,7 +1709,8 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
         w_don,
         OH1,
         OH2,
-        w_third;
+        w_third,
+        *vvv;
     real
         planedist, d;
     qhop_db 
@@ -1720,11 +1721,15 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
          * See if we can avoid this hardcoding. */
         out_of_plane_proton = 2;
 
+    if (bRealHop)
+        vvv = v;
+    else
+        vvv = NULL;
     db = T->db;
     if (eHOP_FORWARD == ehop)
     {
-        qhop_tautomer_swap(T, x, v, hop->primary_d, hop->donor_id);
-        qhop_tautomer_swap(T, x, v, hop->primary_a, hop->acceptor_id);
+        qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id);
+        qhop_tautomer_swap(T, x, vvv, hop->primary_a, hop->acceptor_id);
     }
 
     donor_atom    = &T->qhop_atoms[hop->primary_d];
@@ -1780,16 +1785,18 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
             swap_rvec(x[donor_atom->protons[hop->proton_id]], 
                       x[donor_atom->protons[donor_atom->nr_protons-1]]);
             /* WARNING velocity ? */
+            if (bRealHop)
+                swap_rvec(v[donor_atom->protons[hop->proton_id]], 
+                          v[donor_atom->protons[donor_atom->nr_protons-1]]);
         }
     }
 
     /* Check if the proton ends up on the wrong side of the acceptor */
-    if(bAccWater)
+    if (bAccWater)
     {
         if (eHOP_FORWARD == ehop)
             /* Do we need to flip? */
         {
-
             pbc_dx(pbc,
                    x[donor_atom->atom_id],
                    x[acceptor_atom->atom_id],
@@ -1837,7 +1844,7 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
             /* coords */
             swap_rvec(x[acceptor->atoms[i]], x[donor->atoms[i]]);
             /* vel */
-            swap_rvec(v[acceptor->atoms[i]], v[donor->atoms[i]]);
+            swap_rvec(vvv[acceptor->atoms[i]], vvv[donor->atoms[i]]);
         }
     }
     else
@@ -1869,14 +1876,16 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
                    WARNING.
                 */
                 copy_rvec(hop->xold, x[acceptor_atom->protons[ap]]);
-                copy_rvec(hop->vold, v[acceptor_atom->protons[ap]]);
+                if (bRealHop)
+                    copy_rvec(hop->vold, v[acceptor_atom->protons[ap]]);
             }
             else
             {
                 /* We need to reposition the hydrogen correctly.
                    Save old position and velocity. Needed for undo */
                 copy_rvec(x[acceptor_atom->protons[ap]], hop->xold); 
-                copy_rvec(v[acceptor_atom->protons[ap]], hop->vold); 
+                if (bRealHop)
+                    copy_rvec(v[acceptor_atom->protons[ap]], hop->vold); 
                 
                 /* Reposition the proton on the DA-line */
                 pbc_dx(pbc,x[donor_atom->atom_id],x[acceptor_atom->atom_id],x_tmp);
@@ -1901,14 +1910,13 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
                 svmul(d, x_tmp, x_tmp);
                 rvec_add(x[acceptor_atom->atom_id], x_tmp, x[acceptor_atom->protons[ap]]);
                 copy_rvec(x[acceptor_atom->protons[ap]], hop->xnew);
-                copy_rvec(v[acceptor_atom->protons[ap]], hop->vnew);
             }
         }
     }
     if (eHOP_BACKWARD == ehop)
     {
-        qhop_tautomer_swap(T, x, v, hop->donor_id, hop->primary_d);
-        qhop_tautomer_swap(T, x, v, hop->acceptor_id, hop->primary_a);
+        qhop_tautomer_swap(T, x, vvv, hop->donor_id, hop->primary_d);
+        qhop_tautomer_swap(T, x, vvv, hop->acceptor_id, hop->primary_a);
     }
 
     return TRUE; /* Ok, this is not very good for error checking. */
@@ -2409,8 +2417,8 @@ static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e)
 /**
  * Calculates the transfer probability for the intermediate regime over a 10 fs time window.
  */
-real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
-                      t_hop *hop         ///< The hop 
+static real compute_rate_log(qhop_parameters *p, ///< Pointer to qhop_parameters
+                             t_hop *hop         ///< The hop 
     )
 {
   
@@ -2459,7 +2467,7 @@ static void get_hop_prob(FILE *fplog,
         Ebefore_self_coul, Ebefore_self_vdw,
         Eafter_self_coul, Eafter_self_vdw,
         Edelta, Edelta_coul,
-        r_TST, r_SE, r_log;
+        r_TST, r_SE, r_log, Thop;
     qhop_parameters *p;
     titration_t T;
     
@@ -2487,10 +2495,7 @@ static void get_hop_prob(FILE *fplog,
     Ebefore_mm = (Ebefore->term[F_EPOT] - 
                   (Ebefore->term[F_COUL14] + Ebefore->term[F_LJ14]));
     Ebefore_self = (Ebefore_self_coul + Ebefore_self_vdw); 
-/*
-    qhop_tautomer_swap(T, state->x, NULL, hop->primary_d, hop->donor_id);
-    qhop_tautomer_swap(T, state->x, NULL, hop->primary_a, hop->acceptor_id);
-*/
+
     if (change_protonation(cr, ir, T, md, hop, state->x, state->v, 
                            eHOP_FORWARD, mtop, top, constr, pbc, FALSE))
     {
@@ -2518,46 +2523,44 @@ static void get_hop_prob(FILE *fplog,
         hop->DE_MM = Eafter_mm - Ebefore_mm;
         
         if (NULL != fplog)
-            fprintf(fplog,"ITMD: Edelta %g, Eafter_mm %g, Eafter_self %g, Ebefore_mm %g, Ebefore_self %g, Edelta_coul %g, DE_MM %g, DE_Self %g\nITMD: Eafter_self_coul %g, Ebefore_self_coul %g, Eafter_self_vdw %g, Ebefore_self_vdw %g\n",
+            fprintf(fplog,"%s: Edelta %g, Eafter_mm %g, Eafter_self %g, Ebefore_mm %g, Ebefore_self %g, Edelta_coul %g, DE_MM %g, DE_Self %g\n%s: Eafter_self_coul %g, Ebefore_self_coul %g, Eafter_self_vdw %g, Ebefore_self_vdw %g\n",
+                    eTitrationAlg_names[ir->titration_alg],
                     Edelta,Eafter_mm,Eafter_self,Ebefore_mm,Ebefore_self,Edelta_coul,
                     hop->DE_MM,Eafter_self-Ebefore_self,
+                    eTitrationAlg_names[ir->titration_alg],
                     Eafter_self_coul,Ebefore_self_coul,Eafter_self_vdw, Ebefore_self_vdw);
 
         compute_E12(p, hop, Edelta);
-        compute_E12_right(p, hop);
-        compute_E12_left (p, hop);
         hop->Eb        = compute_Eb(p,hop);
-        
-        r_TST = compute_rate_TST(p, hop);
-        r_SE  = compute_rate_SE (p, hop);
-
-        if(hop->E12 > hop->Er)
+        Thop = ir->delta_t * ir->titration_freq;
+        if (eTitrationAlgQhop == ir->titration_alg)
         {
-            /* Classical TST regime */
-            hop->prob = poisson_prob(r_TST, (ir->delta_t * ir->titration_freq));
-            hop->regime = etQhopTST;
-        }
-        else 
-        {
-            if (hop->E12 < hop->El)
+            compute_E12_right(p, hop);
+            compute_E12_left (p, hop);
+            
+            if(hop->E12 > hop->Er)
             {
-                /* Schroedinger regime */
-                hop->prob = poisson_prob(r_SE, (ir->delta_t * ir->titration_freq));
-                hop->regime = etQhopSE;
+                /* Classical TST regime */
+                r_TST = compute_rate_TST(p, hop);
+                hop->prob = poisson_prob(r_TST, Thop);
+                hop->regime = etQhopTST;
             }
-            else
+            else if (hop->E12 > hop->El)
             {
-                /* intermediate regime */
+                /* Intermediate regime */
                 r_log = compute_rate_log(p, hop);
-                hop->prob = poisson_prob(r_log, (ir->delta_t * ir->titration_freq));
+                hop->prob = poisson_prob(r_log, Thop);
                 hop->regime = etQhopI;
             }
         }
-
+        if ((eTitrationAlgITMD == ir->titration_alg) || (hop->E12 <= hop->El))
+        {
+            /* Schroedinger regime */
+            r_SE = compute_rate_SE (p, hop);
+            hop->prob = poisson_prob(r_SE, (ir->delta_t * ir->titration_freq));
+            hop->regime = etQhopSE;
+        }
         /* now undo the move */
-        /*     qhop_tautomer_swap(T, state->x, NULL, hop->primary_d, hop->donor_id);
-        qhop_tautomer_swap(T, state->x, NULL, hop->primary_a, hop->acceptor_id);
-        */
         if (!change_protonation(cr, ir, T, md, hop, state->x, state->v, 
                                 eHOP_BACKWARD, mtop, top, constr, pbc, FALSE))
         {
@@ -2606,10 +2609,11 @@ static real check_ekin(rvec *v, t_mdatoms *md)
 } /* check_ekin */
 
 /* Scales the velocities within radius rc. */
-static gmx_bool scale_v(FILE *fplog,
+static gmx_bool scale_v(FILE *fplog, t_inputrec *ir,
                         rvec *x, rvec *v, t_mdatoms *md, 
                         int donor_atom, int acceptor_atom,
-                        real rc, real DE,t_pbc *pbc){
+                        real DE,t_pbc *pbc)
+{
     /* computes new velocities, to get ridf of the DE. Returns the new
        kinetic energy;
     */
@@ -2633,7 +2637,7 @@ static gmx_bool scale_v(FILE *fplog,
     clear_rvec(q);
     for(i=0; i < md->nr; i++)
     {
-        fi[i] = distance_dependence(x[i], center, rc, pbc);
+        fi[i] = distance_dependence(x[i], center, ir->titration_vscale_radius, pbc);
         if (fi[i] > 0) 
         {
             mass = md->massT[i];
@@ -2681,11 +2685,11 @@ static gmx_bool scale_v(FILE *fplog,
     {
         lambda = -1;
         if (NULL != fplog)
-            fprintf(fplog,"ITMD: Not enough energy to perform a proton transfer. Better luck next time.\n");
+            fprintf(fplog,"%s: Not enough energy to perform a proton transfer. Better luck next time.\n",eTitrationAlg_names[ir->titration_alg]);
     }
     if (NULL != fplog)
-        fprintf(fplog,"ITMD: lambda = %g. a2 = %g a1 = %g, a0 = %g\n",
-                lambda,a2,a1,a0);
+        fprintf(fplog,"%s: lambda = %g. a2 = %g a1 = %g, a0 = %g\n",
+                eTitrationAlg_names[ir->titration_alg],lambda,a2,a1,a0);
     if (lambda > 0.0 )
     {
         /* with lambda, we compute dv: */
@@ -2756,9 +2760,8 @@ static gmx_bool scale_velocities(FILE *fplog,
     bConverged = FALSE;
     for(iter=0; (iter<maxiter) && !bConverged && bSufficientEkin; iter++)
     {
-        bSufficientEkin = scale_v(fplog,state->x, state->v,
+        bSufficientEkin = scale_v(fplog,ir, state->x, state->v,
                                   md, donor_atom, acceptor_atom,
-                                  ir->titration_vscale_radius, 
                                   DE, pbc);
     
         if (bSufficientEkin)
@@ -2767,7 +2770,8 @@ static gmx_bool scale_velocities(FILE *fplog,
             if (T->db->bConstraints)
             {
                 if (NULL != fplog)
-                    fprintf(fplog,"ITMD: Before constr. ekin_old = %f\n",ekin_old);
+                    fprintf(fplog,"%s: Before constr. ekin_old = %f\n",
+                            eTitrationAlg_names[ir->titration_alg],ekin_old);
                 
                 constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
                           step,1,md,state->x,state->v,state->v,state->box,
@@ -2781,8 +2785,8 @@ static gmx_bool scale_velocities(FILE *fplog,
             
             ekin_new = check_ekin(state->v ,md);   
             if (NULL != fplog)
-                fprintf(fplog,"ITMD: iteration %d, ekin_new = %f, ekin_old = %f. DE_MM = %f\n",
-                        iter,ekin_new,ekin_old,hop->DE_MM);
+                fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE_MM = %f\n",
+                        eTitrationAlg_names[ir->titration_alg],iter,ekin_new,ekin_old,hop->DE_MM);
             
             DE = DE + (ekin_new - ekin_old);
             ekin_old = ekin_new;
@@ -2792,8 +2796,8 @@ static gmx_bool scale_velocities(FILE *fplog,
     if (NULL != fplog)
     {
         gmx_step_str(step, stepstr);
-        fprintf(fplog,"ITMD: Energy correction at step %s: %f, DE_MM: %f\n",
-                stepstr,ekin_new-ekin_before,hop->DE_MM);
+        fprintf(fplog,"%s: Energy correction at step %s: %f, DE_MM: %f\n",
+                eTitrationAlg_names[ir->titration_alg],stepstr,ekin_new-ekin_before,hop->DE_MM);
     }
     return (bSufficientEkin && bConverged);
 } /* scale_velocities */
@@ -3015,8 +3019,8 @@ void do_titration(FILE *fplog,
                 if ((NULL != fplog) && bHop)
                 {
                     gmx_step_str(step, stepstr);
-                    fprintf(fplog,"ITMD: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
-                            stepstr,T->hop[i].E12, i,
+                    fprintf(fplog,"%s: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
+                            eTitrationAlg_names[ir->titration_alg],stepstr,T->hop[i].E12, i,
                             T->qhop_atoms[T->hop[i].donor_id].res_id,
                             T->qhop_atoms[T->hop[i].donor_id].resname,
                             T->qhop_atoms[T->hop[i].acceptor_id].res_id,
