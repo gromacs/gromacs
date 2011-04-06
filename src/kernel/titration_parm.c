@@ -354,7 +354,7 @@ void make_ilib(qhop_db *db)
 
   for (rt=0; rt < db->rb.nrestypes; rt++)
     {
-      if ((db->rb.qrt[rt].bWater && db->constrain!=0) || 
+        if ((db->rb.qrt[rt].bWater && db->bConstraints) || 
 	  !db->rb.qrt[rt].bInTop)
 	{
 	  continue;
@@ -434,7 +434,7 @@ void make_ilib(qhop_db *db)
 	  /* Must shift the findex, now that we know how many params we have for each btype */
 	  for (rt=0; rt < db->rb.nrestypes; rt++)
 	    {
-	      if ((db->rb.qrt[rt].bWater && db->constrain!=0) || 
+            if ((db->rb.qrt[rt].bWater && db->bConstraints) || 
 		  !db->rb.qrt[rt].bInTop)
 		{
 		  continue;

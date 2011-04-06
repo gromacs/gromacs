@@ -301,8 +301,7 @@ typedef struct currentRes {
 
 typedef struct qhop_db {
   int              inertH;    /* The atomtype for the inert hydrogen. */
-  int              constrain; /* What do we constrain? none=0, h-bonds=1, 
-				 all-bonds=2, */
+  gmx_bool         bConstraints; /* True if constraints are present */
   int              nrtp;
   t_restp          *rtp;
   /* Replacing resinfo with more elaborate structures */
