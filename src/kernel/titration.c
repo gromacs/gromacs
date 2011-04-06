@@ -3298,11 +3298,15 @@ void do_titration(FILE *fplog,
                             }
                         }
                     }
-/*                    if (!bHop)
-                        undo_hop(cr,ir,T,db,md,&(T->hop[i]), 
-                                 state->x,state->v,mtop,top,constr,&pbc);
-*/		   
-                        }
+                    if (!bHop)
+                    {
+                        if (!change_protonation2(cr, ir, T, md, &(T->hop[i]), 
+                                                 state->x, state->v, 
+                                                 eHOP_BACKWARD, mtop, top, 
+                                                 constr, &pbc, TRUE))
+                            gmx_fatal(FARGS,"Oops could not hop back. WTH?");
+                    }
+                }
                 else
                 {
                     bHop = FALSE;
