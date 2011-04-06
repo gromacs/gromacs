@@ -79,8 +79,8 @@ typedef struct {
      in this more "object oriented" approach. The latter
      goes for most of the real data members here. */
   gmx_bool bFlip,bDonated;
-  rvec xold, /* Where the acceptor proton used to be */
-    xnew;    /* Where the acceptor proton may end up */
+    rvec xold,vold,   /* Where the acceptor proton used to be */
+        xnew,vnew;    /* Where the acceptor proton may end up */
 } t_hop;
 
 /* Keeps track of where bonded interactions are in an ilist.

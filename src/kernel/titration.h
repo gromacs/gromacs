@@ -12,10 +12,10 @@
 #include "titrationrec.h"
 #include "resall.h"
 
-/*! \brief Initializes the qhoprec.
+/** \brief Initializes the titration structure inside forcerec.
  * 
  * What it does:
- *   - Initializes qhoprec
+ *   - Initializes titration structure inside forcerec
  *   - Picks out the atoms that are titratable
  *   - Figures out which residue subtypes to use at step 0,
  *     based on the H existence map.
@@ -37,62 +37,30 @@ extern void init_titration(FILE *fplog,const char *ff,
  * every hop. The list of hops is scrambled according to the qhopmode
  * and the hops are tested against random numbers. The actual hopping
  * will be done later.
+ * \return nothing.
  */
-extern void
-do_titration(FILE *fplog, 
-	t_commrec *cr,
-	t_inputrec *ir, 
-	t_nrnb *nrnb,
-	gmx_wallcycle_t wcycle, 
-	gmx_localtop_t *top,
-	gmx_mtop_t *mtop, 
-	gmx_groups_t *groups,
-	t_state *state,
-	t_mdatoms *md, 
-	t_fcdata *fcd,
-	t_graph *graph, 
-	t_forcerec *fr,
-	gmx_constr_t constr,
-	gmx_vsite_t *vsite,
-	rvec mu_tot,
-	gmx_bool bBornRadii,
-	real Temperature,
-	gmx_large_int_t step,
-	gmx_ekindata_t *ekindata,
-	tensor force_vir
-	);
-
-extern void qhop_stash_bonded(qhop_db_t db, gmx_mtop_t *mtop);
-
-
-/* qhop_(de)protonate do nothing to the coordinates, they hack the topology. */
-
-/**
- * \brief Protonates the qatom.
- * 
- * The qatom is protonated.
- */
-extern void qhop_protonate(qhop_db *db, titration_t T,
-			   const t_inputrec *ir,
-			   const t_commrec *cr, gmx_localtop_t *top,
-			   gmx_constr_t constr,
-			   t_qhop_atom *qatom,
-			   t_mdatoms *md, gmx_bool bWater,
-			   gmx_bool bSwapBondeds,
-			   gmx_bool bRealHop);
-
-extern void qhop_deprotonate(qhop_db *db, titration_t T,
-			     const t_inputrec *ir, const t_commrec *cr,
-			     gmx_localtop_t *top, gmx_constr_t constr,
-			     t_qhop_atom *qatom,
-			     t_mdatoms *md, gmx_bool bWater,
-			     gmx_bool bSwapBondeds,
-			     gmx_bool bRealHop);
-
-/* Goes through the t_ilist and finds the bonded interactions
- * that can be changed */
-extern void qhop_index_bondeds(t_ilist *ilist, qhop_db_t db,
-			       titration_t T, gmx_bool bGlobal);
+extern void do_titration(FILE *fplog, 
+			 t_commrec *cr,
+			 t_inputrec *ir, 
+			 t_nrnb *nrnb,
+			 gmx_wallcycle_t wcycle, 
+			 gmx_localtop_t *top,
+			 gmx_mtop_t *mtop, 
+			 gmx_groups_t *groups,
+			 t_state *state,
+			 t_mdatoms *md, 
+			 t_fcdata *fcd,
+			 t_graph *graph, 
+			 t_forcerec *fr,
+			 gmx_constr_t constr,
+			 gmx_vsite_t *vsite,
+			 rvec mu_tot,
+			 gmx_bool bBornRadii,
+			 real Temperature,
+			 gmx_large_int_t step,
+			 gmx_ekindata_t *ekindata,
+			 tensor force_vir
+			 );
 
 extern void fold_inactive_protons(titration_t T, rvec x[], rvec v[]);
 

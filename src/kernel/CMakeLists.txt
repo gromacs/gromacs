@@ -35,7 +35,8 @@ set(GMXPREPROCESS_SOURCES
 set(MDRUN_SOURCES 
     gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c md_openmm.c)
+    md.c         mdrun.c    genalg.c md_openmm.c minimize.c gmx_xml.c
+    titration.c titration_parm.c titration_db.c titration_util.c titration_db_xml.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
