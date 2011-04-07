@@ -994,8 +994,8 @@ int main(int argc, char *argv[])
      
     "The protonation state of N- and C-termini can be chosen interactively",
     "with the [TT]-ter[tt] flag.  Default termini are ionized (NH3+ and COO-),",
-    "respectively.  Some force fields support zwitterionic forms of isolated",
-    "amino acids, but for polypeptides these options should NOT be selected.[PAR]",
+    "respectively.  Some force fields support zwitterionic forms for chains of",
+    "one residue, but for polypeptides these options should NOT be selected.[PAR]",
  
     "The separation of chains is not entirely trivial since the markup",
     "in user-generated PDB files frequently varies and sometimes it",
