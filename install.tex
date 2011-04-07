@@ -182,26 +182,20 @@ file.
 \section{Environment Variables}
 {\gromacs} programs may be influenced by the use of 
 \normindex{environment variables}. 
-First of all, the variables set in the \normindex{GMXRC} file
-are essential for running and compiling {\gromacs}. Other variables are:
+First of all, the variables set in the {\tt \normindex{GMXRC}} file
+are essential for running and compiling {\gromacs}. Some other useful 
+environment variables are listed in the following sections.
+
+{\bf Output Control}
+
 \begin{enumerate}
-\item   {\tt DUMPNL}: dump neighbor list. 
-        If set to a positive number the {\em entire}
-        neighbor list is printed in the log file (may be many megabytes).
-        Mainly for debugging purposes, but may also be handy for
-        porting to other platforms.
+
 \item   {\tt GMX_NO_QUOTES}: if this is explicitly set, no cool quotes
         will be printed at the end of a program.
-\item   {\tt WHERE}: when set, print debugging info on line numbers.
 \item   {\tt LOG_BUFS}: the size of the buffer for file I/O. When set
         to 0, all file I/O will be unbuffered and therefore very slow.
         This can be handy for debugging purposes, because it ensures
         that all files are always totally up-to-date.
-\item   {\tt GMXNPRI}: for SGI systems only. When set, gives the
-        default non-degrading priority (npri) for {\tt
-        mdrun}, {\tt g_covar} and {\tt g_nmeig},
-        {\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
-        runs to be performed at near-lowest priority by default.
 \item   {\tt GMX_VIEW_XPM}: {\tt GMX_VIEW_XVG}, {\tt
         GMX_VIEW_EPS} and {\tt GMX_VIEW_PDB}, commands used to
         automatically view \@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
@@ -212,24 +206,63 @@ are essential for running and compiling {\gromacs}. Other variables are:
         as the {\gromacs} tool (which might not be what you want).
         Be careful not to use a command which blocks the terminal
         ({\eg} {\tt vi}), since multiple instances might be run.
-\item   {\tt GMXTIMEUNIT}: the time unit used in output files, can be
-        anything in fs, ps, ns, us, ms, s, m or h.
-\item {\tt GMX_MAXBACKUP}: max number of backups to be made, default
-  128.
-\item {\tt VMD_PLUGIN_PATH}: where to find VMD plug-ins. Needed to be
-  able to read VMD compatible files.
-\item {\tt GMX_SUPPRESS_DUMP}: prevent dumping of step files.
-\item {\tt GMX_NOOPTIMIZEDKERNELS}: will prevent using assembly
-  kernels.
-\item {\tt GMX_NOSEHOOVER_CHAINS}: enables printing of Nos{\'e}-Hoover chain data
-  to the {\tt .edr} file.
-\item There are a number of extra environment variables like the one
-  above, which are used in debugging.
+\item   {\tt GMX_MAXBACKUP}: max number of backups to be made, default
+        128.
+\item   {\tt GMX_SUPPRESS_DUMP}: prevent dumping of step files.
+\item   {\tt GMX_NOSEHOOVER_CHAINS}: enables printing of Nos{\'e}-Hoover chain data
+        to the {\tt .edr} file.
+
 \end{enumerate}
 
-Some other environment variables are specific to one program, such as
-{\tt TOTAL} for the {\tt \normindex{do_shift}} program, and {\tt DSSP} for the
-{\tt \normindex{do_dssp}} program.
+
+{\bf Debugging}
+
+\begin{enumerate}
+
+\item   {\tt DUMPNL}: dump neighbor list. 
+        If set to a positive number the {\em entire}
+        neighbor list is printed in the log file (may be many megabytes).
+        Mainly for debugging purposes, but may also be handy for
+        porting to other platforms.
+\item   {\tt WHERE}: when set, print debugging info on line numbers.
+\item   There are a number of extra environment variables like the one
+        above, which are used in debugging.
+
+\end{enumerate}
+
+{\bf Run control}
+
+\begin{enumerate}
+
+\item   {\tt GMXNPRI}: for SGI systems only. When set, gives the
+        default non-degrading priority (npri) for {\tt
+        mdrun}, {\tt g_covar} and {\tt g_nmeig},
+        {\eg} setting {\tt setenv GMXNPRI 250} causes all
+        runs to be performed at near-lowest priority by default.
+\item   {\tt GMX_NOOPTIMIZEDKERNELS}: will prevent using assembly
+        kernels.
+\item   {\tt GMX_NO_SOLV_OPT}: turns off solvent optimizations.
+\item   {\tt GMX_NB_GENERIC}: use generic C kernels.  Should be set if using
+        {\tt GMX_NO_SOLV_OPT}.
+
+\end{enumerate}
+
+{\bf Analysis and Core Functions}
+
+\begin{enumerate}
+
+\item   {\tt GMXTIMEUNIT}: the time unit used in output files, can be
+        anything in fs, ps, ns, us, ms, s, m or h.
+\item   {\tt VMD_PLUGIN_PATH}: where to find VMD plug-ins. Needed to be
+        able to read VMD compatible files.
+\item   {\tt TOTAL}: sepcifically used by the {\tt \normindex{do_shift}} program.
+\item   {\tt DSSP}: used by {\tt \normindex{do_dssp}} to locate the {\tt dssp}
+        executable.
+\item   {\tt GMX_NOCHARGEGROUPS}: disables mulit-atom charge groups, {\ie} each atom 
+        in all non-solvent molecules is assigned its own charge group.
+\item   {\tt OPENMM_PLUGIN_DIR}: the location of OpenMM plugins, needed for
+        {\tt \normindex{mdrun-gpu}}.
+\end{enumerate}
 
 \section{Running {\gromacs} in parallel}
 If you have installed the MPI (Message Passing Interface) on your computer(s)
