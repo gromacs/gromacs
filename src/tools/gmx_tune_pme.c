@@ -1727,7 +1727,8 @@ static gmx_bool is_main_switch(char *opt)
       || (0 == strcmp(opt,"-so"       ))
       || (0 == strcmp(opt,"-npstring" ))
       || (0 == strcmp(opt,"-npme"     ))
-      || (0 == strcmp(opt,"-passall"  )) )
+      || (0 == strcmp(opt,"-passall"  ))
+      || (0 == strcmp(opt,"-scalevdw" )) )
     return TRUE;
     
     return FALSE;
