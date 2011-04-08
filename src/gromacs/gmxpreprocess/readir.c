@@ -1165,7 +1165,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
   EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
-  EETYPE("adress_tf_full_box",         ir->badress_tf_full_box, yesno_names);
   RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
   RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
   RTYPE ("adress_hy_width",            ir->adress_hy_width,     0);
@@ -2196,9 +2195,9 @@ void do_index(const char* mdparin, const char *ndx,
   /* AdResS reference input */
   nadress_refs = str_nelem(adress_refs,MAXPTR,ptr1);
 
-  for(i=0; (i<nadress_refs); i++)
+  for(i=0; (i<nadress_refs); i++) /*read vector components*/
     ir->adress_refs[i]=strtod(ptr1[i],NULL);
-  for( ;(i<DIM); i++)
+  for( ;(i<DIM); i++) /*remaining undefined components of the vector set to zero*/
     ir->adress_refs[i]=0;
   
  /* End AdResS input */

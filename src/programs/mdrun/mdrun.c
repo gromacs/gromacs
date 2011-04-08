@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
     { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
-    { efXVG, "-tablea", "table",    ffOPTRD },
+    { efXVG, "-tabletf", "tabletf",    ffOPTRD },
     { efXVG, "-tablep", "tablep",   ffOPTRD },
     { efXVG, "-tableb", "table",    ffOPTRD },
     { efTRX, "-rerun",  "rerun",    ffOPTRD },

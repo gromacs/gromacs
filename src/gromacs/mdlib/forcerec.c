@@ -1199,7 +1199,7 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
   int i,j;
 
   if (tabfn == NULL) {
-        gmx_fatal(FARGS,"No thermoforce table file given. Use -tablea to specify a file\n");
+        gmx_fatal(FARGS,"No thermoforce table file given. Use -tabletf to specify a file\n");
     return;
   }
 
@@ -1207,7 +1207,7 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
 
   for (i=0; i<ir->n_adress_tf_grps; i++){
     j = ir->adress_tf_table_index[i]; /* get energy group index */
-    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_tf_%s.%s",
+    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"tf_%s.%s",
         *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]) ,ftp2ext(efXVG));
     printf("loading tf table for energygrp index %d from %s\n", ir->adress_tf_table_index[j], buf);
     fr->atf_tabs[i] = make_atf_table(fp,oenv,fr,buf, box);
@@ -1367,7 +1367,6 @@ void init_forcerec(FILE *fp,
     
     /* Copy AdResS parameters */
     fr->adress_type     = ir->adress_type;
-    fr->badress_tf_full_box = ir->badress_tf_full_box;
     fr->adress_const_wf = ir->adress_const_wf;
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;

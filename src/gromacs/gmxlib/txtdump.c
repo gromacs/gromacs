@@ -709,7 +709,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("adress_ex_width",ir->adress_ex_width);
     PR("adress_hy_width",ir->adress_hy_width);
     PS("adress_interface_correction",EADRESSICTYPE(ir->adress_icor));
-    PS("adress_tf_full_box",BOOL(ir->badress_tf_full_box));
     PS("adress_site",EADRESSSITETYPE(ir->adress_site));
     PR("adress_ex_force_cap",ir->adress_ex_forcecap);
     PS("adress_do_hybridpairs", BOOL(ir->adress_do_hybridpairs));

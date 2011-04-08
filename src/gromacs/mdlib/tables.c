@@ -1128,13 +1128,11 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 			    const char *fn,
                             matrix box)
 {
-	const char *fns[3] = { "atfctab.xvg", "atfdtab.xvg", "atfrtab.xvg" };
-	const char *fns14[3] = { "atfctab14.xvg", "atfdtab14.xvg", "atfrtab14.xvg" };
+	const char *fns[3] = { "tf_tab.xvg", "atfdtab.xvg", "atfrtab.xvg" };
 	FILE        *fp;
 	t_tabledata *td;
-	gmx_bool    bReadTab,bGenTab;
 	real        x0,y0,yp,rtab;
-	int         i,j,k,nx,nx0,tabsel[etiNR];
+	int         i,nx,nx0;
 	void *      p_tmp;
         real        rx, ry, rz, box_r;
 	
@@ -1145,68 +1143,44 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * use etiNR (since we only have one table, but ...) 
 	 */
 	snew(td,1);
-
-        if (fr->badress_tf_full_box){
-            /* take half box x direction as tab range */
-            table.r         = box[0][0]/2;
+        
+        if (fr->adress_type == eAdressSphere){
+            /* take half box diagonal direction as tab range */
+               rx = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
+               ry = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
+               rz = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
+               box_r = sqrt(rx*rx+ry*ry+rz*rz);
+               
+        }else{
+            /* xsplit: take half box x direction as tab range */
+               box_r        = box[0][0]/2;
         }
-        else
-        {
-            table.r         = fr->adress_hy_width;
-        }
+        table.r         = box_r;
 	table.scale     = 0;
 	table.n         = 0;
 	table.scale_exp = 0;
 	nx0             = 10;
 	nx              = 0;
 	
-	/* Check whether we have to read or generate 
-	 * We will always read a table, so remove the generate code
-	 * (Compare with original make_table function
-	 */
+        read_tables(out,fn,1,0,td);
+        rtab      = td[0].x[td[0].nx-1];
 
-	bReadTab = TRUE;
-	bGenTab  = FALSE;
+       if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
+           gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                        "\tshould extend to at least half the length of the box in x-direction"
+                        "%f\n",fn,rtab, box[0][0]/2);
+       }
+       if (rtab < box_r){
+               gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
+                "\tshould extend to at least for spherical adress"
+                "%f (=distance from center to furthermost point in box \n",fn,rtab, box_r);
+       }
 
-	if (bReadTab) 
-	  {
-	    read_tables(out,fn,1,0,td);
-	    rtab      = td[0].x[td[0].nx-1];
-            
-            if (fr->badress_tf_full_box){
-                /* TODO : should really check tf is defined everywhere (in box) */
-               if (fr->adress_type == eAdressXSplit && (rtab < box[0][0]/2)){
-                   gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
-                                "\tshould extend to at least half the length of the longest box side"
-                                "%f\n",fn,rtab, box[0][0]/2);
-               }
-               if (fr->adress_type == eAdressSphere){
-                   rx = 0.5*box[0][0]+0.5*box[1][0]+0.5*box[2][0];
-                   ry = 0.5*box[0][1]+0.5*box[1][1]+0.5*box[2][1];
-                   rz = 0.5*box[0][2]+0.5*box[1][2]+0.5*box[2][2];
-                   box_r = sqrt(rx*rx+ry*ry+rz*rz);
-                   if (rtab < box_r){
-                           gmx_fatal(FARGS,"AdResS full box therm force table in file %s extends to %f:\n"
-                            "\tshould extend to at least for spherical adress"
-                            "%f (=distance from center to furthermost point in box \n",fn,rtab, box_r);
-                   }
-                                   
-               }
-            }
-            else{
-                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
-                  {
-                    gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
-                                "\tshould extend to exactly the size of the hybrid zone"
-                                "%f\n",fn,rtab, fr->adress_hy_width);
-                  }
-            }
 
-	    table.n   = td[0].nx;
-	    nx        = table.n;
-	    table.scale = td[0].tabscale;
-	    nx0         = td[0].nx0;
-	  }
+        table.n   = td[0].nx;
+        nx        = table.n;
+        table.scale = td[0].tabscale;
+        nx0         = td[0].nx0;
 
 	/* Each table type (e.g. coul,lj6,lj12) requires four 
 	 * numbers per datapoint. For performance reasons we want

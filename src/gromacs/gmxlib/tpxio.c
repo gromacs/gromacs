@@ -796,8 +796,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       gmx_fio_do_real(fio,ir->adress_ex_width);
       gmx_fio_do_real(fio,ir->adress_hy_width);
       gmx_fio_do_int(fio,ir->adress_icor);
-      gmx_fio_do_int(fio,ir->badress_chempot_dx);
-      gmx_fio_do_int(fio,ir->badress_tf_full_box);
       gmx_fio_do_int(fio,ir->adress_site);
       gmx_fio_do_rvec(fio,ir->adress_refs);
       gmx_fio_do_int(fio,ir->n_adress_tf_grps);

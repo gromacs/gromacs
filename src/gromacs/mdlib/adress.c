@@ -513,7 +513,6 @@ adress_thermo_force(int                  start,
     int              iatom,n0,nnn,nrcg, i;
     int              adresstype;
     real             adressw, adressr;
-    gmx_bool	     badress_tf_full_box;
     atom_id *        cgindex;
     unsigned short * ptype;
     rvec *           ref;
@@ -531,7 +530,6 @@ adress_thermo_force(int                  start,
     ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refs);
     wf               = mdatoms->wf;
-    badress_tf_full_box = fr->badress_tf_full_box;
 
     for(iatom=start; (iatom<start+homenr); iatom++)
     {
@@ -541,7 +539,7 @@ adress_thermo_force(int                  start,
             {
                 w    = wf[iatom];
                 /* is it hybrid or apply the thermodynamics force everywhere?*/
-                if (((w > 0 && w < 1) || badress_tf_full_box) && mdatoms->tf_table_index[iatom] != NO_TF_TABLE)
+                if ( mdatoms->tf_table_index[iatom] != NO_TF_TABLE)
                 {
                     if (fr->n_adress_tf_grps > 0 ){
                         /* multi component tf is on, select the right table */
@@ -589,15 +587,8 @@ adress_thermo_force(int                  start,
                     }
 
                     dl=sqrt(sqr_dl);
-                    if (badress_tf_full_box){
-                        /* table origin is center of box */
-                        wt               = dl*tabscale;
-                    }
-                    else
-                    {
-                        /* table origin is begin of the hybrid zone */
-                        wt               = (dl-adressr)*tabscale;
-                    }
+                    /* table origin is adress center */
+                    wt               = dl*tabscale;
                     n0               = wt;
                     eps              = wt-n0;
                     eps2             = eps*eps;
