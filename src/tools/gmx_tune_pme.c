@@ -1862,10 +1862,19 @@ static void create_command_line_snippets(
         /* Skip options not meant for mdrun */        
         if (!is_main_switch(opt))
         {
-            /* Print it to a string buffer, strip away trailing whitespaces that pa_val also returns: */
-            sprintf(strbuf2, "%s", pa_val(&pa[i],buf,BUFLENGTH));
-            rtrim(strbuf2);
-            sprintf(strbuf, "%s %s ", opt, strbuf2);
+            /* Boolean arguments need to be generated in the -[no]argname format */
+            if (pa[i].type == etBOOL)
+            {
+                sprintf(strbuf,"-%s%s ",*pa[i].u.b ? "" : "no",opt+1);
+            }
+            else
+            {
+                /* Print it to a string buffer, strip away trailing whitespaces that pa_val also returns: */
+                sprintf(strbuf2, "%s", pa_val(&pa[i],buf,BUFLENGTH));
+                rtrim(strbuf2);
+                sprintf(strbuf, "%s %s ", opt, strbuf2);
+            }
+
             /* We need the -np (or -nt) switch in a separate buffer - whether or not it was set! */
             if (0 == strcmp(opt,np_or_nt))
             {
