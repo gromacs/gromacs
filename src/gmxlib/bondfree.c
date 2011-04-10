@@ -55,7 +55,7 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
-#include "mdrun.hf"
+#include "mdrun.h"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
