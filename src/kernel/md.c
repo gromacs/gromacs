@@ -1190,8 +1190,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(cbuf,top_global->natoms);
     }
     /* all the iteratative cases - only if there are constraints */ 
-    bIterations = ((IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
-    bTrotter = (bVV && (IR_NPT_TROTTER(ir) || (IR_NVT_TROTTER(ir))));        
+    bIterations = ((IR_NPT_TROTTER(ir) || IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
+    bTrotter = (bVV && (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)));
     
     if (bRerunMD)
     {

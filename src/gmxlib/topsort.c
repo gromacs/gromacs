@@ -65,6 +65,11 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
         bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                  ip->harmonic.krA != ip->harmonic.krB);
         break;
+    case F_MORSE:
+        bPert = (ip->morse.b0A  != ip->morse.b0B ||
+                 ip->morse.cbA  != ip->morse.cbB || 
+                 ip->morse.betaA  != ip->morse.betaB);
+        break;
     case F_RESTRBONDS:
         bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
                  ip->restraint.up1A  != ip->restraint.up1B ||

@@ -1101,9 +1101,12 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->bham.c);
     break;
   case F_MORSE:
-    gmx_fio_do_real(fio,iparams->morse.b0);
-    gmx_fio_do_real(fio,iparams->morse.cb);
-    gmx_fio_do_real(fio,iparams->morse.beta);
+    gmx_fio_do_real(fio,iparams->morse.b0A);
+    gmx_fio_do_real(fio,iparams->morse.cbA);
+    gmx_fio_do_real(fio,iparams->morse.betaA);
+    gmx_fio_do_real(fio,iparams->morse.b0B);
+    gmx_fio_do_real(fio,iparams->morse.cbB);
+    gmx_fio_do_real(fio,iparams->morse.betaB);
     break;
   case F_CUBICBONDS:
     gmx_fio_do_real(fio,iparams->cubic.b0);

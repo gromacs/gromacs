@@ -1156,7 +1156,7 @@ void update_tcouple(FILE         *fplog,
     
     /* if using vv, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec)))
     {
         /* We should only couple after a step where energies were determined */
         bTCouple = (inputrec->nsttcouple == 1 ||
@@ -1215,7 +1215,7 @@ void update_pcouple(FILE         *fplog,
     int    i;
     
     /* if using Trotter pressure, we do this elsewhere in the code, so we leave it false. */
-    if (inputrec->epc != epcNO && !(IR_NPT_TROTTER(inputrec)))
+    if (inputrec->epc != epcNO && (!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))))
     {
         /* We should only couple after a step where energies were determined */
         bPCouple = (inputrec->nstpcouple == 1 ||
@@ -1538,7 +1538,7 @@ o               If we assume isotropic scaling, and box length scaling
         break;
     }
     
-    if ((!(IR_NPT_TROTTER(inputrec))) && scale_tot) 
+    if ((!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))) && scale_tot)
     {
         /* The transposes of the scaling matrices are stored,
          * therefore we need to reverse the order in the multiplication.

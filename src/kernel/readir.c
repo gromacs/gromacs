@@ -524,7 +524,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                      "changing \"yes\" to \"Berendsen\"\n");
     }
   
-    if (ir->etc == etcNOSEHOOVER)
+    if ((ir->etc == etcNOSEHOOVER) || (ir->epc == epcMTTK))
     {
         if (ir->opts.nhchainlength < 1) 
         {

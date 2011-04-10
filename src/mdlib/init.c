@@ -133,26 +133,31 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
 
   state->nnhpres = 0;
   if (ir->ePBC != epbcNONE) {
-    state->flags |= (1<<estBOX);
-    if (PRESERVE_SHAPE(*ir)) {
-      state->flags |= (1<<estBOX_REL);
-    }
-    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) {
-      state->flags |= (1<<estBOXV);
-    }
-    if (ir->epc != epcNO) {
-      if (IR_NPT_TROTTER(ir)) {
-	state->nnhpres = 1;
-	state->flags |= (1<<estNHPRES_XI);
-	state->flags |= (1<<estNHPRES_VXI);
-	state->flags |= (1<<estSVIR_PREV);
-	state->flags |= (1<<estFVIR_PREV);
-	state->flags |= (1<<estVETA);
-	state->flags |= (1<<estVOL0);
-      } else {
-	state->flags |= (1<<estPRES_PREV);
+      state->flags |= (1<<estBOX);
+      if (PRESERVE_SHAPE(*ir)) {
+          state->flags |= (1<<estBOX_REL);
       }
-    }
+      if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) 
+      {
+          state->flags |= (1<<estBOXV);
+      }
+      if (ir->epc != epcNO) 
+      {
+          if (IR_NPT_TROTTER(ir) || (IR_NPH_TROTTER(ir))) 
+          {
+              state->nnhpres = 1;
+              state->flags |= (1<<estNHPRES_XI);
+              state->flags |= (1<<estNHPRES_VXI);
+              state->flags |= (1<<estSVIR_PREV);
+              state->flags |= (1<<estFVIR_PREV);
+              state->flags |= (1<<estVETA);
+              state->flags |= (1<<estVOL0);
+          } 
+          else 
+          {
+              state->flags |= (1<<estPRES_PREV);
+          }
+      }
   }
 
   if (ir->etc == etcNOSEHOOVER) {

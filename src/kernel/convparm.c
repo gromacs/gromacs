@@ -169,9 +169,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->harmonic.krB=old[3];
     break;
   case F_MORSE:
-    newparam->morse.b0    =old[0];
-    newparam->morse.cb    =old[1];
-    newparam->morse.beta  =old[2];
+    newparam->morse.b0A    =old[0];
+    newparam->morse.cbA    =old[1];
+    newparam->morse.betaA  =old[2];
+    newparam->morse.b0B    =old[3];
+    newparam->morse.cbB    =old[4];
+    newparam->morse.betaB  =old[5];
     break;
   case F_CUBICBONDS:
     newparam->cubic.b0    =old[0];

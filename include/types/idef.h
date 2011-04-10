@@ -178,8 +178,7 @@ typedef union
    * Use shake (or lincs) instead if you have to change the water bonds.
    */
   struct {real doh,dhh;                                   } settle;
-  /* No free energy supported for morse bonds */ 
-  struct {real b0,cb,beta;                        	  } morse;
+  struct {real b0A,cbA,betaA,b0B,cbB,betaB;               } morse;
   struct {real pos0A[DIM],fcA[DIM],pos0B[DIM],fcB[DIM];   } posres;
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   

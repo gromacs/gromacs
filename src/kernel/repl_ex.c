@@ -273,7 +273,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         fprintf(fplog,"\nRepl  l");
         for(i=0; i<re->nrepl; i++)
         {
-            fprintf(fplog," %3d",re->q[re->ind[i]]);
+            fprintf(fplog," %3d",(int)re->q[re->ind[i]]);
         }
         break;
     default:

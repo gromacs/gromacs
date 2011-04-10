@@ -279,7 +279,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
     md->bNHC_trotter = IR_NVT_TROTTER(ir);
-    md->bMTTK = IR_NPT_TROTTER(ir);
+    md->bMTTK = (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir));
 
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -627,14 +627,14 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->bPrintEnergy)  
-    { 
-        nsets += 1;  /* add energy to the dhdl as well */
-    }
-
     if (fep->n_lambda>0) 
     {
         nsets += 1;   /*add fep state to the dhdl */
+    }
+
+    if (fep->bPrintEnergy)  
+    { 
+        nsets += 1;  /* add energy to the dhdl as well */
     }
 
     nsetsextend = nsets;

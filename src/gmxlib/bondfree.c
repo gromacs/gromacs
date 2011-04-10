@@ -55,7 +55,7 @@
 #include "orires.h"
 #include "force.h"
 #include "nonbonded.h"
-#include "mdrun.h"
+#include "mdrun.hf"
 
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
@@ -126,7 +126,8 @@ real morse_bonds(int nbonds,
 {
   const real one=1.0;
   const real two=2.0;
-  real  dr,dr2,temp,omtemp,cbomtemp,fbond,vbond,fij,b0,be,cb,vtot;
+  real  dr,dr2,temp,omtemp,cbomtemp,fbond,vbond,fij,vtot;
+  real  b0,be,cb,b0A,beA,cbA,b0B,beB,cbB,L1;
   rvec  dx;
   int   i,m,ki,type,ai,aj;
   ivec  dt;
@@ -137,9 +138,18 @@ real morse_bonds(int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
     
-    b0   = forceparams[type].morse.b0;
-    be   = forceparams[type].morse.beta;
-    cb   = forceparams[type].morse.cb;
+    b0A   = forceparams[type].morse.b0A;
+    beA   = forceparams[type].morse.betaA;
+    cbA   = forceparams[type].morse.cbA;
+
+    b0B   = forceparams[type].morse.b0B;
+    beB   = forceparams[type].morse.betaB;
+    cbB   = forceparams[type].morse.cbB;
+
+    L1 = one-lambda;                      /* 1 */
+    b0 = L1*b0A + lambda*b0B;             /* 3 */ 
+    be = L1*beA + lambda*beB;             /* 3 */ 
+    cb = L1*cbA + lambda*cbB;             /* 3 */ 
 
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);            /*   3          */
     dr2  = iprod(dx,dx);                            /*   5          */
@@ -147,13 +157,17 @@ real morse_bonds(int nbonds,
     temp = exp(-be*(dr-b0));                        /*  12          */
     
     if (temp == one)
-      continue;
+    {
+        /* bonds are constrainted. This may _not_ include bond constraints if they are lambda dependent */
+        *dvdl = cbB-cbA;
+        continue;
+    }
 
     omtemp   = one-temp;                               /*   1          */
     cbomtemp = cb*omtemp;                              /*   1          */
     vbond    = cbomtemp*omtemp;                        /*   1          */
-    fbond    = -two*be*temp*cbomtemp*gmx_invsqrt(dr2);      /*   9          */
-    vtot    += vbond;       /* 1 */
+    fbond    = -two*be*temp*cbomtemp*gmx_invsqrt(dr2); /*   9          */
+    vtot     += vbond;                                 /*   1          */
     
     if (g) {
       ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
@@ -168,6 +182,9 @@ real morse_bonds(int nbonds,
       fshift[CENTRAL][m]-=fij;
     }
   }                                           /*  58 TOTAL    */
+
+  *dvdl = (cbB - cbA) * omtemp * omtemp - (2-2*omtemp)*omtemp * cb * ((b0B-b0A)*be - (beB-beA)*(dr-b0));
+
   return vtot;
 }
 

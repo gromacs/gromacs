@@ -235,6 +235,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     {
         donb_flags |= GMX_DONB_FORCES;
     }
+    
     do_nonbonded(cr,fr,x,f,md,excl,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :

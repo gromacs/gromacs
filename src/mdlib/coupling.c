@@ -1064,17 +1064,33 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             trotter_seq[3][2] = etrtBAROV;
 
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
-
+            
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir)) 
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there are only two calls, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[2][0] = etrtNHC;
-                trotter_seq[3][0] = etrtNHC;
-            }
+            /* This is the easy version - there are only two calls, both the same. 
+               Otherwise, even easier -- no calls  */
+            trotter_seq[2][0] = etrtNHC;
+            trotter_seq[3][0] = etrtNHC;
+        }
+        else if (IR_NPH_TROTTER(ir)) 
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV; 
+            
+            /* trotter_seq[1] is etrtNHC for 1/2 step velocities - leave zero */
+            
+            /* The first half trotter update */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+            
+            /* The second half trotter update */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
         }
     } else if (ir->eI==eiVVAK) {
         if (IR_NPT_TROTTER(ir)) 
@@ -1095,18 +1111,35 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             trotter_seq[3][0] = etrtBARONHC;
             trotter_seq[3][1] = etrtBAROV;
 
-            /* The second half trotter update -- blank for now */
+            /* The second half trotter update */
             trotter_seq[4][0] = etrtNHC;
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir)) 
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there is only one call, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[1][0] = etrtNHC;
-                trotter_seq[4][0] = etrtNHC;
-            }
+            /* This is the easy version - there is only one call, both the same. 
+               Otherwise, even easier -- no calls  */
+            trotter_seq[1][0] = etrtNHC;
+            trotter_seq[4][0] = etrtNHC;
+        }
+        else if (IR_NPH_TROTTER(ir))
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV; 
+            
+            /* The first half trotter update, part 1 -- leave zero */
+            trotter_seq[1][0] = etrtNHC;
+
+            /* The first half trotter update, part 2 */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+            
+            /* The second half trotter update, part 1 */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* The second half trotter update -- blank for now */
         }
     }
 
@@ -1193,7 +1226,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         }
     }
     
-    if (IR_NPT_TROTTER(ir)) 
+    if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
     {
         /* add the energy from the barostat thermostat chain */
         for (i=0;i<state->nnhpres;i++) {
