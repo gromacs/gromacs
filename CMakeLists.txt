@@ -12,38 +12,47 @@ set(MANUAL_VERSION "4.5.4")
 # Some cache variables that the user needs to set
 set(
   GMXSRC ""
-  CACHE PATH "Absolute path to GROMACS source distribution"
+  CACHE PATH "Path to GROMACS source distribution"
   )
 set(
   GMXBIN "/usr/local/gromacs/bin"
-  CACHE PATH "Absolute path to GROMACS installed binaries (i.e. including the final '/bin')"
+  CACHE PATH "Path to GROMACS installed binaries (i.e. including the final '/bin')"
   )
 
 # This helps make the index look decent.
 set(MAKEINDEX_COMPILER_FLAGS -s ${CMAKE_CURRENT_SOURCE_DIR}/hfill.ist)
-# UseLATEX.cmake is hacked to call Anton's subindex script to make it
-# even better. Don't replace UseLATEX.cmake blindly!
+# UseLATEX.cmake is hacked to call Anton's subindex script to improve
+# the index generation. Don't replace UseLATEX.cmake blindly!
 
 # We need the name of the program that will print the GROMACS standard
 # and hidden options.
 set(OPTIONS_PROGRAM_NAME g_options)
 
 if(NOT EXISTS ${GMXSRC})
-  MESSAGE(FATAL_ERROR "Please point the GMXSRC CMake variable to the absolute path of the GROMACS source directory.")
+  MESSAGE(FATAL_ERROR "Please point the GMXSRC CMake variable to the path of the GROMACS source directory.")
 endif(NOT EXISTS ${GMXSRC})
 
 if(NOT EXISTS ${GMXBIN} OR NOT EXISTS "${GMXBIN}/GMXRC")
-  MESSAGE(FATAL_ERROR "Please point the GMXBIN CMake variable at the absolute path where GROMACS binaries are installed. There should be no non-GROMACS programs installed there.")
+  MESSAGE(FATAL_ERROR "Please point the GMXBIN CMake variable at the path where GROMACS binaries are installed. There should not be multiple GROMACS programs installed there (e.g. with _mpi, _d suffixes).")
 endif(NOT EXISTS ${GMXBIN} OR NOT EXISTS "${GMXBIN}/GMXRC")
+
+set(REMOVE_OLD_FILES "")
+if(EXISTS ${CMAKE_SOURCE_DIR}/g_options.tex
+    OR EXISTS ${CMAKE_SOURCE_DIR}/proglist.tex
+    OR EXISTS ${CMAKE_SOURCE_DIR}/progman.tex
+    OR EXISTS ${CMAKE_SOURCE_DIR}/mdp_opt.tex)
+  message(FATAL_ERROR "You have at least one of g_options.tex, proglist.tex, progman.tex or mdp_opt.tex in your manual directory, probably from a pre-CMake build of the manual. These must be removed in order for CMake to build the dependencies correctly. One way to do this is to switch to the manual directory and use \"make clean\".")
+endif(EXISTS ${CMAKE_SOURCE_DIR}/g_options.tex
+  OR EXISTS ${CMAKE_SOURCE_DIR}/proglist.tex
+  OR EXISTS ${CMAKE_SOURCE_DIR}/progman.tex
+  OR EXISTS ${CMAKE_SOURCE_DIR}/mdp_opt.tex)
 
 # Here follows various custom CMake "commands" that call our various
 # GROMACS helper scripts to make bits of the manual from the installed
 # binaries and/or source distribution, as appropriate.
 #
 # Only files that can be built should be listed in DEPENDS. Makefile
-# rules are generated for those files. Note that GMXSRC and GMXBIN
-# need to be absolute paths in order for the dependencies to
-# construct properly so that make regenerates files when required.
+# rules are generated for those files.
 #
 # The .mdp options section is now intended to be built directly
 # from a GROMACS source directory. This facilitates drafting
@@ -84,7 +93,9 @@ ADD_LATEX_DOCUMENT(gromacs.tex
 
   # These files we're responsible for creating. They should not be in
   # the git repository, or its directory, or the dependencies will not
-  # work properly.
+  # work properly. Using "make clean" from the manual directory will
+  # clean these up if you have them lying around from old-style
+  # manual builds.
   DEPENDS ${OPTIONS_PROGRAM_NAME}.tex proglist.tex mdp_opt.tex progman.tex
 
   BIBFILES monster.bib unpubl.bib

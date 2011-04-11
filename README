@@ -7,7 +7,7 @@ can be found here http://www.itk.org/Wiki/CMakeUserUseLATEX
 
 The UseLaTeX.cmake package requires an "out of source" build, so make
 a new directory somewhere, and from it run "ccmake ${this_directory}".
-Such a directory can be a subdirectory of this package, however. You
+This directory can be inside the manual directory, or outside. You
 will need to provide values for two CMake cached variables, which
 are the location of installed GROMACS binaries, and the location of
 a GROMACS source distribution. Obviously, these should correspond to
@@ -15,13 +15,26 @@ what you want to build the manual from. This will take care of building
 all of the parts of the manual that are made directly from the source,
 and the parts that are made from the executables themselves.
 
-Those paths should be absolute paths if you want the make dependencies
-to construct correctly. Relative paths will sort-of work, however.
-
 Having told cmake about those locations, it will check that you're
-not obviously wrong. Keep using 'c' for configure until ccmake will
-let you use 'g' for generate. Now "make pdf" will make the PDF
-manual.
+not obviously wrong. With ccmake, keep using 'c' for configure
+until ccmake will let you use 'g' for generate. Now "make pdf" will
+make the PDF manual.
+
+Alternatively, you can run commands like
+
+mkdir build_manual
+cd build_manual
+cmake .. -DGMXSRC=/home/me/GROMACS/git/release-4-5-patches -DGMXBIN=/home/me/programs/gmx-git/bin
+
+to do it from the command line.
+
+Various files from old-style manual builds can break the CMake
+dependency generation. If you run "make clean" from the manual directory,
+it will get rid of g_options.tex, proglist.tex, progman.tex and mdp_opt.tex,
+as well as the progman directory and old LaTeX output files.
+
+The binaries directory should contain only one version of the GROMACS
+binaries - not multiple versions with _mpi, _d suffixes, etc.
 
 Old README contents follow - this are partly out of date.
 --------------
