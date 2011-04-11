@@ -37,6 +37,7 @@
 #endif
 
 #include <math.h>
+#include <string.h>
 #include "typedefs.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -65,7 +66,11 @@ int main (int argc,char *argv[])
     "If an index file is specified, please note that the atom numbers",
     "should correspond to the [BB]protonated[bb] state."
   };
-  
+ 
+  const char *bugs[] = {
+    "For the moment, only .pdb files are accepted to the -s flag"
+  }
+ 
   char        title[STRLEN+1];  
   const char  *infile;
   char        *grpnm;
@@ -104,8 +109,9 @@ int main (int argc,char *argv[])
   bReadMultiple = opt2bSet("-f",NFILE,fnm);
   if (bReadMultiple) {
     infile = opt2fn("-f",NFILE,fnm);
-    if ( !read_first_frame(oenv,&status, infile, &fr, TRX_NEED_X ) )
+    if ( !read_first_frame(oenv,&status, infile, &fr, TRX_NEED_X ) ) {
       gmx_fatal(FARGS,"cannot read coordinate file %s",infile);
+    }
     natoms = fr.natoms;
   } else {
     clear_trxframe(&fr,TRUE);
@@ -120,16 +126,22 @@ int main (int argc,char *argv[])
   }
   
   /* check input */
-  if ( natoms == 0 )
+  if ( natoms == 0 ) {
     gmx_fatal(FARGS,"no atoms in coordinate file %s",infile);
-  if ( natoms > atoms->nr )
+  }
+
+  if ( natoms > atoms->nr ) {
     gmx_fatal(FARGS,"topology with %d atoms does not match "
 		"coordinates with %d atoms",atoms->nr,natoms);
-  for(i=0; i<nidx; i++)
-    if (index[i] > natoms)
+  }
+
+  for(i=0; i<nidx; i++) {
+    if (index[i] > natoms) {
       gmx_fatal(FARGS,"An atom number in group %s is larger than the number of "
 		  "atoms (%d) in the coordinate file %s",grpnm,natoms,infile);
-  
+    }
+  }  
+
   /* get indexed copy of atoms */
   snew(iatoms,1);
   init_t_atoms(iatoms,nidx,FALSE);
@@ -138,10 +150,15 @@ int main (int argc,char *argv[])
   for(i=0; i<nidx; i++) {
     iatoms->atom[i] = atoms->atom[index[i]];
     iatoms->atomname[i] = atoms->atomname[index[i]];
-    if ( i>0 && (atoms->atom[index[i]].resind!=atoms->atom[index[i-1]].resind) )
+    if ( i>0 && (atoms->atom[index[i]].resind!=atoms->atom[index[i-1]].resind) ) {
       resind++;
+    }
     iatoms->atom[i].resind = resind;
     iatoms->resinfo[resind] = atoms->resinfo[atoms->atom[index[i]].resind];
+    /* allocate some space for the rtp name and copy from name */
+    snew(iatoms->resinfo[resind].rtp,1);
+    strcpy(iatoms->resinfo[resind].rtp, atoms->resinfo[resind].name);
+
     iatoms->nres = max(iatoms->nres, iatoms->atom[i].resind+1);
   }
   
@@ -151,10 +168,13 @@ int main (int argc,char *argv[])
   snew(ix, nidx);
   frame=0;
   do {
-    if (debug) fprintf(debug,"FRAME %d (%d %g)\n",frame,fr.step,fr.time);
+    if (debug) {
+        fprintf(debug,"FRAME %d (%d %g)\n",frame,fr.step,fr.time);
+    }
     /* get indexed copy of x */
-    for(i=0; i<nidx; i++)
+    for(i=0; i<nidx; i++) {
       copy_rvec(fr.x[index[i]], ix[i]);
+    }
     /* protonate */
     natoms_out = protonate(&iatoms, &ix, &protdata);
     
@@ -171,6 +191,9 @@ int main (int argc,char *argv[])
     write_trxframe(out,&frout,NULL);
     frame++;
   } while ( bReadMultiple && read_next_frame(oenv,status, &fr) );
+
+  sfree(ix);
+  sfree(iatoms);
   
   thanx(stderr);
 
