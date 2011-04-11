@@ -67,10 +67,6 @@ int main (int argc,char *argv[])
     "should correspond to the [BB]protonated[bb] state."
   };
  
-  const char *bugs[] = {
-    "For the moment, only .pdb files are accepted to the -s flag"
-  }
- 
   char        title[STRLEN+1];  
   const char  *infile;
   char        *grpnm;
@@ -89,6 +85,10 @@ int main (int argc,char *argv[])
   gmx_bool        bReadMultiple;
   output_env_t oenv;
   
+  const char *bugs[] = {
+    "For the moment, only .pdb files are accepted to the -s flag"
+  };
+ 
   t_filenm fnm[] = {
     { efTPS, NULL, NULL,         ffREAD  },
     { efTRX, "-f", NULL,         ffOPTRD },
@@ -99,7 +99,7 @@ int main (int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL,&oenv);
+		    NFILE,fnm,0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
   infile=opt2fn("-s",NFILE,fnm);
   read_tps_conf(infile,title,&top,&ePBC,&x,NULL,box,FALSE);
