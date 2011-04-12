@@ -190,7 +190,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else if (i == F_BHAM)
             md->bEner[i] = bBHAM;
         else if (i == F_EQM)
-            md->bEner[i] = ir->bQMMM;
+            md->bEner[i] = (ir->bQMMM || (eTitrationAlgNone != ir->titration_alg));
         else if (i == F_COUL_LR)
             md->bEner[i] = (ir->rcoulomb > ir->rlist);
         else if (i == F_LJ_LR)

@@ -246,7 +246,7 @@ enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
 
-enum {eTitrationAlgNone, eTitrationAlgITMD, eTitrationAlgQhop, eTitrationAlgNR };
+enum {eTitrationAlgNone, eTitrationAlgICE, eTitrationAlgQhop, eTitrationAlgNR };
 
 enum {eTitrationModeRandlist,  /* Randomize the list of hops */
       eTitrationModeOne,       /* Pick one at random */

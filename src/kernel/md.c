@@ -1141,7 +1141,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
+	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,Etitration=0;
 	real        vetanew = 0;
     double      cycles;
 	real        saved_conserved_quantity = 0;
@@ -1918,9 +1918,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (fr->bTitration && do_per_step(step,ir->titration_freq))
             { 
-                do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
-                             mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
-                             enerd->term[F_TEMP],step,ekind,force_vir);
+                Etitration +=
+                    do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
+                                 mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
+                                 enerd->term[F_TEMP],step,ekind,force_vir);
             }
         }
         
@@ -1964,6 +1965,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
+        enerd->term[F_EQM]   = Etitration;
+        enerd->term[F_EPOT] += Etitration;
     
         GMX_BARRIER(cr->mpi_comm_mygroup);
         

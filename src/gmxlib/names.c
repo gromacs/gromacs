@@ -211,7 +211,7 @@ const char *eMultentOpt_names[eMultentOptNR+1] = {
 };
 
 const char *eTitrationAlg_names[eTitrationAlgNR+1] = {
-  "none", "ITMD", "Qhop", NULL
+  "none", "ICE", "Qhop", NULL
 };
 
 const char *eTitrationMode_names[eTitrationModeNR+1] = {

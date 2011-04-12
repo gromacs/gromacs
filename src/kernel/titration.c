@@ -1915,8 +1915,8 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     }
     if (eHOP_BACKWARD == ehop)
     {
-        qhop_tautomer_swap(T, x, vvv, hop->donor_id, hop->primary_d);
-        qhop_tautomer_swap(T, x, vvv, hop->acceptor_id, hop->primary_a);
+        qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id );
+        qhop_tautomer_swap(T, x, vvv, hop->primary_a, hop->acceptor_id );
     }
 
     return TRUE; /* Ok, this is not very good for error checking. */
@@ -2245,9 +2245,14 @@ static real poisson_prob(real p,            ///< Hopping probability over a 0.01
 }
 
 static real calc_K(qhop_parameters *p, t_hop *hop)
-{return p->k_1 * exp(-p->k_2 * (hop->rda-0.23)) + p->k_3;}
+{
+    return p->k_1 * exp(-p->k_2 * (hop->rda-0.23)) + p->k_3;
+}
+
 static real calc_M(qhop_parameters *p, t_hop *hop)
-{return p->m_1 * exp(-p->m_2 * (hop->rda-0.23)) + p->m_3;}
+{
+    return p->m_1 * exp(-p->m_2 * (hop->rda-0.23)) + p->m_3;
+}
 /**
  * \brief Calculates the SE-regime validity limit and stores it in hop->El.
  *
@@ -2401,7 +2406,8 @@ static real compute_rate_SE(qhop_parameters *p, ///< Pointer to qhop_parameters
     return(pSE);
 } /* compute_prob_SE */
 
-static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e)
+static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e,
+                       const char *alg)
 {
     int k;
     
@@ -2409,7 +2415,7 @@ static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e)
     {
         for(k=0; (k<F_ECONSERVED); k++)
             if (e->term[k] != 0)
-                fprintf(fplog,"%s: %s %g\n",s,interaction_function[k].name,
+                fprintf(fplog,"%s: %s %s %g\n",alg,s,interaction_function[k].name,
                         e->term[k]);
     }
 }
@@ -2484,7 +2490,7 @@ static void get_hop_prob(FILE *fplog,
         evaluate_energy(fplog,cr, ir, nrnb, wcycle,top, mtop,
                         groups, state, md, fcd, graph,
                         fr,vsite,mu_tot,step,Ebefore);
-        dump_enerd(debug,"ITMD Before",Ebefore);
+        dump_enerd(debug,"Before",Ebefore,eTitrationAlg_names[ir->titration_alg]);
         *bHaveEbefore = TRUE;
     }
     /* This needs to be evaluated for each possible hop */
@@ -2501,7 +2507,7 @@ static void get_hop_prob(FILE *fplog,
     {
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
                         fcd,graph,fr,vsite,mu_tot,step, Eafter);
-        dump_enerd(debug,"ITMD After ",Eafter);
+        dump_enerd(debug,"After ",Eafter,eTitrationAlg_names[ir->titration_alg]);
         get_self_energy(cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
                         T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
                         md,top,state->x,pbc,fr,&Eafter_self_coul,&Eafter_self_vdw);
@@ -2520,13 +2526,18 @@ static void get_hop_prob(FILE *fplog,
                        
         Edelta = ((Eafter_mm - Eafter_self) - (Ebefore_mm - Ebefore_self) +
                   Edelta_coul);
-        hop->DE_MM = Eafter_mm - Ebefore_mm;
+        hop->DE_Environment = Eafter_mm - Ebefore_mm;
         
         if (NULL != fplog)
-            fprintf(fplog,"%s: Edelta %g, Eafter_mm %g, Eafter_self %g, Ebefore_mm %g, Ebefore_self %g, Edelta_coul %g, DE_MM %g, DE_Self %g\n%s: Eafter_self_coul %g, Ebefore_self_coul %g, Eafter_self_vdw %g, Ebefore_self_vdw %g\n",
+            fprintf(fplog,"%s: Edelta %g, Eafter_mm %g, Eafter_self %g, Ebefore_mm %g, Ebefore_self %g, Edelta_coul %g, DE_Environment %g, DE_Self %g don: %d (%s) acc: %d (%s)\n%s: Eafter_self_coul %g, Ebefore_self_coul %g, Eafter_self_vdw %g, Ebefore_self_vdw %g\n",
                     eTitrationAlg_names[ir->titration_alg],
                     Edelta,Eafter_mm,Eafter_self,Ebefore_mm,Ebefore_self,Edelta_coul,
-                    hop->DE_MM,Eafter_self-Ebefore_self,
+                    hop->DE_Environment,
+                    Eafter_self-Ebefore_self,
+                    T->qhop_atoms[hop->donor_id].res_id,
+                    T->qhop_atoms[hop->donor_id].resname,
+                    T->qhop_atoms[hop->acceptor_id].res_id,
+                    T->qhop_atoms[hop->acceptor_id].resname,
                     eTitrationAlg_names[ir->titration_alg],
                     Eafter_self_coul,Ebefore_self_coul,Eafter_self_vdw, Ebefore_self_vdw);
 
@@ -2553,7 +2564,7 @@ static void get_hop_prob(FILE *fplog,
                 hop->regime = etQhopI;
             }
         }
-        if ((eTitrationAlgITMD == ir->titration_alg) || (hop->E12 <= hop->El))
+        if ((eTitrationAlgICE == ir->titration_alg) || (hop->E12 <= hop->El))
         {
             /* Schroedinger regime */
             r_SE = compute_rate_SE (p, hop);
@@ -2749,10 +2760,10 @@ static gmx_bool scale_velocities(FILE *fplog,
     ekin_before = check_ekin(state->v,md);
     ekin_old = ekin_before;
     ekin_new = 0;
-    DE = hop->DE_MM;
+    DE = hop->E12;
    
     if (T->db->bConstraints)
-        maxiter = 5;
+        maxiter = 10;
     else
         maxiter = 1;
         
@@ -2785,19 +2796,19 @@ static gmx_bool scale_velocities(FILE *fplog,
             
             ekin_new = check_ekin(state->v ,md);   
             if (NULL != fplog)
-                fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE_MM = %f\n",
-                        eTitrationAlg_names[ir->titration_alg],iter,ekin_new,ekin_old,hop->DE_MM);
+                fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE = %f\n",
+                        eTitrationAlg_names[ir->titration_alg],iter,ekin_new,ekin_old,DE);
             
             DE = DE + (ekin_new - ekin_old);
             ekin_old = ekin_new;
-            bConverged = (DE*DE < 0.001); /* hard coded treshold.... */
+            bConverged = (DE*DE < 1); /* hard coded treshold.... */
         }
     }
     if (NULL != fplog)
     {
         gmx_step_str(step, stepstr);
-        fprintf(fplog,"%s: Energy correction at step %s: %f, DE_MM: %f\n",
-                eTitrationAlg_names[ir->titration_alg],stepstr,ekin_new-ekin_before,hop->DE_MM);
+        fprintf(fplog,"%s: Energy correction at step %s: %f, DE_Environment: %f\n",
+                eTitrationAlg_names[ir->titration_alg],stepstr,ekin_new-ekin_before,hop->DE_Environment);
     }
     return (bSufficientEkin && bConverged);
 } /* scale_velocities */
@@ -2849,7 +2860,7 @@ static void scramble_hops(titration_t T, int mode)      ///< etQhopMode????
     }
 }
 
-void do_titration(FILE *fplog,
+real do_titration(FILE *fplog,
                   t_commrec *cr,
                   t_inputrec *ir,
                   t_nrnb *nrnb,
@@ -2887,7 +2898,7 @@ void do_titration(FILE *fplog,
     gmx_bool bHaveEbefore;
     gmx_enerdata_t *Ebefore,*Eafter;
     real
-        veta, vetanew;
+        deqmmm,eqmmm,veta, vetanew;
     titration_t T;
     
     T = fr->titration;
@@ -2922,7 +2933,9 @@ void do_titration(FILE *fplog,
     } 
 
     find_acceptors(fplog,cr, fr, T, state->x, &pbc, md, &(db->H_map));
-
+    deqmmm = 0;
+    eqmmm = 0;
+    
     if(T->nr_hop > 0)
     {
         bHaveEbefore = FALSE;
@@ -2959,10 +2972,10 @@ void do_titration(FILE *fplog,
                 {
                     /* some printing to the log file */
                     fprintf(debug,
-                            "\n%d. don %d acc %d. E12 = %4.4f, DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
+                            "\n%d. don %d acc %d. E12 = %4.4f, DE_Environment = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
                             T->qhop_atoms[T->hop[i].donor_id].res_id,
                             T->qhop_atoms[T->hop[i].acceptor_id].res_id,
-                            T->hop[i].E12, T->hop[i].DE_MM, T->hop[i].Eb,
+                            T->hop[i].E12, T->hop[i].DE_Environment, T->hop[i].Eb,
                             T->hop[i].hbo, T->hop[i].rda, T->hop[i].ang,
                             T->hop[i].El, T->hop[i].Er,
                             T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
@@ -3010,6 +3023,12 @@ void do_titration(FILE *fplog,
                                                 constr, &pbc, TRUE))
                             gmx_fatal(FARGS,"Oops could not hop back. WTH?");
                     }
+                    else 
+                    {
+                        /* Update QMMM energy */
+                        deqmmm = -(T->hop[i].DE_Environment - T->hop[i].E12);
+                        eqmmm += deqmmm;
+                    }
                 }
                 else
                 {
@@ -3026,17 +3045,16 @@ void do_titration(FILE *fplog,
                             T->qhop_atoms[T->hop[i].acceptor_id].res_id,
                             T->qhop_atoms[T->hop[i].acceptor_id].resname);
                     fprintf(fplog,
-                            " %d. don %d acc %d DE_MM = %4.4f, Eb = %4.4f, hbo = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", i,
-                            T->qhop_atoms[T->hop[i].donor_id].res_id,
-                            T->qhop_atoms[T->hop[i].acceptor_id].res_id,
-                            T->hop[i].DE_MM, T->hop[i].Eb,
-                            T->hop[i].hbo, T->hop[i].rda, T->hop[i].ang,
+                            " DE_Environment = %4.4f, Eb = %4.4f, rda = %2.4f, ang = %2.4f, DE_QMMM = %4.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", 
+                            T->hop[i].DE_Environment, T->hop[i].Eb,
+                            T->hop[i].rda, T->hop[i].ang, deqmmm,
                             T->hop[i].El, T->hop[i].Er,
                             T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
                 }
             }
         }
     }  
+    return eqmmm;
 }
 
 /* paramStr is the string from the rtp file.

@@ -37,9 +37,9 @@ extern void init_titration(FILE *fplog,const char *ff,
  * every hop. The list of hops is scrambled according to the qhopmode
  * and the hops are tested against random numbers. The actual hopping
  * will be done later.
- * \return nothing.
+ * \return the QMMM energy add into the system.
  */
-extern void do_titration(FILE *fplog, 
+extern real do_titration(FILE *fplog, 
 			 t_commrec *cr,
 			 t_inputrec *ir, 
 			 t_nrnb *nrnb,

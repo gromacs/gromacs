@@ -70,7 +70,7 @@ typedef struct {
      if primary != donor/acceptor then
      we swap the coordinates of the primary
      and donor/acceptor when titrating. */
-  real E12_0, E12, DE_MM, Eb,
+  real E12_0, E12, DE_Environment, Eb,
     rda, ang, prob, hbo, kappa,
     Er, El, T;
   /* We put temperature T here, partially because one might
