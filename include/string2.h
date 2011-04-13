@@ -56,6 +56,21 @@
 /*#include "typedefs.h"*/
 #include "types/simple.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef isdigit
+#undef isstring
+#undef isspace
+#undef isalnum
+#undef isalpha
+#undef ispunct
+#undef isxdigit
+#undef isupper
+#undef islower
+#undef toupper
+#undef tolower
+#endif
 
 #ifdef __cplusplus
 extern "C" {

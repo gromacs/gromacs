@@ -1,8 +1,8 @@
-.TH g_sorient 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_sorient 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_sorient - analyzes solvent orientation around solutes
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_sorient\fP
 .BI "\-f" " traj.xtc "
@@ -29,16 +29,18 @@ g_sorient - analyzes solvent orientation around solutes
 .BI "\-rbin" " real "
 .BI "\-[no]pbc" ""
 .SH DESCRIPTION
-\&g_sorient analyzes solvent orientation around solutes.
+\&\fB g_sorient\fR analyzes solvent orientation around solutes.
 \&It calculates two angles between the vector from one or more
 \&reference positions to the first atom of each solvent molecule:
+
 
 \&theta1: the angle with the vector from the first atom of the solvent
 \&molecule to the midpoint between atoms 2 and 3.
 
 \&theta2: the angle with the normal of the solvent plane, defined by the
-\&same three atoms, or when the option \fB \-v23\fR is set
+\&same three atoms, or, when the option \fB \-v23\fR is set, 
 \&the angle with the vector between atoms 2 and 3.
+
 
 \&The reference can be a set of atoms or
 \&the center of mass of a set of atoms. The group of solvent atoms should
@@ -115,7 +117,7 @@ g_sorient - analyzes solvent orientation around solutes
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

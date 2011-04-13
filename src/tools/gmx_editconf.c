@@ -471,7 +471,7 @@ int gmx_editconf(int argc, char *argv[])
     const char
         *desc[] =
             {
-                "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+                "[TT]editconf[tt] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
                 "or [TT].pdb[tt].",
                 "[PAR]",
                 "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
@@ -485,20 +485,21 @@ int gmx_editconf(int argc, char *argv[])
                 "The last two are special cases of a triclinic box.",
                 "The length of the three box vectors of the truncated octahedron is the",
                 "shortest distance between two opposite hexagons.",
-                "The volume of a dodecahedron is 0.71 and that of a truncated octahedron",
-                "is 0.77 of that of a cubic box with the same periodic image distance.",
+                "Relative to a cubic box with some periodic image distance, the volume of a ",
+                "dodecahedron with this same periodic distance is 0.71 times that of the cube, ",
+                "and that of a truncated octahedron is 0.77 times.",
                 "[PAR]",
                 "Option [TT]-box[tt] requires only",
-                "one value for a cubic box, dodecahedron and a truncated octahedron.",
+                "one value for a cubic, rhombic dodecahedral, or truncated octahedral box.",
                 "[PAR]",
-                "With [TT]-d[tt] and a [TT]triclinic[tt] box the size of the system in the x, y",
-                "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
+                "With [TT]-d[tt] and a [TT]triclinic[tt] box the size of the system in the [IT]x[it]-, [IT]y[it]-,",
+                "and [IT]z[it]-directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
                 "[TT]dodecahedron[tt] or [TT]octahedron[tt] boxes, the dimensions are set",
                 "to the diameter of the system (largest distance between atoms) plus twice",
                 "the specified distance.",
                 "[PAR]",
                 "Option [TT]-angles[tt] is only meaningful with option [TT]-box[tt] and",
-                "a triclinic box and can not be used with option [TT]-d[tt].",
+                "a triclinic box and cannot be used with option [TT]-d[tt].",
                 "[PAR]",
                 "When [TT]-n[tt] or [TT]-ndef[tt] is set, a group",
                 "can be selected for calculating the size and the geometric center,",
@@ -507,14 +508,14 @@ int gmx_editconf(int argc, char *argv[])
                 "[TT]-rotate[tt] rotates the coordinates and velocities.",
                 "[PAR]",
                 "[TT]-princ[tt] aligns the principal axes of the system along the",
-                "coordinate axes, with the longest axis aligned with the x axis. ",
+                "coordinate axes, with the longest axis aligned with the [IT]x[it]-axis. ",
                 "This may allow you to decrease the box volume,",
                 "but beware that molecules can rotate significantly in a nanosecond.",
                 "[PAR]",
                 "Scaling is applied before any of the other operations are",
                 "performed. Boxes and coordinates can be scaled to give a certain density (option",
-                "[TT]-density[tt]). Note that this may be inaccurate in case a gro",
-                "file is given as input. A special feature of the scaling option, when the",
+                "[TT]-density[tt]). Note that this may be inaccurate in case a [TT].gro[tt]",
+                "file is given as input. A special feature of the scaling option is that when the",
                 "factor -1 is given in one dimension, one obtains a mirror image,",
                 "mirrored in one of the planes. When one uses -1 in three dimensions, ",
                 "a point-mirror image is obtained.[PAR]",
@@ -534,7 +535,8 @@ int gmx_editconf(int argc, char *argv[])
                 "a row of CA atoms with B-factors ranging from the minimum to the",
                 "maximum value found, effectively making a legend for viewing.",
                 "[PAR]",
-                "With the option [TT]-mead[tt] a special pdb (pqr) file for the MEAD electrostatics",
+                "With the option [TT]-mead[tt] a special [TT].pdb[tt] ([TT].pqr[tt])",
+                "file for the MEAD electrostatics",
                 "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
                 "is that the input file is a run input file.",
                 "The B-factor field is then filled with the Van der Waals radius",
@@ -547,17 +549,17 @@ int gmx_editconf(int argc, char *argv[])
                 "of the principal axis of a specified group against the given vector, ",
 				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
                 "[PAR]",
-                "Finally with option [TT]-label[tt], editconf can add a chain identifier",
-                "to a pdb file, which can be useful for analysis with e.g. rasmol.",
+                "Finally, with option [TT]-label[tt], [TT]editconf[tt] can add a chain identifier",
+                "to a [TT].pdb[tt] file, which can be useful for analysis with e.g. Rasmol.",
                 "[PAR]",
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
-                "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
+                "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
                 "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
     const char *bugs[] =
         {
-            "For complex molecules, the periodicity removal routine may break down, ",
-                "in that case you can use trjconv." };
+            "For complex molecules, the periodicity removal routine may break down, "
+                "in that case you can use [TT]trjconv[tt]." };
     static real dist = 0.0, rbox = 0.0, to_diam = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW =
         FALSE, bCONECT = FALSE;
@@ -618,7 +620,7 @@ int gmx_editconf(int argc, char *argv[])
                         { scale }, "Scaling factor" },
                     { "-density", FALSE, etREAL,
                         { &rho },
-                        "Density (g/l) of the output box achieved by scaling" },
+                        "Density (g/L) of the output box achieved by scaling" },
                     { "-pbc", FALSE, etBOOL,
                         { &bRMPBC },
                         "Remove the periodicity (make molecule whole again)" },
@@ -648,7 +650,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         "-conect", FALSE, etBOOL,
                         { &bCONECT },
-                        "Add CONECT records to a pdb file when written. Can only be done when a topology is present" } };
+                        "Add CONECT records to a [TT].pdb[tt] file when written. Can only be done when a topology is present" } };
 #define NPA asize(pa)
 
     FILE *out;

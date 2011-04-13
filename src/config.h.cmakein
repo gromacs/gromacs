@@ -61,6 +61,9 @@
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
 
+/* Detect Cygwin */
+#cmakedefine GMX_CYGWIN
+
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
 
@@ -215,6 +218,9 @@
 /* Define to 1 if you have the mkl library (-lmkl). */
 #cmakedefine HAVE_LIBMKL
 
+/* Define to 1 if you have the gsl library (-lgsl). */
+#cmakedefine HAVE_LIBGSL
+
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
@@ -289,6 +295,9 @@
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if yo have the <direct.h> header file. */
+#cmakedefine HAVE_DIRECT_H
 
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H

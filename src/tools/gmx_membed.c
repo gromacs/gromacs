@@ -1,5 +1,4 @@
 /*
- * $Id: mdrun.c,v 1.139.2.9 2009/05/04 16:13:29 hess Exp $
  *
  *                This source code is part of
  *
@@ -4283,15 +4282,14 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {
-			"g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position",
-			"and orientation specified by the user.\n",
-			"\n",
-			"SHORT MANUAL\n------------\n",
+			"[TT]g_membed[tt] embeds a membrane protein into an equilibrated lipid bilayer at the position",
+			"and orientation specified by the user.[PAR]",
+			"SHORT MANUAL[BR]------------[BR]",
 			"The user should merge the structure files of the protein and membrane (+solvent), creating a",
 			"single structure file with the protein overlapping the membrane at the desired position and",
-			"orientation. Box size should be taken from the membrane structure file. The corresponding topology",
-			"files should also be merged. Consecutively, create a tpr file (input for g_membed) from these files,"
-			"with the following options included in the mdp file.\n",
+			"orientation. The box size is taken from the membrane structure file. The corresponding topology",
+			"files should also be merged. Consecutively, create a [TT].tpr[tt] file (input for [TT]g_membed[tt]) from these files,"
+			"with the following options included in the [TT].mdp[tt] file.[BR]",
 			" - [TT]integrator      = md[tt][BR]",
 			" - [TT]energygrp       = Protein[tt] (or other group that you want to insert)[BR]",
 			" - [TT]freezegrps      = Protein[tt][BR]",
@@ -4299,32 +4297,29 @@ int gmx_membed(int argc,char *argv[])
 			" - [TT]energygrp_excl  = Protein Protein[tt][BR]",
 			"The output is a structure file containing the protein embedded in the membrane. If a topology",
 			"file is provided, the number of lipid and ",
-			"solvent molecules will be updated to match the new structure file.\n",
-			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.\n",
-			"\n",
-			"SHORT METHOD DESCRIPTION\n",
-			"------------------------\n",
-			"1. The protein is resized around its center of mass by a factor -xy in the xy-plane",
-			"(the membrane plane) and a factor -z in the z-direction (if the size of the",
+			"solvent molecules will be updated to match the new structure file.[BR]",
+			"For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169-2174, Appendix.[PAR]",
+			"SHORT METHOD DESCRIPTION[BR]",
+			"------------------------[BR]",
+			"1. The protein is resized around its center of mass by a factor [TT]-xy[tt] in the xy-plane",
+			"(the membrane plane) and a factor [TT]-z[tt] in the [IT]z[it]-direction (if the size of the",
 			"protein in the z-direction is the same or smaller than the width of the membrane, a",
-			"-z value larger than 1 can prevent that the protein will be enveloped by the lipids).\n",
+			"[TT]-z[tt] value larger than 1 can prevent that the protein will be enveloped by the lipids).[BR]",
 			"2. All lipid and solvent molecules overlapping with the resized protein are removed. All",
-			"intraprotein interactions are turned off to prevent numerical issues for small values of -xy",
-			" or -z\n",
-			"3. One md step is performed.\n",
-			"4. The resize factor (-xy or -z) is incremented by a small amount ((1-xy)/nxy or (1-z)/nz) and the",
+			"intraprotein interactions are turned off to prevent numerical issues for small values of [TT]-xy[tt]",
+			" or [TT]-z[tt][BR]",
+			"3. One md step is performed.[BR]",
+			"4. The resize factor ([TT]-xy[tt] or [TT]-z[tt]) is incremented by a small amount ((1-xy)/nxy or (1-z)/nz) and the",
 			"protein is resized again around its center of mass. The resize factor for the xy-plane",
-			"is incremented first. The resize factor for the z-direction is not changed until the -xy factor",
-			"is 1 (thus after -nxy iteration).\n",
-			"5. Repeat step 3 and 4 until the protein reaches its original size (-nxy + -nz iterations).\n",
-			"For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.\n",
-			"\n",
-			"NOTE\n----\n",
-			" - Protein can be any molecule you want to insert in the membrane.\n",
+			"is incremented first. The resize factor for the z-direction is not changed until the [TT]-xy[tt] factor",
+			"is 1 (thus after [TT]-nxy[tt] iterations).[BR]",
+			"5. Repeat step 3 and 4 until the protein reaches its original size ([TT]-nxy[tt] + [TT]-nz[tt] iterations).[BR]",
+			"For a more extensive method description see Wolf et al, J Comp Chem, 31 (2010) 2169-2174.[PAR]",
+			"NOTE[BR]----[BR]",
+			" - Protein can be any molecule you want to insert in the membrane.[BR]",
 			" - It is recommended to perform a short equilibration run after the embedding",
-			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174, to re-equilibrate the membrane. Clearly",
-			"protein equilibration might require longer.\n",
-			"\n"
+			"(see Wolf et al, J Comp Chem 31 (2010) 2169-2174), to re-equilibrate the membrane. Clearly",
+			"protein equilibration might require longer.[PAR]"
 	};
 	t_commrec    *cr;
 	t_filenm fnm[] = {
@@ -4361,7 +4356,8 @@ int gmx_membed(int argc,char *argv[])
 			{ efXVG, "-px",     "pullx",    ffOPTWR },
 			{ efXVG, "-pf",     "pullf",    ffOPTWR },
 			{ efMTX, "-mtx",    "nm",       ffOPTWR },
-			{ efNDX, "-dn",     "dipole",   ffOPTWR }
+			{ efNDX, "-dn",     "dipole",   ffOPTWR },
+                        { efRND, "-multidir",NULL,      ffOPTRDMULT}
 	};
 #define NFILE asize(fnm)
 
@@ -4444,7 +4440,7 @@ int gmx_membed(int argc,char *argv[])
   { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
     "HIDDENCheck for all bonded interactions with DD" },
   { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
-    "HIDDENUse special bonded atom communication when -rdd > cut-off" },
+    "HIDDENUse special bonded atom communication when [TT]-rdd[tt] > cut-off" },
   { "-rdd",     FALSE, etREAL, {&rdd},
     "HIDDENThe maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
   { "-rcon",    FALSE, etREAL, {&rconstr},
@@ -4476,17 +4472,17 @@ int gmx_membed(int argc,char *argv[])
   { "-reseed",  FALSE, etINT, {&repl_ex_seed},
     "HIDDENSeed for replica exchange, -1 is generate a seed" },
   { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
-    "HIDDENRecalculate virtual site coordinates with -rerun" },
+    "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
   { "-ionize",  FALSE, etBOOL,{&bIonize},
     "HIDDENDo a simulation including the effect of an X-Ray bombardment on your system" },
   { "-confout", TRUE, etBOOL, {&bConfout},
-    "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
+    "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
   { "-stepout", FALSE, etINT, {&nstepout},
     "HIDDENFrequency of writing the remaining runtime" },
   { "-resetstep", FALSE, etINT, {&resetstep},
     "HIDDENReset cycle counters after these many time steps" },
   { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-    "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
+    "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" },
   { "-v",       FALSE, etBOOL,{&bVerbose},
     "Be loud and noisy" },
   { "-maxh",   FALSE, etREAL, {&max_hours},
@@ -4508,7 +4504,7 @@ int gmx_membed(int argc,char *argv[])
 	const char *part_suffix=".part";
 	char     suffix[STRLEN];
 	int      rc;
-
+        char **multidir=NULL;
 
 	cr = init_par(&argc,&argv);
 
@@ -4549,13 +4545,25 @@ int gmx_membed(int argc,char *argv[])
 	nthreads=1;
 #endif
 
+        /* now check the -multi and -multidir option */
+        if (opt2bSet("-multidir", NFILE, fnm))
+        {
+            int i;
+            if (nmultisim > 0)
+            {
+                gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually     exclusive.");
+            }
+            nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+        }
+
 
 	if (repl_ex_nst != 0 && nmultisim < 2)
 		gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
 	if (nmultisim > 1) {
 #ifndef GMX_THREADS
-		init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+                gmx_bool bParFn = (multidir == NULL);
+		init_multisystem(cr,nmultisim,multidir,NFILE,fnm,TRUE);
 #else
 		gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif

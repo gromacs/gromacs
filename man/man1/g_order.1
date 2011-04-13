@@ -1,8 +1,8 @@
-.TH g_order 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_order 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_order - computes the order parameter per atom for carbon tails
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_order\fP
 .BI "\-f" " traj.xtc "
@@ -44,9 +44,9 @@ g_order - computes the order parameter per atom for carbon tails
 
 \&The program can also give all
 \&diagonal elements of the order tensor and even calculate the deuterium
-\&order parameter Scd (default). If the option \-szonly is given, only one
-\&order tensor component (specified by the \-d option) is given and the
-\&order parameter per slice is calculated as well. If \-szonly is not
+\&order parameter Scd (default). If the option \fB \-szonly\fR is given, only one
+\&order tensor component (specified by the \fB \-d\fR option) is given and the
+\&order parameter per slice is calculated as well. If \fB \-szonly\fR is not
 \&selected, all diagonal elements and the deuterium order parameter is
 \&given.
 
@@ -125,7 +125,7 @@ The tetrahedrality order parameters can be determined
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -134,10 +134,10 @@ The tetrahedrality order parameters can be determined
  Direction of the normal on the membrane: \fB z\fR, \fB x\fR or \fB y\fR
 
 .BI "\-sl"  " int" " 1" 
- Calculate order parameter as function of boxlength, dividing the box in nr slices.
+ Calculate order parameter as function of box length, dividing the box in nr slices.
 
 .BI "\-[no]szonly"  "no    "
- Only give Sz element of order tensor. (axis can be specified with \-d)
+ Only give Sz element of order tensor. (axis can be specified with \fB \-d\fR)
 
 .BI "\-[no]unsat"  "no    "
  Calculate order parameters for unsaturated carbons. Note that this cannot be mixed with normal order parameters.

@@ -205,7 +205,7 @@ static int *select_ftype(const char *opt,int *nft,int *mult)
 int main(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "mk_angndx makes an index file for calculation of",
+    "[TT]mk_angndx[tt] makes an index file for calculation of",
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };

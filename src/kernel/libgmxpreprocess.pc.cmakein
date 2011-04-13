@@ -5,8 +5,8 @@ Name: libgmxpreprocess
 Description: Gromacs preprocess lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
-Requires: libgmx@LIBSUFFIX@ libmd@LIBSUFFIX@ 
+Requires: libgmx@GMX_LIBS_SUFFIX@ libmd@GMX_LIBS_SUFFIX@ 
 Libs.private: -lm @CMAKE_THREAD_LIBS_INIT@
-Libs: -L${libdir} -lgmxpreprocess@LIBSUFFIX@
+Libs: -L${libdir} -lgmxpreprocess@GMX_LIBS_SUFFIX@
 Cflags: -I${includedir} @PKG_CFLAGS@
 

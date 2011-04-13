@@ -174,6 +174,7 @@ typedef long long int gmx_large_int_t;
 #define gmx_large_int_pfmt "%lld"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_MPI_LARGE_INT MPI_LONG_LONG_INT
 
 #elif ( (defined LONG_MAX && LONG_MAX==9223372036854775807L) || (defined SIZEOF_LONG_INT && SIZEOF_LONG_INT==8) )
 
@@ -183,6 +184,7 @@ typedef long int gmx_large_int_t;
 #define gmx_large_int_pfmt "%ld"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_MPI_LARGE_INT MPI_LONG_INT
 
 #elif ( (defined INT_MAX && INT_MAX==9223372036854775807L) || (defined SIZEOF_INT && SIZEOF_INT==8) )
 
@@ -192,6 +194,7 @@ typedef int gmx_large_int_t;
 #define gmx_large_int_pfmt  "%d"
 #define SIZEOF_GMX_LARGE_INT  8
 #define GMX_LARGE_INT_MAX     9223372036854775807LL
+#define GMX_MPI_LARGE_INT MPI_INT
 
 #elif ( (defined INT_MAX && INT_MAX==2147483647) || (defined SIZEOF_INT && SIZEOF_INT==4) )
 
@@ -201,6 +204,7 @@ typedef int gmx_large_int_t;
 #define gmx_large_int_pfmt "%d"
 #define SIZEOF_GMX_LARGE_INT  4
 #define GMX_LARGE_INT_MAX     2147483647
+#define GMX_MPI_LARGE_INT MPI_INT
 
 #else
 

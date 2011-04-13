@@ -145,7 +145,7 @@ int gmx_spol(int argc,char *argv[])
 
   
   const char *desc[] = {
-    "g_spol analyzes dipoles around a solute; it is especially useful",
+    "[TT]g_spol[tt] analyzes dipoles around a solute; it is especially useful",
     "for polarizable water. A group of reference atoms, or a center",
     "of mass reference (option [TT]-com[tt]) and a group of solvent",
     "atoms is required. The program splits the group of solvent atoms",
@@ -156,7 +156,7 @@ int gmx_spol(int argc,char *argv[])
     "the inner product of the distance vector",
     "and the dipole of the solvent molecule is determined.",
     "For solvent molecules with net charge (ions), the net charge of the ion",
-    "is subtracted evenly at all atoms in the selection of each ion.",
+    "is subtracted evenly from all atoms in the selection of each ion.",
     "The average of these dipole components is printed.",
     "The same is done for the polarization, where the average dipole is",
     "subtracted from the instantaneous dipole. The magnitude of the average",

@@ -1,5 +1,4 @@
 /*
- * $Id: ehole.c,v 1.12.2.3 2008/02/29 07:02:43 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -559,13 +558,13 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "ehole performs a molecular dynamics simulation of electrons and holes",
+    "[TT]ehole[tt] performs a molecular dynamics simulation of electrons and holes",
     "in an implicit lattice. The lattice is modeled through scattering cross",
     "sections, for elastic and inelastic scattering.",
     "A detailed description of the scatterning processes simulated in ehole",
     "can be found in Timneanu et al. Chemical Physics 299 (2004) 277-283",
     "The paper also includes a description how to calculate the input files.[PAR]",
-    "Description of the input files for ehole:[BR]",
+    "Description of the input files for [TT]ehole[tt]:[BR]",
     "[TT]-sigel.dat[tt]: elastic cross section (per atom). Two columns: Impact electron energy (eV) vs Elastic cross section (A2).[BR]",
     "[TT]-siginel.dat[tt]: inelastic cross section (per atom). Two columns: Impact electron energy (eV) vs Inelastic cross section (A2).[BR]",
     "[TT]-band-ener.dat[tt]: Probability of finding an electron in the valence band.",
@@ -584,7 +583,7 @@ int main(int argc,char *argv[])
     "[TT]-gyr_origin[tt] The radius of gyration of the electron cloud with respect to the origin (contains 4 columns).[BR]",
     "[TT]-mfp[tt] The mean free path of the electrons as a function of energy. If this is not a smooth curve you need to increase the number of simulations.[BR]",
     "[TT]-nion[tt] The number of ions as a function of time, averaged over simulations.[BR]",
-    "[TT]-ener[tt] The energy terms in the simulation (note that there are multiple columns, so use xmgrace -nxy). This shows important information about the stability of the simulation, that is the total energy should be conserved. In this figure you can also inspect the kinetic energy per electron in order to check whether the electrons have thermalized.[BR]"
+    "[TT]-ener[tt] The energy terms in the simulation (note that there are multiple columns, so use [TT]xmgrace -nxy[tt]). This shows important information about the stability of the simulation, that is the total energy should be conserved. In this figure you can also inspect the kinetic energy per electron in order to check whether the electrons have thermalized.[BR]"
   };
   static t_eh_params ehp = {
     100,    /* Max number of particles. Is a parameter but should be dynamic */

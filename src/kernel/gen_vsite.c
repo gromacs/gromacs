@@ -175,9 +175,11 @@ static void read_vsite_database(const char *ddbname,
 	  (*ch) = 0;
 	trim (dirstr);
 
-	if(!gmx_strcasecmp(dirstr,"HID"))
+	if(!gmx_strcasecmp(dirstr,"HID") ||
+	   !gmx_strcasecmp(dirstr,"HISD"))
 	  sprintf(dirstr,"HISA");
-	else if(!gmx_strcasecmp(dirstr,"HIE"))
+	else if(!gmx_strcasecmp(dirstr,"HIE") ||
+		!gmx_strcasecmp(dirstr,"HISE"))
 	  sprintf(dirstr,"HISB");
 	else if(!gmx_strcasecmp(dirstr,"HIP"))
 	  sprintf(dirstr,"HISH");

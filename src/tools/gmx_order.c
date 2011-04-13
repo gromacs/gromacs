@@ -801,10 +801,10 @@ int gmx_order(int argc,char *argv[])
     { "-d",      FALSE, etENUM, {normal_axis}, 
       "Direction of the normal on the membrane" },
     { "-sl",     FALSE, etINT, {&nslices},
-      "Calculate order parameter as function of boxlength, dividing the box"
+      "Calculate order parameter as function of box length, dividing the box"
       " in #nr slices." },
     { "-szonly", FALSE, etBOOL,{&bSzonly},
-      "Only give Sz element of order tensor. (axis can be specified with -d)" },
+      "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
     { "-unsat",  FALSE, etBOOL,{&bUnsat},
       "Calculate order parameters for unsaturated carbons. Note that this can"
       "not be mixed with normal order parameters." },

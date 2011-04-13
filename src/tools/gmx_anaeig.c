@@ -748,7 +748,7 @@ static void rmsf(const char *outfile,int natoms,real *sqrtm,
 int gmx_anaeig(int argc,char *argv[])
 {
   static const char *desc[] = {
-    "g_anaeig analyzes eigenvectors. The eigenvectors can be of a",
+    "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
     "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes analysis",
     "([TT]g_nmeig[tt]).[PAR]",
     
@@ -791,10 +791,10 @@ int gmx_anaeig(int argc,char *argv[])
     "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
     "will be written to separate files. Chain identifiers will be added",
     "when writing a [TT].pdb[tt] file with two or three structures (you",
-    "can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
     
     "  Overlap calculations between covariance analysis:[BR]",
-    "  NOTE: the analysis should use the same fitting structure[PAR]",
+    "  [BB]Note:[bb] the analysis should use the same fitting structure[PAR]",
     
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",

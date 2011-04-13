@@ -82,7 +82,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
 int gmx_covar(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_covar calculates and diagonalizes the (mass-weighted)",
+    "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
     "covariance matrix.",
     "All structures are fitted to the structure in the structure file.",
     "When this is not a run input file periodicity will not be taken into",
@@ -101,9 +101,9 @@ int gmx_covar(int argc,char *argv[])
     "Option [TT]-ascii[tt] writes the whole covariance matrix to",
     "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",
     "[PAR]",
-    "Option [TT]-xpm[tt] writes the whole covariance matrix to an xpm file.",
+    "Option [TT]-xpm[tt] writes the whole covariance matrix to an [TT].xpm[tt] file.",
     "[PAR]",
-    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
+    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an [TT].xpm[tt] file,",
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
     "written.",
     "[PAR]",

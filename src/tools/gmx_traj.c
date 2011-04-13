@@ -95,9 +95,9 @@ static void average_data(rvec x[],rvec xav[],real *mass,
                          int ngrps,int isize[],atom_id **index)
 {
     int  g,i,ind,d;
-    real m,mtot;
+    real m;
     rvec tmp;
-    double sum[DIM];
+    double sum[DIM],mtot;
 
     for(g=0; g<ngrps; g++)
     {
@@ -592,7 +592,7 @@ static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
 int gmx_traj(int argc,char *argv[])
 {
     const char *desc[] = {
-        "g_traj plots coordinates, velocities, forces and/or the box.",
+        "[TT]g_traj[tt] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
         "When [TT]-mol[tt] is set, the numbers in the index file are",
@@ -607,7 +607,7 @@ int gmx_traj(int argc,char *argv[])
         "provided velocities are present in the trajectory file.",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
-        "and average forces as temperature factors to a pdb file with",
+        "and average forces as temperature factors to a [TT].pdb[tt] file with",
         "the average coordinates or the coordinates at [TT]-ctime[tt].",
         "The temperature factors are scaled such that the maximum is 10.",
         "The scaling can be changed with the option [TT]-scale[tt].",
@@ -616,7 +616,7 @@ int gmx_traj(int argc,char *argv[])
         "desired frame. When averaging over frames you might need to use",
         "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
         "If you select either of these option the average force and velocity",
-        "for each atom are written to an xvg file as well",
+        "for each atom are written to an [TT].xvg[tt] file as well",
         "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
         "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
         "norm of the vector is plotted. In addition in the same graph",
@@ -650,9 +650,9 @@ int gmx_traj(int argc,char *argv[])
         { "-bin", FALSE, etREAL, {&binwidth},
           "Binwidth for velocity histogram (nm/ps)" },
         { "-ctime", FALSE, etREAL, {&ctime},
-          "Use frame at this time for x in -cv and -cf instead of the average x" },
+          "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for pdb output, 0 is autoscale" }
+          "Scale factor for [TT].pdb[tt] output, 0 is autoscale" }
     };
     FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL;
     FILE       *outekt=NULL,*outekr=NULL;

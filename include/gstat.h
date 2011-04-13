@@ -66,7 +66,7 @@ real LegendreP(real x,unsigned long m);
 
 enum {
   effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC, 
-  effnEXP5, effnEXP7, effnEXP9, effnERREST, effnNR
+  effnEXP5, effnEXP7, effnEXP9, effnERF, effnERREST, effnNR
 };
 
 /* must correspond with 'leg' g_chi.c:727 */
@@ -96,7 +96,7 @@ typedef struct {
 
 } t_dlist;
 
-extern int  nfp_ffn[effnNR];
+extern const int  nfp_ffn[effnNR];
 
 extern const char *s_ffn[effnNR+2];
 

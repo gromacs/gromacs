@@ -368,7 +368,7 @@ int gmx_density(int argc,char *argv[])
     "Compute partial densities across the box, using an index file.[PAR]",
     "For the total density of NPT simulations, use [TT]g_energy[tt] instead.",
     "[PAR]",
-    "Densities in kg/m^3, number densities or electron densities can be",
+    "Densities are in kg/m^3, and number densities or electron densities can also be",
     "calculated. For electron densities, a file describing the number of",
     "electrons for each type of atom should be provided using [TT]-ei[tt].",
     "It should look like:[BR]",
@@ -409,7 +409,7 @@ int gmx_density(int argc,char *argv[])
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
   };
   
-  real **density;        /* density per slice          */
+  real **density;      /* density per slice          */
   real slWidth;          /* width of one slice         */
   char **grpname;        /* groupnames                 */
   int  nr_electrons;     /* nr. electrons              */

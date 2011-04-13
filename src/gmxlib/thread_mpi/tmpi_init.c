@@ -159,6 +159,11 @@ void *tMPI_Realloc(void *p, size_t size)
     return ret;
 }
 
+void tMPI_Free(void *p)
+{
+    free(p);
+}
+
 
 #if 0
 struct tmpi_thread *tMPI_Get_current(void)

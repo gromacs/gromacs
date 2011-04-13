@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 {
   t_symtab tab;
   static char *desc[] = {
-    "hexamer takes a single input coordinate file and makes five symmetry",
+    "[TT]hexamer[tt] takes a single input coordinate file and makes five symmetry",
     "related copies."
   };
 #define NPA asize(pa)
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     { "-alterz",   FALSE, etREAL,  {&alterz},
       "Add this amount to Z-coordinate in every other molecule" },
     { "-radius",   FALSE, etREAL,  {&rDist},
-      "Distance of protein axis from Z-axis (implies -center)" },
+      "Distance of protein axis from Z-axis (implies [TT]-center[tt])" },
     { "-anglez",   FALSE, etREAL,  {&rAngleZ},
       "Initial angle of rotation around Z-axis of protein" },
     { "-anglex",   FALSE, etREAL,  {&rAngleX},

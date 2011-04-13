@@ -546,7 +546,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     t_pargs dt_pa     = { "-dt",   FALSE, etTIME,  {&tdelta},        
     "Only use frame when t MOD dt = first time (%t)" };
     t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},
-    "View output xvg, xpm, eps and pdb files" };
+    "View output [TT].xvg[tt], [TT].xpm[tt], [TT].eps[tt] and [TT].pdb[tt] files" };
     t_pargs xvg_pa    = { "-xvg",  FALSE, etENUM,  {xvg_format},
     "xvg plot formatting" };
     t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {time_units},

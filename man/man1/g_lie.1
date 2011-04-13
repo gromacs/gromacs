@@ -1,8 +1,8 @@
-.TH g_lie 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_lie 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_lie - free energy estimate from linear combinations
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_lie\fP
 .BI "\-f" " ener.edr "
@@ -21,7 +21,7 @@ g_lie - free energy estimate from linear combinations
 .BI "\-Cqq" " real "
 .BI "\-ligand" " string "
 .SH DESCRIPTION
-\&g_lie computes a free energy estimate based on an energy analysis
+\&\fB g_lie\fR computes a free energy estimate based on an energy analysis
 \&from. One needs an energy file with the following components:
 \&Coul (A\-B) LJ\-SR (A\-B) etc.
 .SH FILES
@@ -53,7 +53,7 @@ g_lie - free energy estimate from linear combinations
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

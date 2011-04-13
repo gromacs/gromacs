@@ -362,7 +362,7 @@ void please_cite(FILE *fp,const char *key)
       "J. S. Hub, B. L. de Groot and D. van der Spoel",
       "g_wham - A free weighted histogram analysis implementation including robust error and autocorrelation estimates",
       "J. Chem. Theory Comput.",
-      0, 2010, "0000-0000"}, 
+      6, 2010, "3713-3720"}, 
     { "In-Chul99a",
       "Y. In-Chul and M. L. Berkowitz",
       "Ewald summation for systems with slab geometry",
@@ -398,6 +398,11 @@ void please_cite(FILE *fp,const char *key)
       "Auger Electron Cascades in Water and Ice",
       "Chem. Phys.",
       299, 2004, "277-283" },
+    { "Caleman2011b",
+      "C. Caleman and M. Hong and J. S. Hub and L. T. da Costa and P. J. van Maaren and D. van der Spoel",
+      "Force Field Benchmark 1: Density, Heat of Vaporization, Heat Capacity, Surface Tension and Dielectric Constant of 152 Organic Liquids",
+      "Submitted",
+      0, 2011, "" },
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
@@ -573,16 +578,42 @@ const char *GromacsVersion()
 
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
+    fprintf(fp, "Version:          %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually
      * coincides with the hash reported above, and produces an empty string
      * in such cases. */
     if (_gmx_central_base_hash[0] != 0)
     {
-        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+        fprintf(fp, "Branched from:    %s\n", _gmx_central_base_hash);
     }
+#endif
+
+#ifdef GMX_DOUBLE
+    fprintf(fp, "Precision:        double\n");
+#else
+    fprintf(fp, "Precision:        single\n");
+#endif
+
+#ifdef GMX_THREADS
+    fprintf(fp, "Parallellization: thread_mpi\n");
+#elif defined(GMX_MPI)
+    fprintf(fp, "Parallellization: MPI\n");
+#else
+    fprintf(fp, "Parallellization: none\n");
+#endif
+
+#ifdef GMX_FFT_FFTPACK
+    fprintf(fp, "FFT Library:      fftpack\n");
+#elif defined(GMX_FFT_FFTW2)
+    fprintf(fp, "FFT Library:      fftw2\n");
+#elif defined(GMX_FFT_FFTW3)
+    fprintf(fp, "FFT Library:      fftw3\n");
+#elif defined(GMX_FFT_MKL)
+    fprintf(fp, "FFT Library:      MKL\n");
+#else
+    fprintf(fp, "FFT Library:      unknown\n");
 #endif
 }

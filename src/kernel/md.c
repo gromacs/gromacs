@@ -89,7 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "membed.h"
+#include "string2.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -118,6 +118,48 @@ typedef struct {
     int set[eglsNR]; /* The communicated signal, equal for all processes */
 } globsig_t;
 
+
+
+/* check which of the multisim simulations has the shortest number of
+   steps and return that number of nsteps */
+static gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
+                                           gmx_large_int_t nsteps)
+{
+    gmx_large_int_t steps_out;
+
+    if MASTER(cr)
+    {
+        gmx_large_int_t *buf;
+        int s;
+
+        snew(buf,cr->ms->nsim);
+
+        buf[cr->ms->sim] = nsteps;
+        gmx_sumli_sim(cr->ms->nsim, buf, cr->ms);
+
+        steps_out=-1;
+        for(s=0; s<cr->ms->nsim; s++)
+        {
+            /* find the smallest positive number */
+            if (buf[s]>= 0 && ((steps_out < 0) || (buf[s]<steps_out)) )
+            {
+                steps_out=buf[s];
+            }
+        }
+        sfree(buf);
+
+        /* if we're the limiting simulation, don't do anything */
+        if (steps_out>=0 && steps_out<nsteps) 
+        {
+            char strbuf[255];
+            snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
+            fprintf(stderr, strbuf, cr->ms->sim, steps_out);
+        }
+    }
+    /* broadcast to non-masters */
+    gmx_bcast(sizeof(gmx_large_int_t), &steps_out, cr);
+    return steps_out;
+}
 
 static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
 {
@@ -1151,6 +1193,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     int         handled_stop_condition=gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t iterate;
+    gmx_large_int_t multisim_nsteps=-1; /* number of steps to do  before first multisim 
+                                          simulation stops. If equal to zero, don't
+                                          communicate any more between multisims.*/
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -1381,6 +1426,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
+    if (repl_ex_nst > 0)
+    {
+        /* We need to be sure replica exchange can only occur
+         * when the energies are current */
+        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
+                        "repl_ex_nst",&repl_ex_nst);
+        /* This check needs to happen before inter-simulation
+         * signals are initialized, too */
+    }
     if (repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
@@ -1618,7 +1672,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         init_nlistheuristics(&nlh,bGStatEveryStep,step);
     }
 
-    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps));
+    if (MULTISIM(cr) && (repl_ex_nst <=0 ))
+    {
+        /* check how many steps are left in other sims */
+        multisim_nsteps=get_multisim_nsteps(cr, ir->nsteps);
+    }
+
+
+    /* and stop now if we should */
+    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
+                 ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
 
         wallcycle_start(wcycle,ewcSTEP);
@@ -1754,6 +1817,27 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 set_nlistheuristics(&nlh,bFirstStep || bExchanged,step);
             }
         } 
+
+        /* check whether we should stop because another simulation has 
+           stopped. */
+        if (MULTISIM(cr))
+        {
+            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&  
+                 (multisim_nsteps != ir->nsteps) )  
+            {
+                if (bNS)
+                {
+                    if (MASTER(cr))
+                    {
+                        fprintf(stderr, 
+                                "Stopping simulation %d because another one has finished\n",
+                                cr->ms->sim);
+                    }
+                    bLastStep=TRUE;
+                    gs.sig[eglsCHKPT] = 1;
+                }
+            }
+        }
 
         /* < 0 means stop at next step, > 0 means stop at next NS step */
         if ( (gs.set[eglsSTOPCOND] < 0 ) ||
@@ -2227,27 +2311,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
-        /* Determine the pressure:
-         * always when we want exact averages in the energy file,
-         * at ns steps when we have pressure coupling,
-         * otherwise only at energy output steps (set below).
-         */
-    
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
-        
-        /* Do we need global communication ? */
-        bGStat = (bGStatEveryStep || bStopCM || bNS ||
-                  (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
-        
-        do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
-        
-        if (do_ene || do_log)
-        {
-            bCalcEnerPres = TRUE;
-            bGStat        = TRUE;
-        }
-
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
 
@@ -2293,7 +2356,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
         }
-        
+
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             run_time > max_hours*60.0*60.0*0.495)
         {
@@ -2510,7 +2573,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,
-                            bFirstIterate ? &gs : NULL,(step % gs.nstms == 0),
+                            bFirstIterate ? &gs : NULL, 
+                            (step_rel % gs.nstms == 0) && 
+                                (multisim_nsteps<0 || (step_rel<multisim_nsteps)),
                             lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
@@ -2765,6 +2830,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
+
     }
     /* End of main MD loop */
     debug_gmx();

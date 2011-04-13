@@ -459,14 +459,14 @@ static void list_mtx(const char *fn)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "gmxdump reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
+    "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
     "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
     "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
     "and prints that to standard output in a readable format.",
     "This program is essential for checking your run input file in case of",
     "problems.[PAR]",
     "The program can also preprocess a topology to help finding problems.",
-    "Note that currently setting GMXLIB is the only way to customize",
+    "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
     "directories used for searching include files.",
   };
   t_filenm fnm[] = {

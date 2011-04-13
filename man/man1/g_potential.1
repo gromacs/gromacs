@@ -1,8 +1,8 @@
-.TH g_potential 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_potential 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_potential - calculates the electrostatic potential across the box
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_potential\fP
 .BI "\-f" " traj.xtc "
@@ -28,14 +28,14 @@ g_potential - calculates the electrostatic potential across the box
 .BI "\-ng" " int "
 .BI "\-[no]correct" ""
 .SH DESCRIPTION
-\&Compute the electrostatical potential across the box. The potential is
+\&\fB g_potential\fR computes the electrostatical potential across the box. The potential is
 \&calculated by first summing the charges per slice and then integrating
 \&twice of this charge distribution. Periodic boundaries are not taken
 \&into account. Reference of potential is taken to be the left side of
-\&the box. It's also possible to calculate the potential in spherical
+\&the box. It is also possible to calculate the potential in spherical
 \&coordinates as function of r by calculating a charge distribution in
 \&spherical slices and twice integrating them. epsilon_r is taken as 1,
-\&2 is more appropriate in many cases.
+\&but 2 is more appropriate in many cases.
 .SH FILES
 .BI "\-f" " traj.xtc" 
 .B Input
@@ -81,7 +81,7 @@ g_potential - calculates the electrostatic potential across the box
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

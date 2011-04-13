@@ -841,9 +841,8 @@ static char *ee_pr(double ee,char *buf)
 }
 
 static void analyse_ener(gmx_bool bCorr,const char *corrfn,
-                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,gmx_bool bTempFluct,
+                         gmx_bool bFee,gmx_bool bSum,gmx_bool bFluct,
                          gmx_bool bVisco,const char *visfn,int nmol,
-                         int nconstr,
                          gmx_large_int_t start_step,double start_t,
                          gmx_large_int_t step,double t,
                          double time[], real reftemp,
@@ -864,7 +863,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
   gmx_large_int_t nsteps;
   int  nexact,nnotexact;
   double x1m,x1mk;
-  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
+  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0;
   int  i,j,nout;
   real chi2;
   char buf[256],eebuf[100];
@@ -962,9 +961,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
       } else if (strstr(leg[i],"otal") != NULL) {
 	VarEtot = sqr(stddev);
 	AvEtot = aver;
-      } else if (strstr(leg[i],"nthalpy") != NULL) {
-	VarEnthalpy = sqr(stddev);
-      }
+      } 
       if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
@@ -1006,35 +1003,6 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
 		log(expEtot)/beta + esum->s[0].av/nmol,log(expEtot)/beta);
       else
 	fprintf(stdout,"\n");
-    }
-    if (bTempFluct && Temp != -1) {
-      printf("\nTemperature dependent fluctuation properties at T = %g. #constr/mol = %d\n",Temp,nconstr);
-      if (nmol < 2)
-	printf("Warning: nmol = %d, this may not be what you want.\n",
-	       nmol);
-      if (VarV != -1) {
-	real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
-	
-	printf("Isothermal Compressibility: %10g /%s\n",
-	       tmp,unit_pres_bar);
-	printf("Adiabatic bulk modulus:     %10g  %s\n",
-	       1.0/tmp,unit_pres_bar);
-      }
-      if (VarEnthalpy != -1) {
-	real Cp = 1000*((VarEnthalpy/nmol)/(BOLTZ*Temp*Temp) - 
-			0.5*BOLTZ*nconstr);
-	printf("Heat capacity at constant pressure Cp: %10g J/mol K\n",Cp);
-      }
-      if ((VarV != -1) && (VarEnthalpy != -1)) {
-	real aP = (sqrt(VarEnthalpy*VarV/nmol))/(BOLTZ*Vaver*Temp*Temp);
-	printf("Thermal expansion coefficient alphaP: %10g 1/K\n",aP);
-      }
-      if ((VarV == -1) && (VarEtot != -1)) {
-	real Cv = 1000*((VarEtot/nmol)/(BOLTZ*Temp*Temp) - 
-			0.5*BOLTZ*nconstr);
-	printf("Heat capacity at constant volume Cv: %10g J/mol K\n",Cv);
-      }
-      please_cite(stdout,"Allen1987a");
     }
     /* Do correlation function */
     if (edat->nframes > 1)
@@ -1248,6 +1216,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
+    gmx_bool changing_lambda;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)
@@ -1276,6 +1245,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
             delta_time =   fr->block[i].sub[0].dval[2];
             start_lambda = fr->block[i].sub[0].dval[3];
             delta_lambda = fr->block[i].sub[0].dval[4];
+            changing_lambda = (delta_lambda != 0);
         }
     }
 
@@ -1304,7 +1274,14 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         }
         *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
                                oenv);
-        sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+        if (! changing_lambda)
+        {
+            sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+        }
+        else
+        {
+            sprintf(buf,"T = %g (K)", temp);
+        }
         xvgr_subtitle(*fp_dhdl,buf,oenv);
         first=TRUE;
     }
@@ -1350,8 +1327,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
 
                     if (!derivative)
                     {
-                        sprintf(legend,
-                                "N(%s(%s=%g) | %s=%g)",
+                        sprintf(legend, "N(%s(%s=%g) | %s=%g)",
                                 deltag, lambda, foreign_lambda, 
                                 lambda, start_lambda);
                     }
@@ -1394,7 +1370,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         char **setnames=NULL;
         int nnames=nblock_dh;
 
-        if (fabs(delta_lambda) > 1e-9)
+        if (changing_lambda)
         {
             nnames++;
         }
@@ -1404,7 +1380,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         }
         j=0;
 
-        if (fabs(delta_lambda) > 1e-9)
+        if ( changing_lambda && first)
         {
             /* lambda is a plotted value */
             setnames[j]=gmx_strdup(lambda);
@@ -1432,8 +1408,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     }
                     else
                     {
-                        sprintf(buf, "%s %s %g",deltag,lambda,
-                                foreign_lambda);
+                        sprintf(buf, "%s %s %g",deltag,lambda, foreign_lambda);
                     }
                     setnames[j] = gmx_strdup(buf);
                     j++;
@@ -1447,8 +1422,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                 {
                     if (len!=blk->sub[2].nr)
                     {
-                        gmx_fatal(FARGS, 
-                                  "Length inconsistency in dhdl data");
+                        gmx_fatal(FARGS, "Length inconsistency in dhdl data");
                     }
                 }
             }
@@ -1504,44 +1478,26 @@ int gmx_energy(int argc,char *argv[])
 {
   const char *desc[] = {
     
-    "g_energy extracts energy components or distance restraint",
+    "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
-    "select the energy terms she wants.[PAR]",
+    "select the desired energy terms.[PAR]",
     
-    "Average, RMSD and drift are calculated with full precision from the",
+    "Average, RMSD, and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
-    "a LSQ fit of the data to a straight line. The reported total drift",
+    "a least-squares fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "An error estimate of the average is given based on a block averages",
-    "over 5 blocks using the full precision averages. The error estimate",
+    "over 5 blocks using the full-precision averages. The error estimate",
     "can be performed over multiple block lengths with the options",
     "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
-    "Note that in most cases the energy files contains averages over all",
+    "[BB]Note[bb] that in most cases the energy files contains averages over all",
     "MD steps, or over many more points than the number of frames in",
-    "energy file. This makes the g_energy statistics output more accurate",
-    "than the xvg output. When exact averages are not present in the energy",
-    "file the statistics mentioned above is simply over the single, per-frame",
+    "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
+    "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
+    "file, the statistics mentioned above are simply over the single, per-frame",
     "energy values.[PAR]",
 
-    "The term fluctuation gives the RMSD around the LSQ fit.[PAR]",
-    
-    "Some fluctuation-dependent properties can be calculated provided",
-    "the correct energy terms are selected. The following properties",
-    "will be computed:[BR]",
-    "Property                        Energy terms needed[BR]",
-    "---------------------------------------------------[BR]",
-    "Heat capacity Cp (NPT sims):    Enthalpy, Temp     [BR]",
-    "Heat capacity Cv (NVT sims):    Etot, Temp         [BR]",
-    "Thermal expansion coeff. (NPT): Enthalpy, Vol, Temp[BR]",
-    "Isothermal compressibility:     Vol, Temp          [BR]",
-    "Adiabatic bulk modulus:         Vol, Temp          [BR]",
-    "---------------------------------------------------[BR]",
-    "You always need to set the number of molecules [TT]-nmol[tt], and,",
-    "if you used constraints in your simulations you will need to give",
-    "the number of constraints per molecule [TT]-nconstr[tt] in order to",
-    "correct for this: (nconstr/2) kB is subtracted from the heat",
-    "capacity in this case. For instance in the case of rigid water",
-    "you need to give the value 3 to this option.[PAR]",
+    "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
@@ -1569,32 +1525,33 @@ int gmx_energy(int argc,char *argv[])
 
     "Option [TT]-odh[tt] extracts and plots the free energy data",
     "(Hamiltoian differences and/or the Hamiltonian derivative dhdl)",
-    "from the ener.edr file.[PAR]",
+    "from the [TT]ener.edr[tt] file.[PAR]",
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
-    "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
-    "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
     "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using:[BR]",
-    "  Delta S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - Delta A)/T[BR]",
-    "  Delta S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - Delta G)/T",
+    "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - [GRK]Delta[grk] A)/T[BR]",
+    "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - [GRK]Delta[grk] G)/T",
     "[PAR]",
     
     "When a second energy file is specified ([TT]-f2[tt]), a free energy",
     "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
     "where EA and EB are the energies from the first and second energy",
-    "files, and the average is over the ensemble A. [BB]NOTE[bb] that",
-    "the energies must both be calculated from the same trajectory."
+    "files, and the average is over the ensemble A. The running average",
+    "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
+    "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
     
   };
   static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
   static gmx_bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
-  static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
+  static int  skip=0,nmol=1,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
     { "-fee",   FALSE, etBOOL,  {&bFee},
@@ -1619,14 +1576,12 @@ int gmx_energy(int argc,char *argv[])
       "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
-    { "-nconstr",  FALSE, etINT,  {&nconstr},
-      "Number of constraints per molecule. Necessary for calculating the heat capacity" },
     { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" },
     { "-orinst", FALSE, etBOOL, {&bOrinst},
       "Analyse instantaneous orientation data" },
     { "-ovec", FALSE, etBOOL, {&bOvec},
-      "Also plot the eigenvectors with -oten" }
+      "Also plot the eigenvectors with [TT]-oten[tt]" }
   };
   const char* drleg[] = {
     "Running average",
@@ -2336,9 +2291,9 @@ int gmx_energy(int argc,char *argv[])
   else
   {
       analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-                   bFee,bSum,bFluct,opt2parg_bSet("-nmol",npargs,ppa),
+                   bFee,bSum,bFluct,
                    bVisco,opt2fn("-vis",NFILE,fnm),
-                   nmol,nconstr,start_step,start_t,frame[cur].step,frame[cur].t,
+                   nmol,start_step,start_t,frame[cur].step,frame[cur].t,
                    time,reftemp,&edat,
                    nset,set,bIsEner,leg,enm,Vaver,ezero,nbmin,nbmax,
                    oenv);

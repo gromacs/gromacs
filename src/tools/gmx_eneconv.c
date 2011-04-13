@@ -463,11 +463,11 @@ int gmx_eneconv(int argc,char *argv[])
   const char *desc[] = {
     "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[BR]",
     "Concatenates several energy files in sorted order.",
-    "In case of double time frames the one",
+    "In the case of double time frames, the one",
     "in the later file is used. By specifying [TT]-settime[tt] you will be",
     "asked for the start time of each file. The input files are taken",
     "from the command line,",
-    "such that the command [TT]eneconv -o fixed.edr *.edr[tt] should do",
+    "such that the command [TT]eneconv -f *.edr -o fixed.edr[tt] should do",
     "the trick. [PAR]",
     "With [IT]one file[it] specified for [TT]-f[tt]:[BR]",
     "Reads one energy file and writes another, applying the [TT]-dt[tt],",
@@ -527,7 +527,7 @@ int gmx_eneconv(int argc,char *argv[])
     { "-dt",       FALSE, etREAL, {&delta_t},
       "Only write out frame when t MOD dt = offset" },
     { "-offset",   FALSE, etREAL, {&toffset},
-      "Time offset for -dt option" }, 
+      "Time offset for [TT]-dt[tt] option" }, 
     { "-settime",  FALSE, etBOOL, {&bSetTime}, 
       "Change starting time interactively" },
     { "-sort",     FALSE, etBOOL, {&bSort},
@@ -770,7 +770,8 @@ int gmx_eneconv(int argc,char *argv[])
 	noutfr++;
       }
     }
-
+    if (f == nfile)
+      f--;
     printf("\nLast step written from %s: t %g, step %s\n",
 	   fnms[f],last_t,gmx_step_str(laststep,buf));
     lastfilestep = laststep;

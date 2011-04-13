@@ -1,8 +1,8 @@
-.TH g_angle 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_angle 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_angle - calculates distributions and correlations for angles and dihedrals
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_angle\fP
 .BI "\-f" " traj.xtc "
@@ -36,22 +36,22 @@ g_angle - calculates distributions and correlations for angles and dihedrals
 .BI "\-beginfit" " real "
 .BI "\-endfit" " real "
 .SH DESCRIPTION
-\&g_angle computes the angle distribution for a number of angles
+\&\fB g_angle\fR computes the angle distribution for a number of angles
 \&or dihedrals. This way you can check whether your simulation
-\&is correct. With option \-ov you can plot the average angle of
-\&a group of angles as a function of time. With the \-all option
+\&is correct. With option \fB \-ov\fR you can plot the average angle of
+\&a group of angles as a function of time. With the \fB \-all\fR option
 \&the first graph is the average, the rest are the individual angles.
 
 
-\&With the \-of option g_angle also calculates the fraction of trans
+\&With the \fB \-of\fR option, \fB g_angle\fR also calculates the fraction of trans
 \&dihedrals (only for dihedrals) as function of time, but this is
 \&probably only fun for a selected few.
 
 
-\&With option \-oc a dihedral correlation function is calculated.
+\&With option \fB \-oc\fR a dihedral correlation function is calculated.
 
 
-\&It should be noted that the indexfile should contain
+\&It should be noted that the index file should contain
 \&atom\-triples for angles or atom\-quadruplets for dihedrals.
 \&If this is not the case, the program will crash.
 
@@ -116,7 +116,7 @@ g_angle - calculates distributions and correlations for angles and dihedrals
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -134,7 +134,7 @@ g_angle - calculates distributions and correlations for angles and dihedrals
  Print dihedral angles modulo 360 degrees
 
 .BI "\-[no]chandler"  "no    "
- Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi  \-60 || phi  60.
+ Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi  \-60 or phi  60.
 
 .BI "\-[no]avercorr"  "no    "
  Average the correlation functions for the individual angles/dihedrals
@@ -149,7 +149,7 @@ g_angle - calculates distributions and correlations for angles and dihedrals
  Order of Legendre polynomial for ACF (0 indicates none): \fB 0\fR, \fB 1\fR, \fB 2\fR or \fB 3\fR
 
 .BI "\-fitfn"  " enum" " none" 
- Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR or \fB exp9\fR
+ Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions

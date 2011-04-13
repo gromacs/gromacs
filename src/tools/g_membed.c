@@ -1,5 +1,4 @@
 /*
- * $Id: g_prot2mem.c 2009/04/02 M.G. Wolf $
  *
  *                This source code is part of
  *

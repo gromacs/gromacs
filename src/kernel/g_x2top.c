@@ -365,11 +365,11 @@ static void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
-    "g_x2top generates a primitive topology from a coordinate file.",
+    "[TT]g_x2top[tt] generates a primitive topology from a coordinate file.",
     "The program assumes all hydrogens are present when defining",
     "the hybridization from the atom name and the number of bonds.",
-    "The program can also make an rtp entry, which you can then add",
-    "to the rtp database.[PAR]",
+    "The program can also make an [TT].rtp[tt] entry, which you can then add",
+    "to the [TT].rtp[tt] database.[PAR]",
     "When [TT]-param[tt] is set, equilibrium distances and angles",
     "and force constants will be printed in the topology for all",
     "interactions. The equilibrium distances and angles are taken",
@@ -379,17 +379,17 @@ int main(int argc, char *argv[])
     "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
-    "with name atomname2type.n2t. Check chapter 5 of the manual for more",
-    "information about file formats. By default the forcefield selection",
+    "with name [TT]atomname2type.n2t[tt]. Check Chapter 5 of the manual for more",
+    "information about file formats. By default, the force field selection",
     "is interactive, but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
-    "case pdb2gmx just looks for the corresponding file.[PAR]",
+    "case [TT]g_x2top[tt] just looks for the corresponding file.[PAR]",
   };
   const char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
     "No improper dihedrals are generated",
-    "The atoms to atomtype translation table is incomplete (atomname2type.n2t files in the data directory). Please extend it and send the results back to the GROMACS crew."
+    "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
   };
   FILE       *fp;
   t_params   plist[F_NRE];
@@ -450,7 +450,7 @@ int main(int argc, char *argv[])
     { "-pbc",    FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions." },
     { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
-      "Use the B-factor supplied in a pdb file for the atomic charges" },
+      "Use the B-factor supplied in a [TT].pdb[tt] file for the atomic charges" },
     { "-param", FALSE, etBOOL, {&bParam},
       "Print parameters in the output" },
     { "-round",  FALSE, etBOOL, {&bRound},

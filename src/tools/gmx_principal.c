@@ -77,7 +77,7 @@ calc_principal_axes(t_topology *   top,
 int gmx_principal(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_principal calculates the three principal axes of inertia for a group",
+    "[TT]g_principal[tt] calculates the three principal axes of inertia for a group",
     "of atoms.",
   };
   static gmx_bool foo = FALSE;

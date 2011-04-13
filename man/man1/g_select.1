@@ -1,8 +1,8 @@
-.TH g_select 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_select 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_select - selects groups of atoms based on flexible textual selections
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_select\fP
 .BI "\-f" " traj.xtc "
@@ -31,7 +31,7 @@ g_select - selects groups of atoms based on flexible textual selections
 .BI "\-[no]cfnorm" ""
 .BI "\-resnr" " enum "
 .SH DESCRIPTION
-\&g_select writes out basic data about dynamic selections.
+\&\fB g_select\fR writes out basic data about dynamic selections.
 \&It can be used for some simple analyses, or the output can
 \&be combined with output from other programs and/or external
 \&analysis programs to calculate more complex things.
@@ -66,7 +66,7 @@ g_select - selects groups of atoms based on flexible textual selections
 
 
 \&With \fB \-on\fR, the selected atoms are written as a index file
-\&compatible with make_ndx and the analyzing tools. Each selection
+\&compatible with \fB make_ndx\fR and the analyzing tools. Each selection
 \&is written as a selection group and for dynamic selections a
 \&group is written for each frame.
 

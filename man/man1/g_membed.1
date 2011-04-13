@@ -1,8 +1,8 @@
-.TH g_membed 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_membed 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_membed - embeds a protein into a lipid bilayer
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_membed\fP
 .BI "\-f" " into_mem.tpr "
@@ -39,6 +39,7 @@ g_membed - embeds a protein into a lipid bilayer
 .BI "\-pf" " pullf.xvg "
 .BI "\-mtx" " nm.mtx "
 .BI "\-dn" " dipole.ndx "
+.BI "\-multidir" " rundir "
 .BI "\-[no]h" ""
 .BI "\-[no]version" ""
 .BI "\-nice" " int "
@@ -58,28 +59,27 @@ g_membed - embeds a protein into a lipid bilayer
 .BI "\-[no]compact" ""
 .BI "\-[no]v" ""
 .SH DESCRIPTION
-\&g_membed embeds a membrane protein into an equilibrated lipid bilayer at the position
+\&\fB g_membed\fR embeds a membrane protein into an equilibrated lipid bilayer at the position
 \&and orientation specified by the user.
 
-\&
 
 \&SHORT MANUAL
 \-\-\-\-\-\-\-\-\-\-\-\-
 
 \&The user should merge the structure files of the protein and membrane (+solvent), creating a
 \&single structure file with the protein overlapping the membrane at the desired position and
-\&orientation. Box size should be taken from the membrane structure file. The corresponding topology
-\&files should also be merged. Consecutively, create a tpr file (input for g_membed) from these files,with the following options included in the mdp file.
+\&orientation. The box size is taken from the membrane structure file. The corresponding topology
+\&files should also be merged. Consecutively, create a \fB .tpr\fR file (input for \fB g_membed\fR) from these files,with the following options included in the \fB .mdp\fR file.
 
-\& \- integrator      = md
+\& \- \fB integrator      = md\fR
 
-\& \- energygrp       = Protein (or other group that you want to insert)
+\& \- \fB energygrp       = Protein\fR (or other group that you want to insert)
 
-\& \- freezegrps      = Protein
+\& \- \fB freezegrps      = Protein\fR
 
-\& \- freezedim       = Y Y Y
+\& \- \fB freezedim       = Y Y Y\fR
 
-\& \- energygrp_excl  = Protein Protein
+\& \- \fB energygrp_excl  = Protein Protein\fR
 
 \&The output is a structure file containing the protein embedded in the membrane. If a topology
 \&file is provided, the number of lipid and 
@@ -87,33 +87,31 @@ g_membed - embeds a protein into a lipid bilayer
 
 \&For a more extensive manual see Wolf et al, J Comp Chem 31 (2010) 2169\-2174, Appendix.
 
-\&
 
 \&SHORT METHOD DESCRIPTION
 
 \&\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
-\&1. The protein is resized around its center of mass by a factor \-xy in the xy\-plane
-\&(the membrane plane) and a factor \-z in the z\-direction (if the size of the
+\&1. The protein is resized around its center of mass by a factor \fB \-xy\fR in the xy\-plane
+\&(the membrane plane) and a factor \fB \-z\fR in the \fI z\fR\-direction (if the size of the
 \&protein in the z\-direction is the same or smaller than the width of the membrane, a
-\&\-z value larger than 1 can prevent that the protein will be enveloped by the lipids).
+\&\fB \-z\fR value larger than 1 can prevent that the protein will be enveloped by the lipids).
 
 \&2. All lipid and solvent molecules overlapping with the resized protein are removed. All
-\&intraprotein interactions are turned off to prevent numerical issues for small values of \-xy
-\& or \-z
+\&intraprotein interactions are turned off to prevent numerical issues for small values of \fB \-xy\fR
+\& or \fB \-z\fR
 
 \&3. One md step is performed.
 
-\&4. The resize factor (\-xy or \-z) is incremented by a small amount ((1\-xy)/nxy or (1\-z)/nz) and the
+\&4. The resize factor (\fB \-xy\fR or \fB \-z\fR) is incremented by a small amount ((1\-xy)/nxy or (1\-z)/nz) and the
 \&protein is resized again around its center of mass. The resize factor for the xy\-plane
-\&is incremented first. The resize factor for the z\-direction is not changed until the \-xy factor
-\&is 1 (thus after \-nxy iteration).
+\&is incremented first. The resize factor for the z\-direction is not changed until the \fB \-xy\fR factor
+\&is 1 (thus after \fB \-nxy\fR iterations).
 
-\&5. Repeat step 3 and 4 until the protein reaches its original size (\-nxy + \-nz iterations).
+\&5. Repeat step 3 and 4 until the protein reaches its original size (\fB \-nxy\fR + \fB \-nz\fR iterations).
 
-\&For a more extensive method descrition see Wolf et al, J Comp Chem, 31 (2010) 2169\-2174.
+\&For a more extensive method description see Wolf et al, J Comp Chem, 31 (2010) 2169\-2174.
 
-\&
 
 \&NOTE
 \-\-\-\-
@@ -121,10 +119,9 @@ g_membed - embeds a protein into a lipid bilayer
 \& \- Protein can be any molecule you want to insert in the membrane.
 
 \& \- It is recommended to perform a short equilibration run after the embedding
-\&(see Wolf et al, J Comp Chem 31 (2010) 2169\-2174, to re\-equilibrate the membrane. Clearly
+\&(see Wolf et al, J Comp Chem 31 (2010) 2169\-2174), to re\-equilibrate the membrane. Clearly
 \&protein equilibration might require longer.
 
-\&
 
 .SH FILES
 .BI "\-f" " into_mem.tpr" 
@@ -262,6 +259,10 @@ g_membed - embeds a protein into a lipid bilayer
 .BI "\-dn" " dipole.ndx" 
 .B Output, Opt.
  Index file 
+
+.BI "\-multidir" " rundir" 
+.B Input, Opt., Mult.
+ Run directory 
 
 .SH OTHER OPTIONS
 .BI "\-[no]h"  "no    "

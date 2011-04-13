@@ -120,16 +120,15 @@ static real calc_dist(t_pbc *pbc,rvec x[],t_block *cgs,int icg,int jcg)
 int gmx_saltbr(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_saltbr plots the distance between all combination of charged groups",
+    "[TT]g_saltbr[tt] plots the distance between all combination of charged groups",
     "as a function of time. The groups are combined in different ways.",
-    "A truncation/cut-off distance can be supplied with -t, ",
-    "such that only groups interacting within this distance will be plotted in the ",
-    "output.[BR]",
-    "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
-    "and plus-plus.xvg, or files for every individual ion-pair if the [TT]-sep[tt]",
-    "option is selected. In this case files are named as [TT]sb-ResnameResnr-Atomnr[tt].",
-    "There may be many such files."
-  };
+    "A minimum distance can be given (i.e. a cut-off), such that groups",
+    "that are never closer than that distance will not be plotted.[PAR]",
+    "Output will be in a number of fixed filenames, [TT]min-min.xvg[tt], [TT]plus-min.xvg[tt]",
+    "and [TT]plus-plus.xvg[tt], or files for every individual ion pair if the [TT]-sep[tt]",
+    "option is selected. In this case, files are named as [TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
+    "There may be [BB]many[bb] such files."
+l  };
   static gmx_bool bSep=FALSE;
   static real truncate=1000.0;
   t_pargs pa[] = {

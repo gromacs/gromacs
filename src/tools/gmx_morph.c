@@ -67,20 +67,20 @@ static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
 int gmx_morph(int argc,char *argv[])
 {
   const char *desc[] = {
-    "g_morph does a linear interpolation of conformations in order to",
+    "[TT]g_morph[tt] does a linear interpolation of conformations in order to",
     "create intermediates. Of course these are completely unphysical, but",
     "that you may try to justify yourself. Output is in the form of a ",
     "generic trajectory. The number of intermediates can be controlled with",
     "the [TT]-ninterm[tt] flag. The first and last flag correspond to the way of",
     "interpolating: 0 corresponds to input structure 1 while",
     "1 corresponds to input structure 2.",
-    "If you specify first < 0 or last > 1 extrapolation will be",
-    "on the path from input structure x1 to x2. In general the coordinates",
+    "If you specify [TT]-first[tt] < 0 or [TT]-last[tt] > 1 extrapolation will be",
+    "on the path from input structure x1 to x2. In general, the coordinates",
     "of the intermediate x(i) out of N total intermidates correspond to:[PAR]",
     "x(i) = x1 + (first+(i/(N-1))*(last-first))*(x2-x1)[PAR]",
     "Finally the RMSD with respect to both input structures can be computed",
-    "if explicitly selected (-or option). In that case an index file may be",
-    "read to select what group RMS is computed from."
+    "if explicitly selected ([TT]-or[tt] option). In that case, an index file may be",
+    "read to select the group from which the RMS is computed."
   };
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },

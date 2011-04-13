@@ -1,8 +1,8 @@
-.TH g_current 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_current 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_current - calculate current autocorrelation function of system
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_current\fP
 .BI "\-s" " topol.tpr "
@@ -32,17 +32,17 @@ g_current - calculate current autocorrelation function of system
 .BI "\-tr" " real "
 .BI "\-temp" " real "
 .SH DESCRIPTION
-\&This is a tool for calculating the current autocorrelation function, the correlation
+\&\fB g_current\fR is a tool for calculating the current autocorrelation function, the correlation
 \&of the rotational and translational dipole moment of the system, and the resulting static
-\&dielectric constant. To obtain a reasonable result the index group has to be neutral.
-\&Furthermore the routine is capable of extracting the static conductivity from the current 
-\&autocorrelation function, if velocities are given. Additionally an Einstein\-Helfand fit also
-\&allows to get the static conductivity.
+\&dielectric constant. To obtain a reasonable result, the index group has to be neutral.
+\&Furthermore, the routine is capable of extracting the static conductivity from the current 
+\&autocorrelation function, if velocities are given. Additionally, an Einstein\-Helfand fit 
+\&can be used to obtain the static conductivity.
 
 
 \&The flag \fB \-caf\fR is for the output of the current autocorrelation function and \fB \-mc\fR writes the
 \&correlation of the rotational and translational part of the dipole moment in the corresponding
-\&file. However this option is only available for trajectories containing velocities.
+\&file. However, this option is only available for trajectories containing velocities.
 \&Options \fB \-sh\fR and \fB \-tr\fR are responsible for the averaging and integration of the
 \&autocorrelation functions. Since averaging proceeds by shifting the starting point
 \&through the trajectory, the shift can be modified with \fB \-sh\fR to enable the choice of uncorrelated
@@ -64,10 +64,10 @@ g_current - calculate current autocorrelation function of system
 
 
 \&\fB \-[no]nojump\fR unfolds the coordinates to allow free diffusion. This is required to get a continuous
-\&translational dipole moment, required for the Einstein\-Helfand fit. The resuls from the fit allow to
-\&determine the dielectric constant for system of charged molecules. However it is also possible to extract
+\&translational dipole moment, required for the Einstein\-Helfand fit. The results from the fit allow
+\&the determination of the dielectric constant for system of charged molecules. However, it is also possible to extract
 \&the dielectric constant from the fluctuations of the total dipole moment in folded coordinates. But this
-\&options has to be used with care, since only very short time spans fulfill the approximation, that the density
+\&option has to be used with care, since only very short time spans fulfill the approximation that the density
 \&of the molecules is approximately constant and the averages are already converged. To be on the safe side,
 \&the dielectric constant should be calculated with the help of the Einstein\-Helfand method for
 \&the translational part of the dielectric constant.
@@ -128,7 +128,7 @@ g_current - calculate current autocorrelation function of system
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -140,7 +140,7 @@ g_current - calculate current autocorrelation function of system
  Removes jumps of atoms across the box.
 
 .BI "\-eps"  " real" " 0     " 
- Dielectric constant of the surrounding medium. eps=0.0 corresponds to eps=infinity (thinfoil boundary conditions).
+ Dielectric constant of the surrounding medium. eps=0.0 corresponds to eps=infinity (tin\-foil boundary conditions).
 
 .BI "\-bfit"  " real" " 100   " 
  Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment.
