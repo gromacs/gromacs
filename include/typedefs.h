@@ -72,6 +72,7 @@
 #include "types/matrix.h"
 #include "types/oenv.h"
 #include "types/globsig.h"
+#include "types/nlistheuristics.h"
 
 #ifdef __cplusplus
 extern "C" {
