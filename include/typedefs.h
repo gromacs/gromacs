@@ -73,6 +73,7 @@
 #include "types/oenv.h"
 #include "types/globsig.h"
 #include "types/nlistheuristics.h"
+#include "types/iteratedconstraints.h"
 
 #ifdef __cplusplus
 extern "C" {
