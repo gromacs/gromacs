@@ -103,22 +103,8 @@
 #endif
 
 
-/* simulation conditions to transmit. Keep in mind that they are 
-   transmitted to other nodes through an MPI_Reduce after
-   casting them to a real (so the signals can be sent together with other 
-   data). This means that the only meaningful values are positive, 
-   negative or zero. */
-enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
-
-typedef struct {
-    int nstms;       /* The frequency for intersimulation communication */
-    int sig[eglsNR]; /* The signal set by one process in do_md */
-    int set[eglsNR]; /* The communicated signal, equal for all processes */
-} globsig_t;
-
-
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
