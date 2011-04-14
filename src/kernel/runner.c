@@ -884,15 +884,3 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     return rc;
 }
-
-void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
-{
-    if (MASTER(cr))
-    {
-        fprintf(stderr,"\n%s\n",buf);
-    }
-    if (fplog)
-    {
-        fprintf(fplog,"\n%s\n",buf);
-    }
-}
