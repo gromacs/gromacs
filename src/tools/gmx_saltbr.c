@@ -128,7 +128,7 @@ int gmx_saltbr(int argc,char *argv[])
     "and [TT]plus-plus.xvg[tt], or files for every individual ion pair if the [TT]-sep[tt]",
     "option is selected. In this case, files are named as [TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
     "There may be [BB]many[bb] such files."
-l  };
+  };
   static gmx_bool bSep=FALSE;
   static real truncate=1000.0;
   t_pargs pa[] = {

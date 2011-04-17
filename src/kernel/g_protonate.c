@@ -157,7 +157,7 @@ int main (int argc,char *argv[])
     iatoms->resinfo[resind] = atoms->resinfo[atoms->atom[index[i]].resind];
     /* allocate some space for the rtp name and copy from name */
     snew(iatoms->resinfo[resind].rtp,1);
-    strcpy(iatoms->resinfo[resind].rtp, atoms->resinfo[resind].name);
+    iatoms->resinfo[resind].rtp = atoms->resinfo[resind].name;
 
     iatoms->nres = max(iatoms->nres, iatoms->atom[i].resind+1);
   }

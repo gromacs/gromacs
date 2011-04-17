@@ -113,16 +113,16 @@ static void clean_pdb_names(t_atoms *atoms,t_symtab *tab)
     }
 }
 
-static void print_pol(int natoms,char **smnames,gmx_poldata_t pd)
+static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
 {
     int    i,np;
-    double poltot,pol,sigpol,sptot;
+    double poltot,pol,sigpol,qtot,sptot;
     char   *gt_type;
     
     poltot = 0;
     sptot  = 0;
     np     = 0;
-    for(i=0; (i<natoms); i++) 
+    for(i=0; (i<atoms->nr); i++) 
     {
         gt_type = gmx_poldata_get_gt_type(pd,smnames[i]);  
         if ((NULL != gt_type) && 
@@ -133,7 +133,7 @@ static void print_pol(int natoms,char **smnames,gmx_poldata_t pd)
             sptot  += sqr(sigpol);
         }
     }
-    printf("Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/natoms));
+    printf("Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/atoms->nr));
 }
 
 void put_in_box(int natom,matrix box,rvec x[],real dbox)
@@ -736,7 +736,7 @@ int main(int argc, char *argv[])
         snew(excls,atoms->nr);
         if (bVerbose)
             printf("Generating angles and dihedrals from bonds...\n");
-        init_nnb(&nnb,atoms->nr,nexcl);
+        init_nnb(&nnb,atoms->nr,nexcl+2);
         gen_nnb(&nnb,plist);
         print_nnb(&nnb,"NNB");
         gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
@@ -788,12 +788,11 @@ int main(int argc, char *argv[])
                    plist[F_IDIHS].nr, plist[F_ANGLES].nr,
                    plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
-      
-            printf("Total charge is %g, total mass is %g, dipole is %g D\n",
-                   qtot,mtot,mu);
         }
+        printf("Total charge is %g, total mass is %g, dipole is %g D\n",
+               qtot,mtot,mu);
         reset_q(atoms);
-        print_pol(atoms->nr,smnames,pd);
+        print_qpol(atoms,smnames,pd);
 
         snew(atoms->atomtype,atoms->nr);
         for(i=0; (i<atoms->nr); i++)

@@ -57,6 +57,7 @@
 #include "index.h"
 #include "tpxio.h"
 #include "matio.h"
+#include "gmx_ana.h"
 #include "binsearch.h"
 #include "powerspect.h"
 

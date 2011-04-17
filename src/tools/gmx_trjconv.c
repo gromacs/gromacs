@@ -74,7 +74,7 @@ sort_comdist2(void *thunk, const void *a, const void *b)
     /* Thunk should point to a real array with the distance to the cluster COM for each molecule,
      * a/b point to integers that refer to the molecule number. 
      */
-    real *pcomdist2 = thunk;
+    real *pcomdist2 = (real *)thunk;
     int  ia    = * (int *)a;
     int  ib    = * (int *)b;
     int  rc;
