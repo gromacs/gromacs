@@ -130,6 +130,8 @@
 extern "C" { 
 #endif
 
+#include "types/simple.h"
+
 void *save_malloc(const char *name,const char *file,int line,size_t size); 
 void *save_calloc(const char *name,const char *file,int line,
 		  size_t nelem,size_t elsize); 
@@ -144,6 +146,12 @@ size_t memavail(void);
 void *save_calloc_aligned(const char *name,const char *file,int line,
 			  unsigned nelem,size_t elsize,size_t alignment); 
 void save_free_aligned(const char *name,const char *file,int line, void *ptr);
+
+
+#ifdef GMX_THREADS
+/* enable NUMA aware allocators if val=TRUE */
+void enable_numa_allocator(gmx_bool val);
+#endif
 
 #ifdef __cplusplus
 }
