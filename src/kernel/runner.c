@@ -274,7 +274,7 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
         }
         else
         {
-            nthreads = tMPI_Get_recommended_nthreads();
+            nthreads = tMPI_Thread_get_hw_number();
         }
     }
 

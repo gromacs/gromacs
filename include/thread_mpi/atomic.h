@@ -630,6 +630,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 /** Atomic swap operation.
 
   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
+  NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
 
   \param a  Pointer to atomic type
   \param b  Value to swap 
@@ -648,6 +649,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 
   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the 
   value of b.
+  NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
 
   \param a  Pointer to atomic type
   \param b  Value to swap 
