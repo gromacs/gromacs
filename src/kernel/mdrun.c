@@ -508,12 +508,6 @@ int main(int argc,char *argv[])
   char **multidir=NULL;
 
 
-#if (defined(GMX_THREADS) && defined(GMX_NUMA_ALLOCATOR) )
-  /* set the allocator before anything else happens */
-  fprintf(stdout,"Enabling NUMA-aware allocators.\n");
-  enable_numa_allocator(TRUE);
-#endif
-
   cr = init_par(&argc,&argv);
 
   if (MASTER(cr))

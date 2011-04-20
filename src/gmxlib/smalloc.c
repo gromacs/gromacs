@@ -40,7 +40,6 @@
 
 #ifdef GMX_THREADS
 #include "thread_mpi/threads.h"
-#include "thread_mpi/numa_malloc.h"
 #endif 
 
 
@@ -103,32 +102,6 @@ static void log_action(int bMal,const char *what,const char *file,int line,
 }
 #endif
 
-
-
-#ifdef GMX_THREADS
-static tMPI_Atomic_t numa_alloc={0};
-
-void enable_numa_allocator(gmx_bool val)
-{
-    tMPI_Atomic_set(&numa_alloc, val ? 1 : 0);
-}
-
-/* check whether the allocators are implemented at all: */
-#ifdef TMPI_NUMA_ALLOC
-#define use_numa_alloc()  (tMPI_Atomic_get(&numa_alloc) != 0)
-#else
-#define use_numa_alloc()  0
-#endif
-
-#else
-
-#define use_numa_alloc()  0
-
-#endif
-
-
-
-
 static char *gmx_large_int_str(gmx_large_int_t i,char *buf)
 {
   sprintf(buf,gmx_large_int_pfmt,i);
@@ -145,18 +118,7 @@ void *save_malloc(const char *name,const char *file,int line,size_t size)
     p=NULL;
   else
     {
-#ifdef GMX_THREADS
-      if (use_numa_alloc())
-      {
-        p=tMPI_Malloc_local(size);
-      }
-      else
-#endif
-      {
-        p=malloc(size);
-      }
-      if (p==NULL) 
-      {
+      if ((p=malloc(size))==NULL) {
 	char cbuf[22];
         gmx_fatal(errno,__FILE__,__LINE__,
 		  "Not enough memory. Failed to malloc %s bytes for %s\n"
@@ -194,47 +156,23 @@ void *save_calloc(const char *name,const char *file,int line,
       }
 #endif
 #ifdef GMX_BROKEN_CALLOC
-#ifdef GMX_THREADS
-      if (use_numa_alloc())
-      {
-          p=tMPI_Malloc_local((size_t)nelem*(size_t)elsize);
-      }
-      else
-#endif
-      {
-          p=malloc((size_t)nelem*(size_t)elsize);
-      }
       /* emulate calloc(3) with malloc/memset on machines with 
          a broken calloc, e.g. in -lgmalloc on cray xt3. */
-      if (p==NULL) 
-      {
+      if ((p=malloc((size_t)nelem*(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
 		  "Not enough memory. Failed to calloc %"gmx_large_int_fmt
 		  " elements of size %"gmx_large_int_fmt
 		  " for %s\n(called from file %s, line %d)",
 		  (gmx_large_int_t)nelem,(gmx_large_int_t)elsize,
 		  name,file,line);
-      }
       memset(p, 0,(size_t) (nelem * elsize));
 #else
-#ifdef GMX_THREADS
-      if (use_numa_alloc())
-      {
-          p=tMPI_Calloc_local((size_t)nelem, (size_t)elsize);
-      }
-      else
-#endif
-      {
-          p=calloc((size_t)nelem,(size_t)elsize);
-      }
-      if (p==NULL) 
-      {
+      if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
 		  "Not enough memory. Failed to calloc %"gmx_large_int_fmt
 		  " elements of size %"gmx_large_int_fmt
 		  " for %s\n(called from file %s, line %d)",
 		  (gmx_large_int_t)nelem,(gmx_large_int_t)elsize,name,file,line);
-      }
 #endif
     }
 #ifdef DEBUG
@@ -268,31 +206,9 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
       }
 #endif
       if (ptr==NULL) 
-      {
-#ifdef GMX_THREADS
-          if (use_numa_alloc())
-          {
-              p=tMPI_Malloc_local(size);
-          }
-          else
-#endif
-          {
-              p=malloc(size);
-          }
-      }
+	p=malloc((size_t)size); 
       else 
-      {
-#ifdef GMX_THREADS
-          if (use_numa_alloc())
-          {
-              p=tMPI_Realloc_local(ptr, size);
-          }
-          else
-#endif
-          {
-              p=realloc(ptr, size);
-          }
-      }
+	p=realloc(ptr,(size_t)size);
       if (p == NULL) {
 	char cbuf[22];
         gmx_fatal(errno,__FILE__,__LINE__,
@@ -311,21 +227,10 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
 void save_free(const char *name,const char *file,int line, void *ptr)
 {
 #ifdef DEBUG
-    log_action(0,name,file,line,0,0,ptr);
+  log_action(0,name,file,line,0,0,ptr);
 #endif
-    if (ptr != NULL)
-    {
-#ifdef GMX_THREADS
-        if (use_numa_alloc())
-        {
-            tMPI_Free_numa(ptr);
-        }
-        else
-#endif
-        {
-            free(ptr);
-        }
-    }
+  if (ptr != NULL)
+    free(ptr);
 }
 
 size_t maxavail(void)
@@ -361,7 +266,6 @@ size_t memavail(void)
   }
   return size;
 }
-
 
 /* If we don't have useful routines for allocating aligned memory,
  * then we have to use the old-style GROMACS approach bitwise-ANDing
@@ -417,18 +321,8 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
         allocate_fail = ((malloced=_aligned_malloc(nelem*elsize, alignment)) 
                          == NULL);
 #else
-#ifdef GMX_THREADS
-        if (use_numa_alloc())
-        {
-            allocate_fail=((malloced = tMPI_Malloc_local(nelem*elsize+alignment+
-                                                         sizeof(void*)))==NULL);
-        }
-        else
-#endif
-        {
-            allocate_fail = ((malloced = malloc(nelem*elsize+alignment+
-                                                sizeof(void*)))==NULL);
-        }
+        allocate_fail = ((malloced = malloc(nelem*elsize+alignment+
+                                            sizeof(void*)))==NULL);
 #endif
         if (allocate_fail)
         {

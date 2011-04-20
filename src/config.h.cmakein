@@ -125,9 +125,6 @@
 /* Use threads for parallelization */
 #cmakedefine GMX_THREADS
 
-/* Use threads for parallelization */
-#cmakedefine GMX_NUMA_ALLOCATOR
-
 /* Use old threading (domain decomp force calc) code */
 #cmakedefine GMX_THREAD_SHM_FDECOMP 
 
