@@ -3691,7 +3691,7 @@ int gmx_membed(int argc,char *argv[])
    only started at mdrunner_threads, though. */
 	if (nthreads<1)
 	{
-		nthreads=tMPI_Get_recommended_nthreads();
+		nthreads=tMPI_Thread_get_hw_number();
 	}
 #else
 	nthreads=1;

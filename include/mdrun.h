@@ -176,6 +176,8 @@ gmx_integrator_t do_md;
 
 gmx_integrator_t do_md_openmm;
 
+
+
 /* ROUTINES from minimize.c */
 
 gmx_integrator_t do_steep;
@@ -196,6 +198,39 @@ gmx_integrator_t do_tpi;
 /* Do test particle insertion */
 
 
+/* ROUTINES from md_support.c */
+
+/* return the number of steps between global communcations */
+int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
+                        int nstglobalcomm,t_inputrec *ir);
+
+/* check whether an 'nst'-style parameter p is a multiple of nst, and
+   set it to be one if not, with a warning. */
+void check_nst_param(FILE *fplog,t_commrec *cr,
+                     const char *desc_nst,int nst,
+                     const char *desc_p,int *p);
+
+/* check which of the multisim simulations has the shortest number of
+   steps and return that number of nsteps */
+gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
+                                    gmx_large_int_t nsteps);
+
+void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
+                         gmx_bool *bNotLastFrame);
+
+/* get the conserved energy associated with the ensemble type*/
+real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,           
+                                      t_extmass *MassQ);
+
+/* reset all cycle and time counters. */
+void reset_all_counters(FILE *fplog,t_commrec *cr,
+                        gmx_large_int_t step,
+                        gmx_large_int_t *step_rel,t_inputrec *ir,
+                        gmx_wallcycle_t wcycle,t_nrnb *nrnb,
+                        gmx_runtime_t *runtime);
+
+
+
 /* ROUTINES from sim_util.c */
 void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
@@ -205,6 +240,7 @@ void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 
 void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			gmx_mtop_t *mtop,rvec x[]);
+
 
 		     
 /* ROUTINES from stat.c */

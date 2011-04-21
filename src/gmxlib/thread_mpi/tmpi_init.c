@@ -249,7 +249,10 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
     }
     if (*nthreads<1)
     {
-        *nthreads=tMPI_Get_recommended_nthreads();
+        int nth=tMPI_Thread_get_hw_number();
+
+        if (nth<1) nth=1; /* make sure it's at least 1 */
+        *nthreads=nth;
     }
 
     return ret;
@@ -392,6 +395,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
     if (N>0) 
     {
         int i;
+        int set_affinity=FALSE;
 
         tmpi_finalized=FALSE;
         Nthreads=N;
@@ -439,11 +443,36 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
             threads[i].start_fn_main=start_fn_main;
             threads[i].start_arg=start_arg;
         }
+
+        /* now check whether to set affinity */
+#ifdef TMPI_THREAD_AFFINITY
+        {
+            int nhw=tMPI_Thread_get_hw_number();
+            if ((nhw > 1) && (nhw == N))
+            {
+                set_affinity=TRUE;
+            }
+        }
+#endif
+
         for(i=1;i<N;i++) /* zero is the main thread */
         {
-            if (tMPI_Thread_create(&(threads[i].thread_id), 
-                                  tMPI_Thread_starter,
-                                  (void*)&(threads[i]) ) )
+            int ret;
+
+            if (set_affinity)
+            {
+                ret=tMPI_Thread_create_aff(&(threads[i].thread_id), 
+                                           tMPI_Thread_starter,
+                                           (void*)&(threads[i]) ) ;
+            }
+            else
+            {
+                ret=tMPI_Thread_create(&(threads[i].thread_id), 
+                                       tMPI_Thread_starter,
+                                       (void*)&(threads[i]) ) ;
+            }
+
+            if(ret)
             {
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
             }
@@ -489,7 +518,8 @@ int tMPI_Init_fn(int main_thread_returns, int N,
 
     if (N<1)
     {
-        N=tMPI_Get_recommended_nthreads();
+        N=tMPI_Thread_get_hw_number();
+        if (N<1) N=1; /*because that's what the fn returns if it doesn't know*/
     }
 
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */

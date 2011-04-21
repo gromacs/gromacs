@@ -20,7 +20,7 @@ libthread_mpi_la_SOURCES = alltoall.c      impl.h          pthreads.h \
 			   event.c         p2p_wait.c      topology.c \
 			   gather.c        profile.c       type.c \
 			   group.c         profile.h       winthreads.c \
-			   hwinfo.c        pthreads.c      winthreads.h
+			   pthreads.c      winthreads.h	   numa_malloc.c
 
 
 CLEANFILES     = *.la *~ \\\#*
