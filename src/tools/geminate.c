@@ -47,6 +47,7 @@
 #include <gsl/gsl_version.h>
 #endif
 
+#include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -1212,4 +1213,85 @@ static real* d2r(const double *d, const int nn)
     r[i] = (real)d[i];
 
   return r;
+}
+
+static void _patchBad(double *ct, int n, double dy)
+{
+  /* Just do lin. interpolation for now. */
+  int i;
+
+  for (i=1; i<n; i++)
+    {
+      ct[i] = ct[0]+i*dy;
+    }
+}
+
+static void patchBadPart(double *ct, int n)
+{
+  _patchBad(ct,n,(ct[n] - ct[0])/n);
+}
+
+static void patchBadTail(double *ct, int n)
+{
+  _patchBad(ct+1,n-1,ct[1]-ct[0]);
+
+}
+
+extern void fixGemACF(double *ct, int len)
+{
+  int i, j, b, e;
+  gmx_bool bBad;
+
+  /* Let's separate two things:
+   * - identification of bad parts
+   * - patching of bad parts.
+   */
+  
+  b = 0; /* Start of a bad stretch */
+  e = 0; /* End of a bad stretch */
+  bBad = FALSE;
+
+  /* An acf of binary data must be one at t=0. */
+  if (abs(ct[0]-1.0) > 1e-6)
+    {
+      ct[0] = 1.0;
+      fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+    }
+
+  for (i=0; i<len; i++)
+    {
+      
+      if (isfinite(ct[i]))
+	{
+	  if (!bBad)
+	    {
+	      /* Still on a good stretch. Proceed.*/
+	      continue;
+	    }
+
+	  /* Patch up preceding bad stretch. */
+	  if (i == (len-1))
+	    {
+	      /* It's the tail */
+	      if (b <= 1)
+		{
+		  gmx_fatal(FARGS, "The ACF is mostly NaN or Inf. Aborting.");
+		}
+	      patchBadTail(&(ct[b-2]), (len-b)+1);
+	    }
+
+	  e = i;
+	  patchBadPart(&(ct[b-1]), (e-b)+1);
+	  bBad = FALSE;
+	}
+      else
+	{
+	  if (!bBad)
+	    {
+	      b = i;
+	  
+	      bBad = TRUE;
+	    }
+	}
+    }
 }
