@@ -45,6 +45,8 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "mdrun.h"
+#include "domdec.h"
+#include "mtop_util.h"
 #include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
