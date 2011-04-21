@@ -43,6 +43,7 @@
 #endif
 
 #include "typedefs.h"
+#include "string2.h"
 #include "smalloc.h"
 #include "mdrun.h"
 #include "domdec.h"
