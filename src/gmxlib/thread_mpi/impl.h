@@ -689,7 +689,7 @@ void tMPI_Trace_print(const char *fmt, ...);
 /* error-checking malloc/realloc: */
 void *tMPI_Malloc(size_t size);
 void *tMPI_Realloc(void *p, size_t size);
-
+void tMPI_Free(void *p);
 
 /* get the current thread structure pointer */
 #define tMPI_Get_current() ((struct tmpi_thread*) \

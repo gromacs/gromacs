@@ -38,6 +38,7 @@
 
 #include <math.h>
 #include "sysstuff.h"
+#include "types/simple.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "physics.h"

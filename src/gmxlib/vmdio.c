@@ -84,6 +84,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <windows.h>
 #include <shlobj.h>
 #endif
+#include "types/simple.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "vmdio.h"
