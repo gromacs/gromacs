@@ -69,7 +69,7 @@ static real FD(real Delta,real f)
             2*f - 2);
 }
 
-static real calc_fluidity(real Delta,real tol)
+static real calc_fluidicity(real Delta,real tol)
 {
     real fd0,fd,fd1,f,f0=0,f1=1;
     real tolmin = 1e-6;
@@ -88,15 +88,47 @@ static real calc_fluidity(real Delta,real tol)
         fd1 = FD(Delta,f1);
         f = (f0+f1)*0.5;
         fd = FD(Delta,f);
-        if (fd > 0)
+        if (fd < 0)
             f0 = f;
-        else if (fd < 0)
+        else if (fd > 0)
             f1 = f;
         else
             return f;
-    } while (f1-f0 < tol);
+    } while ((f1-f0) > tol);
     
     return f;
+}
+
+static real wCsolid(real nu,real beta)
+{
+    real bhn = beta*PLANCK*nu;
+    real ebn;
+    
+    if (bhn == 0)
+        return 1;
+    else 
+    {
+        ebn = exp(-beta*PLANCK*nu);
+        
+        return ebn/sqr(1-ebn);
+    }
+}
+
+static real wSsolid(real nu,real beta)
+{
+    real bhn = beta*PLANCK*nu;
+    real ebn;
+    
+    if (bhn == 0) 
+    {
+        return 1;
+    }
+    else 
+    {
+        ebn = exp(-bhn);
+        
+        return bhn/(exp(bhn)-1) - log(1-exp(-bhn));
+    }
 }
 
 int gmx_dos(int argc,char *argv[])
@@ -121,20 +153,23 @@ int gmx_dos(int argc,char *argv[])
     char       title[256];
     real       t0,t1,m;
     t_trxstatus *status;
-    int        nV,teller,n_alloc,i,j,k,l,fftcode,Nmol;
+    int        nV,teller,n_alloc,i,j,k,l,fftcode,Nmol,Natom;
     double     dt,V2sum,Vsum,V,tmass;
-    real       **c1,**dos,mi,beta;
+    real       **c1,**dos,mi,beta,*nu,stddev;
     output_env_t oenv;
     gmx_fft_t  fft;
-    double     cP,S,Delta,f;
+    double     cP,S,Delta,f,DoS0;
+    double     wCdiff,wSdiff;
     
     static     gmx_bool bVerbose=TRUE;
-    static     real Temp=298.15;
+    static     real Temp=298.15,toler=1e-3;
     t_pargs pa[] = {
         { "-v", FALSE, etBOOL, {&bVerbose},
-          "Be Verbose" },
-        { "-T", FALSE, etBOOL, {&Temp},
-          "Temperature in the simulation" }
+          "Be loud and noisy" },
+        { "-T", FALSE, etREAL, {&Temp},
+          "Temperature in the simulation" },
+        { "-toler", FALSE, etREAL, {&toler},
+          "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" }
     };
 
     t_filenm  fnm[] = {
@@ -147,7 +182,10 @@ int gmx_dos(int argc,char *argv[])
 #define NFILE asize(fnm)
     int     npargs;
     t_pargs *ppa;
-
+    const char *DoSlegend[] = {
+        "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]" 
+    };
+    
     CopyRight(stderr,argv[0]);
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs,pa);
@@ -164,10 +202,11 @@ int gmx_dos(int argc,char *argv[])
     tmass = 0;
     for(i=0; (i<top.atoms.nr); i++)
         tmass += top.atoms.atom[i].m;
-        
-    gnx = top.atoms.nr*DIM;
+
+    Natom = top.atoms.nr;
     Nmol = top.mols.nr;
-  
+    gnx = Natom*DIM;
+    
     /* Correlation stuff */
     snew(c1,gnx);
     for(i=0; (i<gnx); i++)
@@ -216,10 +255,12 @@ int gmx_dos(int argc,char *argv[])
     if (bVerbose)
         printf("Going to do %d fourier transforms of length %d. Hang on.\n",
                gnx,teller);
-    do_autocorr(NULL,oenv,NULL,teller,gnx,c1,dt,eacNormal,FALSE);
-    snew(dos,2);
-    snew(dos[0],teller);
-    snew(dos[1],teller);
+    low_do_autocorr(NULL,oenv,NULL,teller,gnx,teller,c1,dt,eacNormal,0,FALSE,
+                    FALSE,FALSE,-1,-1,0,0);
+    snew(dos,6);
+    for(j=0; (j<6); j++)
+        snew(dos[j],teller);
+
     if (bVerbose)
         printf("Going to merge the ACFs into the mass-weighted total ACF\n");
     for(i=0; (i<gnx); i+=DIM) 
@@ -245,25 +286,50 @@ int gmx_dos(int argc,char *argv[])
     }
 
     /* First compute the DoS */
-    beta = 1/(2*Temp*BOLTZ);
+    beta = 1/(Temp*BOLTZ);
     for(j=0; (j<teller/2); j++) 
     {
-        dos[1][j] = beta*dos[1][2*j];
+        dos[1][j] = (beta/2)*dos[1][2*j];
     }
     /* Now analyze it */
-    Delta = ((2*dos[1][0]/(9*Nmol))*pow(M_PI*BOLTZ*Temp/tmass,1.0/3.0)*
-             pow((Nmol/V),1.0/3.0)*pow(6/M_PI,2.0/3.0));
-    f = calc_fluidity(Delta,1e-3);
-    printf("Nmol = %d, V = %g nm^3, Delta = %g, f = %g\n",
-           Nmol,V,Delta,f);
-    cP = 0;    
-    S  = 0;
-  
+    DoS0 = dos[1][0];
+    Delta = ((2*DoS0/(9*Natom))*pow(M_PI*BOLTZ*Temp/tmass,1.0/3.0)*
+             pow((Natom/V),1.0/3.0)*pow(6/M_PI,2.0/3.0));
+    f = calc_fluidicity(Delta,toler);
+    printf("Nmol = %d, Natom = %d, dt = %g ps\n"
+           "V = %g nm^3, Delta = %g, f = %g\n",
+           Nmol,Natom,dt,V,Delta,f);
+           
+    snew(nu,teller/2);
+    /* Now compute solid (2) and diffusive (3) components */
     fp = xvgropen(opt2fn("-dos",NFILE,fnm),"Density of states",
                   "\\f{12}n\\f{4} (1/ps)","\\f{4}S(\\f{12}n\\f{4})",oenv);
+    xvgr_legend(fp,asize(DoSlegend),DoSlegend,oenv);
     for(j=0; (j<teller/2); j++) 
-        fprintf(fp,"%10g  %10g\n",(j == 0) ? 0 : (j*1.0/dt),dos[1][j]);
+    {
+        nu[j] = j/dt;
+        dos[3][j] = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
+        dos[2][j] = dos[1][j]-dos[3][j];
+        fprintf(fp,"%10g  %10g  %10g  %10g\n",nu[j],dos[1][j],
+                dos[2][j],dos[3][j]);
+    }
     fclose(fp);
+
+    /* Finally analyze the results! */    
+    wCdiff = 0.5;
+    wSdiff = DoS0/(3*BOLTZ); /* Is this correct? */
+    for(j=0; (j<teller/2); j++) 
+    {
+        dos[4][j] = dos[3][j]*wCdiff + dos[4][j]*wCsolid(nu[j],beta);
+        dos[5][j] = dos[3][j]*wSdiff + dos[4][j]*wSsolid(nu[j],beta);
+    }  
+    cP = BOLTZ * evaluate_integral(teller/2,nu,dos[4],NULL,
+                                   teller/4,&stddev);
+    printf("Heat capacity %g kJ/mol K\n",cP);
+    
+    S  = BOLTZ * evaluate_integral(teller/2,nu,dos[5],NULL,
+                                   teller/4,&stddev);
+    printf("Entropy %g kJ/mol K\n",S);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
