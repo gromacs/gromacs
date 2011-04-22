@@ -518,6 +518,30 @@ Atomics should work on all but the most obscure CPU+compiler combinations;
 if your system is not obscure -- like, for example, x86 with gcc --  please
 contact the developers.
 ]); tmpi_atomics=no])
+
+
+  # pthread_setaffinity
+  AC_MSG_CHECKING(if pthread_setaffinity_np is available)
+  AC_COMPILE_IFELSE([#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+int main(void)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+    return 0;
+}],
+  [AC_MSG_RESULT(yes); pthread_setaffinity=yes],
+  [AC_MSG_RESULT(no); pthread_setaffinity=no] )
+
+  if test "x$pthread_setaffinity" = "xyes"; then
+    AC_DEFINE(HAVE_PTHREAD_SETAFFINITY,1,[pthread_setaffinity_np is available])
+  fi
+
   CFLAGS="$CFLAGS_RET"
   CXXFLAGS="$CXXFLAGS_RET"
 

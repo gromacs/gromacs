@@ -52,7 +52,7 @@ files.
 
 #ifdef THREAD_PTHREADS 
 
-#ifdef TMPI_SCHED_SETAFFINITY
+#ifdef HAVE_PTHREAD_SETAFFINITY
 #define _GNU_SOURCE
 #endif
 
@@ -164,7 +164,7 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
 /* set thread's own affinity to a processor number n */
 static int tMPI_Set_affinity(int n)
 {
-#ifdef TMPI_SCHED_SETAFFINITY
+#ifdef HAVE_PTHREAD_SETAFFINITY
     cpu_set_t set;
 
     CPU_ZERO(&set);
@@ -183,16 +183,17 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
     /* set the calling thread's affinity mask */
     if (tMPI_Atomic_get(&main_thread_aff_set) == 0)
     {
-#ifdef TMPI_SCHED_SETAFFINITY
+#ifdef HAVE_PTHREAD_SETAFFINITY
         cpu_set_t set;
 #endif
         /* this can be a spinlock because the chances of collision are low. */
         tMPI_Spinlock_lock( &main_thread_aff_lock );
         tMPI_Atomic_set( &aff_thread_number, 0);
-#ifdef TMPI_SCHED_SETAFFINITY
+#ifdef HAVE_PTHREAD_SETAFFINITY
         CPU_ZERO(&set);
         CPU_SET(0, &set);
         pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+        /*fprintf(stderr, "Setting affinity.\n");*/
 #endif
         tMPI_Atomic_set( &main_thread_aff_set, 1);
         tMPI_Spinlock_unlock( &main_thread_aff_lock );
@@ -217,7 +218,7 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
     }
     else
     {
-#ifdef TMPI_SCHED_SETAFFINITY
+#ifdef HAVE_PTHREAD_SETAFFINITY
         int n;
         cpu_set_t set;
 
