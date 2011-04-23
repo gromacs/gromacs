@@ -317,15 +317,15 @@ int gmx_dos(int argc,char *argv[])
     snew(nu,teller/2);
     /* Now compute solid (2) and diffusive (3) components */
     fp = xvgropen(opt2fn("-dos",NFILE,fnm),"Density of states",
-                  "\\f{12}n\\f{4} (1/ps)","\\f{4}S(\\f{12}n\\f{4})",oenv);
+                  "E (cm\\S-1\\N)","\\f{4}S(\\f{12}n\\f{4})",oenv);
     xvgr_legend(fp,asize(DoSlegend),DoSlegend,oenv);
     for(j=0; (j<teller/2); j++) 
     {
-        nu[j] = j/dt;
+        nu[j] = j/(t1-t0);
         dos[3][j] = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
         dos[2][j] = dos[1][j]-dos[3][j];
-        fprintf(fp,"%10g  %10g  %10g  %10g\n",nu[j],dos[1][j],
-                dos[2][j],dos[3][j]);
+        fprintf(fp,"%10g  %10g  %10g  %10g\n",nu[j]*PLANCK*83.593,
+                dos[1][j],dos[2][j],dos[3][j]);
     }
     fclose(fp);
 
