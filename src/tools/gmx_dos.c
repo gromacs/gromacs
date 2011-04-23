@@ -155,7 +155,7 @@ int gmx_dos(int argc,char *argv[])
     t_trxstatus *status;
     int        nV,teller,n_alloc,i,j,k,l,fftcode,Nmol,Natom;
     double     dt,V2sum,Vsum,V,tmass;
-    real       **c1,**dos,mi,beta,*nu,stddev;
+    real       **c1,**dos,mi,beta,bfac,*nu,stddev;
     output_env_t oenv;
     gmx_fft_t  fft;
     double     cP,S,Delta,f,DoS0;
@@ -275,7 +275,7 @@ int gmx_dos(int argc,char *argv[])
         fprintf(fp,"%10g  %10g\n",j*dt,dos[0][j]);
     fclose(fp);
     
-    if ((fftcode = gmx_fft_init_1d_real(&fft,teller/2,GMX_FFT_FLAG_NONE)) != 0) 
+    if ((fftcode = gmx_fft_init_1d_real(&fft,teller,GMX_FFT_FLAG_NONE)) != 0) 
     {
         gmx_fatal(FARGS,"gmx_fft_init_1d_real returned %d",fftcode);
     }
@@ -284,12 +284,26 @@ int gmx_dos(int argc,char *argv[])
     {
         gmx_fatal(FARGS,"gmx_fft_1d_real returned %d",fftcode);
     }
+    if (bVerbose) 
+    {
+        if ((fftcode = gmx_fft_1d_real(fft,GMX_FFT_COMPLEX_TO_REAL,
+                                       (void *)dos[1],(void *)dos[2])) != 0)
+        {
+            gmx_fatal(FARGS,"gmx_fft_1d_real returned %d",fftcode);
+        }
+        for(j=0; (j<=10); j++) 
+        {
+            printf("TEST: 2-0 %g 2/0 %g\n",dos[2][j]-dos[0][j],
+                   dos[2][j]/dos[0][j]);
+        }
+    }
 
     /* First compute the DoS */
     beta = 1/(Temp*BOLTZ);
+    bfac = beta/2;
     for(j=0; (j<teller/2); j++) 
     {
-        dos[1][j] = (beta/2)*dos[1][2*j];
+        dos[1][j] = bfac*dos[1][2*j];
     }
     /* Now analyze it */
     DoS0 = dos[1][0];
@@ -324,11 +338,11 @@ int gmx_dos(int argc,char *argv[])
         dos[5][j] = dos[3][j]*wSdiff + dos[4][j]*wSsolid(nu[j],beta);
     }  
     cP = BOLTZ * evaluate_integral(teller/2,nu,dos[4],NULL,
-                                   teller/4,&stddev);
+                                   teller/2,&stddev);
     printf("Heat capacity %g kJ/mol K\n",cP);
     
     S  = BOLTZ * evaluate_integral(teller/2,nu,dos[5],NULL,
-                                   teller/4,&stddev);
+                                   teller/2,&stddev);
     printf("Entropy %g kJ/mol K\n",S);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
