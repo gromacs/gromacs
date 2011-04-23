@@ -2245,55 +2245,64 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
                 }
                 
                 /* find the proposal probabilities */
-                for (ifep=minfep;ifep<=maxfep;ifep++) 
-                {
-                    if (ifep != fep_state) 
+
+                if (remainder[fep_state] == 0) {
+                    /* only the current state has any probability */
+                    /* we have to stay at the current state */
+                    lamnew=fep_state;
+                } else {
+                    for (ifep=minfep;ifep<=maxfep;ifep++) 
                     {
-                        propose[ifep] = p_k[ifep]/remainder[fep_state];
+                        if (ifep != fep_state) 
+                        {
+                            propose[ifep] = p_k[ifep]/remainder[fep_state];
+                        }
+                        else 
+                        {
+                            propose[ifep] = 0;
+                        }
                     }
+
+                    r1 = gmx_rng_uniform_real(rng);
+                    for (lamtrial=minfep;lamtrial<=maxfep;lamtrial++) 
+                    {
+                        pnorm = p_k[lamtrial]/remainder[fep_state];
+                        if (lamtrial!=fep_state) 
+                        {
+                            if (r1 <= pnorm) 
+                            {
+                                break;
+                            }
+                            r1 -= pnorm;
+                        }
+                    }
+                
+                    /* we have now selected lamtrial according to p(lamtrial)/1-p(fep_state) */
+                    tprob = 1.0;
+                    /* trial probability is min{1,\frac{1 - p(old)}{1-p(new)} MRS 1/8/2008 */
+                    trialprob = (remainder[fep_state])/(remainder[lamtrial]);
+                    if (trialprob < tprob) 
+                    {
+                        tprob = trialprob;
+                    }
+                    r2 = gmx_rng_uniform_real(rng);
+                    if (r2 < tprob) 
+                    {
+                        lamnew = lamtrial;
+                    } 
                     else 
                     {
-                        propose[ifep] = 0;
+                        lamnew = fep_state;
                     }
                 }
-                
-                r1 = gmx_rng_uniform_real(rng);
-                for (lamtrial=minfep;lamtrial<=maxfep;lamtrial++) 
-                {
-                    pnorm = p_k[lamtrial]/remainder[fep_state];
-                    if (lamtrial!=fep_state) 
-                    {
-                        if (r1 <= pnorm) 
-                        {
-                            break;
-                        }
-                        r1 -= pnorm;
-                    }
-                }
-                
-                /* we have now selected lamtrial according to p(lamtrial)/1-p(fep_state) */
-                tprob = 1.0;
-                /* trial probability is min{1,\frac{1 - p(old)}{1-p(new)} MRS 1/8/2008 */
-                trialprob = (remainder[fep_state])/(remainder[lamtrial]);
-                if (trialprob < tprob) 
-                {
-                    tprob = trialprob;
-                }
-                r2 = gmx_rng_uniform_real(rng);
-                if (r2 < tprob) 
-                {
-                    lamnew = lamtrial;
-                } 
-                else 
-                {
-                    lamnew = fep_state;
-                }
-                
+
                 /* now figure out the acceptance probability for each */
                 for (ifep=minfep;ifep<=maxfep;ifep++) 
                 {
                     tprob = 1.0;
-                    trialprob = (remainder[fep_state])/(remainder[ifep]);
+                    if (remainder[ifep] != 0) {
+                        trialprob = (remainder[fep_state])/(remainder[ifep]);
+                    }
                     if (trialprob < tprob) 
                     {
                         tprob = trialprob;
