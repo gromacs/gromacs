@@ -60,6 +60,8 @@
 #include "gmx_ana.h"
 #include "gmx_fft.h"
 
+enum { VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_NR };
+
 static real FD(real Delta,real f)
 {
     return (2*pow(Delta,-4.5)*pow(f,7.5) - 
@@ -155,10 +157,10 @@ int gmx_dos(int argc,char *argv[])
     t_trxstatus *status;
     int        nV,teller,n_alloc,i,j,k,l,fftcode,Nmol,Natom;
     double     dt,V2sum,Vsum,V,tmass;
-    real       **c1,**dos,mi,beta,bfac,*nu,stddev;
+    real       **c1,**dos,mi,beta,bfac,*nu,*tt,stddev;
     output_env_t oenv;
     gmx_fft_t  fft;
-    double     cP,S,Delta,f,DoS0;
+    double     cP,S,DiffCoeff,Delta,f,DoS0;
     double     wCdiff,wSdiff;
     
     static     gmx_bool bVerbose=TRUE;
@@ -173,11 +175,12 @@ int gmx_dos(int argc,char *argv[])
     };
 
     t_filenm  fnm[] = {
-        { efTRN, "-f",    NULL,   ffREAD  },
-        { efTPX, "-s",    NULL,   ffREAD }, 
-        { efNDX, NULL,    NULL,   ffOPTRD },
-        { efXVG, "-acf",  "acf",  ffWRITE },
-        { efXVG, "-dos",  "dos",  ffWRITE }
+        { efTRN, "-f",    NULL,    ffREAD  },
+        { efTPX, "-s",    NULL,    ffREAD }, 
+        { efNDX, NULL,    NULL,    ffOPTRD },
+        { efXVG, "-vacf", "vacf",  ffWRITE },
+        { efXVG, "-mvacf","mvacf", ffWRITE },
+        { efXVG, "-dos",  "dos",   ffWRITE }
     };
 #define NFILE asize(fnm)
     int     npargs;
@@ -257,22 +260,34 @@ int gmx_dos(int argc,char *argv[])
                gnx,teller);
     low_do_autocorr(NULL,oenv,NULL,teller,gnx,teller,c1,dt,eacNormal,0,FALSE,
                     FALSE,FALSE,-1,-1,0,0);
-    snew(dos,6);
-    for(j=0; (j<6); j++)
+    snew(dos,DOS_NR);
+    for(j=0; (j<DOS_NR); j++)
         snew(dos[j],teller);
 
     if (bVerbose)
-        printf("Going to merge the ACFs into the mass-weighted total ACF\n");
+        printf("Going to merge the ACFs into the mass-weighted and plain ACF\n");
     for(i=0; (i<gnx); i+=DIM) 
     {
         mi = top.atoms.atom[i/DIM].m;
         for(j=0; (j<teller/2); j++) 
-            dos[0][j] += mi * (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
+        {
+            dos[VACF][j]  += (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j])/Natom;
+            dos[MVACF][j] += mi * (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
+        }
     }
-    fp = xvgropen(opt2fn("-acf",NFILE,fnm),"Mass-weighted velocity ACF",
+    fp = xvgropen(opt2fn("-vacf",NFILE,fnm),"Velocity ACF",
+                  "Time (ps)","C(t)",oenv);
+    snew(tt,teller/2);
+    for(j=0; (j<teller/2); j++) 
+    {
+        tt[j] = j*dt;
+        fprintf(fp,"%10g  %10g\n",tt[j],dos[VACF][j]);
+    }
+    fclose(fp);
+    fp = xvgropen(opt2fn("-mvacf",NFILE,fnm),"Mass-weighted velocity ACF",
                   "Time (ps)","C(t)",oenv);
     for(j=0; (j<teller/2); j++) 
-        fprintf(fp,"%10g  %10g\n",j*dt,dos[0][j]);
+        fprintf(fp,"%10g  %10g\n",tt[j],dos[MVACF][j]);
     fclose(fp);
     
     if ((fftcode = gmx_fft_init_1d_real(&fft,teller,GMX_FFT_FLAG_NONE)) != 0) 
@@ -280,33 +295,20 @@ int gmx_dos(int argc,char *argv[])
         gmx_fatal(FARGS,"gmx_fft_init_1d_real returned %d",fftcode);
     }
     if ((fftcode = gmx_fft_1d_real(fft,GMX_FFT_REAL_TO_COMPLEX,
-                                   (void *)dos[0],(void *)dos[1])) != 0)
+                                   (void *)dos[MVACF],(void *)dos[DOS])) != 0)
     {
         gmx_fatal(FARGS,"gmx_fft_1d_real returned %d",fftcode);
-    }
-    if (bVerbose) 
-    {
-        if ((fftcode = gmx_fft_1d_real(fft,GMX_FFT_COMPLEX_TO_REAL,
-                                       (void *)dos[1],(void *)dos[2])) != 0)
-        {
-            gmx_fatal(FARGS,"gmx_fft_1d_real returned %d",fftcode);
-        }
-        for(j=0; (j<=10); j++) 
-        {
-            printf("TEST: 2-0 %g 2/0 %g\n",dos[2][j]-dos[0][j],
-                   dos[2][j]/dos[0][j]);
-        }
     }
 
     /* First compute the DoS */
     beta = 1/(Temp*BOLTZ);
-    bfac = beta/2;
+    bfac = (beta/2);
     for(j=0; (j<teller/2); j++) 
     {
-        dos[1][j] = bfac*dos[1][2*j];
+        dos[DOS][j] = bfac*dos[DOS][2*j];
     }
     /* Now analyze it */
-    DoS0 = dos[1][0];
+    DoS0 = dos[DOS][0];
     Delta = ((2*DoS0/(9*Natom))*pow(M_PI*BOLTZ*Temp/tmass,1.0/3.0)*
              pow((Natom/V),1.0/3.0)*pow(6/M_PI,2.0/3.0));
     f = calc_fluidicity(Delta,toler);
@@ -322,10 +324,11 @@ int gmx_dos(int argc,char *argv[])
     for(j=0; (j<teller/2); j++) 
     {
         nu[j] = j/(t1-t0);
-        dos[3][j] = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
-        dos[2][j] = dos[1][j]-dos[3][j];
-        fprintf(fp,"%10g  %10g  %10g  %10g\n",nu[j]*PLANCK*83.593,
-                dos[1][j],dos[2][j],dos[3][j]);
+        dos[DOS_DIFF][j] = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
+        dos[DOS_SOLID][j] = dos[DOS][j]-dos[DOS_DIFF][j];
+        fprintf(fp,"%10g  %10g  %10g  %10g\n",
+                nu[j]/(1e-7*SPEED_OF_LIGHT),
+                dos[DOS][j],dos[DOS_SOLID][j],dos[DOS_DIFF][j]);
     }
     fclose(fp);
 
@@ -334,16 +337,19 @@ int gmx_dos(int argc,char *argv[])
     wSdiff = DoS0/(3*BOLTZ); /* Is this correct? */
     for(j=0; (j<teller/2); j++) 
     {
-        dos[4][j] = dos[3][j]*wCdiff + dos[4][j]*wCsolid(nu[j],beta);
-        dos[5][j] = dos[3][j]*wSdiff + dos[4][j]*wSsolid(nu[j],beta);
-    }  
-    cP = BOLTZ * evaluate_integral(teller/2,nu,dos[4],NULL,
-                                   teller/2,&stddev);
-    printf("Heat capacity %g kJ/mol K\n",cP);
+        dos[DOS_CP][j] = dos[DOS_DIFF][j]*wCdiff + dos[DOS_SOLID][j]*wCsolid(nu[j],beta);
+        dos[DOS_S][j] = dos[DOS_DIFF][j]*wSdiff + dos[DOS_SOLID][j]*wSsolid(nu[j],beta);
+    }
+    DiffCoeff = evaluate_integral(teller/2,tt,dos[VACF],NULL,teller/2,&stddev);
+    DiffCoeff = 1000*DiffCoeff/3.0;
+    printf("Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",DiffCoeff);
+    printf("Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",1000*dos[DOS][0]/(12*tmass*beta));
     
-    S  = BOLTZ * evaluate_integral(teller/2,nu,dos[5],NULL,
-                                   teller/2,&stddev);
-    printf("Entropy %g kJ/mol K\n",S);
+    cP = BOLTZ * evaluate_integral(teller/2,nu,dos[DOS_CP],NULL,teller/2,&stddev);
+    printf("Heat capacity %g J/mol K\n",1000*cP);
+    
+    S  = BOLTZ * evaluate_integral(teller/2,nu,dos[DOS_S],NULL,teller/2,&stddev);
+    printf("Entropy %g J/mol K\n",1000*S);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
