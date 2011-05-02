@@ -124,11 +124,11 @@ int main(void) { cpu_set_t set;
     pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
     return 0;
 }"
-        HAVE_SCHED_SETAFFINITY
+        PTHREAD_SETAFFINITY
     )
-    if (HAVE_SCHED_SETAFFINITY)
-        set(TMPI_SCHED_SETAFFINITY 1)
-    endif (HAVE_SCHED_SETAFFINITY)
+    if (PTHREAD_SETAFFINITY)
+        set(HAVE_PTHREAD_SETAFFINITY 1)
+    endif (PTHREAD_SETAFFINITY)
 endif (THREAD_PTHREADS)
 
 
