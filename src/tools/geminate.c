@@ -1261,7 +1261,7 @@ extern void fixGemACF(double *ct, int len)
   for (i=0; i<len; i++)
     {
       
-      if (isfinite(ct[i]))
+      if (!(isinf(ct[i]) || isnan(ct[i]))/* isfinite(ct[i]) */)
 	{
 	  if (!bBad)
 	    {
