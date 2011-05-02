@@ -944,17 +944,17 @@ void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 #undef TEMP_FILENM
 }
 
-void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
-{
-    if (MASTER(cr))
-    {
-        fprintf(stderr,"\n%s\n",buf);
-    }
-    if (fplog)
-    {
-        fprintf(fplog,"\n%s\n",buf);
-    }
-}
+/* void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf) */
+/* { */
+/*     if (MASTER(cr)) */
+/*     { */
+/*         fprintf(stderr,"\n%s\n",buf); */
+/*     } */
+/*     if (fplog) */
+/*     { */
+/*         fprintf(fplog,"\n%s\n",buf); */
+/*     } */
+/* } */
 
 double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
