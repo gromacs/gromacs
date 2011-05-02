@@ -146,7 +146,7 @@ int gmx_dos(int argc,char *argv[])
     const char *bugs[] = {
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
     };
-    FILE       *fp;
+    FILE       *fp,*fplog;
     t_topology top;
     int        ePBC=-1;
     t_trxframe fr;
@@ -160,7 +160,7 @@ int gmx_dos(int argc,char *argv[])
     real       **c1,**dos,mi,beta,bfac,*nu,*tt,stddev,c1j;
     output_env_t oenv;
     gmx_fft_t  fft;
-    double     cP,S,DiffCoeff,Delta,f,DoS0;
+    double     cP,S,DiffCoeff,Delta,f,DoS0,recip_fac;
     double     wCdiff,wSdiff;
     
     static     gmx_bool bVerbose=TRUE,bAbsolute=FALSE,bNormalize=FALSE;
@@ -183,11 +183,12 @@ int gmx_dos(int argc,char *argv[])
 
     t_filenm  fnm[] = {
         { efTRN, "-f",    NULL,    ffREAD  },
-        { efTPX, "-s",    NULL,    ffREAD }, 
+        { efTPX, "-s",    NULL,    ffREAD  }, 
         { efNDX, NULL,    NULL,    ffOPTRD },
         { efXVG, "-vacf", "vacf",  ffWRITE },
         { efXVG, "-mvacf","mvacf", ffWRITE },
-        { efXVG, "-dos",  "dos",   ffWRITE }
+        { efXVG, "-dos",  "dos",   ffWRITE },
+        { efLOG, "-dos",  "dos",   ffWRITE },
     };
 #define NFILE asize(fnm)
     int     npargs;
@@ -202,9 +203,10 @@ int gmx_dos(int argc,char *argv[])
     parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
                       NFILE,fnm,npargs,ppa,asize(desc),desc,
                       asize(bugs),bugs,&oenv);
-                      
-    please_cite(stdout,"Pascal2011a");
-    please_cite(stdout,"Caleman2011b");
+    fplog = gmx_fio_fopen(ftp2fn(efLOG,NFILE,fnm),"w");
+    fprintf(fplog,"Doing density of states analysis based on trajectory.\n");
+    please_cite(fplog,"Pascal2011a");
+    please_cite(fplog,"Caleman2011b");
     
     read_tps_conf(ftp2fn(efTPX,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
                   TRUE);
@@ -313,7 +315,8 @@ int gmx_dos(int argc,char *argv[])
 
     /* First compute the DoS */
     beta = 1/(Temp*BOLTZ);
-    bfac = dt*beta/2;
+    /* Magic factor of 8 included now. */
+    bfac = 8*dt*beta/2;
     dos2 = 0;
     snew(nu,teller/2);
     for(j=0; (j<teller/2); j++) 
@@ -337,54 +340,55 @@ int gmx_dos(int argc,char *argv[])
     DoS0 = dos[DOS][0];
     
     /* Note this eqn. is incorrect in Pascal2011a! */
-    Delta = ((2*DoS0/(9*Natom))*sqrt(M_PI*BOLTZ*Temp/tmass)*
+    Delta = ((2*DoS0/(9*Natom))*sqrt(M_PI*BOLTZ*Temp*Natom/tmass)*
              pow((Natom/V),1.0/3.0)*pow(6/M_PI,2.0/3.0));
     f = calc_fluidicity(Delta,toler);
-    printf("Nmol = %d, Natom = %d, dt = %g ps, tmass = %g amu\n"
-           "V = %g nm^3, Delta = %g, f = %g beta = %g (mol/kJ)\n"
-           "DoS0 = %g, Dos2 = %g, DoSTot = %g\n",
-           Nmol,Natom,dt,tmass,V,Delta,f,beta,DoS0,dos2,dostot);
+    fprintf(fplog,"Nmol = %d\nNatom = %d\ndt = %g ps\ntmass = %g amu\n"
+            "V = %g nm^3\nDelta = %g\nf = %g\nbeta = %g (mol/kJ)\n"
+            "DoS0 = %g\nDos2 = %g\nDoSTot = %g\n",
+            Nmol,Natom,dt,tmass,V,Delta,f,beta,DoS0,dos2,dostot);
            
     /* Now compute solid (2) and diffusive (3) components */
     fp = xvgropen(opt2fn("-dos",NFILE,fnm),"Density of states",
                   bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
                   "\\f{4}S(\\f{12}n\\f{4})",oenv);
     xvgr_legend(fp,asize(DoSlegend),DoSlegend,oenv);
+    recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
     for(j=0; (j<teller/2); j++) 
     {
         dos[DOS_DIFF][j] = DoS0/(1+sqr(DoS0*M_PI*nu[j]/(6*f*Natom)));
         dos[DOS_SOLID][j] = dos[DOS][j]-dos[DOS_DIFF][j];
         fprintf(fp,"%10g  %10g  %10g  %10g\n",
-                bRecip ? nu[j]/(1e-7*SPEED_OF_LIGHT) : nu[j],
-                dos[DOS][j],dos[DOS_SOLID][j],dos[DOS_DIFF][j]);
+                recip_fac*nu[j],
+                dos[DOS][j]/recip_fac,
+                dos[DOS_SOLID][j]/recip_fac,
+                dos[DOS_DIFF][j]/recip_fac);
     }
     fclose(fp);
 
     /* Finally analyze the results! */    
     wCdiff = 0.5;
     wSdiff = DoS0/(3*BOLTZ); /* Is this correct? */
-/*    fp = xvgropen("test.xvg","Cp(v)","v","Cp",oenv);*/
     for(j=0; (j<teller/2); j++) 
     {
         dos[DOS_CP][j] = (dos[DOS_DIFF][j]*wCdiff + 
                           dos[DOS_SOLID][j]*wCsolid(nu[j],beta));
         dos[DOS_S][j]  = (dos[DOS_DIFF][j]*wSdiff + 
                           dos[DOS_SOLID][j]*wSsolid(nu[j],beta));
-/*        fprintf(fp,"%10g  %10g  %10g\n",nu[j],
-                dos[DOS_CP][j],wCsolid(nu[j],beta));
-*/  }
-    /*  fclose(fp);*/
+    }
     DiffCoeff = evaluate_integral(teller/2,tt,dos[VACF],NULL,teller/2,&stddev);
     DiffCoeff = 1000*DiffCoeff/3.0;
-    printf("Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",DiffCoeff);
-    printf("Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",
-           1000*DoS0/(12*tmass*beta));
+    fprintf(fplog,"Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
+            DiffCoeff);
+    fprintf(fplog,"Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",
+            1000*DoS0/(12*tmass*beta));
     
     cP = BOLTZ * evaluate_integral(teller/2,nu,dos[DOS_CP],NULL,teller/2,&stddev);
-    printf("Heat capacity %g J/mol K\n",1000*cP/Nmol);
+    fprintf(fplog,"Heat capacity %g J/mol K\n",1000*cP/Nmol);
     
     S  = BOLTZ * evaluate_integral(teller/2,nu,dos[DOS_S],NULL,teller/2,&stddev);
-    printf("Entropy %g J/mol K\n",1000*S/Nmol);
+    fprintf(fplog,"Entropy %g J/mol K\n",1000*S/Nmol);
+    fclose(fplog);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
