@@ -436,6 +436,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
+    rvec   vzero,box_diag;
     real   e,v,dvdl;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
@@ -636,14 +637,39 @@ void do_force(FILE *fplog,t_commrec *cr,
                 put_atoms_in_box(box,mdatoms->homenr,x);
             }
 
-            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,mdatoms->homenr,x,
-                                     fr->nbat);
+            clear_rvec(vzero);
+            box_diag[XX] = box[XX][XX];
+            box_diag[YY] = box[YY][YY];
+            box_diag[ZZ] = box[ZZ][ZZ];
+
+            if (!fr->bDomDec)
+            {
+                gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
+                                         0,vzero,box_diag,
+                                         0,mdatoms->homenr,x,
+                                         0,NULL,
+                                         fr->nbat);
+            }
+            else
+            {
+                gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
+                                                  x,fr->nbat);
+            }
 
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
                                      fr->rvdw,fr->rlist,
                                      700,
-                                     fr->nnbl,fr->nbl,TRUE);
+                                     FALSE,fr->nnbl,fr->nbl,TRUE);
+
+            if (DOMAINDECOMP(cr))
+            {
+                gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
+                                         &top->excls,
+                                         fr->rcut_nsbox,fr->rlist_nsbox,
+                                         700,
+                                         TRUE,fr->nnbl_nl,fr->nbl_nl,TRUE);
+            }
 
             gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
             
@@ -864,16 +890,30 @@ void do_force(FILE *fplog,t_commrec *cr,
             nsbox_generic_kernel(fr->nbl[0],fr->nbat,fr,
                                  fr->nblists[0].tab.scale,
                                  fr->nblists[0].tab.tab,
+                                 TRUE,
                                  fr->nbat->f,fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
                                  enerd->grpp.ener[egBHAMSR] :
                                  enerd->grpp.ener[egLJSR]);
+
+            if (DOMAINDECOMP(cr))
+            {
+                nsbox_generic_kernel(fr->nbl_nl[0],fr->nbat,fr,
+                                     fr->nblists[0].tab.scale,
+                                     fr->nblists[0].tab.tab,
+                                     FALSE,
+                                     fr->nbat->f,fr->fshift[0],
+                                     enerd->grpp.ener[egCOULSR],
+                                     fr->bBHAM ?
+                                     enerd->grpp.ener[egBHAMSR] :
+                                     enerd->grpp.ener[egLJSR]);
+            }
         }
 
         wallcycle_stop(wcycle,ewcRECV_F_GPU);
 
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,mdatoms->homenr,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,fr->natoms_force,f);
     }
 
     if (bDoForces)

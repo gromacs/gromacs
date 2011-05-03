@@ -49,6 +49,7 @@
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
 #include "gmx_sort.h"
+#include "nsbox.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -138,7 +139,8 @@ typedef struct
 
 typedef struct
 {
-    gmx_cgsort_t *sort1,*sort2;
+    gmx_cgsort_t *sort;
+    gmx_cgsort_t *sort2;
     int  sort_nalloc;
     gmx_cgsort_t *sort_new;
     int  sort_new_nalloc;
@@ -279,6 +281,10 @@ typedef struct gmx_domdec_comm
     
     /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
     int  nat[ddnatNR];
+
+    /* Array for signalling if atoms have moved to another domain */
+    int  *moved;
+    int  moved_nalloc;
     
     /* Communication buffer for general use */
     int  *buf_int;
@@ -341,7 +347,7 @@ typedef struct gmx_domdec_comm
     double load_pme;
 
     /* The last partition step */
-    gmx_large_int_t globalcomm_step;
+    gmx_large_int_t partition_step;
 
     /* Debugging */
     int  nstDDDump;
@@ -4164,12 +4170,14 @@ static void rotate_state_atom(t_state *state,int a)
     }
 }
 
-static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
-                              gmx_domdec_t *dd,ivec tric_dir,
-                              t_state *state,rvec **f,
-                              t_forcerec *fr,t_mdatoms *md,
-                              gmx_bool bCompact,
-                              t_nrnb *nrnb)
+static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
+                               gmx_domdec_t *dd,ivec tric_dir,
+                               t_state *state,rvec **f,
+                               t_forcerec *fr,t_mdatoms *md,
+                               gmx_bool bCompact,
+                               t_nrnb *nrnb,
+                               int *ncg_stay_home,
+                               int *ncg_moved)
 {
     int  *move;
     int  npbcdim;
@@ -4177,7 +4185,7 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     int  c,i,cg,k,k0,k1,d,dim,dim2,dir,d2,d3,d4,cell_d;
     int  mc,cdd,nrcg,ncg_recv,nat_recv,nvs,nvr,nvec,vec;
     int  sbuf[2],rbuf[2];
-    int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
+    int  home_pos_cg,home_pos_at,buf_pos;
     int  flag;
     gmx_bool bV=FALSE,bSDX=FALSE,bCGP=FALSE;
     gmx_bool bScrew;
@@ -4446,6 +4454,12 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
     inc_nrnb(nrnb,eNR_RESETX,dd->ncg_home);
+
+    *ncg_moved = 0;
+    for(i=0; i<dd->ndim*2; i++)
+    {
+        *ncg_moved += ncg[i];
+    }
     
     nvec = 1;
     if (bV)
@@ -4508,15 +4522,36 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     }
     else
     {
+        int *moved;
+
+        if (fr->nbs != NULL)
+        {
+            if (dd->ncg_home > comm->moved_nalloc)
+            {
+                comm->moved_nalloc = over_alloc_dd(dd->ncg_home);
+                srenew(comm->moved,comm->moved_nalloc);
+            }
+            moved = comm->moved;
+
+            for(k=0; k<dd->ncg_home; k++)
+            {
+                moved[k] = 0;
+            }
+        }
+        else
+        {
+            moved = fr->ns.grid->cell_index;
+        }
+
         clear_and_mark_ind(dd->ncg_home,move,
                            dd->index_gl,dd->cgindex,dd->gatindex,
                            dd->ga2la,comm->bLocalCG,
-                           fr->ns.grid->cell_index);
+                           moved);
     }
     
     cginfo_mb = fr->cginfo_mb;
 
-    ncg_stay_home = home_pos_cg;
+    *ncg_stay_home = home_pos_cg;
     for(d=0; d<dd->ndim; d++)
     {
         dim = dd->dim[d];
@@ -4761,8 +4796,6 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     {
         fprintf(debug,"Finished repartitioning\n");
     }
-
-    return ncg_stay_home;
 }
 
 void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl)
@@ -6584,7 +6617,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         check_dd_restrictions(cr,dd,ir,fplog);
     }
 
-    comm->globalcomm_step = INT_MIN;
+    comm->partition_step = INT_MIN;
     dd->ddp_count = 0;
 
     clear_dd_cycle_counts(dd);
@@ -7775,6 +7808,14 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
     }
 }
 
+static void set_zones_size(gmx_domdec_zones_t *zones,
+                           const gmx_domdec_comm_t *comm)
+{
+    copy_rvec(comm->cell_x0,zones->home_x0);
+    copy_rvec(comm->cell_x1,zones->home_x1);
+    zones->r = comm->cutoff;
+}
+
 static int comp_cgsort(const void *a,const void *b)
 {
     int comp;
@@ -7890,24 +7931,14 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     }
 }
 
-static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
-                          rvec *cgcm,t_forcerec *fr,t_state *state,
-                          int ncg_home_old)
+static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
 {
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t *cgsort,*sort_i;
-    int  ncg_new,nsort2,nsort_new,i,cell_index,*ibuf,cgsize;
-    rvec *vbuf;
-    
+    int  ncg_new,nsort2,nsort_new,i,cell_index,*ibuf;
+
     sort = dd->comm->sort;
-    
-    if (dd->ncg_home > sort->sort_nalloc)
-    {
-        sort->sort_nalloc = over_alloc_dd(dd->ncg_home);
-        srenew(sort->sort1,sort->sort_nalloc);
-        srenew(sort->sort2,sort->sort_nalloc);
-    }
-    
+
     if (ncg_home_old >= 0)
     {
         /* The charge groups that remained in the same ns grid cell
@@ -7923,7 +7954,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             cell_index = fr->ns.grid->cell_index[i];
             if (cell_index !=  4*fr->ns.grid->ncells)
             {
-                if (i >= ncg_home_old || cell_index != sort->sort1[i].nsc)
+                if (i >= ncg_home_old || cell_index != sort->sort[i].nsc)
                 {
                     /* This cg is new on this node or moved ns grid cell */
                     if (nsort_new >= sort->sort_new_nalloc)
@@ -7953,11 +7984,11 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
                     nsort2,nsort_new);
         }
         /* Sort efficiently */
-        ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,sort->sort1);
+        ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,sort->sort);
     }
     else
     {
-        cgsort = sort->sort1;
+        cgsort = sort->sort;
         ncg_new = 0;
         for(i=0; i<dd->ncg_home; i++)
         {
@@ -7979,7 +8010,72 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
         /* Determine the order of the charge groups using qsort */
         qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
     }
-    cgsort = sort->sort1;
+
+    return ncg_new;
+}
+
+static int dd_sort_order_nsbox(gmx_domdec_t *dd,gmx_nbsearch_t nbs,
+                               int ncg_home_old)
+{
+    gmx_cgsort_t *cgsort;
+    int na_new;
+    int *a,a_rm;
+    int i;
+
+    cgsort = dd->comm->sort->sort;
+
+    gmx_nbsearch_get_atomorder(nbs,&a);
+
+    a_rm = dd->ncg_home;
+
+    na_new = 0;
+    for(i=0; i<dd->ncg_home; i++)
+    {
+        if (a[i] >= 0)
+        {
+            cgsort[i].nsc = a[i];
+            na_new++;
+        }
+        else
+        {
+            cgsort[i].nsc = a_rm;
+        }
+        cgsort[i].ind = i;
+    }
+
+    /* For now we only have qsort, we need to add an ordered sort */
+    qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
+
+    return na_new;
+}
+
+static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
+                          rvec *cgcm,t_forcerec *fr,t_state *state,
+                          int ncg_home_old)
+{
+    gmx_domdec_sort_t *sort;
+    gmx_cgsort_t *cgsort,*sort_i;
+    int  ncg_new,i,*ibuf,cgsize;
+    rvec *vbuf;
+    
+    sort = dd->comm->sort;
+    
+    if (dd->ncg_home > sort->sort_nalloc)
+    {
+        sort->sort_nalloc = over_alloc_dd(dd->ncg_home);
+        srenew(sort->sort,sort->sort_nalloc);
+        srenew(sort->sort,sort->sort_nalloc);
+    }
+    cgsort = sort->sort;
+
+    if (fr->nbs != NULL)
+    {
+        ncg_new = dd_sort_order_nsbox(dd,fr->nbs,ncg_home_old);
+    }
+    else
+    {
+        ncg_new = dd_sort_order_nsgrid(dd,fr,ncg_home_old);
+    }
     
     /* We alloc with the old size, since cgindex is still old */
     vec_rvec_check_alloc(&dd->comm->vbuf,dd->cgindex[dd->ncg_home]);
@@ -8047,13 +8143,21 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     /* Set the home atom number */
     dd->nat_home = dd->cgindex[dd->ncg_home];
-    
-    /* Copy the sorted ns cell indices back to the ns grid struct */
-    for(i=0; i<dd->ncg_home; i++)
+
+    if (fr->nbs != NULL)
     {
-        fr->ns.grid->cell_index[i] = cgsort[i].nsc;
+        /* The atoms are now exactly in grid order, update the grid order */
+        gmx_nbsearch_set_atomorder(fr->nbs,state->x,fr->nbat);
     }
-    fr->ns.grid->nr = dd->ncg_home;
+    else
+    {
+        /* Copy the sorted ns cell indices back to the ns grid struct */
+        for(i=0; i<dd->ncg_home; i++)
+        {
+            fr->ns.grid->cell_index[i] = cgsort[i].nsc;
+        }
+        fr->ns.grid->nr = dd->ncg_home;
+    }
 }
 
 static void add_dd_statistics(gmx_domdec_t *dd)
@@ -8175,7 +8279,7 @@ void dd_partition_system(FILE            *fplog,
     t_block *cgs_gl;
     gmx_large_int_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;
-    int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
+    int  i,j,n,cg0=0,ncg_home_old=-1,ncg_moved,nat_f_novirsum;
     gmx_bool bBoxChanged,bNStGlobalComm,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
     gmx_bool bRedist,bSortCG,bResortAll;
     ivec ncells_old,np;
@@ -8206,13 +8310,13 @@ void dd_partition_system(FILE            *fplog,
         {
             step_pcoupl = ((step - 1)/n)*n + 1;
         }
-        if (step_pcoupl >= comm->globalcomm_step)
+        if (step_pcoupl >= comm->partition_step)
         {
             bBoxChanged = TRUE;
         }
     }
 
-    bNStGlobalComm = (step >= comm->globalcomm_step + nstglobalcomm);
+    bNStGlobalComm = (step % nstglobalcomm == 0);
 
     if (!comm->bDynLoadBal)
     {
@@ -8409,27 +8513,35 @@ void dd_partition_system(FILE            *fplog,
 
     ncg_home_old = dd->ncg_home;
 
+    ncg_moved = 0;
     if (bRedist)
     {
-        cg0 = dd_redistribute_cg(fplog,step,dd,ddbox.tric_dir,
-                                 state_local,f,fr,mdatoms,
-                                 !bSortCG,nrnb);
+        dd_redistribute_cg(fplog,step,dd,ddbox.tric_dir,
+                           state_local,f,fr,mdatoms,
+                           !bSortCG,nrnb,&cg0,&ncg_moved);
     }
     
-    get_nsgrid_boundaries(fr->ns.grid,dd,
-                          state_local->box,&ddbox,&comm->cell_x0,&comm->cell_x1,
-                          dd->ncg_home,fr->cg_cm,
-                          cell_ns_x0,cell_ns_x1,&grid_density);
+    if (fr->nbs == NULL)
+    {
+        get_nsgrid_boundaries(fr->ns.grid,dd,
+                              state_local->box,&ddbox,
+                              &comm->cell_x0,&comm->cell_x1,
+                              dd->ncg_home,fr->cg_cm,
+                              cell_ns_x0,cell_ns_x1,&grid_density);
+    }
 
     if (bBoxChanged)
     {
         comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
     }
 
-    copy_ivec(fr->ns.grid->n,ncells_old);
-    grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,
-               state_local->box,cell_ns_x0,cell_ns_x1,
-               fr->rlistlong,grid_density);
+    if (fr->nbs == NULL)
+    {
+        copy_ivec(fr->ns.grid->n,ncells_old);
+        grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,
+                   state_local->box,cell_ns_x0,cell_ns_x1,
+                   fr->rlistlong,grid_density);
+    }
     /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
     copy_ivec(ddbox.tric_dir,comm->tric_dir);
 
@@ -8445,16 +8557,33 @@ void dd_partition_system(FILE            *fplog,
          * so we can sort with the indices.
          */
         set_zones_ncg_home(dd);
-        fill_grid(fplog,&comm->zones,fr->ns.grid,dd->ncg_home,
-                  0,dd->ncg_home,fr->cg_cm);
-        
-        /* Check if we can user the old order and ns grid cell indices
-         * of the charge groups to sort the charge groups efficiently.
-         */
-        bResortAll = (bMasterState ||
-                      fr->ns.grid->n[XX] != ncells_old[XX] ||
-                      fr->ns.grid->n[YY] != ncells_old[YY] ||
-                      fr->ns.grid->n[ZZ] != ncells_old[ZZ]);
+
+        bResortAll = bMasterState;
+
+        if (fr->nbs != NULL)
+        {
+            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,state_local->box,
+                                     0,comm->cell_x0,comm->cell_x1,
+                                     0,dd->ncg_home,
+                                     state_local->x,
+                                     ncg_moved,comm->moved,
+                                     fr->nbat);
+        }
+        else
+        {
+            fill_grid(fplog,&comm->zones,fr->ns.grid,dd->ncg_home,
+                      0,dd->ncg_home,fr->cg_cm);
+
+            /* Check if we can user the old order and ns grid cell indices
+             * of the charge groups to sort the charge groups efficiently.
+             */
+            if (fr->ns.grid->n[XX] != ncells_old[XX] ||
+                fr->ns.grid->n[YY] != ncells_old[YY] ||
+                fr->ns.grid->n[ZZ] != ncells_old[ZZ])
+            {
+                bResortAll = TRUE;
+            }
+        }
 
         if (debug)
         {
@@ -8477,6 +8606,8 @@ void dd_partition_system(FILE            *fplog,
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
     
+    set_zones_size(&comm->zones,comm);
+
     /*
     write_dd_pdb("dd_home",step,"dump",top_global,cr,
                  -1,state_local->x,state_local->box);
@@ -8618,11 +8749,8 @@ void dd_partition_system(FILE            *fplog,
                      -1,state_local->x,state_local->box);
     }
 
-    if (bNStGlobalComm)
-    {
-        /* Store the global communication step */
-        comm->globalcomm_step = step;
-    }
+    /* Store the partitioning step */
+    comm->partition_step = step;
     
     /* Increase the DD partitioning counter */
     dd->ddp_count++;

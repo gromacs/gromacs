@@ -249,6 +249,8 @@ typedef struct {
   gmx_nbsearch_t nbs;
   int            nnbl;
   gmx_nblist_t   **nbl;
+  int            nnbl_nl;
+  gmx_nblist_t   **nbl_nl;
   gmx_nb_atomdata_t *nbat;
 
   /* The wall tables (if used) */

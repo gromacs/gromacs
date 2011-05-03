@@ -60,8 +60,8 @@ extern "C" {
 typedef struct gmx_domdec_master *gmx_domdec_master_p_t;
 
 typedef struct {
-  int  j0;       /* j-cell start               */
-  int  j1;       /* j-cell end                 */
+  int  j0;       /* j-zone start               */
+  int  j1;       /* j-zone end                 */
   int  cg1;      /* i-charge-group end         */
   int  jcg0;     /* j-charge-group start       */
   int  jcg1;     /* j-charge-group end         */
@@ -80,6 +80,11 @@ typedef struct {
   int  nizone;
   /* The neighbor search charge group ranges for each i-zone */
   gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
+  /* Size of the home zone */
+  rvec home_x0;
+  rvec home_x1;
+  /* Communication range */
+  real r;
 } gmx_domdec_zones_t;
 
 typedef struct gmx_ga2la *gmx_ga2la_t;

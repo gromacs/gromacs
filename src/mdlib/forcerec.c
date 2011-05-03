@@ -1912,7 +1912,10 @@ void init_forcerec(FILE *fp,
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        gmx_nbsearch_init(&fr->nbs,napc);
+        gmx_nbsearch_init(&fr->nbs,
+                          DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
+                          DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
+                          napc);
 
         fr->nnbl = 1;
 #ifdef GMX_OPENMP
@@ -1934,6 +1937,31 @@ void init_forcerec(FILE *fp,
 #else
                             NULL,NULL);
 #endif
+        }
+        if (DOMAINDECOMP(cr))
+        {
+            fr->nnbl_nl = fr->nnbl;
+            snew(fr->nbl_nl,fr->nnbl_nl);
+#pragma omp parallel for schedule(static)
+            for(i=0; i<fr->nnbl_nl; i++)
+            {
+                /* Allocate the nblist data structure locally on each thread
+                 * to optimize memory access for NUMA architectures.
+                 */
+                snew(fr->nbl_nl[i],1);
+                gmx_nblist_init(fr->nbl_nl[i],
+#ifdef GMX_GPU
+                                /* Only list 0 is used on the GPU */
+                                (fr->useGPU && i==0) ? &pmalloc : NULL,
+                                (fr->useGPU && i==0) ? &pfree   : NULL);
+#else
+                                NULL,NULL);
+#endif
+            }
+        }
+        else
+        {
+            fr->nnbl_nl = 0;
         }
 
         snew(fr->nbat,1);

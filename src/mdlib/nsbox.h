@@ -41,12 +41,45 @@ extern "C" {
 #endif
 
 /* Allocates and initializes a neighbor searching data structure */
-void gmx_nbsearch_init(gmx_nbsearch_t * nbs,int natoms_per_cell);
+void gmx_nbsearch_init(gmx_nbsearch_t * nbs,
+                       ivec *n_dd_cells,
+                       gmx_domdec_zones_t *zones,
+                       int natoms_per_cell);
 
-/* Put the atoms on the neighborsearching grid */
+/* Put the atoms on the neighborsearching grid.
+ * Only atoms a0 to a1 in x are put on the grid.
+ * With domain decomposition part of the n particles might have migrated,
+ * but have not been removed yet. This count is given by nmoved.
+ * When move[i] < 0 particle i has migrated and will not be put on the grid.
+ * Without domain decomposition move will be NULL.
+ */
 void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
-                              int ePBC,matrix box,int n,rvec *x,
+                              int ePBC,matrix box,
+                              int dd_zone,
+                              rvec corner0,rvec corner1,
+                              int a0,int a1,
+                              rvec *x,
+                              int nmoved,int *move,
                               gmx_nb_atomdata_t *nbat);
+
+/* As gmx_nbsearch_put_on_grid, but for the non-local atoms
+ * with domain decomposition. Should be called after calling
+ * gmx_nbsearch_put_on_grid for the local atoms / home zone.
+ */
+void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
+                                       const gmx_domdec_zones_t *zones,
+                                       rvec *x,
+                                       gmx_nb_atomdata_t *nbat);
+
+/* Return the order indices *a of the atoms on the ns grid.
+ * An index of -1 indicates and atom that moved to another domain.
+ */
+void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a);
+
+/* Renumber the atom indices on the grid to consecutive order */
+void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs,
+                                rvec *x,
+                                gmx_nb_atomdata_t *nbat);
 
 /* Initialize a neighbor list data structure */
 void gmx_nblist_init(gmx_nblist_t * nbl,
@@ -64,6 +97,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                               const t_blocka *excl,
                               real rcut,real rlist,
                               int min_ci_balanced,
+                              gmx_bool nonLocal,
                               int nnbl,gmx_nblist_t **nbl,
                               gmx_bool CombineNBLists);
 

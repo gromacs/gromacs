@@ -141,6 +141,11 @@ void dd_atom_spread_real(gmx_domdec_t *dd,real v[]);
 void dd_atom_sum_real(gmx_domdec_t *dd,real v[]);
 /* Sum the contributions to a real for each atom over the neighboring cells. */
 
+void dd_gmx_nbsearch_put_on_grid_nonlocal(gmx_domdec_t *dd,
+                                          t_forcerec *fr,
+                                          rvec *x);
+/* Put the atoms in the non-local zones on the neighborsearch grid */
+
 void dd_partition_system(FILE            *fplog,
                                 gmx_large_int_t      step,
                                 t_commrec       *cr,
