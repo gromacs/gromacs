@@ -92,6 +92,10 @@ class OptionInfo
         // Disallow copy and assign.
         OptionInfo(const OptionInfo &);
         void operator =(const OptionInfo &);
+
+        // This is a workaround for a buggy gcc 4.2, which seems to 
+        // require access to all constructors: 
+        friend class OptionsIterator;
 };
 
 /*! \libinternal \brief
