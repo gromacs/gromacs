@@ -9,7 +9,7 @@ pkgincludethread_mpidir = ${pkgincludedir}/thread_mpi
 
 pkgincludethread_mpi_HEADERS = \
 	atomic.h       event.h        lock.h         tmpi.h \
-	barrier.h      hwinfo.h       mpi_bindings.h wait.h \
-	collective.h   list.h         threads.h
+	barrier.h      mpi_bindings.h wait.h \
+	collective.h   list.h         threads.h	     numa_malloc.h
 
 

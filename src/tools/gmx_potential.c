@@ -55,6 +55,11 @@
 #include "index.h"
 #include "gmx_ana.h"
 
+/* Suppress Cygwin compiler warnings from using newlib version of
+ * ctype.h */
+#ifdef GMX_CYGWIN
+#undef toupper
+#endif
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19

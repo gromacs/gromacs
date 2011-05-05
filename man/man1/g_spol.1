@@ -1,8 +1,8 @@
-.TH g_spol 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_spol 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_spol - analyzes solvent dipole orientation and polarization around solutes
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_spol\fP
 .BI "\-f" " traj.xtc "
@@ -24,7 +24,7 @@ g_spol - analyzes solvent dipole orientation and polarization around solutes
 .BI "\-dip" " real "
 .BI "\-bw" " real "
 .SH DESCRIPTION
-\&g_spol analyzes dipoles around a solute; it is especially useful
+\&\fB g_spol\fR analyzes dipoles around a solute; it is especially useful
 \&for polarizable water. A group of reference atoms, or a center
 \&of mass reference (option \fB \-com\fR) and a group of solvent
 \&atoms is required. The program splits the group of solvent atoms
@@ -35,7 +35,7 @@ g_spol - analyzes solvent dipole orientation and polarization around solutes
 \&the inner product of the distance vector
 \&and the dipole of the solvent molecule is determined.
 \&For solvent molecules with net charge (ions), the net charge of the ion
-\&is subtracted evenly at all atoms in the selection of each ion.
+\&is subtracted evenly from all atoms in the selection of each ion.
 \&The average of these dipole components is printed.
 \&The same is done for the polarization, where the average dipole is
 \&subtracted from the instantaneous dipole. The magnitude of the average
@@ -79,7 +79,7 @@ g_spol - analyzes solvent dipole orientation and polarization around solutes
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

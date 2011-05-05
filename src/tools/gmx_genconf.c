@@ -111,13 +111,13 @@ int gmx_genconf(int argc, char *argv[])
   const char *desc[] = {
     "[TT]genconf[tt] multiplies a given coordinate file by simply stacking them",
     "on top of each other, like a small child playing with wooden blocks.",
-    "The program makes a grid of [IT]user defined[it]",
+    "The program makes a grid of [IT]user-defined[it]",
     "proportions ([TT]-nbox[tt]), ",
     "and interspaces the grid point with an extra space [TT]-dist[tt].[PAR]",
     "When option [TT]-rot[tt] is used the program does not check for overlap",
     "between molecules on grid points. It is recommended to make the box in",
     "the input file at least as big as the coordinates + ",
-    "Van der Waals radius.[PAR]",
+    "van der Waals radius.[PAR]",
     "If the optional trajectory file is given, conformations are not",
     "generated, but read from this file and translated appropriately to",
     "build the grid."

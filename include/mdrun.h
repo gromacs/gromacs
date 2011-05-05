@@ -176,6 +176,8 @@ gmx_integrator_t do_md;
 
 gmx_integrator_t do_md_openmm;
 
+
+
 /* ROUTINES from minimize.c */
 
 gmx_integrator_t do_steep;
@@ -196,6 +198,39 @@ gmx_integrator_t do_tpi;
 /* Do test particle insertion */
 
 
+/* ROUTINES from md_support.c */
+
+/* return the number of steps between global communcations */
+int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
+                        int nstglobalcomm,t_inputrec *ir);
+
+/* check whether an 'nst'-style parameter p is a multiple of nst, and
+   set it to be one if not, with a warning. */
+void check_nst_param(FILE *fplog,t_commrec *cr,
+                     const char *desc_nst,int nst,
+                     const char *desc_p,int *p);
+
+/* check which of the multisim simulations has the shortest number of
+   steps and return that number of nsteps */
+gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
+                                    gmx_large_int_t nsteps);
+
+void rerun_parallel_comm(t_commrec *cr,t_trxframe *fr,
+                         gmx_bool *bNotLastFrame);
+
+/* get the conserved energy associated with the ensemble type*/
+real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,           
+                                      t_extmass *MassQ);
+
+/* reset all cycle and time counters. */
+void reset_all_counters(FILE *fplog,t_commrec *cr,
+                        gmx_large_int_t step,
+                        gmx_large_int_t *step_rel,t_inputrec *ir,
+                        gmx_wallcycle_t wcycle,t_nrnb *nrnb,
+                        gmx_runtime_t *runtime);
+
+
+
 /* ROUTINES from sim_util.c */
 void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
@@ -205,6 +240,7 @@ void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 
 void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			gmx_mtop_t *mtop,rvec x[]);
+
 
 		     
 /* ROUTINES from stat.c */
@@ -333,7 +369,33 @@ void dynamic_load_balancing(gmx_bool bVerbose,t_commrec *cr,real capacity[],
 /* Perform load balancing, i.e. split the particles over processors
  * based on their coordinates in the "dimension" direction.
  */
+
+int multisim_min(const gmx_multisim_t *ms,int nmin,int n);
+/* Set an appropriate value for n across the whole multi-simulation */
+
+int multisim_nstsimsync(const t_commrec *cr,
+			const t_inputrec *ir,int repl_ex_nst);
+/* Determine the interval for inter-simulation communication */
 				   
+void init_global_signals(globsig_t *gs,const t_commrec *cr,
+			 const t_inputrec *ir,int repl_ex_nst);
+/* Constructor for globsig_t */
+
+void copy_coupling_state(t_state *statea,t_state *stateb,
+			 gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts);
+/* Copy stuff from state A to state B */
+
+void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
+		     t_forcerec *fr, gmx_ekindata_t *ekind,
+		     t_state *state, t_state *state_global, t_mdatoms *mdatoms,
+		     t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
+		     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir,
+		     tensor pres, rvec mu_tot, gmx_constr_t constr,
+		     globsig_t *gs,gmx_bool bInterSimGS,
+		     matrix box, gmx_mtop_t *top_global, real *pcurr,
+		     int natoms, gmx_bool *bSumEkinhOld, int flags);
+/* Compute global variables during integration */
+
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,

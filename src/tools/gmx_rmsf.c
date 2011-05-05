@@ -167,8 +167,8 @@ int gmx_rmsf(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_rmsf[tt] computes the root mean square fluctuation (RMSF, i.e. standard ",
-    "deviation) of atomic positions ",
-    "after (optionally) fitting to a reference frame.[PAR]",
+    "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
+    "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
     "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
     "values, which are written to a [TT].pdb[tt] file with the coordinates, of the",
     "structure file, or of a [TT].pdb[tt] file when [TT]-q[tt] is specified.",

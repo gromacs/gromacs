@@ -193,17 +193,17 @@ int gmx_rotmat(int argc,char *argv[])
         "determining the orientation of a molecule",
         "at an interface, possibly on a trajectory produced with",
         "[TT]trjconv -fit rotxy+transxy[tt] to remove the rotation",
-        "in the xy-plane.",
+        "in the [IT]x-y[it] plane.",
         "[PAR]",
         "Option [TT]-ref[tt] determines a reference structure for fitting,",
         "instead of using the structure from [TT]-s[tt]. The structure with",
         "the lowest sum of RMSD's to all other structures is used.",
         "Since the computational cost of this procedure grows with",
         "the square of the number of frames, the [TT]-skip[tt] option",
-        "can be useful. A full fit or only a fit in the x/y plane can",
+        "can be useful. A full fit or only a fit in the [IT]x-y[it] plane can",
         "be performed.",
         "[PAR]",
-        "Option [TT]-fitxy[tt] fits in the x/y plane before determining",
+        "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
     const char *reffit[] = 

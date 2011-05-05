@@ -1,8 +1,8 @@
-.TH g_filter 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_filter 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_filter - frequency filters trajectories, useful for making smooth movies
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_filter\fP
 .BI "\-f" " traj.xtc "
@@ -22,7 +22,7 @@ g_filter - frequency filters trajectories, useful for making smooth movies
 .BI "\-[no]nojump" ""
 .BI "\-[no]fit" ""
 .SH DESCRIPTION
-\&g_filter performs frequency filtering on a trajectory.
+\&\fB g_filter\fR performs frequency filtering on a trajectory.
 \&The filter shape is cos(pi t/A) + 1 from \-A to +A, where A is given
 \&by the option \fB \-nf\fR times the time step in the input trajectory.
 \&This filter reduces fluctuations with period A by 85%, with period
@@ -31,7 +31,7 @@ g_filter - frequency filters trajectories, useful for making smooth movies
 
 
 \&Option \fB \-ol\fR writes a low\-pass filtered trajectory.
-\&A frame is written every \fB nf\fR input frames.
+\&A frame is written every \fB \-nf\fR input frames.
 \&This ratio of filter length and output interval ensures a good
 \&suppression of aliasing of high\-frequency motion, which is useful for
 \&making smooth movies. Also averages of properties which are linear
@@ -43,7 +43,7 @@ g_filter - frequency filters trajectories, useful for making smooth movies
 \&Option \fB \-oh\fR writes a high\-pass filtered trajectory.
 \&The high\-pass filtered coordinates are added to the coordinates
 \&from the structure file. When using high\-pass filtering use \fB \-fit\fR
-\&or make sure you use a trajectory which has been fitted on
+\&or make sure you use a trajectory that has been fitted on
 \&the coordinates in the structure file.
 .SH FILES
 .BI "\-f" " traj.xtc" 
@@ -86,7 +86,7 @@ g_filter - frequency filters trajectories, useful for making smooth movies
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-nf"  " int" " 10" 
  Sets the filter length as well as the output interval for low\-pass filtering

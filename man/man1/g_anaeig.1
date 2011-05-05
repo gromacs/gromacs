@@ -1,8 +1,8 @@
-.TH g_anaeig 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_anaeig 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_anaeig - analyzes the eigenvectors
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_anaeig\fP
 .BI "\-v" " eigenvec.trr "
@@ -91,12 +91,12 @@ g_anaeig - analyzes the eigenvectors
 \&\fB \-last\fR have been set explicitly, in which case all eigenvectors
 \&will be written to separate files. Chain identifiers will be added
 \&when writing a \fB .pdb\fR file with two or three structures (you
-\&can use \fB rasmol \-nmrpdb\fR to view such a pdb file).
+\&can use \fB rasmol \-nmrpdb\fR to view such a \fB .pdb\fR file).
 
 
 \&  Overlap calculations between covariance analysis:
 
-\&  NOTE: the analysis should use the same fitting structure
+\&  \fB Note:\fR the analysis should use the same fitting structure
 
 
 \&\fB \-over\fR: calculate the subspace overlap of the eigenvectors in
@@ -218,7 +218,7 @@ g_anaeig - analyzes the eigenvectors
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

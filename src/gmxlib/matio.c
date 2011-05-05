@@ -445,8 +445,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   if (m>=0)
     gmx_incons("Not enough rows in the matrix");
 
-  /* This code makes me cry. DvdS 2010-07-08 */
-  /*sfree(line);*/
+  sfree(line_buf);
 }
 
 int read_xpm_matrix(const char *fnm,t_matrix **matrix)

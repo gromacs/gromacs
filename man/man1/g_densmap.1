@@ -1,8 +1,8 @@
-.TH g_densmap 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_densmap 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_densmap - calculates 2D planar or axial-radial density maps
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_densmap\fP
 .BI "\-f" " traj.xtc "
@@ -31,11 +31,11 @@ g_densmap - calculates 2D planar or axial-radial density maps
 .BI "\-dmin" " real "
 .BI "\-dmax" " real "
 .SH DESCRIPTION
-\&g_densmap computes 2D number\-density maps.
+\&\fB g_densmap\fR computes 2D number\-density maps.
 \&It can make planar and axial\-radial density maps.
 \&The output \fB .xpm\fR file can be visualized with for instance xv
-\&and can be converted to postscript with xpm2ps.
-\&Optionally, output can be in text form to a .dat file.
+\&and can be converted to postscript with \fB xpm2ps\fR.
+\&Optionally, output can be in text form to a \fB .dat\fR file with \fB \-od\fR, instead of the usual \fB .xpm\fR file with \fB \-o\fR.
 \&
 
 
@@ -110,7 +110,7 @@ g_densmap - calculates 2D planar or axial-radial density maps
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-bin"  " real" " 0.02  " 
  Grid size (nm)
