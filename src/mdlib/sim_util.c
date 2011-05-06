@@ -2570,13 +2570,13 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 
     if ((int)step == fep->nstfep)  /* this is the first step that this routine is visited.  Should make this more robust */
     {
-        dfhist->wl_delta == fep->init_wl_delta;  /* MRS -- this would fit better somewhere else? */
+        dfhist->wl_delta = fep->init_wl_delta;  /* MRS -- this would fit better somewhere else? */
         for (i=0;i<nlim;i++) {
             dfhist->sum_weights[i] = fep->init_lambda_weights[i];
             dfhist->sum_dg[i] = fep->init_lambda_weights[i];
         }
     } 
-
+    
 	/* update the count at the current lambda*/
 	dfhist->n_at_lam[nlam]++;	
     
