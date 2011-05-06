@@ -1379,8 +1379,6 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
             gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
         }
         *napc = GPU_NS_CELL_SIZE;
-#else 
-    gmx_fatal(FARGS,"No GPU support compiled into mdrun whereas a Verlet has been requested. There is currently no efficient cut-off scheme available for this. If you have a GPU, compile mdrun with GPU support. (Very slow emulation on the CPU is possible by setting the env.var. GMX_EMULATE_GPU)");
 #endif
     }
 }
@@ -1915,7 +1913,9 @@ void init_forcerec(FILE *fp,
         gmx_nbsearch_init(&fr->nbs,
                           DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                           DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                          napc);
+                          !(fr->useGPU || fr->emulateGPU),
+                          napc,
+                          fr->nthreads);
 
         fr->nnbl = 1;
 #ifdef GMX_OPENMP
@@ -1957,7 +1957,7 @@ void init_forcerec(FILE *fp,
 #else
                                 NULL,NULL);
 #endif
-            }
+             }
         }
         else
         {
@@ -1966,7 +1966,9 @@ void init_forcerec(FILE *fp,
 
         snew(fr->nbat,1);
 
-        gmx_nb_atomdata_init(fr->nbat,nbatXYZQ,fr->ntype,fr->nbfp,
+        gmx_nb_atomdata_init(fr->nbat,fr->ntype,fr->nbfp,
+                             !(fr->useGPU || fr->emulateGPU) ? nbatXXXX : nbatXYZQ,
+                             !(fr->useGPU || fr->emulateGPU) ? fr->nthreads : 1,
 #ifdef GMX_GPU
                              fr->useGPU ? &pmalloc : NULL,
                              fr->useGPU ? &pfree   : NULL);

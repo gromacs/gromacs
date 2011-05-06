@@ -66,12 +66,23 @@ typedef void gmx_nbat_alloc_t(void **ptr,size_t nbytes);
  */
 typedef void gmx_nbat_free_t(void *ptr);
 
+typedef struct {
+    int c;     /* The j-cell                       */
+    int excl;  /* The exclusion (interaction) bits */
+} gmx_nbl_cj_t;
+
 /* Smaller neighbor list list unit */
 typedef struct {
     int ci;            /* i-cell              */
     int shift;         /* Shift vector index  */
-    int sj4_ind_start;  /* Start index into sj */
-    int sj4_ind_end;    /* End index into sj   */
+    union {
+        int cj_ind_start;   /* Start index into cj  */
+        int sj4_ind_start;  /* Start index into sj4 */
+    };
+    union {
+        int cj_ind_end;     /* End index into cj    */
+        int sj4_ind_end;    /* End index into sj4   */
+    };        
 } gmx_nbl_ci_t;
 
 typedef struct {
@@ -94,6 +105,10 @@ typedef struct {
 
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
+
+    gmx_bool simple;       /* Simple list has napc=naps and uses cj    *
+                            * Complex list usese sj4                   */
+
     int      napc;         /* The number of atoms per super cell       */
     int      naps;         /* The number of atoms per sub cell         */
     gmx_bool TwoWay;       /* Each pair once or twice in the list?     */
@@ -102,6 +117,11 @@ typedef struct {
     int      nci;          /* The number of i super cells in the list  */
     gmx_nbl_ci_t *ci;      /* The i super cell list                    */
     int      ci_nalloc;    /* The allocation size of ci                */
+
+    int      ncj;          /* The number of j-cells                    */
+    gmx_nbl_cj_t *cj;      /* The j-cell list                          */
+    int      cj_nalloc;    /* The allocation size of cj                */
+
     int      nsj4;         /* The total number of 4*j sub cells        */
     gmx_nbl_sj4_t *sj4;    /* The 4*j sub cell list (size nsj4)        */
     int      nexcl;        /* The count for excl                       */
@@ -115,7 +135,14 @@ typedef struct {
     gmx_cache_protect_t cp1;
 } gmx_nblist_t;
 
-enum { nbatXYZ, nbatXYZQ };
+    enum { nbatXYZ, nbatXYZQ, nbatXXXX };
+
+typedef struct {
+    real *f;      /* f, size natoms*xstride                             */
+    real *fshift; /* Shift force array, size SHIFTS*DIM                 */
+    real Vc;      /* Temporary Coulomb energy storage                   */
+    real Vvdw;    /* Temporary Van der Waals energy storage             */
+} gmx_nb_atomdata_output_t;
 
 typedef struct {
     gmx_nbat_alloc_t *alloc;
@@ -130,7 +157,8 @@ typedef struct {
     rvec *shift_vec; /* Shift vectors, copied from t_forcerec           */
     int  xstride; /* stride for a coordinate in x (usually 3 or 4)      */
     real *x;      /* x and possibly q, size natoms*xstride              */
-    real *f;      /* f, size natoms*xstride                             */
+    int  nout;    /* The number of force arrays                         */
+    gmx_nb_atomdata_output_t *out;  /* Output data structures           */
     int  nalloc;  /* Allocation size of all arrays (time xstride for x) */
 } gmx_nb_atomdata_t;
 

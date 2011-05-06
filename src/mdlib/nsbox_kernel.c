@@ -98,7 +98,7 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
         /* Zero the output force array */
         for(n=0; n<nbat->natoms*nbat->xstride; n++)
         {
-            nbat->f[n] = 0;
+            f[n] = 0;
         }
     }
 	

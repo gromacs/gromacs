@@ -44,7 +44,7 @@ extern "C" {
 void gmx_nbsearch_init(gmx_nbsearch_t * nbs,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-                       int natoms_per_cell);
+                       gmx_bool GPU,int natoms_per_cell);
 
 /* Put the atoms on the neighborsearching grid.
  * Only atoms a0 to a1 in x are put on the grid.
@@ -72,14 +72,12 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        gmx_nb_atomdata_t *nbat);
 
 /* Return the order indices *a of the atoms on the ns grid.
- * An index of -1 indicates and atom that moved to another domain.
+ * An index >= *moved indicates and atom that moved to another domain.
  */
-void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a);
+    void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved);
 
 /* Renumber the atom indices on the grid to consecutive order */
-void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs,
-                                rvec *x,
-                                gmx_nb_atomdata_t *nbat);
+void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs);
 
 /* Initialize a neighbor list data structure */
 void gmx_nblist_init(gmx_nblist_t * nbl,
@@ -106,7 +104,8 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
  */
-void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,int nbatXFormat,
+void gmx_nb_atomdata_init(const gmx_nbsearch_t nbs,
+                          gmx_nb_atomdata_t *nbat,
                           int ntypes,const real *nbfp,
                           gmx_nbat_alloc_t *alloc,
                           gmx_nbat_free_t  *free);
@@ -134,7 +133,13 @@ void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
                                      const gmx_nb_atomdata_t *nbat,
+                                     gmx_bool combine_forces,
                                      int natoms,rvec *f);
+
+/* Add the fshift force stored in nbat to fshift */
+void gmx_nb_atomdata_add_nbat_fshift_to_fshift(const gmx_nb_atomdata_t *nbat,
+                                               rvec *fshift);
+
 #ifdef __cplusplus
 }
 #endif

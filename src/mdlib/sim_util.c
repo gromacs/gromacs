@@ -88,6 +88,7 @@
 #include "genborn.h"
 #include "nsbox.h"
 #include "nsbox_kernel.h"
+#include "nb_cell_kernel.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -660,7 +661,8 @@ void do_force(FILE *fplog,t_commrec *cr,
                                      &top->excls,
                                      fr->rvdw,fr->rlist,
                                      700,
-                                     FALSE,fr->nnbl,fr->nbl,TRUE);
+                                     FALSE,fr->nnbl,fr->nbl,
+                                     fr->useGPU || fr->emulateGPU);
 
             if (DOMAINDECOMP(cr))
             {
@@ -668,7 +670,8 @@ void do_force(FILE *fplog,t_commrec *cr,
                                          &top->excls,
                                          fr->rcut_nsbox,fr->rlist_nsbox,
                                          700,
-                                         TRUE,fr->nnbl_nl,fr->nbl_nl,TRUE);
+                                         TRUE,fr->nnbl_nl,fr->nbl_nl,
+                                         fr->useGPU || fr->emulateGPU);
             }
 
             gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
@@ -686,7 +689,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         wallcycle_stop(wcycle,ewcNS);
     }
 
-    if (fr->useGPU || fr->emulateGPU)
+    if (fr->nbs != NULL)
     {
         gmx_nb_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                       fr->shift_vec,fr->nbat);
@@ -837,6 +840,47 @@ void do_force(FILE *fplog,t_commrec *cr,
                       lambda,graph,&(top->excls),fr->mu_tot,
                       ((fr->useGPU || fr->emulateGPU) ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
+
+    if (inputrec->cutoff_scheme == ecutsVERLET && fr->nbl[0]->simple)
+    {
+        /* Maybe we should move this into do_force_lowlevel */
+        nb_cell_kernel(fr->nnbl,fr->nbl,
+                       fr->nbat,fr,
+                       fr->nblists[0].tab.scale,
+                       fr->nblists[0].tab.tab,
+                       flags,
+                       TRUE,
+                       enerd->grpp.ener[egCOULSR],
+                       fr->bBHAM ?
+                       enerd->grpp.ener[egBHAMSR] :
+                       enerd->grpp.ener[egLJSR]);
+        
+        if (DOMAINDECOMP(cr))
+        {
+            nb_cell_kernel(fr->nnbl_nl,fr->nbl_nl,
+                           fr->nbat,fr,
+                           fr->nblists[0].tab.scale,
+                           fr->nblists[0].tab.tab,
+                           flags,
+                           FALSE,
+                           enerd->grpp.ener[egCOULSR],
+                           fr->bBHAM ?
+                           enerd->grpp.ener[egBHAMSR] :
+                           enerd->grpp.ener[egLJSR]);
+        }
+
+        /* Add all the non-bonded force to the normal force array.
+         * This can be split into a local a non-local part when overlapping
+         * communication with calculation with domain decomposition.
+         */
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,TRUE,
+                                        fr->natoms_force,f);
+
+        if ((flags & GMX_FORCE_VIRIAL) && fr->nnbl > 1)
+        {
+            gmx_nb_atomdata_add_nbat_fshift_to_fshift(fr->nbat,fr->fshift);
+        }
+    }
     
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -854,7 +898,7 @@ void do_force(FILE *fplog,t_commrec *cr,
             dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
         }
     }
- 
+
     if (fr->useGPU || fr->emulateGPU)
     {
         wallcycle_start(wcycle,ewcRECV_F_GPU);
@@ -891,19 +935,18 @@ void do_force(FILE *fplog,t_commrec *cr,
                                  fr->nblists[0].tab.scale,
                                  fr->nblists[0].tab.tab,
                                  TRUE,
-                                 fr->nbat->f,fr->fshift[0],
+                                 fr->nbat->out[0].f,fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
                                  enerd->grpp.ener[egBHAMSR] :
                                  enerd->grpp.ener[egLJSR]);
-
             if (DOMAINDECOMP(cr))
             {
                 nsbox_generic_kernel(fr->nbl_nl[0],fr->nbat,fr,
                                      fr->nblists[0].tab.scale,
                                      fr->nblists[0].tab.tab,
                                      FALSE,
-                                     fr->nbat->f,fr->fshift[0],
+                                     fr->nbat->out[0].f,fr->fshift[0],
                                      enerd->grpp.ener[egCOULSR],
                                      fr->bBHAM ?
                                      enerd->grpp.ener[egBHAMSR] :
@@ -913,7 +956,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcRECV_F_GPU);
 
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,fr->natoms_force,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,FALSE,
+                                        fr->natoms_force,f);
     }
 
     if (bDoForces)

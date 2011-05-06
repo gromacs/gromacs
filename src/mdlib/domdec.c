@@ -4170,6 +4170,18 @@ static void rotate_state_atom(t_state *state,int a)
     }
 }
 
+static int *get_moved(gmx_domdec_comm_t *comm,int natoms)
+{
+    if (natoms > comm->moved_nalloc)
+    {
+        /* Contents should be preserved here */
+        comm->moved_nalloc = over_alloc_dd(natoms);
+        srenew(comm->moved,comm->moved_nalloc);
+    }
+
+    return comm->moved;
+}
+
 static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                                gmx_domdec_t *dd,ivec tric_dir,
                                t_state *state,rvec **f,
@@ -4196,6 +4208,8 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     atom_id *cgindex;
     cginfo_mb_t *cginfo_mb;
     gmx_domdec_comm_t *comm;
+    int  *moved;
+
     
     if (dd->bScrewPBC)
     {
@@ -4522,16 +4536,9 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     }
     else
     {
-        int *moved;
-
         if (fr->nbs != NULL)
         {
-            if (dd->ncg_home > comm->moved_nalloc)
-            {
-                comm->moved_nalloc = over_alloc_dd(dd->ncg_home);
-                srenew(comm->moved,comm->moved_nalloc);
-            }
-            moved = comm->moved;
+            moved = get_moved(comm,dd->ncg_home);
 
             for(k=0; k<dd->ncg_home; k++)
             {
@@ -4789,6 +4796,15 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
      * and ncg_home and nat_home are not the real count, since there are
      * "holes" in the arrays for the charge groups that moved to neighbors.
      */
+    if (fr->nbs != NULL)
+    {
+        moved = get_moved(comm,home_pos_cg);
+
+        for(i=dd->ncg_home; i<home_pos_cg; i++)
+        {
+            moved[i] = 0;
+        }
+    }
     dd->ncg_home = home_pos_cg;
     dd->nat_home = home_pos_at;
 
@@ -8019,27 +8035,23 @@ static int dd_sort_order_nsbox(gmx_domdec_t *dd,gmx_nbsearch_t nbs,
 {
     gmx_cgsort_t *cgsort;
     int na_new;
-    int *a,a_rm;
+    int *a,moved;
     int i;
 
     cgsort = dd->comm->sort->sort;
 
-    gmx_nbsearch_get_atomorder(nbs,&a);
-
-    a_rm = dd->ncg_home;
+    gmx_nbsearch_get_atomorder(nbs,&a,&moved);
 
     na_new = 0;
     for(i=0; i<dd->ncg_home; i++)
     {
-        if (a[i] >= 0)
+        cgsort[i].nsc = a[i];
+        if (a[i] < moved)
         {
-            cgsort[i].nsc = a[i];
             na_new++;
         }
-        else
-        {
-            cgsort[i].nsc = a_rm;
-        }
+        /* ind_gl is irrelevant for this sort, but set it to avoid uninits */
+        cgsort[i].ind_gl = 0;
         cgsort[i].ind = i;
     }
 
@@ -8064,7 +8076,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     {
         sort->sort_nalloc = over_alloc_dd(dd->ncg_home);
         srenew(sort->sort,sort->sort_nalloc);
-        srenew(sort->sort,sort->sort_nalloc);
+        srenew(sort->sort2,sort->sort_nalloc);
     }
     cgsort = sort->sort;
 
@@ -8147,7 +8159,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     if (fr->nbs != NULL)
     {
         /* The atoms are now exactly in grid order, update the grid order */
-        gmx_nbsearch_set_atomorder(fr->nbs,state->x,fr->nbat);
+        gmx_nbsearch_set_atomorder(fr->nbs);
     }
     else
     {
@@ -8282,7 +8294,7 @@ void dd_partition_system(FILE            *fplog,
     int  i,j,n,cg0=0,ncg_home_old=-1,ncg_moved,nat_f_novirsum;
     gmx_bool bBoxChanged,bNStGlobalComm,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
     gmx_bool bRedist,bSortCG,bResortAll;
-    ivec ncells_old,np;
+    ivec ncells_old={0,0,0},np;
     real grid_density;
     char sbuf[22];
 	
