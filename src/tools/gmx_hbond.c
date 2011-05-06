@@ -3619,7 +3619,7 @@ int gmx_hbond(int argc,char *argv[])
             dist, ang, peri, icell, jcell,              \
             grp, ogrp, ai, aj, xjj, yjj, zjj,           \
             xk, yk, zk, ihb, id,  resdist,              \
-            xkk, ykk, zkk, kcell, ak, k, bTric)         \
+            xkk, ykk, zkk, kcell, ak, k, bTric)        \
     default(none)                                       \
     shared(hb, p_hb, p_adist, p_rdist, actual_nThreads, \
            x, bBox, box, hbox, rcut, r2cut, rshell,     \
@@ -3654,7 +3654,6 @@ int gmx_hbond(int argc,char *argv[])
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
             } /* omp single */
-
 #ifdef HAVE_OPENMP
             p_hb[threadNr]->time = hb->time; /* This pointer may have changed. */
 #endif
@@ -3738,7 +3737,7 @@ int gmx_hbond(int argc,char *argv[])
                     /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
 #endif
-                    for(xi=0; (xi<ngrid[XX]); xi++)
+                    for(xi=0; xi<ngrid[XX]; xi++)
                         for(yi=0; (yi<ngrid[YY]); yi++)
                             for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	      

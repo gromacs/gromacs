@@ -32,37 +32,40 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifndef _pbc_h
-#define _pbc_h
-
-
-#include "simple.h"
+#ifndef _nlistheuristics_h
+#define _nlistheuristics_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Maximum number of combinations of single triclinic box vectors
- * required to shift atoms that are within a brick of the size of
- * the diagonal of the box to within the maximum cut-off distance.
- */
-#define MAX_NTRICVEC 12
+#if 0
+}
+/* Hack to make automatic indenting work */
+#endif
 
 typedef struct {
-  int    ndim_ePBC;
-  int    ePBCDX;
-  int    dim;
-  matrix box;
-  rvec   fbox_diag;
-  rvec   hbox_diag;
-  rvec   mhbox_diag;
-  real   max_cutoff2;
-  gmx_bool   bLimitDistance;
-  real   limit_distance2;
-  int    ntric_vec;
-  ivec   tric_shift[MAX_NTRICVEC];
-  rvec   tric_vec[MAX_NTRICVEC];
-} t_pbc;
+    gmx_bool       bGStatEveryStep;
+    gmx_large_int_t step_ns;
+    gmx_large_int_t step_nscheck;
+    gmx_large_int_t nns;
+    matrix     scale_tot;
+    int        nabnsb;
+    double     s1;
+    double     s2;
+    double     ab;
+    double     lt_runav;
+    double     lt_runav2;
+} gmx_nlheur_t;
+
+void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step);
+
+void init_nlistheuristics(gmx_nlheur_t *nlh,
+			  gmx_bool bGStatEveryStep,gmx_large_int_t step);
+
+void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step);
+
+void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step);
 
 #ifdef __cplusplus
 }

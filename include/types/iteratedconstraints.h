@@ -32,37 +32,36 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifndef _pbc_h
-#define _pbc_h
-
-
-#include "simple.h"
+#ifndef _iteratedconstraints_h
+#define _iteratedconstraints_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Maximum number of combinations of single triclinic box vectors
- * required to shift atoms that are within a brick of the size of
- * the diagonal of the box to within the maximum cut-off distance.
- */
-#define MAX_NTRICVEC 12
+#if 0
+}
+/* Hack to make automatic indenting work */
+#endif
 
-typedef struct {
-  int    ndim_ePBC;
-  int    ePBCDX;
-  int    dim;
-  matrix box;
-  rvec   fbox_diag;
-  rvec   hbox_diag;
-  rvec   mhbox_diag;
-  real   max_cutoff2;
-  gmx_bool   bLimitDistance;
-  real   limit_distance2;
-  int    ntric_vec;
-  ivec   tric_shift[MAX_NTRICVEC];
-  rvec   tric_vec[MAX_NTRICVEC];
-} t_pbc;
+/* Definitions for convergence of iterated constraints */
+
+/* iterate constraints up to 50 times  */
+#define MAXITERCONST       50
+
+/* data type */
+typedef struct
+{
+    real f,fprev,x,xprev;  
+    int iter_i;
+    gmx_bool bIterate;
+    real allrelerr[MAXITERCONST+2];
+    int num_close; /* number of "close" violations, caused by limited precision. */
+} gmx_iterate_t;
+
+void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate);
+
+gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
 
 #ifdef __cplusplus
 }

@@ -32,37 +32,30 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-#ifndef _pbc_h
-#define _pbc_h
-
-
-#include "simple.h"
+#ifndef _globsig_h
+#define _globsig_h
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Maximum number of combinations of single triclinic box vectors
- * required to shift atoms that are within a brick of the size of
- * the diagonal of the box to within the maximum cut-off distance.
- */
-#define MAX_NTRICVEC 12
+#if 0
+}
+/* Hack to make automatic indenting work */
+#endif
+
+/* simulation conditions to transmit. Keep in mind that they are 
+   transmitted to other nodes through an MPI_Reduce after
+   casting them to a real (so the signals can be sent together with other 
+   data). This means that the only meaningful values are positive, 
+   negative or zero. */
+enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
 
 typedef struct {
-  int    ndim_ePBC;
-  int    ePBCDX;
-  int    dim;
-  matrix box;
-  rvec   fbox_diag;
-  rvec   hbox_diag;
-  rvec   mhbox_diag;
-  real   max_cutoff2;
-  gmx_bool   bLimitDistance;
-  real   limit_distance2;
-  int    ntric_vec;
-  ivec   tric_shift[MAX_NTRICVEC];
-  rvec   tric_vec[MAX_NTRICVEC];
-} t_pbc;
+    int nstms;       /* The frequency for intersimulation communication */
+    int sig[eglsNR]; /* The signal set by one process in do_md */
+    int set[eglsNR]; /* The communicated signal, equal for all processes */
+} globsig_t;
 
 #ifdef __cplusplus
 }

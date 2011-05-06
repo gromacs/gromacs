@@ -35,69 +35,37 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-
 #ifdef HAVE_TMPI_CONFIG_H
 #include "tmpi_config.h"
-#else
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#endif
+
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef THREAD_WINDOWS
-#include <windows.h>
 #endif
 
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
+
 #include "impl.h"
-#include "thread_mpi/hwinfo.h"
+#include "p2p.h"
 
-#ifdef TMPI_TRACE
-#include <stdarg.h>
-#endif
+/* point-to-point buffered mode transfer functions */
 
-
-int tMPI_Get_hw_nthreads(void)
+int MPI_Buffer_attach(void* buffer, int size)
 {
-    int ret=-1;
-#ifdef HAVE_SYSCONF
-#if defined(_SC_NPROCESSORS_ONLN)
-    ret=sysconf(_SC_NPROCESSORS_ONLN);
-#elif defined(_SC_NPROC_ONLN)
-    ret=sysconf(_SC_NPROC_ONLN);
-#elif defined(_SC_NPROCESSORS_CONF)
-    ret=sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(_SC_NPROC_CONF)
-    ret=sysconf(_SC_NPROC_CONF);
-#endif
-#endif
-
-#ifdef THREAD_WINDOWS
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo( &sysinfo );
-
-    ret=sysinfo.dwNumberOfProcessors;
-#endif
-    return ret;
 }
 
 
-int tMPI_Get_recommended_nthreads(void)
+int MPI_Buffer_detach(void* buffer_addr, int* size)
 {
-    int N=1; /* the default is 1 */
-
-#ifndef TMPI_NO_ATOMICS
-    N=tMPI_Get_hw_nthreads();
-    if (N<1)
-        N=1;
-#endif
-    return N;
 }
 
