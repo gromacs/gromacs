@@ -194,6 +194,8 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
 
 void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 {
+    int i;
+
     /* first check which type we should use: histogram or raw data */
     if (dh->nhist == 0)
     {
@@ -226,7 +228,6 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 #undef GMX_DOUBLE
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
-            int i;
             for(i=0;i<dh->ndh;i++)
             {
                 dh->dhf[i] = (float)dh->dh[i];

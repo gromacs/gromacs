@@ -205,8 +205,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         if (ir->fepvals->delta_lambda != 0)
         {
             gmx_fatal(FARGS,"delta_lambda is not zero");
-         }
-         break;    
+        }
+        break;    
     }
 
     if (re->bNPT)
@@ -270,7 +270,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         }
         break;
     case ereLAMBDA:
-        fprintf(fplog,"\nRepl  l");
+        fprintf(fplog,"\nRepl  lambda");
         for(i=0; i<re->nrepl; i++)
         {
             fprintf(fplog," %3d",(int)re->q[re->ind[i]]);
@@ -286,7 +286,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         {
             fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
         }
-
+        
         for(i=0; i<re->nrepl; i++)
         {
             if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
@@ -296,7 +296,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         }
     }
     fprintf(fplog,"\nRepl  ");
-  
+    
     re->nst = nst;
     if (init_seed == -1)
     {
@@ -316,7 +316,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
     fprintf(fplog,"\nRepl  exchange interval: %d\n",re->nst);
     fprintf(fplog,"\nRepl  random seed: %d\n",re->seed);
-
+    
     re->nattempt[0] = 0;
     re->nattempt[1] = 0;
     snew(re->nmoves,re->nrepl);
@@ -324,7 +324,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         snew(re->nmoves[i],re->nrepl);
     }
-
+    
     snew(re->prob_sum,re->nrepl);
     snew(re->nexchange,re->nrepl);
 

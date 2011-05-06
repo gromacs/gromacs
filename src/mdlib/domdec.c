@@ -1456,7 +1456,7 @@ void dd_collect_state(gmx_domdec_t *dd,
         for (i=0;i<efptNR;i++) {
             state->lambda[i] = state_local->lambda[i];
         }
-        state->fep_state = state->fep_state;
+        state->fep_state = state_local->fep_state;
         state->veta = state_local->veta;
         state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
