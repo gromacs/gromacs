@@ -216,6 +216,18 @@ This way, exclusions will not be affected by an atom being
 defined as virtual site or not, but by the bonding configuration of the
 atom.
 
+Virtual sites can be constructed in a more generic way using basic geometric
+parameters.  The directive that can be used is {\tt [ virtual_sitesn ]}.  Required
+parameters are listed in~\tabref{topfile2}.  An example entry for defining a virtual
+site at the center of geometry of a given set of atoms might be:
+
+{\small
+\begin{verbatim}
+[ virtual_sitesn ]
+; Site   funct    from
+5        1        1     2     3     4
+\end{verbatim}}
+
 \section{Parameter files}
 
 \label{sec:paramfiles}
