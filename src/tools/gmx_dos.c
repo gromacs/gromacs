@@ -62,7 +62,7 @@
 
 enum { VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_NR };
 
-static real FD(real Delta,real f)
+static double FD(double Delta,double f)
 {
     return (2*pow(Delta,-4.5)*pow(f,7.5) - 
             6*pow(Delta,-3)*pow(f,5) -
@@ -71,32 +71,32 @@ static real FD(real Delta,real f)
             2*f - 2);
 }
 
-static real YYY(real f,real y)
+static double YYY(double f,double y)
 {
     return (2*pow(y*f,3) - sqr(f)*y*(1+6*y) +
             (2+6*y)*f - 2);
 }
 
-static real calc_compress(real y)
+static double calc_compress(double y)
 {
     if (y==1)
         return 0;
     return ((1+y+sqr(y)-pow(y,3))/(pow(1-y,3)));
 }
 
-static real bisector(real Delta,real tol,
-                     real ff0,real ff1,
-                     real ff(real,real))
+static double bisector(double Delta,double tol,
+                     double ff0,double ff1,
+                     double ff(double,double))
 {
-    real fd0,fd,fd1,f,f0,f1;
-    real tolmin = 1e-6;
+    double fd0,fd,fd1,f,f0,f1;
+    double tolmin = 1e-8;
     
     f0 = ff0;
     f1 = ff1;
     if (tol < tolmin) 
     {
         fprintf(stderr,"Unrealistic tolerance %g for bisector. Setting it to %g\n",tol,tolmin);
-        tol=1e-6;
+        tol = tolmin;
     }
     
     do {
@@ -115,20 +115,27 @@ static real bisector(real Delta,real tol,
     return f;
 }
 
-static real calc_fluidicity(real Delta,real tol)
+static double calc_fluidicity(double Delta,double tol)
 {
     return bisector(Delta,tol,0,1,FD);
 }
 
-static real calc_y(real f,real Delta)
+static double calc_y(double f,double Delta,double toler)
 {
-    return pow(f/Delta,1.5);
-/*    return bisector(f,1e-5,0,10000,YYY);*/
+    double y1,y2;
+    
+    y1 = pow(f/Delta,1.5);
+    y2 = bisector(f,toler,0,10000,YYY);
+    if (fabs((y1-y2)/(y1+y2)) > 100*toler)
+        fprintf(stderr,"Inconsistency computing y: y1 = %f, y2 = %f, using y1.\n",
+                y1,y2);
+        
+    return y1;
 }
 
-static real calc_Shs(real f,real y)
+static double calc_Shs(double f,double y)
 {
-    real fy  = f*y;
+    double fy  = f*y;
     
     return BOLTZ*(log(calc_compress(fy)) + fy*(3*fy-4)/sqr(1-fy));
 }
@@ -206,7 +213,7 @@ static void dump_fy(output_env_t oenv,real toler)
     for (Delta=1e-5; (Delta <= 1000); Delta*=DD)
     {
         f = calc_fluidicity(Delta,toler);
-        y = calc_y(f,Delta);
+        y = calc_y(f,Delta,toler);
         fprintf(fp,"%10g  %10g  %10g  %10g\n",Delta,f,f*y,y);
     }
     fclose(fp);
@@ -450,14 +457,14 @@ int gmx_dos(int argc,char *argv[])
     Delta = ((2*DoS0/(9*Natom))*sqrt(M_PI*BOLTZ*Temp*Natom/tmass)*
              pow((Natom/V),1.0/3.0)*pow(6/M_PI,2.0/3.0));
     f = calc_fluidicity(Delta,toler);
-    y = calc_y(f,Delta);
+    y = calc_y(f,Delta,toler);
     z = calc_compress(y);
     Sig = 5.0/3.0;
     Shs = Sig+calc_Shs(f,y);
     rho = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = pow(6*y*V/(M_PI*Natom),1.0/3.0);
     
-    fprintf(fplog,"System = %s\n",title);
+    fprintf(fplog,"System = \"%s\"\n",title);
     fprintf(fplog,"Nmol = %d\n",Nmol);
     fprintf(fplog,"Natom = %d\n",Natom);
     fprintf(fplog,"dt = %g ps\n",dt);
