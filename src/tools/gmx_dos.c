@@ -60,7 +60,7 @@
 #include "gmx_ana.h"
 #include "gmx_fft.h"
 
-enum { VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_NR };
+enum { VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR };
 
 static double FD(double Delta,double f)
 {
@@ -199,6 +199,34 @@ static real wSsolid(real nu,real beta)
     }
 }
 
+static real wAsolid(real nu,real beta)
+{
+    real bhn = beta*PLANCK*nu;
+    
+    if (bhn == 0) 
+    {
+        return 0;
+    }
+    else 
+    {
+        return log((1-exp(-bhn))/(exp(-bhn/2))) - log(bhn);
+    }
+}
+
+static real wEsolid(real nu,real beta)
+{
+    real bhn = beta*PLANCK*nu;
+    
+    if (bhn == 0) 
+    {
+        return 1;
+    }
+    else 
+    {
+        return bhn/2 + bhn/(exp(bhn)-1)-1;
+    }
+}
+
 static void dump_fy(output_env_t oenv,real toler)
 {
     FILE *fp;
@@ -223,15 +251,16 @@ static void dump_w(output_env_t oenv,real beta)
 {
     FILE *fp;
     double nu;
-    const char *leg[] = { "wCv", "wS" };
+    const char *leg[] = { "wCv", "wS", "wA", "wE" };
     
     fp=xvgropen("w.xvg","Fig. 1, Berens1983a","\\f{12}b\\f{4}h\\f{12}n",
                 "w",oenv);
     xvgr_legend(fp,asize(leg),leg,oenv);
     for (nu=1; (nu<100); nu+=0.05)
     {
-        fprintf(fp,"%10g  %10g  %10g\n",beta*PLANCK*nu,
-                wCsolid(nu,beta),wSsolid(nu,beta));
+        fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",beta*PLANCK*nu,
+                wCsolid(nu,beta),wSsolid(nu,beta),
+                wAsolid(nu,beta),wEsolid(nu,beta));
     }
     fclose(fp);
 }
@@ -263,8 +292,8 @@ int gmx_dos(int argc,char *argv[])
     real       **c1,**dos,mi,beta,bfac,*nu,*tt,stddev,c1j;
     output_env_t oenv;
     gmx_fft_t  fft;
-    double     cP,S,DiffCoeff,Delta,f,y,z,sigHS,Shs,Sig,DoS0,recip_fac;
-    double     wCdiff,wSdiff;
+    double     cP,S,A,E,DiffCoeff,Delta,f,y,z,sigHS,Shs,Sig,DoS0,recip_fac;
+    double     wCdiff,wSdiff,wAdiff,wEdiff;
     
     static     gmx_bool bVerbose=TRUE,bAbsolute=FALSE,bNormalize=FALSE;
     static     gmx_bool bRecip=FALSE,bDump=FALSE;
@@ -507,12 +536,18 @@ int gmx_dos(int argc,char *argv[])
     /* Finally analyze the results! */    
     wCdiff = 0.5;
     wSdiff = Shs/(3*BOLTZ); /* Is this correct? */
+    wEdiff = 0.5;
+    wAdiff = wEdiff-wSdiff;
     for(j=0; (j<nframes/4); j++) 
     {
         dos[DOS_CP][j] = (dos[DOS_DIFF][j]*wCdiff + 
                           dos[DOS_SOLID][j]*wCsolid(nu[j],beta));
         dos[DOS_S][j]  = (dos[DOS_DIFF][j]*wSdiff + 
                           dos[DOS_SOLID][j]*wSsolid(nu[j],beta));
+        dos[DOS_A][j]  = (dos[DOS_DIFF][j]*wAdiff + 
+                          dos[DOS_SOLID][j]*wAsolid(nu[j],beta));
+        dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff + 
+                          dos[DOS_SOLID][j]*wEsolid(nu[j],beta));
     }
     DiffCoeff = evaluate_integral(nframes/2,tt,dos[VACF],NULL,nframes/2,&stddev);
     DiffCoeff = 1000*DiffCoeff/3.0;
@@ -528,6 +563,12 @@ int gmx_dos(int argc,char *argv[])
     S  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_S],NULL,
                                    nframes/4,&stddev);
     fprintf(fplog,"Entropy %g J/mol K\n",1000*S/Nmol);
+    A  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_A],NULL,
+                                   nframes/4,&stddev);
+    fprintf(fplog,"Helmholtz energy %g kJ/mol\n",A/Nmol);
+    E  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_E],NULL,
+                                   nframes/4,&stddev);
+    fprintf(fplog,"Internal energy %g kJ/mol\n",E/Nmol);
     fprintf(fplog,"\nArrivederci!\n");
     fclose(fplog);
     
