@@ -617,6 +617,11 @@ int gmx_trjconv(int argc,char *argv[])
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
 
+	"It is not always possible to use combinations of [TT]-pbc[tt],",
+	"[TT]-fit[tt], [TT]-ur[tt] and [TT]-center[tt] to do exactly what",
+	"you want in one call to [TT]trjconv[tt]. Consider using multiple",
+	"calls, and check out the GROMACS website for suggestions.[PAR]",
+
         "With [TT]-dt[tt], it is possible to reduce the number of ",
         "frames in the output. This option relies on the accuracy of the times",
         "in your input trajectory, so if these are inaccurate use the",
