@@ -526,8 +526,10 @@ int gmx_trjconv(int argc,char *argv[])
         "dumps each group in the index file to a separate trajectory file.[BR]",
         "[BB]10.[bb] select frames within a certain range of a quantity given",
         "in an [TT].xvg[tt] file.[PAR]",
+
         "The program [TT]trjcat[tt] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
+
         "Currently seven formats are supported for input and output:",
         "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt],",
         "[TT].pdb[tt] and [TT].g87[tt].",
@@ -541,20 +543,24 @@ int gmx_trjconv(int argc,char *argv[])
         "of the [TT]trjconv[tt] binary.",
         "Note that velocities are only supported in",
         "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
+
         "Option [TT]-app[tt] can be used to",
         "append output to an existing trajectory file.",
         "No checks are performed to ensure integrity",
         "of the resulting combined trajectory file.[PAR]",
+
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
         "[TT].pdb[tt] files with all frames concatenated can be viewed with",
         "[TT]rasmol -nmrpdb[tt].[PAR]",
+
         "It is possible to select part of your trajectory and write it out",
         "to a new trajectory file in order to save disk space, e.g. for leaving",
         "out the water from a trajectory of a protein in water.",
         "[BB]ALWAYS[bb] put the original trajectory on tape!",
         "We recommend to use the portable [TT].xtc[tt] format for your analysis",
         "to save disk space and to have portable files.[PAR]",
+
         "There are two options for fitting the trajectory to a reference",
         "either for essential dynamics analysis, etc.",
         "The first option is just plain fitting to a reference structure",
@@ -565,6 +571,7 @@ int gmx_trjconv(int argc,char *argv[])
         "trajectory is generated, which might not be the case when using the",
         "regular fit method, e.g. when your protein undergoes large",
         "conformational transitions.[PAR]",
+
         "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
         "treatment:[BR]",
         "[TT]* mol[tt] puts the center of mass of molecules in the box.[BR]",
@@ -587,6 +594,7 @@ int gmx_trjconv(int argc,char *argv[])
         "approximate center for the cluster. This is useful e.g. if you have",
         "two big vesicles, and you want to maintain their relative positions.[BR]",
         "[TT]* whole[tt] only makes broken molecules whole.[PAR]",
+
         "Option [TT]-ur[tt] sets the unit cell representation for options",
         "[TT]mol[tt], [TT]res[tt] and [TT]atom[tt] of [TT]-pbc[tt].",
         "All three options give different results for triclinic boxes and",
@@ -598,6 +606,7 @@ int gmx_trjconv(int argc,char *argv[])
         "octahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
         "is [TT]tric[tt] (see below), unless the option [TT]-boxcenter[tt]",
         "is set differently.[PAR]",
+
         "Option [TT]-center[tt] centers the system in the box. The user can",
         "select the group which is used to determine the geometrical center.",
         "Option [TT]-boxcenter[tt] sets the location of the center of the box",
@@ -607,6 +616,7 @@ int gmx_trjconv(int argc,char *argv[])
         "[TT]zero[tt]: zero.",
         "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
         "want all molecules in the box after the centering.[PAR]",
+
         "With [TT]-dt[tt], it is possible to reduce the number of ",
         "frames in the output. This option relies on the accuracy of the times",
         "in your input trajectory, so if these are inaccurate use the",
@@ -614,12 +624,15 @@ int gmx_trjconv(int argc,char *argv[])
         "simultaneously). For making smooth movies, the program [TT]g_filter[tt]",
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
+
         "Using [TT]-trunc[tt] [TT]trjconv[tt] can truncate [TT].trj[tt] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
+
         "Option [TT]-dump[tt] can be used to extract a frame at or near",
         "one specific time from your trajectory.[PAR]",
+
         "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
         "When options [TT]-dropunder[tt] and/or [TT]-dropover[tt] are set,",
         "frames with a value below and above the value of the respective options",
