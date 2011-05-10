@@ -1293,7 +1293,7 @@ int gmx_dipoles(int argc,char *argv[])
         "the dipoles divided by the distance to the third power.[PAR]",
         "[PAR]",
         "EXAMPLES[PAR]",
-        "[TT]g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft[tt][PAR]",
+        "[TT]g_dipoles -corr mol -P 1 -o dip_sqr -mu 2.273 -mumax 5.0[tt][PAR]",
         "This will calculate the autocorrelation function of the molecular",
         "dipoles using a first order Legendre polynomial of the angle of the",
         "dipole vector and itself a time t later. For this calculation 1001",
