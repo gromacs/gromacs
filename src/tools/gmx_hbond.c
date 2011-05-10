@@ -1494,7 +1494,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
     if (bBox){
         if (d>a && bMerge && (bContact || isInterchangable(hb, d, a, grpd, grpa))) { /* acceptor is also a donor and vice versa? */
-            return hbNo;
+            /* return hbNo; */
             daSwap = TRUE; /* If so, then their history should be filed with donor and acceptor swapped. */
         }
         if (hb->bGem) {
@@ -2375,11 +2375,11 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                      */
     if (acType != AC_LUZAR)
     {
-#if (_OPENMP >= 200805) /* =====================\ */
-        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP >= 200805) /\* =====================\ *\/ */
+/*         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif /* _OPENMP >= 200805 ====================/ */
+/* #endif /\* _OPENMP >= 200805 ====================/ *\/ */
 
         omp_set_num_threads(nThreads);
         snew(dondata, nThreads);
@@ -3557,11 +3557,11 @@ int gmx_hbond(int argc,char *argv[])
 
     if (bParallel)
     {
-#if (_OPENMP > 200805)
-        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP > 200805) */
+/*         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif
+/* #endif */
         omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
         fflush(stdout);
