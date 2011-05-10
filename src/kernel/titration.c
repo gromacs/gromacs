@@ -3035,11 +3035,13 @@ real do_titration(FILE *fplog,
                     bHop = FALSE;
                 }
 
-                if ((NULL != fplog) && bHop)
+                if ((NULL != fplog))
                 {
                     gmx_step_str(step, stepstr);
-                    fprintf(fplog,"%s: P-hop at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
-                            eTitrationAlg_names[ir->titration_alg],stepstr,T->hop[i].E12, i,
+                    fprintf(fplog,"%s: %5s at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
+                            eTitrationAlg_names[ir->titration_alg],
+                            (bHop ? "P-hop" : "no hop"),
+                            stepstr,T->hop[i].E12, i,
                             T->qhop_atoms[T->hop[i].donor_id].res_id,
                             T->qhop_atoms[T->hop[i].donor_id].resname,
                             T->qhop_atoms[T->hop[i].acceptor_id].res_id,
