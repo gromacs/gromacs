@@ -58,6 +58,55 @@
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
+#define MAXPTR 254
+
+/* count the number of elements in a string.
+    str = the input string
+    maxptr = the maximum number of allowed elements
+    ptr = the output array of pointers to the first character of each element 
+    returns: the number of elements. */
+static int str_nelem(const char *str,int maxptr,char *ptr[])
+{
+  int  np=0;
+  char *copy0,*copy;
+  
+  copy0=strdup(str); 
+  copy=copy0;
+  ltrim(copy);
+  while (*copy != '\0') {
+    if (np >= maxptr)
+      gmx_fatal(FARGS,"Too many groups on line: '%s' (max is %d)",
+		  str,maxptr);
+    if (ptr) 
+      ptr[np]=copy;
+    np++;
+    while ((*copy != '\0') && !isspace(*copy))
+      copy++;
+    if (*copy != '\0') {
+      *copy='\0';
+      copy++;
+    }
+    ltrim(copy);
+  }
+  if (ptr == NULL)
+    sfree(copy0);
+
+  return np;
+}
+
+static void parse_n_double(char *str,int *n,double **r)
+{
+  char *ptr[MAXPTR];
+  int  i;
+
+  *n = str_nelem(str,MAXPTR,ptr);
+
+  snew(*r,*n);
+  for(i=0; i<*n; i++) {
+    (*r)[i] = strtod(ptr[i],NULL);
+  }
+}
+
 static gmx_bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
   gmx_bool *b;
@@ -323,8 +372,9 @@ int main (int argc, char *argv[])
   int          i;
   gmx_large_int_t   nsteps_req,run_step,frame;
   double       run_t,state_t;
-  gmx_bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
-  gmx_bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
+  gmx_bool     bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
+  gmx_bool     bFepWeights,bWLdelta,bFepState;
+  gmx_bool     bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
@@ -339,6 +389,7 @@ int main (int argc, char *argv[])
   gmx_enxnm_t  *enm=NULL;
   t_enxframe   *fr_ener=NULL;
   char         buf[200],buf2[200];
+  int          nweights;
   output_env_t oenv;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
@@ -352,7 +403,10 @@ int main (int argc, char *argv[])
   /* Command line options */
   static int  nsteps_req_int = 0;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static gmx_bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
+  static int init_fep_state = 0;
+  static const char *init_fep_weights = "0";
+  static real init_wl_delta;
+  static gmx_bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE; 
   static t_pargs pa[] = {
     { "-extend",        FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },
@@ -367,7 +421,13 @@ int main (int argc, char *argv[])
     { "-vel",           FALSE, etBOOL, {&bVel},
       "Require velocities from trajectory" },
     { "-cont",          FALSE, etBOOL, {&bContinuation},
-      "For exact continuation, the constraints should not be applied before the first step" }
+      "For exact continuation, the constraints should not be applied before the first step" },
+    { "-init_fep_state",FALSE, etINT, {&init_fep_state},
+      "fep state to initialize from" },
+    { "-init_fep_weights",FALSE, etSTR, {&init_fep_weights},
+      "initial fep weights" },
+    { "-init_wl_delta", FALSE, etREAL, {&init_wl_delta},
+      "initial Wang-Landau delta" }
   };
   int nerror = 0;
   
@@ -379,11 +439,14 @@ int main (int argc, char *argv[])
 
   /* Convert int to gmx_large_int_t */
   nsteps_req = nsteps_req_int;
-  bNsteps = opt2parg_bSet("-nsteps",asize(pa),pa);
-  bExtend = opt2parg_bSet("-extend",asize(pa),pa);
-  bUntil  = opt2parg_bSet("-until",asize(pa),pa);
-  bTime   = opt2parg_bSet("-time",asize(pa),pa);
-  bTraj   = (opt2bSet("-f",NFILE,fnm) || bTime);
+  bNsteps   = opt2parg_bSet("-nsteps",asize(pa),pa);
+  bExtend   = opt2parg_bSet("-extend",asize(pa),pa);
+  bUntil    = opt2parg_bSet("-until",asize(pa),pa);
+  bFepState = opt2parg_bSet("-init_fep_state",asize(pa),pa);
+  bFepWeights  = opt2parg_bSet("-init_fep_weights",asize(pa),pa);
+  bWLdelta  = opt2parg_bSet("-init_wl_delta",asize(pa),pa);
+  bTime     = opt2parg_bSet("-time",asize(pa),pa);
+  bTraj     = (opt2bSet("-f",NFILE,fnm) || bTime);
 
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and stuff from %s\n",top_fn);
@@ -521,8 +584,36 @@ int main (int argc, char *argv[])
 		EPCOUPLTYPE(epcPARRINELLORAHMAN));
       }
     }
+    if (bWLdelta) 
+      {
+	ir->fepvals->init_wl_delta = init_wl_delta;
+      }
+    if (bFepState) 
+      {
+	ir->fepvals->init_fep_state = init_fep_state;
+      }
+    if (bFepWeights) 
+      {
+	/* now read in the weights - error handling? */
+	parse_n_double(init_fep_weights,&nweights,&(ir->fepvals->init_lambda_weights));
+	
+	if (nweights == 0)
+	  {
+	    ir->fepvals->init_weights = 0;
+	    snew(ir->fepvals->init_lambda_weights,ir->fepvals->n_lambda); /* initialize to zero */
+	  }
+	else if (nweights != ir->fepvals->n_lambda)
+	  {
+	    gmx_fatal(FARGS,"Number of weights (%d) is not equal to number of lambda values (%d)",
+		      nweights,ir->fepvals->n_lambda);
+	  }
+	else
+	  {
+	    ir->fepvals->init_weights = 1;
+	  }
+      }
   }
-
+  
   if (bNsteps) {
     fprintf(stderr,"Setting nsteps to %s\n",gmx_step_str(nsteps_req,buf));
     ir->nsteps = nsteps_req;
