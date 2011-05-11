@@ -1315,7 +1315,7 @@ int gmx_dipoles(int argc,char *argv[])
         { "-mu",       FALSE, etREAL, {&mu_aver},
           "dipole of a single molecule (in Debye)" },
         { "-mumax",    FALSE, etREAL, {&mu_max},
-          "max dipole in Debye (for histrogram)" },
+          "max dipole in Debye (for histogram)" },
         { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
           "epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
         { "-skip",     FALSE, etINT, {&skip},
