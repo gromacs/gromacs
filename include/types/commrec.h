@@ -80,11 +80,9 @@ typedef struct {
   int  nizone;
   /* The neighbor search charge group ranges for each i-zone */
   gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
-  /* Size of the home zone */
-  rvec home_x0;
-  rvec home_x1;
-  /* Communication range */
-  real r;
+  /* Boundaries of the zones */
+  rvec zone_x0[DD_MAXZONE];
+  rvec zone_x1[DD_MAXZONE];
 } gmx_domdec_zones_t;
 
 typedef struct gmx_ga2la *gmx_ga2la_t;

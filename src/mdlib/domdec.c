@@ -7824,12 +7824,40 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
     }
 }
 
-static void set_zones_size(gmx_domdec_zones_t *zones,
-                           const gmx_domdec_comm_t *comm)
+static void set_zones_size(gmx_domdec_t *dd)
 {
-    copy_rvec(comm->cell_x0,zones->home_x0);
-    copy_rvec(comm->cell_x1,zones->home_x1);
-    zones->r = comm->cutoff;
+    gmx_domdec_comm_t *comm;
+    gmx_domdec_zones_t *zones;
+    int z,d,dim;
+
+    comm = dd->comm;
+
+    zones = &comm->zones;
+
+    for(z=0; z<zones->n; z++)
+    {
+        copy_rvec(comm->cell_x0,zones->zone_x0[z]);
+        copy_rvec(comm->cell_x1,zones->zone_x1[z]);
+        for(d=0; d<dd->ndim; d++)
+        {
+            dim = dd->dim[d];
+            if (!dd->bGridJump || d == 0)
+            {
+                zones->zone_x0[z][dim] = comm->cell_x1[dim];
+                zones->zone_x1[z][dim] = comm->cell_x1[dim] + comm->cutoff;
+            }
+            else if (d == 1)
+            {
+                zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][d-1]].min0;
+                zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][d-1]].max1;
+            }
+            else
+            {
+                zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].min0;
+                zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].max1;
+            }
+        }
+    }
 }
 
 static int comp_cgsort(const void *a,const void *b)
@@ -8618,7 +8646,7 @@ void dd_partition_system(FILE            *fplog,
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
     
-    set_zones_size(&comm->zones,comm);
+    set_zones_size(dd);
 
     /*
     write_dd_pdb("dd_home",step,"dump",top_global,cr,

@@ -1553,21 +1553,10 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
 
     for(zone=1; zone<zones->n; zone++)
     {
-        /* Temporary zone size calculation code.
-         * Only works without dynamic load balancing.
-         */
         for(d=0; d<DIM; d++)
         {
-            if (zones->shift[zone][d] == 0)
-            {
-                c0[d] = zones->home_x0[d];
-                c1[d] = zones->home_x1[d];
-            }
-            else
-            {
-                c0[d] = zones->home_x1[d];
-                c1[d] = zones->home_x1[d] + zones->r;
-            }
+            c0[d] = zones->zone_x0[zone][d];
+            c1[d] = zones->zone_x1[zone][d];
         }
 
         nbs->grid[zone].cell0 = nbs->grid[zone-1].cell0 + nbs->grid[zone-1].nc;
