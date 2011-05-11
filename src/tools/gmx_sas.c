@@ -565,10 +565,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int gmx_sas(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent accessible surface area.",
+    "[TT]g_sas[tt] computes hydrophobic, hydrophilic and total solvent",
+    "accessible surface area.",
     "As a side effect, the Connolly surface can be generated as well in",
-    "a [TT].pdb[tt] file where the nodes are represented as atoms and the vertices",
-    "connecting the nearest nodes as CONECT records.",
+    "a [TT].pdb[tt] file where the nodes are represented as atoms and the",
+    "vertice connecting the nearest nodes as CONECT records.",
     "The program will ask for a group for the surface calculation",
     "and a group for the output. The calculation group should always",
     "consists of all the non-solvent atoms in the system.",
@@ -578,10 +579,12 @@ int gmx_sas(int argc,char *argv[])
     "In combination with the latter option an [TT].itp[tt] file can be",
     "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
+
     "By default, periodic boundary conditions are taken into account,",
     "this can be turned off using the [TT]-nopbc[tt] option.[PAR]",
-    "With the [TT]-tv[tt] option the total volume and density of the molecule can be",
-    "computed.",
+
+    "With the [TT]-tv[tt] option the total volume and density of the",
+    "molecule can be computed.",
     "Please consider whether the normal probe radius is appropriate",
     "in this case or whether you would rather use e.g. 0. It is good",
     "to keep in mind that the results for volume and density are very",
