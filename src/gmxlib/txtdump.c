@@ -522,6 +522,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, gmx_bool bMDPforma
             fprintf(fp,"  %10g",fepvals->init_lambda_weights[i]);
         }
         fprintf(fp,"\n");
+        PI("init_weights",fepvals->init_weights);
     }
 
     PR("sc_alpha",fepvals->sc_alpha);

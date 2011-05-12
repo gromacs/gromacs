@@ -2568,13 +2568,14 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     snew(pfep_lamee,nlim);
     snew(p_k,nlim);
 
-    if ((int)step == fep->nstfep)  /* this is the first step that this routine is visited.  Should make this more robust */
+    if (fep->init_weights)  /* if initialized weights, we need to fill them in */
     {
         dfhist->wl_delta = fep->init_wl_delta;  /* MRS -- this would fit better somewhere else? */
         for (i=0;i<nlim;i++) {
             dfhist->sum_weights[i] = fep->init_lambda_weights[i];
             dfhist->sum_dg[i] = fep->init_lambda_weights[i];
         }
+        fep->init_weights = FALSE;
     } 
     
 	/* update the count at the current lambda*/
