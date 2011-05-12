@@ -230,7 +230,12 @@ static int qhop_get_primary(titration_t T, int hop_id, int DA)
     }
 
     /* If we've gotten this far, then something is wrong. */
-    gmx_fatal(FARGS, "Primary tautomeric site could not be determined.");
+    gmx_fatal(FARGS,
+              "Primary tautomeric site could not be determined:\n"
+              "  %s atom id      %i (%s).",
+              DA == eQDON ? "donor" : "acceptor",
+              T->qhop_atoms[hop_id].atom_id,
+              T->qhop_atoms[hop_id].atomname);
   
     return -1;
 }
