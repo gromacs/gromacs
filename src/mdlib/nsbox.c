@@ -147,7 +147,7 @@ typedef struct {
     gmx_cycles_t start;
 } gmx_nbs_cc_t;
 
-enum { enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCnr };
+enum { enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr };
 
 typedef struct {
     rvec c0;    /* The lower corner of the (local) grid         */
@@ -211,6 +211,10 @@ typedef struct gmx_nbsearch {
     int  *a;    /* The atom index on the grid, the inverse of cell */
     int  a_nalloc;
 
+    int  natoms_local;    /* The local atoms run from 0 to natoms_local */
+    int  natoms_nonlocal; /* The non-local atoms run from natoms_local
+                           * to natoms_nonlocal */
+
     gmx_bool print_cycles;
     gmx_nbs_cc_t cc[enbsCCnr];
 
@@ -255,15 +259,19 @@ static void nbs_cycle_print(FILE *fp,const gmx_nbsearch_t nbs)
     int t;
 
     fprintf(fp,"\n");
-    fprintf(fp,"ns %4d grid %4.1f search %4.1f",
+    fprintf(fp,"ns %4d grid %4.1f search %4.1f red.f %5.3f",
             nbs->cc[enbsCCgrid].count,
             Mcyc_av(&nbs->cc[enbsCCgrid]),
-            Mcyc_av(&nbs->cc[enbsCCsearch]));
+            Mcyc_av(&nbs->cc[enbsCCsearch]),
+            Mcyc_av(&nbs->cc[enbsCCreducef]));
 
     if (nbs->nthread_max > 1)
     {
-        fprintf(fp," comb %4.1f",
-                Mcyc_av(&nbs->cc[enbsCCcombine]));
+        if (nbs->cc[enbsCCcombine].count > 0)
+        {
+            fprintf(fp," comb %4.1f",
+                    Mcyc_av(&nbs->cc[enbsCCcombine]));
+        }
         fprintf(fp," s. th");
         for(t=0; t<nbs->nthread_max; t++)
         {
@@ -1517,6 +1525,16 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
         set_grid_atom_density(grid,n-nmoved,corner0,corner1);
 
         grid->cell0 = 0;
+
+        nbs->natoms_local    = a1 - nmoved;
+        /* We assume that gmx_nbsearch_put_on_grid is called first
+         * for the local atoms (dd_zone=0).
+         */
+        nbs->natoms_nonlocal = a1 - nmoved;
+    }
+    else
+    {
+        nbs->natoms_nonlocal = max(nbs->natoms_nonlocal,a1);
     }
 
     nc_max_grid = set_grid_size_xy(nbs,grid,n-nmoved,corner0,corner1,
@@ -2607,7 +2625,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
         /* If we only found 1 pair, check if any atoms are actually
          * within the cut-off, so we could get rid of it.
          */
-        if (npair == 1 && d2l[si_last] >= rbb2)
+        if (npair == 1 && d2l[si_last] >= rl2)
         {
             if (!nbs->subc_dc(naps,si_last,x_ci,csj,stride,x,rl2))
             {
@@ -3815,7 +3833,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
 
     if (nbs->print_cycles &&
         nbs->cc[enbsCCgrid].count > 0 &&
-        nbs->cc[enbsCCgrid].count % 10 == 0)
+        nbs->cc[enbsCCgrid].count % 100 == 0)
     {
         nbs_cycle_print(stderr,nbs);
     }
@@ -4002,13 +4020,30 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
 }
 
 void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
+                                      int enbatATOMS,
                                       rvec *x,
                                       gmx_nb_atomdata_t *nbat)
 {
-    int g,cxy,na,ash;
+    int g0=0,g1=0,g,cxy,na,ash;
     const gmx_nbs_grid_t *grid;
 
-    for(g=0; g<nbs->ngrid; g++)
+    switch (enbatATOMS)
+    {
+    case enbatATOMSall:
+        g0 = 0;
+        g1 = nbs->ngrid;
+        break;
+    case enbatATOMSlocal:
+        g0 = 0;
+        g1 = 1;
+        break;
+    case enbatATOMSnonlocal:
+        g0 = 1;
+        g1 = nbs->ngrid;
+        break;
+    }
+
+    for(g=g0; g<g1; g++)
     {
         grid = &nbs->grid[g];
 
@@ -4110,11 +4145,31 @@ static void gmx_nb_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
 }
 
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
+                                     int enbatATOMS,
                                      const gmx_nb_atomdata_t *nbat,
                                      gmx_bool combine_forces,
-                                     int natoms,rvec *f)
+                                     rvec *f)
 {
+    int a0,na;
     int nth,th;
+
+    nbs_cycle_start(&nbs->cc[enbsCCreducef]);
+
+    switch (enbatATOMS)
+    {
+    case enbatATOMSall:
+        a0 = 0;
+        na = nbs->natoms_nonlocal;
+        break;
+    case enbatATOMSlocal:
+        a0 = 0;
+        na = nbs->natoms_local;
+        break;
+    case enbatATOMSnonlocal:
+        a0 = nbs->natoms_local;
+        na = nbs->natoms_nonlocal - nbs->natoms_local;
+        break;
+    }
 
     nth = omp_get_max_threads();
 #pragma omp parallel for schedule(static)
@@ -4123,10 +4178,12 @@ void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
         gmx_nb_atomdata_add_nbat_f_to_f_part(nbs,nbat,
                                              nbat->out,
                                              combine_forces ? nbat->nout : 1,
-                                             ((th+0)*natoms)/nth,
-                                             ((th+1)*natoms)/nth,
+                                             a0+((th+0)*na)/nth,
+                                             a0+((th+1)*na)/nth,
                                              f);
     }
+
+    nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }
 
 void gmx_nb_atomdata_add_nbat_fshift_to_fshift(const gmx_nb_atomdata_t *nbat,

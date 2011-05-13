@@ -696,7 +696,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (!bNS)
         {
             /* We are not doing ns this step, we need to copy x to nbat->x */
-            gmx_nb_atomdata_copy_x_to_nbat_x(fr->nbs,x,fr->nbat);
+            gmx_nb_atomdata_copy_x_to_nbat_x(fr->nbs,enbatATOMSall,x,fr->nbat);
         }
     }
 
@@ -873,8 +873,7 @@ void do_force(FILE *fplog,t_commrec *cr,
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,TRUE,
-                                        fr->natoms_force,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,TRUE,f);
 
         if ((flags & GMX_FORCE_VIRIAL) && fr->nnbl > 1)
         {
@@ -956,8 +955,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcRECV_F_GPU);
 
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,fr->nbat,FALSE,
-                                        fr->natoms_force,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,FALSE,f);
     }
 
     if (bDoForces)

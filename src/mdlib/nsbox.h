@@ -125,16 +125,20 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
                                    gmx_nb_atomdata_t *nbat);
 
+enum { enbatATOMSall, enbatATOMSlocal, enbatATOMSnonlocal };
+
 /* Copy x to nbat->x */
 void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
+                                      int enbatATOMS,
                                       rvec *x,
                                       gmx_nb_atomdata_t *nbat);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
+                                     int enbatATOMS,
                                      const gmx_nb_atomdata_t *nbat,
                                      gmx_bool combine_forces,
-                                     int natoms,rvec *f);
+                                     rvec *f);
 
 /* Add the fshift force stored in nbat to fshift */
 void gmx_nb_atomdata_add_nbat_fshift_to_fshift(const gmx_nb_atomdata_t *nbat,
