@@ -790,22 +790,10 @@ void upd_mdebin(t_mdebin *md,
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
 
         /* This is pV (in kJ/mol).  The pressure is the reference pressure,
-           not the instantaneous pressure */  
-        pv = 0;
-        for (i=0;i<DIM;i++) 
-        {
-            for (j=0;j<DIM;j++) 
-            {
-                if (i>j) 
-                {
-                    pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
-                } 
-                else 
-                {
-                    pv += box[j][i]*md->ref_p[j][i]/PRESFAC;
-                }
-            }
-        }
+           not the instantaneous pressure.  Check to make sure this is true for general case 
+           of nonsymmetric pressure. 
+        */  
+        pv = vol*trace(md->ref_p)/(DIM*PRESFAC);
 
         add_ebin(md->ebin,md->ib   ,nboxs,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
