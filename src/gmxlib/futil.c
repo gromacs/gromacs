@@ -560,7 +560,7 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname)
         }
         else
         {
-            if(errno=EINVAL)
+            if(errno==EINVAL)
             {
                 sfree(gmxdir);
                 *p_gmxdir = NULL;
