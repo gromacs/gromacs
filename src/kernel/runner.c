@@ -647,10 +647,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             if (PAR(cr))
             {
-                if (!MASTER(cr))
-                {
-                    snew(state,1);
-                }
                 bcast_state(cr,state,TRUE);
             }
         }
