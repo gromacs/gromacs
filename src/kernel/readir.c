@@ -1030,6 +1030,11 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("titration-epsilon-r", ir->titration_epsilon_r, 0.7);
   RTYPE ("titration-vscale_radius", ir->titration_vscale_radius, 1);
   ITYPE ("titration-random-seed", ir->titration_random_seed, 1993);
+  if (ir->titration_alg == eTitrationAlgMC && ir->titration_mode != eTitrationModeOne)
+  {
+      warning_error(wi, "Can only do MC titration with titration-mode = one.");
+  }
+
 
   /* Simulated annealing */
   CCTYPE("SIMULATED ANNEALING");
