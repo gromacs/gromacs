@@ -60,6 +60,10 @@
 #include <omp.h>
 #endif
 
+#ifndef isfinite
+#define isfinite(x) (!isinf(x) && !isnan(x))
+#endif
+
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
  * http://folding.bmc.uu.se) from code written by Omer Markovitch (email, url).
@@ -701,6 +705,8 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
     	 gsl_vector_get(p, 0), gsl_vector_get(p, 1),
     	 GD->params);
   
+  fixGemACF(GD->ctTheory, nFitPoints);
+
   /* Removing a bunch of points from the log-part. */
 #ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
@@ -877,12 +883,19 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->kd,
 	    s->fval, size, d2);
 
-    if (iter%10 == 1)
+    if (iter%1 == 0)
       {
 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
+	/* fixGemACF(GD->ctTheory, nFitPoints); */
 	sprintf(dumpname, "Iter_%i.xvg", iter);
 	for(i=0; i<GD->nData; i++)
-	  dumpdata[i] = (real)(GD->ctTheory[i]);
+	  {
+	    dumpdata[i] = (real)(GD->ctTheory[i]);
+	    if (!isfinite(dumpdata[i]))
+	      {
+		gmx_fatal(FARGS, "Non-finite value in acf.");
+	      }
+	  }
 	dumpN(dumpdata, GD->nData, dumpname);
       }
   }
