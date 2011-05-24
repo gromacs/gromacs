@@ -60,6 +60,8 @@
 #endif
 #ifdef FFT5D_THREADS
 #include <omp.h>
+#else 
+#include "no_omp.h"
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif
@@ -144,10 +146,6 @@ static int vmax(int* a, int s) {
     }
     return max;
 } 
-#ifndef FFT5D_THREADS
-static int omp_get_max_threads() { return 1; }
-static int omp_get_thread_num() {  return 0; }
-#endif    
 
 /*
 copied here from fftgrid, because:

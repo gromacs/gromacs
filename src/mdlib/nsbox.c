@@ -52,6 +52,8 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
+#else
+#include "no_omp.h"
 #endif
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )

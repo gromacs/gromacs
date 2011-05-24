@@ -58,6 +58,8 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
+#else
+#include "no_omp.h"
 #endif
 
 typedef struct gmx_constr {

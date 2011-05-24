@@ -69,6 +69,8 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
+#else 
+#include "no_omp.h"
 #endif
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */

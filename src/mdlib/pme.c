@@ -69,6 +69,8 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
+#else
+#include "no_omp.h"
 #endif
 
 #include <stdio.h>
@@ -298,10 +300,6 @@ typedef struct gmx_pme {
     real *   sum_qgrid_dd_tmp;
 } t_gmx_pme;
 
-
-#ifndef GMX_OPENMP
-static int omp_get_thread_num() {  return 0; }
-#endif
 
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc,
                                    int start,int end,int thread)
