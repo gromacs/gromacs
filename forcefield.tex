@@ -2585,14 +2585,18 @@ this force field please read the previous paragraph.
 
 \subsection{\gromosv{96}\index{gromos-96 force field}}
 {\gromacs} supports the \gromosv{96} force fields~\cite{gromos96}.
-All parameters for the 43a1, 43a2 (development, improved alkane
-dihedrals), 45a3, 53a5, and 53a6 force fields are included.  All standard
+All parameters for the 43A1, 43A2 (development, improved alkane
+dihedrals), 45A3, 53A5, and 53A6 parameter sets are included.  All standard
 building blocks are included and topologies can be built automatically
-by {\tt pdb2gmx}.  The \gromosv{96} force field is a further
-development of the \gromosv{87} force field.
-The \gromosv{96} force field has improvements
-over the \gromosv{87} force field for proteins and small molecules.
-It is not, however, recommended for use with long alkanes and
+by {\tt pdb2gmx}.  
+
+The \gromosv{96} force field is a further development of the \gromosv{87} force field.
+It has improvements over the \gromosv{87} force field for proteins and small molecules.
+{\bf Note} that the sugar parameters present in 53A6 do correspond to those published in 
+JCC 2004 vol 25 pag 1656, which are different from those present in 45A4, which
+is not included in {\gromacs} at this time.  The 45A4 parameter set corresponds to a later
+revision of these parameters. 
+The \gromosv{96} force field is not, however, recommended for use with long alkanes and
 lipids.  The \gromosv{96} force field differs from the \gromosv{87}
 force field in a few respects:
 \begin{itemize}
