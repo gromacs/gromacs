@@ -1363,7 +1363,7 @@ static void scan_edvec(FILE *in,int nr,rvec *vec)
 }
 
 
-static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj)
+static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj, gmx_bool *bHaveReference)
 {
     int i,idum,nscan;
     double rdum,refproj_dum=0.0,refprojslope_dum=0.0;
@@ -1395,9 +1395,12 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj)
                 switch(nscan)
                 {
                     case 4:
-                        /* Every 4 values read */
+                        /* Every 4 values read, including reference position */
+                        *bHaveReference = TRUE;
                         break;
                     case 3:
+                        /* A reference position is provided */
+                        *bHaveReference = TRUE;
                         /* No value for slope, set to 0 */
                         refprojslope_dum = 0.0;
                         break;
@@ -1436,12 +1439,15 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec,gmx_bool bReadRefproj)
 /* calls read_edvec for the vector groups, only for flooding there is an extra call */
 static void read_edvecs(FILE *in,int nr,t_edvecs *vecs)
 {
-    read_edvec(in,nr,&vecs->mon   ,FALSE);
-    read_edvec(in,nr,&vecs->linfix,FALSE);
-    read_edvec(in,nr,&vecs->linacc,FALSE);
-    read_edvec(in,nr,&vecs->radfix,FALSE);
-    read_edvec(in,nr,&vecs->radacc,FALSE);
-    read_edvec(in,nr,&vecs->radcon,FALSE);
+	gmx_bool bHaveReference = FALSE;
+
+
+    read_edvec(in, nr, &vecs->mon   , FALSE, &bHaveReference);
+    read_edvec(in, nr, &vecs->linfix, FALSE, &bHaveReference);
+    read_edvec(in, nr, &vecs->linacc, FALSE, &bHaveReference);
+    read_edvec(in, nr, &vecs->radfix, FALSE, &bHaveReference);
+    read_edvec(in, nr, &vecs->radacc, FALSE, &bHaveReference);
+    read_edvec(in, nr, &vecs->radcon, FALSE, &bHaveReference);
 }
 
 
@@ -1474,6 +1480,9 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     int readmagic;
     const int magic=670;
     gmx_bool bEOF;
+
+    /* Was a specific reference point for the flooding/umbrella potential provided in the edi file? */
+    gmx_bool bHaveReference = FALSE;
 
 
     /* the edi file is not free format, so expect problems if the input is corrupt. */
@@ -1543,7 +1552,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
 
     /* eigenvectors */
     read_edvecs(in,edi->sav.nr,&edi->vecs);
-    read_edvec(in,edi->sav.nr,&edi->flood.vecs,edi->flood.bHarmonic);
+    read_edvec(in,edi->sav.nr,&edi->flood.vecs,edi->flood.bHarmonic, &bHaveReference);
 
     /* target positions */
     edi->star.nr=read_edint(in,&bEOF);
@@ -1559,6 +1568,13 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     edi->sori.nr=read_edint(in,&bEOF);
     if (edi->sori.nr > 0)
     {
+    	if (bHaveReference)
+    	{
+    		/* Both an -ori structure and a at least one manual reference point have been
+    		 * specified. That's ambiguous and probably not intentional. */
+    		gmx_fatal(FARGS, "ED: An origin structure has been provided and a at least one (moving) reference\n"
+    		                 "    point was manually specified in the edi file. That is ambiguous. Aborting.\n");
+    	}
         snew(edi->sori.anrs,edi->sori.nr);
         snew(edi->sori.x   ,edi->sori.nr);
         edi->sori.sqrtm    =NULL;
@@ -2100,6 +2116,20 @@ static int ed_constraints(gmx_bool edtype, t_edpar *edi)
 }
 
 
+/* Copies reference projection 'refproj' to fixed 'refproj0' variable for flooding/
+ * umbrella sampling simulations. */
+static void copyEvecReference(t_eigvec* floodvecs)
+{
+	int i;
+
+
+	for (i=0; i<floodvecs->neig; i++)
+	{
+		floodvecs->refproj0[i] = floodvecs->refproj[i];
+	}
+}
+
+
 void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 t_inputrec  *ir,     /* input record                       */
                 t_commrec   *cr,     /* communication record               */
@@ -2241,6 +2271,9 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                     fprintf(stderr, "ED: The ORIGIN structure will define the flooding potential center.\n");
                     /* Set center of flooding potential to the ORIGIN structure */
                     rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
+                    /* We already know that no (moving) reference position was provided,
+                     * therefore we can overwrite refproj[0]*/
+                    copyEvecReference(&edi->flood.vecs);
                 }
             }
             else /* No origin structure given */
