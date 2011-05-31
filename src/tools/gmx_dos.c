@@ -488,7 +488,7 @@ int gmx_dos(int argc,char *argv[])
     f = calc_fluidicity(Delta,toler);
     y = calc_y(f,Delta,toler);
     z = calc_compress(y);
-    Sig = 5.0/3.0;
+    Sig = BOLTZ*(5.0/2.0+log(2*M_PI*BOLTZ*Temp/(sqr(PLANCK))*V/(f*Natom)));
     Shs = Sig+calc_Shs(f,y);
     rho = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = pow(6*y*V/(M_PI*Natom),1.0/3.0);
