@@ -94,6 +94,12 @@
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
 #include "gmx_sse2_single.h"
+
+#define PME_SSE
+/* Some old AMD processors could have problems with unaligned loads+stores */
+#ifndef GMX_FAHCORE
+#define PME_SSE_UNALIGNED
+#endif
 #endif
 
 #include "mpelogging.h"
@@ -112,6 +118,7 @@
 #define mpi_type MPI_FLOAT
 #endif
 
+/* GMX_CACHE_SEP should be a multiple of 16 to preserve alignment */
 #define GMX_CACHE_SEP 64
 
 /* We only define a maximum to be able to use local arrays without allocation.
@@ -214,6 +221,14 @@ typedef struct {
     ivec nthread_comm;  /* The number of threads to communicate with        */
 } pmegrids_t;
 
+
+typedef struct {
+#ifdef PME_SSE
+    /* Masks for SSE aligned spreading and gathering */
+    __m128 mask_SSE0[6],mask_SSE1[6];
+#endif
+} pme_spline_work_t;
+
 typedef struct {
     /* work data for solve_pme */
     int      nalloc;
@@ -256,8 +271,17 @@ typedef struct gmx_pme {
     
     pmegrids_t pmegridA;  /* Grids on which we do spreading/interpolation, includes overlap */
     pmegrids_t pmegridB;
+    /* The PME charge spreading grid sizes/strides, includes pme_order-1 */
     int     pmegrid_nx,pmegrid_ny,pmegrid_nz;
+    /* pmegrid_nz might be larger than strictly necessary to ensure
+     * memory alignment, pmegrid_nz_base gives the real base size.
+     */
+    int     pmegrid_nz_base;
+    /* The local PME grid starting indices */
     int     pmegrid_start_ix,pmegrid_start_iy,pmegrid_start_iz;    
+
+    /* Work data for spreading and gathering */
+    pme_spline_work_t spline_work;
     
     real *fftgridA;             /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     real *fftgridB;             /* inside the interpolation grid, but separate for 2D PME decomp. */
@@ -429,36 +453,6 @@ static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc,
         /* Now tpl_n contains the cummulative count again */
     }
 }
-
-#if (0)
-static void make_thread_local_ind(pme_atomcomm_t *atc,
-                                  int thread,splinedata_t *spline)
-{
-    int  *thread_idx,*ind,*thread_one;
-    int  n,i;
-    
-    /* This is the only routine where every thread loops over
-     * the whole node data.
-     * Therefore it is performance sensitive at high thread parallelization.
-     * To avoid a conditional, we always store the index and
-     * increase the count with an array containing 0's and 1 for our thread.
-     */
-    
-    thread_idx = atc->thread_idx;
-    ind        = spline->ind;
-    thread_one = spline->thread_one;
-
-    n = 0;
-    for(i=0; i<atc->n; i++)
-    {
-        ind[n] = i;
-        n += thread_one[thread_idx[i]];
-    }
-
-    spline->n = n;
-}
-#endif
-
 
 static void make_thread_local_ind(pme_atomcomm_t *atc,
                                   int thread,splinedata_t *spline)
@@ -1415,63 +1409,9 @@ for(ithx=0; (ithx<order); ithx++)                    \
 }
 
 
-static void spread_q_bsplines(pmegrid_t *pmegrid, 
-                              pme_atomcomm_t *atc, splinedata_t *spline)
-{
-
-    /* spread charges from home atoms to local grid */
-    real     *grid;
-    pme_overlap_t *ol;
-    int      b,i,nn,n,ithx,ithy,ithz,i0,j0,k0;
-    int *    idxptr;
-    int      order,norder,index_x,index_xy,index_xyz;
-    real     valx,valxy,qn;
-    real     *thx,*thy,*thz;
-    int      localsize, bndsize;
-    int      pnx,pny,pnz,ndatatot;
-  
-    pnx = pmegrid->n[XX];
-    pny = pmegrid->n[YY];
-    pnz = pmegrid->n[ZZ];
-    ndatatot = pnx*pny*pnz;
-    grid = pmegrid->grid;
-    for(i=0;i<ndatatot;i++)
-    {
-        grid[i] = 0;
-    }
-    
-    order = pmegrid->order;
-
-    for(nn=0; nn<spline->n;nn++) 
-    {
-        n  = spline->ind[nn];
-        qn = atc->q[n];
-
-        if (qn != 0) 
-        {
-            idxptr = atc->idx[n];
-            norder = nn*order;
-            
-            i0   = idxptr[XX]; 
-            j0   = idxptr[YY];
-            k0   = idxptr[ZZ];
-
-            thx = spline->theta[XX] + norder;
-            thy = spline->theta[YY] + norder;
-            thz = spline->theta[ZZ] + norder;
-            
-            switch (order) {
-            case 4:  DO_BSPLINE(4);     break;
-            case 5:  DO_BSPLINE(5);     break;
-            default: DO_BSPLINE(order); break;
-            }
-        }
-    }	
-}
-
-
 static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
-                                     pme_atomcomm_t *atc, splinedata_t *spline)
+                                     pme_atomcomm_t *atc, splinedata_t *spline,
+                                     pme_spline_work_t *work)
 {
 
     /* spread charges from home atoms to local grid */
@@ -1522,9 +1462,31 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
             thz = spline->theta[ZZ] + norder;
             
             switch (order) {
-            case 4:  DO_BSPLINE(4);     break;
-            case 5:  DO_BSPLINE(5);     break;
-            default: DO_BSPLINE(order); break;
+            case 4:
+#ifdef PME_SSE
+#ifdef PME_SSE_UNALIGNED
+#define PME_SPREAD_SSE_ORDER4
+#else
+#define PME_SPREAD_SSE_ALIGNED
+#define PME_ORDER 4
+#endif
+#include "pme_sse_single.h"
+#else
+                DO_BSPLINE(4);
+#endif
+                break;
+            case 5:
+#ifdef PME_SSE
+#define PME_SPREAD_SSE_ALIGNED
+#define PME_ORDER 5
+#include "pme_sse_single.h"
+#else
+                DO_BSPLINE(5);
+#endif
+                break;
+            default:
+                DO_BSPLINE(order);
+                break;
             }
         }
     }	
@@ -1536,16 +1498,49 @@ static void alloc_real_aligned(int n,real **ptr_raw,real **ptr)
     snew(*ptr_raw,n+8);
 
     *ptr = (real *) (((size_t) *ptr_raw + 16) & (~((size_t) 15)));
+
+}
+static void set_grid_alignment(int *pmegrid_nz,int pme_order)
+{
+#ifdef PME_SSE
+    if (pme_order == 5 
+#ifndef PME_SSE_UNALIGNED
+        || pme_order == 4
+#endif
+        )
+    {  
+        /* Round nz up to a multiple of 4 to ensure alignment */
+        *pmegrid_nz = ((*pmegrid_nz + 3) & ~3);
+    }
+#endif
+}
+
+static void set_gridsize_alignment(int *gridsize,int pme_order)
+{
+#ifdef PME_SSE
+#ifndef PME_SSE_UNALIGNED
+    if (pme_order == 4)
+    {
+        /* Add extra elements to ensured aligned operations do not go
+         * beyond the allocated grid size.
+         * Note that for pme_order=5, the pme grid z-size alignment
+         * ensures that we will not go beyond the grid size.
+         */
+         *gridsize += 4;
+    }
+#endif
+#endif
 }
 
 static void pmegrid_init(pmegrid_t *grid,
                          int cx, int cy, int cz,
                          int x0, int y0, int z0,
                          int x1, int y1, int z1,
+                         gmx_bool set_alignment,
                          int pme_order,
                          real *ptr)
 {
-    int d;
+    int nz,gridsize;
 
     grid->ci[XX] = cx;
     grid->ci[YY] = cy;
@@ -1556,10 +1551,24 @@ static void pmegrid_init(pmegrid_t *grid,
     grid->n[XX]      = x1 - x0 + pme_order - 1;
     grid->n[YY]      = y1 - y0 + pme_order - 1;
     grid->n[ZZ]      = z1 - z0 + pme_order - 1;
+
+    nz = grid->n[ZZ];
+    set_grid_alignment(&nz,pme_order);
+    if (set_alignment)
+    {
+        grid->n[ZZ] = nz;
+    }
+    else if (nz != grid->n[ZZ])
+    {
+        gmx_incons("pmegrid_init call with an unaligned z size");
+    }
+
     grid->order = pme_order;
     if (ptr == NULL)
     {
-        snew(grid->grid,grid->n[XX]*grid->n[YY]*grid->n[ZZ]);
+        gridsize = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
+        set_gridsize_alignment(&gridsize,pme_order);
+        snew_aligned(grid->grid,gridsize,16);
     }
     else
     {
@@ -1627,13 +1636,13 @@ static void make_subgrid_division(const ivec n,int ovl,int nthread,
 }
 
 static void pmegrids_init(pmegrids_t *grids,
-                          int nx,int ny,int nz,
+                          int nx,int ny,int nz,int nz_base,
                           int pme_order,
                           int nthread,
                           int overlap_x,
                           int overlap_y)
 {
-    ivec n,g0,g1;
+    ivec n,n_base,g0,g1;
     int t,x,y,z,d,i,tfac;
     int max_comm_lines;
 
@@ -1641,11 +1650,15 @@ static void pmegrids_init(pmegrids_t *grids,
     n[YY] = ny - (pme_order - 1);
     n[ZZ] = nz - (pme_order - 1);
 
-    pmegrid_init(&grids->grid,0,0,0,0,0,0,n[XX],n[YY],n[ZZ],pme_order,NULL);
+    copy_ivec(n,n_base);
+    n_base[ZZ] = nz_base;
+
+    pmegrid_init(&grids->grid,0,0,0,0,0,0,n[XX],n[YY],n[ZZ],FALSE,pme_order,
+                 NULL);
 
     grids->nthread = nthread;
 
-    make_subgrid_division(n,pme_order-1,grids->nthread,grids->nc);
+    make_subgrid_division(n_base,pme_order-1,grids->nthread,grids->nc);
     
     if (grids->nthread > 1)
     {
@@ -1657,6 +1670,7 @@ static void pmegrids_init(pmegrids_t *grids,
         {
             nst[d] = div_round_up(n[d],grids->nc[d]) + pme_order - 1;
         }
+        set_grid_alignment(&nst[ZZ],pme_order);
 
         if (debug)
         {
@@ -1670,8 +1684,10 @@ static void pmegrids_init(pmegrids_t *grids,
         snew(grids->grid_th,grids->nthread);
         t = 0;
         gridsize = nst[XX]*nst[YY]*nst[ZZ];
-        snew(grid_all,
-             grids->nthread*gridsize+(grids->nthread+1)*GMX_CACHE_SEP);
+        set_gridsize_alignment(&gridsize,pme_order);
+        snew_aligned(grid_all,
+                     grids->nthread*gridsize+(grids->nthread+1)*GMX_CACHE_SEP,
+                     16);
 
         for(x=0; x<grids->nc[XX]; x++)
         {
@@ -1687,6 +1703,7 @@ static void pmegrids_init(pmegrids_t *grids,
                                  (n[XX]*(x+1))/grids->nc[XX],
                                  (n[YY]*(y+1))/grids->nc[YY],
                                  (n[ZZ]*(z+1))/grids->nc[ZZ],
+                                 TRUE,
                                  pme_order,
                                  grid_all+GMX_CACHE_SEP+t*(gridsize+GMX_CACHE_SEP));
                     t++;
@@ -1799,7 +1816,7 @@ static void free_work(pme_work_t *work)
 }
 
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef PME_SSE
     /* Calculate exponentials through SSE in float precision */
 #define CALC_EXPONENTIALS(start,end,f,d_aligned,r_aligned,e_aligned) \
     {                                               \
@@ -2182,6 +2199,10 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
     int     norder;
     real    rxx,ryx,ryy,rzx,rzy,rzz;
     int     order;
+
+    pme_spline_work_t *work;
+
+    work = &pme->spline_work;
     
     order = pme->pme_order;
     thx   = spline->theta[XX];
@@ -2236,9 +2257,31 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
             dthz = spline->dtheta[ZZ] + norder;
             
             switch (order) {
-            case 4:  DO_FSPLINE(4);     break;
-            case 5:  DO_FSPLINE(5);     break;
-            default: DO_FSPLINE(order); break;
+            case 4:
+#ifdef PME_SSE
+#ifdef PME_SSE_UNALIGNED
+#define PME_GATHER_F_SSE_ORDER4
+#else
+#define PME_GATHER_F_SSE_ALIGNED
+#define PME_ORDER 4
+#endif
+#include "pme_sse_single.h"
+#else
+                DO_FSPLINE(4);
+#endif
+                break;
+            case 5:
+#ifdef PME_SSE
+#define PME_GATHER_F_SSE_ALIGNED
+#define PME_ORDER 5
+#include "pme_sse_single.h"
+#else
+                DO_FSPLINE(5);
+#endif
+                break;
+            default:
+                DO_FSPLINE(order);
+                break;
             }
 
             atc->f[n][XX] += -qn*( fx*nx*rxx );
@@ -2603,7 +2646,6 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     {
         if (atc->nthread > 1)
         {
-            //snew(atc->thread_plist[thread].n,atc->nthread);
             snew(atc->thread_plist[thread].n,atc->nthread+2*GMX_CACHE_SEP);
             atc->thread_plist[thread].n += GMX_CACHE_SEP;
         }
@@ -2776,6 +2818,29 @@ make_gridindex5_to_localindex(int n,int local_start,int local_range,
 
     *global_to_local = gtl;
     *fraction_shift  = fsh;
+}
+
+static void sse_mask_init(pme_spline_work_t *work,int order)
+{
+#ifdef PME_SSE
+    float  tmp[8];
+    __m128 zero_SSE;
+    int    of,i;
+    
+    zero_SSE = _mm_setzero_ps();
+    
+    for(of=0; of<8-(order-1); of++)
+    {
+        for(i=0; i<8; i++)
+        {
+            tmp[i] = (i >= of && i < of+order ? 1 : 0);
+        }
+        work->mask_SSE0[of] = _mm_loadu_ps(tmp);
+        work->mask_SSE1[of] = _mm_loadu_ps(tmp+4);
+        work->mask_SSE0[of] = _mm_cmpgt_ps(work->mask_SSE0[of],zero_SSE);
+        work->mask_SSE1[of] = _mm_cmpgt_ps(work->mask_SSE1[of],zero_SSE);
+    }
+#endif
 }
 
 static void
@@ -3015,7 +3080,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                       pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_ny = pme->overlap[1].s2g1[pme->nodeid_minor] - 
                       pme->overlap[1].s2g0[pme->nodeid_minor];
-    pme->pmegrid_nz = pme->nkz + pme->pme_order - 1;
+    pme->pmegrid_nz_base = pme->nkz;
+    pme->pmegrid_nz = pme->pmegrid_nz_base + pme->pme_order - 1;
+    set_grid_alignment(&pme->pmegrid_nz,pme->pme_order);
     
     pme->pmegrid_start_ix = pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
@@ -3031,15 +3098,18 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                                   &pme->nny,&pme->fshy);
     make_gridindex5_to_localindex(pme->nkz,
                                   pme->pmegrid_start_iz,
-                                  pme->pmegrid_nz - (pme->pme_order-1),
+                                  pme->pmegrid_nz_base,
                                   &pme->nnz,&pme->fshz);
     
     pmegrids_init(&pme->pmegridA,
                   pme->pmegrid_nx,pme->pmegrid_ny,pme->pmegrid_nz,
+                  pme->pmegrid_nz_base,
                   pme->pme_order,
                   pme->nthread,
                   pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                   pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
+
+    sse_mask_init(&pme->spline_work,pme->pme_order);
 
     ndata[0] = pme->nkx;
     ndata[1] = pme->nky;
@@ -3056,6 +3126,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     {
         pmegrids_init(&pme->pmegridB,
                       pme->pmegrid_nx,pme->pmegrid_ny,pme->pmegrid_nz,
+                      pme->pmegrid_nz_base,
                       pme->pme_order,
                       pme->nthread,
                       pme->nkx % pme->nnodes_major != 0,
@@ -3600,7 +3671,6 @@ static void spread_on_grid(gmx_pme_t pme,
 #pragma omp parallel private(thread,start,end)
         {
             thread = omp_get_thread_num();
-            //ct1a = omp_cyc_start();
             start = atc->n* thread   /nthread;
             end   = atc->n*(thread+1)/nthread;
             
@@ -3649,15 +3719,19 @@ static void spread_on_grid(gmx_pme_t pme,
         if (bSpread)
         {
             /* put local atoms on grid. */
-            //ct1a = omp_cyc_start();
-            spread_q_bsplines_thread(grid,atc,spline);
+#ifdef PME_TIME_SPREAD
+            ct1a = omp_cyc_start();
+#endif
+            spread_q_bsplines_thread(grid,atc,spline,&pme->spline_work);
 
             if (grids->nthread > 1)
             {
                 copy_local_grid(pme,grids,thread,fftgrid);
             }
-            //ct1a = omp_cyc_end(ct1a);
-            //cs1a[thread] += (double)ct1a;
+#ifdef PME_TIME_SPREAD
+            ct1a = omp_cyc_end(ct1a);
+            cs1a[thread] += (double)ct1a;
+#endif
         }
     }
 #ifdef PME_TIME_THREADS
@@ -3677,7 +3751,9 @@ static void spread_on_grid(gmx_pme_t pme,
                                       fftgrid,
                                       pme->overlap[0].sendbuf,
                                       pme->overlap[1].sendbuf);
-            //print_sendbuf(pme,pme->overlap[0].sendbuf);
+#ifdef PRINT_PME_SENDBUF
+            print_sendbuf(pme,pme->overlap[0].sendbuf);
+#endif
         }
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_end(c3);
@@ -3691,30 +3767,16 @@ static void spread_on_grid(gmx_pme_t pme,
         }
     }
 
-    /* {
-        int x,y,z;
-        real *g;
-        g = grids->grid.grid;
-        for(x=0; x<grids->grid.n[XX]; x++)
-            for(y=0; y<grids->grid.n[YY]; y++)
-                for(z=0; z<grids->grid.n[ZZ]; z++) {
-                    printf("%2d %2d %2d %6.3f\n",x,y,z,*g);
-                    g++;
-                }
-        exit(0);
-        } */
-
 #ifdef PME_TIME_THREADS
     cnt++;
     if (cnt % 20 == 0)
     {
-        //printf("idx %.2f spread %.2f red %.2f\n",
-        //       cs1*1e-9,cs2*1e-9,cs3*1e-9);
-
         printf("idx %.2f spread %.2f red %.2f",
                cs1*1e-9,cs2*1e-9,cs3*1e-9);
-        //for(thread=0; thread<nthread; thread++)
-        //    printf(" %.2f",cs1a[thread]*1e-9);
+#ifdef PME_TIME_SPREAD
+        for(thread=0; thread<nthread; thread++)
+            printf(" %.2f",cs1a[thread]*1e-9);
+#endif
         printf("\n");
     }
 #endif
