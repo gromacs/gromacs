@@ -114,6 +114,12 @@
 
 #define GMX_CACHE_SEP 64
 
+/* We only define a maximum to be able to use local arrays without allocation.
+ * An order larger than 12 should never be needed, even for test cases.
+ * If needed it can be changed here.
+ */
+#define PME_ORDER_MAX 12
+
 /* Internal datastructures */
 typedef struct {
     int send_index0;
@@ -2312,15 +2318,68 @@ static real gather_energy_bsplines(gmx_pme_t pme,real *grid,
     return energy;
 }
 
+/* Macro to force loop unrolling by fixing order.
+ * This gives a significant performance gain.
+ */
+#define CALC_SPLINE(order)                     \
+{                                              \
+    int j,k,l;                                 \
+    real dr,div;                               \
+    real data[PME_ORDER_MAX];                  \
+    real ddata[PME_ORDER_MAX];                 \
+                                               \
+    for(j=0; (j<DIM); j++)                     \
+    {                                          \
+        dr  = xptr[j];                         \
+                                               \
+        /* dr is relative offset from lower cell limit */ \
+        data[order-1] = 0;                     \
+        data[1] = dr;                          \
+        data[0] = 1 - dr;                      \
+                                               \
+        for(k=3; (k<order); k++)               \
+        {                                      \
+            div = 1.0/(k - 1.0);               \
+            data[k-1] = div*dr*data[k-2];      \
+            for(l=1; (l<(k-1)); l++)           \
+            {                                  \
+                data[k-l-1] = div*((dr+l)*data[k-l-2]+(k-l-dr)* \
+                                   data[k-l-1]);                \
+            }                                  \
+            data[0] = div*(1-dr)*data[0];      \
+        }                                      \
+        /* differentiate */                    \
+        ddata[0] = -data[0];                   \
+        for(k=1; (k<order); k++)               \
+        {                                      \
+            ddata[k] = data[k-1] - data[k];    \
+        }                                      \
+                                               \
+        div = 1.0/(order - 1);                 \
+        data[order-1] = div*dr*data[order-2];  \
+        for(l=1; (l<(order-1)); l++)           \
+        {                                      \
+            data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
+                               (order-l-dr)*data[order-l-1]); \
+        }                                      \
+        data[0] = div*(1 - dr)*data[0];        \
+                                               \
+        for(k=0; k<order; k++)                 \
+        {                                      \
+            theta[j][i*order+k]  = data[k];    \
+            dtheta[j][i*order+k] = ddata[k];   \
+        }                                      \
+    }                                          \
+}
+
 void make_bsplines(splinevec theta,splinevec dtheta,int order,
                    rvec fractx[],int nr,int ind[],real charge[],
                    gmx_bool bFreeEnergy)
 {
     /* construct splines for local atoms */
-    int  i,ii,j,k,l;
-    real dr,div;
-    real *data,*ddata,*xptr;
-    
+    int  i,ii;
+    real *xptr;
+
     for(i=0; i<nr; i++)
     {
         /* With free energy we do not use the charge check.
@@ -2330,38 +2389,10 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,
         ii = ind[i];
         if (bFreeEnergy || charge[ii] != 0.0) {
             xptr = fractx[ii];
-            for(j=0; (j<DIM); j++) {
-                dr  = xptr[j];
-                
-                /* dr is relative offset from lower cell limit */
-                data=&(theta[j][i*order]);
-                data[order-1]=0;
-                data[1]=dr;
-                data[0]=1-dr;
-                
-                for(k=3; (k<order); k++) {
-                    div=1.0/(k-1.0);    
-                    data[k-1]=div*dr*data[k-2];
-                    for(l=1; (l<(k-1)); l++) {
-                        data[k-l-1]=div*((dr+l)*data[k-l-2]+(k-l-dr)*
-                                         data[k-l-1]);
-                    }
-                    data[0]=div*(1-dr)*data[0];
-                }
-                /* differentiate */
-                ddata    = &(dtheta[j][i*order]);
-                ddata[0] = -data[0];
-                for(k=1; (k<order); k++) {
-                    ddata[k]=data[k-1]-data[k];
-                }
-                
-                div=1.0/(order-1);
-                data[order-1]=div*dr*data[order-2];
-                for(l=1; (l<(order-1)); l++) {
-                    data[order-l-1]=div*((dr+l)*data[order-l-2]+
-                                         (order-l-dr)*data[order-l-1]);
-                }
-                data[0]=div*(1-dr)*data[0]; 
+            switch(order) {
+            case 4:  CALC_SPLINE(4);     break;
+            case 5:  CALC_SPLINE(5);     break;
+            default: CALC_SPLINE(order); break;
             }
         }
     }
@@ -2882,6 +2913,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
     
+    if (pme->pme_order > PME_ORDER_MAX)
+    {
+        gmx_fatal(FARGS,"pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
+                  pme->pme_order,PME_ORDER_MAX);
+    }
+
     /* Currently pme.c supports only the fft5d FFT code.
      * Therefore the grid always needs to be divisible by nnodes.
      * When the old 1D code is also supported again, change this check.
