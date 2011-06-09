@@ -2124,6 +2124,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
       { efXVG, "-field",  "field",    ffOPTWR },
       { efXVG, "-table",  "table",    ffOPTRD },
+      { efXVG, "-tabletf", "tabletf",   ffOPTRD },
       { efXVG, "-tablep", "tablep",   ffOPTRD },
       { efXVG, "-tableb", "table",    ffOPTRD },
       { efTRX, "-rerun",  "rerun",    ffOPTRD },
