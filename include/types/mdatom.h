@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+
+#define  NO_TF_TABLE 255
+#define  DEFAULT_TF_TABLE 0
+
 typedef struct {
   real          tmassA,tmassB,tmass;
   int           nr;
@@ -66,6 +70,11 @@ typedef struct {
   int           homenr;
   /* The lambda value used to create the contents of the struct */
   real          lambda;
+  /* The AdResS weighting function */
+  real          *wf;
+  gmx_bool          pureex;
+  gmx_bool          purecg;
+  unsigned short  *tf_table_index; /* The tf table that will be applied, if thermodyn, force enabled*/
 } t_mdatoms;
 
 #ifdef __cplusplus

@@ -94,6 +94,7 @@
 #include "tmpi.h"
 #endif
 
+#include "adress.h"
 #include "qmmm.h"
 
 #if 0
@@ -427,6 +428,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     double mu[2*DIM]; 
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bDoAdressWF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -467,6 +469,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
+    /* should probably move this to the forcerec since it doesn't change */
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff));
 
     if (bStateChanged)
     {
@@ -557,6 +561,33 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
     if (bStateChanged)
     {
+
+        /* update adress weight beforehand */
+        if(bDoAdressWF)
+        {
+            /* need pbc for adress weight calculation with pbc_dx */
+            set_pbc(&pbc,inputrec->ePBC,box);
+            if(fr->adress_site == eAdressSITEcog)
+            {
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEcom)
+            {
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEatomatom){
+                update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else
+            {
+                update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+        }
+
         for(i=0; i<2; i++)
         {
             for(j=0;j<DIM;j++)
@@ -699,8 +730,11 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        /* Position restraints always require full pbc */
-        set_pbc(&pbc,inputrec->ePBC,box);
+        /* Position restraints always require full pbc. Check if we already did it for Adress */
+        if(!(bStateChanged && bDoAdressWF))
+        {
+            set_pbc(&pbc,inputrec->ePBC,box);
+        }
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
@@ -754,6 +788,13 @@ void do_force(FILE *fplog,t_commrec *cr,
             calc_f_el(MASTER(cr) ? field : NULL,
                       start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
                       inputrec->ex,inputrec->et,t);
+        }
+
+        if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
+        {
+            /* Compute thermodynamic force in hybrid AdResS region */
+            adress_thermo_force(start,homenr,&(top->cgs),x,fr->f_novirsum,fr,mdatoms,
+                                inputrec->ePBC==epbcNONE ? NULL : &pbc);
         }
         
         /* Communicate the forces */
@@ -1524,6 +1565,11 @@ void init_md(FILE *fplog,
                               mtop,ir, (*outf)->fp_dhdl);
     }
     
+    if (ir->bAdress)
+    {
+      please_cite(fplog,"Fritsch12");
+      please_cite(fplog,"Junghans10");
+    }
     /* Initiate variables */  
     clear_mat(force_vir);
     clear_mat(shake_vir);
