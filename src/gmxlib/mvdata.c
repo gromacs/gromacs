@@ -502,7 +502,17 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   for(i=0; (i<DIM); i++) {
     bc_cosines(cr,&(inputrec->ex[i]));
     bc_cosines(cr,&(inputrec->et[i]));
-  }
+    }
+    if (inputrec->bAdress) {
+        if (inputrec->adress->n_tf_grps > 0) {
+            snew_bc(cr, inputrec->adress->tf_table_index, inputrec->adress->n_tf_grps);
+            nblock_bc(cr, inputrec->adress->n_tf_grps, inputrec->adress->tf_table_index);
+        }
+        if (inputrec->adress->n_energy_grps > 0) {
+            snew_bc(cr, inputrec->adress->group_explicit, inputrec->adress->n_energy_grps);
+            nblock_bc(cr, inputrec->adress->n_energy_grps, inputrec->adress->group_explicit);
+        }
+    }
 }
 
 static void bc_moltype(const t_commrec *cr,t_symtab *symtab,
