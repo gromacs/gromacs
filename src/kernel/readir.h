@@ -136,4 +136,13 @@ extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
  * If bStart adds the distance to the initial reference location.
  */
 
+extern int str_nelem(const char *str,int maxptr,char *ptr[]);
+/* helper function from readir.c to convert strings */
+
+extern void read_adressparams(int *ninp_p,t_inpfile **inp_p,t_adress *adress, warninp_t wi);
+/* Reads in AdResS related parameters */
+
+extern void do_adress_index(t_adress *adress, gmx_groups_t *groups,char **gnames,t_grpopts *opts,warninp_t wi);
+/* Generate adress groups */
+
 #endif	/* _readir_h */
