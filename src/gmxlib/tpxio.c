@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 73;
+static const int tpx_version = 74;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -745,6 +745,30 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_real(fio,ir->userreal3); 
     gmx_fio_do_real(fio,ir->userreal4); 
     
+    /* AdResS stuff */
+    if (file_version >= 74) {
+      gmx_fio_do_int(fio,ir->adress_type);
+      gmx_fio_do_real(fio,ir->adress_const_wf);
+      gmx_fio_do_real(fio,ir->adress_ex_width);
+      gmx_fio_do_real(fio,ir->adress_hy_width);
+      gmx_fio_do_int(fio,ir->adress_icor);
+      gmx_fio_do_int(fio,ir->adress_site);
+      gmx_fio_do_rvec(fio,ir->adress_refs);
+      gmx_fio_do_int(fio,ir->n_adress_tf_grps);
+      gmx_fio_do_real(fio, ir->adress_ex_forcecap);
+      gmx_fio_do_int(fio, ir->n_energy_grps);
+      gmx_fio_do_int(fio,ir->adress_do_hybridpairs);
+             
+      if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
+      if (ir->n_adress_tf_grps > 0) {
+        bDum=gmx_fio_ndo_int(fio,ir->adress_tf_table_index,ir->n_adress_tf_grps);
+      }
+      if (bRead)snew(ir->adress_group_explicit,ir->n_energy_grps);
+      if (ir->n_energy_grps > 0) {
+        bDum=gmx_fio_ndo_int(fio, ir->adress_group_explicit,ir->n_energy_grps);
+      }
+    }
+
     /* pull stuff */
     if (file_version >= 48) {
       gmx_fio_do_int(fio,ir->ePull);
