@@ -55,7 +55,8 @@
 #include "tpxio.h"
 #include "viewit.h"
 
-gmx_bool *bPhobics(int ,char *)
+/* defined in gmx_wheel.c*/
+extern gmx_bool *bPhobics(int ,char *);
 
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,
@@ -461,7 +462,7 @@ int main(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  bPhbres=bPhobics(atoms->nres,atoms->resinfo);
+  bPhbres=bPhobics((int)atoms->nres,(char *)atoms->resinfo);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
   nres=0;
