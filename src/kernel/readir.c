@@ -76,7 +76,8 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
-  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
+  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],adress_refs[STRLEN],
+  adress_tf_grp_names[STRLEN], adress_cg_grp_names[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -690,6 +691,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
     
   }
+
+  if (ir->adress_type != eAdressOff && !EI_SD(ir->eI)){
+       warning_error(wi,"AdresS simulation supports only stochastic dynamics");
+  }
+  if (ir->adress_type != eAdressOff && ir->epc != epcNO){
+       warning_error(wi,"AdresS simulation does not support pressure coupling");
+  }
+   if (ir->adress_type != eAdressOff && (EEL_PME(ir->coulombtype))){
+       warning_error(wi,"AdresS simulation does not support long-range electrostatics");
+   }
+
 }
 
 static int str_nelem(const char *str,int maxptr,char *ptr[])
@@ -1146,6 +1158,20 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("E-z",   	efield_z,	NULL);
   STYPE ("E-zt",	efield_zt,	NULL);
   
+  /* AdResS defined thingies */
+  CCTYPE ("AdResS parameters");
+  EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
+  RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
+  RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
+  RTYPE ("adress_hy_width",            ir->adress_hy_width,     0);
+  RTYPE ("adress_ex_forcecap",            ir->adress_ex_forcecap,     0);
+  EETYPE("adress_interface_correction",ir->adress_icor,         eAdressICtype_names);
+  EETYPE("adress_site",                ir->adress_site,         eAdressSITEtype_names);
+  STYPE ("adress_reference_coords",    adress_refs,             NULL);
+  STYPE ("adress_tf_grp_names",        adress_tf_grp_names,     NULL);
+  STYPE ("adress_cg_grp_names",        adress_cg_grp_names,     NULL);
+  EETYPE("adress_do_hybridpairs",      ir->adress_do_hybridpairs, yesno_names);
+
   /* User defined thingies */
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
@@ -1777,6 +1803,8 @@ void do_index(const char* mdparin, const char *ndx,
   real    tau_min;
   int     nstcmin;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
+  int     nadress_refs, nadress_tf_grp_names;
+  int     nadress_cg_grp_names;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
@@ -2160,6 +2188,16 @@ void do_index(const char* mdparin, const char *ndx,
   }
   /* end of QMMM input */
 
+  /* AdResS reference input */
+  nadress_refs = str_nelem(adress_refs,MAXPTR,ptr1);
+
+  for(i=0; (i<nadress_refs); i++) /*read vector components*/
+    ir->adress_refs[i]=strtod(ptr1[i],NULL);
+  for( ;(i<DIM); i++) /*remaining undefined components of the vector set to zero*/
+    ir->adress_refs[i]=0;
+  
+ /* End AdResS input */
+
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {
       fprintf(stderr,"%-16s has %d element(s):",gtypes[i],groups->grps[i].nr); 
@@ -2187,7 +2225,72 @@ void do_index(const char* mdparin, const char *ndx,
   decode_cos(efield_yt,&(ir->et[YY]),TRUE);
   decode_cos(efield_z,&(ir->ex[ZZ]),FALSE);
   decode_cos(efield_zt,&(ir->et[ZZ]),TRUE);
+
+    /* AdResS coarse grained groups input */
   
+  nr = groups->grps[egcENER].nr;
+  snew(ir->adress_group_explicit, nr);
+  for (i=0; i <nr; i++){
+      ir->adress_group_explicit[i] = TRUE;
+  }
+  ir->n_energy_grps = nr;
+
+  nadress_cg_grp_names = str_nelem(adress_cg_grp_names,MAXPTR,ptr1);
+
+  if (nadress_cg_grp_names > 0){
+        for (i=0; i <nadress_cg_grp_names; i++){
+            /* search for the group name mathching the tf group name */
+            k = 0;
+            while ((k < nr) &&
+                 gmx_strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+              k++;
+            if (k==nr) gmx_fatal(FARGS,"Adress cg energy group %s not found\n",ptr1[i]);
+            ir->adress_group_explicit[k] = FALSE;
+            printf ("AdResS: Energy group %s is treated as coarse-grained \n",
+              (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
+    }
+        /* set energy group exclusions between all coarse-grained and explicit groups */
+      for (j = 0; j < nr; j++) {
+            for (k = 0; k < nr; k++) {
+                if (!(ir->adress_group_explicit[k] == ir->adress_group_explicit[j])){
+                    ir->opts.egp_flags[nr * j + k] |= EGP_EXCL;
+                    if (debug) fprintf(debug,"AdResS excl %s %s \n",
+                        (char*)(gnames[groups->grps[egcENER].nm_ind[j]]),
+                        (char*)(gnames[groups->grps[egcENER].nm_ind[k]]));
+                }
+            }
+      }
+  }else if (ir->adress_type != eAdressOff){
+      warning(wi,"For an AdResS simulation at least one coarse-grained energy group has to be specified in adress_cg_grp_names");
+  }
+
+
+  /* AdResS multiple tf tables input */
+  nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
+  ir->n_adress_tf_grps = nadress_tf_grp_names;
+  snew(ir->adress_tf_table_index, nadress_tf_grp_names);
+
+  nr = groups->grps[egcENER].nr;
+
+  if (nadress_tf_grp_names > 0){
+        for (i=0; i <nadress_tf_grp_names; i++){
+            /* search for the group name mathching the tf group name */
+            k = 0;
+            while ((k < nr) &&
+                 strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+              k++;
+            if (k==nr) gmx_fatal(FARGS,"Adress tf energy group %s not found\n",ptr1[i]);
+            
+            ir->adress_tf_table_index[i] = k;
+            if (debug) fprintf(debug,"found tf group %s id %d \n",ptr1[i], k);
+            if (ir->adress_group_explicit[k]){
+                gmx_fatal(FARGS,"Thermodynamic force group %s is not a coarse-grained group in adress_cg_grp_names. The thermodynamic force has to act on the coarse-grained vsite of a molecule.\n",ptr1[i]);
+            }
+
+    }
+  }
+  /* end AdResS multiple tf tables input */
+   
   for(i=0; (i<grps->nr); i++)
     sfree(gnames[i]);
   sfree(gnames);

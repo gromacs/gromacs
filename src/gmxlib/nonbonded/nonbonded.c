@@ -64,13 +64,16 @@
 #include "nonbonded.h"
 
 #include "nb_kernel_c/nb_kernel_c.h"
+#include "nb_kernel_adress_c/nb_kernel_c_adress.h"
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
+#include "nb_generic_adress.h"
 
 
 /* 1,4 interactions uses kernel 330 directly */
 #include "nb_kernel_c/nb_kernel330.h" 
+#include "nb_kernel_adress_c/nb_kernel330_adress.h"
 
 #ifdef GMX_PPC_ALTIVEC   
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
@@ -207,6 +210,8 @@ nb_kernel_table[eNR_NBKERNEL_NR] =
 static nb_kernel_t **
 nb_kernel_list = NULL;
 
+static nb_adress_kernel_t **
+nb_kernel_list_adress = NULL;
 
 void
 gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
@@ -296,6 +301,23 @@ gmx_setup_kernels(FILE *fplog,gmx_bool bGenericKernelOnly)
     }
 }
 
+void
+gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly) {
+    int i;
+
+    snew(nb_kernel_list_adress, eNR_NBKERNEL_NR);
+
+    for (i = 0; i < eNR_NBKERNEL_NR; i++) {
+        nb_kernel_list_adress[i] = NULL;
+    }
+
+    if (bGenericKernelOnly)
+    {
+        return;
+    }
+
+    nb_kernel_setup_adress(fplog, nb_kernel_list_adress);
+}
 
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
@@ -310,6 +332,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	t_nblists       *nblists;
 	gmx_bool            bWater;
 	nb_kernel_t *   kernelptr;
+        nb_adress_kernel_t * adresskernelptr;
 	FILE *          fp;
 	int             fac=0;
 	int             nthreads = 1;
@@ -318,14 +341,24 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
     
+        gmx_bool        bCG; /* for AdresS */
+        int             k;/* for AdresS */
+
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
+
+    bCG = FALSE;  /* for AdresS */
+    adresskernelptr = NULL;
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
     
+    if (!fr->adress_type==eAdressOff && !bDoForces){
+        gmx_fatal(FARGS,"No force kernels not implemeted for adress");
+    }
+
     if(fr->bAllvsAll) 
     {
         if(fr->bGB)
@@ -534,34 +567,87 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                 }
                 else if (nlist->enlist == enlistCG_CG)
                 {
+		    if (fr->adress_type==eAdressOff){
                     /* Call the charge group based inner loop */
-                    gmx_nb_generic_cg_kernel(nlist,
-                                             fr,
-                                             mdatoms,
-                                             x[0],
-                                             f[0],
-                                             fshift,
-                                             egcoul,
-                                             egnb,
-                                             nblists->tab.scale,
-                                             tabledata,
-                                             &outeriter,
-                                             &inneriter);
+                       gmx_nb_generic_cg_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter);
+		    }
+		    else
+		    {
+                       /*gmx_nb_generic_adress_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter);*/
+                          gmx_fatal(FARGS,"Death & horror! Adress cgcg kernel not implemented anymore.\n");
+
+		    }
                 }
                 else
                 {
-                    /* Not free energy */
+                    /* AdresS*/
+                    /* for adress we need to determine for each energy group wether it is explicit or coarse-grained */
+                    if (!fr->adress_type == eAdressOff) {                        
+                        bCG = FALSE;
+                        if ( !fr->adress_group_explicit[ mdatoms->cENER[nlist->iinr[0]] ] ){
+                            bCG=TRUE;
+                        }
+                        /* If this processor has only explicit atoms (w=1)
+                          skip the coarse grained force calculation. Same for
+                         only coarsegrained atoms and explicit interactions.
+                         Last condition is to make sure that generic kernel is not
+                         skipped*/
+                        if (mdatoms->pureex && bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
+                        if (mdatoms->purecg && !bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
+                        kernelptr = NULL;
+                        adresskernelptr = NULL;
+                    }
 
-                    kernelptr = nb_kernel_list[nrnb_ind];
-
-                    if (kernelptr == NULL)
-                    {
+                    if (fr->adress_type == eAdressOff ||
+                            mdatoms->pureex ||
+                            mdatoms->purecg){
+                        /* if we only have to calculate pure cg/ex interactions
+                         we can use the faster standard gromacs kernels*/
+                        kernelptr = nb_kernel_list[nrnb_ind];
+                    }else{
+                        /* This processor has hybrid interactions which means
+                         * we have to
+                         * use our own kernels. We have two kernel types: one that
+                         * calculates the forces with the explicit prefactor w1*w2
+                         * and one for coarse-grained with (1-w1*w2)
+                         * explicit kernels are the second part of the kernel
+                         *  list */
+                        if (!bCG) nrnb_ind += eNR_NBKERNEL_NR/2;                      
+                        adresskernelptr = nb_kernel_list_adress[nrnb_ind];
+                    }
+                    
+                    if (kernelptr == NULL && adresskernelptr == NULL)
+                     {
                         /* Call a generic nonbonded kernel */
                         
                         /* If you want to hack/test your own interactions,
                          * do it in this routine and make sure it is called
                          * by setting the environment variable GMX_NB_GENERIC.
                          */
+                        if (fr->adress_type==eAdressOff){
+
                         gmx_nb_generic_kernel(nlist,
                                               fr,
                                               mdatoms,
@@ -574,11 +660,30 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                               tabledata,
                                               &outeriter,
                                               &inneriter);
+                        }else /* do generic AdResS kernels (slow)*/
+                        {
+
+                            gmx_nb_generic_adress_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter,
+                                                bCG);
+                        }
+
+
                     }
                     else
                     {
                         /* Call nonbonded kernel from function pointer */
-                        
+                        if (kernelptr!=NULL){
                         (*kernelptr)( &(nlist->nri),
                                       nlist->iinr,
                                       nlist->jindex,
@@ -610,6 +715,41 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       &outeriter,
                                       &inneriter,
                                       (real *)&gbdata);
+                        }else if (adresskernelptr != NULL)
+                        { /* Adress kernels */
+                          (*adresskernelptr)( &(nlist->nri),
+                                      nlist->iinr,
+                                      nlist->jindex,
+                                      nlist->jjnr,
+                                      nlist->shift,
+                                      fr->shift_vec[0],
+                                      fshift,
+                                      nlist->gid,
+                                      x[0],
+                                      f[0],
+                                      mdatoms->chargeA,
+                                      &(fr->epsfac),
+                                      &(fr->k_rf),
+                                      &(fr->c_rf),
+                                      egcoul,
+                                      mdatoms->typeA,
+                                      &(fr->ntype),
+                                      fr->nbfp,
+                                      egnb,
+                                      &(nblists->tab.scale),
+                                      tabledata,
+                                      fr->invsqrta,
+                                      fr->dvda,
+                                      &(fr->gbtabscale),
+                                      fr->gbtab.tab,
+                                      &nthreads,
+                                      &(nlist->count),
+                                      nlist->mtx,
+                                      &outeriter,
+                                      &inneriter,
+                                      fr->adress_ex_forcecap,
+                                      mdatoms->wf);
+                        }
                     }
                 }
                 
@@ -665,6 +805,9 @@ do_listed_vdw_q(int ftype,int nbonds,
     int       icoul,ivdw;
     gmx_bool      bMolPBC,bFreeEnergy;
     
+    gmx_bool      bCG; /* AdResS*/
+    real      wf14[2]={0,0}; /* AdResS*/
+   
 #if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
 #else
@@ -734,6 +877,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     }
     
     
+    bCG = FALSE; /*Adres*/
     /* We don't do SSE or altivec here, due to large overhead for 4-fold 
      * unrolling on short lists 
      */
@@ -746,6 +890,15 @@ do_listed_vdw_q(int ftype,int nbonds,
         aj    = iatoms[i++];
         gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
         
+        if (!fr->adress_type == eAdressOff) {
+            if (fr->adress_group_explicit[md->cENER[ai]] != fr->adress_group_explicit[md->cENER[aj]]){
+                /*exclude cg-ex interaction*/
+                continue;
+            }           
+            bCG = !fr->adress_group_explicit[md->cENER[ai]];
+            wf14[0] = md->wf[ai];
+            wf14[1] = md->wf[aj];
+        }
         switch (ftype) {
         case F_LJ14:
             bFreeEnergy =
@@ -872,6 +1025,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         }
         else 
         { 
+          if (fr->adress_type==eAdressOff || !fr->adress_do_hybridpairs){
             /* Not perturbed - call kernel 330 */
             nb_kernel330
                 ( &i1,
@@ -905,7 +1059,77 @@ do_listed_vdw_q(int ftype,int nbonds,
                   &outeriter,
                   &inneriter,
                   NULL);                
-        }
+                } else {
+                    if (bCG) {
+                        nb_kernel330_adress_cg(&i1,
+                                &i0,
+                                j_index,
+                                &i1,
+                                &shift_f,
+                                fr->shift_vec[0],
+                                fshift[0],
+                                &gid,
+                                x14[0],
+                                f14[0],
+                                chargeA,
+                                &eps,
+                                &krf,
+                                &crf,
+                                egcoul,
+                                typeA,
+                                &ntype,
+                                nbfp,
+                                egnb,
+                                &tabscale,
+                                tab,
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                &nthreads,
+                                &count,
+                                (void *) &mtx,
+                                &outeriter,
+                                &inneriter,
+                                fr->adress_ex_forcecap,
+                                wf14);
+                    } else {
+                        nb_kernel330_adress_ex(&i1,
+                                &i0,
+                                j_index,
+                                &i1,
+                                &shift_f,
+                                fr->shift_vec[0],
+                                fshift[0],
+                                &gid,
+                                x14[0],
+                                f14[0],
+                                chargeA,
+                                &eps,
+                                &krf,
+                                &crf,
+                                egcoul,
+                                typeA,
+                                &ntype,
+                                nbfp,
+                                egnb,
+                                &tabscale,
+                                tab,
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                &nthreads,
+                                &count,
+                                (void *) &mtx,
+                                &outeriter,
+                                &inneriter,
+                                fr->adress_ex_forcecap,
+                                wf14);
+                    }
+
+                }
+            }
         
         /* Add the forces */
         rvec_inc(f[ai],f14[0]);

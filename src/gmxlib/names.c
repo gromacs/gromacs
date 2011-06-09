@@ -209,3 +209,15 @@ const char *eMultentOpt_names[eMultentOptNR+1] = {
   "multiple_entries", "no", "use_last", NULL
 };
 
+const char *eAdresstype_names[eAdressNR+1] = {
+  "off","constant", "xsplit", "sphere", NULL 
+};
+
+const char *eAdressICtype_names[eAdressICNR+1] = {
+  "off", "thermoforce", NULL 
+};
+
+const char *eAdressSITEtype_names[eAdressSITENR+1] = {
+  "com","cog", "atom", "atomperatom", NULL
+};
+

@@ -667,6 +667,19 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("ld-seed",ir->ld_seed);
     PR("cos-accel",ir->cos_accel);
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
+
+    if (ir->adress_type != eAdressOff){
+        PS("adress_type",EADRESSTYPE(ir->adress_type));
+        PR("adress_const_wf",ir->adress_const_wf);
+        PR("adress_ex_width",ir->adress_ex_width);
+        PR("adress_hy_width",ir->adress_hy_width);
+        PS("adress_interface_correction",EADRESSICTYPE(ir->adress_icor));
+        PS("adress_site",EADRESSSITETYPE(ir->adress_site));
+        PR("adress_ex_force_cap",ir->adress_ex_forcecap);
+        PS("adress_do_hybridpairs", BOOL(ir->adress_do_hybridpairs));
+
+        pr_rvecs(fp,indent,"adress_reference_coords",&(ir->adress_refs),bMDPformat);
+    }
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);
