@@ -261,6 +261,18 @@ enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
 
+enum {
+  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
+};
+
+enum {
+  eAdressICOff, eAdressICThermoForce, eAdressICNR
+};
+
+enum {
+  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
+};
+
 #ifdef __cplusplus
 }
 #endif

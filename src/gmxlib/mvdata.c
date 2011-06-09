@@ -482,6 +482,19 @@ static void bc_rot(const t_commrec *cr,t_rot *rot)
     bc_rotgrp(cr,&rot->grp[g]);
 }
 
+static void bc_adress(const t_commrec *cr,t_adress *adress)
+{
+  block_bc(cr,*adress);
+  if (adress->n_tf_grps > 0) {
+      snew_bc(cr, adress->tf_table_index, adress->n_tf_grps);
+      nblock_bc(cr, adress->n_tf_grps, adress->tf_table_index);
+  }
+  if (adress->n_energy_grps > 0) {
+      snew_bc(cr, adress->group_explicit, adress->n_energy_grps);
+      nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
+  }
+}
+
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   gmx_bool bAlloc=TRUE;
@@ -502,6 +515,10 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   for(i=0; (i<DIM); i++) {
     bc_cosines(cr,&(inputrec->ex[i]));
     bc_cosines(cr,&(inputrec->et[i]));
+  }
+  if (inputrec->bAdress) {
+      snew_bc(cr,inputrec->adress,1);
+      bc_adress(cr,inputrec->adress);
   }
 }
 
