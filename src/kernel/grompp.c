@@ -1366,6 +1366,13 @@ int main (int argc, char *argv[])
                     "NB: United atoms have the same atom numbers as normal ones.\n\n"); 
   }
 
+  if (ir->adress_type!=eAdressOff) {
+    if ((ir->adress_const_wf>1) || (ir->adress_const_wf<0)) {
+      warning_error(wi,"AdResS contant weighting function should be between 0 and 1\n\n");
+    }
+    /** \TODO check size of ex+hy width against box size */
+  }
+ 
   /* Check for errors in the input now, since they might cause problems
    * during processing further down.
    */
