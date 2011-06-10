@@ -134,6 +134,9 @@ extern "C"
 #include "atomic/xlc_ppc.h"
 
 
+#elif defined (__sun) && (defined(__sparcv9) || defined(__sparc))
+/* Solaris on SPARC (Sun C Compiler, Solaris Studio) */
+#include "atomic/suncc-sparc.h"
 
 
 

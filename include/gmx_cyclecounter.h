@@ -137,6 +137,11 @@ gmx_cycles_t;
 typedef unsigned long long 
 gmx_cycles_t;
 
+#elif defined(__sun) && defined(__sparcv9)
+
+typedef unsigned long
+gmx_cycles_t;
+
 #else
 /*! \brief Integer-like datatype for cycle counter values
  * 
@@ -271,6 +276,13 @@ static __inline__ int gmx_cycles_have_counter(void)
 static __inline__ int gmx_cycles_have_counter(void)
 { 
     /* Metrowerks on macintosh */
+    return 1;
+}
+#elif defined(__sun) && defined(__sparcv9)
+
+static __inline__ int gmx_cycles_have_counter(void)
+{ 
+    /* Solaris on SPARC*/
     return 1;
 }
 #else
@@ -458,6 +470,15 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;  
 }
+#elif defined(__sun) && defined(__sparcv9)
+
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+     gmx_cycles_t ret;
+     __asm__ __volatile__("rd %%tick, %0" : "=r" (ret));
+     return ret;
+}
+
 #else
 static gmx_cycles_t gmx_cycles_read(void)
 { 

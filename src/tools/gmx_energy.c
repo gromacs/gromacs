@@ -1020,7 +1020,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
   /* Check out the printed manual for equations! */
   double Dt,aver,stddev,errest,delta_t,totaldrift;
   enerdata_t *esum=NULL;
-  real xxx,integral,intBulk,Temp,Pres;
+  real xxx,integral,intBulk,Temp=0,Pres=0;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,pr_errest;
   double beta=0,expE,expEtot,*fee=NULL;
   gmx_large_int_t nsteps;
@@ -1374,7 +1374,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
-    gmx_bool changing_lambda;
+    gmx_bool changing_lambda=FALSE;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)

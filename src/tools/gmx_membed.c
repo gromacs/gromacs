@@ -153,7 +153,7 @@ typedef struct {
 	int		*mol;
 	int		*block;
 	int 	nr;
-} rm_t;
+} rmm_t;
 
 int search_string(char *s,int ng,char ***gn)
 {
@@ -560,7 +560,7 @@ void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
 		}
 }
 
-int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
+int gen_rm_list(rmm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop_t *mtop,
 		rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad, int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
 	int i,j,k,l,at,at2,mol_id;
@@ -697,7 +697,7 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 	return nupper+nlower;
 }
 
-void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state, t_block *ins_at, pos_ins_t *pos_ins)
+void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rmm_t *rm_p, t_state *state, t_block *ins_at, pos_ins_t *pos_ins)
 {
 	int i,j,k,n,rm,mol_id,at,block;
 	rvec *x_tmp,*v_tmp;
@@ -873,7 +873,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 	return rm_at;
 }
 
-void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+void top_update(const char *topfile, char *ins, rmm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
 	int	bMolecules=0;
@@ -2758,7 +2758,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_block 		*ins_at,*rest_at;
 	pos_ins_t 		*pos_ins;
 	mem_t			*mem_p;
-	rm_t			*rm_p;
+	rmm_t			*rm_p;
 	gmx_groups_t 		*groups;
 	gmx_bool		 	bExcl=FALSE;
 	t_atoms			atoms;
