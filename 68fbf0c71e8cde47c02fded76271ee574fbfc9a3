@@ -1,0 +1,8 @@
+Change-Id: I68fbf0c71e8cde47c02fded76271ee574fbfc9a3
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Verified+1: Roland Schulz <roland@rschulz.eu>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Sat, 11 Jun 2011 14:08:26 +0200
+Reviewed-on: https://gmx-gerrit.dyndns.org:8443/2
+Project: gromacs
+Branch: refs/heads/master
