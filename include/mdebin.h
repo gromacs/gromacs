@@ -73,6 +73,10 @@ typedef struct {
   gmx_bool   bDynBox;
   gmx_bool   bNHC_trotter;
   gmx_bool   bMTTK;
+  gmx_bool   bVir;
+  gmx_bool   bPress;
+  gmx_bool   bSurft;
+  gmx_bool   bMu;
   int    f_nre;
   int    epc;
   tensor ref_p;
