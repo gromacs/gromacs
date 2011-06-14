@@ -695,6 +695,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (ir->adress_type != eAdressOff && !EI_SD(ir->eI)){
        warning_error(wi,"AdresS simulation supports only stochastic dynamics");
   }
+  if (ir->adress_type != eAdressOff && ir->epc != epcNO){
+       warning_error(wi,"AdresS simulation does not support pressure coupling");
+  }
+   if (ir->adress_type != eAdressOff && (EEL_PME(ir->coulombtype))){
+       warning_error(wi,"AdresS simulation does not support long-range electrostatics");
+   }
 
 }
 
