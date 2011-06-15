@@ -72,7 +72,6 @@
 
 #endif /* CHECK_CUDA_ERRORS */ 
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,9 +86,15 @@ int upload_cudata_alloc(void ** /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 
 int cu_blockwait_event(cudaEvent_t /*stop*/, cudaEvent_t /*start*/, float * /*time*/);
 
+void cu_unbind_texture(const char * /*tex_name*/);
+
 #ifdef __cplusplus
 }
 #endif
 
+#ifdef __cplusplus
+template <typename T>
+size_t cu_bind_texture(const char * /*tex_name*/, const T * /*d_ptr*/, int /*size*/);
+#endif
 
 #endif /* CUDAUTILS_H */

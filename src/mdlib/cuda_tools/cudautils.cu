@@ -110,3 +110,49 @@ int cu_blockwait_event(cudaEvent_t stop, cudaEvent_t start, float *time)
 
     return 0;
 }
+
+/* Binds texture with name tex_name to the GPU global memory (of size elements) 
+   pointed by d_ptr.
+   Returns the offset that needs to be used when fetching from the texture.
+ */
+template <typename T>
+size_t cu_bind_texture(const char *tex_name, const T *d_ptr, int size)
+{
+    cudaError_t             stat;
+    cudaChannelFormatDesc   cd;
+    const textureReference  *tex;
+    char                    str[100];
+
+    size_t offset;
+
+    stat = cudaGetTextureReference(&tex, tex_name);
+    sprintf(str, "cudaGetTextureReference on %s failed", tex_name);
+    CU_RET_ERR(stat, str);
+    cd = cudaCreateChannelDesc<T>();
+
+    stat = cudaBindTexture(&offset, tex, d_ptr, &cd, size*sizeof(*d_ptr));
+    sprintf(str, "cudaBindTexture on %s failed ", tex_name);
+    CU_RET_ERR(stat, str);
+
+    return offset;
+}
+
+/* Instantiate cu_bind_texture with float */
+template size_t cu_bind_texture<float>(const char *, const float *, int);
+
+/*! Unbinds texture with name tex_name. */
+void cu_unbind_texture(const char *tex_name)
+{
+    cudaError_t             stat;
+    const textureReference  *tex;
+    char                    str[100];
+
+    stat = cudaGetTextureReference(&tex, tex_name);
+    sprintf(str, "cudaGetTextureReference on %s failed", tex_name);
+    CU_RET_ERR(stat, str);
+    stat = cudaUnbindTexture(tex);
+    sprintf(str, "cudaUnbindTexture on %s failed ", tex_name);
+    CU_RET_ERR(stat, str);
+}
+
+

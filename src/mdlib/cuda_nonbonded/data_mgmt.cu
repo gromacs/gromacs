@@ -66,34 +66,26 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params);
  */
 static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params)
 {
-    float       *ftmp;
+    float       *ftmp, *coul_tab;
     int         tabsize;
+    double      tabscale;
     cudaError_t stat;
 
-    cudaChannelFormatDesc   cd;
-    const textureReference  *tex_coulomb_tab;
-
     tabsize     = EWALD_COULOMB_FORCE_TABLE_SIZE;
-
-    nb_params->coulomb_tab_size    = tabsize;
-    nb_params->coulomb_tab_scale   = (tabsize - 1) / sqrt(nb_params->cutoff_sq);
+    tabscale    = (tabsize - 1) / sqrt(nb_params->cutoff_sq);
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
-    table_spline3_fill_ewald_force(ftmp, tabsize, 1/nb_params->coulomb_tab_scale, 
-                                   nb_params->ewald_beta);
+    table_spline3_fill_ewald_force(ftmp, tabsize, 1/tabscale, nb_params->ewald_beta);
 
-    stat = cudaMalloc((void **)&nb_params->coulomb_tab, 
-                      tabsize*sizeof(*nb_params->coulomb_tab));
-    CU_RET_ERR(stat, "cudaMalloc failed on nb_params->coulomb_tab"); 
-    upload_cudata(nb_params->coulomb_tab, ftmp, tabsize*sizeof(*nb_params->coulomb_tab));
+    stat = cudaMalloc((void **)&coul_tab, tabsize*sizeof(*coul_tab));
+    CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
+    upload_cudata(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
+    cu_bind_texture("tex_coulomb_tab", coul_tab, tabsize*sizeof(*coul_tab));
 
-    stat = cudaGetTextureReference(&tex_coulomb_tab, "tex_coulomb_tab");
-    CU_RET_ERR(stat, "cudaGetTextureReference on tex_coulomb_tab failed");
-    cd = cudaCreateChannelDesc<float>();
-    stat = cudaBindTexture(NULL, tex_coulomb_tab, nb_params->coulomb_tab, 
-                           &cd, tabsize*sizeof(*nb_params->coulomb_tab));
-    CU_RET_ERR(stat, "cudaBindTexture on tex_coulomb_tab failed");
+    nb_params->coulomb_tab          = coul_tab;
+    nb_params->coulomb_tab_size     = tabsize;
+    nb_params->coulomb_tab_scale    = tabscale;
 
     pfree(ftmp);
 }
@@ -130,11 +122,10 @@ void init_atomdata(cu_atomdata_t *ad, int ntypes)
 /*! Initilizes the nonbonded parameter data structure. */
 void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
 {  
-    cudaError_t             stat;
-    cudaChannelFormatDesc   cd;
-    const textureReference  *tex_nbfp;
-    
-    int ntypes = fr->nbat->ntype;
+    cudaError_t stat;
+    int         ntypes, nnbfp; 
+
+    ntypes = fr->nbat->ntype;
     
     nbp->ewald_beta  = fr->ewaldcoeff;
     nbp->eps_r       = fr->epsilon_r;
@@ -168,15 +159,11 @@ void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
         init_ewald_coulomb_force_table(nbp);
     }
 
-    stat = cudaMalloc((void **)&nbp->nbfp, 2*ntypes*ntypes*sizeof(*(nbp->nbfp)));
+    nnbfp = 2*ntypes*ntypes;
+    stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp"); 
-    upload_cudata(nbp->nbfp, fr->nbat->nbfp, 2*ntypes*ntypes*sizeof(*(nbp->nbfp)));
-
-    stat = cudaGetTextureReference(&tex_nbfp, "tex_nbfp");
-    CU_RET_ERR(stat, "cudaGetTextureReference on tex_nbfp failed");
-    cd = cudaCreateChannelDesc<float>();
-    stat = cudaBindTexture(NULL, tex_nbfp, nbp->nbfp, &cd, 2*ntypes*ntypes*sizeof(*(nbp->nbfp)));
-    CU_RET_ERR(stat, "cudaBindTexture on tex_nbfp failed");
+    upload_cudata(nbp->nbfp, fr->nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
+    cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
 }
 
 /*! Initilizes the neighborlist data structure. */
@@ -405,12 +392,11 @@ void init_cudata_atoms(cu_nonbonded_t cu_nb,
 /*! Frees up all GPU resources used for the nonbonded calculations. */
 void destroy_cudata(FILE *fplog, cu_nonbonded_t cu_nb)
 {
-    cudaError_t stat;
-    const textureReference  *tex;
-    cu_atomdata_t       *atomdata;
-    cu_nb_params_t      *nb_params;
-    cu_nblist_t         *nblist;
-    cu_timers_t         *timers;
+    cudaError_t     stat;
+    cu_atomdata_t   *atomdata;
+    cu_nb_params_t  *nb_params;
+    cu_nblist_t     *nblist;
+    cu_timers_t     *timers;
 
     atomdata    = cu_nb->atomdata;
     nb_params   = cu_nb->nb_params;
@@ -421,10 +407,7 @@ void destroy_cudata(FILE *fplog, cu_nonbonded_t cu_nb)
 
     if (nb_params->eeltype == cu_eelEWALD)
     {
-        stat = cudaGetTextureReference(&tex, "tex_coulomb_tab");
-        CU_RET_ERR(stat, "cudaGetTextureReference on tex_coulomb_tab failed");
-        stat = cudaUnbindTexture(tex);
-        CU_RET_ERR(stat, "cudaUnbindTexture failed on tex");
+        cu_unbind_texture("tex_coulomb_tab");
         destroy_cudata_array(nb_params->coulomb_tab, &nb_params->coulomb_tab_size);            
     }
 
@@ -450,10 +433,7 @@ void destroy_cudata(FILE *fplog, cu_nonbonded_t cu_nb)
         CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_d2h");
     }
 
-    stat = cudaGetTextureReference(&tex, "tex_nbfp");
-    CU_RET_ERR(stat, "cudaGetTextureReference on tex_nbfp failed");
-    stat = cudaUnbindTexture(tex);
-    CU_RET_ERR(stat, "cudaUnbindTexture failed on tex");
+    cu_unbind_texture("tex_nbfp");
     destroy_cudata_array(nb_params->nbfp);
 
     stat = cudaFree(atomdata->shift_vec);
