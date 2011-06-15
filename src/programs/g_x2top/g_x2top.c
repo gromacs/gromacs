@@ -379,17 +379,17 @@ int main(int argc, char *argv[])
     "G53a5  GROMOS96 53a5 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
-    "with name atomname2type.n2t. Check chapter 5 of the manual for more",
-    "information about file formats. By default the forcefield selection",
+    "with name [TT]atomname2type.n2t[tt]. Check Chapter 5 of the manual for more",
+    "information about file formats. By default, the force field selection",
     "is interactive, but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
-    "case [TT]pdb2gmx[tt] just looks for the corresponding file.[PAR]",
+    "case [TT]g_x2top[tt] just looks for the corresponding file.[PAR]",
   };
   const char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
     "No improper dihedrals are generated",
-    "The atoms to atomtype translation table is incomplete (atomname2type.n2t files in the data directory). Please extend it and send the results back to the GROMACS crew."
+    "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
   };
   FILE       *fp;
   t_params   plist[F_NRE];

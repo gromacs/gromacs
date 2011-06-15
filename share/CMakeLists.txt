@@ -5,6 +5,8 @@ install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
   PATTERN "Makefile*" EXCLUDE
   PATTERN "CMake*" EXCLUDE
   PATTERN "cmake*" EXCLUDE
+  PATTERN "template_doc.c" EXCLUDE
+  PATTERN "Template.mak" EXCLUDE
   PATTERN "*~" EXCLUDE
 )
 

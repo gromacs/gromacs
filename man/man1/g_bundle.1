@@ -1,8 +1,8 @@
-.TH g_bundle 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_bundle 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_bundle - analyzes bundles of axes, e.g. helices
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_bundle\fP
 .BI "\-f" " traj.xtc "
@@ -29,7 +29,7 @@ g_bundle - analyzes bundles of axes, e.g. helices
 .BI "\-na" " int "
 .BI "\-[no]z" ""
 .SH DESCRIPTION
-\&g_bundle analyzes bundles of axes. The axes can be for instance
+\&\fB g_bundle\fR analyzes bundles of axes. The axes can be for instance
 \&helix axes. The program reads two index groups and divides both
 \&of them in \fB \-na\fR parts. The centers of mass of these parts
 \&define the tops and bottoms of the axes.
@@ -50,8 +50,8 @@ g_bundle - analyzes bundles of axes, e.g. helices
 
 \&With option \fB \-oa\fR the top, mid (or kink when \fB \-ok\fR is set)
 \&and bottom points of each axis
-\&are written to a pdb file each frame. The residue numbers correspond
-\&to the axis numbers. When viewing this file with \fB rasmol\fR, use the
+\&are written to a \fB .pdb\fR file each frame. The residue numbers correspond
+\&to the axis numbers. When viewing this file with Rasmol, use the
 \&command line option \fB \-nmrpdb\fR, and type \fB set axis true\fR to
 \&display the reference axis.
 .SH FILES
@@ -136,7 +136,7 @@ g_bundle - analyzes bundles of axes, e.g. helices
  Number of axes
 
 .BI "\-[no]z"  "no    "
- Use the Z\-axis as reference iso the average axis
+ Use the \fI z\fR\-axis as reference instead of the average axis
 
 .SH SEE ALSO
 .BR gromacs(7)

@@ -1,8 +1,8 @@
-.TH do_dssp 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH do_dssp 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 do_dssp - assigns secondary structure and calculates solvent accessible surface area
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3do_dssp\fP
 .BI "\-f" " traj.xtc "
@@ -26,12 +26,13 @@ do_dssp - assigns secondary structure and calculates solvent accessible surface 
 .BI "\-xvg" " enum "
 .BI "\-sss" " string "
 .SH DESCRIPTION
-\&do_dssp 
+\&\fB do_dssp\fR 
 \&reads a trajectory file and computes the secondary structure for
 \&each time frame 
 \&calling the dssp program. If you do not have the dssp program,
-\&get it. do_dssp assumes that the dssp executable is
-\&/usr/local/bin/dssp. If this is not the case, then you should
+\&get it from http://swift.cmbi.ru.nl/gv/dssp. \fB do_dssp\fR assumes 
+\&that the dssp executable is located in 
+\&\fB /usr/local/bin/dssp\fR. If this is not the case, then you should
 \&set an environment variable \fB DSSP\fR pointing to the dssp
 \&executable, e.g.: 
 
@@ -42,7 +43,7 @@ do_dssp - assigns secondary structure and calculates solvent accessible surface 
 \&The structure assignment for each residue and time is written to an
 \&\fB .xpm\fR matrix file. This file can be visualized with for instance
 \&\fB xv\fR and can be converted to postscript with \fB xpm2ps\fR.
-\&Individual chains are separated by light grey lines in the xpm and
+\&Individual chains are separated by light grey lines in the \fB .xpm\fR and
 \&postscript files.
 \&The number of residues with each secondary structure type and the
 \&total secondary structure (\fB \-sss\fR) count as a function of
@@ -125,7 +126,7 @@ do_dssp - assigns secondary structure and calculates solvent accessible surface 
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

@@ -1,8 +1,8 @@
-.TH g_traj 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_traj 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_traj - plots x, v and f of selected atoms/groups (and more) from a trajectory
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_traj\fP
 .BI "\-f" " traj.xtc "
@@ -41,9 +41,10 @@ g_traj - plots x, v and f of selected atoms/groups (and more) from a trajectory
 .BI "\-[no]len" ""
 .BI "\-[no]fp" ""
 .BI "\-bin" " real "
+.BI "\-ctime" " real "
 .BI "\-scale" " real "
 .SH DESCRIPTION
-\&g_traj plots coordinates, velocities, forces and/or the box.
+\&\fB g_traj\fR plots coordinates, velocities, forces and/or the box.
 \&With \fB \-com\fR the coordinates, velocities and forces are
 \&calculated for the center of mass of each group.
 \&When \fB \-mol\fR is set, the numbers in the index file are
@@ -64,15 +65,16 @@ g_traj - plots x, v and f of selected atoms/groups (and more) from a trajectory
 
 
 \&Options \fB \-cv\fR and \fB \-cf\fR write the average velocities
-\&and average forces as temperature factors to a pdb file with
-\&the average coordinates. The temperature factors are scaled such
-\&that the maximum is 10. The scaling can be changed with the option
-\&\fB \-scale\fR. To get the velocities or forces of one
+\&and average forces as temperature factors to a \fB .pdb\fR file with
+\&the average coordinates or the coordinates at \fB \-ctime\fR.
+\&The temperature factors are scaled such that the maximum is 10.
+\&The scaling can be changed with the option \fB \-scale\fR.
+\&To get the velocities or forces of one
 \&frame set both \fB \-b\fR and \fB \-e\fR to the time of
 \&desired frame. When averaging over frames you might need to use
 \&the \fB \-nojump\fR option to obtain the correct average coordinates.
 \&If you select either of these option the average force and velocity
-\&for each atom are written to an xvg file as well
+\&for each atom are written to an \fB .xvg\fR file as well
 \&(specified with \fB \-av\fR or \fB \-af\fR).
 
 
@@ -167,7 +169,7 @@ g_traj - plots x, v and f of selected atoms/groups (and more) from a trajectory
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -205,8 +207,11 @@ g_traj - plots x, v and f of selected atoms/groups (and more) from a trajectory
 .BI "\-bin"  " real" " 1     " 
  Binwidth for velocity histogram (nm/ps)
 
+.BI "\-ctime"  " real" " \-1    " 
+ Use frame at this time for x in \fB \-cv\fR and \fB \-cf\fR instead of the average x
+
 .BI "\-scale"  " real" " 0     " 
- Scale factor for pdb output, 0 is autoscale
+ Scale factor for \fB .pdb\fR output, 0 is autoscale
 
 .SH SEE ALSO
 .BR gromacs(7)

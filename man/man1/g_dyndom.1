@@ -1,8 +1,8 @@
-.TH g_dyndom 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_dyndom 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_dyndom - interpolate and extrapolate structure rotations
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_dyndom\fP
 .BI "\-f" " dyndom.pdb "
@@ -19,11 +19,11 @@ g_dyndom - interpolate and extrapolate structure rotations
 .BI "\-head" " vector "
 .BI "\-tail" " vector "
 .SH DESCRIPTION
-\&g_dyndom reads a pdb file output from DynDom
-\&http://www.cmp.uea.ac.uk/dyndom/
-\&It reads the coordinates, and the coordinates of the rotation axis
-\&furthermore it reads an index file containing the domains.
-\&Furthermore it takes the first and last atom of the arrow file
+\&\fB g_dyndom\fR reads a \fB .pdb\fR file output from DynDom
+\&(http://www.cmp.uea.ac.uk/dyndom/).
+\&It reads the coordinates, the coordinates of the rotation axis,
+\&and an index file containing the domains.
+\&Furthermore, it takes the first and last atom of the arrow file
 \&as command line arguments (head and tail) and
 \&finally it takes the translation vector (given in DynDom info file)
 \&and the angle of rotation (also as command line arguments). If the angle
@@ -75,7 +75,7 @@ g_dyndom - interpolate and extrapolate structure rotations
  DymDom dtermined angle of rotation about rotation vector
 
 .BI "\-trans"  " real" " 0     " 
- Translation (Aangstroem) along rotation vector (see DynDom info file)
+ Translation (Angstrom) along rotation vector (see DynDom info file)
 
 .BI "\-head"  " vector" " 0 0 0" 
  First atom of the arrow vector

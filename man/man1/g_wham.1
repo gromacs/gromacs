@@ -1,8 +1,8 @@
-.TH g_wham 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_wham 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_wham - weighted histogram analysis after umbrella sampling
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_wham\fP
 .BI "\-ix" " pullx\-files.dat "
@@ -11,10 +11,11 @@ g_wham - weighted histogram analysis after umbrella sampling
 .BI "\-ip" " pdo\-files.dat "
 .BI "\-o" " profile.xvg "
 .BI "\-hist" " histo.xvg "
+.BI "\-oiact" " iact.xvg "
+.BI "\-iiact" " iact\-in.dat "
 .BI "\-bsres" " bsResult.xvg "
 .BI "\-bsprof" " bsProfs.xvg "
 .BI "\-tab" " umb\-pot.dat "
-.BI "\-wcorr" " cycl\-corr.xvg "
 .BI "\-[no]h" ""
 .BI "\-[no]version" ""
 .BI "\-nice" " int "
@@ -34,14 +35,15 @@ g_wham - weighted histogram analysis after umbrella sampling
 .BI "\-[no]log" ""
 .BI "\-unit" " enum "
 .BI "\-zprof0" " real "
-.BI "\-cycl" " enum "
-.BI "\-alpha" " real "
-.BI "\-[no]flip" ""
-.BI "\-[no]hist\-eq" ""
+.BI "\-[no]cycl" ""
+.BI "\-[no]sym" ""
+.BI "\-[no]ac" ""
+.BI "\-acsig" " real "
+.BI "\-ac\-trestart" " real "
 .BI "\-nBootstrap" " int "
-.BI "\-bs\-dt" " real "
+.BI "\-bs\-method" " enum "
+.BI "\-bs\-tau" " real "
 .BI "\-bs\-seed" " int "
-.BI "\-[no]histbs" ""
 .BI "\-histbs\-block" " int "
 .BI "\-[no]vbs" ""
 .SH DESCRIPTION
@@ -51,24 +53,24 @@ g_wham - weighted histogram analysis after umbrella sampling
 \&compute a potential of mean force (PMF). 
 
 
-\&At present, three input modes are supported:
+\&At present, three input modes are supported.
 
 \&\fB *\fR With option \fB \-it\fR, the user provides a file which contains the
-\&  filenames of the umbrella simulation run\-input files (tpr files),
-\&  AND, with option \-ix, a file which contains filenames of
-\&  the pullx mdrun output files. The tpr and pullx files must
-\&  be in corresponding order, i.e. the first tpr created the
-\&  first pullx, etc.
+\& file names of the umbrella simulation run\-input files (\fB .tpr\fR files),
+\& AND, with option \fB \-ix\fR, a file which contains file names of
+\& the pullx \fB mdrun\fR output files. The \fB .tpr\fR and pullx files must
+\& be in corresponding order, i.e. the first \fB .tpr\fR created the
+\& first pullx, etc.
 
 \&\fB *\fR Same as the previous input mode, except that the the user
-\&  provides the pull force ouput file names (pullf.xvg) with option \-if.
-\&  From the pull force the position in the ubrella potential is
-\&  computed. This does not work with tabulated umbrella potentials.
-\&\fB *\fR With option \fB \-ip\fR, the user provides filenames of (gzipped) pdo files, i.e.
-\&  the gromacs 3.3 umbrella output files. If you have some unusual
-\&  reaction coordinate you may also generate your own pdo files and
-\&  feed them with the \-ip option into to g_wham. The pdo file header
-\&  must be similar to the folowing:
+\& provides the pull force output file names (\fB pullf.xvg\fR) with option \fB \-if\fR.
+\& From the pull force the position in the umbrella potential is
+\& computed. This does not work with tabulated umbrella potentials.
+\fB *\fR With option \fB \-ip\fR, the user provides file names of (gzipped) \fB .pdo\fR files, i.e.
+\& the GROMACS 3.3 umbrella output files. If you have some unusual reaction coordinate you may also generate your own \fB .pdo\fR files and
+\& feed them with the \fB \-ip\fR option into to \fB g_wham\fR. The \fB .pdo\fR file header
+\& must be similar to the following:
+
 
 \&\fB  UMBRELLA      3.0
 
@@ -86,95 +88,134 @@ g_wham - weighted histogram analysis after umbrella sampling
 
 \&\fR
 
-\&  Nr of pull groups, umbrella positions, force constants, and names
-\&  may (of course) differ. Following the header, a time column and
-\&  a data columns for each pull group follow (i.e. the displacement
-\&  with respect to the umbrella center). Up to four pull groups are possible
-\&  at present.
+
+\&The number of pull groups, umbrella positions, force constants, and names 
+\&may (of course) differ. Following the header, a time column and 
+\&a data column for each pull group follows (i.e. the displacement
+\&with respect to the umbrella center). Up to four pull groups are possible 
+\&per \fB .pdo\fR file at present.
 
 
 \&By default, the output files are
 
 \&  \fB \-o\fR      PMF output file
 
-\&  \fB \-hist\fR   histograms output file
+\&  \fB \-hist\fR   Histograms output file
+
+\&Always check whether the histograms sufficiently overlap.
 
 
 \&The umbrella potential is assumed to be harmonic and the force constants are 
-\&read from the tpr or pdo files. If a non\-harmonic umbrella force was applied 
-\&a tabulated potential can be provied with \-tab.
+\&read from the \fB .tpr\fR or \fB .pdo\fR files. If a non\-harmonic umbrella force was applied 
+\&a tabulated potential can be provided with \fB \-tab\fR.
 
 
 \&WHAM OPTIONS
+\-\-\-\-\-\-\-\-\-\-\-\-
 
-
-\&  \fB \-bins\fR   Nr of bins used in analysis
+\&  \fB \-bins\fR   Number of bins used in analysis
 
 \&  \fB \-temp\fR   Temperature in the simulations
 
 \&  \fB \-tol\fR    Stop iteration if profile (probability) changed less than tolerance
 
-\&  \fB \-auto\fR   Automatic determination of boudndaries
+\&  \fB \-auto\fR   Automatic determination of boundaries
 
 \&  \fB \-min,\-max\fR   Boundaries of the profile 
 
-\&The data points which are used 
-\&to compute the profile can be restricted with options \-b, \-e, and \-dt. 
-\&Play particularly with \-b to ensure sufficient equilibration in each 
-\&umbrella window!
+\&The data points that are used to compute the profile
+\&can be restricted with options \fB \-b\fR, \fB \-e\fR, and \fB \-dt\fR. 
+\&Adjust \fB \-b\fR to ensure sufficient equilibration in each 
+\&umbrella window.
 
 
-\&With \-log (default) the profile is written in energy units, otherwise (\-nolog) as 
-\&probability. The unit can be specified with \-unit. With energy output, 
-\&the energy in the first bin is defined to be zero. If you want the free energy at a different 
-\&position to be zero, choose with \-zprof0 (useful with bootstrapping, see below).
+\&With \fB \-log\fR (default) the profile is written in energy units, otherwise 
+\&(with \fB \-nolog\fR) as probability. The unit can be specified with \fB \-unit\fR. 
+\&With energy output, the energy in the first bin is defined to be zero. 
+\&If you want the free energy at a different 
+\&position to be zero, set \fB \-zprof0\fR (useful with bootstrapping, see below).
 
 
-\&For cyclic (or periodic) reaction coordinates (dihedral angle, channel PMF
-\&without osmotic gradient), \-cycl is useful.
+\&For cyclic or periodic reaction coordinates (dihedral angle, channel PMF
+\&without osmotic gradient), the option \fB \-cycl\fR is useful. \fB g_wham\fR will make use of the 
+\&periodicity of the system and generate a periodic PMF. The first and the last bin of the
+\&reaction coordinate will assumed be be neighbors.
 
-\&\fB \-cycl yes\fR        min and max are assumed to
-\&be neighboring points and histogram points outside min and max are mapped into 
-\&the interval [min,max] (compare histogram output). 
 
-\&\fB \-cycl weighted\fR   First, a non\-cyclic profile is computed. Subsequently, 
-\&periodicity is enforced by adding corrections dG(i) between neighboring bins
-\&i and i+1. The correction is chosen proportional to 1/[n(i)*n(i+1)]alpha, where
-\&n(i) denotes the total nr of data points in bin i as collected from all histograms.
-\&alpha is defined with \-alpha. The corrections are written to the file defined by \-wcorr.
-\& (Compare Hub and de Groot, PNAS 105:1198 (2008))
+\&Option \fB \-sym\fR symmetrizes the profile around z=0 before output, 
+\&which may be useful for, e.g. membranes.
+
+
+\&AUTOCORRELATIONS
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+
+\&With \fB \-ac\fR, \fB g_wham\fR estimates the integrated autocorrelation 
+\&time (IACT) tau for each umbrella window and weights the respective 
+\&window with 1/[1+2*tau/dt]. The IACTs are written 
+\&to the file defined with \fB \-oiact\fR. In verbose mode, all 
+\&autocorrelation functions (ACFs) are written to \fB hist_autocorr.xvg\fR. 
+\&Because the IACTs can be severely underestimated in case of limited 
+\&sampling, option \fB \-acsig\fR allows to smooth the IACTs along the 
+\&reaction coordinate with a Gaussian (sigma provided with \fB \-acsig\fR, 
+\&see output in \fB iact.xvg\fR). Note that the IACTs are estimated by simple 
+\&integration of the ACFs while the ACFs are larger 0.05.
+\&If you prefer to compute the IACTs by a more sophisticated (but possibly 
+\&less robust) method such as fitting to a double exponential, you can 
+\&compute the IACTs with \fB g_analyze\fR and provide them to \fB g_wham\fR with the file 
+\&\fB iact\-in.dat\fR (option \fB \-iiact\fR), which should contain one line per 
+\&input file (\fB .pdo\fR or pullx/f file) and one column per pull group in the respective file.
 
 
 \&ERROR ANALYSIS
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 \&Statistical errors may be estimated with bootstrap analysis. Use it with care, 
-\&otherwise the statistical error may be substantially undererstimated !!
+\&otherwise the statistical error may be substantially underestimated. 
+\&More background and examples for the bootstrap technique can be found in 
+\&Hub, de Groot and Van der Spoel, JCTC (2010) 6: 3713\-3720.
 
-\&\fB \-nBootstrap\fR defines the nr of bootstraps. Two bootstrapping modes are supported.
+\&\fB \-nBootstrap\fR defines the number of bootstraps (use, e.g., 100). 
+\&Four bootstrapping methods are supported and 
+\&selected with \fB \-bs\-method\fR.
 
-\&\fB \-histbs\fR    Complete histograms are considered as independent data points (default). For each
-\&bootstrap, N histograms are randomly chosen from the N given histograms (allowing duplication).
-\&To avoid gaps without data along the reaction coordinate blocks of histograms (\-histbs\-block)
-\&may be defined. In that case, the given histograms are divided into blocks and 
-\&only histograms within each block are mixed. Note that the histograms
-\&within each block must be representative for all possible histograms, otherwise the
-\&statistical error is undererstimated!
+\&  (1) \fB b\-hist\fR   Default: complete histograms are considered as independent 
+\&data points, and the bootstrap is carried out by assigning random weights to the 
+\&histograms ("Bayesian bootstrap"). Note that each point along the reaction coordinate
+\&must be covered by multiple independent histograms (e.g. 10 histograms), otherwise the 
+\&statistical error is underestimated.
 
-\&\fB \-nohistbs\fR  The given histograms are used to generate new random histograms,
-\&such that the generated data points are distributed according the given histograms. The number
-\&of points generated for each bootstrap histogram can be controlled with \-bs\-dt.
-\&Note that one data point should be generated for each *independent* point in the given
-\&histograms. With the long autocorrelations in MD simulations, this procedure may 
-\&easily understimate the error!
+\&  (2) \fB hist\fR    Complete histograms are considered as independent data points. 
+\&For each bootstrap, N histograms are randomly chosen from the N given histograms 
+\&(allowing duplication, i.e. sampling with replacement).
+\&To avoid gaps without data along the reaction coordinate blocks of histograms 
+\&(\fB \-histbs\-block\fR) may be defined. In that case, the given histograms are 
+\&divided into blocks and only histograms within each block are mixed. Note that 
+\&the histograms within each block must be representative for all possible histograms, 
+\&otherwise the statistical error is underestimated.
 
-\&Bootstrapping output:
+\&  (3) \fB traj\fR  The given histograms are used to generate new random trajectories,
+\&such that the generated data points are distributed according the given histograms 
+\&and properly autocorrelated. The autocorrelation time (ACT) for each window must be 
+\&known, so use \fB \-ac\fR or provide the ACT with \fB \-iiact\fR. If the ACT of all 
+\&windows are identical (and known), you can also provide them with \fB \-bs\-tau\fR. 
+\&Note that this method may severely underestimate the error in case of limited sampling, 
+\&that is if individual histograms do not represent the complete phase space at 
+\&the respective positions.
 
-\&\fB \-bsres\fR   Average profile and standard deviations
+\&  (4) \fB traj\-gauss\fR  The same as method \fB traj\fR, but the trajectories are 
+\&not bootstrapped from the umbrella histograms but from Gaussians with the average 
+\&and width of the umbrella histograms. That method yields similar error estimates 
+\&like method \fB traj\fR.
 
-\&\fB \-bsprof\fR  All bootstrapping profiles
+Bootstrapping output:
 
-\&With \fB \-vbs\fR (verbose bootstrapping), the histograms of each bootstrap are written, and, 
-\&with \fB \-nohistBS\fR, the cummulants of the histogram.
+\&  \fB \-bsres\fR   Average profile and standard deviations
+
+\&  \fB \-bsprof\fR  All bootstrapping profiles
+
+\&With \fB \-vbs\fR (verbose bootstrapping), the histograms of each bootstrap are written, 
+\&and, with bootstrap method \fB traj\fR, the cumulative distribution functions of 
+\&the histograms.
 .SH FILES
 .BI "\-ix" " pullx\-files.dat" 
 .B Input, Opt.
@@ -200,6 +241,14 @@ g_wham - weighted histogram analysis after umbrella sampling
 .B Output
  xvgr/xmgr file 
 
+.BI "\-oiact" " iact.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "\-iiact" " iact\-in.dat" 
+.B Input, Opt.
+ Generic data file 
+
 .BI "\-bsres" " bsResult.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
@@ -211,10 +260,6 @@ g_wham - weighted histogram analysis after umbrella sampling
 .BI "\-tab" " umb\-pot.dat" 
 .B Input, Opt.
  Generic data file 
-
-.BI "\-wcorr" " cycl\-corr.xvg" 
-.B Input, Opt.
- xvgr/xmgr file 
 
 .SH OTHER OPTIONS
 .BI "\-[no]h"  "no    "
@@ -236,7 +281,7 @@ g_wham - weighted histogram analysis after umbrella sampling
  Maximum coordinate in profile
 
 .BI "\-[no]auto"  "yes   "
- determine min and max automatically
+ Determine min and max automatically
 
 .BI "\-bins"  " int" " 200" 
  Number of bins in profile
@@ -248,13 +293,13 @@ g_wham - weighted histogram analysis after umbrella sampling
  Tolerance
 
 .BI "\-[no]v"  "no    "
- verbose mode
+ Verbose mode
 
 .BI "\-b"  " real" " 50    " 
- first time to analyse (ps)
+ First time to analyse (ps)
 
 .BI "\-e"  " real" " 1e+20 " 
- last time to analyse (ps)
+ Last time to analyse (ps)
 
 .BI "\-dt"  " real" " 0     " 
  Analyse only every dt ps
@@ -263,46 +308,49 @@ g_wham - weighted histogram analysis after umbrella sampling
  Write histograms and exit
 
 .BI "\-[no]boundsonly"  "no    "
- Determine min and max and exit (with \-auto)
+ Determine min and max and exit (with \fB \-auto\fR)
 
 .BI "\-[no]log"  "yes   "
  Calculate the log of the profile before printing
 
 .BI "\-unit"  " enum" " kJ" 
- energy unit in case of log output: \fB kJ\fR, \fB kCal\fR or \fB kT\fR
+ Energy unit in case of log output: \fB kJ\fR, \fB kCal\fR or \fB kT\fR
 
 .BI "\-zprof0"  " real" " 0     " 
- Define profile to 0.0 at this position (with \-log)
+ Define profile to 0.0 at this position (with \fB \-log\fR)
 
-.BI "\-cycl"  " enum" " no" 
- Create cyclic/periodic profile. Assumes min and max are the same point.: \fB no\fR, \fB yes\fR or \fB weighted\fR
+.BI "\-[no]cycl"  "no    "
+ Create cyclic/periodic profile. Assumes min and max are the same point.
 
-.BI "\-alpha"  " real" " 2     " 
- for '\-cycl weighted', set parameter alpha
+.BI "\-[no]sym"  "no    "
+ Symmetrize profile around z=0
 
-.BI "\-[no]flip"  "no    "
- Combine halves of profile (not supported)
+.BI "\-[no]ac"  "no    "
+ Calculate integrated autocorrelation times and use in wham
 
-.BI "\-[no]hist\-eq"  "no    "
- Enforce equal weight for all histograms. (Non\-Weighed\-HAM)
+.BI "\-acsig"  " real" " 0     " 
+ Smooth autocorrelation times along reaction coordinate with Gaussian of this sigma
+
+.BI "\-ac\-trestart"  " real" " 1     " 
+ When computing autocorrelation functions, restart computing every .. (ps)
 
 .BI "\-nBootstrap"  " int" " 0" 
- nr of bootstraps to estimate statistical uncertainty
+ nr of bootstraps to estimate statistical uncertainty (e.g., 200)
 
-.BI "\-bs\-dt"  " real" " 0     " 
- timestep for synthetic bootstrap histograms (ps). Ensure independent data points!
+.BI "\-bs\-method"  " enum" " b\-hist" 
+ Bootstrap method: \fB b\-hist\fR, \fB hist\fR, \fB traj\fR or \fB traj\-gauss\fR
+
+.BI "\-bs\-tau"  " real" " 0     " 
+ Autocorrelation time (ACT) assumed for all histograms. Use option \fB \-ac\fR if ACT is unknown.
 
 .BI "\-bs\-seed"  " int" " \-1" 
- seed for bootstrapping. (\-1 = use time)
-
-.BI "\-[no]histbs"  "yes   "
- In bootstrapping, consider complete histograms as one data point. Accounts better for long autocorrelations.
+ Seed for bootstrapping. (\-1 = use time)
 
 .BI "\-histbs\-block"  " int" " 8" 
- when mixin histograms only mix within blocks of \-histBS_block.
+ When mixing histograms only mix within blocks of \fB \-histbs\-block\fR.
 
 .BI "\-[no]vbs"  "no    "
- verbose bootstrapping. Print the cummulants and a histogram file for each bootstrap.
+ Verbose bootstrapping. Print the CDFs and a histogram file for each bootstrap.
 
 .SH SEE ALSO
 .BR gromacs(7)

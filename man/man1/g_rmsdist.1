@@ -1,8 +1,8 @@
-.TH g_rmsdist 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5-beta4-2010-08-26 09:43:57 +0200-33da7ba-dirty"
+.TH g_rmsdist 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_rmsdist - calculates atom pair distances averaged with power \-2, \-3 or \-6
 
-.B VERSION 4.5-beta4-2010-08-26 09:43:57 +0200-33da7ba-dirty
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_rmsdist\fP
 .BI "\-f" " traj.xtc "
@@ -29,16 +29,16 @@ g_rmsdist - calculates atom pair distances averaged with power \-2, \-3 or \-6
 .BI "\-[no]sumh" ""
 .BI "\-[no]pbc" ""
 .SH DESCRIPTION
-\&g_rmsdist computes the root mean square deviation of atom distances,
+\&\fB g_rmsdist\fR computes the root mean square deviation of atom distances,
 \&which has the advantage that no fit is needed like in standard RMS
-\&deviation as computed by g_rms.
+\&deviation as computed by \fB g_rms\fR.
 \&The reference structure is taken from the structure file.
-\&The rmsd at time t is calculated as the rms
+\&The RMSD at time t is calculated as the RMS
 \&of the differences in distance between atom\-pairs in the reference
 \&structure and the structure at time t.
 
 
-\&g_rmsdist can also produce matrices of the rms distances, rms distances
+\&\fB g_rmsdist\fR can also produce matrices of the rms distances, rms distances
 \&scaled with the mean distance and the mean distances and matrices with
 \&NMR averaged distances (1/r3 and 1/r6 averaging). Finally, lists
 \&of atom pairs with 1/r3 and 1/r6 averaged distance below the
@@ -120,7 +120,7 @@ g_rmsdist - calculates atom pair distances averaged with power \-2, \-3 or \-6
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

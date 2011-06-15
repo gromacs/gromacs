@@ -1,8 +1,8 @@
-.TH g_h2order 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_h2order 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_h2order - computes the orientation of water molecules
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_h2order\fP
 .BI "\-f" " traj.xtc "
@@ -21,12 +21,12 @@ g_h2order - computes the orientation of water molecules
 .BI "\-d" " string "
 .BI "\-sl" " int "
 .SH DESCRIPTION
-\&Compute the orientation of water molecules with respect to the normal
+\&\fB g_h2order\fR computes the orientation of water molecules with respect to the normal
 \&of the box. The program determines the average cosine of the angle
-\&between de dipole moment of water and an axis of the box. The box is
+\&between the dipole moment of water and an axis of the box. The box is
 \&divided in slices and the average orientation per slice is printed.
 \&Each water molecule is assigned to a slice, per time frame, based on the
-\&position of the oxygen. When \-nm  is used the angle between the water
+\&position of the oxygen. When \fB \-nm\fR is used, the angle between the water
 \&dipole and the axis from the center of mass to the oxygen is calculated
 \&instead of the angle between the dipole and a box axis.
 .SH FILES
@@ -70,7 +70,7 @@ g_h2order - computes the orientation of water molecules
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -82,7 +82,7 @@ g_h2order - computes the orientation of water molecules
  Calculate order parameter as function of boxlength, dividing the box in nr slices.
 
 .SH KNOWN PROBLEMS
-\- The program assigns whole water molecules to a slice, based on the firstatom of three in the index file group. It assumes an order O,H,H.Name is not important, but the order is. If this demand is not met,assigning molecules to slices is different.
+\- The program assigns whole water molecules to a slice, based on the first atom of three in the index file group. It assumes an order O,H,H. Name is not important, but the order is. If this demand is not met, assigning molecules to slices is different.
 
 .SH SEE ALSO
 .BR gromacs(7)

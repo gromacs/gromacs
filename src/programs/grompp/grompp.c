@@ -1152,8 +1152,8 @@ int main (int argc, char *argv[])
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-    "[TT]grompp[tt] uses a built-in preprocessor to resolve includes, macros ",
-    "etcetera. The preprocessor supports the following keywords:[BR]",
+    "[TT]grompp[tt] uses a built-in preprocessor to resolve includes, macros, ",
+    "etc. The preprocessor supports the following keywords:[PAR]",
     "#ifdef VARIABLE[BR]",
     "#ifndef VARIABLE[BR]",
     "#else[BR]",
@@ -1161,19 +1161,21 @@ int main (int argc, char *argv[])
     "#define VARIABLE[BR]",
     "#undef VARIABLE[BR]"
     "#include \"filename\"[BR]",
-    "#include <filename>[BR]",
+    "#include <filename>[PAR]",
     "The functioning of these statements in your topology may be modulated by",
-    "using the following two flags in your [TT]mdp[tt] file:[BR]",
-    "define = -DVARIABLE1 -DVARIABLE2[BR]",
-    "include = -I/home/john/doe[BR]",
+    "using the following two flags in your [TT].mdp[tt] file:[PAR]",
+    "[TT]define = -DVARIABLE1 -DVARIABLE2[BR]",
+    "include = -I/home/john/doe[tt][BR]",
     "For further information a C-programming textbook may help you out.",
     "Specifying the [TT]-pp[tt] flag will get the pre-processed",
     "topology file written out so that you can verify its contents.[PAR]",
-    
-    "If your system does not have a c-preprocessor, you can still",
-    "use [TT]grompp[tt], but you do not have access to the features ",
-    "from the cpp. Command line options to the c-preprocessor can be given",
-    "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
+   
+    /* cpp has been unnecessary for some time, hasn't it?
+        "If your system does not have a C-preprocessor, you can still",
+        "use [TT]grompp[tt], but you do not have access to the features ",
+        "from the cpp. Command line options to the C-preprocessor can be given",
+        "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
+    */
     
     "When using position restraints a file with restraint coordinates",
     "can be supplied with [TT]-r[tt], otherwise restraining will be done",
@@ -1191,8 +1193,8 @@ int main (int argc, char *argv[])
     "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
     "variables.[PAR]",
 
-    "[TT]grompp[tt] can be used to restart simulations preserving",
-    "continuity by supplying just a checkpoint file with [TT]-t[tt].",
+    "[TT]grompp[tt] can be used to restart simulations (preserving",
+    "continuity) by supplying just a checkpoint file with [TT]-t[tt].",
     "However, for simply changing the number of run steps to extend",
     "a run, using [TT]tpbconv[tt] is more convenient than [TT]grompp[tt].",
     "You then supply the old checkpoint file directly to [TT]mdrun[tt]",
@@ -1209,10 +1211,10 @@ int main (int argc, char *argv[])
     "of virtual site constructions will be removed. If any constraints remain",
     "which involve virtual sites, a fatal error will result.[PAR]"
     
-    "To verify your run input file, please make notice of all warnings",
+    "To verify your run input file, please take note of all warnings",
     "on the screen, and correct where necessary. Do also look at the contents",
-    "of the [TT]mdout.mdp[tt] file, this contains comment lines, as well as",
-    "the input that [TT]grompp[tt] has read. If in doubt you can start grompp",
+    "of the [TT]mdout.mdp[tt] file; this contains comment lines, as well as",
+    "the input that [TT]grompp[tt] has read. If in doubt, you can start [TT]grompp[tt]",
     "with the [TT]-debug[tt] option which will give you more information",
     "in a file called [TT]grompp.log[tt] (along with real debug info). You",
     "can see the contents of the run input file with the [TT]gmxdump[tt]",

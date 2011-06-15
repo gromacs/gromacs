@@ -1,8 +1,8 @@
-.TH g_covar 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_covar 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_covar - calculates and diagonalizes the covariance matrix
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_covar\fP
 .BI "\-f" " traj.xtc "
@@ -56,13 +56,22 @@ g_covar - calculates and diagonalizes the covariance matrix
 \&
 
 
-\&Option \fB \-xpm\fR writes the whole covariance matrix to an xpm file.
+\&Option \fB \-xpm\fR writes the whole covariance matrix to an \fB .xpm\fR file.
 \&
 
 
-\&Option \fB \-xpma\fR writes the atomic covariance matrix to an xpm file,
+\&Option \fB \-xpma\fR writes the atomic covariance matrix to an \fB .xpm\fR file,
 \&i.e. for each atom pair the sum of the xx, yy and zz covariances is
 \&written.
+\&
+
+
+\&Note that the diagonalization of a matrix requires memory and time
+\&that will increase at least as fast as than the square of the number
+\&of atoms involved. It is easy to run out of memory, in which
+\&case this tool will probably exit with a 'Segmentation fault'. You
+\&should consider carefully whether a reduced set of atoms will meet
+\&your needs for lower costs.
 .SH FILES
 .BI "\-f" " traj.xtc" 
 .B Input

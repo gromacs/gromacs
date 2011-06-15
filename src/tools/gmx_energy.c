@@ -1013,7 +1013,7 @@ static void analyse_ener(gmx_bool bCorr,const char *corrfn,
   /* Check out the printed manual for equations! */
   double Dt,aver,stddev,errest,delta_t,totaldrift;
   enerdata_t *esum=NULL;
-  real xxx,integral,intBulk,Temp,Pres;
+  real xxx,integral,intBulk,Temp=0,Pres=0;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,pr_errest;
   double beta=0,expE,expEtot,*fee=NULL;
   gmx_large_int_t nsteps;
@@ -1367,7 +1367,7 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
-    gmx_bool changing_lambda;
+    gmx_bool changing_lambda=FALSE;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)
@@ -1631,21 +1631,21 @@ int gmx_energy(int argc,char *argv[])
     
     "[TT]g_energy[tt] extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",
-    "select the energy terms she wants.[PAR]",
+    "select the desired energy terms.[PAR]",
     
-    "Average, RMSD and drift are calculated with full precision from the",
+    "Average, RMSD, and drift are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a least-squares fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "An error estimate of the average is given based on a block averages",
-    "over 5 blocks using the full precision averages. The error estimate",
+    "over 5 blocks using the full-precision averages. The error estimate",
     "can be performed over multiple block lengths with the options",
     "[TT]-nbmin[tt] and [TT]-nbmax[tt].",
-    "Note that in most cases the energy files contains averages over all",
+    "[BB]Note[bb] that in most cases the energy files contains averages over all",
     "MD steps, or over many more points than the number of frames in",
     "energy file. This makes the [TT]g_energy[tt] statistics output more accurate",
     "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
-    "file the statistics mentioned above are simply over the single, per-frame",
+    "file, the statistics mentioned above are simply over the single, per-frame",
     "energy values.[PAR]",
 
     "The term fluctuation gives the RMSD around the least-squares fit.[PAR]",
@@ -1694,23 +1694,24 @@ int gmx_energy(int argc,char *argv[])
 
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
-    "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
-    "  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
+    "  [GRK]Delta[grk] G = G(N,p,T) - G_idgas(N,p,T) = kT ln < e^(Upot/kT) >[BR]",
     "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
     "the average is over the ensemble (or time in a trajectory).",
     "Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using:[BR]",
-    "  Delta S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - Delta A)/T[BR]",
-    "  Delta S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - Delta G)/T",
+    "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (<Upot> - [GRK]Delta[grk] A)/T[BR]",
+    "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (<Upot> + pV - [GRK]Delta[grk] G)/T",
     "[PAR]",
     
     "When a second energy file is specified ([TT]-f2[tt]), a free energy",
     "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
     "where EA and EB are the energies from the first and second energy",
-    "files, and the average is over the ensemble A. [BB]NOTE[bb] that",
-    "the energies must both be calculated from the same trajectory."
+    "files, and the average is over the ensemble A. The running average",
+    "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
+    "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
     
   };
   static gmx_bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE,bDriftCorr=FALSE;
