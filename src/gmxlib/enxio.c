@@ -1111,14 +1111,22 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
 
   if (ir->etc == etcNOSEHOOVER) 
   {
+      char cns[20];
+
+      cns[0] = '\0';
+
       for(i=0; i<state->ngtc; i++) {
           ni = groups->grps[egcTC].nm_ind[i];
           bufi = *(groups->grpname[ni]);
           for(j=0; (j<state->nhchainlength); j++) 
           {
-              sprintf(buf,"Xi-%d-%s",j,bufi);
+              if (IR_NVT_TROTTER(ir))
+              {
+                  sprintf(cns,"-%d",j);
+              }
+              sprintf(buf,"Xi%s-%s",cns,bufi);
               state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-              sprintf(buf,"vXi-%d-%s",j,bufi);
+              sprintf(buf,"vXi%s-%s",cns,bufi);
               state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
           }
 
