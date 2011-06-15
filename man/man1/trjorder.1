@@ -1,8 +1,8 @@
-.TH trjorder 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH trjorder 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 trjorder - orders molecules according to their distance to a group
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3trjorder\fP
 .BI "\-f" " traj.xtc "
@@ -23,7 +23,7 @@ trjorder - orders molecules according to their distance to a group
 .BI "\-r" " real "
 .BI "\-[no]z" ""
 .SH DESCRIPTION
-\&trjorder orders molecules according to the smallest distance
+\&\fB trjorder\fR orders molecules according to the smallest distance
 \&to atoms in a reference group
 \&or on z\-coordinate (with option \fB \-z\fR).
 \&With distance ordering, it will ask for a group of reference
@@ -36,7 +36,7 @@ trjorder - orders molecules according to their distance to a group
 \&to the output trajectory.
 
 
-\&trjorder can be useful for e.g. analyzing the n waters closest to a
+\&\fB trjorder\fR can be useful for e.g. analyzing the n waters closest to a
 \&protein.
 \&In that case the reference group would be the protein and the group
 \&of molecules would consist of all the water atoms. When an index group
@@ -45,8 +45,8 @@ trjorder - orders molecules according to their distance to a group
 \&
 
 
-\&If the output file is a pdb file, the distance to the reference target
-\&will be stored in the B\-factor field in order to color with e.g. rasmol.
+\&If the output file is a \fB .pdb\fR file, the distance to the reference target
+\&will be stored in the B\-factor field in order to color with e.g. Rasmol.
 \&
 
 

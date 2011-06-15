@@ -1,8 +1,8 @@
-.TH tpbconv 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH tpbconv 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 tpbconv - makes a run input file for restarting a crashed run
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3tpbconv\fP
 .BI "\-s" " topol.tpr "
@@ -24,27 +24,31 @@ tpbconv - makes a run input file for restarting a crashed run
 \&tpbconv can edit run input files in four ways.
 
 
-\&\fB 1st.\fR by modifying the number of steps in a run input file
+\&\fB 1.\fR by modifying the number of steps in a run input file
 \&with options \fB \-extend\fR, \fB \-until\fR or \fB \-nsteps\fR
 \&(nsteps=\-1 means unlimited number of steps)
 
 
-\&\fB 2nd.\fR (OBSOLETE) by creating a run input file
+\&\fB 2.\fR (OBSOLETE) by creating a run input file
 \&for a continuation run when your simulation has crashed due to e.g.
 \&a full disk, or by making a continuation run input file.
 \&This option is obsolete, since mdrun now writes and reads
 \&checkpoint files.
-\&Note that a frame with coordinates and velocities is needed.
+\&\fB Note\fR that a frame with coordinates and velocities is needed.
 \&When pressure and/or Nose\-Hoover temperature coupling is used
 \&an energy file can be supplied to get an exact continuation
 \&of the original run.
 
 
-\&\fB 3rd.\fR by creating a tpx file for a subset of your original
+\&\fB 3.\fR by creating a \fB .tpx\fR file for a subset of your original
 \&tpx file, which is useful when you want to remove the solvent from
-\&your tpx file, or when you want to make e.g. a pure Ca tpx file.
-\&\fB WARNING: this tpx file is not fully functional\fR.
-\&\fB 4th.\fR by setting the charges of a specified group
+\&your \fB .tpx\fR file, or when you want to make e.g. a pure Calpha \fB .tpx\fR file.
+\&Note that you may need to use \fB \-nsteps \-1\fR (or similar) to get
+\&this to work.
+\&\fB WARNING: this \fB .tpx\fR file is not fully functional\fR.
+
+
+\&\fB 4.\fR by setting the charges of a specified group
 \&to zero. This is useful when doing free energy estimates
 \&using the LIE (Linear Interaction Energy) method.
 .SH FILES

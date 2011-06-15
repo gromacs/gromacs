@@ -1,8 +1,8 @@
-.TH trjcat 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH trjcat 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 trjcat - concatenates trajectory files
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3trjcat\fP
 .BI "\-f" " traj.xtc "
@@ -25,12 +25,12 @@ trjcat - concatenates trajectory files
 .BI "\-[no]overwrite" ""
 .BI "\-[no]cat" ""
 .SH DESCRIPTION
-\&trjcat concatenates several input trajectory files in sorted order. 
+\&\fB trjcat\fR concatenates several input trajectory files in sorted order. 
 \&In case of double time frames the one in the later file is used. 
 \&By specifying \fB \-settime\fR you will be asked for the start time 
 \&of each file. The input files are taken from the command line, 
-\&such that a command like \fB trjcat \-o fixed.trr *.trr\fR should do 
-\&the trick. Using \fB \-cat\fR you can simply paste several files 
+\&such that a command like \fB trjcat \-f *.trr \-o fixed.trr\fR should do 
+\&the trick. Using \fB \-cat\fR, you can simply paste several files 
 \&together without removal of frames with identical time stamps.
 
 
@@ -42,19 +42,19 @@ trjcat - concatenates trajectory files
 
 
 \&If the \fB \-demux\fR option is given, the N trajectories that are
-\&read, are written in another order as specified in the xvg file.
-\&The xvg file should contain something like:
+\&read, are written in another order as specified in the \fB .xvg\fR file.
+\&The \fB .xvg\fR file should contain something like:
 
 
-\&0  0  1  2  3  4  5
+\&\fB 0  0  1  2  3  4  5
 
-\&2  1  0  2  3  5  4
+\&2  1  0  2  3  5  4\fR
 
 \&Where the first number is the time, and subsequent numbers point to
 \&trajectory indices.
 \&The frames corresponding to the numbers present at the first line
 \&are collected into the output trajectory. If the number of frames in
-\&the trajectory does not match that in the xvg file then the program
+\&the trajectory does not match that in the \fB .xvg\fR file then the program
 \&tries to be smart. Beware.
 .SH FILES
 .BI "\-f" " traj.xtc" 
@@ -99,7 +99,7 @@ trjcat - concatenates trajectory files
  Only write frame when t MOD dt = first time (ps)
 
 .BI "\-prec"  " int" " 3" 
- Precision for .xtc and .gro writing in number of decimal places
+ Precision for \fB .xtc\fR and \fB .gro\fR writing in number of decimal places
 
 .BI "\-[no]vel"  "yes   "
  Read and write velocities if possible
@@ -111,13 +111,13 @@ trjcat - concatenates trajectory files
  Sort trajectory files (not frames)
 
 .BI "\-[no]keeplast"  "no    "
- keep overlapping frames at end of trajectory
+ Keep overlapping frames at end of trajectory
 
 .BI "\-[no]overwrite"  "no    "
- overwrite overlapping frames during appending
+ Overwrite overlapping frames during appending
 
 .BI "\-[no]cat"  "no    "
- do not discard double time frames
+ Do not discard double time frames
 
 .SH SEE ALSO
 .BR gromacs(7)

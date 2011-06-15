@@ -468,7 +468,6 @@ void done_energyhistory(energyhistory_t * enerhist)
     sfree(enerhist->ener_ave);
     sfree(enerhist->ener_sum);
     sfree(enerhist->ener_sum_sim);
-    sfree(enerhist->dht);
 
     if (enerhist->dht != NULL)
     {

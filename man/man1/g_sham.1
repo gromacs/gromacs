@@ -1,8 +1,8 @@
-.TH g_sham 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_sham 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_sham - read/write xmgr and xvgr data sets
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_sham\fP
 .BI "\-f" " graph.xvg "
@@ -45,19 +45,19 @@ g_sham - read/write xmgr and xvgr data sets
 .BI "\-nlevels" " int "
 .BI "\-mname" " string "
 .SH DESCRIPTION
-\&g_sham makes multi\-dimensional free\-energy, enthalpy and entropy plots.
-\&g_sham reads one or more xvg files and analyzes data sets.
-\&g_sham basic purpose is plotting Gibbs free energy landscapes
+\&\fB g_sham\fR makes multi\-dimensional free\-energy, enthalpy and entropy plots.
+\&\fB g_sham\fR reads one or more \fB .xvg\fR files and analyzes data sets.
+\&The basic purpose of \fB g_sham\fR is to plot Gibbs free energy landscapes
 \&(option \fB \-ls\fR)
-\&by Bolzmann inverting multi\-dimensional histograms (option \fB \-lp\fR)
+\&by Bolzmann inverting multi\-dimensional histograms (option \fB \-lp\fR),
 \&but it can also
 \&make enthalpy (option \fB \-lsh\fR) and entropy (option \fB \-lss\fR)
 \&plots. The histograms can be made for any quantities the user supplies.
 \&A line in the input file may start with a time
-\&(see option \fB \-time\fR) and any number of y values may follow.
+\&(see option \fB \-time\fR) and any number of \fI y\fR\-values may follow.
 \&Multiple sets can also be
 \&read when they are separated by & (option \fB \-n\fR),
-\&in this case only one y value is read from each line.
+\&in this case only one \fI y\fR\-value is read from each line.
 \&All lines starting with  and @ are skipped.
 \&
 
@@ -71,23 +71,23 @@ g_sham - read/write xmgr and xvgr data sets
 
 \&Option \fB \-ene\fR can be used to supply a file with energies.
 \&These energies are used as a weighting function in the single
-\&histogram analysis method due to Kumar et. al. When also temperatures
-\&are supplied (as a second column in the file) an experimental
+\&histogram analysis method by Kumar et al. When temperatures
+\&are supplied (as a second column in the file), an experimental
 \&weighting scheme is applied. In addition the vales
 \&are used for making enthalpy and entropy plots.
 \&
 
 
-\&With option \fB \-dim\fR dimensions can be gives for distances.
+\&With option \fB \-dim\fR, dimensions can be gives for distances.
 \&When a distance is 2\- or 3\-dimensional, the circumference or surface
 \&sampled by two particles increases with increasing distance.
 \&Depending on what one would like to show, one can choose to correct
 \&the histogram and free\-energy for this volume effect.
-\&The probability is normalized by r and r2 for a dimension of 2 and 3
+\&The probability is normalized by r and r2 for dimensions of 2 and 3, 
 \&respectively.
 \&A value of \-1 is used to indicate an angle in degrees between two
 \&vectors: a sin(angle) normalization will be applied.
-\&Note that for angles between vectors the inner\-product or cosine
+\&\fB Note\fR that for angles between vectors the inner\-product or cosine
 \&is the natural quantity to use, as it will produce bins of the same
 \&volume.
 .SH FILES
@@ -158,7 +158,7 @@ g_sham - read/write xmgr and xvgr data sets
  Set the nicelevel
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
