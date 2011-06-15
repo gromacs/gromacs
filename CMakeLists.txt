@@ -490,6 +490,11 @@ if(GMX_GPU)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
     endif()
+    # we need this linker flag for gcc 4.5
+    CHECK_C_COMPILER_FLAG("-Wl,--copy-dt-needed-entries" COPY_DT_NEEDED_ENTRIES_LINK_FLAG)
+    if(COPY_DT_NEEDED_ENTRIES_LINK_FLAG)
+        set(GROMACS_LINKER_FLAGS "-Wl,--copy-dt-needed-entries ${GROMACS_LINKER_FLAGS}")
+    endif()
 endif()
 
 if(GMX_OPENMP)   
