@@ -72,7 +72,7 @@
 
 
 /* 1,4 interactions uses kernel 330 directly */
-#include "nb_kernel_c/nb_kernel330.h"
+#include "nb_kernel_c/nb_kernel330.h" 
 #include "nb_kernel_adress_c/nb_kernel330_adress.h"
 
 #ifdef GMX_PPC_ALTIVEC   
@@ -209,6 +209,7 @@ nb_kernel_table[eNR_NBKERNEL_NR] =
 
 static nb_kernel_t **
 nb_kernel_list = NULL;
+
 static nb_adress_kernel_t **
 nb_kernel_list_adress = NULL;
 
@@ -339,6 +340,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
+    
         gmx_bool        bCG; /* for AdresS */
         int             k;/* for AdresS */
 
@@ -348,11 +350,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
     bCG = FALSE;  /* for AdresS */
     adresskernelptr = NULL;
-    
+
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
 	gbdata.gpol               = egpol;
-
+    
     if (!fr->adress_type==eAdressOff && !bDoForces){
         gmx_fatal(FARGS,"No force kernels not implemeted for adress");
     }
@@ -607,8 +609,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                         if ( !fr->adress_group_explicit[ mdatoms->cENER[nlist->iinr[0]] ] ){
                             bCG=TRUE;
                         }
-                    
-
                         /* If this processor has only explicit atoms (w=1)
                           skip the coarse grained force calculation. Same for
                          only coarsegrained atoms and explicit interactions.
@@ -616,7 +616,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                          skipped*/
                         if (mdatoms->pureex && bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
                         if (mdatoms->purecg && !bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
-
                         kernelptr = NULL;
                         adresskernelptr = NULL;
                     }
@@ -640,7 +639,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                     }
                     
                     if (kernelptr == NULL && adresskernelptr == NULL)
-                    {
+                     {
                         /* Call a generic nonbonded kernel */
                         
                         /* If you want to hack/test your own interactions,
@@ -805,6 +804,7 @@ do_listed_vdw_q(int ftype,int nbonds,
     t_nblist  tmplist;
     int       icoul,ivdw;
     gmx_bool      bMolPBC,bFreeEnergy;
+    
     gmx_bool      bCG; /* AdResS*/
     real      wf14[2]={0,0}; /* AdResS*/
    
@@ -876,6 +876,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         ivdw = 1;
     }
     
+    
     bCG = FALSE; /*Adres*/
     /* We don't do SSE or altivec here, due to large overhead for 4-fold 
      * unrolling on short lists 
@@ -888,7 +889,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         ai    = iatoms[i++];
         aj    = iatoms[i++];
         gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
-
+        
         if (!fr->adress_type == eAdressOff) {
             if (fr->adress_group_explicit[md->cENER[ai]] != fr->adress_group_explicit[md->cENER[aj]]){
                 /*exclude cg-ex interaction*/
@@ -1023,7 +1024,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       &inneriter);
         }
         else 
-        {
+        { 
           if (fr->adress_type==eAdressOff || !fr->adress_do_hybridpairs){
             /* Not perturbed - call kernel 330 */
             nb_kernel330
@@ -1057,7 +1058,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                   (void *)&mtx,
                   &outeriter,
                   &inneriter,
-                  NULL);
+                  NULL);                
                 } else {
                     if (bCG) {
                         nb_kernel330_adress_cg(&i1,

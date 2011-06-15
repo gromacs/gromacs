@@ -144,6 +144,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     snew(md,1);
 
+    md->bVir=TRUE;
+    md->bPress=TRUE;
+    md->bSurft=TRUE;
+    md->bMu=TRUE;
+
     if (EI_DYNAMICS(ir->eI))
     {
         md->delta_t = ir->delta_t;
@@ -250,6 +255,19 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bEner[F_TEMP] = TRUE;
 #endif
 
+    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
+    if (ir->adress_type != eAdressOff && !debug) {
+        for (i = 0; i < F_NRE; i++) {
+            md->bEner[i] = FALSE;
+            if(i == F_EKIN){ md->bEner[i] = TRUE;}
+            if(i == F_TEMP){ md->bEner[i] = TRUE;}
+        }
+        md->bVir=FALSE;
+        md->bPress=FALSE;
+        md->bSurft=FALSE;
+        md->bMu=FALSE;
+    }
+
     md->f_nre=0;
     for(i=0; i<F_NRE; i++)
     {
@@ -304,16 +322,20 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm,unit_energy);
         md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm,unit_energy);
     }
-    md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm,unit_energy);
-    md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
-    md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
+    if (md->bVir)
+        md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm,unit_energy);
+    if (md->bPress)
+        md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
+    if (md->bSurft)
+        md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
                                 unit_surft_bar);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin,md->bTricl ? 6 : 3,
                                  boxvel_nm,unit_vel);
     }
-    md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
+    if (md->bMu)
+        md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
     if (ir->cos_accel != 0)
     {
         md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm,unit_vel);
@@ -364,8 +386,20 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     n=groups->grps[egcENER].nr;
-    md->nEg=n;
-    md->nE=(n*(n+1))/2;
+    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
+    if (ir->adress_type == eAdressOff){
+        /*standard simulation*/
+        md->nEg=n;
+        md->nE=(n*(n+1))/2;
+    }
+    else if (!debug) {
+        /*AdResS simulation*/
+       md->nU=0;
+       md->nEg=0;
+       md->nE=0;
+       md->nEc=0;
+       md->isvir=FALSE;
+    }
     snew(md->igrp,md->nE);
     if (md->nE > 1)
     {
@@ -731,10 +765,14 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         add_ebin(md->ebin,md->isvir,9,svir[0],bSum);
         add_ebin(md->ebin,md->ifvir,9,fvir[0],bSum);
     }
-    add_ebin(md->ebin,md->ivir,9,vir[0],bSum);
-    add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
-    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
-    add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
+    if (md->bVir)
+        add_ebin(md->ebin,md->ivir,9,vir[0],bSum);
+    if (md->bPress)
+        add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
+    if (md->bSurft){
+        tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+        add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
+    }
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];
@@ -745,7 +783,8 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         tmp6[5] = state->boxv[ZZ][YY];
         add_ebin(md->ebin,md->ipc,md->bTricl ? 6 : 3,tmp6,bSum);
     }
-    add_ebin(md->ebin,md->imu,3,mu_tot,bSum);
+    if(md->bMu)
+        add_ebin(md->ebin,md->imu,3,mu_tot,bSum);
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
