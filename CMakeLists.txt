@@ -781,8 +781,8 @@ endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED LIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+if ( DEFINED GMXLIB )
+    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
 else()
     set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
 endif()
