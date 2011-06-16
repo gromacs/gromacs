@@ -183,7 +183,7 @@ gmx_calloc_aligned(size_t size)
  * lin is allocated by fft5d because size of array is only known after planning phase 
  * rlout2 is only used as intermediate buffer - only returned after allocation to reuse for back transform - should not be used by caller
 */
-fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3)
+fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads)
 {
 
     int P[2],bMaster,prank[2],i,t;
@@ -419,12 +419,6 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
 
     
-    int nthreads = 1;
-    //FFTW(init_threads)();
-    
-    nthreads = omp_get_max_threads();
-
-
     if (debug)
     {
         fprintf(debug, "Running on %d threads\n",nthreads);        
@@ -1197,7 +1191,7 @@ void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor
 
 /*same as fft5d_plan_3d but with cartesian coordinator and automatic splitting 
   of processor dimensions*/
-fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3) {
+fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads) {
     MPI_Comm cart[2]={0};
 #ifdef GMX_MPI
     int size=1,prank=0;
@@ -1227,7 +1221,7 @@ fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int
     MPI_Cart_sub(gcart, rdim1 , &cart[0]);
     MPI_Cart_sub(gcart, rdim2 , &cart[1]);
 #endif
-    return fft5d_plan_3d(NG, MG, KG, cart, flags, rlin, rlout,rlout2,rlout3); 
+    return fft5d_plan_3d(NG, MG, KG, cart, flags, rlin, rlout,rlout2,rlout3,nthreads);
 }
 
 
