@@ -3322,6 +3322,37 @@ static gmx_bool next_ci(const gmx_nbs_grid_t *grid,
     return TRUE;
 }
 
+static real boundingbox_only_distance2(const gmx_nbs_grid_t *gridi,
+                                       const gmx_nbs_grid_t *gridj,
+                                       real rlist,
+                                       gmx_bool simple)
+{
+    /* If the distance between two sub-cell bounding boxes is less
+     * than this distance, do not check the distance between
+     * all particle pairs in the sub-cell, since then it is likely
+     * that the box pair has atom pairs within the cut-off.
+     * We use the nblist cut-off minus 0.5 times the average x/y diagonal
+     * spacing of the sub-cells. Around 40% of the checked pairs are pruned.
+     * Using more than 0.5 gains at most 0.5%.
+     * If forces are calculated more than twice, the performance gain
+     * in the force calculation outweighs the cost of checking.
+     * Note that with subcell lists, the atom-pair distance check
+     * is only performed when only 1 out of 8 sub-cells in within range,
+     * this is because the GPU is much faster than the cpu.
+     */
+    real bbx,bby;
+
+    bbx = 0.5*(gridi->sx + gridj->sx);
+    bby = 0.5*(gridi->sy + gridj->sy);
+    if (!simple)
+    {
+        bbx /= NSUBCELL_X;
+        bby /= NSUBCELL_Y;
+    }
+
+    return sqr(max(0,rlist - 0.5*sqrt(bbx*bbx + bby*bby)));
+}
+
 static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                           const gmx_nbs_grid_t *gridi,
                                           const gmx_nbs_grid_t *gridj,
@@ -3373,23 +3404,8 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
     rl2 = nbl->rlist*nbl->rlist;
 
-    if (nbs->subc_dc == NULL)
-    {
-        rbb2 = rl2;
-    }
-    else
-    {
-        /* If the distance between two sub-cell bounding boxes is less
-         * than the nblist cut-off minus half of the average x/y diagonal
-         * spacing of the sub-cells, do not check the distance between
-         * all particle pairs in the sub-cell, since then it is likely
-         * that the box pair has atom pairs within the cut-off.
-         */
-        rbb2 = sqr(max(0,
-                       nbl->rlist -
-                       0.5*sqrt(sqr(box[XX][XX]/(gridi->ncx*NSUBCELL_X)) +
-                                sqr(box[YY][YY]/(gridi->ncy*NSUBCELL_Y)))));
-    }
+    rbb2 = boundingbox_only_distance2(gridi,gridj,nbl->rlist,nbl->simple);
+
     if (debug)
     {
         fprintf(debug,"nbl bounding box only distance %f\n",sqrt(rbb2));
