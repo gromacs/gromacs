@@ -49,520 +49,968 @@
 #include "vec.h"
 #include "tgroup.h"
 
-#define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
-/* Probably the test for (nr) > 0 in the next macro is only needed
- * on BlueGene(/L), where IBM's MPI_Bcast will segfault after
- * dereferencing a null pointer, even when no data is to be transferred. */
-#define  nblock_bc(cr,nr,d) { if ((nr) > 0) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr)); }
-#define    snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
-/* Dirty macro with bAlloc not as an argument */
-#define nblock_abc(cr,nr,d) { if (bAlloc) snew((d),(nr)); nblock_bc(cr,(nr),(d)); }
+/*! \brief Code for packed MPI communication of t_state, t_inputrec
+ *         and gmx_mtop_t variables.
+ *
+ * This code uses proper MPI packing and unpacking to communicate
+ * dynamically-allocated data structures with minimal calls to
+ * functions that actually communicate between processors.
+ *
+ * It does so by abstracting the necessary calls to MPI_Pack_size,
+ * MPI_Pack and MPI_Unpack through a common umbrella function. This
+ * umbrella function is called from a callback function that is unique
+ * to each kind of data. The necessary house-keeping is performed
+ * behind the scenes. The callback is first invoked in a mode that
+ * determines the (upper bound of the) size of the packed data
+ * structure, and memory is allocated accordingly on all nodes. The
+ * sending (master) node then invokes the callback function again in
+ * "pack" mode. All nodes execute the MPI communication call. Then the
+ * receiving (non-master) nodes then invoke the callback function
+ * again in "unpack" mode. This way, only the callback function needs
+ * to contain code that maps normal data types to MPI_Datatypes,
+ * rather than in three places in a simple MPI_Pack implementation.
+ *
+ * Clearly, dynamically allocated arrays of dynamically allocated
+ * arrays (etc.) present a difficulty, because all nodes need to know
+ * in advance how much data they will communicate. So multiple phases
+ * of packing and unpacking can be required. The packaging of the
+ * house-keeping makes this very simple. All that is required is
+ * multiple callback functions. An example exists in bcast_ir_mtop().
+ *
+ * Large arrays (e.g. of size natoms) don't benefit from reducing
+ * calls to the communication library by doing such packing, anda
+ * developer can feel free to include a normal MPI communcation call
+ * in a callback function, so long as they take care to see that it is
+ * called suitably from the different kinds of nodes. An example
+ * exists in bcast_state().
+ *
+ * The usual trick of defining a struct to contain the necessary data
+ * that must be preserved between calls to the callback function can
+ * be used, via the usual void pointer argument to the callback and
+ * the house-keeping function.
+ *
+ * The 4.5.x (and earlier) code used dozens of calls to MPI_Bcast to
+ * deal with the fact that propagating dynamically allocated structs
+ * is awkward in MPI. Since this process only really occured during
+ * system setup and replica exchange, it was not a big deal. However,
+ * the nature of the solution meant that
+ *
+ */
 
-static void bc_string(const t_commrec *cr,t_symtab *symtab,char ***s)
+#ifndef GMX_MPI
+/* Calling any of these entry points is illegal without MPI, but the
+ * non-MPI code contains calls to them them, so they have to be
+ * defined and able to be compiled. */
+void bcast_state_setup(const t_commrec *cr, t_state *state)
 {
-  int handle;
-  
-  if (MASTER(cr)) {
-    handle = lookup_symtab(symtab,*s);
-  }
-  block_bc(cr,handle);
-  if (!MASTER(cr)) {
-    *s = get_symtab_handle(symtab,handle);
-  }
+    gmx_call("bcast_state_setup");
 }
 
-static void bc_strings(const t_commrec *cr,t_symtab *symtab,int nr,char ****nm)
+void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
 {
-  int  i;
-  int  *handle;
-  char ***NM;
-
-  snew(handle,nr);
-  if (MASTER(cr)) {
-    NM = *nm;
-    for(i=0; (i<nr); i++)
-      handle[i] = lookup_symtab(symtab,NM[i]);
-  }
-  nblock_bc(cr,nr,handle);
-
-  if (!MASTER(cr)) {
-    snew_bc(cr,*nm,nr);
-    NM = *nm;
-    for (i=0; (i<nr); i++) 
-      (*nm)[i] = get_symtab_handle(symtab,handle[i]);
-  }
-  sfree(handle);
+    gmx_call("bcast_state");
 }
 
-static void bc_strings_resinfo(const t_commrec *cr,t_symtab *symtab,
-			       int nr,t_resinfo *resinfo)
+void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 {
-  int  i;
-  int  *handle;
-
-  snew(handle,nr);
-  if (MASTER(cr)) {
-    for(i=0; (i<nr); i++)
-      handle[i] = lookup_symtab(symtab,resinfo[i].name);
-  }
-  nblock_bc(cr,nr,handle);
-
-  if (!MASTER(cr)) {
-    for (i=0; (i<nr); i++) 
-      resinfo[i].name = get_symtab_handle(symtab,handle[i]);
-  }
-  sfree(handle);
+    gmx_call("bcast_ir_mtop");
 }
 
-static void bc_symtab(const t_commrec *cr,t_symtab *symtab)
-{
-  int i,nr,len;
-  t_symbuf *symbuf;
+#else
 
-  block_bc(cr,symtab->nr);
-  nr = symtab->nr;
-  snew_bc(cr,symtab->symbuf,1);
-  symbuf = symtab->symbuf;
-  symbuf->bufsize = nr;
-  snew_bc(cr,symbuf->buf,nr);
-  for (i=0; i<nr; i++) {
+/*! Determines the mode in which a function is invoked during MPI
+ *  packing. */
+typedef enum {eptPackSize, eptPack, eptUnpack, eptPackTypeNR} ePackType;
+
+/*! /brief Manage packing and unpacking transparently.
+ */
+typedef struct
+{
+    const t_commrec *cr;
+    ePackType packtype;
+    char *buffer;
+    int size_of_buffer;
+    int position;
+} t_gmx_packed;
+typedef t_gmx_packed *gmx_packed_t;
+
+gmx_packed_t gmx_packed_init(const t_commrec *cr)
+{
+    gmx_packed_t packed;
+    snew(packed, 1);
+    packed->cr = cr;
+    packed->packtype = eptPackSize;
+    return packed;
+}
+
+void gmx_packed_allocate(gmx_packed_t packed)
+{
+    snew(packed->buffer, packed->size_of_buffer);
+    packed->position = 0;
+}
+
+void gmx_packed_destroy(gmx_packed_t packed)
+{
+    sfree(packed->buffer);
+    sfree(packed);
+}
+
+/*! /brief Do the house-keeping around the calls to the callback
+ *         function.
+ *
+ * It would be nice if this function could allocate the data pointer
+ * upon request (which is wanted by bcast_state()), but without proper
+ * function overloading, that's possible only by writing ugly code.
+ */
+void gmx_pack_function(gmx_packed_t packed, void *data, int nr, MPI_Datatype mpitype)
+{
+    int packed_size = 0;
+    switch(packed->packtype)
+    {
+    case eptPackSize:
+        MPI_Pack_size(nr, mpitype, packed->cr->mpi_comm_mygroup, &packed_size);
+        packed->size_of_buffer += packed_size;
+        break;
+    case eptPack:
+        if (0 < nr)
+        {
+            MPI_Pack(data, nr, mpitype, packed->buffer, packed->size_of_buffer, &packed->position, packed->cr->mpi_comm_mygroup);
+        }
+        break;
+    case eptUnpack:
+        if (0 < nr)
+        {
+            MPI_Unpack(packed->buffer, packed->size_of_buffer, &packed->position, data, nr, mpitype, packed->cr->mpi_comm_mygroup);
+        }
+        break;
+    }
+}
+
+/*! /brief Actually do the broadcast of the packed data.
+ */
+void do_packed_bcast(gmx_packed_t packed)
+{
+    /* Probably the test for 0 < packed->position is only needed on
+     * BlueGene(/L), where IBM's MPI_Bcast will segfault after
+     * dereferencing a null pointer, even when no data is to be
+     * transferred. */
+    if (0 < packed->size_of_buffer)
+    {
+        MPI_Bcast(packed->buffer, packed->size_of_buffer, MPI_PACKED, MASTERRANK(packed->cr), packed->cr->mpi_comm_mygroup);
+    }
+}
+
+/*! /brief Helper allocation macro
+ *
+ * The idea is that we want to be able allocate sub-structures before
+ * any dereferences in the callbacks, and never repeat the same
+ * allocation.
+ */
+#define snew_pack(packed,d,nr) if (!MASTER((packed)->cr) && ((packed)->packtype == eptPackSize)) snew((d),(nr))
+
+/*! /brief Helper allocation macro for bcast_state
+ */
+#define snew_bAlloc(packed,bAlloc,d,nr) if ((bAlloc) && ((packed)->packtype == eptUnpack)) snew((d),(nr))
+
+/*! /brief Data type for callback functions.
+ */
+typedef void (*t_packed_callback)(gmx_packed_t packed, void *data);
+
+/*!/brief Do the house-keeping for broadcasting structures from master
+ *        to other nodes.
+ */
+static
+void pack_and_bcast(const t_commrec *cr, void *data,
+                    t_packed_callback callback) {
+    gmx_packed_t packed = gmx_packed_init(cr);
+    /* How much data will be packed and sent later? */
+    callback(packed, data);
+    
+    /* Allocate */
+    gmx_packed_allocate(packed);
     if (MASTER(cr))
-      len = strlen(symbuf->buf[i]) + 1;
-    block_bc(cr,len);
-    snew_bc(cr,symbuf->buf[i],len);
-    nblock_bc(cr,len,symbuf->buf[i]);
-  }
-}
-
-static void bc_block(const t_commrec *cr,t_block *block)
-{
-  block_bc(cr,block->nr);
-  snew_bc(cr,block->index,block->nr+1);
-  nblock_bc(cr,block->nr+1,block->index);
-}
-
-static void bc_blocka(const t_commrec *cr,t_blocka *block)
-{
-  block_bc(cr,block->nr);
-  snew_bc(cr,block->index,block->nr+1);
-  nblock_bc(cr,block->nr+1,block->index);
-  block_bc(cr,block->nra);
-  if (block->nra) {
-    snew_bc(cr,block->a,block->nra);
-    nblock_bc(cr,block->nra,block->a);
-  }
-}
-
-static void bc_grps(const t_commrec *cr,t_grps grps[])
-{
-  int i;
-  
-  for(i=0; (i<egcNR); i++) {
-    block_bc(cr,grps[i].nr);
-    snew_bc(cr,grps[i].nm_ind,grps[i].nr);
-    nblock_bc(cr,grps[i].nr,grps[i].nm_ind);
-  }
-}
-
-static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
-{
-  int dummy;
-
-  block_bc(cr,atoms->nr);
-  snew_bc(cr,atoms->atom,atoms->nr);
-  nblock_bc(cr,atoms->nr,atoms->atom);
-  bc_strings(cr,symtab,atoms->nr,&atoms->atomname);
-  block_bc(cr,atoms->nres);
-  snew_bc(cr,atoms->resinfo,atoms->nres);
-  nblock_bc(cr,atoms->nres,atoms->resinfo);
-  bc_strings_resinfo(cr,symtab,atoms->nres,atoms->resinfo);
-  /* QMMM requires atomtypes to be known on all nodes as well */
-  bc_strings(cr,symtab,atoms->nr,&atoms->atomtype);
-  bc_strings(cr,symtab,atoms->nr,&atoms->atomtypeB);
-}
-
-static void bc_groups(const t_commrec *cr,t_symtab *symtab,
-		      int natoms,gmx_groups_t *groups)
-{
-  int dummy;
-  int g,n;
-
-  bc_grps(cr,groups->grps);
-  block_bc(cr,groups->ngrpname);
-  bc_strings(cr,symtab,groups->ngrpname,&groups->grpname);
-  for(g=0; g<egcNR; g++) {
-    if (MASTER(cr)) {
-      if (groups->grpnr[g]) {
-	n = natoms;
-      } else {
-	n = 0;
-      }
+    {
+        packed->packtype = eptPack;
     }
-    block_bc(cr,n);
-    if (n == 0) {
-      groups->grpnr[g] = NULL;
-    } else {
-      snew_bc(cr,groups->grpnr[g],n);
-      nblock_bc(cr,n,groups->grpnr[g]);
+    else
+    {
+        packed->packtype = eptUnpack;
+        /* receive broadcast before unpacking */
+        do_packed_bcast(packed);
     }
-  }
-  if (debug) fprintf(debug,"after bc_groups\n");
-}
 
-void bcast_state_setup(const t_commrec *cr,t_state *state)
-{
-  block_bc(cr,state->natoms);
-  block_bc(cr,state->ngtc);
-  block_bc(cr,state->nnhpres);
-  block_bc(cr,state->nhchainlength);
-  block_bc(cr,state->nrng);
-  block_bc(cr,state->nrngi);
-  block_bc(cr,state->flags);
-}
+    /* Do pack or unpack, as applicable */
+    callback(packed, data);
 
-void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
-{
-  int i,nnht,nnhtp;
-
-  bcast_state_setup(cr,state);
-
-  nnht = (state->ngtc)*(state->nhchainlength); 
-  nnhtp = (state->nnhpres)*(state->nhchainlength); 
-
-  if (MASTER(cr)) {
-    bAlloc = FALSE;
-  }
-  if (bAlloc) {
-    state->nalloc = state->natoms;
-  }
-  for(i=0; i<estNR; i++) {
-    if (state->flags & (1<<i)) {
-      switch (i) {
-      case estLAMBDA:  block_bc(cr,state->lambda); break;
-      case estBOX:     block_bc(cr,state->box); break;
-      case estBOX_REL: block_bc(cr,state->box_rel); break;
-      case estBOXV:    block_bc(cr,state->boxv); break;
-      case estPRES_PREV: block_bc(cr,state->pres_prev); break;
-      case estSVIR_PREV: block_bc(cr,state->svir_prev); break;
-      case estFVIR_PREV: block_bc(cr,state->fvir_prev); break;
-      case estNH_XI:   nblock_abc(cr,nnht,state->nosehoover_xi); break;
-      case estNH_VXI:  nblock_abc(cr,nnht,state->nosehoover_vxi); break;
-      case estNHPRES_XI:   nblock_abc(cr,nnhtp,state->nhpres_xi); break;
-      case estNHPRES_VXI:  nblock_abc(cr,nnhtp,state->nhpres_vxi); break;
-      case estTC_INT:  nblock_abc(cr,state->ngtc,state->therm_integral); break;
-      case estVETA:    block_bc(cr,state->veta); break;
-      case estVOL0:    block_bc(cr,state->vol0); break;
-      case estX:       nblock_abc(cr,state->natoms,state->x); break;
-      case estV:       nblock_abc(cr,state->natoms,state->v); break;
-      case estSDX:     nblock_abc(cr,state->natoms,state->sd_X); break;
-      case estCGP:     nblock_abc(cr,state->natoms,state->cg_p); break;
-	  case estLD_RNG:  if(state->nrngi == 1) nblock_abc(cr,state->nrng,state->ld_rng); break;
-	  case estLD_RNGI: if(state->nrngi == 1) nblock_abc(cr,state->nrngi,state->ld_rngi); break;
-      case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
-      case estDISRE_RM3TAV:
-          block_bc(cr,state->hist.ndisrepairs);
-          nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
-          break;
-      case estORIRE_INITF: block_bc(cr,state->hist.orire_initf); break;
-      case estORIRE_DTAV:
-          block_bc(cr,state->hist.norire_Dtav);
-          nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
-          break;
-      default:
-          gmx_fatal(FARGS,
-                    "Communication is not implemented for %s in bcast_state",
-                    est_names[i]);
-      }
+    if (MASTER(cr))
+    {
+        /* send broadcast after packing */
+        do_packed_bcast(packed);
     }
-  }
+    /* Clean up */
+    gmx_packed_destroy(packed);
 }
 
-static void bc_ilists(const t_commrec *cr,t_ilist *ilist)
-{
-  int ftype;
+/* The functions for the two stages of broadcasting a t_state follow.
+ */
 
-  /* Here we only communicate the non-zero length ilists */
-  if (MASTER(cr)) {
-    for(ftype=0; ftype<F_NRE; ftype++) {
-      if (ilist[ftype].nr > 0) {
-	block_bc(cr,ftype);
-	block_bc(cr,ilist[ftype].nr);
-	nblock_bc(cr,ilist[ftype].nr,ilist[ftype].iatoms);
-      }
+typedef struct state_helper
+{
+    t_state *state;
+    gmx_bool bAlloc;
+} t_state_helper;
+
+void state_setup_callback(gmx_packed_t packed, void *data)
+{
+    t_state_helper *helper = (t_state_helper *) data;
+    t_state *state = helper->state;
+
+    gmx_pack_function(packed, &state->natoms, 1, MPI_INT);
+    gmx_pack_function(packed, &state->ngtc, 1, MPI_INT);
+    gmx_pack_function(packed, &state->nnhpres, 1, MPI_INT);
+    gmx_pack_function(packed, &state->nhchainlength, 1, MPI_INT);
+    gmx_pack_function(packed, &state->nrng, 1, MPI_INT);
+    gmx_pack_function(packed, &state->nrngi, 1, MPI_INT);
+    gmx_pack_function(packed, &state->flags, 1, MPI_INT);
+    if (state->flags & estDISRE_RM3TAV)
+    {
+        gmx_pack_function(packed, &state->hist.ndisrepairs, 1, MPI_INT);
     }
-    ftype = -1;
-    block_bc(cr,ftype);
-  } else {
-    for(ftype=0; ftype<F_NRE; ftype++) {
-      ilist[ftype].nr = 0;
+    if (state->flags & estORIRE_DTAV)
+    {
+        gmx_pack_function(packed, &state->hist.norire_Dtav, 1, MPI_INT);
     }
-    do {
-      block_bc(cr,ftype);
-      if (ftype >= 0) {
-	block_bc(cr,ilist[ftype].nr);
-	snew_bc(cr,ilist[ftype].iatoms,ilist[ftype].nr);
-	nblock_bc(cr,ilist[ftype].nr,ilist[ftype].iatoms);
-      }
-    } while (ftype >= 0);
-  }
-
-  if (debug) fprintf(debug,"after bc_ilists\n");
 }
 
-static void bc_idef(const t_commrec *cr,t_idef *idef)
+/*! /brief Broadcast various integers that determine sizes of arrays,
+ *         etc. in a t_state.
+ */
+void bcast_state_setup(const t_commrec *cr, t_state *state)
 {
-  block_bc(cr,idef->ntypes);
-  block_bc(cr,idef->atnr);
-  snew_bc(cr,idef->functype,idef->ntypes);
-  snew_bc(cr,idef->iparams,idef->ntypes);
-  nblock_bc(cr,idef->ntypes,idef->functype);
-  nblock_bc(cr,idef->ntypes,idef->iparams);
-  block_bc(cr,idef->fudgeQQ);
-  bc_ilists(cr,idef->il);
-  block_bc(cr,idef->ilsort);
+    t_state_helper helper;
+
+    helper.state = state;
+    helper.bAlloc = FALSE;
+    pack_and_bcast(cr, &helper, state_setup_callback);
 }
 
-static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
+void state_callback(gmx_packed_t packed, void *data)
 {
-	int i,j,nelem,ngrid;
-	
-	block_bc(cr,cmap_grid->ngrid);
-	block_bc(cr,cmap_grid->grid_spacing);
-	
-	ngrid = cmap_grid->ngrid;
-	nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
-	
-	if(ngrid>0)
-	{
-		snew_bc(cr,cmap_grid->cmapdata,ngrid);
-		
-		for(i=0;i<ngrid;i++)
-		{
-			snew_bc(cr,cmap_grid->cmapdata[i].cmap,4*nelem);
-			nblock_bc(cr,4*nelem,cmap_grid->cmapdata[i].cmap);
-		}
-	}
-}
+    int i, nnht, nnhtp;
+    t_state_helper *helper = (t_state_helper *) data;
+    t_state *state = helper->state;
+    gmx_bool bAlloc = helper->bAlloc;
 
-static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
-{
-  int i;
-  
-  block_bc(cr,ffp->ntypes);
-  block_bc(cr,ffp->atnr);
-  snew_bc(cr,ffp->functype,ffp->ntypes);
-  snew_bc(cr,ffp->iparams,ffp->ntypes);
-  nblock_bc(cr,ffp->ntypes,ffp->functype);
-  nblock_bc(cr,ffp->ntypes,ffp->iparams);
-  block_bc(cr,ffp->reppow);
-  block_bc(cr,ffp->fudgeQQ);
-  bc_cmap(cr,&ffp->cmap_grid);
-}
+    nnht = (state->ngtc)*(state->nhchainlength);
+    nnhtp = (state->nnhpres)*(state->nhchainlength);
 
-static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
-{
-    int i,n;
-    
-    block_bc(cr,g->ngtc);
-    block_bc(cr,g->ngacc);
-    block_bc(cr,g->ngfrz);
-    block_bc(cr,g->ngener);
-    snew_bc(cr,g->nrdf,g->ngtc);
-    snew_bc(cr,g->tau_t,g->ngtc);
-    snew_bc(cr,g->ref_t,g->ngtc);
-    snew_bc(cr,g->acc,g->ngacc);
-    snew_bc(cr,g->nFreeze,g->ngfrz);
-    snew_bc(cr,g->egp_flags,g->ngener*g->ngener);
-    
-    nblock_bc(cr,g->ngtc,g->nrdf);
-    nblock_bc(cr,g->ngtc,g->tau_t);
-    nblock_bc(cr,g->ngtc,g->ref_t);
-    nblock_bc(cr,g->ngacc,g->acc);
-    nblock_bc(cr,g->ngfrz,g->nFreeze);
-    nblock_bc(cr,g->ngener*g->ngener,g->egp_flags);
-    snew_bc(cr,g->annealing,g->ngtc);
-    snew_bc(cr,g->anneal_npoints,g->ngtc);
-    snew_bc(cr,g->anneal_time,g->ngtc);
-    snew_bc(cr,g->anneal_temp,g->ngtc);
-    nblock_bc(cr,g->ngtc,g->annealing);
-    nblock_bc(cr,g->ngtc,g->anneal_npoints);
-    for(i=0;(i<g->ngtc); i++) {
-        n = g->anneal_npoints[i];
-        if (n > 0) {
-	  snew_bc(cr,g->anneal_time[i],n);
-	  snew_bc(cr,g->anneal_temp[i],n);
-	  nblock_bc(cr,n,g->anneal_time[i]);
-	  nblock_bc(cr,n,g->anneal_temp[i]);
+    for(i = 0; i < estNR; i++)
+    {
+        if (state->flags & (1<<i))
+        {
+            switch (i)
+            {
+            case estLAMBDA:      gmx_pack_function(packed, &state->lambda, 1, GMX_MPI_REAL); break;
+            case estBOX:         gmx_pack_function(packed, state->box, DIM*DIM, GMX_MPI_REAL); break;
+            case estBOX_REL:     gmx_pack_function(packed, state->box_rel, DIM*DIM, GMX_MPI_REAL); break;
+            case estBOXV:        gmx_pack_function(packed, state->boxv, DIM*DIM, GMX_MPI_REAL); break;
+            case estPRES_PREV:   gmx_pack_function(packed, state->pres_prev, DIM*DIM, GMX_MPI_REAL); break;
+            case estSVIR_PREV:   gmx_pack_function(packed, state->svir_prev, DIM*DIM, GMX_MPI_REAL); break;
+            case estFVIR_PREV:   gmx_pack_function(packed, state->fvir_prev, DIM*DIM, GMX_MPI_REAL); break;
+            case estNH_XI:
+                snew_bAlloc(packed, bAlloc, state->nosehoover_xi, nnht);
+                gmx_pack_function(packed, state->nosehoover_xi, nnht, MPI_DOUBLE);
+                break;
+            case estNH_VXI:
+                snew_bAlloc(packed, bAlloc, state->nosehoover_vxi, nnht);
+                gmx_pack_function(packed, state->nosehoover_vxi, nnht, MPI_DOUBLE);
+                break;
+            case estNHPRES_XI:
+                snew_bAlloc(packed, bAlloc, state->nhpres_xi, nnhtp);
+                gmx_pack_function(packed, state->nhpres_xi, nnhtp, MPI_DOUBLE);
+                break;
+            case estNHPRES_VXI:
+                snew_bAlloc(packed, bAlloc, state->nhpres_vxi, nnhtp);
+                gmx_pack_function(packed, state->nhpres_vxi, nnhtp, MPI_DOUBLE);
+                break;
+            case estTC_INT:
+                snew_bAlloc(packed, bAlloc, state->therm_integral, state->ngtc);
+                gmx_pack_function(packed, state->therm_integral, state->ngtc, MPI_DOUBLE);
+                break;
+            case estVETA:        gmx_pack_function(packed, &state->veta, 1, GMX_MPI_REAL); break;
+            case estVOL0:        gmx_pack_function(packed, &state->vol0, 1, GMX_MPI_REAL); break;
+                /* The next four items are generally large enough
+                 * to broadcast on their own, rather than take time
+                 * packing. */
+            case estX:
+                snew_bAlloc(packed, bAlloc, state->x, state->natoms);
+                if (eptPackSize != packed->packtype)
+                {
+                    gmx_bcast(state->natoms * sizeof(state->x[0]), state->x, packed->cr);
+                }
+                break;
+            case estV:
+                snew_bAlloc(packed, bAlloc, state->v, state->natoms);
+                if (eptPackSize != packed->packtype)
+                {
+                    gmx_bcast(state->natoms * sizeof(state->v[0]), state->v, packed->cr);
+                }
+                break;
+            case estSDX:
+                snew_bAlloc(packed, bAlloc, state->sd_X, state->natoms);
+                if (eptPackSize != packed->packtype)
+                {
+                    gmx_bcast(state->natoms * sizeof(state->sd_X[0]), state->sd_X, packed->cr);
+                }
+                break;
+            case estCGP:
+                snew_bAlloc(packed, bAlloc, state->cg_p, state->natoms);
+                if (eptPackSize != packed->packtype)
+                {
+                    gmx_bcast(state->natoms * sizeof(state->cg_p[0]), state->cg_p, packed->cr);
+                }
+                break;
+            case estLD_RNG:
+                if(1 == state->nrngi)
+                {
+                    snew_bAlloc(packed, bAlloc, state->ld_rng, state->nrng);
+                    gmx_pack_function(packed, state->ld_rng, state->nrng, MPI_UNSIGNED);
+                }
+                break;
+            case estLD_RNGI:
+                if(1 == state->nrngi)
+                {
+                    snew_bAlloc(packed, bAlloc, state->ld_rngi, state->nrngi);
+                    gmx_pack_function(packed, state->ld_rngi, state->nrngi, MPI_INT);
+                }
+                break;
+            case estDISRE_INITF:
+                gmx_pack_function(packed, &state->hist.disre_initf, 1, GMX_MPI_REAL);
+                break;
+            case estDISRE_RM3TAV:
+                snew_bAlloc(packed, bAlloc, state->hist.disre_rm3tav, state->hist.ndisrepairs);
+                gmx_pack_function(packed, state->hist.disre_rm3tav, state->hist.ndisrepairs, GMX_MPI_REAL);
+                break;
+            case estORIRE_INITF:
+                gmx_pack_function(packed, &state->hist.orire_initf, 1, GMX_MPI_REAL);
+                break;
+            case estORIRE_DTAV:
+                snew_bAlloc(packed, bAlloc, state->hist.orire_Dtav, state->hist.norire_Dtav);
+                gmx_pack_function(packed, state->hist.orire_Dtav, state->hist.norire_Dtav, GMX_MPI_REAL);
+                break;
+            default:
+                gmx_fatal(FARGS,
+                          "Communication is not implemented for %s in bcast_state",
+                          est_names[i]);
+            }
         }
     }
-    
+}
+
+/*! /brief Broadcast a t_state struct to the other processors in the
+ *         simulation.
+ */
+void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
+{
+    t_state_helper helper;
+
+    if (MASTER(cr))
+    {
+        bAlloc = FALSE;
+    }
+    if (bAlloc)
+    {
+        state->nalloc = state->natoms;
+    }
+
+    helper.state = state;
+    helper.bAlloc = bAlloc;
+    pack_and_bcast(cr, &helper, state_callback);
+}
+
+/* Helper functions for doing the bcast of inputrec and mtop follow.
+ */
+
+static
+void gmx_pack_string(gmx_packed_t packed, t_symtab *symtab, char ***s)
+{
+    int handle;
+
+    if (eptPack == packed->packtype)
+    {
+        handle = lookup_symtab(symtab, *s);
+    }
+    gmx_pack_function(packed, &handle, 1, MPI_INT);
+    if (eptUnpack == packed->packtype)
+    {
+        *s = get_symtab_handle(symtab, handle);
+    }
+}
+
+static
+void gmx_pack_strings(gmx_packed_t packed, t_symtab *symtab, int nr, char ****nm)
+{
+    int  i;
+    int  *handle;
+
+    /* Allocate and pre-process */
+    switch(packed->packtype)
+    {
+    case eptPackSize:
+        snew_pack(packed, *nm, nr);
+        break;
+    case eptPack:
+        snew(handle, nr);
+        for(i = 0; i < nr; i++)
+        {
+            handle[i] = lookup_symtab(symtab,(*nm)[i]);
+        }
+        break;
+    case eptUnpack:
+        snew(handle, nr);
+        break;
+    }
+
+    /* Do packing */
+    gmx_pack_function(packed, handle, nr, MPI_INT);
+
+    /* Deallocate and post-process */
+    switch(packed->packtype)
+    {
+    case eptPackSize:
+        break;
+    case eptPack:
+        sfree(handle);
+        break;
+    case eptUnpack:
+        for (i = 0; i < nr; i++)
+        {
+            (*nm)[i] = get_symtab_handle(symtab, handle[i]);
+        }
+        sfree(handle);
+        break;
+    }
+}
+
+static
+void gmx_pack_strings_resinfo(gmx_packed_t packed, t_symtab *symtab,
+                                         int nr, t_resinfo *resinfo)
+{
+    int  i;
+
+    for(i = 0; i < nr; i++)
+    {
+        int  handle = -1;
+        if (eptPack == packed->packtype)
+        {
+            handle = lookup_symtab(symtab, resinfo[i].name);
+        }
+        gmx_pack_function(packed, &handle, 1, MPI_INT);
+        if (eptUnpack == packed->packtype)
+        {
+            resinfo[i].name = get_symtab_handle(symtab, handle);
+        }
+    }
+}
+
+static
+void gmx_pack_symtab(gmx_packed_t packed, t_symtab *symtab, int *buf_lengths)
+{
+    int i, len;
+
+    for (i = 0; i < symtab->nr; i++)
+    {
+        snew_pack(packed, symtab->symbuf->buf[i], buf_lengths[i]);
+        gmx_pack_function(packed, symtab->symbuf->buf[i], buf_lengths[i], MPI_CHAR);
+    }
+}
+
+static
+void gmx_pack_block(gmx_packed_t packed, t_block *block)
+{
+
+    snew_pack(packed, block->index, block->nr+1);
+    gmx_pack_function(packed, block->index, block->nr+1, MPI_INT);
+}
+
+static
+void gmx_pack_blocka(gmx_packed_t packed, t_blocka *block)
+{
+
+    snew_pack(packed, block->index, block->nr+1);
+    gmx_pack_function(packed, block->index, block->nr+1, MPI_INT);
+    if (block->nra)
+    {
+        snew_pack(packed, block->a, block->nra);
+        gmx_pack_function(packed, block->a, block->nra, MPI_INT);
+    }
+}
+
+static
+void gmx_pack_grps(gmx_packed_t packed, t_grps grps[])
+{
+    int i;
+  
+    for(i = 0; i < egcNR; i++)
+    {
+        snew_pack(packed, grps[i].nm_ind, grps[i].nr);
+        gmx_pack_function(packed, grps[i].nm_ind, grps[i].nr, MPI_INT);
+    }
+}
+
+static
+void gmx_pack_atoms(gmx_packed_t packed, t_symtab *symtab, t_atoms *atoms)
+{
+    int dummy;
+
+    snew_pack(packed, atoms->atom, atoms->nr);
+    gmx_pack_function(packed, atoms->atom, sizeof(atoms->atom[0]) * atoms->nr, MPI_BYTE);
+    gmx_pack_strings(packed, symtab, atoms->nr, &atoms->atomname);
+    snew_pack(packed, atoms->resinfo, atoms->nres);
+    gmx_pack_function(packed, atoms->resinfo, sizeof(atoms->resinfo[0]) * atoms->nres, MPI_BYTE);
+    gmx_pack_strings_resinfo(packed, symtab, atoms->nres, atoms->resinfo);
+    /* QMMM requires atomtypes to be known on all nodes as well */
+    gmx_pack_strings(packed, symtab, atoms->nr, &atoms->atomtype);
+    gmx_pack_strings(packed, symtab, atoms->nr, &atoms->atomtypeB);
+}
+
+static
+void gmx_pack_groups(gmx_packed_t packed, t_symtab *symtab,
+                                gmx_groups_t *groups, int *grpnr_sizes)
+{
+    int dummy;
+    int g, n;
+
+    gmx_pack_grps(packed, groups->grps);
+    gmx_pack_strings(packed, symtab, groups->ngrpname, &groups->grpname);
+    for(g = 0; g < egcNR; g++)
+    {
+        if (0 == grpnr_sizes[g])
+        {
+            groups->grpnr[g] = NULL;
+        }
+        else
+        {
+            snew_pack(packed, groups->grpnr[g], grpnr_sizes[g]);
+            gmx_pack_function(packed, groups->grpnr[g], grpnr_sizes[g], MPI_CHAR);
+        }
+    }
+    if (debug) fprintf(debug,"after gmx_pack_groups\n");
+}
+
+static
+void gmx_pack_ilists(gmx_packed_t packed, t_ilist *ilist)
+{
+    int ftype;
+
+    for(ftype = 0; ftype < F_NRE; ftype++)
+    {
+        snew_pack(packed, ilist[ftype].iatoms, ilist[ftype].nr);
+        gmx_pack_function(packed, ilist[ftype].iatoms, ilist[ftype].nr, MPI_INT);
+    }
+
+    if (debug) fprintf(debug,"after gmx_pack_ilists\n");
+}
+
+/* This was in the old code, but not used.
+static
+void bc_idef(gmx_packed_t packed, ept packtype, t_idef *idef)
+{
+    block_bc(cr,idef->ntypes);
+    block_bc(cr,idef->atnr);
+    snew_pack(cr,idef->functype,idef->ntypes);
+    snew_pack(cr,idef->iparams,idef->ntypes);
+    nblock_bc(cr,idef->ntypes,idef->functype);
+    nblock_bc(cr,idef->ntypes,idef->iparams);
+    block_bc(cr,idef->fudgeQQ);
+    bc_ilists(cr,idef->il);
+    block_bc(cr,idef->ilsort);
+}
+*/
+
+static
+void gmx_pack_cmap(gmx_packed_t packed, gmx_cmap_t *cmap_grid)
+{
+    int i, j,nelem, ngrid;
+	
+    ngrid = cmap_grid->ngrid;
+    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+	
+    if(ngrid > 0)
+    {
+        snew_pack(packed, cmap_grid->cmapdata, ngrid);
+		
+        for(i = 0; i < ngrid; i++)
+        {
+            snew_pack(packed, cmap_grid->cmapdata[i].cmap, 4*nelem);
+            gmx_pack_function(packed, cmap_grid->cmapdata[i].cmap, 4*nelem, GMX_MPI_REAL);
+        }
+    }
+}
+
+static
+void gmx_pack_ffparams(gmx_packed_t packed, gmx_ffparams_t *ffp)
+{
+    int i;
+  
+    gmx_pack_function(packed, &ffp->atnr, 1, MPI_INT);
+    snew_pack(packed, ffp->functype, ffp->ntypes);
+    snew_pack(packed, ffp->iparams, ffp->ntypes);
+    gmx_pack_function(packed, ffp->functype, ffp->ntypes, MPI_INT);
+    gmx_pack_function(packed, ffp->iparams, sizeof(ffp->iparams[0]) * ffp->ntypes, MPI_BYTE);
+    gmx_pack_function(packed, &ffp->reppow, 1, MPI_DOUBLE);
+    gmx_pack_function(packed, &ffp->fudgeQQ, 1, GMX_MPI_REAL);
+    gmx_pack_cmap(packed, &ffp->cmap_grid);
+}
+
+static
+void gmx_pack_grpopts(gmx_packed_t packed, t_grpopts *g)
+{
+    int i, n;
+
+    snew_pack(packed, g->nrdf, g->ngtc);
+    snew_pack(packed, g->tau_t, g->ngtc);
+    snew_pack(packed, g->ref_t, g->ngtc);
+    snew_pack(packed, g->acc, g->ngacc);
+    snew_pack(packed, g->nFreeze, g->ngfrz);
+    snew_pack(packed, g->egp_flags, g->ngener*g->ngener);
+    gmx_pack_function(packed, g->nrdf, g->ngtc, GMX_MPI_REAL);
+    gmx_pack_function(packed, g->tau_t, g->ngtc, GMX_MPI_REAL);
+    gmx_pack_function(packed, g->ref_t, g->ngtc, GMX_MPI_REAL);
+    gmx_pack_function(packed, g->acc, g->ngacc * DIM, GMX_MPI_REAL);
+    gmx_pack_function(packed, g->nFreeze, g->ngfrz * DIM, MPI_INT);
+    gmx_pack_function(packed, g->egp_flags, g->ngener*g->ngener, MPI_INT);
+    snew_pack(packed, g->annealing, g->ngtc);
+    snew_pack(packed, g->anneal_npoints, g->ngtc);
+    snew_pack(packed, g->anneal_time, g->ngtc);
+    snew_pack(packed, g->anneal_temp, g->ngtc);
+    gmx_pack_function(packed, g->annealing, g->ngtc, MPI_INT);
+    for(i = 0;i < g->ngtc; i++)
+    {
+        n = g->anneal_npoints[i];
+        if (n > 0)
+        {
+            snew_pack(packed, g->anneal_time[i], n);
+            snew_pack(packed, g->anneal_temp[i], n);
+            gmx_pack_function(packed, g->anneal_time[i], n, GMX_MPI_REAL);
+            gmx_pack_function(packed, g->anneal_temp[i], n, GMX_MPI_REAL);
+        }
+    }
+        
     /* QMMM stuff, see inputrec */
-    block_bc(cr,g->ngQM);
-    snew_bc(cr,g->QMmethod,g->ngQM);
-    snew_bc(cr,g->QMbasis,g->ngQM);
-    snew_bc(cr,g->QMcharge,g->ngQM);
-    snew_bc(cr,g->QMmult,g->ngQM);
-    snew_bc(cr,g->bSH,g->ngQM);
-    snew_bc(cr,g->CASorbitals,g->ngQM);
-    snew_bc(cr,g->CASelectrons,g->ngQM);
-    snew_bc(cr,g->SAon,g->ngQM);
-    snew_bc(cr,g->SAoff,g->ngQM);
-    snew_bc(cr,g->SAsteps,g->ngQM);
+    snew_pack(packed, g->QMmethod, g->ngQM);
+    snew_pack(packed, g->QMbasis, g->ngQM);
+    snew_pack(packed, g->QMcharge, g->ngQM);
+    snew_pack(packed, g->QMmult, g->ngQM);
+    snew_pack(packed, g->bSH, g->ngQM);
+    snew_pack(packed, g->CASorbitals, g->ngQM);
+    snew_pack(packed, g->CASelectrons, g->ngQM);
+    snew_pack(packed, g->SAon, g->ngQM);
+    snew_pack(packed, g->SAoff, g->ngQM);
+    snew_pack(packed, g->SAsteps, g->ngQM);
     
     if (g->ngQM)
     {
-        nblock_bc(cr,g->ngQM,g->QMmethod);
-        nblock_bc(cr,g->ngQM,g->QMbasis);
-        nblock_bc(cr,g->ngQM,g->QMcharge);
-        nblock_bc(cr,g->ngQM,g->QMmult);
-        nblock_bc(cr,g->ngQM,g->bSH);
-        nblock_bc(cr,g->ngQM,g->CASorbitals);
-        nblock_bc(cr,g->ngQM,g->CASelectrons);
-        nblock_bc(cr,g->ngQM,g->SAon);
-        nblock_bc(cr,g->ngQM,g->SAoff);
-        nblock_bc(cr,g->ngQM,g->SAsteps);
+        gmx_pack_function(packed, g->QMmethod, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->QMbasis, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->QMcharge, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->QMmult, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->bSH, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->CASorbitals, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->CASelectrons, g->ngQM, MPI_INT);
+        gmx_pack_function(packed, g->SAon, g->ngQM, GMX_MPI_REAL);
+        gmx_pack_function(packed, g->SAoff, g->ngQM, GMX_MPI_REAL);
+        gmx_pack_function(packed, g->SAsteps, g->ngQM, MPI_INT);
         /* end of QMMM stuff */
     }
 }
 
-static void bc_cosines(const t_commrec *cr,t_cosines *cs)
+static
+void gmx_pack_cosines(gmx_packed_t packed, t_cosines *cs)
 {
-  block_bc(cr,cs->n);
-  snew_bc(cr,cs->a,cs->n);
-  snew_bc(cr,cs->phi,cs->n);
-  if (cs->n > 0) {
-    nblock_bc(cr,cs->n,cs->a);
-    nblock_bc(cr,cs->n,cs->phi);
-  }
+
+    snew_pack(packed, cs->a, cs->n);
+    snew_pack(packed, cs->phi, cs->n);
+    if (cs->n > 0)
+    {
+        gmx_pack_function(packed, cs->a, cs->n, GMX_MPI_REAL);
+        gmx_pack_function(packed, cs->phi, cs->n, GMX_MPI_REAL);
+    }
 }
 
-static void bc_pullgrp(const t_commrec *cr,t_pullgrp *pgrp)
+static
+void gmx_pack_pullgrp(gmx_packed_t packed, t_pullgrp *pgrp)
 {
-  block_bc(cr,*pgrp);
-  if (pgrp->nat > 0) {
-    snew_bc(cr,pgrp->ind,pgrp->nat);
-    nblock_bc(cr,pgrp->nat,pgrp->ind);
-  }
-  if (pgrp->nweight > 0) {
-    snew_bc(cr,pgrp->weight,pgrp->nweight);
-    nblock_bc(cr,pgrp->nweight,pgrp->weight);
-  }
+
+    if (pgrp->nat > 0)
+    {
+        snew_pack(packed, pgrp->ind, pgrp->nat);
+        gmx_pack_function(packed, pgrp->ind, pgrp->nat, MPI_INT);
+    }
+    if (pgrp->nweight > 0)
+    {
+        snew_pack(packed, pgrp->weight, pgrp->nweight);
+        gmx_pack_function(packed, pgrp->weight, pgrp->nweight, GMX_MPI_REAL);
+    }
 }
 
-static void bc_pull(const t_commrec *cr,t_pull *pull)
+static
+void gmx_pack_pull(gmx_packed_t packed, t_pull *pull)
 {
-  int g;
+    int g;
 
-  block_bc(cr,*pull);
-  snew_bc(cr,pull->grp,pull->ngrp+1);
-  for(g=0; g<pull->ngrp+1; g++)
-  {
-      bc_pullgrp(cr,&pull->grp[g]);
-  }
+    for(g = 0; g < pull->ngrp+1; g++)
+    {
+        gmx_pack_pullgrp(packed, &pull->grp[g]);
+    }
 }
 
-static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
+static
+void gmx_pack_inputrec(gmx_packed_t packed, t_inputrec *inputrec)
 {
-  gmx_bool bAlloc=TRUE;
-  int i;
-  
-  block_bc(cr,*inputrec);
-  snew_bc(cr,inputrec->flambda,inputrec->n_flambda);
-  nblock_bc(cr,inputrec->n_flambda,inputrec->flambda);
-  bc_grpopts(cr,&(inputrec->opts));
-  if (inputrec->ePull != epullNO) {
-    snew_bc(cr,inputrec->pull,1);
-    bc_pull(cr,inputrec->pull);
-  }
-  for(i=0; (i<DIM); i++) {
-    bc_cosines(cr,&(inputrec->ex[i]));
-    bc_cosines(cr,&(inputrec->et[i]));
-  }
+    int i;
+
+    snew_pack(packed, inputrec->flambda, inputrec->n_flambda);
+    gmx_pack_function(packed, inputrec->flambda, inputrec->n_flambda, MPI_DOUBLE);
+
+    gmx_pack_grpopts(packed, &(inputrec->opts));
+    if (inputrec->ePull != epullNO)
+    {
+        gmx_pack_pull(packed, inputrec->pull);
+    }
+    for(i = 0; i < DIM; i++)
+    {
+        gmx_pack_cosines(packed, &(inputrec->ex[i]));
+        gmx_pack_cosines(packed, &(inputrec->et[i]));
+    }
 }
 
-static void bc_moltype(const t_commrec *cr,t_symtab *symtab,
-		       gmx_moltype_t *moltype)
+static
+void gmx_pack_moltype(gmx_packed_t packed, t_symtab *symtab,
+                                 gmx_moltype_t *moltype)
 {
-  bc_string(cr,symtab,&moltype->name);
-  bc_atoms(cr,symtab,&moltype->atoms);
-  if (debug) fprintf(debug,"after bc_atoms\n");
+    gmx_pack_string(packed, symtab, &moltype->name);
+    gmx_pack_atoms(packed, symtab, &moltype->atoms);
+    if (debug) fprintf(debug,"after gmx_pack_atoms\n");
 
-  bc_ilists(cr,moltype->ilist);
-  bc_block(cr,&moltype->cgs);
-  bc_blocka(cr,&moltype->excls);
+    gmx_pack_ilists(packed, moltype->ilist);
+    gmx_pack_block(packed, &moltype->cgs);
+    gmx_pack_blocka(packed, &moltype->excls);
 }
 
-static void bc_molblock(const t_commrec *cr,gmx_molblock_t *molb)
+static
+void gmx_pack_molblock(gmx_packed_t packed, gmx_molblock_t *molb)
 {
-  gmx_bool bAlloc=TRUE;
-  
-  block_bc(cr,molb->type);
-  block_bc(cr,molb->nmol);
-  block_bc(cr,molb->natoms_mol);
-  block_bc(cr,molb->nposres_xA);
-  if (molb->nposres_xA > 0) {
-    snew_bc(cr,molb->posres_xA,molb->nposres_xA);
-    nblock_bc(cr,molb->nposres_xA*DIM,molb->posres_xA[0]);
-  }
-  block_bc(cr,molb->nposres_xB);
-  if (molb->nposres_xB > 0) {
-    snew_bc(cr,molb->posres_xB,molb->nposres_xB);
-    nblock_bc(cr,molb->nposres_xB*DIM,molb->posres_xB[0]);
-  }
-  if (debug) fprintf(debug,"after bc_molblock\n");
+    gmx_pack_function(packed, &molb->type, 1, MPI_INT);
+    gmx_pack_function(packed, &molb->nmol, 1, MPI_INT);
+    gmx_pack_function(packed, &molb->natoms_mol, 1, MPI_INT);
+    if (molb->nposres_xA > 0)
+    {
+        snew_pack(packed, molb->posres_xA, molb->nposres_xA);
+        gmx_pack_function(packed, molb->posres_xA[0], molb->nposres_xA * DIM, GMX_MPI_REAL);
+    }
+    if (molb->nposres_xB > 0)
+    {
+        snew_pack(packed, molb->posres_xB, molb->nposres_xB);
+        gmx_pack_function(packed, molb->posres_xB[0], molb->nposres_xB * DIM, GMX_MPI_REAL);
+    }
+    if (debug) fprintf(debug,"after gmx_pack_molblock\n");
 }
 
-static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
+static
+void gmx_pack_atomtypes(gmx_packed_t packed, t_atomtypes *atomtypes)
 {
-  int nr;
+    int nr;
 
-  block_bc(cr,atomtypes->nr);
+    nr = atomtypes->nr;
 
-  nr = atomtypes->nr;
+    snew_pack(packed, atomtypes->radius, nr);
+    snew_pack(packed, atomtypes->vol, nr);
+    snew_pack(packed, atomtypes->surftens, nr);
+    snew_pack(packed, atomtypes->gb_radius, nr);
+    snew_pack(packed, atomtypes->S_hct, nr);
 
-  snew_bc(cr,atomtypes->radius,nr);
-  snew_bc(cr,atomtypes->vol,nr);
-  snew_bc(cr,atomtypes->surftens,nr);
-  snew_bc(cr,atomtypes->gb_radius,nr);
-  snew_bc(cr,atomtypes->S_hct,nr);
-
-  nblock_bc(cr,nr,atomtypes->radius);
-  nblock_bc(cr,nr,atomtypes->vol);
-  nblock_bc(cr,nr,atomtypes->surftens);
-  nblock_bc(cr,nr,atomtypes->gb_radius);
-  nblock_bc(cr,nr,atomtypes->S_hct);
+    gmx_pack_function(packed, atomtypes->radius, nr, GMX_MPI_REAL);
+    gmx_pack_function(packed, atomtypes->vol, nr, GMX_MPI_REAL);
+    gmx_pack_function(packed, atomtypes->surftens, nr, GMX_MPI_REAL);
+    gmx_pack_function(packed, atomtypes->gb_radius, nr, GMX_MPI_REAL);
+    gmx_pack_function(packed, atomtypes->S_hct, nr, GMX_MPI_REAL);
 }
 
-
-void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
+typedef struct ir_mtop_helper
 {
-  int i; 
-  if (debug) fprintf(debug,"in bc_data\n");
-  bc_inputrec(cr,inputrec);
-  if (debug) fprintf(debug,"after bc_inputrec\n");
-  bc_symtab(cr,&mtop->symtab);
-  if (debug) fprintf(debug,"after bc_symtab\n");
-  bc_string(cr,&mtop->symtab,&mtop->name);
-  if (debug) fprintf(debug,"after bc_name\n");
+    t_inputrec *inputrec;
+    gmx_mtop_t *mtop;
+    int *buf_lengths, *grpnr_sizes;
+} t_ir_mtop_helper;
 
-  bc_ffparams(cr,&mtop->ffparams);
+void ir_mtop_first_callback(gmx_packed_t packed, void *data)
+{
+    t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
+    t_inputrec *inputrec = helper->inputrec;
+    gmx_mtop_t *mtop = helper->mtop;
+    int *buf_lengths = helper->buf_lengths;
+    int *grpnr_sizes = helper->grpnr_sizes;
+    int i, g;
 
-  block_bc(cr,mtop->nmoltype);
-  snew_bc(cr,mtop->moltype,mtop->nmoltype);
-  for(i=0; i<mtop->nmoltype; i++) {
-    bc_moltype(cr,&mtop->symtab,&mtop->moltype[i]);
-  }
-
-  block_bc(cr,mtop->nmolblock);
-  snew_bc(cr,mtop->molblock,mtop->nmolblock);
-  for(i=0; i<mtop->nmolblock; i++) {
-    bc_molblock(cr,&mtop->molblock[i]);
-  }
-
-  block_bc(cr,mtop->natoms);
-
-  bc_atomtypes(cr,&mtop->atomtypes);
-
-  bc_block(cr,&mtop->mols);
-  bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);
+    gmx_pack_function(packed, inputrec, sizeof(*inputrec), MPI_BYTE);
+    for (i = 0; i < DIM; i++)
+    {
+        gmx_pack_function(packed, &inputrec->ex[i].n, 1, MPI_INT);
+        gmx_pack_function(packed, &inputrec->et[i].n, 1, MPI_INT);
+    }
+    gmx_pack_function(packed, mtop, sizeof(*mtop), MPI_BYTE);
 }
+
+void ir_mtop_second_callback(gmx_packed_t packed, void *data)
+{
+    t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
+    t_inputrec *inputrec = helper->inputrec;
+    gmx_mtop_t *mtop = helper->mtop;
+    int *buf_lengths = helper->buf_lengths;
+    int *grpnr_sizes = helper->grpnr_sizes;
+    int i, g, ftype;
+
+    /* Now do some allocation for the next stage of data */
+    if (packed->packtype == eptUnpack)
+    {
+        snew(inputrec->opts.anneal_npoints, inputrec->opts.ngtc);
+        snew(mtop->symtab.symbuf, 1);
+        mtop->symtab.symbuf->bufsize = mtop->symtab.nr;
+        snew(mtop->symtab.symbuf->buf, mtop->symtab.nr);
+        snew(mtop->moltype, mtop->nmoltype);
+        snew(mtop->molblock, mtop->nmolblock);
+        if (inputrec->ePull != epullNO)
+        {
+            snew(inputrec->pull, 1);
+        }
+    }
+
+    gmx_pack_function(packed, inputrec->opts.anneal_npoints, inputrec->opts.ngtc, MPI_INT);
+
+    if (inputrec->ePull != epullNO)
+    {
+        gmx_pack_function(packed, inputrec->pull, sizeof(*inputrec->pull), MPI_BYTE);
+    }
+
+    for (i = 0; i < mtop->symtab.nr; i++)
+    {
+        if (eptPack == packed->packtype)
+        {
+            buf_lengths[i] = strlen(mtop->symtab.symbuf->buf[i]) + 1;
+        }
+    }
+    gmx_pack_function(packed, buf_lengths, mtop->symtab.nr, MPI_INT);
+
+    gmx_pack_function(packed, &mtop->groups.ngrpname, 1, MPI_INT);
+    for(g = 0; g < egcNR; g++)
+    {
+        gmx_pack_function(packed, &mtop->groups.grps[g].nr, 1, MPI_INT);
+    }
+    for(g = 0; g < egcNR; g++)
+    {
+        if (eptPack == packed->packtype)
+        {
+            grpnr_sizes[g] = mtop->groups.grpnr[g] ? mtop->natoms : 0;
+        }
+    }
+    gmx_pack_function(packed, grpnr_sizes, egcNR, MPI_INT);
+
+    for (i = 0; i < mtop->nmoltype; i++)
+    {
+        gmx_pack_function(packed, &mtop->moltype[i].atoms.nr, 1, MPI_INT);
+        gmx_pack_function(packed, &mtop->moltype[i].atoms.nres, 1, MPI_INT);
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            gmx_pack_function(packed, &mtop->moltype[i].ilist[ftype].nr, 1, MPI_INT);
+        }
+        gmx_pack_function(packed, &mtop->moltype[i].cgs.nr, 1, MPI_INT);
+        gmx_pack_function(packed, &mtop->moltype[i].excls.nr, 1, MPI_INT);
+        gmx_pack_function(packed, &mtop->moltype[i].excls.nra, 1, MPI_INT);
+    }
+    for(i = 0; i < mtop->nmolblock; i++)
+    {
+        gmx_pack_function(packed, &mtop->molblock[i].nposres_xA, 1, MPI_INT);
+        gmx_pack_function(packed, &mtop->molblock[i].nposres_xB, 1, MPI_INT);
+    }
+}
+
+void ir_mtop_third_callback(gmx_packed_t packed, void *data)
+{
+    t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
+    t_inputrec *inputrec = helper->inputrec;
+    gmx_mtop_t *mtop = helper->mtop;
+    int *buf_lengths = helper->buf_lengths;
+    int *grpnr_sizes = helper->grpnr_sizes;
+    int g;
+
+    snew_pack(packed, inputrec->pull->grp, inputrec->pull->ngrp+1);
+    for (g = 0; g < inputrec->pull->ngrp+1; g++)
+    {
+        gmx_pack_function(packed, &inputrec->pull->grp[g], sizeof(inputrec->pull->grp[g]), MPI_BYTE);
+    }
+}
+
+void ir_mtop_fourth_callback(gmx_packed_t packed, void *data)
+{
+    t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
+    t_inputrec *inputrec = helper->inputrec;
+    gmx_mtop_t *mtop = helper->mtop;
+    int *buf_lengths = helper->buf_lengths;
+    int *grpnr_sizes = helper->grpnr_sizes;
+    int i;
+
+    gmx_pack_inputrec(packed, inputrec);
+    gmx_pack_symtab(packed, &mtop->symtab, buf_lengths);
+    gmx_pack_string(packed, &mtop->symtab, &mtop->name);
+    gmx_pack_ffparams(packed, &mtop->ffparams);
+    for(i = 0; i < mtop->nmoltype; i++)
+    {
+        gmx_pack_moltype(packed, &mtop->symtab, &mtop->moltype[i]);
+    }
+    for(i = 0; i < mtop->nmolblock; i++)
+    {
+        gmx_pack_molblock(packed, &mtop->molblock[i]);
+    }
+    gmx_pack_atomtypes(packed, &mtop->atomtypes);
+    gmx_pack_block(packed, &mtop->mols);
+    gmx_pack_groups(packed, &mtop->symtab, &mtop->groups, grpnr_sizes);
+}
+
+/*! /brief Broadcast t_inputrec and gmx_mtop_t structs to the other
+ *         processors in the simulation.
+ */
+void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
+{
+    int i, g, ftype;
+    t_ir_mtop_helper helper;
+
+    helper.inputrec = inputrec;
+    helper.mtop = mtop;
+    snew(helper.grpnr_sizes, egcNR);
+    helper.buf_lengths = NULL;
+
+    /* First, send around various integers that determine sizes of
+     * arrays. */
+    pack_and_bcast(cr, &helper, ir_mtop_first_callback);
+
+    snew(helper.buf_lengths, mtop->symtab.nr);
+
+    /* Then, send around some arrays of more sizes, whose lengths were
+     * found in the first stage. */
+    pack_and_bcast(cr, &helper, ir_mtop_second_callback);
+
+    /* Pull groups require another round of communication */
+    if (inputrec->ePull != epullNO)
+    {
+        pack_and_bcast(cr, &helper, ir_mtop_third_callback);
+    }
+
+    /* Finally, flesh it all out */
+    pack_and_bcast(cr, &helper, ir_mtop_fourth_callback);
+
+    /* Clean up */
+    sfree(helper.buf_lengths);
+    sfree(helper.grpnr_sizes);
+}
+#endif
