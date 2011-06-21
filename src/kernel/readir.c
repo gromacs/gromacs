@@ -1317,7 +1317,7 @@ int search_string(char *s,int ng,char *gn[])
     }
   }
     
-  gmx_fatal(FARGS,"Group %s not found in indexfile.\nGroup names must match either [moleculetype] names\nor custom index group names,in which case you\nmust supply and index file to the '-n' option of grompp.",s);
+  gmx_fatal(FARGS,"Group %s not found in index file.\nGroup names must match either [moleculetype] names\nor custom index group names,in which case you\nmust supply an index file to the '-n' option of grompp.",s);
   
   return -1;
 }
