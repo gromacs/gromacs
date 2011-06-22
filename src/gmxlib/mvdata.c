@@ -134,6 +134,7 @@ typedef struct
 } t_gmx_packed;
 typedef t_gmx_packed *gmx_packed_t;
 
+static
 gmx_packed_t gmx_packed_init(const t_commrec *cr)
 {
     gmx_packed_t packed;
@@ -143,12 +144,14 @@ gmx_packed_t gmx_packed_init(const t_commrec *cr)
     return packed;
 }
 
+static
 void gmx_packed_allocate(gmx_packed_t packed)
 {
     snew(packed->buffer, packed->size_of_buffer);
     packed->position = 0;
 }
 
+static
 void gmx_packed_destroy(gmx_packed_t packed)
 {
     sfree(packed->buffer);
@@ -162,6 +165,7 @@ void gmx_packed_destroy(gmx_packed_t packed)
  * upon request (which is wanted by bcast_state()), but without proper
  * function overloading, that's possible only by writing ugly code.
  */
+static
 void gmx_pack_function(gmx_packed_t packed, void *data, int nr, MPI_Datatype mpitype)
 {
     int packed_size = 0;
@@ -188,6 +192,7 @@ void gmx_pack_function(gmx_packed_t packed, void *data, int nr, MPI_Datatype mpi
 
 /*! /brief Actually do the broadcast of the packed data.
  */
+static
 void do_packed_bcast(gmx_packed_t packed)
 {
     /* Probably the test for 0 < packed->position is only needed on
@@ -260,6 +265,7 @@ typedef struct state_helper
     gmx_bool bAlloc;
 } t_state_helper;
 
+static
 void state_setup_callback(gmx_packed_t packed, void *data)
 {
     t_state_helper *helper = (t_state_helper *) data;
@@ -294,6 +300,7 @@ void bcast_state_setup(const t_commrec *cr, t_state *state)
     pack_and_bcast(cr, &helper, state_setup_callback);
 }
 
+static
 void state_callback(gmx_packed_t packed, void *data)
 {
     int i, nnht, nnhtp;
@@ -516,7 +523,7 @@ void gmx_pack_strings_resinfo(gmx_packed_t packed, t_symtab *symtab,
 static
 void gmx_pack_symtab(gmx_packed_t packed, t_symtab *symtab, int *buf_lengths)
 {
-    int i, len;
+    int i;
 
     for (i = 0; i < symtab->nr; i++)
     {
@@ -561,8 +568,6 @@ void gmx_pack_grps(gmx_packed_t packed, t_grps grps[])
 static
 void gmx_pack_atoms(gmx_packed_t packed, t_symtab *symtab, t_atoms *atoms)
 {
-    int dummy;
-
     snew_pack(packed, atoms->atom, atoms->nr);
     gmx_pack_function(packed, atoms->atom, sizeof(atoms->atom[0]) * atoms->nr, MPI_BYTE);
     gmx_pack_strings(packed, symtab, atoms->nr, &atoms->atomname);
@@ -578,8 +583,7 @@ static
 void gmx_pack_groups(gmx_packed_t packed, t_symtab *symtab,
                                 gmx_groups_t *groups, int *grpnr_sizes)
 {
-    int dummy;
-    int g, n;
+    int g;
 
     gmx_pack_grps(packed, groups->grps);
     gmx_pack_strings(packed, symtab, groups->ngrpname, &groups->grpname);
@@ -631,7 +635,7 @@ void bc_idef(gmx_packed_t packed, ept packtype, t_idef *idef)
 static
 void gmx_pack_cmap(gmx_packed_t packed, gmx_cmap_t *cmap_grid)
 {
-    int i, j,nelem, ngrid;
+    int i, nelem, ngrid;
 	
     ngrid = cmap_grid->ngrid;
     nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
@@ -651,8 +655,6 @@ void gmx_pack_cmap(gmx_packed_t packed, gmx_cmap_t *cmap_grid)
 static
 void gmx_pack_ffparams(gmx_packed_t packed, gmx_ffparams_t *ffp)
 {
-    int i;
-  
     gmx_pack_function(packed, &ffp->atnr, 1, MPI_INT);
     snew_pack(packed, ffp->functype, ffp->ntypes);
     snew_pack(packed, ffp->iparams, ffp->ntypes);
@@ -844,6 +846,7 @@ typedef struct ir_mtop_helper
     int *buf_lengths, *grpnr_sizes;
 } t_ir_mtop_helper;
 
+static
 void ir_mtop_first_callback(gmx_packed_t packed, void *data)
 {
     t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
@@ -862,6 +865,7 @@ void ir_mtop_first_callback(gmx_packed_t packed, void *data)
     gmx_pack_function(packed, mtop, sizeof(*mtop), MPI_BYTE);
 }
 
+static
 void ir_mtop_second_callback(gmx_packed_t packed, void *data)
 {
     t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
@@ -935,6 +939,7 @@ void ir_mtop_second_callback(gmx_packed_t packed, void *data)
     }
 }
 
+static
 void ir_mtop_third_callback(gmx_packed_t packed, void *data)
 {
     t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
@@ -951,6 +956,7 @@ void ir_mtop_third_callback(gmx_packed_t packed, void *data)
     }
 }
 
+static
 void ir_mtop_fourth_callback(gmx_packed_t packed, void *data)
 {
     t_ir_mtop_helper *helper = (t_ir_mtop_helper *) data;
