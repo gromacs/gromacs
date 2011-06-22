@@ -215,7 +215,7 @@ void do_packed_bcast(gmx_packed_t packed)
 
 /*! /brief Helper allocation macro for bcast_state
  */
-#define snew_bAlloc(packed,bAlloc,d,nr) if ((bAlloc) && ((packed)->packtype == eptUnpack)) snew((d),(nr))
+#define snew_bAlloc(packed,bAlloc,d,nr) if ((bAlloc) && ((packed)->packtype == eptPackSize)) snew((d),(nr))
 
 /*! /brief Data type for callback functions.
  */
@@ -351,28 +351,28 @@ void state_callback(gmx_packed_t packed, void *data)
                  * packing. */
             case estX:
                 snew_bAlloc(packed, bAlloc, state->x, state->natoms);
-                if (eptPackSize != packed->packtype)
+                if (eptPackSize == packed->packtype)
                 {
                     gmx_bcast(state->natoms * sizeof(state->x[0]), state->x, packed->cr);
                 }
                 break;
             case estV:
                 snew_bAlloc(packed, bAlloc, state->v, state->natoms);
-                if (eptPackSize != packed->packtype)
+                if (eptPackSize == packed->packtype)
                 {
                     gmx_bcast(state->natoms * sizeof(state->v[0]), state->v, packed->cr);
                 }
                 break;
             case estSDX:
                 snew_bAlloc(packed, bAlloc, state->sd_X, state->natoms);
-                if (eptPackSize != packed->packtype)
+                if (eptPackSize == packed->packtype)
                 {
                     gmx_bcast(state->natoms * sizeof(state->sd_X[0]), state->sd_X, packed->cr);
                 }
                 break;
             case estCGP:
                 snew_bAlloc(packed, bAlloc, state->cg_p, state->natoms);
-                if (eptPackSize != packed->packtype)
+                if (eptPackSize == packed->packtype)
                 {
                     gmx_bcast(state->natoms * sizeof(state->cg_p[0]), state->cg_p, packed->cr);
                 }
