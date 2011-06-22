@@ -504,10 +504,10 @@ Values in columns 1-3 are not currently used. They pertain to more
 elaborate surface area algorithms, the one from Qiu {\em et al.}~\cite{Still97} in
 particular.  Column 4 contains the atomic van der Waals radii, which are used
 in computing the Born radii. The dielectric offset is specified in
-the {\tt *.mdp} file, and gets added to the input radii for the different
-radii methods.  Column 5 is the scale factor for the HCT and OBC
-models. The values are taken from the original HCT reference~\cite{Truhlar96}, as well
-as the corresponding implementation in Tinker.
+the {\tt *.mdp} file, and gets subtracted from the input van der Waals radii for the different
+Born radii methods, as described by Onufriev {\em et al.}~\cite{Case04}.  Column 5 is the 
+scale factor for the HCT and OBC models. The values are taken from the original 
+HCT reference~\cite{Truhlar96}, as well as the corresponding implementation in Tinker.
 
 
 
