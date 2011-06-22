@@ -421,6 +421,8 @@ void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc)
 {
     t_state_helper helper;
 
+    bcast_state_setup(cr,state);
+
     if (MASTER(cr))
     {
         bAlloc = FALSE;
