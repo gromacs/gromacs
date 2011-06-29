@@ -574,7 +574,8 @@ int gmx_trjconv(int argc,char *argv[])
 
         "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
         "treatment:[BR]",
-        "[TT]* mol[tt] puts the center of mass of molecules in the box.[BR]",
+        "[TT]* mol[tt] puts the center of mass of molecules in the box,",
+	"and requires a run input file to be supplied with [TT]-s[tt].[BR]",
         "[TT]* res[tt] puts the center of mass of residues in the box.[BR]",
         "[TT]* atom[tt] puts all the atoms in the box.[BR]",
         "[TT]* nojump[tt] checks if atoms jump across the box and then puts",
@@ -1157,7 +1158,10 @@ int gmx_trjconv(int argc,char *argv[])
                 /* check if index is meaningful */
                 for(i=0; i<nout; i++) {
                     if (index[i] >= natoms)
-                        gmx_fatal(FARGS,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
+                        gmx_fatal(FARGS,
+				  "Index[%d] %d is larger than the number of atoms in the\n"
+				  "trajectory file (%d). There is a mismatch in the contents\n"
+				  "of your -f, -s and/or -n files.",i,index[i]+1,natoms);
                     bCopy = bCopy || (i != index[i]);
                 }
             if (bCopy) {
