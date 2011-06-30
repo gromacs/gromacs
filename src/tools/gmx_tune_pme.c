@@ -820,7 +820,6 @@ static void make_grid_list(
     t_pmegrid *gridall;
     int gridalloc,excess;
 
-
     /* Determine length of triclinic box vectors */
     for(d=0; d<DIM; d++)
     {
@@ -842,32 +841,37 @@ static void make_grid_list(
     else
         eps = 1.0/max( (*griduse)[0].nkz, max( (*griduse)[0].nkx, (*griduse)[0].nky ) );
 
-    for (req_fac = fmin; act_fac < fmax; req_fac += eps)
+    /* if no scaling was requested, don't adjust the input's cut-ff based on the calculated spacing */
+    if (!(fmin == 1.0 && fmax == 1.0))
     {
-        nkx=0;
-        nky=0;
-        nkz=0;
-        calc_grid(NULL,box,fs*req_fac,&nkx,&nky,&nkz);
-        act_fs = max(box_size[XX]/nkx,max(box_size[YY]/nky,box_size[ZZ]/nkz));
-        act_fac = act_fs/fs;
-        if (    ! ( nkx==nkx_old           && nky==nky_old           && nkz==nkz_old           )    /* Exclude if grid is already in list */
-             && ! ( nkx==(*griduse)[0].nkx && nky==(*griduse)[0].nky && nkz==(*griduse)[0].nkz ) )  /* Exclude input file grid */
+        for (req_fac = fmin; act_fac < fmax; req_fac += eps)
         {
-            /* We found a new grid that will do */
-            nkx_old = nkx;
-            nky_old = nky;
-            nkz_old = nkz;
-            gridall[ngridall].nkx = nkx;
-            gridall[ngridall].nky = nky;
-            gridall[ngridall].nkz = nkz;
-            gridall[ngridall].fac = act_fac;
-            gridall[ngridall].fs  = act_fs;
-            fprintf(stdout, "%5d%5d%5d %12f %12f\n",nkx,nky,nkz,act_fs,act_fac);
-            ngridall++;
-            if (ngridall >= gridalloc)
+            nkx=0;
+            nky=0;
+            nkz=0;
+            calc_grid(NULL,box,fs*req_fac,&nkx,&nky,&nkz);
+            act_fs = max(box_size[XX]/nkx,max(box_size[YY]/nky,box_size[ZZ]/nkz));
+            act_fac = act_fs/fs;
+            if (    ! ( nkx==nkx_old           && nky==nky_old           && nkz==nkz_old           )    /* Exclude if grid is already in list */
+                    && ! ( nkx==(*griduse)[0].nkx && nky==(*griduse)[0].nky && nkz==(*griduse)[0].nkz 
+                        && (*griduse)[0].fs == fs) )  /* Exclude input file grid if the spacing of the input doesn't need adjustment */
             {
-                gridalloc += 25;
-                srenew(gridall, gridalloc);
+                /* We found a new grid that will do */
+                nkx_old = nkx;
+                nky_old = nky;
+                nkz_old = nkz;
+                gridall[ngridall].nkx = nkx;
+                gridall[ngridall].nky = nky;
+                gridall[ngridall].nkz = nkz;
+                gridall[ngridall].fac = act_fac;
+                gridall[ngridall].fs  = act_fs;
+                fprintf(stdout, "%5d%5d%5d %12f %12f\n",nkx,nky,nkz,act_fs,act_fac);
+                ngridall++;
+                if (ngridall >= gridalloc)
+                {
+                    gridalloc += 25;
+                    srenew(gridall, gridalloc);
+                }
             }
         }
     }
@@ -1034,6 +1038,16 @@ static void make_benchmark_tprs(
 
     /* If no value for the fourierspacing was provided on the command line, we
      * use the reconstruction from the tpr file */
+    if (ir->fourier_spacing > 0)
+    {
+        /* Use the spacing from the tpr */
+        fourierspacing = ir->fourier_spacing;
+    }
+    else
+    {
+        fourierspacing = pmegrid[0].fs;
+    }
+
     if (fourierspacing <= 0)
     {
         fourierspacing = pmegrid[0].fs;
