@@ -101,7 +101,7 @@
 
 #ifdef GMX_GPU
 #include "cuda_data_mgmt.h"
-#include "cuda_nb.h" 
+#include "cuda_nb.h"
 #endif
 
 #if 0
@@ -597,9 +597,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     real   e,v,dvdl;
     float  cycles_pme,cycles_force;
 
-#ifdef GMX_GPU    
-    cu_timings_t *gpu_t = get_gpu_timings(fr->gpu_nb);
-    gmx_bool    gpu_debug_print = getenv("GMX_GPU_DEBUG_PRINT") != NULL;
+#ifdef GMX_GPU
+    //cu_timings_t *gpu_t = get_gpu_timings(fr->gpu_nb);
 #endif
     
     start  = mdatoms->start;
@@ -812,13 +811,31 @@ void do_force(FILE *fplog,t_commrec *cr,
                                                   x,fr->nbat);
             }
 
+            gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
+
+            gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
+
+#ifdef GMX_GPU
+            /* initialize the gpu atom datastructures */
+            if (fr->useGPU)
+            {
+                init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->streamGPU);
+            }
+#endif
+
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
                                      fr->rvdw,fr->rlist,
                                      700,
                                      FALSE,fr->nnbl,fr->nbl,
                                      fr->useGPU || fr->emulateGPU);
-
+#ifdef GMX_GPU
+            /* initialize GPU local neighbor list */
+            if (fr->useGPU)
+            {
+                init_cudata_nblist(fr->gpu_nb, fr->nbl[0], FALSE, fr->streamGPU);
+            }
+#endif
             if (DOMAINDECOMP(cr))
             {
                 gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
@@ -827,21 +844,16 @@ void do_force(FILE *fplog,t_commrec *cr,
                                          700,
                                          TRUE,fr->nnbl_nl,fr->nbl_nl,
                                          fr->useGPU || fr->emulateGPU);
-            }
-
-            gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
-            
-            gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
-
 #ifdef GMX_GPU
-            /* initialize the gpu atom datastructures */
-            if (fr->useGPU)
-            {
-                init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->nbl[0], fr->streamGPU);
-            }
+                /* initialize GPU non-local neighbor list */
+                if (fr->useGPU)
+                {
+                    init_cudata_nblist(fr->gpu_nb, fr->nbl_nl[0], TRUE, fr->streamGPU);
+                }
 #endif
+            }
         }
-        wallcycle_stop(wcycle,ewcNS);
+            wallcycle_stop(wcycle,ewcNS); // FIXME should this counter exclude the GPU copies?
     }
 
     if (fr->nbs != NULL)
@@ -861,20 +873,22 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* wait for the atomdata trasfer to be finished */
         if (bNS)
         {
-            cu_blockwait_atomdata(fr->gpu_nb);
-            
-            if (gpu_debug_print && gpu_t->nb_count % 1000 == 0)
-            {
-                printf("NS transfer [%4d]:\t%5.3f ms\n", gpu_t->nb_count, 
-                        gpu_t->atomdt_h2d_total_time/gpu_t->atomdt_count);
-            }
+            /* FIXME moved into cu_stream_nb */
+            // XXX cu_blockwait_atomdata(fr->gpu_nb);
        }
 
         /* Launch GPU-accelerated nonbonded calculations.
            Both copying to/from device and kernel execution is asynchronous */
         wallcycle_start(wcycle,ewcSEND_X_GPU);
      
-        cu_stream_nb(fr->gpu_nb, fr->nbat, flags, !fr->streamGPU);
+        cu_stream_nb(fr->gpu_nb, fr->nbat, flags,
+                     FALSE, TRUE, !DOMAINDECOMP(cr), !fr->streamGPU);
+
+        if (DOMAINDECOMP(cr))
+        {
+            cu_stream_nb(fr->gpu_nb, fr->nbat, flags,
+                         TRUE, FALSE, TRUE, !fr->streamGPU);
+        }
 
         wallcycle_stop(wcycle,ewcSEND_X_GPU);
     }
@@ -1042,26 +1056,17 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (fr->useGPU)
         {
 #ifdef GMX_GPU
-            cu_blockwait_nb(fr->gpu_nb, flags, 
+            cu_blockwait_nb(fr->gpu_nb, flags, FALSE, !DOMAINDECOMP(cr),
                             enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                             fr->fshift);
-            if (gpu_debug_print && (!(gpu_t->nb_count % 500) || gpu_t->nb_count == 5001))
+
+            if (DOMAINDECOMP(cr))
             {
-                if (gpu_t->nb_h2d_time > 0)
-                {
-                    printf("NB time [%4d]:\t%5.3f ms | H2D: %5.3f  D2H: %5.3f\n", 
-                            gpu_t->nb_count,
-                            gpu_t->k_time[0][0].t/gpu_t->k_time[0][0].c,
-                            gpu_t->nb_h2d_time/gpu_t->nb_count,
-                            gpu_t->nb_d2h_time/gpu_t->nb_count);
-                }
-                else 
-                {
-                    printf("NB time [%4d]:\t%5.3f ms\n", 
-                            gpu_t->nb_count,
-                            gpu_t->k_time[0][0].t/gpu_t->k_time[0][0].c);
-                }
+                cu_blockwait_nb(fr->gpu_nb, flags, TRUE, TRUE,
+                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                        fr->fshift);
             }
+            cu_time_atomdata(fr->gpu_nb);
 #endif  /* GMX_GPU */
         }
         else

@@ -31,8 +31,8 @@ struct nb_tmp_data
 
 struct cu_atomdata
 {
-    int     natoms;     /* number of atoms for all 8 neighbouring domains 
-                           XXX ATM only one value, with MPI it'll be 8  */
+    int     natoms;         /* number of atoms                      */
+    int     natoms_local;   /* number of local atoms                */
     int     nalloc;     /* allocation size for the atom data (xq, f) */ 
     
     float4  *xq;        /* atom coordinates + charges, size natoms  */
@@ -95,12 +95,19 @@ struct cu_nblist
 /* timers for the GPU kernels and H2D/D2H trasfers */
 struct cu_timers
 {
-    cudaEvent_t     start_nb, stop_nb;          /* events for timing nonbonded calculation + related 
-                                                   data transfers                                   */
-    gmx_bool        time_transfers;             /* enable/disable separate host-device data trasnfer timing */
-    cudaEvent_t     start_nb_h2d, stop_nb_h2d;  /* events for timing host to device transfer (every step) */
-    cudaEvent_t     start_nb_d2h, stop_nb_d2h;  /* events for timing device to host transfer (every step) */
-    cudaEvent_t     start_atdat, stop_atdat;    /* events for timing atom data transfer (every NS step) */
+    cudaEvent_t start_nb, stop_nb;          /* events for timing nonbonded calculation + related 
+                                                   data transfers                                           */
+    cudaEvent_t start_nb_nl, stop_nb_nl;    /* events for timing nonbonded calculation on non-local data
+                                                   + related data transfers                                 */   
+    gmx_bool    time_transfers;             /* enable/disable separate host-device data trasnfer timing     */
+    cudaEvent_t start_nb_h2d, stop_nb_h2d;  /* events for timing host to device transfer (every step)       */
+    cudaEvent_t start_nb_h2d_nl, stop_nb_h2d_nl;  /* events for timing host to device transfer (every step) */
+    cudaEvent_t start_nb_d2h, stop_nb_d2h;  /* events for timing device to host transfer (every step)       */
+    cudaEvent_t start_nb_d2h_nl, stop_nb_d2h_nl; /* events for timing device to host transfer (every step) */
+    cudaEvent_t start_atdat, stop_atdat;    /* events for timing atom data transfer (every NS step)         */
+    cudaEvent_t start_atdat_nl, stop_atdat_nl;    /* events for timing atom data transfer (every NS step)   */
+
+    cudaStream_t    nbstream, nbstream_nl;      /* local and non-local calculation streams */
 };
 
 /* main data structure for CUDA nonbonded force evaluation */
@@ -111,6 +118,7 @@ struct cu_nonbonded
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
     cu_nblist_t     *nblist; 
+    cu_nblist_t     *nblist_nl; 
     cu_timers_t     *timers;
     cu_timings_t    *timings;
     nb_tmp_data     tmpdata;

@@ -154,6 +154,7 @@ typedef struct {
     int  comb_rule;  /* Combination rule, see enum above                   */
     real *nbfp_comb; /* LJ parameter per atom type, size ntype             */
     int  natoms;     /* Number of atoms                                    */
+    int  natoms_local;  /* Number of local atoms                           */
     int  *type;      /* Atom types                                         */
     real *lj_comb;   /* LJ parameters per atom for combining for pairs     */
     int  XFormat;    /* The format of x (and q), enum                      */

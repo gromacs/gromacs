@@ -1358,8 +1358,10 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
         {
             int gpu_device_id;
 
-            /* initialize GPU */
-            gpu_device_id = 0; /* TODO get dev_id */
+            /* TODO initialize GPU */
+            /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
+               each process will try to use the GPU with id = nodeid. */
+            gpu_device_id = nodeid; 
             env = getenv("GMX_GPU_ID");
             if (env != NULL)
             {

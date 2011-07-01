@@ -1567,6 +1567,11 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
     
     calc_cell_indices(nbs,dd_zone,grid,a0,a1,x,move,nbat);
 
+    if (dd_zone == 0)
+    {
+        nbat->natoms_local = nbat->natoms;
+    }
+
     nbs_cycle_stop(&nbs->cc[enbsCCgrid]);
 }
 
