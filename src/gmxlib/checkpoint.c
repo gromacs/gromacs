@@ -1930,7 +1930,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     t_fileio *fp;
     
     fp = gmx_fio_open(fn,"r");
-    read_checkpoint_data(fp,simulation_part,step,t,state,TRUE,NULL,NULL);
+    read_checkpoint_data(fp,simulation_part,step,t,state,FALSE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
