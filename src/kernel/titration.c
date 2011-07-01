@@ -47,7 +47,6 @@
 #include "smalloc.h"
 #include "assert.h"
 #include "physics.h"
-#include "macros.h"
 #include "vec.h"
 #include "force.h"
 #include "invblock.h"
