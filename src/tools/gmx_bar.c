@@ -2715,7 +2715,7 @@ int gmx_bar(int argc,char *argv[])
     fpb = NULL;
     if (opt2bSet("-o",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG","kT");
         fpb = xvgropen_type(opt2fn("-o",NFILE,fnm),"Free energy differences",
                             "\\lambda",buf,exvggtXYDY,oenv);
     }
@@ -2723,7 +2723,7 @@ int gmx_bar(int argc,char *argv[])
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG","kT");
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                       "\\lambda",buf,oenv);
     }
