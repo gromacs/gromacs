@@ -294,7 +294,9 @@ static void gmx_nbs_grid_init(gmx_nbs_grid_t * grid)
 void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-                       gmx_bool GPU,int natoms_subcell)
+                       gmx_bool simple,
+                       int natoms_subcell,
+                       int nthread_max)
 {
     gmx_nbsearch_t nbs;
     int d,np,g,t;
@@ -325,7 +327,7 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
         nbs->ngrid = (np + 1)/2;
     }
 
-    nbs->simple = !GPU;
+    nbs->simple = simple;
 
     if (nbs->simple)
     {
@@ -396,12 +398,7 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
         }
     }
 
-    nbs->nthread_max = 1;
-#ifdef GMX_OPENMP
-    {
-        nbs->nthread_max = omp_get_max_threads();
-    }
-#endif
+    nbs->nthread_max = nthread_max;
 
     /* Initialize the work data structures for each thread */
     snew(nbs->work,nbs->nthread_max);
@@ -3879,9 +3876,10 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     }
 }
 
-void gmx_nb_atomdata_init(const gmx_nbsearch_t nbs,
-                          gmx_nb_atomdata_t *nbat,
+void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
                           int ntype,const real *nbfp,
+                          int XFormat,
+                          int nout,
                           gmx_nbat_alloc_t *alloc,
                           gmx_nbat_free_t  *free)
 {
@@ -3931,12 +3929,12 @@ void gmx_nb_atomdata_init(const gmx_nbsearch_t nbs,
 
     nbat->natoms  = 0;
     nbat->type    = NULL;
-    nbat->XFormat = (nbs->simple ? nbatXXXX : nbatXYZQ);
+    nbat->XFormat = XFormat;
     nbat->q       = NULL;
     nbat->alloc((void **)&nbat->shift_vec,SHIFTS*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? 4 : 3);
     nbat->x       = NULL;
-    nbat->nout    = nbs->nthread_max;
+    nbat->nout    = nout;
     snew(nbat->out,nbat->nout);
     nbat->nalloc  = 0;
     for(i=0; i<nbat->nout; i++)
@@ -4163,7 +4161,6 @@ static void gmx_nb_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
                                      int enbatATOMS,
                                      const gmx_nb_atomdata_t *nbat,
-                                     gmx_bool combine_forces,
                                      rvec *f)
 {
     int a0,na;
@@ -4193,7 +4190,7 @@ void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
     {
         gmx_nb_atomdata_add_nbat_f_to_f_part(nbs,nbat,
                                              nbat->out,
-                                             combine_forces ? nbat->nout : 1,
+                                             nbat->nout,
                                              a0+((th+0)*na)/nth,
                                              a0+((th+1)*na)/nth,
                                              f);

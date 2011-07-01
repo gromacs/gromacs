@@ -873,7 +873,7 @@ void do_force(FILE *fplog,t_commrec *cr,
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,TRUE,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,f);
 
         if ((flags & GMX_FORCE_VIRIAL) && fr->nnbl > 1)
         {
@@ -955,7 +955,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcRECV_F_GPU);
 
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,FALSE,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,f);
     }
 
     if (bDoForces)

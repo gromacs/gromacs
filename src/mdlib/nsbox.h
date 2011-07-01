@@ -41,10 +41,12 @@ extern "C" {
 #endif
 
 /* Allocates and initializes a neighbor searching data structure */
-void gmx_nbsearch_init(gmx_nbsearch_t * nbs,
+void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-                       gmx_bool GPU,int natoms_per_cell);
+                       gmx_bool simple,
+                       int natoms_subcell,
+                       int nthread_max);
 
 /* Put the atoms on the neighborsearching grid.
  * Only atoms a0 to a1 in x are put on the grid.
@@ -104,9 +106,10 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
  */
-void gmx_nb_atomdata_init(const gmx_nbsearch_t nbs,
-                          gmx_nb_atomdata_t *nbat,
-                          int ntypes,const real *nbfp,
+void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
+                          int ntype,const real *nbfp,
+                          int XFormat,
+                          int nout,
                           gmx_nbat_alloc_t *alloc,
                           gmx_nbat_free_t  *free);
 
@@ -137,7 +140,6 @@ void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
                                      int enbatATOMS,
                                      const gmx_nb_atomdata_t *nbat,
-                                     gmx_bool combine_forces,
                                      rvec *f);
 
 /* Add the fshift force stored in nbat to fshift */
