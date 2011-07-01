@@ -78,6 +78,7 @@
 #define BOND  0.15
 #define HBOND  0.2
 #define MAXHOPANG 60
+#define MAX_MC_TRANSFERS 4
 
 typedef enum { eHOP_FORWARD, eHOP_BACKWARD } eHOP_t;
 
@@ -2546,8 +2547,14 @@ static void get_hop_prob(FILE *fplog,
                     Eafter_self_coul,Ebefore_self_coul,Eafter_self_vdw, Ebefore_self_vdw);
 
         compute_E12(p, hop, Edelta);
-        hop->Eb        = compute_Eb(p,hop);
+
+        if (eTitrationAlgMC != ir->titration_alg)
+        {
+            hop->Eb        = compute_Eb(p,hop);
+        }
+
         Thop = ir->delta_t * ir->titration_freq;
+
         if (eTitrationAlgQhop == ir->titration_alg)
         {
             compute_E12_right(p, hop);
@@ -2574,6 +2581,17 @@ static void get_hop_prob(FILE *fplog,
             r_SE = compute_rate_SE (p, hop);
             hop->prob = poisson_prob(r_SE, (ir->delta_t * ir->titration_freq));
             hop->regime = etQhopSE;
+        }
+        if (eTitrationAlgMC == ir->titration_alg)
+        {
+            if (hop->E12 <= 0)
+            {
+                hop->prob = 1;
+            }
+            else
+            {
+                hop->prob = exp(-hop->E12 / (BOLTZ * hop->T));
+            }
         }
         /* now undo the move */
         if (!change_protonation(cr, ir, T, md, hop, state->x, state->v, 
@@ -2889,7 +2907,7 @@ real do_titration(FILE *fplog,
     char
         stepstr[STEPSTRSIZE];
     int
-        i,j,a;
+        i,j,a,nTransfers;
     gmx_bool
         bAgain,bHop;
     real 
@@ -2957,6 +2975,27 @@ real do_titration(FILE *fplog,
             }
         }
         scramble_hops(T, ir->titration_mode);
+
+        if (ir->titration_alg == eTitrationAlgMC)
+        {
+            /* Correct the probability for the different number of possible hops from different donors:
+             *   p = p' * NTRANSFERS/MAXTRANSFERS,
+             * where NTRANSFERS are the actual number of possible transfers from a site, and MAXTRANSFERS
+             * is a constant>=NTRANSFERS. */
+
+            for (i=0; i<T->nr_hop; i++)
+            {
+                nTransfers = 0;
+                for (j=0; j<T->nr_hop; j++)
+                {
+                    if (T->hop[i].donor_id == T->hop[j].donor_id)
+                    {
+                        nTransfers++;
+                    }
+                }
+                T->hop[i].prob *= nTransfers/MAX_MC_TRANSFERS;
+            }
+        }
         
         for(i=0; (i <T->nr_hop); i++)
         {
@@ -3056,6 +3095,11 @@ real do_titration(FILE *fplog,
                             T->hop[i].rda, T->hop[i].ang, deqmmm,
                             T->hop[i].El, T->hop[i].Er,
                             T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
+                }
+
+                if (ir->titration_mode == eTitrationModeOne)
+                {
+                    break;
                 }
             }
         }

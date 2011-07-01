@@ -99,10 +99,10 @@
     
     <!-- p_SE -->
     <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>	
-    <parameter name="k_2"   value="86.69" unit="1/nm"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
     <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="34.36" unit=""/>
-    <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
     <parameter name="m_3"   value="-30.43" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
@@ -139,10 +139,10 @@
 
     <!-- p_SE -->
     <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
-    <parameter name="k_2"   value="86.69" unit="1/nm"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
     <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="34.36" unit=""/>
-    <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
     <parameter name="m_3"   value="-30.43" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
@@ -179,10 +179,10 @@
 
     <!-- p_SE -->
     <parameter name="k_1"   value="1.758871353419417" unit="1/(kJ/mol)"/>
-    <parameter name="k_2"   value="202.21" unit="1/nm"/>
+    <parameter name="k_2"   value="-202.21" unit="1/nm"/>
     <parameter name="k_3"   value="0.046867527498804" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="27.94" unit=""/>
-    <parameter name="m_2"   value="5.000" unit="1/nm"/>
+    <parameter name="m_2"   value="-5.000" unit="1/nm"/>
     <parameter name="m_3"   value="-23.54" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
@@ -219,10 +219,10 @@
 
     <!-- p_SE -->
     <parameter name="k_1"   value="0.197417503586801" unit="1/(kJ/mol)"/>
-    <parameter name="k_2"   value="99.67" unit="1/nm"/>
+    <parameter name="k_2"   value="-99.67" unit="1/nm"/>
     <parameter name="k_3"   value="0.038020086083214" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="45.4942" unit=""/>
-    <parameter name="m_2"   value="3.054" unit="1/nm"/>
+    <parameter name="m_2"   value="-3.054" unit="1/nm"/>
     <parameter name="m_3"   value="-41.10" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
@@ -248,6 +248,7 @@
     <parameter name="r_2"   value="-1.7982604503233e-05" unit="1/(K*(kJ/mol)^2)"/>
     <parameter name="r_3"   value="2.48668829839619e-08" unit="1/(K^2*(kJ/mol)^2)"/>
   </titration>
+
   <titration donor="H3O" acceptor="AC-">
     <don_atom> OW </don_atom>
     <acc_atom> OC2 </acc_atom>
@@ -258,10 +259,10 @@
 
     <!-- p_SE -->
     <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
-    <parameter name="k_2"   value="86.69" unit="1/nm"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
     <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="34.36" unit=""/>
-    <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
     <parameter name="m_3"   value="-30.43" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
@@ -298,10 +299,10 @@
 
     <!-- p_SE -->
     <parameter name="k_1"   value="0.12171209947393591" unit="1/(kJ/mol)"/>
-    <parameter name="k_2"   value="86.69" unit="1/nm"/>
+    <parameter name="k_2"   value="-86.69" unit="1/nm"/>
     <parameter name="k_3"   value="0.030607364897178382" unit="1/(kJ/mol)"/>
     <parameter name="m_1"   value="34.36" unit=""/>
-    <parameter name="m_2"   value="4.36" unit="1/nm"/>
+    <parameter name="m_2"   value="-4.36" unit="1/nm"/>
     <parameter name="m_3"   value="-30.43" unit=""/>
 
     <!-- {S, T, V} => E_b = E_b(E_12) -->
