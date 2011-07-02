@@ -1,8 +1,8 @@
-.TH trjconv 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH trjconv 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 trjconv - converts and manipulates trajectory files
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "\-f" " traj.xtc "
@@ -31,6 +31,7 @@ trjconv - converts and manipulates trajectory files
 .BI "\-[no]center" ""
 .BI "\-boxcenter" " enum "
 .BI "\-box" " vector "
+.BI "\-clustercenter" " vector "
 .BI "\-trans" " vector "
 .BI "\-shift" " vector "
 .BI "\-fit" " enum "
@@ -47,7 +48,7 @@ trjconv - converts and manipulates trajectory files
 .BI "\-dropover" " real "
 .BI "\-[no]conect" ""
 .SH DESCRIPTION
-\&trjconv can convert trajectory files in many ways:
+\&\fB trjconv\fR can convert trajectory files in many ways:
 
 \&\fB 1.\fR from one format to another
 
@@ -68,7 +69,7 @@ trjconv - converts and manipulates trajectory files
 
 \&\fB 9.\fR cut the trajectory in small subtrajectories according
 \&to information in an index file. This allows subsequent analysis of
-\&the subtrajectories that could, for example be the result of a
+\&the subtrajectories that could, for example, be the result of a
 \&cluster analysis. Use option \fB \-sub\fR.
 \&This assumes that the entries in the index file are frame numbers and
 \&dumps each group in the index file to a separate trajectory file.
@@ -77,7 +78,7 @@ trjconv - converts and manipulates trajectory files
 \&in an \fB .xvg\fR file.
 
 
-\&The program \fB trjcat\fR can concatenate multiple trajectory files.
+\&The program \fB trjcat\fR is better suited for concatenating multiple trajectory files.
 \&
 
 
@@ -91,7 +92,7 @@ trjconv - converts and manipulates trajectory files
 \&is always taken from \fB \-ndec\fR, when this option is set.
 \&All other formats have fixed precision. \fB .trr\fR and \fB .trj\fR
 \&output can be single or double precision, depending on the precision
-\&of the trjconv binary.
+\&of the \fB trjconv\fR binary.
 \&Note that velocities are only supported in
 \&\fB .trr\fR, \fB .trj\fR, \fB .gro\fR and \fB .g96\fR files.
 
@@ -103,7 +104,7 @@ trjconv - converts and manipulates trajectory files
 
 
 \&Option \fB \-sep\fR can be used to write every frame to a separate
-\&.gro, .g96 or .pdb file, default all frames all written to one file.
+\&\fB .gro, .g96\fR or \fB .pdb\fR file. By default, all frames all written to one file.
 \&\fB .pdb\fR files with all frames concatenated can be viewed with
 \&\fB rasmol \-nmrpdb\fR.
 
@@ -117,9 +118,9 @@ trjconv - converts and manipulates trajectory files
 
 
 \&There are two options for fitting the trajectory to a reference
-\&either for essential dynamics analysis or for whatever.
+\&either for essential dynamics analysis, etc.
 \&The first option is just plain fitting to a reference structure
-\&in the structure file, the second option is a progressive fit
+\&in the structure file. The second option is a progressive fit
 \&in which the first timeframe is fitted to the reference structure 
 \&in the structure file to obtain and each subsequent timeframe is 
 \&fitted to the previously fitted structure. This way a continuous
@@ -131,28 +132,32 @@ trjconv - converts and manipulates trajectory files
 \&Option \fB \-pbc\fR sets the type of periodic boundary condition
 \&treatment:
 
-\&* \fB mol\fR puts the center of mass of molecules in the box.
+\&\fB * mol\fR puts the center of mass of molecules in the box.
 
-\&* \fB res\fR puts the center of mass of residues in the box.
+\&\fB * res\fR puts the center of mass of residues in the box.
 
-\&* \fB atom\fR puts all the atoms in the box.
+\&\fB * atom\fR puts all the atoms in the box.
 
-\&* \fB nojump\fR checks if atoms jump across the box and then puts
+\&\fB * nojump\fR checks if atoms jump across the box and then puts
 \&them back. This has the effect that all molecules
 \&will remain whole (provided they were whole in the initial
-\&conformation), note that this ensures a continuous trajectory but
+\&conformation). \fB Note\fR that this ensures a continuous trajectory but
 \&molecules may diffuse out of the box. The starting configuration
 \&for this procedure is taken from the structure file, if one is
 \&supplied, otherwise it is the first frame.
 
-\&* \fB cluster\fR clusters all the atoms in the selected index
-\&such that they are all closest to the center of mass of the cluster
-\&which is iteratively updated. Note that this will only give meaningful
+\&\fB * cluster\fR clusters all the atoms in the selected index
+\&such that they are all closest to the center of mass of the cluster,
+\&which is iteratively updated. \fB Note\fR that this will only give meaningful
 \&results if you in fact have a cluster. Luckily that can be checked
 \&afterwards using a trajectory viewer. Note also that if your molecules
 \&are broken this will not work either.
 
-\&* \fB whole\fR only makes broken molecules whole.
+\&The separate option \fB \-clustercenter\fR can be used to specify an
+\&approximate center for the cluster. This is useful e.g. if you have
+\&two big vesicles, and you want to maintain their relative positions.
+
+\&\fB * whole\fR only makes broken molecules whole.
 
 
 \&Option \fB \-ur\fR sets the unit cell representation for options
@@ -163,7 +168,7 @@ trjconv - converts and manipulates trajectory files
 \&\fB tric\fR is the triclinic unit cell.
 \&\fB compact\fR puts all atoms at the closest distance from the center
 \&of the box. This can be useful for visualizing e.g. truncated
-\&octahedrons. The center for options \fB tric\fR and \fB compact\fR
+\&octahedra. The center for options \fB tric\fR and \fB compact\fR
 \&is \fB tric\fR (see below), unless the option \fB \-boxcenter\fR
 \&is set differently.
 
@@ -179,22 +184,19 @@ trjconv - converts and manipulates trajectory files
 \&want all molecules in the box after the centering.
 
 
-\&With \fB \-dt\fR it is possible to reduce the number of 
+\&With \fB \-dt\fR, it is possible to reduce the number of 
 \&frames in the output. This option relies on the accuracy of the times
 \&in your input trajectory, so if these are inaccurate use the
 \&\fB \-timestep\fR option to modify the time (this can be done
-\&simultaneously). For making smooth movies the program \fB g_filter\fR
+\&simultaneously). For making smooth movies, the program \fB g_filter\fR
 \&can reduce the number of frames while using low\-pass frequency
 \&filtering, this reduces aliasing of high frequency motions.
 
 
-\&Using \fB \-trunc\fR trjconv can truncate \fB .trj\fR in place, i.e.
+\&Using \fB \-trunc\fR \fB trjconv\fR can truncate \fB .trj\fR in place, i.e.
 \&without copying the file. This is useful when a run has crashed
-\&during disk I/O (one more disk full), or when two contiguous
-\&trajectories must be concatenated without have double frames.
-
-
-\&\fB trjcat\fR is more suitable for concatenating trajectory files.
+\&during disk I/O (i.e. full disk), or when two contiguous
+\&trajectories must be concatenated without having double frames.
 
 
 \&Option \fB \-dump\fR can be used to extract a frame at or near
@@ -254,7 +256,7 @@ trjconv - converts and manipulates trajectory files
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -292,6 +294,9 @@ trjconv - converts and manipulates trajectory files
 .BI "\-box"  " vector" " 0 0 0" 
  Size for new cubic box (default: read from input)
 
+.BI "\-clustercenter"  " vector" " 0 0 0" 
+ Optional starting point for pbc cluster option
+
 .BI "\-trans"  " vector" " 0 0 0" 
  All coordinates will be translated by trans. This can advantageously be combined with \-pbc mol \-ur compact.
 
@@ -311,7 +316,7 @@ trjconv - converts and manipulates trajectory files
  Read and write forces if possible
 
 .BI "\-trunc"  " time" " \-1    " 
- Truncate input trj file after this time (ps)
+ Truncate input trajectory file after this time (ps)
 
 .BI "\-exec"  " string" " " 
  Execute command for every output frame with the frame number as argument
@@ -326,7 +331,7 @@ trjconv - converts and manipulates trajectory files
  Write each frame to a separate .gro, .g96 or .pdb file
 
 .BI "\-nzero"  " int" " 0" 
- Prepend file number in case you use the \-sep flag with this number of zeroes
+ If the \-sep flag is set, use these many digits for the file numbers and prepend zeros as needed
 
 .BI "\-dropunder"  " real" " 0     " 
  Drop all frames below this value
@@ -335,7 +340,7 @@ trjconv - converts and manipulates trajectory files
  Drop all frames above this value
 
 .BI "\-[no]conect"  "no    "
- Add conect records when writing pdb files. Useful for visualization of non\-standard molecules, e.g. coarse grained ones
+ Add conect records when writing \fB .pdb\fR files. Useful for visualization of non\-standard molecules, e.g. coarse grained ones
 
 .SH SEE ALSO
 .BR gromacs(7)

@@ -610,12 +610,12 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         if (ir->dhdl_derivatives == dhdlderivativesYES)
         {
             sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
-            setname[nsi++] = strdup(buf);
+            setname[nsi++] = gmx_strdup(buf);
         }
         for(s=0; s<ir->n_flambda; s++)
         {
             sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s]);
-            setname[nsi++] = strdup(buf);
+            setname[nsi++] = gmx_strdup(buf);
         }
         xvgr_legend(fp,nsets,(const char**)setname,oenv);
 
@@ -753,7 +753,7 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         add_ebin(md->ebin,md->ivcos,1,&(ekind->cosacc.vcos),bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *vol*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*vol*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin,md->ivisc,1,&tmp,bSum);    
     }
     if (md->nE > 1)

@@ -1889,7 +1889,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt,gmx_ffparams_t *ffparams,
     {
         /* We copy the coordinates so the original coordinates remain
          * unchanged, just to be 100% sure that we do not affect
-         * binary reproducability of simulations.
+         * binary reproducibility of simulations.
          */
         n = molt->cgs.index[molt->cgs.nr];
         for(i=0; i<n; i++)

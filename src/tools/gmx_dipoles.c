@@ -683,7 +683,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
     rvec       dipaxis;
     matrix     box;
-    gmx_bool       bCorr,bTotal,bCont;
+    gmx_bool   bCorr,bTotal,bCont;
     double     M_diff=0,epsilon,invtel,vol_aver;
     double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
     double     M[3],M2[3],M4[3],Gk=0,g_k=0;
@@ -726,7 +726,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
         mols = &(top->mols);
     }
   
-    if (iVol == -1)
+    if ((iVol == -1) && bMU)
         printf("Using Volume from topology: %g nm^3\n",volume);
 
     /* Correlation stuff */ 
@@ -1268,7 +1268,7 @@ int gmx_dipoles(int argc,char *argv[])
     const char *desc[] = {
         "[TT]g_dipoles[tt] computes the total dipole plus fluctuations of a simulation",
         "system. From this you can compute e.g. the dielectric constant for",
-        "low dielectric media.",
+        "low-dielectric media.",
         "For molecules with a net charge, the net charge is subtracted at",
         "center of mass of the molecule.[PAR]",
         "The file [TT]Mtot.xvg[tt] contains the total dipole moment of a frame, the",
@@ -1277,8 +1277,8 @@ int gmx_dipoles(int argc,char *argv[])
         "simulation.",
         "The file [TT]dipdist.xvg[tt] contains the distribution of dipole moments during",
         "the simulation",
-        "The mu_max is used as the highest value in the distribution graph.[PAR]",
-        "Furthermore the dipole autocorrelation function will be computed when",
+        "The value of [TT]-mumax[tt] is used as the highest value in the distribution graph.[PAR]",
+        "Furthermore, the dipole autocorrelation function will be computed when",
         "option [TT]-corr[tt] is used. The output file name is given with the [TT]-c[tt]",
         "option.",
         "The correlation functions can be averaged over all molecules",
@@ -1288,17 +1288,17 @@ int gmx_dipoles(int argc,char *argv[])
         "Option [TT]-g[tt] produces a plot of the distance dependent Kirkwood",
         "G-factor, as well as the average cosine of the angle between the dipoles",
         "as a function of the distance. The plot also includes gOO and hOO",
-        "according to Nymand & Linse, JCP 112 (2000) pp 6386-6395. In the same plot",
+        "according to Nymand & Linse, J. Chem. Phys. 112 (2000) pp 6386-6395. In the same plot, ",
         "we also include the energy per scale computed by taking the inner product of",
         "the dipoles divided by the distance to the third power.[PAR]",
         "[PAR]",
         "EXAMPLES[PAR]",
-        "[TT]g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft[tt][PAR]",
+        "[TT]g_dipoles -corr mol -P 1 -o dip_sqr -mu 2.273 -mumax 5.0[tt][PAR]",
         "This will calculate the autocorrelation function of the molecular",
         "dipoles using a first order Legendre polynomial of the angle of the",
         "dipole vector and itself a time t later. For this calculation 1001",
-        "frames will be used. Further the dielectric constant will be calculated",
-        "using an epsilonRF of infinity (default), temperature of 300 K (default) and",
+        "frames will be used. Further, the dielectric constant will be calculated",
+        "using an [GRK]epsilon[grk]RF of infinity (default), temperature of 300 K (default) and",
         "an average dipole moment of the molecule of 2.273 (SPC). For the",
         "distribution function a maximum of 5.0 will be used."
     };
@@ -1315,7 +1315,7 @@ int gmx_dipoles(int argc,char *argv[])
         { "-mu",       FALSE, etREAL, {&mu_aver},
           "dipole of a single molecule (in Debye)" },
         { "-mumax",    FALSE, etREAL, {&mu_max},
-          "max dipole in Debye (for histrogram)" },
+          "max dipole in Debye (for histogram)" },
         { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
           "epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
         { "-skip",     FALSE, etINT, {&skip},
@@ -1325,7 +1325,7 @@ int gmx_dipoles(int argc,char *argv[])
         { "-corr",     FALSE, etENUM, {corrtype},
           "Correlation function to calculate" },
         { "-pairs",    FALSE, etBOOL, {&bPairs},
-          "Calculate |cos theta| between all pairs of molecules. May be slow" },
+          "Calculate |cos [GRK]theta[grk]| between all pairs of molecules. May be slow" },
         { "-ncos",     FALSE, etINT, {&ncos},
           "Must be 1 or 2. Determines whether the <cos> is computed between all molecules in one group, or between molecules in two different groups. This turns on the [TT]-gkr[tt] flag." }, 
         { "-axis",     FALSE, etSTR, {&axtitle}, 
@@ -1337,19 +1337,19 @@ int gmx_dipoles(int argc,char *argv[])
         { "-gkratom2", FALSE, etINT, {&nFB},
           "Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of molecules" },
         { "-rcmax",    FALSE, etREAL, {&rcmax},
-          "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterium based on the box length will be used." },
+          "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used." },
         { "-phi",      FALSE, etBOOL, {&bPhi},
           "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
         { "-nlevels",  FALSE, etINT, {&nlevels},
           "Number of colors in the cmap output" },
         { "-ndegrees", FALSE, etINT, {&ndegrees},
-          "Number of divisions on the y-axis in the camp output (for 180 degrees)" }
+          "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)" }
     };
     int          *gnx;
     int          nFF[2];
     atom_id      **grpindex;
     char         **grpname=NULL;
-    gmx_bool         bCorr,bQuad,bGkr,bMU,bSlab;  
+    gmx_bool     bCorr,bQuad,bGkr,bMU,bSlab;  
     t_filenm fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },

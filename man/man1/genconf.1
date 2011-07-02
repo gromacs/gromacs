@@ -1,8 +1,8 @@
-.TH genconf 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH genconf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 genconf - multiplies a conformation in 'random' orientations
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3genconf\fP
 .BI "\-f" " conf.gro "
@@ -22,9 +22,9 @@ genconf - multiplies a conformation in 'random' orientations
 .BI "\-maxrot" " vector "
 .BI "\-[no]renumber" ""
 .SH DESCRIPTION
-\&genconf multiplies a given coordinate file by simply stacking them
+\&\fB genconf\fR multiplies a given coordinate file by simply stacking them
 \&on top of each other, like a small child playing with wooden blocks.
-\&The program makes a grid of \fI user defined\fR
+\&The program makes a grid of \fI user\-defined\fR
 \&proportions (\fB \-nbox\fR), 
 \&and interspaces the grid point with an extra space \fB \-dist\fR.
 
@@ -32,7 +32,7 @@ genconf - multiplies a conformation in 'random' orientations
 \&When option \fB \-rot\fR is used the program does not check for overlap
 \&between molecules on grid points. It is recommended to make the box in
 \&the input file at least as big as the coordinates + 
-\&Van der Waals radius.
+\&van der Waals radius.
 
 
 \&If the optional trajectory file is given, conformations are not

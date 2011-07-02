@@ -83,14 +83,13 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal) 
+static void *init_vetavars(t_vetavars *vars,
+                           gmx_bool constr_deriv,
+                           real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal) 
 {
-    t_vetavars *vars;
     double g;
     int i;
 
-    snew(vars,1);
-    snew(vars->vscale_nhc,ir->opts.ngtc);
     /* first, set the alpha integrator variable */
     if ((ir->opts.nrdf[0] > 0) && bPscal) 
     {
@@ -104,25 +103,39 @@ static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_eki
     vars->vscale = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta = vetanew;
-    if ((ekind==NULL) || (!bPscal))
+
+    if (constr_deriv)
     {
-        for (i=0;i<ir->opts.ngtc;i++)
+        snew(vars->vscale_nhc,ir->opts.ngtc);
+        if ((ekind==NULL) || (!bPscal))
         {
-            vars->vscale_nhc[i] = 1;
+            for (i=0;i<ir->opts.ngtc;i++)
+            {
+                vars->vscale_nhc[i] = 1;
+            }
         }
-    } else {
-        for (i=0;i<ir->opts.ngtc;i++)
+        else
         {
-            vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
+            for (i=0;i<ir->opts.ngtc;i++)
+            {
+                vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
+            }
         }
     }
+    else
+    {
+        vars->vscale_nhc = NULL;
+    }
+
     return vars;
 }
 
 static void free_vetavars(t_vetavars *vars) 
 {
-    sfree(vars->vscale_nhc);
-    sfree(vars);
+    if (vars->vscale_nhc != NULL)
+    {
+        sfree(vars->vscale_nhc);
+    }
 }
 
 static int pcomp(const void *p1, const void *p2)
@@ -297,7 +310,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     int     nsettle;
     t_pbc   pbc;
     char    buf[22];
-    t_vetavars *vetavar;
+    t_vetavars vetavar;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
@@ -312,7 +325,8 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     nrend = start+homenr;
 
     /* set constants for pressure control integration */ 
-    vetavar = init_vetavars(veta,vetanew,ir,ekind,bPscal);
+    init_vetavars(&vetavar,econq!=econqCoord,
+                  veta,vetanew,ir,ekind,bPscal);
 
     if (ir->delta_t == 0)
     {
@@ -363,14 +377,16 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,xprime,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,
+                          &vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,min_proj,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,
+                          &vetavar);
             break;
         default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
@@ -398,7 +414,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         case econqCoord:
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar);
+                    invdt,v[0],vir!=NULL,rmdr,&error,&vetavar);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
             if (v != NULL)
             {
@@ -435,7 +451,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             case econqForceDispl:
                 settle_proj(fplog,constr->settled,econq,
                             nsettle,settle->iatoms,x,
-                            xprime,min_proj,vir!=NULL,rmdr,vetavar);
+                            xprime,min_proj,vir!=NULL,rmdr,&vetavar);
                 /* This is an overestimate */
                 inc_nrnb(nrnb,eNR_SETTLE,nsettle);
                 break;
@@ -448,7 +464,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         }
     }
 
-    free_vetavars(vetavar);
+    free_vetavars(&vetavar);
     
     if (vir != NULL)
     {
@@ -1039,8 +1055,13 @@ gmx_constr_t init_constraints(FILE *fplog,
                 } 
                 else if (ilist[F_SETTLE].iatoms[i] != settle_type) 
                 {
-                    gmx_fatal(FARGS,"More than one settle type.\n"
-                              "Suggestion: change the least use settle constraints into 3 normal constraints.");
+                    gmx_fatal(FARGS,
+                              "The [molecules] section of your topology specifies more than one block of\n"
+                              "a [moleculetype] with a [settles] block. Only one such is allowed. If you\n"
+                              "are trying to partition your solvent into different *groups* (e.g. for\n"
+                              "freezing, T-coupling, etc.) then you are using the wrong approach. Index\n"
+                              "files specify groups. Otherwise, you may wish to change the least-used\n"
+                              "block of molecules with SETTLE constraints into 3 normal constraints.");
                 }
             }
         }

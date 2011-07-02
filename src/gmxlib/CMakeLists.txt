@@ -101,11 +101,9 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
-# Selection has test_ instead of _test.  Removing here for special case, perhaps make general?
-if(GMX_FAHCORE)
-    file(GLOB SELECTION_TEST selection/test*)
-    list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
-endif(GMX_FAHCORE)
+# Selection has test_ instead of _test.
+file(GLOB SELECTION_TEST selection/test*)
+list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
 if(NOT GMX_OPENMM) 

@@ -260,7 +260,7 @@ void write_pdbfile_indexed(FILE *out,const char *title,
   else
     bOccup = FALSE;
 
-  fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
+  fprintf(out,"MODEL %8d\n",model_nr>0 ? model_nr : 1);
 
   lastchainresind   = -1;
   lastchainnum      = -1;
@@ -438,7 +438,7 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
   int  i,atomnumber,len;
   size_t k;
-  char anm[6],anm_copy[6];
+  char anm[6],anm_copy[6],*ptr;
   char nc='\0';
   real eval;
   
@@ -470,7 +470,8 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;
-    sprintf(atoms->atom[i].elem,"%2s",gmx_atomprop_element(aps,atomnumber));
+    ptr = gmx_atomprop_element(aps,atomnumber);
+    strncpy(atoms->atom[i].elem,ptr==NULL ? "" : ptr,4);
     if (debug)
       fprintf(debug,"Atomnumber for atom '%s' is %d\n",anm,atomnumber);
   }

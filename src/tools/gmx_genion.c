@@ -71,11 +71,12 @@ static void insert_ion(int nsa,int *nwater,
   real extr_e,poti,rmin2;
   rvec xei,dx;
   gmx_bool bSub=FALSE;
-  int  maxrand;
+  gmx_large_int_t maxrand;
   
   ei=-1;
   nw = *nwater;
-  maxrand = 1000*nw;
+  maxrand  = nw;
+  maxrand *= 1000;
   if (bRandom) {
     do {
       ei = nw*rando(seed);
@@ -301,10 +302,10 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 	fprintf(fpout,"%-10s  %d\n",grpname,nsol_last);  
       }
       if (p_num > 0) {
-	fprintf(fpout,"%-10s  %d\n",p_name,p_num);  
+	fprintf(fpout,"%-15s  %d\n",p_name,p_num);  
       }
       if (n_num > 0) {
-	fprintf(fpout,"%-10s  %d\n",n_name,n_num);
+	fprintf(fpout,"%-15s  %d\n",n_name,n_num);
       }
     }
   }
@@ -340,7 +341,7 @@ int gmx_genion(int argc, char *argv[])
     "[PAR]Ions which can have multiple charge states get the multiplicity",
     "added, without sign, for the uncommon states only.[PAR]",
     "With the option [TT]-pot[tt] the potential can be written as B-factors",
-    "in a [TT].pdb[tt] file (for visualisation using e.g. rasmol).",
+    "in a [TT].pdb[tt] file (for visualisation using e.g. Rasmol).",
     "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
     "For larger ions, e.g. sulfate we recommended using [TT]genbox[tt]."

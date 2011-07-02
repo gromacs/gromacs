@@ -1,8 +1,8 @@
-.TH g_clustsize 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_clustsize 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_clustsize - calculate size distributions of atomic clusters
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_clustsize\fP
 .BI "\-f" " traj.xtc "
@@ -35,8 +35,8 @@ g_clustsize - calculate size distributions of atomic clusters
 .BI "\-rgbhi" " vector "
 .SH DESCRIPTION
 \&This program computes the size distributions of molecular/atomic clusters in
-\&the gas phase. The output is given in the form of a XPM file.
-\&The total number of clusters is written to a XVG file.
+\&the gas phase. The output is given in the form of an \fB .xpm\fR file.
+\&The total number of clusters is written to an \fB .xvg\fR file.
 
 
 \&When the \fB \-mol\fR option is given clusters will be made out of
@@ -46,11 +46,11 @@ g_clustsize - calculate size distributions of atomic clusters
 
 
 \&When velocities are present in your trajectory, the temperature of
-\&the largest cluster will be printed in a separate xvg file assuming
+\&the largest cluster will be printed in a separate \fB .xvg\fR file assuming
 \&that the particles are free to move. If you are using constraints,
 \&please correct the temperature. For instance water simulated with SHAKE
 \&or SETTLE will yield a temperature that is 1.5 times too low. You can
-\&compensate for this with the \-ndf option. Remember to take the removal
+\&compensate for this with the \fB \-ndf\fR option. Remember to take the removal
 \&of center of mass motion into account.
 
 
@@ -124,7 +124,7 @@ g_clustsize - calculate size distributions of atomic clusters
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -133,7 +133,7 @@ g_clustsize - calculate size distributions of atomic clusters
  Largest distance (nm) to be considered in a cluster
 
 .BI "\-[no]mol"  "no    "
- Cluster molecules rather than atoms (needs tpr file)
+ Cluster molecules rather than atoms (needs \fB .tpr\fR file)
 
 .BI "\-[no]pbc"  "yes   "
  Use periodic boundary conditions
@@ -142,7 +142,7 @@ g_clustsize - calculate size distributions of atomic clusters
  Number of frames to skip between writing
 
 .BI "\-nlevels"  " int" " 20" 
- Number of levels of grey in xpm output
+ Number of levels of grey in \fB .xpm\fR output
 
 .BI "\-ndf"  " int" " \-1" 
  Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used.

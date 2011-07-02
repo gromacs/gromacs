@@ -87,7 +87,8 @@ static gmx_bool in_box(t_pbc *pbc,rvec x)
   rvec box_center,dx;
   int  shift;
   
-  calc_box_center(ecenterTRIC,pbc->box,box_center);
+  /* pbc_dx_aiuc only works correctly with the rectangular box center */
+  calc_box_center(ecenterRECT,pbc->box,box_center);
   
   shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
@@ -627,11 +628,15 @@ int gmx_genbox(int argc,char *argv[])
     "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
     "successful the same van der Waals criterium is used as for removal of ",
-    "solvent molecules. When no appropriately ",
-    "sized holes (holes that can hold an extra molecule) are available the ",
+    "solvent molecules. When no appropriately-sized ",
+    "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
-    
+
+    "If you need to do more than one of the above operations, it can be",
+    "best to call [TT]genbox[tt] separately for each operation, so that",
+    "you are sure of the order in which the operations occur.[PAR]",
+
     "The default solvent is Simple Point Charge water (SPC), with coordinates ",
     "from [TT]$GMXLIB/spc216.gro[tt]. These coordinates can also be used",
     "for other 3-site water models, since a short equibilibration will remove",

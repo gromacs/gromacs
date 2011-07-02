@@ -89,24 +89,20 @@ static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
         {
             bDiff = TRUE;
         }
-
-        if (bDiff)
+    }
+    if (bDiff)
+    {
+        if (re->type >= 0 && re->type < ereNR)
         {
-            if (re->type >= 0 && re->type < ereNR)
-            {
-                gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
-                          erename[re->type],erename[ere]);
-            }
-            else
-            {
-                /* Set the replica exchange type and quantities */
-                re->type = ere;
-                snew(re->q,re->nrepl);
-                for(s=0; s<ms->nsim; s++)
-                {
-                    re->q[s] = qall[s];
-                }
-            }
+            gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
+                      erename[re->type],erename[ere]);
+        }
+        /* Set the replica exchange type and quantities */
+        re->type = ere;
+        snew(re->q,re->nrepl);
+        for(s=0; s<ms->nsim; s++)
+        {
+            re->q[s] = qall[s];
         }
     }
 
@@ -139,9 +135,9 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     check_multi_int(fplog,ms,state->natoms,"the number of atoms");
     check_multi_int(fplog,ms,ir->eI,"the integrator");
-    check_multi_int(fplog,ms,ir->init_step+ir->nsteps,"init_step+nsteps");
-    check_multi_int(fplog,ms,(ir->init_step+nst-1)/nst,
-                    "first exchange step: init_step/-replex");
+    check_multi_large_int(fplog,ms,ir->init_step+ir->nsteps,"init_step+nsteps");
+    check_multi_large_int(fplog,ms,(ir->init_step+nst-1)/nst,
+                          "first exchange step: init_step/-replex");
     check_multi_int(fplog,ms,ir->etc,"the temperature coupling");
     check_multi_int(fplog,ms,ir->opts.ngtc,
                     "the number of temperature coupling groups");
