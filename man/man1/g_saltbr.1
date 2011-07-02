@@ -1,8 +1,8 @@
-.TH g_saltbr 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_saltbr 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_saltbr - computes salt bridges
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_saltbr\fP
 .BI "\-f" " traj.xtc "
@@ -16,15 +16,16 @@ g_saltbr - computes salt bridges
 .BI "\-t" " real "
 .BI "\-[no]sep" ""
 .SH DESCRIPTION
-\&g_saltbr plots the distance between all combination of charged groups
+\&\fB g_saltbr\fR plots the distance between all combination of charged groups
 \&as a function of time. The groups are combined in different ways.
-\&A minimum distance can be given, (eg. the cut\-off), then groups
+\&A minimum distance can be given (i.e. a cut\-off), such that groups
 \&that are never closer than that distance will not be plotted.
 
-\&Output will be in a number of fixed filenames, min\-min.xvg, plus\-min.xvg
-\&and plus\-plus.xvg, or files for every individual ion\-pair if the \fB \-sep\fR
-\&option is selected. In this case files are named as \fB sb\-ResnameResnr\-Atomnr\fR.
-\&There may be many such files.
+
+\&Output will be in a number of fixed filenames, \fB min\-min.xvg\fR, \fB plus\-min.xvg\fR
+\&and \fB plus\-plus.xvg\fR, or files for every individual ion pair if the \fB \-sep\fR
+\&option is selected. In this case, files are named as \fB sb\-(Resname)(Resnr)\-(Atomnr)\fR.
+\&There may be \fB many\fR such files.
 .SH FILES
 .BI "\-f" " traj.xtc" 
 .B Input

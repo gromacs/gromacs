@@ -1,8 +1,8 @@
-.TH g_rama 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_rama 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_rama - computes Ramachandran plots
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_rama\fP
 .BI "\-f" " traj.xtc "
@@ -17,7 +17,7 @@ g_rama - computes Ramachandran plots
 .BI "\-[no]w" ""
 .BI "\-xvg" " enum "
 .SH DESCRIPTION
-\&g_rama selects the Phi/Psi dihedral combinations from your topology file
+\&\fB g_rama\fR selects the phi/psi dihedral combinations from your topology file
 \&and computes these as a function of time.
 \&Using simple Unix tools such as \fI grep\fR you can select out
 \&specific residues.
@@ -54,7 +54,7 @@ g_rama - computes Ramachandran plots
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

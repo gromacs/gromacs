@@ -160,7 +160,7 @@ int fget_lines(FILE *in,char ***strings)
   snew(ptr,nstr);
   for(i=0; (i<nstr); i++) {
     fgets2(buf,255,in);
-    ptr[i] = strdup(buf);
+    ptr[i] = gmx_strdup(buf);
   }
   
   (*strings) = ptr;

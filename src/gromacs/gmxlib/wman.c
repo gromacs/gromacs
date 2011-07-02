@@ -90,6 +90,10 @@ const t_sandr_const sandrTeX[] = {
   { "[BR]", "\\\\"   },
   { "%",    "\\%"    },
   { "&",    "\\&"    },
+  /* The next couple of lines allow true Greek symbols to be written to the 
+     manual, which makes it look pretty */
+  { "[GRK]", "$\\"   },
+  { "[grk]", "$"     },
   /* The next two lines used to substitute "|" and "||" to "or", but only
    * g_angle used that functionality, so that was changed to a textual
    * "or" there, so that other places could use those symbols to indicate
@@ -107,7 +111,9 @@ const t_sandr_const sandrTty[] = {
   { "[IT]", "" },
   { "[it]", "" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRTTY asize(sandrTty)
 
@@ -122,7 +128,9 @@ const t_sandr_const sandrWiki[] = {
   { "[IT]", "''" },
   { "[it]", "''" },
   { "[PAR]","\n\n" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n" },
+  { "[GRK]", "&" },
+  { "[grk]", ";" }
 };
 #define NSRWIKI asize(sandrWiki)
 
@@ -140,7 +148,9 @@ const t_sandr_const sandrNROFF[] = {
   { "^",    "" },
   { "#",    "" },
   { "[BR]", "\n"},
-  { "-",    "\\-"}
+  { "-",    "\\-"},
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRNROFF asize(sandrNROFF)
 
@@ -154,7 +164,9 @@ const t_sandr_const sandrHTML[] = {
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
   { "[PAR]","<p>" },
-  { "[BR]", "<br>" }
+  { "[BR]", "<br>" },
+  { "[GRK]", "&"  },
+  { "[grk]", ";"  }
 };
 #define NSRHTML asize(sandrHTML)
 
@@ -168,7 +180,9 @@ const t_sandr_const sandrXML[] = {
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
   { "[PAR]","</par>\n<par>" },
-  { "[BR]", "<br />" }
+  { "[BR]", "<br />" },
+  { "[GRK]", "" },
+  { "[grk]", "" }
 };
 #define NSRXML asize(sandrXML)
 

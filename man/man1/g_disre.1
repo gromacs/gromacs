@@ -1,8 +1,8 @@
-.TH g_disre 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_disre 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_disre - analyzes distance restraints
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_disre\fP
 .BI "\-s" " topol.tpr "
@@ -30,9 +30,9 @@ g_disre - analyzes distance restraints
 .BI "\-nlevels" " int "
 .BI "\-[no]third" ""
 .SH DESCRIPTION
-\&g_disre computes violations of distance restraints.
-\&If necessary all protons can be added to a protein molecule 
-\&using the protonate program.
+\&\fB g_disre\fR computes violations of distance restraints.
+\&If necessary, all protons can be added to a protein molecule 
+\&using the \fB g_protonate\fR program.
 
 
 \&The program always
@@ -46,7 +46,7 @@ g_disre - analyzes distance restraints
 \&printing.
 
 
-\&When the optional\fB \-q\fR flag is given a pdb file coloured by the
+\&When the optional \fB \-q\fR flag is given a \fB .pdb\fR file coloured by the
 \&amount of average violations.
 
 
@@ -124,7 +124,7 @@ g_disre - analyzes distance restraints
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

@@ -328,8 +328,8 @@ void please_cite(FILE *fp,const char *key)
       "Algorithms for Constrained Molecular Dynamics",
       "J. Comp. Chem.",
       16, 1995, "1192-1209" },
-    { "Essman95a",
-      "U. Essman, L. Perela, M. L. Berkowitz, T. Darden, H. Lee and L. G. Pedersen ",
+    { "Essmann95a",
+      "U. Essmann, L. Perera, M. L. Berkowitz, T. Darden, H. Lee and L. G. Pedersen ",
       "A smooth particle mesh Ewald method",
       "J. Chem. Phys.",
       103, 1995, "8577-8592" },
@@ -578,16 +578,42 @@ const char *GromacsVersion()
 
 void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Version:        %s\n", _gmx_ver_string);
+    fprintf(fp, "Version:          %s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-    fprintf(fp, "GIT SHA1 hash:  %s\n", _gmx_full_git_hash);
+    fprintf(fp, "GIT SHA1 hash:    %s\n", _gmx_full_git_hash);
     /* Only print out the branch information if present.
      * The generating script checks whether the branch point actually
      * coincides with the hash reported above, and produces an empty string
      * in such cases. */
     if (_gmx_central_base_hash[0] != 0)
     {
-        fprintf(fp, "Branched from:  %s\n", _gmx_central_base_hash);
+        fprintf(fp, "Branched from:    %s\n", _gmx_central_base_hash);
     }
+#endif
+
+#ifdef GMX_DOUBLE
+    fprintf(fp, "Precision:        double\n");
+#else
+    fprintf(fp, "Precision:        single\n");
+#endif
+
+#ifdef GMX_THREADS
+    fprintf(fp, "Parallellization: thread_mpi\n");
+#elif defined(GMX_MPI)
+    fprintf(fp, "Parallellization: MPI\n");
+#else
+    fprintf(fp, "Parallellization: none\n");
+#endif
+
+#ifdef GMX_FFT_FFTPACK
+    fprintf(fp, "FFT Library:      fftpack\n");
+#elif defined(GMX_FFT_FFTW2)
+    fprintf(fp, "FFT Library:      fftw2\n");
+#elif defined(GMX_FFT_FFTW3)
+    fprintf(fp, "FFT Library:      fftw3\n");
+#elif defined(GMX_FFT_MKL)
+    fprintf(fp, "FFT Library:      MKL\n");
+#else
+    fprintf(fp, "FFT Library:      unknown\n");
 #endif
 }

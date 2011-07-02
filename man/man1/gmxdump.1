@@ -1,8 +1,8 @@
-.TH gmxdump 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH gmxdump 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 gmxdump - makes binary files human readable
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3gmxdump\fP
 .BI "\-s" " topol.tpr "
@@ -18,7 +18,7 @@ gmxdump - makes binary files human readable
 .BI "\-[no]nr" ""
 .BI "\-[no]sys" ""
 .SH DESCRIPTION
-\&gmxdump reads a run input file (\fB .tpa\fR/\fB .tpr\fR/\fB .tpb\fR),
+\&\fB gmxdump\fR reads a run input file (\fB .tpa\fR/\fB .tpr\fR/\fB .tpb\fR),
 \&a trajectory (\fB .trj\fR/\fB .trr\fR/\fB .xtc\fR), an energy
 \&file (\fB .ene\fR/\fB .edr\fR), or a checkpoint file (\fB .cpt\fR)
 \&and prints that to standard output in a readable format.
@@ -27,7 +27,7 @@ gmxdump - makes binary files human readable
 
 
 \&The program can also preprocess a topology to help finding problems.
-\&Note that currently setting GMXLIB is the only way to customize
+\&Note that currently setting \fB GMXLIB\fR is the only way to customize
 \&directories used for searching include files.
 .SH FILES
 .BI "\-s" " topol.tpr" 

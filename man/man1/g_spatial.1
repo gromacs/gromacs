@@ -1,8 +1,8 @@
-.TH g_spatial 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_spatial 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
-g_spatial - calculates the spatial distribution function (more control than g_sdf)
+g_spatial - calculates the spatial distribution function
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_spatial\fP
 .BI "\-s" " topol.tpr "
@@ -21,57 +21,57 @@ g_spatial - calculates the spatial distribution function (more control than g_sd
 .BI "\-bin" " real "
 .BI "\-nab" " int "
 .SH DESCRIPTION
-\&g_spatial calculates the spatial distribution function and 
+\&\fB g_spatial\fR calculates the spatial distribution function and 
 \&outputs it in a form that can be read by VMD as Gaussian98 cube format. 
-\&This was developed from template.c (gromacs\-3.3). 
-\&For a system of 32K atoms and a 50ns trajectory, the SDF can be generated 
+\&This was developed from template.c (GROMACS\-3.3). 
+\&For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated 
 \&in about 30 minutes, with most of the time dedicated to the two runs through 
-\&trjconv that are required to center everything properly. 
-\&This also takes a whole bunch of space (3 copies of the xtc file). 
+\&\fB trjconv\fR that are required to center everything properly. 
+\&This also takes a whole bunch of space (3 copies of the \fB .xtc\fR file). 
 \&Still, the pictures are pretty and very informative when the fitted selection is properly made. 
-\&3\-4 atoms in a widely mobile group like a free amino acid in solution works 
+\&3\-4 atoms in a widely mobile group (like a free amino acid in solution) works 
 \&well, or select the protein backbone in a stable folded structure to get the SDF 
 \&of solvent and look at the time\-averaged solvation shell. 
-\&It is also possible using this program to generate the SDF based on some arbitrarty 
-\&Cartesian coordinate. To do that, simply omit the preliminary trjconv steps. 
+\&It is also possible using this program to generate the SDF based on some arbitrary 
+\&Cartesian coordinate. To do that, simply omit the preliminary \fB trjconv\fR steps. 
 
 \&USAGE: 
 
-\&1. Use make_ndx to create a group containing the atoms around which you want the SDF 
+\&1. Use \fB make_ndx\fR to create a group containing the atoms around which you want the SDF 
 
-\&2. trjconv \-s a.tpr \-f a.xtc \-o b.xtc \-center tric \-ur compact \-pbc none 
+\&2. \fB trjconv \-s a.tpr \-f a.xtc \-o b.xtc \-center tric \-ur compact \-pbc none\fR 
 
-\&3. trjconv \-s a.tpr \-f b.xtc \-o c.xtc \-fit rot+trans 
+\&3. \fB trjconv \-s a.tpr \-f b.xtc \-o c.xtc \-fit rot+trans\fR 
 
-\&4. run g_spatial on the xtc output of step 3. 
+\&4. run \fB g_spatial\fR on the \fB .xtc\fR output of step 3. 
 
-\&5. Load grid.cube into VMD and view as an isosurface. 
+\&5. Load \fB grid.cube\fR into VMD and view as an isosurface. 
 
-\&*** Systems such as micelles will require trjconv \-pbc cluster between steps 1 and 2
+\&\fB Note\fR that systems such as micelles will require \fB trjconv \-pbc cluster\fR between steps 1 and 2
 
-\&WARNINGS: 
+\&WARNINGS:
 
 \&The SDF will be generated for a cube that contains all bins that have some non\-zero occupancy. 
-\&However, the preparatory \-fit rot+trans option to trjconv implies that your system will be rotating 
+\&However, the preparatory \fB \-fit rot+trans\fR option to \fB trjconv\fR implies that your system will be rotating 
 \&and translating in space (in order that the selected group does not). Therefore the values that are 
 \&returned will only be valid for some region around your central group/coordinate that has full overlap 
 \&with system volume throughout the entire translated/rotated system over the course of the trajectory. 
 \&It is up to the user to ensure that this is the case. 
 
-\&BUGS: 
+\&BUGS:
 
 \&When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected 
-\&and the program is halted prior to the fault while displaying a warning message suggesting the use of the \-nab 
+\&and the program is halted prior to the fault while displaying a warning message suggesting the use of the \fB \-nab\fR (Number of Additional Bins)
 \&option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again 
-\&with an increased \-nab value. 
+\&with an increased \fB \-nab\fR value. 
 
-\&RISKY OPTIONS: 
+\&RISKY OPTIONS:
 
 \&To reduce the amount of space and time required, you can output only the coords 
-\&that are going to be used in the first and subsequent run through trjconv. 
-\&However, be sure to set the \-nab option to a sufficiently high value since 
-\&memory is allocated for cube bins based on the initial coords and the \-nab 
-\&(Number of Additional Bins) option value. 
+\&that are going to be used in the first and subsequent run through \fB trjconv\fR. 
+\&However, be sure to set the \fB \-nab\fR option to a sufficiently high value since 
+\&memory is allocated for cube bins based on the initial coordinates and the \fB \-nab\fR 
+\&option value. 
 
 .SH FILES
 .BI "\-s" " topol.tpr" 
@@ -106,13 +106,13 @@ g_spatial - calculates the spatial distribution function (more control than g_sd
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-[no]pbc"  "no    "
  Use periodic boundary conditions for computing distances
 
 .BI "\-[no]div"  "yes   "
- Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE (\-nodiv) to get accurate counts per frame
+ Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE (\fB \-nodiv\fR) to get accurate counts per frame
 
 .BI "\-ign"  " int" " \-1" 
  Do not display this number of outer cubes (positive values may reduce boundary speckles; \-1 ensures outer surface is visible)

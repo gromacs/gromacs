@@ -1,8 +1,8 @@
-.TH g_sas 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_sas 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_sas - computes solvent accessible surface area
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_sas\fP
 .BI "\-f" " traj.xtc "
@@ -31,17 +31,17 @@ g_sas - computes solvent accessible surface area
 .BI "\-[no]prot" ""
 .BI "\-dgs" " real "
 .SH DESCRIPTION
-\&g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.
-\&As a side effect the Connolly surface can be generated as well in
-\&a pdb file where the nodes are represented as atoms and the vertices
+\&\fB g_sas\fR computes hydrophobic, hydrophilic and total solvent accessible surface area.
+\&As a side effect, the Connolly surface can be generated as well in
+\&a \fB .pdb\fR file where the nodes are represented as atoms and the vertices
 \&connecting the nearest nodes as CONECT records.
 \&The program will ask for a group for the surface calculation
 \&and a group for the output. The calculation group should always
 \&consists of all the non\-solvent atoms in the system.
 \&The output group can be the whole or part of the calculation group.
-\&The area can be plotted
+\&The average and standard deviation of the area over the trajectory can be plotted
 \&per residue and atom as well (options \fB \-or\fR and \fB \-oa\fR).
-\&In combination with the latter option an \fB itp\fR file can be
+\&In combination with the latter option an \fB .itp\fR file can be
 \&generated (option \fB \-i\fR)
 \&which can be used to restrain surface atoms.
 
@@ -55,9 +55,9 @@ g_sas - computes solvent accessible surface area
 \&Please consider whether the normal probe radius is appropriate
 \&in this case or whether you would rather use e.g. 0. It is good
 \&to keep in mind that the results for volume and density are very
-\&approximate, in e.g. ice Ih one can easily fit water molecules in the
-\&pores which would yield too low volume, too high surface area and too
-\&high density.
+\&approximate. For example, in ice Ih, one can easily fit water molecules in the
+\&pores which would yield a volume that is too low, and surface area and density
+\&that are both too high.
 .SH FILES
 .BI "\-f" " traj.xtc" 
 .B Input
@@ -115,7 +115,7 @@ g_sas - computes solvent accessible surface area
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -139,10 +139,10 @@ g_sas - computes solvent accessible surface area
  Take periodicity into account
 
 .BI "\-[no]prot"  "yes   "
- Output the protein to the connelly pdb file too
+ Output the protein to the Connelly \fB .pdb\fR file too
 
 .BI "\-dgs"  " real" " 0     " 
- default value for solvation free energy per area (kJ/mol/nm2)
+ Default value for solvation free energy per area (kJ/mol/nm2)
 
 .SH SEE ALSO
 .BR gromacs(7)

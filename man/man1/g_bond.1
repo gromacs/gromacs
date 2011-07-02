@@ -1,8 +1,8 @@
-.TH g_bond 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_bond 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_bond - calculates distances between atoms
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_bond\fP
 .BI "\-f" " traj.xtc "
@@ -24,8 +24,8 @@ g_bond - calculates distances between atoms
 .BI "\-[no]aver" ""
 .BI "\-[no]averdist" ""
 .SH DESCRIPTION
-\&g_bond makes a distribution of bond lengths. If all is well a
-\&gaussian distribution should be made when using a harmonic potential.
+\&\fB g_bond\fR makes a distribution of bond lengths. If all is well a
+\&Gaussian distribution should be made when using a harmonic potential.
 \&Bonds are read from a single group in the index file in order i1\-j1
 \&i2\-j2 through in\-jn.
 
@@ -84,7 +84,7 @@ g_bond - calculates distances between atoms
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -99,7 +99,7 @@ g_bond - calculates distances between atoms
  Average bond length distributions
 
 .BI "\-[no]averdist"  "yes   "
- Average distances (turns on \-d)
+ Average distances (turns on \fB \-d\fR)
 
 .SH KNOWN PROBLEMS
 \- It should be possible to get bond information from the topology.

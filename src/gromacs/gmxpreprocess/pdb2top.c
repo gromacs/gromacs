@@ -310,6 +310,20 @@ choose_ff(const char *ffsel,
             }
         }
         while ( pret==NULL || (sel < 0) || (sel >= nff));
+
+        /* Check for a current limitation of the fflib code.
+         * It will always read from the first ff directory in the list.
+         * This check assumes that the order of ffs matches the order
+         * in which fflib_open searches ff library files.
+         */
+        for(i=0; i<sel; i++)
+        {
+            if (strcmp(ffs[i],ffs[sel]) == 0)
+            {
+                gmx_fatal(FARGS,"Can only select the first of multiple force field entries with directory name '%s%s' in the list. If you want to use the next entry, run pdb2gmx in a different directory or rename or move the force field directory present in the current working directory.",
+                          ffs[sel],fflib_forcefield_dir_ext());
+            }
+        }
     }
     else
     {

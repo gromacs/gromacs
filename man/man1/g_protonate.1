@@ -1,8 +1,8 @@
-.TH g_protonate 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_protonate 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_protonate - protonates structures
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_protonate\fP
 .BI "\-s" " topol.tpr "
@@ -16,15 +16,15 @@ g_protonate - protonates structures
 .BI "\-e" " time "
 .BI "\-dt" " time "
 .SH DESCRIPTION
-\&\fB protonate\fR reads (a) conformation(s) and adds all missing
-\&hydrogens as defined in \fB ffgmx2.hdb\fR. If only \fB \-s\fR is
+\&\fB g_protonate\fR reads (a) conformation(s) and adds all missing
+\&hydrogens as defined in \fB gmx2.ff/aminoacids.hdb\fR. If only \fB \-s\fR is
 \&specified, this conformation will be protonated, if also \fB \-f\fR
-\&is specified, the conformation(s) will be read from this file
+\&is specified, the conformation(s) will be read from this file, 
 \&which can be either a single conformation or a trajectory.
 \&
 
 
-\&If a pdb file is supplied, residue names might not correspond to
+\&If a \fB .pdb\fR file is supplied, residue names might not correspond to
 \&to the GROMACS naming conventions, in which case these residues will
 \&probably not be properly protonated.
 \&

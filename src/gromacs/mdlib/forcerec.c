@@ -1444,7 +1444,7 @@ void init_forcerec(FILE *fp,
         {
             if (fp)
                 fprintf(fp,"Will do PME sum in reciprocal space.\n");
-            please_cite(fp,"Essman95a");
+            please_cite(fp,"Essmann95a");
             
             if (ir->ewald_geometry == eewg3DC)
             {

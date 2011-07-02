@@ -179,6 +179,9 @@ gmx_ctime_r(const time_t *clock,char *buf, int n)
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     /* Windows */
     ctime_s( tmpbuf, STRLEN, clock );
+#elif (defined(__sun))
+    /*Solaris*/
+    ctime_r(clock, tmpbuf, n);
 #else
     ctime_r(clock,tmpbuf);
 #endif

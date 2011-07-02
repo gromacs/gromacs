@@ -37,10 +37,9 @@ if (CMAKE_USE_PTHREADS_INIT)
         thread_mpi/event.c         thread_mpi/reduce_fast.c
         thread_mpi/gather.c        thread_mpi/scatter.c
         thread_mpi/group.c         thread_mpi/tmpi_init.c
-        thread_mpi/hwinfo.c        thread_mpi/topology.c
-        thread_mpi/list.c          thread_mpi/type.c
-        thread_mpi/lock.c          
-        thread_mpi/once.c)
+        thread_mpi/topology.c      thread_mpi/list.c          
+        thread_mpi/type.c          thread_mpi/lock.c
+        thread_mpi/numa_malloc.c   thread_mpi/once.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
@@ -56,10 +55,10 @@ else (CMAKE_USE_PTHREADS_INIT)
             thread_mpi/event.c         thread_mpi/reduce_fast.c
             thread_mpi/gather.c        thread_mpi/scatter.c
             thread_mpi/group.c         thread_mpi/tmpi_init.c
-            thread_mpi/hwinfo.c        thread_mpi/topology.c
-            thread_mpi/list.c          thread_mpi/type.c
-            thread_mpi/lock.c          thread_mpi/winthreads.c
-            thread_mpi/once.c)
+            thread_mpi/topology.c      thread_mpi/list.c
+            thread_mpi/type.c          thread_mpi/lock.c
+            thread_mpi/winthreads.c    thread_mpi/once.c
+            thread_mpi/numa_malloc.c)
         set(THREAD_LIBRARY )
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
@@ -92,6 +91,45 @@ if (THREAD_MPI_PROFILING)
 else (THREAD_MPI_PROFILING)
     add_definitions()
 endif (THREAD_MPI_PROFILING)
+
+include(CheckCSourceCompiles)
+
+# Windows NUMA allocator
+if (THREAD_WINDOWS)
+	check_c_source_compiles(
+	"#include <windows.h>
+	int main(void) { PROCESSOR_NUMBER a; return 0; }"
+	HAVE_PROCESSOR_NUMBER)
+	if(HAVE_PROCESSOR_NUMBER)
+            #add_definitions(-DTMPI_WINDOWS_NUMA_API)
+            set(TMPI_WINDOWS_NUMA_API 1)
+	endif(HAVE_PROCESSOR_NUMBER)
+endif(THREAD_WINDOWS)
+
+
+
+include(CheckFunctionExists)
+if (THREAD_PTHREADS)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+    # check for sched_setaffinity
+    check_c_source_compiles(
+        "#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+int main(void) { cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+    return 0;
+}"
+        PTHREAD_SETAFFINITY
+    )
+    if (PTHREAD_SETAFFINITY)
+        set(HAVE_PTHREAD_SETAFFINITY 1)
+    endif (PTHREAD_SETAFFINITY)
+endif (THREAD_PTHREADS)
 
 
 # this runs on POSIX systems

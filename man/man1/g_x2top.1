@@ -1,8 +1,8 @@
-.TH g_x2top 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_x2top 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_x2top - generates a primitive topology from coordinates 
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_x2top\fP
 .BI "\-f" " conf.gro "
@@ -27,11 +27,11 @@ g_x2top - generates a primitive topology from coordinates
 .BI "\-kt" " real "
 .BI "\-kp" " real "
 .SH DESCRIPTION
-\&x2top generates a primitive topology from a coordinate file.
+\&\fB g_x2top\fR generates a primitive topology from a coordinate file.
 \&The program assumes all hydrogens are present when defining
 \&the hybridization from the atom name and the number of bonds.
-\&The program can also make an rtp entry, which you can then add
-\&to the rtp database.
+\&The program can also make an \fB .rtp\fR entry, which you can then add
+\&to the \fB .rtp\fR database.
 
 
 \&When \fB \-param\fR is set, equilibrium distances and angles
@@ -49,11 +49,11 @@ g_x2top - generates a primitive topology from coordinates
 
 
 \&The corresponding data files can be found in the library directory
-\&with name atomname2type.n2t. Check chapter 5 of the manual for more
-\&information about file formats. By default the forcefield selection
+\&with name \fB atomname2type.n2t\fR. Check Chapter 5 of the manual for more
+\&information about file formats. By default, the force field selection
 \&is interactive, but you can use the \fB \-ff\fR option to specify
 \&one of the short names above on the command line instead. In that
-\&case pdb2gmx just looks for the corresponding file.
+\&case \fB g_x2top\fR just looks for the corresponding file.
 
 
 .SH FILES
@@ -107,7 +107,7 @@ g_x2top - generates a primitive topology from coordinates
  Use periodic boundary conditions.
 
 .BI "\-[no]pdbq"  "no    "
- Use the B\-factor supplied in a pdb file for the atomic charges
+ Use the B\-factor supplied in a \fB .pdb\fR file for the atomic charges
 
 .BI "\-[no]param"  "yes   "
  Print parameters in the output
@@ -131,7 +131,7 @@ g_x2top - generates a primitive topology from coordinates
 
 \- No improper dihedrals are generated
 
-\- The atoms to atomtype translation table is incomplete (atomname2type.n2t files in the data directory). Please extend it and send the results back to the GROMACS crew.
+\- The atoms to atomtype translation table is incomplete (\fB atomname2type.n2t\fR file in the data directory). Please extend it and send the results back to the GROMACS crew.
 
 .SH SEE ALSO
 .BR gromacs(7)

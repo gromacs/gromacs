@@ -55,6 +55,9 @@
 #include "tpxio.h"
 #include "viewit.h"
 
+/* defined in gmx_wheel.c*/
+extern gmx_bool *bPhobics(int ,char *);
+
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
@@ -168,22 +171,6 @@ static int strip_dssp(char *dsspfile,int nres,
   return nr;
 }
 
-gmx_bool *bPhobics(t_atoms *atoms)
-{
-  int  i,nb;
-  char **cb;
-  gmx_bool *bb;
-  
-  nb=get_strings("phbres.dat",&cb);
-  snew(bb,atoms->nres);
-  
-  for(i=0; (i<atoms->nres); i++) {
-    if (search_str(nb,cb,*atoms->resinfo[i].name) != -1)
-      bb[i]=TRUE;
-  }
-  return bb;
-}
- 
 static void check_oo(t_atoms *atoms)
 {
   char *OOO;
@@ -388,9 +375,10 @@ int main(int argc,char *argv[])
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. [TT]do_dssp[tt] assumes that the dssp executable is",
-    "/usr/local/bin/dssp. If this is not the case, then you should",
-    "set an environment variable [BB]DSSP[bb] pointing to the dssp",
+    "get it from http://swift.cmbi.ru.nl/gv/dssp. [TT]do_dssp[tt] assumes ",
+    "that the dssp executable is located in ",
+    "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
+    "set an environment variable [TT]DSSP[tt] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
     "The structure assignment for each residue and time is written to an",
@@ -474,7 +462,7 @@ int main(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  bPhbres=bPhobics(atoms);
+  bPhbres=bPhobics((int)atoms->nres,(char *)atoms->resinfo);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
   nres=0;
