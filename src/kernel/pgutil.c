@@ -48,13 +48,16 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
 {
   if (strcmp(bondtype,"check") != 0) {
     if (bDontQuit) {
-      fprintf(stderr,
-	      "WARNING: atom %s not found in residue seq.nr. %d while adding %s\n",
-	      atomname,resind+1,bondtype);
+      gmx_warning("WARNING: Atom %s is used in an interaction of type %s in the\n"
+		  "topology database, but an atom of that name was not found in\n"
+		  "residue number %d.\n",
+		  atomname,bondtype,resind+1);
     } else {
       gmx_fatal(fatal_errno,file,line,
-		"Atom %s not found in residue seq.nr. %d while adding %s\n",
-		atomname,resind+1,bondtype);
+		"Atom %s is used in an interaction of type %s in the topology\n"
+		"database, but an atom of that name was not found in residue\n"
+		"number %d.\n",
+		atomname,bondtype,resind+1);
     }
   }
 }
