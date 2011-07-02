@@ -94,7 +94,7 @@ AbstractHistogramModule::initRange(real miny, real maxy, real binw,
     assert(miny < maxy && binw > 0);
     if (bIntegerBins)
     {
-        _nbins = ceil((maxy - miny) / binw) + 1;
+        _nbins = (int)ceil((maxy - miny) / binw) + 1;
         miny -= 0.5 * binw;
         maxy  = miny + _nbins * binw;
     }
@@ -481,7 +481,7 @@ AnalysisDataBinAverageModule::frameStarted(real x, real dx)
 {
     for (int i = 0; i < nbins(); ++i)
     {
-        _n[i] = 0.0;
+        _n[i] = 0;
     }
     return AbstractHistogramModule::frameStarted(x, dx);
 }
