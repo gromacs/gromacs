@@ -1770,6 +1770,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
     }
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
+    fep->init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.*/
     if (ret)
     {
         cp_error();

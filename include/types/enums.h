@@ -167,15 +167,16 @@ enum {
    elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett  
    elamstatsMINVAR = using Barker + minimum variance for weights                                          
    elamstatsWL = Wang-Landu (using visitation counts)               
-   elamstatsGWL = Gibbs-weighted Wang-Landau (using weighted visitation counts)                 
+   elamstatsGWL = Gibbs-weighted Wang-Landau (using gibbs weighted visitation counts)                 
+   elamstatsWGWL = Weighted Gibbs-weighted Wang-Landau (using optimized gibbs weighted visitation counts)                 
 */
 enum {
-  elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsNR
+  elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsGWL, elamstatsWGWL, elamstatsNR
 };
 
 #define ELAMSTATS_EXPANDED(e) ((e) > elamstatsNO)
 
-#define EWL(e) ((e) == elamstatsGWL || (e) == elamstatsWL)  
+#define EWL(e) ((e) == elamstatsGWL || (e) == elamstatsWL || (e) == elamstatsGWL || (e) == elamstatsWGWL) 
 
 /* How moves in lambda are calculated:                                                                                 
    elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down        

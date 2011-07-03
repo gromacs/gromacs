@@ -89,6 +89,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "txtdump.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -1731,7 +1732,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bDoDHDL = do_per_step(step,ir->nstdhdl);
             bDoFEP  = do_per_step(step,ir->fepvals->nstfep);
         }
-
+        
         if (bSimAnn) 
         {
             update_annealing_target_temp(&(ir->opts),t);

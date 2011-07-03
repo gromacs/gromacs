@@ -1486,9 +1486,9 @@ extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state
         return;
     }
     
+    *fep_state = fep->init_fep_state; /* this might overwrite if checkpoint is set -- kludge is in for now */
     for (i=0;i<efptNR;i++) 
     {
-        *fep_state = fep->init_fep_state;
         /* overwrite lambda state with init_lambda for now for backwards compatibility */
         if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
         {
@@ -1596,31 +1596,75 @@ void init_md(FILE *fplog,
 }
 
 
-void GenerateGibbsProbabilities(real *scaled_lamee, real *p_k, real *pks, int minfep, int maxfep) {
-  
-    int ifep; 
-    real denom, maxlamee;
+void GenerateGibbsProbabilities(real *ene, real *p_k, real *pks, int minfep, int maxfep) {
+    
+    int i; 
+    real maxene;
     
     *pks = 0.0;
-    maxlamee = scaled_lamee[minfep];
+    maxene = ene[minfep];
     /* find the maximum value */
-    for (ifep=minfep;ifep<=maxfep;ifep++) 
+    for (i=minfep;i<=maxfep;i++) 
     {
-        if (scaled_lamee[ifep]>maxlamee) 
+        if (ene[i]>maxene) 
         {
-            maxlamee = scaled_lamee[ifep];
+            maxene = ene[i];
         }
     }
     /* find the denominator */
-    for (ifep=minfep;ifep<=maxfep;ifep++) 
+    for (i=minfep;i<=maxfep;i++) 
     {
-        *pks += exp(scaled_lamee[ifep]-maxlamee);
+        *pks += exp(ene[i]-maxene);
     }  
     /*numerators*/
-    for (ifep=minfep;ifep<=maxfep;ifep++) 
+    for (i=minfep;i<=maxfep;i++) 
     {
-        p_k[ifep] = exp(scaled_lamee[ifep]-maxlamee) / *pks;
+        p_k[i] = exp(ene[i]-maxene) / *pks;
     }
+}
+
+void GenerateWeightedGibbsProbabilities(real *ene, real *p_k, real *pks, int nlim, real *nvals,real delta) {
+    
+    int i; 
+    real maxene;
+    real *nene;
+    *pks = 0.0;
+    
+    snew(nene,nlim);
+    for (i=0;i<nlim;i++) {
+        /* add the delta, since we need to make sure it's greater than zero, and 
+         we need a non-arbitrary number?  Not if we update the count first,perhaps? */
+        nene[i] = ene[i] + log(nvals[i]+delta);
+        //nene[i] = ene[i] + log(nvals[i]);
+    }
+
+    /* find the maximum value */
+    maxene = nene[0];
+    for (i=0;i<nlim;i++) 
+    {
+        if (nene[i] > maxene) {
+            maxene = nene[i];
+        }
+    }
+
+    /* subtract off the maximum, avoiding overflow */
+    for (i=0;i<nlim;i++) 
+    {
+        nene[i] -= maxene;
+    }
+    
+    /* find the denominator */
+    for (i=0;i<nlim;i++) 
+    {
+        *pks += exp(nene[i]);
+    }
+    
+    /*numerators*/
+    for (i=0;i<nlim;i++) 
+    {
+        p_k[i] = exp(nene[i]) / *pks;
+    }
+    sfree(nene);
 }
 
 real do_logsum(int N, real *a_n) {
@@ -1841,6 +1885,7 @@ static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state
     real *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;    
     real clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
     real *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg, *p_k;
+    real *numweighted_lamee, *logfrac;
     int *nonzero;
 
     /* if we have equilibrated the weights, exit now */
@@ -1883,6 +1928,33 @@ static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state
                 dfhist->sum_weights[i] -= dfhist->wl_delta*p_k[i];
                 dfhist->wl_histo[i] += p_k[i];
             }
+            sfree(p_k);
+        } else if (fep->elamstats==elamstatsWGWL) {
+            snew(p_k,nlim);
+            
+            // first increment count
+            GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,0,nlim-1); 
+            for (i=0;i<nlim;i++) {
+                dfhist->wl_histo[i] += p_k[i];
+            }
+            
+            // then increment weights (uses count)
+            pks = 0.0;
+            GenerateWeightedGibbsProbabilities(weighted_lamee,p_k,&pks,nlim,dfhist->wl_histo,dfhist->wl_delta);
+            
+            for (i=0;i<nlim;i++) 
+            {
+                dfhist->sum_weights[i] -= dfhist->wl_delta*p_k[i];                   
+            }
+            /* Alternate definition, using logarithms. Shouldn't make very much difference. */
+            /*
+            real di;
+            for (i=0;i<nlim;i++) 
+            {
+                di = 1+dfhist->wl_delta*p_k[i];
+                dfhist->sum_weights[i] -= log(di);
+            }            
+            */
             sfree(p_k);
         }
         
@@ -2412,6 +2484,9 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
     if (mod(step,frequency)==0)
     {
         fprintf(outfile,"             MC-lambda information\n");
+        if (EWL(fep->elamstats) && (!(dfhist->bEquil))) {
+            fprintf(outfile,"  Wang-Landau incrementor is: %11.5g\n",dfhist->wl_delta);
+        }
         fprintf(outfile,"  N");
         for (i=0;i<efptNR;i++) 
         {
@@ -2456,7 +2531,12 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
             }
             if (EWL(fep->elamstats) && (!(dfhist->bEquil)))  /* if performing WL and still haven't equilibrated */
             {
-                fprintf(outfile,"%9.3f",dfhist->wl_histo[ifep]);
+                if (fep->elamstats == elamstatsWL) 
+                {
+                    fprintf(outfile,"%9d",(int)dfhist->wl_histo[ifep]);
+                } else {
+                    fprintf(outfile,"%9.3f",dfhist->wl_histo[ifep]);
+                }
             } 
             else   /* we have equilibrated weights */
             {
@@ -2555,10 +2635,10 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
                                      int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
-    int i,nlim,lamnew;
-    real mckt,maxscaled=0,maxweighted=0;
+    int i,nlim,lamnew,totalsamples;
+    real mckt,oneovert,maxscaled=0,maxweighted=0;
     t_lambda *fep;
-    gmx_bool bIfReset,bDoneEquilibrating=FALSE;
+    gmx_bool bIfReset,bAllVisited,bDoneEquilibrating=FALSE;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
@@ -2652,20 +2732,42 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	
 	if (EWL(fep->elamstats)) 
     {
-        bIfReset = CheckHistogramRatios(fep->n_lambda,dfhist->wl_histo,fep->wl_ratio,flatbyAVERAGE);
-        
-        if (bIfReset) 
+        /* What's the total number of samples collected so far (should persist past checkpoints!) */
+        totalsamples = 0;
+        bAllVisited = TRUE;
+        for (i=0;i<nlim;i++)
         {
-            for (i=0;i<nlim;i++) 
-            {
-                dfhist->wl_histo[i] = 0;
-            }
-            dfhist->wl_delta *= fep->wl_scale;
-            if (log) {
-                fprintf(log,"\nStep %d: Wang-Landau weight is now %14.8f\n",(int)step,dfhist->wl_delta);
+            totalsamples += dfhist->n_at_lam[i];
+            if (dfhist->wl_histo[i] <= 1) {
+                bAllVisited = FALSE;
             }
         }
-	}
+        oneovert = (1.0*fep->n_lambda)/totalsamples;
+        /* oneovert has decreasd by a bit since last time, so we actually make sure its within one of this number */
+        if (0) {
+        //if (dfhist->wl_delta >= ((totalsamples)/(totalsamples-1.00001))*oneovert || (bAllVisited==FALSE) ||) {
+            bIfReset = CheckHistogramRatios(fep->n_lambda,dfhist->wl_histo,fep->wl_ratio,flatbyAVERAGE);
+            if (bIfReset) 
+            {
+                for (i=0;i<nlim;i++) 
+                {
+                    dfhist->wl_histo[i] = 0;
+                }
+                dfhist->wl_delta *= fep->wl_scale;
+                if (log) {
+                    fprintf(log,"\nStep %d: Wang-Landau weight increment is now %14.8f (1/t=%.8f)",(int)step,dfhist->wl_delta,oneovert);
+                    fprintf(log,"\nStep %d: weights are now:",(int)step);
+                    for (i=0;i<nlim;i++) 
+                    {
+                        fprintf(log," %.5f",dfhist->sum_weights[i]);
+                    }                  
+                    fprintf(log,"\n");
+                }
+            }
+        } else {
+            dfhist->wl_delta = oneovert; /* now we reduce this each time, instead of only at flatness */
+        }
+    }
     sfree(scaled_lamee);
     sfree(weighted_lamee);
     sfree(p_k);

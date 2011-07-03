@@ -144,8 +144,8 @@ assigned.
 
 If you want to turn on only restraints going from A to B, then it would be:
 
-init-lambda-state    = 1
-restraint-lambdas     = 0.0 0.1 0.2 0.4 0.6 1.0
+init-lambda-state      = 1
+restraint-lambdas      = 0.0 0.1 0.2 0.4 0.6 1.0
 
 The current weights are written out to the logfile every nstlog steps,
 in units of kT.

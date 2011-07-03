@@ -141,7 +141,7 @@ const char *efpt_names[efptNR+1] = {
 };
 
 const char *elamstats_names[elamstatsNR+1] = {
-  "no", "metropolis-transition","barker-transition", "minvar", "wang-landau", "gibbs-wang-landau", NULL
+  "no", "metropolis-transition", "barker-transition", "minvar", "wang-landau", "gwl", "wgwl",NULL
 };
 
 const char *elmcmove_names[elmcmoveNR+1] = {
