@@ -25,7 +25,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	force.c  	forcerec.c	\
 	ghat.c		init.c		\
         iteratedconstraints.c   md_support.c    \
-	mdatom.c	mdebin.c	minimize.c	\
+	mdatom.c	mdebin.c		\
 	mvxvf.c		ns.c		nlistheuristics.c    nsgrid.c	\
 	perf_est.c	genborn.c			\
 	genborn_sse2_single.c				\
