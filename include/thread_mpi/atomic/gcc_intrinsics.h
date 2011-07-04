@@ -90,7 +90,7 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval, 
                                       void *newval)
 {
-#if !defined(__INTEL_COMPILER)
+#if !defined(__INTEL_COMPILER) && !defined(__CUDACC__)
     return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 #else
     /* the intel compilers need integer type arguments for compare_and_swap.
