@@ -279,7 +279,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
               snew(fepvals->init_lambda_weights,fepvals->n_lambda);
           }
           bDum=gmx_fio_ndo_real(fio,fepvals->init_lambda_weights,fepvals->n_lambda);
-          gmx_fio_do_gmx_bool(fio,fepvals->init_weights);
+          gmx_fio_do_gmx_bool(fio,fepvals->bInit_weights);
       }
   }
   else if (file_version >= 64) 

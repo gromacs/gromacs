@@ -620,20 +620,20 @@ static int poisson_variate(real lambda,gmx_rng_t rng) {
 
 void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock)
 {
-    /* To do -- I don't think it handles the case when constraints are on, but some particles are not 
-       actually constrained.  I don't think they get randomized at all.  How do we find them? */
-
     t_grpopts *opts;
     int    i,j,k,d,len,n,ngtc,gc=0;
-    int    nshake, nsettle, nrandom, nsettle_randomize, nshake_randomize;
-    real   boltz,sd,reft;
+    int    nshake, nsettle, nrandom, nrand_group;
+    real   boltz,sd,reft,prand;
     gmx_bool *randomize;
+    gmx_bool *randatom;
+    int *randatom_list;
     real *boltzfac;
-    int *randatom,*settle_randomize,*shake_randomize;
     t_iatom *iatoms; 
 
     opts = &ir->opts;
     ngtc = opts->ngtc;
+
+    /* figure out how to get rid of these snew allocations.  Ask Berk? */
     snew(randomize,ngtc);
     snew(boltzfac,ngtc);
     
@@ -650,111 +650,150 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             randomize[i] = FALSE;
         }
     }
-        
+    
+    snew(randatom,md->homenr);
+
+    /* idef is only passed in if it's chance-per-particle andersen, so it essentially serves as a boolean 
+       to determine which type of andersen is being used */
     if (idef) {
-        /* select randomly from shake and settle groups */
-        /* Do the selection of the two groups independently, so they
-         * can be handled differently. */
-        
-        /* first the settles. */
-        nsettle  = idef->il[F_SETTLE].nr/2;
-        nsettle_randomize = poisson_variate(nsettle*rate,rng);  /* how many do we randomize? Use Poisson. */
-        snew(settle_randomize,nsettle_randomize);
-        for (i=0;i<nsettle_randomize;i++) {
-            settle_randomize[i] = (int)(gmx_rng_uniform_real(rng)*nsettle);  /* floor?  int? */
-        }
 
-        /* now the shakes */
-        nshake  = nblocks;
-        /* how many do we randomize? Use Poisson. Might not be a good approximation 
-           here, since there may be not that many atoms? It's good as long as the rate is low. */
-        nshake_randomize = poisson_variate(nshake*rate,rng);  
-        snew(shake_randomize,nshake_randomize);
-
-        for (i=0;i<nshake_randomize;i++) {
-            shake_randomize[i] = (int)(gmx_rng_uniform_real(rng)*nshake);
-        }
-        /* note that this process does not account for replacements.  That's fine -- the worst that happens is 
-           that we randomize them extra times, and our rate is artificially low.  In fact, does this correct for the 
-           fact that we are using poisson instead of binomial?  Or does the correction go in the other direction?
-           Also, if that correction was made, then we would have to cap the total number of randomizations;
-           right now, it's ok to have 2000 randomizations for 1000 particles, since it just randomizes the 
-           velocities again.
+        /* randomly atoms to randomize.  However, all constraint groups have to be either randomized or 
+           or not. 
+           Algorithm: 
+           1. Select whether or not to randomize each atom.
+           2. Cycle through the constraint groups.
+              2a. for each constraint group, determine the fraction f of that constraint group that are randomized.
+              2b. all atoms in the constraint group are randomized  with probability f.
         */
-          
-        /* now that we know which constraint groups to randomize, let's make a list of atoms to randomize */
-        /* maximum will be all atoms; probably much smaller, but we are freeing the space anyway later. */
         
-        snew(randatom,md->homenr);
-        n = 0;
-        for (i=0;i<nsettle_randomize;i++) {
-            j = settle_randomize[i];
+        /* simple brute force version */
+        nrandom = 0;
+
+        if (rate > 0.01)  { /* if the rate is relatively high, use a standard method, if low rate, use poisson */
+            for (i=0;i<md->homenr;i++) {         
+                if (gmx_rng_uniform_real(rng)<rate) {  /* question -- what is the precision of this? If not high 
+                                                          precision, low rates may not be represented */
+                    randatom[i] = TRUE;
+                    nrandom++;
+                }
+            }
+        } else {
+            /* poisson distributions approxmation, more efficient for low rates, fewer random numbers */
+            nrandom = poisson_variate(md->homenr*rate,rng);  /* how many do we randomize? Use Poisson. */
+            
+            for (i=0;i<nrandom;i++) {
+                randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;  
+            }
+        }
+
+        /* instead of looping over the constraint groups, if we had a
+           list of which atoms were in which constraint groups, we
+           could then loop over only the groupst that are randomized
+           now.  But that is not available now.  Create later? */
+
+        /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
+
+        nsettle  = idef->il[F_SETTLE].nr/2;
+        for (i=0;i<nsettle;i++) {
             iatoms = idef->il[F_SETTLE].iatoms;
+            nrand_group = 0;
             for (k=0;k<3;k++)  /* settles are always 3 atoms, hardcoded */
             {
-                randatom[n] = iatoms[2*j+1]+k;
-                n++;
+                if (randatom[iatoms[2*i+1]+k]) { 
+                    nrand_group++;
+                    randatom[iatoms[2*i+1]+k] = FALSE; 
+                    nrandom--;
+                }
+            } if (nrand_group > 0) {
+                prand = (nrand_group)/3.0;
+                if (gmx_rng_uniform_real(rng)<prand) {
+                    for (k=0;k<3;k++)  
+                    {
+                        randatom[iatoms[2*i+1]+k] = TRUE; 
+                    }
+                    nrandom+=3;
+                }
             }
         }
-        
-        for (i=0;i<nshake_randomize;i++) {
-            j = shake_randomize[i];
-            iatoms = &(idef->il[F_CONSTR].iatoms[sblock[j]]);
-            len = sblock[j+1]-sblock[j];
-            for (k=1;k<len;k++)
-            { 
-                randatom[n] = iatoms[k];
-                n++;
-            }
-        }
-        /* the total number of atoms to randomize */
-        nrandom = n;
 
-        if (debug) {
-            fprintf(debug,"nsettle: %d\n",nsettle);
-            fprintf(debug,"nsettle_randomize: %d\n",nsettle_randomize);
-            fprintf(debug,"nshake: %d\n",nshake);
-            fprintf(debug,"nshake_randomize: %d\n",nshake_randomize);
-            fprintf(debug,"nrandom: %d\n",nrandom);
+        /* now loop through the shake groups */
+        nshake = nblocks;
+        for (i=0;i<nshake;i++) {
+            iatoms = &(idef->il[F_CONSTR].iatoms[sblock[i]]);
+            len = sblock[i+1]-sblock[i];
+            nrand_group = 0;
+            for (k=0;k<len;k++)
+            { 
+                if (k%3 != 0) {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                    if (randatom[iatoms[k]]) { 
+                        nrand_group++;
+                        randatom[iatoms[k]] = FALSE;  /* need to mark it false here in case the atom is in more than
+                                                         one group in the shake block */
+                        nrandom--;
+                    }
+                }
+            }
+            if (nrand_group > 0) {
+                prand = (nrand_group)/(1.0*(2*len/3));
+                if (gmx_rng_uniform_real(rng)<prand) {
+                    for (k=0;k<len;k++)  
+                    {
+                        if (k%3 != 0) {  /* only 2/3 of the sblock items are atoms, the others are labels */
+                            randatom[iatoms[k]] = TRUE; 
+                            nrandom++;
+                        }
+                    }
+                }
+            }
+        }
+        if (nrandom > 0) {
+            n = 0;
+            snew(randatom_list,nrandom);
+            for (i=0;i<md->homenr;i++)  /* now loop over the list of atoms */
+            {
+                if (randatom[i]) {
+                    randatom_list[n] = i;
+                    n++;
+                }
+            }
         }
     }
     else
     {
         /* if it's massive, then randomize all the atoms */
         nrandom = md->homenr;
-        snew(randatom,nrandom);
+        snew(randatom_list,nrandom);
         for (i=0;i<nrandom;i++) {         
-            randatom[i] = md->start + i;
+            randatom_list[i] = i;
         }
     }
 
-    /* randomize these velocities*/
-
+    /* randomize the velocities of the selected particles */
+    
     for (i=0;i<nrandom;i++)  /* now loop over the list of atoms */
     {
-        n = randatom[i];
+        n = randatom_list[i];
         if (md->cTC)
         {
-            gc   = md->cTC[n];  /* assign temperature group if there are more than one */
+            gc   = md->cTC[n];  /* assign the atom to a temperature group if there are more than one */
         }
         if (randomize[gc]) 
         {
             sd = sqrt(boltzfac[gc]*md->invmass[n]);
             for (d=0;d<DIM;d++) 
             {
-                //state->v[n][d] = sd*gmx_rng_gaussian_real(rng);  /* perhaps */
                 state->v[n][d] = sd*gmx_rng_gaussian_table(rng);  /* more efficient? */
             }
         }
     }
+
     /* free up all the allocated arrays! */
-    if (idef) {
-        sfree(settle_randomize);
-        sfree(shake_randomize);
-    }
     sfree(randatom);
     sfree(randomize);
     sfree(boltzfac);
+    if (nrandom > 0) {
+        sfree(randatom_list);
+    }
 }
 
 

@@ -510,7 +510,7 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->wl_scale);
   block_bc(cr,fepvals->wl_ratio);
   block_bc(cr,fepvals->init_wl_delta);
-  block_bc(cr,fepvals->init_weights);
+  block_bc(cr,fepvals->bInit_weights);
   snew_bc(cr,fepvals->init_lambda_weights,fepvals->n_lambda);
   nblock_bc(cr,fepvals->n_lambda,fepvals->init_lambda_weights);
   block_bc(cr,fepvals->mc_temp);

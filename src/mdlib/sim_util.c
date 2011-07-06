@@ -1632,10 +1632,13 @@ void GenerateWeightedGibbsProbabilities(real *ene, real *p_k, real *pks, int nli
     
     snew(nene,nlim);
     for (i=0;i<nlim;i++) {
-        /* add the delta, since we need to make sure it's greater than zero, and 
-         we need a non-arbitrary number?  Not if we update the count first,perhaps? */
-        nene[i] = ene[i] + log(nvals[i]+delta);
-        //nene[i] = ene[i] + log(nvals[i]);
+        if (nvals[i] == 0) {
+            /* add the delta, since we need to make sure it's greater than zero, and 
+               we need a non-arbitrary number? */
+            nene[i] = ene[i] + log(nvals[i]+delta);
+        } else {
+            nene[i] = ene[i] + log(nvals[i]);
+        }
     }
 
     /* find the maximum value */
@@ -1914,31 +1917,22 @@ static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state
     
     if (EWL(fep->elamstats))
     {
-        if (fep->elamstats==elamstatsWL) 
+        if (fep->elamstats==elamstatsWL)  /* Standard Wang-Landau */
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta; 
             dfhist->wl_histo[fep_state] += 1.0;
         } 
-        else if (fep->elamstats==elamstatsGWL) 
+        else if (fep->elamstats==elamstatsWWL) /* Weighted Wang-Landau */
         {
             snew(p_k,nlim);
-            GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,0,nlim-1);
-            for (i=0;i<nlim;i++) 
-            {
-                dfhist->sum_weights[i] -= dfhist->wl_delta*p_k[i];
-                dfhist->wl_histo[i] += p_k[i];
-            }
-            sfree(p_k);
-        } else if (fep->elamstats==elamstatsWGWL) {
-            snew(p_k,nlim);
             
-            // first increment count
+            /* first increment count */
             GenerateGibbsProbabilities(weighted_lamee,p_k,&pks,0,nlim-1); 
             for (i=0;i<nlim;i++) {
                 dfhist->wl_histo[i] += p_k[i];
             }
             
-            // then increment weights (uses count)
+            /* then increment weights (uses count) */
             pks = 0.0;
             GenerateWeightedGibbsProbabilities(weighted_lamee,p_k,&pks,nlim,dfhist->wl_histo,dfhist->wl_delta);
             
@@ -1946,14 +1940,14 @@ static gmx_bool UpdateWeights(t_lambda *fep, df_history_t *dfhist, int fep_state
             {
                 dfhist->sum_weights[i] -= dfhist->wl_delta*p_k[i];                   
             }
-            /* Alternate definition, using logarithms. Shouldn't make very much difference. */
+            /* Alternate definition, using logarithms. Shouldn't make very much difference! */
             /*
-            real di;
-            for (i=0;i<nlim;i++) 
-            {
+              real di;
+              for (i=0;i<nlim;i++) 
+              {
                 di = 1+dfhist->wl_delta*p_k[i];
                 dfhist->sum_weights[i] -= log(di);
-            }            
+              }            
             */
             sfree(p_k);
         }
@@ -2648,14 +2642,14 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     snew(pfep_lamee,nlim);
     snew(p_k,nlim);
 
-    if (fep->init_weights)  /* if initialized weights, we need to fill them in */
+    if (fep->bInit_weights)  /* if initialized weights, we need to fill them in */
     {
         dfhist->wl_delta = fep->init_wl_delta;  /* MRS -- this would fit better somewhere else? */
         for (i=0;i<nlim;i++) {
             dfhist->sum_weights[i] = fep->init_lambda_weights[i];
             dfhist->sum_dg[i] = fep->init_lambda_weights[i];
         }
-        fep->init_weights = FALSE;
+        fep->bInit_weights = FALSE;
     } 
     
 	/* update the count at the current lambda*/

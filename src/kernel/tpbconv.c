@@ -595,11 +595,12 @@ int main (int argc, char *argv[])
     if (bFepWeights) 
       {
 	/* now read in the weights - error handling? */
+	/* MRS: Currently works, though gets error: passing argument 1 of ‘parse_n_double’ discards qualifiers from pointer target type */
 	parse_n_double(init_fep_weights,&nweights,&(ir->fepvals->init_lambda_weights));
 	
 	if (nweights == 0)
 	  {
-	    ir->fepvals->init_weights = 0;
+	    ir->fepvals->bInit_weights = FALSE;
 	    snew(ir->fepvals->init_lambda_weights,ir->fepvals->n_lambda); /* initialize to zero */
 	  }
 	else if (nweights != ir->fepvals->n_lambda)
@@ -609,7 +610,7 @@ int main (int argc, char *argv[])
 	  }
 	else
 	  {
-	    ir->fepvals->init_weights = 1;
+	    ir->fepvals->bInit_weights = TRUE;
 	  }
       }
   }

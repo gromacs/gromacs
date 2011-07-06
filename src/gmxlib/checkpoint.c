@@ -1339,7 +1339,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     {
         flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
                      (1<<edfhTIJ) | (1<<edfhTIJEMP)); 
-        if ((fep->elamstats == elamstatsWL) || (fep->elamstats == elamstatsGWL)) 
+        if (EWL(fep->elamstats))
         {
             flags_dfh |= ((1<<edfhWLDELTA) | (1<<edfhWLHISTO)); 
         }

@@ -400,7 +400,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK((fep->equil_ratio<=0) && (fep->elmceq==elmceqRATIO));
       
       sprintf(err_buf,"lmc-weight-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
-              elmceq_names[elmceqWLDELTA],elamstats_names[elamstatsWL],elamstats_names[elamstatsGWL]);
+              elmceq_names[elmceqWLDELTA],elamstats_names[elamstatsWL],elamstats_names[elamstatsWWL]);
       CHECK((fep->elmceq==elmceqWLDELTA) && (!EWL(fep->elamstats)));
 
       sprintf(err_buf,"lmc-repeats (%d) must be greater than 0",fep->lmc_repeats);
@@ -1023,11 +1023,10 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     }
 
     /* now read in the weights - error handling? */
-    /*snew(fep->init_lambda_weights,fep->n_lambda); */
     parse_n_double(weights,&nweights,&(fep->init_lambda_weights));
     if (nweights == 0) 
     {
-        fep->init_weights = 0;
+        fep->bInit_weights = FALSE;
         snew(fep->init_lambda_weights,fep->n_lambda); /* initialize to zero */
     } 
     else if (nweights != fep->n_lambda)
@@ -1037,7 +1036,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     } 
     else 
     {
-        fep->init_weights = 1;
+        fep->bInit_weights = TRUE;
     }
 }
 
@@ -1443,6 +1442,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);
   RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.8);
   RTYPE ("init-wl-delta",ir->fepvals->init_wl_delta,1.0);
+  EETYPE("wl-oneovert",ir->fepvals->bWLoneovert,yesno_names);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);

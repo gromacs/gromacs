@@ -165,7 +165,8 @@ typedef struct {
   real  wl_scale;            /* scaling factor for wang-landau */
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
   real  init_wl_delta;       /* starting delta for wang-landau */
-  gmx_bool init_weights;         /* did we initialize the weights? */
+  gmx_bool bWLoneovert;         /* use one over t convergece for wang-landau when the delta get sufficiently small */
+  gmx_bool bInit_weights;         /* did we initialize the weights? */
   real *init_lambda_weights; /* user-specified initial weights to start with  */
   real mc_temp;              /* To override the main temperature, or define it if it's not defined */
 } t_lambda;
