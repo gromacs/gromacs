@@ -1717,27 +1717,16 @@ int FindMinimum(real *min_metric, int N) {
     return min_nval;
 }
 
-static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int flatcriteria) 
+static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio) 
 {
     
     int i;
-    real nmean,maxval,minval;
+    real nmean;
     gmx_bool bIfFlat;
     
     nmean = 0;
-    minval = histo[0];
-    maxval = histo[0];
     for (i=0;i<nhisto;i++) 
     {
-        if (histo[i] > maxval) 
-        {
-            maxval = histo[i];
-        }
-        
-        if (histo[i] < minval) 
-        {
-            minval = histo[i];
-        }
         nmean += histo[i];
     }
 
@@ -1749,25 +1738,14 @@ static gmx_bool CheckHistogramRatios(int nhisto, real *histo, real ratio, int fl
     }
     nmean /= (real)nhisto;
     
-    bIfFlat = FALSE;
-    if (flatcriteria==flatbyEXTREMES) 
+    bIfFlat = TRUE;
+    for (i=0;i<nhisto;i++) 
     {
-        if (minval/maxval > ratio)
+        /* make sure that all points are in the ratio < x <  1/ratio range  */
+        if (!((histo[i]/nmean < 1.0/ratio) && (histo[i]/nmean > ratio)))
         {
-            bIfFlat = TRUE;
-        }
-    }
-    if (flatcriteria==flatbyAVERAGE) 
-    {
-        bIfFlat = TRUE;
-        for (i=0;i<nhisto;i++) 
-        {
-            /* make sure that all points are in the ratio < x <  1/ratio range  */
-            if (!((histo[i]/nmean < 1.0/ratio) && (histo[i]/nmean > ratio)))
-            {
-                bIfFlat = FALSE;
-                break;
-            }
+            bIfFlat = FALSE;
+            break;
         }
     }
     return bIfFlat;
@@ -1848,7 +1826,7 @@ static gmx_bool CheckIfDoneEquilibrating(t_lambda *fep, df_history_t *dfhist, gm
             for (i=0;i<fep->n_lambda;i++) {
                 modhisto[i] = 1.0*(dfhist->n_at_lam[i]-fep->lmc_forced_nstart);
             }
-            bIfFlat = CheckHistogramRatios(fep->n_lambda,modhisto,fep->equil_ratio,flatbyEXTREMES);
+            bIfFlat = CheckHistogramRatios(fep->n_lambda,modhisto,fep->equil_ratio);
             sfree(modhisto);
             if (!bIfFlat) 
             {
@@ -2632,7 +2610,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     int i,nlim,lamnew,totalsamples;
     real mckt,oneovert,maxscaled=0,maxweighted=0;
     t_lambda *fep;
-    gmx_bool bIfReset,bAllVisited,bDoneEquilibrating=FALSE;
+    gmx_bool bIfReset,bSwitchtoOneOverT,bDoneEquilibrating=FALSE;
 
     fep = ir->fepvals;
 	nlim = fep->n_lambda;
@@ -2726,21 +2704,26 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	
 	if (EWL(fep->elamstats)) 
     {
-        /* What's the total number of samples collected so far (should persist past checkpoints!) */
-        totalsamples = 0;
-        bAllVisited = TRUE;
-        for (i=0;i<nlim;i++)
-        {
-            totalsamples += dfhist->n_at_lam[i];
-            if (dfhist->wl_histo[i] <= 1) {
-                bAllVisited = FALSE;
+        bSwitchtoOneOverT = FALSE;
+        if (fep->bWLoneovert) {
+            totalsamples = 0;
+            for (i=0;i<nlim;i++)
+            {
+                totalsamples += dfhist->n_at_lam[i];
+            }
+            oneovert = (1.0*fep->n_lambda)/totalsamples;
+            /* oneovert has decreasd by a bit since last time, so we actually make sure its within one of this number */
+            /* switch to 1/t incrementing when wl_delta has decreased at least once, and wl_delta is now less than 1/t */
+            if ((dfhist->wl_delta <= ((totalsamples)/(totalsamples-1.00001))*oneovert) && 
+                (dfhist->wl_delta < fep->init_wl_delta)) 
+            {
+                bSwitchtoOneOverT = TRUE;
             }
         }
-        oneovert = (1.0*fep->n_lambda)/totalsamples;
-        /* oneovert has decreasd by a bit since last time, so we actually make sure its within one of this number */
-        if (0) {
-        //if (dfhist->wl_delta >= ((totalsamples)/(totalsamples-1.00001))*oneovert || (bAllVisited==FALSE) ||) {
-            bIfReset = CheckHistogramRatios(fep->n_lambda,dfhist->wl_histo,fep->wl_ratio,flatbyAVERAGE);
+        if (bSwitchtoOneOverT) {
+            dfhist->wl_delta = oneovert; /* now we reduce by this each time, instead of only at flatness */
+        } else {
+            bIfReset = CheckHistogramRatios(fep->n_lambda,dfhist->wl_histo,fep->wl_ratio);
             if (bIfReset) 
             {
                 for (i=0;i<nlim;i++) 
@@ -2749,7 +2732,6 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
                 }
                 dfhist->wl_delta *= fep->wl_scale;
                 if (log) {
-                    fprintf(log,"\nStep %d: Wang-Landau weight increment is now %14.8f (1/t=%.8f)",(int)step,dfhist->wl_delta,oneovert);
                     fprintf(log,"\nStep %d: weights are now:",(int)step);
                     for (i=0;i<nlim;i++) 
                     {
@@ -2758,8 +2740,6 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
                     fprintf(log,"\n");
                 }
             }
-        } else {
-            dfhist->wl_delta = oneovert; /* now we reduce this each time, instead of only at flatness */
         }
     }
     sfree(scaled_lamee);
