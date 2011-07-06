@@ -164,7 +164,7 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
-				int repl_ex_nst,int repl_ex_multiplex, int repl_ex_seed,
+				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
 				const char *deviceOptions,
 				unsigned long Flags,
@@ -355,7 +355,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
 	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
-             int repl_ex_multiplex, int repl_ex_seed, real pforce,real cpt_period,real max_hours,
+             int repl_ex_seed, real pforce,real cpt_period,real max_hours,
 	     const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 

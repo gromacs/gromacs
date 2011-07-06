@@ -62,7 +62,6 @@ typedef struct gmx_repl_ex
     real *pres;
     int  *ind;
     int  nst;
-    int  nmultiplex;
     int  seed;
     int  nattempt[2];
     int  **nmoves;
@@ -119,7 +118,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
                                     const gmx_multisim_t *ms,
                                     const t_state *state,
                                     const t_inputrec *ir,
-                                    int nst,int nmultiplex, int init_seed)
+                                    int nst, int init_seed)
 {
     real temp,pres;
     int  i,j,k;
@@ -330,8 +329,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     fprintf(fplog,"Repl  below: x=exchange, pr=probability\n");
 
-    re->nmultiplex = nmultiplex;
- 
     return re;
 }
 
@@ -685,11 +682,9 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     real *Epot=NULL,*Vol=NULL,**flambda=NULL,*beta=NULL,*prob;
     int *pind;
     real ediff=0,delta=0,dpV=0;
-    gmx_bool *bEx,bPrint,bMulti;
+    gmx_bool *bEx,bPrint;
     int exchange;
     
-    bMulti = (re->nmultiplex > 1);
-        
     fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
     
     snew(beta,re->nrepl);
@@ -738,111 +733,15 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     snew(prob,re->nrepl);
     exchange = -1;
     
-    if (!bMulti)  /* standard case -- choose to do either forward switching or reverse switching */
+    m = (step / re->nst)% 2;
+    for(i=1; i<re->nrepl; i++) 
     {
-        m = (step / re->nst)% 2;
-        for(i=1; i<re->nrepl; i++) 
-        {
-            a = re->ind[i-1];
-            b = re->ind[i];
-            
-            bPrint = (re->repl==a || re->repl==b);
-            if (i % 2 == m) 
-            {
-                switch (re->type) 
-                {
-                case ereTEMP:
-                    /* Use equations from:
-                     * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
-                     */
-                    ediff = Epot[b] - Epot[a];
-                    delta = -(beta[b] - beta[a])*ediff;
-                    break;
-                case ereLAMBDA:
-                    /* ediff =  E_new - E_old */
-                    /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
-                    /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
-                    ediff = flambda[b][a] + flambda[a][b];    
-                    delta = ediff*beta[a]; /* assume all at same temperature for now!! Could be at different temperatures,
-                                            of course. Would require the total energy as well.*/
-                    break;
-                default:
-                    gmx_incons("Unknown replica exchange quantity");
-                }
-                if (bPrint)
-                {
-                    fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
-                }
-                if (re->bNPT) 
-                {
-                    dpV = (beta[a]*re->pres[a]-beta[b]*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
-                    if (bPrint)
-                    {
-                        fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
-                    }
-                    delta += dpV;
-                }
-                if (bPrint)
-                {
-                    fprintf(fplog,"\n");
-                }
-                if (delta <= 0) {
-                    prob[i] = 1;
-                    bEx[i] = TRUE;
-                } 
-                else 
-                {
-                    if (delta > 100) {
-                        prob[i] = 0;
-                    } else {
-                        prob[i] = exp(-delta);
-                    }
-                    bEx[i] = (rando(&(re->seed)) < prob[i]);
-                }
-                re->prob_sum[i] += prob[i];    
-                if (bEx[i]) 
-                {
-                    if (a == re->repl) 
-                    {
-                        exchange = b;
-                    } 
-                    else if (b == re->repl) 
-                    {
-                        exchange = a;
-                    }
-                    re->nexchange[i]++;
-                }
-            } 
-            else 
-            {
-                prob[i] = -1;
-                bEx[i] = FALSE;
-            }
-        }
-        print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
-        print_prob(fplog,"pr",re->nrepl,prob);
-        fprintf(fplog,"\n");
-    }
-    else /* multiswitch replica exchange */
-    {
-        snew(pind,re->nrepl);
-
-        /* make a duplicate set of indices for shuffling */
-        for(i=0; i<re->nrepl;i++) {
-            pind[i] = re->ind[i];
-        }
+        a = re->ind[i-1];
+        b = re->ind[i];
         
-        for(i=0; i<re->nmultiplex;i++) {
-            
-            /* randomly select a neighboring pair  */
-            /* find out which state it is from, and what label that state currently has */
-            i0 = floor(re->nrepl*(rando(&(re->seed))));          
-            i1 = i0+1;
-            a = re->ind[i0];
-            b = re->ind[i1];
-            ap = pind[i0];
-            bp = pind[i1];
-            
+        bPrint = (re->repl==a || re->repl==b);
+        if (i % 2 == m) 
+        {
             switch (re->type) 
             {
             case ereTEMP:
@@ -850,71 +749,71 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
                  * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
                  */
                 ediff = Epot[b] - Epot[a];
-                delta = -(beta[bp] - beta[ap])*ediff;
+                delta = -(beta[b] - beta[a])*ediff;
                 break;
             case ereLAMBDA:
                 /* ediff =  E_new - E_old */
-                /*       =  [H_bp(x_a) + H_ap(x_b)] - [H_bp(x_b) + H_ap(x_a)] */
-                /*       =  [H_bp(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_bp(x_b)] */
-                /*       =  [H_bp(x_a) -H_a(x_a) +H_a(x_a)- H_ap(x_a)] + [H_ap(x_b) -H_b(x_b) +H_b(x_b)- H_bp(x_b)] */
-                /*       =  [H_bp(x_a) -H_a(x_a)] - [H_ap(x_a)- H_a(x_a)] + [H_ap(x_b) -H_b(x_b)] - H_bp(x_b)- H_b(x_b)] */
-                ediff = (flambda[bp][a] - flambda[ap][a]) + (flambda[ap][b] - flambda[bp][b]);    
-                delta = ediff*beta[a]; /* assume all same temperature for now!! */
+                /*       =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)] */
+                /*       =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)] */
+                ediff = flambda[b][a] + flambda[a][b];    
+                delta = ediff*beta[a]; /* assume all at same temperature for now!! Could be at different temperatures,
+                                          of course. Would require the total energy as well.*/
                 break;
             default:
                 gmx_incons("Unknown replica exchange quantity");
             }
+            if (bPrint)
+            {
+                fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
+            }
             if (re->bNPT) 
             {
-                dpV = (beta[ap]*re->pres[ap]-beta[bp]*re->pres[bp])*(Vol[b]-Vol[a])/PRESFAC;
+                dpV = (beta[a]*re->pres[a]-beta[b]*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
                 if (bPrint)
                 {
                     fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
                 }
                 delta += dpV;
             }
+            if (bPrint)
+            {
+                fprintf(fplog,"\n");
+            }
             if (delta <= 0) {
-                prob[0] = 1;
-                bEx[0] = TRUE;
+                prob[i] = 1;
+                bEx[i] = TRUE;
             } 
             else 
             {
                 if (delta > 100) {
-                    prob[0] = 0;
+                    prob[i] = 0;
                 } else {
-                    prob[0] = exp(-delta);
+                    prob[i] = exp(-delta);
                 }
-                bEx[0] = (rando(&(re->seed)) < prob[0]);
+                bEx[i] = (rando(&(re->seed)) < prob[i]);
             }
-            if (bEx[0]) 
+            re->prob_sum[i] += prob[i];    
+            if (bEx[i]) 
             {
-                /* swap the states */
-                tmp = pind[i0];
-                pind[i0] = pind[i1];
-                pind[i1] = tmp;
+                if (a == re->repl) 
+                {
+                    exchange = b;
+                } 
+                else if (b == re->repl) 
+                {
+                    exchange = a;
+                }
+                re->nexchange[i]++;
             }
-        }
-        
-        for (i=0;i<re->nrepl;i++) 
+        } 
+        else 
         {
-            if (re->ind[i] == re->repl) 
-            {
-                exchange = pind[i];
-            } 
+            prob[i] = -1;
+            bEx[i] = FALSE;
         }
-        
-        if (exchange == re->repl)
-        {
-            exchange = -1;
-        }
-        else {
-            bPrint = TRUE; 
-        }
-        
-        if (bPrint)
-        {
-            fprintf(fplog,"Repl %d <-> %d",re->repl,exchange);
-        }
+        print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
+        print_prob(fplog,"pr",re->nrepl,prob);
+        fprintf(fplog,"\n");
     }
     
     sfree(bEx);
@@ -936,14 +835,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     default:
         gmx_incons("Unknown replica exchange quantity");
     }
-    if (!bMulti) 
-    {
-        re->nattempt[m]++;
-    }
-    else
-    {
-        re->nattempt[0]++;
-    }
+    re->nattempt[m]++;
     return exchange;
 }
 
@@ -1038,55 +930,40 @@ void print_replica_exchange_statistics(FILE *fplog,struct gmx_repl_ex *re)
 {
     real *prob;
     int  i;
-    gmx_bool bMulti;
 
-    bMulti = (re->nmultiplex > 1);
-  
     fprintf(fplog,"\nReplica exchange statistics\n");
-    if (!(bMulti)) 
-    {
-        fprintf(fplog,"Repl  %d attempts, %d odd, %d even\n",
-                re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
-    } 
-
+    fprintf(fplog,"Repl  %d attempts, %d odd, %d even\n",
+            re->nattempt[0]+re->nattempt[1],re->nattempt[1],re->nattempt[0]);
   
-    fprintf(fplog,"Repl  average probabilities:\n");
-    if (bMulti) 
-    {
-        print_matrix(fplog,"",re->nrepl,re->nmoves,re->nattempt[0]);
-    }
-    else
-    {
-        snew(prob,re->nrepl);
-        for(i=1; i<re->nrepl; i++) {
-            if (re->nattempt[i%2] == 0)
-            {
-                prob[i] = 0;
-            }
-            else
-            {
-                prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
-            }
+    snew(prob,re->nrepl);
+    for(i=1; i<re->nrepl; i++) {
+        if (re->nattempt[i%2] == 0)
+        {
+            prob[i] = 0;
         }
-        print_ind(fplog,"",re->nrepl,re->ind,NULL);
-        print_prob(fplog,"",re->nrepl,prob);
-
-        fprintf(fplog,"Repl  number of exchanges:\n");
-        print_ind(fplog,"",re->nrepl,re->ind,NULL);
-        print_count(fplog,"",re->nrepl,re->nexchange);
-
-        fprintf(fplog,"Repl  average number of exchanges:\n");
-        for(i=1; i<re->nrepl; i++) {
-            if (re->nattempt[i%2] == 0)
-                prob[i] = 0;
-            else
-                prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+        else
+        {
+            prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
         }
-        print_ind(fplog,"",re->nrepl,re->ind,NULL);
-        print_prob(fplog,"",re->nrepl,prob);
-      
-        sfree(prob);
     }
+    print_ind(fplog,"",re->nrepl,re->ind,NULL);
+    print_prob(fplog,"",re->nrepl,prob);
+
+    fprintf(fplog,"Repl  number of exchanges:\n");
+    print_ind(fplog,"",re->nrepl,re->ind,NULL);
+    print_count(fplog,"",re->nrepl,re->nexchange);
+    
+    fprintf(fplog,"Repl  average number of exchanges:\n");
+    for(i=1; i<re->nrepl; i++) {
+        if (re->nattempt[i%2] == 0)
+            prob[i] = 0;
+        else
+            prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
+    }
+    print_ind(fplog,"",re->nrepl,re->ind,NULL);
+    print_prob(fplog,"",re->nrepl,prob);
+    
+    sfree(prob);
   
     fprintf(fplog,"\n");
 }
