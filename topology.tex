@@ -506,8 +506,12 @@ particular.  Column 4 contains the atomic van der Waals radii, which are used
 in computing the Born radii. The dielectric offset is specified in
 the {\tt *.mdp} file, and gets subtracted from the input van der Waals radii for the different
 Born radii methods, as described by Onufriev {\em et al.}~\cite{Case04}.  Column 5 is the 
-scale factor for the HCT and OBC models. The values are taken from the original 
-HCT reference~\cite{Truhlar96}, as well as the corresponding implementation in Tinker.
+scale factor for the HCT and OBC models. The values are taken from the Tinker implementation of 
+the HCT pairwise scaling method~\cite{Truhlar96}.  This method has been modified such that the
+scaling factors have been adjusted to minimize differences between analytical surface areas and
+GB using the HCT algorithm.  The scaling is further modified in that it is not applied pairwise
+as proposed by Hawkins {\em et al.}~\cite{Truhlar96}, but on a per-atom (rather than a per-pair) 
+basis.
 
 
 
