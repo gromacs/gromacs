@@ -3590,7 +3590,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              int it_xy, int it_z, real probe_rad, int low_up_rm,
              int pieces, gmx_bool bALLOW_ASYMMETRY, int maxwarn)
 {
-    gmx_bool   useGPU;
     double     nodetime=0,realtime;
     t_inputrec *inputrec;
     t_state    *state=NULL;
@@ -3641,8 +3640,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
        cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
     snew(mtop,1);
-
-    useGPU = gmx_check_use_gpu(fplog);
 
     if (bVerbose && SIMMASTER(cr))
     {
@@ -4108,7 +4105,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
-                      useGPU,FALSE,pforce);
+                      FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,

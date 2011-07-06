@@ -1330,23 +1330,30 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
     }
 }
 
-gmx_bool gmx_check_use_gpu(FILE *fp)
+static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
 {
-    gmx_bool useGPU,emulateGPU;
     char *env;
 
     env = getenv("GMX_EMULATE_GPU");
-    emulateGPU = (env != NULL);
+    fr->emulateGPU = (env != NULL);
 
     /* Try to turn GPU acceleration on if GMX_GPU is defined */
-    useGPU = FALSE;    
-    if (emulateGPU)
+    fr->useGPU = FALSE;
+    if (fr->emulateGPU)
     {
-        fprintf(fp, "Emulating GPU\n");
+        sscanf(env,"%d",napc);
+        if (*napc == 0)
+        {
+            *napc = GPU_NS_CELL_SIZE;
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp, "Emulating GPU, using %d atoms per cell\n", *napc);
+        }
     }    
-#ifdef GMX_GPU
     else
     {
+#ifdef GMX_GPU
         if (getenv("GMX_NO_GPU") == NULL)
         {
             int gpu_device_id;
@@ -1364,18 +1371,18 @@ gmx_bool gmx_check_use_gpu(FILE *fp)
             }
             else
             {
-                fprintf(fp,"Using GPU#%d\n", gpu_device_id);
-                useGPU = TRUE;
+                fr->useGPU = TRUE;
             }
         }
         else 
         {
             gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
         }
-    }
+        *napc = GPU_NS_CELL_SIZE;
+#else 
+    gmx_fatal(FARGS,"No GPU support compiled into mdrun whereas a Verlet has been requested. There is currently no efficient cut-off scheme available for this. If you have a GPU, compile mdrun with GPU support. (Very slow emulation on the CPU is possible by setting the env.var. GMX_EMULATE_GPU)");
 #endif
-    
-    return (useGPU || emulateGPU);
+    }
 }
 
 static void set_nsbox_cutoffs(FILE *fp,t_forcerec *fr,real nblist_lifetime)
@@ -1425,7 +1432,6 @@ void init_forcerec(FILE *fp,
                    const char *tabfn,
                    const char *tabpfn,
                    const char *tabbfn,
-                   gmx_bool       useGPU,
                    gmx_bool       bNoSolvOpt,
                    real       print_force)
 {
@@ -1934,29 +1940,7 @@ void init_forcerec(FILE *fp,
     else
     {
         /* nsbox neighbor searching and GPU stuff */
-        napc = GPU_NS_CELL_SIZE;
-
-        env = getenv("GMX_EMULATE_GPU");
-        fr->emulateGPU = (env != NULL);
-#ifndef GMX_GPU
-        if (!fr->emulateGPU)
-        {
-            gmx_fatal(FARGS,"No GPU support compiled into mdrun whereas a Verlet has been requested. There is currently no efficient cut-off scheme available for this. If you have a GPU, compile mdrun with GPU support. (Very slow emulation on the CPU is possible by setting the env.var. GMX_EMULATE_GPU)");
-        }
-#endif
-        fr->useGPU = !fr->emulateGPU;
-        if (fr->emulateGPU)
-        {
-            sscanf(env,"%d",&napc);
-            if (napc == 0)
-            {
-                napc = GPU_NS_CELL_SIZE;
-            }
-            if (fp != NULL)
-            {
-                fprintf(fp, "Emulating GPU, using %d atoms per cell\n",napc);
-            }
-        }
+        gmx_check_use_gpu(fp, fr, &napc, cr->nodeid);
 
         set_nsbox_cutoffs(fp,fr,EI_DYNAMICS(ir->eI) ? ir->delta_t*(ir->nstlist-1) : 0.0);
 

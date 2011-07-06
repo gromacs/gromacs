@@ -132,9 +132,6 @@ forcerec_set_ranges(t_forcerec *fr,
 		    int natoms_force_constr,int natoms_f_novirsum);
 /* Set the number of cg's and atoms for the force calculation */
 
-gmx_bool gmx_check_use_gpu(FILE *fp);
-/* Return if we will a GPU or GPU emulation */
-
 gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
                              gmx_bool bPrintNote,t_commrec *cr,FILE *fp);
 /* Returns if we can use all-vs-all loops.
@@ -154,7 +151,6 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-		   gmx_bool       useGPU,
 			  gmx_bool       bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 

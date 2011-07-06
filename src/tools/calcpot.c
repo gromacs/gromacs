@@ -285,7 +285,6 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   *fr = mk_forcerec();
   init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
 		state->box,FALSE,table,table,NULL,
-                FALSE, /* useGPU */
                 TRUE,-1);
 
   /* Remove periodicity */  
