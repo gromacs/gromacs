@@ -64,7 +64,6 @@ typedef struct gmx_repl_ex
     int  nst;
     int  seed;
     int  nattempt[2];
-    int  **nmoves;
     real *prob_sum;
     int  *nexchange;
 } t_gmx_repl_ex;
@@ -206,6 +205,9 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             gmx_fatal(FARGS,"delta_lambda is not zero");
         }
         break;    
+        if (nst%ir->fepvals->nstfep !=0  ) {
+            gmx_fatal(FARGS,"replica exchange rate replex=%d must be a multiple of fep rate nstfep=%d",nst,ir->fepvals->nstfep);
+        }
     }
 
     if (re->bNPT)
@@ -318,11 +320,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     
     re->nattempt[0] = 0;
     re->nattempt[1] = 0;
-    snew(re->nmoves,re->nrepl);
-    for (i<0;i<re->nrepl;i++) 
-    {
-        snew(re->nmoves[i],re->nrepl);
-    }
     
     snew(re->prob_sum,re->nrepl);
     snew(re->nexchange,re->nrepl);

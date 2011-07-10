@@ -230,6 +230,7 @@ typedef struct {
   gmx_bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
   int  nsttcouple;      /* interval in steps for temperature coupling   */
+  gmx_bool bPrintNHChains; /* whether to print nose-hoover chains        */
   int  epc;		/* pressure coupling                            */
   int  epct;		/* pressure coupling type			*/
   int  nstpcouple;      /* interval in steps for pressure coupling      */

@@ -578,6 +578,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->bContinuation",-1,ir1->bContinuation,ir2->bContinuation);
   cmp_int(fp,"inputrec->bShakeSOR",-1,ir1->bShakeSOR,ir2->bShakeSOR);
   cmp_int(fp,"inputrec->etc",-1,ir1->etc,ir2->etc);
+  cmp_int(fp,"inputrec->bPrintNHChains",-1,ir1->bPrintNHChains,ir2->bPrintNHChains);
   cmp_int(fp,"inputrec->epc",-1,ir1->epc,ir2->epc);
   cmp_int(fp,"inputrec->epct",-1,ir1->epct,ir2->epct);
   cmp_real(fp,"inputrec->tau_p",-1,ir1->tau_p,ir2->tau_p,ftol,abstol);

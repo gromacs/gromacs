@@ -279,6 +279,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
     md->bNHC_trotter = IR_NVT_TROTTER(ir);
+    md->bPrintNHChains = ir-> bPrintNHChains;
     md->bMTTK = (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir));
 
     md->ebin  = mk_ebin();
@@ -456,11 +457,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->itemp=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
                              unit_temp_K);
 
-    bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); /* whether to print Nose-Hoover chains */
-
     if (md->etc == etcNOSEHOOVER)
     {
-        if (bNoseHoover) 
+        if (md->bPrintNHChains) 
         {
             if (md->bNHC_trotter) 
             {
@@ -749,7 +748,6 @@ void upd_mdebin(t_mdebin *md,
     real   *store_dh;
     real   store_energy;
     real   tmp;
-    gmx_bool   bNoseHoover;
 
     /* Do NOT use the box in the state variable, but the separate box provided
      * as an argument. This is because we sometimes need to write the box from
@@ -861,12 +859,10 @@ void upd_mdebin(t_mdebin *md,
         }
         add_ebin(md->ebin,md->itemp,md->nTC,md->tmp_r,bSum);
 
-        /* whether to print Nose-Hoover chains: */
-        bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); 
-
         if (md->etc == etcNOSEHOOVER)
         {
-            if (bNoseHoover) 
+            /* whether to print Nose-Hoover chains: */
+            if (md->bPrintNHChains) 
             {
                 if (md->bNHC_trotter)
                 {

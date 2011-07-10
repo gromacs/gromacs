@@ -227,13 +227,12 @@ static void do_update_md(int start,int nrend,double dt,
 static void do_update_vv_vel(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
-                             unsigned short ptype[],
-                             unsigned short cFREEZE[],unsigned short cACC[],
-                             rvec v[],rvec f[],
+                             unsigned short ptype[],unsigned short cFREEZE[],
+                             unsigned short cACC[],rvec v[],rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
-    int    gf=0,ga=0,gt=0;
+    int    gf=0,ga=0;
     rvec   vrel;
     real   u,vn,vv,va,vb,vnrel;
     int    n,d;
@@ -250,6 +249,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         mv1      = 1.0;
         mv2      = 1.0;
     }
+
     for(n=start; n<nrend; n++) 
     {
         w_dt = invmass[n]*dt;
@@ -261,7 +261,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             ga   = cACC[n];
         }
-        
+
         for(d=0; d<DIM; d++) 
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
@@ -279,8 +279,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
 static void do_update_vv_pos(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
-                             unsigned short ptype[],
-                             unsigned short cFREEZE[],
+                             unsigned short ptype[],unsigned short cFREEZE[],
                              rvec x[],rvec xprime[],rvec v[],
                              rvec f[],gmx_bool bExtended, real veta, real alpha)
 {
@@ -289,18 +288,19 @@ static void do_update_vv_pos(int start,int nrend,double dt,
   int    n,d;
   double g,mr1,mr2;
 
-  if (bExtended) {
+  /* Should Parrinello-Rahman be here? */
+  if (bExtended)
+  {
       g        = 0.5*dt*veta;
       mr1      = exp(g);
       mr2      = series_sinhx(g);
-  }
-  else 
-  {
+  } else {
       mr1      = 1.0;
       mr2      = 1.0;
   }
   
   for(n=start; n<nrend; n++) {
+
       if (cFREEZE)
       {
           gf   = cFREEZE[n];
@@ -508,7 +508,7 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
     
     snew(upd,1);
     
-    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERS(ir->etc))
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
         upd->sd = init_stochd(fplog,ir);
     }
@@ -1152,15 +1152,22 @@ void update_tcouple(FILE         *fplog,
 {
     gmx_bool   bTCouple=FALSE;
     real   dttc;
-    int    i,start,end,homenr;
+    int    i,start,end,homenr,offset;
     
-    /* if using vv, we do this elsewhere in the code */
+    /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
         !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec)))
     {
-        /* We should only couple after a step where energies were determined */
+        /* We should only couple after a step where energies were determined (for leapfrog versions)
+         or the step energies are determined, for velocity verlet versions */
+        
+        if (EI_VV(inputrec->eI)) {
+            offset = 0;
+        } else {
+            offset = 1;
+        }
         bTCouple = (inputrec->nsttcouple == 1 ||
-                    do_per_step(step+inputrec->nsttcouple-1,
+                    do_per_step(step+inputrec->nsttcouple-offset,
                                 inputrec->nsttcouple));
     }
     
@@ -1187,6 +1194,7 @@ void update_tcouple(FILE         *fplog,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
+            // MRS -- need to understand what is happening here!!! //
             rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
         }
     }
@@ -1294,7 +1302,7 @@ void update_constraints(FILE         *fplog,
                         gmx_bool         bCalcVir,
                         real         vetanew)
 {
-    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
+    gmx_bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
@@ -1462,7 +1470,7 @@ void update_box(FILE         *fplog,
                 gmx_bool         bInitStep,
                 gmx_bool         bFirstHalf)
 {
-    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g;
@@ -1575,7 +1583,7 @@ void update_coords(FILE         *fplog,
                    gmx_constr_t constr,
                    t_idef       *idef)
 {
-    gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool         bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
     real             rate;
     real             *imass,*imassin;
@@ -1614,11 +1622,10 @@ void update_coords(FILE         *fplog,
         update_orires_history(fcd,&state->hist);
     }
     
+    
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK)); 
 
-    bExtended = bNH || bPR;
-    
     if (bDoLR && inputrec->nstlist > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
     {
         /* Store the total force + nstlist-1 times the LR force
@@ -1697,10 +1704,8 @@ void update_coords(FILE         *fplog,
             do_update_vv_vel(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,
-                             state->v,force,
-                             bExtended,state->veta,alpha);  
+                             md->invmass,md->ptype,md->cFREEZE,md->cACC,
+                             state->v,force,(bNH || bPR),state->veta,alpha);  
             break;
         case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,
@@ -1708,7 +1713,7 @@ void update_coords(FILE         *fplog,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,md->cFREEZE,
                              state->x,xprime,state->v,force,
-                             bExtended,state->veta,alpha);
+                             (bNH || bPR) ,state->veta,alpha);
             break;
         }
         break;
@@ -1717,7 +1722,7 @@ void update_coords(FILE         *fplog,
         break;
     }
 
-    if (ETC_ANDERS(inputrec->etc) && ((UpdatePart == etrtVELOCITY1) && EI_VV(inputrec->eI)))
+    if (ETC_ANDERSEN(inputrec->etc) && ((UpdatePart == etrtVELOCITY1) && EI_VV(inputrec->eI)))
     {
         rate = (inputrec->delta_t)/inputrec->opts.tau_t[0];
         /* proceed with andersen if 1) it's fixed probability per

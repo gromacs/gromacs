@@ -617,6 +617,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("bContinuation",BOOL(ir->bContinuation));
     PS("bShakeSOR",BOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
+    PS("bPrintNHChains",BOOL(ir->bPrintNHChains));
     PI("nsttcouple",ir->nsttcouple);
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));

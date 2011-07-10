@@ -658,6 +658,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
+    if (file_version >= 74) {
+        gmx_fio_do_int(fio,ir->bPrintNHChains);
+    }
     if (file_version >= 71)
     {
         gmx_fio_do_int(fio,ir->nsttcouple);

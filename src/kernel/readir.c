@@ -200,6 +200,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     {
         ir->etc = etcNO;
     }
+    if (ir->eI == eiVVAK) {
+        sprintf(warn_buf,"Integrator method %s is implemented primarily for validation purposes; for molecular dynamics, you should probably be using %s or %s",ei_names[eiVVAK],ei_names[eiMD],ei_names[eiVV]);
+        warning_note(wi,warn_buf);
+    }
     if (!EI_DYNAMICS(ir->eI))
     {
         ir->epc = epcNO;
@@ -516,7 +520,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
-    /* TEMPERATURE COUPLING */
+  /* TEMPERATURE COUPLING */
     if (ir->etc == etcYES)
     {
         ir->etc = etcBERENDSEN;
@@ -544,15 +548,24 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         ir->opts.nhchainlength = 0;
     }
 
-    if (ETC_ANDERS(ir->etc))
+    if (ir->eI == eiVVAK) {
+        sprintf(err_buf,"%s implemented primarily for validation, and requires nsttcouple = 1 and nstpcouple = 1.",
+                ei_names[eiVVAK]);
+        CHECK((ir->nsttcouple != 1) || (ir->nstpcouple != 1)); 
+    }
+
+    if (ETC_ANDERSEN(ir->etc))
     {
+        sprintf(err_buf,"%s temperature control not supported for integrator %s.",etcoupl_names[ir->etc],ei_names[ir->eI]);
+        CHECK(!(EI_VV(ir->eI)));
+        
         for (i=0;i<ir->opts.ngtc;i++) 
         {
-            sprintf(err_buf,"all tau_t must currently be equal using Andersen temperature control");
-            CHECK(ir->opts.tau_t[0] == ir->opts.tau_t[i]);
+            sprintf(err_buf,"all tau_t must currently be equal using Andersen temperature control, violated for group %d",i);
+            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
             sprintf(err_buf,"all tau_t must be postive using Andersen temperature control, tau_t[%d]=%10.6f",
                     i,ir->opts.tau_t[i]);      
-            CHECK(ir->opts.tau_t[i]>0);
+            CHECK(ir->opts.tau_t[i]<0);
         }  
     }
     if (ir->etc == etcBERENDSEN)
@@ -562,7 +575,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi,warn_buf);
     }
 
-    if ((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENMASSIVE) 
+    if ((ir->etc==etcNOSEHOOVER || ETC_ANDERSEN(ir->etc)) 
         && ir->epc==epcBERENDSEN)
     {
         sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
@@ -615,12 +628,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         {
             if ((ir->epc!=epcBERENDSEN) && (ir->epc!=epcMTTK))
             {
-                warning_error(wi,"for md-vv, can only use Berendsen and Martyna-Tuckerman-Tobias-Klein equations for pressure control"); 
+                warning_error(wi,"for md-vv and md-vv-avek, can only use Berendsen and Martyna-Tuckerman-Tobias-Klein (MTTK) equations for pressure control; MTTK is equivalent to Parrinello-Rahman."); 
             }
-        }
-        if (ir->etc == etcBERENDSEN || ir->etc == etcVRESCALE) 
-        {
-            warning_error(wi,"for md-vv, Berendsen and velocity rescale temperature control algorithms are not supported.");
         }
     }
 
@@ -1276,6 +1285,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("tcoupl",	ir->etc,        etcoupl_names);
   ITYPE ("nsttcouple", ir->nsttcouple,  -1);
   ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
+  EETYPE("print-nose-hoover-chain-variables", ir->bPrintNHChains, yesno_names);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -2202,6 +2212,7 @@ void do_index(const char* mdparin, const char *ndx,
       {
             ir->nsttcouple = ir_optimal_nsttcouple(ir);
       }
+
       if (EI_VV(ir->eI)) 
       {
           if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
@@ -2215,6 +2226,16 @@ void do_index(const char* mdparin, const char *ndx,
               ir->nstpcouple = mincouple;
               ir->nsttcouple = mincouple;
               sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
+              warning_note(wi,warn_buf);
+          }
+      }
+      /* velocity verlet with averaged kinetic energy KE = 0.5*(v(t+1/2) - v(t-1/2)) is implemented 
+         primarily for testing purposes, and does not work with temperature coupling other than 1 */
+
+      if (ETC_ANDERSEN(ir->etc)) {
+          if (ir->nsttcouple != 1) {
+              ir->nsttcouple = 1;
+              sprintf(warn_buf,"Andersen temperature control methods assume nsttcouple = 1; there is no need for larger nsttcouple > 1, since no global parameters are computed. nsttcouple has been reset to 1");
               warning_note(wi,warn_buf);
           }
       }

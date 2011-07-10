@@ -72,6 +72,7 @@ typedef struct {
   gmx_bool   bTricl;
   gmx_bool   bDynBox;
   gmx_bool   bNHC_trotter;
+  gmx_bool   bPrintNHChains;
   gmx_bool   bMTTK;
   int    f_nre;
   int    epc;

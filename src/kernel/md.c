@@ -375,7 +375,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     if (bTemp || bPres || bEner || bConstrain) 
     {
-        if (!bGStat)
+        if (!bGStat) 
         {
             /* We will not sum ekinh_old,                                                            
              * so signal that we still have to do it.                                                
@@ -1950,10 +1950,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * at nstcalcenergy steps and at energy output steps (set below).
          */
 
-        bNstEner = do_per_step(step,ir->nstcalcenergy);
+        if (EI_VV(ir->eI) && (!bInitStep)) {  /* for vv, the first half actually corresponds to the last step */
+            bNstEner = do_per_step(step-1,ir->nstcalcenergy);  
+        } else {
+            bNstEner = do_per_step(step,ir->nstcalcenergy);  
+        }
         bCalcEnerPres =
             (bNstEner ||
              (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
+
         bExpandedEnsemble =  ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && 
                               (bDoFEP) && (step > 0));
         
@@ -2127,6 +2132,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
                 bPres = TRUE;
                 bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
+                if (bNstEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
+                {
+                    bSumEkinhOld = TRUE;
+                }
                 compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                 wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                 constr,NULL,FALSE,state->box,
@@ -2529,7 +2538,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,NULL,FALSE,lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                    cglo_flags | CGLO_TEMPERATURE    
+                                    cglo_flags | CGLO_TEMPERATURE   
                         );
                     wallcycle_start(wcycle,ewcUPDATE);
                     trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ4);            
