@@ -81,7 +81,6 @@
 #include "xtcio.h"
 #include "copyrite.h"
 #include "pull_rotation.h"
-#include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "gmx_wallcycle.h"
@@ -519,7 +518,6 @@ void do_force(FILE *fplog,t_commrec *cr,
      */    
 
     wallcycle_start(wcycle,ewcPP_PMESENDX);
-    GMX_MPE_LOG(ev_send_coordinates_start);
 
     bBS = (inputrec->nwall == 2);
     if (bBS) {
@@ -531,7 +529,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                    mdatoms->nChargePerturbed,lambda,
                    ( flags & GMX_FORCE_VIRIAL),step);
 
-    GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
   }
 #endif /* GMX_MPI */
@@ -644,7 +641,6 @@ void do_force(FILE *fplog,t_commrec *cr,
      * since that will interfere with the dynamic load balancing.
      */
     wallcycle_start(wcycle,ewcFORCE);
-    GMX_MPE_LOG(ev_forcecycles_start);
 
     if (bDoForces)
     {
@@ -655,7 +651,6 @@ void do_force(FILE *fplog,t_commrec *cr,
             if (flags & GMX_FORCE_VIRIAL)
             {
                 fr->f_novirsum = fr->f_novirsum_alloc;
-                GMX_BARRIER(cr->mpi_comm_mygroup);
                 if (fr->bDomDec)
                 {
                     clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
@@ -664,7 +659,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                 {
                     clear_rvecs(homenr,fr->f_novirsum+start);
                 }
-                GMX_BARRIER(cr->mpi_comm_mygroup);
             }
             else
             {
@@ -691,8 +685,6 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
 
         clear_rvec(fr->vir_diag_posres);
-
-        GMX_BARRIER(cr->mpi_comm_mygroup);
     }
     if (inputrec->ePull == epullCONSTRAINT)
     {
@@ -738,7 +730,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                       flags,&cycles_pme);
     
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
-    GMX_BARRIER(cr->mpi_comm_mygroup);
     
     if (ed)
     {

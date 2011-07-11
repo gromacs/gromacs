@@ -62,7 +62,6 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "qmmm.h"
-#include "mpelogging.h"
 
 
 void ns(FILE *fp,
@@ -86,7 +85,7 @@ void ns(FILE *fp,
   char   *ptr;
   int    nsearch;
 
-  GMX_MPE_LOG(ev_ns_start);
+
   if (!fr->ns.nblist_initialized)
   {
       init_neighbor_list(fp, fr, md->homenr);
@@ -109,8 +108,6 @@ void ns(FILE *fp,
   */
   if (fr->ns.dump_nl > 0)
     dump_nblist(fp,cr,fr,fr->ns.dump_nl);
-
-  GMX_MPE_LOG(ev_ns_finish);
 }
 
 void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
@@ -156,7 +153,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
-    GMX_MPE_LOG(ev_force_start);
+
     set_pbc(&pbc,fr->ePBC,box);
     
     /* Reset box */
@@ -181,7 +178,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
     
     /* Call the short range functions all in one go. */
-    GMX_MPE_LOG(ev_do_fnbf_start);
     
     dvdlambda = 0;
     
@@ -299,8 +295,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
     debug_gmx();
     
-    GMX_MPE_LOG(ev_do_fnbf_finish);
-    
     if (debug)
     {
         pr_rvecs(debug,0,"fshift after SR",fr->fshift,SHIFTS);
@@ -340,7 +334,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     
     if (flags & GMX_FORCE_BONDED)
     {
-        GMX_MPE_LOG(ev_calc_bonds_start);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
@@ -373,7 +366,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             destroy_enerdata(&ed_lam);
         }
         debug_gmx();
-        GMX_MPE_LOG(ev_calc_bonds_finish);
     }
 
     where();
@@ -578,8 +570,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
     }
     
-    GMX_MPE_LOG(ev_force_finish);
-
 }
 
 void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)

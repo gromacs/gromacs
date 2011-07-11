@@ -74,7 +74,6 @@
 #include "mdatoms.h"
 #include "repl_ex.h"
 #include "qmmm.h"
-#include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "topsort.h"
@@ -681,8 +680,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         wallcycle_start(wcycle,ewcSTEP);
 
-        GMX_MPE_LOG(ev_timestep1);
-
         if (bRerunMD) {
             if (rerun_fr.bStep) {
                 step = rerun_fr.step;
@@ -935,8 +932,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
 
-        GMX_MPE_LOG(ev_timestep2);
-
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
          * or at the last step (but not when we do not want confout),
@@ -1020,8 +1015,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
-    
-        GMX_BARRIER(cr->mpi_comm_mygroup);
         
         if (bTCR)
         {
@@ -1190,8 +1183,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
             }
             enerd->term[F_DHDL_CON] += dvdl;
-            
-            GMX_MPE_LOG(ev_timestep1);
         }
     
         /* MRS -- now done iterating -- compute the conserved quantity */
@@ -1217,8 +1208,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * the update.
          * for RerunMD t is read from input trajectory
          */
-        GMX_MPE_LOG(ev_output_start);
-
         mdof_flags = 0;
         if (do_per_step(step,ir->nstxout)) { mdof_flags |= MDOF_X; }
         if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
@@ -1296,7 +1285,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             wallcycle_stop(wcycle,ewcTRAJ);
         }
-        GMX_MPE_LOG(ev_output_finish);
         
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV) 
@@ -1419,7 +1407,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                so scroll down for that logic */
             
             /* #########   START SECOND UPDATE STEP ################# */
-            GMX_MPE_LOG(ev_update_start);
             /* Box is changed in update() when we do pressure coupling,
              * but we should still use the old box for energy corrections and when
              * writing it to the energy file, so it matches the trajectory files for
@@ -1538,9 +1525,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* Need to unshift here */
                 unshift_self(graph,state->box,state->x);
             }
-            
-            GMX_BARRIER(cr->mpi_comm_mygroup);
-            GMX_MPE_LOG(ev_update_finish);
 
             if (vsite != NULL) 
             {

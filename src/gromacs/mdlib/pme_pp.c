@@ -57,8 +57,6 @@
 #include "tmpi.h"
 #endif
 
-#include "mpelogging.h"
-
 #define PP_PME_CHARGE   (1<<0)
 #define PP_PME_CHARGEB  (1<<1)
 #define PP_PME_COORD    (1<<2)
