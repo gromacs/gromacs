@@ -545,6 +545,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, gmx_bool bMDPforma
     PR("wl-scale",fepvals->wl_scale);
     PR("init-wl-delta",fepvals->init_wl_delta);
     PR("wl-ratio",fepvals->wl_ratio);
+    PS("bWLoneovert",BOOL(fepvals->bWLoneovert));
     PI("nstfep",fepvals->nstfep);
     PI("lmc-seed",fepvals->lmc_seed);
     PR("mc-temperature",fepvals->mc_temp);

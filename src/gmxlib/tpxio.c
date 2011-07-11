@@ -281,6 +281,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
           bDum=gmx_fio_ndo_real(fio,fepvals->init_lambda_weights,fepvals->n_lambda);
           gmx_fio_do_gmx_bool(fio,fepvals->bInit_weights);
       }
+      gmx_fio_do_gmx_bool(fio,fepvals->bWLoneovert);
   }
   else if (file_version >= 64) 
   {
@@ -659,7 +660,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
      * berendsen temperature coupling, respectively.
      */
     if (file_version >= 74) {
-        gmx_fio_do_int(fio,ir->bPrintNHChains);
+        gmx_fio_do_gmx_bool(fio,ir->bPrintNHChains);
     }
     if (file_version >= 71)
     {
