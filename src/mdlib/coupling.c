@@ -669,20 +669,19 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         /* simple brute force version */
         nrandom = 0;
 
-        if (rate > 0.01)  { /* if the rate is relatively high, use a standard method, if low rate, use poisson */
-            for (i=0;i<md->homenr;i++) {         
-                if (gmx_rng_uniform_real(rng)<rate) {  /* question -- what is the precision of this? If not high 
-                                                          precision, low rates may not be represented */
-                    randatom[i] = TRUE;
-                    nrandom++;
-                }
-            }
-        } else {
-            /* poisson distributions approxmation, more efficient for low rates, fewer random numbers */
+        if ((rate < 0.05) && (md->homenr > 50)) { /* if the rate is relatively high, use a standard method, if low rate, use poisson */
+            /* poisson distributions approxmation, more efficient for low rates, fewer random numbers required */
             nrandom = poisson_variate(md->homenr*rate,rng);  /* how many do we randomize? Use Poisson. */
             
             for (i=0;i<nrandom;i++) {
                 randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;  
+            }
+        } else {
+            for (i=0;i<md->homenr;i++) {         
+                if (gmx_rng_uniform_real(rng)<rate) {  
+                    randatom[i] = TRUE;
+                    nrandom++;
+                }
             }
         }
 
