@@ -271,7 +271,7 @@ static gmx_bool inhomogeneous_z(const t_inputrec *ir)
 }
 
 /* Avoid integer overflows */
-static float comm_vol(int npme, int a, int b, int c)
+static float comm_pme_cost_vol(int npme, int a, int b, int c)
 {
     float comm_vol;
 
@@ -430,7 +430,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
             temp *= ir->nky;
             temp *= ir->nkz;
             temp /= nk;
-            comm += temp;
+            comm_pme += temp;
 /* Old line comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk; */
         }
     }
@@ -441,8 +441,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
      * are similar and therefore these formulas also prefer load balance
      * in the FFT and pme_solve calculation.
      */
-    comm_pme += comm_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
-    comm_pme += comm_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
+    comm_pme += comm_pme_cost_vol(npme[YY], ir->nky, ir->nkz, ir->nkx);
+    comm_pme += comm_pme_cost_vol(npme[XX], ir->nkx, ir->nky, ir->nkz);
     
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
