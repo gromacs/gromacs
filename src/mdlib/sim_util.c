@@ -394,6 +394,107 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
 }
 
+static void posres_wrapper(FILE *fplog,
+                           gmx_bool bSepDVDL,
+                           t_inputrec *ir,
+                           t_nrnb *nrnb,
+                           gmx_localtop_t *top,
+                           matrix box,rvec x[],
+                           rvec f[],
+                           gmx_enerdata_t *enerd,
+                           real lambda,
+                           t_forcerec *fr)
+{
+    t_pbc pbc;
+    real  v,dvdl;
+
+    /* Position restraints always require full pbc */
+    set_pbc(&pbc,ir->ePBC,box);
+    v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+               top->idef.iparams_posres,
+               (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
+               ir->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
+               fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+    if (bSepDVDL)
+    {
+        fprintf(fplog,sepdvdlformat,
+                interaction_function[F_POSRES].longname,v,dvdl);
+    }
+    enerd->term[F_POSRES] += v;
+    /* This linear lambda dependence assumption is only correct
+     * when only k depends on lambda,
+     * not when the reference position depends on lambda.
+     * grompp checks for this.
+     */
+    enerd->dvdl_lin += dvdl;
+    inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+}
+
+static void pull_potential_wrapper(FILE *fplog,
+                                   gmx_bool bSepDVDL,
+                                   t_commrec *cr,
+                                   t_inputrec *ir,
+                                   matrix box,rvec x[],
+                                   rvec f[],
+                                   tensor vir_force,
+                                   t_mdatoms *mdatoms,
+                                   gmx_enerdata_t *enerd,
+                                   real lambda,
+                                   double t)
+{
+    t_pbc  pbc;
+    real   dvdl;
+
+    /* Calculate the center of mass forces, this requires communication,
+     * which is why pull_potential is called close to other communication.
+     * The virial contribution is calculated directly,
+     * which is why we call pull_potential after calc_virial.
+     */
+    set_pbc(&pbc,ir->ePBC,box);
+    dvdl = 0; 
+    enerd->term[F_COM_PULL] =
+        pull_potential(ir->ePull,ir->pull,mdatoms,&pbc,
+                       cr,t,lambda,x,f,vir_force,&dvdl);
+    if (bSepDVDL)
+    {
+        fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
+    }
+    enerd->dvdl_lin += dvdl;
+}
+
+static void pme_receive_force_ener(FILE *fplog,
+                                   gmx_bool bSepDVDL,
+                                   t_commrec *cr,
+                                   gmx_wallcycle_t wcycle,
+                                   gmx_enerdata_t *enerd,
+                                   t_forcerec *fr)
+{
+    real   e,v,dvdl;    
+    float  cycles_ppdpme,cycles_seppme;
+
+    cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
+    dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
+
+    /* In case of node-splitting, the PP nodes receive the long-range 
+     * forces, virial and energy from the PME nodes here.
+     */    
+    wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
+    dvdl = 0;
+    gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
+                      &cycles_seppme);
+    if (bSepDVDL)
+    {
+        fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
+    }
+    enerd->term[F_COUL_RECIP] += e;
+    enerd->dvdl_lin += dvdl;
+    if (wcycle)
+    {
+        dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
+    }
+    wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
+}
+
 static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 			       gmx_large_int_t step,real pforce,rvec *x,rvec *f)
 {
@@ -413,6 +514,61 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
   }
 }
 
+static void post_process_forces(FILE *fplog,
+                                t_commrec *cr,
+                                gmx_large_int_t step,
+                                t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                                gmx_localtop_t *top,
+                                matrix box,rvec x[],
+                                rvec f[],
+                                tensor vir_force,
+                                t_mdatoms *mdatoms,
+                                t_graph *graph,
+                                t_forcerec *fr,gmx_vsite_t *vsite,
+                                int flags)
+{
+    if (fr->bF_NoVirSum)
+    {
+        if (vsite)
+        {
+            /* Spread the mesh force on virtual sites to the other particles... 
+             * This is parallellized. MPI communication is performed
+             * if the constructing atoms aren't local.
+             */
+            wallcycle_start(wcycle,ewcVSITESPREAD);
+            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
+                           &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+            wallcycle_stop(wcycle,ewcVSITESPREAD);
+        }
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            /* Now add the forces, this is local */
+            if (fr->bDomDec)
+            {
+                sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
+            }
+            else
+            {
+                sum_forces(mdatoms->start,mdatoms->start+mdatoms->homenr,
+                           f,fr->f_novirsum);
+            }
+            if (EEL_FULL(fr->eeltype))
+            {
+                /* Add the mesh contribution to the virial */
+                m_add(vir_force,fr->vir_el_recip,vir_force);
+            }
+            if (debug)
+            {
+                pr_rvecs(debug,0,"vir_force",vir_force,DIM);
+            }
+        }
+    }
+    
+    if (fr->print_force >= 0)
+    {
+        print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
+    }
+}
 
 void do_force(FILE *fplog,t_commrec *cr,
               t_inputrec *inputrec,
@@ -439,8 +595,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     matrix boxs;
     rvec   vzero,box_diag;
     real   e,v,dvdl;
-    t_pbc  pbc;
-    float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
+    float  cycles_pme,cycles_force;
 
 #ifdef GMX_GPU    
     cu_timings_t *gpu_t = get_gpu_timings(fr->gpu_nb);
@@ -809,26 +964,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        /* Position restraints always require full pbc */
-        set_pbc(&pbc,inputrec->ePBC,box);
-        v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
-                   top->idef.iparams_posres,
-                   (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
-                   fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
-        if (bSepDVDL)
-        {
-            fprintf(fplog,sepdvdlformat,
-                    interaction_function[F_POSRES].longname,v,dvdl);
-        }
-        enerd->term[F_POSRES] += v;
-        /* This linear lambda dependence assumption is only correct
-         * when only k depends on lambda,
-         * not when the reference position depends on lambda.
-         * grompp checks for this.
-         */
-        enerd->dvdl_lin += dvdl;
-        inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+        posres_wrapper(fplog,bSepDVDL,inputrec,nrnb,top,box,x,
+                       f,enerd,lambda,fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
@@ -1036,91 +1173,27 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
-        /* Calculate the center of mass forces, this requires communication,
-         * which is why pull_potential is called close to other communication.
-         * The virial contribution is calculated directly,
-         * which is why we call pull_potential after calc_virial.
-         */
-        set_pbc(&pbc,inputrec->ePBC,box);
-        dvdl = 0; 
-        enerd->term[F_COM_PULL] =
-            pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-                           cr,t,lambda,x,f,vir_force,&dvdl);
-        if (bSepDVDL)
-        {
-            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
-        }
-        enerd->dvdl_lin += dvdl;
+        pull_potential_wrapper(fplog,bSepDVDL,cr,inputrec,box,x,
+                               f,vir_force,mdatoms,enerd,lambda,t);
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
-        cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
-        dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
-
         /* In case of node-splitting, the PP nodes receive the long-range 
          * forces, virial and energy from the PME nodes here.
          */    
-        wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-        dvdl = 0;
-        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
-                          &cycles_seppme);
-        if (bSepDVDL)
-        {
-            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
-        }
-        enerd->term[F_COUL_RECIP] += e;
-        enerd->dvdl_lin += dvdl;
-        if (wcycle)
-        {
-            dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
-        }
-        wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
+        pme_receive_force_ener(fplog,bSepDVDL,cr,wcycle,enerd,fr);
     }
 
-    if (bDoForces && fr->bF_NoVirSum)
+    if (bDoForces)
     {
-        if (vsite)
-        {
-            /* Spread the mesh force on virtual sites to the other particles... 
-             * This is parallellized. MPI communication is performed
-             * if the constructing atoms aren't local.
-             */
-            wallcycle_start(wcycle,ewcVSITESPREAD);
-            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
-                           &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
-            wallcycle_stop(wcycle,ewcVSITESPREAD);
-        }
-        if (flags & GMX_FORCE_VIRIAL)
-        {
-            /* Now add the forces, this is local */
-            if (fr->bDomDec)
-            {
-                sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
-            }
-            else
-            {
-                sum_forces(start,start+homenr,f,fr->f_novirsum);
-            }
-            if (EEL_FULL(fr->eeltype))
-            {
-                /* Add the mesh contribution to the virial */
-                m_add(vir_force,fr->vir_el_recip,vir_force);
-            }
-            if (debug)
-            {
-                pr_rvecs(debug,0,"vir_force",vir_force,DIM);
-            }
-        }
+        post_process_forces(fplog,cr,step,nrnb,wcycle,
+                            top,box,x,f,vir_force,mdatoms,graph,fr,vsite,
+                            flags);
     }
     
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(inputrec->opts),enerd);
-    
-    if (fr->print_force >= 0 && bDoForces)
-    {
-        print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
-    }
 }
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
