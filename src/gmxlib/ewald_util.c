@@ -105,7 +105,6 @@ real ewald_LRcorrection(FILE *fplog,
 #else
   double  isp=0.564189583547756;
 #endif
-  int     niat;
   gmx_bool    bFreeEnergy = (chargeB != NULL);
   gmx_bool    bMolPBC = fr->bMolPBC;
 
@@ -159,15 +158,10 @@ real ewald_LRcorrection(FILE *fplog,
     fprintf(debug,"mutot   = %8.3f  %8.3f  %8.3f\n",
 	    mutot[0][XX],mutot[0][YY],mutot[0][ZZ]);
   }
-
-  if (DOMAINDECOMP(cr))
-    niat = excl->nr;
-  else
-    niat = end; 
       
   clear_mat(dxdf);
   if (!bFreeEnergy) {
-    for(i=start; (i<niat); i++) {
+    for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
       i1  = excl->index[i];
@@ -269,7 +263,7 @@ real ewald_LRcorrection(FILE *fplog,
       }
     }
   } else {
-    for(i=start; (i<niat); i++) {
+    for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
       qiB = chargeB[i]*one_4pi_eps;
