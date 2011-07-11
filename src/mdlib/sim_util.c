@@ -570,7 +570,7 @@ static void post_process_forces(FILE *fplog,
     }
 }
 
-void do_force(FILE *fplog,t_commrec *cr,
+void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
               t_inputrec *inputrec,
               gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
@@ -608,25 +608,18 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     clear_mat(vir_force);
 
-    if (PARTDECOMP(cr))
+    cg0 = 0;
+    if (DOMAINDECOMP(cr))
     {
-        pd_cg_range(cr,&cg0,&cg1);
+        cg1 = cr->dd->ncg_tot;
     }
     else
     {
-        cg0 = 0;
-        if (DOMAINDECOMP(cr))
-        {
-            cg1 = cr->dd->ncg_tot;
-        }
-        else
-        {
-            cg1 = top->cgs.nr;
-        }
-        if (fr->n_tpi > 0)
-        {
-            cg1--;
-        }
+        cg1 = top->cgs.nr;
+    }
+    if (fr->n_tpi > 0)
+    {
+        cg1--;
     }
 
     bStateChanged = (flags & GMX_FORCE_STATECHANGED);
@@ -640,7 +633,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (bStateChanged)
     {
         update_forcerec(fplog,fr,box);
-        
+
         /* Calculate total (local) dipole moment in a temporary common array. 
          * This makes it possible to sum them over nodes faster.
          */
@@ -648,61 +641,61 @@ void do_force(FILE *fplog,t_commrec *cr,
                 x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
                 mu,mu+DIM);
     }
-  
-  if (fr->ePBC != epbcNONE) { 
-    /* Compute shift vectors every step,
-     * because of pressure coupling or box deformation!
-     */
-    if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
-      calc_shifts(box,fr->shift_vec);
-    
-    if (bCalcCGCM) { 
-      put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
-			       &(top->cgs),x,fr->cg_cm);
-      inc_nrnb(nrnb,eNR_CGCM,homenr);
-      inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
+
+    if (fr->ePBC != epbcNONE) { 
+        /* Compute shift vectors every step,
+         * because of pressure coupling or box deformation!
+         */
+        if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+            calc_shifts(box,fr->shift_vec);
+
+        if (bCalcCGCM) { 
+            put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
+                    &(top->cgs),x,fr->cg_cm);
+            inc_nrnb(nrnb,eNR_CGCM,homenr);
+            inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
+        } 
+        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
+            unshift_self(graph,box,x);
+        }
     } 
-    else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
-      unshift_self(graph,box,x);
+    else if (bCalcCGCM) {
+        calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
+        inc_nrnb(nrnb,eNR_CGCM,homenr);
     }
-  } 
-  else if (bCalcCGCM) {
-    calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
-    inc_nrnb(nrnb,eNR_CGCM,homenr);
-  }
-  
-  if (bCalcCGCM) {
-    if (PAR(cr)) {
-      move_cgcm(fplog,cr,fr->cg_cm);
+
+    if (bCalcCGCM) {
+        if (PAR(cr)) {
+            move_cgcm(fplog,cr,fr->cg_cm);
+        }
+        if (gmx_debug_at)
+            pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
     }
-    if (gmx_debug_at)
-      pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
-  }
 
 #ifdef GMX_MPI
-  if (!(cr->duty & DUTY_PME)) {
-    /* Send particle coordinates to the pme nodes.
-     * Since this is only implemented for domain decomposition
-     * and domain decomposition does not use the graph,
-     * we do not need to worry about shifting.
-     */    
+    if (!(cr->duty & DUTY_PME)) {
+        /* Send particle coordinates to the pme nodes.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */    
 
-    wallcycle_start(wcycle,ewcPP_PMESENDX);
-    GMX_MPE_LOG(ev_send_coordinates_start);
+        wallcycle_start(wcycle,ewcPP_PMESENDX);
+        GMX_MPE_LOG(ev_send_coordinates_start);
 
-    bBS = (inputrec->nwall == 2);
-    if (bBS) {
-      copy_mat(box,boxs);
-      svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+        bBS = (inputrec->nwall == 2);
+        if (bBS) {
+            copy_mat(box,boxs);
+            svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+        }
+
+        gmx_pme_send_x(cr,bBS ? boxs : box,x,
+                mdatoms->nChargePerturbed,lambda,
+                ( flags & GMX_FORCE_VIRIAL),step);
+
+        GMX_MPE_LOG(ev_send_coordinates_finish);
+        wallcycle_stop(wcycle,ewcPP_PMESENDX);
     }
-
-    gmx_pme_send_x(cr,bBS ? boxs : box,x,
-                   mdatoms->nChargePerturbed,lambda,
-                   ( flags & GMX_FORCE_VIRIAL),step);
-
-    GMX_MPE_LOG(ev_send_coordinates_finish);
-    wallcycle_stop(wcycle,ewcPP_PMESENDX);
-  }
 #endif /* GMX_MPI */
 
     /* Communicate coordinates and sum dipole if necessary */
@@ -713,16 +706,34 @@ void do_force(FILE *fplog,t_commrec *cr,
         {
             dd_move_x(cr->dd,box,x);
         }
-        else
-        {
-            move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
-        }
+
         /* When we don't need the total dipole we sum it in global_stat */
         if (bStateChanged && NEED_MUTOT(*inputrec))
         {
             gmx_sumd(2*DIM,mu,cr);
         }
         wallcycle_stop(wcycle,ewcMOVEX);
+    }
+
+    if (bNS)
+    {
+        if (!fr->bDomDec)
+        {
+            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
+                    0,vzero,box_diag,
+                    0,mdatoms->homenr,x,
+                    0,NULL,
+                    fr->nbat);
+        }
+        else
+        {
+            gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
+                    x,fr->nbat);
+        }
+
+        gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
+
+        gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
     }
 
     if (bStateChanged)
@@ -762,98 +773,55 @@ void do_force(FILE *fplog,t_commrec *cr,
             mk_mshift(fplog,graph,fr->ePBC,box,x);
         }
 
-        /* Reset long range forces if necessary */
-        if (fr->bTwinRange)
+        if (top->cgs.index[top->cgs.nr] > top->cgs.nr)
         {
-            /* Reset the (long-range) forces if necessary */
-            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
+            put_atoms_in_box(box,mdatoms->homenr,x);
         }
 
-        if (inputrec->cutoff_scheme == ecutsOLD)
-        {
-            /* Do the actual neighbour searching and if twin range electrostatics
-            * also do the calculation of long range forces and energies.
-            */
-            dvdl = 0; 
-            ns(fplog,fr,x,box,
-            groups,&(inputrec->opts),top,mdatoms,
-            cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
-            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
-            if (bSepDVDL)
-            {
-                fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
-            }
-            enerd->dvdl_lin += dvdl;
-        }
-        else
-        {
-            if (top->cgs.index[top->cgs.nr] > top->cgs.nr)
-            {
-                put_atoms_in_box(box,mdatoms->homenr,x);
-            }
-
-            clear_rvec(vzero);
-            box_diag[XX] = box[XX][XX];
-            box_diag[YY] = box[YY][YY];
-            box_diag[ZZ] = box[ZZ][ZZ];
-
-            if (!fr->bDomDec)
-            {
-                gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
-                                         0,vzero,box_diag,
-                                         0,mdatoms->homenr,x,
-                                         0,NULL,
-                                         fr->nbat);
-            }
-            else
-            {
-                gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
-                                                  x,fr->nbat);
-            }
-
-            gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
-
-            gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
+        clear_rvec(vzero);
+        box_diag[XX] = box[XX][XX];
+        box_diag[YY] = box[YY][YY];
+        box_diag[ZZ] = box[ZZ][ZZ];
 
 #ifdef GMX_GPU
-            /* initialize the gpu atom datastructures */
-            if (fr->useGPU)
-            {
-                init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->streamGPU);
-            }
+        /* initialize the gpu atom datastructures */
+        if (fr->useGPU)
+        {
+            init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->streamGPU);
+        }
 #endif
 
+        gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
+                                 &top->excls,
+                                 fr->rvdw,fr->rlist,
+                                 700,
+                                 FALSE,fr->nnbl,fr->nbl,
+                                 fr->useGPU || fr->emulateGPU);
+#ifdef GMX_GPU
+        /* initialize GPU local neighbor list */
+        if (fr->useGPU)
+        {
+            init_cudata_nblist(fr->gpu_nb, fr->nbl[0], FALSE, fr->streamGPU);
+        }
+#endif
+        if (DOMAINDECOMP(cr))
+        {
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
                                      fr->rvdw,fr->rlist,
                                      700,
-                                     FALSE,fr->nnbl,fr->nbl,
+                                     TRUE,fr->nnbl_nl,fr->nbl_nl,
                                      fr->useGPU || fr->emulateGPU);
 #ifdef GMX_GPU
-            /* initialize GPU local neighbor list */
+            /* initialize GPU non-local neighbor list */
             if (fr->useGPU)
             {
-                init_cudata_nblist(fr->gpu_nb, fr->nbl[0], FALSE, fr->streamGPU);
+                init_cudata_nblist(fr->gpu_nb, fr->nbl_nl[0], TRUE, fr->streamGPU);
             }
 #endif
-            if (DOMAINDECOMP(cr))
-            {
-                gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
-                                         &top->excls,
-                                         fr->rcut_nsbox,fr->rlist_nsbox,
-                                         700,
-                                         TRUE,fr->nnbl_nl,fr->nbl_nl,
-                                         fr->useGPU || fr->emulateGPU);
-#ifdef GMX_GPU
-                /* initialize GPU non-local neighbor list */
-                if (fr->useGPU)
-                {
-                    init_cudata_nblist(fr->gpu_nb, fr->nbl_nl[0], TRUE, fr->streamGPU);
-                }
-#endif
-            }
         }
-            wallcycle_stop(wcycle,ewcNS); // FIXME should this counter exclude the GPU copies?
+
+        wallcycle_stop(wcycle,ewcNS); // FIXME should this counter exclude the GPU copies?
     }
 
     if (fr->nbs != NULL)
@@ -894,7 +862,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
 #endif /* GMX_GPU */
   
-	
+
+    /* XXX I guess this can go out as it's not supported  */
     if (inputrec->implicit_solvent && bNS) 
     {
         make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
@@ -992,7 +961,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                       ((fr->useGPU || fr->emulateGPU) ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
 
-    if (inputrec->cutoff_scheme == ecutsVERLET && fr->nbl[0]->simple)
+    if (fr->nbl[0]->simple)
     {
         /* Maybe we should move this into do_force_lowlevel */
         nb_cell_kernel(fr->nnbl,fr->nbl,
@@ -1114,6 +1083,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (PAR(cr))
         {
             wallcycle_start(wcycle,ewcMOVEF);
+            /* FIXME: remove PD branch this */
             if (DOMAINDECOMP(cr))
             {
                 dd_move_f(cr->dd,f,fr->fshift);
@@ -1135,14 +1105,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                      * since f_twin is already included in f.
                      */
                     dd_move_f(cr->dd,fr->f_twin,NULL);
-                }
-            }
-            else
-            {
-                pd_move_f(cr,f,nrnb);
-                if (bSepLRF)
-                {
-                    pd_move_f(cr,fr->f_twin,nrnb);
                 }
             }
             wallcycle_stop(wcycle,ewcMOVEF);
@@ -1200,6 +1162,489 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(inputrec->opts),enerd);
 }
+
+void do_force_cutsOLD(FILE *fplog,t_commrec *cr,
+              t_inputrec *inputrec,
+              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+              gmx_localtop_t *top,
+              gmx_mtop_t *mtop,
+              gmx_groups_t *groups,
+              matrix box,rvec x[],history_t *hist,
+              rvec f[],
+              tensor vir_force,
+              t_mdatoms *mdatoms,
+              gmx_enerdata_t *enerd,t_fcdata *fcd,
+              real lambda,t_graph *graph,
+              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              double t,FILE *field,gmx_edsam_t ed,
+              gmx_bool bBornRadii,
+              int flags)
+{
+    int    cg0,cg1,i,j;
+    int    start,homenr;
+    double mu[2*DIM]; 
+    gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF;
+    matrix boxs;
+    rvec   vzero,box_diag;
+    real   e,v,dvdl;
+    float  cycles_pme,cycles_force;
+
+    start  = mdatoms->start;
+    homenr = mdatoms->homenr;
+
+    bSepDVDL = (fr->bSepDVDL && do_per_step(step,inputrec->nstlog));
+
+    clear_mat(vir_force);
+
+    if (PARTDECOMP(cr))
+    {
+        pd_cg_range(cr,&cg0,&cg1);
+    }
+    else
+    {
+        cg0 = 0;
+        if (DOMAINDECOMP(cr))
+        {
+            cg1 = cr->dd->ncg_tot;
+        }
+        else
+        {
+            cg1 = top->cgs.nr;
+        }
+        if (fr->n_tpi > 0)
+        {
+            cg1--;
+        }
+    }
+
+    bStateChanged = (flags & GMX_FORCE_STATECHANGED);
+    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE); 
+    bFillGrid     = (bNS && bStateChanged);
+    bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
+    bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
+    bDoForces     = (flags & GMX_FORCE_FORCES);
+    bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
+
+    if (bStateChanged)
+    {
+        update_forcerec(fplog,fr,box);
+
+        /* Calculate total (local) dipole moment in a temporary common array. 
+         * This makes it possible to sum them over nodes faster.
+         */
+        calc_mu(start,homenr,
+                x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
+                mu,mu+DIM);
+    }
+
+    if (fr->ePBC != epbcNONE) { 
+        /* Compute shift vectors every step,
+         * because of pressure coupling or box deformation!
+         */
+        if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+            calc_shifts(box,fr->shift_vec);
+
+        if (bCalcCGCM) { 
+            put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
+                    &(top->cgs),x,fr->cg_cm);
+            inc_nrnb(nrnb,eNR_CGCM,homenr);
+            inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
+        } 
+        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
+            unshift_self(graph,box,x);
+        }
+    } 
+    else if (bCalcCGCM) {
+        calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
+        inc_nrnb(nrnb,eNR_CGCM,homenr);
+    }
+
+    if (bCalcCGCM) {
+        if (PAR(cr)) {
+            move_cgcm(fplog,cr,fr->cg_cm);
+        }
+        if (gmx_debug_at)
+            pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
+    }
+
+#ifdef GMX_MPI
+    if (!(cr->duty & DUTY_PME)) {
+        /* Send particle coordinates to the pme nodes.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */    
+
+        wallcycle_start(wcycle,ewcPP_PMESENDX);
+        GMX_MPE_LOG(ev_send_coordinates_start);
+
+        bBS = (inputrec->nwall == 2);
+        if (bBS) {
+            copy_mat(box,boxs);
+            svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+        }
+
+        gmx_pme_send_x(cr,bBS ? boxs : box,x,
+                mdatoms->nChargePerturbed,lambda,
+                ( flags & GMX_FORCE_VIRIAL),step);
+
+        GMX_MPE_LOG(ev_send_coordinates_finish);
+        wallcycle_stop(wcycle,ewcPP_PMESENDX);
+    }
+#endif /* GMX_MPI */
+
+    /* Communicate coordinates and sum dipole if necessary */
+    if (PAR(cr))
+    {
+        wallcycle_start(wcycle,ewcMOVEX);
+        if (DOMAINDECOMP(cr))
+        {
+            dd_move_x(cr->dd,box,x);
+        }
+        else
+        {
+            move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
+        }
+        /* When we don't need the total dipole we sum it in global_stat */
+        if (bStateChanged && NEED_MUTOT(*inputrec))
+        {
+            gmx_sumd(2*DIM,mu,cr);
+        }
+        wallcycle_stop(wcycle,ewcMOVEX);
+    }
+
+    if (bStateChanged)
+    {
+        for(i=0; i<2; i++)
+        {
+            for(j=0;j<DIM;j++)
+            {
+                fr->mu_tot[i][j] = mu[i*DIM + j];
+            }
+        }
+    }
+    if (fr->efep == efepNO)
+    {
+        copy_rvec(fr->mu_tot[0],mu_tot);
+    }
+    else
+    {
+        for(j=0; j<DIM; j++)
+        {
+            mu_tot[j] =
+                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+        }
+    }
+
+    /* Reset energies */
+    reset_enerdata(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));
+    clear_rvecs(SHIFTS,fr->fshift);
+
+    if (bNS)
+    {
+        wallcycle_start(wcycle,ewcNS);
+        
+        if (graph && bStateChanged)
+        {
+            /* Calculate intramolecular shift vectors to make molecules whole */
+            mk_mshift(fplog,graph,fr->ePBC,box,x);
+        }
+
+        /* Reset long range forces if necessary */
+        if (fr->bTwinRange)
+        {
+            /* Reset the (long-range) forces if necessary */
+            clear_rvecs(fr->natoms_force_constr,bSepLRF ? fr->f_twin : f);
+        }
+
+        /* Do the actual neighbour searching and if twin range electrostatics
+        * also do the calculation of long range forces and energies.
+        */
+        dvdl = 0; 
+        ns(fplog,fr,x,box,
+        groups,&(inputrec->opts),top,mdatoms,
+        cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+        bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
+        if (bSepDVDL)
+        {
+            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
+        }
+        enerd->dvdl_lin += dvdl;
+
+        wallcycle_stop(wcycle,ewcNS);
+    }
+
+    if (inputrec->implicit_solvent && bNS) 
+    {
+        make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
+                       x,box,fr,&top->idef,graph,fr->born);
+    }
+
+    if (DOMAINDECOMP(cr))
+    {
+        if (!(cr->duty & DUTY_PME))
+        {
+            wallcycle_start(wcycle,ewcPPDURINGPME);
+            dd_force_flop_start(cr->dd,nrnb);
+        }
+    }
+
+    /* Start the force cycle counter.
+     * This counter is stopped in do_forcelow_level.
+     * No parallel communication should occur while this counter is running,
+     * since that will interfere with the dynamic load balancing.
+     */
+    wallcycle_start(wcycle,ewcFORCE);
+    
+    if (bDoForces)
+    {
+        /* Reset forces for which the virial is calculated separately:
+         * PME/Ewald forces if necessary */
+        if (fr->bF_NoVirSum) 
+        {
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                fr->f_novirsum = fr->f_novirsum_alloc;
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                if (fr->bDomDec)
+                {
+                    clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
+                }
+                else
+                {
+                    clear_rvecs(homenr,fr->f_novirsum+start);
+                }
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+            }
+            else
+            {
+                /* We are not calculating the pressure so we do not need
+                 * a separate array for forces that do not contribute
+                 * to the pressure.
+                 */
+                fr->f_novirsum = f;
+            }
+        }
+
+        if (bSepLRF)
+        {
+            /* Add the long range forces to the short range forces */
+            for(i=0; i<fr->natoms_force_constr; i++)
+            {
+                copy_rvec(fr->f_twin[i],f[i]);
+            }
+        }
+        else if (!(fr->bTwinRange && bNS))
+        {
+            /* Clear the short-range forces */
+            clear_rvecs(fr->natoms_force_constr,f);
+        }
+
+        clear_rvec(fr->vir_diag_posres);
+
+        GMX_BARRIER(cr->mpi_comm_mygroup);
+    }
+    if (inputrec->ePull == epullCONSTRAINT)
+    {
+        clear_pull_forces(inputrec->pull);
+    }
+
+    /* update QMMMrec, if necessary */
+    if(fr->bQMMM)
+    {
+        update_QMMMrec(cr,fr,x,mdatoms,box,top);
+    }
+
+    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
+    {
+        posres_wrapper(fplog,bSepDVDL,inputrec,nrnb,top,box,x,
+                       f,enerd,lambda,fr);
+    }
+
+    /* Compute the bonded and non-bonded energies and optionally forces */
+    /* if we use the GPU turn off the nonbonded */
+    do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
+                      cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
+                      x,hist,f,enerd,fcd,mtop,top,fr->born,
+                      &(top->atomtypes),bBornRadii,box,
+                      lambda,graph,&(top->excls),fr->mu_tot,
+                      ((fr->useGPU || fr->emulateGPU) ? flags&~GMX_FORCE_NONBONDED : flags),
+                      &cycles_pme);
+
+
+    cycles_force = wallcycle_stop(wcycle,ewcFORCE);
+    GMX_BARRIER(cr->mpi_comm_mygroup);
+
+    if (ed)
+    {
+        do_flood(fplog,cr,x,f,ed,box,step);
+    }
+
+    if (DOMAINDECOMP(cr))
+    {
+        dd_force_flop_stop(cr->dd,nrnb);
+        if (wcycle)
+        {
+            dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
+        }
+    }
+
+    if (bDoForces)
+    {
+        if (IR_ELEC_FIELD(*inputrec))
+        {
+            /* Compute forces due to electric field */
+            calc_f_el(MASTER(cr) ? field : NULL,
+                      start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
+                      inputrec->ex,inputrec->et,t);
+        }
+
+        /* Communicate the forces */
+        if (PAR(cr))
+        {
+            wallcycle_start(wcycle,ewcMOVEF);
+            if (DOMAINDECOMP(cr))
+            {
+                dd_move_f(cr->dd,f,fr->fshift);
+                /* Do we need to communicate the separate force array
+                 * for terms that do not contribute to the single sum virial?
+                 * Position restraints and electric fields do not introduce
+                 * inter-cg forces, only full electrostatics methods do.
+                 * When we do not calculate the virial, fr->f_novirsum = f,
+                 * so we have already communicated these forces.
+                 */
+                if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+                    (flags & GMX_FORCE_VIRIAL))
+                {
+                    dd_move_f(cr->dd,fr->f_novirsum,NULL);
+                }
+                if (bSepLRF)
+                {
+                    /* We should not update the shift forces here,
+                     * since f_twin is already included in f.
+                     */
+                    dd_move_f(cr->dd,fr->f_twin,NULL);
+                }
+            }
+            else
+            {
+                pd_move_f(cr,f,nrnb);
+                if (bSepLRF)
+                {
+                    pd_move_f(cr,fr->f_twin,nrnb);
+                }
+            }
+            wallcycle_stop(wcycle,ewcMOVEF);
+        }
+
+        /* If we have NoVirSum forces, but we do not calculate the virial,
+         * we sum fr->f_novirum=f later.
+         */
+        if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
+        {
+            wallcycle_start(wcycle,ewcVSITESPREAD);
+            spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
+                           &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+            wallcycle_stop(wcycle,ewcVSITESPREAD);
+
+            if (bSepLRF)
+            {
+                wallcycle_start(wcycle,ewcVSITESPREAD);
+                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,
+                               nrnb,
+                               &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+                wallcycle_stop(wcycle,ewcVSITESPREAD);
+            }
+        }
+
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            /* Calculation of the virial must be done after vsites! */
+            calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
+                        vir_force,graph,box,nrnb,fr,inputrec->ePBC);
+        }
+    }
+
+    if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
+    {
+        pull_potential_wrapper(fplog,bSepDVDL,cr,inputrec,box,x,
+                               f,vir_force,mdatoms,enerd,lambda,t);
+    }
+
+    if (PAR(cr) && !(cr->duty & DUTY_PME))
+    {
+        /* In case of node-splitting, the PP nodes receive the long-range 
+         * forces, virial and energy from the PME nodes here.
+         */
+        pme_receive_force_ener(fplog,bSepDVDL,cr,wcycle,enerd,fr);
+    }
+
+    if (bDoForces)
+    {
+        post_process_forces(fplog,cr,step,nrnb,wcycle,
+                            top,box,x,f,vir_force,mdatoms,graph,fr,vsite,
+                            flags);
+    }
+
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(inputrec->opts),enerd);
+}
+
+void do_force(FILE *fplog,t_commrec *cr,
+              t_inputrec *inputrec,
+              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+              gmx_localtop_t *top,
+              gmx_mtop_t *mtop,
+              gmx_groups_t *groups,
+              matrix box,rvec x[],history_t *hist,
+              rvec f[],
+              tensor vir_force,
+              t_mdatoms *mdatoms,
+              gmx_enerdata_t *enerd,t_fcdata *fcd,
+              real lambda,t_graph *graph,
+              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              double t,FILE *field,gmx_edsam_t ed,
+              gmx_bool bBornRadii,
+              int flags)
+{
+    switch (inputrec->cutoff_scheme)
+    {
+        case ecutsVERLET:
+            do_force_cutsVERLET(fplog, cr, inputrec,
+                                step, nrnb, wcycle,
+                                top, mtop,
+                                groups,
+                                box, x, hist,
+                                f, vir_force,
+                                mdatoms,
+                                enerd, fcd,
+                                lambda, graph,
+                                fr, vsite, mu_tot,
+                                t, field, ed,
+                                bBornRadii,
+                                flags);
+            break;
+        case ecutsOLD:
+             do_force_cutsOLD(fplog, cr, inputrec,
+                              step, nrnb, wcycle,
+                              top, mtop,
+                              groups,
+                              box, x, hist,
+                              f, vir_force,
+                              mdatoms,
+                              enerd, fcd,
+                              lambda, graph,
+                              fr, vsite, mu_tot,
+                              t, field, ed,
+                              bBornRadii,
+                              flags);
+            break;
+        default:
+            gmx_incons("Invalid cuto-off scheme encountered in do_force!");
+    }
+}
+
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                         t_inputrec *ir,t_mdatoms *md,
