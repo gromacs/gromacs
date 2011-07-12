@@ -364,7 +364,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     settle  = &idef->il[F_SETTLE];
     nsettle = settle->nr/2;
 
-#ifdef GMX_OPENMP    
+#ifdef GMX_OPENMP
     if (nsettle > 0)
     {
         nth = omp_get_max_threads();
@@ -383,89 +383,76 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         snew(constr->settle_error,nth);
     }
     
-    if (nth > 1 && (constr->lincsd != NULL || constr->nblocks > 0))
-    {
-        /* First thread does LINCS or SHAKE and no SETTLE */
-        th_ss = 1;
-    }
-    else
-    {
-        /* All threads do SETTLE */
-        th_ss = 0;
-    }
-
     settle_error = -1;
 
-#pragma omp parallel for schedule(static)
-    for(th=0; th<nth; th++)
+    if (constr->lincsd != NULL)
     {
-        if (constr->lincsd != NULL && th == 0)
+        bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
+                              x,xprime,min_proj,box,lambda,dvdlambda,
+                              invdt,v,vir!=NULL,rmdr,
+                              econq,nrnb,
+                              constr->maxwarn,&constr->warncount_lincs);
+        if (!bOK && constr->maxwarn >= 0)
         {
-            bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
-                                  x,xprime,min_proj,box,lambda,dvdlambda,
-                                  invdt,v,vir!=NULL,rmdr,
-                                  econq,nrnb,
-                                  constr->maxwarn,&constr->warncount_lincs);
-            if (!bOK && constr->maxwarn >= 0)
+            if (fplog != NULL)
             {
-                if (fplog != NULL)
-                {
-                    fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-                            econstr_names[econtLINCS],gmx_step_str(step,buf));
-                }
-                bDump = TRUE;
+                fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                        econstr_names[econtLINCS],gmx_step_str(step,buf));
             }
-        }	
-        
-        if (constr->nblocks > 0 && th == 0)
-        {
-            switch (econq) {
-            case (econqCoord):
-                bOK = bshakef(fplog,constr->shaked,
-                              homenr,md->invmass,constr->nblocks,constr->sblock,
-                              idef,ir,box,x,xprime,nrnb,
-                              constr->lagr,lambda,dvdlambda,
-                              invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,
-                              econq,&vetavar);
-                break;
-            case (econqVeloc):
-                bOK = bshakef(fplog,constr->shaked,
-                              homenr,md->invmass,constr->nblocks,constr->sblock,
-                              idef,ir,box,x,min_proj,nrnb,
-                              constr->lagr,lambda,dvdlambda,
-                              invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,
-                              econq,&vetavar);
-                break;
-            default:
-                gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
-                break;
-            }
-            
-            if (!bOK && constr->maxwarn >= 0)
-            {
-                if (fplog != NULL)
-                {
-                    fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-                            econstr_names[econtSHAKE],gmx_step_str(step,buf));
-                }
-                bDump = TRUE;
-            }
+            bDump = TRUE;
+        }
+    }	
+    
+    if (constr->nblocks > 0)
+    {
+        switch (econq) {
+        case (econqCoord):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,xprime,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
+            break;
+        case (econqVeloc):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,min_proj,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
+            break;
+        default:
+            gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+            break;
         }
         
-        if (nsettle > 0)
+        if (!bOK && constr->maxwarn >= 0)
         {
-            int start_th,end_th;
-
-            if (th > 0)
+            if (fplog != NULL)
             {
-                clear_mat(constr->rmdr_th[th]);
+                fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                        econstr_names[econtSHAKE],gmx_step_str(step,buf));
             }
-            start_th = (nsettle*(th-th_ss  ))/(nth-th_ss);
-            end_th   = (nsettle*(th-th_ss+1))/(nth-th_ss);
-
-            switch (econq)
+            bDump = TRUE;
+        }
+    }
+    
+    if (nsettle > 0)
+    {
+        switch (econq)
+        {
+        case econqCoord:
+#pragma omp parallel for schedule(static)
+            for(th=0; th<nth; th++)
             {
-            case econqCoord:
+                int start_th,end_th;
+
+                if (th > 0)
+                {
+                    clear_mat(constr->rmdr_th[th]);
+                }
+
+                start_th = (nsettle* th   )/nth;
+                end_th   = (nsettle*(th+1))/nth;
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
                     csettle(constr->settled,
@@ -476,23 +463,31 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                             th == 0 ? &settle_error : &constr->settle_error[th],
                             &vetavar);
                 }
-                if (th == 0)
-                {
-                    inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-                    if (v != NULL)
-                    {
-                        inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-                    }
-                    if (vir != NULL)
-                    {
-                        inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
-                    }
-                }
-                break;
-            case econqVeloc:
-            case econqDeriv:
-            case econqForce:
-            case econqForceDispl:
+            }
+            inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+            if (v != NULL)
+            {
+                inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
+            }
+            if (vir != NULL)
+            {
+                inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+            }
+            break;
+        case econqVeloc:
+        case econqDeriv:
+        case econqForce:
+        case econqForceDispl:
+#pragma omp parallel for schedule(static)
+            for(th=0; th<nth; th++)
+            {
+                int start_th,end_th;
+
+                clear_mat(constr->rmdr_th[th]);
+                
+                start_th = (nsettle*(th-th_ss  ))/(nth-th_ss);
+                end_th   = (nsettle*(th-th_ss+1))/(nth-th_ss);
+
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
                     settle_proj(fplog,constr->settled,econq,
@@ -501,15 +496,15 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                                 th == 0 ? rmdr : constr->rmdr_th[th],
                                 &vetavar);
                 }
-                /* This is an overestimate */
-                inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-                break;
-            case econqDeriv_FlexCon:
-                /* Nothing to do, since the are no flexible constraints in settles */
-                break;
-            default:
-                gmx_incons("Unknown constraint quantity for settle");
             }
+            /* This is an overestimate */
+            inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+            break;
+        case econqDeriv_FlexCon:
+            /* Nothing to do, since the are no flexible constraints in settles */
+            break;
+        default:
+            gmx_incons("Unknown constraint quantity for settle");
         }
     }
 
