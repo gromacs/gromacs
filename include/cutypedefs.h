@@ -99,6 +99,8 @@ struct cu_timers
                                                    data transfers                                           */
     cudaEvent_t start_nb_nl, stop_nb_nl;    /* events for timing nonbonded calculation on non-local data
                                                    + related data transfers                                 */   
+    cudaEvent_t start_clear, stop_clear;
+
     gmx_bool    time_transfers;             /* enable/disable separate host-device data trasnfer timing     */
     cudaEvent_t start_nb_h2d, stop_nb_h2d;  /* events for timing host to device transfer (every step)       */
     cudaEvent_t start_nb_h2d_nl, stop_nb_h2d_nl;  /* events for timing host to device transfer (every step) */

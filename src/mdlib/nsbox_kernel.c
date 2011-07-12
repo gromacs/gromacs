@@ -208,20 +208,10 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
                                     continue;
                                 }
 
-                                /* Temporary fix for multiple grids */
-                                if (type[ia] == ntype-1 || type[ja] == ntype-1)
-                                {
-                                    continue;
-                                }
                                 if (type[ia] != ntype-1 && type[ja] != ntype-1)
                                 {
                                     npair++;
                                 }
-#ifdef DEBUG_NSBOX_KERNEL
-                                if (rsq == 0)
-                                    printf("\n -- ai -- %4d %d  %d %4d  %5.3f %5.3f %5.3f\n\n",
-                                           ia,type[ia],ja,type[ja],jx,jy,jz);
-#endif
                                 rinv             = gmx_invsqrt(rsq);
                                 rinvsq           = rinv*rinv;  
                                 fscal            = 0;

@@ -1897,7 +1897,8 @@ void init_forcerec(FILE *fp,
     
     snew(fr->excl_load,fr->nthreads+1);
 
-    if (ir->cutoff_scheme == ecutsOLD)
+    fr->cutoff_scheme = ir->cutoff_scheme;
+    if (fr->cutoff_scheme == ecutsOLD)
     {
         fr->useGPU     = FALSE;
         fr->emulateGPU = FALSE;

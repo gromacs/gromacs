@@ -203,6 +203,11 @@ static void init_timers(cu_timers_t *t)
     stat = cudaEventCreateWithFlags(&(t->stop_nb_nl), eventflags);
     CU_RET_ERR(stat, "cudaEventCreate on stop_nb_nl failed");
 
+    stat = cudaEventCreateWithFlags(&(t->start_clear), eventflags);
+    CU_RET_ERR(stat, "cudaEventCreate on start_clear failed");
+    stat = cudaEventCreateWithFlags(&(t->stop_clear), eventflags);
+    CU_RET_ERR(stat, "cudaEventCreate on stop_clear failed");
+
     stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
     CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
     stat = cudaEventCreateWithFlags(&(t->stop_atdat), eventflags);
@@ -366,6 +371,60 @@ void init_cudata_nblist(cu_nonbonded_t cu_nb,
     d_nblist->prune_nbl = TRUE;
 }
 
+void cu_move_shift_vec(cu_nonbonded_t cu_nb, 
+                       const gmx_nb_atomdata_t *nbatom)
+{
+    cu_atomdata_t   *adat = cu_nb->atomdata;
+
+    /* HtoD shift vec if we have a dynamic box */
+    if (nbatom->dynamic_box || !adat->shift_vec_copied)
+    {
+        upload_cudata_async(adat->shift_vec, nbatom->shift_vec, SHIFTS * sizeof(*adat->shift_vec), 0);
+        adat->shift_vec_copied = TRUE;
+    }
+}
+
+/* FIXME put all the clear ops into a stream, otherwise it won't overlap with anything  */
+void cu_clear_nb_outputs(cu_nonbonded_t cu_nb, 
+                         const gmx_nb_atomdata_t *nbatom, // FIXME VEEERY dirty
+                         int flags)
+{
+    cudaError_t stat;
+
+    cu_atomdata_t   *adat = cu_nb->atomdata;
+    cu_timers_t     *timers = cu_nb->timers;
+
+    gmx_bool calc_ene   = flags & GMX_FORCE_VIRIAL;
+    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    /* FIXME: this is not a clear OP! */
+    cu_move_shift_vec(cu_nb, nbatom);
+
+    stat = cudaEventRecord(timers->start_clear, 0);
+    CU_RET_ERR(stat, "cudaEventRecord on start_clear falied");
+
+    cudaMemsetAsync(adat->f, 0, adat->natoms * sizeof(*adat->f), 0);
+
+    /* set the shift force output to 0 */
+    if (calc_fshift)
+    {
+        cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), 0);
+    }
+
+    /* set energy outputs to 0 */
+    if (calc_ene)
+    {
+        cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), 0);
+        cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), 0);
+    }
+
+    cudaEventRecord(timers->stop_clear, 0);
+    CU_RET_ERR(stat, "cudaEventRecord on stop_clear falied");
+
+    /* block all future streams until this finishes */
+    // XXX this is too restrictive stat = cudaStreamWaitEvent(NULL, timers->stop_clear 0);
+}
+
 /*! Initilizes atom-data on the GPU, called at every neighbor search step. 
  */
 void init_cudata_atoms(cu_nonbonded_t cu_nb,
@@ -460,6 +519,12 @@ void destroy_cudata(FILE *fplog, cu_nonbonded_t cu_nb)
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_nl");
     stat = cudaEventDestroy(timers->stop_nb_nl);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_nl");
+
+    stat = cudaEventDestroy(timers->start_clear);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_clear");
+    stat = cudaEventDestroy(timers->stop_clear);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_clear");
+
     stat = cudaEventDestroy(timers->start_atdat);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
     stat = cudaEventDestroy(timers->stop_atdat);
@@ -601,6 +666,17 @@ static void realloc_cudata_array(void **d_dest, void *h_src, size_t type_size,
             upload_cudata(*d_dest, h_src,  *curr_size * type_size);
         }
     }
+}
+
+void cu_move_xq(cu_nonbonded_t cu_nb, const gmx_nb_atomdata_t *nbat,
+                gmx_bool nonLocal)
+{
+    cu_atomdata_t   *d_nbat = cu_nb->atomdata;
+    cudaStream_t    stream = nonLocal ? cu_nb->timers->nbstream_nl :
+                                        cu_nb->timers->nbstream;
+
+    upload_cudata_async(d_nbat->xq, nbat->x,
+                        d_nbat->natoms * sizeof(*d_nbat->xq), stream);
 }
 
 /*! Blocking waits until the atom data gets copied to the GPU and times the transfer.

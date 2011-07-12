@@ -218,6 +218,17 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
     }
 }
 
+void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
+{
+    if (wc == NULL)
+    {
+        return;
+    }
+
+    wallcycle_start(wc, ewc);
+    wc->wcc[ewc].n--;
+}
+
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
     gmx_cycles_t cycle,last;

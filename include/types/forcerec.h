@@ -246,6 +246,7 @@ typedef struct {
   t_nblists *nblists;
 
   /* The bounding box type neighbor searching data */
+  gmx_bool cutoff_scheme; /* old- or Verlet-style cutoff */ 
   gmx_nbsearch_t nbs;
   int            nnbl;
   gmx_nblist_t   **nbl;

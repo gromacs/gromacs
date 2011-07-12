@@ -57,7 +57,10 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr,
  */
 
 void wallcycle_start(gmx_wallcycle_t wc, int ewc);
-/* Set the start cycle count for ewc */
+/* Starts the cycle counter (and increases the call count) */
+
+void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
+/* Starts the cycle counter without increasing the call count */
 
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */

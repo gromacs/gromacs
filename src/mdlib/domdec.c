@@ -4611,7 +4611,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     }
     else
     {
-        if (fr->nbs != NULL)
+        if (fr->cutoff_scheme == ecutsVERLET)
         {
             moved = get_moved(comm,dd->ncg_home);
 
@@ -4871,7 +4871,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
      * and ncg_home and nat_home are not the real count, since there are
      * "holes" in the arrays for the charge groups that moved to neighbors.
      */
-    if (fr->nbs != NULL)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
         moved = get_moved(comm,home_pos_cg);
 
@@ -8412,7 +8412,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     /* Set the home atom number */
     dd->nat_home = dd->cgindex[dd->ncg_home];
 
-    if (fr->nbs != NULL)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
         /* The atoms are now exactly in grid order, update the grid order */
         gmx_nbsearch_set_atomorder(fr->nbs);
@@ -8804,7 +8804,7 @@ void dd_partition_system(FILE            *fplog,
         comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
     }
 
-    if (fr->nbs == NULL)
+    if (fr->cutoff_scheme == ecutsOLD)
     {
         copy_ivec(fr->ns.grid->n,ncells_old);
         grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,
@@ -8835,7 +8835,7 @@ void dd_partition_system(FILE            *fplog,
 
         bResortAll = bMasterState;
 
-        if (fr->nbs != NULL)
+        if (fr->cutoff_scheme == ecutsVERLET)
         {
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,state_local->box,
                                      0,comm->cell_x0,comm->cell_x1,
@@ -8948,6 +8948,17 @@ void dd_partition_system(FILE            *fplog,
     if (state_local->natoms > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,state_local->natoms);
+    }
+
+    if (fr->cutoff_scheme == ecutsVERLET)
+    {
+        /* Since we don`t use charge groups, cg_cm is equal to x.
+         * We copy the non-local cg_cm to x, so we can skip dd_move_x.
+         */
+        for(i=dd->ncg_home; i<dd->ncg_tot; i++)
+        {
+            copy_rvec(fr->cg_cm[i],state_local->x[i]);
+        }
     }
 
     if (fr->bF_NoVirSum)
