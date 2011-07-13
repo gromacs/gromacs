@@ -146,11 +146,11 @@ static void get_ns_buffer_atomtypes(const gmx_mtop_t *mtop,
 
         il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
 
-        for(i=0; i<il->nr; i+=2)
+        for(i=0; i<il->nr; i+=4)
         {
             a1 = il->iatoms[i+1];
-            a2 = il->iatoms[i+1]+1;
-            a3 = il->iatoms[i+1]+2;
+            a2 = il->iatoms[i+2];
+            a3 = il->iatoms[i+3];
             con_m[a1] += atoms->atom[a2].m + atoms->atom[a3].m;
             con_m[a2] += atoms->atom[a1].m + atoms->atom[a3].m;
             con_m[a3] += atoms->atom[a1].m + atoms->atom[a2].m;

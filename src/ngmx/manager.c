@@ -87,8 +87,8 @@ static void add_bonds(t_manager *man,t_functype func[],
     delta = interaction_function[ftype].nratoms;
     
     if (ftype == F_SETTLE) {
-      aj=ai+1;
-      ak=ai+2;
+      aj = ia[2];
+      ak = ia[3];
       bB[ai]=bB[aj]=bB[ak]=TRUE;
       add_object(man,eOHBond,ai,aj);
       add_object(man,eOHBond,ai,ak);

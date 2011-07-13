@@ -1036,7 +1036,7 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
     int        i,j,nra,n;
     t_functype func_type;
     t_ilist    *interaction;
-    atom_id    nr1,nr2;
+    atom_id    nr1,nr2,nr3;
     gmx_bool       stop;
 
     if (!ddd->dptr) {
@@ -1071,14 +1071,16 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	
                 /* check out this functype */
                 if (func_type == F_SETTLE) {
-                    nr1=interaction->iatoms[i+1];
+                    nr1 = interaction->iatoms[i+1];
+                    nr2 = interaction->iatoms[i+2];
+                    nr3 = interaction->iatoms[i+3];
 	  
                     if (ISINGRP(datable[nr1])) {
-                        if (ISINGRP(datable[nr1+1])) {
+                        if (ISINGRP(datable[nr2])) {
                             datable[nr1] |= DON;
                             add_dh(ddd,nr1,nr1+1,grp,datable);
                         }
-                        if (ISINGRP(datable[nr1+2])) {
+                        if (ISINGRP(datable[nr3])) {
                             datable[nr1] |= DON;
                             add_dh(ddd,nr1,nr1+2,grp,datable);
                         }

@@ -213,9 +213,9 @@ void settle_proj(FILE *fp,
     
     for (i=0; i<nsettle; i++)
     {
-        ow1 = iatoms[i*2+1];
-        hw2 = ow1 + 1;
-        hw3 = ow1 + 2;
+        ow1 = iatoms[i*4+1];
+        hw2 = iatoms[i*4+2];
+        hw3 = iatoms[i*4+3];
 
 
         for(m=0; m<DIM; m++)
@@ -441,9 +441,9 @@ void csettle(gmx_settledata_t settled,
   for (i = 0; i < nsettle; ++i) {
     doshake = 0;
     /*    --- Step1  A1' ---      */
-    ow1 = iatoms[i*2+1] * 3;
-    hw2 = ow1 + 3;
-    hw3 = ow1 + 6;
+    ow1 = iatoms[i*4+1] * 3;
+    hw2 = iatoms[i*4+2] * 3;
+    hw3 = iatoms[i*4+3] * 3;
     xb0 = b4[hw2    ] - b4[ow1];
     yb0 = b4[hw2 + 1] - b4[ow1 + 1];
     zb0 = b4[hw2 + 2] - b4[ow1 + 2];
