@@ -6325,7 +6325,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         comm->bInterCGMultiBody = FALSE;
     }
     
-    dd->bInterCGcons = inter_charge_group_constraints(mtop);
+    dd->bInterCGcons    = inter_charge_group_constraints(mtop);
+    dd->bInterCGsettles = inter_charge_group_settles(mtop);
 
     if (ir->rlistlong == 0)
     {
@@ -8675,12 +8676,12 @@ void dd_partition_system(FILE            *fplog,
             }
             break;
         case ddnatCON:
-            if (dd->bInterCGcons)
+            if (dd->bInterCGcons || dd->bInterCGsettles)
             {
                 /* Only for inter-cg constraints we need special code */
                 n = dd_make_local_constraints(dd,n,top_global,
                                               constr,ir->nProjOrder,
-                                              &top_local->idef.il[F_CONSTR]);
+                                              top_local->idef.il);
             }
             break;
         default:

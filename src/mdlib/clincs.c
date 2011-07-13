@@ -1244,7 +1244,8 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     /* We do not need full pbc when constraints do not cross charge groups,
      * i.e. when dd->constraint_comm==NULL
      */
-    if ((cr->dd || ir->bPeriodicMols) && !(cr->dd && cr->dd->constraint_comm==NULL))
+    if (ir->ePBC != epbcNONE &&
+        (cr->dd || ir->bPeriodicMols) && !(cr->dd && cr->dd->constraint_comm==NULL))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
@@ -1256,16 +1257,6 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     {
         pbc_null = NULL;
     }
-    if (cr->dd)
-    {
-        /* Communicate the coordinates required for the non-local constraints */
-        dd_move_x_constraints(cr->dd,box,x,xprime);
-        /* dump_conf(dd,lincsd,NULL,"con",TRUE,xprime,box); */
-    }
-	else if (PARTDECOMP(cr))
-	{
-		pd_move_x_constraints(cr,x,xprime);
-	}	
 	
     if (econq == econqCoord)
     {

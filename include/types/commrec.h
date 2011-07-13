@@ -168,6 +168,7 @@ typedef struct {
 
   /* Are there inter charge group constraints */
   gmx_bool bInterCGcons;
+  gmx_bool bInterCGsettles;
 
   /* Global atom number to interaction list */
   gmx_reverse_top_p_t reverse_top;

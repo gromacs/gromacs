@@ -53,6 +53,7 @@ typedef struct {
 typedef struct gmx_reverse_top {
     gmx_bool bExclRequired; /* Do we require all exclusions to be assigned? */
     gmx_bool bConstr;       /* Are there constraints in this revserse top?  */
+    gmx_bool bSettle;       /* Are there settles in this revserse top?  */
     gmx_bool bBCheck;       /* All bonded interactions have to be assigned? */
     gmx_bool bMultiCGmols;  /* Are the multi charge-group molecules?        */
     gmx_reverse_ilist_t *ril_mt; /* Reverse ilist for all moltypes      */
@@ -82,13 +83,14 @@ static int nral_rt(int ftype)
     return nral;
 }
 
-static gmx_bool dd_check_ftype(int ftype,gmx_bool bBCheck,gmx_bool bConstr)
+static gmx_bool dd_check_ftype(int ftype,gmx_bool bBCheck,
+                               gmx_bool bConstr,gmx_bool bSettle)
 {
     return (((interaction_function[ftype].flags & IF_BOND) &&
              !(interaction_function[ftype].flags & IF_VSITE) &&
              (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))) ||
-            ftype == F_SETTLE ||
-            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)));
+            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
+            (bSettle && ftype == F_SETTLE));
 }
 
 static void print_error_header(FILE *fplog,char *moltypename,int nprint)
@@ -124,7 +126,7 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
     gatindex = cr->dd->gatindex;
     for(ftype=0; ftype<F_NRE; ftype++)
     {
-        if (dd_check_ftype(ftype,rt->bBCheck,rt->bConstr))
+        if (dd_check_ftype(ftype,rt->bBCheck,rt->bConstr,rt->bSettle))
         {
             nral = NRAL(ftype);
             il = &idef->il[ftype];
@@ -310,8 +312,8 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count,  g
             if (((interaction_function[ftype].flags & IF_BOND) &&
                  (dd->reverse_top->bBCheck 
                   || !(interaction_function[ftype].flags & IF_LIMZERO)))
-                || ftype == F_SETTLE
-                || (dd->reverse_top->bConstr && ftype == F_CONSTR))
+                || (dd->reverse_top->bConstr && ftype == F_CONSTR)
+                || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
                 nral = NRAL(ftype);
                 n = gmx_mtop_ftype_count(err_top_global,ftype);
@@ -408,7 +410,8 @@ static int count_excls(t_block *cgs,t_blocka *excls,int *n_intercg_excl)
 static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
                                   int **vsite_pbc,
                                   int *count,
-                                  gmx_bool bConstr,gmx_bool bBCheck,
+                                  gmx_bool bConstr,gmx_bool bSettle,
+                                  gmx_bool bBCheck,
                                   int *r_index,int *r_il,
                                   gmx_bool bLinkToAllAtoms,
                                   gmx_bool bAssign)
@@ -424,8 +427,9 @@ static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
     for(ftype=0; ftype<F_NRE; ftype++)
     {
         if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE)) ||
-            ftype == F_SETTLE ||
-            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC))) {
+            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) ||
+            (bSettle && ftype == F_SETTLE))
+        {
             bVSite = (interaction_function[ftype].flags & IF_VSITE);
             nral = NRAL(ftype);
             il = &il_mt[ftype];
@@ -508,7 +512,8 @@ static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
 
 static int make_reverse_ilist(gmx_moltype_t *molt,
                               int **vsite_pbc,
-                              gmx_bool bConstr,gmx_bool bBCheck,
+                              gmx_bool bConstr,gmx_bool bSettle,
+                              gmx_bool bBCheck,
                               gmx_bool bLinkToAllAtoms,
                               gmx_reverse_ilist_t *ril_mt)
 {
@@ -519,7 +524,7 @@ static int make_reverse_ilist(gmx_moltype_t *molt,
     snew(count,nat_mt);
     low_make_reverse_ilist(molt->ilist,molt->atoms.atom,vsite_pbc,
                            count,
-                           bConstr,bBCheck,NULL,NULL,
+                           bConstr,bSettle,bBCheck,NULL,NULL,
                            bLinkToAllAtoms,FALSE);
     
     snew(ril_mt->index,nat_mt+1);
@@ -535,7 +540,7 @@ static int make_reverse_ilist(gmx_moltype_t *molt,
     nint_mt =
         low_make_reverse_ilist(molt->ilist,molt->atoms.atom,vsite_pbc,
                                count,
-                               bConstr,bBCheck,
+                               bConstr,bSettle,bBCheck,
                                ril_mt->index,ril_mt->il,
                                bLinkToAllAtoms,TRUE);
     
@@ -552,7 +557,7 @@ static void destroy_reverse_ilist(gmx_reverse_ilist_t *ril)
 
 static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
                                            int ***vsite_pbc_molt,
-                                           gmx_bool bConstr,
+                                           gmx_bool bConstr,gmx_bool bSettle,
                                            gmx_bool bBCheck,int *nint)
 {
     int mt,i,mb;
@@ -564,6 +569,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
     
     /* Should we include constraints (for SHAKE) in rt? */
     rt->bConstr = bConstr;
+    rt->bSettle = bSettle;
     rt->bBCheck = bBCheck;
     
     rt->bMultiCGmols = FALSE;
@@ -581,7 +587,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
         /* Make the atom to interaction list for this molecule type */
         nint_mt[mt] =
             make_reverse_ilist(molt,vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
-                               rt->bConstr,rt->bBCheck,FALSE,
+                               rt->bConstr,rt->bSettle,rt->bBCheck,FALSE,
                                &rt->ril_mt[mt]);
         
         rt->ril_mt_tot_size += rt->ril_mt[mt].index[molt->atoms.nr];
@@ -637,7 +643,7 @@ void dd_make_reverse_top(FILE *fplog,
     
     dd->reverse_top = make_reverse_top(mtop,ir->efep!=efepNO,
                                        vsite ? vsite->vsite_pbc_molt : NULL,
-                                       !dd->bInterCGcons,
+                                       !dd->bInterCGcons,!dd->bInterCGsettles,
                                        bBCheck,&dd->nbonded_global);
     
     if (dd->reverse_top->ril_mt_tot_size >= 200000 &&
@@ -691,7 +697,7 @@ void dd_make_reverse_top(FILE *fplog,
         init_domdec_vsites(dd,natoms);
     }
     
-    if (dd->bInterCGcons)
+    if (dd->bInterCGcons || dd->bInterCGsettles)
     {
         init_domdec_constraints(dd,natoms,mtop,constr);
     }
@@ -1700,7 +1706,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
          * to all atoms, not only the first atom as in gmx_reverse_top.
          * The constraints are discarded here.
          */
-        make_reverse_ilist(molt,NULL,FALSE,FALSE,TRUE,&ril);
+        make_reverse_ilist(molt,NULL,FALSE,FALSE,FALSE,TRUE,&ril);
 
         cgi_mb = &cginfo_mb[mb];
         
@@ -1808,7 +1814,7 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
     r2_mb = 0;
     for(ftype=0; ftype<F_NRE; ftype++)
     {
-        if (dd_check_ftype(ftype,bBCheck,FALSE))
+        if (dd_check_ftype(ftype,bBCheck,FALSE,FALSE))
         {
             il = &molt->ilist[ftype];
             nral = NRAL(ftype);

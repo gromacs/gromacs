@@ -99,11 +99,12 @@ gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
 void csettle(gmx_settledata_t settled,
                     int nsettle,	/* Number of settles  	        */
                     t_iatom iatoms[],	/* The settle iatom list        */
+             const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                     real b4[],		/* Old coordinates		*/
                     real after[],	/* New coords, to be settled	*/
                     real invdt,         /* 1/delta_t                    */
                     real *v,            /* Also constrain v if v!=NULL  */
-                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
+                    int CalcVirAtomEnd, /* Calculate r x m delta_r      */
                     tensor rmdr,        /* sum r x m delta_r            */
                     int *xerror,
                     t_vetavars *vetavar     /* variables for pressure control */   
@@ -111,9 +112,11 @@ void csettle(gmx_settledata_t settled,
 
 void settle_proj(FILE *fp,
                         gmx_settledata_t settled,int econq,
-                        int nsettle, t_iatom iatoms[],rvec x[],
+                        int nsettle, t_iatom iatoms[],
+                 const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
+                 rvec x[],
                         rvec *der,rvec *derp,
-                        gmx_bool bCalcVir,tensor rmdder, t_vetavars *vetavar);
+                        int CalcVirAtomEnd,tensor rmdder, t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
@@ -192,8 +195,11 @@ t_blocka make_at2con(int start,int natoms,
 			    gmx_bool bDynamics,int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
-t_blocka *atom2constraints_moltype(gmx_constr_t constr);
-/* Returns the an arry of atom to constraints lists for the moltypes */
+const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
+/* Returns the an array of atom to constraints lists for the moltypes */
+
+const int **atom2settle_moltype(gmx_constr_t constr);
+/* Returns the an array of atom to settle for the moltypes */
 
 #define constr_iatomptr(nconstr,iatom_constr,iatom_constrnc,con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
 /* Macro for getting the constraint iatoms for a constraint number con
@@ -203,6 +209,9 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 
 gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
+
+gmx_bool inter_charge_group_settles(gmx_mtop_t *mtop);
+/* Returns if there are inter charge group settles */
 
 real *constr_rmsd_data(gmx_constr_t constr);
 /* Return the data for determining constraint RMS relative deviations.

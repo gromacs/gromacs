@@ -803,32 +803,28 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
     }
 }
 
-int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
-                              gmx_mtop_t *mtop,
-                              gmx_constr_t constr,int nrec,
-                              t_ilist *il_local)
+static void atoms_to_constraints(gmx_domdec_t *dd,
+                                 gmx_mtop_t *mtop,
+                                 const t_blocka *at2con_mt,int nrec,
+                                 t_ilist *ilc_local,
+                                 const int **at2settle_mt,
+                                 t_ilist *ils_local)
 {
-    t_blocka *at2con_mt,*at2con;
+    const t_blocka *at2con;
     gmx_ga2la_t ga2la;
-    int ncon1,ncon2;
+    int ncon1,ncon2,nset;
     gmx_molblock_t *molb;
     t_iatom *ia1,*ia2,*iap;
     int nhome,a,a_gl,a_mol,a_loc,b_lo,offset,mb,molnr,b_mol,i,con,con_offset;
     gmx_domdec_constraints_t *dc;
-    int at_end,*ga2la_specat,j;
+    gmx_domdec_specat_comm_t *dcc;
     
-    dc = dd->constraints;
+    dc  = dd->constraints;
+    dcc = dd->constraint_comm;
     
-    at2con_mt = atom2constraints_moltype(constr);
     ga2la  = dd->ga2la;
-    
-    dc->ncon     = 0;
-    il_local->nr = 0;
+
     nhome = 0;
-    if (dd->constraint_comm)
-    {
-        dd->constraint_comm->nind_req = 0;
-    }
     for(a=0; a<dd->nat_home; a++)
     {
         a_gl = dd->gatindex[a];
@@ -836,10 +832,14 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         gmx_mtop_atomnr_to_molblock_ind(mtop,a_gl,&mb,&molnr,&a_mol);
         molb = &mtop->molblock[mb];
         
-        ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
-        ncon2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].nr/3;
+        ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr;
+        ncon2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].nr;
+        nset  = mtop->moltype[molb->type].ilist[F_SETTLE].nr;
         if (ncon1 > 0 || ncon2 > 0)
         {
+            ncon1 /= 3;
+            ncon2 /= 3;
+
             ia1 = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
             ia2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].iatoms;
 
@@ -877,15 +877,15 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                         }
                         dc->con_gl[dc->ncon] = con_offset + con;
                         dc->con_nlocat[dc->ncon] = 2;
-                        if (il_local->nr + 3 > il_local->nalloc)
+                        if (ilc_local->nr + 3 > ilc_local->nalloc)
                         {
-                            il_local->nalloc = over_alloc_dd(il_local->nr + 3);
-                            srenew(il_local->iatoms,il_local->nalloc);
+                            ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
+                            srenew(ilc_local->iatoms,ilc_local->nalloc);
                         }
                         b_lo = a_loc;
-                        il_local->iatoms[il_local->nr++] = iap[0];
-                        il_local->iatoms[il_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
-                        il_local->iatoms[il_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
+                        ilc_local->iatoms[ilc_local->nr++] = iap[0];
+                        ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
+                        ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
                         dc->ncon++;
                         nhome++;
                     }
@@ -900,12 +900,80 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                      */
                     walk_out(con,con_offset,b_mol,offset,nrec,
                              ncon1,ia1,ia2,at2con,
-                             dd->ga2la,TRUE,dc,dd->constraint_comm,il_local);
+                             dd->ga2la,TRUE,dc,dcc,ilc_local);
+                }
+            }
+        }
+
+        if (nset > 0)
+        {
+            int settle;
+            int sa;
+            int a_glsa,a_gls[3],a_locs[3];
+            gmx_bool a_home[3];
+            int nlocal;
+            gmx_bool bAssign;
+
+            settle = at2settle_mt[molb->type][a_mol];
+            if (settle >= 0)
+            {
+                offset = a_gl - a_mol;
+                
+                ia1 = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
+
+                bAssign = FALSE;
+                nlocal = 0;
+                for(sa=0; sa<3; sa++)
+                {
+                    a_glsa = offset + ia1[settle*4+1+sa];
+                    a_gls[sa] = a_glsa;
+                    a_home[sa] = ga2la_get_home(ga2la,a_glsa,&a_locs[sa]);
+                    if (a_home[sa])
+                    {
+                        if (nlocal == 0 && a_gl == a_glsa)
+                        {
+                            bAssign = TRUE;
+                        }
+                        nlocal++;
+                    }
+                }
+
+                if (bAssign)
+                {
+                    if (ils_local->nr + 4 > ils_local->nalloc)
+                    {
+                        ils_local->nalloc = over_alloc_dd(ils_local->nr+4);
+                        srenew(ils_local->iatoms,ils_local->nalloc);
+                    }
+
+                    ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
+
+                    for(sa=0; sa<3; sa++)
+                    {
+                        if (ga2la_get_home(ga2la,a_gls[sa],&a_locs[sa]))
+                        {
+                            ils_local->iatoms[ils_local->nr++] = a_locs[sa];
+                        }
+                        else
+                        {
+                            ils_local->iatoms[ils_local->nr++] = -a_gls[sa] - 1;
+                            /* Add this non-home atom to the list */
+                            if (dcc->nind_req+1 > dcc->ind_req_nalloc)
+                            {
+                                dcc->ind_req_nalloc = over_alloc_large(dcc->nind_req+1);
+                                srenew(dcc->ind_req,dcc->ind_req_nalloc);
+                            }
+                            dcc->ind_req[dcc->nind_req++] = a_gls[sa];
+                            /* A check on double atom requests is
+                             * not required for settle.
+                             */
+                        }
+                    }
                 }
             }
         }
     }
-    
+
     if (debug)
     {
         fprintf(debug,
@@ -913,7 +981,43 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                 nhome,dc->ncon-nhome,
                 dd->constraint_comm ? dd->constraint_comm->nind_req : 0);
     }
+}
 
+int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
+                              gmx_mtop_t *mtop,
+                              gmx_constr_t constr,int nrec,
+                              t_ilist *il_local)
+{
+    gmx_domdec_constraints_t *dc;
+    t_ilist *ilc_local,*ils_local;
+    const t_blocka *at2con_mt;
+    const int **at2settle_mt;
+    int *ga2la_specat;
+    int at_end,i,j;
+    t_iatom *iap;
+    
+    dc = dd->constraints;
+    
+    ilc_local = &il_local[F_CONSTR];
+    ils_local = &il_local[F_SETTLE];
+
+    dc->ncon      = 0;
+    ilc_local->nr = 0;
+    ils_local->nr = 0;
+    if (dd->constraint_comm)
+    {
+        dd->constraint_comm->nind_req = 0;
+    }
+
+    at2con_mt    = atom2constraints_moltype(constr);
+    at2settle_mt = atom2settle_moltype(constr);
+    if (at2con_mt != NULL || at2settle_mt != NULL)
+    {
+        atoms_to_constraints(dd,mtop,
+                             at2con_mt,nrec,ilc_local,
+                             at2settle_mt,ils_local);
+    }
+    
     if (dd->constraint_comm) {
         at_end =
             setup_specat_communication(dd,dd->constraint_comm,
@@ -923,10 +1027,22 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         
         /* Fill in the missing indices */
         ga2la_specat = dd->constraints->ga2la;
-        for(i=0; i<il_local->nr; i+=3)
+        for(i=0; i<ilc_local->nr; i+=3)
         {
-            iap = il_local->iatoms + i;
+            iap = ilc_local->iatoms + i;
             for(j=1; j<3; j++)
+            {
+                if (iap[j] < 0)
+                {
+                    iap[j] = ga2la_specat[-iap[j]-1];
+                }
+            }
+        }
+
+        for(i=0; i<ils_local->nr; i+=4)
+        {
+            iap = ils_local->iatoms + i;
+            for(j=1; j<4; j++)
             {
                 if (iap[j] < 0)
                 {

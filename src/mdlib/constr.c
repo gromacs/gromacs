@@ -67,6 +67,9 @@ typedef struct gmx_constr {
   int              nflexcon;     /* The number of flexible constraints */
   int              n_at2con_mt;  /* The size of at2con = #moltypes     */
   t_blocka         *at2con_mt;   /* A list of atoms to constraints     */
+  int              n_at2settle_mt; /* The size of at2settle = #moltypes  */
+  int              **at2settle_mt; /* A list of atoms to settles         */
+  gmx_bool         bInterCGsettles;
   gmx_lincsdata_t  lincsd;       /* LINCS data                         */
   gmx_shakedata_t  shaked;       /* SHAKE data                         */
   gmx_settledata_t settled;      /* SETTLE data                        */
@@ -385,6 +388,18 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     settle_error = -1;
 
+    /* Communicate the coordinates required for the non-local constraints
+     * for LINCS and/or SETTLE.
+     */
+    if (cr->dd)
+    {
+        dd_move_x_constraints(cr->dd,box,x,xprime);
+    }
+	else if (PARTDECOMP(cr))
+	{
+		pd_move_x_constraints(cr,x,xprime);
+	}	
+
     if (constr->lincsd != NULL)
     {
         bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
@@ -438,6 +453,27 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     if (nsettle > 0)
     {
+        t_pbc pbc,*pbc_null;
+        int CalcVirAtomEnd;
+
+        if (ir->ePBC != epbcNONE && constr->bInterCGsettles)
+        {
+            pbc_null = set_pbc_dd(&pbc,ir->ePBC,cr->dd,FALSE,box);
+        }
+        else
+        {
+            pbc_null = NULL;
+        }
+
+        if (vir == NULL)
+        {
+            CalcVirAtomEnd = 0;
+        }
+        else
+        {
+            CalcVirAtomEnd = md->start + md->homenr;
+        }
+
         switch (econq)
         {
         case econqCoord:
@@ -457,8 +493,9 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 {
                     csettle(constr->settled,
                             end_th-start_th,settle->iatoms+start_th*4,
+                            pbc_null,
                             x[0],xprime[0],
-                            invdt,v[0],vir!=NULL,
+                            invdt,v[0],CalcVirAtomEnd,
                             th == 0 ? rmdr : constr->rmdr_th[th],
                             th == 0 ? &settle_error : &constr->settle_error[th],
                             &vetavar);
@@ -491,8 +528,10 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
                     settle_proj(fplog,constr->settled,econq,
-                                end_th-start_th,settle->iatoms+start_th*4,x,
-                                xprime,min_proj,vir!=NULL,
+                                end_th-start_th,settle->iatoms+start_th*4,
+                                pbc_null,
+                                x,
+                                xprime,min_proj,CalcVirAtomEnd,
                                 th == 0 ? rmdr : constr->rmdr_th[th],
                                 &vetavar);
                 }
@@ -812,6 +851,28 @@ t_blocka make_at2con(int start,int natoms,
   return at2con;
 }
 
+static int *make_at2settle(int natoms,const t_ilist *ilist)
+{
+    int *at2s;
+    int a,s;
+  
+    snew(at2s,natoms);
+    /* Set all to no settle */
+    for(a=0; a<natoms; a++)
+    {
+        at2s[a] = -1;
+    }
+
+    for(s=0; s<ilist->nr; s+=4)
+    {
+        at2s[ilist->iatoms[s+1]] = s/4;
+        at2s[ilist->iatoms[s+2]] = s/4;
+        at2s[ilist->iatoms[s+3]] = s/4;
+    }
+
+    return at2s;
+}
+
 void set_constraints(struct gmx_constr *constr,
                      gmx_localtop_t *top,t_inputrec *ir,
                      t_mdatoms *md,t_commrec *cr)
@@ -1119,7 +1180,9 @@ gmx_constr_t init_constraints(FILE *fplog,
   
     if (nset > 0) {
         please_cite(fplog,"Miyamoto92a");
-        
+
+        constr->bInterCGsettles = inter_charge_group_settles(mtop);
+
         /* Check that we have only one settle type */
         settle_type = -1;
         iloop = gmx_mtop_ilistloop_init(mtop);
@@ -1142,6 +1205,15 @@ gmx_constr_t init_constraints(FILE *fplog,
                               "block of molecules with SETTLE constraints into 3 normal constraints.");
                 }
             }
+        }
+
+        constr->n_at2settle_mt = mtop->nmoltype;
+        snew(constr->at2settle_mt,constr->n_at2settle_mt);
+        for(mt=0; mt<mtop->nmoltype; mt++) 
+        {
+            constr->at2settle_mt[mt] =
+                make_at2settle(mtop->moltype[mt].atoms.nr,
+                               &mtop->moltype[mt].ilist[F_SETTLE]);
         }
     }
     
@@ -1184,44 +1256,127 @@ gmx_constr_t init_constraints(FILE *fplog,
     return constr;
 }
 
-t_blocka *atom2constraints_moltype(gmx_constr_t constr)
+const t_blocka *atom2constraints_moltype(gmx_constr_t constr)
 {
   return constr->at2con_mt;
+}
+
+const int **atom2settle_moltype(gmx_constr_t constr)
+{
+    return (const int **)constr->at2settle_mt;
 }
 
 
 gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 {
-  const gmx_moltype_t *molt;
-  const t_block *cgs;
-  const t_ilist *il;
-  int  mb;
-  int  nat,*at2cg,cg,a,ftype,i;
-  gmx_bool bInterCG;
+    const gmx_moltype_t *molt;
+    const t_block *cgs;
+    const t_ilist *il;
+    int  mb;
+    int  nat,*at2cg,cg,a,ftype,i;
+    gmx_bool bInterCG;
 
-  bInterCG = FALSE;
-  for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++) {
-    molt = &mtop->moltype[mtop->molblock[mb].type];
+    bInterCG = FALSE;
+    for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++)
+    {
+        molt = &mtop->moltype[mtop->molblock[mb].type];
 
-    if (molt->ilist[F_CONSTR].nr   > 0 ||
-	molt->ilist[F_CONSTRNC].nr > 0) {
-      cgs  = &molt->cgs;
-      snew(at2cg,molt->atoms.nr);
-      for(cg=0; cg<cgs->nr; cg++) {
-	for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
-	  at2cg[a] = cg;
-      }
-      
-      for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++) {
-	il = &molt->ilist[ftype];
-	for(i=0; i<il->nr && !bInterCG; i+=3) {
-	  if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
-	    bInterCG = TRUE;
-	}
-      }
-      sfree(at2cg);
+        if (molt->ilist[F_CONSTR].nr   > 0 ||
+            molt->ilist[F_CONSTRNC].nr > 0 ||
+            molt->ilist[F_SETTLE].nr > 0)
+        {
+            cgs  = &molt->cgs;
+            snew(at2cg,molt->atoms.nr);
+            for(cg=0; cg<cgs->nr; cg++)
+            {
+                for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
+                    at2cg[a] = cg;
+            }
+
+            for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++)
+            {
+                il = &molt->ilist[ftype];
+                for(i=0; i<il->nr && !bInterCG; i+=3)
+                {
+                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
+                    {
+                        bInterCG = TRUE;
+                    }
+                }
+            }
+
+            for(ftype=F_SETTLE; ftype<=F_SETTLE; ftype++)
+            {
+                il = &molt->ilist[ftype];
+                for(i=0; i<il->nr && !bInterCG; i+=4)
+                {
+                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]] ||
+                        at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+3]])
+                    {
+                        bInterCG = TRUE;
+                    }
+                }
+            }       
+            
+            sfree(at2cg);
+        }
     }
-  }
 
-  return bInterCG;
+    return bInterCG;
+}
+
+gmx_bool inter_charge_group_settles(gmx_mtop_t *mtop)
+{
+    const gmx_moltype_t *molt;
+    const t_block *cgs;
+    const t_ilist *il;
+    int  mb;
+    int  nat,*at2cg,cg,a,ftype,i;
+    gmx_bool bInterCG;
+
+    bInterCG = FALSE;
+    for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++)
+    {
+        molt = &mtop->moltype[mtop->molblock[mb].type];
+
+        if (molt->ilist[F_SETTLE].nr > 0)
+        {
+            cgs  = &molt->cgs;
+            snew(at2cg,molt->atoms.nr);
+            for(cg=0; cg<cgs->nr; cg++)
+            {
+                for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
+                    at2cg[a] = cg;
+            }
+
+            for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++)
+            {
+                il = &molt->ilist[ftype];
+                for(i=0; i<il->nr && !bInterCG; i+=3)
+                {
+                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
+                    {
+                        bInterCG = TRUE;
+                    }
+                }
+            }
+
+            for(ftype=F_SETTLE; ftype<=F_SETTLE; ftype++)
+            {
+                il = &molt->ilist[ftype];
+                for(i=0; i<il->nr && !bInterCG; i+=4)
+                {
+                    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]] ||
+                        at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+3]])
+                    {
+                        bInterCG = TRUE;
+                    }
+                }
+            }       
+            
+            sfree(at2cg);
+        }
+    }
+
+    return bInterCG;
 }
