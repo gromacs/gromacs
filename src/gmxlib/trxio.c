@@ -690,6 +690,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       /* Checkpoint files can not contain mulitple frames */
       break;
     case efG96:
+      gmx_fatal(FARGS,
+		"Reading trajectories in .g96 format is broken. Please use\n"
+		"a different file format.");
       read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
       bRet = (fr->natoms > 0);
       break;
