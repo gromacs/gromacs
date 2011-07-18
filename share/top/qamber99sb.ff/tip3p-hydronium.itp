@@ -3,7 +3,6 @@
 ; This topology file should work with qamber99sb
 ;
 
-	
 [ moleculetype ]
 ; molname       nrexcl
 HOH             2

@@ -61,11 +61,11 @@
     HW1  HW        0.417     0
     HW2  HW        0.417     0
  [ bonds ]
-    OW   HW1	0.09572   462750.4
-    OW   HW2	0.09572   462750.4
+    OW   HW1	0.09572   502416.0
+    OW   HW2	0.09572   502416.0
 ;   The rest are vsites
  [ angles ]
-    HW1  OW   HW2   104.52    836.8
+    HW1  OW   HW2   104.52    628.02
 
 [ H3O ]
  [ atoms ]
@@ -74,13 +74,13 @@
     HW2  HW        0.525     0
     HW3  HW        0.525     0
 [ bonds ]
-    OW   HW1	0.09766   462750.4
-    OW   HW2	0.09766   462750.4
-    OW   HW3	0.09766   462750.4
+    OW   HW1	0.09766   502416.0 
+    OW   HW2	0.09766   502416.0 
+    OW   HW3	0.09766   502416.0 
 [ angles ]
-    HW1  OW   HW2   112    836.8
-    HW1  OW   HW3   112    836.8
-    HW3  OW   HW2   112    836.8
+    HW1  OW   HW2   112   628.02	 
+    HW1  OW   HW3   112   628.02	 
+    HW3  OW   HW2   112   628.02	 
 
 ; ------------------
 ; Titrable acetic acid. 
