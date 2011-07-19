@@ -689,6 +689,7 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
     real *propose,*accept,*remainder;
     real sum,pnorm;
     t_lambda *fep;
+    gmx_bool bRestricted;
 
     fep = ir->fepvals;
     nlim = fep->n_lambda;
@@ -735,11 +736,13 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
         
         if ((fep->elmcmove==elmcmoveGIBBS) || (fep->elmcmove==elmcmoveMETGIBBS)) 
         {
-            /* use the Gibbs sampler, with variable locality */
+            bRestricted = TRUE;
+            /* use the Gibbs sampler, with restricted range */
             if (fep->gibbsdeltalam < 0) 
             {
                 minfep = 0; 
                 maxfep = nlim-1;
+                bRestricted = FALSE;
             } 
             else 
             {
@@ -854,15 +857,17 @@ static int ChooseNewLambda(FILE *log, t_inputrec *ir, df_history_t *dfhist, int 
             
             if (lamnew > maxfep) 
             {
+                int loc=0;
+                int nerror = 200+(maxfep-minfep+1)*60;
+                char errorstr[nerror];
                 /* if its greater than maxfep, then something went wrong -- probably underflow in the calculation
-                   of sum weights */
-                fprintf(log,"Denominator %3d%17.10e\n",0,pks);	      	    
-                fprintf(log,"  i               dE        numerator          weights\n");
+                   of sum weights. Generated detailed info for failure */
+                loc += sprintf(errorstr,"Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination.\nDenominator is: %3d%17.10e\n  i                dE        numerator          weights\n",0,pks);
                 for (ifep=minfep;ifep<=maxfep;ifep++) 
                 {
-                    fprintf(log,"%3d,%17.10e%17.10e%17.10e\n",ifep,weighted_lamee[ifep],p_k[ifep],dfhist->sum_weights[ifep]);
+                    loc += sprintf(&errorstr[loc],"%3d %17.10e%17.10e%17.10e\n",ifep,weighted_lamee[ifep],p_k[ifep],dfhist->sum_weights[ifep]);
                 }
-                gmx_fatal(FARGS,"Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination");
+                gmx_fatal(FARGS,errorstr);
             }
         } 
         else if ((fep->elmcmove==elmcmoveMETROPOLIS) || (fep->elmcmove==elmcmoveBARKER)) 

@@ -2278,6 +2278,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_energyhistory(&state_global->enerhist,mdebin);
                     if (ir->efep>efepNO) 
                     {
+                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. Find a better place to do this?
+                                                                     only necessary for single threads. */
                         copy_df_history(&state_global->dfhist,&df_history);
                     }
                 }
