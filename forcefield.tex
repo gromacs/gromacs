@@ -760,7 +760,7 @@ The RB dihedral function can also be used to include Fourier dihedrals
 (see below):
 \beq
 V_{rb} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[F_1(1+\cos(\phi)) + F_2(
-1-\cos(2\phi)) + F_3(1+\cos(3\phi) + F_4(1-\cos(4\phi))\right]
+1-\cos(2\phi)) + F_3(1+\cos(3\phi)) + F_4(1-\cos(4\phi))\right]
 \eeq
 Because of the equalities \( \cos(2\phi) = 2\cos^2(\phi) - 1 \),
 \( \cos(3\phi) = 4\cos^3(\phi) - 3\cos(\phi) \) and
@@ -791,7 +791,7 @@ or four~\cite{Jorgensen2005a} cosine terms of a Fourier series.
 In {\gromacs} the four term function is implemented:
 \beq
 V_{F} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[C_1(1+\cos(\phi)) + C_2(
-1-\cos(2\phi)) + C_3(1+\cos(3\phi) + C_4(1+\cos(4\phi))\right],
+1-\cos(2\phi)) + C_3(1+\cos(3\phi)) + C_4(1+\cos(4\phi))\right],
 \eeq
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 Internally, {\gromacs}
@@ -814,7 +814,7 @@ where $k$ is a force constant in units of energy
 and $f$ is a cubic spline function; for details see \ssecref{cubicspline}.
 For each interaction, the force constant $k$ and the table number $n$
 are specified in the topology.
-The are two different types of bonds, one that generates exclusions (type 8)
+There are two different types of bonds, one that generates exclusions (type 8)
 and one that does not (type 9).
 For details see \tabref{topfile2}.
 The table files are supplied to the {\tt mdrun} program.
@@ -829,8 +829,8 @@ where $x$ should be uniformly-spaced. Requirements for entries in the topology
 are given in~\tabref{topfile2}. 
 The setup of the tables is as follows:
 \\{\bf bonds}:
-$x$ is the distance in nm. For distances beyond the table length
-cause {\tt mdrun} to quit with an error message
+$x$ is the distance in nm. For distances beyond the table length,
+{\tt mdrun} will quit with an error message.
 \\{\bf angles}:
 $x$ is the angle in degrees. The table should go from
 0 up to and including 180 degrees; the derivative is taken in degrees.
@@ -1013,9 +1013,9 @@ The forces are
 For restraints not derived from NMR data, this functionality
 will usually suffice and a section of {\tt [ bonds ]} type 10
 can be used to apply individual restraints between pairs of atoms,
-%\ifthenelse{\equal{\gmxlite}{1}}
-{atoms.}
-{atoms, see \ssecref{topfile}.}
+%\ifthenelse{\equal{\gmxlite}{1}}{atoms.}{
+atoms, see \ssecref{topfile}.}
+%} % Brace matches ifthenelse test for gmxlite 
 For applying restraints derived from NMR measurements, more complex
 functionality might be required, which is provided through
 the {\tt [~distance_restraints~]} section and is described below.
@@ -1430,7 +1430,7 @@ b &=& \langle \delta_i^c (t) -\delta_i^{exp} \rangle
 
 \subsubsection{Using orientation restraints}
 Orientation restraints can be added to a molecule definition in
-the topology in the section {\tt [~orientation_restraints~]}.
+the topology file in the section {\tt [~orientation_restraints~]}.
 Here we give an example section containing five N-H residual dipolar
 coupling restraints:
 
@@ -1640,15 +1640,15 @@ presented above.
 When the mass of a particle changes, there is also a contribution of
 the kinetic energy to the free energy (note that we can not write 
 the momentum \ve{p} as m\ve{v}, since that would result 
-in the sign of $\dvdl{Ek}$ being incorrect~\cite{Gunsteren98a}):
+in the sign of $\dvdl{E_k}$ being incorrect~\cite{Gunsteren98a}):
 
 \bea
-Ek      &=&     \half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}        \\
-\dvdl{Ek}&=&    -\half\frac{\ve{p}^2(m^B-m^A)}{(\LL m^A + \LAM m^B)^2}
+E_k      &=&     \half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}        \\
+\dvdl{E_k}&=&    -\half\frac{\ve{p}^2(m^B-m^A)}{(\LL m^A + \LAM m^B)^2}
 \eea
 after taking the derivative, we {\em can} insert \ve{p} = m\ve{v}, such that:
 \beq
-\dvdl{Ek}~=~    -\half\ve{v}^2(m^B-m^A)
+\dvdl{E_k}~=~    -\half\ve{v}^2(m^B-m^A)
 \eeq
 
 \subsubsection{Constraints}
@@ -1750,7 +1750,7 @@ Another issue that should be considered is the soft-core effect of hydrogens
 without Lennard-Jones interaction. Their soft-core $\sigma$ is
 set with {\tt sc_sigma} in the {\tt .mdp} file. These hydrogens
 produce peaks in $\partial H/\partial\LAM$ at $\LAM$ is 0 and/or 1 for $p=1$
-and close to 0 and/or 1 with $p=2$. Lowering {\tt sc_sigma} will decrease
+and close to 0 and/or 1 with $p=2$. Lowering {\tt\mbox{sc_sigma}} will decrease
 this effect, but it will also increase the interactions with hydrogens
 relative to the other interactions in the soft-core state.
 %} % Brace matches ifthenelse test for gmxlite
@@ -1763,13 +1763,6 @@ Atoms within a molecule that are close by in the chain,
 atoms are called {\em first neighbors, second neighbors} and 
 {\em \swapindex{third}{neighbor}s}, respectively (see \figref{chain}).  
 Since the interactions of atom {\bf i} with atoms {\bf i+1} and {\bf i+2} 
-
-\begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/chain}}
-\caption{Atoms along an alkane chain.}
-\label{fig:chain}
-\end{figure}
-
 are mainly quantum mechanical, they can not be modeled by a Lennard-Jones potential.
 Instead it is assumed that these interactions are adequately modeled
 by a harmonic bond term or constraint ({\bf i, i+1}) and a harmonic angle term
@@ -1778,6 +1771,12 @@ are therefore
 {\em excluded} from the Lennard-Jones \swapindex{interaction}{list} 
 of atom {\bf i};
 atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\bf i}.
+
+\begin{figure}
+\centerline{\includegraphics[angle=270,width=8cm]{plots/chain}}
+\caption{Atoms along an alkane chain.}
+\label{fig:chain}
+\end{figure}
 
 For third neighbors, the normal Lennard-Jones repulsion is sometimes
 still too strong, which means that when applied to a molecule, the
@@ -2296,8 +2295,8 @@ restriction as holds for the energy (see \secref{ecorr}).
 \label{sec:lr_elstat}
 \subsection{\normindex{Ewald sum}mation}
 \label{sec:ewald}
-The total electrostatic energy of $N$ particles and the periodic
-images\index{periodic boundary conditions} are given by
+The total electrostatic energy of $N$ particles and their periodic
+images\index{periodic boundary conditions} is given by
 \begin{equation}
 V=\frac{f}{2}\sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} \sum_{i}^{N} \sum_{j}^{N} 
@@ -2466,7 +2465,7 @@ nm).  PPPM does not provide the same accuracy as PME, but can be
 slightly faster in some cases. Due to the problem with the pressure
 tensor you shouldn't use it with pressure coupling.
 
-PPM is currently disabled in GROMACS, but there are plans to
+PPPM is currently disabled in GROMACS, but there are plans to
 re-introduce it.
 %We're somewhat ambivalent about PPPM, so if you use it please contact
 %us - otherwise it might be removed from future releases so we can concentrate

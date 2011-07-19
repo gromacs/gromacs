@@ -511,7 +511,7 @@ Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
 connecting images within the cut-off $R_c$ can be found by constructing:
 \bea
 \ve{r}'''   & = & \ve{r}_j-\ve{r}_i \\
-\ve{r}''    & = & \ve{r}''' - {\bf c}*\verb'round'(r'''_z/c_z)) \\
+\ve{r}''    & = & \ve{r}''' - {\bf c}*\verb'round'(r'''_z/c_z) \\
 \ve{r}'     & = & \ve{r}'' - {\bf b}*\verb'round'(r''_y/b_y) \\
 \ve{r}_{ij} & = & \ve{r}' - {\bf a}*\verb'round'(r'_x/a_x)
 \eea
@@ -554,7 +554,7 @@ be the preferred box shape.
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Charge groups}
 \label{sec:chargegroup}
-Charge groups were originally introduced reduce cut-off artifacts
+Charge groups were originally introduced to reduce cut-off artifacts
 of Coulomb interactions. When a plain cut-off is used, significant
 jumps in the potential and forces arise when atoms with (partial) charges
 move in and out of the cut-off radius. When all chemical moieties have
@@ -1094,7 +1094,7 @@ harmonic oscillators, can be {\em nonergodic}, meaning that only a
 subsection of phase space is ever sampled, even if the simulations
 were to run for infinitely long.  For this reason, the Nos{\'e}-Hoover
 chain approach was developed, where each of the Nos{\'e}-Hoover
-thermostats is has its own Nos{\'e}-Hoover thermostat controlling its
+thermostats has its own Nos{\'e}-Hoover thermostat controlling its
 temperature.  In the limit of an infinite chain of thermostats, the
 dynamics are guaranteed to be ergodic. Using just a few chains can
 greatly improve the ergodicity, but recent reseach has shown that the
@@ -1967,7 +1967,7 @@ an efficient one, where the relative error in the temperature
 is $\frac{1}{2}\Delta t\, \xi$,
 and a more complex leap-frog algorithm~\cite{Gunsteren88},
 which has third-order accuracy for any value of $\Delta t\, \xi$.
-In this complex algorithm four Gaussian random number are required
+In this complex algorithm four Gaussian random numbers are required
 per integration step per degree of freedom, and with constraints the
 coordinates need to be constrained twice per integration step.
 Depending on the computational cost of the force calculation,
@@ -2141,7 +2141,7 @@ the sorting of the normal modes according to their frequencies.
 Both {\tt mdrun} and {\tt g_nmeig} should be run in double precision.
 The normal modes can be analyzed with the program {\tt g_anaeig}.
 Ensembles of structures at any temperature and for any subset of
-normal modes can be generated with {\tt \normindex{g_nmens}}.
+normal modes can be generated with {\tt \normindex{\mbox{g_nmens}}}.
 An overview of normal mode analysis and the related principal component
 analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 % } % Brace matches ifthenelse test for gmxlite
