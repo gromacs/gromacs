@@ -884,9 +884,6 @@ static void calc_fluctuation_props(FILE *fp,
     int ii[eNR];
     
     NANO3 = NANO*NANO*NANO;
-    if (nmol < 2)
-        fprintf(fp,"\nWARNING: nmol = %d, this may not be what you want.\n",
-                nmol);
     if (!bDriftCorr)
     {
         fprintf(fp,"\nYou may want to use the -driftcorr flag in order to correct\n"
@@ -909,7 +906,7 @@ static void calc_fluctuation_props(FILE *fp,
     vvhh = alpha = kappa = cp = dcp = cv = NOTSET;
     
     /* Temperature */
-    tt = 0;
+    tt = NOTSET;
     if (ii[eTemp] < nset)
     {
         tt    = edat->s[ii[eTemp]].av;
@@ -932,7 +929,7 @@ static void calc_fluctuation_props(FILE *fp,
     }
     /* Total energy */
     et = varet = NOTSET;
-    if ((ii[eEtot] < nset) && (hh == NOTSET))
+    if ((ii[eEtot] < nset) && (hh == NOTSET) && (tt != NOTSET))
     {
         /* Only compute cv in constant volume runs, which we can test
            by checking whether the enthalpy was computed.
@@ -956,44 +953,54 @@ static void calc_fluctuation_props(FILE *fp,
         dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
     }
 
-    fprintf(fp,"\nTemperature dependent fluctuation properties at T = %g.\n",tt);
-    fprintf(fp,"\nHeat capacities obtained from fluctuations do *not* include\n");
-    fprintf(fp,"quantum corrections. If you want to get a more accurate estimate\n");
-    fprintf(fp,"please use the g_dos program.\n\n");
+    if (tt != NOTSET)
+    {
+        if (nmol < 2)
+            fprintf(fp,"\nWARNING: nmol = %d, this may not be what you want.\n",
+                    nmol);
+        fprintf(fp,"\nTemperature dependent fluctuation properties at T = %g.\n",tt);
+        fprintf(fp,"\nHeat capacities obtained from fluctuations do *not* include\n");
+        fprintf(fp,"quantum corrections. If you want to get a more accurate estimate\n");
+        fprintf(fp,"please use the g_dos program.\n\n");
 
-    if (debug != NULL)
-    {
-        if (varv != NOTSET)    
-            fprintf(fp,"varv  =  %10g (m^6)\n",varv*AVOGADRO/nmol);
-        if (vvhh != NOTSET)
-            fprintf(fp,"vvhh  =  %10g (m^3 J)\n",vvhh);
-    }
-    if (vv != NOTSET)
-        fprintf(fp,"Volume                                   = %10g m^3/mol\n",
-                vv*AVOGADRO/nmol);
-    if (varh != NOTSET)
-        fprintf(fp,"Enthalpy                                 = %10g kJ/mol\n",
+        if (debug != NULL)
+        {
+            if (varv != NOTSET)    
+                fprintf(fp,"varv  =  %10g (m^6)\n",varv*AVOGADRO/nmol);
+            if (vvhh != NOTSET)
+                fprintf(fp,"vvhh  =  %10g (m^3 J)\n",vvhh);
+        }
+        if (vv != NOTSET)
+            fprintf(fp,"Volume                                   = %10g m^3/mol\n",
+                    vv*AVOGADRO/nmol);
+        if (varh != NOTSET)
+            fprintf(fp,"Enthalpy                                 = %10g kJ/mol\n",
                 hh*AVOGADRO/(KILO*nmol));
-    if (alpha != NOTSET)
-        fprintf(fp,"Coefficient of Thermal Expansion Alpha_P = %10g (1/K)\n",
-                alpha);
-    if (kappa != NOTSET)
-    {
-        fprintf(fp,"Isothermal Compressibility Kappa         = %10g (J/m^3)\n",
-                kappa);
-        fprintf(fp,"Adiabatic bulk modulus                   = %10g (m^3/J)\n",
-                1.0/kappa);
+        if (alpha != NOTSET)
+            fprintf(fp,"Coefficient of Thermal Expansion Alpha_P = %10g (1/K)\n",
+                    alpha);
+        if (kappa != NOTSET)
+        {
+            fprintf(fp,"Isothermal Compressibility Kappa         = %10g (J/m^3)\n",
+                    kappa);
+            fprintf(fp,"Adiabatic bulk modulus                   = %10g (m^3/J)\n",
+                    1.0/kappa);
+        }
+        if (cp != NOTSET)
+            fprintf(fp,"Heat capacity at constant pressure Cp    = %10g J/mol K\n",
+                    cp);
+        if (cv != NOTSET)
+            fprintf(fp,"Heat capacity at constant volume Cv      = %10g J/mol K\n",
+                    cv);
+        if (dcp != NOTSET)
+            fprintf(fp,"Cp-Cv                                    =  %10g J/mol K\n",
+                    dcp);
+        please_cite(fp,"Allen1987a");
     }
-    if (cp != NOTSET)
-        fprintf(fp,"Heat capacity at constant pressure Cp    = %10g J/mol K\n",
-                cp);
-    if (cv != NOTSET)
-        fprintf(fp,"Heat capacity at constant volume Cv      = %10g J/mol K\n",
-                cv);
-    if (dcp != NOTSET)
-        fprintf(fp,"Cp-Cv                                    =  %10g J/mol K\n",
-                dcp);
-    please_cite(fp,"Allen1987a");
+    else 
+    {
+        fprintf(fp,"You should select the temperature in order to obtain fluctuation properties.\n");
+    }
 }
 
 static void analyse_ener(gmx_bool bCorr,const char *corrfn,

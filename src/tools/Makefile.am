@@ -24,7 +24,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_analyze.c	gmx_anaeig.c	gmx_bar.c	\
 	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
-	gmx_covar.c	gmx_current.c	\
+	gmx_covar.c	gmx_current.c	gmx_dos.c	\
 	gmx_density.c	gmx_densmap.c   gmx_dih.c	\
 	gmx_dielectric.c	gmx_kinetics.c gmx_spatial.c	\
 	gmx_dipoles.c	gmx_disre.c	gmx_dist.c	gmx_dyndom.c	\
@@ -59,7 +59,7 @@ bin_PROGRAMS = \
 	g_analyze   	g_anaeig    	g_bar		\
 	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
-	g_covar     	g_current	\
+	g_covar     	g_current	g_dos \
 	g_density   	g_densmap       g_dih       	\
 	g_dielectric 	g_helixorient 	g_principal \
 	g_dipoles   	g_disre     	g_dist      	g_dyndom    	\
