@@ -1820,7 +1820,7 @@ static void free_work(pme_work_t *work)
     /* Calculate exponentials through SSE in float precision */
 #define CALC_EXPONENTIALS(start,end,f,d_aligned,r_aligned,e_aligned) \
     {                                               \
-        const __m128 two = {2.0f,2.0f,2.0f,2.0f};   \
+        const __m128 two = _mm_set_ps(2.0f,2.0f,2.0f,2.0f); \
         __m128 f_sse;                               \
         __m128 lu;                                  \
         __m128 tmp_d1,d_inv,tmp_r,tmp_e;            \
