@@ -59,7 +59,8 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int   i,j,mi,mj,jmax,nd;
+    int   i,j,mi,mj,jmax;
+    real nd;
     double Ekin,Efac,reft,kT;
     double dt;
     t_grp_tcstat *tcstat;
@@ -91,7 +92,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
         ixi = &xi[i*nh];
         if (bBarostat) {
             iQinv = &(MassQ->QPinv[i*nh]); 
-            nd = 1; /* THIS WILL CHANGE IF NOT ISOTROPIC */
+            nd = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft = max(0.0,opts->ref_t[0]);
             Ekin = sqr(*veta)/MassQ->Winv;
         } else {
