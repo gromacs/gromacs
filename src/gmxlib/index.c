@@ -148,7 +148,7 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 }
 
 static void 
-p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx_bool bVerb)
+p_status(const char **restype, int nres, const char **typenames, int ntypes)
 {
     int i,j;
     int found;
@@ -172,16 +172,15 @@ p_status(const char **restype, int nres, const char **typenames, int ntypes, gmx
         }
     }
     
-    if (bVerb)
+    for(i=0; (i<ntypes); i++) 
     {
-        for(i=0; (i<ntypes); i++) 
+        if (counter[i] > 0)
         {
-            if(counter[i]>0)
-            {
-                printf("There are: %5d %10s residues\n",counter[i],typenames[i]);
-            }
+            printf("There are: %5d %10s residues\n",counter[i],typenames[i]);
         }
     }
+
+    sfree(counter);
 }
 
 
@@ -741,30 +740,25 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb
         resnm = *atoms->resinfo[i].name;
         gmx_residuetype_get_type(rt,resnm,&(restype[i]));
 
-        if(i==0)
+        /* Note that this does not lead to a N*N loop, but N*K, where
+         * K is the number of residue _types_, which is small and independent of N.
+         */
+        found = 0;
+        for(k=0;k<ntypes && !found;k++)
         {
-            snew(p_typename,1);
-            p_typename[ntypes++] = strdup(restype[i]);
+            found = !strcmp(restype[i],p_typename[k]);
         }
-        else
+        if(!found)
         {
-            /* Note that this does not lead to a N*N loop, but N*K, where
-             * K is the number of residue _types_, which is small and independent of N.
-             */
-            found = 0;
-            for(k=0;k<i && !found;k++)
-            {
-                found = !strcmp(restype[i],restype[k]);
-            }
-            if(!found)
-            {
-                srenew(p_typename,ntypes+1);
-                p_typename[ntypes++] = strdup(restype[i]);
-            }
+            srenew(p_typename,ntypes+1);
+            p_typename[ntypes++] = strdup(restype[i]);
         }
     }    
     
-    p_status(restype,atoms->nres,p_typename,ntypes,bVerb);
+    if (bVerb)
+    {
+        p_status(restype,atoms->nres,p_typename,ntypes);
+    }
 
     for(k=0;k<ntypes;k++)
     {              

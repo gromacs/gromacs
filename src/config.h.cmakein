@@ -170,6 +170,12 @@
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
 
+/* Define for Linux pthread_setaffinity */
+#cmakedefine HAVE_PTHREAD_SETAFFINITY
+
+/* Define for Windows NUMA-aware allocator functions*/
+#cmakedefine TMPI_WINDOWS_NUMA_API
+
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
 

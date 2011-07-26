@@ -471,8 +471,15 @@ t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title)
   int sel;
   
   printf("%s\n",title);
-  for(i=0; (i<nb); i++) 
-    printf("%2d: %s\n",i,(*tb[i]).name);
+  for(i=0; (i<nb); i++)
+  {
+    char *advice_string = "";
+    if (0 == gmx_wcmatch("*ZWITTERION*", (*tb[i]).name))
+    {
+      advice_string = " (only use with zwitterions containing exactly one residue)";
+    }
+    printf("%2d: %s%s\n",i,(*tb[i]).name, advice_string);
+  }
   do {
        ret = gmx_fgeti(&sel,stdin);
   } while (ret || (sel < 0) || (sel >= nb));

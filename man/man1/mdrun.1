@@ -1,8 +1,8 @@
-.TH mdrun 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH mdrun 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 mdrun - performs a simulation, do a normal mode analysis or an energy minimization
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "\-s" " topol.tpr "
@@ -32,6 +32,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .BI "\-pf" " pullf.xvg "
 .BI "\-mtx" " nm.mtx "
 .BI "\-dn" " dipole.ndx "
+.BI "\-multidir" " rundir "
 .BI "\-[no]h" ""
 .BI "\-[no]version" ""
 .BI "\-nice" " int "
@@ -39,7 +40,6 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .BI "\-xvg" " enum "
 .BI "\-[no]pd" ""
 .BI "\-dd" " vector "
-.BI "\-nt" " int "
 .BI "\-npme" " int "
 .BI "\-ddorder" " enum "
 .BI "\-[no]ddcheck" ""
@@ -62,20 +62,20 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .BI "\-reseed" " int "
 .BI "\-[no]ionize" ""
 .SH DESCRIPTION
-\&The mdrun program is the main computational chemistry engine
+\&The \fB mdrun\fR program is the main computational chemistry engine
 \&within GROMACS. Obviously, it performs Molecular Dynamics simulations,
 \&but it can also perform Stochastic Dynamics, Energy Minimization,
 \&test particle insertion or (re)calculation of energies.
-\&Normal mode analysis is another option. In this case mdrun
+\&Normal mode analysis is another option. In this case \fB mdrun\fR
 \&builds a Hessian matrix from single conformation.
 \&For usual Normal Modes\-like calculations, make sure that
 \&the structure provided is properly energy\-minimized.
-\&The generated matrix can be diagonalized by g_nmeig.
+\&The generated matrix can be diagonalized by \fB g_nmeig\fR.
 
 
-\&The mdrun program reads the run input file (\fB \-s\fR)
+\&The \fB mdrun\fR program reads the run input file (\fB \-s\fR)
 \&and distributes the topology over nodes if needed.
-\&mdrun produces at least four output files.
+\&\fB mdrun\fR produces at least four output files.
 \&A single log file (\fB \-g\fR) is written, unless the option
 \&\fB \-seppot\fR is used, in which case each node writes a log file.
 \&The trajectory file (\fB \-o\fR), contains coordinates, velocities and
@@ -92,13 +92,13 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&turned on.
 
 
-\&When mdrun is started using MPI with more than 1 node, parallelization
+\&When \fB mdrun\fR is started using MPI with more than 1 node, parallelization
 \&is used. By default domain decomposition is used, unless the \fB \-pd\fR
 \&option is set, which selects particle decomposition.
 
 
 \&With domain decomposition, the spatial decomposition can be set
-\&with option \fB \-dd\fR. By default mdrun selects a good decomposition.
+\&with option \fB \-dd\fR. By default \fB mdrun\fR selects a good decomposition.
 \&The user only needs to change this when the system is very inhomogeneous.
 \&Dynamic load balancing is set with the option \fB \-dlb\fR,
 \&which can give a significant performance improvement,
@@ -119,7 +119,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&this is computationally more efficient starting at about 12 nodes.
 \&The number of PME nodes is set with option \fB \-npme\fR,
 \&this can not be more than half of the nodes.
-\&By default mdrun makes a guess for the number of PME
+\&By default \fB mdrun\fR makes a guess for the number of PME
 \&nodes when the number of nodes is larger than 11 or performance wise
 \&not compatible with the PME grid x dimension.
 \&But the user should optimize npme. Performance statistics on this issue
@@ -133,6 +133,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&This section lists all options that affect the domain decomposition.
 \&
 
+
 \&Option \fB \-rdd\fR can be used to set the required maximum distance
 \&for inter charge\-group bonded interactions.
 \&Communication for two\-body bonded interactions below the non\-bonded
@@ -142,17 +143,19 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&and nearly indepedent of the value of \fB \-rdd\fR.
 \&With dynamic load balancing option \fB \-rdd\fR also sets
 \&the lower limit for the domain decomposition cell sizes.
-\&By default \fB \-rdd\fR is determined by mdrun based on
+\&By default \fB \-rdd\fR is determined by \fB mdrun\fR based on
 \&the initial coordinates. The chosen value will be a balance
 \&between interaction range and communication cost.
 \&
 
+
 \&When inter charge\-group bonded interactions are beyond
-\&the bonded cut\-off distance, mdrun terminates with an error message.
+\&the bonded cut\-off distance, \fB mdrun\fR terminates with an error message.
 \&For pair interactions and tabulated bonds
 \&that do not generate exclusions, this check can be turned off
 \&with the option \fB \-noddcheck\fR.
 \&
+
 
 \&When constraints are present, option \fB \-rcon\fR influences
 \&the cell size limit as well.
@@ -160,13 +163,14 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&should not be beyond the smallest cell size. A error message is
 \&generated when this happens and the user should change the decomposition
 \&or decrease the LINCS order and increase the number of LINCS iterations.
-\&By default mdrun estimates the minimum cell size required for P\-LINCS
+\&By default \fB mdrun\fR estimates the minimum cell size required for P\-LINCS
 \&in a conservative fashion. For high parallelization it can be useful
 \&to set the distance required for P\-LINCS with the option \fB \-rcon\fR.
 \&
 
+
 \&The \fB \-dds\fR option sets the minimum allowed x, y and/or z scaling
-\&of the cells with dynamic load balancing. mdrun will ensure that
+\&of the cells with dynamic load balancing. \fB mdrun\fR will ensure that
 \&the cells can scale down by at least this factor. This option is used
 \&for the automated spatial decomposition (when not using \fB \-dd\fR)
 \&as well as for determining the number of grid pulses, which in turn
@@ -181,7 +185,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&This can improve performance for highly parallel simulations
 \&where this global communication step becomes the bottleneck.
 \&For a global thermostat and/or barostat the temperature
-\&and/or pressure will also only be updated every \-gcom steps.
+\&and/or pressure will also only be updated every \fB \-gcom\fR steps.
 \&By default it is set to the minimum of nstcalcenergy and nstlist.
 
 
@@ -194,19 +198,19 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&ED (essential dynamics) sampling is switched on by using the \fB \-ei\fR
 \&flag followed by an \fB .edi\fR file.
 \&The \fB .edi\fR file can be produced using options in the essdyn
-\&menu of the WHAT IF program. mdrun produces a \fB .edo\fR file that
+\&menu of the WHAT IF program. \fB mdrun\fR produces a \fB .edo\fR file that
 \&contains projections of positions, velocities and forces onto selected
 \&eigenvectors.
 
 
 \&When user\-defined potential functions have been selected in the
-\&\fB .mdp\fR file the \fB \-table\fR option is used to pass mdrun
+\&\fB .mdp\fR file the \fB \-table\fR option is used to pass \fB mdrun\fR
 \&a formatted table with potential functions. The file is read from
-\&either the current directory or from the GMXLIB directory.
-\&A number of pre\-formatted tables are presented in the GMXLIB dir,
-\&for 6\-8, 6\-9, 6\-10, 6\-11, 6\-12 Lennard Jones potentials with
+\&either the current directory or from the \fB GMXLIB\fR directory.
+\&A number of pre\-formatted tables are presented in the \fB GMXLIB\fR dir,
+\&for 6\-8, 6\-9, 6\-10, 6\-11, 6\-12 Lennard\-Jones potentials with
 \&normal Coulomb.
-\&When pair interactions are present a separate table for pair interaction
+\&When pair interactions are present, a separate table for pair interaction
 \&functions is read using the \fB \-tablep\fR option.
 
 
@@ -214,7 +218,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&interaction functions are read using the \fB \-tableb\fR option.
 \&For each different tabulated interaction type the table file name is
 \&modified in a different way: before the file extension an underscore is
-\&appended, then a b for bonds, an a for angles or a d for dihedrals
+\&appended, then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals
 \&and finally the table number of the interaction type.
 
 
@@ -223,10 +227,16 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&in the \fB .mdp\fR file.
 
 
-\&With \fB \-multi\fR multiple systems are simulated in parallel.
-\&As many input files are required as the number of systems.
-\&The system number is appended to the run input and each output filename,
-\&for instance topol.tpr becomes topol0.tpr, topol1.tpr etc.
+\&With \fB \-multi\fR or \fB \-multidir\fR, multiple systems can be 
+\&simulated in parallel.
+\&As many input files/directories are required as the number of systems. 
+\&The \fB \-multidir\fR option takes a list of directories (one for each 
+\&system) and runs in each of them, using the input/output file names, 
+\&such as specified by e.g. the \fB \-s\fR option, relative to these 
+\&directories.
+\&With \fB \-multi\fR, the system number is appended to the run input 
+\&and each output filename, for instance \fB topol.tpr\fR becomes
+\&\fB topol0.tpr\fR, \fB topol1.tpr\fR etc.
 \&The number of nodes per system is the total number of nodes
 \&divided by the number of systems.
 \&One use of this option is for NMR refinement: when distance
@@ -235,8 +245,8 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 
 
 \&With \fB \-replex\fR replica exchange is attempted every given number
-\&of steps. The number of replicas is set with the \fB \-multi\fR option,
-\&see above.
+\&of steps. The number of replicas is set with the \fB \-multi\fR or 
+\&\fB \-multidir\fR option, described above.
 \&All run input files should use a different coupling temperature,
 \&the order of the files is not important. The random seed is set with
 \&\fB \-reseed\fR. The velocities are scaled and neighbor searching
@@ -245,7 +255,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 
 \&Finally some experimental algorithms can be tested when the
 \&appropriate options have been given. Currently under
-\&investigation are: polarizability, and X\-Ray bombardments.
+\&investigation are: polarizability and X\-ray bombardments.
 \&
 
 
@@ -267,18 +277,22 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&A simulation can be continued by reading the full state from file
 \&with option \fB \-cpi\fR. This option is intelligent in the way that
 \&if no checkpoint file is found, Gromacs just assumes a normal run and
-\&starts from the first step of the tpr file. By default the output
+\&starts from the first step of the \fB .tpr\fR file. By default the output
 \&will be appending to the existing output files. The checkpoint file
 \&contains checksums of all output files, such that you will never
 \&loose data when some output files are modified, corrupt or removed.
 \&There are three scenarios with \fB \-cpi\fR:
 
-\&* no files with matching names are present: new output files are written
 
-\&* all files are present with names and checksums matching those stored
+\&\fB *\fR no files with matching names are present: new output files are written
+
+
+\&\fB *\fR all files are present with names and checksums matching those stored
 \&in the checkpoint file: files are appended
 
-\&* otherwise no files are modified and a fatal error is generated
+
+\&\fB *\fR otherwise no files are modified and a fatal error is generated
+
 
 \&With \fB \-noappend\fR new output files are opened and the simulation
 \&part number is added to all output file names.
@@ -309,18 +323,18 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 \&
 
 
-\&When mdrun receives a TERM signal, it will set nsteps to the current
-\&step plus one. When mdrun receives an INT signal (e.g. when ctrl+C is
+\&When \fB mdrun\fR receives a TERM signal, it will set nsteps to the current
+\&step plus one. When \fB mdrun\fR receives an INT signal (e.g. when ctrl+C is
 \&pressed), it will stop after the next neighbor search step 
 \&(with nstlist=0 at the next step).
 \&In both cases all the usual output will be written to file.
-\&When running with MPI, a signal to one of the mdrun processes
+\&When running with MPI, a signal to one of the \fB mdrun\fR processes
 \&is sufficient, this signal should not be sent to mpirun or
-\&the mdrun process that is the parent of the others.
+\&the \fB mdrun\fR process that is the parent of the others.
 \&
 
 
-\&When mdrun is started with MPI, it does not run niced by default.
+\&When \fB mdrun\fR is started with MPI, it does not run niced by default.
 .SH FILES
 .BI "\-s" " topol.tpr" 
 .B Input
@@ -430,6 +444,10 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .B Output, Opt.
  Index file 
 
+.BI "\-multidir" " rundir" 
+.B Input, Opt., Mult.
+ Run directory 
+
 .SH OTHER OPTIONS
 .BI "\-[no]h"  "no    "
  Print help info and quit
@@ -451,9 +469,6 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 
 .BI "\-dd"  " vector" " 0 0 0" 
  Domain decomposition grid, 0 is optimize
-
-.BI "\-nt"  " int" " 0" 
- Number of threads to start (0 is guess)
 
 .BI "\-npme"  " int" " \-1" 
  Number of separate nodes to be used for PME, \-1 is guess

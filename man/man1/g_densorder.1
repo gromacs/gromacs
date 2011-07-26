@@ -1,0 +1,123 @@
+.TH g_densorder 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.SH NAME
+g_densorder - calculate surface fluctuations
+
+.B VERSION 4.5.4-dev-20110404-bc5695c
+.SH SYNOPSIS
+\f3g_densorder\fP
+.BI "\-s" " topol.tpr "
+.BI "\-f" " traj.xtc "
+.BI "\-n" " index.ndx "
+.BI "\-o" " Density4D.dat "
+.BI "\-or" " hello.out "
+.BI "\-og" " interface.xpm "
+.BI "\-Spect" " intfspect.out "
+.BI "\-[no]h" ""
+.BI "\-[no]version" ""
+.BI "\-nice" " int "
+.BI "\-b" " time "
+.BI "\-e" " time "
+.BI "\-dt" " time "
+.BI "\-[no]w" ""
+.BI "\-[no]1d" ""
+.BI "\-bw" " real "
+.BI "\-bwn" " real "
+.BI "\-order" " int "
+.BI "\-axis" " string "
+.BI "\-method" " enum "
+.BI "\-d1" " real "
+.BI "\-d2" " real "
+.BI "\-tblock" " int "
+.BI "\-nlevel" " int "
+.SH DESCRIPTION
+\&A small program to reduce a two\-phase density distribution
+\&along an axis, computed over a MD trajectory
+\&to 2D surfaces fluctuating in time, by a fit to
+\&a functional profile for interfacial densities
+\&A time\-averaged spatial representation of the
+\&interfaces can be output with the option \-tavg
+.SH FILES
+.BI "\-s" " topol.tpr" 
+.B Input
+ Run input file: tpr tpb tpa 
+
+.BI "\-f" " traj.xtc" 
+.B Input
+ Trajectory: xtc trr trj gro g96 pdb cpt 
+
+.BI "\-n" " index.ndx" 
+.B Input
+ Index file 
+
+.BI "\-o" " Density4D.dat" 
+.B Output, Opt.
+ Generic data file 
+
+.BI "\-or" " hello.out" 
+.B Output, Opt., Mult.
+ Generic output file 
+
+.BI "\-og" " interface.xpm" 
+.B Output, Opt., Mult.
+ X PixMap compatible matrix file 
+
+.BI "\-Spect" " intfspect.out" 
+.B Output, Opt., Mult.
+ Generic output file 
+
+.SH OTHER OPTIONS
+.BI "\-[no]h"  "no    "
+ Print help info and quit
+
+.BI "\-[no]version"  "no    "
+ Print version info and quit
+
+.BI "\-nice"  " int" " 0" 
+ Set the nicelevel
+
+.BI "\-b"  " time" " 0     " 
+ First frame (ps) to read from trajectory
+
+.BI "\-e"  " time" " 0     " 
+ Last frame (ps) to read from trajectory
+
+.BI "\-dt"  " time" " 0     " 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "\-[no]w"  "no    "
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
+
+.BI "\-[no]1d"  "no    "
+ Pseudo\-1d interface geometry
+
+.BI "\-bw"  " real" " 0.2   " 
+ Binwidth of density distribution tangential to interface
+
+.BI "\-bwn"  " real" " 0.05  " 
+ Binwidth of density distribution normal to interface
+
+.BI "\-order"  " int" " 0" 
+ Order of Gaussian filter, order 0 equates to NO filtering
+
+.BI "\-axis"  " string" " Z" 
+ Axis Direction \- X, Y or Z
+
+.BI "\-method"  " enum" " bisect" 
+ Interface location method: \fB bisect\fR or \fB functional\fR
+
+.BI "\-d1"  " real" " 0     " 
+ Bulk density phase 1 (at small z)
+
+.BI "\-d2"  " real" " 1000  " 
+ Bulk density phase 2 (at large z)
+
+.BI "\-tblock"  " int" " 100" 
+ Number of frames in one time\-block average
+
+.BI "\-nlevel"  " int" " 100" 
+ Number of Height levels in 2D \- XPixMaps
+
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

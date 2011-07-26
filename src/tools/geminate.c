@@ -47,6 +47,7 @@
 #include <gsl/gsl_version.h>
 #endif
 
+#include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -57,6 +58,10 @@
 #endif
 #ifdef HAVE_OPENMP
 #include <omp.h>
+#endif
+
+#ifndef isfinite
+#define isfinite(x) (!isinf(x) && !isnan(x))
 #endif
 
 /* The first few sections of this file contain functions that were adopted,
@@ -700,6 +705,8 @@ static double gemFunc_residual2(const gsl_vector *p, void *data)
     	 gsl_vector_get(p, 0), gsl_vector_get(p, 1),
     	 GD->params);
   
+  fixGemACF(GD->ctTheory, nFitPoints);
+
   /* Removing a bunch of points from the log-part. */
 #ifdef HAVE_OPENMP
 #pragma omp parallel for schedule(dynamic)	\
@@ -876,12 +883,19 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	    params->kd,
 	    s->fval, size, d2);
 
-    if (iter%10 == 1)
+    if (iter%1 == 0)
       {
 	eq10v2(GD->ctTheory, time, nData, params->ka, params->kd, params);
+	/* fixGemACF(GD->ctTheory, nFitPoints); */
 	sprintf(dumpname, "Iter_%i.xvg", iter);
 	for(i=0; i<GD->nData; i++)
-	  dumpdata[i] = (real)(GD->ctTheory[i]);
+	  {
+	    dumpdata[i] = (real)(GD->ctTheory[i]);
+	    if (!isfinite(dumpdata[i]))
+	      {
+		gmx_fatal(FARGS, "Non-finite value in acf.");
+	      }
+	  }
 	dumpN(dumpdata, GD->nData, dumpname);
       }
   }
@@ -1212,4 +1226,85 @@ static real* d2r(const double *d, const int nn)
     r[i] = (real)d[i];
 
   return r;
+}
+
+static void _patchBad(double *ct, int n, double dy)
+{
+  /* Just do lin. interpolation for now. */
+  int i;
+
+  for (i=1; i<n; i++)
+    {
+      ct[i] = ct[0]+i*dy;
+    }
+}
+
+static void patchBadPart(double *ct, int n)
+{
+  _patchBad(ct,n,(ct[n] - ct[0])/n);
+}
+
+static void patchBadTail(double *ct, int n)
+{
+  _patchBad(ct+1,n-1,ct[1]-ct[0]);
+
+}
+
+extern void fixGemACF(double *ct, int len)
+{
+  int i, j, b, e;
+  gmx_bool bBad;
+
+  /* Let's separate two things:
+   * - identification of bad parts
+   * - patching of bad parts.
+   */
+  
+  b = 0; /* Start of a bad stretch */
+  e = 0; /* End of a bad stretch */
+  bBad = FALSE;
+
+  /* An acf of binary data must be one at t=0. */
+  if (abs(ct[0]-1.0) > 1e-6)
+    {
+      ct[0] = 1.0;
+      fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+    }
+
+  for (i=0; i<len; i++)
+    {
+      
+      if (!(isinf(ct[i]) || isnan(ct[i]))/* isfinite(ct[i]) */)
+	{
+	  if (!bBad)
+	    {
+	      /* Still on a good stretch. Proceed.*/
+	      continue;
+	    }
+
+	  /* Patch up preceding bad stretch. */
+	  if (i == (len-1))
+	    {
+	      /* It's the tail */
+	      if (b <= 1)
+		{
+		  gmx_fatal(FARGS, "The ACF is mostly NaN or Inf. Aborting.");
+		}
+	      patchBadTail(&(ct[b-2]), (len-b)+1);
+	    }
+
+	  e = i;
+	  patchBadPart(&(ct[b-1]), (e-b)+1);
+	  bBad = FALSE;
+	}
+      else
+	{
+	  if (!bBad)
+	    {
+	      b = i;
+	  
+	      bBad = TRUE;
+	    }
+	}
+    }
 }

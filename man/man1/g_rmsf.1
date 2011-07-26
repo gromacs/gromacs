@@ -1,8 +1,8 @@
-.TH g_rmsf 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_rmsf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_rmsf - calculates atomic fluctuations
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_rmsf\fP
 .BI "\-f" " traj.xtc "
@@ -27,14 +27,14 @@ g_rmsf - calculates atomic fluctuations
 .BI "\-[no]aniso" ""
 .BI "\-[no]fit" ""
 .SH DESCRIPTION
-\&g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard 
-\&deviation) of atomic positions 
-\&after (optionally) fitting to a reference frame.
+\&\fB g_rmsf\fR computes the root mean square fluctuation (RMSF, i.e. standard 
+\&deviation) of atomic positions in the trajectory (supplied with \fB \-f\fR)
+\&after (optionally) fitting to a reference frame (supplied with \fB \-s\fR).
 
 
 \&With option \fB \-oq\fR the RMSF values are converted to B\-factor
-\&values, which are written to a pdb file with the coordinates, of the
-\&structure file, or of a pdb file when \fB \-q\fR is specified.
+\&values, which are written to a \fB .pdb\fR file with the coordinates, of the
+\&structure file, or of a \fB .pdb\fR file when \fB \-q\fR is specified.
 \&Option \fB \-ox\fR writes the B\-factors to a file with the average
 \&coordinates.
 
@@ -43,18 +43,18 @@ g_rmsf - calculates atomic fluctuations
 \&respect to the reference structure is calculated.
 
 
-\&With the option \fB aniso\fR g_rmsf will compute anisotropic
+\&With the option \fB \-aniso\fR, \fB g_rmsf\fR will compute anisotropic
 \&temperature factors and then it will also output average coordinates
-\&and a pdb file with ANISOU records (corresonding to the \fB \-oq\fR
+\&and a \fB .pdb\fR file with ANISOU records (corresonding to the \fB \-oq\fR
 \&or \fB \-ox\fR option). Please note that the U values
-\&are orientation dependent, so before comparison with experimental data
+\&are orientation\-dependent, so before comparison with experimental data
 \&you should verify that you fit to the experimental coordinates.
 
 
-\&When a pdb input file is passed to the program and the \fB \-aniso\fR
+\&When a \fB .pdb\fR input file is passed to the program and the \fB \-aniso\fR
 \&flag is set
 \&a correlation plot of the Uij will be created, if any anisotropic
-\&temperature factors are present in the pdb file.
+\&temperature factors are present in the \fB .pdb\fR file.
 
 
 \&With option \fB \-dir\fR the average MSF (3x3) matrix is diagonalized.
@@ -121,7 +121,7 @@ g_rmsf - calculates atomic fluctuations
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

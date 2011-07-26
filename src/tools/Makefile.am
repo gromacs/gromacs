@@ -24,7 +24,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_analyze.c	gmx_anaeig.c	gmx_bar.c	\
 	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
-	gmx_covar.c	gmx_current.c	\
+	gmx_covar.c	gmx_current.c	gmx_dos.c	\
 	gmx_density.c	gmx_densmap.c   gmx_dih.c	\
 	gmx_dielectric.c	gmx_kinetics.c gmx_spatial.c	\
 	gmx_dipoles.c	gmx_disre.c	gmx_dist.c	gmx_dyndom.c	\
@@ -43,8 +43,12 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	gmx_tune_pme.c  gmx_membed.c    \
-	calcpot.c 	calcpot.h 	edittop.c
+	addconf.c 	addconf.h	gmx_tune_pme.c  gmx_membed.c     \
+	calcpot.c 	calcpot.h 	edittop.c	\
+	dens_filter.c	dens_filter.h	\
+	powerspect.c	powerspect.h	interf.h	\
+	gmx_densorder.c	gmx_hydorder.c	\
+	binsearch.h	binsearch.c
 
 bin_PROGRAMS = \
 	do_dssp		editconf	eneconv		\
@@ -55,7 +59,7 @@ bin_PROGRAMS = \
 	g_analyze   	g_anaeig    	g_bar		\
 	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
-	g_covar     	g_current	\
+	g_covar     	g_current	g_dos \
 	g_density   	g_densmap       g_dih       	\
 	g_dielectric 	g_helixorient 	g_principal \
 	g_dipoles   	g_disre     	g_dist      	g_dyndom    	\
@@ -71,12 +75,8 @@ bin_PROGRAMS = \
 	g_spatial	g_pme_error		g_options	\
 	g_tcaf      	g_traj      	g_tune_pme   \
 	g_vanhove	g_velacc    	g_membed      \
-	g_clustsize 	g_mdmat     	g_wham		\
-	g_sigeps
-
-# These programs are not compiled or installed by default - you will have to 
-# issue "make <program>" and copy the binary to the correct location yourself! 
-# Add new entries in Makefile.am!
+	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
+	g_sigeps	g_densorder	g_hydorder
 
 EXTRA_DIST		=	libgmxana.pc.cmakein
 

@@ -1494,7 +1494,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
     if (bBox){
         if (d>a && bMerge && (bContact || isInterchangable(hb, d, a, grpd, grpa))) { /* acceptor is also a donor and vice versa? */
-            return hbNo;
+            /* return hbNo; */
             daSwap = TRUE; /* If so, then their history should be filed with donor and acceptor swapped. */
         }
         if (hb->bGem) {
@@ -2375,11 +2375,11 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                      */
     if (acType != AC_LUZAR)
     {
-#if (_OPENMP >= 200805) /* =====================\ */
-        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP >= 200805) /\* =====================\ *\/ */
+/*         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif /* _OPENMP >= 200805 ====================/ */
+/* #endif /\* _OPENMP >= 200805 ====================/ *\/ */
 
         omp_set_num_threads(nThreads);
         snew(dondata, nThreads);
@@ -3557,11 +3557,11 @@ int gmx_hbond(int argc,char *argv[])
 
     if (bParallel)
     {
-#if (_OPENMP > 200805)
-        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP > 200805) */
+/*         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif
+/* #endif */
         omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
         fflush(stdout);
@@ -3619,7 +3619,7 @@ int gmx_hbond(int argc,char *argv[])
             dist, ang, peri, icell, jcell,              \
             grp, ogrp, ai, aj, xjj, yjj, zjj,           \
             xk, yk, zk, ihb, id,  resdist,              \
-            xkk, ykk, zkk, kcell, ak, k, bTric)         \
+            xkk, ykk, zkk, kcell, ak, k, bTric)        \
     default(none)                                       \
     shared(hb, p_hb, p_adist, p_rdist, actual_nThreads, \
            x, bBox, box, hbox, rcut, r2cut, rshell,     \
@@ -3654,7 +3654,6 @@ int gmx_hbond(int argc,char *argv[])
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
             } /* omp single */
-
 #ifdef HAVE_OPENMP
             p_hb[threadNr]->time = hb->time; /* This pointer may have changed. */
 #endif
@@ -3738,7 +3737,7 @@ int gmx_hbond(int argc,char *argv[])
                     /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
 #endif
-                    for(xi=0; (xi<ngrid[XX]); xi++)
+                    for(xi=0; xi<ngrid[XX]; xi++)
                         for(yi=0; (yi<ngrid[YY]); yi++)
                             for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	      

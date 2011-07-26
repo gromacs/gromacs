@@ -1,8 +1,8 @@
-.TH g_helix 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_helix 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_helix - calculates basic properties of alpha helices
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_helix\fP
 .BI "\-s" " topol.tpr "
@@ -27,46 +27,46 @@ g_helix - calculates basic properties of alpha helices
 .BI "\-ahxstart" " int "
 .BI "\-ahxend" " int "
 .SH DESCRIPTION
-\&g_helix computes all kind of helix properties. First, the peptide
-\&is checked to find the longest helical part. This is determined by
-\&Hydrogen bonds and Phi/Psi angles.
+\&\fB g_helix\fR computes all kinds of helix properties. First, the peptide
+\&is checked to find the longest helical part, as determined by
+\&hydrogen bonds and phi/psi angles.
 \&That bit is fitted
-\&to an ideal helix around the Z\-axis and centered around the origin.
+\&to an ideal helix around the \fI z\fR\-axis and centered around the origin.
 \&Then the following properties are computed:
 
 
-\&\fB 1.\fR Helix radius (file radius.xvg). This is merely the
+\&\fB 1.\fR Helix radius (file \fB radius.xvg\fR). This is merely the
 \&RMS deviation in two dimensions for all Calpha atoms.
 \&it is calced as sqrt((SUM i(x2(i)+y2(i)))/N), where N is the number
 \&of backbone atoms. For an ideal helix the radius is 0.23 nm
 
-\&\fB 2.\fR Twist (file twist.xvg). The average helical angle per
-\&residue is calculated. For alpha helix it is 100 degrees,
-\&for 3\-10 helices it will be smaller,
+\&\fB 2.\fR Twist (file \fB twist.xvg\fR). The average helical angle per
+\&residue is calculated. For an alpha\-helix it is 100 degrees,
+\&for 3\-10 helices it will be smaller, and 
 \&for 5\-helices it will be larger.
 
-\&\fB 3.\fR Rise per residue (file rise.xvg). The helical rise per
-\&residue is plotted as the difference in Z\-coordinate between Ca
-\&atoms. For an ideal helix this is 0.15 nm
+\&\fB 3.\fR Rise per residue (file \fB rise.xvg\fR). The helical rise per
+\&residue is plotted as the difference in \fI z\fR\-coordinate between Calpha
+\&atoms. For an ideal helix, this is 0.15 nm
 
-\&\fB 4.\fR Total helix length (file len\-ahx.xvg). The total length
+\&\fB 4.\fR Total helix length (file \fB len\-ahx.xvg\fR). The total length
 \&of the
 \&helix in nm. This is simply the average rise (see above) times the
 \&number of helical residues (see below).
 
-\&\fB 5.\fR Number of helical residues (file n\-ahx.xvg). The title says
+\&\fB 5.\fR Number of helical residues (file \fB n\-ahx.xvg\fR). The title says
 \&it all.
 
-\&\fB 6.\fR Helix Dipole, backbone only (file dip\-ahx.xvg).
+\&\fB 6.\fR Helix dipole, backbone only (file \fB dip\-ahx.xvg\fR).
 
 \&\fB 7.\fR RMS deviation from ideal helix, calculated for the Calpha
-\&atoms only (file rms\-ahx.xvg).
+\&atoms only (file \fB rms\-ahx.xvg\fR).
 
-\&\fB 8.\fR Average Calpha\-Calpha dihedral angle (file phi\-ahx.xvg).
+\&\fB 8.\fR Average Calpha \- Calpha dihedral angle (file \fB phi\-ahx.xvg\fR).
 
-\&\fB 9.\fR Average Phi and Psi angles (file phipsi.xvg).
+\&\fB 9.\fR Average phi and psi angles (file \fB phipsi.xvg\fR).
 
-\&\fB 10.\fR Ellipticity at 222 nm according to \fI Hirst and Brooks\fR
+\&\fB 10.\fR Ellipticity at 222 nm according to Hirst and Brooks.
 \&
 
 
@@ -115,7 +115,7 @@ g_helix - calculates basic properties of alpha helices
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-r0"  " int" " 1" 
  The first residue number in the sequence

@@ -375,7 +375,7 @@ energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 <dd>precision to write to xtc trajectory</dd>
 <dt><b>xtc_grps:</b></dt>
 <dd>group(s) to write to xtc trajectory, default the whole system is written
-(if <b>nstxtcout</b> is larger than zero)</dd>
+(if <b>nstxtcout</b> &gt; 0)</dd>
 <dt><b>energygrps:</b></dt>
 <dd>group(s) to write to energy file</dd>
 </dl>
@@ -406,11 +406,11 @@ than half the buffer size from the center of geometry of their charge group
 as determined at the previous neighbor search.
 Coordinate scaling due to pressure coupling or the <b>deform</b> option
 is taken into account.
-This option guarantees that their are no cut-off artifacts.
-But for larger systems this can come at a high computational cost,
+This option guarantees that their are no cut-off artifacts,
+but for larger systems this can come at a high computational cost,
 since the neighbor list update frequency will be determined
 by just one or two particles moving slightly beyond the half buffer length
-(which not even necessarily implies that the neighbor list is invalid),
+(which does not necessarily imply that the neighbor list is invalid),
 while 99.99% of the particles are fine.
 </dd>
 </dl></dd>
@@ -449,10 +449,10 @@ These disadvantages do not apply when two walls are used.</dd>
 <dt><b>periodic_molecules:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>molecules are finite, fast molecular pbc can be used</dd>
+<dd>molecules are finite, fast molecular PBC can be used</dd>
 <dt><b>yes</b></dt>
 <dd>for systems with molecules that couple to themselves through
-the periodic boundary conditions, this requires a slower pbc algorithm
+the periodic boundary conditions, this requires a slower PBC algorithm
 and molecules are not made whole in the output</dd>
 </dl></dd>
 
@@ -511,12 +511,12 @@ The grid dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 <br>
-NOTE: PPPM is not functional in the current version, we plan to implement
+NOTE: PPPM is not functional in the current version, but we plan to implement
 PPPM through a small modification of the PME code.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
-where <b>rcoulomb</b> &ge <b>rlist</b>.
+where <b>rcoulomb</b> &ge; <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The dielectric constant can be set to infinity by setting <b>epsilon_rf</b><tt>=0</tt>.</dd>
 
@@ -1005,7 +1005,7 @@ the process ID number.
 i.e. bonds are represented by a harmonic (or other) potential
 or a Morse potential (depending on the setting of <b>morse</b>)
 and angles by a harmonic (or other) potential.
-<dt><b>hbonds</b></dt>
+<dt><b>h-bonds</b></dt>
 <dd>Convert the bonds with H-atoms to constraints.</dd>
 <dt><b>all-bonds</b></dt>
 <dd>Convert all bonds to constraints.</dd>

@@ -1161,7 +1161,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                      t_nrnb *nrnb,
                      int maxwarn,int *warncount)
 {
-    char  buf[STRLEN],buf2[22];
+    char  buf[STRLEN],buf2[22],buf3[STRLEN];
     int   i,warn,p_imax,error;
     real  ncons_loc,p_ssd,p_max;
     t_pbc pbc,*pbc_null;
@@ -1324,10 +1324,19 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             {
                 cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                         &ncons_loc,&p_ssd,&p_max,&p_imax);
-                sprintf(buf,"\nStep %s, time %g (ps)  LINCS WARNING\n"
+                if (MULTISIM(cr))
+                {
+                    sprintf(buf3," in simulation %d", cr->ms->sim);
+                }
+                else
+                {
+                    buf3[0] = 0;
+                }
+                sprintf(buf,"\nStep %s, time %g (ps)  LINCS WARNING%s\n"
                         "relative constraint deviation after LINCS:\n"
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
                         gmx_step_str(step,buf2),ir->init_t+step*ir->delta_t,
+                        buf3,
                         sqrt(p_ssd/ncons_loc),p_max,
                         ddglatnr(cr->dd,lincsd->bla[2*p_imax]),
                         ddglatnr(cr->dd,lincsd->bla[2*p_imax+1]));
