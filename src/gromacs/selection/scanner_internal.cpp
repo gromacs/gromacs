@@ -56,8 +56,8 @@
 
 #include "string2.h"
 
+#include "gromacs/fatalerror/errorcodes.h"
 #include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 
 #include "gromacs/selection/selmethod.h"

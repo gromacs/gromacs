@@ -30,14 +30,14 @@
  */
 /*! \file
  * \brief
- * Declares common return codes and functions for fatal error handling.
+ * Declares error codes an related functions for fatal error handling.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
  * \ingroup module_fatalerror
  */
-#ifndef GMX_FATALERROR_FATALERROR_H
-#define GMX_FATALERROR_FATALERROR_H
+#ifndef GMX_FATALERROR_ERRORCODES_H
+#define GMX_FATALERROR_ERRORCODES_H
 
 namespace gmx
 {

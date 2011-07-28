@@ -50,7 +50,6 @@
 #include "selmethod.h"
 
 #include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/fatalerror.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/basicoptions.h"

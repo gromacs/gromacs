@@ -30,12 +30,12 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in fatalerror.h.
+ * Implements functions in errorcodes.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_fatalerror
  */
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/errorcodes.h"
 
 #include <cstdarg>
 #include <cstdio>

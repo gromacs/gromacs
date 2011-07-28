@@ -36,7 +36,7 @@
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/errorcodes.h"
 #include "testutils/datapath.h"
 #include "testutils/refdata.h"
 

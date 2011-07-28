@@ -39,7 +39,7 @@
 
 #include <boost/exception/get_error_info.hpp>
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/errorcodes.h"
 
 #include "errorformat.h"
 
