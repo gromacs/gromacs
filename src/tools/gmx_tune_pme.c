@@ -2345,8 +2345,9 @@ int gmx_tune_pme(int argc,char *argv[])
                 fs, bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa),pa);
     
-    /* Determine max and min number of PME nodes to test: */
-    if ((nnodes > 2) && (npme_fixed >= -1))
+    /* Determine the maximum and minimum number of PME nodes to test,
+     * the actual list of settings is build in do_the_tests(). */
+    if ((nnodes > 2) && (npme_fixed < -1))
     {
         maxPMEnodes = floor(maxPMEfraction*nnodes);
         minPMEnodes = max(floor(minPMEfraction*nnodes), 0);
