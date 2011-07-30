@@ -99,7 +99,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 
     private:
         virtual void convertValue(const std::string &value);
-        virtual void processSet(int nvalues);
+        virtual void processSetValues(ValueList *values);
 };
 
 /*! \internal \brief
@@ -116,7 +116,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
 
     private:
         virtual void convertValue(const std::string &value);
-        virtual void processSet(int nvalues);
+        virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
         bool                    _bTime;
@@ -136,6 +136,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 
     private:
         virtual void convertValue(const std::string &value);
+        virtual void refreshValues();
 
         ValueList               _allowed;
         int                    *_enumIndexStore;

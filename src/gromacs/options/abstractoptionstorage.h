@@ -203,12 +203,12 @@ class AbstractOptionStorage
         const Options &hostOptions() const { return *_options; }
 
         /*! \brief
-         * Removes all values from the storage.
+         * Removes all values from temporary storage for a set.
          *
-         * This function is called also before the first value is added,
-         * allowing the storage to set a default value in initialization.
+         * This function is always called before starting to add values to
+         * a set, allowing the storage to clear its internal buffers.
          */
-        virtual void clear() = 0;
+        virtual void clearSet() = 0;
         /*! \brief
          * Adds a new value, converting it from a string.
          *
@@ -222,24 +222,16 @@ class AbstractOptionStorage
          * Performs validation and/or actions once a set of values has been
          * added.
          *
-         * \param[in] nvalues  Number of values added since the previous call
-         *      to finishSet().
-         *
          * This function may be called multiple times of the underlying option
          * can be specified multiple times.
          */
-        virtual void processSet(int nvalues) = 0;
+        virtual void processSet() = 0;
         /*! \brief
          * Performs validation and/or actions once all values have been added.
          *
          * This function is always called once.
          */
         virtual void processAll() = 0;
-
-        /*! \brief
-         * Increments the number of values for the current set.
-         */
-        void incrementValueCount();
 
     private:
         std::string             _name;
@@ -250,8 +242,8 @@ class AbstractOptionStorage
         int                     _minValueCount;
         //! Maximum allowed number of values (in one set), or -1 if no limit.
         int                     _maxValueCount;
-        //! Number of values added so far to the current set, or -1 if not in one.
-        int                     _currentValueCount;
+        //! Whether we are currently assigning values to a set.
+        bool                    _inSet;
         //! Parent Options object.
         Options                *_options;
 

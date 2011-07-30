@@ -72,13 +72,6 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         MockOptionStorage(const MockOption &settings, gmx::Options *options);
 
         /*! \brief
-         * Calls processAll() in the base class.
-         */
-        void processAllBase()
-        {
-            MyBase::processAll();
-        }
-        /*! \brief
          * Calls addValue("dummy") in the base class.
          */
         void addDummyValue()
@@ -93,12 +86,13 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             setFlag(gmx::efSet);
         }
         using MyBase::addValue;
+        using MyBase::commitValues;
 
         virtual const char *typeString() const { return "mock"; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
 
         MOCK_METHOD1(convertValue, void(const std::string &value));
-        MOCK_METHOD1(processSet, void(int nvalues));
+        MOCK_METHOD1(processSetValues, void(ValueList *values));
         MOCK_METHOD0(processAll, void());
 };
 
@@ -116,9 +110,6 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         {
         }
 
-        //! Sets the required flags to support storage that may not add values.
-        MyClass &mayNotAddValues()
-        { setFlag(gmx::efConversionMayNotAddValues); return me(); }
         //! Sets an output pointer to give access to the created storage object.
         MyClass &storageObject(MockOptionStorage **storagePtr)
         { _storagePtr = storagePtr; return me(); }
@@ -145,8 +136,6 @@ MockOptionStorage::MockOptionStorage(const MockOption &settings, gmx::Options *o
     using ::testing::WithArg;
     ON_CALL(*this, convertValue(_))
         .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
-    ON_CALL(*this, processAll())
-        .WillByDefault(Invoke(this, &MockOptionStorage::processAllBase));
 }
 
 namespace
@@ -171,7 +160,8 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
         using ::testing::InvokeWithoutArgs;
         EXPECT_CALL(*mock, processAll())
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                            InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }
 
     gmx::OptionsAssigner assigner(&options);
@@ -193,17 +183,19 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
     ASSERT_NO_THROW(options.addOption(
-                        MockOption("name").storageObject(&mock).mayNotAddValues()
+                        MockOption("name").storageObject(&mock)
                             .storeVector(&values).multiValue()));
 
     {
         ::testing::InSequence dummy;
+        using ::testing::ElementsAre;
+        using ::testing::Pointee;
         using ::testing::Return;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(Return());
         EXPECT_CALL(*mock, convertValue("c"));
-        EXPECT_CALL(*mock, processSet(2));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "c"))));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -238,12 +230,14 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
+        using ::testing::ElementsAre;
         using ::testing::InvokeWithoutArgs;
+        using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
-        EXPECT_CALL(*mock, processSet(3));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -278,12 +272,14 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
+        using ::testing::ElementsAre;
         using ::testing::InvokeWithoutArgs;
+        using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
-        EXPECT_CALL(*mock, processSet(2));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -311,17 +307,18 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
     ASSERT_NO_THROW(options.addOption(
-                        MockOption("name").storageObject(&mock).mayNotAddValues()
+                        MockOption("name").storageObject(&mock)
                             .storeVector(&values).valueCount(0)));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
         using ::testing::DoAll;
+        using ::testing::ElementsAre;
+        using ::testing::Pointee;
         using ::testing::Return;
         EXPECT_CALL(*mock, convertValue("a"))
             .WillOnce(Return());
-        EXPECT_CALL(*mock, processSet(0));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre())));
         EXPECT_CALL(*mock, processAll());
     }
 

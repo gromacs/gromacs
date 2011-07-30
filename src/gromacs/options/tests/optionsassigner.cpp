@@ -80,6 +80,10 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
     EXPECT_THROW(assigner.startOption("p"), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
+
+    EXPECT_TRUE(options.isSet("p"));
+    ASSERT_EQ(1U, values.size());
+    EXPECT_EQ(1, values[0]);
 }
 
 TEST(OptionsAssignerTest, HandlesMultipleParameter)
@@ -124,6 +128,8 @@ TEST(OptionsAssignerTest, HandlesMissingValue)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(2, value2);
 }
 
 TEST(OptionsAssignerTest, HandlesExtraValue)
@@ -141,6 +147,8 @@ TEST(OptionsAssignerTest, HandlesExtraValue)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(2, value1);
 }
 
 TEST(OptionsAssignerTest, HandlesSubSections)
@@ -507,6 +515,32 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValue)
     EXPECT_EQ(1, vec[2]);
 }
 
+TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssignment)
+{
+    gmx::Options options(NULL, NULL);
+    int  vec[3] = {3, 2, 1};
+    std::vector<int> vec2(vec, vec+3);
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(vec)
+                                          .storeVector(&vec2).vector()));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_NO_THROW(assigner.appendValue("1"));
+    EXPECT_NO_THROW(assigner.appendValue("3"));
+    EXPECT_THROW(assigner.finishOption(), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(3, vec[0]);
+    EXPECT_EQ(2, vec[1]);
+    EXPECT_EQ(1, vec[2]);
+    ASSERT_EQ(3U, vec2.size());
+    EXPECT_EQ(3, vec2[0]);
+    EXPECT_EQ(2, vec2[1]);
+    EXPECT_EQ(1, vec2[2]);
+}
 
 TEST(OptionsAssignerDoubleTest, StoresSingleValue)
 {

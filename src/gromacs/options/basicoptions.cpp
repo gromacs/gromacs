@@ -51,19 +51,17 @@
 #include "basicoptionstorage.h"
 
 template <typename T> static
-void expandVector(int length, int *nvalues, std::vector<T> *values)
+void expandVector(size_t length, std::vector<T> *values)
 {
-    if (length > 0 && *nvalues > 0 && *nvalues != length)
+    if (length > 0 && values->size() > 0 && values->size() != length)
     {
-        if (*nvalues != 1)
+        if (values->size() != 1)
         {
-            values->resize(values->size() - *nvalues);
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                      "Expected 1 or %d values, got %d", length, *nvalues)));
+                      "Expected 1 or %d values, got %d", length, values->size())));
         }
-        const T &value = (*values)[values->size() - 1];
-        values->resize(values->size() + length - 1, value);
-        *nvalues = length;
+        const T &value = (*values)[0];
+        values->resize(length, value);
     }
 }
 
@@ -128,13 +126,12 @@ void IntegerOptionStorage::convertValue(const std::string &value)
     addValue(ival);
 }
 
-void IntegerOptionStorage::processSet(int nvalues)
+void IntegerOptionStorage::processSetValues(ValueList *values)
 {
     if (hasFlag(efVector))
     {
-        expandVector(maxValueCount(), &nvalues, &values());
+        expandVector(maxValueCount(), values);
     }
-    MyBase::processSet(nvalues);
 }
 
 /********************************************************************
@@ -188,13 +185,12 @@ void DoubleOptionStorage::convertValue(const std::string &value)
     addValue(dval);
 }
 
-void DoubleOptionStorage::processSet(int nvalues)
+void DoubleOptionStorage::processSetValues(ValueList *values)
 {
     if (hasFlag(efVector))
     {
-        expandVector(maxValueCount(), &nvalues, &values());
+        expandVector(maxValueCount(), values);
     }
-    MyBase::processSet(nvalues);
 }
 
 void DoubleOptionStorage::processAll()
@@ -207,8 +203,8 @@ void DoubleOptionStorage::processAll()
         {
             (*i) *= factor;
         }
+        refreshValues();
     }
-    MyBase::processAll();
 }
 
 /********************************************************************
@@ -281,10 +277,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings, Options *
     {
         clear();
         addValue(_allowed[settings._defaultEnumIndex]);
-        if (_enumIndexStore != NULL)
-        {
-            *_enumIndexStore = settings._defaultEnumIndex;
-        }
+        commitValues();
     }
 }
 
@@ -319,9 +312,19 @@ void StringOptionStorage::convertValue(const std::string &value)
             GMX_THROW(InvalidInputError("Invalid value: " + value));
         }
         addValue(*match);
-        if (_enumIndexStore != NULL)
+    }
+}
+
+void StringOptionStorage::refreshValues()
+{
+    MyBase::refreshValues();
+    if (_enumIndexStore != NULL)
+    {
+        for (size_t i = 0; i < values().size(); ++i)
         {
-            _enumIndexStore[valueCount() - 1] = (match - _allowed.begin());
+            ValueList::const_iterator match =
+                std::find(_allowed.begin(), _allowed.end(), values()[i]);
+            _enumIndexStore[i] = (match - _allowed.begin());
         }
     }
 }

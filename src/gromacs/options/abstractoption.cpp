@@ -55,7 +55,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
     : _flags(settings._flags | staticFlags),
       _minValueCount(settings._minValueCount),
       _maxValueCount(settings._maxValueCount),
-      _currentValueCount(-1),
+      _inSet(false),
       _options(options)
 {
     // If the maximum number of values is not known, storage to
@@ -88,67 +88,36 @@ void AbstractOptionStorage::startSource()
 
 void AbstractOptionStorage::startSet()
 {
-    if (hasFlag(efHasDefaultValue))
-    {
-        clearFlag(efHasDefaultValue);
-        clear();
-    }
-    else if (isSet() && !hasFlag(efMulti))
+    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
+    clearSet();
+    // The last condition takes care of the situation where multiple
+    // sources are used, and a later source should be able to reassign
+    // the value even though the option is already set.
+    if (isSet() && !hasFlag(efMulti) && !hasFlag(efHasDefaultValue))
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
-    _currentValueCount = 0;
+    _inSet = true;
 }
 
 void AbstractOptionStorage::appendValue(const std::string &value)
 {
-    GMX_RELEASE_ASSERT(_currentValueCount >= 0, "startSet() not called");
-    if (!hasFlag(efConversionMayNotAddValues) && _maxValueCount >= 0
-        && _currentValueCount >= _maxValueCount)
-    {
-        GMX_THROW(InvalidInputError("Ignoring extra value: " + value));
-    }
+    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
     convertValue(value);
 }
 
-class CurrentCountClearer
-{
-    public:
-        explicit CurrentCountClearer(int *currentValueCount)
-            : value_(currentValueCount)
-        {
-        }
-        ~CurrentCountClearer()
-        {
-            *value_ = -1;
-        }
-
-    private:
-        int                    *value_;
-};
-
 void AbstractOptionStorage::finishSet()
 {
-    GMX_RELEASE_ASSERT(_currentValueCount >= 0, "startSet() not called");
-
+    GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
+    _inSet = false;
     setFlag(efSet);
-
-    CurrentCountClearer clearOnExit(&_currentValueCount);
-    // TODO: Remove invalid values
-    processSet(_currentValueCount);
-    // TODO: Should this also be checked if processSet throws?
-    if (!hasFlag(efDontCheckMinimumCount)
-        && _currentValueCount < _minValueCount)
-    {
-        GMX_THROW(InvalidInputError("Too few (valid) values"));
-    }
+    processSet();
 }
 
 void AbstractOptionStorage::finish()
 {
-    GMX_RELEASE_ASSERT(_currentValueCount == -1, "finishSet() not called");
+    GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
     processAll();
-    // TODO: Should this also be checked if processAll throws?
     if (hasFlag(efRequired) && !isSet())
     {
         GMX_THROW(InvalidInputError("Option is required, but not set"));
@@ -178,19 +147,6 @@ void AbstractOptionStorage::setMaxValueCount(int count)
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }
-}
-
-void AbstractOptionStorage::incrementValueCount()
-{
-    if (_currentValueCount == -1)
-    {
-        return;
-    }
-    if (_maxValueCount >= 0 && _currentValueCount >= _maxValueCount)
-    {
-        GMX_THROW(InvalidInputError("Too many values"));
-    }
-    ++_currentValueCount;
 }
 
 } // namespace gmx

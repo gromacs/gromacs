@@ -111,7 +111,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
 
     private:
         virtual void convertValue(const std::string &value);
-        virtual void processSet(int nvalues);
+        virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
         SelectionFlags          _selectionFlags;

@@ -58,7 +58,7 @@ class Options;
  *
  * \tparam T Assignable type that stores a single option value.
  *
- * Provides an implementation of the clear() and valueCount() methods of
+ * Provides an implementation of the clearSet() and valueCount() methods of
  * AbstractOptionStorage, as well as a basic implementation of processSet() and
  * processAll().  This leaves typeString(), formatValue(), and convertValue()
  * to be implemented in derived classes.
@@ -96,34 +96,44 @@ class OptionStorageTemplate : public AbstractOptionStorage
                               OptionFlags staticFlags = OptionFlags());
 
 
-        virtual void clear();
+        virtual void clearSet();
         /*! \copydoc AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
          * \p value to the storage type.
          */
         virtual void convertValue(const std::string &value) = 0;
+        /*! \brief
+         * Processes values for a set after all have been converted.
+         *
+         * \param[in,out] values Valid values in the set.
+         *
+         * This method is called after all convertValue() calls for a set.
+         * \p values contains all values that were validly converted by
+         * convertValue().  The derived class may alter the values.
+         */
+        virtual void processSetValues(ValueList *values)
+        {
+        }
         /*! \copydoc AbstractOptionStorage::processSet()
          *
-         * The implementation in OptionStorageTemplate copies the values
-         * from the main storage vector to alternate locations, and always
-         * succeeds.  Derived classes should always call the base class
-         * implementation if they override this method.
+         * OptionStorage template implements this method, and provides a more
+         * detailed processSetValues() method that can be overridden in
+         * subclasses.
          */
-        virtual void processSet(int nvalues)
-        {
-            processValues(nvalues);
-        }
+        virtual void processSet();
         /*! \copydoc AbstractOptionStorage::processAll()
          *
          * The implementation in OptionStorageTemplate does nothing.
-         * Derived classes should still always call the base class
-         * implementation if they override this method.
          */
         virtual void processAll()
         {
         }
 
+        /*! \brief
+         * Removes all values from the storage.
+         */
+        void clear() { _values->clear(); }
         /*! \brief
          * Adds a value to the storage.
          *
@@ -133,23 +143,19 @@ class OptionStorageTemplate : public AbstractOptionStorage
          *
          * Derived classes should call this function from the convertValue()
          * implementation to add converted values to the storage.
-         * It is only necessary to check the return value if addValue() is
-         * called more than once from one convertValue() invocation, or if
-         * ::efConversionMayNotAddValues is specified.
          */
         void addValue(const T &value);
         /*! \brief
-         * Store values in alternate locations.
-         *
-         * \param[in] nvalues  Number of values to process.
-         *
-         * Stores the last \p nvalues values added with addValue() to the
-         * alternate storage locations.
+         * Commits values added with addValue().
          *
          * Derived classes should call this method if they use addValue()
          * outside convertValue(), e.g., to set a default value.
          */
-        void processValues(int nvalues);
+        void commitValues();
+        /*! \brief
+         * Store values in alternate locations.
+         */
+        virtual void refreshValues();
 
         //! Provides derived classes access to the current list of values.
         ValueList &values() { return *_values; }
@@ -157,6 +163,10 @@ class OptionStorageTemplate : public AbstractOptionStorage
         const ValueList &values() const { return *_values; }
 
     private:
+        /*! \brief
+         * Vector for temporary storage of values before commitSet() is called.
+         */
+        ValueList               _setValues;
         /*! \brief
          * Vector for primary storage of option values.
          *
@@ -209,6 +219,8 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
             _values->clear();
             addValue(*settings._defaultValue);
             setFlag(efHasDefaultValue);
+            // TODO: This is a bit hairy, as it indirectly calls a virtual function.
+            commitValues();
         }
         else if (!hasFlag(efExternalValueVector) && _store != NULL)
         {
@@ -241,43 +253,69 @@ OptionStorageTemplate<T>::~OptionStorageTemplate()
 
 
 template <typename T>
-void OptionStorageTemplate<T>::clear()
+void OptionStorageTemplate<T>::clearSet()
 {
-    _values->clear();
+    _setValues.clear();
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::processSet()
+{
+    processSetValues(&_setValues);
+    if (_setValues.empty() && _defaultValueIfSet != NULL)
+    {
+        addValue(*_defaultValueIfSet);
+    }
+    if (!hasFlag(efDontCheckMinimumCount)
+        && _setValues.size() < static_cast<size_t>(minValueCount()))
+    {
+        clearSet();
+        GMX_THROW(InvalidInputError("Too few (valid) values"));
+    }
+    commitValues();
 }
 
 
 template <typename T>
 void OptionStorageTemplate<T>::addValue(const T &value)
 {
-    incrementValueCount();
-    _values->push_back(value);
-    if (_store != NULL)
+    if (maxValueCount() >= 0
+        && _setValues.size() >= static_cast<size_t>(maxValueCount()))
     {
-        _store[_values->size() - 1] = value;
+        GMX_THROW(InvalidInputError("Too many values"));
     }
-    if (_countptr != NULL)
-    {
-        *_countptr = _values->size();
-    }
+    _setValues.push_back(value);
 }
 
 
 template <typename T>
-void OptionStorageTemplate<T>::processValues(int nvalues)
+void OptionStorageTemplate<T>::commitValues()
 {
-    if (nvalues == 0 && _defaultValueIfSet != NULL)
+    if (hasFlag(efHasDefaultValue))
     {
-        addValue(*_defaultValueIfSet);
-        nvalues = 1;
+        _values->swap(_setValues);
+        clearFlag(efHasDefaultValue);
     }
+    else
+    {
+        _values->insert(_values->end(), _setValues.begin(), _setValues.end());
+    }
+    clearSet();
+    refreshValues();
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::refreshValues()
+{
     if (_countptr != NULL)
     {
         *_countptr = _values->size();
     }
     if (_store != NULL)
     {
-        for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)
+        for (size_t i = 0; i < _values->size(); ++i)
         {
             _store[i] = (*_values)[i];
         }

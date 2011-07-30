@@ -61,8 +61,7 @@ namespace gmx
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
                                                Options *options)
     : MyBase(settings, options,
-             OptionFlags() | efNoDefaultValue | efConversionMayNotAddValues
-                | efDontCheckMinimumCount),
+             OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
       _selectionFlags(settings._selectionFlags), _adjuster(NULL)
 {
     options->globalProperties().request(eogpSelectionCollection);
@@ -95,6 +94,10 @@ void SelectionOptionStorage::addSelections(
     {
         GMX_THROW(InvalidInputError("Too few selections provided"));
     }
+    if (bFullValue)
+    {
+        clearSet();
+    }
     std::vector<Selection *>::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
     {
@@ -106,6 +109,10 @@ void SelectionOptionStorage::addSelections(
         }
         (*i)->setFlags(_selectionFlags);
         addValue(*i);
+    }
+    if (bFullValue)
+    {
+        commitValues();
     }
 }
 
@@ -122,14 +129,12 @@ void SelectionOptionStorage::convertValue(const std::string &value)
     addSelections(selections, false);
 }
 
-void SelectionOptionStorage::processSet(int nvalues)
+void SelectionOptionStorage::processSetValues(ValueList *values)
 {
-    if (nvalues > 0 && nvalues < minValueCount())
+    if (values->size() > 0 && values->size() < static_cast<size_t>(minValueCount()))
     {
-        // TODO: Remove the invalid values
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
     }
-    MyBase::processSet(nvalues);
 }
 
 void SelectionOptionStorage::processAll()
@@ -143,7 +148,6 @@ void SelectionOptionStorage::processAll()
         sc->_impl->requestSelections(name(), description(), this);
         setFlag(efSet);
     }
-    MyBase::processAll();
 }
 
 void SelectionOptionStorage::setAllowedValueCount(int count)
