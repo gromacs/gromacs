@@ -42,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include "../fatalerror/exceptions.h"
 #include "../fatalerror/gmxassert.h"
 
 #include "abstractoption.h"
@@ -111,7 +112,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          */
         virtual void processSet(int nvalues)
         {
-            processValues(nvalues, true);
+            processValues(nvalues);
         }
         /*! \copydoc AbstractOptionStorage::processAll()
          *
@@ -141,19 +142,14 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Store values in alternate locations.
          *
          * \param[in] nvalues  Number of values to process.
-         * \param[in] bDoArray Whether to put values in the array storage as
-         *      well.
          *
          * Stores the last \p nvalues values added with addValue() to the
          * alternate storage locations.
-         * The current implementation asserts if it is called more than once
-         * with \p bDoArray set to true.
          *
          * Derived classes should call this method if they use addValue()
-         * outside convertValue(), e.g., to set a default value.  In such
-         * cases, \p bDoArray should be set to false.
+         * outside convertValue(), e.g., to set a default value.
          */
-        void processValues(int nvalues, bool bDoArray);
+        void processValues(int nvalues);
 
         //! Provides derived classes access to the current list of values.
         ValueList &values() { return *_values; }
@@ -172,8 +168,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          */
         ValueList              *_values;
         T                      *_store;
-        T                     **_storeArray;
-        int                    *_nvalptr;
+        int                    *_countptr;
         T                      *_defaultValueIfSet;
 
         // Copy and assign disallowed by base.
@@ -188,14 +183,9 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
     : AbstractOptionStorage(settings, options, staticFlags),
       _values(settings._storeVector),
       _store(settings._store),
-      _storeArray(settings._storeArray),
-      _nvalptr(settings._nvalptr),
+      _countptr(settings._countptr),
       _defaultValueIfSet(NULL)
 {
-    // It's impossible for the caller to do proper memory management if
-    // the provided memory is not initialized as NULL.
-    GMX_RELEASE_ASSERT(settings._storeArray == NULL || *settings._storeArray == NULL,
-                       "Incorrect or unsafe usage");
     if (!_values)
     {
         // The flag should be set for proper error checking.
@@ -207,13 +197,17 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
                        || (settings._defaultValue == NULL
                            && settings._defaultValueIfSet == NULL),
                        "Option does not support default value, but one is set");
+    if (_store != NULL && _countptr == NULL && !hasFlag(efVector)
+        && minValueCount() != maxValueCount())
+    {
+        GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
+    }
     if (!hasFlag(efNoDefaultValue))
     {
         if (settings._defaultValue != NULL)
         {
             _values->clear();
             addValue(*settings._defaultValue);
-            processValues(1, false);
             setFlag(efHasDefaultValue);
         }
         else if (!hasFlag(efExternalValueVector) && _store != NULL)
@@ -258,36 +252,34 @@ void OptionStorageTemplate<T>::addValue(const T &value)
 {
     incrementValueCount();
     _values->push_back(value);
+    if (_store != NULL)
+    {
+        _store[_values->size() - 1] = value;
+    }
+    if (_countptr != NULL)
+    {
+        *_countptr = _values->size();
+    }
 }
 
 
 template <typename T>
-void OptionStorageTemplate<T>::processValues(int nvalues, bool bDoArray)
+void OptionStorageTemplate<T>::processValues(int nvalues)
 {
     if (nvalues == 0 && _defaultValueIfSet != NULL)
     {
         addValue(*_defaultValueIfSet);
         nvalues = 1;
     }
-    if (_nvalptr)
+    if (_countptr != NULL)
     {
-        *_nvalptr = _values->size();
+        *_countptr = _values->size();
     }
-    if (bDoArray && _storeArray != NULL)
+    if (_store != NULL)
     {
-        GMX_RELEASE_ASSERT(*_storeArray == NULL,
-                           "processValues() called more than once with bDoArray == true");
-        *_storeArray = new T[_values->size()];
-    }
-    for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)
-    {
-        if (_store)
+        for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)
         {
             _store[i] = (*_values)[i];
-        }
-        if (bDoArray && _storeArray != NULL)
-        {
-            (*_storeArray)[i] = (*_values)[i];
         }
     }
 }

@@ -276,23 +276,15 @@ class OptionTemplate : public AbstractOption
         MyClass &store(T *store)
         { setFlag(efExternalStore); _store = store; return me(); }
         /*! \brief
-         * Stores a pointer to array of values.
+         * Stores number of values in the value pointed by \p countptr.
          *
-         * \param[in] store   Storage for a pointer to an array of values.
-         * \param[in] nvalptr Storage for the number of values.
+         * \param[in] countptr Storage for the number of values.
          *
-         * The pointer written to *store should be freed by the caller using
-         * delete[].
-         * Either of the input parameters can be NULL, in which case the
-         * corresponding value is not stored.
          * The pointers provided should remain valid as long as the associated
          * Options object exists.
-         *
-         * This function is deprecated, but may be convenient for interfacing
-         * with legacy code.
          */
-        MyClass &storeArray(T **store, int *nvalptr)
-        { setFlag(efExternalStoreArray); _storeArray = store; _nvalptr = nvalptr; return me(); }
+        MyClass &storeCount(int *countptr)
+        { _countptr = countptr; return me(); }
         /*! \brief
          * Stores option values in the provided vector.
          *
@@ -312,7 +304,7 @@ class OptionTemplate : public AbstractOption
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
               _defaultValue(NULL), _defaultValueIfSet(NULL), _store(NULL),
-              _storeArray(NULL), _nvalptr(NULL), _storeVector(NULL)
+              _countptr(NULL), _storeVector(NULL)
         { }
 
         /*! \brief
@@ -332,8 +324,7 @@ class OptionTemplate : public AbstractOption
         const T                *_defaultValue;
         const T                *_defaultValueIfSet;
         T                      *_store;
-        T                     **_storeArray;
-        int                    *_nvalptr;
+        int                    *_countptr;
         std::vector<T>         *_storeVector;
 
         /*! \brief

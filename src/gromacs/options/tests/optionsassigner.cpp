@@ -427,33 +427,6 @@ TEST(OptionsAssignerIntegerTest, HandlesBothDefaultValues)
     EXPECT_EQ(2, value);
 }
 
-TEST(OptionsAssignerIntegerTest, StoresToArray)
-{
-    gmx::Options          options(NULL, NULL);
-    int                  *values = NULL;
-    int                   nval = -1;
-    using gmx::IntegerOption;
-    ASSERT_NO_THROW(options.addOption(
-                        IntegerOption("p").storeArray(&values, &nval)
-                            .multiValue()));
-
-    gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("-2"));
-    ASSERT_NO_THROW(assigner.appendValue("1"));
-    ASSERT_NO_THROW(assigner.appendValue("4"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
-
-    EXPECT_EQ(3, nval);
-    EXPECT_EQ(-2, values[0]);
-    EXPECT_EQ(1, values[1]);
-    EXPECT_EQ(4, values[2]);
-    delete[] values;
-}
-
 TEST(OptionsAssignerIntegerTest, StoresToVector)
 {
     gmx::Options          options(NULL, NULL);

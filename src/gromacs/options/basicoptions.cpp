@@ -285,7 +285,6 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings, Options *
         {
             *_enumIndexStore = settings._defaultEnumIndex;
         }
-        processValues(1, false);
     }
 }
 

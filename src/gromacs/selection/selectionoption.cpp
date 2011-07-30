@@ -107,10 +107,6 @@ void SelectionOptionStorage::addSelections(
         (*i)->setFlags(_selectionFlags);
         addValue(*i);
     }
-    if (bFullValue)
-    {
-        processValues(selections.size(), true);
-    }
 }
 
 

@@ -87,7 +87,6 @@ enum OptionFlag
      */
     efVector              = 1<<6,
     efExternalStore       = 1<<8,
-    efExternalStoreArray  = 1<<9,
     efExternalValueVector = 1<<10,
     //! %Option does not support default values.
     efNoDefaultValue      = 1<<7,
