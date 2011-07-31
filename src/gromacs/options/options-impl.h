@@ -74,6 +74,8 @@ class Options::Impl
          *
          * \param[in] name  Name to search for.
          * \returns Pointer to the found subsection, or NULL if not found.
+         *
+         * Does not throw.
          */
         Options *findSubSection(const char *name) const;
         /*! \brief
@@ -81,11 +83,16 @@ class Options::Impl
          *
          * \param[in] name  Name to search for.
          * \returns Pointer to the found option, or NULL if not found.
+         *
+         * Does not throw.
          */
         AbstractOptionStorage *findOption(const char *name) const;
 
         /*! \brief
-         * Calls Option::startSource() for all options, including subsections.
+         * Calls AbstractOptionStorage::startSource() for all options,
+         * including subsections.
+         *
+         * Does not throw.
          */
         void startSource();
 

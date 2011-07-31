@@ -89,7 +89,6 @@ void AbstractOptionStorage::startSource()
 void AbstractOptionStorage::startSet()
 {
     GMX_RELEASE_ASSERT(!_inSet, "finishSet() not called");
-    clearSet();
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
@@ -97,6 +96,7 @@ void AbstractOptionStorage::startSet()
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
+    clearSet();
     _inSet = true;
 }
 
@@ -110,6 +110,7 @@ void AbstractOptionStorage::finishSet()
 {
     GMX_RELEASE_ASSERT(_inSet, "startSet() not called");
     _inSet = false;
+    // TODO: Should this be done only when processSet() does not throw?
     setFlag(efSet);
     processSet();
 }

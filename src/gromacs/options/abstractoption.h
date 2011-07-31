@@ -41,7 +41,7 @@
  *
  * This header is needed directly only when implementing new option types,
  * but methods of OptionTemplate are visible even to the normal user through
- * its subclasses..
+ * its subclasses.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -95,21 +95,23 @@ class AbstractOption
          *
          * \param[in]  options  Option collection object.
          * \returns The created storage object.
+         * \throws  APIError if invalid option settings have been provided.
          *
          * This method is called by when creating an option object
          * The \p options object is used to implement global properties.
          *
          * Derived classes should implement the method to create an actual
          * storage object and populate it with correct values.
+         * They should also throw APIError if they detect problems.
          *
          * Should only be called by Options::addOption().
-         *
-         * \see AbstractOptionStorage::init()
          */
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const = 0;
 
         /*! \brief
          * Creates the description string for the option.
+         *
+         * \returns Description string for the option.
          *
          * This function is virtual to allow derived classes to customize the
          * description programmatically, e.g., by adding the list of allowed
@@ -188,7 +190,7 @@ class ConcreteOption : public OptionTemplate<int, ConcreteOption>
  * \endcode
  *
  * All public functions in this class return \c *this casted to a reference to
- * \p U.
+ * \p U.  They do not throw.
  *
  * For examples of how to use classes derived from this class, see the class
  * documentation for Options.
@@ -270,6 +272,9 @@ class OptionTemplate : public AbstractOption
          * \p store.  If there is no maximum allowed number or if the maximum
          * is inconveniently large, storeVector() should be used.
          *
+         * For information on when values are available in the storage, see
+         * storeVector().
+         *
          * The pointer provided should remain valid as long as the associated
          * Options object exists.
          */
@@ -279,6 +284,9 @@ class OptionTemplate : public AbstractOption
          * Stores number of values in the value pointed by \p countptr.
          *
          * \param[in] countptr Storage for the number of values.
+         *
+         * For information on when values are available in the storage, see
+         * storeVector().
          *
          * The pointers provided should remain valid as long as the associated
          * Options object exists.
@@ -290,8 +298,10 @@ class OptionTemplate : public AbstractOption
          *
          * \param[in] store  Vector to store option values in.
          *
-         * The caller should not make any assumptions about the contents of the
-         * vector while options are being parsed.
+         * Values are added to the vector after each successful set of values
+         * is parsed.  Note that for some options, the value may be changed
+         * later, and is only guaranteed to be correct after Options::finish()
+         * has been called (see, e.g., DoubleOption::time()).
          *
          * The pointer provided should remain valid as long as the associated
          * Options object exists.

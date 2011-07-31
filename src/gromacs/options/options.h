@@ -109,15 +109,27 @@ class Options
         //! Returns the full description of the option collection.
         const std::string &description() const;
 
-        //! Sets the full description of the option collection.
+        /*! \brief
+         * Sets the full description of the option collection.
+         *
+         * \param[in] desc Array of strings to form the description, terminated
+         *      by a NULL pointer.
+         *
+         * The strings in the \p desc array are concatenated to form the
+         * description, adding a single space between the strings if there is
+         * no whitespace in the end of a string.
+         */
         void setDescription(const char *const *desc);
         //int addBugs(int nbugs, const char *const *bugs);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.
          *
+         * \param[in] section Subsection to add.
+         *
          * The name() field of \p section is used as the name of the
-         * subsection.
+         * subsection.  If an attempt is made to add two different subsections
+         * with the same name, this function asserts.
          *
          * For certain functionality to work properly, no options should
          * be added to the subsection after it has been added to another
@@ -128,13 +140,13 @@ class Options
          * collection.
          * It is not possible to add the same Options object as a subsection to
          * several different Options.
+         * If an attempt is made, the function asserts.
          */
         void addSubSection(Options *section);
         /*! \brief
          * Adds a recognized option to the collection.
          *
-         * The behavior is undefined if invalid settings are provided.
-         * The current implementation asserts if it detects an error.
+         * \throws APIError if invalid option settings are provided.
          *
          * See \link Options class documentation \endlink for example usage.
          */
@@ -151,17 +163,21 @@ class Options
          */
         void addDefaultOptions();
 
-        //! Returns true if option is set.
+        //! Returns true if option \p name is set.
         bool isSet(const char *name) const;
         /*! \brief
          * Notifies the collection that all option values are assigned.
          *
-         * \param[in] errors  Error reporter for reporting errors.
-         * \retval 0 on success.
+         * \throws InvalidInputError if invalid user input is detected.
          *
          * This function should be called after no more option values are
          * to be assigned.  Values in storage variables are guaranteed to be
-         * available only after this call.
+         * available only after this call, although in most cases, they are
+         * available already during assignment.
+         *
+         * If invalid option values, e.g., missing required option, is detected
+         * at this point, this function throws.  The thrown exception contains
+         * information on all errors detected during the call.
          */
         void finish();
 
@@ -171,6 +187,9 @@ class Options
          * The caller should not store pointers or references to the object;
          * it can change if this object is added as a subsection into
          * another collection.
+         *
+         * The global property object is shared by all Options objects that
+         * are part of the same section/subsection hierarchy.
          *
          * \see OptionsGlobalProperties
          */

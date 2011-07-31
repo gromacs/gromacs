@@ -72,6 +72,11 @@ class CommandLineParser
 
         /*! \brief
          * Parses the command-line.
+         *
+         * \throws InvalidInputError if any errors were detected in the input.
+         *
+         * All command-line arguments are parsed, and an aggregate exception
+         * with all the detected errors is thrown in the end.
          */
         void parse(int *argc, char *argv[]);
 

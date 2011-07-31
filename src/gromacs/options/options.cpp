@@ -52,6 +52,7 @@
 namespace gmx
 {
 
+// TODO: Move this into the utility module
 static std::string composeString(const char *const *sarray)
 {
     std::string result;

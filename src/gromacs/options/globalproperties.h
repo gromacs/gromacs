@@ -96,7 +96,7 @@ class OptionsGlobalProperties
          * code.
          *
          * Currently, the returned structure is always filled with default
-         * values.
+         * values for most fields.
          *
          * \deprecated
          */
@@ -114,6 +114,17 @@ class OptionsGlobalProperties
         {
             return _usedProperties & (1<<id);
         }
+        /*! \brief
+         * Adds options for setting requested global properties.
+         *
+         * \param[in,out] options Options to which the global property options
+         *      are added.
+         *
+         * If a global property has been requested and it can be set/customized
+         * by the user, this method adds the necessary option to \p options.
+         *
+         * This method performs the real work of Options::addDefaultOptions().
+         */
         void addDefaultOptions(Options *options);
         /*! \brief
          * Initializes variables dependent on global properties.

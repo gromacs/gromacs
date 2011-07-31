@@ -72,6 +72,8 @@ using gmx::BooleanOption;
 options.addOption(BooleanOption("pbc").store(&bPBC));
  * \endcode
  *
+ * Public methods in this class do not throw.
+ *
  * \inpublicapi
  */
 class BooleanOption : public OptionTemplate<bool, BooleanOption>
@@ -84,6 +86,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
         }
 
     protected:
+        //! Creates a BooleanOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 };
 
@@ -100,6 +103,8 @@ options.addOption(IntegerOption("rcut").store(&rcut));
 int  box[3] = {1, 1, 1};  // Default value
 options.addOption(IntegerOption("box").store(box).vector());
  * \endcode
+ *
+ * Public methods in this class do not throw.
  *
  * \inpublicapi
  */
@@ -120,6 +125,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
         MyClass &vector() { setVector(); return me(); }
 
     protected:
+        //! Creates an IntegerOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         /*! \brief
@@ -131,6 +137,8 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
 /*! \brief
  * Specifies an option that provides floating-point (double) values.
+ *
+ * Public methods in this class do not throw.
  *
  * \inpublicapi
  */
@@ -146,10 +154,19 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
         MyClass &vector() { setVector(); return me(); }
         /*! \brief
          * Sets the option to obey time conversion rules.
+         *
+         * For options with this flag, the user can specify a global time unit
+         * using a global option that is added by Options::addDefaultOptions().
+         * For the program, the value is always converted to ps.
+         *
+         * When this flag is specified, the option value is available only
+         * after Options::finish() has been called instead of immediately after
+         * assignment.
          */
         MyClass &timeValue() { _bTime = true; return me(); }
 
     private:
+        //! Creates a DoubleOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         bool _bTime;
@@ -178,6 +195,8 @@ options.addOption(StringOption("type").enumValue(allowed).store(&str)
                      .storeEnumIndex(&type));
  * \endcode
  *
+ * Public methods in this class do not throw.
+ *
  * \inpublicapi
  */
 class StringOption : public OptionTemplate<std::string, StringOption>
@@ -187,13 +206,14 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         explicit StringOption(const char *name)
             : MyBase(name), _enumValues(NULL), _defaultEnumIndex(-1),
               _enumIndexStore(NULL)
-        {}
+        {
+        }
 
         /*! \brief
          * Sets the option to only accept one of a fixed set of strings.
          *
-         * \param[in] values  Array of strings to accept, terminated with a
-         *     NULL value.
+         * \param[in] values  Array of strings to accept, a NULL pointer
+         *      following the last string.
          *
          * Also accepts prefixes of the strings; if a prefix matches more than
          * one of the possible strings, the shortest one is used (in a tie, the
@@ -233,6 +253,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         { _enumIndexStore = store; return me(); }
 
     protected:
+        //! Creates a StringOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
         virtual std::string createDescription() const;
 
@@ -250,6 +271,10 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
 /*! \brief
  * Specifies an option that provides file names.
+ *
+ * Public methods in this class do not throw.
+ *
+ * This class is currently a stub implementation.
  *
  * \inpublicapi
  */
@@ -289,6 +314,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         MyClass &libraryFile() { setFlag(efFileLibrary); return me(); }
 
     protected:
+        //! Creates a FileNameOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
     private:

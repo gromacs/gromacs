@@ -203,6 +203,8 @@ void OptionsAssigner::appendValue(const std::string &value)
 {
     AbstractOptionStorage *option = _impl->_currentOption;
     GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
+    // Does not count correctly, but the actual count is not really used.
+    // TODO: Rename the variable to better reflect the usage.
     ++_impl->_currentValueCount;
     option->appendValue(value);
 }
@@ -216,6 +218,8 @@ void OptionsAssigner::finishOption()
     {
         if (_impl->_currentValueCount == 0)
         {
+            // Should not throw, otherwise something is wrong.
+            // TODO: Get rid of the hard-coded values.
             option->appendValue(_impl->_reverseBoolean ? "0" : "1");
         }
         else if (_impl->_reverseBoolean)
