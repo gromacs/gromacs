@@ -37,10 +37,8 @@
  */
 #include "gromacs/options/abstractoption.h"
 
-#include <cassert>
-
-#include "gromacs/errorreporting/abstracterrorreporter.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
 
@@ -51,37 +49,25 @@ namespace gmx
  * AbstractOptionStorage
  */
 
-AbstractOptionStorage::AbstractOptionStorage()
-    : _minValueCount(0), _maxValueCount(0), _currentValueCount(-1),
-      _options(NULL)
+AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
+                                             Options *options,
+                                             OptionFlags staticFlags)
+    : _flags(settings._flags | staticFlags),
+      _minValueCount(settings._minValueCount),
+      _maxValueCount(settings._maxValueCount),
+      _currentValueCount(-1),
+      _options(options)
 {
-}
-
-AbstractOptionStorage::~AbstractOptionStorage()
-{
-}
-
-int AbstractOptionStorage::init(const AbstractOption &settings,
-                                Options *options)
-{
-    // We add user-provided flags to the ones possibly set by the subclass.
-    _flags |= settings._flags;
-    _minValueCount = settings._minValueCount;
-    _maxValueCount = settings._maxValueCount;
-    _options = options;
-
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.
     if ((_maxValueCount < 0 || hasFlag(efMulti)) && hasFlag(efExternalStore))
     {
-        GMX_ERROR(eeInvalidValue,
-                  "Cannot set user-allocated storage for arbitrary number of values");
+        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
     }
     // Check that user has not provided incorrect values for vectors.
     if (hasFlag(efVector) && (_minValueCount > 1 || _maxValueCount < 1))
     {
-        GMX_ERROR(eeInvalidValue,
-                  "Inconsistent value counts for vector values");
+        GMX_THROW(APIError("Inconsistent value counts for vector values"));
     }
 
     if (settings._name != NULL)
@@ -89,17 +75,18 @@ int AbstractOptionStorage::init(const AbstractOption &settings,
         _name  = settings._name;
     }
     _descr = settings.createDescription();
-
-    return 0;
 }
 
-int AbstractOptionStorage::startSource()
+AbstractOptionStorage::~AbstractOptionStorage()
+{
+}
+
+void AbstractOptionStorage::startSource()
 {
     setFlag(efHasDefaultValue);
-    return 0;
 }
 
-int AbstractOptionStorage::startSet(AbstractErrorReporter *errors)
+void AbstractOptionStorage::startSet()
 {
     if (hasFlag(efHasDefaultValue))
     {
@@ -108,102 +95,102 @@ int AbstractOptionStorage::startSet(AbstractErrorReporter *errors)
     }
     else if (isSet() && !hasFlag(efMulti))
     {
-        errors->error("Option specified multiple times");
-        return eeInvalidInput;
+        GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     _currentValueCount = 0;
-    return 0;
 }
 
-int AbstractOptionStorage::appendValue(const std::string &value,
-                                       AbstractErrorReporter *errors)
+void AbstractOptionStorage::appendValue(const std::string &value)
 {
-    assert(_currentValueCount >= 0);
+    GMX_RELEASE_ASSERT(_currentValueCount >= 0, "startSet() not called");
     if (!hasFlag(efConversionMayNotAddValues) && _maxValueCount >= 0
         && _currentValueCount >= _maxValueCount)
     {
-        errors->warning("Ignoring extra value: " + value);
-        return eeInvalidInput;
+        GMX_THROW(InvalidInputError("Ignoring extra value: " + value));
     }
-    return convertValue(value, errors);
+    convertValue(value);
 }
 
-int AbstractOptionStorage::finishSet(AbstractErrorReporter *errors)
+class CurrentCountClearer
 {
-    assert(_currentValueCount >= 0);
+    public:
+        explicit CurrentCountClearer(int *currentValueCount)
+            : value_(currentValueCount)
+        {
+        }
+        ~CurrentCountClearer()
+        {
+            *value_ = -1;
+        }
+
+    private:
+        int                    *value_;
+};
+
+void AbstractOptionStorage::finishSet()
+{
+    GMX_RELEASE_ASSERT(_currentValueCount >= 0, "startSet() not called");
 
     setFlag(efSet);
-    // TODO: Remove invalid values if there are too few
-    int rc = processSet(_currentValueCount, errors);
+
+    CurrentCountClearer clearOnExit(&_currentValueCount);
+    // TODO: Remove invalid values
+    processSet(_currentValueCount);
+    // TODO: Should this also be checked if processSet throws?
     if (!hasFlag(efDontCheckMinimumCount)
         && _currentValueCount < _minValueCount)
     {
-        errors->error("Too few (valid) values");
-        rc = eeInvalidInput;
+        GMX_THROW(InvalidInputError("Too few (valid) values"));
     }
-    _currentValueCount = -1;
-    return rc;
 }
 
-int AbstractOptionStorage::finish(AbstractErrorReporter *errors)
+void AbstractOptionStorage::finish()
 {
-    assert(_currentValueCount == -1);
-    int rc = processAll(errors);
+    GMX_RELEASE_ASSERT(_currentValueCount == -1, "finishSet() not called");
+    processAll();
+    // TODO: Should this also be checked if processAll throws?
     if (hasFlag(efRequired) && !isSet())
     {
-        errors->error("Required option '" + _name + "' not set");
-        rc = eeInconsistentInput;
+        GMX_THROW(InvalidInputError("Option is required, but not set"));
     }
-    return rc;
 }
 
-int AbstractOptionStorage::setMinValueCount(int count,
-                                            AbstractErrorReporter *errors)
+void AbstractOptionStorage::setMinValueCount(int count)
 {
-    assert(!hasFlag(efMulti));
-    assert(count >= 0);
+    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
+                       "setMinValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(count >= 0, "Invalid value count");
     _minValueCount = count;
     if (isSet()
         && !hasFlag(efDontCheckMinimumCount) && valueCount() < _minValueCount)
     {
-        if (_maxValueCount == -1 || valueCount() <= _maxValueCount)
-        {
-            errors->error("Too few values");
-        }
-        return eeInconsistentInput;
+        GMX_THROW(InvalidInputError("Too few values"));
     }
-    return 0;
 }
 
-int AbstractOptionStorage::setMaxValueCount(int count,
-                                            AbstractErrorReporter *errors)
+void AbstractOptionStorage::setMaxValueCount(int count)
 {
-    assert(!hasFlag(efMulti));
-    assert(count >= -1);
+    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
+                       "setMaxValueCount() not supported with efMulti");
+    GMX_RELEASE_ASSERT(count >= -1, "Invalid value count");
     _maxValueCount = count;
     if (isSet() && _maxValueCount >= 0 && valueCount() > _maxValueCount)
     {
-        if (hasFlag(efDontCheckMinimumCount) || valueCount() >= _minValueCount)
-        {
-            errors->error("Too many values");
-        }
-        return eeInconsistentInput;
+        GMX_THROW(InvalidInputError("Too many values"));
     }
-    return 0;
 }
 
-int AbstractOptionStorage::incrementValueCount()
+void AbstractOptionStorage::incrementValueCount()
 {
     if (_currentValueCount == -1)
     {
-        return 0;
+        return;
     }
     if (_maxValueCount >= 0 && _currentValueCount >= _maxValueCount)
     {
-        return eeInvalidInput;
+        GMX_THROW(InvalidInputError("Too many values"));
     }
     ++_currentValueCount;
-    return 0;
 }
 
 } // namespace gmx

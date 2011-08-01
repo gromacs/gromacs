@@ -39,7 +39,6 @@
 #include <config.h>
 #endif
 
-#include <cassert>
 #include <string.h>
 
 #include <rmpbc.h>
@@ -48,7 +47,8 @@
 #include <tpxio.h>
 #include <vec.h>
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
@@ -56,6 +56,7 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/utility/format.h"
 
 #include "analysissettings-impl.h"
 
@@ -212,19 +213,17 @@ TrajectoryAnalysisRunnerCommon::initOptions()
 }
 
 
-int
+bool
 TrajectoryAnalysisRunnerCommon::initOptionsDone()
 {
     if (_impl->_bHelp)
     {
-        // TODO: Proper error code for graceful exit
-        return -1;
+        return false;
     }
 
     if (_impl->_trjfile.empty() && _impl->_topfile.empty())
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "No trajectory or topology provided, nothing to do!");
+        GMX_THROW(InconsistentInputError("No trajectory or topology provided, nothing to do!"));
     }
 
     if (_impl->_options.isSet("b"))
@@ -234,15 +233,13 @@ TrajectoryAnalysisRunnerCommon::initOptionsDone()
     if (_impl->_options.isSet("dt"))
         setTimeValue(TDELTA, _impl->_deltaTime);
 
-    return 0;
+    return true;
 }
 
 
-int
+void
 TrajectoryAnalysisRunnerCommon::initIndexGroups(SelectionCollection *selections)
 {
-    int rc = 0;
-
     if (_impl->_ndxfile.empty())
     {
         // TODO: Initialize default selections
@@ -251,9 +248,8 @@ TrajectoryAnalysisRunnerCommon::initIndexGroups(SelectionCollection *selections)
     else
     {
         gmx_ana_indexgrps_init(&_impl->_grps, NULL, _impl->_ndxfile.c_str());
-        rc = selections->setIndexGroups(_impl->_grps);
+        selections->setIndexGroups(_impl->_grps);
     }
-    return rc;
 }
 
 
@@ -269,7 +265,7 @@ TrajectoryAnalysisRunnerCommon::doneIndexGroups(SelectionCollection *selections)
 }
 
 
-int
+void
 TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 {
     const TrajectoryAnalysisSettings &settings = _impl->_settings;
@@ -278,8 +274,7 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
           || selections->requiresTopology();
     if (bRequireTop && _impl->_topfile.empty())
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "No topology provided, but one is required for analysis");
+        GMX_THROW(InconsistentInputError("No topology provided, but one is required for analysis"));
     }
 
     // Load the topology if requested.
@@ -304,18 +299,10 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     int  natoms = -1;
     if (!_impl->_topInfo.hasTopology())
     {
-        int rc = initFirstFrame();
-        if (rc != 0)
-        {
-            return rc;
-        }
+        initFirstFrame();
         natoms = _impl->fr->natoms;
     }
-    int rc = selections->setTopology(_impl->_topInfo.topology(), natoms);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    selections->setTopology(_impl->_topInfo.topology(), natoms);
 
     /*
     if (_impl->bSelDump)
@@ -324,18 +311,16 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
         fprintf(stderr, "\n");
     }
     */
-
-    return 0;
 }
 
 
-int
+void
 TrajectoryAnalysisRunnerCommon::initFirstFrame()
 {
     // Return if we have already initialized the trajectory.
     if (_impl->fr)
     {
-        return 0;
+        return;
     }
     _impl->_oenv = _impl->_options.globalProperties().output_env();
 
@@ -350,17 +335,15 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         if (!read_first_frame(_impl->_oenv, &_impl->_status,
                               _impl->_trjfile.c_str(), _impl->fr, frflags))
         {
-            GMX_ERROR(eeFileNotFound,
-                      "Could not read coordinates from trajectory");
+            GMX_THROW(FileIOError("Could not read coordinates from trajectory"));
         }
         _impl->_bTrajOpen = true;
 
         if (top.hasTopology() && _impl->fr->natoms > top.topology()->atoms.nr)
         {
-            fatalErrorFormatted(eeInconsistentInput, GMX_ERRORLOC,
-                "Trajectory (%d atoms) does not match topology (%d atoms)",
-                _impl->fr->natoms, top.topology()->atoms.nr);
-            return eeInconsistentInput;
+            GMX_THROW(InconsistentInputError(formatString(
+                      "Trajectory (%d atoms) does not match topology (%d atoms)",
+                      _impl->fr->natoms, top.topology()->atoms.nr)));
         }
         // Check index groups if they have been initialized based on the topology.
         /*
@@ -380,13 +363,11 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         // TODO: Initialize more of the fields.
         if (frflags & (TRX_NEED_V))
         {
-            GMX_ERROR(eeNotImplemented,
-                      "Velocity reading from a topology not implemented");
+            GMX_THROW(NotImplementedError("Velocity reading from a topology not implemented"));
         }
         if (frflags & (TRX_NEED_F))
         {
-            GMX_ERROR(eeInvalidInput,
-                      "Forces cannot be read from a topology");
+            GMX_THROW(InvalidInputError("Forces cannot be read from a topology"));
         }
         _impl->fr->flags  = frflags;
         _impl->fr->natoms = top.topology()->atoms.nr;
@@ -404,8 +385,6 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         _impl->_gpbc = gmx_rmpbc_init(&top.topology()->idef, top.ePBC(),
                                       _impl->fr->natoms, _impl->fr->box);
     }
-
-    return 0;
 }
 
 
@@ -425,14 +404,13 @@ TrajectoryAnalysisRunnerCommon::readNextFrame()
 }
 
 
-int
+void
 TrajectoryAnalysisRunnerCommon::initFrame()
 {
     if (_impl->_gpbc != NULL)
     {
         gmx_rmpbc_trxfr(_impl->_gpbc, _impl->fr);
     }
-    return 0;
 }
 
 

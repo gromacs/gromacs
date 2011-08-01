@@ -37,10 +37,13 @@
 #include <pbc.h>
 #include <vec.h>
 
+// FIXME: This kind of hackery should not be necessary
+#undef min
+#undef max
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -84,18 +87,16 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
 }
 
 
-int
+void
 Distance::initAnalysis(const TopologyInformation & /*top*/)
 {
     if (_sel[0]->posCount() != 1)
     {
-        GMX_ERROR(eeInvalidInput,
-                  "The first selection does not define a single position");
+        GMX_THROW(InvalidInputError("The first selection does not define a single position"));
     }
     if (_sel[1]->posCount() != 1)
     {
-        GMX_ERROR(eeInvalidInput,
-                  "The second selection does not define a single position");
+        GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
     _data.setColumns(4);
     registerAnalysisDataset(&_data, "distance");
@@ -109,12 +110,10 @@ Distance::initAnalysis(const TopologyInformation & /*top*/)
     _plotm->setXLabel("Time [ps]");
     _plotm->setYLabel("Distance [nm]");
     _data.addModule(_plotm);
-
-    return 0;
 }
 
 
-int
+void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
@@ -137,18 +136,16 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh->addPoint(0, r);
     dh->addPoints(1, 3, dx);
     dh->finishFrame();
-    return 0;
 }
 
 
-int
+void
 Distance::finishAnalysis(int /*nframes*/)
 {
-    return 0;
 }
 
 
-int
+void
 Distance::writeOutput()
 {
     const real *ave;
@@ -156,7 +153,6 @@ Distance::writeOutput()
     _avem->getData(0, NULL, &ave, NULL);
     fprintf(stderr, "Average distance: %f\n", ave[0]);
     fprintf(stderr, "Std. deviation:   %f\n", ave[1]);
-    return 0;
 }
 
 

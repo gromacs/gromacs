@@ -44,7 +44,6 @@
 #include "tpxio.h"
 #include "vec.h"
 
-#include "gromacs/errorreporting/emptyerrorreporter.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
@@ -68,12 +67,11 @@ class SelectionCollectionTest : public ::testing::Test
 
         void setAtomCount(int natoms)
         {
-            _sc.setTopology(NULL, natoms);
+            ASSERT_NO_THROW(_sc.setTopology(NULL, natoms));
         }
         void loadTopology(const char *filename);
 
         gmx::SelectionCollection _sc;
-        gmx::EmptyErrorReporter  _errors;
         t_topology              *_top;
         t_trxframe              *_frame;
 };
@@ -82,7 +80,6 @@ class SelectionCollectionTest : public ::testing::Test
 SelectionCollectionTest::SelectionCollectionTest()
     : _sc(NULL), _top(NULL), _frame(NULL)
 {
-    _sc.init();
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
 }
@@ -125,7 +122,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
     _frame->bBox   = TRUE;
     copy_mat(box, _frame->box);
 
-    ASSERT_EQ(0, _sc.setTopology(_top, -1));
+    ASSERT_NO_THROW(_sc.setTopology(_top, -1));
 }
 
 
@@ -175,7 +172,7 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
     {
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
-        ASSERT_EQ(0, _sc.parseFromString(selections[i], &_errors, &_sel));
+        ASSERT_NO_THROW(_sc.parseFromString(selections[i], &_sel));
         char buf[50];
         if (_sel.size() == _count)
         {
@@ -283,7 +280,7 @@ SelectionCollectionDataTest::runEvaluate()
 void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
-    ASSERT_EQ(0, _sc.evaluateFinal(_framenr));
+    ASSERT_NO_THROW(_sc.evaluateFinal(_framenr));
     if (!_data.isWriteMode())
     {
         checkCompiled();
@@ -295,7 +292,7 @@ void
 SelectionCollectionDataTest::runTest(int natoms, const char * const *selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    setAtomCount(natoms);
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(natoms));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
@@ -304,7 +301,7 @@ void
 SelectionCollectionDataTest::runTest(const char *filename, const char * const *selections)
 {
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
-    loadTopology(filename);
+    ASSERT_NO_FATAL_FAILURE(loadTopology(filename));
     ASSERT_NO_FATAL_FAILURE(runCompiler());
     if (_flags.test(efTestEvaluation))
     {

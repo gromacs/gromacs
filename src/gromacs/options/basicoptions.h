@@ -42,9 +42,9 @@
 #ifndef GMX_OPTIONS_BASICOPTIONS_H
 #define GMX_OPTIONS_BASICOPTIONS_H
 
-#include <cassert>
-
 #include <string>
+
+#include "../fatalerror/gmxassert.h"
 
 #include "abstractoption.h"
 #include "optionfiletype.h"
@@ -84,8 +84,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
         }
 
     protected:
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 };
 
 /*! \brief
@@ -121,8 +120,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
         MyClass &vector() { setVector(); return me(); }
 
     protected:
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -152,8 +150,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
         MyClass &timeValue() { _bTime = true; return me(); }
 
     private:
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         bool _bTime;
 
@@ -216,7 +213,11 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * Cannot be specified without enumValue().
          */
         MyClass &defaultEnumIndex(int index)
-        { assert(index >= 0); _defaultEnumIndex = index; return me(); }
+        {
+            GMX_RELEASE_ASSERT(index >= 0, "Invalid enumeration index");
+            _defaultEnumIndex = index;
+            return me();
+        }
         /*! \brief
          * Stores the index of the selected value into the provided memory
          * location.
@@ -232,8 +233,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         { _enumIndexStore = store; return me(); }
 
     protected:
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
         virtual std::string createDescription() const;
 
     private:
@@ -289,8 +289,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         MyClass &libraryFile() { setFlag(efFileLibrary); return me(); }
 
     protected:
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
     private:
         OptionFileType          _filetype;

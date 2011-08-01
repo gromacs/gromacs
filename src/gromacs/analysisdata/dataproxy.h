@@ -66,20 +66,20 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         AnalysisDataProxy(int col, int span, AbstractAnalysisData *data);
 
         virtual int frameCount() const;
-        virtual int getDataWErr(int index, real *x, real *dx,
-                                const real **y, const real **dy,
-                                const bool **missing = 0) const;
-        virtual int requestStorage(int nframes = -1);
+        virtual bool getDataWErr(int index, real *x, real *dx,
+                                 const real **y, const real **dy,
+                                 const bool **missing = 0) const;
+        virtual bool requestStorage(int nframes = -1);
 
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *missing);
-        virtual int frameFinished();
-        virtual int dataFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *missing);
+        virtual void frameFinished();
+        virtual void dataFinished();
 
     private:
         AbstractAnalysisData   &_source;

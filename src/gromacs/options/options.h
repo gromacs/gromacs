@@ -47,8 +47,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
-
 class AbstractOption;
 class OptionsGlobalProperties;
 class OptionsAssigner;
@@ -165,7 +163,7 @@ class Options
          * to be assigned.  Values in storage variables are guaranteed to be
          * available only after this call.
          */
-        int finish(AbstractErrorReporter *errors);
+        void finish();
 
         /*! \brief
          * Returns the global property object for this collection.

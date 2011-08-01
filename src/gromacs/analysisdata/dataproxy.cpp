@@ -37,7 +37,7 @@
  */
 #include "dataproxy.h"
 
-#include <cassert>
+#include "gromacs/fatalerror/gmxassert.h"
 
 namespace gmx
 {
@@ -46,8 +46,8 @@ AnalysisDataProxy::AnalysisDataProxy(int col, int span,
                                      AbstractAnalysisData *data)
     : _source(*data), _col(col), _span(span)
 {
-    assert(data);
-    assert(col >= 0 && span > 0);
+    GMX_RELEASE_ASSERT(data, "Source data must not be NULL");
+    GMX_RELEASE_ASSERT(col >= 0 && span > 0, "Invalid proxy column");
     setColumnCount(span);
     setMultipoint(_source.isMultipoint());
 }
@@ -60,13 +60,13 @@ AnalysisDataProxy::frameCount() const
 }
 
 
-int
+bool
 AnalysisDataProxy::getDataWErr(int index, real *x, real *dx,
                                const real **y, const real **dy,
                                const bool **missing) const
 {
-    int rc = _source.getDataWErr(index, x, dx, y, dy, missing);
-    if (rc == 0)
+    bool bExists = _source.getDataWErr(index, x, dx, y, dy, missing);
+    if (bExists)
     {
         if (y && *y)
         {
@@ -81,11 +81,11 @@ AnalysisDataProxy::getDataWErr(int index, real *x, real *dx,
             *missing += _col;
         }
     }
-    return rc;
+    return bExists;
 }
 
 
-int
+bool
 AnalysisDataProxy::requestStorage(int nframes)
 {
     return _source.requestStorage(nframes);
@@ -99,30 +99,31 @@ AnalysisDataProxy::flags() const
 }
 
 
-int
+void
 AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 {
-    assert(data == &_source);
-    assert(_col + _span <= _source.columnCount());
-    return notifyDataStart();
+    GMX_RELEASE_ASSERT(data == &_source, "Source data mismatch");
+    GMX_RELEASE_ASSERT(_col + _span <= _source.columnCount(),
+                       "Invalid column(s) specified");
+    notifyDataStart();
 }
 
 
-int
+void
 AnalysisDataProxy::frameStarted(real x, real dx)
 {
-    return notifyFrameStart(x, dx);
+    notifyFrameStart(x, dx);
 }
 
 
-int
+void
 AnalysisDataProxy::pointsAdded(real x, real dx, int firstcol, int n,
                                const real *y, const real *dy,
                                const bool *missing)
 {
     if (firstcol + n <= _col || firstcol >= _col + _span)
     {
-        return 0;
+        return;
     }
     firstcol -= _col;
     if (firstcol < 0)
@@ -146,21 +147,21 @@ AnalysisDataProxy::pointsAdded(real x, real dx, int firstcol, int n,
     {
         n = _span - firstcol;
     }
-    return notifyPointsAdd(firstcol, n, y, dy, missing);
+    notifyPointsAdd(firstcol, n, y, dy, missing);
 }
 
 
-int
+void
 AnalysisDataProxy::frameFinished()
 {
-    return notifyFrameFinish();
+    notifyFrameFinish();
 }
 
 
-int
+void
 AnalysisDataProxy::dataFinished()
 {
-    return notifyDataFinish();
+    notifyDataFinish();
 }
 
 } // namespace gmx

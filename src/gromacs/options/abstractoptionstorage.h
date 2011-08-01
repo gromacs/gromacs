@@ -46,7 +46,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
 class AbstractOption;
 class Options;
 
@@ -82,16 +81,6 @@ class AbstractOptionStorage
     public:
         virtual ~AbstractOptionStorage();
 
-        /*! \brief
-         * Initializes the storage object from the settings object.
-         *
-         * \param[in] settings  Option settings.
-         * \param[in] options   Option collection that will contain the
-         *     option.
-         * \retval 0 on success.
-         */
-        int init(const AbstractOption &settings, Options *options);
-
         //! Returns true if the option has been set.
         bool isSet() const { return hasFlag(efSet); }
         //! Returns true if the option is a boolean option.
@@ -122,57 +111,50 @@ class AbstractOptionStorage
         /*! \brief
          * Starts adding values from a new source for the option.
          *
-         * \retval 0 on success.
-         *
          * This marks the vurrent value of the option as a default value,
          * causing next call to startSet() to clear it.  This allows values
          * from the new source to overwrite old values.
          */
-        int startSource();
+        void startSource();
         /*! \brief
          * Starts adding a new set of values for the option.
-         *
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 on success.
          *
          * If the parameter is specified multiple times, startSet() should be
          * called before the values for each instance.
          */
-        int startSet(AbstractErrorReporter *errors);
+        void startSet();
         /*! \brief
          * Adds a new value for the option, converting it from a string.
          *
          * \param[in] value  String value to convert.
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 if the value was successfully converted and added.
          */
-        int appendValue(const std::string &value,
-                        AbstractErrorReporter *errors);
+        void appendValue(const std::string &value);
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.
          *
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 on success.
-         *
          * If the parameter is specified multiple times, finishSet() should be
          * called after the values for each instance.
          */
-        int finishSet(AbstractErrorReporter *errors);
+        void finishSet();
         /*! \brief
          * Performs validation and/or actions once all values have been added.
          *
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 on success.
-         *
          * This function should be called after all values have been provided
-         * with appendValue().  Calls finishSet() if needed.
+         * with appendValue().
          */
-        int finish(AbstractErrorReporter *errors);
+        void finish();
 
     protected:
-        //! Creates an uninitialized storage object.
-        AbstractOptionStorage();
+        /*! \brief
+         * Initializes the storage object from the settings object.
+         *
+         * \param[in] settings  Option settings.
+         * \param[in] options   Option collection that will contain the
+         *     option.
+         */
+        AbstractOptionStorage(const AbstractOption &settings, Options *options,
+                              OptionFlags staticFlags = OptionFlags());
 
         //! Returns true if the given flag is set.
         bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
@@ -189,8 +171,6 @@ class AbstractOptionStorage
          * Sets a new minimum number of values required in one set.
          *
          * \param[in] count  New minimum number of values (must be > 0).
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 on success.
          *
          * If values have already been provided, it is checked that there are
          * enough.  If called together with setMaxValueCount(), only
@@ -200,14 +180,12 @@ class AbstractOptionStorage
          * Cannot be called for options with ::efMulti set, because it is
          * impossible to check the requirement after the values have been set.
          */
-        int setMinValueCount(int count, AbstractErrorReporter *errors);
+        void setMinValueCount(int count);
         /*! \brief
          * Sets a new maximum number of values required in one set.
          *
          * \param[in] count  New maximum number of values
          *                   (must be > 0, or -1 for no limit).
-         * \param[in] errors Error reporter for errors.
-         * \retval 0 on success.
          *
          * If values have already been provided, it is checked that there are
          * not too many.  If called together with setMinValueCount(), only
@@ -217,7 +195,7 @@ class AbstractOptionStorage
          * Cannot be called for options with ::efMulti set, because it is
          * impossible to check the requirement after the values have been set.
          */
-        int setMaxValueCount(int count, AbstractErrorReporter *errors);
+        void setMaxValueCount(int count);
 
         //! Returns the Options object that houses the option.
         Options &hostOptions() { return *_options; }
@@ -235,44 +213,33 @@ class AbstractOptionStorage
          * Adds a new value, converting it from a string.
          *
          * \param[in] value  String value to convert.
-         * \param[in] errors Error reporter object.
-         * \retval 0 if the value was successfully converted.
          *
          * This function may be called multiple times if the underlying
          * option is defined to accept multiple values.
          */
-        virtual int convertValue(const std::string &value,
-                                 AbstractErrorReporter *errors) = 0;
+        virtual void convertValue(const std::string &value) = 0;
         /*! \brief
          * Performs validation and/or actions once a set of values has been
          * added.
          *
          * \param[in] nvalues  Number of values added since the previous call
          *      to finishSet().
-         * \param[in] errors Error reporter object.
-         * \retval 0 on success.
          *
          * This function may be called multiple times of the underlying option
          * can be specified multiple times.
          */
-        virtual int processSet(int nvalues, AbstractErrorReporter *errors) = 0;
+        virtual void processSet(int nvalues) = 0;
         /*! \brief
          * Performs validation and/or actions once all values have been added.
          *
-         * \param[in] errors Error reporter object.
-         * \retval 0 if final option values are valid.
-         *
          * This function is always called once.
          */
-        virtual int processAll(AbstractErrorReporter *errors) = 0;
+        virtual void processAll() = 0;
 
         /*! \brief
          * Increments the number of values for the current set.
-         *
-         * \retval 0 on success.
-         * \retval ::eeInvalidInput if the maximum value count has been reached.
          */
-        int incrementValueCount();
+        void incrementValueCount();
 
     private:
         std::string             _name;

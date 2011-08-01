@@ -39,13 +39,15 @@
 #include <config.h>
 #endif
 
+#include <memory>
+
 #include <copyrite.h>
 #include <pbc.h>
 #include <rmpbc.h>
 #include <statutil.h>
 
-#include "gromacs/errorreporting/standarderrorreporter.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/asciihelpwriter.h"
 #include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/globalproperties.h"
@@ -71,11 +73,11 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
         void printHelp(const Options &options,
                        const TrajectoryAnalysisRunnerCommon &common);
-        int parseOptions(TrajectoryAnalysisSettings *settings,
-                         TrajectoryAnalysisRunnerCommon *common,
-                         SelectionCollection *selections,
-                         Options *options,
-                         int *argc, char *argv[]);
+        bool parseOptions(TrajectoryAnalysisSettings *settings,
+                          TrajectoryAnalysisRunnerCommon *common,
+                          SelectionCollection *selections,
+                          Options *options,
+                          int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *_module;
         int                     _debugLevel;
@@ -110,7 +112,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
 }
 
 
-int
+bool
 TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         TrajectoryAnalysisSettings *settings,
         TrajectoryAnalysisRunnerCommon *common,
@@ -118,29 +120,12 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
-    StandardErrorReporter  errors;
     int rc;
 
     Options *moduleOptions = _module->initOptions(settings);
-    if (moduleOptions == NULL)
-    {
-        GMX_ERROR(eeOutOfMemory,
-                  "Could not allocate memory for option storage");
-    }
-
+    GMX_RELEASE_ASSERT(moduleOptions != NULL, "Module returned NULL options");
     Options *commonOptions = common->initOptions();
-    if (moduleOptions == NULL)
-    {
-        GMX_ERROR(eeOutOfMemory,
-                  "Could not allocate memory for option storage");
-    }
-
     Options *selectionOptions = selections->initOptions();
-    if (selectionOptions == NULL)
-    {
-        GMX_ERROR(eeOutOfMemory,
-                  "Could not allocate memory for option storage");
-    }
 
     options->addSubSection(commonOptions);
     options->addSubSection(selectionOptions);
@@ -150,28 +135,26 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     commonOptions->addDefaultOptions();
 
     {
-        CommandLineParser  parser(options, &errors);
-        rc = parser.parse(argc, argv);
+        CommandLineParser  parser(options);
+        try
+        {
+            parser.parse(argc, argv);
+        }
+        catch (UserInputError &ex)
+        {
+            printHelp(*options, *common);
+            throw;
+        }
         printHelp(*options, *common);
-        if (rc != 0)
-        {
-            GMX_ERROR(rc, "Command-line option parsing failed, "
-                          "see higher up for detailed error messages");
-        }
-        rc = options->finish(&errors);
-        if (rc != 0)
-        {
-            GMX_ERROR(rc, "Command-line option parsing failed, "
-                          "see higher up for detailed error messages");
-        }
+        options->finish();
     }
 
-    rc = common->initOptionsDone();
-    if (rc != 0)
+    if (!common->initOptionsDone())
     {
-        return rc;
+        return false;
     }
-    rc = _module->initOptionsDone(settings, &errors);
+    _module->initOptionsDone(settings);
+    /*
     if (rc != 0)
     {
         if (rc == eeInconsistentInput)
@@ -181,18 +164,16 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         }
         return rc;
     }
+    */
 
-    rc = common->initIndexGroups(selections);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    common->initIndexGroups(selections);
 
     // TODO: Check whether the input is a pipe.
     bool bInteractive = true;
-    rc = selections->parseRequestedFromStdin(bInteractive, &errors);
+    selections->parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
-    return rc;
+
+    return true;
 }
 
 
@@ -229,73 +210,44 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     CopyRight(stderr, argv[0]);
 
     SelectionCollection  selections(NULL);
-    rc = selections.init();
-    if (rc != 0)
-    {
-        return rc;
-    }
     selections.setDebugLevel(_impl->_debugLevel);
 
     TrajectoryAnalysisSettings  settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
     Options  options(NULL, NULL);
-    rc = _impl->parseOptions(&settings, &common, &selections, &options,
-                             &argc, argv);
-    if (rc != 0)
+    if (!_impl->parseOptions(&settings, &common, &selections, &options,
+                             &argc, argv))
     {
-        return rc;
+        return 0;
     }
 
-    rc = common.initTopology(&selections);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    common.initTopology(&selections);
     rc = selections.compile();
     if (rc != 0)
     {
-        return rc;
+        // Error message has already been printed.
+        return 1;
     }
 
     const TopologyInformation &topology = common.topologyInformation();
-    rc = module->initAnalysis(topology);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    module->initAnalysis(topology);
 
     // Load first frame.
-    rc = common.initFirstFrame();
-    if (rc != 0)
-    {
-        return rc;
-    }
-    rc = module->initAfterFirstFrame(common.frame());
-    if (rc != 0)
-    {
-        return rc;
-    }
+    common.initFirstFrame();
+    module->initAfterFirstFrame(common.frame());
 
     t_pbc  pbc;
-    t_pbc *ppbc = settings.hasPBC() ? &pbc : 0;
+    t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
 
     int nframes = 0;
-    TrajectoryAnalysisModuleData *pdata = NULL;
-    rc = module->startFrames(NULL, selections, &pdata);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    std::auto_ptr<TrajectoryAnalysisModuleData>
+        pdata(module->startFrames(NULL, selections));
     do
     {
-        rc = common.initFrame();
-        if (rc != 0)
-        {
-            return rc;
-        }
+        common.initFrame();
         t_trxframe &frame = common.frame();
-        if (ppbc)
+        if (ppbc != NULL)
         {
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
@@ -303,31 +255,20 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
         rc = selections.evaluate(&frame, ppbc);
         if (rc != 0)
         {
-            return rc;
+            // Error message has already been printed.
+            return 1;
         }
-        rc = module->analyzeFrame(nframes, frame, ppbc, pdata);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        module->analyzeFrame(nframes, frame, ppbc, pdata.get());
 
         nframes++;
     }
     while (common.readNextFrame());
-    rc = module->finishFrames(pdata);
-    if (rc != 0)
+    module->finishFrames(pdata.get());
+    if (pdata.get() != NULL)
     {
-        return rc;
+        pdata->finish();
     }
-    if (pdata)
-    {
-        rc = pdata->finish();
-        delete pdata;
-        if (rc != 0)
-        {
-            return rc;
-        }
-    }
+    pdata.reset();
 
     if (common.hasTrajectory())
     {
@@ -340,19 +281,12 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     }
 
     // Restore the maximal groups for dynamic selections.
-    rc = selections.evaluateFinal(nframes);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    selections.evaluateFinal(nframes);
 
-    rc = module->finishAnalysis(nframes);
-    if (rc == 0)
-    {
-        rc = module->writeOutput();
-    }
+    module->finishAnalysis(nframes);
+    module->writeOutput();
 
-    return rc;
+    return 0;
 }
 
 } // namespace gmx

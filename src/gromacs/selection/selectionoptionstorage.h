@@ -56,17 +56,14 @@ class SelectionOptionAdjuster;
 class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
 {
     public:
-        SelectionOptionStorage();
-        virtual ~SelectionOptionStorage();
-
         /*! \brief
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
          * \param[in] options    Options object.
-         * \retval 0 on success.
          */
-        int init(const SelectionOption &settings, Options *options);
+        SelectionOptionStorage(const SelectionOption &settings, Options *options);
+        virtual ~SelectionOptionStorage();
 
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatValue(int i) const;
@@ -77,7 +74,6 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * \param[in] selections  List of selections to add.
          * \param[in] bFullValue  If true, the provided selections are the full
          *      value of the option, and additional checks are performed.
-         * \param[in] errors      Error reporter object.
          *
          * This function is used to implement the methods
          * SelectionCollection::parseRequestedFromStdin() and
@@ -85,8 +81,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * \p bFullValue set to true), as well as internally by the storage
          * class (called with \p bFullValue set to false).
          */
-        int addSelections(const std::vector<Selection *> &selections,
-                          bool bFullValue, AbstractErrorReporter *errors);
+        void addSelections(const std::vector<Selection *> &selections,
+                           bool bFullValue);
 
         // Required to access the number of values in selection requests.
         // See SelectionCollection::Impl.
@@ -95,34 +91,28 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * Sets the number of selections allowed for this selection.
          *
          * \param[in] count       Required number of selections for this option.
-         * \param[in] errors      Error reporter object.
-         * \retval 0 on success.
          *
          * If values have already been provided, it is checked that a correct
          * number has been provided.  If requests have already been made, but
          * have not yet been processed, they are also affected.
          */
-        int setAllowedValueCount(int count, AbstractErrorReporter *errors);
+        void setAllowedValueCount(int count);
         /*! \brief
          * Alters flags for the selections created by this option.
          *
          * \param[in] flag        Flag to change.
          * \param[in] bSet        Whether to set or clear the flag.
-         * \param[in] errors      Error reporter object.
-         * \retval 0 on success.
          *
          * If values have already been provided, it is checked that they match
          * the limitations enforced by the flags.  If requests have already
          * been made, but have not yet been processed, they are also affected.
          */
-        int setSelectionFlag(SelectionFlag flag, bool bSet,
-                             AbstractErrorReporter *errors);
+        void setSelectionFlag(SelectionFlag flag, bool bSet);
 
     private:
-        virtual int convertValue(const std::string &value,
-                                 AbstractErrorReporter *errors);
-        virtual int processSet(int nvalues, AbstractErrorReporter *errors);
-        virtual int processAll(AbstractErrorReporter *errors);
+        virtual void convertValue(const std::string &value);
+        virtual void processSet(int nvalues);
+        virtual void processAll();
 
         SelectionFlags          _selectionFlags;
         //! Pointer to the adjuster (there can be only one, can be NULL).

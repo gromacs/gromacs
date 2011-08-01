@@ -45,12 +45,13 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/format.h"
 
 namespace gmx
 {
@@ -74,13 +75,13 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
 
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
-        virtual int frameFinished();
-        virtual int dataFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
+        virtual void frameFinished();
+        virtual void dataFinished();
 
     private:
         void closeFile();
@@ -149,32 +150,30 @@ int IndexFileWriterModule::flags() const
 }
 
 
-int IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
+void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
     if (!_fnm.empty())
     {
         _fp = gmx_fio_fopen(_fnm.c_str(), "w");
     }
-    return 0;
 }
 
 
-int IndexFileWriterModule::frameStarted(real /*x*/, real /*dx*/)
+void IndexFileWriterModule::frameStarted(real /*x*/, real /*dx*/)
 {
     _bAnyWritten = false;
     _currentGroup = -1;
-    return 0;
 }
 
 
-int
+void
 IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
                                    const real *y, const real * /*dy*/,
                                    const bool * /*present*/)
 {
     if (_fp == NULL)
     {
-        return 0;
+        return;
     }
     if (firstcol == 0)
     {
@@ -188,9 +187,7 @@ IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
             std::string name = _groups[_currentGroup].name;
             if (_groups[_currentGroup].bDynamic)
             {
-                char tbuf[50];
-                snprintf(tbuf, 50, "_f%d_t%.3f", _framenr, x);
-                name += tbuf;
+                name += formatString("_f%d_t%.3f", _framenr, x);
             }
             std::fprintf(_fp, "[ %s ]", name.c_str());
             _bAnyWritten = true;
@@ -209,25 +206,22 @@ IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
             ++_currentSize;
         }
     }
-    return 0;
 }
 
 
-int IndexFileWriterModule::frameFinished()
+void IndexFileWriterModule::frameFinished()
 {
     ++_framenr;
-    return 0;
 }
 
 
-int IndexFileWriterModule::dataFinished()
+void IndexFileWriterModule::dataFinished()
 {
     if (_fp != NULL)
     {
         std::fprintf(_fp, "\n");
     }
     closeFile();
-    return 0;
 }
 
 
@@ -238,7 +232,11 @@ int IndexFileWriterModule::dataFinished()
 class Select::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
-        ModuleData() : _mmap(NULL)
+        ModuleData(TrajectoryAnalysisModule *module,
+                   AnalysisDataParallelOptions opt,
+                   const SelectionCollection &selections)
+            : TrajectoryAnalysisModuleData(module, opt, selections),
+              _mmap(NULL)
         {
         }
 
@@ -251,9 +249,9 @@ class Select::ModuleData : public TrajectoryAnalysisModuleData
             }
         }
 
-        virtual int finish()
+        virtual void finish()
         {
-            return finishDataHandles();
+            finishDataHandles();
         }
 
         gmx_ana_indexmap_t  *_mmap;
@@ -357,13 +355,12 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
 }
 
 
-int
+void
 Select::initAnalysis(const TopologyInformation &top)
 {
     if (!_fnIndex.empty() && _bDump && _sel.size() > 1U)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "With -oi and -dump, there can be only one selection");
+        GMX_THROW(InconsistentInputError("With -oi and -dump, there can be only one selection"));
     }
     _bResInd = (_resNumberType == "index");
 
@@ -460,34 +457,22 @@ Select::initAnalysis(const TopologyInformation &top)
     }
 
     _top = top.topology();
-
-    return 0;
 }
 
 
-int
+TrajectoryAnalysisModuleData *
 Select::startFrames(AnalysisDataParallelOptions opt,
-                    const SelectionCollection &selections,
-                    TrajectoryAnalysisModuleData **pdatap)
+                    const SelectionCollection &selections)
 {
-    ModuleData *pdata = new ModuleData();
-
-    *pdatap = pdata;
-    int rc = pdata->init(this, opt, selections);
-    if (rc != 0)
-    {
-        delete pdata;
-        *pdatap = NULL;
-        return rc;
-    }
+    ModuleData *pdata = new ModuleData(this, opt, selections);
     snew(pdata->_mmap, 1);
     gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0])->indexGroup(),
                           _top, _sel[0]->type());
-    return 0;
+    return pdata;
 }
 
 
-int
+void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
@@ -551,21 +536,18 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         mdh->finishFrame();
     }
-    return 0;
 }
 
 
-int
+void
 Select::finishAnalysis(int /*nframes*/)
 {
-    return 0;
 }
 
 
-int
+void
 Select::writeOutput()
 {
-    return 0;
 }
 
 

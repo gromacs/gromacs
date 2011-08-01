@@ -142,14 +142,13 @@ class TrajectoryAnalysisSettings
          * Overrides any earlier set flags.
          * By default, no flags are set.
          */
-        int setFlags(unsigned long flags);
+        void setFlags(unsigned long flags);
         //! Sets or clears an individual flag.
-        int setFlag(unsigned long flag, bool bSet = true);
+        void setFlag(unsigned long flag, bool bSet = true);
         /*! \brief
          * Sets whether PBC are used.
          *
          * \param[in]  bPBC   TRUE if PBC should be used.
-         * \returns    0 on success.
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether PBC are used in the analysis.
@@ -166,12 +165,11 @@ class TrajectoryAnalysisSettings
          *
          * \see ::efNoUserPBC
          */
-        int setPBC(bool bPBC);
+        void setPBC(bool bPBC);
         /*! \brief
          * Sets whether molecules are made whole.
          *
          * \param[in]     bRmPBC TRUE if molecules should be made whole.
-         * \returns       0 on success.
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether molecules are made whole.
@@ -192,19 +190,18 @@ class TrajectoryAnalysisSettings
          *
          * \see ::efNoUserRmPBC
          */
-        int setRmPBC(bool bRmPBC);
+        void setRmPBC(bool bRmPBC);
         /*! \brief
          * Sets flags that determine what to read from the trajectory.
          *
          * \param[in]     frflags Flags for what to read from the trajectory file.
-         * \returns       0 on success, an error code on error.
          *
          * If this function is not called, the flags default to TRX_NEED_X.
          * If the analysis module needs some other information (velocities,
          * forces), it can call this function to load additional information
          * from the trajectory.
          */
-        int setFrameFlags(int frflags);
+        void setFrameFlags(int frflags);
 
     private:
         class Impl;
@@ -242,14 +239,13 @@ class TopologyInformation
          *      (can be NULL, in which case it is not used).
          * \param[out] box   Box size from the topology file
          *      (can be NULL, in which case it is not used).
-         * \returns    0 on success, a non-zero error code on error.
          *
          * If TrajectoryAnalysisSettings::efUseTopX has not been specified,
          * \p x should be NULL.
          *
          * The pointer returned in \p *x should not be freed.
          */
-        int getTopologyConf(rvec **x, matrix box) const;
+        void getTopologyConf(rvec **x, matrix box) const;
 
     private:
         TopologyInformation();

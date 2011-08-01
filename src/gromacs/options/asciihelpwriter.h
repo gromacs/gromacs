@@ -76,9 +76,8 @@ class AsciiHelpWriter
          * Writes the help.
          *
          * \param[in] fp  File to write the help to.
-         * \retval 0 on success.
          */
-        int writeHelp(FILE *fp);
+        void writeHelp(FILE *fp);
 
     private:
         class Impl;

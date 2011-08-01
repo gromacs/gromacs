@@ -37,12 +37,12 @@
  */
 #include "gromacs/options/globalproperties.h"
 
-#include <cassert>
 #include <cstddef>
 
 #include <smalloc.h>
 #include <statutil.h>
 
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
@@ -80,8 +80,9 @@ OptionsGlobalProperties::~OptionsGlobalProperties()
 
 double OptionsGlobalProperties::timeScaleFactor() const
 {
-    assert(_timeUnit >= 0
-           && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]));
+    GMX_RELEASE_ASSERT(_timeUnit >= 0
+        && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]),
+        "Time unit index has become out of range");
     return timeScaleFactors[_timeUnit];
 }
 

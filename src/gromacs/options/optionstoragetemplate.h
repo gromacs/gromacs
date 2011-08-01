@@ -39,10 +39,10 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
-#include <cassert>
-
 #include <string>
 #include <vector>
+
+#include "../fatalerror/gmxassert.h"
 
 #include "abstractoption.h"
 #include "abstractoptionstorage.h"
@@ -76,6 +76,13 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
         virtual ~OptionStorageTemplate();
 
+        // No implementation in this class for the pure virtual methods, but
+        // the declarations are still included for clarity.
+        virtual const char *typeString() const = 0;
+        virtual int valueCount() const { return _values->size(); }
+        virtual std::string formatValue(int i) const = 0;
+
+    protected:
         /*! \brief
          * Initializes the storage from option settings.
          *
@@ -84,17 +91,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * \see OptionTemplate::createDefaultStorage()
          */
         template <class U>
-        int init(const OptionTemplate<T, U> &settings, Options *options);
+        OptionStorageTemplate(const OptionTemplate<T, U> &settings, Options *options,
+                              OptionFlags staticFlags = OptionFlags());
 
-        // No implementation in this class for the pure virtual methods, but
-        // the declarations are still included for clarity.
-        virtual const char *typeString() const = 0;
-        virtual int valueCount() const { return _values->size(); }
-        virtual std::string formatValue(int i) const = 0;
-
-    protected:
-        //! Initializes default values (no storage).
-        OptionStorageTemplate();
 
         virtual void clear();
         /*! \copydoc AbstractOptionStorage::convertValue()
@@ -102,8 +101,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Derived classes should call addValue() after they have converted
          * \p value to the storage type.
          */
-        virtual int convertValue(const std::string &value,
-                                 AbstractErrorReporter *errors) = 0;
+        virtual void convertValue(const std::string &value) = 0;
         /*! \copydoc AbstractOptionStorage::processSet()
          *
          * The implementation in OptionStorageTemplate copies the values
@@ -111,20 +109,19 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * succeeds.  Derived classes should always call the base class
          * implementation if they override this method.
          */
-        virtual int processSet(int nvalues,
-                               AbstractErrorReporter * /*errors*/)
+        virtual void processSet(int nvalues)
         {
             processValues(nvalues, true);
-            return 0;
         }
         /*! \copydoc AbstractOptionStorage::processAll()
          *
-         * The implementation in OptionStorageTemplate does nothing, and always
-         * returns zero.  Derived classes should still always call the base
-         * class implementation if they override this method.
+         * The implementation in OptionStorageTemplate does nothing.
+         * Derived classes should still always call the base class
+         * implementation if they override this method.
          */
-        virtual int processAll(AbstractErrorReporter * /*errors*/)
-        { return 0; }
+        virtual void processAll()
+        {
+        }
 
         /*! \brief
          * Adds a value to the storage.
@@ -139,7 +136,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * called more than once from one convertValue() invocation, or if
          * ::efConversionMayNotAddValues is specified.
          */
-        int addValue(const T &value);
+        void addValue(const T &value);
         /*! \brief
          * Store values in alternate locations.
          *
@@ -182,83 +179,34 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // Copy and assign disallowed by base.
 };
 
-/*! \brief
- * Helper function for creating storage objects.
- *
- * \tparam     T  Type of the settings object (derived from OptionTemplate).
- * \tparam     S  Type of the storage object (derived from OptionStorageTemplate).
- * \param[in]  settings  Settings object to pass to S::init().
- * \param[in]  options   Options object to pass to S::init().
- * \param[out] output    Pointer to the created storage object.
- * \returns    The return value of S::init().
- *
- * Creates a new instance of S and calls the init() method with the provided
- * parameters.  If the initialization fails, destroys the partially constructed
- * object.
- *
- * \inlibraryapi
- */
-template <class T, class S> int
-createOptionStorage(const T *settings, Options *options,
-                    AbstractOptionStorage **output)
-{
-    S *storage = new S;
-    int rc = storage->init(*settings, options);
-    if (rc != 0)
-    {
-        delete storage;
-        return rc;
-    }
-    *output = storage;
-    return 0;
-}
-
-
-template <typename T>
-OptionStorageTemplate<T>::OptionStorageTemplate()
-    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
-      _defaultValueIfSet(NULL)
-{
-}
-
-
-template <typename T>
-OptionStorageTemplate<T>::~OptionStorageTemplate()
-{
-    if (!hasFlag(efExternalValueVector))
-    {
-        delete _values;
-    }
-    delete _defaultValueIfSet;
-}
-
 
 template <typename T>
 template <class U>
-int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options *options)
+OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
+                                                Options *options,
+                                                OptionFlags staticFlags)
+    : AbstractOptionStorage(settings, options, staticFlags),
+      _values(settings._storeVector),
+      _store(settings._store),
+      _storeArray(settings._storeArray),
+      _nvalptr(settings._nvalptr),
+      _defaultValueIfSet(NULL)
 {
     // It's impossible for the caller to do proper memory management if
     // the provided memory is not initialized as NULL.
-    assert(settings._storeArray == NULL || *settings._storeArray == NULL);
-    int rc = AbstractOptionStorage::init(settings, options);
-    if (rc != 0)
-    {
-        return rc;
-    }
-    _store      = settings._store;
-    _storeArray = settings._storeArray;
-    _nvalptr    = settings._nvalptr;
-    _values     = settings._storeVector;
+    GMX_RELEASE_ASSERT(settings._storeArray == NULL || *settings._storeArray == NULL,
+                       "Incorrect or unsafe usage");
     if (!_values)
     {
         // The flag should be set for proper error checking.
-        assert(!hasFlag(efExternalValueVector));
+        GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
+                           "Internal inconsistency");
         _values = new std::vector<T>;
     }
-    // If the option does not support default values, one should not be set.
-    assert(!hasFlag(efNoDefaultValue)
-           || (settings._defaultValue == NULL
-               && settings._defaultValueIfSet == NULL));
+    GMX_RELEASE_ASSERT(!hasFlag(efNoDefaultValue)
+                       || (settings._defaultValue == NULL
+                           && settings._defaultValueIfSet == NULL),
+                       "Option does not support default value, but one is set");
     if (!hasFlag(efNoDefaultValue))
     {
         if (settings._defaultValue != NULL)
@@ -284,7 +232,17 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
             _defaultValueIfSet = new T(*settings._defaultValueIfSet);
         }
     }
-    return 0;
+}
+
+
+template <typename T>
+OptionStorageTemplate<T>::~OptionStorageTemplate()
+{
+    if (!hasFlag(efExternalValueVector))
+    {
+        delete _values;
+    }
+    delete _defaultValueIfSet;
 }
 
 
@@ -296,14 +254,10 @@ void OptionStorageTemplate<T>::clear()
 
 
 template <typename T>
-int OptionStorageTemplate<T>::addValue(const T &value)
+void OptionStorageTemplate<T>::addValue(const T &value)
 {
-    int rc = incrementValueCount();
-    if (rc == 0)
-    {
-        _values->push_back(value);
-    }
-    return rc;
+    incrementValueCount();
+    _values->push_back(value);
 }
 
 
@@ -321,7 +275,8 @@ void OptionStorageTemplate<T>::processValues(int nvalues, bool bDoArray)
     }
     if (bDoArray && _storeArray != NULL)
     {
-        assert(*_storeArray == NULL);
+        GMX_RELEASE_ASSERT(*_storeArray == NULL,
+                           "processValues() called more than once with bDoArray == true");
         *_storeArray = new T[_values->size()];
     }
     for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)

@@ -37,6 +37,7 @@
 
 #include <vector>
 
+#include <gromacs/fatalerror/exceptions.h>
 #include <gromacs/options/basicoptions.h>
 #include <gromacs/options/options.h>
 #include <gromacs/selection/selection.h>
@@ -55,13 +56,13 @@ class SelectionTester : public TrajectoryAnalysisModule
         ~SelectionTester();
 
         Options *initOptions(TrajectoryAnalysisSettings *settings);
-        int initAnalysis(const TopologyInformation &top);
+        void initAnalysis(const TopologyInformation &top);
 
-        int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                         TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata);
 
-        int finishAnalysis(int nframes);
-        int writeOutput();
+        void finishAnalysis(int nframes);
+        void writeOutput();
 
     private:
         void printSelections();
@@ -111,14 +112,13 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
     return &_options;
 }
 
-int
+void
 SelectionTester::initAnalysis(const TopologyInformation &/*top*/)
 {
     printSelections();
-    return 0;
 }
 
-int
+void
 SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*pbc*/,
                               TrajectoryAnalysisModuleData * /*pdata*/)
 {
@@ -149,20 +149,17 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
         }
     }
     fprintf(stderr, "\n");
-    return 0;
 }
 
-int
+void
 SelectionTester::finishAnalysis(int /*nframes*/)
 {
     printSelections();
-    return 0;
 }
 
-int
+void
 SelectionTester::writeOutput()
 {
-    return 0;
 }
 
 }
@@ -170,8 +167,16 @@ SelectionTester::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    gmx::SelectionTester module;
-    gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
-    runner.setSelectionDebugLevel(1);
-    return runner.run(argc, argv);
+    try
+    {
+        gmx::SelectionTester module;
+        gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
+        runner.setSelectionDebugLevel(1);
+        return runner.run(argc, argv);
+    }
+    catch (std::exception &ex)
+    {
+        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        return 1;
+    }
 }

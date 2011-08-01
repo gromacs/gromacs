@@ -39,7 +39,6 @@
 #include <config.h>
 #endif
 
-#include <cassert>
 #include <cstdio>
 
 #include <smalloc.h>
@@ -50,8 +49,10 @@
 #include "poscalc.h"
 #include "selmethod.h"
 
-#include "gromacs/errorreporting/abstracterrorreporter.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -96,6 +97,19 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     _sc.pcc       = pcc;
     _sc.mempool   = NULL;
     _sc.symtab    = NULL;
+
+    if (_sc.pcc == NULL)
+    {
+        int rc = gmx_ana_poscalc_coll_create(&_sc.pcc);
+        if (rc != 0)
+        {
+            // TODO: A more reasonable error
+            GMX_THROW(InternalError("Failed to create position calculation collection"));
+        }
+        _flags.set(Impl::efOwnPositionCollection);
+    }
+    _gmx_sel_symtab_create(&_sc.symtab);
+    gmx_ana_selmethod_register_defaults(_sc.symtab);
 }
 
 
@@ -136,12 +150,14 @@ SelectionCollection::Impl::clearSymbolTable()
 }
 
 
-int
+void
 SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
                                      std::vector<Selection *> *output)
 {
     gmx_ana_selcollection_t *sc = &_sc;
-    assert(sc == _gmx_sel_lexer_selcollection(scanner));
+    MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
+    GMX_ASSERT(sc == _gmx_sel_lexer_selcollection(scanner),
+               "Incorrectly initialized lexer");
 
     int oldCount = sc->sel.size();
     int bOk = !_gmx_sel_yybparse(scanner);
@@ -149,7 +165,8 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     int nr = sc->sel.size() - oldCount;
     if (maxnr > 0 && nr != maxnr)
     {
-        return eeInvalidInput;
+        bOk = false;
+        errors->append("Too few selections provided");
     }
 
     if (bOk)
@@ -161,7 +178,11 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
         }
     }
 
-    return bOk ? 0 : eeInvalidInput;
+    if (!bOk || !errors->isEmpty())
+    {
+        GMX_ASSERT(bOk && !errors->isEmpty(), "Inconsistent error reporting");
+        GMX_THROW(InvalidInputError(errors->toString()));
+    }
 }
 
 
@@ -173,21 +194,21 @@ void SelectionCollection::Impl::requestSelections(
 }
 
 
-int SelectionCollection::Impl::resolveExternalGroups(t_selelem *root)
+void SelectionCollection::Impl::resolveExternalGroups(
+        t_selelem *root, MessageStringCollector *errors)
 {
-    int rc = 0;
 
     if (root->type == SEL_GROUPREF)
     {
+        bool bOk = true;
         if (root->u.gref.name != NULL)
         {
             char *name = root->u.gref.name;
             if (!gmx_ana_indexgrps_find(&root->u.cgrp, _grps, name))
             {
                 // TODO: Improve error messages
-                GMX_ERROR_NORET(eeInvalidInput,
-                                "Unknown group referenced in a selection");
-                rc = eeInvalidInput;
+                errors->append("Unknown group referenced in a selection");
+                bOk = false;
             }
             else
             {
@@ -200,12 +221,11 @@ int SelectionCollection::Impl::resolveExternalGroups(t_selelem *root)
                                            root->u.gref.id))
             {
                 // TODO: Improve error messages
-                GMX_ERROR_NORET(eeInvalidInput,
-                                "Unknown group referenced in a selection");
-                rc = eeInvalidInput;
+                errors->append("Unknown group referenced in a selection");
+                bOk = false;
             }
         }
-        if (rc == 0)
+        if (bOk)
         {
             root->type = SEL_CONST;
             root->name = root->u.cgrp.name;
@@ -215,11 +235,9 @@ int SelectionCollection::Impl::resolveExternalGroups(t_selelem *root)
     t_selelem *child = root->child;
     while (child != NULL)
     {
-        int rc1 = resolveExternalGroups(child);
-        rc = (rc == 0 ? rc1 : rc);
+        resolveExternalGroups(child, errors);
         child = child->next;
     }
-    return rc;
 }
 
 
@@ -236,42 +254,6 @@ SelectionCollection::SelectionCollection(gmx_ana_poscalc_coll_t *pcc)
 SelectionCollection::~SelectionCollection()
 {
     delete _impl;
-}
-
-
-int
-SelectionCollection::init()
-{
-    if (_impl->_sc.pcc == NULL)
-    {
-        int rc = gmx_ana_poscalc_coll_create(&_impl->_sc.pcc);
-        if (rc != 0)
-        {
-            return rc;
-        }
-        _impl->_flags.set(Impl::efOwnPositionCollection);
-    }
-    _gmx_sel_symtab_create(&_impl->_sc.symtab);
-    gmx_ana_selmethod_register_defaults(_impl->_sc.symtab);
-    return 0;
-}
-
-
-int
-SelectionCollection::create(SelectionCollection **scp,
-                            gmx_ana_poscalc_coll_t *pcc)
-{
-    SelectionCollection *sc = new SelectionCollection(pcc);
-
-    int rc = sc->init();
-    if (rc != 0)
-    {
-        *scp = NULL;
-        delete sc;
-        return rc;
-    }
-    *scp = sc;
-    return 0;
 }
 
 
@@ -294,7 +276,8 @@ SelectionCollection::initOptions()
     const char **postypes = gmx_ana_poscalc_create_type_enum(TRUE);
     if (postypes == NULL)
     {
-        return NULL;
+        // TODO: Use an out-of-memory exception here
+        GMX_THROW(InternalError("Could not create position calculation enum"));
     }
     options.addOption(StringOption("selrpos").enumValue(postypes + 1)
                           .store(&_impl->_rpost).defaultValue(postypes[1])
@@ -302,7 +285,8 @@ SelectionCollection::initOptions()
     options.addOption(StringOption("seltype").enumValue(postypes + 1)
                           .store(&_impl->_spost).defaultValue(postypes[1])
                           .description("Default selection output positions"));
-    assert(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4);
+    GMX_RELEASE_ASSERT(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4,
+                       "Debug level out of range");
     options.addOption(StringOption("seldebug").hidden(_impl->_debugLevel == 0)
                           .enumValue(debug_levels)
                           .defaultValue(debug_levels[_impl->_debugLevel])
@@ -317,7 +301,7 @@ SelectionCollection::initOptions()
 void
 SelectionCollection::setReferencePosType(const char *type)
 {
-    assert(type != NULL);
+    GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
     _impl->_rpost = type;
 }
 
@@ -325,7 +309,7 @@ SelectionCollection::setReferencePosType(const char *type)
 void
 SelectionCollection::setOutputPosType(const char *type)
 {
-    assert(type != NULL);
+    GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
     _impl->_spost = type;
 }
 
@@ -337,7 +321,7 @@ SelectionCollection::setDebugLevel(int debuglevel)
 }
 
 
-int
+void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
     gmx_ana_selcollection_t *sc = &_impl->_sc;
@@ -349,32 +333,34 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     {
         if (sc->top == NULL)
         {
-            GMX_ERROR(eeInvalidValue,
-                      "Selections need either the topology or the number of atoms");
+            GMX_THROW(APIError("Selections need either the topology or the number of atoms"));
         }
         natoms = sc->top->atoms.nr;
     }
+
     gmx_ana_index_init_simple(&sc->gall, natoms, NULL);
-    return 0;
 }
 
 
-int
+void
 SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 {
-    assert(grps == NULL || !_impl->hasFlag(Impl::efExternalGroupsSet));
+    GMX_RELEASE_ASSERT(grps == NULL || !_impl->hasFlag(Impl::efExternalGroupsSet),
+                       "Can only set external groups once or clear them afterwards");
     _impl->_grps = grps;
     _impl->_flags.set(Impl::efExternalGroupsSet);
 
-    int rc = 0;
+    MessageStringCollector errors;
     t_selelem *root = _impl->_sc.root;
     while (root != NULL)
     {
-        int rc1 = _impl->resolveExternalGroups(root);
-        rc = (rc == 0 ? rc1 : rc);
+        _impl->resolveExternalGroups(root, &errors);
         root = root->next;
     }
-    return rc;
+    if (!errors.isEmpty())
+    {
+        GMX_THROW(InvalidInputError(errors.toString()));
+    }
 }
 
 
@@ -418,11 +404,28 @@ SelectionCollection::requiresTopology() const
 }
 
 
-int
-SelectionCollection::parseRequestedFromStdin(bool bInteractive,
-                                             AbstractErrorReporter *errors)
+class RequestsClearer
 {
-    int rc = 0;
+    public:
+        RequestsClearer(SelectionCollection::Impl::RequestList *requests)
+            : _requests(requests)
+        {
+        }
+        ~RequestsClearer()
+        {
+            _requests->clear();
+        }
+
+    private:
+        SelectionCollection::Impl::RequestList *_requests;
+};
+
+
+void
+SelectionCollection::parseRequestedFromStdin(bool bInteractive)
+{
+    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
     {
@@ -448,32 +451,20 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive,
                          request.count() < 0 ? ", Ctrl-D to end" : "");
         }
         std::vector<Selection *> selections;
-        rc = parseFromStdin(request.count(), bInteractive, errors, &selections);
-        if (rc != 0)
-        {
-            break;
-        }
-        rc = request.storage->addSelections(selections, true, errors);
-        if (rc != 0)
-        {
-            break;
-        }
+        parseFromStdin(request.count(), bInteractive, &selections);
+        request.storage->addSelections(selections, true);
     }
-    _impl->_requests.clear();
-    return rc;
 }
 
 
-int
-SelectionCollection::parseRequestedFromString(const std::string &str,
-                                              AbstractErrorReporter *errors)
+void
+SelectionCollection::parseRequestedFromString(const std::string &str)
 {
+    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+
     std::vector<Selection *> selections;
-    int rc = parseFromString(str, errors, &selections);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    parseFromString(str, &selections);
+
     std::vector<Selection *>::const_iterator first = selections.begin();
     std::vector<Selection *>::const_iterator last = first;
     Impl::RequestList::const_iterator i;
@@ -484,9 +475,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str,
         {
             if (selections.end() - first < request.count())
             {
-                errors->error("Too few selections provided");
-                rc = eeInvalidInput;
-                break;
+                GMX_THROW(InvalidInputError("Too few selections provided"));
             }
             last = first + request.count();
         }
@@ -494,93 +483,73 @@ SelectionCollection::parseRequestedFromString(const std::string &str,
         {
             if (i != _impl->_requests.end() - 1)
             {
-                GMX_ERROR_NORET(eeInvalidValue,
-                                "Request for all selections not the last option");
-                rc = eeInvalidValue;
-                break;
+                GMX_THROW(APIError("Request for all selections not the last option"));
             }
             last = selections.end();
         }
         std::vector<Selection *> curr(first, last);
-        rc = request.storage->addSelections(curr, true, errors);
-        if (rc != 0)
-        {
-            break;
-        }
+        request.storage->addSelections(curr, true);
         first = last;
     }
-    _impl->_requests.clear();
     if (last != selections.end())
     {
-        errors->error("Too many selections provided");
-        rc = eeInvalidInput;
+        GMX_THROW(InvalidInputError("Too many selections provided"));
     }
-    return rc;
 }
 
 
-int
+void
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    AbstractErrorReporter *errors,
                                     std::vector<Selection *> *output)
 {
     yyscan_t scanner;
-    int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, bInteractive, nr,
-                             _impl->hasFlag(Impl::efExternalGroupsSet),
-                             _impl->_grps);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    _gmx_sel_init_lexer(&scanner, &_impl->_sc, bInteractive, nr,
+                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_grps);
     /* We don't set the lexer input here, which causes it to use a special
      * internal implementation for reading from stdin. */
-    return _impl->runParser(scanner, nr, output);
+    _impl->runParser(scanner, nr, output);
 }
 
 
-int
+void
 SelectionCollection::parseFromFile(const std::string &filename,
-                                   AbstractErrorReporter *errors,
                                    std::vector<Selection *> *output)
 {
     yyscan_t scanner;
     FILE *fp;
-    int   rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, false, -1,
-                             _impl->hasFlag(Impl::efExternalGroupsSet),
-                             _impl->_grps);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_grps);
     fp = ffopen(filename.c_str(), "r");
     _gmx_sel_set_lex_input_file(scanner, fp);
-    rc = _impl->runParser(scanner, -1, output);
+    // TODO: Use RAII
+    try
+    {
+        _impl->runParser(scanner, -1, output);
+    }
+    catch (std::exception &)
+    {
+        ffclose(fp);
+        throw;
+    }
     ffclose(fp);
-    return rc;
 }
 
 
-int
+void
 SelectionCollection::parseFromString(const std::string &str,
-                                     AbstractErrorReporter *errors,
                                      std::vector<Selection *> *output)
 {
     yyscan_t scanner;
-    int      rc;
 
-    rc = _gmx_sel_init_lexer(&scanner, &_impl->_sc, errors, false, -1,
-                             _impl->hasFlag(Impl::efExternalGroupsSet),
-                             _impl->_grps);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
+                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_grps);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
-    return _impl->runParser(scanner, -1, output);
+    _impl->runParser(scanner, -1, output);
 }
 
 
@@ -589,11 +558,7 @@ SelectionCollection::compile()
 {
     if (!_impl->hasFlag(Impl::efExternalGroupsSet))
     {
-        int rc = setIndexGroups(NULL);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        setIndexGroups(NULL);
     }
     if (_impl->_debugLevel >= 1)
     {
@@ -638,10 +603,10 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 }
 
 
-int
+void
 SelectionCollection::evaluateFinal(int nframes)
 {
-    return gmx_ana_selcollection_evaluate_fin(&_impl->_sc, nframes);
+    gmx_ana_selcollection_evaluate_fin(&_impl->_sc, nframes);
 }
 
 

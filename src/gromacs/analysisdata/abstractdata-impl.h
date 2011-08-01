@@ -75,8 +75,8 @@ class AbstractAnalysisData::Impl
          * calls the notification functions in \p module as if the module had
          * been registered to the data object when the data was added.
          */
-        int presentData(AbstractAnalysisData *data,
-                        AnalysisDataModuleInterface *module);
+        void presentData(AbstractAnalysisData *data,
+                         AnalysisDataModuleInterface *module);
 
         //! List of modules added to the data.
         ModuleList              _modules;

@@ -67,24 +67,22 @@ AnalysisDataAverageModule::flags() const
 }
 
 
-int
+void
 AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     int nrows = data->columnCount();
     setRowCount(nrows);
     snew(_nsamples, nrows);
-    return 0;
 }
 
 
-int
+void
 AnalysisDataAverageModule::frameStarted(real x, real dx)
 {
-    return 0;
 }
 
 
-int
+void
 AnalysisDataAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
                                        const real *y, const real *dy,
                                        const bool *present)
@@ -98,18 +96,16 @@ AnalysisDataAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
             _nsamples[firstcol + i] += 1;
         }
     }
-    return 0;
 }
 
 
-int
+void
 AnalysisDataAverageModule::frameFinished()
 {
-    return 0;
 }
 
 
-int
+void
 AnalysisDataAverageModule::dataFinished()
 {
     for (int i = 0; i < rowCount(); ++i)
@@ -119,7 +115,7 @@ AnalysisDataAverageModule::dataFinished()
         setValue(i, 0, ave);
         setValue(i, 1, std);
     }
-    return valuesReady();
+    valuesReady();
 }
 
 

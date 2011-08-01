@@ -94,8 +94,7 @@ class AbstractOption
          * Creates a default storage object for the option.
          *
          * \param[in]  options  Option collection object.
-         * \param[out] storage  The created storage object.
-         * \retval     0 if there are no errors.
+         * \returns The created storage object.
          *
          * This method is called by when creating an option object
          * The \p options object is used to implement global properties.
@@ -107,8 +106,7 @@ class AbstractOption
          *
          * \see AbstractOptionStorage::init()
          */
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const = 0;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const = 0;
 
         /*! \brief
          * Creates the description string for the option.

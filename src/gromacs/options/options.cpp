@@ -37,10 +37,12 @@
  */
 #include "gromacs/options/options.h"
 
-#include <cassert>
 #include <cctype>
 #include <cstring>
 
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/globalproperties.h"
@@ -116,24 +118,20 @@ AbstractOptionStorage *Options::Impl::findOption(const char *name) const
     return NULL;
 }
 
-int Options::Impl::startSource()
+void Options::Impl::startSource()
 {
-    int rc = 0;
     OptionList::const_iterator i;
     for (i = _options.begin(); i != _options.end(); ++i)
     {
         AbstractOptionStorage *option = *i;
-        int rc1 = option->startSource();
-        rc = (rc != 0 ? rc : rc1);
+        option->startSource();
     }
     SubSectionList::const_iterator j;
     for (j = _subSections.begin(); j != _subSections.end(); ++j)
     {
         Options *section = *j;
-        int rc1 = section->_impl->startSource();
-        rc = (rc != 0 ? rc : rc1);
+        section->_impl->startSource();
     }
-    return rc;
 }
 
 /********************************************************************
@@ -173,9 +171,11 @@ void Options::setDescription(const char *const *desc)
 void Options::addSubSection(Options *section)
 {
     // Make sure that section is not already inserted somewhere.
-    assert(section->_impl->_parent == NULL);
+    GMX_RELEASE_ASSERT(section->_impl->_parent == NULL,
+                       "Cannot add as subsection twice");
     // Make sure that there are no duplicate sections.
-    assert(_impl->findSubSection(section->name().c_str()) == NULL);
+    GMX_RELEASE_ASSERT(_impl->findSubSection(section->name().c_str()) == NULL,
+                       "Duplicate subsection name");
     _impl->_subSections.push_back(section);
     section->_impl->_parent = this;
 
@@ -187,13 +187,13 @@ void Options::addSubSection(Options *section)
 
 void Options::addOption(const AbstractOption &settings)
 {
-    AbstractOptionStorage *option = NULL;
-    int rc = settings.createDefaultStorage(this, &option);
-    // Caller code should be fixed if option initialization fails.
-    assert(rc == 0);
-    // Make sure that there are no duplicate options.
-    assert(_impl->findOption(option->name().c_str()) == NULL);
-    _impl->_options.push_back(option);
+    std::auto_ptr<AbstractOptionStorage> option(settings.createDefaultStorage(this));
+    if (_impl->findOption(option->name().c_str()) != NULL)
+    {
+        GMX_THROW(APIError("Duplicate option: " + option->name()));
+    }
+    _impl->_options.push_back(option.get());
+    option.release();
 }
 
 void Options::addDefaultOptions()
@@ -207,29 +207,47 @@ bool Options::isSet(const char *name) const
     return (option != NULL ? option->isSet() : false);
 }
 
-int Options::finish(AbstractErrorReporter *errors)
+void Options::finish()
 {
-    int rc = 0;
+    MessageStringCollector errors;
     Impl::OptionList::const_iterator i;
     for (i = _impl->_options.begin(); i != _impl->_options.end(); ++i)
     {
         AbstractOptionStorage *option = *i;
-        int rc1 = option->finish(errors);
-        rc = (rc != 0 ? rc : rc1);
+        try
+        {
+            option->finish();
+        }
+        catch (UserInputError &ex)
+        {
+            MessageStringContext context(&errors, "In option " + option->name());
+            errors.append(ex.what());
+        }
     }
     Impl::SubSectionList::const_iterator j;
     for (j = _impl->_subSections.begin(); j != _impl->_subSections.end(); ++j)
     {
         Options *section = *j;
-        int rc1 = section->finish(errors);
-        rc = (rc != 0 ? rc : rc1);
+        try
+        {
+            section->finish();
+        }
+        catch (UserInputError &ex)
+        {
+            errors.append(ex.what());
+        }
     }
     if (_impl->_parent == NULL)
     {
-        assert(_impl->_globalProperties != NULL);
+        GMX_RELEASE_ASSERT(_impl->_globalProperties != NULL,
+                           "Global properties should exist for the top-level options");
         _impl->_globalProperties->finish();
     }
-    return rc;
+    if (!errors.isEmpty())
+    {
+        // TODO: This exception type may not always be appropriate.
+        GMX_THROW(InvalidInputError(errors.toString()));
+    }
 }
 
 OptionsGlobalProperties &Options::globalProperties()
@@ -239,6 +257,8 @@ OptionsGlobalProperties &Options::globalProperties()
     {
         section = section->_impl->_parent;
     }
+    GMX_RELEASE_ASSERT(section->_impl->_globalProperties != NULL,
+                       "Global properties should exist for the top-level options");
     return *section->_impl->_globalProperties;
 }
 

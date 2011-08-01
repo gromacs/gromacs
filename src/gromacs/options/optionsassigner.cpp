@@ -39,10 +39,8 @@
 
 #include <deque>
 
-#include <cassert>
-
-#include "gromacs/errorreporting/abstracterrorreporter.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
 
@@ -56,9 +54,9 @@ namespace gmx
  * OptionsAssigner::Impl
  */
 
-OptionsAssigner::Impl::Impl(Options *options, AbstractErrorReporter *errors)
-    : _options(*options), _errors(errors), _flags(0), _currentOption(NULL),
-      _errorCode(0), _currentValueCount(0), _reverseBoolean(false)
+OptionsAssigner::Impl::Impl(Options *options)
+    : _options(*options), _flags(0), _currentOption(NULL),
+      _currentValueCount(0), _reverseBoolean(false)
 {
     _sectionStack.push_back(&_options);
 }
@@ -78,7 +76,8 @@ void OptionsAssigner::Impl::setFlag(OptionsAssigner::Impl::Flag flag, bool bSet)
 AbstractOptionStorage *
 OptionsAssigner::Impl::findOption(const char *name)
 {
-    assert(_currentOption == NULL);
+    GMX_RELEASE_ASSERT(_currentOption == NULL,
+                       "Cannot search for another option while processing one");
     AbstractOptionStorage *option = NULL;
     Options *section = NULL;
     Options *root = &currentSection();
@@ -152,19 +151,14 @@ OptionsAssigner::Impl::findOption(const char *name)
  * OptionsAssigner
  */
 
-OptionsAssigner::OptionsAssigner(Options *options, AbstractErrorReporter *errors)
-    : _impl(new Impl(options, errors))
+OptionsAssigner::OptionsAssigner(Options *options)
+    : _impl(new Impl(options))
 {
 }
 
 OptionsAssigner::~OptionsAssigner()
 {
     delete _impl;
-}
-
-AbstractErrorReporter *OptionsAssigner::errorReporter() const
-{
-    return _impl->_errors;
 }
 
 void OptionsAssigner::setAcceptBooleanNoPrefix(bool enabled)
@@ -177,119 +171,85 @@ void OptionsAssigner::setNoStrictSectioning(bool enabled)
     _impl->setFlag(Impl::efNoStrictSectioning, enabled);
 }
 
-int OptionsAssigner::start()
+void OptionsAssigner::start()
 {
-    return _impl->keepError(_impl->_options._impl->startSource());
+    _impl->_options._impl->startSource();
 }
 
-int OptionsAssigner::startSubSection(const char *name)
+void OptionsAssigner::startSubSection(const char *name)
 {
-    if (_impl->_currentOption != NULL)
-    {
-        // The return code is ignored to keep on assigning, but any error is
-        // stored to be returned in finish().
-        finishOption();
-    }
-
     Options *section = _impl->currentSection()._impl->findSubSection(name);
     if (section == NULL)
     {
-        // TODO: Print an error
-        return _impl->keepError(eeInvalidInput);
+        GMX_THROW(InvalidInputError("Unknown subsection"));
     }
     _impl->_sectionStack.push_back(section);
-    return 0;
 }
 
-int OptionsAssigner::startOption(const char *name)
+void OptionsAssigner::startOption(const char *name)
 {
-    if (_impl->_currentOption != NULL)
-    {
-        // The return code is ignored to keep on assigning, but any error is
-        // stored to be returned in finish().
-        finishOption();
-    }
-
+    GMX_RELEASE_ASSERT(_impl->_currentOption == NULL, "finishOption() not called");
     AbstractOptionStorage *option = _impl->findOption(name);
     if (option == NULL)
     {
-        _impl->_errors->error("Unknown option");
-        return _impl->keepError(eeInvalidInput);
+        GMX_THROW(InvalidInputError("Unknown option"));
     }
-    int rc = option->startSet(_impl->_errors);
-    if (rc != 0)
-    {
-        return _impl->keepError(rc);
-    }
+    option->startSet();
     _impl->_currentOption = option;
     _impl->_currentValueCount = 0;
-    return 0;
 }
 
-int OptionsAssigner::appendValue(const std::string &value)
+void OptionsAssigner::appendValue(const std::string &value)
 {
     AbstractOptionStorage *option = _impl->_currentOption;
-    // The option should have been successfully started.
-    assert(option != NULL);
+    GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
     ++_impl->_currentValueCount;
-    return _impl->keepError(option->appendValue(value, _impl->_errors));
+    option->appendValue(value);
 }
 
-int OptionsAssigner::finishOption()
+void OptionsAssigner::finishOption()
 {
     AbstractOptionStorage *option = _impl->_currentOption;
-    // The option should have been successfully started.
-    assert(option != NULL);
-    int rc = 0;
+    GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
+    bool bBoolReverseValue = false;
     if (option->isBoolean())
     {
         if (_impl->_currentValueCount == 0)
         {
-            // TODO: Get rid of the hard-coded strings.
-            rc = option->appendValue(_impl->_reverseBoolean ? "0" : "1",
-                                     _impl->_errors);
-            // If the above fails, there is something wrong.
-            assert(rc == 0);
+            option->appendValue(_impl->_reverseBoolean ? "0" : "1");
         }
         else if (_impl->_reverseBoolean)
         {
-            _impl->_errors->error("Cannot specify a value together with 'no' prefix");
-            rc = eeInvalidInput;
+            bBoolReverseValue = true;
         }
     }
-    int rc1 = _impl->_currentOption->finishSet(_impl->_errors);
-    rc = (rc != 0 ? rc : rc1);
     _impl->_currentOption = NULL;
     _impl->_reverseBoolean = false;
-    return _impl->keepError(rc);
+    option->finishSet();
+    if (bBoolReverseValue)
+    {
+        GMX_THROW(InvalidInputError("Cannot specify a value together with 'no' prefix"));
+    }
 }
 
-int OptionsAssigner::finishSubSection()
+void OptionsAssigner::finishSubSection()
 {
     // Should only be called if we are in a subsection.
-    assert(_impl->inSubSection());
-    if (_impl->_currentOption != NULL)
-    {
-        // Possible error codes are stored and returned in the end.
-        finishOption();
-    }
+    GMX_RELEASE_ASSERT(_impl->inSubSection(), "startSubSection() not called");
     _impl->_sectionStack.pop_back();
-    return 0;
 }
 
-int OptionsAssigner::finish()
+void OptionsAssigner::finish()
 {
-    if (_impl->_currentOption != NULL)
+    GMX_RELEASE_ASSERT(_impl->_currentOption == NULL, "finishOption() not called");
+    if (_impl->hasFlag(Impl::efNoStrictSectioning))
     {
-        // Possible error codes are stored and returned in the end.
-        finishOption();
+        while (_impl->inSubSection())
+        {
+            finishSubSection();
+        }
     }
-    while (_impl->inSubSection())
-    {
-        // Possible error codes are stored and returned in the end.
-        finishSubSection();
-    }
-    return _impl->_errorCode;
+    GMX_RELEASE_ASSERT(!_impl->inSubSection(), "finishSubSection() not called");
 }
 
 } // namespace gmx

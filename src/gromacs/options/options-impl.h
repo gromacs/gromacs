@@ -86,11 +86,8 @@ class Options::Impl
 
         /*! \brief
          * Calls Option::startSource() for all options, including subsections.
-         *
-         * \returns 0 on success, or the first non-zero return value of the
-         *      called functions.
          */
-        int startSource();
+        void startSource();
 
         //! Name for the Options object.
         std::string             _name;

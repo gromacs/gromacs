@@ -57,13 +57,13 @@ class Distance : public TrajectoryAnalysisModule
         static TrajectoryAnalysisModule *create();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
-        virtual int initAnalysis(const TopologyInformation &top);
+        virtual void initAnalysis(const TopologyInformation &top);
 
-        virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                 TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
-        virtual int finishAnalysis(int nframes);
-        virtual int writeOutput();
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
 
     private:
         Options                         _options;

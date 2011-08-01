@@ -248,7 +248,7 @@ AsciiHelpWriter &AsciiHelpWriter::setShowDescriptions(bool bSet)
     return *this;
 }
 
-int AsciiHelpWriter::writeHelp(FILE *fp)
+void AsciiHelpWriter::writeHelp(FILE *fp)
 {
     if (_impl->_flags.test(Impl::efShowDescriptions))
     {
@@ -273,7 +273,6 @@ int AsciiHelpWriter::writeHelp(FILE *fp)
             fprintf(fp, "\n");
         }
     }
-    return 0;
 }
 
 } // namespace gmx

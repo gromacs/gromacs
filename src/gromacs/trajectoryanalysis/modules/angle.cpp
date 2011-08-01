@@ -37,14 +37,17 @@
 #include <pbc.h>
 #include <vec.h>
 
+// FIXME: This kind of hackery should not be necessary
+#undef min
+#undef max
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/errorreporting/abstracterrorreporter.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/utility/format.h"
 
 namespace gmx
 {
@@ -149,57 +152,48 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
 }
 
 
-int
-Angle::initOptionsDone(TrajectoryAnalysisSettings *settings,
-                       AbstractErrorReporter *errors)
+void
+Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
 {
     // Validity checks.
     bool bSingle = (_g1type[0] == 'a' || _g1type[0] == 'd');
 
     if (bSingle && _g2type[0] != 'n')
     {
-        errors->error("Cannot use a second group (-g2) with -g1 angle or dihedral");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
+                                         "-g1 angle or dihedral"));
     }
     if (bSingle && _options.isSet("group2"))
     {
-        errors->error("Cannot provide a second selection (-group2) with "
-                      "-g1 angle or dihedral");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("Cannot provide a second selection "
+                                         "(-group2) with -g1 angle or dihedral"));
     }
     if (!bSingle && _g2type[0] == 'n')
     {
-        errors->error("Should specify a second group (-g2) if the first group "
-                      "is not an angle or a dihedral");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("Should specify a second group (-g2) "
+                                         "if the first group is not an angle or a dihedral"));
     }
     if (bSingle && _bDumpDist)
     {
-        errors->warning("Cannot calculate distances with -g1 angle or dihedral");
-        _bDumpDist = false;
+        GMX_THROW(InconsistentInputError("Cannot calculate distances with -g1 angle or dihedral"));
+        // _bDumpDist = false;
+    }
+    if (_bMulti && !bSingle)
+    {
+        GMX_THROW(InconsistentInputError("-mult can only be combined with -g1 angle or dihedral"));
     }
     if (_bMulti && _bSplit1)
     {
-        errors->error("-mult can only be combined with -g1 angle or dihedral");
-        return eeInconsistentInput;
-    }
-    if (!bSingle && _bMulti)
-    {
-        errors->error("-mult can only be combined with -g1 angle or dihedral");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("-mult can not be combined with -split1"));
     }
     if (_bMulti && _bAll)
     {
-        errors->error("-mult and -all are mutually exclusive options");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("-mult and -all are mutually exclusive options"));
     }
+
     if (_bAll)
     {
-        int rc = _sel1Adj->setOnlyStatic(true);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        _sel1Adj->setOnlyStatic(true);
     }
 
     // Set up the number of positions per angle.
@@ -210,7 +204,7 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings,
         case 'v': _natoms1 = 2; break;
         case 'p': _natoms1 = 3; break;
         default:
-            GMX_ERROR(eeInternalError, "invalid -g1 value");
+            GMX_THROW(InternalError("invalid -g1 value"));
     }
     switch (_g2type[0])
     {
@@ -221,38 +215,25 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings,
         case 'z': _natoms2 = 0; break;
         case 's': _natoms2 = 1; break;
         default:
-            GMX_ERROR(eeInternalError, "invalid -g2 value");
+            GMX_THROW(InternalError("invalid -g2 value"));
     }
     if (_natoms2 == 0 && _options.isSet("group2"))
     {
-        errors->error("Cannot provide a second selection (-group2) with -g2 t0 or z");
-        return eeInconsistentInput;
+        GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
 
     if (!_bMulti)
     {
-        OptionAdjusterErrorContext context(_sel1Adj, errors);
-        int rc = _sel1Adj->setValueCount(_bSplit1 ? _natoms1 : 1);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        _sel1Adj->setValueCount(_bSplit1 ? _natoms1 : 1);
     }
     if (_natoms2 > 0)
     {
-        OptionAdjusterErrorContext context(_sel2Adj, errors);
-        int rc = _sel2Adj->setValueCount(_bSplit2 ? _natoms2 : 1);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        _sel2Adj->setValueCount(_bSplit2 ? _natoms2 : 1);
     }
-
-    return 0;
 }
 
 
-int
+void
 Angle::checkSelections(const std::vector<Selection *> &sel1,
                        const std::vector<Selection *> &sel2) const
 {
@@ -262,13 +243,12 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         {
             if (sel1[g]->posCount() % _natoms1 != 0)
             {
-                fatalErrorFormatted(eeInconsistentInput, GMX_ERRORLOC,
+                GMX_THROW(InconsistentInputError(formatString(
                     "Number of positions in selection %d not divisible by %d",
-                    static_cast<int>(g + 1), _natoms1);
-                return eeInconsistentInput;
+                    static_cast<int>(g + 1), _natoms1)));
             }
         }
-        return 0;
+        return;
     }
 
     int na1 = sel1[0]->posCount();
@@ -276,17 +256,15 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
 
     if (!_bSplit1 && _natoms1 > 1 && na1 % _natoms1 != 0)
     {
-        fatalErrorFormatted(eeInconsistentInput, GMX_ERRORLOC,
+        GMX_THROW(InconsistentInputError(formatString(
             "Number of positions in the first group not divisible by %d",
-            _natoms1);
-        return eeInconsistentInput;
+            _natoms1)));
     }
     if (!_bSplit2 && _natoms2 > 1 && na2 % _natoms2 != 0)
     {
-        fatalErrorFormatted(eeInconsistentInput, GMX_ERRORLOC,
+        GMX_THROW(InconsistentInputError(formatString(
             "Number of positions in the second group not divisible by %d",
-            _natoms2);
-        return eeInconsistentInput;
+            _natoms2)));
     }
 
     if (_bSplit1)
@@ -295,9 +273,9 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         {
             if (sel1[g]->posCount() != na1)
             {
-                GMX_ERROR(eeInconsistentInput,
+                GMX_THROW(InconsistentInputError(
                           "All selections in the first group should contain "
-                          "the same number of positions");
+                          "the same number of positions"));
             }
         }
     }
@@ -313,9 +291,9 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
             {
                 if (sel2[g]->posCount() != na2)
                 {
-                    GMX_ERROR(eeInconsistentInput,
+                    GMX_THROW(InconsistentInputError(
                               "All selections in the second group should contain "
-                              "the same number of positions");
+                              "the same number of positions"));
                 }
             }
         }
@@ -326,26 +304,21 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
     }
     if (_natoms1 > 0 && _natoms2 > 1 && na1 != na2)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "Number of vectors defined by the two groups are not the same");
+        GMX_THROW(InconsistentInputError(
+                  "Number of vectors defined by the two groups are not the same"));
     }
     if (_g2type[0] == 's' && sel2[0]->posCount() != 1)
     {
-        GMX_ERROR(eeInconsistentInput,
-                  "The second group should contain a single position with -g2 sphnorm");
+        GMX_THROW(InconsistentInputError(
+                  "The second group should contain a single position with -g2 sphnorm"));
     }
-    return 0;
 }
 
 
-int
+void
 Angle::initAnalysis(const TopologyInformation &top)
 {
-    int rc = checkSelections(_sel1, _sel2);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    checkSelections(_sel1, _sel2);
 
     if (_bMulti)
     {
@@ -383,8 +356,6 @@ Angle::initAnalysis(const TopologyInformation &top)
     plotm->setXTimeLabel();
     plotm->setYLabel("Angle [degrees]");
     _data.addModule(plotm);
-
-    return 0;
 }
 
 
@@ -448,7 +419,7 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
 }
 
 
-int
+void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
@@ -456,11 +427,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     std::vector<Selection *> sel1 = pdata->parallelSelections(_sel1);
     std::vector<Selection *> sel2 = pdata->parallelSelections(_sel2);
 
-    int rc = checkSelections(sel1, sel2);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    checkSelections(sel1, sel2);
 
     rvec  v1, v2;
     rvec  c1, c2;
@@ -564,12 +531,12 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                             }
                             break;
                         default:
-                            GMX_ERROR(eeInternalError, "invalid -g2 value");
+                            GMX_THROW(InternalError("invalid -g2 value"));
                     }
                     angle = gmx_angle(v1, v2);
                     break;
                 default:
-                    GMX_ERROR(eeInternalError, "invalid -g1 value");
+                    GMX_THROW(InternalError("invalid -g1 value"));
             }
             angle *= RAD2DEG;
             real dist = 0.0;
@@ -600,21 +567,18 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         dh->addPoint(g, ave);
     }
     dh->finishFrame();
-    return 0;
 }
 
 
-int
+void
 Angle::finishAnalysis(int /*nframes*/)
 {
-    return 0;
 }
 
 
-int
+void
 Angle::writeOutput()
 {
-    return 0;
 }
 
 

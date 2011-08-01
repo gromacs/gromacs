@@ -44,7 +44,6 @@
 #include <string>
 #include <vector>
 
-#include <cassert>
 #include <cstdio>
 #include <cstring>
 
@@ -53,9 +52,13 @@
 #include <vec.h>
 #include <xvgr.h>
 
+// FIXME: This kind of trickery should not be necessary...
+#undef min
+#undef max
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/selectioncollection.h"
 
 #include "plot-impl.h"
@@ -85,7 +88,7 @@ AbstractPlotModule::Impl::~Impl()
 void
 AbstractPlotModule::Impl::closeFile()
 {
-    if (fp)
+    if (fp != NULL)
     {
         if (bPlain)
         {
@@ -193,8 +196,10 @@ AbstractPlotModule::appendLegend(const char *setname)
 void
 AbstractPlotModule::setXFormat(int width, int prec, char fmt)
 {
-    assert(width >= 0 && prec >= 0 && width <= 99 && prec <= 99);
-    assert(strchr("eEfFgG", fmt) != NULL);
+    GMX_RELEASE_ASSERT(width >= 0 && prec >= 0 && width <= 99 && prec <= 99,
+                       "Invalid width or precision");
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", fmt) != NULL,
+                       "Invalid format specifier");
     sprintf(_impl->xfmt, "%%%d.%d%c", width, prec, fmt);
 }
 
@@ -202,8 +207,10 @@ AbstractPlotModule::setXFormat(int width, int prec, char fmt)
 void
 AbstractPlotModule::setYFormat(int width, int prec, char fmt)
 {
-    assert(width >= 0 && prec >= 0 && width <= 99 && prec <= 99);
-    assert(strchr("eEfFgG", fmt) != NULL);
+    GMX_RELEASE_ASSERT(width >= 0 && prec >= 0 && width <= 99 && prec <= 99,
+                       "Invalid width or precision");
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", fmt) != NULL,
+                       "Invalid format specifier");
     sprintf(_impl->yfmt, " %%%d.%d%c", width, prec, fmt);
 }
 
@@ -215,7 +222,7 @@ AbstractPlotModule::flags() const
 }
 
 
-int
+void
 AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
 {
     if (!_impl->fnm.empty())
@@ -252,43 +259,38 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
             }
         }
     }
-
-    return 0;
 }
 
 
-int
+void
 AbstractPlotModule::frameStarted(real x, real dx)
 {
     if (!isFileOpen())
     {
-        return 0;
+        return;
     }
     if (!_impl->bOmitX)
     {
         std::fprintf(_impl->fp, _impl->xfmt, x);
     }
-    return 0;
 }
 
 
-int
+void
 AbstractPlotModule::frameFinished()
 {
     if (!isFileOpen())
     {
-        return 0;
+        return;
     }
     std::fprintf(_impl->fp, "\n");
-    return 0;
 }
 
 
-int
+void
 AbstractPlotModule::dataFinished()
 {
     _impl->closeFile();
-    return 0;
 }
 
 
@@ -302,7 +304,7 @@ AbstractPlotModule::isFileOpen() const
 void
 AbstractPlotModule::writeValue(real value) const
 {
-    assert(isFileOpen());
+    GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     std::fprintf(_impl->fp, _impl->yfmt, value);
 }
 
@@ -317,20 +319,19 @@ AnalysisDataPlotModule::AnalysisDataPlotModule(const Options &options)
 }
 
 
-int
+void
 AnalysisDataPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
                                     const real *y, const real *dy,
                                     const bool *present)
 {
     if (!isFileOpen())
     {
-        return 0;
+        return;
     }
     for (int i = 0; i < n; ++i)
     {
         writeValue(y[i]);
     }
-    return 0;
 }
 
 
@@ -378,7 +379,7 @@ AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
 
 
 void
-AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[4])
+AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
 {
     for (int i = 0; i < DIM + 1; ++i)
     {
@@ -387,18 +388,18 @@ AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[4])
 }
 
 
-int
+void
 AnalysisDataVectorPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
                                           const real *y, const real *dy,
                                           const bool *present)
 {
     if (firstcol % DIM != 0)
     {
-        GMX_ERROR(eeInvalidValue, "Partial data points");
+        GMX_THROW(APIError("Partial data points"));
     }
     if (!isFileOpen())
     {
-        return 0;
+        return;
     }
     for (int i = 0; i < n; i += 3)
     {
@@ -414,7 +415,6 @@ AnalysisDataVectorPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
             writeValue(norm(&y[i]));
         }
     }
-    return 0;
 }
 
 } // namespace gmx

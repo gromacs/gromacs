@@ -234,9 +234,8 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
 /*!
  * \param[in,out] sc  The selection collection to evaluate.
  * \param[in]     nframes Total number of frames.
- * \returns       0 on successful evaluation, a non-zero error code on error.
  */
-int
+void
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
 {
     t_selelem          *sel;
@@ -259,7 +258,6 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
             sel->avecfrac /= nframes;
         }
     }
-    return 0;
 }
 
 /*!

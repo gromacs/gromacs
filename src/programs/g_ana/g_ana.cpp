@@ -45,24 +45,31 @@
 int
 main(int argc, char *argv[])
 {
-    if (argc < 2)
+    try
     {
-        CopyRight(stderr, argv[0]);
-        GMX_ERROR(gmx::eeInvalidInput,
-                  "Not enough command-line arguments");
-    }
+        if (argc < 2)
+        {
+            CopyRight(stderr, argv[0]);
+            GMX_THROW(gmx::InvalidInputError("Not enough command-line arguments"));
+        }
 
-    std::auto_ptr<gmx::TrajectoryAnalysisModule>
-        mod(gmx::createTrajectoryAnalysisModule(argv[1]));
-    if (mod.get() == NULL)
+        std::auto_ptr<gmx::TrajectoryAnalysisModule>
+            mod(gmx::createTrajectoryAnalysisModule(argv[1]));
+        if (mod.get() == NULL)
+        {
+            CopyRight(stderr, argv[0]);
+            GMX_THROW(gmx::InvalidInputError(
+                      "Unknown analysis module given as the first command-line argument"));
+        }
+        --argc;
+        ++argv;
+
+        gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
+        return runner.run(argc, argv);
+    }
+    catch (std::exception &ex)
     {
-        CopyRight(stderr, argv[0]);
-        GMX_ERROR(gmx::eeInvalidInput,
-                  "Unknown analysis module given as the first command-line argument");
+        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        return 1;
     }
-    --argc;
-    ++argv;
-
-    gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
-    return runner.run(argc, argv);
 }

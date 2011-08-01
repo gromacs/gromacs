@@ -45,8 +45,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
-
 class AbstractOptionStorage;
 class Options;
 
@@ -67,26 +65,7 @@ class OptionsAssigner::Impl
             efNoStrictSectioning        = 1<<1,
         };
         //! Sets the option object to assign to.
-        Impl(Options *options, AbstractErrorReporter *errors);
-
-        /*! \brief
-         * Stores error code for later retrieval if it is the first error.
-         *
-         * \param[in] code  Error code to store.
-         * \returns \p code
-         *
-         * The first call with a non-zero \p code sets the \p _errorCode
-         * attribute; later calls do nothing   The return value allows the
-         * function to be used like \c "return keepError(rc);"
-         */
-        int keepError(int code)
-        {
-            if (_errorCode == 0)
-            {
-                _errorCode = code;
-            }
-            return code;
-        }
+        Impl(Options *options);
 
         //! Sets or clears the given flag.
         void setFlag(Flag flag, bool bSet);
@@ -111,8 +90,6 @@ class OptionsAssigner::Impl
 
         //! Options object to assign to.
         Options                &_options;
-        //! Error reporter to use for errors.
-        AbstractErrorReporter  *_errors;
         //! Flags that control assignment behavior.
         unsigned long           _flags;
         /*! \brief
@@ -123,8 +100,6 @@ class OptionsAssigner::Impl
         std::vector<Options *>  _sectionStack;
         //! Current option being assigned to, or NULL if none.
         AbstractOptionStorage  *_currentOption;
-        //! Keeps the error code of the first error encountered, or 0 if none.
-        int                     _errorCode;
         //! Number of values assigned so far to the current option.
         int                     _currentValueCount;
         //! If true, a "no" prefix was given for the current boolean option.

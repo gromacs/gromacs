@@ -50,7 +50,6 @@ struct gmx_ana_poscalc_coll_t;
 namespace gmx
 {
 
-class AbstractErrorReporter;
 class Options;
 class Selection;
 class SelectionOptionStorage;
@@ -98,30 +97,11 @@ class SelectionCollection
         ~SelectionCollection();
 
         /*! \brief
-         * Initializes the object.
-         *
-         * \retval 0 on success.
-         *
-         * Should be called immediately after construction.
-         */
-        int init();
-        /*! \brief
          * Initializes options for setting global properties on the collection.
          *
          * The return value should not be deleted by the caller.
          */
         Options *initOptions();
-
-        /*! \brief
-         * Convenience function that creates a new selection collection and
-         * calls init().
-         *
-         * \param[out] scp Pointer to a newly created selection collection.
-         * \param[in]  pcc Position calculation data structure to use for
-         *      selection evaluation.
-         * \returns    0 on success.
-         */
-        static int create(SelectionCollection **scp, gmx_ana_poscalc_coll_t *pcc);
 
         /*! \brief
          * Sets the default reference position handling for a selection
@@ -183,38 +163,34 @@ class SelectionCollection
          * the selection: even if the topology contains more atoms, they will
          * not be selected.
          */
-        int setTopology(t_topology *top, int natoms);
+        void setTopology(t_topology *top, int natoms);
         /*! \brief
          * Sets the external index groups to use for the selections.
          *
          * Can be called only once with non-NULL \p grps.
          */
-        int setIndexGroups(gmx_ana_indexgrps_t *grps);
+        void setIndexGroups(gmx_ana_indexgrps_t *grps);
         /*! \brief
          * Parses selection(s) from standard input for options not yet
          * provided.
          *
          * \param[in]  bInteractive Whether the parser should behave
          *      interactively.
-         * \param[in]  errors       Error reporter object.
          *
          * This method cooperates with SelectionOption to allow interactive
          * input of missing selections after all options have been processed.
          * It should be called after the Options::finish() method has been
          * called on all options that add selections to this collection.
          */
-        int parseRequestedFromStdin(bool bInteractive,
-                                    AbstractErrorReporter *errors);
+        void parseRequestedFromStdin(bool bInteractive);
         /*! \brief
          * Parses selection(s) from a string for options not yet provided.
          *
          * \param[in]  str     String to parse.
-         * \param[in]  errors  Error reporter object.
          *
          * \see parseRequestedFromStdin()
          */
-        int parseRequestedFromString(const std::string &str,
-                                     AbstractErrorReporter *errors);
+        void parseRequestedFromString(const std::string &str);
         /*! \brief
          * Parses selection(s) from standard input.
          *
@@ -222,7 +198,6 @@ class SelectionCollection
          *      (if -1, parse as many as provided by the user).
          * \param[in]  bInteractive Whether the parser should behave
          *      interactively.
-         * \param[in]  errors   Error reporter object.
          * \param[out] output   Vector to which parsed selections are appended.
          * \retval     0 on success.
          * \retval     ::eeInvalidInput on syntax error (an interactive parser
@@ -237,14 +212,12 @@ class SelectionCollection
          * Some information about the selections only becomes available once
          * compile() has been called.
          */
-        int parseFromStdin(int count, bool bInteractive,
-                           AbstractErrorReporter *errors,
-                           std::vector<Selection *> *output);
+        void parseFromStdin(int count, bool bInteractive,
+                            std::vector<Selection *> *output);
         /*! \brief
          * Parses selection(s) from a file.
          *
          * \param[in]  filename Name of the file to parse selections from.
-         * \param[in]  errors   Error reporter object.
          * \param[out] output   Vector to which parsed selections are appended.
          * \retval     0 on success.
          * \retval     ::eeInvalidInput on syntax error.
@@ -257,14 +230,12 @@ class SelectionCollection
          * Some information about the selections only becomes available once
          * compile() has been called.
          */
-        int parseFromFile(const std::string &filename,
-                          AbstractErrorReporter *errors,
-                          std::vector<Selection *> *output);
+        void parseFromFile(const std::string &filename,
+                           std::vector<Selection *> *output);
         /*! \brief
          * Parses selection(s) from a string.
          *
          * \param[in]  str      String to parse selections from.
-         * \param[in]  errors   Error reporter object.
          * \param[out] output   Vector to which parsed selections are appended.
          * \retval     0 on success.
          * \retval     ::eeInvalidInput on syntax error.
@@ -277,9 +248,8 @@ class SelectionCollection
          * Some information about the selections only becomes available once
          * compile() has been called.
          */
-        int parseFromString(const std::string &str,
-                            AbstractErrorReporter *errors,
-                            std::vector<Selection *> *output);
+        void parseFromString(const std::string &str,
+                             std::vector<Selection *> *output);
         /*! \brief
          * Prepares the selections for evaluation and performs optimizations.
          *
@@ -307,9 +277,10 @@ class SelectionCollection
          * Evaluates the largest possible index groups from dynamic selections.
          *
          * \param[in] nframes Total number of frames.
-         * \returns   0 on successful evaluation, a non-zero error code on error.
+         *
+         * This function does not throw.
          */
-        int evaluateFinal(int nframes);
+        void evaluateFinal(int nframes);
 
         /*! \brief
          * Prints a human-readable version of the internal selection element

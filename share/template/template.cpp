@@ -44,16 +44,16 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         AnalysisTemplate();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
-        virtual int initAnalysis(const TopologyInformation &top);
+        virtual void initAnalysis(const TopologyInformation &top);
 
-        virtual int startFrames(AnalysisDataParallelOptions opt,
-                                const SelectionCollection &selections,
-                                TrajectoryAnalysisModuleData **pdatap);
-        virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                 TrajectoryAnalysisModuleData *pdata);
+        virtual TrajectoryAnalysisModuleData *startFrames(
+                    AnalysisDataParallelOptions opt,
+                    const SelectionCollection &selections);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
-        virtual int finishAnalysis(int nframes);
-        virtual int writeOutput();
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
 
     private:
         class ModuleData;
@@ -73,7 +73,11 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
-        ModuleData() : _nb(NULL)
+        ModuleData(TrajectoryAnalysisModule *module,
+                   AnalysisDataParallelOptions opt,
+                   const SelectionCollection &selections)
+            : TrajectoryAnalysisModuleData(module, opt, selections),
+              _nb(NULL)
         {
         }
 
@@ -82,9 +86,9 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
             delete _nb;
         }
 
-        virtual int finish()
+        virtual void finish()
         {
-            return finishDataHandles();
+            finishDataHandles();
         }
 
         NeighborhoodSearch          *_nb;
@@ -141,7 +145,7 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 }
 
 
-int
+void
 AnalysisTemplate::initAnalysis(const TopologyInformation & /*top*/)
 {
     _data.setColumns(_sel.size());
@@ -159,35 +163,26 @@ AnalysisTemplate::initAnalysis(const TopologyInformation & /*top*/)
         plotm->setYLabel("Distance (nm)");
         _data.addModule(plotm);
     }
-    return 0;
 }
 
 
-int
+TrajectoryAnalysisModuleData *
 AnalysisTemplate::startFrames(AnalysisDataParallelOptions opt,
-                              const SelectionCollection &selections,
-                              TrajectoryAnalysisModuleData **pdatap)
+                              const SelectionCollection &selections)
 {
-    *pdatap = NULL;
-    ModuleData *pdata = new ModuleData();
-    int rc = pdata->init(this, opt, selections);
+    ModuleData *pdata = new ModuleData(this, opt, selections);
+    int rc = NeighborhoodSearch::create(&pdata->_nb, _cutoff, _refsel->posCount());
     if (rc != 0)
     {
         delete pdata;
-        return rc;
+        // FIXME: Use exceptions in the neighborhood search API
+        GMX_THROW(InternalError("Neighborhood search initialization failed"));
     }
-    rc = NeighborhoodSearch::create(&pdata->_nb, _cutoff, _refsel->posCount());
-    if (rc != 0)
-    {
-        delete pdata;
-        return rc;
-    }
-    *pdatap = pdata;
-    return rc;
+    return pdata;
 }
 
 
-int
+void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
@@ -197,7 +192,8 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     int rc = nb->init(pbc, _refsel->positions());
     if (rc != 0)
     {
-        return rc;
+        // FIXME: Use exceptions in the neighborhood search API
+        GMX_THROW(InternalError("Neighborhood search frame initialization failed"));
     }
     dh->startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
@@ -213,18 +209,16 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         dh->addPoint(g, frave);
     }
     dh->finishFrame();
-    return 0;
 }
 
 
-int
+void
 AnalysisTemplate::finishAnalysis(int /*nframes*/)
 {
-    return 0;
 }
 
 
-int
+void
 AnalysisTemplate::writeOutput()
 {
     // We print out the average of the mean distances for each group.
@@ -233,7 +227,6 @@ AnalysisTemplate::writeOutput()
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
                 _sel[g]->name(), _avem->average(g));
     }
-    return 0;
 }
 
 /*! \brief
@@ -242,7 +235,15 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    AnalysisTemplate module;
-    TrajectoryAnalysisCommandLineRunner runner(&module);
-    return runner.run(argc, argv);
+    try
+    {
+        AnalysisTemplate module;
+        TrajectoryAnalysisCommandLineRunner runner(&module);
+        return runner.run(argc, argv);
+    }
+    catch (std::exception &ex)
+    {
+        fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
+        return 1;
+    }
 }

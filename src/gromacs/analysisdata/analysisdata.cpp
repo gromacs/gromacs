@@ -38,10 +38,10 @@
 #include "gromacs/analysisdata/analysisdata.h"
 
 #include <algorithm>
+#include <memory>
 
-#include <cassert>
-
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 #include "abstractdata-impl.h"
 #include "analysisdata-impl.h"
@@ -82,22 +82,16 @@ AnalysisData::Impl::~Impl()
 }
 
 
-int
+void
 AnalysisData::Impl::addPendingFrame(AnalysisDataFrame *fr)
 {
-    assert(fr->_index >= _data.frameCount());
+    GMX_ASSERT(fr->_index >= _data.frameCount(),
+               "addPendingFrame() called for too old frame");
     size_t pindex = fr->_index - _data.frameCount();
     if (pindex == 0)
     {
-        int rc;
-
         // Just store our frame if it is the next one.
-        rc = _data.storeNextFrame(fr->_x, fr->_dx,
-                                  fr->_y, fr->_dy, fr->_present);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        _data.storeNextFrame(fr->_x, fr->_dx, fr->_y, fr->_dy, fr->_present);
         incrementPStart();
     }
     else
@@ -124,27 +118,21 @@ AnalysisData::Impl::addPendingFrame(AnalysisDataFrame *fr)
         }
         _pending[pindex]->_index = fr->_index;
     }
-    return processPendingFrames();
+    processPendingFrames();
 }
 
 
-int
+void
 AnalysisData::Impl::processPendingFrames()
 {
     while (_pending[_pstart]->_index != -1)
     {
         AnalysisDataFrame *fr = _pending[_pstart];
 
-        int rc = _data.storeNextFrame(fr->_x, fr->_dx,
-                                      fr->_y, fr->_dy, fr->_present);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        _data.storeNextFrame(fr->_x, fr->_dx, fr->_y, fr->_dy, fr->_present);
         fr->_index = -1;
         incrementPStart();
     }
-    return 0;
 }
 
 
@@ -181,34 +169,28 @@ AnalysisData::~AnalysisData()
 void
 AnalysisData::setColumns(int ncol, bool multipoint)
 {
-    assert(ncol > 0);
-    assert(_impl->_handles.empty());
+    GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
+    GMX_RELEASE_ASSERT(_impl->_handles.empty(),
+                       "Cannot change data dimensionality after creating handles");
     setColumnCount(ncol);
     setMultipoint(multipoint);
 }
 
 
-int
-AnalysisData::startData(AnalysisDataHandle **handlep,
-                        AnalysisDataParallelOptions opt)
+AnalysisDataHandle *
+AnalysisData::startData(AnalysisDataParallelOptions opt)
 {
     if (_impl->_handles.empty())
     {
-        int rc = startDataStore();
-        if (rc != 0)
-        {
-            return rc;
-        }
+        startDataStore();
     }
     else if (isMultipoint())
     {
-        GMX_ERROR(eeNotImplemented,
-                  "Parallelism not supported for multipoint data");
+        GMX_THROW(NotImplementedError("Parallelism not supported for multipoint data"));
     }
 
-    AnalysisDataHandle *handle = new AnalysisDataHandle(this);
-    _impl->_handles.push_back(handle);
-    *handlep = handle;
+    std::auto_ptr<AnalysisDataHandle> handle(new AnalysisDataHandle(this));
+    _impl->_handles.push_back(handle.get());
 
     _impl->_pending.resize(2 * _impl->_handles.size() - 1);
     Impl::FrameList::iterator i;
@@ -219,26 +201,26 @@ AnalysisData::startData(AnalysisDataHandle **handlep,
         (*i)->_index = -1;
     }
 
-    return 0;
+    return handle.release();
 }
 
 
-int
+void
 AnalysisData::finishData(AnalysisDataHandle *handle)
 {
     Impl::HandleList::iterator i;
 
     i = std::find(_impl->_handles.begin(), _impl->_handles.end(), handle);
-    assert(i != _impl->_handles.end());
+    GMX_RELEASE_ASSERT(i != _impl->_handles.end(),
+                       "finishData() called for an unknown handle");
 
     _impl->_handles.erase(i);
     delete handle;
 
     if (_impl->_handles.empty())
     {
-        return notifyDataFinish();
+        notifyDataFinish();
     }
-    return 0;
 }
 
 
@@ -279,12 +261,12 @@ AnalysisDataHandle::~AnalysisDataHandle()
 }
 
 
-int
+void
 AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
     if (_impl->_data.isMultipoint())
     {
-        return _impl->_data.notifyFrameStart(x, dx);
+        _impl->_data.notifyFrameStart(x, dx);
     }
     else
     {
@@ -297,37 +279,36 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
             _impl->_frame->_dy[i] = 0.0;
             _impl->_frame->_present[i] = false;
         }
-        return 0;
     }
 }
 
 
-int
+void
 AnalysisDataHandle::addPoint(int col, real y, real dy, bool present)
 {
     if (_impl->_data.isMultipoint())
     {
-        return _impl->_data.notifyPointsAdd(col, 1, &y, &dy, &present);
+        _impl->_data.notifyPointsAdd(col, 1, &y, &dy, &present);
     }
     else
     {
-        assert(!_impl->_frame->_present[col]);
+        GMX_ASSERT(!_impl->_frame->_present[col],
+                   "Data for a column set multiple times");
         _impl->_frame->_y[col] = y;
         _impl->_frame->_dy[col] = dy;
         _impl->_frame->_present[col] = present;
-        return 0;
     }
 }
 
 
-int
+void
 AnalysisDataHandle::addPoints(int firstcol, int n,
                               const real *y, const real *dy,
                               const bool *present)
 {
     if (_impl->_data.isMultipoint())
     {
-        return _impl->_data.notifyPointsAdd(firstcol, n, y, dy, present);
+        _impl->_data.notifyPointsAdd(firstcol, n, y, dy, present);
     }
     else
     {
@@ -336,56 +317,48 @@ AnalysisDataHandle::addPoints(int firstcol, int n,
             addPoint(firstcol + i, y[i], dy ? dy[i] : 0.0,
                      present ? present[i] : true);
         }
-        return 0;
     }
 }
 
 
-int
+void
 AnalysisDataHandle::finishFrame()
 {
     if (_impl->_data.isMultipoint())
     {
-        return _impl->_data.notifyFrameFinish();
+        _impl->_data.notifyFrameFinish();
     }
     else
     {
-        return _impl->_data._impl->addPendingFrame(_impl->_frame);
+        _impl->_data._impl->addPendingFrame(_impl->_frame);
     }
 }
 
 
-int
+void
 AnalysisDataHandle::addFrame(int index, real x, const real *y, const real *dy,
                              const bool *present)
 {
-    return addFrame(index, x, 0.0, y, dy, present);
+    addFrame(index, x, 0.0, y, dy, present);
 }
 
 
-int
+void
 AnalysisDataHandle::addFrame(int index, real x, real dx,
                              const real *y, const real *dy,
                              const bool *present)
 {
-    int rc = startFrame(index, x, dx);
-    if (rc == 0)
-    {
-        rc = addPoints(0, _impl->_data.columnCount(), y, dy, present);
-    }
-    if (rc == 0)
-    {
-        rc = finishFrame();
-    }
-    return rc;
+    startFrame(index, x, dx);
+    addPoints(0, _impl->_data.columnCount(), y, dy, present);
+    finishFrame();
 }
 
 
-int
+void
 AnalysisDataHandle::finishData()
 {
     // Calls delete this
-    return _impl->_data.finishData(this);
+    _impl->_data.finishData(this);
 }
 
 } // namespace gmx

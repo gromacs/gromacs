@@ -62,13 +62,13 @@ class AbstractHistogramModule : public AbstractAnalysisDataStored,
         /*! \brief
          * Initializes the histogram using bin width and the number of bins.
          */
-        int initNBins(real miny, real binw, int nbins,
-                      bool bIntegerBins = false);
+        void initNBins(real miny, real binw, int nbins,
+                       bool bIntegerBins = false);
         /*! \brief
          * Initializes the histogram using a range and a bin width.
          */
-        int initRange(real miny, real maxy, real binw,
-                      bool bIntegerBins = false);
+        void initRange(real miny, real maxy, real binw,
+                       bool bIntegerBins = false);
         /*! \brief
          * Sets the histogram to match all values.
          *
@@ -96,13 +96,13 @@ class AbstractHistogramModule : public AbstractAnalysisDataStored,
 
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present) = 0;
-        virtual int frameFinished();
-        virtual int dataFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present) = 0;
+        virtual void frameFinished();
+        virtual void dataFinished();
 
     protected:
         AbstractHistogramModule();
@@ -144,13 +144,13 @@ class HistogramAverageModule : public AbstractAnalysisArrayData,
     public:
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
-        virtual int frameFinished();
-        virtual int dataFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
+        virtual void frameFinished();
+        virtual void dataFinished();
 
         /*! \brief
          * Sets the averager to ignore missing values.
@@ -175,7 +175,7 @@ class HistogramAverageModule : public AbstractAnalysisArrayData,
          * After this function has been called, it is no longer possible to
          * alter the histogram.
          */
-        int done() { return AbstractAnalysisArrayData::valuesReady(); }
+        void done() { AbstractAnalysisArrayData::valuesReady(); }
 
     private:
         HistogramAverageModule();
@@ -203,9 +203,9 @@ class HistogramAverageModule : public AbstractAnalysisArrayData,
 class AnalysisDataSimpleHistogramModule : public AbstractHistogramModule
 {
     public:
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
 
         // Copy and assign disallowed by base.
 };
@@ -230,9 +230,9 @@ class AnalysisDataWeightedHistogramModule : public AbstractHistogramModule
     public:
         virtual int flags() const;
 
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
 
         // Copy and assign disallowed by base.
 };
@@ -264,12 +264,12 @@ class AnalysisDataBinAverageModule : public AbstractHistogramModule
 
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
-        virtual int frameFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
+        virtual void frameFinished();
 
     private:
         int                    *_n;

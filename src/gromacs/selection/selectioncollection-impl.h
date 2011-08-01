@@ -87,6 +87,7 @@ struct gmx_ana_selcollection_t
 namespace gmx
 {
 
+class MessageStringCollector;
 class SelectionOptionStorage;
 
 /*! \internal \brief
@@ -133,8 +134,6 @@ class SelectionCollection::Impl
         bool hasFlag(Flag flag) const { return _flags.test(flag); }
         //! Clears the symbol table of the selection collection.
         void clearSymbolTable();
-        //! Registers the default selection methods for the collection.
-        int registerDefaultMethods();
         /*! \brief
          * Helper function that runs the parser once the tokenizer has been
          * initialized.
@@ -144,17 +143,16 @@ class SelectionCollection::Impl
          *      (if -1, parse as many as provided by the user).
          * \param[out]    output  Vector to which parsed selections are
          *      appended.
-         * \retval        0 on success.
-         * \retval        ::eeInvalidInput on error.
          *
          * Does not clear \p output.
          */
-        int runParser(void *scanner, int maxnr,
-                      std::vector<Selection *> *output);
+        void runParser(void *scanner, int maxnr,
+                       std::vector<Selection *> *output);
         void requestSelections(const std::string &name,
                                const std::string &descr,
                                SelectionOptionStorage *storage);
-        int resolveExternalGroups(struct t_selelem *root);
+        void resolveExternalGroups(struct t_selelem *root,
+                                   MessageStringCollector *errors);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t _sc;
@@ -206,7 +204,7 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
 /*! \internal \brief
  * Evaluates the largest possible index groups from dynamic selections.
  */
-int
+void
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
 
 /*!\}*/

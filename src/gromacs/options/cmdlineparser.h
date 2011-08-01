@@ -42,8 +42,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
-
 class Options;
 
 /*! \brief
@@ -54,9 +52,8 @@ class Options;
 gmx::Options options("name", "description");
 // Fill up options
 
-gmx::StandardErrorReporter errors;
-gmx::CommandLineParser(&options, &errors).parse(&argc, argv);
-options.finish(&errors);
+gmx::CommandLineParser(&options).parse(&argc, argv);
+options.finish();
  * \endcode
  *
  * \inpublicapi
@@ -69,17 +66,14 @@ class CommandLineParser
          * Creates a command-line parser that sets values for options.
          *
          * \param[in] options  Options object whose options should be set.
-         * \param[in] errors   Error reporter object.
          */
-        CommandLineParser(Options *options, AbstractErrorReporter *errors);
+        CommandLineParser(Options *options);
         ~CommandLineParser();
 
         /*! \brief
          * Parses the command-line.
-         *
-         * \retval 0 if there were no errors.
          */
-        int parse(int *argc, char *argv[]);
+        void parse(int *argc, char *argv[]);
 
     private:
         class Impl;

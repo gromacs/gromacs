@@ -37,14 +37,12 @@
  */
 #include "gromacs/selection/selectionoption.h"
 
-#include <cassert>
-
 #include <string>
 #include <vector>
 
-#include "gromacs/errorreporting/abstracterrorreporter.h"
-#include "gromacs/errorreporting/errorcontext.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -60,36 +58,25 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage()
-    : _adjuster(NULL)
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
+                                               Options *options)
+    : MyBase(settings, options,
+             OptionFlags() | efNoDefaultValue | efConversionMayNotAddValues
+                | efDontCheckMinimumCount),
+      _selectionFlags(settings._selectionFlags), _adjuster(NULL)
 {
-    MyBase::setFlag(efNoDefaultValue);
-    MyBase::setFlag(efConversionMayNotAddValues);
-    MyBase::setFlag(efDontCheckMinimumCount);
+    options->globalProperties().request(eogpSelectionCollection);
+    if (settings._adjuster != NULL)
+    {
+        _adjuster = new SelectionOptionAdjuster(this);
+        *settings._adjuster = _adjuster;
+    }
 }
 
 
 SelectionOptionStorage::~SelectionOptionStorage()
 {
     delete _adjuster;
-}
-
-
-int SelectionOptionStorage::init(const SelectionOption &settings,
-                                 Options *options)
-{
-    _selectionFlags = settings._selectionFlags;
-    int rc = MyBase::init(settings, options);
-    if (rc == 0)
-    {
-        options->globalProperties().request(eogpSelectionCollection);
-        if (settings._adjuster)
-        {
-            _adjuster = new SelectionOptionAdjuster(this);
-            *settings._adjuster = _adjuster;
-        }
-    }
-    return rc;
 }
 
 
@@ -100,14 +87,13 @@ std::string SelectionOptionStorage::formatValue(int i) const
 }
 
 
-int SelectionOptionStorage::addSelections(
+void SelectionOptionStorage::addSelections(
         const std::vector<Selection *> &selections,
-        bool bFullValue, AbstractErrorReporter *errors)
+        bool bFullValue)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
     {
-        errors->error("Too few selections provided");
-        return eeInvalidInput;
+        GMX_THROW(InvalidInputError("Too few selections provided"));
     }
     std::vector<Selection *>::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
@@ -116,101 +102,98 @@ int SelectionOptionStorage::addSelections(
         // behave better.
         if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
         {
-            errors->error("Dynamic selections not supported");
-            return eeInvalidInput;
+            GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
         (*i)->setFlags(_selectionFlags);
-        int rc = addValue(*i);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        addValue(*i);
     }
     if (bFullValue)
     {
         processValues(selections.size(), true);
     }
-    return 0;
 }
 
 
-int SelectionOptionStorage::convertValue(const std::string &value,
-                                         AbstractErrorReporter *errors)
+void SelectionOptionStorage::convertValue(const std::string &value)
 {
     SelectionCollection *sc =
         hostOptions().globalProperties().selectionCollection();
-    assert(sc != NULL);
+    GMX_RELEASE_ASSERT(sc != NULL, "Selection collection is not set");
 
     std::vector<Selection *> selections;
     // TODO: Implement reading from a file.
-    int rc = sc->parseFromString(value, errors, &selections);
-    if (rc == 0)
-    {
-        rc = addSelections(selections, false, errors);
-    }
-    return rc;
+    sc->parseFromString(value, &selections);
+    addSelections(selections, false);
 }
 
-int SelectionOptionStorage::processSet(int nvalues,
-                                       AbstractErrorReporter *errors)
+void SelectionOptionStorage::processSet(int nvalues)
 {
     if (nvalues > 0 && nvalues < minValueCount())
     {
         // TODO: Remove the invalid values
-        errors->error("Too few (valid) values provided");
-        return eeInvalidInput;
+        GMX_THROW(InvalidInputError("Too few (valid) values provided"));
     }
-    return MyBase::processSet(nvalues, errors);
+    MyBase::processSet(nvalues);
 }
 
-int SelectionOptionStorage::processAll(AbstractErrorReporter *errors)
+void SelectionOptionStorage::processAll()
 {
     if ((hasFlag(efRequired) || hasFlag(efSet)) && valueCount() == 0)
     {
         SelectionCollection *sc =
             hostOptions().globalProperties().selectionCollection();
-        assert(sc != NULL);
+        GMX_RELEASE_ASSERT(sc != NULL, "Selection collection is not set");
 
         sc->_impl->requestSelections(name(), description(), this);
         setFlag(efSet);
     }
-    return MyBase::processAll(errors);
+    MyBase::processAll();
 }
 
-int SelectionOptionStorage::setAllowedValueCount(int count,
-                                                 AbstractErrorReporter *errors)
+void SelectionOptionStorage::setAllowedValueCount(int count)
 {
-    ErrorContext context(errors, "In option '" + name() + "'");
-    int rc = 0;
-    if (count > 0)
+    MessageStringCollector errors;
+    errors.startContext("In option '" + name() + "'");
+    if (count >= 0)
     {
-        rc = setMinValueCount(count, errors);
-        if (rc == 0 && valueCount() > 0 && valueCount() < count)
+        // Should not throw because efDontCheckMinimumCount is set
+        setMinValueCount(count);
+        if (valueCount() > 0 && valueCount() < count)
         {
-            errors->error("Too few (valid) values provided");
-            rc = eeInvalidInput;
+            errors.append("Too few (valid) values provided");
         }
     }
-    int rc1 = setMaxValueCount(count, errors);
-    return rc != 0 ? rc : rc1;
+    try
+    {
+        setMaxValueCount(count);
+    }
+    catch (UserInputError &ex)
+    {
+        errors.append(ex.what());
+    }
+    errors.finishContext();
+    if (!errors.isEmpty())
+    {
+        GMX_THROW(InvalidInputError(errors.toString()));
+    }
 }
 
-int SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet,
-                                             AbstractErrorReporter *errors)
+void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    ErrorContext context(errors, "In option '" + name() + "'");
     _selectionFlags.set(flag, bSet);
     ValueList::const_iterator i;
     for (i = values().begin(); i != values().end(); ++i)
     {
         if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
         {
-            errors->error("Dynamic selections not supported");
-            return eeInvalidInput;
+            MessageStringCollector errors;
+            errors.startContext("In option '" + name() + "'");
+            errors.append("Dynamic selections not supported");
+            errors.finishContext();
+            GMX_THROW(InvalidInputError(errors.toString()));
         }
         (*i)->setFlags(_selectionFlags);
     }
-    return 0;
 }
 
 
@@ -219,51 +202,43 @@ int SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet,
  */
 
 SelectionOptionAdjuster::SelectionOptionAdjuster(SelectionOptionStorage *storage)
-    : _storage(*storage), _errors(NULL)
+    : _storage(*storage)
 {
 }
 
-AbstractErrorReporter *
-SelectionOptionAdjuster::setErrorReporter(AbstractErrorReporter *errors)
+void SelectionOptionAdjuster::setValueCount(int count)
 {
-    AbstractErrorReporter *old = _errors;
-    _errors = errors;
-    return old;
+    return storage().setAllowedValueCount(count);
 }
 
-int SelectionOptionAdjuster::setValueCount(int count)
+void SelectionOptionAdjuster::setEvaluateVelocities(bool bEnabled)
 {
-    return storage().setAllowedValueCount(count, errors());
+    return storage().setSelectionFlag(efEvaluateVelocities, bEnabled);
 }
 
-int SelectionOptionAdjuster::setEvaluateVelocities(bool bEnabled)
+void SelectionOptionAdjuster::setEvaluateForces(bool bEnabled)
 {
-    return storage().setSelectionFlag(efEvaluateVelocities, bEnabled, errors());
+    return storage().setSelectionFlag(efEvaluateForces, bEnabled);
 }
 
-int SelectionOptionAdjuster::setEvaluateForces(bool bEnabled)
+void SelectionOptionAdjuster::setOnlyAtoms(bool bEnabled)
 {
-    return storage().setSelectionFlag(efEvaluateForces, bEnabled, errors());
+    return storage().setSelectionFlag(efOnlyAtoms, bEnabled);
 }
 
-int SelectionOptionAdjuster::setOnlyAtoms(bool bEnabled)
+void SelectionOptionAdjuster::setOnlyStatic(bool bEnabled)
 {
-    return storage().setSelectionFlag(efOnlyAtoms, bEnabled, errors());
+    return storage().setSelectionFlag(efOnlyStatic, bEnabled);
 }
 
-int SelectionOptionAdjuster::setOnlyStatic(bool bEnabled)
+void SelectionOptionAdjuster::setDynamicMask(bool bEnabled)
 {
-    return storage().setSelectionFlag(efOnlyStatic, bEnabled, errors());
+    return storage().setSelectionFlag(efDynamicMask, bEnabled);
 }
 
-int SelectionOptionAdjuster::setDynamicMask(bool bEnabled)
+void SelectionOptionAdjuster::setDynamicOnlyWhole(bool bEnabled)
 {
-    return storage().setSelectionFlag(efDynamicMask, bEnabled, errors());
-}
-
-int SelectionOptionAdjuster::setDynamicOnlyWhole(bool bEnabled)
-{
-    return storage().setSelectionFlag(efDynamicOnlyWhole, bEnabled, errors());
+    return storage().setSelectionFlag(efDynamicOnlyWhole, bEnabled);
 }
 
 
@@ -271,10 +246,9 @@ int SelectionOptionAdjuster::setDynamicOnlyWhole(bool bEnabled)
  * SelectionOption
  */
 
-int SelectionOption::createDefaultStorage(Options *options,
-                                          AbstractOptionStorage **storage) const
+AbstractOptionStorage *SelectionOption::createDefaultStorage(Options *options) const
 {
-    return createOptionStorage<SelectionOption, SelectionOptionStorage>(this, options, storage);
+    return new SelectionOptionStorage(*this, options);
 }
 
 } // namespace gmx

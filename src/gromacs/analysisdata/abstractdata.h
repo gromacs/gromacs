@@ -44,12 +44,6 @@
 namespace gmx
 {
 
-//! Additional error codes for functions in the analysis data module.
-enum AnalysisDataErrorCode
-{
-    eedataDataNotAvailable = -1,
-};
-
 class AnalysisDataModuleInterface;
 
 /*! \libinternal \brief
@@ -75,6 +69,15 @@ class AnalysisDataModuleInterface;
  * in a correct sequence (the functions will assert in most incorrect use
  * cases), and that the data provided through the public interface matches
  * that passed to the modules with the notify methods.
+ *
+ * Currently, it is not possible to continue using the data object if an
+ * attached module throws an exception during data processing; it is only safe
+ * to destroy such data object.
+ *
+ * \todo
+ * Improve the exception-handling semantics.  In most cases, it doesn't make
+ * much sense to continue data processing after one module fails, but having
+ * the alternative would not hurt.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -133,78 +136,79 @@ class AbstractAnalysisData
          * \param[out] present Returns a pointer to an array that tells
          *      whether the corresponding column is present in that frame.
          *      If NULL, no missing information is returned.
-         * \retval 0 on success.
-         * \retval ::eedataDataNotAvailable if data for the requested frame is
-         *      no longer available (this is regarded as a normal outcome,
-         *      i.e., no error handlers are invoked).
+         * \retval \c false if data for the requested frame is no longer
+         *      available.
          *
-         * Derived classes can choose to return ::eedataDataNotAvailable if
-         * requestStorage() has not been called at all, or if the frame is
-         * too old (compared to the value given to requestStorage()).
+         * Derived classes can choose to return false if requestStorage() has
+         * not been called at all, or if the frame is too old (compared to the
+         * value given to requestStorage()).
+         *
+         * \todo
+         * For more flexibility, it would be better to return a data row/frame
+         * object from this method, which could then be used to access all the
+         * data for that frame.
          */
-        virtual int getDataWErr(int index, real *x, real *dx,
-                                const real **y, const real **dy,
-                                const bool **present = 0) const = 0;
+        virtual bool getDataWErr(int index, real *x, real *dx,
+                                 const real **y, const real **dy,
+                                 const bool **present = 0) const = 0;
         /*! \brief
          * Convenience function for accessing stored data.
          *
          * \see getDataWErr()
          */
-        int getData(int index, real *x, const real **y,
-                    const bool **present = 0) const;
+        bool getData(int index, real *x, const real **y,
+                     const bool **present = 0) const;
         /*! \brief
          * Convenience function for accessing errors for stored data.
          *
          * \see getDataWErr()
          */
-        int getErrors(int index, real *dx, const real **dy) const;
+        bool getErrors(int index, real *dx, const real **dy) const;
         /*! \brief
          * Request storage of frames.
          *
          * \param[in] nframes  Request storing at least \c nframes previous
          *     frames (-1 = request storing all).
-         * \retval 0 on success.
-         * \retval eedataInvalidCall if data has already been added and
-         *      cannot be stored.
-         * \retval eedataNotSupported if the object does not support storage.
+         * \retval true if the request could be satisfied.
          *
          * If called multiple times, the largest request should be honored.
          *
          * \see getData()
          */
-        virtual int requestStorage(int nframes = -1) = 0;
+        virtual bool requestStorage(int nframes = -1) = 0;
 
         /*! \brief
          * Adds a module to process the data.
          *
          * \param  module  Module to add.
-         * \retval 0 on success.
-         * \retval ::eeInvalidValue if \p module is not compatible with the
-         *      data object.
-         * \retval ::eedataDataNotAvailable if data has already been added to
-         *      the data object and everything is not available through
-         *      getData().
+         * \exception APIError if
+         *      - \p module is not compatible with the data object
+         *      - data has already been added to the data object and everything
+         *        is not available through getData().
          *
          * If data has already been added to the module, the new module
-         * immediately processes all existing data.  ::eedataDataNotAvailable
-         * is returned if all data is not available through getData().
+         * immediately processes all existing data.  APIError is thrown
+         * if all data is not available through getData().
          *
-         * If the call successful, the data object takes ownership of the
+         * When this function is entered, the data object takes ownership of the
          * module, and automatically destructs it when the data object itself
          * is destroyed.
+         *
+         * \todo
+         * Provide additional semantics that does not acquire ownership of the
+         * data object.
          */
-        int addModule(AnalysisDataModuleInterface *module);
+        void addModule(AnalysisDataModuleInterface *module);
         /*! \brief
          * Adds a module that processes only a subset of the columns.
          *
          * \param[in] col     First column.
          * \param[in] span    Number of columns.
          * \param     module  Module to add.
-         * \retval 0 on success.
          *
-         * Can return any of the return codes for addModule().
+         * \see addModule()
          */
-        int addColumnModule(int col, int span, AnalysisDataModuleInterface *module);
+        void addColumnModule(int col, int span, AnalysisDataModuleInterface *module);
         /*! \brief
          * Applies a module to process data that is ready.
          *
@@ -216,7 +220,7 @@ class AbstractAnalysisData
          * It is provided for additional flexibility in postprocessing
          * in-memory data.
          */
-        int applyModule(AnalysisDataModuleInterface *module);
+        void applyModule(AnalysisDataModuleInterface *module);
 
     protected:
         AbstractAnalysisData();
@@ -255,14 +259,14 @@ class AbstractAnalysisData
          * notification functions. The derived class should prepare for
          * requestStorage() calls from the attached modules.
          */
-        int notifyDataStart();
+        void notifyDataStart();
         /*! \brief
          * Notifies attached modules of the start of a frame.
          *
          * Should be called once for each frame, before notifyPointsAdd() calls
          * for thet frame.
          */
-        int notifyFrameStart(real x, real dx) const;
+        void notifyFrameStart(real x, real dx) const;
         /*! \brief
          * Notifies attached modules of the addition of points to the
          * current frame.
@@ -275,22 +279,22 @@ class AbstractAnalysisData
          * even the whole frame in a single call rather than calling the method
          * for each column separately.
          */
-        int notifyPointsAdd(int firstcol, int n,
-                            const real *y, const real *dy,
-                            const bool *present) const;
+        void notifyPointsAdd(int firstcol, int n,
+                             const real *y, const real *dy,
+                             const bool *present) const;
         /*! \brief
          * Notifies attached modules of the end of a frame.
          *
          * Should be called once for each call of notifyFrameStart(), after any
          * notifyPointsAdd() calls for the frame.
          */
-        int notifyFrameFinish() const;
+        void notifyFrameFinish() const;
         /*! \brief
          * Notifies attached modules of the end of data.
          *
          * Should be called once, after all the other notification calls.
          */
-        int notifyDataFinish() const;
+        void notifyDataFinish() const;
 
     private:
         class Impl;
@@ -331,10 +335,10 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         virtual ~AbstractAnalysisDataStored();
 
         virtual int frameCount() const;
-        virtual int getDataWErr(int index, real *x, real *dx,
-                                const real **y, const real **dy,
-                                const bool **present = 0) const;
-        virtual int requestStorage(int nframes = -1);
+        virtual bool getDataWErr(int index, real *x, real *dx,
+                                 const real **y, const real **dy,
+                                 const bool **present = 0) const;
+        virtual bool requestStorage(int nframes = -1);
 
     protected:
         AbstractAnalysisDataStored();
@@ -347,14 +351,14 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         void setMultipoint(bool multipoint);
 
         //! Start storing data.
-        int startDataStore();
+        void startDataStore();
         //! Starts storing a next frame.
-        int startNextFrame(real x, real dx);
+        void startNextFrame(real x, real dx);
         //! Stores the whole frame in a single call after start_next_frame().
-        int storeThisFrame(const real *y, const real *dy, const bool *present);
+        void storeThisFrame(const real *y, const real *dy, const bool *present);
         //! Convenience function for storing a whole frame in a single call.
-        int storeNextFrame(real x, real dx, const real *y, const real *dy,
-                           const bool *present);
+        void storeNextFrame(real x, real dx, const real *y, const real *dy,
+                            const bool *present);
 
     private:
         class Impl;

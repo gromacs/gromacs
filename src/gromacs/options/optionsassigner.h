@@ -46,8 +46,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
-
 class Options;
 
 /*! \libinternal \brief
@@ -61,8 +59,7 @@ class Options;
 gmx::options::Options options("name", "Title");
 // Set up options
 
-gmx::error::StandardReporter errors;
-gmx::options::OptionsAssigner assigner(&options, &errors);
+gmx::options::OptionsAssigner assigner(&options);
 assigner.startOption("opt1");
 assigner.appendValue("3");
 assigner.startSubSection("section");
@@ -92,17 +89,8 @@ class OptionsAssigner
         /*! \brief
          * Creates an object that assigns to the given object.
          */
-        OptionsAssigner(Options *options, AbstractErrorReporter *errors);
+        OptionsAssigner(Options *options);
         ~OptionsAssigner();
-
-        /*! \brief
-         * Returns the error reporter object passed to the constructor.
-         *
-         * This method is provided for convenience such that users of this
-         * class do not need to store a separate pointer to the error reporter
-         * if they need to use it.
-         */
-        AbstractErrorReporter *errorReporter() const;
 
         /*! \brief
          * Sets the assigner to recognize boolean options with a "no" prefix.
@@ -135,61 +123,38 @@ class OptionsAssigner
 
         /*! \brief
          * Start assigning values.
-         *
-         * \retval 0 on success.
          */
-        int start();
+        void start();
         /*! \brief
          * Start assigning values to options in a subsection.
          *
          * \param[in] name  Name of the subsection to start assigning to.
-         * \retval 0 if assignment can proceed.
-         *
-         * Does not call finishSubSection() automatically to enable nested
-         * sections.
          */
-        int startSubSection(const char *name);
+        void startSubSection(const char *name);
         /*! \brief
          * Start assigning values for an option.
          *
          * \param[in] name  Name of the option to start assigning to.
-         * \retval 0 if assignment can proceed.
          */
-        int startOption(const char *name);
+        void startOption(const char *name);
         /*! \brief
          * Appends a value to the value list of the current option.
          *
          * \param[in] value  String representation of the value to assign.
-         * \retval 0 if assignment was successful.
          */
-        int appendValue(const std::string &value);
+        void appendValue(const std::string &value);
         /*! \brief
          * Finish assigning values for the current option.
-         *
-         * \retval 0 if there were no errors in the assignment.
-         *
-         * This function returns non-zero only if the error could not have been
-         * detected earlier, i.e., from the return value of appendValue().
          */
-        int finishOption();
+        void finishOption();
         /*! \brief
          * Finish assigning values to a subsection.
-         *
-         * \retval 0 for success.
-         *
-         * This function returns non-zero only if the error could not have been
-         * detected earlier.
          */
-        int finishSubSection();
+        void finishSubSection();
         /*! \brief
          * Finish assigning options through the object.
-         *
-         * \retval 0 if there were no errors in the assignment.
-         *
-         * If an error was detected in any of the other calls to this class,
-         * this function returns the error code of the first of such errors.
          */
-        int finish();
+        void finish();
 
     private:
         class Impl;

@@ -60,7 +60,7 @@ class TrajectoryAnalysisModuleData::Impl
         Impl() : _selections(NULL) {}
         ~Impl();
 
-        int finishHandles();
+        void finishHandles();
 
         HandleContainer         _handles;
         const SelectionCollection *_selections;
@@ -86,7 +86,11 @@ class TrajectoryAnalysisModule::Impl
 class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
     public:
-        virtual int finish();
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
+                                          /*AnalysisDataParallelOptions*/ void* opt,
+                                          const SelectionCollection &selections);
+
+        virtual void finish();
 };
 
 } // namespace gmx

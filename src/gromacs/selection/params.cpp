@@ -43,11 +43,12 @@
 #include <string2.h>
 #include <vec.h>
 
-#include "gromacs/errorreporting/errorcontext.h"
 #include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
+#include "gromacs/utility/format.h"
 
 #include "parsetree.h"
 #include "position.h"
@@ -865,7 +866,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     {
         if (value->type != param->val.type)
         {
-            _gmx_selparser_warning(scanner, "incorrect value skipped");
+            _gmx_selparser_error(scanner, "incorrect value skipped");
             value = value->next;
             continue;
         }
@@ -902,7 +903,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                         }
                         if (j != value->u.i.i2 + 1)
                         {
-                            _gmx_selparser_warning(scanner, "extra values skipped");
+                            _gmx_selparser_error(scanner, "extra values skipped");
                         }
                     }
                     else
@@ -913,7 +914,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                         }
                         if (j != value->u.i.i2 - 1)
                         {
-                            _gmx_selparser_warning(scanner, "extra values skipped");
+                            _gmx_selparser_error(scanner, "extra values skipped");
                         }
                     }
                     --i;
@@ -1135,7 +1136,7 @@ gmx_bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
                       t_selelem *root, void *scanner)
 {
-    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
     gmx_bool                bOk, rc;
@@ -1146,16 +1147,15 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
     bOk = TRUE;
     for (i = 0; i < nparam; ++i)
     {
-        char buf[128];
-        sprintf(buf, "In parameter '%s'", params[i].name);
-        gmx::ErrorContext context(errors, buf);
+        std::string contextStr = gmx::formatString("In parameter '%s'", params[i].name);
+        gmx::MessageStringContext  context(errors, contextStr);
         if (params[i].val.type != POS_VALUE && (params[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
             if (params[i].val.u.ptr != NULL)
             {
-                _gmx_selparser_warning(scanner, "value pointer is not NULL "
-                                       "although it should be for SPAR_VARNUM "
-                                       "and SPAR_ATOMVAL parameters");
+                _gmx_selparser_error(scanner, "value pointer is not NULL "
+                                     "although it should be for SPAR_VARNUM "
+                                     "and SPAR_ATOMVAL parameters");
             }
             if ((params[i].flags & SPAR_VARNUM)
                 && (params[i].flags & SPAR_DYNAMIC) && !params[i].nvalptr)
@@ -1184,17 +1184,17 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
     i      = 0;
     while (pparam)
     {
-        char buf[128];
+        std::string contextStr;
         /* Find the parameter and make some checks */
         if (pparam->name != NULL)
         {
-            sprintf(buf, "In parameter '%s'", pparam->name);
+            contextStr = gmx::formatString("In parameter '%s'", pparam->name);
             i = -1;
             oparam = gmx_ana_selparam_find(pparam->name, nparam, params);
         }
         else if (i >= 0)
         {
-            sprintf(buf, "In value %d", i + 1);
+            contextStr = gmx::formatString("In value %d", i + 1);
             oparam = &params[i];
             if (oparam->name != NULL)
             {
@@ -1213,7 +1213,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             pparam = pparam->next;
             continue;
         }
-        gmx::ErrorContext context(errors, buf);
+        gmx::MessageStringContext  context(errors, contextStr);
         if (!oparam)
         {
             _gmx_selparser_error(scanner, "unknown parameter skipped");

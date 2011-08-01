@@ -37,12 +37,11 @@
  */
 #include "gromacs/analysisdata/arraydata.h"
 
-#include <cassert>
-
 // Legacy header.
 #include "smalloc.h"
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 namespace gmx
 {
@@ -65,7 +64,7 @@ AbstractAnalysisArrayData::frameCount() const
 }
 
 
-int
+bool
 AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
                                        const real **y, const real **dy,
                                        const bool **present) const
@@ -75,50 +74,51 @@ AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
         index += _nrows;
         if (index < 0)
         {
-            GMX_ERROR(eeInvalidValue, "Frame index out of range");
+            return false;
         }
     }
     if (index >= frameCount())
     {
-        GMX_ERROR(eeInvalidValue, "Frame index out of range");
+        return false;
     }
-    if (x)
+    if (x != NULL)
     {
         *x = _xstart + index * _xstep;
     }
-    if (dx)
+    if (dx != NULL)
     {
         *dx = 0.0;
     }
-    if (y)
+    if (y != NULL)
     {
         *y = _value + (index * columnCount());
     }
-    if (dy)
+    if (dy != NULL)
     {
         // TODO: Implement
         *dy = NULL;
     }
-    if (present)
+    if (present != NULL)
     {
         // TODO: Implement
         *present = NULL;
     }
-    return 0;
+    return true;
 }
 
 
-int
-AbstractAnalysisArrayData::requestStorage(int nframes)
+bool
+AbstractAnalysisArrayData::requestStorage(int /*nframes*/)
 {
-    return 0;
+    return true;
 }
 
 
 void
 AbstractAnalysisArrayData::setColumnCount(int ncols)
 {
-    assert(!_value);
+    GMX_RELEASE_ASSERT(!_value,
+                       "Cannot change column count after data has been allocated");
     AbstractAnalysisData::setColumnCount(ncols);
 }
 
@@ -126,8 +126,10 @@ AbstractAnalysisArrayData::setColumnCount(int ncols)
 void
 AbstractAnalysisArrayData::setRowCount(int nrows)
 {
-    assert(nrows > 0);
-    assert(!_value && columnCount() > 0);
+    GMX_RELEASE_ASSERT(nrows > 0, "Invalid number of rows");
+    GMX_RELEASE_ASSERT(!_value,
+                       "Cannot change row count after data has been allocated");
+    GMX_RELEASE_ASSERT(columnCount() > 0, "Column count must be set before row count");
     _nrows = nrows;
     snew(_value, _nrows * columnCount());
 }
@@ -136,47 +138,32 @@ AbstractAnalysisArrayData::setRowCount(int nrows)
 void
 AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
-    assert(!_bReady);
+    GMX_RELEASE_ASSERT(!_bReady, "X axis cannot be set after data is finished");
     _xstart = start;
     _xstep = step;
 }
 
 
-int
+void
 AbstractAnalysisArrayData::valuesReady()
 {
-    assert(columnCount() > 0 && _nrows > 0);
+    GMX_RELEASE_ASSERT(columnCount() > 0 && _nrows > 0 && _value,
+                       "There must be some data");
     if (_bReady)
     {
-        return 0;
+        return;
     }
     _bReady = true;
 
-    int rc = notifyDataStart();
-    if (rc != 0)
-    {
-        return rc;
-    }
+    notifyDataStart();
     for (int i = 0; i < _nrows; ++i)
     {
-        rc = notifyFrameStart(_xstart + i * _xstep, 0);
-        if (rc != 0)
-        {
-            return rc;
-        }
-        rc = notifyPointsAdd(0, columnCount(), _value + (i * columnCount()),
-                             NULL, NULL);
-        if (rc != 0)
-        {
-            return rc;
-        }
-        rc = notifyFrameFinish();
-        if (rc != 0)
-        {
-            return rc;
-        }
+        notifyFrameStart(_xstart + i * _xstep, 0);
+        notifyPointsAdd(0, columnCount(), _value + (i * columnCount()),
+                        NULL, NULL);
+        notifyFrameFinish();
     }
-    return notifyDataFinish();
+    notifyDataFinish();
 }
 
 
@@ -184,8 +171,9 @@ void
 AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
                                         AbstractAnalysisArrayData *dest)
 {
-    assert(src->columnCount() > 0 && src->_nrows > 0 && src->_value);
-    assert(!dest->_value);
+    GMX_RELEASE_ASSERT(src->columnCount() > 0 && src->_nrows > 0 && src->_value,
+                       "Source data must not be empty");
+    GMX_RELEASE_ASSERT(!dest->_value, "Destination data must not be allocated");
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->_nrows);
     dest->setXAxis(src->_xstart, src->_xstep);

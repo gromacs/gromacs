@@ -41,14 +41,16 @@
 #include <config.h>
 #endif
 
-#include <cassert>
 #include <cmath>
+
+#include <memory>
 
 // Legacy include.
 #include "smalloc.h"
 
 #include "gromacs/basicmath.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 namespace gmx
 {
@@ -68,11 +70,11 @@ AbstractHistogramModule::~AbstractHistogramModule()
 }
 
 
-int
+void
 AbstractHistogramModule::initNBins(real miny, real binw, int nbins,
                                    bool bIntegerBins)
 {
-    assert(nbins > 0 && binw > 0);
+    GMX_RELEASE_ASSERT(nbins > 0 && binw > 0, "Invalid histogram parameters");
     if (bIntegerBins)
     {
         miny -= 0.5*binw;
@@ -83,15 +85,14 @@ AbstractHistogramModule::initNBins(real miny, real binw, int nbins,
     _maxy     = miny + nbins * binw;
     _invbw    = 1.0/binw;
     setColumnCount(_nbins);
-    return 0;
 }
 
 
-int
+void
 AbstractHistogramModule::initRange(real miny, real maxy, real binw,
                                    bool bIntegerBins)
 {
-    assert(miny < maxy && binw > 0);
+    GMX_RELEASE_ASSERT(miny < maxy && binw > 0, "Invalid histogram parameters");
     if (bIntegerBins)
     {
         _nbins = (int)ceil((maxy - miny) / binw) + 1;
@@ -114,7 +115,6 @@ AbstractHistogramModule::initRange(real miny, real maxy, real binw,
     _binwidth = binw;
     _invbw    = 1.0/binw;
     setColumnCount(_nbins);
-    return 0;
 }
 
 
@@ -158,7 +158,7 @@ AbstractHistogramModule::flags() const
 }
 
 
-int
+void
 AbstractHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     if (!_averager)
@@ -167,32 +167,32 @@ AbstractHistogramModule::dataStarted(AbstractAnalysisData *data)
     }
     _averager->setXAxis(_miny + 0.5 * _binwidth, _binwidth);
     snew(_hist, nbins());
-    return startDataStore();
+    startDataStore();
 }
 
 
-int
+void
 AbstractHistogramModule::frameStarted(real x, real dx)
 {
     for (int i = 0; i < nbins(); ++i)
     {
         _hist[i] = 0.0;
     }
-    return startNextFrame(x, dx);
+    startNextFrame(x, dx);
 }
 
 
-int
+void
 AbstractHistogramModule::frameFinished()
 {
-    return storeThisFrame(_hist, NULL, NULL);
+    storeThisFrame(_hist, NULL, NULL);
 }
 
 
-int
+void
 AbstractHistogramModule::dataFinished()
 {
-    return notifyDataFinish();
+    notifyDataFinish();
 }
 
 
@@ -231,22 +231,20 @@ HistogramAverageModule::flags() const
 }
 
 
-int
+void
 HistogramAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     setRowCount(data->columnCount());
-    return 0;
 }
 
 
-int
-HistogramAverageModule::frameStarted(real x, real dx)
+void
+HistogramAverageModule::frameStarted(real /*x*/, real /*dx*/)
 {
-    return 0;
 }
 
 
-int
+void
 HistogramAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
                                     const real *y, const real *dy,
                                     const bool *present)
@@ -258,7 +256,7 @@ HistogramAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
     }
     if (_bIgnoreMissing)
     {
-        assert(present != NULL);
+        GMX_ASSERT(present != NULL, "Required data not available");
         for (int i = 0; i < n; ++i)
         {
             if (present[i])
@@ -267,19 +265,17 @@ HistogramAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
             }
         }
     }
-    return 0;
 }
 
 
-int
+void
 HistogramAverageModule::frameFinished()
 {
     ++_nframes;
-    return 0;
 }
 
 
-int
+void
 HistogramAverageModule::dataFinished()
 {
     for (int i = 0; i < rowCount(); ++i)
@@ -302,14 +298,13 @@ HistogramAverageModule::dataFinished()
         setValue(i, 0, ave);
         setValue(i, 1, std);
     }
-    return 0;
 }
 
 
 HistogramAverageModule *
 HistogramAverageModule::resampleDoubleBinWidth(bool bIntegerBins) const
 {
-    HistogramAverageModule *dest = new HistogramAverageModule();
+    std::auto_ptr<HistogramAverageModule> dest(new HistogramAverageModule());
     int nbins = rowCount() / 2;
     dest->setRowCount(nbins);
     real minx = xstart() + xstep() / 2;
@@ -339,16 +334,16 @@ HistogramAverageModule::resampleDoubleBinWidth(bool bIntegerBins) const
         dest->setValue(i, 0, v);
         dest->setValue(i, 1, ve);
     }
-    return dest;
+    return dest.release();
 }
 
 
 HistogramAverageModule *
 HistogramAverageModule::clone() const
 {
-    HistogramAverageModule *dest = new HistogramAverageModule();
-    copyContents(this, dest);
-    return dest;
+    std::auto_ptr<HistogramAverageModule> dest(new HistogramAverageModule());
+    copyContents(this, dest.get());
+    return dest.release();
 }
 
 
@@ -390,7 +385,7 @@ HistogramAverageModule::scaleVector(real norm[])
  * AnalysisDataSimpleHistogramModule
  */
 
-int
+void
 AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
                                                int /*firstcol*/, int n,
                                                const real *y, const real * /*dy*/,
@@ -401,7 +396,6 @@ AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
         int bin = findBin(y[i]);
         _hist[bin] += 1;
     }
-    return 0;
 }
 
 
@@ -416,21 +410,20 @@ AnalysisDataWeightedHistogramModule::flags() const
 }
 
 
-int
+void
 AnalysisDataWeightedHistogramModule::pointsAdded(real x, real dx, int firstcol, int n,
                                                  const real *y, const real *dy,
                                                  const bool *present)
 {
     if (firstcol != 0 || n < 2)
     {
-        GMX_ERROR(eeInvalidValue, "Invalid data layout");
+        GMX_THROW(APIError("Invalid data layout"));
     }
     int bin = findBin(y[0]);
     for (int i = 1; i < n; ++i)
     {
         _hist[bin] += y[i];
     }
-    return 0;
 }
 
 
@@ -454,7 +447,7 @@ void
 AnalysisDataBinAverageModule::setIgnoreMissing(bool bIgnoreMissing)
 {
     // Changes can only be made before there is data.
-    assert(!_n);
+    GMX_RELEASE_ASSERT(_n == NULL, "Cannot make changes after data is allocated");
     _bIgnoreMissing = bIgnoreMissing;
     averager()->setIgnoreMissing(bIgnoreMissing);
 }
@@ -467,34 +460,34 @@ AnalysisDataBinAverageModule::flags() const
 }
 
 
-int
+void
 AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     snew(_n, nbins());
     snew(_present, nbins());
-    return AbstractHistogramModule::dataStarted(data);
+    AbstractHistogramModule::dataStarted(data);
 }
 
 
-int
+void
 AnalysisDataBinAverageModule::frameStarted(real x, real dx)
 {
     for (int i = 0; i < nbins(); ++i)
     {
         _n[i] = 0;
     }
-    return AbstractHistogramModule::frameStarted(x, dx);
+    AbstractHistogramModule::frameStarted(x, dx);
 }
 
 
-int
+void
 AnalysisDataBinAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
                                           const real *y, const real *dy,
                                           const bool *present)
 {
     if (firstcol != 0 || n < 2)
     {
-        GMX_ERROR(eeInvalidValue, "Invalid data layout");
+        GMX_THROW(APIError("Invalid data layout"));
     }
     int bin = findBin(y[0]);
     for (int i = 1; i < n; ++i)
@@ -502,11 +495,10 @@ AnalysisDataBinAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
         _hist[bin] += y[i];
     }
     _n[bin] += n - 1;
-    return 0;
 }
 
 
-int
+void
 AnalysisDataBinAverageModule::frameFinished()
 {
     for (int i = 0; i < nbins(); ++i)
@@ -519,9 +511,9 @@ AnalysisDataBinAverageModule::frameFinished()
     }
     if (!_bIgnoreMissing)
     {
-        return AbstractHistogramModule::frameFinished();
+        AbstractHistogramModule::frameFinished();
     }
-    return storeThisFrame(_hist, NULL, _present);
+    storeThisFrame(_hist, NULL, _present);
 }
 
 } // namespace gmx

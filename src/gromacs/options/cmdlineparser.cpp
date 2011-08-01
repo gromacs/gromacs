@@ -37,7 +37,8 @@
  */
 #include "gromacs/options/cmdlineparser.h"
 
-#include "gromacs/errorreporting/abstracterrorreporter.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/optionsassigner.h"
 
 #include "cmdlineparser-impl.h"
@@ -49,8 +50,8 @@ namespace gmx
  * CommandLineParser::Impl
  */
 
-CommandLineParser::Impl::Impl(Options *options, AbstractErrorReporter *errors)
-    : _assigner(options, errors)
+CommandLineParser::Impl::Impl(Options *options)
+    : _assigner(options)
 {
     _assigner.setAcceptBooleanNoPrefix(true);
     _assigner.setNoStrictSectioning(true);
@@ -60,9 +61,8 @@ CommandLineParser::Impl::Impl(Options *options, AbstractErrorReporter *errors)
  * CommandLineParser
  */
 
-CommandLineParser::CommandLineParser(Options *options,
-                                     AbstractErrorReporter *errors)
-    : _impl(new Impl(options, errors))
+CommandLineParser::CommandLineParser(Options *options)
+    : _impl(new Impl(options))
 {
 }
 
@@ -71,9 +71,9 @@ CommandLineParser::~CommandLineParser()
     delete _impl;
 }
 
-int CommandLineParser::parse(int *argc, char *argv[])
+void CommandLineParser::parse(int *argc, char *argv[])
 {
-    AbstractErrorReporter *errors = _impl->_assigner.errorReporter();
+    MessageStringCollector errors;
     int  i = 1;
     // Start in the discard phase to skip options that can't be understood.
     bool bDiscard = true;
@@ -86,30 +86,61 @@ int CommandLineParser::parse(int *argc, char *argv[])
         {
             if (!bDiscard)
             {
-                _impl->_assigner.finishOption();
-                errors->finishContext();
+                try
+                {
+                    _impl->_assigner.finishOption();
+                }
+                catch (UserInputError &ex)
+                {
+                    errors.append(ex.what());
+                }
+                errors.finishContext();
             }
-            errors->startContext("In command-line option " + std::string(argv[i]));
-            const char *name = &argv[i][1];
-            int rc = _impl->_assigner.startOption(name);
-            bDiscard = (rc != 0);
-            if (bDiscard)
+            errors.startContext("In command-line option " + std::string(argv[i]));
+            bDiscard = false;
+            try
             {
-                errors->finishContext();
+                const char *name = &argv[i][1];
+                _impl->_assigner.startOption(name);
+            }
+            catch (UserInputError &ex)
+            {
+                bDiscard = true;
+                errors.append(ex.what());
+                errors.finishContext();
             }
         }
         else if (!bDiscard)
         {
-            _impl->_assigner.appendValue(argv[i]);
+            try
+            {
+                _impl->_assigner.appendValue(argv[i]);
+            }
+            catch (UserInputError &ex)
+            {
+                errors.append(ex.what());
+            }
         }
         ++i;
     }
     if (!bDiscard)
     {
-        _impl->_assigner.finishOption();
-        errors->finishContext();
+        try
+        {
+            _impl->_assigner.finishOption();
+        }
+        catch (UserInputError &ex)
+        {
+            errors.append(ex.what());
+        }
+        errors.finishContext();
     }
-    return _impl->_assigner.finish();
+    _impl->_assigner.finish();
+    if (!errors.isEmpty())
+    {
+        // TODO: This exception type may not always be appropriate.
+        GMX_THROW(InvalidInputError(errors.toString()));
+    }
 }
 
 } // namespace gmx
