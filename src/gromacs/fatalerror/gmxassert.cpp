@@ -28,39 +28,41 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \defgroup module_fatalerror Handling of Fatal Errors
- * \ingroup group_utilitymodules
+/*! \internal \file
  * \brief
- * Provides functions for handling fatal errors.
- *
- * Facilities for handling fatal errors are provided by the fatalerror.h header
- * file.  It provides a set of error codes (the enum ::ErrorCode) that should
- * be used for return codes in functions.  It also provides function fatalError()
- * for reporting the cause of the error to the user, and convenience macros
- * ::GMX_ERROR and ::GMX_ERROR_NORET for calling fatalError().  If the reason
- * string needs formatting, fatalErrorFormatted() is also provided.
- *
- * For users of the library, setFatalErrorHandler() is provided to alter the
- * behavior of fatalError() and fatalErrorFormatted().  fatalError() simply
- * calls the provided handler, while fatalErrorFormatted() does the formatting
- * internally and then calls the same handler.  The default handler prints the
- * reason of the error to standard error and aborts the execution.
+ * Implements assertion handlers.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- */
-/*! \file
- * \brief
- * Public API convenience header for fatal error handling.
- *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \inpublicapi
  * \ingroup module_fatalerror
  */
-#ifndef GMX_FATALERROR_H
-#define GMX_FATALERROR_H
+#include "gromacs/fatalerror/gmxassert.h"
 
-#include "fatalerror/exceptions.h"
-#include "fatalerror/fatalerror.h"
-#include "fatalerror/gmxassert.h"
+#include <cstdio>
+#include <cstdlib>
 
-#endif
+#include <string>
+
+#include "gromacs/utility/format.h"
+
+#include "errorformat.h"
+
+namespace gmx
+{
+
+namespace internal
+{
+
+void assertHandler(const char *condition, const char *msg,
+                   const char *func, const char *file, int line)
+{
+    std::string text =
+        formatFatalError("Assertion failed",
+                         formatString("Condition: %s\n%s", condition, msg).c_str(),
+                         func, file, line);
+    std::fprintf(stderr, "%s", text.c_str());
+    std::abort();
+}
+
+} // namespace internal
+
+} // namespace gmx

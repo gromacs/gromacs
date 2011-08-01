@@ -41,6 +41,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "errorformat.h"
+
+// This has to match the enum in fatalerror.h
 static const char *const error_names[] =
 {
     "No error",
@@ -55,6 +58,7 @@ static const char *const error_names[] =
     "Invalid value (bug)",
     "Invalid call (bug)",
     "Internal error (bug)",
+    "API error (bug)",
     "Range checking error (possible bug)",
     "Communication error (possible bug)",
 
@@ -64,23 +68,21 @@ static const char *const error_names[] =
 namespace gmx
 {
 
+const char *getErrorCodeString(int errorcode)
+{
+    if (errorcode < 0 || errorcode >= eeUnknownError)
+    {
+        errorcode = eeUnknownError;
+    }
+    return error_names[errorcode];
+}
+
 static void standardErrorHandler(int retcode, const char *msg,
                                  const char *file, int line)
 {
-    using std::fprintf;
-
-    fprintf(stderr, "\n-------------------------------------------------------\n");
-    fprintf(stderr, "Program %s, %s\n", "TEST", "VERSION 0.1");
-    fprintf(stderr, "In source file %s, line %d\n\n", file, line);
-    if (retcode < 0 || retcode >= eeUnknownError)
-    {
-        retcode = eeUnknownError;
-    }
-    fprintf(stderr, "%s:\n", error_names[retcode]);
-    fprintf(stderr, "%s\n", msg);
-    fprintf(stderr, "For more information and tips for troubleshooting, please check the GROMACS\n"
-                    "website at http://www.gromacs.org/Documentation/Errors");
-    fprintf(stderr, "\n-------------------------------------------------------\n");
+    const char *title = getErrorCodeString(retcode);
+    fprintf(stderr, "%s",
+            internal::formatFatalError(title, msg, NULL, file, line).c_str());
     std::exit(1);
 }
 

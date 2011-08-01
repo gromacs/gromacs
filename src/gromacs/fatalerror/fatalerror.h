@@ -76,6 +76,8 @@ enum ErrorCode
     eeInvalidCall,
     //! Internal consistency check failed.
     eeInternalError,
+    //! API specification was violated.
+    eeAPIError,
     //! Range consistency check failed.
     eeRange,
     //! Communication consistency check failed.
@@ -83,6 +85,19 @@ enum ErrorCode
 
     eeUnknownError,
 };
+
+/*! \brief
+ * Returns a short string description of an error code.
+ *
+ * \param[in] errorcode Error code to retrieve the string for.
+ * \returns   A constant string corresponding to \p errorcode.
+ *
+ * If \p errorcode is not one of those defined for ::gmx::ErrorCode,
+ * the string corresponding to ::eeUnknownError is returned.
+ *
+ * This function does not throw.
+ */
+const char *getErrorCodeString(int errorcode);
 
 /*! \brief
  * Callback function pointer type for error handlers.
