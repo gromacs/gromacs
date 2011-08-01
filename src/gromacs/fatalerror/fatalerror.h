@@ -130,29 +130,6 @@ ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
  * \param[in] line    Line in \p file on which the error occurred.
  */
 void fatalError(int retcode, const char *msg, const char *file, int line);
-/*! \brief
- * Raises an error with a formatted message.
- *
- * Use like this:
- * \code
-::gmx::fatalErrorFormatted(::gmx::eeInvalidInput, GMX_ERRORLOC,
-    "Invalid command-line argument: %s", argname);
- * \endcode
- *
- * \param[in] retcode Error code to raise.
- * \param[in] file    Name of the source file where the error occurred.
- * \param[in] line    Line in \p file on which the error occurred.
- * \param[in] fmt     printf format string.
- */
-void fatalErrorFormatted(int retcode, const char *file, int line,
-                         const char *fmt, ...);
-
-/*! \brief
- * Helper macro for fatalErrorFormatted().
- *
- * \see fatalErrorFormatted()
- */
-#define GMX_ERRORLOC   __FILE__, __LINE__
 
 /*! \brief
  * Macro for raising an error and returning from a function.
@@ -173,37 +150,6 @@ void fatalErrorFormatted(int retcode, const char *file, int line,
  */
 #define GMX_ERROR_NORET(retcode, msg) \
         ::gmx::fatalError(retcode, msg, __FILE__, __LINE__)
-
-/*! \def GMX_ERROR_DEBUG
- * \brief
- * Macro for raising a debugging error and returning from a function.
- *
- * If NDEBUG is defined, this macro only returns the given error code.
- * If it is not defined, behaves exactly like GMX_ERROR.
- *
- * The function should return \c int ; if it doesn't, use GMX_ERROR_DEBUG_NORET.
- */
-/*! \def GMX_ERROR_DEBUG_NORET
- * \brief
- * Macro for raising a debugging error in a function that does not return \c int.
- *
- * If NDEBUG is defined, this macro does nothing.  If it is not defined,
- * behaves exactly like GMX_ERROR_NORET.
- */
-#ifdef NDEBUG
-#define GMX_ERROR_DEBUG(retcode, msg) \
-        return (retcode)
-#define GMX_ERROR_DEBUG_NORET(retcode, msg)
-#else
-#define GMX_ERROR_DEBUG(retcode, msg) \
-    do { \
-        int _rc_internal = (retcode); \
-        ::gmx::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
-        return _rc_internal; \
-    } while (0)
-#define GMX_ERROR_DEBUG_NORET(retcode, msg) \
-        ::gmx::fatalError(retcode, msg, __FILE__, __LINE__)
-#endif
 
 /*!\}*/
 

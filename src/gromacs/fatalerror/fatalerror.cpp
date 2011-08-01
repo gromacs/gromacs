@@ -108,23 +108,4 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
     }
 }
 
-void fatalErrorFormatted(int retcode, const char *file, int line,
-                         const char *fmt, ...)
-{
-    // TODO: Acquire a mutex here
-    ErrorHandlerFunc handler = error_handler;
-    // TODO: Release the mutex here
-    if (handler != NULL)
-    {
-        char    errorbuf[10000];
-        va_list va;
-
-        va_start(va, fmt);
-        // FIXME: vsnprintf should really be used here
-        std::vsprintf(errorbuf, fmt, va);
-        va_end(va);
-        handler(retcode, errorbuf, file, line);
-    }
-}
-
 } // namespace gmx
