@@ -1158,7 +1158,7 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, const real *fftgrid, real *pmegrid,
 {
     ivec    local_fft_ndata,local_fft_offset,local_fft_size;
     ivec    local_pme_size;
-    int     ix0,ix1,ix,iy,iz;
+    int     ixy0,ixy1,ixy,ix,iy,iz;
     int     pmeidx,fftidx;
 #ifdef PME_TIME_THREADS
     gmx_cycles_t c1;
@@ -1182,24 +1182,19 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, const real *fftgrid, real *pmegrid,
     /* The fftgrid is always 'justified' to the lower-left corner of the PME grid, 
      the offset is identical, and the PME grid always has more data (due to overlap)
      */
-    ix0 = ((thread  )*local_fft_ndata[XX])/nthread;
-    ix1 = ((thread+1)*local_fft_ndata[XX])/nthread;
+    ixy0 = ((thread  )*local_fft_ndata[XX]*local_fft_ndata[YY])/nthread;
+    ixy1 = ((thread+1)*local_fft_ndata[XX]*local_fft_ndata[YY])/nthread;
 
-    for(ix=ix0;ix<ix1;ix++)
+    for(ixy=ixy0;ixy<ixy1;ixy++)
     {
-        for(iy=0;iy<local_fft_ndata[YY];iy++)
+        ix = ixy/local_fft_ndata[YY];
+        iy = ixy - ix*local_fft_ndata[YY];
+
+        pmeidx = (ix*local_pme_size[YY] + iy)*local_pme_size[ZZ];
+        fftidx = (ix*local_fft_size[YY] + iy)*local_fft_size[ZZ];
+        for(iz=0;iz<local_fft_ndata[ZZ];iz++)
         {
-            pmeidx = (ix*local_pme_size[YY] + iy)*local_pme_size[ZZ];
-            fftidx = (ix*local_fft_size[YY] + iy)*local_fft_size[ZZ];
-            for(iz=0;iz<local_fft_ndata[ZZ];iz++)
-            {
-                /*
-                pmeidx = ix*(local_pme_size[YY]*local_pme_size[ZZ])+iy*(local_pme_size[ZZ])+iz;
-                fftidx = ix*(local_fft_size[YY]*local_fft_size[ZZ])+iy*(local_fft_size[ZZ])+iz;
-                pmegrid[pmeidx] = fftgrid[fftidx];
-                */
-                pmegrid[pmeidx+iz] = fftgrid[fftidx+iz];
-            }
+            pmegrid[pmeidx+iz] = fftgrid[fftidx+iz];
         }
     }
  
