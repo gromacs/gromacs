@@ -1156,7 +1156,7 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, const real *fftgrid, real *pmegrid,
 {
     ivec    local_fft_ndata,local_fft_offset,local_fft_size;
     ivec    local_pme_size;
-    int     ix0,ix1,ix,iy,iz;
+    int     ixy0,ixy1,ixy,ix,iy,iz;
     int     pmeidx,fftidx;
 #ifdef PME_TIME_THREADS
     gmx_cycles_t c1;
@@ -1180,24 +1180,19 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, const real *fftgrid, real *pmegrid,
     /* The fftgrid is always 'justified' to the lower-left corner of the PME grid, 
      the offset is identical, and the PME grid always has more data (due to overlap)
      */
-    ix0 = ((thread  )*local_fft_ndata[XX])/nthread;
-    ix1 = ((thread+1)*local_fft_ndata[XX])/nthread;
+    ixy0 = ((thread  )*local_fft_ndata[XX]*local_fft_ndata[YY])/nthread;
+    ixy1 = ((thread+1)*local_fft_ndata[XX]*local_fft_ndata[YY])/nthread;
 
-    for(ix=ix0;ix<ix1;ix++)
+    for(ixy=ixy0;ixy<ixy1;ixy++)
     {
-        for(iy=0;iy<local_fft_ndata[YY];iy++)
+        ix = ixy/local_fft_ndata[YY];
+        iy = ixy - ix*local_fft_ndata[YY];
+
+        pmeidx = (ix*local_pme_size[YY] + iy)*local_pme_size[ZZ];
+        fftidx = (ix*local_fft_size[YY] + iy)*local_fft_size[ZZ];
+        for(iz=0;iz<local_fft_ndata[ZZ];iz++)
         {
-            pmeidx = (ix*local_pme_size[YY] + iy)*local_pme_size[ZZ];
-            fftidx = (ix*local_fft_size[YY] + iy)*local_fft_size[ZZ];
-            for(iz=0;iz<local_fft_ndata[ZZ];iz++)
-            {
-                /*
-                pmeidx = ix*(local_pme_size[YY]*local_pme_size[ZZ])+iy*(local_pme_size[ZZ])+iz;
-                fftidx = ix*(local_fft_size[YY]*local_fft_size[ZZ])+iy*(local_fft_size[ZZ])+iz;
-                pmegrid[pmeidx] = fftgrid[fftidx];
-                */
-                pmegrid[pmeidx+iz] = fftgrid[fftidx+iz];
-            }
+            pmegrid[pmeidx+iz] = fftgrid[fftidx+iz];
         }
     }
  
@@ -1818,7 +1813,7 @@ static void free_work(pme_work_t *work)
     /* Calculate exponentials through SSE in float precision */
 #define CALC_EXPONENTIALS(start,end,f,d_aligned,r_aligned,e_aligned) \
     {                                               \
-        const __m128 two = {2.0f,2.0f,2.0f,2.0f};   \
+        const __m128 two = _mm_set_ps(2.0f,2.0f,2.0f,2.0f); \
         __m128 f_sse;                               \
         __m128 lu;                                  \
         __m128 tmp_d1,d_inv,tmp_r,tmp_e;            \
@@ -1828,10 +1823,8 @@ static void free_work(pme_work_t *work)
             tmp_d1   = _mm_load_ps(d_aligned+kx);                      \
             lu       = _mm_rcp_ps(tmp_d1);                             \
             d_inv    = _mm_mul_ps(lu,_mm_sub_ps(two,_mm_mul_ps(lu,tmp_d1))); \
-            _mm_store_ps(d_aligned+kx,d_inv);                          \
             tmp_r    = _mm_load_ps(r_aligned+kx);                      \
             tmp_r    = gmx_mm_exp_ps(tmp_r);        \
-            _mm_store_ps(r_aligned+kx,tmp_r);       \
             tmp_e    = _mm_mul_ps(f_sse,d_inv);     \
             tmp_e    = _mm_mul_ps(tmp_e,tmp_r);     \
             _mm_store_ps(e_aligned+kx,tmp_e);       \
