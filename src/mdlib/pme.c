@@ -1825,10 +1825,8 @@ static void free_work(pme_work_t *work)
             tmp_d1   = _mm_load_ps(d_aligned+kx);                      \
             lu       = _mm_rcp_ps(tmp_d1);                             \
             d_inv    = _mm_mul_ps(lu,_mm_sub_ps(two,_mm_mul_ps(lu,tmp_d1))); \
-            _mm_store_ps(d_aligned+kx,d_inv);                          \
             tmp_r    = _mm_load_ps(r_aligned+kx);                      \
             tmp_r    = gmx_mm_exp_ps(tmp_r);        \
-            _mm_store_ps(r_aligned+kx,tmp_r);       \
             tmp_e    = _mm_mul_ps(f_sse,d_inv);     \
             tmp_e    = _mm_mul_ps(tmp_e,tmp_r);     \
             _mm_store_ps(e_aligned+kx,tmp_e);       \
