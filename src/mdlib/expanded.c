@@ -1006,22 +1006,22 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t
             {
                 if (fep->elamstats == elamstatsWL) 
                 {
-                    fprintf(outfile,"%9d",(int)dfhist->wl_histo[ifep]);
+                    fprintf(outfile," %9d",(int)dfhist->wl_histo[ifep]);
                 } else {
-                    fprintf(outfile,"%9.3f",dfhist->wl_histo[ifep]);
+                    fprintf(outfile," %9.3f",dfhist->wl_histo[ifep]);
                 }
             } 
             else   /* we have equilibrated weights */
             {
-                fprintf(outfile,"%9d",dfhist->n_at_lam[ifep]);	      
+                fprintf(outfile," %9d",dfhist->n_at_lam[ifep]);	      
             }
             if (fep->elamstats==elamstatsMINVAR) 
             {
-                fprintf(outfile,"%11.5f%11.5f%11.5f%11.5f",dfhist->sum_weights[ifep],dfhist->sum_dg[ifep],dg,dv);
+                fprintf(outfile," %11.5f %11.5f %11.5f %11.5f",dfhist->sum_weights[ifep],dfhist->sum_dg[ifep],dg,dv);
             } 
             else 
             {
-                fprintf(outfile,"%11.5f%11.5f",dfhist->sum_weights[ifep],dw);
+                fprintf(outfile," %11.5f %11.5f",dfhist->sum_weights[ifep],dw);
             }
             if (ifep == nlam) {
                 fprintf(outfile," <<\n");
