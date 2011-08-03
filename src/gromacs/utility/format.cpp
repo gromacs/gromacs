@@ -37,6 +37,7 @@
  */
 #include "gromacs/utility/format.h"
 
+#include <cstdio>
 #include <cstdarg>
 
 namespace gmx
