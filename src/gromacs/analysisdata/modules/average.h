@@ -71,13 +71,13 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 
         virtual int flags() const;
 
-        virtual int dataStarted(AbstractAnalysisData *data);
-        virtual int frameStarted(real x, real dx);
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present);
-        virtual int frameFinished();
-        virtual int dataFinished();
+        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void frameStarted(real x, real dx);
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present);
+        virtual void frameFinished();
+        virtual void dataFinished();
 
         //! Convenience access to the average of a data column.
         real average(int index) const;

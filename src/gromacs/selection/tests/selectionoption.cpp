@@ -39,7 +39,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/errorreporting/emptyerrorreporter.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
@@ -62,7 +62,6 @@ class SelectionOptionTest : public ::testing::Test
 SelectionOptionTest::SelectionOptionTest()
     : _sc(NULL), _options(NULL, NULL)
 {
-    _sc.init();
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
     _options.globalProperties().setSelectionCollection(&_sc);
@@ -73,14 +72,16 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
 {
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel));
+    ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
     ASSERT_TRUE(sel != NULL);
     ASSERT_FALSE(sel->isDynamic());
 }
@@ -90,14 +91,16 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
 {
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel).onlyStatic());
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").store(&sel).onlyStatic()));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_NE(0, assigner.appendValue("resname RA RB and x < 5"));
-    EXPECT_NE(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_THROW(assigner.appendValue("resname RA RB and x < 5"), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
 }
 
 
@@ -105,15 +108,16 @@ TEST_F(SelectionOptionTest, HandlesTooManySelections)
 {
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel));
+    ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_NE(0, assigner.appendValue("resname RB RC"));
-    EXPECT_NE(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_THROW(assigner.appendValue("resname RB RC"), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
     ASSERT_TRUE(sel != NULL);
 }
 
@@ -122,14 +126,16 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 {
     gmx::Selection *sel[2] = {NULL, NULL};
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(sel).valueCount(2));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").store(sel).valueCount(2)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_NE(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_THROW(assigner.finishOption(), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
 }
 
 
@@ -138,18 +144,19 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     std::vector<gmx::Selection *> sel;
     gmx::SelectionOptionAdjuster *adjuster;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
-                           .getAdjuster(&adjuster));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()
+                            .getAdjuster(&adjuster)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_EQ(0, assigner.appendValue("resname RB RC"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
-    EXPECT_EQ(0, adjuster->setValueCount(2));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RB RC"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_NO_THROW(adjuster->setValueCount(2));
 }
 
 
@@ -158,17 +165,18 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     gmx::Selection *sel;
     gmx::SelectionOptionAdjuster *adjuster;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel)
-                           .getAdjuster(&adjuster));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").store(&sel)
+                            .getAdjuster(&adjuster)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("x < 5"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
-    EXPECT_NE(0, adjuster->setOnlyStatic(true));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("x < 5"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_THROW(adjuster->setOnlyStatic(true), gmx::InvalidInputError);
 }
 
 
@@ -177,19 +185,19 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     std::vector<gmx::Selection *> sel;
     gmx::SelectionOptionAdjuster *adjuster;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
-                           .getAdjuster(&adjuster));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()
+                            .getAdjuster(&adjuster)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_EQ(0, assigner.appendValue("resname RB RC"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
-    EXPECT_NE(0, adjuster->setValueCount(1));
-    EXPECT_EQ(1, errors.errorCount(gmx::AbstractErrorReporter::etError));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RB RC"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_THROW(adjuster->setValueCount(1), gmx::InvalidInputError);
 }
 
 
@@ -198,18 +206,18 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     std::vector<gmx::Selection *> sel;
     gmx::SelectionOptionAdjuster *adjuster;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").storeVector(&sel).multiValue()
-                           .getAdjuster(&adjuster));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()
+                            .getAdjuster(&adjuster)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.appendValue("resname RA RB"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
-    EXPECT_NE(0, adjuster->setValueCount(2));
-    EXPECT_EQ(1, errors.errorCount(gmx::AbstractErrorReporter::etError));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_THROW(adjuster->setValueCount(2), gmx::InvalidInputError);
 }
 
 
@@ -217,13 +225,14 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
 {
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel).required());
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").store(&sel).required()));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB", &errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB"));
     ASSERT_TRUE(sel != NULL);
 }
 
@@ -232,14 +241,15 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
 {
     gmx::Selection *sel[2] = {NULL, NULL};
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(sel).required()
-                           .valueCount(2));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").store(sel).required()
+                            .valueCount(2)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_NE(0, _sc.parseRequestedFromString("resname RA RB", &errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_THROW(_sc.parseRequestedFromString("resname RA RB"), gmx::InvalidInputError);
 }
 
 
@@ -247,14 +257,15 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 {
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").store(&sel));
+    ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB", &errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB"));
     ASSERT_TRUE(sel != NULL);
 }
 
@@ -264,17 +275,18 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     std::vector<gmx::Selection *> sel;
     gmx::SelectionOptionAdjuster *adjuster;
     using gmx::SelectionOption;
-    _options.addOption(SelectionOption("sel").storeVector(&sel).valueCount(3)
-                           .getAdjuster(&adjuster));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).valueCount(3)
+                            .getAdjuster(&adjuster)));
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&_options, &errors);
-    ASSERT_EQ(0, assigner.startOption("sel"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, _options.finish(&errors));
-    gmx::OptionAdjusterErrorContext context(adjuster, &errors);
-    EXPECT_EQ(0, adjuster->setValueCount(2));
-    EXPECT_EQ(0, _sc.parseRequestedFromString("resname RA RB; resname RB RC", &errors));
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+    EXPECT_NO_THROW(adjuster->setValueCount(2));
+    EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB; resname RB RC"));
 }
 
 } // namespace

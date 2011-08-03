@@ -472,6 +472,28 @@ else(GMX_DLOPEN)
     set(PKG_DL_LIBS)
 endif (GMX_DLOPEN)
 
+option(GMX_INTERNAL_BOOST "Use minimal internal version of boost" OFF)
+if ( NOT GMX_INTERNAL_BOOST )
+  find_package( Boost 1.36.0 )
+else ( NOT GMX_INTERNAL_BOOST )
+  set (Boost_FOUND FALSE)
+endif( NOT GMX_INTERNAL_BOOST )
+
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+else()
+  message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
+  include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+  add_definitions( -DBOOST_NO_TYPEID )  #TYPEID not supported for minimal internal version (would add significant more code)
+  # TODO: Propagate the above settings to the installed CMakeFiles.txt template
+  # (from share/template/)
+  # TODO: Reorder stuff such that INCL_INSTALL_DIR could be used here
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost")
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost
+          COMPONENT development)
+endif()
+
 find_package(GTest)
 find_package(GMock)
 find_package(Doxygen)

@@ -46,7 +46,8 @@
 
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/basicmath.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 #include "displacement-impl.h"
 
@@ -95,13 +96,13 @@ AnalysisDataDisplacementModule::setMaxTime(real tmax)
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::setMSDHistogram(AnalysisDataBinAverageModule *histm)
 {
-    assert(!_impl->histm);
+    GMX_RELEASE_ASSERT(!_impl->histm, "Can only set MSD histogram once");
     _impl->histm = histm;
     histm->setIgnoreMissing(true);
-    return addModule(histm);
+    addModule(histm);
 }
 
 
@@ -112,19 +113,19 @@ AnalysisDataDisplacementModule::frameCount() const
 }
 
 
-int
+bool
 AnalysisDataDisplacementModule::getDataWErr(int index, real *x, real *dx,
                                             const real **y, const real **dy,
                                             const bool **present) const
 {
-    return eedataDataNotAvailable;
+    return false;
 }
 
 
-int
+bool
 AnalysisDataDisplacementModule::requestStorage(int nframes)
 {
-    GMX_ERROR(eeNotImplemented, "Displacement storage not supported");
+    return false;
 }
 
 
@@ -135,12 +136,12 @@ AnalysisDataDisplacementModule::flags() const
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 {
     if (data->columnCount() % _impl->ndim != 0)
     {
-        GMX_ERROR(eeInvalidValue, "Data has incorrect number of columns");
+        GMX_THROW(APIError("Data has incorrect number of columns"));
     }
     _impl->nmax = data->columnCount();
     snew(_impl->oldval, _impl->nmax);
@@ -149,12 +150,10 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
     int ncol = _impl->nmax / _impl->ndim + 1;
     snew(_impl->currd, ncol);
     setColumnCount(ncol);
-
-    return 0;
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::frameStarted(real x, real dx)
 {
     // Initialize times.
@@ -167,14 +166,14 @@ AnalysisDataDisplacementModule::frameStarted(real x, real dx)
         _impl->dt = x - _impl->t0;
         if (_impl->dt < 0 || gmx_within_tol(_impl->dt, 0.0, GMX_REAL_EPS))
         {
-            GMX_ERROR(eeInvalidInput, "Identical or decreasing frame times");
+            GMX_THROW(APIError("Identical or decreasing frame times"));
         }
     }
     else
     {
         if (!gmx_within_tol(x - _impl->t, _impl->dt, GMX_REAL_EPS))
         {
-            GMX_ERROR(eeInvalidInput, "Frames not evenly spaced");
+            GMX_THROW(APIError("Frames not evenly spaced"));
         }
     }
     _impl->t = x;
@@ -201,33 +200,31 @@ AnalysisDataDisplacementModule::frameStarted(real x, real dx)
 */
     _impl->nstored++;
     _impl->bFirst = false;
-    return 0;
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::pointsAdded(real x, real dx, int firstcol, int n,
                                             const real *y, const real *dy,
                                             const bool *present)
 {
     if (firstcol % _impl->ndim != 0 || n % _impl->ndim != 0)
     {
-        GMX_ERROR(eeInvalidValue, "Partial data points");
+        GMX_THROW(APIError("Partial data points"));
     }
     for (int i = firstcol; i < firstcol + n; ++i)
     {
         _impl->oldval[_impl->ci + i] = y[i];
     }
-    return 0;
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::frameFinished()
 {
     if (_impl->nstored <= 1)
     {
-        return 0;
+        return;
     }
 
     int step, i;
@@ -240,18 +237,9 @@ AnalysisDataDisplacementModule::frameFinished()
             _impl->histm->initNBins(0, _impl->dt,
                                     _impl->max_store / _impl->nmax, true);
         }
-        rc = notifyDataStart();
-        if (rc != 0)
-        {
-            _impl->nstored = 1;
-            return rc;
-        }
+        notifyDataStart();
     }
-    rc = notifyFrameStart(_impl->t, 0);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    notifyFrameStart(_impl->t, 0);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
          step < _impl->nstored && i != _impl->ci;
@@ -274,25 +262,20 @@ AnalysisDataDisplacementModule::frameFinished()
             }
             _impl->currd[k] = dist2;
         }
-        rc = notifyPointsAdd(0, k, _impl->currd, NULL, NULL);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        notifyPointsAdd(0, k, _impl->currd, NULL, NULL);
     }
 
-    return notifyFrameFinish();
+    notifyFrameFinish();
 }
 
 
-int
+void
 AnalysisDataDisplacementModule::dataFinished()
 {
     if (_impl->nstored >= 2)
     {
-        return notifyDataFinish();
+        notifyDataFinish();
     }
-    return 0;
 }
 
 } // namespace gmx

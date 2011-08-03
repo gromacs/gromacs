@@ -46,8 +46,6 @@
 namespace gmx
 {
 
-class AbstractErrorReporter;
-
 class Options;
 
 /*! \libinternal \brief
@@ -56,32 +54,26 @@ class Options;
  * This class extends the interface of an Options object by providing methods
  * to set values for options.  It also keeps track of necessary state variables
  * to assign values to options in subsections within the Options object.
- * Typical use (without error checking):
+ * Typical use (without error handling):
  * \code
 gmx::options::Options options("name", "Title");
 // Set up options
 
-gmx::error::StandardReporter errors;
-gmx::options::OptionsAssigner assigner(&options, &errors);
+gmx::options::OptionsAssigner assigner(&options);
+assigner.start();
 assigner.startOption("opt1");
 assigner.appendValue("3");
+assigner.finishOption();
 assigner.startSubSection("section");
 assigner.startOption("opt2"); // Now in the subsection
 assigner.appendValue("yes");
+assigner.finishOption();
 assigner.finishSubSection()
 assigner.startOption("opt3"); // Again in the main options
 assigner.appendValue("2");
-assigner.finish(); // At minimum, the return value of finish() should be checked.
+assigner.finishOption();
+assigner.finish();
  * \endcode
- *
- * As shown in the example, calling finishOption() or finishSubSection() is
- * optional; they are automatically called when appropriate by startOption(),
- * startSubSection(), and finish().
- * However, you need to call them explicitly if you want to act on the return
- * value: these calls do not influence the return value of
- * startOption() / startSubSection().
- * They do influence the return value of finish(), however.
- * The finish() method should always be called.
  *
  * \inlibraryapi
  * \ingroup module_options
@@ -92,17 +84,8 @@ class OptionsAssigner
         /*! \brief
          * Creates an object that assigns to the given object.
          */
-        OptionsAssigner(Options *options, AbstractErrorReporter *errors);
+        OptionsAssigner(Options *options);
         ~OptionsAssigner();
-
-        /*! \brief
-         * Returns the error reporter object passed to the constructor.
-         *
-         * This method is provided for convenience such that users of this
-         * class do not need to store a separate pointer to the error reporter
-         * if they need to use it.
-         */
-        AbstractErrorReporter *errorReporter() const;
 
         /*! \brief
          * Sets the assigner to recognize boolean options with a "no" prefix.
@@ -116,6 +99,8 @@ class OptionsAssigner
          *
          * Can be set or cleared at any time, and will have effect on all
          * subsequent calls of startOption().
+         *
+         * Does not throw.
          */
         void setAcceptBooleanNoPrefix(bool enabled);
         /*! \brief
@@ -130,66 +115,87 @@ class OptionsAssigner
          *
          * Can be set or cleared at any time, and will have effect on all
          * subsequent calls of startOption().
+         *
+         * Does not throw.
          */
         void setNoStrictSectioning(bool enabled);
 
         /*! \brief
          * Start assigning values.
          *
-         * \retval 0 on success.
+         * Does not throw.
          */
-        int start();
+        void start();
         /*! \brief
          * Start assigning values to options in a subsection.
          *
          * \param[in] name  Name of the subsection to start assigning to.
-         * \retval 0 if assignment can proceed.
+         * \throws InvalidInputError if such a subsection is not found.
          *
-         * Does not call finishSubSection() automatically to enable nested
-         * sections.
+         * Strong exception safety guarantee.
          */
-        int startSubSection(const char *name);
+        void startSubSection(const char *name);
         /*! \brief
          * Start assigning values for an option.
          *
          * \param[in] name  Name of the option to start assigning to.
-         * \retval 0 if assignment can proceed.
+         * \throws InvalidInputError if such an option is not found, or if the
+         *      option is specified more than once but doesn't support it.
+         *
+         * Strong exception safety guarantee.
          */
-        int startOption(const char *name);
+        void startOption(const char *name);
         /*! \brief
          * Appends a value to the value list of the current option.
          *
          * \param[in] value  String representation of the value to assign.
-         * \retval 0 if assignment was successful.
+         * \throws InvalidInputError if the value cannot be converted or if
+         *      there are too many values for an option.
+         *
+         * Basic exception safety guarantee:
+         * If this method throws, erroneous values are ignored, but it is
+         * possible to continue assigning values to the same option.  However,
+         * if \p value would result in more than one value, and some of them
+         * can be converted, but some result in errors, it is currently
+         * possible that some values have been added to the option even if an
+         * exception is thrown.
+         *
+         * Strong exception safety guarantee if the option provides value
+         * conversion with the same guarantee.  All options where a single
+         * input value always results in a single output value provide this.
+         *
+         * \internal
+         * This method provides the same exception safety guarantee as the
+         * OptionStorageTemplate::convertValue() method of the storage class
+         * implementing the option where the value is assigned to.
          */
-        int appendValue(const std::string &value);
+        void appendValue(const std::string &value);
         /*! \brief
          * Finish assigning values for the current option.
          *
-         * \retval 0 if there were no errors in the assignment.
+         * \throws InvalidInputError if the set of values since startOption()
+         *      is not valid.
          *
-         * This function returns non-zero only if the error could not have been
-         * detected earlier, i.e., from the return value of appendValue().
+         * If this method throws, it returns to the state where the option was
+         * before startOption(), i.e., all values added with appendValue()
+         * since the last startOption() are discarded.
+         *
+         * Independent of whether the method throws, the option opened with
+         * startOption() will be closed after the call.
          */
-        int finishOption();
+        void finishOption();
         /*! \brief
          * Finish assigning values to a subsection.
          *
-         * \retval 0 for success.
-         *
-         * This function returns non-zero only if the error could not have been
-         * detected earlier.
+         * Does not throw.
          */
-        int finishSubSection();
+        void finishSubSection();
         /*! \brief
          * Finish assigning options through the object.
          *
-         * \retval 0 if there were no errors in the assignment.
-         *
-         * If an error was detected in any of the other calls to this class,
-         * this function returns the error code of the first of such errors.
+         * Does not throw.
          */
-        int finish();
+        void finish();
 
     private:
         class Impl;

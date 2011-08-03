@@ -49,7 +49,6 @@ namespace gmx
 {
 
 class AbstractAnalysisData;
-class AbstractErrorReporter;
 class AnalysisData;
 class AnalysisDataHandle;
 class Options;
@@ -79,28 +78,12 @@ class TrajectoryAnalysisModuleData
         virtual ~TrajectoryAnalysisModuleData();
 
         /*! \brief
-         * Initializes thread-local storage for data handles and selections.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         *
-         * Calls AnalysisData::startData() on all data objects registered with
-         * TrajectoryAnalysisModule::registerAnalysisDataset() in \p module.
-         * The handles are accessible through dataHandle().
-         */
-        int init(TrajectoryAnalysisModule *module, /*AnalysisDataParallelOptions*/ void* opt,
-                 const SelectionCollection &selections);
-
-        /*! \brief
          * Performs any finishing actions after all frames have been processed.
-         *
-         * \returns  0 on success, a non-zero error code on error.
          *
          * This function is called immediately before the destructor.
          * All implementations should call finishDataHandles().
          */
-        virtual int finish() = 0;
+        virtual void finish() = 0;
 
         /*! \brief
          * Returns a data handle for a dataset with a given name.
@@ -119,18 +102,28 @@ class TrajectoryAnalysisModuleData
         std::vector<Selection *> parallelSelections(const std::vector<Selection *> &selections);
 
     protected:
-        //! Initializes data.
-        TrajectoryAnalysisModuleData();
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         *
+         * Calls AnalysisData::startData() on all data objects registered with
+         * TrajectoryAnalysisModule::registerAnalysisDataset() in \p module.
+         * The handles are accessible through dataHandle().
+         */
+        TrajectoryAnalysisModuleData(TrajectoryAnalysisModule *module,
+                                     /*AnalysisDataParallelOptions*/ void* opt,
+                                     const SelectionCollection &selections);
 
         /*! \brief
          * Calls finishData() on all data handles.
          *
-         * \returns  0 on success, a non-zero error code on error.
-         *
          * This function should be called from the implementation of finish()
          * in all subclasses.
          */
-        int finishDataHandles();
+        void finishDataHandles();
 
     private:
         class Impl;
@@ -181,20 +174,15 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Called after all option values have been set.
          *
-         * \returns  Zero on success, a non-zero error code on error.
-         *
          * If the module needs to change settings that affect topology loading
          * or selection initialization based on option values, this function
          * has to be overridden.
          *
          * The default implementation does nothing.
          */
-        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings,
-                                    AbstractErrorReporter *errors);
+        virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
-         *
-         * \returns  Zero on success, a non-zero error code on error.
          *
          * When this function is called, selections have been initialized based
          * on user input, and a topology has been loaded if provided by the
@@ -202,11 +190,9 @@ class TrajectoryAnalysisModule
          * the largest possible selection, i.e., the selections passed to
          * analyzeFrame() are always a subset of the selections provided here.
          */
-        virtual int initAnalysis(const TopologyInformation &top) = 0;
+        virtual void initAnalysis(const TopologyInformation &top) = 0;
         /*! \brief
          * Performs additional initialization after reading the first frame.
-         *
-         * \returns  Zero on success, a non-zero error code on error.
          *
          * When this function is called, selections are the same as in
          * initAnalysis(), i.e., they have not been evaluated for the first
@@ -217,18 +203,18 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual int initAfterFirstFrame(const t_trxframe &fr);
+        virtual void initAfterFirstFrame(const t_trxframe &fr);
 
         /*! \brief
          * Starts the analysis of frames.
          *
          * \param[in]  opt
          * \param[in]  selections  Frame-local selection collection object.
-         * \param[out] pdatap      Data structure for thread-local data.
+         * \returns    Data structure for thread-local data.
          *
          * This function is necessary only for threaded parallelization.
          * It is called once for each thread and should initialize a class that
-         * contains any required frame-local data in \p *pdatap.
+         * contains any required frame-local data in the returned value.
          * The default implementation creates a basic data structure that holds
          * thread-local data handles for all data objects registered with
          * registerAnalysisDataset(), as well as the thread-local selection
@@ -240,9 +226,9 @@ class TrajectoryAnalysisModule
          *
          * \see TrajectoryAnalysisModuleData
          */
-        virtual int startFrames(/*AnalysisDataParallelOptions*/ void* opt,
-                                const SelectionCollection &selections,
-                                TrajectoryAnalysisModuleData **pdatap);
+        virtual TrajectoryAnalysisModuleData *startFrames(
+                /*AnalysisDataParallelOptions*/ void* opt,
+                const SelectionCollection &selections);
         /*! \brief
          * Analyzes a single frame.
          *
@@ -251,7 +237,6 @@ class TrajectoryAnalysisModule
          * \param[in]     fr     Current frame.
          * \param[in]     pbc    Periodic boundary conditions for \p fr.
          * \param[in,out] pdata  Data structure for frame-local data.
-         * \return  0 on success, a non-zero error code or error.
          *
          * This function is called once for each frame to be analyzed,
          * and should analyze the positions provided in \p sel.
@@ -266,8 +251,8 @@ class TrajectoryAnalysisModule
          * Any access to data structures not stored in \p pdata should be
          * designed to be thread-safe.
          */
-        virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                 TrajectoryAnalysisModuleData *pdata) = 0;
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata) = 0;
         /*! \brief
          * Finishes the analysis of frames.
          *
@@ -287,7 +272,7 @@ class TrajectoryAnalysisModule
          *
          * \see startFrames()
          */
-        virtual int finishFrames(TrajectoryAnalysisModuleData *pdata);
+        virtual void finishFrames(TrajectoryAnalysisModuleData *pdata);
 
         /*! \brief
          * Postprocesses data after frames have been read.
@@ -295,7 +280,7 @@ class TrajectoryAnalysisModule
          * This function is called after all finishFrames() calls have been
          * called.
          */
-        virtual int finishAnalysis(int nframes) = 0;
+        virtual void finishAnalysis(int nframes) = 0;
         /*! \brief
          * Writes output into files and/or standard output/error.
          *
@@ -304,7 +289,7 @@ class TrajectoryAnalysisModule
          * This function is guaranteed to be called only after
          * finishAnalysis().
          */
-        virtual int writeOutput() = 0;
+        virtual void writeOutput() = 0;
 
         /*! \brief
          * Returns the number of datasets provided by the module.

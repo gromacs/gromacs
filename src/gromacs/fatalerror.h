@@ -59,6 +59,8 @@
 #ifndef GMX_FATALERROR_H
 #define GMX_FATALERROR_H
 
-#include "fatalerror/fatalerror.h"
+#include "fatalerror/errorcodes.h"
+#include "fatalerror/exceptions.h"
+#include "fatalerror/gmxassert.h"
 
 #endif

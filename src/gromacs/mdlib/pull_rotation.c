@@ -55,7 +55,6 @@
 #include "gmx_ga2la.h"
 #include "xvgr.h"
 #include "gmxfio.h"
-#include "mpelogging.h"
 #include "groupcoord.h"
 #include "pull_rotation.h"
 #include "gmx_sort.h"
@@ -463,8 +462,6 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
     
     er=rot->enfrot;
     
-    GMX_MPE_LOG(ev_add_rot_forces_start);
-
     /* Loop over enforced rotation groups (usually 1, though)
      * Apply the forces from rotation potentials */
     for (g=0; g<rot->ngrp; g++)
@@ -490,8 +487,6 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
     er->bOut = TRUE;
     
     PRINT_POT_TAU
-
-    GMX_MPE_LOG(ev_add_rot_forces_finish);
 
     return Vrot;
 }
@@ -2176,8 +2171,6 @@ static real do_flex_lowlevel(
 
             rvec_add(sum_n2, innersumvec, sum_n2);
             
-            GMX_MPE_LOG(ev_inner_loop_finish);
-
             /* Calculate the torque: */
             if (bOutstepRot)
             {
@@ -2300,8 +2293,6 @@ static void get_firstlast_atom_per_slab(t_rotgrp *rotg, t_commrec *cr)
     
     erg=rotg->enfrotgrp;
 
-    GMX_MPE_LOG(ev_get_firstlast_start);
-    
     /* Find the first atom that needs to enter the calculation for each slab */
     n = erg->slab_first;  /* slab */
     i = 0; /* start with the first atom */
@@ -2336,8 +2327,6 @@ static void get_firstlast_atom_per_slab(t_rotgrp *rotg, t_commrec *cr)
          /* Proceed to the next slab */
          n--;
      } while (n >= erg->slab_first);
-    
-     GMX_MPE_LOG(ev_get_firstlast_finish);
 }
 
 
@@ -2440,14 +2429,12 @@ static void do_flexible(
         erg->slab_torque_v[l] = 0.0;
     
     /* Call the rotational forces kernel */
-    GMX_MPE_LOG(ev_flexll_start);
     if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEXT)
         erg->V = do_flex_lowlevel(rotg, sigma, x, bOutstepRot, bOutstepSlab, box, cr);
     else if (rotg->eType == erotgFLEX2 || rotg->eType == erotgFLEX2T)
         erg->V = do_flex2_lowlevel(rotg, sigma, x, bOutstepRot, bOutstepSlab, box, cr);
     else
         gmx_fatal(FARGS, "Unknown flexible rotation type");
-    GMX_MPE_LOG(ev_flexll_finish);
     
     /* Determine angle by RMSD fit to the reference - Let's hope this */
     /* only happens once in a while, since this is not parallelized! */
@@ -3783,7 +3770,6 @@ extern void do_rotation(
     /**************************************************************************/
     /* Done communicating, we can start to count cycles now ... */
     wallcycle_start(wcycle, ewcROT);
-    GMX_MPE_LOG(ev_rotcycles_start);
 
 #ifdef TAKETIME
     t0 = MPI_Wtime();
@@ -3868,5 +3854,4 @@ extern void do_rotation(
     cycles_rot = wallcycle_stop(wcycle,ewcROT);
     if (DOMAINDECOMP(cr) && wcycle)
         dd_cycles_add(cr->dd,cycles_rot,ddCyclF);
-    GMX_MPE_LOG(ev_rotcycles_finish);
 }

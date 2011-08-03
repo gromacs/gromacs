@@ -39,10 +39,11 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
-#include <cassert>
-
 #include <string>
 #include <vector>
+
+#include "../fatalerror/exceptions.h"
+#include "../fatalerror/gmxassert.h"
 
 #include "abstractoption.h"
 #include "abstractoptionstorage.h"
@@ -52,15 +53,26 @@ namespace gmx
 
 class Options;
 
-/*! \brief
+/*! \libinternal \brief
  * Templated base class for constructing option value storage classes.
  *
  * \tparam T Assignable type that stores a single option value.
  *
- * Provides an implementation of the clear() and valueCount() methods of
- * AbstractOptionStorage, as well as a basic implementation of processSet() and
- * processAll().  This leaves typeString(), formatValue(), and convertValue()
- * to be implemented in derived classes.
+ * Provides an implementation of the clearSet(), valueCount(), and processSet()
+ * methods of AbstractOptionStorage, as well as a basic no-action
+ * implementation of processAll().  Two new virtual methods are added:
+ * processSetValues() and refreshValues().  The default implementation of
+ * processSetValues() does nothing, and refreshValues() is used to update
+ * secondary storage after values have been added/changed.
+ * This leaves typeString(), formatValue(), and convertValue() to be
+ * implemented in derived classes.  processSetValues() and processAll() can
+ * also be implemented if necessary.
+ *
+ * Implements transaction support for adding values within a set: all calls to
+ * addValue() add the value to a temporary storage, processSetValues() operates
+ * on this temporary storage, and commitValues() then copies these values to
+ * the real storage.  commitValues() provides a strong exception safety
+ * guarantee for the process (and it only throws if it runs out of memory).
  *
  * \inlibraryapi
  * \ingroup module_options
@@ -76,16 +88,6 @@ class OptionStorageTemplate : public AbstractOptionStorage
 
         virtual ~OptionStorageTemplate();
 
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \retval 0 on success.
-         *
-         * \see OptionTemplate::createDefaultStorage()
-         */
-        template <class U>
-        int init(const OptionTemplate<T, U> &settings, Options *options);
-
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
@@ -93,180 +95,192 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual std::string formatValue(int i) const = 0;
 
     protected:
-        //! Initializes default values (no storage).
-        OptionStorageTemplate();
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings  Option settings.
+         * \param[in] options   Option collection that will contain the
+         *     option.
+         * \param[in] staticFlags Option flags that are always set and specify
+         *      generic behavior of the option.
+         * \throws  APIError if invalid settings have been provided.
+         */
+        template <class U>
+        OptionStorageTemplate(const OptionTemplate<T, U> &settings, Options *options,
+                              OptionFlags staticFlags = OptionFlags());
 
-        virtual void clear();
+
+        virtual void clearSet();
         /*! \copydoc AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
-         * \p value to the storage type.
+         * \p value to the storage type.  It is allowed to call addValue()
+         * more than once, or not at all.  OptionsAssigner::appendValue()
+         * provides the same exception safety guarantee as this method, so it
+         * should be considered whether the implementation can be made strongly
+         * exception safe.
          */
-        virtual int convertValue(const std::string &value,
-                                 AbstractErrorReporter *errors) = 0;
+        virtual void convertValue(const std::string &value) = 0;
+        /*! \brief
+         * Processes values for a set after all have been converted.
+         *
+         * \param[in,out] values Valid values in the set.
+         * \throws InvalidInputError if the values do not form a valid set.
+         *
+         * This method is called after all convertValue() calls for a set.
+         * \p values contains all values that were validly converted by
+         * convertValue().  The derived class may alter the values, but should
+         * in such a case ensure that a correct number of values is produced.
+         * If the derived class throws, all values in \p values are discarded.
+         */
+        virtual void processSetValues(ValueList *values)
+        {
+        }
         /*! \copydoc AbstractOptionStorage::processSet()
          *
-         * The implementation in OptionStorageTemplate copies the values
-         * from the main storage vector to alternate locations, and always
-         * succeeds.  Derived classes should always call the base class
-         * implementation if they override this method.
+         * OptionStorage template implements transaction support for a set of
+         * values in this method (see the class description), and provides a
+         * more detailed processSetValues() method that can be overridden in
+         * subclasses to process the actual values.  Derived classes should
+         * override that method instead of this one if set value processing is
+         * necessary.
          */
-        virtual int processSet(int nvalues,
-                               AbstractErrorReporter * /*errors*/)
-        {
-            processValues(nvalues, true);
-            return 0;
-        }
+        virtual void processSet();
         /*! \copydoc AbstractOptionStorage::processAll()
          *
-         * The implementation in OptionStorageTemplate does nothing, and always
-         * returns zero.  Derived classes should still always call the base
-         * class implementation if they override this method.
+         * The implementation in OptionStorageTemplate does nothing.
          */
-        virtual int processAll(AbstractErrorReporter * /*errors*/)
-        { return 0; }
+        virtual void processAll()
+        {
+        }
 
         /*! \brief
-         * Adds a value to the storage.
+         * Removes all values from the storage.
+         *
+         * Does not throw.
+         */
+        void clear() { _values->clear(); }
+        /*! \brief
+         * Adds a value to a temporary storage.
          *
          * \param[in] value  Value to add. A copy is made.
-         * \retval 0 on success.
-         * \retval ::eeInvalidInput if the maximum value count has been reached.
+         * \throws InvalidInputError if the maximum value count has been reached.
          *
          * Derived classes should call this function from the convertValue()
          * implementation to add converted values to the storage.
-         * It is only necessary to check the return value if addValue() is
-         * called more than once from one convertValue() invocation, or if
-         * ::efConversionMayNotAddValues is specified.
+         * If the maximum value cont has been reached, the value is discarded
+         * and an exception is thrown.
+         *
+         * If adding values outside convertValue() (e.g., to set a custom
+         * default value), derived classes should call clearSet() before adding
+         * values (unless in the constructor) and commitValues() once all
+         * values are added.
          */
-        int addValue(const T &value);
+        void addValue(const T &value);
         /*! \brief
-         * Store values in alternate locations.
+         * Commits values added with addValue().
          *
-         * \param[in] nvalues  Number of values to process.
-         * \param[in] bDoArray Whether to put values in the array storage as
-         *      well.
+         * If this function succeeds, values added with addValue() since the
+         * previous clearSet() are added to the storage for the option.
+         * Only throws in out-of-memory conditions, and provides the strong
+         * exception safety guarantee.
          *
-         * Stores the last \p nvalues values added with addValue() to the
-         * alternate storage locations.
-         * The current implementation asserts if it is called more than once
-         * with \p bDoArray set to true.
+         * See addValue() for cases where this method should be used in derived
+         * classes.
          *
-         * Derived classes should call this method if they use addValue()
-         * outside convertValue(), e.g., to set a default value.  In such
-         * cases, \p bDoArray should be set to false.
+         * Calls refreshValues() and clearSet() if it is successful.
          */
-        void processValues(int nvalues, bool bDoArray);
+        void commitValues();
+        /*! \brief
+         * Updates alternative store locations.
+         *
+         * Derived classes should override this method if they implement
+         * alternative store locations, and copy/translate values from the
+         * values() vector to these alternative storages.  They should also
+         * call the base class implementation as part of their implementation.
+         *
+         * Should be called in derived classes if values are modified directly
+         * through the values() method, e.g., in processAll().  Does not need
+         * to be called if commitValues() is used.
+         *
+         * Does not throw, and derived classes should not change that.
+         */
+        virtual void refreshValues();
 
-        //! Provides derived classes access to the current list of values.
+        /*! \brief
+         * Provides derived classes access to the current list of values.
+         *
+         * The non-const variant should only be used from processAll() in
+         * derived classes if necessary, and refreshValues() should be called
+         * if any changes are made.
+         */
         ValueList &values() { return *_values; }
         //! Provides derived classes access to the current list of values.
         const ValueList &values() const { return *_values; }
 
     private:
         /*! \brief
+         * Vector for temporary storage of values before commitSet() is called.
+         */
+        ValueList               _setValues;
+        /*! \brief
          * Vector for primary storage of option values.
          *
          * Is never NULL; points either to externally provided vector, or an
-         * internally allocated one.  The allocation is performed by init().
+         * internally allocated one.  The allocation is performed by the
+         * constructor.
          *
-         * addValue() adds values only to this storage.  Other memory locations
-         * are updated only when processAll() is called.
+         * Primarily, modifications to values are done only to this storage,
+         * and other storage locations are updated only when refreshValues() is
+         * called.
          */
         ValueList              *_values;
         T                      *_store;
-        T                     **_storeArray;
-        int                    *_nvalptr;
+        int                    *_countptr;
         T                      *_defaultValueIfSet;
 
         // Copy and assign disallowed by base.
 };
 
-/*! \brief
- * Helper function for creating storage objects.
- *
- * \tparam     T  Type of the settings object (derived from OptionTemplate).
- * \tparam     S  Type of the storage object (derived from OptionStorageTemplate).
- * \param[in]  settings  Settings object to pass to S::init().
- * \param[in]  options   Options object to pass to S::init().
- * \param[out] output    Pointer to the created storage object.
- * \returns    The return value of S::init().
- *
- * Creates a new instance of S and calls the init() method with the provided
- * parameters.  If the initialization fails, destroys the partially constructed
- * object.
- *
- * \inlibraryapi
- */
-template <class T, class S> int
-createOptionStorage(const T *settings, Options *options,
-                    AbstractOptionStorage **output)
-{
-    S *storage = new S;
-    int rc = storage->init(*settings, options);
-    if (rc != 0)
-    {
-        delete storage;
-        return rc;
-    }
-    *output = storage;
-    return 0;
-}
-
-
-template <typename T>
-OptionStorageTemplate<T>::OptionStorageTemplate()
-    : _values(NULL), _store(NULL), _storeArray(NULL), _nvalptr(NULL),
-      _defaultValueIfSet(NULL)
-{
-}
-
-
-template <typename T>
-OptionStorageTemplate<T>::~OptionStorageTemplate()
-{
-    if (!hasFlag(efExternalValueVector))
-    {
-        delete _values;
-    }
-    delete _defaultValueIfSet;
-}
-
 
 template <typename T>
 template <class U>
-int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options *options)
+OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
+                                                Options *options,
+                                                OptionFlags staticFlags)
+    : AbstractOptionStorage(settings, options, staticFlags),
+      _values(settings._storeVector),
+      _store(settings._store),
+      _countptr(settings._countptr),
+      _defaultValueIfSet(NULL)
 {
-    // It's impossible for the caller to do proper memory management if
-    // the provided memory is not initialized as NULL.
-    assert(settings._storeArray == NULL || *settings._storeArray == NULL);
-    int rc = AbstractOptionStorage::init(settings, options);
-    if (rc != 0)
-    {
-        return rc;
-    }
-    _store      = settings._store;
-    _storeArray = settings._storeArray;
-    _nvalptr    = settings._nvalptr;
-    _values     = settings._storeVector;
     if (!_values)
     {
         // The flag should be set for proper error checking.
-        assert(!hasFlag(efExternalValueVector));
+        GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
+                           "Internal inconsistency");
         _values = new std::vector<T>;
     }
-    // If the option does not support default values, one should not be set.
-    assert(!hasFlag(efNoDefaultValue)
-           || (settings._defaultValue == NULL
-               && settings._defaultValueIfSet == NULL));
+    if (hasFlag(efNoDefaultValue)
+        && (settings._defaultValue != NULL
+            || settings._defaultValueIfSet != NULL))
+    {
+        GMX_THROW(APIError("Option does not support default value, but one is set"));
+    }
+    if (_store != NULL && _countptr == NULL && !hasFlag(efVector)
+        && minValueCount() != maxValueCount())
+    {
+        GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
+    }
     if (!hasFlag(efNoDefaultValue))
     {
         if (settings._defaultValue != NULL)
         {
             _values->clear();
             addValue(*settings._defaultValue);
-            processValues(1, false);
             setFlag(efHasDefaultValue);
+            // TODO: This is a bit hairy, as it indirectly calls a virtual function.
+            commitValues();
         }
         else if (!hasFlag(efExternalValueVector) && _store != NULL)
         {
@@ -284,55 +298,86 @@ int OptionStorageTemplate<T>::init(const OptionTemplate<T, U> &settings, Options
             _defaultValueIfSet = new T(*settings._defaultValueIfSet);
         }
     }
-    return 0;
 }
 
 
 template <typename T>
-void OptionStorageTemplate<T>::clear()
+OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
-    _values->clear();
-}
-
-
-template <typename T>
-int OptionStorageTemplate<T>::addValue(const T &value)
-{
-    int rc = incrementValueCount();
-    if (rc == 0)
+    if (!hasFlag(efExternalValueVector))
     {
-        _values->push_back(value);
+        delete _values;
     }
-    return rc;
+    delete _defaultValueIfSet;
 }
 
 
 template <typename T>
-void OptionStorageTemplate<T>::processValues(int nvalues, bool bDoArray)
+void OptionStorageTemplate<T>::clearSet()
 {
-    if (nvalues == 0 && _defaultValueIfSet != NULL)
+    _setValues.clear();
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::processSet()
+{
+    processSetValues(&_setValues);
+    if (_setValues.empty() && _defaultValueIfSet != NULL)
     {
         addValue(*_defaultValueIfSet);
-        nvalues = 1;
     }
-    if (_nvalptr)
+    if (!hasFlag(efDontCheckMinimumCount)
+        && _setValues.size() < static_cast<size_t>(minValueCount()))
     {
-        *_nvalptr = _values->size();
+        clearSet();
+        GMX_THROW(InvalidInputError("Too few (valid) values"));
     }
-    if (bDoArray && _storeArray != NULL)
+    commitValues();
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::addValue(const T &value)
+{
+    if (maxValueCount() >= 0
+        && _setValues.size() >= static_cast<size_t>(maxValueCount()))
     {
-        assert(*_storeArray == NULL);
-        *_storeArray = new T[_values->size()];
+        GMX_THROW(InvalidInputError("Too many values"));
     }
-    for (size_t i = _values->size() - nvalues; i < _values->size(); ++i)
+    _setValues.push_back(value);
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::commitValues()
+{
+    if (hasFlag(efHasDefaultValue))
     {
-        if (_store)
+        _values->swap(_setValues);
+        clearFlag(efHasDefaultValue);
+    }
+    else
+    {
+        _values->insert(_values->end(), _setValues.begin(), _setValues.end());
+    }
+    clearSet();
+    refreshValues();
+}
+
+
+template <typename T>
+void OptionStorageTemplate<T>::refreshValues()
+{
+    if (_countptr != NULL)
+    {
+        *_countptr = _values->size();
+    }
+    if (_store != NULL)
+    {
+        for (size_t i = 0; i < _values->size(); ++i)
         {
             _store[i] = (*_values)[i];
-        }
-        if (bDoArray && _storeArray != NULL)
-        {
-            (*_storeArray)[i] = (*_values)[i];
         }
     }
 }

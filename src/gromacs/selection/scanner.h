@@ -40,7 +40,7 @@
 
 namespace gmx
 {
-class AbstractErrorReporter;
+class MessageStringCollector;
 }
 
 #include "parser.h"
@@ -54,9 +54,8 @@ typedef void *yyscan_t;
 #endif
 
 /** Initializes the selection scanner. */
-int
+void
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx::AbstractErrorReporter *errors,
                     bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps);
 /** Frees memory allocated for the selection scanner. */
@@ -70,7 +69,7 @@ _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);
 /** Returns the error reporter for the scanner. */
-gmx::AbstractErrorReporter *
+gmx::MessageStringCollector *
 _gmx_sel_lexer_error_reporter(yyscan_t scanner);
 /** Returns true if the external index groups for the scanner are set. */
 bool

@@ -30,11 +30,10 @@
  */
 /*! \internal \file
  * \brief
- * Tests construction of basic option types.
+ * Tests creation of basic option types.
  *
  * Most of the tests for the basic options are in optionsassigner.cpp.
- * This file only tests behavior that should fail in parameter construction,
- * which would result in higher-level code asserting.
+ * This file only tests behavior that should fail in initialization.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
@@ -44,43 +43,33 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
-
-#include "../basicoptionstorage.h"
+#include "gromacs/options/options.h"
 
 namespace
 {
 
-TEST(OptionTest, SetsNameAndDescription)
+TEST(OptionsTest, FailsOnNonsafeStorage)
 {
-    gmx::IntegerOptionStorage   option;
+    gmx::Options options(NULL, NULL);
     int value = -1;
     using gmx::IntegerOption;
-    ASSERT_EQ(0, option.init(IntegerOption("name").store(&value)
-                                 .description("Description"), NULL));
-    EXPECT_EQ("name", option.name());
-    EXPECT_EQ("Description", option.description());
-    EXPECT_FALSE(option.isSet());
+    ASSERT_THROW(options.addOption(IntegerOption("name").store(&value)
+                                       .multiValue()),
+                 gmx::APIError);
 }
 
-TEST(OptionTest, FailsOnNonsafeStorage)
+TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
 {
-    gmx::IntegerOptionStorage   option;
-    int value = -1;
-    using gmx::IntegerOption;
-    ASSERT_NE(0, option.init(IntegerOption("name").store(&value)
-                                 .multiValue(), NULL));
-}
-
-TEST(OptionTest, FailsOnIncorrectEnumDefaultValue)
-{
-    gmx::StringOptionStorage    option;
+    gmx::Options options(NULL, NULL);
     std::string                 value;
     const char * const          allowed[] = { "none", "test", "value", NULL };
     using gmx::StringOption;
-    ASSERT_NE(0, option.init(StringOption("name").store(&value)
-                                 .enumValue(allowed)
-                                 .defaultValue("unknown"), NULL));
+    ASSERT_THROW(options.addOption(StringOption("name").store(&value)
+                                       .enumValue(allowed)
+                                       .defaultValue("unknown")),
+                 gmx::APIError);
 }
 
 } // namespace

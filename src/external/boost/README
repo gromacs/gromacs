@@ -1,0 +1,5 @@
+Steps to produce minimal version of BOOST:
+1) Download Boost (current minimal version is derived from 1.46_1)
+2) Extract
+3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
+4) run bcp with required files (currently exception/all.hpp)

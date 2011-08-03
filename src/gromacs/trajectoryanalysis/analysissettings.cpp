@@ -43,7 +43,7 @@
 #include <statutil.h>
 #include <vec.h>
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 
 #include "analysissettings-impl.h"
@@ -104,15 +104,14 @@ TrajectoryAnalysisSettings::frflags() const
 }
 
 
-int
+void
 TrajectoryAnalysisSettings::setFlags(unsigned long flags)
 {
     _impl->flags = flags;
-    return 0;
 }
 
 
-int
+void
 TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
 {
     if (bSet)
@@ -123,31 +122,27 @@ TrajectoryAnalysisSettings::setFlag(unsigned long flag, bool bSet)
     {
         _impl->flags &= ~flag;
     }
-    return 0;
 }
 
 
-int
+void
 TrajectoryAnalysisSettings::setPBC(bool bPBC)
 {
     _impl->bPBC = bPBC;
-    return 0;
 }
 
 
-int
+void
 TrajectoryAnalysisSettings::setRmPBC(bool bRmPBC)
 {
     _impl->bRmPBC = bRmPBC;
-    return 0;
 }
 
 
-int
+void
 TrajectoryAnalysisSettings::setFrameFlags(int frflags)
 {
     _impl->frflags = frflags;
-    return 0;
 }
 
 
@@ -161,6 +156,7 @@ TopologyInformation::TopologyInformation()
     clear_mat(_boxtop);
 }
 
+
 TopologyInformation::~TopologyInformation()
 {
     if (_top)
@@ -171,7 +167,8 @@ TopologyInformation::~TopologyInformation()
     sfree(_xtop);
 }
 
-int
+
+void
 TopologyInformation::getTopologyConf(rvec **x, matrix box) const
 {
     if (box)
@@ -183,13 +180,10 @@ TopologyInformation::getTopologyConf(rvec **x, matrix box) const
         if (!_xtop)
         {
             *x = NULL;
-            GMX_ERROR(eeInvalidValue,
-                      "Topology coordinates requested without setting efUseTopX");
-            return -1;
+            GMX_THROW(APIError("Topology coordinates requested without setting efUseTopX"));
         }
         *x = _xtop;
     }
-    return 0;
 }
 
 } // namespace gmx

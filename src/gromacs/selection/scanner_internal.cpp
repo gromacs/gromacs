@@ -56,7 +56,9 @@
 
 #include "string2.h"
 
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 
 #include "gromacs/selection/selmethod.h"
 
@@ -69,7 +71,7 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
-//! Step in which the allocated memory for pretty-printed input is incremeted.
+//! Step in which the allocated memory for pretty-printed input is incremented.
 #define STRSTORE_ALLOCSTEP 1000
 
 /* These are defined as macros in the generated scanner_flex.h.
@@ -92,6 +94,11 @@ read_stdin_line(gmx_sel_lexer_t *state)
     }
     if (state->bInteractive)
     {
+        if (!state->errors->isEmpty())
+        {
+            fprintf(stderr, "%s", state->errors->toString().c_str());
+            state->errors->clear();
+        }
         fprintf(stderr, "> ");
     }
     /* For some reason (at least on my Linux), fgets() doesn't return until
@@ -452,20 +459,21 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
     state->pselstr[state->pslen] = 0;
 }
 
-int
+void
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx::AbstractErrorReporter *errors,
                     bool bInteractive, int maxnr, bool bGroups,
                     struct gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *state;
-    int              rc;
 
-    rc = _gmx_sel_yylex_init(scannerp);
+    int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
     {
-        return rc;
+        // TODO: Throw a more representative exception.
+        GMX_THROW(gmx::InternalError("Lexer initialization failed"));
     }
+
+    gmx::MessageStringCollector *errors = new gmx::MessageStringCollector;
 
     snew(state, 1);
     state->sc        = sc;
@@ -497,7 +505,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->bBuffer      = FALSE;
 
     _gmx_sel_yyset_extra(state, *scannerp);
-    return 0;
 }
 
 void
@@ -530,7 +537,7 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
     return state->sc;
 }
 
-gmx::AbstractErrorReporter *
+gmx::MessageStringCollector *
 _gmx_sel_lexer_error_reporter(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);

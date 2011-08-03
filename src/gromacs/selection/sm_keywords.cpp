@@ -53,8 +53,8 @@
 #include <smalloc.h>
 #include <string2.h>
 
-#include "gromacs/errorreporting/errorcontext.h"
-#include "gromacs/fatalerror/fatalerror.h"
+#include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/selmethod.h"
 
 #include "keywords.h"
@@ -705,10 +705,10 @@ _gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
     t_selelem            *sel;
     t_methoddata_kweval  *data;
 
-    gmx::AbstractErrorReporter *errors = _gmx_sel_lexer_error_reporter(scanner);
+    gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[1024];
     sprintf(buf, "In evaluation of '%s'", method->name);
-    gmx::ErrorContext  context(errors, buf);
+    gmx::MessageStringContext   context(errors, buf);
 
     if ((method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
         || method->outinit || method->pupdate)

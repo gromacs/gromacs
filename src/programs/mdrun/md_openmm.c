@@ -76,7 +76,6 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "qmmm.h"
-#include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "topsort.h"
@@ -362,8 +361,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         wallcycle_start(wcycle,ewcSTEP);
 
-        GMX_MPE_LOG(ev_timestep1);
-
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
@@ -382,7 +379,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         clear_mat(force_vir);
-        GMX_MPE_LOG(ev_timestep2);
 
         /* We write a checkpoint at this MD step when:
          * either when we signalled through gs (in OpenMM NS works different),
@@ -402,8 +398,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * the update.
          * for RerunMD t is read from input trajectory
          */
-        GMX_MPE_LOG(ev_output_start);
-
         mdof_flags = 0;
         if (do_per_step(step,ir->nstxout))
         {
@@ -472,8 +466,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             wallcycle_stop(wcycle,ewcTRAJ);
         }
-        GMX_MPE_LOG(ev_output_finish);
-
 
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;

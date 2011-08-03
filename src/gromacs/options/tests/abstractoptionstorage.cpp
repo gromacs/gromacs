@@ -44,8 +44,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/fatalerror.h"
-#include "gromacs/errorreporting/emptyerrorreporter.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionstoragetemplate.h"
@@ -69,44 +68,15 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
          *
          * \param[in] settings   Storage settings.
          * \param[in] options    Options object.
-         * \retval 0 on success.
          */
-        int init(const MockOption &settings, gmx::Options *options);
+        MockOptionStorage(const MockOption &settings, gmx::Options *options);
 
         /*! \brief
-         * Calls addValue() in the base class and expects it to succeed.
-         */
-        void addValue(const std::string &value)
-        {
-            EXPECT_EQ(0, MyBase::addValue(value));
-        }
-        /*! \brief
-         * Calls addValue() in the base class and expects it to fail.
-         */
-        void addValueExpectFail(const std::string &value)
-        {
-            EXPECT_NE(0, MyBase::addValue(value));
-        }
-        /*! \brief
-         * Calls processAll() in the base class.
-         */
-        int processAllBase(gmx::AbstractErrorReporter *errors)
-        {
-            return MyBase::processAll(errors);
-        }
-        /*! \brief
-         * Calls addValue("dummy") in the base class and expects it to succeed.
+         * Calls addValue("dummy") in the base class.
          */
         void addDummyValue()
         {
             addValue("dummy");
-        }
-        /*! \brief
-         * Calls addValue("dummy") in the base class and expects it to fail.
-         */
-        void addDummyValueExpectFail()
-        {
-            addValueExpectFail("dummy");
         }
         /*! \brief
          * Calls setFlag(efSet).
@@ -115,15 +85,15 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             setFlag(gmx::efSet);
         }
+        using MyBase::addValue;
+        using MyBase::commitValues;
 
         virtual const char *typeString() const { return "mock"; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
 
-        MOCK_METHOD2(convertValue, int(const std::string &value,
-                                       gmx::AbstractErrorReporter *errors));
-        MOCK_METHOD2(processSet, int(int nvalues,
-                                     gmx::AbstractErrorReporter *errors));
-        MOCK_METHOD1(processAll, int(gmx::AbstractErrorReporter *errors));
+        MOCK_METHOD1(convertValue, void(const std::string &value));
+        MOCK_METHOD1(processSetValues, void(ValueList *values));
+        MOCK_METHOD0(processAll, void());
 };
 
 /*! \internal \brief
@@ -140,41 +110,32 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         {
         }
 
-        //! Sets the required flags to support storage that may not add values.
-        MyClass &mayNotAddValues()
-        { setFlag(gmx::efConversionMayNotAddValues); return me(); }
         //! Sets an output pointer to give access to the created storage object.
         MyClass &storageObject(MockOptionStorage **storagePtr)
         { _storagePtr = storagePtr; return me(); }
 
     private:
-        virtual int createDefaultStorage(gmx::Options *options,
-                                         gmx::AbstractOptionStorage **storage) const
+        virtual gmx::AbstractOptionStorage *createDefaultStorage(gmx::Options *options) const
         {
-            int rc = gmx::createOptionStorage<MockOption, MockOptionStorage>(this, options, storage);
+            MockOptionStorage *storage = new MockOptionStorage(*this, options);
             if (_storagePtr != NULL)
             {
-                *_storagePtr = static_cast<MockOptionStorage *>(*storage);
+                *_storagePtr = storage;
             }
-            return rc;
+            return storage;
         }
 
         MockOptionStorage     **_storagePtr;
 };
 
-int MockOptionStorage::init(const MockOption &settings, gmx::Options *options)
+MockOptionStorage::MockOptionStorage(const MockOption &settings, gmx::Options *options)
+    : MyBase(settings, options)
 {
     using ::testing::_;
-    using ::testing::DoAll;
     using ::testing::Invoke;
-    using ::testing::Return;
     using ::testing::WithArg;
-    ON_CALL(*this, convertValue(_, _))
-        .WillByDefault(DoAll(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)),
-                             Return(0)));
-    ON_CALL(*this, processAll(_))
-        .WillByDefault(Invoke(this, &MockOptionStorage::processAllBase));
-    return MyBase::init(settings, options);
+    ON_CALL(*this, convertValue(_))
+        .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
 }
 
 namespace
@@ -189,25 +150,24 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
-    options.addOption(MockOption("name").storageObject(&mock).required()
-                          .storeVector(&values));
+    ASSERT_NO_THROW(options.addOption(
+                        MockOption("name").storageObject(&mock).required()
+                            .storeVector(&values)));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
         using ::testing::DoAll;
-        using ::testing::Return;
         using ::testing::InvokeWithoutArgs;
-        EXPECT_CALL(*mock, processAll(_))
+        EXPECT_CALL(*mock, processAll())
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::setOption),
                             InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            Return(0)));
+                            InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&options, &errors);
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, options.finish(&errors));
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
 
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ("dummy", values[0]);
@@ -222,29 +182,32 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
-    options.addOption(MockOption("name").storageObject(&mock).mayNotAddValues()
-                          .storeVector(&values).multiValue());
+    ASSERT_NO_THROW(options.addOption(
+                        MockOption("name").storageObject(&mock)
+                            .storeVector(&values).multiValue()));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
+        using ::testing::ElementsAre;
+        using ::testing::Pointee;
         using ::testing::Return;
-        EXPECT_CALL(*mock, convertValue("a", _));
-        EXPECT_CALL(*mock, convertValue("b", _))
-            .WillOnce(Return(0));
-        EXPECT_CALL(*mock, convertValue("c", _));
-        EXPECT_CALL(*mock, processSet(2, _));
-        EXPECT_CALL(*mock, processAll(_));
+        EXPECT_CALL(*mock, convertValue("a"));
+        EXPECT_CALL(*mock, convertValue("b"))
+            .WillOnce(Return());
+        EXPECT_CALL(*mock, convertValue("c"));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "c"))));
+        EXPECT_CALL(*mock, processAll());
     }
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&options, &errors);
-    EXPECT_EQ(0, assigner.startOption("name"));
-    EXPECT_EQ(0, assigner.appendValue("a"));
-    EXPECT_EQ(0, assigner.appendValue("b"));
-    EXPECT_EQ(0, assigner.appendValue("c"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, options.finish(&errors));
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("name"));
+    EXPECT_NO_THROW(assigner.appendValue("a"));
+    EXPECT_NO_THROW(assigner.appendValue("b"));
+    EXPECT_NO_THROW(assigner.appendValue("c"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
 
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ("a", values[0]);
@@ -260,31 +223,32 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
-    options.addOption(MockOption("name").storageObject(&mock)
-                          .storeVector(&values).multiValue());
+    ASSERT_NO_THROW(options.addOption(
+                        MockOption("name").storageObject(&mock)
+                            .storeVector(&values).multiValue()));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
         using ::testing::DoAll;
+        using ::testing::ElementsAre;
         using ::testing::InvokeWithoutArgs;
-        using ::testing::Return;
-        EXPECT_CALL(*mock, convertValue("a", _));
-        EXPECT_CALL(*mock, convertValue("b", _))
+        using ::testing::Pointee;
+        EXPECT_CALL(*mock, convertValue("a"));
+        EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            Return(0)));
-        EXPECT_CALL(*mock, processSet(3, _));
-        EXPECT_CALL(*mock, processAll(_));
+                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy", "dummy"))));
+        EXPECT_CALL(*mock, processAll());
     }
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&options, &errors);
-    EXPECT_EQ(0, assigner.startOption("name"));
-    EXPECT_EQ(0, assigner.appendValue("a"));
-    EXPECT_EQ(0, assigner.appendValue("b"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, options.finish(&errors));
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("name"));
+    EXPECT_NO_THROW(assigner.appendValue("a"));
+    EXPECT_NO_THROW(assigner.appendValue("b"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
 
     ASSERT_EQ(3U, values.size());
     EXPECT_EQ("a", values[0]);
@@ -301,31 +265,32 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
-    options.addOption(MockOption("name").storageObject(&mock)
-                          .storeVector(&values).valueCount(2));
+    ASSERT_NO_THROW(options.addOption(
+                        MockOption("name").storageObject(&mock)
+                            .storeVector(&values).valueCount(2)));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
         using ::testing::DoAll;
+        using ::testing::ElementsAre;
         using ::testing::InvokeWithoutArgs;
-        using ::testing::Return;
-        EXPECT_CALL(*mock, convertValue("a", _));
-        EXPECT_CALL(*mock, convertValue("b", _))
+        using ::testing::Pointee;
+        EXPECT_CALL(*mock, convertValue("a"));
+        EXPECT_CALL(*mock, convertValue("b"))
             .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValueExpectFail),
-                            Return(gmx::eeInvalidInput)));
-        EXPECT_CALL(*mock, processSet(2, _));
-        EXPECT_CALL(*mock, processAll(_));
+                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy"))));
+        EXPECT_CALL(*mock, processAll());
     }
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&options, &errors);
-    EXPECT_EQ(0, assigner.startOption("name"));
-    EXPECT_EQ(0, assigner.appendValue("a"));
-    EXPECT_NE(0, assigner.appendValue("b"));
-    EXPECT_NE(0, assigner.finish());
-    EXPECT_EQ(0, options.finish(&errors));
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("name"));
+    EXPECT_NO_THROW(assigner.appendValue("a"));
+    EXPECT_THROW(assigner.appendValue("b"), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
 
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ("a", values[0]);
@@ -341,27 +306,29 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
     MockOptionStorage          *mock;
-    options.addOption(MockOption("name").storageObject(&mock).mayNotAddValues()
-                          .storeVector(&values).valueCount(0));
+    ASSERT_NO_THROW(options.addOption(
+                        MockOption("name").storageObject(&mock)
+                            .storeVector(&values).valueCount(0)));
 
     {
         ::testing::InSequence dummy;
-        using ::testing::_;
         using ::testing::DoAll;
-        using ::testing::InvokeWithoutArgs;
+        using ::testing::ElementsAre;
+        using ::testing::Pointee;
         using ::testing::Return;
-        EXPECT_CALL(*mock, convertValue("a", _))
-            .WillOnce(Return(0));
-        EXPECT_CALL(*mock, processSet(0, _));
-        EXPECT_CALL(*mock, processAll(_));
+        EXPECT_CALL(*mock, convertValue("a"))
+            .WillOnce(Return());
+        EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre())));
+        EXPECT_CALL(*mock, processAll());
     }
 
-    gmx::EmptyErrorReporter errors;
-    gmx::OptionsAssigner assigner(&options, &errors);
-    EXPECT_EQ(0, assigner.startOption("name"));
-    EXPECT_EQ(0, assigner.appendValue("a"));
-    EXPECT_EQ(0, assigner.finish());
-    EXPECT_EQ(0, options.finish(&errors));
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    EXPECT_NO_THROW(assigner.startOption("name"));
+    EXPECT_NO_THROW(assigner.appendValue("a"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
 
     ASSERT_EQ(0U, values.size());
 }

@@ -37,9 +37,8 @@
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 
-#include <cassert>
-
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 #include "analysismodule-impl.h"
 
@@ -52,21 +51,25 @@ namespace gmx
 
 TrajectoryAnalysisModuleData::Impl::~Impl()
 {
-    finishHandles();
+    try
+    {
+        finishHandles();
+    }
+    catch (...)
+    {
+    }
 }
 
 
-int TrajectoryAnalysisModuleData::Impl::finishHandles()
+void TrajectoryAnalysisModuleData::Impl::finishHandles()
 {
-    int rc = 0;
+    // FIXME: Call finishData() for all handles even if one throws
     HandleContainer::const_iterator i;
     for (i = _handles.begin(); i != _handles.end(); ++i)
     {
-        int rc1 = i->second->finishData();
-        rc = (rc == 0 ? rc1 : rc);
+        i->second->finishData();
     }
     _handles.clear();
-    return rc;
 }
 
 
@@ -74,9 +77,19 @@ int TrajectoryAnalysisModuleData::Impl::finishHandles()
  * TrajectoryAnalysisModuleData
  */
 
-TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
+TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
+        TrajectoryAnalysisModule *module,
+        AnalysisDataParallelOptions opt,
+        const SelectionCollection &selections)
     : _impl(new Impl)
 {
+    TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
+    for (i = module->_impl->_analysisDatasets.begin();
+         i != module->_impl->_analysisDatasets.end(); ++i)
+    {
+        _impl->_handles[i->first] = i->second->startData(opt);
+    }
+    _impl->_selections = &selections;
 }
 
 
@@ -86,37 +99,17 @@ TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
 }
 
 
-int TrajectoryAnalysisModuleData::init(TrajectoryAnalysisModule *module,
-                                       AnalysisDataParallelOptions opt,
-                                       const SelectionCollection &selections)
+void TrajectoryAnalysisModuleData::finishDataHandles()
 {
-    TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
-    for (i = module->_impl->_analysisDatasets.begin();
-         i != module->_impl->_analysisDatasets.end(); ++i)
-    {
-        AnalysisDataHandle *handle = NULL;
-        int rc = i->second->startData(&handle, opt);
-        if (rc != 0)
-        {
-            return rc;
-        }
-        _impl->_handles[i->first] = handle;
-    }
-    _impl->_selections = &selections;
-    return 0;
-}
-
-
-int TrajectoryAnalysisModuleData::finishDataHandles()
-{
-    return _impl->finishHandles();
+    _impl->finishHandles();
 }
 
 
 AnalysisDataHandle *TrajectoryAnalysisModuleData::dataHandle(const char *name)
 {
     Impl::HandleContainer::const_iterator i = _impl->_handles.find(name);
-    assert(i != _impl->_handles.end() || !"Data handle requested on unknown dataset");
+    GMX_RELEASE_ASSERT(i != _impl->_handles.end(),
+                       "Data handle requested on unknown dataset");
     return (i != _impl->_handles.end()) ? (*i).second : NULL;
 }
 
@@ -145,11 +138,19 @@ TrajectoryAnalysisModuleData::parallelSelections(const std::vector<Selection *> 
 /********************************************************************
  * TrajectoryAnalysisModuleDataBasic
  */
+TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
+        TrajectoryAnalysisModule *module,
+        /*AnalysisDataParallelOptions*/ void* opt,
+        const SelectionCollection &selections)
+    : TrajectoryAnalysisModuleData(module, opt, selections)
+{
+}
 
-int
+
+void
 TrajectoryAnalysisModuleDataBasic::finish()
 {
-    return finishDataHandles();
+    finishDataHandles();
 }
 
 
@@ -169,39 +170,26 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 }
 
 
-int TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/,
-                                              AbstractErrorReporter * /*errors*/)
+void TrajectoryAnalysisModule::initOptionsDone(TrajectoryAnalysisSettings * /*settings*/)
 {
-    return 0;
 }
 
 
-int TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
 {
-    return 0;
 }
 
 
-int TrajectoryAnalysisModule::startFrames(AnalysisDataParallelOptions opt,
-                                          const SelectionCollection &selections,
-                                          TrajectoryAnalysisModuleData **pdatap)
+TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModule::startFrames(AnalysisDataParallelOptions opt,
+                                      const SelectionCollection &selections)
 {
-    TrajectoryAnalysisModuleDataBasic *pdata
-        = new TrajectoryAnalysisModuleDataBasic();
-    *pdatap = pdata;
-    int rc = pdata->init(this, opt, selections);
-    if (rc != 0)
-    {
-        delete pdata;
-        *pdatap = NULL;
-    }
-    return rc;
+    return new TrajectoryAnalysisModuleDataBasic(this, opt, selections);
 }
 
 
-int TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
+void TrajectoryAnalysisModule::finishFrames(TrajectoryAnalysisModuleData * /*pdata*/)
 {
-    return 0;
 }
 
 

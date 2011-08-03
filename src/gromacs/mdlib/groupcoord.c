@@ -38,7 +38,6 @@
 
 
 #include "groupcoord.h"
-#include "mpelogging.h"
 #include "network.h"
 #include "pbc.h"
 #include "vec.h"
@@ -155,8 +154,6 @@ static void shift_positions_group(
     int      i,tx,ty,tz;
 
 
-    GMX_MPE_LOG(ev_shift_start);
-
     /* Loop over the group's atoms */
     if(TRICLINIC(box)) 
     {
@@ -183,7 +180,6 @@ static void shift_positions_group(
             x[i][ZZ]=x[i][ZZ]+tz*box[ZZ][ZZ];
         }
     }    
-    GMX_MPE_LOG(ev_shift_finish);
 }
 
 
@@ -206,8 +202,6 @@ extern void communicate_group_positions(
 {
     int i;
 
-
-    GMX_MPE_LOG(ev_get_group_x_start);
 
     /* Zero out the groups' global position array */
     clear_rvecs(nr, xcoll);
@@ -251,8 +245,6 @@ extern void communicate_group_positions(
                 copy_rvec(xcoll[i],xcoll_old[i]);   
         }
     }
-    
-    GMX_MPE_LOG(ev_get_group_x_finish);
 }
 
 

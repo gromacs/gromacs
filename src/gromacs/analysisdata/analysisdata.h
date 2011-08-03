@@ -83,12 +83,11 @@ class AnalysisData : public AbstractAnalysisDataStored
         /*! \brief
          * Create a handle for adding data.
          *
-         * \param[out] handlep The created handle is stored in \p *handlep.
          * \param[in]  opt     Options for setting how this handle will be
          *     used.
+         * \returns The created handle.
          */
-        int startData(AnalysisDataHandle **handlep,
-                      AnalysisDataParallelOptions opt);
+        AnalysisDataHandle *startData(AnalysisDataParallelOptions opt);
         /*! \brief
          * Destroy a handle after all data has been added.
          *
@@ -96,7 +95,7 @@ class AnalysisData : public AbstractAnalysisDataStored
          *
          * The pointer \p handle is invalid after the call.
          */
-        int finishData(AnalysisDataHandle *handle);
+        void finishData(AnalysisDataHandle *handle);
 
     private:
         class Impl;
@@ -121,25 +120,33 @@ class AnalysisData : public AbstractAnalysisDataStored
 class AnalysisDataHandle
 {
     public:
+        /*! \brief
+         * Frees memory allocated for the internal implementation.
+         *
+         * Should not be called directly, but through finishData() or
+         * AnalysisData::finishData().
+         */
+        ~AnalysisDataHandle();
+
         //! Start data for a new frame.
-        int startFrame(int index, real x, real dx = 0.0);
+        void startFrame(int index, real x, real dx = 0.0);
         //! Add a data point for in single column for the current frame.
-        int addPoint(int col, real y, real dy = 0.0, bool present = true);
+        void addPoint(int col, real y, real dy = 0.0, bool present = true);
         //! Add multiple data points in neighboring columns for the current frame.
-        int addPoints(int firstcol, int n,
+        void addPoints(int firstcol, int n,
+                       const real *y, const real *dy = 0,
+                       const bool *present = 0);
+        //! Finish data for the current frame.
+        void finishFrame();
+        //! Convenience function for adding a complete frame.
+        void addFrame(int index, real x, const real *y, const real *dy = 0,
+                      const bool *present = 0);
+        //! Convenience function for adding a complete frame.
+        void addFrame(int index, real x, real dx,
                       const real *y, const real *dy = 0,
                       const bool *present = 0);
-        //! Finish data for the current frame.
-        int finishFrame();
-        //! Convenience function for adding a complete frame.
-        int addFrame(int index, real x, const real *y, const real *dy = 0,
-                     const bool *present = 0);
-        //! Convenience function for adding a complete frame.
-        int addFrame(int index, real x, real dx,
-                     const real *y, const real *dy = 0,
-                     const bool *present = 0);
         //! Calls AnalysisData::finishData() for this handle.
-        int finishData();
+        void finishData();
 
     private:
         /*! \brief
@@ -151,13 +158,6 @@ class AnalysisDataHandle
          * constructed through AnalysisData::startData().
          */
         explicit AnalysisDataHandle(AnalysisData *data);
-        /*! \brief
-         * Frees memory allocated for the internal implementation.
-         *
-         * The destructor is private because data handles should only be
-         * deleted by calling AnalysisData::finishData() (or finishData()).
-         */
-        ~AnalysisDataHandle();
 
         class Impl;
 

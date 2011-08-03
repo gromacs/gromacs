@@ -109,9 +109,6 @@ typedef struct t_selexpr_param
 
 /** Error reporting function for the selection parser. */
 void
-_gmx_selparser_warning(void *scanner, const char *fmt, ...);
-/** Error reporting function for the selection parser. */
-void
 _gmx_selparser_error(void *scanner, const char *fmt, ...);
 
 /** Allocates and initializes a constant \c t_selexpr_value. */

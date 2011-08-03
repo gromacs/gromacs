@@ -39,7 +39,7 @@
 
 namespace gmx
 {
-class AbstractErrorReporter;
+class MessageStringCollector;
 }
 
 #include "parser.h"
@@ -71,7 +71,7 @@ typedef struct gmx_sel_lexer_t
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
     //! Error reporter object.
-    gmx::AbstractErrorReporter      *errors;
+    gmx::MessageStringCollector     *errors;
     //! Whether external index groups have been set.
     bool                             bGroups;
     //! External index groups for resolving \c group keywords.

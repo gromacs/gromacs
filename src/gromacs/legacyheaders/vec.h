@@ -112,7 +112,6 @@
 #include "sysstuff.h"
 #include "macros.h"
 #include "gmx_fatal.h"
-#include "mpelogging.h"
 #include "physics.h"
 
 #ifdef __cplusplus
@@ -460,13 +459,9 @@ static gmx_inline void clear_rvecs(int n,rvec v[])
 {
 /*  memset(v[0],0,DIM*n*sizeof(v[0][0])); */
   int i;
-
-  GMX_MPE_LOG(ev_clear_rvecs_start);
     
   for(i=0; (i<n); i++) 
     clear_rvec(v[i]);
-    
-  GMX_MPE_LOG(ev_clear_rvecs_finish);  
 }
 
 static gmx_inline void clear_mat(matrix a)

@@ -71,11 +71,11 @@ class AnalysisData::Impl
          * AbstractStoredData.  Otherwise, it is put into the correct location
          * in \a _pending.  Calls processPendingFrame() after processing \p fr.
          */
-        int addPendingFrame(AnalysisDataFrame *fr);
+        void addPendingFrame(AnalysisDataFrame *fr);
         /*! \brief
          * Passes pending frames to base class if all earlier frames are ready.
          */
-        int processPendingFrames();
+        void processPendingFrames();
         //! Increments \a _pstart.
         void incrementPStart();
 

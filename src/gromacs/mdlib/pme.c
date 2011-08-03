@@ -92,8 +92,6 @@
 #include "gmx_sse2_single.h"
 #endif
 
-#include "mpelogging.h"
-
 #define DFT_TOL 1e-7
 /* #define PRT_FORCE */
 /* conditions for on the fly time-measurement */
@@ -2551,7 +2549,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
                 where();
                 
-                GMX_BARRIER(cr->mpi_comm_mygroup);
                 /* Redistribute x (only once) and qA or qB */
                 if (DOMAINDECOMP(cr)) {
                     dd_pmeredist_x_q(pme, n_d, q==0, x_d, q_d, atc);
@@ -2573,11 +2570,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_start(wcycle,ewcPME_SPREADGATHER);
 
             /* Spread the charges on a grid */
-            GMX_MPE_LOG(ev_spread_on_grid_start);
-            
-            /* Spread the charges on a grid */
             spread_on_grid(pme,&pme->atc[0],grid,q==0,TRUE);
-            GMX_MPE_LOG(ev_spread_on_grid_finish);
 
             if (q == 0)
             {
@@ -2591,7 +2584,6 @@ int gmx_pme_do(gmx_pme_t pme,
             /* sum contributions to local grid from other nodes */
 #ifdef GMX_MPI
             if (pme->nnodes > 1) {
-                GMX_BARRIER(cr->mpi_comm_mygroup);
                 gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_FORWARD);
                 where();
             }
@@ -2606,18 +2598,13 @@ int gmx_pme_do(gmx_pme_t pme,
         if (flags & GMX_PME_SOLVE)
         {
             /* do 3d-fft */ 
-            GMX_BARRIER(cr->mpi_comm_mygroup);
-            GMX_MPE_LOG(ev_gmxfft3d_start);
             wallcycle_start(wcycle,ewcPME_FFT);
             gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,fftgrid,cfftgrid);
             wallcycle_stop(wcycle,ewcPME_FFT);
-            GMX_MPE_LOG(ev_gmxfft3d_finish);
             where();
             
             /* solve in k-space for our local cells */
             vol = det(box);
-            GMX_BARRIER(cr->mpi_comm_mygroup);
-            GMX_MPE_LOG(ev_solve_pme_start);
             wallcycle_start(wcycle,ewcPME_SOLVE);
             loop_count =
                 solve_pme_yzx(pme,cfftgrid,ewaldcoeff,vol,
@@ -2625,7 +2612,6 @@ int gmx_pme_do(gmx_pme_t pme,
                               &energy_AB[q],vir_AB[q]);
             wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
-            GMX_MPE_LOG(ev_solve_pme_finish);
             inc_nrnb(nrnb,eNR_SOLVEPME,loop_count);
         }
 
@@ -2634,15 +2620,12 @@ int gmx_pme_do(gmx_pme_t pme,
         {
             
             /* do 3d-invfft */
-            GMX_BARRIER(cr->mpi_comm_mygroup);
-            GMX_MPE_LOG(ev_gmxfft3d_start);
             where();
             wallcycle_start(wcycle,ewcPME_FFT);
             gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid);
             wallcycle_stop(wcycle,ewcPME_FFT);
 
             where();
-            GMX_MPE_LOG(ev_gmxfft3d_finish);
 
             if (pme->nodeid == 0)
             {
@@ -2658,7 +2641,6 @@ int gmx_pme_do(gmx_pme_t pme,
             /* distribute local grid to all nodes */
 #ifdef GMX_MPI
             if (pme->nnodes > 1) {
-                GMX_BARRIER(cr->mpi_comm_mygroup);
                 gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_BACKWARD);
             }
 #endif
@@ -2670,8 +2652,6 @@ int gmx_pme_do(gmx_pme_t pme,
         if (flags & GMX_PME_CALC_F)
         {
             /* interpolate forces for our local atoms */
-            GMX_BARRIER(cr->mpi_comm_mygroup);
-            GMX_MPE_LOG(ev_gather_f_bsplines_start);
 
             where();
             
@@ -2683,9 +2663,7 @@ int gmx_pme_do(gmx_pme_t pme,
             gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
                               pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
             where();
-            
-            GMX_MPE_LOG(ev_gather_f_bsplines_finish);
-            
+
             inc_nrnb(nrnb,eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
@@ -2707,7 +2685,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 n_d = pme->atc[d+1].n;
                 f_d = pme->atc[d+1].f;
             }
-            GMX_BARRIER(cr->mpi_comm_mygroup);
             if (DOMAINDECOMP(cr)) {
                 dd_pmeredist_f(pme,atc,n_d,f_d,
                                d==pme->ndecompdim-1 && pme->bPPnode);

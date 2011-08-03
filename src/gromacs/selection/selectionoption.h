@@ -39,15 +39,12 @@
 #ifndef GMX_SELECTION_SELECTIONOPTION_H
 #define GMX_SELECTION_SELECTIONOPTION_H
 
-#include <cassert>
-
 #include "../options/abstractoption.h"
 #include "selectionenums.h"
 
 namespace gmx
 {
 
-class AbstractErrorReporter;
 class Selection;
 class SelectionOptionAdjuster;
 class SelectionOptionStorage;
@@ -117,8 +114,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual int createDefaultStorage(Options *options,
-                                         AbstractOptionStorage **storage) const;
+        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         SelectionFlags          _selectionFlags;
         SelectionOptionAdjuster **_adjuster;
@@ -191,93 +187,32 @@ class SelectionOptionAdjuster
         SelectionOptionAdjuster(SelectionOptionStorage *storage);
 
         /*! \brief
-         * Sets an error reporter for all subsequent operations.
-         *
-         * \param[in] errors  Error reporter object.
-         * \returns The previously set error reporter (may be NULL).
-         *
-         * Caller must ensure that the error reporter is valid as long as it
-         * is assigned to the adjuster.
-         *
-         * There must be a valid error reporter associated with the adjuster
-         * before any other method in the object is called.
-         *
-         * \see OptionAdjusterErrorContext
-         */
-        AbstractErrorReporter *setErrorReporter(AbstractErrorReporter *errors);
-
-        /*! \brief
          * Sets the number of selections allowed for the option.
          *
          * \param[in] count  Number of allowed selections.
-         * \retval 0 on success.
          */
-        int setValueCount(int count);
+        void setValueCount(int count);
 
         //! \copydoc SelectionOption::evaluateVelocities()
-        int setEvaluateVelocities(bool bEnabled);
+        void setEvaluateVelocities(bool bEnabled);
         //! \copydoc SelectionOption::evaluateForces()
-        int setEvaluateForces(bool bEnabled);
+        void setEvaluateForces(bool bEnabled);
         //! \copydoc SelectionOption::onlyAtoms()
-        int setOnlyAtoms(bool bEnabled);
+        void setOnlyAtoms(bool bEnabled);
         //! \copydoc SelectionOption::onlyStatic()
-        int setOnlyStatic(bool bEnabled);
+        void setOnlyStatic(bool bEnabled);
         //! \copydoc SelectionOption::dynamicMask()
-        int setDynamicMask(bool bEnabled);
+        void setDynamicMask(bool bEnabled);
         //! \copydoc SelectionOption::dynamicOnlyWhole()
-        int setDynamicOnlyWhole(bool bEnabled);
+        void setDynamicOnlyWhole(bool bEnabled);
 
     private:
         //! Returns the storage object associated with this adjuster.
         SelectionOptionStorage &storage() { return _storage; }
         //! Returns the storage object associated with this adjuster.
         const SelectionOptionStorage &storage() const { return _storage; }
-        //! Returns the current error reporter object, asserts if there is none.
-        AbstractErrorReporter *errors()
-        { assert(_errors != NULL); return _errors; }
 
         SelectionOptionStorage &_storage;
-        AbstractErrorReporter  *_errors;
-};
-
-
-/*! \brief
- * Convenience class for providing an error reporter for an option adjuster.
- *
- * This class implements a RAII-type interface over
- * SelectionOptionAdjuster::setErrorReporter(): the constructor sets a new
- * error reporter, and the destructor restores the old reporter.
- *
- * Example use:
- * \code
-{
-    OptionAdjusterErrorContext context(adjuster, errors);
-    adjuster->setValueCount(2); // Errors are reported using 'errors'.
-}  // Previous reporter is automatically restored on scope exit.
- * \endcode
- *
- * \inpublicapi
- * \ingroup module_selection
- */
-class OptionAdjusterErrorContext
-{
-    public:
-        //! Sets error reporter for an adjuster and stores the old reporter.
-        OptionAdjusterErrorContext(SelectionOptionAdjuster *adjuster,
-                                   AbstractErrorReporter *errors)
-            : _adjuster(adjuster)
-        {
-            _oldReporter = adjuster->setErrorReporter(errors);
-        }
-        //! Restores the old error reporter.
-        ~OptionAdjusterErrorContext()
-        {
-            _adjuster->setErrorReporter(_oldReporter);
-        }
-
-    private:
-        SelectionOptionAdjuster *_adjuster;
-        AbstractErrorReporter   *_oldReporter;
 };
 
 } // namespace gmx

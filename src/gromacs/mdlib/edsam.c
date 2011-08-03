@@ -55,7 +55,6 @@
 #include "nrjac.h"
 #include "mtop_util.h"
 #include "edsam.h"
-#include "mpelogging.h"
 #include "gmxfio.h"
 #include "groupcoord.h"
 
@@ -1655,8 +1654,6 @@ static void fit_to_reference(rvec      *xcoll,    /* The positions to be fitted 
     struct t_fit_to_ref *loc;
 
 
-    GMX_MPE_LOG(ev_fit_to_reference_start);
-
     /* Allocate memory the first time this routine is called for each edi dataset */
     if (NULL == edi->buf->fit_to_ref)
     {
@@ -1681,8 +1678,6 @@ static void fit_to_reference(rvec      *xcoll,    /* The positions to be fitted 
 
     /* Determine the rotation matrix */
     do_edfit(edi->sref.nr, edi->sref.x, loc->xcopy, rotmat, edi);
-
-    GMX_MPE_LOG(ev_fit_to_reference_finish);
 }
 
 
@@ -1755,8 +1750,6 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
     int tx,ty,tz;
 
 
-    GMX_MPE_LOG(ev_unshift_start);
-
     tx=is[XX];
     ty=is[YY];
     tz=is[ZZ];
@@ -1772,8 +1765,6 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
         xu[YY] = x[YY]-ty*box[YY][YY];
         xu[ZZ] = x[ZZ]-tz*box[ZZ][ZZ];
     }
-
-    GMX_MPE_LOG(ev_unshift_finish);
 }
 
 
@@ -2015,8 +2006,6 @@ static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_large_int_t step
     int i;
 
 
-    GMX_MPE_LOG(ev_ed_apply_cons_start);
-
     /* subtract the average positions */
     for (i=0; i<edi->sav.nr; i++)
         rvec_dec(xcoll[i], edi->sav.x[i]);
@@ -2033,8 +2022,6 @@ static void ed_apply_constraints(rvec *xcoll, t_edpar *edi, gmx_large_int_t step
     /* add back the average positions */
     for (i=0; i<edi->sav.nr; i++)
         rvec_inc(xcoll[i], edi->sav.x[i]);
-
-    GMX_MPE_LOG(ev_ed_apply_cons_finish);
 }
 
 
@@ -2149,8 +2136,6 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 
     if (!DOMAINDECOMP(cr) && PAR(cr) && MASTER(cr))
         gmx_fatal(FARGS, "Please switch on domain decomposition to use essential dynamics in parallel.");
-
-    GMX_MPE_LOG(ev_edsam_start);
 
     if (MASTER(cr))
         fprintf(stderr, "ED: Initializing essential dynamics constraints.\n");
@@ -2413,8 +2398,6 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
      * when the simulation has started */
     if (ed->edo)
         fflush(ed->edo);
-
-    GMX_MPE_LOG(ev_edsam_finish);
 }
 
 
@@ -2591,6 +2574,4 @@ void do_edsam(t_inputrec  *ir,
     } /* END of loop over ED datasets */
 
     ed->bFirst = FALSE;
-
-    GMX_MPE_LOG(ev_edsam_finish);
 }

@@ -56,19 +56,18 @@ class Angle : public TrajectoryAnalysisModule
         static TrajectoryAnalysisModule *create();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
-        virtual int initOptionsDone(TrajectoryAnalysisSettings *settings,
-                                    AbstractErrorReporter *errors);
-        virtual int initAnalysis(const TopologyInformation &top);
+        virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TopologyInformation &top);
 
-        virtual int analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                 TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
-        virtual int finishAnalysis(int nframes);
-        virtual int writeOutput();
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
 
     private:
-        int checkSelections(const std::vector<Selection *> &sel1,
-                            const std::vector<Selection *> &sel2) const;
+        void checkSelections(const std::vector<Selection *> &sel1,
+                             const std::vector<Selection *> &sel2) const;
 
         Options                 _options;
 

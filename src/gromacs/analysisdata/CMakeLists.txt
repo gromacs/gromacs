@@ -11,3 +11,7 @@ install(FILES ${ANALYSISDATA_PUBLIC_HEADERS}
         COMPONENT development)
 
 add_subdirectory(modules)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)

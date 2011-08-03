@@ -44,7 +44,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/errorreporting/emptyerrorreporter.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/options.h"
@@ -61,7 +60,6 @@ class CommandLineParserTest : public ::testing::Test
         void createArguments(const char *cmdline[]);
 
         gmx::Options            _options;
-        gmx::EmptyErrorReporter _errors;
         gmx::CommandLineParser  _parser;
         bool                    _flag;
         std::vector<int>        _ivalues;
@@ -71,7 +69,7 @@ class CommandLineParserTest : public ::testing::Test
 };
 
 CommandLineParserTest::CommandLineParserTest()
-    : _options(NULL, NULL), _parser(&_options, &_errors),
+    : _options(NULL, NULL), _parser(&_options),
       _flag(false),
       _argc(0), _argv(NULL)
 {
@@ -113,8 +111,8 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
 {
     const char *cmdline[] = {"-flag", "yes", "-mvi", "2", "-mvd", "2.7", NULL};
     createArguments(cmdline);
-    ASSERT_EQ(0, _parser.parse(&_argc, _argv));
-    ASSERT_EQ(0, _options.finish(&_errors));
+    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
+    ASSERT_NO_THROW(_options.finish());
 
     EXPECT_TRUE(_flag);
     ASSERT_EQ(1U, _ivalues.size());

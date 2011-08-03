@@ -104,28 +104,32 @@ class AnalysisDataModuleInterface
          * (column count, whether it's multipoint) do not change once this
          * method has been called.
          */
-        virtual int dataStarted(AbstractAnalysisData *data) = 0;
+        virtual void dataStarted(AbstractAnalysisData *data) = 0;
         /*! \brief
          * Called at the start of each data frame.
          */
-        virtual int frameStarted(real x, real dx) = 0;
+        virtual void frameStarted(real x, real dx) = 0;
         /*! \brief
          * Called one or more times during each data frame.
          *
          * For convenience, the \p x and \p dx values for the frame are
          * passed to each call of this function.
+         *
+         * \todo
+         * For more flexibility, this function should take a data row/frame
+         * object, which could be used to access all relevant data.
          */
-        virtual int pointsAdded(real x, real dx, int firstcol, int n,
-                                const real *y, const real *dy,
-                                const bool *present) = 0;
+        virtual void pointsAdded(real x, real dx, int firstcol, int n,
+                                 const real *y, const real *dy,
+                                 const bool *present) = 0;
         /*! \brief
          * Called when a data frame is finished.
          */
-        virtual int frameFinished() = 0;
+        virtual void frameFinished() = 0;
         /*! \brief
          * Called (once) when no more data is available.
          */
-        virtual int dataFinished() = 0;
+        virtual void dataFinished() = 0;
 
     protected:
         AnalysisDataModuleInterface() {}

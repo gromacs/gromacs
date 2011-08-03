@@ -53,7 +53,7 @@ class CommandLineParser::Impl
 {
     public:
         //! Sets the options object to parse to.
-        Impl(Options *options, AbstractErrorReporter *errors);
+        Impl(Options *options);
 
         //! Helper object for assigning the options.
         OptionsAssigner         _assigner;

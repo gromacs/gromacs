@@ -75,13 +75,13 @@ class TrajectoryAnalysisRunnerCommon
         ~TrajectoryAnalysisRunnerCommon();
 
         Options *initOptions();
-        int initOptionsDone();
-        int initIndexGroups(SelectionCollection *selections);
+        bool initOptionsDone();
+        void initIndexGroups(SelectionCollection *selections);
         void doneIndexGroups(SelectionCollection *selections);
-        int initTopology(SelectionCollection *selections);
-        int initFirstFrame();
+        void initTopology(SelectionCollection *selections);
+        void initFirstFrame();
         bool readNextFrame();
-        int initFrame();
+        void initFrame();
 
         //! Returns flags for help printing.
         HelpFlags helpFlags() const;

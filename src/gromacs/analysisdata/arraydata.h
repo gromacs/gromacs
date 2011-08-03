@@ -39,7 +39,9 @@
 #ifndef GMX_ANALYSISDATA_ARRAYDATA_H
 #define GMX_ANALYSISDATA_ARRAYDATA_H
 
-#include <cassert>
+#include <cstddef>
+
+#include "../fatalerror/gmxassert.h"
 
 #include "abstractdata.h"
 
@@ -62,10 +64,10 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         virtual ~AbstractAnalysisArrayData();
 
         virtual int frameCount() const;
-        virtual int getDataWErr(int index, real *x, real *dx,
-                                const real **y, const real **dy,
-                                const bool **present = 0) const;
-        virtual int requestStorage(int nframes = -1);
+        virtual bool getDataWErr(int index, real *x, real *dx,
+                                 const real **y, const real **dy,
+                                 const bool **present = 0) const;
+        virtual bool requestStorage(int nframes = -1);
 
     protected:
         AbstractAnalysisArrayData();
@@ -96,17 +98,17 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         //! Returns a reference to a given array element.
         real &value(int row, int col)
         {
-            assert(row >= 0 && row < _nrows);
-            assert(col >= 0 && col < columnCount());
-            assert(_value);
+            GMX_ASSERT(row >= 0 && row < _nrows, "Row index out of range");
+            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+            GMX_ASSERT(_value != NULL, "Data array not allocated");
             return _value[row * columnCount() + col];
         }
         //! Returns a given array element.
         const real &value(int row, int col) const
         {
-            assert(row >= 0 && row < _nrows);
-            assert(col >= 0 && col < columnCount());
-            assert(_value);
+            GMX_ASSERT(row >= 0 && row < _nrows, "Row index out of range");
+            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+            GMX_ASSERT(_value != NULL, "Data array not allocated");
             return _value[row * columnCount() + col];
         }
         /*! \brief
@@ -123,7 +125,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * have been initialized. The values should not be changed after this
          * function has been called.
          */
-        int valuesReady();
+        void valuesReady();
 
         /*! \brief
          * Copies the contents into a new object.
