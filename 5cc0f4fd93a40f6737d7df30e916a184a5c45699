@@ -1,0 +1,8 @@
+Change-Id: I5cc0f4fd93a40f6737d7df30e916a184a5c45699
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Verified+1: Roland Schulz <roland@rschulz.eu>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Wed, 03 Aug 2011 16:58:19 +0200
+Reviewed-on: https://gerrit.gromacs.org:8443/40
+Project: gromacs
+Branch: refs/heads/test-gerrit
