@@ -2360,7 +2360,7 @@ static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
 
     gmx_bool   InRange;
     real       d2;
-    int        cj;
+    int        cjf_gl,cjl_gl,cj;
 
     work = nbl->work;
 
@@ -2390,9 +2390,10 @@ static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            jx_SSE  = _mm_load_ps(x_j+cjf*12+0);
-            jy_SSE  = _mm_load_ps(x_j+cjf*12+4);
-            jz_SSE  = _mm_load_ps(x_j+cjf*12+8);
+            cjf_gl = gridj->cell0 + cjf;
+            jx_SSE  = _mm_load_ps(x_j+cjf_gl*12+0);
+            jy_SSE  = _mm_load_ps(x_j+cjf_gl*12+4);
+            jz_SSE  = _mm_load_ps(x_j+cjf_gl*12+8);
             
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(work->ix_SSE0,jx_SSE);
@@ -2460,9 +2461,10 @@ static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            jx_SSE  = _mm_load_ps(x_j+cjl*12+0);
-            jy_SSE  = _mm_load_ps(x_j+cjl*12+4);
-            jz_SSE  = _mm_load_ps(x_j+cjl*12+8);
+            cjl_gl = gridj->cell0 + cjl;
+            jx_SSE  = _mm_load_ps(x_j+cjl_gl*12+0);
+            jy_SSE  = _mm_load_ps(x_j+cjl_gl*12+4);
+            jz_SSE  = _mm_load_ps(x_j+cjl_gl*12+8);
             
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(work->ix_SSE0,jx_SSE);
@@ -2536,7 +2538,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
 {
     int  naps;
     int  npair;
-    int  sj,si1,si,csj,csi;
+    int  sj,si1,si,csj,csj_gl,csi;
     int  sj4_ind,sj_offset;
     unsigned imask;
     gmx_nbl_sj4_t *sj4;
@@ -2563,8 +2565,10 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
         
         csj = cj*NSUBCELL + sj;
 
+        csj_gl = gridj->cell0*NSUBCELL + csj;
+
         /* Initialize this j-subcell i-subcell list */
-        sj4->sj[sj_offset] = gridj->cell0*NSUBCELL + csj;
+        sj4->sj[sj_offset] = csj_gl;
         imask              = 0;
 
         if (!nbl->TwoWay && ci_equals_cj)
@@ -2599,7 +2603,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
              * within the cut-off.
              */
             if (d2 < rbb2 ||
-                (d2 < rl2 && nbs->subc_dc(naps,si,x_ci,csj,stride,x,rl2)))
+                (d2 < rl2 && nbs->subc_dc(naps,si,x_ci,csj_gl,stride,x,rl2)))
 #else
             /* Check if the distance between the two bounding boxes
              * in within the neighborlist cut-off.
@@ -2622,9 +2626,9 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
         /* If we only found 1 pair, check if any atoms are actually
          * within the cut-off, so we could get rid of it.
          */
-        if (npair == 1 && d2l[si_last] >= rl2)
+        if (npair == 1 && d2l[si_last] >= rbb2)
         {
-            if (!nbs->subc_dc(naps,si_last,x_ci,csj,stride,x,rl2))
+            if (!nbs->subc_dc(naps,si_last,x_ci,csj_gl,stride,x,rl2))
             {
                 imask &= ~(1U << (sj_offset*NSUBCELL+si_last));
                 npair--;
@@ -3571,7 +3575,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                               nbl->work->bb_ci);
                     }
 
-                    nbs->icell_set_x(ci,shx,shy,shz,
+                    nbs->icell_set_x(gridi->cell0+ci,shx,shy,shz,
                                      nbs->naps,nbat->xstride,nbat->x,nbl->work);
 
                     for(cx=cxf; cx<=cxl; cx++)
