@@ -7825,38 +7825,135 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
     }
 }
 
-static void set_zones_size(gmx_domdec_t *dd)
+static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
     gmx_domdec_zones_t *zones;
-    int z,d,dim;
+    gmx_bool bDistMB;
+    int  z,zi,zj0,zj1,d,dim;
+    real rcs,rcmbs;
 
     comm = dd->comm;
 
     zones = &comm->zones;
 
+    /* Do we need to determine extra distances for multi-body bondeds? */
+    bDistMB = (comm->bInterCGMultiBody && dd->bGridJump && dd->ndim > 1);
+
     for(z=0; z<zones->n; z++)
     {
+        /* Copy cell limits to zone limits.
+         * Valid for non-DD dims and non-shifted dims.
+         */
         copy_rvec(comm->cell_x0,zones->zone_x0[z]);
         copy_rvec(comm->cell_x1,zones->zone_x1[z]);
-        for(d=0; d<dd->ndim; d++)
+    }
+
+    for(d=0; d<dd->ndim; d++)
+    {
+        dim = dd->dim[d];
+
+        for(z=0; z<zones->n; z++)
         {
-            dim = dd->dim[d];
-            if (!dd->bGridJump || d == 0)
+            /* With a staggered grid we have different sizes
+             * for non-shifted dimensions.
+             */
+            if (dd->bGridJump && zones->shift[z][dim] == 0)
             {
-                zones->zone_x0[z][dim] = comm->cell_x1[dim];
-                zones->zone_x1[z][dim] = comm->cell_x1[dim] + comm->cutoff;
+                if (d == 1)
+                {
+                    zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][d-1]].min0;
+                    zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][d-1]].max1;
+                }
+                else if (d == 2)
+                {
+                    zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].min0;
+                    zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].max1;
+                }
             }
-            else if (d == 1)
+        }
+
+        rcs   = comm->cutoff;
+        rcmbs = comm->cutoff_mbody;
+        if (ddbox->tric_dir[dim])
+        {
+            rcs   /= ddbox->skew_fac[dim];
+            rcmbs /= ddbox->skew_fac[dim];
+        }
+
+        /* Set the lower limit for the shifted zone dimensions */
+        for(z=0; z<zones->n; z++)
+        {
+            if (zones->shift[z][dim] > 0)
             {
-                zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][d-1]].min0;
-                zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][d-1]].max1;
+                dim = dd->dim[d];
+                if (!dd->bGridJump || d == 0)
+                {
+                    zones->zone_x0[z][dim] = comm->cell_x1[dim];
+                    zones->zone_x1[z][dim] = comm->cell_x1[dim] + rcs;
+                }
+                else
+                {
+                    if (comm->cd[d].np > 1)
+                    {
+                        gmx_fatal(FARGS,"Sorry, multiple pulses not supported yet in combination with dynamic load balancing");
+                    }
+                    /* Here we take the lower limit of the zone equal to
+                     * the upper limit of the one below, which is only
+                     * valid with only one domain in the zone.
+                     */
+                    zones->zone_x0[z][dim] =
+                        zones->zone_x1[zone_perm[d][z-(1<<d)]][dim];
+                    /* A temporary limit, is updated below */
+                    zones->zone_x1[z][dim] = zones->zone_x0[z][dim];
+
+                    if (bDistMB)
+                    {
+                        for(zi=0; zi<zones->nizone; zi++)
+                        {
+                            if (zones->shift[zi][d] == 0)
+                            {
+                                /* This takes the whole zone into account.
+                                 * With multiple pulses this will lead
+                                 * to a larger zone then strictly necessary.
+                                 */
+                                zones->zone_x1[z][dim] = max(zones->zone_x1[z][dim],
+                                                             zones->zone_x1[zi][dim]+rcmbs);
+                            }
+                        }
+                    }
+                }
             }
-            else
+        }
+
+        /* Loop over the i-zones to set the upper limit of each
+         * j-zone they see.
+         */
+        for(zi=0; zi<zones->nizone; zi++)
+        {
+            if (zones->shift[zi][d] == 0)
             {
-                zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].min0;
-                zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].max1;
+                for(z=zones->izone[zi].j0; z<zones->izone[zi].j1; z++)
+                {
+                    if (zones->shift[z][d] > 0)
+                    {
+                        zones->zone_x1[z][dim] = max(zones->zone_x1[z][dim],
+                                                     zones->zone_x1[zi][dim]+rcs);
+                    }
+                }
             }
+        }
+    }
+
+    if (debug)
+    {
+        for(z=0; z<zones->n; z++)
+        {
+            fprintf(debug,"zone %d %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
+                    z,
+                    zones->zone_x0[z][XX],zones->zone_x1[z][XX],
+                    zones->zone_x0[z][YY],zones->zone_x1[z][YY],
+                    zones->zone_x0[z][ZZ],zones->zone_x1[z][ZZ]);
         }
     }
 }
@@ -8562,14 +8659,11 @@ void dd_partition_system(FILE            *fplog,
                            !bSortCG,nrnb,&cg0,&ncg_moved);
     }
     
-    if (fr->nbs == NULL)
-    {
-        get_nsgrid_boundaries(fr->ns.grid,dd,
-                              state_local->box,&ddbox,
-                              &comm->cell_x0,&comm->cell_x1,
-                              dd->ncg_home,fr->cg_cm,
-                              cell_ns_x0,cell_ns_x1,&grid_density);
-    }
+    get_nsgrid_boundaries(ddbox.nboundeddim,state_local->box,
+                          dd,&ddbox,
+                          &comm->cell_x0,&comm->cell_x1,
+                          dd->ncg_home,fr->cg_cm,
+                          cell_ns_x0,cell_ns_x1,&grid_density);
 
     if (bBoxChanged)
     {
@@ -8646,8 +8740,11 @@ void dd_partition_system(FILE            *fplog,
 
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
-    
-    set_zones_size(dd);
+
+    if (fr->nbs != NULL)
+    {
+        set_zones_size(dd,&ddbox);
+    }
 
     /*
     write_dd_pdb("dd_home",step,"dump",top_global,cr,

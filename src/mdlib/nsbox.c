@@ -1279,10 +1279,15 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
                  * x and y indices, not z.
                  */
                 nbs->cell[i] = cx*grid->ncy + cy;
+
+#ifdef DEBUG_NSBOX_GRIDDING
                 if (nbs->cell[i] >= grid->ncx*grid->ncy)
                 {
-                    gmx_incons("hmm");
+                    gmx_fatal(FARGS,
+                              "grid cell cx %d cy %d out of range (max %d %d)",
+                              cx,cy,grid->ncx,grid->ncy);
                 }
+#endif
             }
             else
             {
@@ -2979,16 +2984,19 @@ static void close_ci_entry_supersub(gmx_nblist_t *nbl,
     }
 }
 
+static void sync_work(gmx_nblist_t *nbl)
+{
+    nbl->work->sj_ind   = nbl->nsj4*4;
+    nbl->work->sj4_init = nbl->nsj4;
+}
+
 static void clear_nblist(gmx_nblist_t *nbl)
 {
     nbl->nci          = 0;
     nbl->ncj          = 0;
     nbl->nsj4         = 0;
-    nbl->work->sj_ind = nbl->nsj4*4;
     nbl->nsi          = 0;
     nbl->nexcl        = 1;
-
-    nbl->work->sj4_init = 0;
 }
 
 static void set_icell_bb_simple(const real *bb,int ci,
@@ -3255,7 +3263,7 @@ static void combine_nblists(int nnbl,gmx_nblist_t **nbl,
          * However this requires a lot more bookkeeping and does not
          * lead to a performance improvement.
          */
-        /* The ci list copy is probably not work parallelizing */
+        /* The ci list copy is probably not worth parallelizing */
         for(i=0; i<nbli->nci; i++)
         {
             nblc->ci[nblc->nci]                = nbli->ci[i];
@@ -3375,7 +3383,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     int  shift;
     gmx_bool bMakeList;
     real shx,shy,shz;
-    real *bbcz_i,*bbcz_j,*bb_j;
+    const real *bbcz_i,*bbcz_j;
     real bx0,bx1,by0,by1,bz0,bz1;
     real bz1_frac;
     real d2z,d2zx,d2zxy,d2xy;
@@ -3384,6 +3392,8 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     int  c0,c1,cs,cf,cl;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
+
+    sync_work(nbl);
 
     /* Maybe we should not set the type of neighborlist at search time,
      * but rather in gmx_nblist_init?
@@ -3445,7 +3455,6 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
     bbcz_i = gridi->bbcz;
     bbcz_j = gridj->bbcz;
-    bb_j   = gridj->bb;
 
     /* Set the block size as 5/11/ntask times the average number of cells
      * in a y,z slab. This should ensure a quite uniform distribution
@@ -3783,7 +3792,6 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     {
         fprintf(debug,"ns making %d nblists\n",nnbl);
     }
-    nbs_cycle_start(&nbs->cc[enbsCCsearch]);
 
     if (!nonLocal)
     {
@@ -3825,9 +3833,16 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                 fprintf(debug,"ns search grid %d vs %d\n",zi,zj);
             }
 
+            nbs_cycle_start(&nbs->cc[enbsCCsearch]);
+
 #pragma omp parallel for schedule(static)
             for(th=0; th<nnbl; th++)
             {
+                if (CombineNBLists && th > 0)
+                {
+                    clear_nblist(nbl[th]);
+                }
+
                 /* Divide the i super cell equally over the nblists */
                 gmx_nbsearch_make_nblist_part(nbs,gridi,gridj,
                                               &nbs->work[th],nbat,excl,
