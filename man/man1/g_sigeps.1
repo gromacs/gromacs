@@ -1,8 +1,8 @@
-.TH g_sigeps 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_sigeps 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_sigeps - convert c6/12 or c6/cn combinations to and from sigma/epsilon
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_sigeps\fP
 .BI "\-o" " potje.xvg "
@@ -23,10 +23,10 @@ g_sigeps - convert c6/12 or c6/cn combinations to and from sigma/epsilon
 .BI "\-qj" " real "
 .BI "\-sigfac" " real "
 .SH DESCRIPTION
-\&Sigeps is a simple utility that converts c6/c12 or c6/cn combinations
+\&\fB g_sigeps\fR is a simple utility that converts C6/C12 or C6/Cn combinations
 \&to sigma and epsilon, or vice versa. It can also plot the potential
-\&in  file. In addition it makes an approximation of a Buckingham potential
-\&to a Lennard Jones potential.
+\&in  file. In addition, it makes an approximation of a Buckingham potential
+\&to a Lennard\-Jones potential.
 .SH FILES
 .BI "\-o" " potje.xvg" 
 .B Output
@@ -43,7 +43,7 @@ g_sigeps - convert c6/12 or c6/cn combinations to and from sigma/epsilon
  Set the nicelevel
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

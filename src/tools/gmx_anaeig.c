@@ -794,7 +794,7 @@ int gmx_anaeig(int argc,char *argv[])
     "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
     
     "  Overlap calculations between covariance analysis:[BR]",
-    "  NOTE: the analysis should use the same fitting structure[PAR]",
+    "  [BB]Note:[bb] the analysis should use the same fitting structure[PAR]",
     
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",

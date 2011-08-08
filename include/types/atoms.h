@@ -48,12 +48,12 @@ enum {
 /* The particle type */
  
 typedef struct {
-  real 		m,q;		/* Mass and charge			*/
-  real 		mB,qB;		/* Mass and charge for Free Energy calc */
-  unsigned short type;		/* Atom type				*/
-  unsigned short typeB;		/* Atom type for Free Energy calc	*/
-  int           ptype;		/* Particle type			*/
-  int 		resind;		/* Index into resinfo in t_atoms)       */
+  real          m,q;            /* Mass and charge                      */
+  real          mB,qB;          /* Mass and charge for Free Energy calc */
+  unsigned short type;          /* Atom type                            */
+  unsigned short typeB;         /* Atom type for Free Energy calc       */
+  int           ptype;          /* Particle type                        */
+  int           resind;         /* Index into resinfo (in t_atoms)      */
   int           atomnumber;     /* Atomic Number or NOTSET              */
   char          elem[4];        /* Element name                         */
 } t_atom;
@@ -74,40 +74,39 @@ typedef struct {
   char atomnm[6];               /* True atom name including spaces      */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */
-  gmx_bool bAnisotropic;            /* (an)isotropic switch                 */
+  gmx_bool bAnisotropic;        /* (an)isotropic switch                 */
   int  uij[6];                  /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
 typedef struct {
-  int  nr;			/* Number of different groups		*/
+  int  nr;                      /* Number of different groups           */
   int  *nm_ind;                 /* Index in the group names             */
 } t_grps;
 
 typedef struct {
   int           nr;             /* Nr of atoms                          */
-  t_atom	*atom;		/* Array of atoms (dim: nr)		*/
-				/* The following entries will not 	*/
-				/* allways be used (nres==0)	 	*/
-  char		***atomname;	/* Array of pointers to atom name	*/
-				/* use: (*(atomname[i]))		*/
-  char		***atomtype;	/* Array of pointers to atom types	*/
-				/* use: (*(atomtype[i]))		*/
-  char		***atomtypeB;	/* Array of pointers to B atom types	*/
-				/* use: (*(atomtypeB[i]))		*/
-  int		nres;		/* The number of resinfo entries	*/
+  t_atom        *atom;	        /* Array of atoms (dim: nr)             */
+                                /* The following entries will not       */
+                                /* always be used (nres==0)             */
+  char	        ***atomname;    /* Array of pointers to atom name       */
+                                /* use: (*(atomname[i]))                */
+  char          ***atomtype;    /* Array of pointers to atom types      */
+                                /* use: (*(atomtype[i]))                */
+  char          ***atomtypeB;   /* Array of pointers to B atom types    */
+                                /* use: (*(atomtypeB[i]))               */
+  int           nres;           /* The number of resinfo entries        */
   t_resinfo     *resinfo;       /* Array of residue names and numbers   */
   t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 
 typedef struct {
-  int           nr;             /* number of atomtypes                     */
-  real         *radius;         /* GBSA radius for each atomtype        */
-  real         *vol;            /* GBSA efective volume for each atomtype   */
-  real         *surftens;       /* implicit solvent surftens for each atomtype */
-  real         *gb_radius;      /* GB radius for each atom type */
-  real         *S_hct;          /* Overlap factors for HCT/OBC GB models */
-
-  int          *atomnumber;     /* Atomic number, used for QM/MM */
+  int           nr;             /* number of atomtypes                          */
+  real         *radius;         /* GBSA radius for each atomtype                */
+  real         *vol;            /* GBSA efective volume for each atomtype       */
+  real         *surftens;       /* implicit solvent surftens for each atomtype  */
+  real         *gb_radius;      /* GB radius for each atom type                 */
+  real         *S_hct;          /* Overlap factors for HCT/OBC GB models        */
+  int          *atomnumber;     /* Atomic number, used for QM/MM                */
 } t_atomtypes;
 
 

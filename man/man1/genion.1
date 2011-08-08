@@ -1,8 +1,8 @@
-.TH genion 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH genion 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 genion - generates mono atomic ions on energetically favorable positions
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3genion\fP
 .BI "\-s" " topol.tpr "
@@ -29,10 +29,10 @@ genion - generates mono atomic ions on energetically favorable positions
 .BI "\-conc" " real "
 .BI "\-[no]neutral" ""
 .SH DESCRIPTION
-\&genion replaces solvent molecules by monoatomic ions at
+\&\fB genion\fR replaces solvent molecules by monoatomic ions at
 \&the position of the first atoms with the most favorable electrostatic
 \&potential or at random. The potential is calculated on all atoms, using
-\&normal GROMACS particle based methods (in contrast to other methods
+\&normal GROMACS particle\-based methods (in contrast to other methods
 \&based on solving the Poisson\-Boltzmann equation).
 \&The potential is recalculated after every ion insertion.
 \&If specified in the run input file, a reaction field, shift function
@@ -45,18 +45,23 @@ genion - generates mono atomic ions on energetically favorable positions
 
 
 \&The ion molecule type, residue and atom names in all force fields
-\&are the capitalized element names without sign. Ions which can have
-\&multiple charge states get the multiplicilty added, without sign,
-\&for the uncommon states only.
+\&are the capitalized element names without sign. This molecule name
+\&should be given with \fB \-pname\fR or \fB \-nname\fR, and the
+\&\fB [molecules]\fR section of your topology updated accordingly,
+\&either by hand or with \fB \-p\fR. Do not use an atom name instead!
+\&
+
+Ions which can have multiple charge states get the multiplicity
+\&added, without sign, for the uncommon states only.
 
 
 \&With the option \fB \-pot\fR the potential can be written as B\-factors
-\&in a pdb file (for visualisation using e.g. rasmol).
+\&in a \fB .pdb\fR file (for visualisation using e.g. Rasmol).
 \&The unit of the potential is 1000 kJ/(mol e), the scaling be changed
 \&with the \fB \-scale\fR option.
 
 
-\&For larger ions, e.g. sulfate we recommended to use genbox.
+\&For larger ions, e.g. sulfate we recommended using \fB genbox\fR.
 .SH FILES
 .BI "\-s" " topol.tpr" 
 .B Input
@@ -127,10 +132,10 @@ genion - generates mono atomic ions on energetically favorable positions
  Seed for random number generator
 
 .BI "\-scale"  " real" " 0.001 " 
- Scaling factor for the potential for \-pot
+ Scaling factor for the potential for \fB \-pot\fR
 
 .BI "\-conc"  " real" " 0     " 
- Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input tpr file. Overrides the \-np and  nn options.
+ Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input \fB .tpr\fR file. Overrides the \fB \-np\fR and \fB \-nn\fR options.
 
 .BI "\-[no]neutral"  "no    "
  This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated.

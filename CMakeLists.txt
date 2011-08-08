@@ -12,7 +12,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.5.3-dev")
+set(PROJECT_VERSION "4.5.4-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -23,7 +23,7 @@ set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "3")
+SET(CPACK_PACKAGE_VERSION_PATCH "4")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -284,6 +284,7 @@ check_include_files(math.h       HAVE_MATH_H)
 check_include_files(limits.h     HAVE_LIMITS_H)
 check_include_files(memory.h     HAVE_MEMORY_H)
 check_include_files(unistd.h	 HAVE_UNISTD_H)
+check_include_files(direct.h	 HAVE_DIRECT_H)
 check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(stdint.h	 HAVE_STDINT_H)
 check_include_files(stdlib.h	 HAVE_STDLIB_H)
@@ -486,6 +487,10 @@ if(APPLE)
    list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
 
+if(CYGWIN)
+    set(GMX_CYGWIN 1)
+endif(CYGWIN)
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
@@ -504,6 +509,9 @@ endif()
 
 if (GMX_DLOPEN)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
+    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+else(GMX_DLOPEN)
+    set(PKG_DL_LIBS)
 endif (GMX_DLOPEN)
 
 ########################################################################
@@ -819,8 +827,8 @@ endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED LIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+if ( DEFINED GMXLIB )
+    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
 else()
     set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
 endif()

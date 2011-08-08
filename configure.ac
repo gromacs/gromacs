@@ -9,7 +9,7 @@ AC_PREREQ(2.50)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-AC_INIT(gromacs, 4.5.3-dev, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.4-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -518,6 +518,30 @@ Atomics should work on all but the most obscure CPU+compiler combinations;
 if your system is not obscure -- like, for example, x86 with gcc --  please
 contact the developers.
 ]); tmpi_atomics=no])
+
+
+  # pthread_setaffinity
+  AC_MSG_CHECKING(if pthread_setaffinity_np is available)
+  AC_COMPILE_IFELSE([#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+int main(void)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(0, &set);
+    pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+    return 0;
+}],
+  [AC_MSG_RESULT(yes); pthread_setaffinity=yes],
+  [AC_MSG_RESULT(no); pthread_setaffinity=no] )
+
+  if test "x$pthread_setaffinity" = "xyes"; then
+    AC_DEFINE(HAVE_PTHREAD_SETAFFINITY,1,[pthread_setaffinity_np is available])
+  fi
+
   CFLAGS="$CFLAGS_RET"
   CXXFLAGS="$CXXFLAGS_RET"
 
@@ -768,6 +792,7 @@ esac
 
 AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(direct.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(dirent.h,,[AC_MSG_WARN(

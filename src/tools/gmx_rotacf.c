@@ -58,14 +58,14 @@ int gmx_rotacf(int argc,char *argv[])
 {
   const char *desc[] = {
     "[TT]g_rotacf[tt] calculates the rotational correlation function",
-    "for molecules. Three atoms (i,j,k) must be given in the index",
+    "for molecules. Atom triplets (i,j,k) must be given in the index",
     "file, defining two vectors ij and jk. The rotational ACF",
     "is calculated as the autocorrelation function of the vector",
     "n = ij x jk, i.e. the cross product of the two vectors.",
     "Since three atoms span a plane, the order of the three atoms",
-    "does not matter. Optionally, controlled by the [TT]-d[tt] switch, you can",
+    "does not matter. Optionally, by invoking the [TT]-d[tt] switch, you can",
     "calculate the rotational correlation function for linear molecules",
-    "by specifying two atoms (i,j) in the index file.",
+    "by specifying atom pairs (i,j) in the index file.",
     "[PAR]",
     "EXAMPLES[PAR]",
     "[TT]g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",

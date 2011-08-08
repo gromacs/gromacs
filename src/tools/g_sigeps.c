@@ -73,10 +73,10 @@ real dpot(real x,real qq,real c6,real cn,int npow)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "[TT]g_sigeps[tt] is a simple utility that converts c6/c12 or c6/cn combinations",
-    "to sigma and epsilon, or vice versa. It can also plot the potential",
-    "in  file. In addition it makes an approximation of a Buckingham potential",
-    "to a Lennard Jones potential."
+    "[TT]g_sigeps[tt] is a simple utility that converts C6/C12 or C6/Cn combinations",
+    "to [GRK]sigma[grk] and [GRK]epsilon[grk], or vice versa. It can also plot the potential",
+    "in  file. In addition, it makes an approximation of a Buckingham potential",
+    "to a Lennard-Jones potential."
   };
   static real c6=1.0e-3,cn=1.0e-6,qi=0,qj=0,sig=0.3,eps=1,sigfac=0.7;
   static real Abh=1e5,Bbh=32,Cbh=1e-3;

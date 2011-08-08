@@ -1256,9 +1256,10 @@ int gmx_cluster(int argc,char *argv[])
       for(i=0; i<nf; i++)
 	reset_x(ifsize,fitidx,isize,NULL,xx[i],mass);
     }
-  }
-  if (bPBC) {
-    gmx_rmpbc_done(gpbc);
+    if (bPBC)
+    {
+      gmx_rmpbc_done(gpbc);
+    }
   }
 
   if (bReadMat) {

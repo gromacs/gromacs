@@ -1,8 +1,8 @@
-.TH eneconv 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH eneconv 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 eneconv - converts energy files
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3eneconv\fP
 .BI "\-f" " ener.edr "
@@ -16,17 +16,18 @@ eneconv - converts energy files
 .BI "\-offset" " real "
 .BI "\-[no]settime" ""
 .BI "\-[no]sort" ""
+.BI "\-[no]rmdh" ""
 .BI "\-scalefac" " real "
 .BI "\-[no]error" ""
 .SH DESCRIPTION
 \&With \fI multiple files\fR specified for the \fB \-f\fR option:
 
 \&Concatenates several energy files in sorted order.
-\&In case of double time frames the one
+\&In the case of double time frames, the one
 \&in the later file is used. By specifying \fB \-settime\fR you will be
 \&asked for the start time of each file. The input files are taken
 \&from the command line,
-\&such that the command \fB eneconv \-o fixed.edr *.edr\fR should do
+\&such that the command \fB eneconv \-f *.edr \-o fixed.edr\fR should do
 \&the trick. 
 
 
@@ -69,13 +70,16 @@ eneconv - converts energy files
  Only write out frame when t MOD dt = offset
 
 .BI "\-offset"  " real" " 0     " 
- Time offset for \-dt option
+ Time offset for \fB \-dt\fR option
 
 .BI "\-[no]settime"  "no    "
  Change starting time interactively
 
 .BI "\-[no]sort"  "yes   "
  Sort energy files (not frames)
+
+.BI "\-[no]rmdh"  "no    "
+ Remove free energy block data
 
 .BI "\-scalefac"  " real" " 1     " 
  Multiply energy component by this factor

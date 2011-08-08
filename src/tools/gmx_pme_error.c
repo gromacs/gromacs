@@ -497,12 +497,12 @@ static real estimate_reciprocal(
         x_per_core = xtot;
     }
 /*     
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 */
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
         t0 = MPI_Wtime();
@@ -728,13 +728,14 @@ static real estimate_reciprocal(
     if (MASTER(cr))
         fprintf(stderr, "\n");
 
-
+#ifdef GMX_LIB_MPI
 #ifdef TAKETIME
     if (MASTER(cr))
     {
         t1= MPI_Wtime() - t0;
         fprintf(fp_out, "Recip. err. est. took   : %lf s\n", t1);
     }
+#endif
 #endif
    
 #ifdef DEBUG
@@ -1078,7 +1079,7 @@ int gmx_pme_error(int argc,char *argv[])
     
     cr = init_par(&argc,&argv);
     
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 

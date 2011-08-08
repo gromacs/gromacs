@@ -94,6 +94,9 @@ int
 gmx_dist(int argc,char *argv[]);
 
 int 
+gmx_dos(int argc,char *argv[]);
+
+int 
 gmx_dyndom(int argc,char *argv[]);
 
 int 

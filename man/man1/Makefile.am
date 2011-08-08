@@ -18,6 +18,7 @@ man_MANS =   \
 	g_current.1  \
 	g_density.1  \
 	g_densmap.1  \
+	g_densorder.1  \
 	g_dielectric.1  \
 	g_dih.1  \
 	g_dipoles.1  \
@@ -32,6 +33,7 @@ man_MANS =   \
 	g_hbond.1  \
 	g_helix.1  \
 	g_helixorient.1  \
+	g_hydorder.1  \
 	g_lie.1  \
 	g_mdmat.1  \
 	g_membed.1  \
@@ -41,7 +43,9 @@ man_MANS =   \
 	g_nmeig.1  \
 	g_nmens.1  \
 	g_nmtraj.1  \
+	g_options.1  \
 	g_order.1  \
+	g_pme_error.1  \
 	g_polystat.1  \
 	g_potential.1  \
 	g_principal.1  \

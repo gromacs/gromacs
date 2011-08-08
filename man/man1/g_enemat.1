@@ -1,8 +1,8 @@
-.TH g_enemat 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_enemat 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_enemat - extracts an energy matrix from an energy file
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_enemat\fP
 .BI "\-f" " ener.edr "
@@ -35,12 +35,12 @@ g_enemat - extracts an energy matrix from an energy file
 .BI "\-[no]free" ""
 .BI "\-temp" " real "
 .SH DESCRIPTION
-\&g_enemat extracts an energy matrix from the energy file (\fB \-f\fR).
+\&\fB g_enemat\fR extracts an energy matrix from the energy file (\fB \-f\fR).
 \&With \fB \-groups\fR a file must be supplied with on each
 \&line a group of atoms to be used. For these groups matrix of
 \&interaction energies will be extracted from the energy file
 \&by looking for energy groups with names corresponding to pairs
-\&of groups of atoms. E.g. if your \fB \-groups\fR file contains:
+\&of groups of atoms, e.g. if your \fB \-groups\fR file contains:
 
 \&\fB 2\fR
 
@@ -110,7 +110,7 @@ g_enemat - extracts an energy matrix from an energy file
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -122,7 +122,7 @@ g_enemat - extracts an energy matrix from an energy file
  Skip number of frames between data points
 
 .BI "\-[no]mean"  "yes   "
- with \-groups extracts matrix of mean energies instead of matrix for each timestep
+ with \fB \-groups\fR extracts matrix of mean energies instead of matrix for each timestep
 
 .BI "\-nlevels"  " int" " 20" 
  number of levels for matrix colors
