@@ -519,7 +519,7 @@ check_solvent(FILE *                fp,
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                                    t_forcerec *fr,gmx_bool bNoSolvOpt,
-                                   gmx_bool *bExcl_IntraCGAll_InterCGNone)
+                                   gmx_bool *bExcl_IntraCGAll)
 {
     const t_block *cgs;
     const t_blocka *excl;
@@ -534,7 +534,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
 
-    *bExcl_IntraCGAll_InterCGNone = TRUE;
+    *bExcl_IntraCGAll = TRUE;
 
     excl_nalloc = 10;
     snew(bExcl,excl_nalloc);
@@ -650,9 +650,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                 }
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
 
-                if (!bExclIntraAll || bExclInter)
+                if (!bExclIntraAll)
                 {
-                    *bExcl_IntraCGAll_InterCGNone = FALSE;
+                    *bExcl_IntraCGAll = FALSE;
                 }
             }
         }
@@ -1762,7 +1762,7 @@ void init_forcerec(FILE *fp,
     
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,
-                                   &fr->bExcl_IntraCGAll_InterCGNone);
+                                   &fr->bExcl_IntraCGAll);
     if (DOMAINDECOMP(cr)) {
         fr->cginfo = NULL;
     } else {
