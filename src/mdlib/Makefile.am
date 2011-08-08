@@ -41,7 +41,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
 	groupcoord.c			groupcoord.h    \
-	pme.c		pme_pp.c	pppm.c		\
+	pme.c		pme_pp.c	pme_sse_single.h	\
+	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\
