@@ -317,9 +317,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
        }
-       if (!fr->bExcl_IntraCGAll_InterCGNone)
+       if (!fr->bExcl_IntraCGAll)
        {
-           gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded and no inter-cg exclusions, this is not the case for this system.");
+           gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded, this is not the case for this system.");
        }
    }
    

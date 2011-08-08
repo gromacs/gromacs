@@ -218,7 +218,8 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   gmx_bool bGrid;
-  gmx_bool bExcl_IntraCGAll_InterCGNone;
+  /* True if all intra charge group nb interactions are excluded */
+  gmx_bool bExcl_IntraCGAll;
   cginfo_mb_t *cginfo_mb;
   int  *cginfo;
   rvec *cg_cm;
