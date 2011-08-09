@@ -125,15 +125,11 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr,
     snew(wc->wcc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL)
     {
-/*#ifndef GMX_THREADS*/
         if (fplog) 
         {
             fprintf(fplog,"\nWill time all the code during the run\n\n");
         }
         snew(wc->wcc_all,ewcNR*ewcNR);
-/*#else*/
-        gmx_fatal(FARGS, "GMX_CYCLE_ALL is incompatible with threaded code");
-/*#endif*/
     }
     
     return wc;
@@ -264,7 +260,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     wallcc_t *wcc;
     double cycles_n[ewcNR],buf[ewcNR],*cyc_all,*buf_all;
-    int    i;
+    int    i,j;
 
     if (wc == NULL)
     {
@@ -278,10 +274,26 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         if (pme_subdivision(i) || i==ewcPMEMESH || (i==ewcRUN && cr->duty == DUTY_PME))
         {
             wcc[i].c *= wc->omp_nthreads_pme;
+
+            if (wc->wcc_all)
+            {
+                for(j=0; j<ewcNR; j++)
+                {
+                    wc->wcc_all[i*ewcNR+j].c *= wc->omp_nthreads_pme;
+                }
+            }
         }
         else
         {
             wcc[i].c *= wc->omp_nthreads_pp;
+
+            if (wc->wcc_all)
+            {
+                for(j=0; j<ewcNR; j++)
+                {
+                    wc->wcc_all[i*ewcNR+j].c *= wc->omp_nthreads_pp;
+                }
+            }
         }
     }
 
