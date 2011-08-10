@@ -66,8 +66,8 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
   atom_id inda0,inda1;
   gmx_bool    bFound;
 
-  inda0 = a0 - g->start;
-  inda1 = a1 - g->start;
+  inda0 = a0 - g->at_start;
+  inda1 = a1 - g->at_start;
   bFound = FALSE;
   /* Search for a direct edge between a0 and a1.
    * All egdes are bidirectional, so we only need to search one way.
@@ -145,14 +145,15 @@ void p_graph(FILE *log,const char *title,t_graph *g)
   fprintf(log,"graph:  %s\n",title);
   fprintf(log,"nnodes: %d\n",g->nnodes);
   fprintf(log,"nbound: %d\n",g->nbound);
-  fprintf(log,"start:  %d\n",g->start);
-  fprintf(log,"end:    %d\n",g->end);
+  fprintf(log,"start:  %d\n",g->at_start);
+  fprintf(log,"end:    %d\n",g->at_end);
   fprintf(log," atom shiftx shifty shiftz C nedg    e1    e2 etc.\n");
   for(i=0; (i<g->nnodes); i++)
     if (g->nedge[i] > 0) {
-      fprintf(log,"%5d%7d%7d%7d %1s%5d",g->start+i+1,
-	      g->ishift[i][XX],g->ishift[i][YY],
-	      g->ishift[i][ZZ],
+      fprintf(log,"%5d%7d%7d%7d %1s%5d",g->at_start+i+1,
+	      g->ishift[g->at_start+i][XX],
+	      g->ishift[g->at_start+i][YY],
+	      g->ishift[g->at_start+i][ZZ],
 	      (g->negc > 0) ? cc[g->egc[i]] : " ",
 	      g->nedge[i]);
       for(j=0; (j<g->nedge[i]); j++)
@@ -180,15 +181,15 @@ static void calc_1se(t_graph *g,int ftype,t_ilist *il,
 	nbond[iaa]   += 2;
 	nbond[iaa+1] += 1;
 	nbond[iaa+2] += 1;
-	g->start      = min(g->start,iaa);
-	g->end        = max(g->end,iaa+2);
+	g->at_start   = min(g->at_start,iaa);
+	g->at_end     = max(g->at_end,iaa+2+1);
       }
     } else {
       for(k=1; (k<=nratoms); k++) {
 	iaa=ia[k];
 	if (iaa >= at_start && iaa < at_end) {
-	  g->start=min(g->start,iaa);
-	  g->end  =max(g->end,  iaa);
+	  g->at_start = min(g->at_start,iaa);
+	  g->at_end   = max(g->at_end,  iaa+1);
 	  /* When making the graph we (might) link all atoms in an interaction
 	   * sequentially. Therefore the end atoms add 1 to the count,
 	   * the middle atoms 2.
@@ -210,8 +211,8 @@ static int calc_start_end(FILE *fplog,t_graph *g,t_ilist il[],
 {
   int   i,nnb,nbtot;
   
-  g->start=at_end;
-  g->end=0;
+  g->at_start = at_end;
+  g->at_end   = 0;
 
   /* First add all the real bonds: they should determine the molecular 
    * graph.
@@ -230,7 +231,7 @@ static int calc_start_end(FILE *fplog,t_graph *g,t_ilist il[],
   
   nnb   = 0;
   nbtot = 0;
-  for(i=g->start; (i<=g->end); i++) {
+  for(i=g->at_start; (i<g->at_end); i++) {
     nbtot += nbond[i];
     nnb    = max(nnb,nbond[i]);
   }
@@ -277,7 +278,7 @@ static gmx_bool determine_graph_parts(t_graph *g,int *part)
   gmx_bool bMultiPart;
 
   /* Initialize the part array with all entries different */
-  for(at_i=g->start; at_i<g->end; at_i++) {
+  for(at_i=g->at_start; at_i<g->at_end; at_i++) {
     part[at_i] = at_i;
   }
 
@@ -286,7 +287,7 @@ static gmx_bool determine_graph_parts(t_graph *g,int *part)
     bMultiPart = FALSE;
     nchanged = 0;
     for(i=0; (i<g->nnodes); i++) {
-      at_i  = g->start + i;
+      at_i  = g->at_start + i;
       at_i2 = g->edge[i];
       for(e=0; e<g->nedge[i]; e++) {
 	/* Set part for both nodes to the minimum */
@@ -298,7 +299,7 @@ static gmx_bool determine_graph_parts(t_graph *g,int *part)
 	  nchanged++;
 	}
       }
-      if (part[at_i] != part[g->start]) {
+      if (part[at_i] != part[g->at_start]) {
 	bMultiPart = TRUE;
       }
     }
@@ -320,22 +321,28 @@ void mk_graph_ilist(FILE *fplog,
   int     i,nbtot;
   gmx_bool    bMultiPart;
 
+  if (at_start != 0) {
+    gmx_incons("In mk_graph_ilist at_start can not be != 0");
+  }
+  g->natoms = at_end;
+
   snew(nbond,at_end);
   nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
   
-  if (g->start >= g->end) {
-    g->nnodes = 0;
-    g->nbound = 0;
+  if (g->at_start >= g->at_end) {
+    g->at_start = at_start;
+    g->at_end   = at_end;
+    g->nnodes   = 0;
+    g->nbound   = 0;
   }
   else {
-    g->nnodes = g->end - g->start + 1;
-    snew(g->ishift,g->nnodes);
+    g->nnodes = g->at_end - g->at_start;
     snew(g->nedge,g->nnodes);
     snew(g->edge,g->nnodes);
     /* Allocate a single array and set pointers into it */
     snew(g->edge[0],nbtot);
     for(i=1; (i<g->nnodes); i++) {
-      g->edge[i] = g->edge[i-1] + nbond[g->start+i-1];
+      g->edge[i] = g->edge[i-1] + nbond[g->at_start+i-1];
     }
 
     if (!bShakeOnly) {
@@ -383,6 +390,8 @@ void mk_graph_ilist(FILE *fplog,
 
   sfree(nbond);
 
+  snew(g->ishift,g->natoms);
+
   if (gmx_debug_at)
     p_graph(debug,"graph",g);
 }
@@ -406,12 +415,12 @@ void done_graph(t_graph *g)
   
   GCHECK(g);
   if (g->nnodes > 0) {
-    sfree(g->ishift);
     sfree(g->nedge);
     sfree(g->edge[0]);
     sfree(g->edge);
     sfree(g->egc);
   }
+  sfree(g->ishift);
 }
 
 /************************************************************
@@ -522,25 +531,25 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     hbox[m]=box[m][m]*0.5;
   bTriclinic = TRICLINIC(box);
   
-  ng=0;
-  ai=*AtomI;
+  g0 = g->at_start;
+  ng = 0;
+  ai = g0 + *AtomI;
   
-  g0=g->start;
   /* Loop over all the bonds */
-  for(j=0; (j<g->nedge[ai]); j++) {
-    aj=g->edge[ai][j]-g0;
+  for(j=0; (j<g->nedge[ai-g0]); j++) {
+    aj = g->edge[ai-g0][j];
     /* If there is a white one, make it grey and set pbc */
     if (g->bScrewPBC)
-      mk_1shift_screw(box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+      mk_1shift_screw(box,hbox,x[ai],x[aj],g->ishift[ai],is_aj);
     else if (bTriclinic)
-      mk_1shift_tric(npbcdim,box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+      mk_1shift_tric(npbcdim,box,hbox,x[ai],x[aj],g->ishift[ai],is_aj);
     else
-      mk_1shift(npbcdim,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+      mk_1shift(npbcdim,hbox,x[ai],x[aj],g->ishift[ai],is_aj);
     
-    if (egc[aj] == egcolWhite) {
-      if (aj < *AtomI)
-	*AtomI = aj;
-      egc[aj] = egcolGrey;
+    if (egc[aj-g0] == egcolWhite) {
+      if (aj - g0 < *AtomI)
+	*AtomI = aj - g0;
+      egc[aj-g0] = egcolGrey;
       
       copy_ivec(is_aj,g->ishift[aj]);
 
@@ -551,11 +560,11 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 	     (is_aj[ZZ] != g->ishift[aj][ZZ])) {
       if (gmx_debug_at) {
 	set_pbc(&pbc,-1,box);
-	pbc_dx(&pbc,x[g0+ai],x[g0+aj],dx);
+	pbc_dx(&pbc,x[ai],x[aj],dx);
 	fprintf(debug,"mk_grey: shifts for atom %d due to atom %d\n"
 		"are (%d,%d,%d), should be (%d,%d,%d)\n"
 		"dx = (%g,%g,%g)\n",
-		aj+g0+1,ai+g0+1,is_aj[XX],is_aj[YY],is_aj[ZZ],
+		aj+1,ai+1,is_aj[XX],is_aj[YY],is_aj[ZZ],
 		g->ishift[aj][XX],g->ishift[aj][YY],g->ishift[aj][ZZ],
 		dx[XX],dx[YY],dx[ZZ]);
       }
@@ -600,7 +609,7 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
    * at all. If we return without doing this for a system without bonds
    * (i.e. only settles) all water molecules are moved to the opposite octant
    */
-  for(i=0; (i<g->nnodes); i++) {
+  for(i=0; (i<g->natoms); i++) {
       g->ishift[i][XX]=g->ishift[i][YY]=g->ishift[i][ZZ]=0;
   }
     
@@ -691,19 +700,23 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
   ivec *is;
-  int      g0,gn;
-  int      i,j,tx,ty,tz;
+  int      g0,g1;
+  int      j,tx,ty,tz;
 
   GCHECK(g);
-  g0=g->start;
-  gn=g->nnodes;
-  is=g->ishift;
+  g0 = g->at_start;
+  g1 = g->at_end;
+  is = g->ishift;
   
+  for(j=0; j<g0; j++) {
+    copy_rvec(x[j],x_s[j]);
+  }
+
   if (g->bScrewPBC) {
-    for(i=0,j=g0; (i<gn); i++,j++) { 
-      tx=is[i][XX];
-      ty=is[i][YY];
-      tz=is[i][ZZ];
+    for(j=g0; (j<g1); j++) { 
+      tx=is[j][XX];
+      ty=is[j][YY];
+      tz=is[j][ZZ];
       
       if ((tx > 0 && tx % 2 == 1) ||
 	  (tx < 0 && -tx %2 == 1)) {
@@ -717,131 +730,143 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
       x_s[j][ZZ] = x[j][ZZ] + tz*box[ZZ][ZZ];
     }
   } else if (TRICLINIC(box)) {
-     for(i=0,j=g0; (i<gn); i++,j++) { 
-	 tx=is[i][XX];
-	 ty=is[i][YY];
-	 tz=is[i][ZZ];
+     for(j=g0; (j<g1); j++) { 
+	 tx=is[j][XX];
+	 ty=is[j][YY];
+	 tz=is[j][ZZ];
 	 
 	 x_s[j][XX]=x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	 x_s[j][YY]=x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	 x_s[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
      }
   } else {
-     for(i=0,j=g0; (i<gn); i++,j++) { 
-	 tx=is[i][XX];
-	 ty=is[i][YY];
-	 tz=is[i][ZZ];
+     for(j=g0; (j<g1); j++) { 
+	 tx=is[j][XX];
+	 ty=is[j][YY];
+	 tz=is[j][ZZ];
 	 
 	 x_s[j][XX]=x[j][XX]+tx*box[XX][XX];
 	 x_s[j][YY]=x[j][YY]+ty*box[YY][YY];
 	 x_s[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
      }
   }       
-     
+
+  for(j=g1; j<g->natoms; j++) {
+    copy_rvec(x[j],x_s[j]);
+  }
 }
 
 void shift_self(t_graph *g,matrix box,rvec x[])
 {
   ivec *is;
-  int      g0,gn;
-  int      i,j,tx,ty,tz;
+  int      g0,g1;
+  int      j,tx,ty,tz;
 
   if (g->bScrewPBC)
     gmx_incons("screw pbc not implemented for shift_self");
 
-  g0=g->start;
-  gn=g->nnodes;
-  is=g->ishift;
+  g0 = g->at_start;
+  g1 = g->at_end;
+  is = g->ishift;
 
 #ifdef DEBUG
   fprintf(stderr,"Shifting atoms %d to %d\n",g0,g0+gn);
 #endif
   if(TRICLINIC(box)) {
-      for(i=0,j=g0; (i<gn); i++,j++) { 
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) { 
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  x[j][YY]=x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	  x[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
       }
   } else {
-      for(i=0,j=g0; (i<gn); i++,j++) { 
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) { 
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x[j][XX]+tx*box[XX][XX];
 	  x[j][YY]=x[j][YY]+ty*box[YY][YY];
 	  x[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
       }
   }       
-  
 }
 
 void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
   ivec *is;
-  int      g0,gn;
-  int      i,j,tx,ty,tz;
+  int      g0,g1;
+  int      j,tx,ty,tz;
 
   if (g->bScrewPBC)
-    gmx_incons("screw pbc not implemented for unshift_x");
+    gmx_incons("screw pbc not implemented (yet) for unshift_x");
 
-  g0=g->start;
-  gn=g->nnodes;
-  is=g->ishift;
+  g0 = g->at_start;
+  g1 = g->at_end;
+  is = g->ishift;
+
+  for(j=0; j<g0; j++) {
+    copy_rvec(x_s[j],x[j]);
+  }
+
   if(TRICLINIC(box)) {
-      for(i=0,j=g0; (i<gn); i++,j++) {
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) {
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x_s[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
 	  x[j][YY]=x_s[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
 	  x[j][ZZ]=x_s[j][ZZ]-tz*box[ZZ][ZZ];
       }
   } else {
-      for(i=0,j=g0; (i<gn); i++,j++) {
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) {
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x_s[j][XX]-tx*box[XX][XX];
 	  x[j][YY]=x_s[j][YY]-ty*box[YY][YY];
 	  x[j][ZZ]=x_s[j][ZZ]-tz*box[ZZ][ZZ];
       }
   }
+
+  for(j=g1; j<g->natoms; j++) {
+    copy_rvec(x_s[j],x[j]);
+  }
 }
 
 void unshift_self(t_graph *g,matrix box,rvec x[])
 {
   ivec *is;
-  int g0,gn;
-  int i,j,tx,ty,tz;
+  int g0,g1;
+  int j,tx,ty,tz;
 
   if (g->bScrewPBC)
     gmx_incons("screw pbc not implemented for unshift_self");
 
-  g0=g->start;
-  gn=g->nnodes;
-  is=g->ishift;
+  g0 = g->at_start;
+  g1 = g->at_end;
+  is = g->ishift;
+
   if(TRICLINIC(box)) {
-      for(i=0,j=g0; (i<gn); i++,j++) {
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) {
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
 	  x[j][YY]=x[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
 	  x[j][ZZ]=x[j][ZZ]-tz*box[ZZ][ZZ];
       }
   } else {
-      for(i=0,j=g0; (i<gn); i++,j++) {
-	  tx=is[i][XX];
-	  ty=is[i][YY];
-	  tz=is[i][ZZ];
+      for(j=g0; (j<g1); j++) {
+	  tx=is[j][XX];
+	  ty=is[j][YY];
+	  tz=is[j][ZZ];
 	  
 	  x[j][XX]=x[j][XX]-tx*box[XX][XX];
 	  x[j][YY]=x[j][YY]-ty*box[YY][YY];

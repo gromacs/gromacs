@@ -166,7 +166,7 @@ void gmx_rmpbc(gmx_rmpbc_t gpbc,int natoms,matrix box,rvec x[])
     if (gr != NULL)
     {
         mk_mshift(stdout,gr,ePBC,box,x);
-        shift_x(gr,box,x,x);
+        shift_self(gr,box,x);
     }
 }
 
@@ -204,7 +204,7 @@ void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc,t_trxframe *fr)
         if (gr != NULL)
         {
             mk_mshift(stdout,gr,ePBC,fr->box,fr->x);
-            shift_x(gr,fr->box,fr->x,fr->x);
+            shift_self(gr,fr->box,fr->x);
         }
     }
 }
