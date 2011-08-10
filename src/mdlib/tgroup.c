@@ -51,6 +51,10 @@
 #include "rbin.h"
 #include "mtop_util.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
     int i,j;
@@ -93,6 +97,7 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
   int i;
+  int nthread,thread;
 #ifdef DEBUG
   fprintf(log,"ngtc: %d, ngacc: %d, ngener: %d\n",opts->ngtc,opts->ngacc,
 	  opts->ngener);
@@ -119,6 +124,20 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
       ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
+#ifdef GMX_OPENMP
+    nthread = omp_get_max_threads();
+#else
+    nthread = 1;
+#endif
+    snew(ekind->ekin_work,nthread);
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
+    {
+        snew(ekind->ekin_work[thread],ekind->ngtc);
+    }
+    
+    snew(ekind->dekindl_work,nthread);
+
   ekind->ngacc = opts->ngacc;
   snew(ekind->grpstat,opts->ngacc);
   init_grpstat(log,mtop,opts->ngacc,ekind->grpstat);

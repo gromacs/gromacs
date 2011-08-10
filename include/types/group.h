@@ -71,12 +71,14 @@ typedef struct {
   gmx_bool         bNEMD;
   int          ngtc;            /* The number of T-coupling groups      */
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
+  tensor       **ekin_work;     /* Work arrays for tcstat per thread    */
   int          ngacc;           /* The number of acceleration groups    */
   t_grp_acc    *grpstat;	/* Acceleration data			*/
   tensor       ekin;            /* overall kinetic energy               */
   tensor       ekinh;           /* overall 1/2 step kinetic energy      */
   real         dekindl;         /* dEkin/dlambda at half step           */
   real         dekindl_old;     /* dEkin/dlambda at old half step       */
+  real         *dekindl_work;   /* Work dekindl per thread              */
   t_cos_acc    cosacc;          /* Cosine acceleration data             */
 } gmx_ekindata_t;
 

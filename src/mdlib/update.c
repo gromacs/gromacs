@@ -798,13 +798,10 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
                                 gmx_ekindata_t *ekind,t_nrnb *nrnb,gmx_bool bEkinAveVel, 
                                 gmx_bool bSaveEkinOld)
 {
-  int          start=md->start,homenr=md->homenr;
-  int          g,d,n,m,ga=0,gt=0;
-  rvec         v_corrt;
-  real         hm;
+  int          g;
   t_grp_tcstat *tcstat=ekind->tcstat;
   t_grp_acc    *grpstat=ekind->grpstat;
-  real         dekindl;
+  int          nthread,thread;
 
   /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
      an option, but not supported now.  Additionally, if we are doing iterations.  
@@ -834,45 +831,89 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   }
   ekind->dekindl_old = ekind->dekindl;
   
-  dekindl = 0;
-  for(n=start; (n<start+homenr); n++) 
-  {
-      if (md->cACC)
-      {
-          ga = md->cACC[n];
-      }
-      if (md->cTC)
-      {
-          gt = md->cTC[n];
-      }
-      hm   = 0.5*md->massT[n];
-      
-      for(d=0; (d<DIM); d++) 
-      {
-          v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
-      }
-      for(d=0; (d<DIM); d++) 
-      {
-          for (m=0;(m<DIM); m++) 
-          {
-              /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bEkinAveVel) 
-              {
-                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
-              } 
-              else 
-              {
-                  tcstat[gt].ekinh[m][d]+=hm*v_corrt[m]*v_corrt[d]; 
-              }
-          }
-      }
-      if (md->nMassPerturbed && md->bPerturbed[n]) 
-      {
-          dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
-      }
-  }
-  ekind->dekindl = dekindl;
-  inc_nrnb(nrnb,eNR_EKIN,homenr);
+#ifdef GMX_OPENMP
+    nthread = omp_get_max_threads();
+#else
+    nthread = 1;
+#endif
+
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
+    {
+        int  start_t,end_t,n;
+        int  ga,gt;
+        rvec v_corrt;
+        real hm;
+        int  d,m;
+        matrix *ekin_sum;
+        real   *dekindl_sum;
+
+        start_t = md->start + ((thread+0)*md->homenr)/nthread;
+        end_t   = md->start + ((thread+1)*md->homenr)/nthread;
+
+        ekin_sum    = ekind->ekin_work[thread];
+        dekindl_sum = &ekind->dekindl_work[thread];
+
+        for(gt=0; gt<opts->ngtc; gt++)
+        {
+            clear_mat(ekin_sum[gt]);
+        }
+
+        ga = 0;
+        gt = 0;
+        for(n=start_t; n<end_t; n++) 
+        {
+            if (md->cACC)
+            {
+                ga = md->cACC[n];
+            }
+            if (md->cTC)
+            {
+                gt = md->cTC[n];
+            }
+            hm   = 0.5*md->massT[n];
+            
+            for(d=0; (d<DIM); d++) 
+            {
+                v_corrt[d]  = v[n][d]  - grpstat[ga].u[d];
+            }
+            for(d=0; (d<DIM); d++) 
+            {
+                for (m=0;(m<DIM); m++) 
+                {
+                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                    ekin_sum[gt][m][d] += hm*v_corrt[m]*v_corrt[d];
+                }
+            }
+            if (md->nMassPerturbed && md->bPerturbed[n]) 
+            {
+                *dekindl_sum -=
+                    0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
+            }
+        }
+    }
+
+    ekind->dekindl = 0;
+    for(thread=0; thread<nthread; thread++)
+    {
+        for(g=0; g<opts->ngtc; g++)
+        {
+            if (bEkinAveVel) 
+            {
+                m_add(tcstat[g].ekinf,ekind->ekin_work[thread][g],
+                      tcstat[g].ekinf);
+            }
+            else
+            {
+                m_add(tcstat[g].ekinh,ekind->ekin_work[thread][g],
+                      tcstat[g].ekinh);
+            }
+        }
+
+        ekind->dekindl += ekind->dekindl_work[thread];
+    }
+
+    inc_nrnb(nrnb,eNR_EKIN,md->homenr);
 }
 
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
