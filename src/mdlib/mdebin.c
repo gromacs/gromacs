@@ -614,7 +614,7 @@ FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         }
         for(s=0; s<ir->n_flambda; s++)
         {
-            sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s]);
+            sprintf(buf,"%s %s %.4g",deltag,lambda,ir->flambda[s]);
             setname[nsi++] = gmx_strdup(buf);
         }
         xvgr_legend(fp,nsets,(const char**)setname,oenv);
