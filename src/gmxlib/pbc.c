@@ -243,7 +243,7 @@ gmx_bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
 
     if (bCorrected && graph) {
         /* correct the graph */
-        for(i=0; i<graph->nnodes; i++) {
+        for(i=graph->at_start; i<graph->at_end; i++) {
             graph->ishift[i][YY] -= graph->ishift[i][ZZ]*zy;
             graph->ishift[i][XX] -= graph->ishift[i][ZZ]*zx;
             graph->ishift[i][XX] -= graph->ishift[i][YY]*yx;

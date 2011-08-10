@@ -518,7 +518,7 @@ static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
   ng=0;
   ai=*AtomI;
   
-  g0=g->start;
+  g0=g->at_start;
   /* Loop over all the bonds */
   for(j=0; (j<g->nedge[ai]); j++) {
     aj=g->edge[ai][j]-g0;
@@ -574,7 +574,7 @@ static int mk_sblocks(FILE *fp,t_graph *g,int maxsid,t_sid sid[])
   nnodes=g->nnodes;
   snew(egc,nnodes);
   
-  g0=g->start;
+  g0=g->at_start;
   nW=g->nbound;
   nG=0;
   nB=0;

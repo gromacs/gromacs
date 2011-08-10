@@ -222,8 +222,8 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
     /* Calculate virial for bonded forces only when they belong to
      * this node.
      */
-    start = max(i0,g->start);
-    end   = min(i1,g->end+1);
+    start = max(i0,g->at_start);
+    end   = min(i1,g->at_end);
 #ifdef SAFE
     lo_fcv2(start,end,x,f,vir,g->ishift,box,TRICLINIC(box));
 #else
