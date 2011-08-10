@@ -1,8 +1,8 @@
-.TH genbox 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH genbox 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 genbox - solvates a system
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3genbox\fP
 .BI "\-cp" " protein.gro "
@@ -22,14 +22,14 @@ genbox - solvates a system
 .BI "\-maxsol" " int "
 .BI "\-[no]vel" ""
 .SH DESCRIPTION
-\&Genbox can do one of 3 things:
+\&\fB genbox\fR can do one of 3 things:
 
 
-\&1) Generate a box of solvent. Specify \-cs and \-box. Or specify \-cs and
-\&\-cp with a structure file with a box, but without atoms.
+\&1) Generate a box of solvent. Specify \fB \-cs\fR and \fB \-box\fR. Or specify \fB \-cs\fR and
+\&\fB \-cp\fR with a structure file with a box, but without atoms.
 
 
-\&2) Solvate a solute configuration, eg. a protein, in a bath of solvent 
+\&2) Solvate a solute configuration, e.g. a protein, in a bath of solvent 
 \&molecules. Specify \fB \-cp\fR (solute) and \fB \-cs\fR (solvent). 
 \&The box specified in the solute coordinate file (\fB \-cp\fR) is used,
 \&unless \fB \-box\fR is set.
@@ -38,9 +38,9 @@ genbox - solvates a system
 \&to change the box dimensions and center the solute.
 \&Solvent molecules are removed from the box where the 
 \&distance between any atom of the solute molecule(s) and any atom of 
-\&the solvent molecule is less than the sum of the VanderWaals radii of 
-\&both atoms. A database (\fB vdwradii.dat\fR) of VanderWaals radii is 
-\&read by the program, atoms not in the database are 
+\&the solvent molecule is less than the sum of the van der Waals radii of 
+\&both atoms. A database (\fB vdwradii.dat\fR) of van der Waals radii is 
+\&read by the program, and atoms not in the database are 
 \&assigned a default distance \fB \-vdwd\fR.
 \&Note that this option will also influence the distances between
 \&solvent molecules if they contain atoms that are not in the database.
@@ -51,11 +51,16 @@ genbox - solvates a system
 \&at random positions.
 \&The program iterates until \fB nmol\fR molecules
 \&have been inserted in the box. To test whether an insertion is 
-\&successful the same VanderWaals criterium is used as for removal of 
-\&solvent molecules. When no appropriately 
-\&sized holes (holes that can hold an extra molecule) are available the 
+\&successful the same van der Waals criterium is used as for removal of 
+\&solvent molecules. When no appropriately\-sized 
+\&holes (holes that can hold an extra molecule) are available, the 
 \&program tries for \fB \-nmol\fR * \fB \-try\fR times before giving up. 
-\&Increase \-try if you have several small holes to fill.
+\&Increase \fB \-try\fR if you have several small holes to fill.
+
+
+\&If you need to do more than one of the above operations, it can be
+\&best to call \fB genbox\fR separately for each operation, so that
+\&you are sure of the order in which the operations occur.
 
 
 \&The default solvent is Simple Point Charge water (SPC), with coordinates 
@@ -81,18 +86,18 @@ genbox - solvates a system
 \&longest molecule axis along a box edge. This way the amount of solvent
 \&molecules necessary is reduced.
 \&It should be kept in mind that this only works for
-\&short simulations, as eg. an alpha\-helical peptide in solution can 
+\&short simulations, as e.g. an alpha\-helical peptide in solution can 
 \&rotate over 90 degrees, within 500 ps. In general it is therefore 
 \&better to make a more or less cubic box.
 
 
-\&Setting \-shell larger than zero will place a layer of water of
+\&Setting \fB \-shell\fR larger than zero will place a layer of water of
 \&the specified thickness (nm) around the solute. Hint: it is a good
-\&idea to put the protein in the center of a box first (using editconf).
+\&idea to put the protein in the center of a box first (using \fB editconf\fR).
 \&
 
 
-\&Finally, genbox will optionally remove lines from your topology file in 
+\&Finally, \fB genbox\fR will optionally remove lines from your topology file in 
 \&which a number of solvent molecules is already added, and adds a 
 \&line with the total number of solvent molecules in your coordinate file.
 .SH FILES
@@ -133,7 +138,7 @@ genbox - solvates a system
  no of extra molecules to insert
 
 .BI "\-try"  " int" " 10" 
- try inserting \-nmol*\-try times
+ try inserting \fB \-nmol\fR times \fB \-try\fR times
 
 .BI "\-seed"  " int" " 1997" 
  random generator seed

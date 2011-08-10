@@ -1,8 +1,8 @@
-.TH g_vanhove 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_vanhove 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_vanhove - calculates Van Hove displacement functions
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_vanhove\fP
 .BI "\-f" " traj.xtc "
@@ -30,10 +30,10 @@ g_vanhove - calculates Van Hove displacement functions
 .BI "\-rt" " real "
 .BI "\-ft" " int "
 .SH DESCRIPTION
-\&g_vanhove computes the Van Hove correlation function.
+\&\fB g_vanhove\fR computes the Van Hove correlation function.
 \&The Van Hove G(r,t) is the probability that a particle that is at r0
 \&at time zero can be found at position r0+r at time t.
-\&g_vanhove determines G not for a vector r, but for the length of r.
+\&\fB g_vanhove\fR determines G not for a vector r, but for the length of r.
 \&Thus it gives the probability that a particle moves a distance of r
 \&in time t.
 \&Jumps across the periodic boundaries are removed.
@@ -112,7 +112,7 @@ g_vanhove - calculates Van Hove displacement functions
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -127,7 +127,7 @@ g_vanhove - calculates Van Hove displacement functions
  Maximum r in the matrix (nm)
 
 .BI "\-rbin"  " real" " 0.01  " 
- Binwidth in the matrix and for \-or (nm)
+ Binwidth in the matrix and for \fB \-or\fR (nm)
 
 .BI "\-mmax"  " real" " 0     " 
  Maximum density in the matrix, 0 is calculate (1/nm)
@@ -136,16 +136,16 @@ g_vanhove - calculates Van Hove displacement functions
  Number of levels in the matrix
 
 .BI "\-nr"  " int" " 1" 
- Number of curves for the \-or output
+ Number of curves for the \fB \-or\fR output
 
 .BI "\-fr"  " int" " 0" 
- Frame spacing for the \-or output
+ Frame spacing for the \fB \-or\fR output
 
 .BI "\-rt"  " real" " 0     " 
- Integration limit for the \-ot output (nm)
+ Integration limit for the \fB \-ot\fR output (nm)
 
 .BI "\-ft"  " int" " 0" 
- Number of frames in the \-ot output, 0 is plot all
+ Number of frames in the \fB \-ot\fR output, 0 is plot all
 
 .SH SEE ALSO
 .BR gromacs(7)

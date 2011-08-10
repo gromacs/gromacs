@@ -1,8 +1,8 @@
-.TH g_confrms 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_confrms 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_confrms - fits two structures and calculates the rmsd 
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_confrms\fP
 .BI "\-f1" " conf1.gro "
@@ -23,8 +23,8 @@ g_confrms - fits two structures and calculates the rmsd
 .BI "\-[no]label" ""
 .BI "\-[no]bfac" ""
 .SH DESCRIPTION
-\&g_confrms computes the root mean square deviation (RMSD) of two
-\&structures after LSQ fitting the second structure on the first one.
+\&\fB g_confrms\fR computes the root mean square deviation (RMSD) of two
+\&structures after least\-squares fitting the second structure on the first one.
 \&The two structures do NOT need to have the same number of atoms,
 \&only the two index groups used for the fit need to be identical.
 \&With \fB \-name\fR only matching atom names from the selected groups
@@ -73,7 +73,7 @@ g_confrms - fits two structures and calculates the rmsd
  Set the nicelevel
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-[no]one"  "no    "
  Only write the fitted structure to file

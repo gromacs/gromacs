@@ -1494,7 +1494,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
     if (bBox){
         if (d>a && bMerge && (bContact || isInterchangable(hb, d, a, grpd, grpa))) { /* acceptor is also a donor and vice versa? */
-            return hbNo;
+            /* return hbNo; */
             daSwap = TRUE; /* If so, then their history should be filed with donor and acceptor swapped. */
         }
         if (hb->bGem) {
@@ -2375,11 +2375,11 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                      */
     if (acType != AC_LUZAR)
     {
-#if (_OPENMP >= 200805) /* =====================\ */
-        nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP >= 200805) /\* =====================\ *\/ */
+/*         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif /* _OPENMP >= 200805 ====================/ */
+/* #endif /\* _OPENMP >= 200805 ====================/ *\/ */
 
         omp_set_num_threads(nThreads);
         snew(dondata, nThreads);
@@ -3180,7 +3180,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
         { "-smooth",FALSE, etREAL, {&smooth_tail_start},
-          "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
+          "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
         { "-dump",  FALSE, etINT, {&nDump},
           "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb",FALSE, etREAL, {&maxnhb},
@@ -3190,7 +3190,7 @@ int gmx_hbond(int argc,char *argv[])
         { "-geminate", FALSE, etENUM, {gemType},
           "Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details."},
         { "-diff", FALSE, etREAL, {&D},
-          "Dffusion coefficient to use in the rev. gem. recomb. kinetic model. If non-positive, then it will be fitted to the ACF along with ka and kd."},
+          "Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd."},
 #ifdef HAVE_OPENMP
         { "-nthreads", FALSE, etINT, {&nThreads},
           "Number of threads used for the parallel loop over autocorrelations. nThreads <= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3)"},
@@ -3557,11 +3557,11 @@ int gmx_hbond(int argc,char *argv[])
 
     if (bParallel)
     {
-#if (_OPENMP > 200805)
-        actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit());
-#else
+/* #if (_OPENMP > 200805) */
+/*         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_thread_limit()); */
+/* #else */
         actual_nThreads = min((nThreads <= 0) ? INT_MAX : nThreads, omp_get_num_procs());
-#endif
+/* #endif */
         omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
         fflush(stdout);
@@ -3619,7 +3619,7 @@ int gmx_hbond(int argc,char *argv[])
             dist, ang, peri, icell, jcell,              \
             grp, ogrp, ai, aj, xjj, yjj, zjj,           \
             xk, yk, zk, ihb, id,  resdist,              \
-            xkk, ykk, zkk, kcell, ak, k, bTric)         \
+            xkk, ykk, zkk, kcell, ak, k, bTric)        \
     default(none)                                       \
     shared(hb, p_hb, p_adist, p_rdist, actual_nThreads, \
            x, bBox, box, hbox, rcut, r2cut, rshell,     \
@@ -3654,7 +3654,6 @@ int gmx_hbond(int argc,char *argv[])
                 if (hb->bDAnr)
                     count_da_grid(ngrid, grid, hb->danr[nframes]);
             } /* omp single */
-
 #ifdef HAVE_OPENMP
             p_hb[threadNr]->time = hb->time; /* This pointer may have changed. */
 #endif
@@ -3738,7 +3737,7 @@ int gmx_hbond(int argc,char *argv[])
                     /* The outer grid loop will have to do for now. */
 #pragma omp for schedule(dynamic)
 #endif
-                    for(xi=0; (xi<ngrid[XX]); xi++)
+                    for(xi=0; xi<ngrid[XX]; xi++)
                         for(yi=0; (yi<ngrid[YY]); yi++)
                             for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	      
@@ -4064,7 +4063,7 @@ int gmx_hbond(int argc,char *argv[])
             sprintf(mat.title,bContact ? "Contact Existence Map":
                     "Hydrogen Bond Existence Map");
             sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
-            sprintf(mat.label_x,output_env_get_xvgr_tlabel(oenv));
+            sprintf(mat.label_x,"%s",output_env_get_xvgr_tlabel(oenv));
             sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
             mat.bDiscrete=TRUE;
             mat.nmap=2;

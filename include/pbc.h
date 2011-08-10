@@ -33,8 +33,8 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _pbc_h
-#define _pbc_h
+#ifndef _types_pbc_h
+#define _types_pbc_h
 
 #include "sysstuff.h"
 #include "typedefs.h"

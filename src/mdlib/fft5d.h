@@ -82,7 +82,7 @@ struct fft5d_plan_t {
 
 typedef struct fft5d_plan_t *fft5d_plan;
 
-void fft5d_execute(fft5d_plan plan,fft5d_time times);
+void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times);
 fft5d_plan fft5d_plan_3d(int N, int M, int K, MPI_Comm comm[2], int flags, t_complex** lin, t_complex** lin2, t_complex** lout2, t_complex** lout3, int nthreads);
 void fft5d_local_size(fft5d_plan plan,int* N1,int* M0,int* K0,int* K1,int** coor);
 void fft5d_destroy(fft5d_plan plan);

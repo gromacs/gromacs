@@ -24,8 +24,9 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	edsam.c		ewald.c         \
 	force.c  	forcerec.c	\
 	ghat.c		init.c		\
+    iteratedconstraints.c   md_support.c    \
 	mdatom.c	mdebin.c	minimize.c	\
-	mvxvf.c		ns.c		nsgrid.c	\
+	mvxvf.c		ns.c		nlistheuristics.c    nsgrid.c	\
 	perf_est.c	genborn.c			\
 	genborn_sse2_single.c				\
 	genborn_sse2_single.h				\
@@ -40,7 +41,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
 	groupcoord.c			groupcoord.h    \
-	pme.c		pme_pp.c	pppm.c		\
+	pme.c		pme_pp.c	pme_sse_single.h	\
+	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\

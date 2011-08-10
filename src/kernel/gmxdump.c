@@ -466,7 +466,7 @@ int main(int argc,char *argv[])
     "This program is essential for checking your run input file in case of",
     "problems.[PAR]",
     "The program can also preprocess a topology to help finding problems.",
-    "Note that currently setting GMXLIB is the only way to customize",
+    "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
     "directories used for searching include files.",
   };
   t_filenm fnm[] = {

@@ -1,8 +1,8 @@
-.TH g_msd 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_msd 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_msd - calculates mean square displacements
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_msd\fP
 .BI "\-f" " traj.xtc "
@@ -30,7 +30,7 @@ g_msd - calculates mean square displacements
 .BI "\-beginfit" " time "
 .BI "\-endfit" " time "
 .SH DESCRIPTION
-\&g_msd computes the mean square displacement (MSD) of atoms from
+\&\fB g_msd\fR computes the mean square displacement (MSD) of atoms from
 \&a set of initial positions. This provides an easy way to compute
 \&the diffusion constant using the Einstein relation.
 \&The time between the reference points for the MSD calculation
@@ -49,7 +49,8 @@ g_msd - calculates mean square displacements
 \&each group, the order in the output is: trace xx yy zz yx zx zy.
 
 
-\&If \fB \-mol\fR is set, g_msd plots the MSD for individual molecules: 
+\&If \fB \-mol\fR is set, \fB g_msd\fR plots the MSD for individual molecules
+\&(including making molecules whole across periodic boundaries): 
 \&for each individual molecule a diffusion constant is computed for 
 \&its center of mass. The chosen index group will be split into 
 \&molecules.
@@ -62,7 +63,7 @@ g_msd - calculates mean square displacements
 \&With the option \fB \-rmcomm\fR, the center of mass motion of a 
 \&specific group can be removed. For trajectories produced with 
 \&GROMACS this is usually not necessary, 
-\&as mdrun usually already removes the center of mass motion.
+\&as \fB mdrun\fR usually already removes the center of mass motion.
 \&When you use this option be sure that the whole system is stored
 \&in the trajectory file.
 
@@ -79,7 +80,7 @@ g_msd - calculates mean square displacements
 \&\fB \-beginfit\fR and \fB \-endfit\fR.
 
 
-\&Option \fB \-pdb\fR writes a pdb file with the coordinates of the frame
+\&Option \fB \-pdb\fR writes a \fB .pdb\fR file with the coordinates of the frame
 \&at time \fB \-tpdb\fR with in the B\-factor field the square root of
 \&the diffusion coefficient of the molecule.
 \&This option implies option \fB \-mol\fR.
@@ -128,7 +129,7 @@ g_msd - calculates mean square displacements
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -152,7 +153,7 @@ g_msd - calculates mean square displacements
  Remove center of mass motion
 
 .BI "\-tpdb"  " time" " 0     " 
- The frame to use for option \-pdb (ps)
+ The frame to use for option \fB \-pdb\fR (ps)
 
 .BI "\-trestart"  " time" " 10    " 
  Time between restarting points in trajectory (ps)

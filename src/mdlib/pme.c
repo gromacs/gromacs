@@ -545,9 +545,9 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
 
     nthread = atc->nthread;
 
-#pragma omp parallel private(thread)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
     {
-        thread = omp_get_thread_num();
         pme_calc_pidx(natoms* thread   /nthread,
                       natoms*(thread+1)/nthread,
                       recipbox,x,atc,atc->count_thread[thread]);
@@ -1275,7 +1275,7 @@ wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 static void
 unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 {
-    int     nx,ny,nz,pnx,pny,pnz,ny_x,overlap,ix,iy,iz;
+    int     nx,ny,nz,pnx,pny,pnz,ny_x,overlap,ix;
 
     nx = pme->nkx;
     ny = pme->nky;
@@ -1293,6 +1293,8 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 
         for(ix=0; ix<overlap; ix++)
         {
+            int iy,iz;
+
             for(iy=0; iy<ny_x; iy++)
             {
                 for(iz=0; iz<nz; iz++)
@@ -1306,9 +1308,11 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 
     if (pme->nnodes_minor == 1)
     {
-#pragma omp parallel for private(iy,iz) schedule(static)
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
        for(ix=0; ix<pme->pmegrid_nx; ix++)
        {
+           int iy,iz;
+
            for(iy=0; iy<overlap; iy++)
            {
                for(iz=0; iz<nz; iz++)
@@ -1321,9 +1325,11 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 
     /* Copy periodic overlap in z */
-#pragma omp parallel for private(iy,iz) schedule(static)
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
     for(ix=0; ix<pme->pmegrid_nx; ix++)
     {
+        int iy,iz;
+
         for(iy=0; iy<pme->pmegrid_ny; iy++)
         {
             for(iz=0; iz<overlap; iz++)
@@ -2123,13 +2129,15 @@ static int solve_pme_yzx_wrapper(gmx_pme_t pme,t_complex *grid,
                                  gmx_bool bEnerVir,real *mesh_energy,matrix vir)
 {
     int  nthread,thread;
-    int  nelements=0,n;
+    int  nelements=0;
 
     nthread = pme->nthread;
 
-#pragma omp parallel private(thread,n)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
     {
-        thread = omp_get_thread_num();
+        int n;
+
         n = solve_pme_yzx(pme,grid,ewaldcoeff,vol,bEnerVir,nthread,thread);
         if (thread == 0)
         {
@@ -3642,9 +3650,6 @@ static void spread_on_grid(gmx_pme_t pme,
                            real *fftgrid)
 {
     int nthread,thread;
-    int start,end;
-    splinedata_t *spline;
-    pmegrid_t *grid;
 #ifdef PME_TIME_THREADS
     gmx_cycles_t c1,c2,c3,ct1a,ct1b,ct1c;
     static double cs1=0,cs2=0,cs3=0;
@@ -3659,9 +3664,11 @@ static void spread_on_grid(gmx_pme_t pme,
 #endif
     if (bCalcSplines)
     {
-#pragma omp parallel private(thread,start,end)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+        for(thread=0; thread<nthread; thread++)
         {
-            thread = omp_get_thread_num();
+            int start,end;
+
             start = atc->n* thread   /nthread;
             end   = atc->n*(thread+1)/nthread;
             
@@ -3679,9 +3686,11 @@ static void spread_on_grid(gmx_pme_t pme,
 #ifdef PME_TIME_THREADS
     c2 = omp_cyc_start();
 #endif
-#pragma omp parallel private(thread,spline,grid)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
     {
-        thread = omp_get_thread_num();
+        splinedata_t *spline;
+        pmegrid_t *grid;
 
         /* make local bsplines  */
         if (grids->nthread == 1)
@@ -3735,9 +3744,9 @@ static void spread_on_grid(gmx_pme_t pme,
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
 #endif
-#pragma omp parallel private(thread)
+#pragma omp parallel for num_threads(grids->nthread) schedule(static)
+        for(thread=0; thread<grids->nthread; thread++)
         {
-            thread = omp_get_thread_num();
             reduce_threadgrid_overlap(pme,grids,thread,
                                       fftgrid,
                                       pme->overlap[0].sendbuf,
@@ -3950,7 +3959,6 @@ int gmx_pme_do(gmx_pme_t pme,
     int     q,d,i,j,ntot,npme;
     int     nx,ny,nz;
     int     n_d,local_ny;
-    int     loop_count;
     pme_atomcomm_t *atc=NULL;
     pmegrids_t *pmegrid=NULL;
     real    *grid=NULL;
@@ -3964,14 +3972,6 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
     int     thread;
-#ifdef GMX_OPENMP
-    int     nthread_old;
-
-    /* Store the current maximum number of threads */
-    nthread_old = omp_get_max_threads();
-    /* Set the maximum number of threads for gmx_pme_do */
-    omp_set_num_threads(pme->nthread);
-#endif
 
     if (pme->nnodes > 1) {
         atc = &pme->atc[0];
@@ -4111,22 +4111,23 @@ int gmx_pme_do(gmx_pme_t pme,
         }
 
         /* Here we start a large thread parallel region */
-#pragma omp parallel private(thread,loop_count)
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
+        for(thread=0; thread<pme->nthread; thread++)
         {
-            thread = omp_get_thread_num();
-
             if (flags & GMX_PME_SOLVE)
             {
+                int loop_count;
+
                 /* do 3d-fft */ 
-#pragma omp master
+                if (thread == 0)
                 {
                     GMX_BARRIER(cr->mpi_comm_mygroup);
                     GMX_MPE_LOG(ev_gmxfft3d_start);
                     wallcycle_start(wcycle,ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_REAL_TO_COMPLEX,
-                                           fftgrid,cfftgrid,wcycle);
-#pragma omp master
+                                           fftgrid,cfftgrid,thread,wcycle);
+                if (thread == 0)
                 {
                     wallcycle_stop(wcycle,ewcPME_FFT);
                     GMX_MPE_LOG(ev_gmxfft3d_finish);
@@ -4134,7 +4135,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 where();
                 
                 /* solve in k-space for our local cells */
-#pragma omp master
+                if (thread == 0)
                 {
                     GMX_BARRIER(cr->mpi_comm_mygroup);
                     GMX_MPE_LOG(ev_solve_pme_start);
@@ -4145,7 +4146,7 @@ int gmx_pme_do(gmx_pme_t pme,
                                   box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                   flags & GMX_PME_CALC_ENER_VIR,
                                   pme->nthread,thread);
-#pragma omp master
+                if (thread == 0)
                 {
                     wallcycle_stop(wcycle,ewcPME_SOLVE);
                     where();
@@ -4157,15 +4158,16 @@ int gmx_pme_do(gmx_pme_t pme,
             if (flags & GMX_PME_CALC_F)
             {
                 /* do 3d-invfft */
-#pragma omp master
+                if (thread == 0)
                 {
                     GMX_BARRIER(cr->mpi_comm_mygroup);
                     GMX_MPE_LOG(ev_gmxfft3d_start);
                     where();
                     wallcycle_start(wcycle,ewcPME_FFT);
                 }
-                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,cfftgrid,fftgrid,wcycle);
-#pragma omp master
+                gmx_parallel_3dfft_execute(pfft_setup,GMX_FFT_COMPLEX_TO_REAL,
+                                           cfftgrid,fftgrid,thread,wcycle);
+                if (thread == 0)
                 {
                     wallcycle_stop(wcycle,ewcPME_FFT);
                     
@@ -4213,10 +4215,11 @@ int gmx_pme_do(gmx_pme_t pme,
              * therefore we should not clear it.
              */
             bClearF = (q == 0 && PAR(cr));
-#pragma omp parallel
+#pragma omp parallel for num_threads(pme->nthread) schedule(static)
+            for(thread=0; thread<pme->nthread; thread++)
             {
                 gather_f_bsplines(pme,grid,bClearF,atc,
-                                  &atc->spline[omp_get_thread_num()],
+                                  &atc->spline[thread],
                                   pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
             }
 
@@ -4281,11 +4284,6 @@ int gmx_pme_do(gmx_pme_t pme,
     {
         fprintf(debug,"PME mesh energy: %g\n",*energy);
     }
-
-#ifdef GMX_OPENMP
-    /* Set the maximum number of threads back to the original value */
-    omp_set_num_threads(nthread_old);
-#endif
     
     return 0;
 }

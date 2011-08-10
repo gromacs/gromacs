@@ -1,8 +1,8 @@
-.TH g_tune_pme 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_tune_pme 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_tune_pme\fP
 .BI "\-p" " perf.out "
@@ -65,6 +65,7 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 .BI "\-max" " real "
 .BI "\-min" " real "
 .BI "\-npme" " enum "
+.BI "\-fix" " int "
 .BI "\-upfac" " real "
 .BI "\-downfac" " real "
 .BI "\-ntpr" " int "
@@ -96,12 +97,12 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 .BI "\-[no]ionize" ""
 .SH DESCRIPTION
 \&For a given number \fB \-np\fR or \fB \-nt\fR of processors/threads, this program systematically
-\&times mdrun with various numbers of PME\-only nodes and determines
+\&times \fB mdrun\fR with various numbers of PME\-only nodes and determines
 \&which setting is fastest. It will also test whether performance can
 \&be enhanced by shifting load from the reciprocal to the real space
 \&part of the Ewald sum. 
-\&Simply pass your \fB .tpr\fR file to g_tune_pme together with other options
-\&for mdrun as needed.
+\&Simply pass your \fB .tpr\fR file to \fB g_tune_pme\fR together with other options
+\&for \fB mdrun\fR as needed.
 
 
 \&Which executables are used can be set in the environment variables
@@ -109,23 +110,25 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 \&will be used as defaults. Note that for certain MPI frameworks you
 \&need to provide a machine\- or hostfile. This can also be passed
 \&via the MPIRUN variable, e.g.
-\&'export MPIRUN="/usr/local/mpirun \-machinefile hosts"'
 
 
-\&Please call g_tune_pme with the normal options you would pass to
-\&mdrun and add \fB \-np\fR for the number of processors to perform the
+\&\fB export MPIRUN="/usr/local/mpirun \-machinefile hosts"\fR
+
+
+\&Please call \fB g_tune_pme\fR with the normal options you would pass to
+\&\fB mdrun\fR and add \fB \-np\fR for the number of processors to perform the
 \&tests on, or \fB \-nt\fR for the number of threads. You can also add \fB \-r\fR
 \&to repeat each test several times to get better statistics. 
 
 
-\&g_tune_pme can test various real space / reciprocal space workloads
+\&\fB g_tune_pme\fR can test various real space / reciprocal space workloads
 \&for you. With \fB \-ntpr\fR you control how many extra \fB .tpr\fR files will be
 \&written with enlarged cutoffs and smaller fourier grids respectively.
-\&Typically, the first test (no. 0) will be with the settings from the input
-\&\fB .tpr\fR file; the last test (no. \fB ntpr\fR) will have cutoffs multiplied
+\&Typically, the first test (number 0) will be with the settings from the input
+\&\fB .tpr\fR file; the last test (number \fB ntpr\fR) will have cutoffs multiplied
 \&by (and at the same time fourier grid dimensions divided by) the scaling
-\&factor \fB \-fac\fR (default 1.2). The remaining \fB .tpr\fR files will have equally
-\&spaced values inbetween these extremes. Note that you can set \fB \-ntpr\fR to 1
+\&factor \fB \-fac\fR (default 1.2). The remaining \fB .tpr\fR files will have about 
+\&equally\-spaced values in between these extremes. \fB Note\fR that you can set \fB \-ntpr\fR to 1
 \&if you just want to find the optimal number of PME\-only nodes; in that case
 \&your input \fB .tpr\fR file will remain unchanged.
 
@@ -136,15 +139,15 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 \&are by default reset after 100 steps. For large systems
 \&(1M atoms) you may have to set \fB \-resetstep\fR to a higher value.
 \&From the 'DD' load imbalance entries in the md.log output file you
-\&can tell after how many steps the load is sufficiently balanced.
+\&can tell after how many steps the load is sufficiently balanced. Example call:
 
-Example call: \fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
+\fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
 
 
-\&After calling mdrun several times, detailed performance information
-\&is available in the output file perf.out. 
-\&Note that during the benchmarks a couple of temporary files are written
-\&(options \-b*), these will be automatically deleted after each test.
+\&After calling \fB mdrun\fR several times, detailed performance information
+\&is available in the output file \fB perf.out.\fR 
+\&\fB Note\fR that during the benchmarks, a couple of temporary files are written
+\&(options \fB \-b\fR*), these will be automatically deleted after each test.
 
 
 \&If you want the simulation to be started automatically with the
@@ -365,7 +368,7 @@ Example call: \fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
  Number of nodes to run the tests on (must be  2 for separate PME nodes)
 
 .BI "\-npstring"  " enum" " \-np" 
- Specify the number of processors to $MPIRUN using this string: \fB \-np\fR, \fB \-n\fR or \fB none\fR
+ Specify the number of processors to \fB $MPIRUN\fR using this string: \fB \-np\fR, \fB \-n\fR or \fB none\fR
 
 .BI "\-nt"  " int" " 1" 
  Number of threads to run the tests on (turns MPI & mpirun off)
@@ -380,7 +383,10 @@ Example call: \fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
  Min fraction of PME nodes to test with
 
 .BI "\-npme"  " enum" " auto" 
- Benchmark all possible values for \-npme or just the subset that is expected to perform well: \fB auto\fR, \fB all\fR or \fB subset\fR
+ Benchmark all possible values for \fB \-npme\fR or just the subset that is expected to perform well: \fB auto\fR, \fB all\fR or \fB subset\fR
+
+.BI "\-fix"  " int" " \-2" 
+ If = \-1, do not vary the number of PME\-only nodes, instead use this fixed value and only vary rcoulomb and the PME grid spacing.
 
 .BI "\-upfac"  " real" " 1.2   " 
  Upper limit for rcoulomb scaling factor (Note that rcoulomb upscaling results in fourier grid downscaling)
@@ -389,19 +395,19 @@ Example call: \fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
  Lower limit for rcoulomb scaling factor
 
 .BI "\-ntpr"  " int" " 0" 
- Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If  1, automatically choose the number of tpr files to test
+ Number of \fB .tpr\fR files to benchmark. Create this many files with scaling factors ranging from 1.0 to fac. If  1, automatically choose the number of \fB .tpr\fR files to test
 
 .BI "\-four"  " real" " 0     " 
- Use this fourierspacing value instead of the grid found in the tpr input file. (Spacing applies to a scaling factor of 1.0 if multiple tpr files are written)
+ Use this fourierspacing value instead of the grid found in the \fB .tpr\fR input file. (Spacing applies to a scaling factor of 1.0 if multiple \fB .tpr\fR files are written)
 
 .BI "\-steps"  " step" " 1000" 
- Take timings for these many steps in the benchmark runs
+ Take timings for this many steps in the benchmark runs
 
 .BI "\-resetstep"  " int" " 100" 
- Let dlb equilibrate these many steps before timings are taken (reset cycle counters after these many steps)
+ Let dlb equilibrate this many steps before timings are taken (reset cycle counters after this many steps)
 
 .BI "\-simsteps"  " step" " \-1" 
- If non\-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)
+ If non\-negative, perform this many steps in the real run (overwrites nsteps from \fB .tpr\fR, add \fB .cpt\fR steps)
 
 .BI "\-[no]launch"  "no    "
  Lauch the real simulation after optimization
@@ -467,7 +473,7 @@ Example call: \fB g_tune_pme \-np 64 \-s protein.tpr \-launch\fR
  Seed for replica exchange, \-1 is generate a seed
 
 .BI "\-[no]ionize"  "no    "
- Do a simulation including the effect of an X\-Ray bombardment on your system
+ Do a simulation including the effect of an X\-ray bombardment on your system
 
 .SH SEE ALSO
 .BR gromacs(7)

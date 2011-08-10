@@ -1,8 +1,8 @@
-.TH g_morph 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_morph 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_morph - linear interpolation of conformations 
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_morph\fP
 .BI "\-f1" " conf1.gro "
@@ -20,15 +20,15 @@ g_morph - linear interpolation of conformations
 .BI "\-last" " real "
 .BI "\-[no]fit" ""
 .SH DESCRIPTION
-\&g_morph does a linear interpolation of conformations in order to
+\&\fB g_morph\fR does a linear interpolation of conformations in order to
 \&create intermediates. Of course these are completely unphysical, but
 \&that you may try to justify yourself. Output is in the form of a 
 \&generic trajectory. The number of intermediates can be controlled with
-\&the \-ninterm flag. The first and last flag correspond to the way of
+\&the \fB \-ninterm\fR flag. The first and last flag correspond to the way of
 \&interpolating: 0 corresponds to input structure 1 while
 \&1 corresponds to input structure 2.
-\&If you specify first  0 or last  1 extrapolation will be
-\&on the path from input structure x1 to x2. In general the coordinates
+\&If you specify \fB \-first\fR  0 or \fB \-last\fR  1 extrapolation will be
+\&on the path from input structure x1 to x2. In general, the coordinates
 \&of the intermediate x(i) out of N total intermidates correspond to:
 
 
@@ -36,8 +36,8 @@ g_morph - linear interpolation of conformations
 
 
 \&Finally the RMSD with respect to both input structures can be computed
-\&if explicitly selected (\-or option). In that case an index file may be
-\&read to select what group RMS is computed from.
+\&if explicitly selected (\fB \-or\fR option). In that case, an index file may be
+\&read to select the group from which the RMS is computed.
 .SH FILES
 .BI "\-f1" " conf1.gro" 
 .B Input
@@ -70,7 +70,7 @@ g_morph - linear interpolation of conformations
  Set the nicelevel
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR

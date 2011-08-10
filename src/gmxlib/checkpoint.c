@@ -1236,11 +1236,11 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     }
 
     
-    version = strdup(VERSION);
-    btime   = strdup(BUILD_TIME);
-    buser   = strdup(BUILD_USER);
-    bmach   = strdup(BUILD_MACHINE);
-    fprog   = strdup(Program());
+    version = gmx_strdup(VERSION);
+    btime   = gmx_strdup(BUILD_TIME);
+    buser   = gmx_strdup(BUILD_USER);
+    bmach   = gmx_strdup(BUILD_MACHINE);
+    fprog   = gmx_strdup(Program());
 
     ftime   = &(timebuf[0]);
     
@@ -1930,7 +1930,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     t_fileio *fp;
     
     fp = gmx_fio_open(fn,"r");
-    read_checkpoint_data(fp,simulation_part,step,t,state,TRUE,NULL,NULL);
+    read_checkpoint_data(fp,simulation_part,step,t,state,FALSE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");

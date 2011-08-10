@@ -1,8 +1,8 @@
-.TH g_velacc 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_velacc 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_velacc - calculates velocity autocorrelation functions
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_velacc\fP
 .BI "\-f" " traj.trr "
@@ -27,7 +27,7 @@ g_velacc - calculates velocity autocorrelation functions
 .BI "\-beginfit" " real "
 .BI "\-endfit" " real "
 .SH DESCRIPTION
-\&g_velacc computes the velocity autocorrelation function.
+\&\fB g_velacc\fR computes the velocity autocorrelation function.
 \&When the \fB \-m\fR option is used, the momentum autocorrelation
 \&function is calculated.
 
@@ -72,7 +72,7 @@ g_velacc - calculates velocity autocorrelation functions
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -93,7 +93,7 @@ g_velacc - calculates velocity autocorrelation functions
  Order of Legendre polynomial for ACF (0 indicates none): \fB 0\fR, \fB 1\fR, \fB 2\fR or \fB 3\fR
 
 .BI "\-fitfn"  " enum" " none" 
- Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR or \fB exp9\fR
+ Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions

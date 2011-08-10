@@ -1,0 +1,70 @@
+.TH g_pme_error 1 "Sun 10 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110410-e5eb052-dirty"
+.SH NAME
+g_pme_error - estimates the error of using PME with a given input file
+
+.B VERSION 4.5.4-dev-20110410-e5eb052-dirty
+.SH SYNOPSIS
+\f3g_pme_error\fP
+.BI "\-s" " topol.tpr "
+.BI "\-o" " error.out "
+.BI "\-so" " tuned.tpr "
+.BI "\-[no]h" ""
+.BI "\-[no]version" ""
+.BI "\-nice" " int "
+.BI "\-beta" " real "
+.BI "\-[no]tune" ""
+.BI "\-self" " real "
+.BI "\-seed" " int "
+.BI "\-[no]v" ""
+.SH DESCRIPTION
+\&\fB g_pme_error\fR estimates the error of the electrostatic forces
+\&if using the sPME algorithm. The flag \fB \-tune\fR will determine
+\&the splitting parameter such that the error is equally
+\&distributed over the real and reciprocal space part.
+\&The part of the error that stems from self interaction of the particles is computationally demanding. However, a good a approximation is to
+\&just use a fraction of the particles for this term which can be
+\&indicated by the flag \fB \-self\fR.
+
+
+.SH FILES
+.BI "\-s" " topol.tpr" 
+.B Input
+ Run input file: tpr tpb tpa 
+
+.BI "\-o" " error.out" 
+.B Output
+ Generic output file 
+
+.BI "\-so" " tuned.tpr" 
+.B Output, Opt.
+ Run input file: tpr tpb tpa 
+
+.SH OTHER OPTIONS
+.BI "\-[no]h"  "no    "
+ Print help info and quit
+
+.BI "\-[no]version"  "no    "
+ Print version info and quit
+
+.BI "\-nice"  " int" " 0" 
+ Set the nicelevel
+
+.BI "\-beta"  " real" " \-1    " 
+ If positive, overwrite ewald_beta from \fB .tpr\fR file with this value
+
+.BI "\-[no]tune"  "no    "
+ Tune the splitting parameter such that the error is equally distributed between real and reciprocal space
+
+.BI "\-self"  " real" " 1     " 
+ If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles
+
+.BI "\-seed"  " int" " 0" 
+ Random number seed used for Monte Carlo algorithm when \fB \-self\fR is set to a value between 0.0 and 1.0
+
+.BI "\-[no]v"  "no    "
+ Be loud and noisy
+
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

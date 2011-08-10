@@ -1356,10 +1356,14 @@ int search_string(char *s,int ng,char *gn[])
   int i;
   
   for(i=0; (i<ng); i++)
+  {
     if (gmx_strcasecmp(s,gn[i]) == 0)
+    {
       return i;
-      
-  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your .mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
+    }
+  }
+    
+  gmx_fatal(FARGS,"Group %s not found in index file.\nGroup names must match either [moleculetype] names\nor custom index group names,in which case you\nmust supply an index file to the '-n' option of grompp.",s);
   
   return -1;
 }

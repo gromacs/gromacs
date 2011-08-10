@@ -513,7 +513,7 @@ int gmx_rmsdist (int argc,char *argv[])
     "which has the advantage that no fit is needed like in standard RMS",
     "deviation as computed by [TT]g_rms[tt].",
     "The reference structure is taken from the structure file.",
-    "The rmsd at time t is calculated as the rms",
+    "The RMSD at time t is calculated as the RMS",
     "of the differences in distance between atom-pairs in the reference",
     "structure and the structure at time t.[PAR]",
     "[TT]g_rmsdist[tt] can also produce matrices of the rms distances, rms distances",

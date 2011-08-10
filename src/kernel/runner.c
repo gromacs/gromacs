@@ -262,10 +262,12 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 }
 
 
-/* get the number of threads based on how many there were requested, 
-   which algorithms we're using, and how many particles there are. */
-static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
-                        gmx_mtop_t *mtop)
+/* Get the number of threads to use for thread-MPI based on how many
+ * there were requested, which algorithms we're using,
+ * and how many particles there are.
+ */
+static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
+                            gmx_mtop_t *mtop)
 {
     int nthreads,nthreads_new;
     int min_atoms_per_thread;
@@ -288,7 +290,7 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
         }
         else
         {
-            nthreads = tMPI_Get_recommended_nthreads();
+            nthreads = tMPI_Thread_get_hw_number();
         }
     }
 
@@ -379,9 +381,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
-    int         nthreads=1;
-    int         omp_nthreads_pp = 1;
-    int         omp_nthreads_pme = 1; 
+    int         nthreads_mpi=1;
+    int         nthreads_pp =1;
+    int         nthreads_pme=1;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -406,12 +408,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
-        nthreads = get_nthreads(nthreads_requested, inputrec, mtop);
+        nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
 
-        if (nthreads > 1)
+        if (nthreads_mpi > 1)
         {
             /* now start the threads. */
-            cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
+            cr=mdrunner_start_threads(nthreads_mpi, fplog, cr_old, nfile, fnm, 
                                       oenv, bVerbose, bCompact, nstglobalcomm, 
                                       ddxyz, dd_node_order, rdd, rconstr, 
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
@@ -644,7 +646,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
        PP: is omp_get_max_threads for now.
      */
 #ifdef GMX_OPENMP
-    omp_nthreads_pp = omp_get_max_threads();
+    nthreads_pp = omp_get_max_threads();
 
     if (EEL_PME(inputrec->coulombtype))
     {
@@ -652,30 +654,24 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             char *ptr;
             
-            omp_nthreads_pme = omp_get_max_threads();
+            nthreads_pme = omp_get_max_threads();
             if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
             {
-                sscanf(ptr,"%d",&omp_nthreads_pme);
+                sscanf(ptr,"%d",&nthreads_pme);
             }
-            omp_set_num_threads(omp_nthreads_pme);
-            if (fplog!=NULL)
+            if (fplog != NULL && nthreads_pme > 1)
             {
-                fprintf(fplog,"Using %d threads for PME\n",omp_nthreads_pme);
+                fprintf(fplog,"Using %d threads for PME\n",nthreads_pme);
             }
         }
         if (PAR(cr))
         {
-            gmx_bcast_sim(sizeof(omp_nthreads_pme),&omp_nthreads_pme,cr);
+            gmx_bcast_sim(sizeof(nthreads_pme),&nthreads_pme,cr);
         }
-        /* Set the number of threads.
-         * This is only done here currently because fft5d_plan_3d
-         * does not get the number of threads passed yet.
-         */
-        omp_set_num_threads(omp_nthreads_pme);
     }
 #endif
 
-    wcycle = wallcycle_init(fplog,resetstep,cr,omp_nthreads_pp,omp_nthreads_pme);
+    wcycle = wallcycle_init(fplog,resetstep,cr,nthreads_pp,nthreads_pme);
 
     if (PAR(cr))
     {
@@ -701,10 +697,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             if (PAR(cr))
             {
-                if (!MASTER(cr))
-                {
-                    snew(state,1);
-                }
                 bcast_state(cr,state,TRUE);
             }
         }
@@ -827,10 +819,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             int core;
             MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
             MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads_pme : 1; //threads on this node
-            MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            int local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; //threads on this node
+            MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
             core-=local_omp_nthreads; //make exclusive scan
-    #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
+#pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
             {
                 cpu_set_t mask;
                 CPU_ZERO(&mask);
@@ -847,7 +839,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
-                                  (Flags & MD_REPRODUCIBLE),omp_nthreads_pme);
+                                  (Flags & MD_REPRODUCIBLE),nthreads_pme);
             if (status != 0) 
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);
@@ -944,7 +936,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
 #endif
                NULL,
-               omp_nthreads_pp, 
+               nthreads_pp, 
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     /* Does what it says */  
@@ -985,16 +977,4 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
 
     return rc;
-}
-
-void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
-{
-    if (MASTER(cr))
-    {
-        fprintf(stderr,"\n%s\n",buf);
-    }
-    if (fplog)
-    {
-        fprintf(fplog,"\n%s\n",buf);
-    }
 }

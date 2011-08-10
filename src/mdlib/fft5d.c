@@ -535,7 +535,7 @@ improvements: make sure that each FFT is aligned. each should best start at a ca
             /* Make sure that the init routines are only called by one thread at a time and in order
                (later is only important to not confuse valgrind)
              */
-#pragma omp parallel for schedule(static),ordered
+#pragma omp parallel for num_threads(nthreads) schedule(static),ordered
             for(t=0; t<nthreads; t++)
 #pragma omp ordered
             {
@@ -845,7 +845,7 @@ static void print_localdata(const t_complex* lin, const char* txt, int s, fft5d_
     }
 }
 
-void fft5d_execute(fft5d_plan plan,fft5d_time times) {
+void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
     t_complex *lin = plan->lin;
     t_complex *lout = plan->lout;
     t_complex *lout2 = plan->lout2;
@@ -863,12 +863,13 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
     double time_fft=0,time_local=0,time_mpi[2]={0},time=0;    
     int *N=plan->N,*M=plan->M,*K=plan->K,*pN=plan->pN,*pM=plan->pM,*pK=plan->pK,
         *C=plan->C,*P=plan->P,**iNin=plan->iNin,**oNin=plan->oNin,**iNout=plan->iNout,**oNout=plan->oNout;
-    int s=0,t,tstart,tend,bParallelDim;
+    int s=0,tstart,tend,bParallelDim;
     
     
 #ifdef GMX_FFT_FFTW3 
-    if (plan->p3d) {
-#pragma omp master
+    if (plan->p3d)
+    {
+        if (thread == 0)
         {
 #ifdef NOGMX
             if (times!=0)
@@ -889,12 +890,11 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 #endif
 
         s=0;
-        t = omp_get_thread_num();
         
     /*lin: x,y,z*/
-#pragma omp master 
+        if (plan->flags&FFT5D_DEBUG && thread == 0)
         {
-            if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: copy in lin\n", s, plan);
+            print_localdata(lin, "%d %d: copy in lin\n", s, plan);
         }
 
         for (s=0;s<2;s++) {  /*loop over first two FFT steps (corner rotations)*/
@@ -912,12 +912,9 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 
         /* ---------- START FFT ------------ */
 #ifdef NOGMX
-#pragma omp master 
+        if (times!=0 && thread == 0)
         {
-            if (times!=0)
-            {
-                time=MPI_Wtime();
-            }
+            time=MPI_Wtime();
         }
 #endif
         
@@ -935,37 +932,34 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
             }
         }
         
-        tstart = (t*pM[s]*pK[s]/plan->nthreads)*C[s];
+        tstart = (thread*pM[s]*pK[s]/plan->nthreads)*C[s];
         if ((plan->flags&FFT5D_REALCOMPLEX) && !(plan->flags&FFT5D_BACKWARD) && s==0)
         {
-            gmx_fft_many_1d_real(p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin+tstart,fftout+tstart);
+            gmx_fft_many_1d_real(p1d[s][thread],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin+tstart,fftout+tstart);
         } else
         {
-            gmx_fft_many_1d(     p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin+tstart,fftout+tstart);
+            gmx_fft_many_1d(     p1d[s][thread],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin+tstart,fftout+tstart);
             
         }
 
-#pragma omp master 
-        {
 #ifdef NOGMX
-            if (times!=0)
-            {
-                time_fft+=MPI_Wtime()-time;
-            }
+        if (times != NULL && thread == 0)
+        {
+            time_fft+=MPI_Wtime()-time;
+        }
 #endif
-            if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
+        if (plan->flags&FFT5D_DEBUG && thread == 0)
+        {
+            print_localdata(lout, "%d %d: FFT %d\n", s, plan);
         }
         /* ---------- END FFT ------------ */        
 
         /* ---------- START SPLIT + TRANSPOSE------------ (if parallel in in this dimension)*/
         if (bParallelDim) {
 #ifdef NOGMX
-#pragma omp master
-            { 
-                if (times!=0)
-                {
-                    time=MPI_Wtime();
-                }
+            if (times != NULL && thread == 0)
+            {
+                time=MPI_Wtime();
             }
 #endif
             /*prepare for A
@@ -974,24 +968,21 @@ llToAll
               for sending*/
             if (pM[s]>0) 
             {
-                tend = ((t+1)*pM[s]*pK[s]/plan->nthreads);
+                tend = ((thread+1)*pM[s]*pK[s]/plan->nthreads);
                 tstart/=C[s];
                 splitaxes(lout2,lout,N[s],M[s],K[s], pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
             }
 #pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
 #ifdef NOGMX
-#pragma omp master 
+            if (times != NULL && thread == 0)
             {
-                if (times!=0)
-                {
-                    time_local+=MPI_Wtime()-time;
-                }
+                time_local+=MPI_Wtime()-time;
             }
 #endif
 
         /* ---------- END SPLIT , START TRANSPOSE------------ */            
 
-#pragma omp master 
+            if (thread == 0)
             {
 #ifdef NOGMX
                 if (times!=0)
@@ -1029,12 +1020,9 @@ llToAll
 
         /* ---------- START JOIN ------------ */
 #ifdef NOGMX
-#pragma omp master 
+        if (times != NULL && thread == 0)
         {
-            if (times!=0)
-            {
-                time=MPI_Wtime();
-            }
+            time=MPI_Wtime();
         }
 #endif
 
@@ -1051,70 +1039,67 @@ llToAll
         if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) {
             if (pM[s]>0) 
             {
-                tstart = (t * pM[s]*pN[s]/plan->nthreads);            
-                tend = ((t+1)*pM[s]*pN[s]/plan->nthreads);            
+                tstart = ( thread   *pM[s]*pN[s]/plan->nthreads);            
+                tend   = ((thread+1)*pM[s]*pN[s]/plan->nthreads);            
                 joinAxesTrans13(lin,joinin,N[s],pM[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pM[s],tstart/pM[s],tend%pM[s],tend/pM[s]);
             }
         }
         else { 
             if (pN[s]>0) 
             {
-                tstart = (t * pK[s]*pN[s]/plan->nthreads);            
-                tend = ((t+1)*pK[s]*pN[s]/plan->nthreads);            
+                tstart = ( thread   *pK[s]*pN[s]/plan->nthreads);            
+                tend   = ((thread+1)*pK[s]*pN[s]/plan->nthreads);            
                 joinAxesTrans12(lin,joinin,N[s],M[s],pK[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1],tstart%pN[s],tstart/pN[s],tend%pN[s],tend/pN[s]);
             }
         }
-#pragma omp master 
-        {
+
 #ifdef NOGMX
-            if (times!=0)
-            {
-                time_local+=MPI_Wtime()-time;
-            }
+        if (times != NULL && thread == 0)
+        {
+            time_local+=MPI_Wtime()-time;
+        }
 #endif
-            if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: tranposed %d\n", s+1, plan);
+        if (plan->flags&FFT5D_DEBUG && thread == 0)
+        {
+            print_localdata(lin, "%d %d: tranposed %d\n", s+1, plan);
         }       
         /* ---------- END JOIN ------------ */
 
         /*if (debug) print_localdata(lin, "%d %d: transposed x-z\n", N1, M0, K, ZYX, coor);*/
     }  /* for(s=0;s<2;s++) */
 #ifdef NOGMX
-#pragma omp master 
-    {    
-        if (times!=0)
+        if (times != NULL && thread == 0)
         {
             time=MPI_Wtime();
         }
-    }
 #endif
 
     if (plan->flags&FFT5D_INPLACE) lout=lin; /*in place currently not supported*/
 
     /*  ----------- FFT ----------- */
-    tstart = (t*pM[s]*pK[s]/plan->nthreads)*C[s];
+    tstart = (thread*pM[s]*pK[s]/plan->nthreads)*C[s];
     if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD)) {
-        gmx_fft_many_1d_real(p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin+tstart,lout+tstart);
+        gmx_fft_many_1d_real(p1d[s][thread],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_COMPLEX_TO_REAL:GMX_FFT_REAL_TO_COMPLEX,lin+tstart,lout+tstart);
     } else {
-        gmx_fft_many_1d(     p1d[s][t],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin+tstart,lout+tstart);
+        gmx_fft_many_1d(     p1d[s][thread],(plan->flags&FFT5D_BACKWARD)?GMX_FFT_BACKWARD:GMX_FFT_FORWARD,               lin+tstart,lout+tstart);
     }
     /* ------------ END FFT ---------*/
 
-#pragma omp master
-    {
 #ifdef NOGMX
-        if (times!=0)
-        {
-            time_fft+=MPI_Wtime()-time;
+    if (times != NULL && thread == 0)
+    {
+        time_fft+=MPI_Wtime()-time;
         
-            times->fft+=time_fft;
-            times->local+=time_local;
-            times->mpi2+=time_mpi[1];
-            times->mpi1+=time_mpi[0];
-        }
+        times->fft+=time_fft;
+        times->local+=time_local;
+        times->mpi2+=time_mpi[1];
+        times->mpi1+=time_mpi[0];
+    }
 #endif
 
-        if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
-                /*if (debug) print_localdata(lout, "%d %d: FFT in y\n", N1, M, K0, YZX, coor);*/
+    if (plan->flags&FFT5D_DEBUG && thread == 0)
+    {
+        print_localdata(lout, "%d %d: FFT %d\n", s, plan);
     }
 }
 

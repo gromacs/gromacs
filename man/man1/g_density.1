@@ -1,8 +1,8 @@
-.TH g_density 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_density 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_density - calculates the density of the system
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_density\fP
 .BI "\-f" " traj.xtc "
@@ -25,17 +25,23 @@ g_density - calculates the density of the system
 .BI "\-[no]symm" ""
 .BI "\-[no]center" ""
 .SH DESCRIPTION
-\&Compute partial densities across the box, using an index file. Densities
-\&in kg/m3, number densities or electron densities can be
+\&Compute partial densities across the box, using an index file.
+
+
+\&For the total density of NPT simulations, use \fB g_energy\fR instead.
+\&
+
+
+\&Densities are in kg/m3, and number densities or electron densities can also be
 \&calculated. For electron densities, a file describing the number of
 \&electrons for each type of atom should be provided using \fB \-ei\fR.
 \&It should look like:
 
-\&   2
+\&   \fB 2\fR
 
-\&   atomname = nrelectrons
+\&   \fB atomname = nrelectrons\fR
 
-\&   atomname = nrelectrons
+\&   \fB atomname = nrelectrons\fR
 
 \&The first line contains the number of lines to read from the file.
 \&There should be one line for each unique atom name in your system.
@@ -82,7 +88,7 @@ g_density - calculates the density of the system
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
