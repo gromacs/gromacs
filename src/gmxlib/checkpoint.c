@@ -1406,7 +1406,6 @@ static void check_match(FILE *fplog,
     check_string(fplog,"Build machine",BUILD_MACHINE,bmach  ,&mm);
     check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
-    npp = cr->nnodes - cr->npmenodes;
     check_int   (fplog,"#nodes"       ,cr->nnodes   ,npp_f+npme_f ,&mm);
     if (bPartDecomp)
     {
@@ -1414,9 +1413,15 @@ static void check_match(FILE *fplog,
         dd_nc[YY] = 1;
         dd_nc[ZZ] = 1;
     }
-    if (npp > 1)
+    if (cr->nnodes > 1)
     {
         check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
+
+        npp = cr->nnodes;
+        if (cr->npmenodes >= 0)
+        {
+            npp -= cr->npmenodes;
+        }
         if (npp == npp_f)
         {
             check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
@@ -1557,10 +1562,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     if (!PAR(cr))
     {
         nppnodes = 1;
+        cr->npmenodes = 0;
     }
     else if (bPartDecomp)
     {
         nppnodes = cr->nnodes;
+        cr->npmenodes = 0;
     }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
