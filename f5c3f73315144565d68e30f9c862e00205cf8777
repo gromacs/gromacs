@@ -1,0 +1,8 @@
+Change-Id: If5c3f73315144565d68e30f9c862e00205cf8777
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Verified+1: Roland Schulz <roland@rschulz.eu>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Thu, 11 Aug 2011 19:25:55 +0200
+Reviewed-on: https://gerrit.gromacs.org/46
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
