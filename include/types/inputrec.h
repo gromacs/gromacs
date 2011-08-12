@@ -144,8 +144,12 @@ typedef struct {
 				note: NOT a gmx_bool, but an enum */
   int dh_hist_size;         /* The maximum table size for the dH histogram      */
   double dh_hist_spacing;   /* The spacing for the dH histogram              */
+} t_lambda;
+
+typedef struct {
+  int nstexpanded;           /* The frequency of expanded ensemble state changes */
   int elamstats;             /* which type of move updating do we use for lambda monte carlo (or no for none) */
-  int elmcmove;              /* what move set will be we using -- Gibbs, or MH */
+  int elmcmove;              /* what move set will be we using for state space moves */
   int elmceq;                /* the method we use to decide of we have equilibrated the weights */
   int equil_n_at_lam;        /* the minumum number of samples at each lambda for deciding whether we have reached a minimum */
   real equil_wl_delta;       /* WL delta at which we stop equilibrating weights */
@@ -160,16 +164,16 @@ typedef struct {
   gmx_bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
   int  nstTij;                /* How frequently to print the transition matrices */
   int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
-  int  lmc_forced_nstart;    /* minimum number of samples for each state before free samplin */ /* MRS -- VERIFY THIS! */
+  int  lmc_forced_nstart;    /* minimum number of samples for each state before free sampling */ /* MRS -- VERIFY THIS! */
   int  gibbsdeltalam;        /* distance in lambda space for the gibbs interval */
   real  wl_scale;            /* scaling factor for wang-landau */
   real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
   real  init_wl_delta;       /* starting delta for wang-landau */
-  gmx_bool bWLoneovert;         /* use one over t convergece for wang-landau when the delta get sufficiently small */
-  gmx_bool bInit_weights;         /* did we initialize the weights? */
-  real *init_lambda_weights; /* user-specified initial weights to start with  */
+  gmx_bool bWLoneovert;      /* use one over t convergece for wang-landau when the delta get sufficiently small */
+  gmx_bool bInit_weights;    /* did we initialize the weights? */
   real mc_temp;              /* To override the main temperature, or define it if it's not defined */
-} t_lambda;
+  real *init_lambda_weights; /* user-specified initial weights to start with  */
+} t_expanded;
 
 typedef struct {
   int        ngrp;        /* number of groups */
@@ -268,8 +272,13 @@ typedef struct {
   real tabext;          /* Extension of the table beyond the cut-off,   *
 		 	 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
-  int  efep;   		/* free energy interpolation no/yes		*/
+  int  efep;   		/* free energy calculations                     */ 
+  gmx_bool bSimTemp;    /* Whether to do simulated tempering            */
+  gmx_bool bExpanded;   /* Whether expanded ensembles are used          */
+  real simtemp_low;     /* the low temperature for simulated tempering  */
+  real simtemp_high;    /* the high temperature for simulated tempering */
   t_lambda *fepvals;    /* Data for the FEP state                       */
+  t_expanded *expandedvals; /* Expanded ensemble parameters              */ 
   int  nstdhdl;         /* The frequency for calculating dhdl           */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/

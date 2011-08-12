@@ -536,7 +536,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             openmm_copy_state(openmmData, state, &t, f, enerd, bX, bV, bF, do_ene);
 
             upd_mdebin(mdebin,FALSE,TRUE,
-                       t,mdatoms->tmass,enerd,state,ir->fepvals,lastbox,
+                       t,mdatoms->tmass,enerd,state,ir->fepvals,ir->expandedvals,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
             print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,do_log?fplog:NULL,

@@ -492,73 +492,81 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   PR("kB",pg->kB);
 }
 
-static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, gmx_bool bMDPformat)
+static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda, gmx_bool bMDPformat)
+{
+    int i;
+    
+    PI("nstexpanded", expand->nstexpanded);
+    PS("lambda-stats", elamstats_names[expand->elamstats]);
+    PS("lambda-mc-move", elmcmove_names[expand->elmcmove]);
+    PI("lmc-repeats",expand->lmc_repeats);
+    PI("lmc-gibbsdelta",expand->gibbsdeltalam);
+    PI("lmc-nstart",expand->lmc_forced_nstart);  
+    PS("symmetrized-transition-matrix", BOOL(expand->bSymmetrizedTMatrix));
+    PI("nstTij",expand->nstTij);
+    PI("mininum-var-min",expand->minvarmin); /*default is reasonable */
+    PI("weight-c-range",expand->c_range); /* default is just C=0 */
+    PR("wl-scale",expand->wl_scale);
+    PR("init-wl-delta",expand->init_wl_delta);
+    PR("wl-ratio",expand->wl_ratio);
+    PS("bWLoneovert",BOOL(expand->bWLoneovert));
+    PI("lmc-seed",expand->lmc_seed);
+    PR("mc-temperature",expand->mc_temp);
+    PS("lambda-weights-equil",elmceq_names[expand->elmceq]);
+    PI("weight-equil-number-all-lambda",expand->equil_n_at_lam);
+    PI("weight-equil-number-samples",expand->equil_samples);
+    PI("weight-equil-number-steps",expand->equil_steps);
+    PR("weight-equil-wl-delta",expand->equil_wl_delta);
+    PR("weight-equil-count-ratio",expand->equil_ratio);
+
+    pr_indent(fp,indent);
+    fprintf(fp,"init_lambda_weights%s\n",bMDPformat ? " = " : ":");
+    for(i=0; i<n_lambda; i++)
+    {
+        fprintf(fp,"  %10g",expand->init_lambda_weights[i]);
+    }
+    fprintf(fp,"\n");
+    PI("init_weights",expand->bInit_weights);
+}
+
+static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
 {
     int i,j;
 
-    PI("init_fep_state",fepvals->init_fep_state);
-    PI("init_lambda",fepvals->init_lambda);
-    PR("delta_lambda",fepvals->delta_lambda);
+    PI("init_fep_state",fep->init_fep_state);
+    PI("init_lambda",fep->init_lambda);
+    PR("delta_lambda",fep->delta_lambda);
     if (!bMDPformat)
     {
-        PI("n_lambdas",fepvals->n_lambda);
+        PI("n_lambdas",fep->n_lambda);
     }
-    if (fepvals->n_lambda > 0)
+    if (fep->n_lambda > 0)
     {
         pr_indent(fp,indent);
         fprintf(fp,"all_lambda%s\n",bMDPformat ? " = " : ":");
         for(i=0; i<efptNR; i++) {
             fprintf(fp,"%18s",efpt_names[i]);
-            for(j=0; j<fepvals->n_lambda; j++)
+            for(j=0; j<fep->n_lambda; j++)
             {
-                fprintf(fp,"  %10g",fepvals->all_lambda[i][j]);
+                fprintf(fp,"  %10g",fep->all_lambda[i][j]);
             }
             fprintf(fp,"\n");
         }
-        pr_indent(fp,indent);
-        fprintf(fp,"init_lambda_weights%s\n",bMDPformat ? " = " : ":");
-        for(i=0; i<fepvals->n_lambda; i++)
-        {
-            fprintf(fp,"  %10g",fepvals->init_lambda_weights[i]);
-        }
-        fprintf(fp,"\n");
-        PI("init_weights",fepvals->bInit_weights);
     }
 
-    PR("sc_alpha",fepvals->sc_alpha);
-    PS("bScCoul",BOOL(fepvals->bScCoul));
-    PS("bScPrintEnergy",BOOL(fepvals->bPrintEnergy));
-    PI("sc_power",fepvals->sc_power);
-    PR("sc_sigma",fepvals->sc_sigma);
-    PR("sc_sigma_min",fepvals->sc_sigma_min);
-    PI("dh_hist_size", fepvals->dh_hist_size);
-    PD("dh_hist_spacing", fepvals->dh_hist_spacing);
-    PS("lambda-stats", elamstats_names[fepvals->elamstats]);
-    PS("lambda-mc-move", elmcmove_names[fepvals->elmcmove]);
-    PI("lmc-repeats",fepvals->lmc_repeats);
-    PI("lmc-gibbsdelta",fepvals->gibbsdeltalam);
-    PI("lmc-nstart",fepvals->lmc_forced_nstart);  
-    PS("symmetrized-transition-matrix", BOOL(fepvals->bSymmetrizedTMatrix));
-    PI("nstTij",fepvals->nstTij);
-    PI("mininum-var-min",fepvals->minvarmin); /*default is reasonable */
-    PI("weight-c-range",fepvals->c_range); /* default is just C=0 */
-    PR("wl-scale",fepvals->wl_scale);
-    PR("init-wl-delta",fepvals->init_wl_delta);
-    PR("wl-ratio",fepvals->wl_ratio);
-    PS("bWLoneovert",BOOL(fepvals->bWLoneovert));
-    PI("nstfep",fepvals->nstfep);
-    PI("lmc-seed",fepvals->lmc_seed);
-    PR("mc-temperature",fepvals->mc_temp);
-    PS("lambda-weights-equil",elmceq_names[fepvals->elmceq]);
-    PI("weight-equil-number-all-lambda",fepvals->equil_n_at_lam);
-    PI("weight-equil-number-samples",fepvals->equil_samples);
-    PI("weight-equil-number-steps",fepvals->equil_steps);
-    PR("weight-equil-wl-delta",fepvals->equil_wl_delta);
-    PR("weight-equil-count-ratio",fepvals->equil_ratio);
-    PS("separate_dhdl_file", SEPDHDLFILETYPE(fepvals->separate_dhdl_file));
-    PS("dhdl_derivatives", DHDLDERIVATIVESTYPE(fepvals->dhdl_derivatives));
-    PI("dh_hist_size", fepvals->dh_hist_size);
-    PD("dh_hist_spacing", fepvals->dh_hist_spacing);
+    PR("sc_alpha",fep->sc_alpha);
+    PS("bScCoul",BOOL(fep->bScCoul));
+    PS("bScPrintEnergy",BOOL(fep->bPrintEnergy));
+    PI("sc_power",fep->sc_power);
+    PR("sc_sigma",fep->sc_sigma);
+    PR("sc_sigma_min",fep->sc_sigma_min);
+    PS("separate_dhdl_file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
+    PS("dhdl_derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
+    PI("dh_hist_size", fep->dh_hist_size);
+    PD("dh_hist_spacing", fep->dh_hist_spacing);
+
+    PI("nstfep",fep->nstfep);
+
 };
 
 static void pr_pull(FILE *fp,int indent,t_pull *pull)
@@ -670,8 +678,16 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("sa_surface_tension",ir->sa_surface_tension);
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
-    if (ir->efep != efepNO) {
+    if (ir->efep > efepNO) {
         pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
+    }
+    if (ir->bExpanded) {
+        pr_expandedvals(fp,indent,ir->expandedvals,ir->fepvals->n_lambda,bMDPformat);
+    }
+    PS("bSimTemp",BOOL(ir->bSimTemp));
+    if (ir->bSimTemp) {
+        PR("simtemp_low",ir->simtemp_low);
+        PR("simtemp_high",ir->simtemp_high);        
     }
     PI("nstdhdl", ir->nstdhdl);
     PI("nwall",ir->nwall);

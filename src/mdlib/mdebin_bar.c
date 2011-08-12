@@ -334,7 +334,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     dhc->ndh = 0;
     
     /* include one more for the specification of the state, by lambda or fep_state, store as double for now*/
-    if (ir->fepvals->elamstats > elamstatsNO) {
+    if (ir->expandedvals->elamstats > elamstatsNO) {
         dhc->ndh +=1;
     }
     

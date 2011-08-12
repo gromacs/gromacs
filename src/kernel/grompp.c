@@ -1313,9 +1313,9 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
 
-  if (ir->fepvals->lmc_seed == -1) {
-    ir->fepvals->lmc_seed = make_seed();
-    fprintf(stderr,"Setting the lambda MC random seed to %d\n",ir->fepvals->lmc_seed);
+  if (ir->expandedvals->lmc_seed == -1) {
+    ir->expandedvals->lmc_seed = make_seed();
+    fprintf(stderr,"Setting the lambda MC random seed to %d\n",ir->expandedvals->lmc_seed);
   }
 
   bNeedVel = EI_STATE_VELOCITY(ir->eI);
@@ -1396,10 +1396,13 @@ int main (int argc, char *argv[])
             else
             {
                 fprintf(stderr," and %s\n",fnB);
-                if (ir->efep != efepNO && ir->fepvals->n_lambda > 0)
+#if 0                
+                if (ir->efep > efepNO && ir->fepvals->n_lambda > 0)
                 {
                     warning_error(wi,"Can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.");
                 }
+                /* MRS: Pretty sure this has been fixed with the current code.  Need to do more in depth verification.  */
+#endif
             }
         }
         gen_posres(sys,mi,fn,fnB,
@@ -1550,22 +1553,26 @@ int main (int argc, char *argv[])
   /*  reset_multinr(sys); */
   
   if (EEL_PME(ir->coulombtype)) {
-    float ratio = pme_load_estimate(sys,ir,state.box);
-    fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
-    /* With free energy we might need to do PME both for the A and B state
-     * charges. This will double the cost, but the optimal performance will
-     * then probably be at a slightly larger cut-off and grid spacing.
-     */
-    if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
-        (ir->efep != efepNO && ratio > 2.0/3.0)) {
-        warning_note(wi,
-                     "The optimal PME mesh load for parallel simulations is below 0.5\n"
-		   "and for highly parallel simulations between 0.25 and 0.33,\n"
-		   "for higher performance, increase the cut-off and the PME grid spacing");
-    }
+      float ratio = pme_load_estimate(sys,ir,state.box);
+      fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
+      /* With free energy we might need to do PME both for the A and B state
+       * charges. This will double the cost, but the optimal performance will
+       * then probably be at a slightly larger cut-off and grid spacing.
+       */
+      if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
+          (ir->efep > efepNO && ratio > 2.0/3.0)) {
+          warning_note(wi,
+                       "The optimal PME mesh load for parallel simulations is below 0.5\n"
+                       "and for highly parallel simulations between 0.25 and 0.33,\n"
+                       "for higher performance, increase the cut-off and the PME grid spacing.\n");
+          if (ir->efep > efepNO) {
+              warning_note(wi,
+                           "For free energy simulations, the optimal load limit increases from 0.5 to 0.667\n");
+          }
+      }
   }
-
-    {
+  
+  {
         char warn_buf[STRLEN];
         double cio = compute_io(ir,sys->natoms,&sys->groups,F_NRE,1);
         sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
@@ -1577,7 +1584,8 @@ int main (int argc, char *argv[])
         }
     }
 	
-  if (ir->efep!= efepNO)
+  /* MRS: eventually figure out better logic for initializing the fep values.  */
+  if (ir->efep > efepNO)
   {
       state.fep_state = ir->fepvals->init_fep_state;
       for (i=0;i<efptNR;i++) 

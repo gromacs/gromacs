@@ -720,10 +720,10 @@ void do_force(FILE *fplog,t_commrec *cr,
          * grompp checks for this.  (verify this is still the case?)
          */
         enerd->dvdl_nonlin[efptRESTRAINT] += dvdlambda[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
-                                                                     but we can't be sure w/o additional checking that is
-                                                                     hard to do at this level of code. Otherwise, 
-                                                                     the dvdl is not differentiable */
-         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+                                                                          but we can't be sure w/o additional checking that is
+                                                                          hard to do at this level of code. Otherwise, 
+                                                                          the dvdl is not differentiable */
+        inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
         if ((inputrec->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
         {
             for(i=0; i<enerd->n_lambda; i++)
@@ -737,7 +737,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                 enerd->enerpart_lambda[i] += v;
             }
         } 
-
    }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
@@ -1229,7 +1228,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
         *enercorr += avcsix*enerdiff;
         dvdlambda = 0.0;
-        if (ir->efep != efepNO) 
+        if (ir->efep > efepNO) 
         {
             dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
@@ -1237,7 +1236,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         {
             enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
             *enercorr += avctwelve*enerdiff;
-            if (fr->efep != efepNO) 
+            if (fr->efep > efepNO) 
             {
                 dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
@@ -1284,7 +1283,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
                     *enercorr,dvdlambda);
         }
-        if (fr->efep != efepNO) 
+        if (fr->efep > efepNO) 
         {
             *dvdlcorr += dvdlambda;
         }
@@ -1473,6 +1472,9 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 
 extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0)
 {
+    /* this function works, but could probably use a logic rewrite to keep all the different 
+       types of efep straight. */
+
     int i;
     
     if (efep==efepNO) {
@@ -1484,28 +1486,29 @@ extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state
             }
         }
         return;
+    } else {
+    
+        *fep_state = fep->init_fep_state; /* this might overwrite if checkpoint is set -- kludge is in for now */
+        for (i=0;i<efptNR;i++) 
+        {
+            /* overwrite lambda state with init_lambda for now for backwards compatibility */
+            if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
+            {
+                lambda[i] = fep->init_lambda;
+                if (lam0) {
+                    lam0[i] = lambda[i];
+                }
+            }
+            else 
+            {
+                lambda[i] = fep->all_lambda[i][*fep_state];
+                if (lam0) {
+                    lam0[i] = lambda[i];
+                }
+            }
+        } 
     }
-    
-    *fep_state = fep->init_fep_state; /* this might overwrite if checkpoint is set -- kludge is in for now */
-    for (i=0;i<efptNR;i++) 
-    {
-        /* overwrite lambda state with init_lambda for now for backwards compatibility */
-        if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
-        {
-            lambda[i] = fep->init_lambda;
-            if (lam0) {
-                lam0[i] = lambda[i];
-            }
-        }
-        else 
-        {
-            lambda[i] = fep->all_lambda[i][*fep_state];
-            if (lam0) {
-                lam0[i] = lambda[i];
-            }
-        }
-    } 
-    
+
     /* Send to the log the information on the current lambdas */
     if (fplog != NULL) 
     {
@@ -1552,7 +1555,7 @@ void init_md(FILE *fplog,
     }
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,fep_state,lambda,lam0);
+    initialize_lambdas(fplog,ir->efep,ir->fepvals,fep_state,lambda,lam0);
     
     if (upd)
     {

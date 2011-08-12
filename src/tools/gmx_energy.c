@@ -1418,7 +1418,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
                     }
                     /* we need to decide which data type it is based on the count*/
                     
-                    if ((j==1) && (ir->fepvals->elamstats > elamstatsNO)) 
+                    if (j==1 && ir->bExpanded) 
                     {
                         fprintf(*fp_dhdl,"%4d", (int)value);   /* if expanded ensembles and zero, this is a state value, it's an integer. We need a cleaner conditional than if j==1! */
                     } else {

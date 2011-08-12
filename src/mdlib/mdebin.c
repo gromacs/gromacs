@@ -213,9 +213,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                  (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT]) || 
                  (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS]) ||
                  (i == F_DVDL_REMAIN && ir->fepvals->separate_dvdl[efptFEP]))
-            md->bEner[i] = (ir->efep != efepNO);
+            md->bEner[i] = (ir->efep > efepNO);
 /*    else if (i == F_DHDL_CON)
-      md->bEner[i] = (ir->efep != efepNO && md->bConstr); */      
+      md->bEner[i] = (ir->efep > efepNO && md->bConstr); */      
         else if ((interaction_function[i].flags & IF_VSITE) ||
                  (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
             md->bEner[i] = FALSE;
@@ -552,7 +552,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     /* check whether we're going to write dh histograms */
     md->dhc=NULL; 
-    if (ir->fepvals->separate_dhdl_file == sepdhdlfileNO )
+    if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO )
     {
         int i;
         snew(md->dhc, 1);
@@ -564,7 +564,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         md->fp_dhdl = fp_dhdl;
     }
-    //md->dhdl_derivatives = (ir->dhdl_derivatives==dhdlderivativesYES);
     return md;
 }
 
@@ -586,8 +585,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     /* for simplicity */
     fep = ir->fepvals;
 
-    /* consider adding an option for printing the full potential at each step, instead of the differences. */
-    
     if (fep->n_lambda == 0) 
     {
         sprintf(title,"%s",dhdl);
@@ -604,15 +601,15 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     fp = gmx_fio_fopen(filename,"w+");
     xvgr_header(fp,title,label_x,label_y,exvggtXNY,oenv);
 
-    if (fep->delta_lambda == 0)
-    {
-        sprintf(buf,"T = %g (K), %s = %g",
-                ir->opts.ref_t[0],lambda,fep->init_lambda);
-    }
-    else
+    if (!(ir->bSimTemp))
     {
         sprintf(buf,"T = %g (K)",
                 ir->opts.ref_t[0]);
+    }
+    if (ir->efep != efepSLOWGROWTH)
+    {
+        sprintf(buf,"%s = %g",
+                lambda,fep->init_lambda);
     }
     xvgr_subtitle(fp,buf,oenv);
 
@@ -626,9 +623,9 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->n_lambda>0) 
+    if (fep->n_lambda>0 && !(ir->bSimTemp)) 
     {
-        nsets += 1;   /*add fep state to the dhdl */
+        nsets += 1;   /*add fep state to the dhdl, unless doing simulated tempering, where we supress dhdl */
     }
 
     if (fep->bPrintEnergy)  
@@ -643,10 +640,10 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     }
     snew(setname,nsetsextend); 
     
-    if ((fep->n_lambda > 0) && (fep->elmcmove > elmcmoveNO))
+    if (ir->bExpanded)
     {
         /* state for the fep_vals, if we have alchemical sampling */
-        sprintf(buf,"%s","Alchemical state");
+        sprintf(buf,"%s","Thermodynamic state");
         setname[s] = strdup(buf);
         s+=1;
     }
@@ -673,7 +670,12 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
          * from this xvg legend.
          */
 
-        nsetsbegin = 1;  /* for FEP state */
+        if (!(ir->bSimTemp)) {
+            nsetsbegin = 1;  /* for FEP state */
+        } else {
+            nsetsbegin = 0;
+        }
+ 
         if (fep->bPrintEnergy)  
         { 
             nsetsbegin += 1;
@@ -692,6 +694,11 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
                 }
             }
             sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
+            if (ir->bSimTemp) 
+            {
+                /* print the temperature for this state if doing simulated annealing */
+                sprintf(&buf[nps]," T = %g (%s)",fep->all_lambda[efptTEMPERATURE][s-(nsetsbegin)],unit_temp_K);
+            }
             setname[s] = strdup(buf);
         }
         if (ir->epc!=epcNO) {
@@ -729,7 +736,8 @@ void upd_mdebin(t_mdebin *md,
                 real tmass,
                 gmx_enerdata_t *enerd,
                 t_state *state,
-                t_lambda *fepvals,
+                t_lambda *fep,
+                t_expanded *expand,
                 matrix  box,
                 tensor svir,
                 tensor fvir,
@@ -930,11 +938,11 @@ void upd_mdebin(t_mdebin *md,
         /* the current free energy state */
         
         /* print the current state if we are doing expanded ensemble */
-        if (fepvals->elmcmove > elmcmoveNO) {
+        if (expand->elmcmove > elmcmoveNO) {
             fprintf(md->fp_dhdl," %4d",state->fep_state);
         }
         /* total energy (for if the temperature changes */
-        if (fepvals->bPrintEnergy) 
+        if (fep->bPrintEnergy) 
         {
             store_energy = enerd->term[F_ETOT];
             fprintf(md->fp_dhdl," %#.8g",store_energy);
@@ -942,7 +950,7 @@ void upd_mdebin(t_mdebin *md,
 
         for (i=0;i<efptNR;i++) 
         {
-            if (fepvals->separate_dvdl[i])
+            if (fep->separate_dvdl[i])
             {
                 fprintf(md->fp_dhdl," %#.8g",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
             }
@@ -963,10 +971,10 @@ void upd_mdebin(t_mdebin *md,
     if (md->dhc && bDoDHDL)
     {
         int idhdl = 0; 
-        snew(store_dh,fepvals->n_lambda);
+        snew(store_dh,fep->n_lambda);
         for (i=0;i<efptNR;i++) 
         {
-            if (fepvals->separate_dvdl[i])
+            if (fep->separate_dvdl[i])
             {
                 store_dhdl[idhdl] = enerd->term[F_DVDL_REMAIN+i]; /* assumes F_DVDL_REMAIN is first */
                 idhdl+=1;
@@ -981,11 +989,11 @@ void upd_mdebin(t_mdebin *md,
                                 store_energy,
                                 pv,
                                 state->lambda,
-                                (fepvals->elamstats>elamstatsNO),
-                                (fepvals->bPrintEnergy),
+                                (expand->elamstats>elamstatsNO),
+                                (fep->bPrintEnergy),
                                 (md->epc!=epcNO),
                                 idhdl,
-                                fepvals->n_lambda,
+                                fep->n_lambda,
                                 store_dhdl,
                                 store_dh,
                                 time);

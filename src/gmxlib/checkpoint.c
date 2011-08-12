@@ -1238,7 +1238,8 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
 
 void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
                       FILE *fplog,t_commrec *cr,
-                      int eIntegrator,int efep, t_lambda *fep, int simulation_part,
+                      int eIntegrator,int simulation_part,
+                      gmx_bool bExpanded, int elamstats,
                       gmx_large_int_t step,double t,t_state *state)
 {
     t_fileio *fp;
@@ -1335,15 +1336,15 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         }
     }
 
-    if (efep>0)
+    if (bExpanded)
     {
         flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
                      (1<<edfhTIJ) | (1<<edfhTIJEMP)); 
-        if (EWL(fep->elamstats))
+        if (EWL(elamstats))
         {
             flags_dfh |= ((1<<edfhWLDELTA) | (1<<edfhWLHISTO)); 
         }
-        if ((fep->elamstats == elamstatsMINVAR) || (fep->elamstats == elamstatsBARKER) || (fep->elamstats == elamstatsMETROPOLIS))
+        if ((elamstats == elamstatsMINVAR) || (elamstats == elamstatsBARKER) || (elamstats == elamstatsMETROPOLIS))
         { 
             flags_dfh |= ((1<<edfhACCUMP) | (1<<edfhACCUMM) | (1<<edfhACCUMP2) | (1<<edfhACCUMP2) 
                           | (1<<edfhSUMMINVAR) | (1<<edfhSUMVAR));
@@ -1560,7 +1561,7 @@ static void check_match(FILE *fplog,
 
 static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
-                            int eIntegrator,int bFep, t_lambda *fep, gmx_large_int_t *step,double *t,
+                            int eIntegrator, int *init_fep_state, gmx_large_int_t *step,double *t,
                             t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
                             int *simulation_part,gmx_bool bAppendOutputFiles)
 {
@@ -1770,7 +1771,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
     }
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
-    fep->init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.*/
+    *init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.*/
     if (ret)
     {
         cp_error();
@@ -1968,7 +1969,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
       /* Read the state from the checkpoint file */
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
-                      ir->eI,ir->efep,ir->fepvals,&step,&t,state,bReadRNG,bReadEkin,
+                      ir->eI,&(ir->fepvals->init_fep_state),&step,&t,state,bReadRNG,bReadEkin,
                       &ir->simulation_part,bAppend);
     }
     if (PAR(cr)) {

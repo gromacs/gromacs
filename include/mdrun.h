@@ -128,8 +128,8 @@ typedef struct {
   const char *fn_cpt;
   gmx_bool bKeepAndNumCPT;
   int  eIntegrator;
-  int  efep;
-  t_lambda fep;
+  gmx_bool  bExpanded;
+  int elamstats;
   int  simulation_part;
   FILE *fp_dhdl;
   FILE *fp_field;
@@ -300,8 +300,8 @@ extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
 				     int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng);
 
-extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, df_history_t *dfhist, 
-                                      int nlam, int frequency, gmx_large_int_t step);
+extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, df_history_t *dfhist, 
+				      int nlam, int frequency, gmx_large_int_t step);
   
 extern void get_mc_state(gmx_rng_t rng,t_state *state);
 

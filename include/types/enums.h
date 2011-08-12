@@ -154,12 +154,18 @@ enum {
 
 /* FEP selection */
 enum {
-  efepNO, efepYES, efepNR
+  efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR
 };
+  /* if efepNO, there are no evaluations at other states. 
+     if efepYES, treated equivalently to efepSTATIC.
+     if efepSTATIC, then lambdas do not change during the simulation.
+     if efepSLOWGROWTH, then the states change monotonically throughout the simulation.
+     if efepEXPANDED, then expanded ensemble simulations are occuring. 
+  */
 
 /* FEP coupling types */
 enum {
-  efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptNR
+  efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptTEMPERATURE,efptNR
 };
 
 /* How the lambda weights are calculated:                        
@@ -204,14 +210,14 @@ enum {
 enum
 {
   /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-  sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
+  esepdhdlfileYES, esepdhdlfileNO, esepdhdlfileNR
 };
 
 /* dhdl_derivatives selection */
 enum
 {
   /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-  dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
+  edhdlderivativesYES, edhdlderivativesNO, edhdlderivativesNR
 };
 
 /* Solvent model */

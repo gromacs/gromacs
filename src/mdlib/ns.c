@@ -349,7 +349,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
                    maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_ww);
        
-       if (fr->efep != efepNO) 
+       if (fr->efep > efepNO) 
        {
            if ((fr->bEwald) && (fr->sc_alphacoul > 0))
            {

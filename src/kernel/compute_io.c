@@ -88,7 +88,7 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
     /* t_energy contains doubles, but real is written to edr */
     cio += (1.0*nste)*nrener*3*sizeof(real);
     
-    if ((ir->efep != efepNO) && (ir->nstdhdl > 0))
+    if ((ir->efep > efepNO || ir->bSimTemp) && (ir->nstdhdl > 0))
     {
         int ndh=ir->fepvals->n_lambda;
         int ndhdl=0;
@@ -102,10 +102,10 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
             }
         }
         
-        if (ir->fepvals->separate_dhdl_file==sepdhdlfileYES)
+        if (ir->fepvals->separate_dhdl_file==esepdhdlfileYES)
         {
             nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
-            if (ir->fepvals->elmcmove > elmcmoveNO)
+            if (ir->expandedvals->elmcmove > elmcmoveNO)
             {
                 nchars += 5;   /* alchemical state */
             }
@@ -122,7 +122,7 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
             if (ir->fepvals->dh_hist_size <= 0) 
             {
                 int ndh_tot = ndh+ndhdl;
-                if (ir->fepvals->elmcmove > elmcmoveNO)
+                if (ir->expandedvals->elmcmove > elmcmoveNO)
                 {
                     ndh_tot += 1;
                 }

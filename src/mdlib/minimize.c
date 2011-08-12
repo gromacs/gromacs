@@ -281,30 +281,7 @@ void init_em(FILE *fplog,const char *title,
     state_global->ngtc = 0;
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog,(ir->efep != efepNO),ir->fepvals,&(state_global->fep_state),state_global->lambda,NULL);
-
-#if 0
-    for (i=0;i<efptNR;i++)
-    {
-        if (ir->efep != efepNO)
-        {
-            state_global->fep_state = ir->fepvals->init_fep_state;
-            /* overwrite lambda state with init_lambda for now for backwards compatibility */
-            if (ir->fepvals->init_lambda>=0) /* if it's -1, it was never initializd */
-            {
-                state_global->lambda[i] = ir->fepvals->init_lambda;
-            }
-            else 
-            {
-                state_global->lambda[i] = ir->fepvals->all_lambda[i][state_global->fep_state];
-            }
-        } 
-        else 
-        {
-            state_global->lambda[i] = 0.0;
-        }
-    }
-#endif
+    initialize_lambdas(fplog,ir->efep,ir->fepvals,&(state_global->fep_state),state_global->lambda,NULL);
 
     init_nrnb(nrnb);
     
@@ -970,7 +947,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,FALSE,FALSE,(double)step,
-               mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
+               mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,inputrec->expandedvals,s_min->s.box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda[efptFEP]);
@@ -1323,7 +1300,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,FALSE,FALSE,(double)step,
-                 mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,s_min->s.box,
+                 mdatoms->tmass,enerd,&s_min->s,inputrec->fepvals,inputrec->expandedvals,s_min->s.box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
 
       do_log = do_per_step(step,inputrec->nstlog);
@@ -1552,7 +1529,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,FALSE,FALSE,(double)step,
-               mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
+               mdatoms->tmass,enerd,state,inputrec->fepvals,inputrec->expandedvals,state->box,
                NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda[efptFEP]);
@@ -1966,7 +1943,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,FALSE,FALSE,(double)step,
-                 mdatoms->tmass,enerd,state,inputrec->fepvals,state->box,
+                 mdatoms->tmass,enerd,state,inputrec->fepvals,inputrec->expandedvals,state->box,
                  NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
@@ -2151,7 +2128,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
       if (s_try->epot < s_min->epot) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,FALSE,FALSE,(double)count,
-		   mdatoms->tmass,enerd,&s_try->s,inputrec->fepvals,
+		   mdatoms->tmass,enerd,&s_try->s,inputrec->fepvals,inputrec->expandedvals,
                    s_try->s.box, NULL,NULL,vir,pres,NULL,mu_tot,constr);
 	print_ebin(outf->fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),

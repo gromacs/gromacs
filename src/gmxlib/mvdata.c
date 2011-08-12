@@ -466,58 +466,70 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
   }
 }
 
-static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
+static void bc_fepvals(const t_commrec *cr,t_lambda *fep)
 {
-  gmx_bool bAlloc=TRUE;
-  int i;
+    gmx_bool bAlloc=TRUE;
+    int i;
+    
+    block_bc(cr,fep->init_lambda);   
+    block_bc(cr,fep->init_fep_state);
+    block_bc(cr,fep->delta_lambda);	
+    block_bc(cr,fep->nstfep);
+    block_bc(cr,fep->bPrintEnergy);
+    block_bc(cr,fep->n_lambda);        
+    snew_bc(cr,fep->all_lambda,efptNR);
+    nblock_bc(cr,efptNR,fep->all_lambda);
+    for (i=0;i<efptNR;i++) {
+        snew_bc(cr,fep->all_lambda[i],fep->n_lambda);
+        nblock_bc(cr,fep->n_lambda,fep->all_lambda[i]);
+    }
+    block_bc(cr,fep->sc_alpha);        
+    block_bc(cr,fep->sc_power);
+    block_bc(cr,fep->sc_sigma);        
+    block_bc(cr,fep->bScCoul);
+    nblock_bc(cr,efptNR,&(fep->separate_dvdl[0]));
+    block_bc(cr,fep->dh_hist_size);
+    block_bc(cr,fep->dh_hist_spacing);
+    if (debug) 
+    {
+        fprintf(debug,"after bc_fepvals\n");
+    }
+}
 
-  block_bc(cr,fepvals->init_lambda);   
-  block_bc(cr,fepvals->init_fep_state);
-  block_bc(cr,fepvals->delta_lambda);	
-  block_bc(cr,fepvals->nstfep);
-  block_bc(cr,fepvals->bPrintEnergy);
-  block_bc(cr,fepvals->n_lambda);        
-  snew_bc(cr,fepvals->all_lambda,efptNR);
-  nblock_bc(cr,efptNR,fepvals->all_lambda);
-  for (i=0;i<efptNR;i++) {
-      snew_bc(cr,fepvals->all_lambda[i],fepvals->n_lambda);
-      nblock_bc(cr,fepvals->n_lambda,fepvals->all_lambda[i]);
-  }
-  block_bc(cr,fepvals->sc_alpha);        
-  block_bc(cr,fepvals->sc_power);
-  block_bc(cr,fepvals->sc_sigma);        
-  block_bc(cr,fepvals->bScCoul);
-  nblock_bc(cr,efptNR,&(fepvals->separate_dvdl[0]));
-  block_bc(cr,fepvals->dh_hist_size);
-  block_bc(cr,fepvals->dh_hist_spacing);
-  block_bc(cr,fepvals->elamstats);
-  block_bc(cr,fepvals->elmcmove);
-  block_bc(cr,fepvals->elmceq);
-  block_bc(cr,fepvals->equil_n_at_lam);
-  block_bc(cr,fepvals->equil_wl_delta);
-  block_bc(cr,fepvals->equil_ratio);
-  block_bc(cr,fepvals->equil_steps);
-  block_bc(cr,fepvals->equil_samples);
-  block_bc(cr,fepvals->lmc_seed);
-  block_bc(cr,fepvals->minvar);
-  block_bc(cr,fepvals->minvar_const);
-  block_bc(cr,fepvals->c_range);
-  block_bc(cr,fepvals->bSymmetrizedTMatrix);
-  block_bc(cr,fepvals->nstTij);
-  block_bc(cr,fepvals->lmc_repeats);
-  block_bc(cr,fepvals->lmc_forced_nstart);
-  block_bc(cr,fepvals->gibbsdeltalam);
-  block_bc(cr,fepvals->wl_scale);
-  block_bc(cr,fepvals->wl_ratio);
-  block_bc(cr,fepvals->init_wl_delta);
-  block_bc(cr,fepvals->bInit_weights);
-  snew_bc(cr,fepvals->init_lambda_weights,fepvals->n_lambda);
-  nblock_bc(cr,fepvals->n_lambda,fepvals->init_lambda_weights);
-  block_bc(cr,fepvals->mc_temp);
-  if (debug) 
-  {
-      fprintf(debug,"after bc_fepvals\n");
-  }
+static void bc_expandedvals(const t_commrec *cr,t_expanded *expand, int n_lambda)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+    
+    block_bc(cr,expand->nstexpanded);
+    block_bc(cr,expand->elamstats);
+    block_bc(cr,expand->elmcmove);
+    block_bc(cr,expand->elmceq);
+    block_bc(cr,expand->equil_n_at_lam);
+    block_bc(cr,expand->equil_wl_delta);
+    block_bc(cr,expand->equil_ratio);
+    block_bc(cr,expand->equil_steps);
+    block_bc(cr,expand->equil_samples);
+    block_bc(cr,expand->lmc_seed);
+    block_bc(cr,expand->minvar);
+    block_bc(cr,expand->minvar_const);
+    block_bc(cr,expand->c_range);
+    block_bc(cr,expand->bSymmetrizedTMatrix);
+    block_bc(cr,expand->nstTij);
+    block_bc(cr,expand->lmc_repeats);
+    block_bc(cr,expand->lmc_forced_nstart);
+    block_bc(cr,expand->gibbsdeltalam);
+    block_bc(cr,expand->wl_scale);
+    block_bc(cr,expand->wl_ratio);
+    block_bc(cr,expand->init_wl_delta);
+    block_bc(cr,expand->bInit_weights);
+    snew_bc(cr,expand->init_lambda_weights,n_lambda);
+    nblock_bc(cr,n_lambda,expand->init_lambda_weights);
+    block_bc(cr,expand->mc_temp);
+    if (debug) 
+    {
+        fprintf(debug,"after bc_expandedvals\n");
+    }
 }
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
@@ -533,8 +545,12 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
    * n_lambda is set to zero */
 
   snew_bc(cr,inputrec->fepvals,1);
-  if (inputrec->efep != efepNO) {
+  if (inputrec->efep > efepNO || inputrec->bSimTemp) {
       bc_fepvals(cr,inputrec->fepvals);
+  }
+  if (inputrec->bExpanded) {
+      snew_bc(cr,inputrec->expandedvals,1);
+      bc_expandedvals(cr,inputrec->expandedvals,inputrec->fepvals->n_lambda);
   }
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);

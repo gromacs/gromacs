@@ -105,6 +105,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->include,STRLEN); 
   snew(opts->define,STRLEN);
   snew(ir->fepvals,1);
+  snew(ir->expandedvals,1);
 }
 
 static void _low_check(gmx_bool b,char *s,warninp_t wi)
@@ -167,7 +168,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     real dt_coupl=0;
     real dt_pcoupl;
     int  nstcmin;
-    t_lambda *fep;
+    t_lambda *fep = ir->fepvals;
+    t_expanded *expand = ir->expandedvals;
     
   set_warning_line(wi,mdparin,-1);
 
@@ -294,7 +296,22 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
      
   /* verify FEP options */
 
-  if (ir->efep != efepNO) {
+  if (ir->bSimTemp) {
+      for (i=0;i<fep->n_lambda;i++) 
+      {
+          sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[efptTEMPERATURE],fep->all_lambda[efptTEMPERATURE][i]);
+          CHECK((fep->all_lambda[efptTEMPERATURE][i] < 0) || (fep->all_lambda[efptTEMPERATURE][i] > 1));
+      }
+      /* check validty of lambda inputs */
+      sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
+      CHECK((fep->init_fep_state >= fep->n_lambda));
+
+      /* check compatability of the temperature coupling with simulated tempering */
+      sprintf(err_buf,"Nose-Hoover based temperature control such as [%s] is not consistent with simulated tempering",etcoupl_names[ir->etc]);
+      CHECK((ir->etc != etcNOSEHOOVER));
+  }
+
+  if (ir->efep > efepNO) {
       fep = ir->fepvals;
       sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
               fep->sc_power);
@@ -310,12 +327,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     
       sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);    
       CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0))); 
-      
+
+      sprintf(err_buf,"Can't use postive delta-lambda (%g) with expanded ensemble simulations",fep->delta_lambda);    
+      CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
+
       sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
       CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM));
       
       /* check validty of lambda inputs */
-      sprintf(err_buf,"initial fep state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
+      sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
       CHECK((fep->init_fep_state >= fep->n_lambda));
       
       for (j=0;j<efptNR;j++)
@@ -355,95 +375,107 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
           be treated differently, but that's the next step */
       
       for (i=0;i<efptNR;i++) {
-          for (j=0;j<ir->fepvals->n_lambda;j++) {
+          for (j=0;j<fep->n_lambda;j++) {
               sprintf(err_buf,"%s[%d] must be between 0 and 1",efpt_names[i],j);
-              CHECK((ir->fepvals->all_lambda[i][j] < 0) || (ir->fepvals->all_lambda[i][j] > 1));
+              CHECK((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1));
           }
       }
+  }
+
+  if ((ir->bSimTemp) || (ir->efep != efepNO)) {
+      fep = ir->fepvals;
+      expand = ir->expandedvals;
 
       /* checking equilibration of weights inputs for validity */
-
+      
       sprintf(err_buf,"weight-equil-number-all-lambda (%d) is ignored if lmc-weight-equil is not equal to %s",
-              fep->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
-      CHECK((fep->equil_n_at_lam>0) && (fep->elmceq!=elmceqNUMATLAM));
+              expand->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
+      CHECK((expand->equil_n_at_lam>0) && (expand->elmceq!=elmceqNUMATLAM));
             
       sprintf(err_buf,"weight-equil-number-samples (%d) is ignored if lmc-weight-equil is not equal to %s",
-              fep->equil_samples,elmceq_names[elmceqSAMPLES]);
-      CHECK((fep->equil_samples>0) && (fep->elmceq!=elmceqSAMPLES));
+              expand->equil_samples,elmceq_names[elmceqSAMPLES]);
+      CHECK((expand->equil_samples>0) && (expand->elmceq!=elmceqSAMPLES));
       
       sprintf(err_buf,"weight-equil-number-steps (%d) is ignored if lmc-weight-equil is not equal to %s",
-              fep->equil_steps,elmceq_names[elmceqSTEPS]);
-      CHECK((fep->equil_steps>0) && (fep->elmceq!=elmceqSTEPS));
+              expand->equil_steps,elmceq_names[elmceqSTEPS]);
+      CHECK((expand->equil_steps>0) && (expand->elmceq!=elmceqSTEPS));
       
       sprintf(err_buf,"weight-equil-wl-delta (%d) is ignored if lmc-weight-equil is not equal to %s",
-              fep->equil_samples,elmceq_names[elmceqWLDELTA]);
-      CHECK((fep->equil_wl_delta>0) && (fep->elmceq!=elmceqWLDELTA));
+              expand->equil_samples,elmceq_names[elmceqWLDELTA]);
+      CHECK((expand->equil_wl_delta>0) && (expand->elmceq!=elmceqWLDELTA));
       
       sprintf(err_buf,"weight-equil-count-ratio (%f) is ignored if lmc-weight-equil is not equal to %s",
-              fep->equil_ratio,elmceq_names[elmceqRATIO]);
-      CHECK((fep->equil_ratio>0) && (fep->elmceq!=elmceqRATIO));
+              expand->equil_ratio,elmceq_names[elmceqRATIO]);
+      CHECK((expand->equil_ratio>0) && (expand->elmceq!=elmceqRATIO));
 
       sprintf(err_buf,"weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weight-equil=%s",
-              fep->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
-      CHECK((fep->equil_n_at_lam<=0) && (fep->elmceq==elmceqNUMATLAM));
+              expand->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
+      CHECK((expand->equil_n_at_lam<=0) && (expand->elmceq==elmceqNUMATLAM));
       
       sprintf(err_buf,"weight-equil-number-samples (%d) must be a positive integer if lmc-weight-equil=%s",
-              fep->equil_samples,elmceq_names[elmceqSAMPLES]);
-      CHECK((fep->equil_samples<=0) && (fep->elmceq==elmceqSAMPLES));
+              expand->equil_samples,elmceq_names[elmceqSAMPLES]);
+      CHECK((expand->equil_samples<=0) && (expand->elmceq==elmceqSAMPLES));
       
       sprintf(err_buf,"weight-equil-number-steps (%d) must be a positive integer if lmc-weight-equil=%s",
-              fep->equil_steps,elmceq_names[elmceqSTEPS]);
-      CHECK((fep->equil_steps<=0) && (fep->elmceq==elmceqSTEPS));
+              expand->equil_steps,elmceq_names[elmceqSTEPS]);
+      CHECK((expand->equil_steps<=0) && (expand->elmceq==elmceqSTEPS));
       
       sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weight-equil=%s",
-              fep->equil_wl_delta,elmceq_names[elmceqWLDELTA]);
-      CHECK((fep->equil_wl_delta<=0) && (fep->elmceq==elmceqWLDELTA));
+              expand->equil_wl_delta,elmceq_names[elmceqWLDELTA]);
+      CHECK((expand->equil_wl_delta<=0) && (expand->elmceq==elmceqWLDELTA));
       
       sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weight-equil=%s",
-              fep->equil_ratio,elmceq_names[elmceqRATIO]);
-      CHECK((fep->equil_ratio<=0) && (fep->elmceq==elmceqRATIO));
+              expand->equil_ratio,elmceq_names[elmceqRATIO]);
+      CHECK((expand->equil_ratio<=0) && (expand->elmceq==elmceqRATIO));
       
       sprintf(err_buf,"lmc-weight-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
               elmceq_names[elmceqWLDELTA],elamstats_names[elamstatsWL],elamstats_names[elamstatsWWL]);
-      CHECK((fep->elmceq==elmceqWLDELTA) && (!EWL(fep->elamstats)));
+      CHECK((expand->elmceq==elmceqWLDELTA) && (!EWL(expand->elamstats)));
 
-      sprintf(err_buf,"lmc-repeats (%d) must be greater than 0",fep->lmc_repeats);
-      CHECK((fep->lmc_repeats <= 0));      
-      sprintf(err_buf,"minimum-var-min (%d) must be greater than 0",fep->minvarmin);
-      CHECK((fep->minvarmin <= 0));
-      sprintf(err_buf,"weight-c-range (%d) must be greater or equal to 0",fep->c_range);
-      CHECK((fep->c_range < 0));
+      sprintf(err_buf,"lmc-repeats (%d) must be greater than 0",expand->lmc_repeats);
+      CHECK((expand->lmc_repeats <= 0));      
+      sprintf(err_buf,"minimum-var-min (%d) must be greater than 0",expand->minvarmin);
+      CHECK((expand->minvarmin <= 0));
+      sprintf(err_buf,"weight-c-range (%d) must be greater or equal to 0",expand->c_range);
+      CHECK((expand->c_range < 0));
       sprintf(err_buf,"init-lambda-state (%d) must be zero if lmc-forced-nstart (%d)> 0 and lmc-move != 'no'",
-              fep->init_fep_state, fep->lmc_forced_nstart);
-      CHECK((fep->init_fep_state!=0) && (fep->lmc_forced_nstart>0) && (fep->elmcmove!=elmcmoveNO));      
-      sprintf(err_buf,"lmc-forced-nstart (%d) must not be negative",fep->lmc_forced_nstart);
-      CHECK((fep->lmc_forced_nstart < 0));  
+              fep->init_fep_state, expand->lmc_forced_nstart);
+      CHECK((fep->init_fep_state!=0) && (expand->lmc_forced_nstart>0) && (expand->elmcmove!=elmcmoveNO));      
+      sprintf(err_buf,"lmc-forced-nstart (%d) must not be negative",expand->lmc_forced_nstart);
+      CHECK((expand->lmc_forced_nstart < 0));  
       sprintf(err_buf,"init-lambda-state (%d) must be in the interval [0,number of lambdas)",fep->init_fep_state);
       CHECK((fep->init_fep_state < 0) || (fep->init_fep_state >= fep->n_lambda));  
 
-      sprintf(err_buf,"init-wl-delta (%f) must be greater than or equal to 0",fep->init_wl_delta);
-      CHECK((fep->init_wl_delta < 0));
-      sprintf(err_buf,"wl-ratio (%f) must be between 0 and 1",fep->wl_ratio);
-      CHECK((fep->wl_ratio <= 0) || (fep->wl_ratio >= 1));
-      sprintf(err_buf,"wl-scale (%f) must be between 0 and 1",fep->wl_scale);
-      CHECK((fep->wl_scale <= 0) || (fep->wl_scale >= 1));
+      sprintf(err_buf,"init-wl-delta (%f) must be greater than or equal to 0",expand->init_wl_delta);
+      CHECK((expand->init_wl_delta < 0));
+      sprintf(err_buf,"wl-ratio (%f) must be between 0 and 1",expand->wl_ratio);
+      CHECK((expand->wl_ratio <= 0) || (expand->wl_ratio >= 1));
+      sprintf(err_buf,"wl-scale (%f) must be between 0 and 1",expand->wl_scale);
+      CHECK((expand->wl_scale <= 0) || (expand->wl_scale >= 1));
+
+      /* make sure the frequency of various things being computed are compatible */
+
+      /* if there is no temperature control, we need to specify an MC temperature */
+      sprintf(err_buf,"If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
+      CHECK(!(ir->etc || EI_SD(ir->eI) || ir->eI==eiBD) && (expand->mc_temp <=0) && (expand->elmcmove != elmcmoveNO));
+
       sprintf(err_buf,"nstdhdl (%d) must be an integer multiple of nstfep (%d)",
               ir->nstdhdl,fep->nstfep);
       CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
       sprintf(err_buf,"nstfep (%d) must be an integer multiple of nstlist (%d)",
               fep->nstfep,ir->nstlist);  /* MRS -- WHAT ABOUT IF IT'S VARIABLE NSLIST? */
       CHECK((mod(ir->nstdhdl,fep->nstfep)!=0));
-      if (fep->nstTij > 0)
+
+      sprintf(err_buf,"nstexpanded (%d) must be an integer multiple of nstfep (%d) if changes in lambda state are being performed",
+              expand->nstexpanded,fep->nstfep);  
+      CHECK((ir->efep > efepNO) && (mod(expand->nstexpanded,fep->nstfep)!=0)); /* is this right? */
+
+      if (expand->nstTij > 0)
       {
           sprintf(err_buf,"nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
-                  fep->nstTij,ir->nstlog);
-          CHECK((mod(fep->nstTij,ir->nstlog)!=0));
+                  expand->nstTij,ir->nstlog);
+          CHECK((mod(expand->nstTij,ir->nstlog)!=0));
       }
-      /* if there is no temperature control, we need to specify an MC temperature */
-      sprintf(err_buf,"If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
-      CHECK(!(ir->etc || EI_SD(ir->eI) || ir->eI==eiBD) && (fep->mc_temp <=0) && (fep->elmcmove != elmcmoveNO));
-
-      /* other FEP checks that might need to be added . . . */
   }
   
   /* PBC/WALLS */
@@ -939,6 +971,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
 
     int i,j,max_n_lambda,nweights,nfep[efptNR];
     t_lambda *fep = ir->fepvals;
+    t_expanded *expand = ir->expandedvals;
     double **count_fep_lambdas;
     
     snew(count_fep_lambdas,efptNR);
@@ -981,6 +1014,9 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
             gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
                       nfep[i],efpt_names[i],max_n_lambda);	
         }
+
+        ir->fepvals->separate_dvdl[efptTEMPERATURE] = FALSE;            
+        /* we don't print out dhdl if the temperature is changing, since we can't correctly define dhdl in this case */
     }
     
     /* the number of lambdas is the number we've read in, which is either zero 
@@ -1031,12 +1067,13 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
         }
     }
 
+    expand = ir->expandedvals;
     /* now read in the weights - error handling? */
-    parse_n_double(weights,&nweights,&(fep->init_lambda_weights));
+    parse_n_double(weights,&nweights,&(expand->init_lambda_weights));
     if (nweights == 0) 
     {
-        fep->bInit_weights = FALSE;
-        snew(fep->init_lambda_weights,fep->n_lambda); /* initialize to zero */
+        expand->bInit_weights = FALSE;
+        snew(expand->init_lambda_weights,fep->n_lambda); /* initialize to zero */
     } 
     else if (nweights != fep->n_lambda)
     {
@@ -1045,7 +1082,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     } 
     else 
     {
-        fep->bInit_weights = TRUE;
+        expand->bInit_weights = TRUE;
     }
 }
 
@@ -1125,7 +1162,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   const char *tmp;
   int       i,j,m,ninp;
   char      warn_buf[STRLEN];
-  
+  t_lambda  *fep = ir->fepvals;
+  t_expanded *expand = ir->expandedvals;
+
   inp = read_inpfile(mdparin, &ninp, NULL, wi);
 
   snew(dumstr[0],STRLEN);
@@ -1423,61 +1462,71 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("dihre",       opts->bDihre,   yesno_names);
   RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
 
-  /* Free energy stuff */
+  /* simulated tempering variables */
   CCTYPE ("Free energy control stuff");
+  EETYPE("simulated-tempering",ir->bSimTemp,yesno_names); 
+  RTYPE("sim-temp-low",ir->simtemp_low,300.0);
+  RTYPE("sim-temp-high",ir->simtemp_high,300.0);
+
+  /* free energy variables */
+
   EETYPE("free-energy",	ir->efep, efep_names); 
-  RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so 
+  ITYPE ("nstdhdl",ir->nstdhdl, 10);
+  STYPE ("couple-moltype",  couple_moltype,  NULL);
+  EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
+  EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
+  EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
+
+  RTYPE ("init-lambda", fep->init_lambda,-1); /* start with -1 so 
                                                          we can recognize if 
                                                          it was not entered */
-  ITYPE ("init-lambda-state", ir->fepvals->init_fep_state,0);
-  RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
-  EETYPE("lmc-stats", ir->fepvals->elamstats, elamstats_names);
-  EETYPE("lmc-mc-move", ir->fepvals->elmcmove, elmcmove_names);
-  EETYPE("lmc-weights-equil",ir->fepvals->elmceq,elmceq_names);
-  ITYPE ("weight-equil-number-all-lambda",ir->fepvals->equil_n_at_lam,-1);
-  ITYPE ("weight-equil-number-samples",ir->fepvals->equil_samples,-1);
-  ITYPE ("weight-equil-number-steps",ir->fepvals->equil_steps,-1);
-  RTYPE ("weight-equil-wl-delta",ir->fepvals->equil_wl_delta,-1);
-  RTYPE ("weight-equil-count-ratio",ir->fepvals->equil_ratio,-1);
-  CCTYPE("Seed for Monte Carlo in lambda space");
-  ITYPE ("lmc-seed",ir->fepvals->lmc_seed,-1);
-  RTYPE ("mc-temperature",ir->fepvals->mc_temp,-1);
-  ITYPE ("lmc-repeats",ir->fepvals->lmc_repeats,1);
-  ITYPE ("lmc-gibbsdelta",ir->fepvals->gibbsdeltalam,-1);
-  ITYPE ("lmc-forced-nstart",ir->fepvals->lmc_forced_nstart,0);  
-  EETYPE("symmetrized-transition-matrix", ir->fepvals->bSymmetrizedTMatrix, yesno_names);
-  ITYPE("nst-transition-matrix", ir->fepvals->nstTij, -1);
-  ITYPE ("mininum-var-min",ir->fepvals->minvarmin, 100); /*default is reasonable */
-  ITYPE ("weight-c-range",ir->fepvals->c_range, 0); /* default is just C=0 */
-  RTYPE ("wl-scale",ir->fepvals->wl_scale,0.8);
-  RTYPE ("wl-ratio",ir->fepvals->wl_ratio,0.8);
-  RTYPE ("init-wl-delta",ir->fepvals->init_wl_delta,1.0);
-  EETYPE("wl-oneovert",ir->fepvals->bWLoneovert,yesno_names);
+  ITYPE ("init-lambda-state", fep->init_fep_state,0);
+  RTYPE ("delta-lambda",fep->delta_lambda,0.0);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);
   STYPE ("vdw-lambdas", fep_lambda[efptVDW], NULL);
   STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
   STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
+  STYPE ("temperature-lambdas", fep_lambda[efptTEMPERATURE], NULL);
   STYPE ("init-lambda-weights",lambda_weights,NULL);
-  EETYPE("dhdl-print-energy", ir->fepvals->bPrintEnergy, yesno_names);
-  RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
-  ITYPE ("sc-power",ir->fepvals->sc_power,0);
-  RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
-  EETYPE("sc-coul",ir->fepvals->bScCoul,yesno_names);
-  ITYPE ("nstdhdl",ir->nstdhdl, 10);
-  ITYPE ("nstfep",ir->fepvals->nstfep, 10);
-  ITYPE ("dh_hist_size", ir->fepvals->dh_hist_size, 0);
-  RTYPE ("dh_hist_spacing", ir->fepvals->dh_hist_spacing, 0.1);
-  EETYPE("separate-dhdl-file", ir->fepvals->separate_dhdl_file, 
+  EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
+  RTYPE ("sc-alpha",fep->sc_alpha,0.0);
+  ITYPE ("sc-power",fep->sc_power,0);
+  RTYPE ("sc-sigma",fep->sc_sigma,0.3);
+  EETYPE("sc-coul",fep->bScCoul,yesno_names);
+  ITYPE ("nstfep",fep->nstfep, 10);
+  ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
+  RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
+  EETYPE("separate-dhdl-file", fep->separate_dhdl_file, 
                                separate_dhdl_file_names);
-  EETYPE("dhdl-derivatives", ir->fepvals->dhdl_derivatives, dhdl_derivatives_names);
-  ITYPE ("dh_hist_size", ir->fepvals->dh_hist_size, 0);
-  RTYPE ("dh_hist_spacing", ir->fepvals->dh_hist_spacing, 0.1);
-  STYPE ("couple-moltype",  couple_moltype,  NULL);
-  EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
-  EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
-  EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
+  EETYPE("dhdl-derivatives", fep->dhdl_derivatives, dhdl_derivatives_names);
+  ITYPE ("dh_hist_size", fep->dh_hist_size, 0);
+  RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
+
+  /* expanded ensemble variables */
+  EETYPE("lmc-stats", expand->elamstats, elamstats_names);
+  EETYPE("lmc-mc-move", expand->elmcmove, elmcmove_names);
+  EETYPE("lmc-weights-equil",expand->elmceq,elmceq_names);
+  ITYPE ("weight-equil-number-all-lambda",expand->equil_n_at_lam,-1);
+  ITYPE ("weight-equil-number-samples",expand->equil_samples,-1);
+  ITYPE ("weight-equil-number-steps",expand->equil_steps,-1);
+  RTYPE ("weight-equil-wl-delta",expand->equil_wl_delta,-1);
+  RTYPE ("weight-equil-count-ratio",expand->equil_ratio,-1);
+  CCTYPE("Seed for Monte Carlo in lambda space");
+  ITYPE ("lmc-seed",expand->lmc_seed,-1);
+  RTYPE ("mc-temperature",expand->mc_temp,-1);
+  ITYPE ("lmc-repeats",expand->lmc_repeats,1);
+  ITYPE ("lmc-gibbsdelta",expand->gibbsdeltalam,-1);
+  ITYPE ("lmc-forced-nstart",expand->lmc_forced_nstart,0);  
+  EETYPE("symmetrized-transition-matrix", expand->bSymmetrizedTMatrix, yesno_names);
+  ITYPE("nst-transition-matrix", expand->nstTij, -1);
+  ITYPE ("mininum-var-min",expand->minvarmin, 100); /*default is reasonable */
+  ITYPE ("weight-c-range",expand->c_range, 0); /* default is just C=0 */
+  RTYPE ("wl-scale",expand->wl_scale,0.8);
+  RTYPE ("wl-ratio",expand->wl_ratio,0.8);
+  RTYPE ("init-wl-delta",expand->init_wl_delta,1.0);
+  EETYPE("wl-oneovert",expand->bWLoneovert,yesno_names);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");
@@ -1595,30 +1644,61 @@ void get_ir(const char *mdparin,const char *mdparout,
     }
   }
 
-  /* FREE ENERGY OPTIONS */
-  if (ir->efep != efepNO) 
+  /* FREE ENERGY AND EXPANDED ENSEMBLE OPTIONS */
+  if (ir->efep > efepNO) {
+      ir->efep = efepSTATIC;
+      if (ir->expandedvals->elmcmove > elmcmoveNO) {
+          ir->efep = efepEXPANDED;
+      }
+      if (fep->delta_lambda > 0) {
+          ir->efep = efepSLOWGROWTH;
+      }
+  }
+
+  if (ir->bSimTemp) {
+      fep->bPrintEnergy = TRUE;
+      /* always print out the energy to dhdl if we are doing expanded ensemble, since we need the total energy
+         if the temperature is changing. */
+  }
+      
+  if ((ir->efep > efepNO) || ir->bSimTemp) 
   {
+      ir->bExpanded = FALSE;
+      if ((ir->efep == efepEXPANDED) || ir->bSimTemp)
+      {
+          ir->bExpanded = TRUE;
+      }
       do_fep_params(ir,fep_lambda,lambda_weights);
   } 
   else
   {
       ir->fepvals->n_lambda = 0;
   }
+
+  /* WALL PARAMETERS */
   
   do_wall_params(ir,wall_atomtype,wall_density,opts);
+
+  /* ORIENTATION RESTRAINT PARAMETERS */
   
   if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
       warning_error(wi,"ERROR: Need one orientation restraint fit group\n");
   }
 
+  /* DEFORMATION PARAMETERS */
+  
   clear_mat(ir->deform);
   for(i=0; i<6; i++)
-    dumdub[0][i] = 0;
+  {
+      dumdub[0][i] = 0;
+  }
   m = sscanf(deform,"%lf %lf %lf %lf %lf %lf",
 	     &(dumdub[0][0]),&(dumdub[0][1]),&(dumdub[0][2]),
 	     &(dumdub[0][3]),&(dumdub[0][4]),&(dumdub[0][5]));
-  for(i=0; i<3; i++)
-    ir->deform[i][i] = dumdub[0][i];
+  for(i=0; i<3; i++) 
+  {
+      ir->deform[i][i] = dumdub[0][i];
+  }
   ir->deform[YY][XX] = dumdub[0][3];
   ir->deform[ZZ][XX] = dumdub[0][4];
   ir->deform[ZZ][YY] = dumdub[0][5];
@@ -2261,9 +2341,9 @@ void do_index(const char* mdparin, const char *ndx,
       }
       /* set the lambda mc temperature to the md integrator temperature (which should be defined 
          if we are in this conditional) if mc_temp is negative */
-      if (ir->fepvals->mc_temp < 0)
+      if (ir->expandedvals->mc_temp < 0)
       {
-          ir->fepvals->mc_temp = ir->opts.ref_t[0];  /*for now, set to the first reft */
+          ir->expandedvals->mc_temp = ir->opts.ref_t[0];  /*for now, set to the first reft */
       }  
   }
       

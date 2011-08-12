@@ -751,7 +751,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         switch (ftype) {
         case F_LJ14:
             bFreeEnergy =
-                (fr->efep != efepNO &&
+                (fr->efep > efepNO &&
                  ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
                   iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                   iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));

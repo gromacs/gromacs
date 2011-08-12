@@ -586,7 +586,7 @@ int main (int argc, char *argv[])
     }
     if (bWLdelta) 
       {
-	ir->fepvals->init_wl_delta = init_wl_delta;
+	ir->expandedvals->init_wl_delta = init_wl_delta;
       }
     if (bFepState) 
       {
@@ -596,12 +596,12 @@ int main (int argc, char *argv[])
       {
 	/* now read in the weights - error handling? */
 	/* MRS: Currently works, though gets error: passing argument 1 of ‘parse_n_double’ discards qualifiers from pointer target type */
-	parse_n_double(init_fep_weights,&nweights,&(ir->fepvals->init_lambda_weights));
+	parse_n_double(init_fep_weights,&nweights,&(ir->expandedvals->init_lambda_weights));
 	
 	if (nweights == 0)
 	  {
-	    ir->fepvals->bInit_weights = FALSE;
-	    snew(ir->fepvals->init_lambda_weights,ir->fepvals->n_lambda); /* initialize to zero */
+	    ir->expandedvals->bInit_weights = FALSE;
+	    snew(ir->expandedvals->init_lambda_weights,ir->fepvals->n_lambda); /* initialize to zero */
 	  }
 	else if (nweights != ir->fepvals->n_lambda)
 	  {
@@ -610,7 +610,7 @@ int main (int argc, char *argv[])
 	  }
 	else
 	  {
-	    ir->fepvals->bInit_weights = TRUE;
+	    ir->expandedvals->bInit_weights = TRUE;
 	  }
       }
   }

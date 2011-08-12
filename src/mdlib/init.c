@@ -76,11 +76,11 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
    * with what is needed, so we correct this here.
    */
   state->flags = 0;
-  if (ir->efep != efepNO)
-    {
+  if (ir->efep > efepNO || ir->bExpanded)
+  {
       state->flags |= (1<<estLAMBDA);
       state->flags |= (1<<estFEPSTATE);
-    }
+  }
   state->flags |= (1<<estX);
   if (state->lambda==NULL)
     {
@@ -124,7 +124,7 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
     state->nrng = 0;
   }
 
-  if (ir->fepvals->elmcmove>elmcmoveNO) 
+  if (ir->bExpanded) 
   {
       state->nmcrng  = gmx_rng_n();
       snew(state->mc_rng,state->nmcrng);
@@ -173,7 +173,7 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);
-  init_df_history(&state->dfhist,ir->fepvals->n_lambda,ir->fepvals->init_wl_delta);
+  init_df_history(&state->dfhist,ir->fepvals->n_lambda,ir->expandedvals->init_wl_delta);
 }
 
 

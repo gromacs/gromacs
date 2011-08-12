@@ -230,6 +230,51 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
   }
 }
 
+static void do_expandedvals(t_fileio *fio,t_expanded *expand,int n_lambda, gmx_bool bRead, int file_version) 
+{
+  /* i is defined in the ndo_double macro; use g to iterate. */
+  int i,g;
+  real fv;
+  gmx_bool bDum=TRUE;
+  real rdum;
+
+  if (file_version >= 74)
+  {
+      if (n_lambda>0)
+      {
+          if (bRead) 
+          {
+              snew(expand->init_lambda_weights,n_lambda);
+          }
+          bDum=gmx_fio_ndo_real(fio,expand->init_lambda_weights,n_lambda);
+          gmx_fio_do_gmx_bool(fio,expand->bInit_weights);
+      }
+
+      gmx_fio_do_int(fio,expand->nstexpanded);
+      gmx_fio_do_int(fio,expand->elmcmove);
+      gmx_fio_do_int(fio,expand->elamstats);
+      gmx_fio_do_int(fio,expand->lmc_repeats);
+      gmx_fio_do_int(fio,expand->gibbsdeltalam);
+      gmx_fio_do_int(fio,expand->lmc_forced_nstart);
+      gmx_fio_do_int(fio,expand->lmc_seed);
+      gmx_fio_do_real(fio,expand->mc_temp);
+      gmx_fio_do_int(fio,expand->bSymmetrizedTMatrix);
+      gmx_fio_do_int(fio,expand->nstTij);
+      gmx_fio_do_int(fio,expand->minvarmin);
+      gmx_fio_do_int(fio,expand->c_range);
+      gmx_fio_do_real(fio,expand->wl_scale);
+      gmx_fio_do_real(fio,expand->wl_ratio);
+      gmx_fio_do_real(fio,expand->init_wl_delta);
+      gmx_fio_do_gmx_bool(fio,expand->bWLoneovert);
+      gmx_fio_do_int(fio,expand->elmceq);
+      gmx_fio_do_int(fio,expand->equil_steps);
+      gmx_fio_do_int(fio,expand->equil_samples);
+      gmx_fio_do_int(fio,expand->equil_n_at_lam);
+      gmx_fio_do_real(fio,expand->equil_wl_delta);
+      gmx_fio_do_real(fio,expand->equil_ratio);
+  }
+}
+
 static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_version) 
 {
   /* i is defined in the ndo_double macro; use g to iterate. */
@@ -272,16 +317,6 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
               bDum=gmx_fio_ndo_int(fio,fepvals->separate_dvdl,efptNR);
           }
       }
-      if (fepvals->n_lambda>0)
-      {
-          if (bRead) 
-          {
-              snew(fepvals->init_lambda_weights,fepvals->n_lambda);
-          }
-          bDum=gmx_fio_ndo_real(fio,fepvals->init_lambda_weights,fepvals->n_lambda);
-          gmx_fio_do_gmx_bool(fio,fepvals->bInit_weights);
-      }
-      gmx_fio_do_gmx_bool(fio,fepvals->bWLoneovert);
   }
   else if (file_version >= 64) 
   {
@@ -297,30 +332,6 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   {
       fepvals->n_lambda = 0;
       fepvals->all_lambda   = NULL;
-  }
-  if (file_version >= 74) 
-  {
-      gmx_fio_do_int(fio,fepvals->elmcmove);
-      gmx_fio_do_int(fio,fepvals->elamstats);
-      gmx_fio_do_int(fio,fepvals->lmc_repeats);
-      gmx_fio_do_int(fio,fepvals->gibbsdeltalam);
-      gmx_fio_do_int(fio,fepvals->lmc_forced_nstart);
-      gmx_fio_do_int(fio,fepvals->lmc_seed);
-      gmx_fio_do_real(fio,fepvals->mc_temp);
-      gmx_fio_do_int(fio,fepvals->bSymmetrizedTMatrix);
-      gmx_fio_do_int(fio,fepvals->nstTij);
-      gmx_fio_do_int(fio,fepvals->minvarmin);
-      gmx_fio_do_int(fio,fepvals->c_range);
-      gmx_fio_do_real(fio,fepvals->wl_scale);
-      gmx_fio_do_real(fio,fepvals->wl_ratio);
-      gmx_fio_do_real(fio,fepvals->init_wl_delta);
-      gmx_fio_do_int(fio,fepvals->nstfep);
-      gmx_fio_do_int(fio,fepvals->elmceq);
-      gmx_fio_do_int(fio,fepvals->equil_steps);
-      gmx_fio_do_int(fio,fepvals->equil_samples);
-      gmx_fio_do_int(fio,fepvals->equil_n_at_lam);
-      gmx_fio_do_real(fio,fepvals->equil_wl_delta);
-      gmx_fio_do_real(fio,fepvals->equil_ratio);
   }
   if (file_version >= 13) 
   {
@@ -382,8 +393,8 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   }
   else
   {
-      fepvals->separate_dhdl_file = sepdhdlfileYES;
-      fepvals->dhdl_derivatives = dhdlderivativesYES;
+      fepvals->separate_dhdl_file = esepdhdlfileYES;
+      fepvals->dhdl_derivatives = edhdlderivativesYES;
   }
 
   if (file_version >= 71)
@@ -758,6 +769,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     if (file_version < 54)
       gmx_fio_do_real(fio,*fudgeQQ);
     do_fepvals(fio,ir->fepvals,bRead,file_version);
+    do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
+
     if (file_version >= 64) {
         gmx_fio_do_int(fio,ir->nstdhdl);
     } else {
@@ -766,8 +779,21 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 
     gmx_fio_do_int(fio,ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
-      ir->efep = efepYES;
-    
+    {
+        ir->efep = efepYES;
+    }
+    gmx_fio_do_gmx_bool(fio,ir->bSimTemp);
+    if (file_version >= 74 && ir->bSimTemp) {
+        ir->bSimTemp = TRUE;
+    }
+    gmx_fio_do_gmx_bool(fio,ir->bExpanded);
+    if (file_version >= 74 && ir->bExpanded) {
+        ir->bExpanded = TRUE;
+    }
+    if (file_version >= 74) {
+        gmx_fio_do_real(fio,ir->simtemp_low);
+        gmx_fio_do_real(fio,ir->simtemp_high);
+    }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
     }

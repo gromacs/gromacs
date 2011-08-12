@@ -263,7 +263,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
           }
           where();
-          if (inputrec->efep != efepNO) 
+          if (inputrec->efep > efepNO) 
           {
               idvdll  = add_bind(rb,efptNR,enerd->dvdl_lin);
               idvdlnl = add_bind(rb,efptNR,enerd->dvdl_nonlin);
@@ -364,7 +364,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           {
               extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
           }
-          if (inputrec->efep != efepNO) 
+          if (inputrec->efep > efepNO) 
           {
               extract_bind(rb,idvdll ,efptNR,enerd->dvdl_lin);
               extract_bind(rb,idvdlnl,efptNR,enerd->dvdl_nonlin);
@@ -447,10 +447,9 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
     of->fp_field = NULL;
     
     of->eIntegrator     = ir->eI;
-    of->efep            = ir->efep;
+    of->bExpanded       = ir->bExpanded;
+    of->elamstats       = ir->expandedvals->elamstats;
     of->simulation_part = ir->simulation_part;
-    of->fep.elamstats = ir->fepvals->elamstats;
-    of->fep.n_lambda   = ir->fepvals->n_lambda;
 
     if (MASTER(cr))
     {
@@ -484,8 +483,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         }
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
-        if (ir->efep != efepNO && ir->nstdhdl > 0 &&
-            (ir->fepvals->separate_dhdl_file == sepdhdlfileYES ) && 
+        if (ir->efep > efepNO && ir->nstdhdl > 0 &&
+            (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) && 
             EI_DYNAMICS(ir->eI))
         {
             if (bAppendFiles)
@@ -651,8 +650,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
          if (mdof_flags & MDOF_CPT)
          {
              write_checkpoint(of->fn_cpt,of->bKeepAndNumCPT,
-                              fplog,cr,of->eIntegrator,of->efep,&(of->fep),
-                              of->simulation_part,step,t,state_global);
+                              fplog,cr,of->eIntegrator,of->simulation_part,
+                              of->bExpanded,of->elamstats,step,t,state_global);
          }
 
          if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

@@ -133,7 +133,7 @@ const char *gtypes[egcNR+1] = {
 };
 
 const char *efep_names[efepNR+1] = {
-  "no", "yes", NULL
+  "no", "yes", "static", "slow-growth", "expanded", NULL
 };
 
 const char *efpt_names[efptNR+1] = {
@@ -152,11 +152,11 @@ const char *elmceq_names[elmceqNR+1] = {
   "no", "yes", "wl-delta", "number-all-lambda", "number-steps", "number-samples", "count-ratio", NULL   
 };
 
-const char *separate_dhdl_file_names[sepdhdlfileNR+1] = {
+const char *separate_dhdl_file_names[esepdhdlfileNR+1] = {
   "yes", "no", NULL
 };
 
-const char *dhdl_derivatives_names[dhdlderivativesNR+1] = {
+const char *dhdl_derivatives_names[edhdlderivativesNR+1] = {
   "yes", "no", NULL
 };
 

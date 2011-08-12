@@ -912,7 +912,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                         "nstenergy",&ir->nstenergy);
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstlog",&ir->nstlog);
-        if (ir->efep != efepNO)
+        if ((ir->efep != efepNO) || ir->bSimTemp) 
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                             "nstdhdl",&ir->nstdhdl);
@@ -1092,7 +1092,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool   bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
-    gmx_bool   bDoDHDL=FALSE,bDoFEP=FALSE;
+    gmx_bool   bDoDHDL=FALSE,bDoFEP=FALSE,bDoExpanded=FALSE;
     gmx_bool   do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bCPT;
     int        mdof_flags;
@@ -1251,7 +1251,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     /* lambda Monte carlo random number generator  */
-    mcrng = gmx_rng_init(ir->fepvals->lmc_seed);
+    mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
 
     /* copy the state into df_history */
     copy_df_history(&df_history,&state_global->dfhist);
@@ -1680,7 +1680,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             t = t0 + step*ir->delta_t;
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep != efepNO || ir->bSimTemp)
         {
             /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
                requiring different logic. */
@@ -1730,7 +1730,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 } 
             }
             bDoDHDL = do_per_step(step,ir->nstdhdl);
-            bDoFEP  = do_per_step(step,ir->fepvals->nstfep);
+            bDoFEP  = (do_per_step(step,ir->fepvals->nstfep) && (ir->efep>efepNO));
+            bDoExpanded  = (do_per_step(step,ir->expandedvals->nstexpanded) && (ir->bExpanded));
         }
         
         if (bSimAnn) 
@@ -1958,9 +1959,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bCalcEnerPres =
             (bNstEner ||
              (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
-
-        bExpandedEnsemble =  ((ir->efep>efepNO) && (ir->fepvals->elmcmove>elmcmoveNO) && 
-                              (bDoFEP) && (step > 0));
+        
+        bExpandedEnsemble =  (ir->bExpanded && (step > 0)); 
         
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
@@ -2276,10 +2276,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist,mdebin);
-                    if (ir->efep>efepNO) 
+                    if (ir->efep>efepNO || ir->bSimTemp) 
                     {
                         state_global->fep_state = state->fep_state; /* MRS: seems kludgy. Find a better place to do this?
-                                                                     only necessary for single threads. */
+                                                                       only necessary for single threads. */
                         copy_df_history(&state_global->dfhist,&df_history);
                     }
                 }
@@ -2749,14 +2749,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (fplog && do_log && bExpandedEnsemble) 
             {
                 /* only needed if doing expanded ensemble */ 
-               PrintFreeEnergyInfoToFile(fplog,ir->fepvals,&df_history,state->fep_state,ir->nstlog,step);
+                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,ir->expandedvals,&df_history,state->fep_state,ir->nstlog,step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
                 if (bNstEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL,TRUE,
-                               t,mdatoms->tmass,enerd,state,ir->fepvals,lastbox,
+                               t,mdatoms->tmass,enerd,state,ir->fepvals,ir->expandedvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
                 }

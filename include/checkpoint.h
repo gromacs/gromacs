@@ -52,10 +52,11 @@ extern "C" {
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
 void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
-			     FILE *fplog,t_commrec *cr,
-			     int eIntegrator,int efep, t_lambda *fep, int simulation_part,
-			     gmx_large_int_t step,double t,
-			     t_state *state);
+		      FILE *fplog,t_commrec *cr,
+		      int eIntegrator, int simulation_part,
+		      gmx_bool bExpanded, int elamstats, 
+		      gmx_large_int_t step,double t,
+		      t_state *state);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -64,10 +65,9 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
  * but not the state itself.
  */
 void load_checkpoint(const char *fn,FILE **fplog,
-			    t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
-			    t_inputrec *ir,t_state *state,gmx_bool *bReadRNG, 
-			    gmx_bool *bReadEkin,
-			    gmx_bool bTruncateOutputFiles);
+		     t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
+		     t_inputrec *ir,t_state *state,gmx_bool *bReadRNG, 
+		     gmx_bool *bReadEkin,gmx_bool bAppend);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.
