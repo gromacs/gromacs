@@ -87,10 +87,6 @@ static const char *boxvel_nm[] = {
 static gmx_bool bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
-
-
-
-
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
@@ -564,6 +560,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         md->fp_dhdl = fp_dhdl;
     }
+    if (ir->bSimTemp) {
+        snew(md->temperatures,ir->fepvals->n_lambda);
+        for (i=0;i<ir->fepvals->n_lambda;i++) 
+        {
+            md->temperatures[i] = ir->simtemp_low + 
+                (ir->simtemp_high-ir->simtemp_low)*ir->fepvals->all_lambda[efptTEMPERATURE][i];  
+            /* setting the simulated tempering temperatures */
+        }
+    }
     return md;
 }
 
@@ -693,11 +698,14 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
                     nps += np;
                 }
             }
-            sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
             if (ir->bSimTemp) 
             {
                 /* print the temperature for this state if doing simulated annealing */
-                sprintf(&buf[nps]," T = %g (%s)",fep->all_lambda[efptTEMPERATURE][s-(nsetsbegin)],unit_temp_K);
+                sprintf(&buf[nps],"T = %g (%s))",ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*fep->all_lambda[efptTEMPERATURE][s-(nsetsbegin)],unit_temp_K);
+            }
+            else 
+            {
+                sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
             }
             setname[s] = strdup(buf);
         }
@@ -753,7 +761,7 @@ void upd_mdebin(t_mdebin *md,
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   store_dhdl[efptNR]; 
-    real   *store_dh;
+    real   *dE;
     real   store_energy;
     real   tmp;
 
@@ -932,6 +940,20 @@ void upd_mdebin(t_mdebin *md,
     ebin_increase_count(md->ebin,bSum);
 
     /* BAR + thermodynamic integration values */
+    if ((md->fp_dhdl || md->dhc) && bDoDHDL)
+    {
+        snew(dE,enerd->n_lambda-1);
+        for(i=0; i<enerd->n_lambda-1; i++) {
+            if (md->temperatures!=NULL) {
+                dE[i] = enerd->term[F_ETOT]*(md->temperatures[i]/md->temperatures[state->fep_state]-1.0);
+            } 
+            else 
+            {
+                dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];                
+            }
+        }
+    }
+
     if (md->fp_dhdl && bDoDHDL)
     {
         fprintf(md->fp_dhdl,"%.4f",time);
@@ -957,8 +979,7 @@ void upd_mdebin(t_mdebin *md,
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(md->fp_dhdl," %#.8g",
-                    enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+            fprintf(md->fp_dhdl," %#.8g",dE[i-1]);
             
         }
         if (md->epc!=epcNO) 
@@ -971,7 +992,6 @@ void upd_mdebin(t_mdebin *md,
     if (md->dhc && bDoDHDL)
     {
         int idhdl = 0; 
-        snew(store_dh,fep->n_lambda);
         for (i=0;i<efptNR;i++) 
         {
             if (fep->separate_dvdl[i])
@@ -980,10 +1000,7 @@ void upd_mdebin(t_mdebin *md,
                 idhdl+=1;
             }
         }
-        for(i=1; i<enerd->n_lambda; i++)
-        {
-            store_dh[i-1] = enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0];
-        }
+        /* store_dh is dE */
         mde_delta_h_coll_add_dh(md->dhc, 
                                 (double)state->fep_state,
                                 store_energy,
@@ -995,11 +1012,15 @@ void upd_mdebin(t_mdebin *md,
                                 idhdl,
                                 fep->n_lambda,
                                 store_dhdl,
-                                store_dh,
+                                dE,
                                 time);
-        sfree(store_dh);
+    }
+    if ((md->fp_dhdl || md->dhc) && bDoDHDL)
+    {
+        sfree(dE);
     }
 }
+
 
 void upd_mdebin_step(t_mdebin *md)
 {

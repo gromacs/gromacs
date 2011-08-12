@@ -1165,7 +1165,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
         }
     } else { 
         if (ir->bSimTemp) {
-            mckt_current = BOLTZ*temperature_lambdas[nlam];
+            mckt_current = BOLTZ*(ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[nlam]); 
             for (i=0;i<nlim;i++) {
                 mckt = BOLTZ*(ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[i]); 
                 scaled_lamee[i] = enerd->term[F_ETOT]*(1.0/mckt - 1.0/mckt_current);

@@ -1088,7 +1088,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0[efptNR];
-    gmx_bool   bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres,bExpandedEnsemble,bEnergyHere;
+    gmx_bool   bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres,bEnergyHere;
     gmx_bool   bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1731,7 +1731,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             bDoDHDL = do_per_step(step,ir->nstdhdl);
             bDoFEP  = (do_per_step(step,ir->fepvals->nstfep) && (ir->efep>efepNO));
-            bDoExpanded  = (do_per_step(step,ir->expandedvals->nstexpanded) && (ir->bExpanded));
+            bDoExpanded  = (do_per_step(step,ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
         }
         
         if (bSimAnn) 
@@ -1959,8 +1959,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bCalcEnerPres =
             (bNstEner ||
              (ir->epc != epcNO && do_per_step(step,ir->nstpcouple)));
-        
-        bExpandedEnsemble =  (ir->bExpanded && (step > 0)); 
         
         /* Do we need global communication ? */
         bGStat = (bCalcEnerPres || bStopCM ||
@@ -2700,7 +2698,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         sum_dhdl(enerd,state->lambda,ir->fepvals);
         /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
            outputting statistics */
-        if (bExpandedEnsemble) {
+        if (bDoExpanded) {
             lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state->fep_state,&df_history,step,mcrng);
         }
 
@@ -2746,7 +2744,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             gmx_bool do_dr,do_or;
             
-            if (fplog && do_log && bExpandedEnsemble) 
+            if (fplog && do_log && bDoExpanded) 
             {
                 /* only needed if doing expanded ensemble */ 
                 PrintFreeEnergyInfoToFile(fplog,ir->fepvals,ir->expandedvals,&df_history,state->fep_state,ir->nstlog,step);
@@ -2785,7 +2783,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
         }
-        if (bExpandedEnsemble)
+        if (bDoExpanded)
         {
             /* Have to do this part after outputting the logfile and the edr file */
             state->fep_state = lamnew;

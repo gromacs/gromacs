@@ -483,7 +483,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],int mdrun_flags,
         }
         of->fn_cpt = opt2fn("-cpo",nfile,fnm);
         
-        if (ir->efep > efepNO && ir->nstdhdl > 0 &&
+        if ((ir->efep > efepNO || ir->bSimTemp) && ir->nstdhdl > 0 &&
             (ir->fepvals->separate_dhdl_file == esepdhdlfileYES ) && 
             EI_DYNAMICS(ir->eI))
         {

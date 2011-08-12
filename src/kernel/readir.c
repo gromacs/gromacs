@@ -308,7 +308,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
       /* check compatability of the temperature coupling with simulated tempering */
       sprintf(err_buf,"Nose-Hoover based temperature control such as [%s] is not consistent with simulated tempering",etcoupl_names[ir->etc]);
-      CHECK((ir->etc != etcNOSEHOOVER));
+      CHECK((ir->etc == etcNOSEHOOVER));
   }
 
   if (ir->efep > efepNO) {
@@ -1084,6 +1084,14 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     {
         expand->bInit_weights = TRUE;
     }
+    if ((expand->nstexpanded < 0) && (ir->efep > efepNO)) {
+        expand->nstexpanded = fep->nstfep;
+        /* if you don't specify nstexpanded when doing expanded ensemble free energy calcs, it is set to nstfep */
+    }
+    if ((expand->nstexpanded < 0) && ir->bSimTemp) {
+        expand->nstexpanded = ir->nstlist;
+        /* if you don't specify nstexpanded when doing expanded ensemble free energy calcs, it is set to nstlist*/
+    }
 }
 
 static void do_wall_params(t_inputrec *ir,
@@ -1505,6 +1513,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
 
   /* expanded ensemble variables */
+  ITYPE ("nstexpanded",expand->nstexpanded,-1);
   EETYPE("lmc-stats", expand->elamstats, elamstats_names);
   EETYPE("lmc-mc-move", expand->elmcmove, elmcmove_names);
   EETYPE("lmc-weights-equil",expand->elmceq,elmceq_names);

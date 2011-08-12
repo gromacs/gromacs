@@ -85,6 +85,7 @@ typedef struct {
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
   t_mde_delta_h_coll *dhc; /* the delta U components (raw data + histogram) */
+  real *temperatures;
 } t_mdebin;
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,

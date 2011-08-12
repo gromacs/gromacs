@@ -321,6 +321,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   else if (file_version >= 64) 
   {
       gmx_fio_do_int(fio,fepvals->n_lambda);
+      gmx_fio_do_int(fio,fepvals->nstfep);
       snew(fepvals->all_lambda,efptNR);
       if (bRead) 
       {
