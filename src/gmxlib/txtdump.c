@@ -526,7 +526,7 @@ static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda
         fprintf(fp,"  %10g",expand->init_lambda_weights[i]);
     }
     fprintf(fp,"\n");
-    PI("init_weights",expand->bInit_weights);
+    PS("init_weights",BOOL(expand->bInit_weights));
 }
 
 static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)

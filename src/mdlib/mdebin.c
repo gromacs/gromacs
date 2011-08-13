@@ -949,7 +949,7 @@ void upd_mdebin(t_mdebin *md,
     {
         snew(dE,enerd->n_lambda-1);
         for(i=0; i<enerd->n_lambda-1; i++) {
-            dE[i] = enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0];  /* zero for simulated tempering */               
+            dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];  /* zero for simulated tempering */               
             if (md->temperatures!=NULL) 
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
