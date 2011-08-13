@@ -106,6 +106,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(opts->define,STRLEN);
   snew(ir->fepvals,1);
   snew(ir->expandedvals,1);
+  snew(ir->simtempvals,1);
 }
 
 static void _low_check(gmx_bool b,char *s,warninp_t wi)
@@ -294,7 +295,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
 	 (ir->eConstrAlg == econtSHAKE)));
      
-  /* verify FEP options */
+  /* verify simulated tempering options */
 
   if (ir->bSimTemp) {
       for (i=0;i<fep->n_lambda;i++) 
@@ -309,7 +310,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       /* check compatability of the temperature coupling with simulated tempering */
       sprintf(err_buf,"Nose-Hoover based temperature control such as [%s] is not consistent with simulated tempering",etcoupl_names[ir->etc]);
       CHECK((ir->etc == etcNOSEHOOVER));
+
+      /* check that the temperatures make sense */
+
+      sprintf(err_buf,"Higher simulated tempering temperature (%g) must be >= than the simulated tempering lower temperature (%g)",ir->simtempvals->simtemp_high,ir->simtempvals->simtemp_low);      
+      CHECK(ir->simtempvals->simtemp_high <= ir->simtempvals->simtemp_low);
+
+      sprintf(err_buf,"Higher simulated tempering temperature (%g) must be >= zero",ir->simtempvals->simtemp_high);      
+      CHECK(ir->simtempvals->simtemp_high <= 0);
+
+      sprintf(err_buf,"Lower simulated tempering temperature (%g) must be >= zero",ir->simtempvals->simtemp_low);
+      CHECK(ir->simtempvals->simtemp_low <= 0);
   }
+
+  /* verify free energy options */
 
   if (ir->efep > efepNO) {
       fep = ir->fepvals;
@@ -1471,13 +1485,14 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
 
   /* simulated tempering variables */
-  CCTYPE ("Free energy control stuff");
+  CCTYPE("simulated tempering variables");
   EETYPE("simulated-tempering",ir->bSimTemp,yesno_names); 
-  RTYPE("sim-temp-low",ir->simtemp_low,300.0);
-  RTYPE("sim-temp-high",ir->simtemp_high,300.0);
+  EETYPE("simulated-tempering-scaling",ir->simtempvals->eSimTempScale,esimtemp_names); 
+  RTYPE("sim-temp-low",ir->simtempvals->simtemp_low,300.0);
+  RTYPE("sim-temp-high",ir->simtempvals->simtemp_high,300.0);
 
   /* free energy variables */
-
+  CCTYPE ("Free energy variables");
   EETYPE("free-energy",	ir->efep, efep_names); 
   ITYPE ("nstdhdl",ir->nstdhdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
@@ -1513,6 +1528,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("dh_hist_spacing", fep->dh_hist_spacing, 0.1);
 
   /* expanded ensemble variables */
+  CCTYPE ("expanded ensemble variables");
   ITYPE ("nstexpanded",expand->nstexpanded,-1);
   EETYPE("lmc-stats", expand->elamstats, elamstats_names);
   EETYPE("lmc-mc-move", expand->elmcmove, elmcmove_names);

@@ -152,6 +152,10 @@ enum {
   eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR 
 };
 
+/* simulated tempering methods */
+enum {
+  esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
+};
 /* FEP selection */
 enum {
   efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR

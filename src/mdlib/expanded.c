@@ -1096,13 +1096,39 @@ extern void set_mc_state(gmx_rng_t rng,t_state *state)
     gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
 }
 
+extern void GetSimTemps(double *temps,int ntemps, t_simtemp *simtemp, double *temperature_lambdas) {
+
+    int i;
+
+    for (i=0;i<ntemps;i++) 
+    {
+        if (simtemp->eSimTempScale == esimtempLINEAR) 
+        {
+            temps[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*temperature_lambdas[i];
+        }
+        else if (simtemp->eSimTempScale == esimtempEXPONENTIAL) 
+        {
+            temps[i] = simtemp->simtemp_low * pow(simtemp->simtemp_high/simtemp->simtemp_low,temperature_lambdas[i]);
+        }
+        else 
+        {
+            char errorstr[128];
+            sprintf(errorstr,"eSimTempScale=%d not defined",simtemp->eSimTempScale); 
+            gmx_fatal(FARGS,errorstr);
+        }
+    }
+}
+
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-                                     int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng)
+                                    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng, 
+                                    rvec *v, t_mdatoms *mdatoms)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
     int i,nlim,lamnew,totalsamples;
-    real mckt,mckt_current,oneovert,maxscaled=0,maxweighted=0;
+    real oneovert,maxscaled=0,maxweighted=0;
     t_expanded *expand;
+    t_simtemp *simtemp;
+    real *temperatures;
     double *temperature_lambdas;
     gmx_bool bIfReset,bSwitchtoOneOverT,bDoneEquilibrating=FALSE;
 
@@ -1143,7 +1169,12 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	   is there some term we are neglecting, however? */
 
     /* temperature lambdas for simulated tempering */
-    temperature_lambdas = ir->fepvals->all_lambda[efptTEMPERATURE];
+    if (ir->bSimTemp) 
+    {
+        temperature_lambdas = ir->fepvals->all_lambda[efptTEMPERATURE];
+        snew(temperatures,nlim);
+        GetSimTemps(temperatures,nlim,ir->simtempvals,ir->fepvals->all_lambda[efptTEMPERATURE]);
+    }
 
     if (ir->efep > efepNO) 
     {
@@ -1151,13 +1182,15 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
         {
             if (ir->bSimTemp) 
             {
-                mckt = BOLTZ*(ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[i]); 
+                /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
+                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(temperatures[i]*BOLTZ) 
+                    + enerd->term[F_EPOT]*(1.0/(temperatures[i])- 1.0/(temperatures[nlam]))/BOLTZ;
             }
             else 
             {
-                mckt = BOLTZ*expand->mc_temp; /* currently set to the system reft unless otherwise defined */
+                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(expand->mc_temp*BOLTZ);
+                /* mc_temp is currently set to the system reft unless otherwise defined */
             }
-            scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/mckt;
             
             /* save these energies for printing, so they don't get overwritten by the next step */
             /* they aren't overwritten in the non-free energy case, but we always print with these
@@ -1165,10 +1198,8 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
         }
     } else { 
         if (ir->bSimTemp) {
-            mckt_current = BOLTZ*(ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[nlam]); 
             for (i=0;i<nlim;i++) {
-                mckt = BOLTZ*(ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[i]); 
-                scaled_lamee[i] = enerd->term[F_ETOT]*(1.0/mckt - 1.0/mckt_current);
+                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/temperatures[i] - 1.0/temperatures[nlam])/BOLTZ;
             }
         }
     }
@@ -1215,12 +1246,39 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp) 
     {
+        int n, d;
+        real *vscale;
+        real told;
+        int nstart, nend, gt;
+
+        snew(vscale,ir->opts.ngtc);
+        
         for (i=0;i<ir->opts.ngtc;i++) {
             if (ir->opts.ref_t[i] > 0) {
-                ir->opts.ref_t[i] =  ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*temperature_lambdas[lamnew];
+                told = ir->opts.ref_t[i];
+                ir->opts.ref_t[i] =  temperatures[lamnew];
+                vscale[i] = sqrt(ir->opts.ref_t[i]/told);
             }
         }
-    }
+
+        /* we don't need to manipulate the ekind information, as it isn't due to be reset until the next step anyway */
+
+        nstart = mdatoms->start;
+        nend   = nstart + mdatoms->homenr;
+        for(n=nstart; n<nend; n++) 
+        {
+            gt = 0;
+            if (mdatoms->cTC)
+            {
+                gt   = mdatoms->cTC[n];
+            } 
+            for(d=0; d<DIM; d++)
+            {
+                v[n][d] *= vscale[gt];
+            }
+        }
+        sfree(vscale);
+    }    
     
 	/* now check on the Wang-Landau updating critera */
 	

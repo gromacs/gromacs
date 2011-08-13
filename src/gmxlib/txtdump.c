@@ -686,8 +686,9 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     }
     PS("bSimTemp",BOOL(ir->bSimTemp));
     if (ir->bSimTemp) {
-        PR("simtemp_low",ir->simtemp_low);
-        PR("simtemp_high",ir->simtemp_high);        
+        PR("simtemp_low",ir->simtempvals->simtemp_low);
+        PR("simtemp_high",ir->simtempvals->simtemp_high);        
+        PS("simulated-tempering-scaling",ESIMTEMP(ir->simtempvals->eSimTempScale));        
     }
     PI("nstdhdl", ir->nstdhdl);
     PI("nwall",ir->nwall);

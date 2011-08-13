@@ -484,6 +484,13 @@ static void cmp_pull(FILE *fp,t_pull *pull1,t_pull *pull2,real ftol, real abstol
   fprintf(fp,"WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
 
+static void cmp_simtempvals(FILE *fp,t_simtemp *simtemp1,t_simtemp *simtemp2, real ftol, real abstol)
+{
+  cmp_int(fp,"inputrec->simtempvals->eSimTempScale",-1,simtemp1->eSimTempScale,simtemp2->eSimTempScale);
+  cmp_real(fp,"inputrec->simtempvals->simtemp_high",-1,simtemp1->simtemp_high,simtemp2->simtemp_high,ftol,abstol);
+  cmp_real(fp,"inputrec->simtempvals->simtemp_low",-1,simtemp1->simtemp_low,simtemp2->simtemp_low,ftol,abstol);
+}
+
 static void cmp_expandedvals(FILE *fp,t_expanded *expand1,t_expanded *expand2,int n_lambda, real ftol, real abstol)
 {
   int i;
@@ -632,6 +639,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol,abstol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
   cmp_fepvals(fp,ir1->fepvals,ir2->fepvals,ftol,abstol);
+  cmp_int(fp,"inputrec->bSimTemp",-1,ir1->efep,ir2->efep);
+  cmp_simtempvals(fp,ir1->simtempvals,ir2->simtempvals,ftol,abstol);
+  cmp_int(fp,"inputrec->bExpanded",-1,ir1->efep,ir2->efep);
   cmp_expandedvals(fp,ir1->expandedvals,ir2->expandedvals,min(ir1->fepvals->n_lambda,ir2->fepvals->n_lambda),ftol,abstol);
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);

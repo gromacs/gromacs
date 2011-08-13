@@ -275,6 +275,16 @@ static void do_expandedvals(t_fileio *fio,t_expanded *expand,int n_lambda, gmx_b
   }
 }
 
+static void do_simtempvals(t_fileio *fio,t_simtemp *simtemp, gmx_bool bRead, int file_version) 
+{
+  if (file_version >= 74)
+  {
+      gmx_fio_do_int(fio,simtemp->eSimTempScale);
+      gmx_fio_do_real(fio,simtemp->simtemp_high);
+      gmx_fio_do_real(fio,simtemp->simtemp_low);
+  }
+}
+
 static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_version) 
 {
   /* i is defined in the ndo_double macro; use g to iterate. */
@@ -771,6 +781,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       gmx_fio_do_real(fio,*fudgeQQ);
     do_fepvals(fio,ir->fepvals,bRead,file_version);
     do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
+    do_simtempvals(fio,ir->simtempvals,bRead,file_version);
 
     if (file_version >= 64) {
         gmx_fio_do_int(fio,ir->nstdhdl);
@@ -790,10 +801,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_gmx_bool(fio,ir->bExpanded);
     if (file_version >= 74 && ir->bExpanded) {
         ir->bExpanded = TRUE;
-    }
-    if (file_version >= 74) {
-        gmx_fio_do_real(fio,ir->simtemp_low);
-        gmx_fio_do_real(fio,ir->simtemp_high);
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 

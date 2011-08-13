@@ -197,6 +197,7 @@ void init_inputrec(t_inputrec *ir)
     memset(ir,0,(size_t)sizeof(*ir));
     snew(ir->fepvals,1);
     snew(ir->expandedvals,1);
+    snew(ir->simtempvals,1);
 }
 
 void stupid_fill_block(t_block *grp,int natom,gmx_bool bOneIndexGroup)

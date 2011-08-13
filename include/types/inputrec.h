@@ -122,6 +122,12 @@ typedef struct {
 } t_pullgrp; 
 
 typedef struct {
+  int  eSimTempScale;   /* simulated temperature scaling; linear or exponential */
+  real simtemp_low;     /* the low temperature for simulated tempering  */
+  real simtemp_high;    /* the high temperature for simulated tempering */
+} t_simtemp;
+
+typedef struct {
   double init_lambda;    /* Keeping this value for now (legacy, but useable   */
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
@@ -273,11 +279,10 @@ typedef struct {
 		 	 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
   int  efep;   		/* free energy calculations                     */ 
-  gmx_bool bSimTemp;    /* Whether to do simulated tempering            */
-  gmx_bool bExpanded;   /* Whether expanded ensembles are used          */
-  real simtemp_low;     /* the low temperature for simulated tempering  */
-  real simtemp_high;    /* the high temperature for simulated tempering */
   t_lambda *fepvals;    /* Data for the FEP state                       */
+  gmx_bool bSimTemp;    /* Whether to do simulated tempering            */
+  t_simtemp *simtempvals;/* Variables for simulated tempering            */ 
+  gmx_bool bExpanded;   /* Whether expanded ensembles are used          */
   t_expanded *expandedvals; /* Expanded ensemble parameters              */ 
   int  nstdhdl;         /* The frequency for calculating dhdl           */
   int  eDisre;          /* Type of distance restraining                 */

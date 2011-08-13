@@ -55,7 +55,7 @@
 #include "mtop_util.h"
 #include "xvgr.h"
 #include "gmxfio.h"
-
+#include "mdrun.h"
 #include "mdebin_bar.h"
 
 
@@ -562,12 +562,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     if (ir->bSimTemp) {
         snew(md->temperatures,ir->fepvals->n_lambda);
-        for (i=0;i<ir->fepvals->n_lambda;i++) 
-        {
-            md->temperatures[i] = ir->simtemp_low + 
-                (ir->simtemp_high-ir->simtemp_low)*ir->fepvals->all_lambda[efptTEMPERATURE][i];  
-            /* setting the simulated tempering temperatures */
-        }
+        GetSimTemps(md->temperatures,ir->fepvals->n_lambda,ir->simtempvals,ir->fepvals->all_lambda[efptTEMPERATURE]);
     }
     return md;
 }
@@ -581,8 +576,10 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  i,np,nps,nsets,nsets_de,nsetsbegin;
     t_lambda *fep;
+    real *temperatures;
     char **setname;
     char buf[STRLEN];
+    
     int nsets_dhdl = 0;
     int s = 0;
     int nsetsextend;
@@ -687,6 +684,10 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         }
         nsetsbegin += nsets_dhdl;
 
+        if (ir->bSimTemp) {
+            snew(temperatures,fep->n_lambda);
+        }
+
         for(s=nsetsbegin; s<nsets; s++)
         {
             nps = sprintf(buf,"%s %s (",deltag,lambda);  
@@ -700,8 +701,9 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             }
             if (ir->bSimTemp) 
             {
+                GetSimTemps(temperatures,ir->fepvals->n_lambda,ir->simtempvals,fep->all_lambda[efptTEMPERATURE]);
                 /* print the temperature for this state if doing simulated annealing */
-                sprintf(&buf[nps],"T = %g (%s))",ir->simtemp_low + (ir->simtemp_high-ir->simtemp_low)*fep->all_lambda[efptTEMPERATURE][s-(nsetsbegin)],unit_temp_K);
+                sprintf(&buf[nps],"T = %g (%s))",temperatures[s-(nsetsbegin)],unit_temp_K);
             }
             else 
             {
@@ -721,6 +723,9 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             sfree(setname[s]);
         }
         sfree(setname);
+        if (ir->bSimTemp) {
+            sfree(temperatures);
+        }
     }
     
     return fp;
@@ -944,12 +949,12 @@ void upd_mdebin(t_mdebin *md,
     {
         snew(dE,enerd->n_lambda-1);
         for(i=0; i<enerd->n_lambda-1; i++) {
-            if (md->temperatures!=NULL) {
-                dE[i] = enerd->term[F_ETOT]*(md->temperatures[i]/md->temperatures[state->fep_state]-1.0);
-            } 
-            else 
+            dE[i] = enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0];  /* zero for simulated tempering */               
+            if (md->temperatures!=NULL) 
             {
-                dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];                
+                /* MRS: is this right, given the way we have defined the exchange probabilities? */
+                /* is this even useful to have at all? */
+                dE[i] += (md->temperatures[i]/md->temperatures[state->fep_state]-1.0)*enerd->term[F_EKIN]; 
             }
         }
     }

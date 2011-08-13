@@ -67,6 +67,7 @@ extern const char *edisreweighting_names[edrwNR+1];
 extern const char *enbf_names[eNBF_NR+1];
 extern const char *ecomb_names[eCOMB_NR+1];
 extern const char *gtypes[egcNR+1];
+extern const char *esimtemp_names[esimtempNR+1];
 extern const char *efep_names[efepNR+1];
 extern const char *efpt_names[efptNR+1];
 extern const char *elamstats_names[elamstatsNR+1];
@@ -110,6 +111,7 @@ extern const char *eMultentOpt_names[eMultentOptNR+1];
 #define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
+#define ESIMTEMP(e)    ENUM_NAME(e,esimtempNR,esimtemp_names)
 #define EFEPTYPE(e)    ENUM_NAME(e,efepNR,efep_names)
 #define SEPDHDLFILETYPE(e) ENUM_NAME(e,esepdhdlfileNR,separate_dhdl_file_names)
 #define DHDLDERIVATIVESTYPE(e) ENUM_NAME(e,edhdlderivativesNR,dhdl_derivatives_names)

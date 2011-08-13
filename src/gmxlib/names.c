@@ -132,6 +132,10 @@ const char *gtypes[egcNR+1] = {
   "User1", "User2", "VCM", "XTC", "Or. Res. Fit", "QMMM", NULL
 };
 
+const char *esimtemp_names[esimtempNR+1] = {
+  "exponential", "linear", NULL
+};
+
 const char *efep_names[efepNR+1] = {
   "no", "yes", "static", "slow-growth", "expanded", NULL
 };
