@@ -850,7 +850,13 @@ static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t
             if (lamnew > maxfep) 
             {
                 /* it's possible some rounding is failing */
-                if (remainder[fep_state] > 2.0e-15) {
+                if (remainder[fep_state] < 2.0e-15) 
+                {
+                    /* probably numerical rounding error -- no state other than the original has weight */
+                    lamnew = fep_state;
+                }
+                else 
+                {
                     /* probably not a numerical issue */
                     int loc=0;
                     int nerror = 200+(maxfep-minfep+1)*60;
