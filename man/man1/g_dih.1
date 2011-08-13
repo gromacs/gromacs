@@ -1,8 +1,8 @@
-.TH g_dih 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_dih 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_dih - analyzes dihedral transitions
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_dih\fP
 .BI "\-f" " traj.xtc "
@@ -18,7 +18,7 @@ g_dih - analyzes dihedral transitions
 .BI "\-[no]sa" ""
 .BI "\-mult" " int "
 .SH DESCRIPTION
-\&g_dih can do two things. The default is to analyze dihedral transitions
+\&\fB g_dih\fR can do two things. The default is to analyze dihedral transitions
 \&by merely computing all the dihedral angles defined in your topology
 \&for the whole trajectory. When a dihedral flips over to another minimum
 \&an angle/time plot is made.
@@ -61,7 +61,7 @@ g_dih - analyzes dihedral transitions
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-[no]sa"  "no    "
  Perform cluster analysis in dihedral space instead of analysing dihedral transitions.

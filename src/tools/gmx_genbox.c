@@ -87,7 +87,8 @@ static gmx_bool in_box(t_pbc *pbc,rvec x)
   rvec box_center,dx;
   int  shift;
   
-  calc_box_center(ecenterTRIC,pbc->box,box_center);
+  /* pbc_dx_aiuc only works correctly with the rectangular box center */
+  calc_box_center(ecenterRECT,pbc->box,box_center);
   
   shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
@@ -627,8 +628,8 @@ int gmx_genbox(int argc,char *argv[])
     "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
     "successful the same van der Waals criterium is used as for removal of ",
-    "solvent molecules. When no appropriately ",
-    "sized holes (holes that can hold an extra molecule) are available the ",
+    "solvent molecules. When no appropriately-sized ",
+    "holes (holes that can hold an extra molecule) are available, the ",
     "program tries for [TT]-nmol[tt] * [TT]-try[tt] times before giving up. ",
     "Increase [TT]-try[tt] if you have several small holes to fill.[PAR]",
 

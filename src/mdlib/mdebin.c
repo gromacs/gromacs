@@ -672,8 +672,8 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
          * from this xvg legend.
          */
 
-        if (!(ir->bSimTemp)) {
-            nsetsbegin = 1;  /* for FEP state */
+        if (ir->bExpanded) {
+            nsetsbegin = 1;  /* for including the expanded ensemble */
         } else {
             nsetsbegin = 0;
         }

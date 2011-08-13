@@ -1353,11 +1353,11 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         flags_dfh = 0;
     }
 
-    version = strdup(VERSION);
-    btime   = strdup(BUILD_TIME);
-    buser   = strdup(BUILD_USER);
-    bmach   = strdup(BUILD_MACHINE);
-    fprog   = strdup(Program());
+    version = gmx_strdup(VERSION);
+    btime   = gmx_strdup(BUILD_TIME);
+    buser   = gmx_strdup(BUILD_USER);
+    bmach   = gmx_strdup(BUILD_MACHINE);
+    fprog   = gmx_strdup(Program());
 
     ftime   = &(timebuf[0]);
     
@@ -1524,7 +1524,6 @@ static void check_match(FILE *fplog,
     check_string(fplog,"Build machine",BUILD_MACHINE,bmach  ,&mm);
     check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
-    npp = cr->nnodes - cr->npmenodes;
     check_int   (fplog,"#nodes"       ,cr->nnodes   ,npp_f+npme_f ,&mm);
     if (bPartDecomp)
     {
@@ -1532,9 +1531,15 @@ static void check_match(FILE *fplog,
         dd_nc[YY] = 1;
         dd_nc[ZZ] = 1;
     }
-    if (npp > 1)
+    if (cr->nnodes > 1)
     {
         check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
+
+        npp = cr->nnodes;
+        if (cr->npmenodes >= 0)
+        {
+            npp -= cr->npmenodes;
+        }
         if (npp == npp_f)
         {
             check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
@@ -1680,10 +1685,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     if (!PAR(cr))
     {
         nppnodes = 1;
+        cr->npmenodes = 0;
     }
     else if (bPartDecomp)
     {
         nppnodes = cr->nnodes;
+        cr->npmenodes = 0;
     }
     else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
@@ -2067,7 +2074,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     t_fileio *fp;
     
     fp = gmx_fio_open(fn,"r");
-    read_checkpoint_data(fp,simulation_part,step,t,state,TRUE,NULL,NULL);
+    read_checkpoint_data(fp,simulation_part,step,t,state,FALSE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");

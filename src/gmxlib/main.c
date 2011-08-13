@@ -47,6 +47,11 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_DIRECT_H
+/* windows-specific include for _chdir() */
+#include <direct.h>
+#endif
+
 
 #include "smalloc.h"
 #include "gmx_fatal.h"
@@ -200,6 +205,54 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
+void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
+                           gmx_large_int_t val, const char *name)
+{
+  gmx_large_int_t  *ibuf;
+  int p;
+  gmx_bool bCompatible;
+
+  if (NULL != log)
+      fprintf(log,"Multi-checking %s ... ",name);
+  
+  if (ms == NULL)
+    gmx_fatal(FARGS,
+	      "check_multi_int called with a NULL communication pointer");
+
+  snew(ibuf,ms->nsim);
+  ibuf[ms->sim] = val;
+  gmx_sumli_sim(ms->nsim,ibuf,ms);
+  
+  bCompatible = TRUE;
+  for(p=1; p<ms->nsim; p++)
+    bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+  
+  if (bCompatible) 
+  {
+      if (NULL != log)
+          fprintf(log,"OK\n");
+  }
+  else 
+  {
+      if (NULL != log)
+      {
+          fprintf(log,"\n%s is not equal for all subsystems\n",name);
+          for(p=0; p<ms->nsim; p++)
+          {
+              char strbuf[255];
+              /* first make the format string */
+              snprintf(strbuf, 255, "  subsystem %%d: %s\n", 
+                       gmx_large_int_pfmt);
+              fprintf(log,strbuf,p,ibuf[p]);
+          }
+      }
+      gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
+  }
+  
+  sfree(ibuf);
+}
+
+
 void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly, 
                    unsigned long Flags, FILE** fplog)
 {
@@ -235,13 +288,13 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
         }
         else
         {
-            tmpnm=strdup(lognm);
+            tmpnm=gmx_strdup(lognm);
         }
         gmx_bcast(len*sizeof(*tmpnm),tmpnm,cr);
     }
     else
     {
-        tmpnm=strdup(lognm);
+        tmpnm=gmx_strdup(lognm);
     }
   
     debug_gmx();
@@ -343,8 +396,8 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   debug_gmx();
 }
 
-void init_multisystem(t_commrec *cr,int nsim, int nfile,
-                      const t_filenm fnm[],gmx_bool bParFn)
+void init_multisystem(t_commrec *cr,int nsim, char **multidirs,
+                      int nfile, const t_filenm fnm[],gmx_bool bParFn)
 {
     gmx_multisim_t *ms;
     int  nnodes,nnodpersim,sim,i,ftp;
@@ -425,7 +478,21 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
         fprintf(debug,"\n\n");
     }
 
-    if (bParFn)
+    if (multidirs)
+    {
+        int ret;
+        if (debug)
+        {
+            fprintf(debug,"Changing to directory %s\n",multidirs[cr->ms->sim]);
+        }
+        if (chdir(multidirs[cr->ms->sim]) != 0)
+        {
+            gmx_fatal(FARGS, "Couldn't change directory to %s: %s",
+                      multidirs[cr->ms->sim],
+                      strerror(errno));
+        }
+    }
+    else if (bParFn)
     {
         /* Patch output and tpx, cpt and rerun input file names */
         for(i=0; (i<nfile); i++)
@@ -440,7 +507,7 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
                 ftp = fn2ftp(fnm[i].fns[0]);
                 par_fn(fnm[i].fns[0],ftp,cr,TRUE,FALSE,buf,255);
                 sfree(fnm[i].fns[0]);
-                fnm[i].fns[0] = strdup(buf);
+                fnm[i].fns[0] = gmx_strdup(buf);
             }
         }
     }

@@ -1,8 +1,8 @@
-.TH editconf 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH editconf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 editconf - edits the box and writes subgroups 
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3editconf\fP
 .BI "\-f" " conf.gro "
@@ -29,6 +29,7 @@ editconf - edits the box and writes subgroups
 .BI "\-scale" " vector "
 .BI "\-density" " real "
 .BI "\-[no]pbc" ""
+.BI "\-resnr" " int "
 .BI "\-[no]grasp" ""
 .BI "\-rvdw" " real "
 .BI "\-sig56" " real "
@@ -38,7 +39,7 @@ editconf - edits the box and writes subgroups
 .BI "\-label" " string "
 .BI "\-[no]conect" ""
 .SH DESCRIPTION
-\&editconf converts generic structure format to \fB .gro\fR, \fB .g96\fR
+\&\fB editconf\fR converts generic structure format to \fB .gro\fR, \fB .g96\fR
 \&or \fB .pdb\fR.
 \&
 
@@ -56,18 +57,19 @@ editconf - edits the box and writes subgroups
 \&The last two are special cases of a triclinic box.
 \&The length of the three box vectors of the truncated octahedron is the
 \&shortest distance between two opposite hexagons.
-\&The volume of a dodecahedron is 0.71 and that of a truncated octahedron
-\&is 0.77 of that of a cubic box with the same periodic image distance.
+\&Relative to a cubic box with some periodic image distance, the volume of a 
+\&dodecahedron with this same periodic distance is 0.71 times that of the cube, 
+\&and that of a truncated octahedron is 0.77 times.
 \&
 
 
 \&Option \fB \-box\fR requires only
-\&one value for a cubic box, dodecahedron and a truncated octahedron.
+\&one value for a cubic, rhombic dodecahedral, or truncated octahedral box.
 \&
 
 
-\&With \fB \-d\fR and a \fB triclinic\fR box the size of the system in the x, y
-\&and z directions is used. With \fB \-d\fR and \fB cubic\fR,
+\&With \fB \-d\fR and a \fB triclinic\fR box the size of the system in the \fI x\fR\-, \fI y\fR\-,
+\&and \fI z\fR\-directions is used. With \fB \-d\fR and \fB cubic\fR,
 \&\fB dodecahedron\fR or \fB octahedron\fR boxes, the dimensions are set
 \&to the diameter of the system (largest distance between atoms) plus twice
 \&the specified distance.
@@ -75,7 +77,7 @@ editconf - edits the box and writes subgroups
 
 
 \&Option \fB \-angles\fR is only meaningful with option \fB \-box\fR and
-\&a triclinic box and can not be used with option \fB \-d\fR.
+\&a triclinic box and cannot be used with option \fB \-d\fR.
 \&
 
 
@@ -90,17 +92,18 @@ editconf - edits the box and writes subgroups
 
 
 \&\fB \-princ\fR aligns the principal axes of the system along the
-\&coordinate axes, this may allow you to decrease the box volume,
+\&coordinate axes, with the longest axis aligned with the \fI x\fR\-axis. 
+\&This may allow you to decrease the box volume,
 \&but beware that molecules can rotate significantly in a nanosecond.
 \&
 
 
 \&Scaling is applied before any of the other operations are
 \&performed. Boxes and coordinates can be scaled to give a certain density (option
-\&\fB \-density\fR). Note that this may be inaccurate in case a gro
-\&file is given as input. A special feature of the scaling option, when the
+\&\fB \-density\fR). Note that this may be inaccurate in case a \fB .gro\fR
+\&file is given as input. A special feature of the scaling option is that when the
 \&factor \-1 is given in one dimension, one obtains a mirror image,
-\&mirrored in one of the plains, when one uses \-1 in three dimensions
+\&mirrored in one of the planes. When one uses \-1 in three dimensions, 
 \&a point\-mirror image is obtained.
 
 
@@ -108,7 +111,7 @@ editconf - edits the box and writes subgroups
 
 
 \&Periodicity can be removed in a crude manner.
-\&It is important that the box sizes at the bottom of your input file
+\&It is important that the box vectors at the bottom of your input file
 \&are correct when the periodicity is to be removed.
 \&
 
@@ -126,7 +129,8 @@ editconf - edits the box and writes subgroups
 \&
 
 
-\&With the option \-mead a special pdb (pqr) file for the MEAD electrostatics
+\&With the option \fB \-mead\fR a special \fB .pdb\fR (\fB .pqr\fR)
+\&file for the MEAD electrostatics
 \&program (Poisson\-Boltzmann solver) can be made. A further prerequisite
 \&is that the input file is a run input file.
 \&The B\-factor field is then filled with the Van der Waals radius
@@ -134,7 +138,7 @@ editconf - edits the box and writes subgroups
 \&
 
 
-\&The option \-grasp is similar, but it puts the charges in the B\-factor
+\&The option \fB \-grasp\fR is similar, but it puts the charges in the B\-factor
 \&and the radius in the occupancy.
 \&
 
@@ -145,13 +149,13 @@ editconf - edits the box and writes subgroups
 \&
 
 
-\&Finally with option \fB \-label\fR editconf can add a chain identifier
-\&to a pdb file, which can be useful for analysis with e.g. rasmol.
+\&Finally, with option \fB \-label\fR, \fB editconf\fR can add a chain identifier
+\&to a \fB .pdb\fR file, which can be useful for analysis with e.g. Rasmol.
 \&
 
 
 \&To convert a truncated octrahedron file produced by a package which uses
-\&a cubic box with the corners cut off (such as Gromos) use:
+\&a cubic box with the corners cut off (such as GROMOS), use:
 
 \&\fB editconf \-f in \-rotate 0 45 35.264 \-bt o \-box veclen \-o out\fR
 
@@ -188,7 +192,7 @@ editconf - edits the box and writes subgroups
  Set the nicelevel
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-[no]ndef"  "no    "
  Choose output from default index groups
@@ -230,10 +234,13 @@ editconf - edits the box and writes subgroups
  Scaling factor
 
 .BI "\-density"  " real" " 1000  " 
- Density (g/l) of the output box achieved by scaling
+ Density (g/L) of the output box achieved by scaling
 
 .BI "\-[no]pbc"  "no    "
  Remove the periodicity (make molecule whole again)
+
+.BI "\-resnr"  " int" " \-1" 
+  Renumber residues starting from resnr
 
 .BI "\-[no]grasp"  "no    "
  Store the charge of the atom in the B\-factor field and the radius of the atom in the occupancy field
@@ -257,12 +264,10 @@ editconf - edits the box and writes subgroups
  Add chain label for all residues
 
 .BI "\-[no]conect"  "no    "
- Add CONECT records to a pdb file when written. Can only be done when a topology is present
+ Add CONECT records to a \fB .pdb\fR file when written. Can only be done when a topology is present
 
 .SH KNOWN PROBLEMS
-\- For complex molecules, the periodicity removal routine may break down, 
-
-\- in that case you can use trjconv.
+\- For complex molecules, the periodicity removal routine may break down, in that case you can use \fB trjconv\fR.
 
 .SH SEE ALSO
 .BR gromacs(7)

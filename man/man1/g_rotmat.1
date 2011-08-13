@@ -1,8 +1,8 @@
-.TH g_rotmat 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5-beta4-2010-08-26 09:43:57 +0200-33da7ba-dirty"
+.TH g_rotmat 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_rotmat - plots the rotation matrix for fitting to a reference structure
 
-.B VERSION 4.5-beta4-2010-08-26 09:43:57 +0200-33da7ba-dirty
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_rotmat\fP
 .BI "\-f" " traj.xtc "
@@ -22,7 +22,7 @@ g_rotmat - plots the rotation matrix for fitting to a reference structure
 .BI "\-[no]fitxy" ""
 .BI "\-[no]mw" ""
 .SH DESCRIPTION
-\&g_rotmat plots the rotation matrix required for least squares fitting
+\&\fB g_rotmat\fR plots the rotation matrix required for least squares fitting
 \&a conformation onto the reference conformation provided with
 \&\fB \-s\fR. Translation is removed before fitting.
 \&The output are the three vectors that give the new directions
@@ -36,7 +36,7 @@ g_rotmat - plots the rotation matrix for fitting to a reference structure
 \&determining the orientation of a molecule
 \&at an interface, possibly on a trajectory produced with
 \&\fB trjconv \-fit rotxy+transxy\fR to remove the rotation
-\&in the xy\-plane.
+\&in the \fI x\-y\fR plane.
 \&
 
 
@@ -45,12 +45,12 @@ g_rotmat - plots the rotation matrix for fitting to a reference structure
 \&the lowest sum of RMSD's to all other structures is used.
 \&Since the computational cost of this procedure grows with
 \&the square of the number of frames, the \fB \-skip\fR option
-\&can be useful. A full fit or only a fit in the x/y plane can
+\&can be useful. A full fit or only a fit in the \fI x\-y\fR plane can
 \&be performed.
 \&
 
 
-\&Option \fB \-fitxy\fR fits in the x/y plane before determining
+\&Option \fB \-fitxy\fR fits in the \fI x\-y\fR plane before determining
 \&the rotation matrix.
 .SH FILES
 .BI "\-f" " traj.xtc" 
@@ -89,7 +89,7 @@ g_rotmat - plots the rotation matrix for fitting to a reference structure
  Only use frame when t MOD dt = first time (ps)
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -98,7 +98,7 @@ g_rotmat - plots the rotation matrix for fitting to a reference structure
  Determine the optimal reference structure: \fB none\fR, \fB xyz\fR or \fB xy\fR
 
 .BI "\-skip"  " int" " 1" 
- Use every nr\-th frame for \-ref
+ Use every nr\-th frame for \fB \-ref\fR
 
 .BI "\-[no]fitxy"  "no    "
  Fit the x/y rotation before determining the rotation

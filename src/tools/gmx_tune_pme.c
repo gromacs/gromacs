@@ -1845,10 +1845,19 @@ static void create_command_line_snippets(
         /* Skip options not meant for mdrun */        
         if (!is_main_switch(opt))
         {
-            /* Print it to a string buffer, strip away trailing whitespaces that pa_val also returns: */
-            sprintf(strbuf2, "%s", pa_val(&pa[i],buf,BUFLENGTH));
-            rtrim(strbuf2);
-            sprintf(strbuf, "%s %s ", opt, strbuf2);
+            /* Boolean arguments need to be generated in the -[no]argname format */
+            if (pa[i].type == etBOOL)
+            {
+                sprintf(strbuf,"-%s%s ",*pa[i].u.b ? "" : "no",opt+1);
+            }
+            else
+            {
+                /* Print it to a string buffer, strip away trailing whitespaces that pa_val also returns: */
+                sprintf(strbuf2, "%s", pa_val(&pa[i],buf,BUFLENGTH));
+                rtrim(strbuf2);
+                sprintf(strbuf, "%s %s ", opt, strbuf2);
+            }
+
             /* We need the -np (or -nt) switch in a separate buffer - whether or not it was set! */
             if (0 == strcmp(opt,np_or_nt))
             {
@@ -1964,10 +1973,9 @@ static double gettime()
 {
 #ifdef HAVE_GETTIMEOFDAY
     struct timeval t;
-    struct timezone tz = { 0,0 };
     double seconds;
-    
-    gettimeofday(&t,&tz);
+
+    gettimeofday(&t,NULL);
     
     seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
     
@@ -1998,7 +2006,7 @@ int gmx_tune_pme(int argc,char *argv[])
             "MPIRUN and MDRUN. If these are not present, 'mpirun' and 'mdrun'",
             "will be used as defaults. Note that for certain MPI frameworks you",
             "need to provide a machine- or hostfile. This can also be passed",
-            "via the MPIRUN variable, e.g.",
+            "via the MPIRUN variable, e.g.[PAR]",
             "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
             "Please call [TT]g_tune_pme[tt] with the normal options you would pass to",
             "[TT]mdrun[tt] and add [TT]-np[tt] for the number of processors to perform the",
@@ -2007,11 +2015,11 @@ int gmx_tune_pme(int argc,char *argv[])
             "[TT]g_tune_pme[tt] can test various real space / reciprocal space workloads",
             "for you. With [TT]-ntpr[tt] you control how many extra [TT].tpr[tt] files will be",
             "written with enlarged cutoffs and smaller fourier grids respectively.",
-            "Typically, the first test (No. 0) will be with the settings from the input",
-            "[TT].tpr[tt] file; the last test (No. [TT]ntpr[tt]) will have cutoffs multiplied",
+            "Typically, the first test (number 0) will be with the settings from the input",
+            "[TT].tpr[tt] file; the last test (number [TT]ntpr[tt]) will have cutoffs multiplied",
             "by (and at the same time fourier grid dimensions divided by) the scaling",
-            "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have about equally",
-            "spaced values inbetween these extremes. Note that you can set [TT]-ntpr[tt] to 1",
+            "factor [TT]-fac[tt] (default 1.2). The remaining [TT].tpr[tt] files will have about ",
+            "equally-spaced values in between these extremes. [BB]Note[bb] that you can set [TT]-ntpr[tt] to 1",
             "if you just want to find the optimal number of PME-only nodes; in that case",
             "your input [TT].tpr[tt] file will remain unchanged.[PAR]",
             "For the benchmark runs, the default of 1000 time steps should suffice for most",
@@ -2020,11 +2028,11 @@ int gmx_tune_pme(int argc,char *argv[])
             "are by default reset after 100 steps. For large systems",
             "(>1M atoms) you may have to set [TT]-resetstep[tt] to a higher value.",
             "From the 'DD' load imbalance entries in the md.log output file you",
-            "can tell after how many steps the load is sufficiently balanced.[PAR]"
-            "Example call: [TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
+            "can tell after how many steps the load is sufficiently balanced. Example call:[PAR]"
+            "[TT]g_tune_pme -np 64 -s protein.tpr -launch[tt][PAR]",
             "After calling [TT]mdrun[tt] several times, detailed performance information",
-            "is available in the output file perf.out. ",
-            "Note that during the benchmarks a couple of temporary files are written",
+            "is available in the output file [TT]perf.out.[tt] ",
+            "[BB]Note[bb] that during the benchmarks, a couple of temporary files are written",
             "(options [TT]-b[tt]*), these will be automatically deleted after each test.[PAR]",
             "If you want the simulation to be started automatically with the",
             "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
@@ -2167,9 +2175,9 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-np",       FALSE, etINT,  {&nnodes},
         "Number of nodes to run the tests on (must be > 2 for separate PME nodes)" },
       { "-npstring", FALSE, etENUM, {procstring},
-        "Specify the number of processors to $MPIRUN using this string"},
+        "Specify the number of processors to [TT]$MPIRUN[tt] using this string"},
       { "-passall",  FALSE, etBOOL, {&bPassAll},
-        "HIDDENPut arguments unknown to [TT]mdrun[tt] at the end of the command line. Can e.g. be used for debugging purposes. "},
+        "HIDDENPut arguments unknown to [TT]mdrun[tt] at the end of the command line. Can be used for debugging purposes. "},
       { "-nt",       FALSE, etINT,  {&nthreads},
         "Number of threads to run the tests on (turns MPI & mpirun off)"},
       { "-r",        FALSE, etINT,  {&repeats},
@@ -2187,15 +2195,15 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-downfac",  FALSE, etREAL, {&downfac},
         "Lower limit for rcoulomb scaling factor" },
       { "-ntpr",     FALSE, etINT,  {&ntprs},
-        "Number of [TT].tpr[tt] files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
+        "Number of [TT].tpr[tt] files to benchmark. Create this many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of [TT].tpr[tt] files to test" },
       { "-four",     FALSE, etREAL, {&fs},
         "Use this fourierspacing value instead of the grid found in the [TT].tpr[tt] input file. (Spacing applies to a scaling factor of 1.0 if multiple [TT].tpr[tt] files are written)" },
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
-        "Take timings for these many steps in the benchmark runs" }, 
+        "Take timings for this many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
-        "Let dlb equilibrate these many steps before timings are taken (reset cycle counters after these many steps)" },
+        "Let dlb equilibrate this many steps before timings are taken (reset cycle counters after this many steps)" },
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
-        "If non-negative, perform these many steps in the real run (overwrite nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
+        "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
         "Lauch the real simulation after optimization" },
       /******************/
@@ -2252,7 +2260,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
         "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
       { "-ionize",    FALSE, etBOOL, {&bIonize},
-        "Do a simulation including the effect of an X-Ray bombardment on your system" },
+        "Do a simulation including the effect of an X-ray bombardment on your system" },
       { "-confout",   FALSE, etBOOL, {&bConfout},
         "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
       { "-stepout",   FALSE, etINT,  {&nstepout},
@@ -2337,8 +2345,9 @@ int gmx_tune_pme(int argc,char *argv[])
                 fs, bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa),pa);
     
-    /* Determine max and min number of PME nodes to test: */
-    if ((nnodes > 2) && (npme_fixed >= -1))
+    /* Determine the maximum and minimum number of PME nodes to test,
+     * the actual list of settings is build in do_the_tests(). */
+    if ((nnodes > 2) && (npme_fixed < -1))
     {
         maxPMEnodes = floor(maxPMEfraction*nnodes);
         minPMEnodes = max(floor(minPMEfraction*nnodes), 0);

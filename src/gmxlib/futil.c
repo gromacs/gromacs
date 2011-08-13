@@ -370,13 +370,13 @@ static char *backup_fn(const char *file,int count_max)
      * a '\0' to end the directory string .
      */
     if (i > 0) {
-        directory    = strdup(file);
+        directory    = gmx_strdup(file);
         directory[i] = '\0';
-        fn           = strdup(file+i+1);
+        fn           = gmx_strdup(file+i+1);
     }
     else {
-        directory    = strdup(".");
-        fn           = strdup(file);
+        directory    = gmx_strdup(".");
+        fn           = gmx_strdup(file);
     }
     do {
         sprintf(buf,"%s/#%s.%d#",directory,fn,count);
@@ -560,7 +560,7 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname)
         }
         else
         {
-            if(errno=EINVAL)
+            if(errno==EINVAL)
             {
                 sfree(gmxdir);
                 *p_gmxdir = NULL;
@@ -595,22 +595,30 @@ gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name)
     
 #ifdef HAVE_DIRENT_H
     
-    struct dirent           tmp_dirent;
+    struct dirent *         direntp_large;
     struct dirent *         p;
     
     
     if(gmxdir!=NULL && gmxdir->dirent_handle!=NULL)
     {
-        rc = readdir_r(gmxdir->dirent_handle,&tmp_dirent,&p);
+        /* On some platforms no space is present for d_name in dirent.
+         * Since d_name is guaranteed to be the last entry, allocating
+         * extra space for dirent will allow more size for d_name.
+         * GMX_MAX_PATH should always be >= the max possible d_name.
+         */
+        smalloc(direntp_large, sizeof(*direntp_large) + GMX_PATH_MAX);
+        rc = readdir_r(gmxdir->dirent_handle,direntp_large,&p);
+
         if(p!=NULL && rc==0)
         {
-            strncpy(name,tmp_dirent.d_name,maxlength_name);
+            strncpy(name,direntp_large->d_name,maxlength_name);
         }
         else
         {
             name[0] = '\0';
             rc      = ENOENT;
         }
+        sfree(direntp_large);
     }
     else 
     {
@@ -870,7 +878,7 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
     ret = NULL;
     if (bAddCWD && gmx_fexist(file))
     {
-        ret = strdup(file);
+        ret = gmx_strdup(file);
     }
     else 
     {
@@ -881,7 +889,7 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
             sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
             if (gmx_fexist(buf))
             {
-                ret = strdup(buf);
+                ret = gmx_strdup(buf);
             }
         }
         if (ret == NULL && bFatal) 

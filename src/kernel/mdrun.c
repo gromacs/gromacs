@@ -189,7 +189,7 @@ int main(int argc,char *argv[])
     "(the simulation will run correctly also when this is not the case).",
     "[PAR]",
     "This section lists all options that affect the domain decomposition.",
-    "[BR]",
+    "[PAR]",
     "Option [TT]-rdd[tt] can be used to set the required maximum distance",
     "for inter charge-group bonded interactions.",
     "Communication for two-body bonded interactions below the non-bonded",
@@ -202,13 +202,13 @@ int main(int argc,char *argv[])
     "By default [TT]-rdd[tt] is determined by [TT]mdrun[tt] based on",
     "the initial coordinates. The chosen value will be a balance",
     "between interaction range and communication cost.",
-    "[BR]",
+    "[PAR]",
     "When inter charge-group bonded interactions are beyond",
     "the bonded cut-off distance, [TT]mdrun[tt] terminates with an error message.",
     "For pair interactions and tabulated bonds",
     "that do not generate exclusions, this check can be turned off",
     "with the option [TT]-noddcheck[tt].",
-    "[BR]",
+    "[PAR]",
     "When constraints are present, option [TT]-rcon[tt] influences",
     "the cell size limit as well.",
     "Atoms connected by NC constraints, where NC is the LINCS order plus 1,",
@@ -218,7 +218,7 @@ int main(int argc,char *argv[])
     "By default [TT]mdrun[tt] estimates the minimum cell size required for P-LINCS",
     "in a conservative fashion. For high parallelization it can be useful",
     "to set the distance required for P-LINCS with the option [TT]-rcon[tt].",
-    "[BR]",
+    "[PAR]",
     "The [TT]-dds[tt] option sets the minimum allowed x, y and/or z scaling",
     "of the cells with dynamic load balancing. [TT]mdrun[tt] will ensure that",
     "the cells can scale down by at least this factor. This option is used",
@@ -248,40 +248,46 @@ int main(int argc,char *argv[])
     "When user-defined potential functions have been selected in the",
     "[TT].mdp[tt] file the [TT]-table[tt] option is used to pass [TT]mdrun[tt]",
     "a formatted table with potential functions. The file is read from",
-    "either the current directory or from the GMXLIB directory.",
-    "A number of pre-formatted tables are presented in the GMXLIB dir,",
-    "for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard Jones potentials with",
+    "either the current directory or from the [TT]GMXLIB[tt] directory.",
+    "A number of pre-formatted tables are presented in the [TT]GMXLIB[tt] dir,",
+    "for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard-Jones potentials with",
     "normal Coulomb.",
-    "When pair interactions are present a separate table for pair interaction",
+    "When pair interactions are present, a separate table for pair interaction",
     "functions is read using the [TT]-tablep[tt] option.[PAR]",
     "When tabulated bonded functions are present in the topology,",
     "interaction functions are read using the [TT]-tableb[tt] option.",
     "For each different tabulated interaction type the table file name is",
     "modified in a different way: before the file extension an underscore is",
-    "appended, then a b for bonds, an a for angles or a d for dihedrals",
+    "appended, then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals",
     "and finally the table number of the interaction type.[PAR]",
     "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
     "coordinates and forces when pulling is selected",
     "in the [TT].mdp[tt] file.[PAR]",
-    "With [TT]-multi[tt] multiple systems are simulated in parallel.",
-    "As many input files are required as the number of systems.",
-    "The system number is appended to the run input and each output filename,",
-    "for instance [TT]topol.tpr[tt] becomes [TT]topol0.tpr[tt], [TT]topol1.tpr[tt] etc.",
+    "With [TT]-multi[tt] or [TT]-multidir[tt], multiple systems can be ",
+    "simulated in parallel.",
+    "As many input files/directories are required as the number of systems. ",
+    "The [TT]-multidir[tt] option takes a list of directories (one for each ",
+    "system) and runs in each of them, using the input/output file names, ",
+    "such as specified by e.g. the [TT]-s[tt] option, relative to these ",
+    "directories.",
+    "With [TT]-multi[tt], the system number is appended to the run input ",
+    "and each output filename, for instance [TT]topol.tpr[tt] becomes",
+    "[TT]topol0.tpr[tt], [TT]topol1.tpr[tt] etc.",
     "The number of nodes per system is the total number of nodes",
     "divided by the number of systems.",
     "One use of this option is for NMR refinement: when distance",
     "or orientation restraints are present these can be ensemble averaged",
     "over all the systems.[PAR]",
     "With [TT]-replex[tt] replica exchange is attempted every given number",
-    "of steps. The number of replicas is set with the [TT]-multi[tt] option,",
-    "see above.",
+    "of steps. The number of replicas is set with the [TT]-multi[tt] or ",
+    "[TT]-multidir[tt] option, described above.",
     "All run input files should use a different coupling temperature,",
     "the order of the files is not important. The random seed is set with",
     "[TT]-reseed[tt]. The velocities are scaled and neighbor searching",
     "is performed after every exchange.[PAR]",
     "Finally some experimental algorithms can be tested when the",
     "appropriate options have been given. Currently under",
-    "investigation are: polarizability, and X-Ray bombardments.",
+    "investigation are: polarizability and X-ray bombardments.",
     "[PAR]",
     "The option [TT]-pforce[tt] is useful when you suspect a simulation",
     "crashes due to too large forces. With this option coordinates and",
@@ -303,11 +309,11 @@ int main(int argc,char *argv[])
     "will be appending to the existing output files. The checkpoint file",
     "contains checksums of all output files, such that you will never",
     "loose data when some output files are modified, corrupt or removed.",
-    "There are three scenarios with [TT]-cpi[tt]:[BR]",
-    "* no files with matching names are present: new output files are written[BR]",
-    "* all files are present with names and checksums matching those stored",
-    "in the checkpoint file: files are appended[BR]",
-    "* otherwise no files are modified and a fatal error is generated[BR]",
+    "There are three scenarios with [TT]-cpi[tt]:[PAR]",
+    "[TT]*[tt] no files with matching names are present: new output files are written[PAR]",
+    "[TT]*[tt] all files are present with names and checksums matching those stored",
+    "in the checkpoint file: files are appended[PAR]",
+    "[TT]*[tt] otherwise no files are modified and a fatal error is generated[PAR]",
     "With [TT]-noappend[tt] new output files are opened and the simulation",
     "part number is added to all output file names.",
     "Note that in all cases the checkpoint file itself is not renamed",
@@ -371,7 +377,8 @@ int main(int argc,char *argv[])
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
-    { efNDX, "-dn",     "dipole",   ffOPTWR }
+    { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efRND, "-multidir",NULL,      ffOPTRDMULT}
   };
 #define NFILE asize(fnm)
 
@@ -498,6 +505,7 @@ int main(int argc,char *argv[])
   const char *part_suffix=".part";
   char     suffix[STRLEN];
   int      rc;
+  char **multidir=NULL;
 
 
   cr = init_par(&argc,&argv);
@@ -524,6 +532,8 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 
+
+
   /* we set these early because they might be used in init_multisystem() 
      Note that there is the potential for npme>nnodes until the number of
      threads is set later on, if there's thread parallelization. That shouldn't
@@ -535,13 +545,25 @@ int main(int argc,char *argv[])
   nthreads=1;
 #endif
 
+  /* now check the -multi and -multidir option */
+  if (opt2bSet("-multidir", NFILE, fnm))
+  {
+      int i;
+      if (nmultisim > 0)
+      {
+          gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");
+      }
+      nmultisim = opt2fns(&multidir, "-multidir", NFILE, fnm);
+  }
+
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   if (nmultisim > 1) {
 #ifndef GMX_THREADS
-    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+    gmx_bool bParFn = (multidir == NULL);
+    init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
     gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif

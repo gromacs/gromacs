@@ -194,7 +194,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 {
   struct gmx_shellfc *shfc;
   t_shell     *shell;
-  int         *shell_index,*at2cg;
+  int         *shell_index=NULL,*at2cg;
   t_atom      *atom;
   int         n[eptNR],ns,nshell,nsi;
   int         i,j,nmol,type,mb,mt,a_offset,cg,mol,ftype,nra;
@@ -203,6 +203,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
 #define NBT asize(bondtypes)
   t_iatom     *ia;
+  gmx_mtop_atomloop_block_t aloopb;
   gmx_mtop_atomloop_all_t aloop;
   gmx_ffparams_t *ffparams;
   gmx_molblock_t *molb;
@@ -213,29 +214,11 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   for(i=0; (i<eptNR); i++) {
     n[i] = 0;
   }
-  snew(shell_index,mtop->natoms);
 
-  aloop = gmx_mtop_atomloop_all_init(mtop);
-  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-    if (atom->ptype == eptShell) {
-      shell_index[i] = n[atom->ptype];
-    }
-    n[atom->ptype]++;
+  aloopb = gmx_mtop_atomloop_block_init(mtop);
+  while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+    n[atom->ptype] += nmol;
   }
-  
-  /*
-  snew(shell_index,end-start);
-  snew(at2cg,end-start);
-  nsi = 0;
-  for(cg=cg0; (cg<cg1); cg++) {
-    for(i=cgindex[cg]; i<cgindex[cg+1]; i++) {
-      n[atom[i].ptype]++;
-      if (atom[i].ptype == eptShell)
-	shell_index[i-start] = nsi++;
-      at2cg[i-start] = cg;
-    }
-  }
-  */
 
   if (fplog) {
     /* Print the number of each particle type */  
@@ -245,12 +228,10 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
       }
     }
   }
-  
+
   nshell = n[eptShell];
-
+  
   if (nshell == 0 && nflexcon == 0) {
-    sfree(shell_index);
-
     return NULL;
   }
 
@@ -258,13 +239,23 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   shfc->nflexcon = nflexcon;
 
   if (nshell == 0) {
-    sfree(shell_index);
-
     return shfc;
   }
 
+  /* We have shells: fill the shell data structure */
+
+  /* Global system sized array, this should be avoided */
+  snew(shell_index,mtop->natoms);
+
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  nshell = 0;
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+    if (atom->ptype == eptShell) {
+      shell_index[i] = nshell++;
+    }
+  }
+
   snew(shell,nshell);
-  shfc->nflexcon = nflexcon;
   
   /* Initiate the shell structures */    
   for(i=0; (i<nshell); i++) {

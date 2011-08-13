@@ -2,7 +2,7 @@
 # Note that not all .c files are compiled directly: some of them 
 # are #included (some multiple times) from other source files.
 set(THREAD_MPI_LIB_SOURCE 
-    alltoall.c      hwinfo.c        reduce.c
+    alltoall.c      reduce.c
     barrier.c       list.c          reduce_fast.c
     bcast.c         lock.c          scatter.c
     collective.c    once.c          tmpi_init.c
@@ -10,7 +10,7 @@ set(THREAD_MPI_LIB_SOURCE
     errhandler.c    p2p_send_recv.c type.c
     event.c         p2p_wait.c      
     gather.c        profile.c
-    group.c         )
+    group.c         numa_malloc.c)
 
 
 if (THREAD_PTHREADS)

@@ -1,8 +1,8 @@
-.TH g_hbond 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_hbond 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_hbond - computes and analyzes hydrogen bonds
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_hbond\fP
 .BI "\-f" " traj.xtc "
@@ -26,6 +26,7 @@ g_hbond - computes and analyzes hydrogen bonds
 .BI "\-b" " time "
 .BI "\-e" " time "
 .BI "\-dt" " time "
+.BI "\-tu" " enum "
 .BI "\-xvg" " enum "
 .BI "\-a" " real "
 .BI "\-r" " real "
@@ -53,7 +54,7 @@ g_hbond - computes and analyzes hydrogen bonds
 .BI "\-beginfit" " real "
 .BI "\-endfit" " real "
 .SH DESCRIPTION
-\&g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
+\&\fB g_hbond\fR computes and analyzes hydrogen bonds. Hydrogen bonds are
 \&determined based on cutoffs for the angle Acceptor \- Donor \- Hydrogen
 \&(zero is extended) and the distance Hydrogen \- Acceptor.
 \&OH and NH groups are regarded as donors, O is an acceptor always,
@@ -67,7 +68,7 @@ g_hbond - computes and analyzes hydrogen bonds
 \&groups are analyzed.
 
 
-\&If you set \-shell, you will be asked for an additional index group
+\&If you set \fB \-shell\fR, you will be asked for an additional index group
 \&which should contain exactly one atom. In this case, only hydrogen
 \&bonds between atoms within the shell distance from the one atom are
 \&considered.
@@ -205,6 +206,9 @@ g_hbond - computes and analyzes hydrogen bonds
 .BI "\-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
+.BI "\-tu"  " enum" " ps" 
+ Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
+
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
 
@@ -218,7 +222,7 @@ g_hbond - computes and analyzes hydrogen bonds
  Use distance Donor\-Acceptor (if TRUE) or Hydrogen\-Acceptor (FALSE)
 
 .BI "\-r2"  " real" " 0     " 
- Second cutoff radius. Mainly useful with \-contact and \-ac
+ Second cutoff radius. Mainly useful with \fB \-contact\fR and \fB \-ac\fR
 
 .BI "\-abin"  " real" " 1     " 
  Binwidth angle distribution (degrees)
@@ -236,10 +240,10 @@ g_hbond - computes and analyzes hydrogen bonds
  when  0, only calculate hydrogen bonds within  nm shell around one particle
 
 .BI "\-fitstart"  " real" " 1     " 
- Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With \-gemfit we suggest \-fitstart 0
+ Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With \fB \-gemfit\fR we suggest \fB \-fitstart 0\fR
 
 .BI "\-fitstart"  " real" " 1     " 
- Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with \-gemfit)
+ Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with \fB \-gemfit\fR)
 
 .BI "\-temp"  " real" " 298.15" 
  Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming
@@ -248,7 +252,7 @@ g_hbond - computes and analyzes hydrogen bonds
  If = 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(\-x/tau)
 
 .BI "\-dump"  " int" " 0" 
- Dump the first N hydrogen bond ACFs in a single xvg file for debugging
+ Dump the first N hydrogen bond ACFs in a single \fB .xvg\fR file for debugging
 
 .BI "\-max_hb"  " real" " 0     " 
  Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly
@@ -260,7 +264,7 @@ g_hbond - computes and analyzes hydrogen bonds
  Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details.: \fB none\fR, \fB dd\fR, \fB ad\fR, \fB aa\fR or \fB a4\fR
 
 .BI "\-diff"  " real" " \-1    " 
- Dffusion coefficient to use in the rev. gem. recomb. kinetic model. If non\-positive, then it will be fitted to the ACF along with ka and kd.
+ Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd.
 
 .BI "\-acflen"  " int" " \-1" 
  Length of the ACF, default is half the number of frames
@@ -272,7 +276,7 @@ g_hbond - computes and analyzes hydrogen bonds
  Order of Legendre polynomial for ACF (0 indicates none): \fB 0\fR, \fB 1\fR, \fB 2\fR or \fB 3\fR
 
 .BI "\-fitfn"  " enum" " none" 
- Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR or \fB exp9\fR
+ Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions

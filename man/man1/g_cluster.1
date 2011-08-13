@@ -1,8 +1,8 @@
-.TH g_cluster 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH g_cluster 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 g_cluster - clusters structures
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3g_cluster\fP
 .BI "\-f" " traj.xtc "
@@ -45,10 +45,11 @@ g_cluster - clusters structures
 .BI "\-seed" " int "
 .BI "\-niter" " int "
 .BI "\-kT" " real "
+.BI "\-[no]pbc" ""
 .SH DESCRIPTION
-\&g_cluster can cluster structures with several different methods.
+\&\fB g_cluster\fR can cluster structures using several different methods.
 \&Distances between structures can be determined from a trajectory
-\&or read from an XPM matrix file with the \fB \-dm\fR option.
+\&or read from an \fB .xpm\fR matrix file with the \fB \-dm\fR option.
 \&RMS deviation after fitting or RMS deviation of atom\-pair distances
 \&can be used to define the distance between structures.
 
@@ -74,7 +75,7 @@ g_cluster - clusters structures
 \&(\fI Angew. Chem. Int. Ed.\fR \fB 1999\fR, \fI 38\fR, pp 236\-240).
 \&Count number of neighbors using cut\-off, take structure with
 \&largest number of neighbors with all its neighbors as cluster
-\&and eleminate it from the pool of clusters. Repeat for remaining
+\&and eliminate it from the pool of clusters. Repeat for remaining
 \&structures in pool.
 
 
@@ -198,7 +199,7 @@ g_cluster - clusters structures
  Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
 .BI "\-[no]w"  "no    "
- View output xvg, xpm, eps and pdb files
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
 
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
@@ -237,10 +238,10 @@ g_cluster - clusters structures
  Method for cluster determination: \fB linkage\fR, \fB jarvis\-patrick\fR, \fB monte\-carlo\fR, \fB diagonalization\fR or \fB gromos\fR
 
 .BI "\-minstruct"  " int" " 1" 
- Minimum number of structures in cluster for coloring in the xpm file
+ Minimum number of structures in cluster for coloring in the \fB .xpm\fR file
 
 .BI "\-[no]binary"  "no    "
- Treat the RMSD matrix as consisting of 0 and 1, where the cut\-off is given by \-cutoff
+ Treat the RMSD matrix as consisting of 0 and 1, where the cut\-off is given by \fB \-cutoff\fR
 
 .BI "\-M"  " int" " 10" 
  Number of nearest neighbors considered for Jarvis\-Patrick algorithm, 0 is use cutoff
@@ -256,6 +257,9 @@ g_cluster - clusters structures
 
 .BI "\-kT"  " real" " 0.001 " 
  Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps)
+
+.BI "\-[no]pbc"  "yes   "
+ PBC check
 
 .SH SEE ALSO
 .BR gromacs(7)

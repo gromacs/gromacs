@@ -1,8 +1,8 @@
-.TH gmxcheck 1 "Thu 26 Aug 2010" "" "GROMACS suite, VERSION 4.5"
+.TH gmxcheck 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
 .SH NAME
 gmxcheck - checks and compares files
 
-.B VERSION 4.5
+.B VERSION 4.5.4-dev-20110404-bc5695c
 .SH SYNOPSIS
 \f3gmxcheck\fP
 .BI "\-f" " traj.xtc "
@@ -26,7 +26,7 @@ gmxcheck - checks and compares files
 .BI "\-[no]ab" ""
 .BI "\-lastener" " string "
 .SH DESCRIPTION
-\&gmxcheck reads a trajectory (\fB .trj\fR, \fB .trr\fR or 
+\&\fB gmxcheck\fR reads a trajectory (\fB .trj\fR, \fB .trr\fR or 
 \&\fB .xtc\fR), an energy file (\fB .ene\fR or \fB .edr\fR)
 \&or an index file (\fB .ndx\fR)
 \&and prints out useful information about them.
@@ -44,11 +44,11 @@ gmxcheck - checks and compares files
 \&If an index file, is given its contents will be summarized.
 
 
-\&If both a trajectory and a tpr file are given (with \fB \-s1\fR)
+\&If both a trajectory and a \fB .tpr\fR file are given (with \fB \-s1\fR)
 \&the program will check whether the bond lengths defined in the tpr
 \&file are indeed correct in the trajectory. If not you may have
 \&non\-matching files due to e.g. deshuffling or due to problems with
-\&virtual sites. With these flags, gmxcheck provides a quick check for such problems.
+\&virtual sites. With these flags, \fB gmxcheck\fR provides a quick check for such problems.
 
 
 \&The program can compare two run input (\fB .tpr\fR, \fB .tpb\fR or

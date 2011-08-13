@@ -136,7 +136,7 @@ void gmx_conect_add(gmx_conect conect,int ai,int aj);
 gmx_conect gmx_conect_generate(t_topology *top);
 /* Generate a conect structure from a topology */
 
-gmx_conect gmx_conect_init();
+gmx_conect gmx_conect_init(void);
 /* Initiate data structure */
 
 void gmx_conect_done(gmx_conect gc);

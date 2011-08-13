@@ -256,10 +256,20 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
 enum tMPI_Thread_support tMPI_Thread_support(void);
 
 
+/** Get the number of hardware threads that can be run simultaneously.
+
+    Returns the total number of cores and SMT threads that can run.
+
+    \ret The maximum number of threads that can run simulataneously. If this
+         number cannot be determined for the current architecture, 0 is 
+         returned. */
+int tMPI_Thread_get_hw_number(void);
+
 
 /** Create a new thread
  *
  *  The new thread will call start_routine() with the argument arg.
+ *
  *  Please be careful not to change arg after calling this function.
  * 
  *  \param thread          Pointer to opaque thread datatype
@@ -268,9 +278,34 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
  *  
  *  \return Status - 0 on success, or an error code.
  */
-int tMPI_Thread_create   (tMPI_Thread_t *   thread,
-                          void *            (*start_routine)(void *),
-                          void *            arg);
+int tMPI_Thread_create(tMPI_Thread_t *thread,
+                      void* (*start_routine)(void *),
+                      void* arg);
+
+/** Create a new thread with processor affinity 
+ *
+ *  The new thread will call start_routine() with the argument arg.
+ * 
+ *  The new thread will have processor affinity assigned in a 
+ *  round-robin way, starting at processor 1.  The first thread to call 
+ *  this function will be assigned to processor 0.
+ *
+ *  This means that this funtion should ONLY be called when starting a
+ *  thread on each processor: in any other case, this will lead to 
+ *  imbalances because processors 0 and 1 will be oversubscribed.
+ *
+ *  Please be careful not to change arg after calling this function.
+ * 
+ *  \param thread          Pointer to opaque thread datatype
+ *  \param start_routine   The function to call in the new thread
+ *  \param arg             Argument to call with
+ *  
+ *  \return Status - 0 on success, or an error code.
+ */
+int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
+                           void *(*start_routine)(void *),
+                           void *arg);
+
 
 
 
@@ -285,8 +320,7 @@ int tMPI_Thread_create   (tMPI_Thread_t *   thread,
  *  
  *  \return 0 if the join went ok, or a non-zero error code.
  */
-int tMPI_Thread_join     (tMPI_Thread_t     thread,
-                          void **           value_ptr);
+int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr);
 
 
 
@@ -430,7 +464,7 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_data,
  *  \param cond  Pointer to previously allocated condition variable
  *  \return      0 or a non-zero error message.
  */
-int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
+int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond);
 
 
 
@@ -443,7 +477,7 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
  *  \param cond Pointer to condition variable.
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
+int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond);
 
 
 
@@ -462,8 +496,8 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
  *
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
-                          tMPI_Thread_mutex_t *   mtx);
+int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond,
+                          tMPI_Thread_mutex_t *mtx);
 
 
 
@@ -478,7 +512,7 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
  *
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
+int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond);
 
 
 /** Unblock all waiting threads
@@ -491,7 +525,7 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
 *
 *  \return 0 or a non-zero error message.
 */
-int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
+int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond);
 
 
 
@@ -504,7 +538,7 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
  *                     join them can read this value if they try.
  *  \return 
  */
-void tMPI_Thread_exit(void *      value_ptr);
+void tMPI_Thread_exit(void *value_ptr);
 
 
 
@@ -516,7 +550,7 @@ void tMPI_Thread_exit(void *      value_ptr);
  *  \param thread     Handle to thread we want to see dead.
  *  \return 0 or a non-zero error message.
  */
-int tMPI_Thread_cancel(tMPI_Thread_t      thread);
+int tMPI_Thread_cancel(tMPI_Thread_t thread);
 
 
 

@@ -60,8 +60,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
     /* general routine for both barostat and thermostat nose hoover chains */
 
     int   i,j,mi,mj,jmax;
-    real nd;
-    double Ekin,Efac,reft,kT;
+    double Ekin,Efac,reft,kT,nd;
     double dt;
     t_grp_tcstat *tcstat;
     double *ivxi,*ixi;

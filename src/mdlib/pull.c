@@ -456,7 +456,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     dvec  ref,vec;
     double d0,inpr;
     double lambda, rm, mass, invdt=0;
-    gmx_bool bConverged = FALSE;
+    gmx_bool bConverged_all,bConverged=FALSE;
     int niter=0,g,ii,j,m,max_iter=100;
     double q,a,b,c;  /* for solving the quadratic equation, 
                         see Num. Recipes in C ed 2 p. 184 */
@@ -524,8 +524,11 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         }
     }
     
-    while (!bConverged && niter < max_iter)
+    bConverged_all = TRUE;
+    while (!bConverged_all && niter < max_iter)
     {
+        bConverged_all = TRUE;
+
         /* loop over all constraints */
         for(g=1; g<1+pull->ngrp; g++)
         {
@@ -711,16 +714,17 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 break;
             }
             
-            /* DEBUG */
-            if (debug)
+            if (!bConverged)
             {
-                if (!bConverged)
+                if (debug)
                 {
                     fprintf(debug,"NOT CONVERGED YET: Group %d:"
                             "d_ref = %f %f %f, current d = %f\n",
                             g,ref[0],ref[1],ref[2],dnorm(unc_ij));
                 }
-            } /* END DEBUG */
+
+                bConverged_all = FALSE;
+            }
         }
         
         niter++;

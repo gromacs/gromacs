@@ -1,4 +1,4 @@
-AMBER99 force field (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000)
+AMBER99 protein, nucleic AMBER94 (Wang et al., J. Comp. Chem. 21, 1049-1074, 2000)
 
 ********************************************************************
 * The original ffamber ports were written by Eric J. Sorin,        *
