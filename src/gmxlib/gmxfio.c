@@ -540,6 +540,13 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
             /* If it is not, open it as a regular file */
             fio->fp = ffopen(fn,newmode);
         }
+
+        /* for appending seek to end of file to make sure ftell gives correct position
+         * important for checkpointing */
+        if (newmode[0]=='a')
+        {
+            gmx_fseek(fio->fp, 0, SEEK_END);
+        }
     }
     else
     {

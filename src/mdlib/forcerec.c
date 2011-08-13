@@ -518,8 +518,7 @@ check_solvent(FILE *                fp,
 }
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
-                                   t_forcerec *fr,gmx_bool bNoSolvOpt,
-                                   gmx_bool *bExcl_IntraCGAll_InterCGNone)
+                                   t_forcerec *fr,gmx_bool bNoSolvOpt)
 {
     const t_block *cgs;
     const t_blocka *excl;
@@ -533,8 +532,6 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
-
-    *bExcl_IntraCGAll_InterCGNone = TRUE;
 
     excl_nalloc = 10;
     snew(bExcl,excl_nalloc);
@@ -649,11 +646,6 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                     gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
                 }
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
-
-                if (!bExclIntraAll || bExclInter)
-                {
-                    *bExcl_IntraCGAll_InterCGNone = FALSE;
-                }
             }
         }
         cg_offset += molb->nmol*cgs->nr;
@@ -1761,8 +1753,8 @@ void init_forcerec(FILE *fp,
     fr->qr         = mk_QMMMrec();
     
     /* Set all the static charge group info */
-    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,
-                                   &fr->bExcl_IntraCGAll_InterCGNone);
+    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);
+
     if (DOMAINDECOMP(cr)) {
         fr->cginfo = NULL;
     } else {

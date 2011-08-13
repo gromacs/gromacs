@@ -317,10 +317,6 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        {
            fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
        }
-       if (!fr->bExcl_IntraCGAll_InterCGNone)
-       {
-           gmx_fatal(FARGS,"The charge-group - charge-group force loops only support systems with all intra-cg interactions excluded and no inter-cg exclusions, this is not the case for this system.");
-       }
    }
    
    if (fr->solvent_opt == esolTIP4P) {
@@ -547,7 +543,8 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,gmx_bool bLR)
 
 static inline void add_j_to_nblist_cg(t_nblist *nlist,
                                       atom_id j_start,int j_end,
-                                      t_excl *bexcl,gmx_bool bLR)
+                                      t_excl *bexcl,gmx_bool i_is_j,
+                                      gmx_bool bLR)
 {
     int nrj=nlist->nrj;
     int j;
@@ -576,6 +573,14 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     for(j=j_start; j<j_end; j++)
     {
         nlist->excl[nrj*MAX_CGCGSIZE + j - j_start] = bexcl[j];
+    }
+    if (i_is_j)
+    {
+        /* Avoid double counting of intra-cg interactions */
+        for(j=1; j<j_end-j_start; j++)
+        {
+            nlist->excl[nrj*MAX_CGCGSIZE + j] |= (1<<j) - 1;
+        }
     }
 
     nlist->nrj ++;
@@ -1257,7 +1262,7 @@ put_in_list_cg(gmx_bool              bHaveVdW[],
             /* Here we add the j charge group jcg to the list,
              * exclusions are also added to the list.
              */
-            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bExcl,bLR);
+            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bExcl,icg==jcg,bLR);
         }
     }
 
