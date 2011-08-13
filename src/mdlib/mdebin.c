@@ -625,9 +625,9 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->n_lambda>0 && !(ir->bSimTemp)) 
+    if (fep->n_lambda>0 && ir->bExpanded) 
     {
-        nsets += 1;   /*add fep state to the dhdl, unless doing simulated tempering, where we supress dhdl */
+        nsets += 1;   /*add fep state for expanded ensemble */
     }
 
     if (fep->bPrintEnergy)  
@@ -686,6 +686,7 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 
         if (ir->bSimTemp) {
             snew(temperatures,fep->n_lambda);
+            GetSimTemps(temperatures,ir->fepvals->n_lambda,ir->simtempvals,fep->all_lambda[efptTEMPERATURE]);
         }
 
         for(s=nsetsbegin; s<nsets; s++)
@@ -701,7 +702,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             }
             if (ir->bSimTemp) 
             {
-                GetSimTemps(temperatures,ir->fepvals->n_lambda,ir->simtempvals,fep->all_lambda[efptTEMPERATURE]);
                 /* print the temperature for this state if doing simulated annealing */
                 sprintf(&buf[nps],"T = %g (%s))",temperatures[s-(nsetsbegin)],unit_temp_K);
             }

@@ -298,12 +298,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   /* verify simulated tempering options */
 
   if (ir->bSimTemp) {
+      gmx_bool bAllTempZero = TRUE;
       for (i=0;i<fep->n_lambda;i++) 
       {
           sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[efptTEMPERATURE],fep->all_lambda[efptTEMPERATURE][i]);
           CHECK((fep->all_lambda[efptTEMPERATURE][i] < 0) || (fep->all_lambda[efptTEMPERATURE][i] > 1));
+          if (fep->all_lambda[efptTEMPERATURE][i] > 0)
+          {
+              bAllTempZero = FALSE;
+          }
       }
-      /* check validty of lambda inputs */
+      sprintf(err_buf,"if simulated tempering is on, temperature-lambdas may not be all zero");
+      CHECK(bAllTempZero==TRUE);
+
+      /* check validity of lambda inputs */
       sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
       CHECK((fep->init_fep_state >= fep->n_lambda));
 

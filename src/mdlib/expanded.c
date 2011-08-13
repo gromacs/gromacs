@@ -849,17 +849,21 @@ static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t
             
             if (lamnew > maxfep) 
             {
-                int loc=0;
-                int nerror = 200+(maxfep-minfep+1)*60;
-                char errorstr[nerror];
-                /* if its greater than maxfep, then something went wrong -- probably underflow in the calculation
-                   of sum weights. Generated detailed info for failure */
-                loc += sprintf(errorstr,"Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination.\nDenominator is: %3d%17.10e\n  i                dE        numerator          weights\n",0,pks);
-                for (ifep=minfep;ifep<=maxfep;ifep++) 
-                {
-                    loc += sprintf(&errorstr[loc],"%3d %17.10e%17.10e%17.10e\n",ifep,weighted_lamee[ifep],p_k[ifep],dfhist->sum_weights[ifep]);
+                /* it's possible some rounding is failing */
+                if (remainder[fep_state] > 2.0e-15) {
+                    /* probably not a numerical issue */
+                    int loc=0;
+                    int nerror = 200+(maxfep-minfep+1)*60;
+                    char errorstr[nerror];
+                    /* if its greater than maxfep, then something went wrong -- probably underflow in the calculation
+                       of sum weights. Generated detailed info for failure */
+                    loc += sprintf(errorstr,"Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination.\nDenominator is: %3d%17.10e\n  i                dE        numerator          weights\n",0,pks);
+                    for (ifep=minfep;ifep<=maxfep;ifep++) 
+                    {
+                        loc += sprintf(&errorstr[loc],"%3d %17.10e%17.10e%17.10e\n",ifep,weighted_lamee[ifep],p_k[ifep],dfhist->sum_weights[ifep]);
+                    }
+                    gmx_fatal(FARGS,errorstr);
                 }
-                gmx_fatal(FARGS,errorstr);
             }
         } 
         else if ((expand->elmcmove==elmcmoveMETROPOLIS) || (expand->elmcmove==elmcmoveBARKER)) 

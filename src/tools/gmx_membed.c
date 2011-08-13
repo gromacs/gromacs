@@ -1098,7 +1098,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,
+	    &(state_global->fep_state),&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -1107,7 +1108,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,enerd);
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -1212,7 +1213,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             nrnb,wcycle,FALSE);
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
     if (MASTER(cr))
     {
@@ -1512,13 +1513,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (ir->efep != efepNO)
         {
-            if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
+            if (bRerunMD && rerun_fr.bLambda && (ir->fepvals->delta_lambda!=0))
             {
-                state_global->lambda = rerun_fr.lambda;
+                state_global->lambda[efptFEP] = rerun_fr.lambda;
             }
             else
             {
-                state_global->lambda = lam0 + step*ir->delta_lambda;
+	      state_global->lambda[i] = lam0 + step*ir->fepvals->delta_lambda;
             }
             state->lambda = state_global->lambda;
             bDoDHDL = do_per_step(step,ir->nstdhdl);
@@ -1679,12 +1680,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log && !bFFscan)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
         if (ir->efep != efepNO)
         {
-            update_mdatoms(mdatoms,state->lambda);
+            update_mdatoms(mdatoms,state->lambda[efptMASS]);
         }
 
         if (bRerunMD && rerun_fr.bV)
@@ -1972,7 +1973,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
             }
-            enerd->term[F_DHDL_CON] += dvdl;
+            enerd->term[F_DVDL_BONDED] += dvdl;
 
             GMX_MPE_LOG(ev_timestep1);
 
@@ -2335,7 +2336,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
                 }
-                enerd->term[F_DHDL_CON] += dvdl;
+                enerd->term[F_DVDL_BONDED] += dvdl;
             }
             else if (graph)
             {
@@ -2456,7 +2457,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
 
-        sum_dhdl(enerd,state->lambda,ir);
+        sum_dhdl(enerd,state->lambda,ir->fepvals);
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV)
         {
@@ -2519,7 +2520,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bNstEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL,TRUE,
-                               t,mdatoms->tmass,enerd,state,lastbox,
+                               t,mdatoms->tmass,enerd,state,
+			       ir->fepvals,ir->expandedvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
                 }
@@ -3150,255 +3152,9 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       epbc_names[inputrec->ePBC]);
         }
     }
+    return 0;
 }
     
-static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
-                               int nstglobalcomm,t_inputrec *ir)
-{
-    char buf[STRLEN];
-
-    if (!EI_DYNAMICS(ir->eI))
-    {
-        nstglobalcomm = 1;
-    }
-
-    if (nstglobalcomm == -1)
-    {
-        if (ir->nstcalcenergy == 0 && ir->nstlist == 0)
-        {
-            nstglobalcomm = 10;
-            if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
-            {
-                nstglobalcomm = ir->nstenergy;
-            }
-        }
-        else
-        {
-            /* We assume that if nstcalcenergy > nstlist,
-             * nstcalcenergy is a multiple of nstlist.
-             */
-            if (ir->nstcalcenergy == 0 ||
-                (ir->nstlist > 0 && ir->nstlist < ir->nstcalcenergy))
-            {
-                nstglobalcomm = ir->nstlist;
-            }
-            else
-            {
-                nstglobalcomm = ir->nstcalcenergy;
-            }
-        }
-    }
-    else
-    {
-        if (ir->nstlist > 0 &&
-            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
-        {
-            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
-            md_print_warning(cr,fplog,buf);
-        }
-        if (nstglobalcomm > ir->nstcalcenergy)
-        {
-            check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                            "nstcalcenergy",&ir->nstcalcenergy);
-        }
-
-        check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                        "nstenergy",&ir->nstenergy);
-
-        check_nst_param(fplog,cr,"-gcom",nstglobalcomm,
-                        "nstlog",&ir->nstlog);
-    }
-
-    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
-    {
-        sprintf(buf,"WARNING: Changing nstcomm from %d to %d\n",
-                ir->nstcomm,nstglobalcomm);
-        md_print_warning(cr,fplog,buf);
-        ir->nstcomm = nstglobalcomm;
-    }
-
-    return nstglobalcomm;
-}
-
-void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
-                               t_inputrec *ir,gmx_mtop_t *mtop)
-{
-    /* Check required for old tpx files */
-    if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
-        ir->nstcalcenergy % ir->nstlist != 0)
-    {
-        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies");
-
-        if (gmx_mtop_ftype_count(mtop,F_CONSTR) +
-            gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0 &&
-            ir->eConstrAlg == econtSHAKE)
-        {
-            md_print_warning(cr,fplog,"With twin-range cut-off's and SHAKE the virial and pressure are incorrect");
-            if (ir->epc != epcNO)
-            {
-                gmx_fatal(FARGS,"Can not do pressure coupling with twin-range cut-off's and SHAKE");
-            }
-        }
-        check_nst_param(fplog,cr,"nstlist",ir->nstlist,
-                        "nstcalcenergy",&ir->nstcalcenergy);
-    	check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-        	        "nstenergy",&ir->nstenergy);
-        check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                        "nstlog",&ir->nstlog);
-        if (ir->efep != efepNO)
-        {
-            check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                            "nstdhdl",&ir->nstdhdl);
-        }
-    }
-}
-
-typedef struct {
-    gmx_bool       bGStatEveryStep;
-    gmx_large_int_t step_ns;
-    gmx_large_int_t step_nscheck;
-    gmx_large_int_t nns;
-    matrix     scale_tot;
-    int        nabnsb;
-    double     s1;
-    double     s2;
-    double     ab;
-    double     lt_runav;
-    double     lt_runav2;
-} gmx_nlheur_t;
-
-static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
-{
-    nlh->lt_runav  = 0;
-    nlh->lt_runav2 = 0;
-    nlh->step_nscheck = step;
-}
-
-static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 gmx_bool bGStatEveryStep,gmx_large_int_t step)
-{
-    nlh->bGStatEveryStep = bGStatEveryStep;
-    nlh->nns       = 0;
-    nlh->nabnsb    = 0;
-    nlh->s1        = 0;
-    nlh->s2        = 0;
-    nlh->ab        = 0;
-
-    reset_nlistheuristics(nlh,step);
-}
-
-static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
-{
-    gmx_large_int_t nl_lt;
-    char sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-
-    /* Determine the neighbor list life time */
-    nl_lt = step - nlh->step_ns;
-    if (debug)
-    {
-        fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %s steps\n",nlh->nabnsb,gmx_step_str(nl_lt,sbuf));
-    }
-    nlh->nns++;
-    nlh->s1 += nl_lt;
-    nlh->s2 += nl_lt*nl_lt;
-    nlh->ab += nlh->nabnsb;
-    if (nlh->lt_runav == 0)
-    {
-        nlh->lt_runav  = nl_lt;
-        /* Initialize the fluctuation average
-         * such that at startup we check after 0 steps.
-         */
-        nlh->lt_runav2 = sqr(nl_lt/2.0);
-    }
-    /* Running average with 0.9 gives an exp. history of 9.5 */
-    nlh->lt_runav2 = 0.9*nlh->lt_runav2 + 0.1*sqr(nlh->lt_runav - nl_lt);
-    nlh->lt_runav  = 0.9*nlh->lt_runav  + 0.1*nl_lt;
-    if (nlh->bGStatEveryStep)
-    {
-        /* Always check the nlist validity */
-        nlh->step_nscheck = step;
-    }
-    else
-    {
-        /* We check after:  <life time> - 2*sigma
-         * The factor 2 is quite conservative,
-         * but we assume that with nstlist=-1 the user
-         * prefers exact integration over performance.
-         */
-        nlh->step_nscheck = step
-                  + (int)(nlh->lt_runav - 2.0*sqrt(nlh->lt_runav2)) - 1;
-    }
-    if (debug)
-    {
-        fprintf(debug,"nlist life time %s run av. %4.1f sig %3.1f check %s check with -gcom %d\n",
-                gmx_step_str(nl_lt,sbuf),nlh->lt_runav,sqrt(nlh->lt_runav2),
-                gmx_step_str(nlh->step_nscheck-step+1,sbuf2),
-                (int)(nlh->lt_runav - 2.0*sqrt(nlh->lt_runav2)));
-    }
-}
-
-static void set_nlistheuristics(gmx_nlheur_t *nlh,gmx_bool bReset,gmx_large_int_t step)
-{
-    int d;
-
-    if (bReset)
-    {
-        reset_nlistheuristics(nlh,step);
-    }
-    else
-    {
-        update_nliststatistics(nlh,step);
-    }
-
-    nlh->step_ns = step;
-    /* Initialize the cumulative coordinate scaling matrix */
-    clear_mat(nlh->scale_tot);
-    for(d=0; d<DIM; d++)
-    {
-        nlh->scale_tot[d][d] = 1.0;
-    }
-}
-
-double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
-             gmx_vsite_t *vsite,gmx_constr_t constr,
-             int stepout,t_inputrec *ir,
-             gmx_mtop_t *top_global,
-             t_fcdata *fcd,
-             t_state *state_global,
-             t_mdatoms *mdatoms,
-             t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
-             real cpt_period,real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
-             gmx_runtime_t *runtime,
-             rvec fac, rvec *r_ins, pos_ins_t *pos_ins, t_block *ins_at,
-             real xy_step, real z_step, int it_xy, int it_z)
-{
-  return 0;
-}
-
-int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
-             ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-             const char *dddlb_opt,real dlb_scale,
-             const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
-             real pforce,real cpt_period,real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
-             real xy_fac, real xy_max, real z_fac, real z_max,
-             int it_xy, int it_z, real probe_rad, int low_up_rm,
-             int pieces, gmx_bool bALLOW_ASYMMETRY, int maxwarn)
-{
-  return 0;
-}
-
 int gmx_membed(int argc,char *argv[])
 {
 	const char *desc[] = {

@@ -2000,8 +2000,7 @@ int gmx_energy(int argc,char *argv[])
   } else if (bDHDL) {
       get_dhdl_parms(ftp2fn(efTPX,NFILE,fnm),&ir);
   }
-
-<<<<<<< HEAD
+  
    /* Initiate energies and set them to zero */
    edat.nsteps  = 0;
    edat.npoints = 0;
