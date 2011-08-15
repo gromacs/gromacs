@@ -36,8 +36,14 @@
 #include <config.h>
 #endif
 
+#ifdef __linux
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
