@@ -299,6 +299,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       gmx_fio_do_int(fio,fepvals->init_fep_state);
       gmx_fio_do_double(fio,fepvals->init_lambda); 
       gmx_fio_do_double(fio,fepvals->delta_lambda);
+      gmx_fio_do_int(fio,fepvals->nstfep);
   }
   else if (file_version >= 59) {
       gmx_fio_do_double(fio,fepvals->init_lambda);
@@ -331,7 +332,6 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   else if (file_version >= 64) 
   {
       gmx_fio_do_int(fio,fepvals->n_lambda);
-      gmx_fio_do_int(fio,fepvals->nstfep);
       snew(fepvals->all_lambda,efptNR);
       if (bRead) 
       {
@@ -777,7 +777,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       gmx_fio_do_real(fio,rdum); 
 
     gmx_fio_do_real(fio,ir->shake_tol);
-    if (file_version < 54)
+    if (file_version < 54) 
       gmx_fio_do_real(fio,*fudgeQQ);
     do_fepvals(fio,ir->fepvals,bRead,file_version);
     do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);

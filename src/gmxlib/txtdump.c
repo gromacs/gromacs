@@ -533,6 +533,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
 {
     int i,j;
 
+    PI("nstfep",fep->nstfep);
     PI("init_fep_state",fep->init_fep_state);
     PI("init_lambda",fep->init_lambda);
     PR("delta_lambda",fep->delta_lambda);
@@ -564,8 +565,6 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
     PS("dhdl_derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
     PI("dh_hist_size", fep->dh_hist_size);
     PD("dh_hist_spacing", fep->dh_hist_spacing);
-
-    PI("nstfep",fep->nstfep);
 
 };
 
