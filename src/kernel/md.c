@@ -1815,7 +1815,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (fplog && do_log && bDoExpanded) 
             {
                 /* only needed if doing expanded ensemble */ 
-                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,ir->expandedvals,&df_history,state->fep_state,ir->nstlog,step);
+                PrintFreeEnergyInfoToFile(fplog,ir->fepvals,ir->expandedvals,ir->bSimTemp?ir->simtempvals:NULL,
+                                          &df_history,state->fep_state,ir->nstlog,step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {

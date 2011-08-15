@@ -550,7 +550,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->dhc=NULL; 
     if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO )
     {
-        int i;
         snew(md->dhc, 1);
 
         mde_delta_h_coll_init(md->dhc, ir);
@@ -561,8 +560,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->fp_dhdl = fp_dhdl;
     }
     if (ir->bSimTemp) {
+        int i;
         snew(md->temperatures,ir->fepvals->n_lambda);
-        GetSimTemps(md->temperatures,ir->fepvals->n_lambda,ir->simtempvals,ir->fepvals->all_lambda[efptTEMPERATURE]);
+        for (i=0;i<ir->fepvals->n_lambda;i++)
+        {
+            md->temperatures[i] = ir->simtempvals->temperatures[i];
+        }
     }
     return md;
 }
@@ -576,7 +579,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  i,np,nps,nsets,nsets_de,nsetsbegin;
     t_lambda *fep;
-    real *temperatures;
     char **setname;
     char buf[STRLEN];
     
@@ -684,11 +686,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         }
         nsetsbegin += nsets_dhdl;
 
-        if (ir->bSimTemp) {
-            snew(temperatures,fep->n_lambda);
-            GetSimTemps(temperatures,ir->fepvals->n_lambda,ir->simtempvals,fep->all_lambda[efptTEMPERATURE]);
-        }
-
         for(s=nsetsbegin; s<nsets; s++)
         {
             nps = sprintf(buf,"%s %s (",deltag,lambda);  
@@ -703,7 +700,7 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             if (ir->bSimTemp) 
             {
                 /* print the temperature for this state if doing simulated annealing */
-                sprintf(&buf[nps],"T = %g (%s))",temperatures[s-(nsetsbegin)],unit_temp_K);
+                sprintf(&buf[nps],"T = %g (%s))",ir->simtempvals->temperatures[s-(nsetsbegin)],unit_temp_K);
             }
             else 
             {
@@ -723,9 +720,6 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
             sfree(setname[s]);
         }
         sfree(setname);
-        if (ir->bSimTemp) {
-            sfree(temperatures);
-        }
     }
     
     return fp;

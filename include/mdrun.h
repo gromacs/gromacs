@@ -337,9 +337,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 				    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng,
 				    rvec *v, t_mdatoms *mdatoms);
 
-extern void GetSimTemps(double *temps,int ntemps, t_simtemp *simtemp, double *temperature_lambdas);
-
-extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, df_history_t *dfhist, 
+extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist, 
 				      int nlam, int frequency, gmx_large_int_t step);
   
 extern void get_mc_state(gmx_rng_t rng,t_state *state);

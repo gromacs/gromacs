@@ -125,6 +125,7 @@ typedef struct {
   int  eSimTempScale;   /* simulated temperature scaling; linear or exponential */
   real simtemp_low;     /* the low temperature for simulated tempering  */
   real simtemp_high;    /* the high temperature for simulated tempering */
+  real *temperatures;   /* the range of temperatures used for simulated tempering */
 } t_simtemp;
 
 typedef struct {

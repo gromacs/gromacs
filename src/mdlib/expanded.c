@@ -948,13 +948,19 @@ static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t
 }
 
 /* print out the weights to the log, along with current state */
-extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, df_history_t *dfhist, 
+extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist, 
                                       int nlam, int frequency, gmx_large_int_t step)
 {
     int nlim,i,ifep,jfep;
     real dw,dg,dv,dm,Tprint;
-    const char *print_names[efptNR] = {" FEPL","MassL","CoulL"," VdwL","BondL","RestT"};
+    real *temps;
+    const char *print_names[efptNR] = {" FEPL","MassL","CoulL"," VdwL","BondL","RestT","Temp.(K)"};
+    gmx_bool bSimTemp = FALSE;
+
     nlim = fep->n_lambda;
+    if (simtemp != NULL) {
+        bSimTemp = TRUE;
+    }
 
     if (mod(step,frequency)==0)
     {
@@ -965,9 +971,13 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
         fprintf(outfile,"  N");
         for (i=0;i<efptNR;i++) 
         {
-            if (fep->separate_dvdl[i]) 
+            if (fep->separate_dvdl[i])
             {
                 fprintf(outfile,"%7s",print_names[i]);
+            } 
+            else if ((i == efptTEMPERATURE) && bSimTemp)
+            { 
+                fprintf(outfile,"%10s",print_names[i]); /* more space for temperature formats */
             }
         }
         fprintf(outfile,"    Count   ");
@@ -1002,6 +1012,9 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
                 if (fep->separate_dvdl[i]) 
                 {
                     fprintf(outfile,"%7.3f",fep->all_lambda[i][ifep]);
+                } else if (i == efptTEMPERATURE && bSimTemp) 
+                {
+                    fprintf(outfile,"%9.3f",simtemp->temperatures[ifep]);
                 }
             }
             if (EWL(expand->elamstats) && (!(dfhist->bEquil)))  /* if performing WL and still haven't equilibrated */
@@ -1106,29 +1119,6 @@ extern void set_mc_state(gmx_rng_t rng,t_state *state)
     gmx_rng_set_state(rng,state->mc_rng,state->mc_rngi[0]);
 }
 
-extern void GetSimTemps(double *temps,int ntemps, t_simtemp *simtemp, double *temperature_lambdas) {
-
-    int i;
-
-    for (i=0;i<ntemps;i++) 
-    {
-        if (simtemp->eSimTempScale == esimtempLINEAR) 
-        {
-            temps[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*temperature_lambdas[i];
-        }
-        else if (simtemp->eSimTempScale == esimtempEXPONENTIAL) 
-        {
-            temps[i] = simtemp->simtemp_low * pow(simtemp->simtemp_high/simtemp->simtemp_low,temperature_lambdas[i]);
-        }
-        else 
-        {
-            char errorstr[128];
-            sprintf(errorstr,"eSimTempScale=%d not defined",simtemp->eSimTempScale); 
-            gmx_fatal(FARGS,errorstr);
-        }
-    }
-}
-
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
                                     int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng, 
                                     rvec *v, t_mdatoms *mdatoms)
@@ -1138,11 +1128,11 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     real oneovert,maxscaled=0,maxweighted=0;
     t_expanded *expand;
     t_simtemp *simtemp;
-    real *temperatures;
     double *temperature_lambdas;
     gmx_bool bIfReset,bSwitchtoOneOverT,bDoneEquilibrating=FALSE;
 
     expand = ir->expandedvals;
+    simtemp = ir->simtempvals;
 	nlim = ir->fepvals->n_lambda;
 
     snew(scaled_lamee,nlim);
@@ -1178,14 +1168,6 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 	/* we don't need to include the pressure term, since the volume is the same between the two.
 	   is there some term we are neglecting, however? */
 
-    /* temperature lambdas for simulated tempering */
-    if (ir->bSimTemp) 
-    {
-        temperature_lambdas = ir->fepvals->all_lambda[efptTEMPERATURE];
-        snew(temperatures,nlim);
-        GetSimTemps(temperatures,nlim,ir->simtempvals,ir->fepvals->all_lambda[efptTEMPERATURE]);
-    }
-
     if (ir->efep > efepNO) 
     {
         for (i=0;i<nlim;i++) 
@@ -1193,8 +1175,8 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
             if (ir->bSimTemp) 
             {
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
-                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(temperatures[i]*BOLTZ) 
-                    + enerd->term[F_EPOT]*(1.0/(temperatures[i])- 1.0/(temperatures[nlam]))/BOLTZ;
+                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(simtemp->temperatures[i]*BOLTZ) 
+                    + enerd->term[F_EPOT]*(1.0/(simtemp->temperatures[i])- 1.0/(simtemp->temperatures[nlam]))/BOLTZ;
             }
             else 
             {
@@ -1209,7 +1191,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     } else { 
         if (ir->bSimTemp) {
             for (i=0;i<nlim;i++) {
-                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/temperatures[i] - 1.0/temperatures[nlam])/BOLTZ;
+                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/simtemp->temperatures[i] - 1.0/simtemp->temperatures[nlam])/BOLTZ;
             }
         }
     }
@@ -1266,7 +1248,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
         for (i=0;i<ir->opts.ngtc;i++) {
             if (ir->opts.ref_t[i] > 0) {
                 told = ir->opts.ref_t[i];
-                ir->opts.ref_t[i] =  temperatures[lamnew];
+                ir->opts.ref_t[i] =  simtemp->temperatures[lamnew];
                 vscale[i] = sqrt(ir->opts.ref_t[i]/told);
             }
         }

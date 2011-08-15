@@ -492,6 +492,20 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   PR("kB",pg->kB);
 }
 
+static void pr_simtempvals(FILE *fp,int indent,t_simtemp *simtemp, int n_lambda, gmx_bool bMDPformat)
+{
+    int i;
+    
+    PR("simtemp_low",simtemp->simtemp_low);
+    PR("simtemp_high",simtemp->simtemp_high);        
+    PS("simulated-tempering-scaling",ESIMTEMP(simtemp->eSimTempScale));          
+    fprintf(fp,"simulated tempering temperatures %s\n",bMDPformat ? " = " : ":");
+    for(i=0; i<n_lambda; i++)
+    {
+        fprintf(fp,"  %10g",simtemp->temperatures[i]);
+    }
+}
+
 static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda, gmx_bool bMDPformat)
 {
     int i;
@@ -685,9 +699,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     }
     PS("bSimTemp",BOOL(ir->bSimTemp));
     if (ir->bSimTemp) {
-        PR("simtemp_low",ir->simtempvals->simtemp_low);
-        PR("simtemp_high",ir->simtempvals->simtemp_high);        
-        PS("simulated-tempering-scaling",ESIMTEMP(ir->simtempvals->eSimTempScale));        
+        pr_simtempvals(fp,indent,ir->simtempvals,ir->fepvals->n_lambda,bMDPformat);
     }
     PI("nstdhdl", ir->nstdhdl);
     PI("nwall",ir->nwall);

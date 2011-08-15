@@ -109,6 +109,34 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
   snew(ir->simtempvals,1);
 }
 
+static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lambdas) 
+{
+
+    int i;
+
+    for (i=0;i<ntemps;i++) 
+    {
+        /* simple linear scaling -- allows more control */
+        if (simtemp->eSimTempScale == esimtempLINEAR) 
+        {
+            simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*temperature_lambdas[i];
+        }
+        /* exponential scaling -- gives equal weights if the heat capacity is constant */
+        else if (simtemp->eSimTempScale == esimtempEXPONENTIAL) 
+        {
+            simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*((exp(temperature_lambdas[i])-1)/(exp(1.0)-1));
+        }
+        else 
+        {
+            char errorstr[128];
+            sprintf(errorstr,"eSimTempScale=%d not defined",simtemp->eSimTempScale); 
+            gmx_fatal(FARGS,errorstr);
+        }
+    }
+}
+
+
+
 static void _low_check(gmx_bool b,char *s,warninp_t wi)
 {
     if (b)
@@ -1116,6 +1144,15 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     }
 }
 
+
+static void do_simtemp_params(t_inputrec *ir) {
+    
+    snew(ir->simtempvals->temperatures,ir->fepvals->n_lambda);
+    GetSimTemps(ir->fepvals->n_lambda,ir->simtempvals,ir->fepvals->all_lambda[efptTEMPERATURE]);
+    
+    return;
+}
+
 static void do_wall_params(t_inputrec *ir,
                            char *wall_atomtype, char *wall_density,
                            t_gromppopts *opts)
@@ -1702,6 +1739,9 @@ void get_ir(const char *mdparin,const char *mdparout,
           ir->bExpanded = TRUE;
       }
       do_fep_params(ir,fep_lambda,lambda_weights);
+      if (ir->bSimTemp) { /* done after fep params */
+          do_simtemp_params(ir);
+      }
   } 
   else
   {
