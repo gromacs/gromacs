@@ -108,6 +108,9 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
         bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
                  ip->lj14.c12A != ip->lj14.c12B);
         break;
+    case F_CMAP:
+        bPert = FALSE;
+        break;
     default:
         bPert = FALSE;
         gmx_fatal(FARGS,"Function type %s not implemented in ip_pert",
