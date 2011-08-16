@@ -2074,12 +2074,20 @@ int gmx_energy(int argc,char *argv[])
 	        if (edat.nframes % 1000 == 0)
             {
                 srenew(edat.step,edat.nframes+1000);
+                memset(&(edat.step[edat.nframes]),0,1000*sizeof(edat.step[0]));
                 srenew(edat.steps,edat.nframes+1000);
+                memset(&(edat.steps[edat.nframes]),0,1000*sizeof(edat.steps[0]));
                 srenew(edat.points,edat.nframes+1000);
+                memset(&(edat.points[edat.nframes]),0,1000*sizeof(edat.points[0]));
                 for(i=0; i<nset; i++)
                 {
                     srenew(edat.s[i].ener,edat.nframes+1000);
+                    memset(&(edat.s[i].ener[edat.nframes]),0,
+                           1000*sizeof(edat.s[i].ener[0]));
+
                     srenew(edat.s[i].es  ,edat.nframes+1000);
+                    memset(&(edat.s[i].es[edat.nframes]),0,
+                           1000*sizeof(edat.s[i].es[0]));
                 }
             }
 
