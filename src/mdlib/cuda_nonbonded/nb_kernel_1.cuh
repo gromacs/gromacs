@@ -201,7 +201,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             qi      = xqbuf.w;
                             typei   = atom_types[ai];
 
-                            /* LJ C6 and C12 */
+                            /* LJ 6*C6 and 12*C12 */
                             c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
                             c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
 
@@ -209,10 +209,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             inv_r2      = inv_r * inv_r;
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
 
-                            F_invr      = inv_r6 * (12.0f * c12 * inv_r6 - 6.0f * c6) * inv_r2;
+                            F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
  
 #ifdef CALC_ENERGIES
-                            E_lj        += (inv_r6 + lj_shift) * (c12 * (inv_r6 + lj_shift) - c6);
+                            E_lj        += (inv_r6 + lj_shift) * (0.08333333f * c12 * (inv_r6 + lj_shift) - 0.16666667f * c6);
 #endif
 
 #ifdef EL_CUTOFF

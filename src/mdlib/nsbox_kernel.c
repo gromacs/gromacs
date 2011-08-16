@@ -298,8 +298,8 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
                                         rinvsix          = rinvsq*rinvsq*rinvsq;
                                         Vvdw_disp        = c6*rinvsix;     
                                         Vvdw_rep         = c12*rinvsix*rinvsix;
-                                        fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
-                                        Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
+                                        fscal           += (Vvdw_rep-Vvdw_disp)*rinvsq;
+                                        Vvdwtot          = Vvdwtot+Vvdw_rep/12-Vvdw_disp/6;
                                         break;
                                         
                                     case 2:

@@ -49,25 +49,40 @@
 
 
 /* All functionality defines are set here, except for:
- * CALC_ENERGIES, which is set before calling these functions,
+ * CALC_ENERGIES, which is set before calling the kernel function,
  * CHECK_EXCLS, which is set just before including the inner loop contents.
+ * The combination rule defines, LJ_COMB_GEOM or LJ_COMB_LB are currently
+ * set before calling the kernel function. We might want to move that
+ * to inside the n-loop and have a different combination rule for different
+ * ci's, as no combination rule gives a 50% performance hit for LJ.
  */
 
 /* Calculate Coulomb interactions */
-//#define CALC_COULOMB
+#define CALC_COULOMB
 
 /* Assumes only the first half of the particles in each cell have LJ */
 //#define HALF_LJ
 
-/* Assumes are LJ parameters are indentical */
-#define FIX_LJ_C
+/* Assumes all LJ parameters are indentical */
+//#define FIX_LJ_C
+
+#if defined LJ_COMB_GEOM
+#define NBK_FUNC_NAME(x,y) x##_comb_geom_##y
+#else
+#if defined LJ_COMB_LB
+#define NBK_FUNC_NAME(x,y) x##_comb_lb_##y
+#else
+#define NBK_FUNC_NAME(x,y) x##_comb_none_##y
+#endif
+#endif
 
 static void
 #ifndef CALC_ENERGIES
-nb_cell_kernel_sse2_single_noener
+NBK_FUNC_NAME(nb_cell_kernel_sse2_single,noener)
 #else
-nb_cell_kernel_sse2_single_ener
+NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #endif
+#undef NBK_FUNC_NAME
                             (const gmx_nblist_t         *nbl,
                              const gmx_nb_atomdata_t    *nbat,
                              const t_forcerec *         fr,
@@ -86,6 +101,7 @@ nb_cell_kernel_sse2_single_ener
                             )
 {
     const gmx_nbl_ci_t *nbln;
+    const gmx_nbl_cj_t *cj;
     const int          *type;
     const real         *q;
     const real         *shiftvec;
@@ -97,10 +113,12 @@ nb_cell_kernel_sse2_single_ener
     int        ish3;
     //real       shX,shY,shZ;
 	int        ssi,ssix,ssiy,ssiz;
-    int        sjind0,sjind1,sjind,sj,ssj,ssjx,ssjy,ssjz;
+    int        sjind0,sjind1,sjind;
     int        ip,jp;
+#ifndef LJ_COMB_GEOM
     real       pvdw_array[2*UNROLLI*UNROLLJ+3];
     real       *pvdw_c6,*pvdw_c12;
+#endif
     
     __m128     shX_SSE;
     __m128     shY_SSE;
@@ -119,45 +137,46 @@ nb_cell_kernel_sse2_single_ener
     __m128     mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0800, 0x0400, 0x0200, 0x0100) );
     __m128     mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0x8000, 0x4000, 0x2000, 0x1000) );
     __m128     zero_SSE = gmx_mm_castsi128_ps( _mm_set_epi32(0x0, 0x0, 0x0, 0x0) );
-    __m128     mask_int;
-    __m128     int_SSE0;
-    __m128     int_SSE1;
-    __m128     int_SSE2;
-    __m128     int_SSE3;
+#ifdef CALC_COULOMB
+	__m128     iq_SSE0;
+	__m128     iq_SSE1;
+	__m128     iq_SSE2;
+	__m128     iq_SSE3;
+    __m128     mrc_3_SSE;
+#ifdef CALC_ENERGIES
+    __m128     hrc_3_SSE,moh_rc_SSE;
+#endif
+#endif
 
-	__m128     jxSSE,jySSE,jzSSE,jqSSE;
-	__m128     dx_SSE0,dy_SSE0,dz_SSE0;
-	__m128     dx_SSE1,dy_SSE1,dz_SSE1;
-	__m128     dx_SSE2,dy_SSE2,dz_SSE2;
-	__m128     dx_SSE3,dy_SSE3,dz_SSE3;
-	__m128     tx_SSE0,ty_SSE0,tz_SSE0;
-	__m128     tx_SSE1,ty_SSE1,tz_SSE1;
-	__m128     tx_SSE2,ty_SSE2,tz_SSE2;
-	__m128     tx_SSE3,ty_SSE3,tz_SSE3;
-	__m128     rsq_SSE0,rinv_SSE0,rinvsq_SSE0,rinvsix_SSE0;
-	__m128     rsq_SSE1,rinv_SSE1,rinvsq_SSE1,rinvsix_SSE1;
-	__m128     rsq_SSE2,rinv_SSE2,rinvsq_SSE2,rinvsix_SSE2;
-	__m128     rsq_SSE3,rinv_SSE3,rinvsq_SSE3,rinvsix_SSE3;
-    __m128     wco_SSE0;
-    __m128     wco_SSE1;
-    __m128     wco_SSE2;
-    __m128     wco_SSE3;
-    __m128     wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
-	__m128     qq_SSE0,iq_SSE0;
-	__m128     qq_SSE1,iq_SSE1;
-	__m128     qq_SSE2,iq_SSE2;
-	__m128     qq_SSE3,iq_SSE3;
-	__m128     vcoul_SSE0,Vvdw6_SSE0,Vvdw12_SSE0,fscal_SSE0;
-	__m128     vcoul_SSE1,Vvdw6_SSE1,Vvdw12_SSE1,fscal_SSE1;
-	__m128     vcoul_SSE2,Vvdw6_SSE2,Vvdw12_SSE2,fscal_SSE2;
-	__m128     vcoul_SSE3,Vvdw6_SSE3,Vvdw12_SSE3,fscal_SSE3;
+#ifdef LJ_COMB_LB
+    const float *ljc;
+
+    __m128     hsig_i_SSE0,seps_i_SSE0;
+    __m128     hsig_i_SSE1,seps_i_SSE1;
+    __m128     hsig_i_SSE2,seps_i_SSE2;
+    __m128     hsig_i_SSE3,seps_i_SSE3;
+#else
+#ifdef FIX_LJ_C
     __m128     c6_SSE0,c12_SSE0;
     __m128     c6_SSE1,c12_SSE1;
     __m128     c6_SSE2,c12_SSE2;
     __m128     c6_SSE3,c12_SSE3;
-    
+#endif
+
+#ifdef LJ_COMB_GEOM
+    const float *ljc;
+
+    __m128     c6s_SSE0,c12s_SSE0;
+    __m128     c6s_SSE1,c12s_SSE1;
+#ifndef HALF_LJ
+    __m128     c6s_SSE2,c12s_SSE2;
+    __m128     c6s_SSE3,c12s_SSE3;
+#endif
+#endif
+#endif /* LJ_COMB_LB */
+
     __m128     vctotSSE,VvdwtotSSE;
-    __m128     sixSSE,twelveSSE;
+    __m128     sixthSSE,twelvethSSE;
     __m128i    ikSSE,imSSE,ifourSSE;
     __m128i    ioneSSE;
 
@@ -178,21 +197,39 @@ nb_cell_kernel_sse2_single_ener
     int npair=0;
 #endif
 
+#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+    ljc = nbat->lj_comb;
+#endif
+
+#ifndef LJ_COMB_GEOM
     pvdw_c6  = (float *)(((size_t)(pvdw_array+3)) & (~((size_t)15)));
     pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+#endif
 
     q                   = nbat->q;
     type                = nbat->type;
     facel               = fr->epsfac;
     shiftvec            = fr->shift_vec[0];
     x                   = nbat->x;
-    
-    sixSSE    = _mm_set1_ps(6.0);
-    twelveSSE = _mm_set1_ps(12.0);
-    ifourSSE  = _mm_set1_epi32(4);
-    ioneSSE   = _mm_set1_epi32(1);
+
+#ifdef CALC_ENERGIES    
+    sixthSSE    = _mm_set1_ps(0.16666667);
+    twelvethSSE = _mm_set1_ps(0.08333333);
+#endif
+    ifourSSE    = _mm_set1_epi32(4);
+    ioneSSE     = _mm_set1_epi32(1);
 
     rc2_SSE   = _mm_set1_ps(nbl->rcut*nbl->rcut);
+
+#ifdef CALC_COULOMB
+    mrc_3_SSE = _mm_set1_ps(-1.0/(nbl->rcut*nbl->rcut*nbl->rcut));
+
+#ifdef CALC_ENERGIES
+    hrc_3_SSE = _mm_set1_ps(0.5/(nbl->rcut*nbl->rcut*nbl->rcut));
+    
+    moh_rc_SSE = _mm_set1_ps(-1.5/nbl->rcut); 
+#endif
+#endif
 
     wco_any_align = (float *)(((size_t)(wco_any_array+3)) & (~((size_t)15)));
 
@@ -235,7 +272,9 @@ nb_cell_kernel_sse2_single_ener
     c12_SSE1           = _mm_load_ps(pvdw_c12+1*UNROLLJ);
     c12_SSE2           = _mm_load_ps(pvdw_c12+2*UNROLLJ);
     c12_SSE3           = _mm_load_ps(pvdw_c12+3*UNROLLJ);
-#endif
+#endif /* FIX_LJ_C */
+
+    cj = nbl->cj;
 
     ninner = 0;
     for(n=0; n<nbl->nci; n++)
@@ -276,10 +315,36 @@ nb_cell_kernel_sse2_single_ener
 		iq_SSE3          = _mm_set1_ps(facel*q[ssi+3]);
 #endif
 
+#ifdef LJ_COMB_LB
+        hsig_i_SSE0      = _mm_load1_ps(ljc+ssi*2+0);
+        hsig_i_SSE1      = _mm_load1_ps(ljc+ssi*2+1);
+        hsig_i_SSE2      = _mm_load1_ps(ljc+ssi*2+2);
+        hsig_i_SSE3      = _mm_load1_ps(ljc+ssi*2+3);
+        seps_i_SSE0      = _mm_load1_ps(ljc+ssi*2+4);
+        seps_i_SSE1      = _mm_load1_ps(ljc+ssi*2+5);
+        seps_i_SSE2      = _mm_load1_ps(ljc+ssi*2+6);
+        seps_i_SSE3      = _mm_load1_ps(ljc+ssi*2+7);
+#else
+#ifdef LJ_COMB_GEOM
+        c6s_SSE0         = _mm_load1_ps(ljc+ssi*2+0);
+        c6s_SSE1         = _mm_load1_ps(ljc+ssi*2+1);
+#ifndef HALF_LJ
+        c6s_SSE2         = _mm_load1_ps(ljc+ssi*2+2);
+        c6s_SSE3         = _mm_load1_ps(ljc+ssi*2+3);
+#endif
+        c12s_SSE0        = _mm_load1_ps(ljc+ssi*2+4);
+        c12s_SSE1        = _mm_load1_ps(ljc+ssi*2+5);
+#ifndef HALF_LJ
+        c12s_SSE2        = _mm_load1_ps(ljc+ssi*2+6);
+        c12s_SSE3        = _mm_load1_ps(ljc+ssi*2+7);
+#endif
+#else
         nbfp0 = nbat->nbfp + type[ssi  ]*nbat->ntype*2;
         nbfp1 = nbat->nbfp + type[ssi+1]*nbat->ntype*2;
         nbfp2 = nbat->nbfp + type[ssi+2]*nbat->ntype*2;
         nbfp3 = nbat->nbfp + type[ssi+3]*nbat->ntype*2;
+#endif
+#endif
 
 		/* Zero the potential energy for this list */
 		VvdwtotSSE       = _mm_setzero_ps();

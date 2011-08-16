@@ -1975,6 +1975,19 @@ void init_forcerec(FILE *fp,
 #else
                              NULL,NULL);
 #endif
+        if (!(fr->useGPU || fr->emulateGPU) && fp != NULL)
+        {
+            if (fr->nbat->comb_rule==ljcrNONE)
+            {
+                fprintf(fp,"Using full Lennard-Jones parameter combination matrix\n");
+                fprintf(fp,"\nNOTE: the SSE kernels are a LOT slower when the LJ parameters do not obey a combination rule\n\n");
+            }
+            else
+            {
+                fprintf(fp,"Using %s Lennard-Jones combination rule\n",
+                        fr->nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+            }
+        }
 
         if (fr->useGPU)
         {

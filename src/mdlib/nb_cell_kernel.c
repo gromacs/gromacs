@@ -42,16 +42,54 @@
 #include "nb_cell_kernel.h"
 
 
-/* Include the force+energy kernel */
+/* Include the force+energy kernels */
 #define CALC_SHIFTFORCES
 #define CALC_ENERGIES
+#define LJ_COMB_GEOM
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_LB
 #include "nb_cell_kernel_sse2_single.h"
 #undef CALC_ENERGIES
 #undef CALC_SHIFTFORCES
 
-/* Include the force only kernel */
+/* Include the force only kernels */
+#define LJ_COMB_GEOM
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_LB
 #include "nb_cell_kernel_sse2_single.h"
 
+typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
+                                const gmx_nb_atomdata_t    *nbat,
+                                const t_forcerec *         fr,
+                                real                       tabscale,  
+                                const real *               VFtab,
+                                real *                     f,
+                                real *                     fshift,
+                                real *                     Vc,
+                                real *                     Vvdw);
+
+typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
+                                  const gmx_nb_atomdata_t    *nbat,
+                                  const t_forcerec *         fr,
+                                  real                       tabscale,  
+                                  const real *               VFtab,
+                                  real *                     f);
+
+p_nbk_func_ener p_nbk_ener[ljcrNR] =
+{ nb_cell_kernel_sse2_single_comb_geom_ener,
+  nb_cell_kernel_sse2_single_comb_lb_ener,
+  nb_cell_kernel_sse2_single_comb_none_ener };
+
+p_nbk_func_noener p_nbk_noener[ljcrNR] =
+{ nb_cell_kernel_sse2_single_comb_geom_noener,
+  nb_cell_kernel_sse2_single_comb_lb_noener,
+  nb_cell_kernel_sse2_single_comb_none_noener };
 
 static void clear_f(const gmx_nb_atomdata_t *nbat,
                     real *f)
@@ -105,20 +143,21 @@ nb_cell_kernel(int                        nnbl,
         {
             nbat->out[i].Vc   = 0;
             nbat->out[i].Vvdw = 0;
-            nb_cell_kernel_sse2_single_ener(nbl[i],nbat,
-                                            fr,tabscale,VFtab,
-                                            nbat->out[i].f,
-                                            nnbl == 1 ?
-                                            fr->fshift[0] :
-                                            nbat->out[i].fshift,
-                                            &nbat->out[i].Vc,
-                                            &nbat->out[i].Vvdw);
+
+            p_nbk_ener[nbat->comb_rule](nbl[i],nbat,
+                                        fr,tabscale,VFtab,
+                                        nbat->out[i].f,
+                                        nnbl == 1 ?
+                                        fr->fshift[0] :
+                                        nbat->out[i].fshift,
+                                        &nbat->out[i].Vc,
+                                        &nbat->out[i].Vvdw);
         }
         else
         {
-            nb_cell_kernel_sse2_single_noener(nbl[i],nbat,
-                                              fr,tabscale,VFtab,
-                                              nbat->out[i].f);
+            p_nbk_noener[nbat->comb_rule](nbl[i],nbat,
+                                          fr,tabscale,VFtab,
+                                          nbat->out[i].f);
         }
     }
 

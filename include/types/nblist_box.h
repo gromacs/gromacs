@@ -144,22 +144,27 @@ typedef struct {
     real Vvdw;    /* Temporary Van der Waals energy storage             */
 } gmx_nb_atomdata_output_t;
 
+    enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
+
 typedef struct {
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
-    int  ntype;   /* The number of different atom types                 */
-    real *nbfp;   /* The Lennard-Jones C6 and C12 params, size ntype^2  */
-    int  natoms;  /* Number of atoms                                    */
-    int  *type;   /* Atom types                                         */
-    int  XFormat; /* The format of x (and q), enum                      */
-    real *q;      /* Charges, can be NULL if incorporated in x          */
-    gmx_bool dynamic_box; /* Do we need to update shift_vec every step? */
-    rvec *shift_vec; /* Shift vectors, copied from t_forcerec           */
-    int  xstride; /* stride for a coordinate in x (usually 3 or 4)      */
-    real *x;      /* x and possibly q, size natoms*xstride              */
-    int  nout;    /* The number of force arrays                         */
-    gmx_nb_atomdata_output_t *out;  /* Output data structures           */
-    int  nalloc;  /* Allocation size of all arrays (time xstride for x) */
+    int  ntype;      /* The number of different atom types                 */
+    real *nbfp;      /* The Lennard-Jones 6*C6 and 12*C12 params, size ntype^2  */
+    int  comb_rule;  /* Combination rule, see enum above                   */
+    real *nbfp_comb; /* LJ parameter per atom type, size ntype             */
+    int  natoms;     /* Number of atoms                                    */
+    int  *type;      /* Atom types                                         */
+    real *lj_comb;   /* LJ parameters per atom for combining for pairs     */
+    int  XFormat;    /* The format of x (and q), enum                      */
+    real *q;         /* Charges, can be NULL if incorporated in x          */
+    gmx_bool dynamic_box; /* Do we need to update shift_vec every step?    */
+    rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
+    int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
+    real *x;         /* x and possibly q, size natoms*xstride              */
+    int  nout;       /* The number of force arrays                         */
+    gmx_nb_atomdata_output_t *out;  /* Output data structures              */
+    int  nalloc;     /* Allocation size of all arrays (time xstride for x) */
 } gmx_nb_atomdata_t;
 
 #ifdef __cplusplus
