@@ -8654,9 +8654,13 @@ void dd_partition_system(FILE            *fplog,
     ncg_moved = 0;
     if (bRedist)
     {
+        wallcycle_sub_start(wcycle,ewcsDD_REDIST);
+
         dd_redistribute_cg(fplog,step,dd,ddbox.tric_dir,
                            state_local,f,fr,mdatoms,
                            !bSortCG,nrnb,&cg0,&ncg_moved);
+
+        wallcycle_sub_stop(wcycle,ewcsDD_REDIST);
     }
     
     get_nsgrid_boundaries(ddbox.nboundeddim,state_local->box,
@@ -8682,6 +8686,8 @@ void dd_partition_system(FILE            *fplog,
 
     if (bSortCG)
     {
+        wallcycle_sub_start(wcycle,ewcsDD_GRID);
+
         /* Sort the state on charge group position.
          * This enables exact restarts from this step.
          * It also improves performance by about 15% with larger numbers
@@ -8730,7 +8736,11 @@ void dd_partition_system(FILE            *fplog,
         /* Rebuild all the indices */
         cg0 = 0;
         ga2la_clear(dd->ga2la);
+
+        wallcycle_sub_stop(wcycle,ewcsDD_GRID);
     }
+
+    wallcycle_sub_start(wcycle,ewcsDD_SETUPCOMM);
     
     /* Setup up the communication and communicate the coordinates */
     setup_dd_communication(dd,state_local->box,&ddbox,fr);
@@ -8746,10 +8756,14 @@ void dd_partition_system(FILE            *fplog,
         set_zones_size(dd,&ddbox);
     }
 
+    wallcycle_sub_stop(wcycle,ewcsDD_SETUPCOMM);
+
     /*
     write_dd_pdb("dd_home",step,"dump",top_global,cr,
                  -1,state_local->x,state_local->box);
     */
+
+    wallcycle_sub_start(wcycle,ewcsDD_MAKETOP);
     
     /* Extract a local topology from the global topology */
     for(i=0; i<dd->ndim; i++)
@@ -8786,6 +8800,8 @@ void dd_partition_system(FILE            *fplog,
         }
         comm->nat[i] = n;
     }
+
+    wallcycle_sub_stop(wcycle,ewcsDD_MAKETOP);
     
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.
