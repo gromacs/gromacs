@@ -58,6 +58,10 @@
 #include "tmpi.h"
 #endif
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 #define DDRANK(dd,rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
@@ -2334,7 +2338,8 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
     }
 }
 
-static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
+static void rebuild_cgindex(gmx_domdec_t *dd,
+                            const int *gcgs_index,t_state *state)
 {
     int nat,i,*ind,*dd_cg_gl,*cgindex,cg_gl;
     
@@ -2395,12 +2400,14 @@ static void dd_set_cginfo(int *index_gl,int cg0,int cg1,
     }
 }
 
-static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
+static void make_dd_indices(gmx_domdec_t *dd,
+                            const int *gcgs_index,int cg_start)
 {
-    int nzone,zone,zone1,cg0,cg,cg_gl,a,a_gl;
+    int nzone,zone,zone1,cg0,cg1,cg1_p1,cg,cg_gl,a,a_gl;
     int *zone2cg,*zone_ncg1,*index_gl,*gatindex;
     gmx_ga2la_t *ga2la;
     char *bLocalCG;
+    gmx_bool bCGs;
 
     bLocalCG = dd->comm->bLocalCG;
 
@@ -2415,6 +2422,7 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
     zone_ncg1  = dd->comm->zone_ncg1;
     index_gl   = dd->index_gl;
     gatindex   = dd->gatindex;
+    bCGs       = dd->comm->bCGs;
 
     if (zone2cg[1] != dd->ncg_home)
     {
@@ -2433,19 +2441,31 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
         {
             cg0 = zone2cg[zone];
         }
-        for(cg=cg0; cg<zone2cg[zone+1]; cg++)
+        cg1    = zone2cg[zone+1];
+        cg1_p1 = cg0 + zone_ncg1[zone];
+
+        for(cg=cg0; cg<cg1; cg++)
         {
             zone1 = zone;
-            if (cg - cg0 >= zone_ncg1[zone])
+            if (cg >= cg1_p1)
             {
-                /* Signal that this cg is from more than one zone away */
+                /* Signal that this cg is from more than one pulse away */
                 zone1 += nzone;
             }
             cg_gl = index_gl[cg];
-            for(a_gl=gcgs_index[cg_gl]; a_gl<gcgs_index[cg_gl+1]; a_gl++)
+            if (bCGs)
             {
-                gatindex[a] = a_gl;
-                ga2la_set(dd->ga2la,a_gl,a,zone1);
+                for(a_gl=gcgs_index[cg_gl]; a_gl<gcgs_index[cg_gl+1]; a_gl++)
+                {
+                    gatindex[a] = a_gl;
+                    ga2la_set(dd->ga2la,a_gl,a,zone1);
+                    a++;
+                }
+            }
+            else
+            {
+                gatindex[a] = cg_gl;
+                ga2la_set(dd->ga2la,cg_gl,a,zone1);
                 a++;
             }
         }
@@ -4185,125 +4205,29 @@ static int *get_moved(gmx_domdec_comm_t *comm,int natoms)
     return comm->moved;
 }
 
-static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
-                               gmx_domdec_t *dd,ivec tric_dir,
-                               t_state *state,rvec **f,
-                               t_forcerec *fr,t_mdatoms *md,
-                               gmx_bool bCompact,
-                               t_nrnb *nrnb,
-                               int *ncg_stay_home,
-                               int *ncg_moved)
+static void calc_cg_move(FILE *fplog,gmx_large_int_t step,
+                         gmx_domdec_t *dd,
+                         t_state *state,
+                         ivec tric_dir,matrix tcm,
+                         rvec cell_x0,rvec cell_x1,
+                         rvec limitd,rvec limit0,rvec limit1,
+                         const int *cgindex,
+                         int cg_start,int cg_end,
+                         rvec *cg_cm,
+                         int *move)
 {
-    int  *move;
     int  npbcdim;
-    int  ncg[DIM*2],nat[DIM*2];
     int  c,i,cg,k,k0,k1,d,dim,dim2,dir,d2,d3,d4,cell_d;
     int  mc,cdd,nrcg,ncg_recv,nat_recv,nvs,nvr,nvec,vec;
-    int  sbuf[2],rbuf[2];
-    int  home_pos_cg,home_pos_at,buf_pos;
     int  flag;
-    gmx_bool bV=FALSE,bSDX=FALSE,bCGP=FALSE;
     gmx_bool bScrew;
     ivec dev;
     real inv_ncg,pos_d;
-    matrix tcm;
-    rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
-    atom_id *cgindex;
-    cginfo_mb_t *cginfo_mb;
-    gmx_domdec_comm_t *comm;
-    int  *moved;
-
-    
-    if (dd->bScrewPBC)
-    {
-        check_screw_box(state->box);
-    }
-    
-    comm  = dd->comm;
-    cg_cm = fr->cg_cm;
-    
-    for(i=0; i<estNR; i++)
-    {
-        if (EST_DISTR(i))
-        {
-            switch (i)
-            {
-            case estX:   /* Always present */            break;
-            case estV:   bV   = (state->flags & (1<<i)); break;
-            case estSDX: bSDX = (state->flags & (1<<i)); break;
-            case estCGP: bCGP = (state->flags & (1<<i)); break;
-            case estLD_RNG:
-            case estLD_RNGI:
-            case estDISRE_INITF:
-            case estDISRE_RM3TAV:
-            case estORIRE_INITF:
-            case estORIRE_DTAV:
-                /* No processing required */
-                break;
-            default:
-            gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
-            }
-        }
-    }
-    
-    if (dd->ncg_tot > comm->nalloc_int)
-    {
-        comm->nalloc_int = over_alloc_dd(dd->ncg_tot);
-        srenew(comm->buf_int,comm->nalloc_int);
-    }
-    move = comm->buf_int;
-    
-    /* Clear the count */
-    for(c=0; c<dd->ndim*2; c++)
-    {
-        ncg[c] = 0;
-        nat[c] = 0;
-    }
+    rvec cm_new;
 
     npbcdim = dd->npbcdim;
 
-    for(d=0; (d<DIM); d++)
-    {
-        limitd[d] = dd->comm->cellsize_min[d];
-        if (d >= npbcdim && dd->ci[d] == 0)
-        {
-            cell_x0[d] = -GMX_FLOAT_MAX;
-        }
-        else
-        {
-            cell_x0[d] = comm->cell_x0[d];
-        }
-        if (d >= npbcdim && dd->ci[d] == dd->nc[d] - 1)
-        {
-            cell_x1[d] = GMX_FLOAT_MAX;
-        }
-        else
-        {
-            cell_x1[d] = comm->cell_x1[d];
-        }
-        if (d < npbcdim)
-        {
-            limit0[d] = comm->old_cell_x0[d] - limitd[d];
-            limit1[d] = comm->old_cell_x1[d] + limitd[d];
-        }
-        else
-        {
-            /* We check after communication if a charge group moved
-             * more than one cell. Set the pre-comm check limit to float_max.
-             */
-            limit0[d] = -GMX_FLOAT_MAX;
-            limit1[d] =  GMX_FLOAT_MAX;
-        }
-    }
-    
-    make_tric_corr_matrix(npbcdim,state->box,tcm);
-    
-    cgindex = dd->cgindex;
-    
-    /* Compute the center of geometry for all home charge groups
-     * and put them in the box and determine where they should go.
-     */
-    for(cg=0; cg<dd->ncg_home; cg++)
+    for(cg=cg_start; cg<cg_end; cg++)
     {
         k0   = cgindex[cg];
         k1   = cgindex[cg+1];
@@ -4450,9 +4374,156 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                 }
             }
         }
-        move[cg] = mc;
-        if (mc >= 0)
+        /* Temporarily store the flag in move */
+        move[cg] = mc + flag;
+    }
+}
+
+static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
+                               gmx_domdec_t *dd,ivec tric_dir,
+                               t_state *state,rvec **f,
+                               t_forcerec *fr,t_mdatoms *md,
+                               gmx_bool bCompact,
+                               t_nrnb *nrnb,
+                               int *ncg_stay_home,
+                               int *ncg_moved)
+{
+    int  *move;
+    int  npbcdim;
+    int  ncg[DIM*2],nat[DIM*2];
+    int  c,i,cg,k,k0,k1,d,dim,dim2,dir,d2,d3,d4,cell_d;
+    int  mc,cdd,nrcg,ncg_recv,nat_recv,nvs,nvr,nvec,vec;
+    int  sbuf[2],rbuf[2];
+    int  home_pos_cg,home_pos_at,buf_pos;
+    int  flag;
+    gmx_bool bV=FALSE,bSDX=FALSE,bCGP=FALSE;
+    gmx_bool bScrew;
+    ivec dev;
+    real inv_ncg,pos_d;
+    matrix tcm;
+    rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
+    atom_id *cgindex;
+    cginfo_mb_t *cginfo_mb;
+    gmx_domdec_comm_t *comm;
+    int  *moved;
+    int  nthread,thread;
+    
+    if (dd->bScrewPBC)
+    {
+        check_screw_box(state->box);
+    }
+    
+    comm  = dd->comm;
+    cg_cm = fr->cg_cm;
+    
+    for(i=0; i<estNR; i++)
+    {
+        if (EST_DISTR(i))
         {
+            switch (i)
+            {
+            case estX:   /* Always present */            break;
+            case estV:   bV   = (state->flags & (1<<i)); break;
+            case estSDX: bSDX = (state->flags & (1<<i)); break;
+            case estCGP: bCGP = (state->flags & (1<<i)); break;
+            case estLD_RNG:
+            case estLD_RNGI:
+            case estDISRE_INITF:
+            case estDISRE_RM3TAV:
+            case estORIRE_INITF:
+            case estORIRE_DTAV:
+                /* No processing required */
+                break;
+            default:
+            gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
+            }
+        }
+    }
+    
+    if (dd->ncg_tot > comm->nalloc_int)
+    {
+        comm->nalloc_int = over_alloc_dd(dd->ncg_tot);
+        srenew(comm->buf_int,comm->nalloc_int);
+    }
+    move = comm->buf_int;
+    
+    /* Clear the count */
+    for(c=0; c<dd->ndim*2; c++)
+    {
+        ncg[c] = 0;
+        nat[c] = 0;
+    }
+
+    npbcdim = dd->npbcdim;
+
+    for(d=0; (d<DIM); d++)
+    {
+        limitd[d] = dd->comm->cellsize_min[d];
+        if (d >= npbcdim && dd->ci[d] == 0)
+        {
+            cell_x0[d] = -GMX_FLOAT_MAX;
+        }
+        else
+        {
+            cell_x0[d] = comm->cell_x0[d];
+        }
+        if (d >= npbcdim && dd->ci[d] == dd->nc[d] - 1)
+        {
+            cell_x1[d] = GMX_FLOAT_MAX;
+        }
+        else
+        {
+            cell_x1[d] = comm->cell_x1[d];
+        }
+        if (d < npbcdim)
+        {
+            limit0[d] = comm->old_cell_x0[d] - limitd[d];
+            limit1[d] = comm->old_cell_x1[d] + limitd[d];
+        }
+        else
+        {
+            /* We check after communication if a charge group moved
+             * more than one cell. Set the pre-comm check limit to float_max.
+             */
+            limit0[d] = -GMX_FLOAT_MAX;
+            limit1[d] =  GMX_FLOAT_MAX;
+        }
+    }
+    
+    make_tric_corr_matrix(npbcdim,state->box,tcm);
+    
+    cgindex = dd->cgindex;
+
+#ifdef GMX_OPENMP    
+    nthread = omp_get_max_threads();
+#else
+    nthread = 1;
+#endif
+
+    /* Compute the center of geometry for all home charge groups
+     * and put them in the box and determine where they should go.
+     */
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
+    {
+        calc_cg_move(fplog,step,dd,state,tric_dir,tcm,
+                     cell_x0,cell_x1,limitd,limit0,limit1,
+                     cgindex,
+                     ( thread   *dd->ncg_home)/nthread,
+                     ((thread+1)*dd->ncg_home)/nthread,
+                     cg_cm,
+                     move);
+    }
+
+    for(cg=0; cg<dd->ncg_home; cg++)
+    {
+        if (move[cg] >= 0)
+        {
+            mc = move[cg];
+            flag     = mc & ~DD_FLAG_NRCG;
+            mc       = mc & DD_FLAG_NRCG;
+            move[cg] = mc;
+
             if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc])
             {
                 comm->cggl_flag_nalloc[mc] = over_alloc_dd(ncg[mc]+1);
@@ -4463,6 +4534,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
              * and the place where the charge group should go
              * in the next 6 bits. This saves some communication volume.
              */
+            nrcg = cgindex[cg+1] - cgindex[cg];
             comm->cggl_flag[mc][ncg[mc]*DD_CGIBS+1] = nrcg | flag;
             ncg[mc] += 1;
             nat[mc] += nrcg;
