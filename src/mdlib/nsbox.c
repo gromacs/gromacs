@@ -1594,6 +1594,12 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
     }
 }
 
+void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy)
+{
+    *ncx = nbs->grid[0].ncx;
+    *ncy = nbs->grid[0].ncy;
+}
+
 void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved)
 {
     /* Return the atom order for the home cell (index 0) */

@@ -73,10 +73,13 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        rvec *x,
                                        gmx_nb_atomdata_t *nbat);
 
+/* Return the number of x and y cells in the local grid */
+void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy);
+
 /* Return the order indices *a of the atoms on the ns grid.
  * An index >= *moved indicates and atom that moved to another domain.
  */
-    void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved);
+void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs);

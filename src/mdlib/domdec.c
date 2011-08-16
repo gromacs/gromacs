@@ -216,6 +216,9 @@ typedef struct gmx_domdec_comm
     int  nstSortCG;
     gmx_domdec_sort_t *sort;
     
+    /* Are there charge groups? */
+    gmx_bool bCGs;
+
     /* Are there bonded and multi-body interactions between charge groups? */
     gmx_bool bInterCGBondeds;
     gmx_bool bInterCGMultiBody;
@@ -4810,7 +4813,10 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
 
     if (debug)
     {
-        fprintf(debug,"Finished repartitioning\n");
+        fprintf(debug,
+                "Finished repartitioning: cgs moved out %d, new home %d\n",
+                *ncg_moved,dd->ncg_home-*ncg_moved);
+                
     }
 }
 
@@ -6314,6 +6320,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             fprintf(fplog,"Will not sort the charge groups\n");
         }
     }
+
+    comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
     
     comm->bInterCGBondeds = (ncg_mtop(mtop) > mtop->mols.nr);
     if (comm->bInterCGBondeds)
@@ -7975,7 +7983,7 @@ static int comp_cgsort(const void *a,const void *b)
     return comp;
 }
 
-static void order_int_cg(int n,gmx_cgsort_t *sort,
+static void order_int_cg(int n,const gmx_cgsort_t *sort,
                          int *a,int *buf)
 {
     int i;
@@ -7993,7 +8001,7 @@ static void order_int_cg(int n,gmx_cgsort_t *sort,
     }
 }
 
-static void order_vec_cg(int n,gmx_cgsort_t *sort,
+static void order_vec_cg(int n,const gmx_cgsort_t *sort,
                          rvec *v,rvec *buf)
 {
     int i;
@@ -8011,11 +8019,19 @@ static void order_vec_cg(int n,gmx_cgsort_t *sort,
     }
 }
 
-static void order_vec_atom(int ncg,int *cgindex,gmx_cgsort_t *sort,
+static void order_vec_atom(int ncg,const int *cgindex,const gmx_cgsort_t *sort,
                            rvec *v,rvec *buf)
 {
     int a,atot,cg,cg0,cg1,i;
     
+    if (cgindex == NULL)
+    {
+        /* Avoid the useless loop of the atoms within a cg */
+        order_vec_cg(ncg,sort,v,buf);
+
+        return;
+    }
+
     /* Order the data */
     a = 0;
     for(cg=0; cg<ncg; cg++)
@@ -8073,13 +8089,58 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     }
 }
 
-static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
+static void ordered_sort_nsbox(int nsort2,gmx_cgsort_t *sort2,
+                               int nsort_new,gmx_cgsort_t *sort_new,
+                               gmx_cgsort_t *sort1)
+{
+    int i1,i2,i_new;
+    
+    /* The new indices are not very ordered, so we qsort them */
+    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+    
+    /* sort2 is already ordered, so now we can merge the two arrays */
+    i1 = 0;
+    i2 = 0;
+    i_new = 0;
+    while(i2 < nsort2 || i_new < nsort_new)
+    {
+        if (i2 == nsort2)
+        {
+            sort1[i1++] = sort_new[i_new++];
+        }
+        else if (i_new == nsort_new)
+        {
+            sort1[i1++] = sort2[i2++];
+        }
+        else if (sort2[i2].nsc < sort_new[i_new].nsc)
+        {
+            sort1[i1++] = sort2[i2++];
+        }
+        else
+        {
+            sort1[i1++] = sort_new[i_new++];
+        }
+    }
+}
+
+static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
 {
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t *cgsort,*sort_i;
-    int  ncg_new,nsort2,nsort_new,i,cell_index,*ibuf;
+    int  ncg_new,nsort2,nsort_new,i,*a,moved,*ibuf;
 
     sort = dd->comm->sort;
+
+    if (fr->nbs == NULL)
+    {
+        a = fr->ns.grid->cell_index;
+
+        moved = 4*fr->ns.grid->ncells;
+    }
+    else
+    {
+        gmx_nbsearch_get_atomorder(fr->nbs,&a,&moved);
+    }
 
     if (ncg_home_old >= 0)
     {
@@ -8093,10 +8154,9 @@ static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old
         for(i=0; i<dd->ncg_home; i++)
         {
             /* Check if this cg did not move to another node */
-            cell_index = fr->ns.grid->cell_index[i];
-            if (cell_index !=  4*fr->ns.grid->ncells)
+            if (a[i] < moved)
             {
-                if (i >= ncg_home_old || cell_index != sort->sort[i].nsc)
+                if (i >= ncg_home_old || a[i] != sort->sort[i].nsc)
                 {
                     /* This cg is new on this node or moved ns grid cell */
                     if (nsort_new >= sort->sort_new_nalloc)
@@ -8112,9 +8172,11 @@ static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old
                     sort_i = &(sort->sort2[nsort2++]);
                 }
                 /* Sort on the ns grid cell indices
-                 * and the global topology index
+                 * and the global topology index.
+                 * index_gl is irrelevant with cell ns,
+                 * but we set it here anyhow to avoid a conditional.
                  */
-                sort_i->nsc    = cell_index;
+                sort_i->nsc    = a[i];
                 sort_i->ind_gl = dd->index_gl[i];
                 sort_i->ind    = i;
                 ncg_new++;
@@ -8126,7 +8188,16 @@ static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old
                     nsort2,nsort_new);
         }
         /* Sort efficiently */
-        ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,sort->sort);
+        if (fr->nbs == NULL)
+        {
+            ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,
+                         sort->sort);
+        }
+        else
+        {
+            ordered_sort_nsbox(nsort2,sort->sort2,nsort_new,sort->sort_new,
+                               sort->sort);
+        }
     }
     else
     {
@@ -8137,10 +8208,10 @@ static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old
             /* Sort on the ns grid cell indices
              * and the global topology index
              */
-            cgsort[i].nsc    = fr->ns.grid->cell_index[i];
+            cgsort[i].nsc    = a[i];
             cgsort[i].ind_gl = dd->index_gl[i];
             cgsort[i].ind    = i;
-            if (cgsort[i].nsc != 4*fr->ns.grid->ncells)
+            if (cgsort[i].nsc < moved)
             {
                 ncg_new++;
             }
@@ -8156,43 +8227,13 @@ static int dd_sort_order_nsgrid(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old
     return ncg_new;
 }
 
-static int dd_sort_order_nsbox(gmx_domdec_t *dd,gmx_nbsearch_t nbs,
-                               int ncg_home_old)
-{
-    gmx_cgsort_t *cgsort;
-    int na_new;
-    int *a,moved;
-    int i;
-
-    cgsort = dd->comm->sort->sort;
-
-    gmx_nbsearch_get_atomorder(nbs,&a,&moved);
-
-    na_new = 0;
-    for(i=0; i<dd->ncg_home; i++)
-    {
-        cgsort[i].nsc = a[i];
-        if (a[i] < moved)
-        {
-            na_new++;
-        }
-        /* ind_gl is irrelevant for this sort, but set it to avoid uninits */
-        cgsort[i].ind_gl = 0;
-        cgsort[i].ind = i;
-    }
-
-    /* For now we only have qsort, we need to add an ordered sort */
-    qsort_threadsafe(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
-
-    return na_new;
-}
-
 static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
                           rvec *cgcm,t_forcerec *fr,t_state *state,
                           int ncg_home_old)
 {
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t *cgsort,*sort_i;
+    int  *cgindex;
     int  ncg_new,i,*ibuf,cgsize;
     rvec *vbuf;
     
@@ -8206,21 +8247,28 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     cgsort = sort->sort;
 
-    if (fr->nbs != NULL)
-    {
-        ncg_new = dd_sort_order_nsbox(dd,fr->nbs,ncg_home_old);
-    }
-    else
-    {
-        ncg_new = dd_sort_order_nsgrid(dd,fr,ncg_home_old);
-    }
+    ncg_new = dd_sort_order(dd,fr,ncg_home_old);
     
     /* We alloc with the old size, since cgindex is still old */
     vec_rvec_check_alloc(&dd->comm->vbuf,dd->cgindex[dd->ncg_home]);
     vbuf = dd->comm->vbuf.v;
     
+    if (dd->comm->bCGs)
+    {
+        cgindex = dd->cgindex;
+    }
+    else
+    {
+        cgindex = NULL;
+    }
+
     /* Remove the charge groups which are no longer at home here */
     dd->ncg_home = ncg_new;
+    if (debug)
+    {
+        fprintf(debug,"Set the new home charge group count to %d\n",
+                dd->ncg_home);
+    }
     
     /* Reorder the state */
     for(i=0; i<estNR; i++)
@@ -8230,16 +8278,16 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             switch (i)
             {
             case estX:
-                order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->x,vbuf);
+                order_vec_atom(dd->ncg_home,cgindex,cgsort,state->x,vbuf);
                 break;
             case estV:
-                order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->v,vbuf);
+                order_vec_atom(dd->ncg_home,cgindex,cgsort,state->v,vbuf);
                 break;
             case estSDX:
-                order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->sd_X,vbuf);
+                order_vec_atom(dd->ncg_home,cgindex,cgsort,state->sd_X,vbuf);
                 break;
             case estCGP:
-                order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->cg_p,vbuf);
+                order_vec_atom(dd->ncg_home,cgindex,cgsort,state->cg_p,vbuf);
                 break;
             case estLD_RNG:
             case estLD_RNGI:
@@ -8269,15 +8317,25 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     /* Reorder the cginfo */
     order_int_cg(dd->ncg_home,cgsort,fr->cginfo,ibuf);
     /* Rebuild the local cg index */
-    ibuf[0] = 0;
-    for(i=0; i<dd->ncg_home; i++)
+    if (dd->comm->bCGs)
     {
-        cgsize = dd->cgindex[cgsort[i].ind+1] - dd->cgindex[cgsort[i].ind];
-        ibuf[i+1] = ibuf[i] + cgsize;
+        ibuf[0] = 0;
+        for(i=0; i<dd->ncg_home; i++)
+        {
+            cgsize = dd->cgindex[cgsort[i].ind+1] - dd->cgindex[cgsort[i].ind];
+            ibuf[i+1] = ibuf[i] + cgsize;
+        }
+        for(i=0; i<dd->ncg_home+1; i++)
+        {
+            dd->cgindex[i] = ibuf[i];
+        }
     }
-    for(i=0; i<dd->ncg_home+1; i++)
+    else
     {
-        dd->cgindex[i] = ibuf[i];
+        for(i=0; i<dd->ncg_home+1; i++)
+        {
+            dd->cgindex[i] = i;
+        }
     }
     /* Set the home atom number */
     dd->nat_home = dd->cgindex[dd->ncg_home];
@@ -8420,7 +8478,7 @@ void dd_partition_system(FILE            *fplog,
     int  i,j,n,cg0=0,ncg_home_old=-1,ncg_moved,nat_f_novirsum;
     gmx_bool bBoxChanged,bNStGlobalComm,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
     gmx_bool bRedist,bSortCG,bResortAll;
-    ivec ncells_old={0,0,0},np;
+    ivec ncells_old={0,0,0},ncells_new={0,0,0},np;
     real grid_density;
     char sbuf[22];
 	
@@ -8681,6 +8739,10 @@ void dd_partition_system(FILE            *fplog,
                    state_local->box,cell_ns_x0,cell_ns_x1,
                    fr->rlistlong,grid_density);
     }
+    else
+    {
+        gmx_nbsearch_get_ncells(fr->nbs,&ncells_old[XX],&ncells_old[YY]);
+    }
     /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
     copy_ivec(ddbox.tric_dir,comm->tric_dir);
 
@@ -8709,21 +8771,25 @@ void dd_partition_system(FILE            *fplog,
                                      state_local->x,
                                      ncg_moved,comm->moved,
                                      fr->nbat);
+
+            gmx_nbsearch_get_ncells(fr->nbs,&ncells_new[XX],&ncells_new[YY]);
         }
         else
         {
             fill_grid(fplog,&comm->zones,fr->ns.grid,dd->ncg_home,
                       0,dd->ncg_home,fr->cg_cm);
-
-            /* Check if we can user the old order and ns grid cell indices
-             * of the charge groups to sort the charge groups efficiently.
-             */
-            if (fr->ns.grid->n[XX] != ncells_old[XX] ||
-                fr->ns.grid->n[YY] != ncells_old[YY] ||
-                fr->ns.grid->n[ZZ] != ncells_old[ZZ])
-            {
-                bResortAll = TRUE;
-            }
+            
+            copy_ivec(fr->ns.grid->n,ncells_new);
+        }
+    
+        /* Check if we can user the old order and ns grid cell indices
+         * of the charge groups to sort the charge groups efficiently.
+         */
+        if (ncells_new[XX] != ncells_old[XX] ||
+            ncells_new[YY] != ncells_old[YY] ||
+            ncells_new[ZZ] != ncells_old[ZZ])
+        {
+            bResortAll = TRUE;
         }
 
         if (debug)
