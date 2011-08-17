@@ -1192,8 +1192,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * Think about ways around this in the future?
                  * For now, keep this choice in comments.
                  */
-                /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
-                    /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
+                /* bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
+                /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
                 bPres = TRUE;
                 bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
                 if (bNstEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
@@ -1272,7 +1272,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             saved_conserved_quantity = compute_conserved_from_auxiliary(ir,state,&MassQ);
             if (ir->eI==eiVV) 
             {
-                last_ekin = enerd->term[F_EKIN]; /* does this get preserved through checkpointing? */
+                last_ekin = enerd->term[F_EKIN]; 
             }
             if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
             {
@@ -1282,7 +1282,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* ########  END FIRST UPDATE STEP  ############## */
         /* ########  If doing VV, we now have v(dt) ###### */
-        
+#if 1        
+        /* sum up the foreign energy and dhdl terms */
+        sum_dhdl(enerd,state->lambda,ir->fepvals);
+        if (bDoExpanded) {
+            /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
+               outputting statistics, but if performing simulated tempering, we do update the velocities and 
+               the tau_t. */
+            
+            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
+        }
+#endif
         /* ################## START TRAJECTORY OUTPUT ################# */
         
         /* Now we have the energies and forces corresponding to the 
@@ -1412,7 +1422,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
-
+        
         /* Check whether everything is still allright */    
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
 #ifdef GMX_THREADS
@@ -1710,7 +1720,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* only add constraint dvdl after constraints */
         enerd->term[F_DVDL_BONDED] += dvdl;
-
+        
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
         
@@ -1761,15 +1771,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
-        
+#if 0        
         /* sum up the foreign energy and dhdl terms */
         sum_dhdl(enerd,state->lambda,ir->fepvals);
-        /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
-           outputting statistics */
         if (bDoExpanded) {
+            /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
+               outputting statistics, but if performing simulated tempering, we do update the velocities and 
+               the tau_t. */
+            
             lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
         }
-
+#endif
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {

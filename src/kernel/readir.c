@@ -342,6 +342,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"if simulated tempering is on, temperature-lambdas may not be all zero");
       CHECK(bAllTempZero==TRUE);
 
+      sprintf(err_buf,"Simulated tempering is currently only compatible with md-vv");
+      CHECK(ir->eI == eiVV);
+      
       /* check validity of lambda inputs */
       sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
       CHECK((fep->init_fep_state >= fep->n_lambda));

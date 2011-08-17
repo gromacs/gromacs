@@ -790,8 +790,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     if (file_version < 54) 
       gmx_fio_do_real(fio,*fudgeQQ);
     do_fepvals(fio,ir->fepvals,bRead,file_version);
-    do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
-    do_simtempvals(fio,ir->simtempvals,ir->fepvals->n_lambda,bRead,file_version);
 
     if (file_version >= 64) {
         gmx_fio_do_int(fio,ir->nstdhdl);
@@ -808,10 +806,20 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     if (file_version >= 74 && ir->bSimTemp) {
         ir->bSimTemp = TRUE;
     }
+    if (ir->bSimTemp)
+    {
+        do_simtempvals(fio,ir->simtempvals,ir->fepvals->n_lambda,bRead,file_version);
+    }
+
     gmx_fio_do_gmx_bool(fio,ir->bExpanded);
     if (file_version >= 74 && ir->bExpanded) {
         ir->bExpanded = TRUE;
     }
+    if (ir->bExpanded) 
+    {
+        do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
+    }
+
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
     }
