@@ -97,13 +97,22 @@ typedef struct {
   gmx_sd_sigma_t *sdsig;
   rvec *sd_V;
   int  sd_V_nalloc;
+  /* andersen temperature control stuff */
+  gmx_bool *randomize_group;
+  real *boltzfac;  
 } gmx_stochd_t;
 
 typedef struct gmx_update
 {
     gmx_stochd_t *sd;
+    /* xprime for constraint algorithms */
     rvec *xp;
     int  xp_nalloc;
+
+    /* variable size arrays for andersen */
+    gmx_bool *randatom;
+    int *randatom_list;
+
     /* Variables for the deform algorithm */
     gmx_large_int_t deformref_step;
     matrix     deformref_box;
@@ -487,8 +496,33 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
                 fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
                         n,sdc[n].b,sdc[n].c,sdc[n].d);
         }
-    }
+    } 
+    else if (ETC_ANDERSEN(ir->etc)) 
+    {
+        int ngtc;
+        t_grpopts *opts;
+        real reft;
 
+        opts = &ir->opts;
+        ngtc = opts->ngtc;
+        
+        snew(sd->randomize_group,ngtc);
+        snew(sd->boltzfac,ngtc);
+        
+        /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
+        /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
+
+        for (n=0;n<ngtc;n++) {
+            reft = max(0.0,opts->ref_t[n]);
+            if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            {
+                sd->randomize_group[n] = TRUE;
+                sd->boltzfac[n] = BOLTZ*opts->ref_t[n];
+            } else {
+                sd->randomize_group[n] = FALSE;
+            }
+        }
+    }
     return sd;
 }
 
@@ -515,6 +549,8 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
 
     upd->xp = NULL;
     upd->xp_nalloc = 0;
+    upd->randatom = NULL;
+    upd->randatom_list = NULL;
 
     return upd;
 }
@@ -1729,7 +1765,12 @@ void update_coords(FILE         *fplog,
          particle andersen or 2) it's massive andersen and it's tau_t/dt */
         if ((inputrec->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
         {
-            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand,rate,(inputrec->etc==etcANDERSEN)?idef:NULL,constr?get_nblocks(constr):0,constr?get_sblock(constr):NULL);
+            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand,rate,
+                            (inputrec->etc==etcANDERSEN)?idef:NULL,
+                            constr?get_nblocks(constr):0,
+                            constr?get_sblock(constr):NULL,
+                            upd->randatom,upd->randatom_list,
+                            upd->sd->randomize_group,upd->sd->boltzfac);
         }
     }
 }

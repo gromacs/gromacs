@@ -634,7 +634,7 @@ void dd_make_reverse_top(FILE *fplog,
         fprintf(fplog,"\nLinking all bonded interactions to atoms\n");
     }
     
-    dd->reverse_top = make_reverse_top(mtop,ir->efep!=efepNO,
+    dd->reverse_top = make_reverse_top(mtop,ir->efep>efepNO,
                                        vsite ? vsite->vsite_pbc_molt : NULL,
                                        !dd->bInterCGcons,
                                        bBCheck,&dd->nbonded_global);

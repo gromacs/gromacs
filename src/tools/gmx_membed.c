@@ -1511,7 +1511,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             t = t0 + step*ir->delta_t;
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             if (bRerunMD && rerun_fr.bLambda && (ir->fepvals->delta_lambda!=0))
             {
@@ -1683,7 +1683,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             update_mdatoms(mdatoms,state->lambda[efptMASS]);
         }

@@ -706,7 +706,7 @@ int gmx_disre(int argc,char *argv[])
 		   "Largest Violation","Time (ps)","nm",oenv);
   }
 
-  mdatoms = init_mdatoms(fplog,&mtop,ir.efep!=efepNO);
+  mdatoms = init_mdatoms(fplog,&mtop,ir.efep>efepNO);
   atoms2md(&mtop,&ir,0,NULL,0,mtop.natoms,mdatoms);
   update_mdatoms(mdatoms,ir.fepvals->init_lambda);
   fr      = mk_forcerec();

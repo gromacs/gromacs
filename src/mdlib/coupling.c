@@ -83,7 +83,6 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 
     for (i=0; i<nvar; i++) 
     {
-    
         /* make it easier to iterate by selecting 
            out the sub-array that corresponds to this T group */
         
@@ -618,40 +617,20 @@ static int poisson_variate(real lambda,gmx_rng_t rng) {
     return k-1;
 }
 
-void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock)
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
 {
     t_grpopts *opts;
     int    i,j,k,d,len,n,ngtc,gc=0;
     int    nshake, nsettle, nrandom, nrand_group;
-    real   boltz,sd,reft,prand;
-    gmx_bool *randomize;
-    gmx_bool *randatom;
-    int *randatom_list;
-    real *boltzfac;
+    real   boltz,scal,reft,prand;
     t_iatom *iatoms; 
 
+    /* convenience variables */
     opts = &ir->opts;
     ngtc = opts->ngtc;
 
-    /* figure out how to get rid of these snew allocations.  Ask Berk? */
-    snew(randomize,ngtc);
-    snew(boltzfac,ngtc);
-    
-    /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
-    /* since constraint groups don't necessarily match up with temperature groups! */
-
-    for (i=0;i<ngtc;i++) {
-        reft = max(0.0,opts->ref_t[i]);
-        if ((opts->tau_t[i] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
-        {
-            randomize[i] = TRUE;
-            boltzfac[i] = BOLTZ*opts->ref_t[i];
-        } else {
-            randomize[i] = FALSE;
-        }
-    }
-    
-    snew(randatom,md->homenr);
+    srenew(randatom,state->nalloc);
+    srenew(randatom_list,state->nalloc);
 
     /* idef is only passed in if it's chance-per-particle andersen, so it essentially serves as a boolean 
        to determine which type of andersen is being used */
@@ -673,6 +652,8 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             /* poisson distributions approxmation, more efficient for low rates, fewer random numbers required */
             nrandom = poisson_variate(md->homenr*rate,rng);  /* how many do we randomize? Use Poisson. */
             
+            /* now we know how many, choose them randomly. No worries about repeats, at this rate, it's negligible. 
+               worst thing that happens, it lowers the true rate an infintesimal amount */
             for (i=0;i<nrandom;i++) {
                 randatom[(int)(gmx_rng_uniform_real(rng)*md->homenr)] = TRUE;  
             }
@@ -687,9 +668,9 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
 
         /* instead of looping over the constraint groups, if we had a
            list of which atoms were in which constraint groups, we
-           could then loop over only the groupst that are randomized
+           could then loop over only the groups that are randomized
            now.  But that is not available now.  Create later? */
-
+        
         /* first, loop through the settles to make sure all groups either entirely randomized, or not randomized. */
 
         nsettle  = idef->il[F_SETTLE].nr/2;
@@ -714,7 +695,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                 }
             }
         }
-
+        
         /* now loop through the shake groups */
         nshake = nblocks;
         for (i=0;i<nshake;i++) {
@@ -747,7 +728,6 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         }
         if (nrandom > 0) {
             n = 0;
-            snew(randatom_list,nrandom);
             for (i=0;i<md->homenr;i++)  /* now loop over the list of atoms */
             {
                 if (randatom[i]) {
@@ -761,7 +741,6 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
     {
         /* if it's massive, then randomize all the atoms */
         nrandom = md->homenr;
-        snew(randatom_list,nrandom);
         for (i=0;i<nrandom;i++) {         
             randatom_list[i] = i;
         }
@@ -778,20 +757,12 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
         }
         if (randomize[gc]) 
         {
-            sd = sqrt(boltzfac[gc]*md->invmass[n]);
+            scal = sqrt(boltzfac[gc]*md->invmass[n]);
             for (d=0;d<DIM;d++) 
             {
-                state->v[n][d] = sd*gmx_rng_gaussian_table(rng);  /* more efficient? */
+                state->v[n][d] = scal*gmx_rng_gaussian_table(rng);  /* more efficient? */
             }
         }
-    }
-
-    /* free up all the allocated arrays! */
-    sfree(randatom);
-    sfree(randomize);
-    sfree(boltzfac);
-    if (nrandom > 0) {
-        sfree(randatom_list);
     }
 }
 
@@ -970,7 +941,8 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     sfree(scalefac);
 }
 
-int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter) 
+
+extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit) 
 {
     int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
     t_grp_tcstat *tcstat;
@@ -978,15 +950,17 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     real ecorr,pcorr,dvdlcorr;
     real bmass,qmass,reft,kT,dt,ndj,nd;
     tensor dumpres,dumvir;
-    int **trotter_seq;
 
     opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = state->ngtc;
+    ngtc = ir->opts.ngtc;
     nnhpres = state->nnhpres;
     nh = state->nhchainlength; 
 
     if (ir->eI == eiMD) {
-        snew(MassQ->Qinv,ngtc);
+        if (bInit) 
+        {
+            snew(MassQ->Qinv,ngtc);
+        }
         for(i=0; (i<ngtc); i++) 
         { 
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
@@ -1002,11 +976,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     else if (EI_VV(ir->eI))
     {
     /* Set pressure variables */
-        
-        if (state->vol0 == 0) 
-        {
-            state->vol0 = det(state->box); /* because we start by defining a fixed compressibility, 
-                                              we need the volume at this compressibility to solve the problem */ 
+
+        if (bInit) 
+        {        
+            if (state->vol0 == 0) 
+            {
+                state->vol0 = det(state->box); /* because we start by defining a fixed compressibility, 
+                                                  we need the volume at this compressibility to solve the problem */ 
+            }
         }
 
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
@@ -1023,10 +1000,13 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             } 
         }           
         /* Allocate space for thermostat variables */
-        snew(MassQ->Qinv,ngtc*nh);
-        
+        if (bInit) 
+        {
+            snew(MassQ->Qinv,ngtc*nh);
+        }
+
         /* now, set temperature variables */
-        for(i=0; i<ngtc; i++) 
+        for (i=0; i<ngtc; i++) 
         {
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
             {
@@ -1056,6 +1036,24 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             }
         }
     }
+}    
+
+int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bTrotter) 
+{
+    int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
+    t_grp_tcstat *tcstat;
+    t_grpopts *opts;
+    real ecorr,pcorr,dvdlcorr;
+    real bmass,qmass,reft,kT,dt,ndj,nd;
+    tensor dumpres,dumvir;
+    int **trotter_seq;
+
+    opts = &(ir->opts); /* just for ease of referencing */
+    ngtc = state->ngtc;
+    nnhpres = state->nnhpres;
+    nh = state->nhchainlength; 
+    
+    init_npt_masses(ir, state, MassQ, TRUE); 
     
     /* first, initialize clear all the trotter calls */
     snew(trotter_seq,ettTSEQMAX);

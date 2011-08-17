@@ -333,9 +333,12 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
   
 extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0);
 
+extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit); 
+
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-				    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng,
-				    rvec *v, t_mdatoms *mdatoms);
+                                    t_state *state, t_extmass *MassQ, df_history_t *dfhist, 
+                                    gmx_large_int_t step, gmx_rng_t mcrng, 
+                                    rvec *v, t_mdatoms *mdatoms);
 
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist, 
 				      int nlam, int frequency, gmx_large_int_t step);

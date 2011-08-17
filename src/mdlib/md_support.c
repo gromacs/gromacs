@@ -469,7 +469,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL_VDW] += dvdlcorr;
-        if (fr->efep != efepNO) {
+        if (fr->efep > efepNO) {
             enerd->dvdl_lin[efptVDW] += dvdlcorr;
         }
     }
@@ -694,7 +694,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL] += dvdlcorr;
-        if (fr->efep != efepNO) {
+        if (fr->efep > efepNO) {
             enerd->dvdl_lin += dvdlcorr;
         }
     }
@@ -912,7 +912,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                         "nstenergy",&ir->nstenergy);
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstlog",&ir->nstlog);
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                             "nstdhdl",&ir->nstdhdl);

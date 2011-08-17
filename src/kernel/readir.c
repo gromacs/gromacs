@@ -121,7 +121,10 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
         {
             simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*temperature_lambdas[i];
         }
-        /* exponential scaling -- gives equal weights if the heat capacity is constant */
+        else if (simtemp->eSimTempScale == esimtempGEOMETRIC)  /* should give roughly equal acceptance for constant heat capacity . . . */
+        {
+            simtemp->temperatures[i] = simtemp->simtemp_low * pow(simtemp->simtemp_high/simtemp->simtemp_low,(1.0*i)/(ntemps-1));  
+        }
         else if (simtemp->eSimTempScale == esimtempEXPONENTIAL) 
         {
             simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*((exp(temperature_lambdas[i])-1)/(exp(1.0)-1));
@@ -284,7 +287,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
              */
             check_nst("nstcalcenergy",ir->nstcalcenergy,
                       "nstenergy",&ir->nstenergy,wi);
-            if (ir->efep != efepNO)
+            if (ir->efep > efepNO)
             {
                 /* nstdhdl should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy",ir->nstcalcenergy,
@@ -344,8 +347,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK((fep->init_fep_state >= fep->n_lambda));
 
       /* check compatability of the temperature coupling with simulated tempering */
-      sprintf(err_buf,"Nose-Hoover based temperature control such as [%s] is not consistent with simulated tempering",etcoupl_names[ir->etc]);
-      CHECK((ir->etc == etcNOSEHOOVER));
+ 
+      if (ir->etc == etcNOSEHOOVER) {
+          sprintf(warn_buf,"Nose-Hoover based temperature control such as [%s] my not be entirelyconsistent with simulated tempering",etcoupl_names[ir->etc]);
+          warning_note(wi,warn_buf);
+      }
 
       /* check that the temperatures make sense */
 
@@ -419,7 +425,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       }
       sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
       CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
-            && (ir->efep!=efepNO));
+            && (ir->efep>efepNO));
       
       /*  Free Energy Checks -- In an ideal world, slow growth and FEP would                                               
           be treated differently, but that's the next step */
@@ -432,7 +438,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       }
   }
 
-  if ((ir->bSimTemp) || (ir->efep != efepNO)) {
+  if ((ir->bSimTemp) || (ir->efep > efepNO)) {
       fep = ir->fepvals;
       expand = ir->expandedvals;
 
@@ -649,6 +655,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                     i,ir->opts.tau_t[i]);      
             CHECK(ir->opts.tau_t[i]<0);
         }  
+        if (ir->nstcomm > 0 && (ir->etc == etcANDERSEN)) {
+            sprintf(warn_buf,"Center of mass removal not necessary for %s.  All velocities of coupled groups are rerandomized periodically, so flying ice cube errors will not occur.",etcoupl_names[ir->etc]);
+            warning_note(wi,warn_buf);
+        }
+
+        sprintf(err_buf,"nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are randomized every time step",ir->nstcomm,etcoupl_names[ir->etc]);
+        CHECK(ir->nstcomm > 1 && (ir->etc == etcANDERSEN));
+
+        for (i=0;i<ir->opts.ngtc;i++) 
+        {
+            int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
+            sprintf(err_buf,"tau_t for group %d for temperature control methods %s must lead to a number of steps between randomization which is be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The current tau_t (%8.3f) leads to %d steps per randomization",i,etcoupl_names[ir->etc],ir->nstcomm,ir->opts.tau_t[i],nsteps);
+            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
+        }
     }
     if (ir->etc == etcBERENDSEN)
     {
@@ -1701,7 +1721,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   opts->couple_moltype = NULL;
   if (strlen(couple_moltype) > 0) {
-      if (ir->efep != efepNO) {
+      if (ir->efep > efepNO) {
       opts->couple_moltype = strdup(couple_moltype);
       if (opts->couple_lam0 == opts->couple_lam1)
           warning(wi,"The lambda=0 and lambda=1 states for coupling are identical");
@@ -2902,7 +2922,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
     sfree(mgrp);
   }
 
-  if (ir->efep != efepNO && ir->fepvals->sc_alpha != 0 &&
+  if (ir->efep > efepNO && ir->fepvals->sc_alpha != 0 &&
       !gmx_within_tol(sys->ffparams.reppow,12.0,10*GMX_DOUBLE_EPS)) {
     gmx_fatal(FARGS,"Soft-core interactions are only supported with VdW repulsion power 12");
   }

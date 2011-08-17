@@ -165,7 +165,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             repl_quantity(fplog,ms,re,i,re->temp);
             break;
         case ereLAMBDA:
-            if (ir->efep != efepNO)
+            if (ir->efep > efepNO)
             {
                 repl_quantity(fplog,ms,re,i,(real)ir->fepvals->init_fep_state);
             }

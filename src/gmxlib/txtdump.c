@@ -499,11 +499,12 @@ static void pr_simtempvals(FILE *fp,int indent,t_simtemp *simtemp, int n_lambda,
     PR("simtemp_low",simtemp->simtemp_low);
     PR("simtemp_high",simtemp->simtemp_high);        
     PS("simulated-tempering-scaling",ESIMTEMP(simtemp->eSimTempScale));          
-    fprintf(fp,"simulated tempering temperatures %s\n",bMDPformat ? " = " : ":");
+    fprintf(fp,"simulated tempering temperatures %s",bMDPformat ? " = " : ":");
     for(i=0; i<n_lambda; i++)
     {
         fprintf(fp,"  %10g",simtemp->temperatures[i]);
     }
+    fprintf(fp,"\n");
 }
 
 static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda, gmx_bool bMDPformat)
@@ -517,7 +518,7 @@ static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda
     PI("lmc-gibbsdelta",expand->gibbsdeltalam);
     PI("lmc-nstart",expand->lmc_forced_nstart);  
     PS("symmetrized-transition-matrix", BOOL(expand->bSymmetrizedTMatrix));
-    PI("nstTij",expand->nstTij);
+    PI("nst-transition-matrix",expand->nstTij);
     PI("mininum-var-min",expand->minvarmin); /*default is reasonable */
     PI("weight-c-range",expand->c_range); /* default is just C=0 */
     PR("wl-scale",expand->wl_scale);

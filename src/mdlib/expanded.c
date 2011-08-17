@@ -1120,11 +1120,12 @@ extern void set_mc_state(gmx_rng_t rng,t_state *state)
 }
 
 extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *enerd, 
-                                    int nlam, df_history_t *dfhist, gmx_large_int_t step, gmx_rng_t mcrng, 
+                                    t_state *state, t_extmass *MassQ, df_history_t *dfhist, 
+                                    gmx_large_int_t step, gmx_rng_t mcrng, 
                                     rvec *v, t_mdatoms *mdatoms)
 { 
     real *pfep_lamee,*p_k, *scaled_lamee, *weighted_lamee;
-    int i,nlim,lamnew,totalsamples;
+    int i,nlam,nlim,lamnew,totalsamples;
     real oneovert,maxscaled=0,maxweighted=0;
     t_expanded *expand;
     t_simtemp *simtemp;
@@ -1134,6 +1135,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     expand = ir->expandedvals;
     simtemp = ir->simtempvals;
 	nlim = ir->fepvals->n_lambda;
+    nlam = state->fep_state;
 
     snew(scaled_lamee,nlim);
     snew(weighted_lamee,nlim);
@@ -1238,18 +1240,18 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp) 
     {
-        int n, d;
-        real *vscale;
+        int i, j, n, d;
+        real *buf_ngtc;
         real told;
         int nstart, nend, gt;
 
-        snew(vscale,ir->opts.ngtc);
-        
+        snew(buf_ngtc,ir->opts.ngtc);
+
         for (i=0;i<ir->opts.ngtc;i++) {
             if (ir->opts.ref_t[i] > 0) {
                 told = ir->opts.ref_t[i];
                 ir->opts.ref_t[i] =  simtemp->temperatures[lamnew];
-                vscale[i] = sqrt(ir->opts.ref_t[i]/told);
+                buf_ngtc[i] = sqrt(ir->opts.ref_t[i]/told); /* using the buffer as temperature scaling */
             }
         }
 
@@ -1262,14 +1264,33 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
             gt = 0;
             if (mdatoms->cTC)
             {
-                gt   = mdatoms->cTC[n];
+                gt = mdatoms->cTC[n];
             } 
             for(d=0; d<DIM; d++)
             {
-                v[n][d] *= vscale[gt];
+                v[n][d] *= buf_ngtc[gt];
             }
         }
-        sfree(vscale);
+
+        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)) {
+            /* we need to recalculate the masses if the temperature has changed */
+            init_npt_masses(ir,state,MassQ,FALSE);
+            for (i=0;i<state->nnhpres;i++) 
+            {
+                for (j=0;j<ir->opts.nhchainlength;j++) 
+                {
+                    state->nhpres_vxi[i+j] *= buf_ngtc[i];
+                }
+            }
+            for (i=0;i<ir->opts.ngtc;i++) 
+            {
+                for (j=0;j<ir->opts.nhchainlength;j++) 
+                {
+                    state->nosehoover_vxi[i+j] *= buf_ngtc[i];
+                }
+            }
+        }
+        sfree(buf_ngtc);
     }    
     
 	/* now check on the Wang-Landau updating critera */

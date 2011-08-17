@@ -984,7 +984,7 @@ char **do_top(gmx_bool         bVerbose,
                        symtab,atype,nrmols,molinfo,
                        plist,combination_rule,repulsion_power,
                        opts,fudgeQQ,nmolblock,molblock,
-                       ir->efep!=efepNO,bGenborn,bZero,bVerbose,
+                       ir->efep>efepNO,bGenborn,bZero,bVerbose,
                        wi);
     if ((*combination_rule != eCOMB_GEOMETRIC) && 
         (ir->vdwtype == evdwUSER))

@@ -1767,7 +1767,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
            outputting statistics */
         if (bDoExpanded) {
-            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state->fep_state,&df_history,step,mcrng,state->v,mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
         }
 
         /* use the directly determined last velocity, not actually the averaged half steps */

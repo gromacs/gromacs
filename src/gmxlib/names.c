@@ -133,7 +133,7 @@ const char *gtypes[egcNR+1] = {
 };
 
 const char *esimtemp_names[esimtempNR+1] = {
-  "exponential", "linear", NULL
+  "geometric", "exponential", "linear", NULL
 };
 
 const char *efep_names[efepNR+1] = {

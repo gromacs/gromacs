@@ -154,7 +154,7 @@ enum {
 
 /* simulated tempering methods */
 enum {
-  esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
+  esimtempGEOMETRIC, esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
 };
 /* FEP selection */
 enum {

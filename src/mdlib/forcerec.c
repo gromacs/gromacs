@@ -725,7 +725,7 @@ static void set_chargesum(FILE *log,t_forcerec *fr,const gmx_mtop_t *mtop)
         }
     }
     fr->qsum[0] = qsum;
-    if (fr->efep != efepNO)
+    if (fr->efep > efepNO)
     {
         qsum = 0;
         for(mb=0; mb<mtop->nmolblock; mb++)

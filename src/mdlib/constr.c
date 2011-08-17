@@ -336,7 +336,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         invdt  = 1/ir->delta_t;
     }
 
-    if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
+    if (ir->efep > efepNO && EI_DYNAMICS(ir->eI))
     {
         /* Set the constraint lengths for the step at which this configuration
          * is meant to be. The invmasses should not be changed.
