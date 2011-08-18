@@ -266,12 +266,16 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     }
     c6_SSE0            = _mm_load_ps(pvdw_c6 +0*UNROLLJ);
     c6_SSE1            = _mm_load_ps(pvdw_c6 +1*UNROLLJ);
+#ifndef HALF_LJ
     c6_SSE2            = _mm_load_ps(pvdw_c6 +2*UNROLLJ);
     c6_SSE3            = _mm_load_ps(pvdw_c6 +3*UNROLLJ);
+#endif
     c12_SSE0           = _mm_load_ps(pvdw_c12+0*UNROLLJ);
     c12_SSE1           = _mm_load_ps(pvdw_c12+1*UNROLLJ);
+#ifndef HALF_LJ
     c12_SSE2           = _mm_load_ps(pvdw_c12+2*UNROLLJ);
     c12_SSE3           = _mm_load_ps(pvdw_c12+3*UNROLLJ);
+#endif
 #endif /* FIX_LJ_C */
 
     cj = nbl->cj;

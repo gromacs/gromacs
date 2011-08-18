@@ -306,24 +306,34 @@
 #ifdef LJ_COMB_LB
             sir_SSE0           = _mm_mul_ps(_mm_add_ps(hsig_i_SSE0,hsig_j_SSE),rinv_SSE0);
             sir_SSE1           = _mm_mul_ps(_mm_add_ps(hsig_i_SSE1,hsig_j_SSE),rinv_SSE1);
+#ifndef HALF_LJ
             sir_SSE2           = _mm_mul_ps(_mm_add_ps(hsig_i_SSE2,hsig_j_SSE),rinv_SSE2);
             sir_SSE3           = _mm_mul_ps(_mm_add_ps(hsig_i_SSE3,hsig_j_SSE),rinv_SSE3);
+#endif
             sir2_SSE0          = _mm_mul_ps(sir_SSE0,sir_SSE0);
             sir2_SSE1          = _mm_mul_ps(sir_SSE1,sir_SSE1);
+#ifndef HALF_LJ
             sir2_SSE2          = _mm_mul_ps(sir_SSE2,sir_SSE2);
             sir2_SSE3          = _mm_mul_ps(sir_SSE3,sir_SSE3);
+#endif
             sir6_SSE0          = _mm_mul_ps(sir2_SSE0,_mm_mul_ps(sir2_SSE0,sir2_SSE0));
             sir6_SSE1          = _mm_mul_ps(sir2_SSE1,_mm_mul_ps(sir2_SSE1,sir2_SSE1));
+#ifndef HALF_LJ
             sir6_SSE2          = _mm_mul_ps(sir2_SSE2,_mm_mul_ps(sir2_SSE2,sir2_SSE2));
             sir6_SSE3          = _mm_mul_ps(sir2_SSE3,_mm_mul_ps(sir2_SSE3,sir2_SSE3));
+#endif
             Vvdw6_SSE0         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE0,seps_j_SSE),sir6_SSE0);
             Vvdw6_SSE1         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE1,seps_j_SSE),sir6_SSE1);
+#ifndef HALF_LJ
             Vvdw6_SSE2         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE2,seps_j_SSE),sir6_SSE2);
             Vvdw6_SSE3         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE3,seps_j_SSE),sir6_SSE3);
+#endif
             Vvdw12_SSE0        = _mm_mul_ps(Vvdw6_SSE0,sir6_SSE0);
             Vvdw12_SSE1        = _mm_mul_ps(Vvdw6_SSE1,sir6_SSE1);
+#ifndef HALF_LJ
             Vvdw12_SSE2        = _mm_mul_ps(Vvdw6_SSE2,sir6_SSE2);
             Vvdw12_SSE3        = _mm_mul_ps(Vvdw6_SSE3,sir6_SSE3);
+#endif
 #else /* LJ_COMB_LB */
             rinvsix_SSE0       = _mm_mul_ps(rinvsq_SSE0,_mm_mul_ps(rinvsq_SSE0,rinvsq_SSE0));
             rinvsix_SSE1       = _mm_mul_ps(rinvsq_SSE1,_mm_mul_ps(rinvsq_SSE1,rinvsq_SSE1));
@@ -347,10 +357,21 @@
 #ifdef CALC_COULOMB
             vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
 #endif
-            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE, gmx_mm_sum4_ps(_mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE0),_mm_mul_ps(sixthSSE,Vvdw6_SSE0)),
-                                                                       _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE1),_mm_mul_ps(sixthSSE,Vvdw6_SSE1)),
-                                                                       _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE2),_mm_mul_ps(sixthSSE,Vvdw6_SSE2)),
-                                                                       _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE3),_mm_mul_ps(sixthSSE,Vvdw6_SSE3))));
+            VvdwtotSSE         = _mm_add_ps(VvdwtotSSE,
+#ifndef HALF_LJ
+                                            gmx_mm_sum4_ps(
+#else
+                                                _mm_add_ps(
+#endif
+                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE0),_mm_mul_ps(sixthSSE,Vvdw6_SSE0)),
+                                                                       
+                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE1),_mm_mul_ps(sixthSSE,Vvdw6_SSE1))
+#ifndef HALF_LJ
+                                                ,
+                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE2),_mm_mul_ps(sixthSSE,Vvdw6_SSE2)),
+                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE3),_mm_mul_ps(sixthSSE,Vvdw6_SSE3))
+#endif
+                                                ));
 #endif
                                                                             
             fscal_SSE0         = _mm_mul_ps(rinvsq_SSE0,
