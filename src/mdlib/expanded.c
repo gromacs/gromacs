@@ -1238,7 +1238,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
     
     lamnew = ChooseNewLambda(log,nlim,expand,dfhist,nlam,weighted_lamee,p_k,mcrng);
     /* if using simulated tempering, we need to adjust the temperatures */
-    if (ir->bSimTemp) 
+    if (ir->bSimTemp && (lamnew != nlam)) /* only need to change the temperatures if we change the state */ 
     {
         int i, j, n, d;
         real *buf_ngtc;

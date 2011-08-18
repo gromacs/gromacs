@@ -527,12 +527,27 @@ static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda
     PS("bWLoneovert",BOOL(expand->bWLoneovert));
     PI("lmc-seed",expand->lmc_seed);
     PR("mc-temperature",expand->mc_temp);
-    PS("lambda-weights-equil",elmceq_names[expand->elmceq]);
-    PI("weight-equil-number-all-lambda",expand->equil_n_at_lam);
-    PI("weight-equil-number-samples",expand->equil_samples);
-    PI("weight-equil-number-steps",expand->equil_steps);
-    PR("weight-equil-wl-delta",expand->equil_wl_delta);
-    PR("weight-equil-count-ratio",expand->equil_ratio);
+    PS("lmc-weights-equil",elmceq_names[expand->elmceq]);
+    if (expand->elmceq == elmceqNUMATLAM)
+    {
+        PI("weight-equil-number-all-lambda",expand->equil_n_at_lam);
+    }
+    if (expand->elmceq == elmceqSAMPLES)
+    {
+        PI("weight-equil-number-samples",expand->equil_samples);
+    }
+    if (expand->elmceq == elmceqSTEPS)
+    {
+        PI("weight-equil-number-steps",expand->equil_steps);
+    }
+    if (expand->elmceq == elmceqWLDELTA)
+    {
+        PR("weight-equil-wl-delta",expand->equil_wl_delta);
+    }
+    if (expand->elmceq == elmceqRATIO)
+    {
+        PR("weight-equil-count-ratio",expand->equil_ratio);
+    }
 
     pr_indent(fp,indent);
     fprintf(fp,"init_lambda_weights%s\n",bMDPformat ? " = " : ":");
@@ -691,16 +706,17 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("sa_algorithm",ESAALGORITHM(ir->gb_algorithm));
     PR("sa_surface_tension",ir->sa_surface_tension);
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
+    PS("bSimTemp",BOOL(ir->bSimTemp));
+    if (ir->bSimTemp) {
+        pr_simtempvals(fp,indent,ir->simtempvals,ir->fepvals->n_lambda,bMDPformat);
+    }
+
     PS("free_energy",EFEPTYPE(ir->efep));
-    if (ir->efep > efepNO) {
+    if (ir->efep > efepNO || ir->bSimTemp) {
         pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
     }
     if (ir->bExpanded) {
         pr_expandedvals(fp,indent,ir->expandedvals,ir->fepvals->n_lambda,bMDPformat);
-    }
-    PS("bSimTemp",BOOL(ir->bSimTemp));
-    if (ir->bSimTemp) {
-        pr_simtempvals(fp,indent,ir->simtempvals,ir->fepvals->n_lambda,bMDPformat);
     }
     PI("nstdhdl", ir->nstdhdl);
     PI("nwall",ir->nwall);

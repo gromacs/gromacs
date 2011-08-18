@@ -680,16 +680,17 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
             for (k=0;k<3;k++)  /* settles are always 3 atoms, hardcoded */
             {
                 if (randatom[iatoms[2*i+1]+k]) { 
-                    nrand_group++;
+                    nrand_group++;     /* count the number of atoms to be shaken in the settles group */
                     randatom[iatoms[2*i+1]+k] = FALSE; 
                     nrandom--;
                 }
-            } if (nrand_group > 0) {
-                prand = (nrand_group)/3.0;
+            } if (nrand_group > 0) {  
+                prand = (nrand_group)/3.0;  /* use this fraction to compute the probability the 
+                                               whole group is randomized */
                 if (gmx_rng_uniform_real(rng)<prand) {
                     for (k=0;k<3;k++)  
                     {
-                        randatom[iatoms[2*i+1]+k] = TRUE; 
+                        randatom[iatoms[2*i+1]+k] = TRUE;   /* mark them all to be randomized */
                     }
                     nrandom+=3;
                 }
@@ -719,7 +720,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                     for (k=0;k<len;k++)  
                     {
                         if (k%3 != 0) {  /* only 2/3 of the sblock items are atoms, the others are labels */
-                            randatom[iatoms[k]] = TRUE; 
+                            randatom[iatoms[k]] = TRUE; /* randomize all of them */
                             nrandom++;
                         }
                     }
@@ -736,6 +737,13 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                 }
             }
         }
+        nrandom = n;  /* there are some values of nrandom for which
+                         this algorithm won't work; for example all
+                         water molecules and nrandom =/= 3.  Better to
+                         recount and use this number (which we
+                         calculate anyway: it will not affect
+                         the average number of atoms accepted.
+                      */
     }
     else
     {

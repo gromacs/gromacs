@@ -447,47 +447,47 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
       /* checking equilibration of weights inputs for validity */
       
-      sprintf(err_buf,"weight-equil-number-all-lambda (%d) is ignored if lmc-weight-equil is not equal to %s",
+      sprintf(err_buf,"weight-equil-number-all-lambda (%d) is ignored if lmc-weights-equil is not equal to %s",
               expand->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
       CHECK((expand->equil_n_at_lam>0) && (expand->elmceq!=elmceqNUMATLAM));
             
-      sprintf(err_buf,"weight-equil-number-samples (%d) is ignored if lmc-weight-equil is not equal to %s",
+      sprintf(err_buf,"weight-equil-number-samples (%d) is ignored if lmc-weights-equil is not equal to %s",
               expand->equil_samples,elmceq_names[elmceqSAMPLES]);
       CHECK((expand->equil_samples>0) && (expand->elmceq!=elmceqSAMPLES));
       
-      sprintf(err_buf,"weight-equil-number-steps (%d) is ignored if lmc-weight-equil is not equal to %s",
+      sprintf(err_buf,"weight-equil-number-steps (%d) is ignored if lmc-weights-equil is not equal to %s",
               expand->equil_steps,elmceq_names[elmceqSTEPS]);
       CHECK((expand->equil_steps>0) && (expand->elmceq!=elmceqSTEPS));
       
-      sprintf(err_buf,"weight-equil-wl-delta (%d) is ignored if lmc-weight-equil is not equal to %s",
+      sprintf(err_buf,"weight-equil-wl-delta (%d) is ignored if lmc-weights-equil is not equal to %s",
               expand->equil_samples,elmceq_names[elmceqWLDELTA]);
       CHECK((expand->equil_wl_delta>0) && (expand->elmceq!=elmceqWLDELTA));
       
-      sprintf(err_buf,"weight-equil-count-ratio (%f) is ignored if lmc-weight-equil is not equal to %s",
+      sprintf(err_buf,"weight-equil-count-ratio (%f) is ignored if lmc-weights-equil is not equal to %s",
               expand->equil_ratio,elmceq_names[elmceqRATIO]);
       CHECK((expand->equil_ratio>0) && (expand->elmceq!=elmceqRATIO));
 
-      sprintf(err_buf,"weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weight-equil=%s",
+      sprintf(err_buf,"weight-equil-number-all-lambda (%d) must be a positive integer if lmc-weights-equil=%s",
               expand->equil_n_at_lam,elmceq_names[elmceqNUMATLAM]);
       CHECK((expand->equil_n_at_lam<=0) && (expand->elmceq==elmceqNUMATLAM));
       
-      sprintf(err_buf,"weight-equil-number-samples (%d) must be a positive integer if lmc-weight-equil=%s",
+      sprintf(err_buf,"weight-equil-number-samples (%d) must be a positive integer if lmc-weights-equil=%s",
               expand->equil_samples,elmceq_names[elmceqSAMPLES]);
       CHECK((expand->equil_samples<=0) && (expand->elmceq==elmceqSAMPLES));
       
-      sprintf(err_buf,"weight-equil-number-steps (%d) must be a positive integer if lmc-weight-equil=%s",
+      sprintf(err_buf,"weight-equil-number-steps (%d) must be a positive integer if lmc-weights-equil=%s",
               expand->equil_steps,elmceq_names[elmceqSTEPS]);
       CHECK((expand->equil_steps<=0) && (expand->elmceq==elmceqSTEPS));
       
-      sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weight-equil=%s",
+      sprintf(err_buf,"weight-equil-wl-delta (%f) must be > 0 if lmc-weights-equil=%s",
               expand->equil_wl_delta,elmceq_names[elmceqWLDELTA]);
       CHECK((expand->equil_wl_delta<=0) && (expand->elmceq==elmceqWLDELTA));
       
-      sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weight-equil=%s",
+      sprintf(err_buf,"weight-equil-count-ratio (%f) must be > 0 if lmc-weights-equil=%s",
               expand->equil_ratio,elmceq_names[elmceqRATIO]);
       CHECK((expand->equil_ratio<=0) && (expand->elmceq==elmceqRATIO));
       
-      sprintf(err_buf,"lmc-weight-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
+      sprintf(err_buf,"lmc-weights-equil=%s only possible when lmc-stats = %s or lmc-stats %s",
               elmceq_names[elmceqWLDELTA],elamstats_names[elamstatsWL],elamstats_names[elamstatsWWL]);
       CHECK((expand->elmceq==elmceqWLDELTA) && (!EWL(expand->elamstats)));
 
