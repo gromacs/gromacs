@@ -736,14 +736,14 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                     n++;
                 }
             }
+            nrandom = n;  /* there are some values of nrandom for which
+                             this algorithm won't work; for example all
+                             water molecules and nrandom =/= 3.  Better to
+                             recount and use this number (which we
+                             calculate anyway: it will not affect
+                             the average number of atoms accepted.
+                          */
         }
-        nrandom = n;  /* there are some values of nrandom for which
-                         this algorithm won't work; for example all
-                         water molecules and nrandom =/= 3.  Better to
-                         recount and use this number (which we
-                         calculate anyway: it will not affect
-                         the average number of atoms accepted.
-                      */
     }
     else
     {

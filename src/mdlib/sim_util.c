@@ -1470,14 +1470,15 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
   }
 }
 
-extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0)
+extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *lambda,double *lam0)
 {
     /* this function works, but could probably use a logic rewrite to keep all the different 
        types of efep straight. */
 
     int i;
-    
-    if (efep==efepNO) {
+    t_lambda *fep = ir->fepvals;
+
+    if ((ir->efep==efepNO) && (ir->bSimTemp == FALSE)) {
         for (i=0;i<efptNR;i++)  {
             lambda[i] = 0.0;
             if (lam0) 
@@ -1507,6 +1508,14 @@ extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state
                 }
             }
         } 
+    }
+    if (ir->bSimTemp) {
+        /* need to rescale control temperatures to match current state */
+        for (i=0;i<ir->opts.ngtc;i++) {
+            if (ir->opts.ref_t[i] > 0) {
+                ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
+            }
+        }
     }
 
     /* Send to the log the information on the current lambdas */
@@ -1555,7 +1564,7 @@ void init_md(FILE *fplog,
     }
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog,ir->efep,ir->fepvals,fep_state,lambda,lam0);
+    initialize_lambdas(fplog,ir,fep_state,lambda,lam0);
     
     if (upd)
     {

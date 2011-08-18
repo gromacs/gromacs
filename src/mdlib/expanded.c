@@ -1259,7 +1259,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
 
         nstart = mdatoms->start;
         nend   = nstart + mdatoms->homenr;
-        for(n=nstart; n<nend; n++) 
+        for (n=nstart; n<nend; n++) 
         {
             gt = 0;
             if (mdatoms->cTC)
@@ -1268,7 +1268,7 @@ extern int ExpandedEnsembleDynamics(FILE *log,t_inputrec *ir, gmx_enerdata_t *en
             } 
             for(d=0; d<DIM; d++)
             {
-                v[n][d] *= buf_ngtc[gt];
+                 v[n][d] *= buf_ngtc[gt];
             }
         }
 

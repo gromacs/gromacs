@@ -281,7 +281,7 @@ void init_em(FILE *fplog,const char *title,
     state_global->ngtc = 0;
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog,ir->efep,ir->fepvals,&(state_global->fep_state),state_global->lambda,NULL);
+    initialize_lambdas(fplog,ir,&(state_global->fep_state),state_global->lambda,NULL);
 
     init_nrnb(nrnb);
     

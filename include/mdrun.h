@@ -331,7 +331,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 		   matrix box,real lambda,tensor pres,tensor virial,
 		   real *prescorr, real *enercorr, real *dvdlcorr);
   
-extern void initialize_lambdas(FILE *fplog,int efep,t_lambda *fep,int *fep_state,real *lambda,double *lam0);
+extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *lambda,double *lam0);
 
 extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit); 
 
