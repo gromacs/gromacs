@@ -995,8 +995,14 @@ int main(int argc, char *argv[])
     "The protonation state of N- and C-termini can be chosen interactively",
     "with the [TT]-ter[tt] flag.  Default termini are ionized (NH3+ and COO-),",
     "respectively.  Some force fields support zwitterionic forms for chains of",
-    "one residue, but for polypeptides these options should NOT be selected.[PAR]",
- 
+    "one residue, but for polypeptides these options should NOT be selected.",
+    "The AMBER force fields have unique forms for the terminal residues,",
+    "and these are incompatible with the [TT]-ter[tt] mechanism. You need",
+    "to prefix your N- or C-terminal residue names with \"N\" or \"C\"",
+    "respectively to use these forms, making sure you preserve the format",
+    "of the coordinate file. Alternatively, use named terminating residues",
+    "(e.g. ACE, NME).[PAR]",
+
     "The separation of chains is not entirely trivial since the markup",
     "in user-generated PDB files frequently varies and sometimes it",
     "is desirable to merge entries across a TER record, for instance",
