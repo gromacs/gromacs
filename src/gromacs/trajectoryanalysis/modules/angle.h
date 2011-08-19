@@ -28,6 +28,13 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
+/*! \internal \file
+ * \brief
+ * Declares trajectory analysis module for angle calculations.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
+ */
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 
@@ -94,7 +101,7 @@ class Angle : public TrajectoryAnalysisModule
         // Copy and assign disallowed by base.
 };
 
-} // namespace modules
+} // namespace analysismodules
 
 } // namespace gmxana
 

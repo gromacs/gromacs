@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::AnalysisDataModuleInterface.
  *

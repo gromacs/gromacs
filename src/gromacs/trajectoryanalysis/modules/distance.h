@@ -28,8 +28,15 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#ifndef GMX_TRAJANA_MODULES_DISTANCE_HPP
-#define GMX_TRAJANA_MODULES_DISTANCE_HPP
+/*! \internal \file
+ * \brief
+ * Declares trajectory analysis module for distance calculations.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
+ */
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
 
 #include <string>
 #include <vector>

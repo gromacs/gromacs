@@ -33,6 +33,7 @@
  * Functionality for writing tests that can produce their own reference data.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 #ifndef GMX_TESTUTILS_REFDATA_H

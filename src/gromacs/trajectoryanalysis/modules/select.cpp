@@ -28,6 +28,13 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
+/*! \internal \file
+ * \brief
+ * Implements gmx::analysismodules::Select.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_trajectoryanalysis
+ */
 #include "select.h"
 
 #ifdef HAVE_CONFIG_H

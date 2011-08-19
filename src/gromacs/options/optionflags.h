@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \file
  * \brief
  * Defines flags used in option implementation.
  *
