@@ -538,13 +538,27 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     const gmx_moltype_t *molt;
     const gmx_molblock_t *molb;
     cginfo_mb_t *cginfo_mb;
+    gmx_bool *type_LJ;
     int  *cginfo;
     int  cg_offset,a_offset,cgm,am;
     int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
-    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter;
+    gmx_bool bId,*bExcl,bExclIntraAll,bExclInter,bHaveLJ,bHaveQ;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo_mb,mtop->nmolblock);
+
+    snew(type_LJ,fr->ntype);
+    for(ai=0; ai<fr->ntype; ai++)
+    {
+        type_LJ[ai] = FALSE;
+        for(j=0; j<fr->ntype; j++)
+        {
+            type_LJ[ai] = type_LJ[ai] ||
+                fr->bBHAM ||
+                C6(fr->nbfp,fr->ntype,ai,j) != 0 ||
+                C12(fr->nbfp,fr->ntype,ai,j) != 0;
+        }
+    }
 
     *bExcl_IntraCGAll_InterCGNone = TRUE;
 
@@ -620,7 +634,13 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                  */
                 bExclIntraAll = TRUE;
                 bExclInter    = FALSE;
+                bHaveLJ       = FALSE;
+                bHaveQ        = FALSE;
                 for(ai=a0; ai<a1; ai++) {
+                    /* Here we only check for the A, not B topology */
+                    bHaveLJ = bHaveLJ || type_LJ[molt->atoms.atom[ai].type];
+                    bHaveQ  = bHaveQ  || (molt->atoms.atom[ai].q != 0);
+
                     /* Clear the exclusion list for atom ai */
                     for(aj=a0; aj<a1; aj++) {
                         bExcl[aj-a0] = FALSE;
@@ -660,6 +680,15 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                     /* The size in cginfo is currently only read with DD */
                     gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
                 }
+                if (bHaveLJ)
+                {
+                    SET_CGINFO_HAS_LJ(cginfo[cgm+cg]);  
+                }
+                if (bHaveQ)
+                {
+                    SET_CGINFO_HAS_Q(cginfo[cgm+cg]);  
+                }
+                /* Store the charge group size */
                 SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
 
                 if (!bExclIntraAll || bExclInter)
@@ -1856,6 +1885,8 @@ void init_forcerec(FILE *fp,
     
     fr->bQMMM      = ir->bQMMM;   
     fr->qr         = mk_QMMMrec();
+
+    fr->cutoff_scheme = ir->cutoff_scheme;
     
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,
@@ -1897,7 +1928,6 @@ void init_forcerec(FILE *fp,
     
     snew(fr->excl_load,fr->nthreads+1);
 
-    fr->cutoff_scheme = ir->cutoff_scheme;
     if (fr->cutoff_scheme == ecutsOLD)
     {
         fr->useGPU     = FALSE;

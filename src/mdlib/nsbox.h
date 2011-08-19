@@ -60,6 +60,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               int dd_zone,
                               rvec corner0,rvec corner1,
                               int a0,int a1,
+                              const int *atinfo,
                               rvec *x,
                               int nmoved,int *move,
                               gmx_nb_atomdata_t *nbat);
@@ -70,6 +71,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
  */
 void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        const gmx_domdec_zones_t *zones,
+                                       const int *atinfo,
                                        rvec *x,
                                        gmx_nb_atomdata_t *nbat);
 

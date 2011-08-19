@@ -57,12 +57,6 @@
  * ci's, as no combination rule gives a 50% performance hit for LJ.
  */
 
-/* Calculate Coulomb interactions */
-#define CALC_COULOMB
-
-/* Assumes only the first half of the particles in each cell have LJ */
-//#define HALF_LJ
-
 /* Assumes all LJ parameters are indentical */
 //#define FIX_LJ_C
 
@@ -106,13 +100,13 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     const real         *q;
     const real         *shiftvec;
     const real         *x;
-    const real         *nbfp0,*nbfp1,*nbfp2,*nbfp3;
+    const real         *nbfp0,*nbfp1,*nbfp2=NULL,*nbfp3=NULL;
     real       facel;
     real       *nbfp_i;
     int        n,si;
     int        ish3;
-    //real       shX,shY,shZ;
-	int        ssi,ssix,ssiy,ssiz;
+    gmx_bool   half_LJ,do_coul;
+    int        ssi,ssix,ssiy,ssiz;
     int        sjind0,sjind1,sjind;
     int        ip,jp;
 #ifndef LJ_COMB_GEOM
@@ -137,15 +131,13 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     __m128     mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0800, 0x0400, 0x0200, 0x0100) );
     __m128     mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0x8000, 0x4000, 0x2000, 0x1000) );
     __m128     zero_SSE = gmx_mm_castsi128_ps( _mm_set_epi32(0x0, 0x0, 0x0, 0x0) );
-#ifdef CALC_COULOMB
-	__m128     iq_SSE0;
-	__m128     iq_SSE1;
-	__m128     iq_SSE2;
-	__m128     iq_SSE3;
+	__m128     iq_SSE0={0,0,0,0};
+	__m128     iq_SSE1={0,0,0,0};
+	__m128     iq_SSE2={0,0,0,0};
+	__m128     iq_SSE3={0,0,0,0};
     __m128     mrc_3_SSE;
 #ifdef CALC_ENERGIES
     __m128     hrc_3_SSE,moh_rc_SSE;
-#endif
 #endif
 
 #ifdef LJ_COMB_LB
@@ -168,10 +160,8 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 
     __m128     c6s_SSE0,c12s_SSE0;
     __m128     c6s_SSE1,c12s_SSE1;
-#ifndef HALF_LJ
-    __m128     c6s_SSE2,c12s_SSE2;
-    __m128     c6s_SSE3,c12s_SSE3;
-#endif
+    __m128     c6s_SSE2={0,0,0,0},c12s_SSE2={0,0,0,0};
+    __m128     c6s_SSE3={0,0,0,0},c12s_SSE3={0,0,0,0};
 #endif
 #endif /* LJ_COMB_LB */
 
@@ -221,14 +211,12 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 
     rc2_SSE   = _mm_set1_ps(nbl->rcut*nbl->rcut);
 
-#ifdef CALC_COULOMB
     mrc_3_SSE = _mm_set1_ps(-1.0/(nbl->rcut*nbl->rcut*nbl->rcut));
 
 #ifdef CALC_ENERGIES
     hrc_3_SSE = _mm_set1_ps(0.5/(nbl->rcut*nbl->rcut*nbl->rcut));
     
     moh_rc_SSE = _mm_set1_ps(-1.5/nbl->rcut); 
-#endif
 #endif
 
     wco_any_align = (float *)(((size_t)(wco_any_array+3)) & (~((size_t)15)));
@@ -247,35 +235,23 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     {
         pvdw_c6 [0*UNROLLJ+jp] = nbat->nbfp[0*2];
         pvdw_c6 [1*UNROLLJ+jp] = nbat->nbfp[0*2];
-#ifndef HALF_LJ
         pvdw_c6 [2*UNROLLJ+jp] = nbat->nbfp[0*2];
         pvdw_c6 [3*UNROLLJ+jp] = nbat->nbfp[0*2];
-#else
-        pvdw_c6 [2*UNROLLJ+jp] = 0;
-        pvdw_c6 [3*UNROLLJ+jp] = 0;
-#endif
+
         pvdw_c12[0*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[1*UNROLLJ+jp] = nbat->nbfp[0*2+1];
-#ifndef HALF_LJ
         pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
-#else
-        pvdw_c12[2*UNROLLJ+jp] = 0;
-        pvdw_c12[3*UNROLLJ+jp] = 0;
-#endif
     }
     c6_SSE0            = _mm_load_ps(pvdw_c6 +0*UNROLLJ);
     c6_SSE1            = _mm_load_ps(pvdw_c6 +1*UNROLLJ);
-#ifndef HALF_LJ
     c6_SSE2            = _mm_load_ps(pvdw_c6 +2*UNROLLJ);
     c6_SSE3            = _mm_load_ps(pvdw_c6 +3*UNROLLJ);
-#endif
+
     c12_SSE0           = _mm_load_ps(pvdw_c12+0*UNROLLJ);
     c12_SSE1           = _mm_load_ps(pvdw_c12+1*UNROLLJ);
-#ifndef HALF_LJ
     c12_SSE2           = _mm_load_ps(pvdw_c12+2*UNROLLJ);
     c12_SSE3           = _mm_load_ps(pvdw_c12+3*UNROLLJ);
-#endif
 #endif /* FIX_LJ_C */
 
     cj = nbl->cj;
@@ -285,7 +261,7 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     {
         nbln = &nbl->ci[n];
 
-        ish3             = 3*nbln->shift;     
+        ish3             = 3*(nbln->shift & NBL_CI_SHIFT);
         sjind0           = nbln->cj_ind_start;      
         sjind1           = nbln->cj_ind_end;    
         /* Currently only works super-cells equal to sub-cells */
@@ -294,9 +270,13 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
         shX_SSE = _mm_load1_ps(shiftvec+ish3);
         shY_SSE = _mm_load1_ps(shiftvec+ish3+1);
         shZ_SSE = _mm_load1_ps(shiftvec+ish3+2);
-       
-		/* Load i atom data */
+
         ssi              = si*SIMD_WIDTH;
+       
+        half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
+        do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
+
+		/* Load i atom data */
         ssix             = ssi*DIM;
         ssiy             = ssix + SIMD_WIDTH;
         ssiz             = ssiy + SIMD_WIDTH;
@@ -312,12 +292,15 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 		iz_SSE1          = _mm_add_ps(_mm_load1_ps(x+ssiz+1),shZ_SSE);
 		iz_SSE2          = _mm_add_ps(_mm_load1_ps(x+ssiz+2),shZ_SSE);
 		iz_SSE3          = _mm_add_ps(_mm_load1_ps(x+ssiz+3),shZ_SSE);
-#ifdef CALC_COULOMB
-		iq_SSE0          = _mm_set1_ps(facel*q[ssi]);
-		iq_SSE1          = _mm_set1_ps(facel*q[ssi+1]);
-		iq_SSE2          = _mm_set1_ps(facel*q[ssi+2]);
-		iq_SSE3          = _mm_set1_ps(facel*q[ssi+3]);
-#endif
+
+        /* With half_LJ we currently always calculate Coulomb interactions */
+        if (do_coul || half_LJ)
+        {
+            iq_SSE0      = _mm_set1_ps(facel*q[ssi]);
+            iq_SSE1      = _mm_set1_ps(facel*q[ssi+1]);
+            iq_SSE2      = _mm_set1_ps(facel*q[ssi+2]);
+            iq_SSE3      = _mm_set1_ps(facel*q[ssi+3]);
+        }
 
 #ifdef LJ_COMB_LB
         hsig_i_SSE0      = _mm_load1_ps(ljc+ssi*2+0);
@@ -332,21 +315,26 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #ifdef LJ_COMB_GEOM
         c6s_SSE0         = _mm_load1_ps(ljc+ssi*2+0);
         c6s_SSE1         = _mm_load1_ps(ljc+ssi*2+1);
-#ifndef HALF_LJ
-        c6s_SSE2         = _mm_load1_ps(ljc+ssi*2+2);
-        c6s_SSE3         = _mm_load1_ps(ljc+ssi*2+3);
-#endif
+        if (!half_LJ)
+        {
+            c6s_SSE2     = _mm_load1_ps(ljc+ssi*2+2);
+            c6s_SSE3     = _mm_load1_ps(ljc+ssi*2+3);
+        }
         c12s_SSE0        = _mm_load1_ps(ljc+ssi*2+4);
         c12s_SSE1        = _mm_load1_ps(ljc+ssi*2+5);
-#ifndef HALF_LJ
-        c12s_SSE2        = _mm_load1_ps(ljc+ssi*2+6);
-        c12s_SSE3        = _mm_load1_ps(ljc+ssi*2+7);
-#endif
+        if (!half_LJ)
+        {
+            c12s_SSE2    = _mm_load1_ps(ljc+ssi*2+6);
+            c12s_SSE3    = _mm_load1_ps(ljc+ssi*2+7);
+        }
 #else
-        nbfp0 = nbat->nbfp + type[ssi  ]*nbat->ntype*2;
-        nbfp1 = nbat->nbfp + type[ssi+1]*nbat->ntype*2;
-        nbfp2 = nbat->nbfp + type[ssi+2]*nbat->ntype*2;
-        nbfp3 = nbat->nbfp + type[ssi+3]*nbat->ntype*2;
+        nbfp0     = nbat->nbfp + type[ssi  ]*nbat->ntype*2;
+        nbfp1     = nbat->nbfp + type[ssi+1]*nbat->ntype*2;
+        if (!half_LJ)
+        {
+            nbfp2 = nbat->nbfp + type[ssi+2]*nbat->ntype*2;
+            nbfp3 = nbat->nbfp + type[ssi+3]*nbat->ntype*2;
+        }
 #endif
 #endif
 
@@ -372,14 +360,44 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
         while (sjind < sjind1 && nbl->cj[sjind].excl != 0xffff)
         {
 #define CHECK_EXCLS
+            if (half_LJ)
+            {
+#define CALC_COULOMB
+#define HALF_LJ
 #include "nb_cell_kernel_sse2_single_inner.h"
+#undef HALF_LJ
+            }
+            else if (do_coul)
+            {
+#include "nb_cell_kernel_sse2_single_inner.h"
+#undef CALC_COULOMB
+            }
+            else
+            {
+#include "nb_cell_kernel_sse2_single_inner.h"
+            }
 #undef CHECK_EXCLS
             sjind++;
         }
 
         for(; (sjind<sjind1); sjind++)
         {
+            if (half_LJ)
+            {
+#define CALC_COULOMB
+#define HALF_LJ
 #include "nb_cell_kernel_sse2_single_inner.h"
+#undef HALF_LJ
+            }
+            else if (do_coul)
+            {
+#include "nb_cell_kernel_sse2_single_inner.h"
+#undef CALC_COULOMB
+            }
+            else
+            {
+#include "nb_cell_kernel_sse2_single_inner.h"
+            }
         }
         ninner += sjind1 - sjind0;
 
@@ -412,10 +430,11 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #endif
 		
 #ifdef CALC_ENERGIES
-#ifdef CALC_COULOMB
-        _mm_store_ps(tmpsum,vctotSSE);
-        *Vc += tmpsum[0]+tmpsum[1]+tmpsum[2]+tmpsum[3];
-#endif
+        if (do_coul)
+        {
+            _mm_store_ps(tmpsum,vctotSSE);
+            *Vc += tmpsum[0]+tmpsum[1]+tmpsum[2]+tmpsum[3];
+        }
 		
         _mm_store_ps(tmpsum,VvdwtotSSE);
         *Vvdw += tmpsum[0]+tmpsum[1]+tmpsum[2]+tmpsum[3];

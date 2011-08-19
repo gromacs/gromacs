@@ -171,6 +171,7 @@ typedef struct {
     int  *nsubc; /* The number of sub cells for each super cell */
     real *bbcz;  /* Bounding boxes in z for the super cells     */
     real *bb;    /* 3D bounding boxes for the sub cells         */
+    int  *flags; /* Flag for the super cells                    */
     int  nc_nalloc;
 
     int  nsubc_tot;
@@ -506,6 +507,8 @@ static int set_grid_size_xy(const gmx_nbsearch_t nbs,
          * floating exceptions in SSE with the unused bb elements.
          */
         snew_aligned(grid->bb,bb_nalloc,16);
+
+        srenew(grid->flags,grid->nc_nalloc);
     }
 
     copy_rvec(corner0,grid->c0);
@@ -953,10 +956,62 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
     }
 }
 
+void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
+                int a0,int a1,const int *atinfo,
+                int *order,
+                int *flags)
+{
+    int subc,s,a,ni,nj,i,j;
+    int sorti[NBL_NAPC_MAX/NSUBCELL];
+    int sortj[NBL_NAPC_MAX/NSUBCELL];
+    gmx_bool haveQ;
+
+    subc = 0;
+    for(s=a0; s<a1; s+=naps)
+    {
+        /* Sort this (sub-)cell on atoms with LH first, without last */
+        ni = 0;
+        nj = 0;
+        haveQ = FALSE;
+        for(a=s; a<min(s+naps,a1); a++)
+        {
+            haveQ = haveQ || GET_CGINFO_HAS_Q(atinfo[order[a]]);
+
+            if (GET_CGINFO_HAS_LJ(atinfo[order[a]]))
+            {
+                sorti[ni++] = order[a];
+            }
+            else
+            {
+                sortj[nj++] = order[a];
+            }
+        }
+        for(i=0; i<ni; i++)
+        {
+            order[a0+i] = sorti[i];
+        }
+        for(j=0; j<nj; j++)
+        {
+            order[a0+ni+j] = sortj[j];
+        }
+        *flags = 0;
+        if (ni*2 <= naps)
+        {
+            *flags |= NBL_CI_HALF_LJ(subc);
+        }
+        if (haveQ)
+        {
+            *flags |= NBL_CI_DO_COUL(subc);
+        }
+        subc++;
+    }
+}
+
 void fill_cell(const gmx_nbsearch_t nbs,
                gmx_nbs_grid_t *grid,
                gmx_nb_atomdata_t *nbat,
                int a0,int a1,
+               const int *atinfo,
                rvec *x,
                int sx,int sy, int sz)
 {
@@ -973,6 +1028,12 @@ void fill_cell(const gmx_nbsearch_t nbs,
         clear_nbat_real(nbs->naps,nbat->xstride,xnb);
 
         return;
+    }
+
+    if (nbs->simple)
+    {
+        sort_on_lj(nbat,nbs->naps,a0,a1,atinfo,nbs->a,
+                   grid->flags+(a0>>nbs->naps2log)-grid->cell0);
     }
 
     /* Now we have sorted the atoms, set the cell indices */
@@ -1053,7 +1114,9 @@ void fill_cell(const gmx_nbsearch_t nbs,
 static void sort_columns_simple(const gmx_nbsearch_t nbs,
                                 int dd_zone,
                                 gmx_nbs_grid_t *grid,
-                                int a0,int a1,rvec *x,
+                                int a0,int a1,
+                                const int *atinfo,
+                                rvec *x,
                                 gmx_nb_atomdata_t *nbat,
                                 int cxy_start,int cxy_end,
                                 int *sort_work)
@@ -1095,7 +1158,7 @@ static void sort_columns_simple(const gmx_nbsearch_t nbs,
             na_c  = min(nbs->napc,na-(ash_c-ash));
             
             fill_cell(nbs,grid,nbat,
-                      ash_c,ash_c+na_c,x,
+                      ash_c,ash_c+na_c,atinfo,x,
                       nbs->napc*cx + (dd_zone >> 2),
                       nbs->napc*cy + (dd_zone & 3),
                       nbs->napc*cz);
@@ -1119,7 +1182,9 @@ static void sort_columns_simple(const gmx_nbsearch_t nbs,
 static void sort_columns_supersub(const gmx_nbsearch_t nbs,
                                   int dd_zone,
                                   gmx_nbs_grid_t *grid,
-                                  int a0,int a1,rvec *x,
+                                  int a0,int a1,
+                                  const int *atinfo,
+                                  rvec *x,
                                   gmx_nb_atomdata_t *nbat,
                                   int cxy_start,int cxy_end,
                                   int *sort_work)
@@ -1206,7 +1271,7 @@ static void sort_columns_supersub(const gmx_nbsearch_t nbs,
                     na_x  = min(subdiv_x,na-(ash_x-ash));
 
                     fill_cell(nbs,grid,nbat,
-                              ash_x,ash_x+na_x,x,
+                              ash_x,ash_x+na_x,atinfo,x,
                               nbs->naps*(cx*NSUBCELL_X+sub_x) + (dd_zone >> 2),
                               nbs->naps*(cy*NSUBCELL_Y+sub_y) + (dd_zone & 3),
                               nbs->naps*sub_z);
@@ -1232,7 +1297,9 @@ static void sort_columns_supersub(const gmx_nbsearch_t nbs,
 static void calc_cell_indices(const gmx_nbsearch_t nbs,
                               int dd_zone,
                               gmx_nbs_grid_t *grid,
-                              int a0,int a1,rvec *x,
+                              int a0,int a1,
+                              const int *atinfo,
+                              rvec *x,
                               int *move,
                               gmx_nb_atomdata_t *nbat)
 {
@@ -1386,14 +1453,14 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
     {
         if (nbs->simple)
         {
-            sort_columns_simple(nbs,dd_zone,grid,a0,a1,x,nbat,
+            sort_columns_simple(nbs,dd_zone,grid,a0,a1,atinfo,x,nbat,
                                 ((t+0)*grid->ncx*grid->ncy)/nthread,
                                 ((t+1)*grid->ncx*grid->ncy)/nthread,
                                 nbs->work[t].sort_work);
         }
         else
         {
-            sort_columns_supersub(nbs,dd_zone,grid,a0,a1,x,nbat,
+            sort_columns_supersub(nbs,dd_zone,grid,a0,a1,atinfo,x,nbat,
                                   ((t+0)*grid->ncx*grid->ncy)/nthread,
                                   ((t+1)*grid->ncx*grid->ncy)/nthread,
                                   nbs->work[t].sort_work);
@@ -1509,6 +1576,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               int dd_zone,
                               rvec corner0,rvec corner1,
                               int a0,int a1,
+                              const int *atinfo,
                               rvec *x,
                               int nmoved,int *move,
                               gmx_nb_atomdata_t *nbat)
@@ -1565,7 +1633,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
         gmx_nb_atomdata_realloc(nbat,nc_max*nbs->napc);
     }
     
-    calc_cell_indices(nbs,dd_zone,grid,a0,a1,x,move,nbat);
+    calc_cell_indices(nbs,dd_zone,grid,a0,a1,atinfo,x,move,nbat);
 
     if (dd_zone == 0)
     {
@@ -1577,6 +1645,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
 
 void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        const gmx_domdec_zones_t *zones,
+                                       const int *atinfo,
                                        rvec *x,
                                        gmx_nb_atomdata_t *nbat)
 {
@@ -1597,6 +1666,7 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                  zone,c0,c1,
                                  zones->cg_range[zone],
                                  zones->cg_range[zone+1],
+                                 atinfo,
                                  x,
                                  0,NULL,
                                  nbat);
@@ -2194,7 +2264,7 @@ static void print_nblist_statistics_simple(FILE *fp,const gmx_nblist_t *nbl,
     npexcl = 0;
     for(i=0; i<nbl->nci; i++)
     {
-        cs[nbl->ci[i].shift] +=
+        cs[nbl->ci[i].shift & NBL_CI_SHIFT] +=
             nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start;
 
         j = nbl->ci[i].cj_ind_start;
@@ -2864,7 +2934,7 @@ static void nb_realloc_ci(gmx_nblist_t *nbl,int n)
                     nbl->alloc,nbl->free);
 }
 
-static void new_ci_entry(gmx_nblist_t *nbl,int ci,int shift,
+static void new_ci_entry(gmx_nblist_t *nbl,int ci,int shift,int flags,
                          gmx_nbl_work_t *work)
 {
     if (nbl->nci + 1 > nbl->ci_nalloc)
@@ -2875,6 +2945,8 @@ static void new_ci_entry(gmx_nblist_t *nbl,int ci,int shift,
     nbl->ci[nbl->nci].shift         = shift;
     if (nbl->simple)
     {
+        /* Store the interaction flags along with the shift */
+        nbl->ci[nbl->nci].shift    |= flags;
         nbl->ci[nbl->nci].cj_ind_start = nbl->ncj;
         nbl->ci[nbl->nci].cj_ind_end   = nbl->ncj;
     }
@@ -3573,7 +3645,8 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                    d2z,rl2,
                                    &cxf,&cxl); 
 
-                    new_ci_entry(nbl,gridi->cell0+ci,shift,nbl->work);
+                    new_ci_entry(nbl,gridi->cell0+ci,shift,gridi->flags[ci],
+                                 nbl->work);
 
 #ifndef NSBOX_SHIFT_BACKWARD
                     if (!nbl->TwoWay && cxf < ci_x)

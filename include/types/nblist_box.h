@@ -71,10 +71,14 @@ typedef struct {
     int excl;  /* The exclusion (interaction) bits */
 } gmx_nbl_cj_t;
 
+#define NBL_CI_SHIFT          4095
+#define NBL_CI_HALF_LJ(subc)  (1<<(12+2*(subc)))
+#define NBL_CI_DO_COUL(subc)  (1<<(13+2*(subc)))
+
 /* Smaller neighbor list list unit */
 typedef struct {
     int ci;            /* i-cell              */
-    int shift;         /* Shift vector index  */
+    int shift;         /* Shift vector index plus possible flags */
     union {
         int cj_ind_start;   /* Start index into cj  */
         int sj4_ind_start;  /* Start index into sj4 */

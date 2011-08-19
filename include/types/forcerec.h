@@ -70,8 +70,8 @@ typedef struct {
 } t_nblists;
 
 /* macros for the cginfo data in forcerec */
-/* The maximum cg size in cginfo is 255,
- * because we only have space for 8 bits in cginfo,
+/* The maximum cg size in cginfo is 63
+ * because we only have space for 6 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
  * But there is a smaller limit due to the t_excl data structure
  * which is defined in nblist.h.
@@ -87,8 +87,12 @@ typedef struct {
 /* This bit is only used with bBondComm in the domain decomposition */
 #define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
 #define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
-#define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(255<<23)) | ((opt)<<23))
-#define GET_CGINFO_NATOMS(cgi)     (((cgi)>>23)       &   255)
+#define SET_CGINFO_HAS_LJ(cgi)       (cgi) =  ((cgi)  |  (1<<23))
+#define GET_CGINFO_HAS_LJ(cgi)     ( (cgi)            &  (1<<23))
+#define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
+#define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
+#define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(63<<25)) | ((opt)<<25))
+#define GET_CGINFO_NATOMS(cgi)     (((cgi)>>25)       &   63)
 
 
 /* Value to be used in mdrun for an infinite cut-off.

@@ -720,15 +720,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (!fr->bDomDec)
         {
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
-                    0,vzero,box_diag,
-                    0,mdatoms->homenr,x,
-                    0,NULL,
-                    fr->nbat);
+                                     0,vzero,box_diag,
+                                     0,mdatoms->homenr,fr->cginfo,x,
+                                     0,NULL,
+                                     fr->nbat);
         }
         else
         {
             gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
-                    x,fr->nbat);
+                                              fr->cginfo,x,fr->nbat);
         }
 
         gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);

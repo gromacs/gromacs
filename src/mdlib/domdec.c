@@ -8840,6 +8840,7 @@ void dd_partition_system(FILE            *fplog,
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,state_local->box,
                                      0,comm->cell_x0,comm->cell_x1,
                                      0,dd->ncg_home,
+                                     fr->cginfo,
                                      state_local->x,
                                      ncg_moved,comm->moved,
                                      fr->nbat);
