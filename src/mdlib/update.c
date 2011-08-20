@@ -1621,7 +1621,6 @@ void update_coords(FILE         *fplog,
 {
     gmx_bool         bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
-    real             rate;
     real             *imass,*imassin;
     rvec             *force;
     real             dt_1;
@@ -1758,21 +1757,6 @@ void update_coords(FILE         *fplog,
         break;
     }
 
-    if (ETC_ANDERSEN(inputrec->etc) && ((UpdatePart == etrtVELOCITY1) && EI_VV(inputrec->eI)))
-    {
-        rate = (inputrec->delta_t)/inputrec->opts.tau_t[0];
-        /* proceed with andersen if 1) it's fixed probability per
-         particle andersen or 2) it's massive andersen and it's tau_t/dt */
-        if ((inputrec->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
-        {
-            andersen_tcoupl(inputrec,md,state,upd->sd->gaussrand,rate,
-                            (inputrec->etc==etcANDERSEN)?idef:NULL,
-                            constr?get_nblocks(constr):0,
-                            constr?get_sblock(constr):NULL,
-                            upd->randatom,upd->randatom_list,
-                            upd->sd->randomize_group,upd->sd->boltzfac);
-        }
-    }
 }
 
 
@@ -1828,4 +1812,20 @@ void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
           trace(dekin),trace(ekin),vcm[XX],vcm[YY],vcm[ZZ]);
   fprintf(log,"mv = (%8.4f %8.4f %8.4f)\n",
           mv[XX],mv[YY],mv[ZZ]);
+}
+
+extern void update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr) {
+
+    real rate = (ir->delta_t)/ir->opts.tau_t[0];
+    /* proceed with andersen if 1) it's fixed probability per
+       particle andersen or 2) it's massive andersen and it's tau_t/dt */
+    if ((ir->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
+    {
+        andersen_tcoupl(ir,md,state,upd->sd->gaussrand,rate,
+                        (ir->etc==etcANDERSEN)?idef:NULL,
+                        constr?get_nblocks(constr):0,
+                        constr?get_sblock(constr):NULL,
+                        upd->randatom,upd->randatom_list,
+                        upd->sd->randomize_group,upd->sd->boltzfac);
+    }
 }

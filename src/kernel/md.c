@@ -184,7 +184,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* for FEP */
     int         fep_state=0;
     real        frac;
-
+    real        rate;
     double      cycles;
 	real        saved_conserved_quantity = 0;
     real        last_ekin = 0;
@@ -1184,6 +1184,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
+                if (ETC_ANDERSEN(ir->etc) && EI_VV(ir->eI))
+                {
+                    update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr);
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                                       &top->idef,tmp_vir,NULL,
+                                       cr,nrnb,wcycle,upd,constr,
+                                       bInitStep,TRUE,FALSE,vetanew);
+                }
                 
                 /* if VV, compute the pressure and constraints */
                 /* For VV2, we strictly only need this if using pressure
