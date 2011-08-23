@@ -82,7 +82,7 @@ gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
                     trim(buf);
                 }
             }
-            while (NULL!=buf && strlen(buf)==0);
+            while (!feof(in) && NULL!=buf && strlen(buf)==0);
             
             if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2))
             {
