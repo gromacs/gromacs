@@ -7942,13 +7942,13 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
             {
                 if (d == 1)
                 {
-                    zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][d-1]].min0;
-                    zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][d-1]].max1;
+                    zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].min0;
+                    zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].max1;
                 }
                 else if (d == 2)
                 {
-                    zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].min0;
-                    zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][d-2]][zones->shift[z][d-1]].max1;
+                    zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].min0;
+                    zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].max1;
                 }
             }
         }
@@ -7982,8 +7982,24 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
                      * the upper limit of the one below, which is only
                      * valid with only one domain in the zone.
                      */
-                    zones->zone_x0[z][dim] =
-                        zones->zone_x1[zone_perm[d][z-(1<<d)]][dim];
+                    if (z<4)
+                    {
+                        zones->zone_x0[z][dim] =
+                            zones->zone_x1[zone_perm[1][z-2]][dim];
+                    }
+                    else
+                    {
+                        if (d == 1)
+                        {
+                            zones->zone_x0[z][dim] =
+                                zones->zone_x0[zone_perm[2][z-4]][dim];
+                        }
+                        else
+                        {
+                            zones->zone_x0[z][dim] =
+                                zones->zone_x1[zone_perm[2][z-4]][dim];
+                        }
+                    }
                     /* A temporary limit, is updated below */
                     zones->zone_x1[z][dim] = zones->zone_x0[z][dim];
 
@@ -7991,7 +8007,7 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
                     {
                         for(zi=0; zi<zones->nizone; zi++)
                         {
-                            if (zones->shift[zi][d] == 0)
+                            if (zones->shift[zi][dim] == 0)
                             {
                                 /* This takes the whole zone into account.
                                  * With multiple pulses this will lead
@@ -8011,11 +8027,11 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
          */
         for(zi=0; zi<zones->nizone; zi++)
         {
-            if (zones->shift[zi][d] == 0)
+            if (zones->shift[zi][dim] == 0)
             {
                 for(z=zones->izone[zi].j0; z<zones->izone[zi].j1; z++)
                 {
-                    if (zones->shift[z][d] > 0)
+                    if (zones->shift[z][dim] > 0)
                     {
                         zones->zone_x1[z][dim] = max(zones->zone_x1[z][dim],
                                                      zones->zone_x1[zi][dim]+rcs);
