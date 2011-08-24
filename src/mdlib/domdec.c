@@ -6459,7 +6459,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     if (cr->npmenodes > dd->nnodes)
     {
         gmx_fatal_collective(FARGS,cr,NULL,
-                             "The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
+                             "The number of separate PME nodes (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
