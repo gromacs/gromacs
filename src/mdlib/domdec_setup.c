@@ -37,6 +37,11 @@ static int factorize(int n,int **fac,int **mfac)
 {
     int d,ndiv;
 
+    if (n < 0)
+    {
+        gmx_fatal(FARGS, "Can only factorize positive integers.");
+    }
+
     /* Decompose n in factors */
     snew(*fac,n/2);
     snew(*mfac,n/2);
@@ -670,6 +675,12 @@ real dd_choose_grid(FILE *fplog,
                 {
                     gmx_fatal(FARGS,
                               "Can not have separate PME nodes with 2 or less nodes");
+                }
+                if (cr->npmenodes > cr->nnodes)
+                {
+                    gmx_fatal(FARGS,
+                              "Can not have %d PME nodes with just %d total nodes",
+                              cr->npmenodes, cr->nnodes);
                 }
 
                 /* If the user purposely selected the number of PME nodes,
