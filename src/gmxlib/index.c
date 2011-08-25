@@ -333,8 +333,10 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
     "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H", 
     "Prot-Masses"
   };
-  /* construct index group containing (TRUE) or excluding (FALSE)
-     given atom names */
+  /* construct each index group from the union of the set of protein
+     atoms and the corresponding set of atom names in the chains
+     variable (FALSE), or the union with the complement of that set
+     in the chains variable (TRUE) */
   const gmx_bool complement[NCH] = { 
     TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
   };
