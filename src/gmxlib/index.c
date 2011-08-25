@@ -310,7 +310,7 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
 			 t_blocka *gb,char ***gn,gmx_bool bASK,gmx_bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
-  static const char *pnoh[]    = { "H" };
+  static const char *pnoh[]    = { "H", "HN" };
   static const char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
   static const char *calpha[]  = { "CA" };
@@ -318,7 +318,7 @@ static void analyse_prot(const char ** restype,t_atoms *atoms,
   static const char *mc[]      = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT" };
   static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OC1","OC2","OT","OXT" };
   static const char *mch[]     = { "N","CA","C","O","O1","O2","OC1","OC2","OT","OXT",
-			     "H1","H2","H3","H" };
+				   "H1","H2","H3","H","HN" };
   /* array of arrays of atomnames: */
   static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
 #define NCH asize(chains)
