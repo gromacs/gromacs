@@ -85,7 +85,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
             setFlag(efBoolean);
         }
 
-    protected:
+    private:
         //! Creates a BooleanOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 };
@@ -124,7 +124,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
          */
         MyClass &vector() { setVector(); return me(); }
 
-    protected:
+    private:
         //! Creates an IntegerOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
@@ -252,12 +252,11 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         MyClass &storeEnumIndex(int *store)
         { _enumIndexStore = store; return me(); }
 
-    protected:
+    private:
         //! Creates a StringOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
         virtual std::string createDescription() const;
 
-    private:
         const char *const      *_enumValues;
         int                     _defaultEnumIndex;
         int                    *_enumIndexStore;
@@ -313,11 +312,10 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &libraryFile() { setFlag(efFileLibrary); return me(); }
 
-    protected:
+    private:
         //! Creates a FileNameOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
-    private:
         OptionFileType          _filetype;
 
         /*! \brief

@@ -54,10 +54,12 @@ class AnalysisDataModuleInterface;
  * getErrors(), requestStorage()) and functions for using modules for
  * processing the data (addModule(), addColumnModule(), applyModule()).
  *
+ * \if libapi
  * There are also protected functions for use in derived classes:
  * setting the properties returned by isMultipoint() and columnCount()
  * through setMultipoint() and setColumnCount(), and notifying attached
  * modules of added data.
+ * \endif
  *
  * Notice that even for non-const objects, the interface does not provide
  * any means of altering the data. It is only possible to add modules,
@@ -65,10 +67,12 @@ class AnalysisDataModuleInterface;
  * pointing to an internal data structure without worrying about possible
  * modifications of the data.
  *
+ * \if libapi
  * It is up to subclasses to ensure that the protected functions are called
  * in a correct sequence (the functions will assert in most incorrect use
  * cases), and that the data provided through the public interface matches
  * that passed to the modules with the notify methods.
+ * \endif
  *
  * Currently, it is not possible to continue using the data object if an
  * attached module throws an exception during data processing; it is only safe
@@ -100,8 +104,10 @@ class AbstractAnalysisData
          * doesn't support storing such data, but this should rarely be
          * necessary.
          *
+         * \if libapi
          * Derived classes can change the type by calling setMultipoint().
          * If this is not done, the function always returns false.
+         * \endif
          */
         bool isMultipoint() const { return _bMultiPoint; }
         /*! \brief
@@ -109,9 +115,11 @@ class AbstractAnalysisData
          *
          * \returns The number of columns in the data.
          *
+         * If the number of columns is yet known, returns 0.
+         * \if libapi
          * Derived classes should set the number of columns with
          * setColumnCount().
-         * If the number of columns is not set, returns 0.
+         * \endif
          */
         int columnCount() const { return _ncol; }
         /*! \brief
@@ -139,9 +147,11 @@ class AbstractAnalysisData
          * \retval \c false if data for the requested frame is no longer
          *      available.
          *
+         * \if libapi
          * Derived classes can choose to return false if requestStorage() has
          * not been called at all, or if the frame is too old (compared to the
          * value given to requestStorage()).
+         * \endif
          *
          * \todo
          * For more flexibility, it would be better to return a data row/frame
@@ -223,6 +233,7 @@ class AbstractAnalysisData
         void applyModule(AnalysisDataModuleInterface *module);
 
     protected:
+        /*! \cond libapi */
         AbstractAnalysisData();
 
         /*! \brief
@@ -295,6 +306,7 @@ class AbstractAnalysisData
          * Should be called once, after all the other notification calls.
          */
         void notifyDataFinish() const;
+        //! \endcond
 
     private:
         class Impl;
@@ -312,6 +324,7 @@ class AbstractAnalysisData
 /*! \brief
  * Abstract class that implements storage of data.
  *
+ * \if libapi
  * This class implements a standard way of storing data, to avoid implementing
  * storage in each derived class separately. All the pure virtual methods of
  * AbstractData are implemented, and protected methods are provided to add data
@@ -325,6 +338,7 @@ class AbstractAnalysisData
  * Some changes could make it possible to obtain a pointer to the
  * storage, allowing the calculated values to be stored there directly
  * instead of a temporary array.
+ * \endif
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -341,6 +355,7 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         virtual bool requestStorage(int nframes = -1);
 
     protected:
+        /*! \cond libapi */
         AbstractAnalysisDataStored();
 
         /*! \copydoc AbstractAnalysisData::setMultipoint()
@@ -359,6 +374,7 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         //! Convenience function for storing a whole frame in a single call.
         void storeNextFrame(real x, real dx, const real *y, const real *dy,
                             const bool *present);
+        //! \endcond
 
     private:
         class Impl;
