@@ -97,6 +97,9 @@ ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
     return old_handler;
 }
 
+namespace internal
+{
+
 void fatalError(int retcode, const char *msg, const char *file, int line)
 {
     // TODO: Acquire a mutex here
@@ -107,5 +110,7 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
         handler(retcode, msg, file, line);
     }
 }
+
+} // namespace internal
 
 } // namespace gmx

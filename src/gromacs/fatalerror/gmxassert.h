@@ -79,10 +79,11 @@
 namespace gmx
 {
 
+/*! \cond internal */
 namespace internal
 {
 
-/*! \internal \brief
+/*! \brief
  * Called when an assert fails.
  *
  * Should not be called directly, but instead through ::GMX_ASSERT or
@@ -94,6 +95,7 @@ void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line);
 
 } // namespace internal
+//! \endcond
 
 } // namespace gmx
 

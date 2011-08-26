@@ -87,8 +87,8 @@ class AnalysisDataModuleInterface
          *
          * The purpose of this method is to remove the need for common checks
          * for data compatibility in the classes that implement the interface.
-         * Instead, AbstractData performs these checks based on the flags
-         * provided.
+         * Instead, AbstractAnalysisData performs these checks based on the
+         * flags provided.
          */
         virtual int flags() const = 0;
 

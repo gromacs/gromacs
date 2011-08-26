@@ -99,7 +99,7 @@ std::string getReferenceDataPath();
  * Initializes reference data handling.
  *
  * Sets the reference data mode based on command-line arguments.  By default,
- * ::eerefdataCompare is used, but \c --create-ref-data or \c --update-ref-data
+ * ::erefdataCompare is used, but \c --create-ref-data or \c --update-ref-data
  * can be used to change it.
  * Recognized command-line arguments are removed from the list.
  *
