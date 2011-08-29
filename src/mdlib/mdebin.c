@@ -84,12 +84,6 @@ static const char *boxvel_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static gmx_bool bTricl,bDynBox;
-static int  f_nre=0,epc,etc,nCrmsd;
-
-
-
-
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
@@ -263,13 +257,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     md->epc = ir->epc;
-    for (i=0;i<DIM;i++) 
-    {
-        for (j=0;j<DIM;j++) 
-        {
-            md->ref_p[i][j] = ir->ref_p[i][j];
-        }
-    }
+    md->bDiagPres = !TRICLINIC(ir->ref_p);
+    md->ref_p = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
@@ -296,8 +285,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                                    unit_length);
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
-        md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
-        md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
+        if (md->bDiagPres)
+        {
+            md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
+            md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
+        }
     }
     if (md->bConstrVir)
     {
@@ -701,30 +693,20 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
 
-        /* This is pV (in kJ/mol).  The pressure is the reference pressure,
-           not the instantaneous pressure */  
-        pv = 0;
-        for (i=0;i<DIM;i++) 
-        {
-            for (j=0;j<DIM;j++) 
-            {
-                if (i>j) 
-                {
-                    pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
-                } 
-                else 
-                {
-                    pv += box[j][i]*md->ref_p[j][i]/PRESFAC;
-                }
-            }
-        }
-
         add_ebin(md->ebin,md->ib   ,nboxs,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
-        add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
-        enthalpy = pv + enerd->term[F_ETOT];
-        add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
+
+        if (md->bDiagPres)
+        {
+            /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+               not the instantaneous pressure */  
+            pv = vol*md->ref_p/PRESFAC;
+
+            add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
+            enthalpy = pv + enerd->term[F_ETOT];
+            add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
+        }
     }
     if (md->bConstrVir)
     {
