@@ -719,16 +719,20 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         wallcycle_start(wcycle,ewcNS);
         if (!fr->bDomDec)
         {
+            wallcycle_sub_start(wcycle,ewcsNBS_GRID_LOCAL);
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
                                      0,vzero,box_diag,
                                      0,mdatoms->homenr,fr->cginfo,x,
                                      0,NULL,
                                      fr->nbat);
+            wallcycle_sub_stop(wcycle,ewcsNBS_GRID_LOCAL);
         }
         else
         {
+            wallcycle_sub_start(wcycle,ewcsNBS_GRID_NONLOCAL);
             gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
                                               fr->cginfo,x,fr->nbat);
+            wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
         gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
@@ -752,12 +756,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     /* do local neighbor search */
     if (bNS)
     {
+        wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_LOCAL);
         gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                  &top->excls,
                                  fr->rvdw,fr->rlist,
                                  700,
                                  FALSE,fr->nnbl,fr->nbl,
                                  bUseGPU || fr->emulateGPU);
+        wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
 #ifdef GMX_GPU
         if (bUseGPU)
         {
@@ -789,12 +795,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         {
             wallcycle_start_nocount(wcycle,ewcNS);
             
+            wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_NONLOCAL);
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
                                      fr->rvdw,fr->rlist,
                                      700,
                                      TRUE,fr->nnbl_nl,fr->nbl_nl,
                                      bUseGPU || fr->emulateGPU);
+            wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 #ifdef GMX_GPU
             if (bUseGPU)
             {

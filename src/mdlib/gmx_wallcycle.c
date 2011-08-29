@@ -55,9 +55,6 @@
 #include "cuda_data_mgmt.h"
 #endif
 
-/* Uncomment the next line to get extra cycle counters of sub parts */
-/* #define GMX_CYCLE_SUB */
-
 typedef struct
 {
     int          n;
@@ -92,7 +89,9 @@ static const char *wcn[ewcNR] =
 { "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Launch GPU calc." , "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Wait for GPU calc.", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
 
 static const char *wcsn[ewcsNR] =
-{ "DD redist.", "DD grid+sort", "DD setup comm.", "DD make top" };
+{ "DD redist.", "DD NS grid + sort", "DD setup comm.", "DD make top",
+  "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc."
+};
 
 gmx_bool wallcycle_have_counter(void)
 {
@@ -703,23 +702,23 @@ extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_
     wc->reset_counters = reset_counters;
 }
 
+#ifdef GMX_CYCLE_SUB
+
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
 {
-#ifdef GMX_CYCLE_SUB
     if (wc != NULL)
     {
         wc->wcsc[ewcs].start = gmx_cycles_read();
     }
-#endif
 }
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 {
-#ifdef GMX_CYCLE_SUB
     if (wc != NULL)
     {
         wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
         wc->wcsc[ewcs].n++;
     }
-#endif
 }
+
+#endif /* GMX_CYCLE_SUB */

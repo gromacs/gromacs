@@ -45,7 +45,10 @@ extern "C" {
 
   enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcSEND_X_GPU, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcRECV_F_GPU, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcTEST, ewcNR };
 
-enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM, ewcsDD_MAKETOP, ewcsNR };
+enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM, ewcsDD_MAKETOP,
+       ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
+       ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+       ewcsNR };
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
@@ -81,11 +84,22 @@ gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
 /* Set reset_counters */
 
+/* Uncomment the next line to get extra cycle counters of sub parts */
+/* #define GMX_CYCLE_SUB */
+
+#ifdef GMX_CYCLE_SUB
+
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 /* Set the start sub cycle count for ewcs */
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
+
+#else
+/* Define the counter call to nothing to avoid any effect on performance */
+#define wallcycle_sub_start(wc, ewcs)
+#define wallcycle_sub_stop(wc, ewcs)
+#endif
 
 #ifdef __cplusplus
 }
