@@ -151,6 +151,7 @@ enum { enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr };
 
 typedef struct {
     rvec c0;    /* The lower corner of the (local) grid         */
+    rvec c1;    /* The upper corner of the (local) grid         */
     real atom_density;
 
     int  ncx;
@@ -512,6 +513,7 @@ static int set_grid_size_xy(const gmx_nbsearch_t nbs,
     }
 
     copy_rvec(corner0,grid->c0);
+    copy_rvec(corner1,grid->c1);
     grid->sx = size[XX]/grid->ncx;
     grid->sy = size[YY]/grid->ncy;
     grid->inv_sx = 1/grid->sx;
@@ -552,6 +554,14 @@ static void sort_atoms(int dim,gmx_bool Backwards,
          * times the box height out of the box.
          */
         zi = (int)((x[a[i]][dim] - h0)*invh);
+
+#ifdef DEBUG_NSBOX_GRIDDING
+        if (zi < 0 || zi >= nsort)
+        {
+            gmx_fatal(FARGS,"(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d\n",
+                      a[i],'x'+dim,x[a[i]][dim],h0,invh,zi,nsort);
+        }
+#endif
 
         /* Ideally this particle should go in sort cell zi,
          * but that might already be in use,
@@ -1348,7 +1358,7 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
                 nbs->cell[i] = cx*grid->ncy + cy;
 
 #ifdef DEBUG_NSBOX_GRIDDING
-                if (nbs->cell[i] >= grid->ncx*grid->ncy)
+                if (nbs->cell[i] < 0 || nbs->cell[i] >= grid->ncx*grid->ncy)
                 {
                     gmx_fatal(FARGS,
                               "grid cell cx %d cy %d out of range (max %d %d)",
@@ -3473,10 +3483,11 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     const real *bbcz_i,*bbcz_j;
     real bx0,bx1,by0,by1,bz0,bz1;
     real bz1_frac;
-    real d2z,d2zx,d2zxy,d2xy;
+    real d2cx,d2z,d2z_cx,d2z_cy,d2zx,d2zxy,d2xy;
     int  cxf,cxl,cyf,cyf_x,cyl;
     int  cx,cy;
     int  c0,c1,cs,cf,cl;
+    int  ncpc;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
@@ -3512,16 +3523,9 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     /* Set the shift range */
     for(d=0; d<DIM; d++)
     {
-        /* We need to add these domain shift limits for DD
-        sh0[d] = -1;
-        sh1[d] = 1;
-        */
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        /*
-        if (d >= ePBC2npbcdim(fr->ePBC) || (bDomDec && dd->nc[d] > 1))
-        */
         if (d >= ePBC2npbcdim(nbs->ePBC) || nbs->dd_dim[d])
         {
             shp[d] = 0;
@@ -3570,12 +3574,26 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                 gridi->nc,gridi->nc/(double)(gridi->ncx*gridi->ncy),ci_block);
     }
 
+    ncpc = 0;
+
     ci_b = -1;
     ci   = th*ci_block - 1;
     ci_x = 0;
     ci_y = 0;
     while (next_ci(gridi,nth,ci_block,&ci_x,&ci_y,&ci_b,&ci))
     {
+        d2cx = 0;
+        if (gridj != gridi && shp[XX] == 0 &&
+            gridi->c0[XX] + (ci_x+1)*gridi->sx < gridj->c0[XX])
+        {
+            d2cx = sqr(gridj->c0[XX] - (gridi->c0[XX] + (ci_x+1)*gridi->sx));
+            
+            if (d2cx >= rl2)
+            {
+                continue;
+            }
+        }
+
         ci_xy = ci_x*gridi->ncy + ci_y;
 
         /* Loop over shift vectors in three dimensions */
@@ -3599,7 +3617,9 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                 d2z = sqr(bz0 - box[ZZ][ZZ]);
             }
 
-            if (d2z >= rl2)
+            d2z_cx = d2z + d2cx;
+
+            if (d2z_cx >= rl2)
             {
                 continue;
             }
@@ -3621,8 +3641,23 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
                 get_cell_range(by0,by1,
                                gridj->ncy,gridj->c0[YY],gridj->sy,gridj->inv_sy,
-                               d2z,rl2,
+                               d2z_cx,rl2,
                                &cyf,&cyl);
+
+                if (cyf > cyl)
+                {
+                    continue;
+                }
+
+                d2z_cy = d2z;
+                if (by1 < gridj->c0[YY])
+                {
+                    d2z_cy += sqr(gridj->c0[YY] - by1);
+                }
+                else if (by0 > gridj->c1[YY])
+                {
+                    d2z_cy += sqr(by0 - gridj->c1[YY]);
+                }
 
                 for (tx=-shp[XX]; tx<=shp[XX]; tx++)
                 {
@@ -3642,8 +3677,13 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
                     get_cell_range(bx0,bx1,
                                    gridj->ncx,gridj->c0[XX],gridj->sx,gridj->inv_sx,
-                                   d2z,rl2,
+                                   d2z_cy,rl2,
                                    &cxf,&cxl); 
+
+                    if (cxf > cxl)
+                    {
+                        continue;
+                    }
 
                     new_ci_entry(nbl,gridi->cell0+ci,shift,gridi->flags[ci],
                                  nbl->work);
@@ -3822,6 +3862,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                                               rl2,rbb2);
                                         }
                                     }
+                                    ncpc += cl - cf + 1;
                                 }
                             }
                         }  
@@ -3848,9 +3889,11 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     }
 
     nbs_cycle_stop(&work->cc[enbsCCsearch]);
-    
+
     if (debug)
     {
+        fprintf(debug,"ncpc %s %d\n",gridi==gridj ? "local" : "non-local",ncpc);
+
         if (nbl->simple)
         {
             print_nblist_statistics_simple(debug,nbl,nbs,rlist);
