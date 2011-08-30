@@ -375,10 +375,12 @@ static int set_grid_size_xy(gmx_nbsearch_t nbs,int n,matrix box)
         }
     }
 
-    /* Worst case scenario of 1 atom in east last cell */
+    /* Worst case scenario of 1 atom in each last cell */
     nc_max = n/nbs->napc + nbs->ncx*nbs->ncy;
     if (nc_max > nbs->nc_nalloc)
     {
+        int bb_nalloc;
+
         nbs->nc_nalloc = over_alloc_large(nc_max);
         srenew(nbs->a,nbs->nc_nalloc*nbs->napc);
         srenew(nbs->nsubc,nbs->nc_nalloc);
@@ -388,10 +390,15 @@ static int set_grid_size_xy(gmx_nbsearch_t nbs,int n,matrix box)
         {
             gmx_incons("NSUBCELL is not a multiple of SIMD_WITH");
         }
-        srenew(nbs->bb,nbs->nc_nalloc*NSUBCELL/SIMD_WIDTH*NNBSBB_XXXX);
+        bb_nalloc = nbs->nc_nalloc*NSUBCELL/SIMD_WIDTH*NNBSBB_XXXX;
 #else  
-        srenew(nbs->bb,nbs->nc_nalloc*NSUBCELL*NNBSBB_B);
+        bb_nalloc = nbs->nc_nalloc*NSUBCELL*NNBSBB_B;
 #endif
+        sfree_aligned(nbs->bb);
+        /* This snew also zeros the contents, this avoid possible
+         * floating exceptions in SSE with the unused bb elements.
+         */
+        snew_aligned(nbs->bb,bb_nalloc,16);
     }
 
     nbs->sx = box[XX][XX]/nbs->ncx;
