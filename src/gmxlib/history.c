@@ -1,8 +1,36 @@
 /*
- * history.c
  *
- *  Created on: Nov 27, 2009
- *      Author: rschulz
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ *                        VERSION 4.6.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ *
+ * And Hey:
+ * GROningen Mixture of Alchemy and Childrens' Stories
  */
 
 #ifdef HAVE_CONFIG_H
@@ -57,15 +85,21 @@ char* histbuf[MAX_LINES];
 int nhistbuf=0;
 FILE* histfile;
 
-void histopenfile(FILE* file, const char* fn, const char* mode) {
+
+/* open a regular file and record this event into the history */
+int history_fopen(FILE* file, const char* fn, const char* mode) {
     _files[_nfile].file = file;
     _files[_nfile].fn = strdup(fn);
     _files[_nfile].mode = strdup(mode);
     _nfile++;
+    return 0;
 }
 
-char *
-make_message(const char *fmt, ...)
+
+/* like vsnprintf but allocates memory automatically. Returned string has to be freed by caller.
+ * Taken from vsnprintf man-page
+ */
+static char* make_message(const char *fmt, ...)
 {
     /* Guess we need no more than 100 bytes. */
     int n, size = 100;
@@ -98,7 +132,8 @@ make_message(const char *fmt, ...)
 }
 
 
-void histaddinput(char* str)
+/* add all data read from stdin to history buffer */
+int history_addinput(char* str)
 {
     char* npos = strchr(str,'\n');
     while(npos && strlen(str)>0)
@@ -114,9 +149,11 @@ void histaddinput(char* str)
     {
         histbuf[nhistbuf++]=make_message("INP: %s\n",str);   
     }
+    return 0;
 }
 
-static FILE* print_file(int i) 
+/* write file information to history buffer */
+static FILE* history_addfile(int i)
 {
     const char* fnm = _files[i].fn;
     const char* mode = _files[i].mode;
@@ -218,7 +255,8 @@ static FILE* print_file(int i)
     return file;
 }
 
-int  histclosefile(FILE** file) {
+/* close a regular file and record history information */
+int  history_fclose(FILE** file) {
     int i;
     if (file)
     {
@@ -226,7 +264,7 @@ int  histclosefile(FILE** file) {
         {
             if (*file==_files[i].file)
             {
-                *file = print_file(i);
+                *file = history_addfile(i);
                 _files[i].file=NULL;
             }
         }
@@ -234,7 +272,7 @@ int  histclosefile(FILE** file) {
     return 0;
 }
 
-/* return: has to be freed */
+/* Get's current logged in user. Return has to be freed */
 char* getuser() {
     const char* name = NULL;
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
@@ -265,7 +303,9 @@ char* getuser() {
     }
 }    
 
-void init_history(int argc, char** argv) {
+
+/* initialize history function and record command arguments */
+int history_init(int argc, char** argv) {
     int i;
 
     _argc=argc;
@@ -274,11 +314,11 @@ void init_history(int argc, char** argv) {
     {
         _argv[i]=strdup(argv[i]);
     }
-    
+    return 0;
 }
 
-
-void print_history() {
+/* write all history information to file */
+int history_write() {
     int i,j,ret;
     char* lfn;
     const char* histfnm;
@@ -290,7 +330,7 @@ void print_history() {
     for (i=0;i<_nfile;i++) {
         if (_files[i].file!=NULL) {
             fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
-            print_file(i);
+            history_addfile(i);
             /*if (_files[i].file!=NULL) //don't close because it might already be
                                        //closed without calling histclosefile   
             {   
@@ -308,7 +348,7 @@ void print_history() {
     }
     if (strcmp(histfnm,"")==0)  /*don't write history*/
     {
-        return;
+        return 0;
     }
     histfile = fopen(histfnm,"a");  
     if (histfile==NULL)
@@ -360,4 +400,5 @@ void print_history() {
     {
         gmx_fatal(FARGS,"Failed to close file: %s.",histfnm);
     }
+    return 0;
 }

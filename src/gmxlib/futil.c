@@ -157,7 +157,7 @@ int ffclose(FILE *fp)
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            histclosefile(&fp);
+            history_fclose(&fp);
         ret = fclose(fp);
     }
     else if (ps->fp == fp) {
@@ -179,7 +179,7 @@ int ffclose(FILE *fp)
         }
         else {
             if (fp != NULL)
-                histclosefile(&fp);
+                history_fclose(&fp);
             ret = fclose(fp);
         }
     }
@@ -495,7 +495,7 @@ FILE *ffopen(const char *file,const char *mode)
                 gmx_file(file);
         }
     }
-    histopenfile(ff,file,mode);
+    history_fopen(ff,file,mode);
     return ff;
 #endif
 }
@@ -1014,7 +1014,7 @@ char *gmx_fgets(char *s, int size, FILE *stream)
     ret = fgets(s,size,stream);
     if (stream==stdin)
     {
-        histaddinput(s);
+        history_addinput(s);
     }
     return ret;
 }
@@ -1046,7 +1046,7 @@ int gmx_fgetc(FILE *stream)
     {
         buf[0]=ret;
         buf[1]=0;
-        histaddinput(buf);
+        history_addinput(buf);
     }
     return ret;
 }

@@ -281,7 +281,7 @@ void thanx(FILE *fp)
   else
     fprintf(fp,"\n%s\n\n",cq);
   
-  print_history();
+  history_write();
 }
 
 typedef struct {
