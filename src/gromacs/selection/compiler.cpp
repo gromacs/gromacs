@@ -273,6 +273,7 @@
 #include <string2.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
@@ -1002,11 +1003,10 @@ reorder_gmx_boolean_static_children(t_selelem *sel)
  * Currently, this function only converts integer constants to reals
  * within arithmetic expressions.
  */
-static gmx_bool
+static void
 optimize_arithmetic_expressions(t_selelem *sel)
 {
     t_selelem  *child;
-    gmx_bool        bOk;
 
     /* Do recursively for children. */
     if (sel->type != SEL_SUBEXPRREF)
@@ -1014,18 +1014,14 @@ optimize_arithmetic_expressions(t_selelem *sel)
         child = sel->child;
         while (child)
         {
-            bOk = optimize_arithmetic_expressions(child);
-            if (!bOk)
-            {
-                return bOk;
-            }
+            optimize_arithmetic_expressions(child);
             child = child->next;
         }
     }
 
     if (sel->type != SEL_ARITHMETIC)
     {
-        return TRUE;
+        return;
     }
 
     /* Convert integer constants to reals. */
@@ -1038,8 +1034,7 @@ optimize_arithmetic_expressions(t_selelem *sel)
 
             if (child->type != SEL_CONST)
             {
-                gmx_impl("Non-constant integer expressions not implemented in arithmetic evaluation");
-                return FALSE;
+                GMX_THROW(gmx::InconsistentInputError("Non-constant integer expressions not implemented in arithmetic evaluation"));
             }
             snew(r, 1);
             r[0] = child->v.u.i[0];
@@ -1049,12 +1044,10 @@ optimize_arithmetic_expressions(t_selelem *sel)
         }
         else if (child->v.type != REAL_VALUE)
         {
-            gmx_bug("Internal error");
-            return FALSE;
+            GMX_THROW(gmx::InternalError("Non-numerical value in arithmetic expression"));
         }
         child = child->next;
     }
-    return TRUE;
 }
 
 
@@ -1066,12 +1059,11 @@ optimize_arithmetic_expressions(t_selelem *sel)
  * Sets the evaluation functions for the selection (sub)tree.
  *
  * \param[in,out] sel Root of the selection subtree to process.
- * \returns       TRUE on success, FALSE if any subexpression fails.
  *
  * This function sets the evaluation function (\c t_selelem::evaluate)
  * for the selection elements.
  */
-static gmx_bool
+static void
 init_item_evalfunc(t_selelem *sel)
 {
     /* Process children. */
@@ -1082,10 +1074,7 @@ init_item_evalfunc(t_selelem *sel)
         child = sel->child;
         while (child)
         {
-            if (!init_item_evalfunc(child))
-            {
-                return FALSE;
-            }
+            init_item_evalfunc(child);
             child = child->next;
         }
     }
@@ -1127,8 +1116,7 @@ init_item_evalfunc(t_selelem *sel)
                 case BOOL_AND: sel->evaluate = &_gmx_sel_evaluate_and; break;
                 case BOOL_OR:  sel->evaluate = &_gmx_sel_evaluate_or;  break;
                 case BOOL_XOR:
-                    gmx_impl("xor expressions not implemented");
-                    return FALSE;
+                    GMX_THROW(gmx::NotImplementedError("xor expressions not implemented"));
             }
             break;
 
@@ -1150,11 +1138,8 @@ init_item_evalfunc(t_selelem *sel)
             break;
 
         case SEL_GROUPREF:
-            gmx_incons("unresolved group reference in compilation");
-            return FALSE;
+            GMX_THROW(gmx::InconsistentInputError("Unresolved group reference in compilation"));
     }
-
-    return TRUE;
 }
 
 /*! \brief
@@ -2513,7 +2498,6 @@ postprocess_item_subexpressions(t_selelem *sel)
  * \param[in,out] pcc   Position calculation collection to use.
  * \param[in] type   Default position calculation type.
  * \param[in] flags  Flags for default position calculation.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Searches recursively through the selection tree for dynamic
  * \ref SEL_EXPRESSION elements that define the \c gmx_ana_selmethod_t::pupdate
@@ -2524,12 +2508,11 @@ postprocess_item_subexpressions(t_selelem *sel)
  * No calculation is initialized if \p type equals \ref POS_ATOM and
  * the method also defines the \c gmx_ana_selmethod_t::update method.
  */
-static int
+static void
 init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
                e_poscalc_t type, int flags)
 {
     t_selelem *child;
-    int        rc;
 
     /* Initialize COM calculation for dynamic selections now that we know the maximal evaluation group */
     if (sel->type == SEL_EXPRESSION && sel->u.expr.method
@@ -2538,8 +2521,7 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
         if (!sel->u.expr.method->update || type != POS_ATOM)
         {
             /* Create a default calculation if one does not yet exist */
-            int cflags;
-            cflags = 0;
+            int cflags = 0;
             if (!(sel->cdata->flags & SEL_CDATA_STATICEVAL))
             {
                 cflags |= POS_DYNAMIC;
@@ -2547,11 +2529,7 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
             if (!sel->u.expr.pc)
             {
                 cflags |= flags;
-                rc = gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
-                if (rc != 0)
-                {
-                    return rc;
-                }
+                gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
             }
             else
             {
@@ -2569,15 +2547,10 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
         child = sel->child;
         while (child)
         {
-            rc = init_item_comg(child, pcc, type, flags);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            init_item_comg(child, pcc, type, flags);
             child = child->next;
         }
     }
-    return 0;
 }
 
 
@@ -2703,6 +2676,8 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     bool         bDebug = (coll->_impl->_debugLevel >= 2
                            && coll->_impl->_debugLevel != 3);
 
+    /* FIXME: Clean up the collection on exceptions */
+
     rc = _gmx_sel_mempool_create(&sc->mempool);
     if (rc != 0)
     {
@@ -2743,17 +2718,9 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
         /* Process gmx_boolean and arithmetic expressions. */
         optimize_gmx_boolean_expressions(item);
         reorder_gmx_boolean_static_children(item);
-        if (!optimize_arithmetic_expressions(item))
-        {
-            /* FIXME: Clean up the collection */
-            return -1;
-        }
-        /* Initialize evaluation function. */
-        if (!init_item_evalfunc(item))
-        {
-            /* FIXME: Clean up the collection */
-            return -1;
-        }
+        optimize_arithmetic_expressions(item);
+        /* Initialize evaluation */
+        init_item_evalfunc(item);
         setup_memory_pooling(item, sc->mempool);
         /* Initialize the compiler data */
         init_item_compilerdata(item);
@@ -2865,24 +2832,13 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    rc = gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
-    if (rc != 0)
-    {
-        gmx_bug("invalid default reference position type");
-        /* FIXME: Clean up the collection */
-        return rc;
-    }
+    gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
     item = sc->root;
     while (item)
     {
         init_root_item(item, &sc->gall);
         postprocess_item_subexpressions(item);
-        rc = init_item_comg(item, sc->pcc, post, flags);
-        if (rc != 0)
-        {
-            /* FIXME: Clean up the collection */
-            return rc;
-        }
+        init_item_comg(item, sc->pcc, post, flags);
         free_item_compilerdata(item);
         item = item->next;
     }

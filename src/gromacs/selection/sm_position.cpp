@@ -270,11 +270,10 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         d->flags |= POS_DYNAMIC;
     }
-    rc = gmx_ana_poscalc_create_enum(&d->pc, d->pcc, d->type, d->flags);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    // FIXME: This may throw, but only on internal errors.
+    // Will be taken automatically care of when selection compilation fully
+    // uses exceptions.
+    gmx_ana_poscalc_create_enum(&d->pc, d->pcc, d->type, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
     return 0;
 }
@@ -293,12 +292,8 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     int               rc;
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                           d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
     return 0;
 }
@@ -318,12 +313,8 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                           d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
     return 0;
 }
