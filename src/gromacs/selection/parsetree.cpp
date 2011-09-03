@@ -221,6 +221,7 @@
 #include <string2.h>
 
 #include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
@@ -577,26 +578,38 @@ static int
 set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
                 yyscan_t scanner)
 {
-    int  rc;
-
     if (!rpost)
     {
         return 0;
     }
 
-    rc = 0;
     if (sel->u.expr.method->pupdate)
     {
-        /* By default, use whole residues/molecules. */
-        rc = gmx_ana_poscalc_create_enum(&sel->u.expr.pc, pcc, rpost,
-                                         POS_COMPLWHOLE);
+        /* Need to translate exceptions to error codes because the parser still
+         * uses return codes for error handling. */
+        try
+        {
+            /* By default, use whole residues/molecules. */
+            gmx_ana_poscalc_create_enum(&sel->u.expr.pc, pcc, rpost,
+                                        POS_COMPLWHOLE);
+        }
+        catch (gmx::GromacsException &ex)
+        {
+            _gmx_selparser_error(scanner, ex.what());
+            return ex.errorCode();
+        }
+        catch (...)
+        {
+            _gmx_selparser_error(scanner, "Unknown error!");
+            return gmx::eeUnknownError;
+        }
     }
     else
     {
         _gmx_selparser_error(scanner, "modifier '%s' is not applicable for '%s'",
                              rpost, sel->u.expr.method->name);
     }
-    return rc;
+    return 0;
 }
 
 /*!

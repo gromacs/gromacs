@@ -48,10 +48,6 @@
 
 #include "../legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \name Flags for position calculation.
  * \anchor poscalc_flags
  */
@@ -131,7 +127,7 @@ struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 
 /** Converts a string to parameters for gmx_ana_poscalc_create(). */
-int
+void
 gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags);
 /** Creates a list of strings for position enum parameter handling. */
 const char **
@@ -151,11 +147,11 @@ void
 gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc);
 
 /** Creates a new position calculation. */
-int
+void
 gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                        e_poscalc_t type, int flags);
 /** Creates a new position calculation based on an enum value. */
-int
+void
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                             const char *post, int flags);
 /** Sets the flags for position calculation. */
@@ -185,9 +181,5 @@ void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        struct gmx_ana_pos_t *p, struct gmx_ana_index_t *g,
                        t_trxframe *fr, t_pbc *pbc);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

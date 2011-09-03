@@ -301,6 +301,10 @@ void
 SelectionCollection::setReferencePosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
+    //! Check that the type is valid.
+    e_poscalc_t  dummytype;
+    int          dummyflags;
+    gmx_ana_poscalc_type_from_enum(type, &dummytype, &dummyflags);
     _impl->_rpost = type;
 }
 
@@ -309,6 +313,10 @@ void
 SelectionCollection::setOutputPosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
+    //! Check that the type is valid.
+    e_poscalc_t  dummytype;
+    int          dummyflags;
+    gmx_ana_poscalc_type_from_enum(type, &dummytype, &dummyflags);
     _impl->_spost = type;
 }
 
@@ -369,13 +377,13 @@ SelectionCollection::requiresTopology() const
     t_selelem   *sel;
     e_poscalc_t  type;
     int          flags;
-    int          rc;
 
     if (!_impl->_rpost.empty())
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
-        if (rc == 0 && type != POS_ATOM)
+        // Should not throw, because has been checked earlier.
+        gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
+        if (type != POS_ATOM)
         {
             return TRUE;
         }
@@ -383,8 +391,9 @@ SelectionCollection::requiresTopology() const
     if (!_impl->_spost.empty())
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
-        if (rc == 0 && type != POS_ATOM)
+        // Should not throw, because has been checked earlier.
+        gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
+        if (type != POS_ATOM)
         {
             return TRUE;
         }

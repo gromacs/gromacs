@@ -117,6 +117,7 @@
 #include <pbc.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
@@ -260,13 +261,13 @@ index_type_for_poscalc(e_poscalc_t type)
  *   \ref POS_COMPLWHOLE have been set according to \p post
  *   (the completion flags are left at the default values if no completion
  *   prefix is given).
- * \returns       0 if \p post is one of the valid strings, EINVAL otherwise.
+ * \throws  InternalError  if post is not recognized.
  *
  * \attention
  * Checking is not complete, and other values than those listed above
  * may be accepted for \p post, but the results are undefined.
  */
-int
+void
 gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
 {
     const char *ptr;
@@ -275,7 +276,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     {
         *type   = POS_ATOM;
         *flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
-        return 0;
+        return;
     }
 
     /* Process the prefix */
@@ -308,8 +309,11 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     }
     else
     {
-        gmx_incons("unknown position calculation type");
-        return EINVAL;
+        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
+    }
+    if (strlen(ptr) < 7)
+    {
+        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
     }
     if (ptr[6] == 'm')
     {
@@ -321,10 +325,8 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     }
     else
     {
-        gmx_incons("unknown position calculation type");
-        return EINVAL;
+        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
     }
-    return 0;
 }
 
 /*!
@@ -764,14 +766,9 @@ create_simple_base(gmx_ana_poscalc_t *pc)
 {
     gmx_ana_poscalc_t *base;
     int                flags;
-    int                rc;
 
     flags = pc->flags & ~(POS_DYNAMIC | POS_MASKONLY);
-    rc = gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
-    if (rc != 0)
-    {
-        gmx_fatal(FARGS, "position calculation base creation failed");
-    }
+    gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
     set_poscalc_maxindex(base, &pc->gmax, TRUE);
 
     snew(base->p, 1);
@@ -988,9 +985,8 @@ setup_base(gmx_ana_poscalc_t *pc)
  * \param[in]  type  Type of calculation.
  * \param[in]  flags Flags for setting calculation options
  *   (see \ref poscalc_flags "documentation of the flags").
- * \returns    0 on success.
  */
-int
+void
 gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                        e_poscalc_t type, int flags)
 {
@@ -1004,7 +1000,6 @@ gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
     pc->coll     = pcc;
     insert_poscalc(pc, NULL);
     *pcp = pc;
-    return 0;
 }
 
 /*!
@@ -1022,7 +1017,7 @@ gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
  *
  * \see gmx_ana_poscalc_create(), gmx_ana_poscalc_type_from_enum()
  */
-int
+void
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                             const char *post, int flags)
 {
@@ -1031,13 +1026,9 @@ gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc
     int          rc;
 
     cflags = flags;
-    rc = gmx_ana_poscalc_type_from_enum(post, &type, &cflags);
-    if (rc != 0)
-    {
-        *pcp = NULL;
-        return rc;
-    }
-    return gmx_ana_poscalc_create(pcp, pcc, type, cflags);
+    *pcp = NULL;
+    gmx_ana_poscalc_type_from_enum(post, &type, &cflags);
+    gmx_ana_poscalc_create(pcp, pcc, type, cflags);
 }
 
 /*!
