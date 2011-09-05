@@ -73,9 +73,10 @@ typedef struct {
   gmx_bool   bDynBox;
   gmx_bool   bNHC_trotter;
   gmx_bool   bMTTK;
+  gmx_bool   bDiagPres;
   int    f_nre;
   int    epc;
-  tensor ref_p;
+  real   ref_p;
   int	 etc;
   int    nCrmsd;
   gmx_bool   bEner[F_NRE];
