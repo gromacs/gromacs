@@ -1385,41 +1385,6 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
     }
 }
 
-static void set_nsbox_cutoffs(FILE *fp,t_forcerec *fr,real nblist_lifetime)
-{
-    char   *env;
-    double rbuf;
-
-    fr->rcut_nsbox  = fr->rcoulomb;
-    fr->rlist_nsbox = fr->rlist;
-    env = getenv("GMX_NSBOX_BUF");
-    if (env != NULL)
-    {
-        double dbl;
-        sscanf(env,"%lf",&rbuf);
-
-        fr->rlist_nsbox = fr->rcut_nsbox + rbuf;
-    }
-
-    if (fr->rcoulomb > fr->rlist || fr->rvdw > fr->rlist)
-    {
-        gmx_fatal(FARGS,"nsbox does not support twin-range forces");
-    }
-    if (fr->rcoulomb != fr->rvdw)
-    {
-        gmx_fatal(FARGS,"nsbox does not support rcoulomb != rvdw");
-    }
-    fr->rcut_nsbox  = fr->rcoulomb;
-    rbuf = fr->rlist_nsbox - fr->rcut_nsbox;
-
-    if (fp != NULL)
-    {
-        fprintf(fp,
-                "nsbox neighbor list life time %g ps, buffer size: %.3f nm\n",
-                nblist_lifetime,rbuf);
-    }
-}
-
 void init_forcerec(FILE *fp,
                    const output_env_t oenv,
                    t_forcerec *fr,
@@ -1942,7 +1907,10 @@ void init_forcerec(FILE *fp,
         /* nsbox neighbor searching and GPU stuff */
         gmx_check_use_gpu(fp, fr, &napc, cr->nodeid);
 
-        set_nsbox_cutoffs(fp,fr,EI_DYNAMICS(ir->eI) ? ir->delta_t*(ir->nstlist-1) : 0.0);
+        if (ir->rcoulomb != ir->rvdw)
+        {
+            gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
+        }
 
         gmx_nbsearch_init(&fr->nbs,napc);
 

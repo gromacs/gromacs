@@ -20,6 +20,7 @@ libgmxpreprocess@LIBSUFFIX@_la_LDFLAGS = -no-undefined -version-info @SHARED_VER
 
 libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
+calc_nsbuf.c	calc_nsbuf.h	\
 compute_io.c	compute_io.h	\
 convparm.c 	convparm.h	\
 fflibutil.c	fflibutil.h	\

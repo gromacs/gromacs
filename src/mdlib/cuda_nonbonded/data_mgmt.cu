@@ -131,8 +131,8 @@ void init_nb_params(cu_nb_params_t *nbp, const t_forcerec *fr)
     nbp->eps_r       = fr->epsilon_r;
     nbp->two_k_rf    = 2.0 * fr->k_rf;
     nbp->c_rf        = fr->c_rf;
-    nbp->cutoff_sq   = fr->rcut_nsbox * fr->rcut_nsbox;
-    nbp->rlist_sq    = fr->rlist_nsbox * fr->rlist_nsbox;
+    nbp->cutoff_sq   = fr->rvdw * fr->rvdw;
+    nbp->rlist_sq    = fr->rlist * fr->rlist;
     nbp->lj_shift    = (getenv("GMX_LJ_SHIFT") == NULL) ?
              0.0 : -1/(nbp->cutoff_sq * nbp->cutoff_sq * nbp->cutoff_sq);
 

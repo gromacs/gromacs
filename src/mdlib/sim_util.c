@@ -641,7 +641,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
             gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
                                      &top->excls,
-                                     fr->rcut_nsbox,fr->rlist_nsbox,
+                                     fr->rvdw,fr->rlist,
                                      700,
                                      fr->nnbl,fr->nbl,TRUE);
 

@@ -246,8 +246,6 @@ typedef struct {
   t_nblists *nblists;
 
   /* The bounding box type neighbor searching data */
-  real rcut_nsbox;
-  real rlist_nsbox;
   gmx_nbsearch_t nbs;
   int            nnbl;
   gmx_nblist_t   **nbl;

@@ -1,6 +1,7 @@
 
 set(GMXPREPROCESS_SOURCES 
     add_par.c       
+    calc_nsbuf.c
     compute_io.c    
     convparm.c      
     gen_ad.c        

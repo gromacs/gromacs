@@ -80,6 +80,7 @@
 #include "gpp_tomorse.h"
 #include "mtop_util.h"
 #include "genborn.h"
+#include "calc_nsbuf.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -1146,6 +1147,62 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
   
 }
 
+static void set_verlet_buffer(const gmx_mtop_t *mtop,
+                              t_inputrec *ir,
+                              matrix box,
+                              real nsbuf_drift,
+                              warninp_t wi)
+{
+    real ref_T;
+    int i;
+    int n_nonlin_vsite;
+    char warn_buf[STRLEN];
+
+    ref_T = 0;
+    for(i=0; i<ir->opts.ngtc; i++)
+    {
+        if (ir->opts.ref_t[i] < 0)
+        {
+            warning(wi,"There are groups which are not temperature coupled, can not take those into account in the energy drift calculation for the ns buffer size");
+        }
+        else
+        {
+            ref_T = max(ref_T,ir->opts.ref_t[i]);
+        }
+    }
+
+    printf("Determining neighborlist buffer for an energy drift of %g kJ/mol/ps at %g K\n",nsbuf_drift,ref_T);
+
+    for(i=0; i<ir->opts.ngtc; i++)
+    {
+        if (ir->opts.ref_t[i] >= 0 && ir->opts.ref_t[i] != ref_T)
+        {
+            sprintf(warn_buf,"ref_T for group of %.1f DOFs is %g K , which is smaller than the maximum of %g K used for the buffer size calculation. The buffer size might be on the conservative (large) side.",
+                    ir->opts.nrdf[i],ir->opts.ref_t[i],ref_T);
+            warning_note(wi,warn_buf);
+        }
+    }
+
+    /* Set the ns buffer size in ir */
+    calc_ns_buffer_size(mtop,det(box),ir,nsbuf_drift,
+                        &n_nonlin_vsite,&ir->rlist);
+
+    if (n_nonlin_vsite > 0)
+    {
+        sprintf(warn_buf,"There are %d non-linear virtual site constructions. Their contribution to the energy drift is approximated. In most cases this does not affect the energy drift significantly.",n_nonlin_vsite);
+        warning_note(wi,warn_buf);
+    }
+
+    ir->rlistlong = ir->rlist;
+    printf("Set rlist to %g nm, buffer size %g nm\n",
+           ir->rlist,ir->rlist-max(ir->rvdw,ir->rcoulomb));
+            
+    if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box))
+    {
+        gmx_fatal(FARGS,"The neighbor list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase nsbuffer_drift.",ir->rlistlong,sqrt(max_cutoff2(ir->ePBC,box)));
+    }
+}
+
 int main (int argc, char *argv[])
 {
   static const char *desc[] = {
@@ -1525,6 +1582,16 @@ int main (int argc, char *argv[])
            bGenVel ? state.v : NULL,
            wi);
   
+    if (ir->cutoff_scheme == ecutsVERLET && opts->nsbuf_drift > 0)
+    {
+        if (EI_DYNAMICS(ir->eI) &&
+            !(EI_MD(ir->eI==eiMD) && ir->etc!=etcNO) &&
+            inputrec2nboundeddim(ir) == 3)
+        {
+            set_verlet_buffer(sys,ir,state.box,opts->nsbuf_drift,wi);
+        }
+    }
+
   /* Init the temperature coupling state */
   init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);
 

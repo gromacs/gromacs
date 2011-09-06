@@ -197,6 +197,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
     else
     {
+        real rc_max;
+
         /* Normal Verlet type neighbor-list, currently only limited feature support */
         if (ir->rcoulomb != ir->rvdw)
         {
@@ -216,15 +218,54 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
              warning_error(wi,"With Verlet lists nstlist should be larger than 0");
         }
 
-        ir->rlist = max(ir->rcoulomb,ir->rvdw);
-        if (EI_DYNAMICS(ir->eI) && ir->nstlist > 1)
+        rc_max = max(ir->rvdw,ir->rcoulomb);
+
+        if (opts->nsbuf_drift <= 0)
         {
-            /* Temporarily hard-coded buffer size which work well for water
-             * and thus for all atomistic bio-molecular, polymer and organic systems
-             * at 300 K.
-             */
-            ir->rlist += 9.0*(ir->nstlist - 1)*ir->delta_t;
+            if (opts->nsbuf_drift == 0)
+            {
+                warning_error(wi,"Can not have an energy drift of exactly 0");
+            }
+
+            if (ir->rlist < rc_max)
+            {
+                warning_error(wi,"With verlet lists rlist can not be smaller than rvdw or rcoulomb");
+            }
+            
+            if (ir->rlist == rc_max)
+            {
+                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no neighborlist buffer");
+            }
         }
+        else
+        {
+            if (ir->rlist > rc_max)
+            {
+                warning_note(wi,"You have set rlist larger than the interaction cut-off, but you also have nsbuffer_drift > 0. Will set rlist using nsbuffer_drift.");
+            }
+
+            if (EI_DYNAMICS(ir->eI))
+            {
+                if (EI_MD(ir->eI) && ir->etc == etcNO)
+                {
+                   warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift. Set rlist and use nsbuffer_drift=-1."); 
+                }
+
+                if (inputrec2nboundeddim(ir) < 3)
+                {
+                    warning_error(wi,"The box volume is required for calculating rlist from the energy drift and there are unbounded dimensions. Set rlist and use nsbuffer_drift=-1.");
+                }
+                /* Set rlist temporarily so we can continue processing */
+                ir->rlist = rc_max;
+            }
+            else
+            {
+                /* Set the buffer to 5% of the cut-off */
+                ir->rlist = 1.05*rc_max;
+            }
+        }
+
+        /* No twin-range calculations with Verlet lists */
         ir->rlistlong = ir->rlist;
     }
 
@@ -655,7 +696,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
     /* ENERGY CONSERVATION */
-    if (ir_NVE(ir))
+    if (ir_NVE(ir) && ir->cutoff_scheme == ecutsOLD)
     {
         if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
         {
@@ -946,6 +987,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
   EETYPE("pbc",         ir->ePBC,       epbc_names);
   EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names);
+  CTYPE ("Allowed energy drift due to the verlet buffer in kJ/mol/ps per atom,");
+  CTYPE ("a value of -1 means: use rlist");
+  RTYPE("nsbuffer-drift",     opts->nsbuf_drift,    0.001);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
   CTYPE ("long-range cut-off for switched potentials");
@@ -1898,8 +1942,14 @@ void do_index(const char* mdparin, const char *ndx,
               sprintf(warn_buf,"With integrator %s tau_t should be larger than 0",ei_names[ir->eI]);
               warning_error(wi,warn_buf);
           }
-          if ((ir->etc == etcVRESCALE && ir->opts.tau_t[i] >= 0) || 
-              (ir->etc != etcVRESCALE && ir->opts.tau_t[i] >  0))
+
+          if (ir->etc != etcVRESCALE && ir->opts.tau_t[i] == 0)
+          {
+              warning_note(wi,"Changing old tau_t=0 value for not temperature coupling groups to -1");
+              ir->opts.tau_t[i] = -1;
+          }
+
+          if (ir->opts.tau_t[i] >= 0)
           {
               tau_min = min(tau_min,ir->opts.tau_t[i]);
           }
