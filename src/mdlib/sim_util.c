@@ -841,7 +841,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
 #ifdef GMX_GPU
-    if (bUseGPU)
+    if (bUseGPU && !fr->emulateGPU)
     {
         /* launch copy-back of non-local or if not running in parallel the local F */
         if (DOMAINDECOMP(cr))
@@ -1054,17 +1054,17 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 wallcycle_stop(wcycle,ewcFORCE);
             }            
             gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSnonlocal,fr->nbat,f);
-        }
 
 #ifdef GMX_GPU
-        if (!fr->emulateGPU)
-        {
-            /* When runing in parallel we can only launch local copy-back after the 
-               non-local is done! (CUDA can't synchronize streams with async operations
-               wrt the CPU).*/
-            cu_copyback_nb_data(fr->gpu_nb, fr->nbat, flags, FALSE);
-        }
+            if (!fr->emulateGPU)
+            {
+                /* When runing in parallel we can only launch local copy-back after the 
+                   non-local is done! (CUDA can't synchronize streams with async operations
+                   wrt the CPU).*/
+                cu_copyback_nb_data(fr->gpu_nb, fr->nbat, flags, FALSE);
+            }
 #endif
+        }
     }
 
     if (bDoForces)
@@ -1135,12 +1135,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_stop(wcycle,ewcFORCE);
         }
         gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSlocal,fr->nbat,f);
-#ifdef GMX_GPU
-        if (bUseGPU)
-        {
-            cu_time_atomdata(fr->gpu_nb);
-        }
-#endif
     }
     
     if (DOMAINDECOMP(cr))

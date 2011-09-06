@@ -210,8 +210,6 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     cudaEvent_t stop_nb    = nonLocal ? timers->stop_nb_nl : timers->stop_nb;
     cudaEvent_t start_h2d  = nonLocal ? timers->start_nb_h2d_nl : timers->start_nb_h2d;
     cudaEvent_t stop_h2d   = nonLocal ? timers->stop_nb_h2d_nl : timers->stop_nb_h2d;
-    //cudaEvent_t start_d2h  = nonLocal ? timers->start_nb_d2h_nl : timers->stop_nb_d2h;
-    //cudaEvent_t stop_d2h   = nonLocal ? timers->stop_nb_d2h_nl : timers->stop_nb_d2h;
 
     if (nonLocal)
     {
@@ -296,8 +294,8 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
     gmx_bool time_trans = timers->time_transfers;
 
-    cudaEvent_t start_d2h  = nonLocal ? timers->start_nb_d2h_nl : timers->stop_nb_d2h;
-    cudaEvent_t stop_d2h   = nonLocal ? timers->stop_nb_d2h_nl : timers->stop_nb_d2h;
+    cudaEvent_t start   = nonLocal ? timers->start_nb_d2h_nl : timers->start_nb_d2h;
+    cudaEvent_t stop    = nonLocal ? timers->stop_nb_d2h_nl : timers->stop_nb_d2h;
 
     if (nonLocal)
     {
@@ -313,7 +311,7 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     /* beginning of timed D2H section */
     if (time_trans)
     {
-        cudaEventRecord(start_d2h, stream);
+        cudaEventRecord(start, stream);
     }
 
     /* DtoH f */
@@ -340,7 +338,7 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
 
     if (time_trans)
     {
-        cudaEventRecord(stop_d2h, stream);
+        cudaEventRecord(stop, stream);
     }
 }
 
@@ -352,7 +350,6 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
 {    
     cudaError_t     s;
     int             i;
-    float           t_tot, t;
 
     gmx_bool        calc_ene   = flags & GMX_FORCE_VIRIAL;
     gmx_bool        calc_fshift = flags & GMX_FORCE_VIRIAL;
@@ -367,41 +364,52 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     cudaEvent_t stop_nb    = nonLocal ? timers->stop_nb_nl : timers->stop_nb;
     cudaEvent_t start_h2d  = nonLocal ? timers->start_nb_h2d_nl : timers->start_nb_h2d;
     cudaEvent_t stop_h2d   = nonLocal ? timers->stop_nb_h2d_nl : timers->stop_nb_h2d;
-    cudaEvent_t start_d2h  = nonLocal ? timers->start_nb_d2h_nl : timers->stop_nb_d2h;
+    cudaEvent_t start_d2h  = nonLocal ? timers->start_nb_d2h_nl : timers->start_nb_d2h;
     cudaEvent_t stop_d2h   = nonLocal ? timers->stop_nb_d2h_nl : timers->stop_nb_d2h;
+    cudaEvent_t start_nbl_h2d = nonLocal ? timers->start_nbl_h2d_nl : timers->start_nbl_h2d;
+    cudaEvent_t stop_nbl_h2d  = nonLocal ? timers->stop_nbl_h2d_nl : timers->stop_nbl_h2d;
 
     s = cudaStreamSynchronize(stream);
     CU_RET_ERR(s, "cudaStreamSynchronize failed in cu_blockwait_nb");
-    s = cudaEventElapsedTime(&t_tot, start_nb, stop_nb);
-    CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_blockwait_nb");
 
-    /* only increase counter once */
+    /* only increase counter once (at local F wait) */
     if (!nonLocal)
     {
         timings->nb_count++;
         timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].c += 1;
     }
     
-    /* accumulate kernel and transfer timings */
-    timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t += t_tot;
+    /* accumulate kernel timings */
+    timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t +=
+        cu_event_elapsed(start_nb, stop_nb);
 
     // FIXME remove the time_transfers conditional 
     if (timers->time_transfers)
-    {        
-        s = cudaEventElapsedTime(&t, start_h2d, stop_h2d);
-        CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_blockwait_nb");
-        timings->nb_h2d_time += t;
-        // t_tot -= t;
+    {
+        /* X/q H2D and F D2H timings */
+        timings->nb_h2d_time += cu_event_elapsed(start_h2d, stop_h2d);
+        timings->nb_d2h_time += cu_event_elapsed(start_d2h, stop_d2h);
 
-        s = cudaEventElapsedTime(&t, start_d2h, stop_d2h);
-        CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_blockwait_nb");
-        timings->nb_d2h_time += t;
-        // t_tot -= t;
+        /* only count atomdata and nbl H2D if it's neighbor search step */
+        if (nblist->prune_nbl)
+        {
+            /* only add atomdata transfer time once (at local F wait) */
+            if (!nonLocal)
+            {
+                timings->nbl_h2d_count++;
+                timings->nbl_h2d_time +=
+                    cu_event_elapsed(timers->start_atdat, timers->stop_atdat);
+            }
+
+            timings->nbl_h2d_time +=
+                cu_event_elapsed(start_nbl_h2d, stop_nbl_h2d);
+        }
     }
    
     /* turn off neighborlist pruning */
     nblist->prune_nbl = FALSE;
 
+    /* add up enegies and shift forces (only once at local F wait) */
     if (!nonLocal)
     {
         /* XXX debugging code, remove this */

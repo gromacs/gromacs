@@ -589,7 +589,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     /* print GPU timing summary */
     if (gpu_t)
     {
-        tot_gpu = gpu_t->atomdt_h2d_total_time + 
+        tot_gpu = gpu_t->nbl_h2d_time + 
                   gpu_t->nb_h2d_time + 
                   gpu_t->nb_d2h_time;
 
@@ -615,13 +615,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog," Computing:                         Count      Seconds    ms/step       %c\n",'%');
         fprintf(fplog, "%s\n", hline);
         // " %-19s %4d %10s %12.3f %10.1f   %5.1f\n"
-        print_gputimes(fplog, "Neighborlist H2D",
-                gpu_t->atomdt_count, gpu_t->atomdt_h2d_total_time, tot_gpu);
-         print_gputimes(fplog, "Nonbonded H2D", 
+        print_gputimes(fplog, "Neighbor list H2D",
+                gpu_t->nbl_h2d_count, gpu_t->nbl_h2d_time, tot_gpu);
+         print_gputimes(fplog, "X / q H2D", 
                 gpu_t->nb_count, gpu_t->nb_h2d_time, tot_gpu);
 
         char *k_log_str[2][2] = {
-                {"Nonbonded F kernel", "Nonbonded F+Ene k."}, 
+                {"Nonbonded F kernel", "Nonbonded F+ene k."}, 
                 {"Nonbonded F+prune k.", "Nonbonded F+ene+prune k."}};
         for (i = 0; i < 2; i++)
         {
@@ -635,8 +635,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             }
         }        
 
-        print_gputimes(fplog, "Nonbonded D2H",
-                   gpu_t->nb_count, gpu_t->nb_d2h_time, tot_gpu);
+        print_gputimes(fplog, "F D2H",  gpu_t->nb_count, gpu_t->nb_d2h_time, tot_gpu);
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Total ", gpu_t->nb_count, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);

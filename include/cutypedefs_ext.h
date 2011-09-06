@@ -27,9 +27,8 @@ struct cu_timings
     double  nb_d2h_time;    /* device to host transfer time of data */
     int     nb_count;       /* total call count of the nonbonded gpu operations */
 
-    double  atomdt_h2d_total_time;  /* total time of the data trasnfer after a neighbor search step */
-    int     atomdt_count;           /* cll count   - || - */
-    
+    double  nbl_h2d_time;   /* total time of the data trasnfer after a neighbor search step */
+    int     nbl_h2d_count;  /* cll count   - || - */
 };
 
 #ifdef __cplusplus

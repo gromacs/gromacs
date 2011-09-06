@@ -34,7 +34,6 @@ void destroy_cudata(FILE * /*fplog*/,
                     cu_nonbonded_t /*cu_nb*/);
 
 void cu_blockwait_atomdata(cu_nonbonded_t /*cu_nb*/);
-void cu_time_atomdata(cu_nonbonded_t /*cu_nb*/);
 void cu_synchstream_atomdata(cu_nonbonded_t /*cu_nb*/, gmx_bool /*nonLocal*/);
 
 cu_timings_t * get_gpu_timings(cu_nonbonded_t /*cu_nb*/);
@@ -43,6 +42,7 @@ void reset_gpu_timings(cu_nonbonded_t /*cu_nb*/);
 
 int cu_upload_X(cu_nonbonded_t /*cu_nb*/, real * /*h_x*/);
 int cu_download_F(real * /*h_f*/, cu_nonbonded_t /*cu_nb*/);
+
 #ifdef __cplusplus
 }
 #endif

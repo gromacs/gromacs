@@ -88,6 +88,8 @@ int cu_blockwait_event(cudaEvent_t /*stop*/, cudaEvent_t /*start*/, float * /*ti
 
 void cu_unbind_texture(const char * /*tex_name*/);
 
+float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*stop*/);
+
 #ifdef __cplusplus
 }
 #endif
