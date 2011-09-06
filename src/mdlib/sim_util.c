@@ -749,7 +749,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->streamGPU);
         }
 
-        cu_clear_nb_outputs(fr->gpu_nb, fr->nbat, flags);
+        cu_move_shift_vec(fr->gpu_nb, fr->nbat);
     }
 #endif
         
@@ -1116,6 +1116,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                             fr->fshift);
 
             cycles_force += wallcycle_stop(wcycle,ewcRECV_F_GPU);
+
+            /* now clear the GPU outputs while we finish the step on the CPU */
+            cu_clear_nb_f_out(fr->gpu_nb);
+            cu_clear_nb_e_fs_out(fr->gpu_nb);
 #endif
         }
         else

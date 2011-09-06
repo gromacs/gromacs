@@ -26,9 +26,11 @@ void init_cudata_atoms(cu_nonbonded_t /*cu_nb*/,
                        const gmx_nb_atomdata_t * /*atomdata*/,
                        gmx_bool /*doStream*/);
 
-void cu_clear_nb_outputs(cu_nonbonded_t cu_nb, 
-                         const gmx_nb_atomdata_t *nbatom, // FIXME VEEERY dirty
-                         int flags);
+void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
+                       const gmx_nb_atomdata_t * /*nbatom*/);
+
+void cu_clear_nb_f_out(cu_nonbonded_t cu_nb);
+void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb);
 
 void destroy_cudata(FILE * /*fplog*/, 
                     cu_nonbonded_t /*cu_nb*/);

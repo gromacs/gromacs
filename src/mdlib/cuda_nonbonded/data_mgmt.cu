@@ -297,6 +297,9 @@ void init_cudata_ff(FILE *fplog,
     init_timers(nb->timers);
     init_timings(nb->timings);
 
+    /* clear energy and shift force outputs first time */
+    cu_clear_nb_e_fs_out(nb);
+
     /* init tmpdata */
     pmalloc((void**)&nb->tmpdata.e_lj, sizeof(*nb->tmpdata.e_lj));
     pmalloc((void**)&nb->tmpdata.e_el, sizeof(*nb->tmpdata.e_el));
@@ -394,45 +397,39 @@ void cu_move_shift_vec(cu_nonbonded_t cu_nb,
     }
 }
 
-/* FIXME put all the clear ops into a stream, otherwise it won't overlap with anything  */
-void cu_clear_nb_outputs(cu_nonbonded_t cu_nb, 
-                         const gmx_nb_atomdata_t *nbatom, // FIXME VEEERY dirty
-                         int flags)
+static void cu_clear_nb_f_out(cu_nonbonded_t cu_nb, int natoms_clear)
 {
     cudaError_t stat;
 
     cu_atomdata_t   *adat = cu_nb->atomdata;
     cu_timers_t     *timers = cu_nb->timers;
 
-    gmx_bool calc_ene   = flags & GMX_FORCE_VIRIAL;
-    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
-
-    /* FIXME: this is not a clear OP! */
-    cu_move_shift_vec(cu_nb, nbatom);
-
     stat = cudaEventRecord(timers->start_clear, 0);
     CU_RET_ERR(stat, "cudaEventRecord on start_clear falied");
 
-    cudaMemsetAsync(adat->f, 0, adat->natoms * sizeof(*adat->f), 0);
-
-    /* set the shift force output to 0 */
-    if (calc_fshift)
-    {
-        cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), 0);
-    }
-
-    /* set energy outputs to 0 */
-    if (calc_ene)
-    {
-        cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), 0);
-        cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), 0);
-    }
+    cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), 0);
+    CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
 
     cudaEventRecord(timers->stop_clear, 0);
     CU_RET_ERR(stat, "cudaEventRecord on stop_clear falied");
+}
 
-    /* block all future streams until this finishes */
-    // XXX this is too restrictive stat = cudaStreamWaitEvent(NULL, timers->stop_clear 0);
+void cu_clear_nb_f_out(cu_nonbonded_t cu_nb)
+{
+    cu_clear_nb_f_out(cu_nb, cu_nb->atomdata->natoms);
+}
+
+void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb)
+{
+    cudaError_t stat;    
+    cu_atomdata_t *adat = cu_nb->atomdata;
+
+    stat = cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), 0);
+    CU_RET_ERR(stat, "cudaMemsetAsync on f_shift falied");
+    stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), 0);
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
+    stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), 0);
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
 }
 
 /*! Initilizes atom-data on the GPU, called at every neighbor search step. 
@@ -442,11 +439,13 @@ void init_cudata_atoms(cu_nonbonded_t cu_nb,
                        gmx_bool doStream)
 {
     cudaError_t stat;
-    int         nalloc;
-    int         natoms  = nbat->natoms;
+    int         nalloc,
+                natoms = nbat->natoms;
+
+    gmx_bool realloced = FALSE;
 
     cu_atomdata_t *d_atomd  = cu_nb->atomdata;
-    cu_timers_t *timers     = cu_nb->timers;  // FIXME
+    cu_timers_t *timers     = cu_nb->timers;
 
     /* time async copy */
     stat = cudaEventRecord(timers->start_atdat, 0);
@@ -475,10 +474,17 @@ void init_cudata_atoms(cu_nonbonded_t cu_nb,
         CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->atom_types"); 
 
         d_atomd->nalloc = nalloc;
+        realloced = TRUE;
     }
-    
+
     d_atomd->natoms = natoms;
     d_atomd->natoms_local = nbat->natoms_local;
+
+    /* need to clear GPU f output if realloc happened */
+    if (realloced)
+    {
+        cu_clear_nb_f_out(cu_nb, nalloc);
+    }
 
     if(doStream)
     {
