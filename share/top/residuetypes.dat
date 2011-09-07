@@ -173,6 +173,7 @@ RTN     RNA
 RUN     RNA
 RCN     RNA
 RGN     RNA
+ATP	Ligand
 SOL	Water
 WAT	Water
 HOH	Water
