@@ -1184,15 +1184,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
-                if (ETC_ANDERSEN(ir->etc) && EI_VV(ir->eI))
-                {
-                    update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr);
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
-                                       &top->idef,tmp_vir,NULL,
-                                       cr,nrnb,wcycle,upd,constr,
-                                       bInitStep,TRUE,FALSE,vetanew);
-                }
-                
                 /* if VV, compute the pressure and constraints */
                 /* For VV2, we strictly only need this if using pressure
                  * control, but we really would like to have accurate pressures
@@ -1518,6 +1509,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.sig[eglsCHKPT] = 1;
         }
   
+        
+        /* at start of step, randomize the velocities */
+        if (ETC_ANDERSEN(ir->etc) && EI_VV(ir->eI))
+        {
+            update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr);
+            update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                               &top->idef,tmp_vir,NULL,
+                               cr,nrnb,wcycle,upd,constr,
+                               bInitStep,TRUE,FALSE,vetanew);
+        }
+
         if (bIterations)
         {
             gmx_iterate_init(&iterate,bIterations);
