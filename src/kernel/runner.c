@@ -796,6 +796,44 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         snew(pmedata,1);
     }
 
+    //set CPU affinity
+#ifdef GMX_OPENMP
+#ifdef __linux
+    {
+        int core, local_nthreads;
+
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            local_nthreads = omp_get_max_threads();
+        }
+        else
+        {
+            local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; //threads on this node
+        }
+#ifdef GMX_LIB_MPI
+        {
+            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
+
+            MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            core -= local_nthreads; //make exclusive scan
+        }
+#else
+        core = cr->nodeid*local_nthreads;
+#endif
+#pragma omp parallel firstprivate(core) num_threads(local_nthreads)
+        {
+            cpu_set_t mask;
+            CPU_ZERO(&mask);
+            core+=omp_get_thread_num();
+            CPU_SET(core,&mask);
+            sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+        }
+    }
+#endif //__linux
+#endif //GMX_OPENMP
+
+
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype))
@@ -809,31 +847,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             /* The PME only nodes need to know nChargePerturbed */
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
-
-
-        //set CPU affinity
-#ifdef GMX_OPENMP
-#ifdef __linux
-#ifdef GMX_LIB_MPI
-        {
-            int core;
-            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-            int local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; //threads on this node
-            MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-            core-=local_omp_nthreads; //make exclusive scan
-#pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
-            {
-                cpu_set_t mask;
-                CPU_ZERO(&mask);
-                core+=omp_get_thread_num();
-                CPU_SET(core,&mask);
-                sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
-            }
-        }
-#endif //GMX_MPI
-#endif //__linux
-#endif //GMX_OPENMP
 
         if (cr->duty & DUTY_PME)
         {
