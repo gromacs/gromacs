@@ -179,7 +179,7 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
 
     if (!bOk || !errors->isEmpty())
     {
-        GMX_ASSERT(bOk && !errors->isEmpty(), "Inconsistent error reporting");
+        GMX_ASSERT(!bOk && !errors->isEmpty(), "Inconsistent error reporting");
         GMX_THROW(InvalidInputError(errors->toString()));
     }
 }
@@ -200,7 +200,13 @@ void SelectionCollection::Impl::resolveExternalGroups(
     if (root->type == SEL_GROUPREF)
     {
         bool bOk = true;
-        if (root->u.gref.name != NULL)
+        if (_grps == NULL)
+        {
+            // TODO: Improve error messages
+            errors->append("Unknown group referenced in a selection");
+            bOk = false;
+        }
+        else if (root->u.gref.name != NULL)
         {
             char *name = root->u.gref.name;
             if (!gmx_ana_indexgrps_find(&root->u.cgrp, _grps, name))
@@ -564,6 +570,10 @@ SelectionCollection::parseFromString(const std::string &str,
 void
 SelectionCollection::compile()
 {
+    if (_impl->_sc.top == NULL && requiresTopology())
+    {
+        GMX_THROW(InconsistentInputError("Selection requires topology information, but none provided"));
+    }
     if (!_impl->hasFlag(Impl::efExternalGroupsSet))
     {
         setIndexGroups(NULL);
