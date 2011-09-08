@@ -45,6 +45,7 @@
 #include <smalloc.h>
 #include <string2.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/selmethod.h"
 
 #include "keywords.h"
@@ -97,23 +98,23 @@ typedef struct
 static void *
 init_data_same(int npar, gmx_ana_selparam_t *param);
 /** Initializes the \p same selection method. */
-static int
+static void
 init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for the \p same selection method. */
 static void
 free_data_same(void *data);
 /** Initializes the evaluation of the \p same selection method for a frame. */
-static int
+static void
 init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
-static int
+static void
 evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Initializes the evaluation of the \p same selection method for a frame. */
-static int
+static void
 init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
-static int
+static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
@@ -263,7 +264,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
  * \param   data  Pointer to \ref t_methoddata_same to initialize.
  * \returns 0 on success, -1 on failure.
  */
-static int
+static void
 init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
@@ -276,11 +277,10 @@ init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     }
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
-        fprintf(stderr, "ERROR: the same selection keyword combined with a "
-                        "non-keyword does not make sense\n");
-        return -1;
+        GMX_THROW(gmx::InvalidInputError(
+                    "The 'same' selection keyword combined with a "
+                    "non-keyword does not make sense"));
     }
-    return 0;
 }
 
 /*!
@@ -316,12 +316,11 @@ cmp_int(const void *a, const void *b)
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  PBC structure.
  * \param      data Should point to a \ref t_methoddata_same.
- * \returns    0 on success, a non-zero error code on error.
  *
  * Sorts the \c data->as.i array and removes identical values for faster and
  * simpler lookup.
  */
-static int
+static void
 init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
@@ -357,7 +356,6 @@ init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
         }
         d->nas = j + 1;
     }
-    return 0;
 }
 
 /*!
@@ -370,7 +368,7 @@ init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * binary search of \c data->as is performed for each block of values in
  * \c data->val.
  */
-static int
+static void
 evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -429,7 +427,6 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             d->bSorted = FALSE;
         }
     }
-    return 0;
 }
 
 /*! \brief
@@ -446,12 +443,11 @@ cmp_str(const void *a, const void *b)
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  PBC structure.
  * \param      data Should point to a \ref t_methoddata_same.
- * \returns    0 on success, a non-zero error code on error.
  *
  * Sorts the \c data->as.s array and removes identical values for faster and
  * simpler lookup.
  */
-static int
+static void
 init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
@@ -483,7 +479,6 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
         }
     }
     d->nas = j + 1;
-    return 0;
 }
 
 /*!
@@ -495,7 +490,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * A binary search of \c data->as is performed for each block of values in
  * \c data->val.
  */
-static int
+static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -529,5 +524,4 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             }
         }
     }
-    return 0;
 }

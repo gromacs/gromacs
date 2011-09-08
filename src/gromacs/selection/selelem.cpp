@@ -42,6 +42,7 @@
 #include <smalloc.h>
 #include <gmx_fatal.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
@@ -193,36 +194,32 @@ _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype)
  * Reserves memory for the values of \p sel from the \p sel->mempool
  * memory pool. If no memory pool is set, nothing is done.
  */
-int
+void
 _gmx_selelem_mempool_reserve(t_selelem *sel, int count)
 {
-    int rc = 0;
-
     if (!sel->mempool)
     {
-        return 0;
+        return;
     }
     switch (sel->v.type)
     {
         case INT_VALUE:
-            rc = _gmx_sel_mempool_alloc(sel->mempool, (void **)&sel->v.u.i,
-                                        sizeof(*sel->v.u.i)*count);
+            sel->v.u.i = static_cast<int *>(
+                    _gmx_sel_mempool_alloc(sel->mempool, sizeof(*sel->v.u.i)*count));
             break;
 
         case REAL_VALUE:
-            rc = _gmx_sel_mempool_alloc(sel->mempool, (void **)&sel->v.u.r,
-                                        sizeof(*sel->v.u.r)*count);
+            sel->v.u.r = static_cast<real *>(
+                    _gmx_sel_mempool_alloc(sel->mempool, sizeof(*sel->v.u.r)*count));
             break;
 
         case GROUP_VALUE:
-            rc = _gmx_sel_mempool_alloc_group(sel->mempool, sel->v.u.g, count);
+            _gmx_sel_mempool_alloc_group(sel->mempool, sel->v.u.g, count);
             break;
 
         default:
-            gmx_incons("mem pooling not implemented for requested type");
-            return -1;
+            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
     }
-    return rc;
 }
 
 /*!
@@ -254,8 +251,7 @@ _gmx_selelem_mempool_release(t_selelem *sel)
             break;
 
         default:
-            gmx_incons("mem pooling not implemented for requested type");
-            break;
+            GMX_THROW(gmx::InternalError("Memory pooling not implemented for requested type"));
     }
 }
 

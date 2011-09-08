@@ -222,8 +222,8 @@ struct t_selelem;
 /*! \brief
  * Function pointer for evaluating a \c t_selelem.
  */
-typedef int (*sel_evalfunc)(struct gmx_sel_evaluate_t *data,
-                            struct t_selelem *sel, gmx_ana_index_t *g);
+typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t *data,
+                             struct t_selelem *sel, gmx_ana_index_t *g);
 
 /*! \internal \brief
  * Represents an element of a selection expression.
@@ -333,7 +333,7 @@ _gmx_selelem_create(e_selelem_t type);
 extern int
 _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype);
 /** Reserves memory for value of a \c t_selelem from a memory pool. */
-extern int
+extern void
 _gmx_selelem_mempool_reserve(t_selelem *sel, int count);
 /** Releases memory pool used for value of a \c t_selelem. */
 extern void

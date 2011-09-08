@@ -47,6 +47,7 @@
 #include <smalloc.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -70,20 +71,20 @@ typedef struct
 static void *
 init_data_common(int npar, gmx_ana_selparam_t *param);
 /** Initializes a distance-based selection method. */
-static int
+static void
 init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for a distance-based selection method. */
 static void
 free_data_common(void *data);
 /** Initializes the evaluation of a distance-based within selection method for a frame. */
-static int
+static void
 init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p distance selection method. */
-static int
+static void
 evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p within selection method. */
-static int
+static void
 evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
@@ -210,17 +211,16 @@ init_data_common(int npar, gmx_ana_selparam_t *param)
  * (\c t_methoddata_distance::nb).
  * Also checks that the cutoff is valid.
  */
-static int
+static void
 init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
     if ((param[0].flags & SPAR_SET) && d->cutoff <= 0)
     {
-        fprintf(stderr, "error: distance cutoff should be > 0");
-        return -1;
+        GMX_THROW(gmx::InvalidInputError("Distance cutoff should be > 0"));
     }
-    return gmx_ana_nbsearch_create(&d->nb, d->cutoff, d->p.nr);
+    d->nb = gmx_ana_nbsearch_create(d->cutoff, d->p.nr);
 }
 
 /*!
@@ -249,12 +249,12 @@ free_data_common(void *data)
  *
  * Initializes the neighborhood search for the current frame.
  */
-static int
+static void
 init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
-    return gmx_ana_nbsearch_pos_init(d->nb, pbc, &d->p);
+    gmx_ana_nbsearch_pos_init(d->nb, pbc, &d->p);
 }
 
 /*!
@@ -264,7 +264,7 @@ init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * Calculates the distance of each position from \c t_methoddata_distance::p
  * and puts them in \p out->u.r.
  */
-static int
+static void
 evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
@@ -281,7 +281,6 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             out->u.r[i] = n;
         }
     }
-    return 0;
 }
 
 /*!
@@ -291,7 +290,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Finds the atoms that are closer than the defined cutoff to
  * \c t_methoddata_distance::xref and puts them in \p out.g.
  */
-static int
+static void
 evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
@@ -306,5 +305,4 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
         }
     }
-    return 0;
 }

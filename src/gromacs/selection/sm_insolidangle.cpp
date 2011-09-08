@@ -120,12 +120,19 @@
 #include <smalloc.h>
 #include <vec.h>
 
+// FIXME: Should really be in the beginning, but causes compilation errors
+#include <algorithm>
+
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 
 #include "selelem.h"
+
+using std::min;
+using std::max;
 
 /*! \internal \brief
  * Internal data structure for the \p insolidangle selection method.
@@ -211,7 +218,7 @@ typedef struct
 static void *
 init_data_insolidangle(int npar, gmx_ana_selparam_t *param);
 /** Initializes the \p insolidangle selection method. */
-static int
+static void
 init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Sets the COM/COG data for the \p insolidangle selection method. */
 static void
@@ -220,13 +227,13 @@ set_comg_insolidangle(gmx_ana_pos_t *pos, void *data);
 static void
 free_data_insolidangle(void *data);
 /** Initializes the evaluation of the \p insolidangle selection method for a frame. */
-static int
+static void
 init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Internal helper function for evaluate_insolidangle(). */
 static gmx_bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data);
 /** Evaluates the \p insolidangle selection method. */
-static int
+static void
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
@@ -346,7 +353,7 @@ init_data_insolidangle(int npar, gmx_ana_selparam_t *param)
  * Converts t_methoddata_insolidangle::angcut to radians and allocates
  * and allocates memory for the bins used during the evaluation.
  */
-static int
+static void
 init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
@@ -354,8 +361,7 @@ init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *da
 
     if (surf->angcut <= 0)
     {
-        fprintf(stderr, "error: angle cutoff should be > 0");
-        return -1;
+        GMX_THROW(gmx::InvalidInputError("Angle cutoff should be > 0"));
     }
 
     surf->angcut *= DEG2RAD;
@@ -376,8 +382,6 @@ init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *da
     }
     surf->nbins = 0;
     snew(surf->bin, surf->maxbins);
-
-    return 0;
 }
 
 /*!
@@ -410,12 +414,11 @@ free_data_insolidangle(void *data)
  * \param[in]  fr   Current frame.
  * \param[in]  pbc  PBC structure.
  * \param      data Should point to a \ref t_methoddata_insolidangle.
- * \returns    0 on success, a non-zero error code on error.
  *
  * Creates a lookup structure that enables fast queries of whether a point
  * is within the solid angle or not.
  */
-static int
+static void
 init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
@@ -439,7 +442,6 @@ init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
     }
     optimize_surface_points(d);
     d->cfrac = -1;
-    return 0;
 }
 
 /*!
@@ -474,7 +476,7 @@ accept_insolidangle(rvec x, t_pbc *pbc, void *data)
  * \c t_methoddata_insolidangle::span and centered at
  * \c t_methoddata_insolidangle::center, and stores the result in \p out->u.g.
  */
-static int
+static void
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
@@ -489,7 +491,6 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
         }
     }
-    return 0;
 }
 
 /*!
@@ -852,7 +853,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         tmax = acos(cos(theta) / cos(surf->angcut));
     }
     /* Find the first affected bin */
-    tbin = max(floor((theta - surf->angcut) / surf->tbinsize), 0);
+    tbin = max(floor((theta - surf->angcut) / surf->tbinsize), 0.0);
     theta1 = tbin * surf->tbinsize;
     if (theta1 < theta - surf->angcut)
     {

@@ -43,8 +43,10 @@
 #include <smalloc.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/format.h"
 
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.
@@ -67,16 +69,16 @@ typedef struct
 static void *
 init_data_permute(int npar, gmx_ana_selparam_t *param);
 /** Initializes data for the \p permute selection modifier. */
-static int
+static void
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p permute selection modifier. */
-static int
+static void
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
 /** Evaluates the \p permute selection modifier. */
-static int
+static void
 evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
@@ -145,7 +147,7 @@ init_data_permute(int npar, gmx_ana_selparam_t *param)
  * \param[in] data  Should point to a \p t_methoddata_permute.
  * \returns   0 if the input permutation is valid, -1 on error.
  */
-static int
+static void
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
@@ -156,9 +158,8 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     d->perm = param[1].val.u.i;
     if (d->p.nr % d->n != 0)
     {
-        fprintf(stderr, "error: the number of positions to be permuted is not divisible by %d\n",
-                d->n);
-        return -1;
+        GMX_THROW(gmx::InconsistentInputError(
+                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -170,26 +171,22 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         d->perm[i]--;
         if (d->perm[i] < 0 || d->perm[i] >= d->n)
         {
-            fprintf(stderr, "invalid permutation");
-            return -1;
+            GMX_THROW(gmx::InvalidInputError("Invalid permutation"));
         }
         if (d->rperm[d->perm[i]] >= 0)
         {
-            fprintf(stderr, "invalid permutation");
-            return -1;
+            GMX_THROW(gmx::InvalidInputError("Invalid permutation"));
         }
         d->rperm[d->perm[i]] = i;
     }
-    return 0;
 }
 
 /*!
  * \param[in]     top   Topology data structure.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_permute.
- * \returns       0 for success.
  */
-static int
+static void
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
@@ -207,7 +204,6 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
             gmx_ana_pos_append_init(out->u.p, &d->g, &d->p, b);
         }
     }
-    return 0;
 }
 
 /*!
@@ -236,7 +232,7 @@ free_data_permute(void *data)
  * Returns -1 if the size of \p p is not divisible by the number of
  * elements in the permutation.
  */
-static int
+static void
 evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
@@ -246,9 +242,8 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
     if (d->p.nr % d->n != 0)
     {
-        fprintf(stderr, "error: the number of positions to be permuted is not divisible by %d\n",
-                d->n);
-        return -1;
+        GMX_THROW(gmx::InconsistentInputError(
+                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
@@ -267,5 +262,4 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
     }
     gmx_ana_pos_append_finish(out->u.p);
-    return 0;
 }

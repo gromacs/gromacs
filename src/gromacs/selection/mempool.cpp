@@ -39,12 +39,14 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <stdlib.h>
 
-#include <gmx_fatal.h>
+#include <new>
+
 #include <smalloc.h>
 
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 
 #include "mempool.h"
@@ -89,8 +91,8 @@ struct gmx_sel_mempool_t
     size_t                      maxsize;
 };
 
-int
-_gmx_sel_mempool_create(gmx_sel_mempool_t **mpp)
+gmx_sel_mempool_t *
+_gmx_sel_mempool_create()
 {
     gmx_sel_mempool_t *mp;
 
@@ -103,8 +105,7 @@ _gmx_sel_mempool_create(gmx_sel_mempool_t **mpp)
     mp->blockstack        = NULL;
     mp->blockstack_nalloc = 0;
     mp->maxsize           = 0;
-    *mpp = mp;
-    return 0;
+    return mp;
 }
 
 void
@@ -124,20 +125,18 @@ _gmx_sel_mempool_destroy(gmx_sel_mempool_t *mp)
     sfree(mp);
 }
 
-int
-_gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
+void *
+_gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, size_t size)
 {
     void   *ptr = NULL;
     size_t  size_walign;
 
-    *ptrp = NULL;
     size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
     if (mp->buffer)
     {
         if (mp->freesize < size)
         {
-            gmx_bug("out of memory pool memory");
-            return ENOMEM;
+            GMX_THROW(gmx::InternalError("Out of memory pool memory"));
         }
         ptr = mp->freeptr;
         mp->freeptr  += size_walign;
@@ -149,8 +148,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
         ptr = malloc(size);
         if (!ptr)
         {
-            gmx_mem("out of memory");
-            return ENOMEM;
+            throw std::bad_alloc();
         }
         mp->currsize += size_walign;
         if (mp->currsize > mp->maxsize)
@@ -168,8 +166,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
     mp->blockstack[mp->nblocks].size = size_walign;
     mp->nblocks++;
 
-    *ptrp = ptr;
-    return 0;
+    return ptr;
 }
 
 void
@@ -181,7 +178,8 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     {
         return;
     }
-    assert(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr);
+    GMX_RELEASE_ASSERT(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr,
+                       "Invalid order of memory pool free calls");
     mp->nblocks--;
     size = mp->blockstack[mp->nblocks].size;
     mp->currsize -= size;
@@ -196,10 +194,12 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     }
 }
 
-int
+void
 _gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size)
 {
-    assert(mp->nblocks == 0 && !mp->buffer);
+    GMX_RELEASE_ASSERT(mp->nblocks == 0,
+                       "Cannot reserve memory pool when there is something allocated");
+    GMX_RELEASE_ASSERT(!mp->buffer, "Cannot reserve memory pool twice");
     if (size == 0)
     {
         size = mp->maxsize;
@@ -207,20 +207,18 @@ _gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size)
     mp->buffer = (char *)malloc(size);
     if (!mp->buffer)
     {
-        gmx_mem("out of memory");
-        return ENOMEM;
+        throw std::bad_alloc();
     }
     mp->freesize = size;
     mp->freeptr  = mp->buffer;
-    return 0;
 }
 
-int
+void
 _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g,
                              int isize)
 {
-    return _gmx_sel_mempool_alloc(mp, (void **)&g->index,
-                                  sizeof(*g->index)*isize);
+    void *ptr = _gmx_sel_mempool_alloc(mp, sizeof(*g->index)*isize);
+    g->index = static_cast<int *>(ptr);
 }
 
 void

@@ -200,7 +200,7 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
 void
 SelectionCollectionDataTest::runCompiler()
 {
-    ASSERT_EQ(0, _sc.compile());
+    ASSERT_NO_THROW(_sc.compile());
     ASSERT_EQ(_count, _sel.size());
     checkCompiled();
 }
@@ -241,7 +241,7 @@ void
 SelectionCollectionDataTest::runEvaluate()
 {
     ++_framenr;
-    ASSERT_EQ(0, _sc.evaluate(_frame, NULL));
+    ASSERT_NO_THROW(_sc.evaluate(_frame, NULL));
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
@@ -318,8 +318,10 @@ SelectionCollectionDataTest::runTest(const char *filename, const char * const *s
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
     EXPECT_FALSE(_sc.requiresTopology());
-    EXPECT_EQ(0, _sc.compile());
+    EXPECT_NO_THROW(_sc.compile());
 }
+
+// TODO: Tests for error conditions
 
 
 /********************************************************************

@@ -43,6 +43,7 @@
 #include <smalloc.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 
@@ -65,23 +66,23 @@ typedef struct
 static void *
 init_data_merge(int npar, gmx_ana_selparam_t *param);
 /** Initializes data for the merging selection modifiers. */
-static int
+static void
 init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p merge selection modifier. */
-static int
+static void
 init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Initializes output for the \p plus selection modifier. */
-static int
+static void
 init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the merging selection modifiers. */
 static void
 free_data_merge(void *data);
 /** Evaluates the \p merge selection modifier. */
-static int
+static void
 evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p plus selection modifier. */
-static int
+static void
 evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
@@ -179,7 +180,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
  * \param[in] data  Should point to a \p t_methoddata_merge.
  * \returns   0 if everything is successful, -1 on error.
  */
-static int
+static void
 init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
@@ -187,8 +188,7 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     if (d->stride < 0)
     {
-        fprintf(stderr, "error: stride for merging should be positive\n");
-        return -1;
+        GMX_THROW(gmx::InvalidInputError("Stride for merging should be positive"));
     }
     /* If no stride given, deduce it from the input sizes */
     if (d->stride == 0)
@@ -197,15 +197,13 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     }
     if (d->p1.nr != d->stride*d->p2.nr)
     {
-        fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
-        return -1;
+        GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
     /* We access the m.b.nra field instead of g->isize in the position
      * data structures to handle cases where g is NULL
      * (this occurs with constant positions. */
     gmx_ana_index_reserve(&d->g, d->p1.m.b.nra + d->p2.m.b.nra);
     d->g.isize = d->p1.m.b.nra + d->p2.m.b.nra;
-    return 0;
 }
 
 /*! \brief
@@ -214,9 +212,8 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in]     top   Topology data structure.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_merge.
- * \returns       0 for success.
  */
-static int
+static void
 init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
@@ -242,16 +239,14 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     gmx_ana_pos_empty_init(out->u.p);
     d->g.isize = 0;
-    return 0;
 }
 
 /*!
  * \param[in]     top   Topology data structure.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_merge.
- * \returns       0 for success.
  */
-static int
+static void
 init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
@@ -266,16 +261,14 @@ init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
         }
         gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
     }
-    return 0;
 }
 
 /*!
  * \param[in]     top   Topology data structure.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_merge.
- * \returns       0 for success.
  */
-static int
+static void
 init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
@@ -290,7 +283,6 @@ init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     {
         gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
     }
-    return 0;
 }
 
 /*!
@@ -313,9 +305,8 @@ free_data_merge(void *data)
  * \param[in]  p     Positions to merge (should point to \p data->p1).
  * \param[out] out   Output data structure (\p out->u.p is used).
  * \param[in]  data  Should point to a \p t_methoddata_merge.
- * \returns    0 on success.
  */
-static int
+static void
 evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
@@ -325,8 +316,7 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
     if (d->p1.nr != d->stride*d->p2.nr)
     {
-        fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
-        return -1;
+        GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
@@ -345,7 +335,6 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
     gmx_ana_pos_append_finish(out->u.p);
-    return 0;
 }
 
 /*!
@@ -355,9 +344,8 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param[in]  p     Positions to merge (should point to \p data->p1).
  * \param[out] out   Output data structure (\p out->u.p is used).
  * \param[in]  data  Should point to a \p t_methoddata_merge.
- * \returns    0 on success.
  */
-static int
+static void
 evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
@@ -382,5 +370,4 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
     gmx_ana_pos_append_finish(out->u.p);
-    return 0;
 }

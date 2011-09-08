@@ -72,27 +72,27 @@ init_data_kwreal(int npar, gmx_ana_selparam_t *param);
 static void *
 init_data_kwstr(int npar, gmx_ana_selparam_t *param);
 /** Initializes data for integer keyword evaluation. */
-static int
+static void
 init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes data for real keyword evaluation. */
-static int
+static void
 init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes data for string keyword evaluation. */
-static int
+static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for string keyword evaluation. */
 static void
 free_data_kwstr(void *data);
 /** Evaluates integer selection keywords. */
-static int
+static void
 evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates real selection keywords. */
-static int
+static void
 evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates string selection keywords. */
-static int
+static void
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
@@ -225,19 +225,19 @@ gmx_ana_selmethod_t sm_keyword_str = {
 };
 
 /** Initializes keyword evaluation for an arbitrary group. */
-static int
+static void
 init_kweval(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for keyword evaluation in an arbitrary group. */
-static int
+static void
 init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the data allocated for keyword evaluation in an arbitrary group. */
 static void
 free_data_kweval(void *data);
 /** Initializes frame evaluation for keyword evaluation in an arbitrary group. */
-static int
+static void
 init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates keywords in an arbitrary group. */
-static int
+static void
 evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
@@ -285,9 +285,8 @@ init_data_kwint(int npar, gmx_ana_selparam_t *param)
  * \param[in] npar  Not used (should be 2).
  * \param[in] param Method parameters (should point to \ref smparams_keyword_int).
  * \param[in] data  Should point to \ref t_methoddata_kwint.
- * \returns   0 (the initialization always succeeds).
  */
-static int
+static void
 init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwint *d = (t_methoddata_kwint *)data;
@@ -295,7 +294,6 @@ init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     d->v = param[0].val.u.i;
     d->n = param[1].val.nr;
     d->r = param[1].val.u.i;
-    return 0;
 }
 
 /*!
@@ -306,7 +304,7 @@ init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \c t_methoddata_kwint structure for this selection.
  * Matching atoms are stored in \p out->u.g.
  */
-static int
+static void
 evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -347,7 +345,6 @@ evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             out->u.g->index[out->u.g->isize++] = g->index[i];
         }
     }
-    return 0;
 }
 
 
@@ -378,7 +375,7 @@ init_data_kwreal(int npar, gmx_ana_selparam_t *param)
  * \param[in] data  Should point to \ref t_methoddata_kwreal.
  * \returns   0 (the initialization always succeeds).
  */
-static int
+static void
 init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
@@ -386,7 +383,6 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     d->v = param[0].val.u.r;
     d->n = param[1].val.nr;
     d->r = param[1].val.u.r;
-    return 0;
 }
 
 /*!
@@ -397,7 +393,7 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \c t_methoddata_kwreal structure for this selection.
  * Matching atoms are stored in \p out->u.g.
  */
-static int
+static void
 evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -438,7 +434,6 @@ evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             out->u.g->index[out->u.g->isize++] = g->index[i];
         }
     }
-    return 0;
 }
 
 
@@ -467,9 +462,8 @@ init_data_kwstr(int npar, gmx_ana_selparam_t *param)
  * \param[in] npar  Not used (should be 2).
  * \param[in] param Method parameters (should point to \ref smparams_keyword_str).
  * \param[in] data  Should point to \ref t_methoddata_kwstr.
- * \returns   0 (the initialization always succeeds).
  */
-static int
+static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
@@ -484,7 +478,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     /* Return if this is not the first time */
     if (d->m)
     {
-        return 0;
+        return;
     }
     snew(d->m, d->n);
     for (i = 0; i < d->n; ++i)
@@ -501,6 +495,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         if (bRegExp)
         {
+            // TODO: Get rid of these prints to stderr
 #ifdef USE_REGEX
             snew(buf, strlen(s) + 3);
             sprintf(buf, "^%s$", s);
@@ -523,7 +518,6 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         d->m[i].bRegExp = bRegExp;
     }
-    return 0;
 }
 
 /*!
@@ -560,7 +554,7 @@ free_data_kwstr(void *data)
  * Wildcards are allowed in the strings.
  * Matching atoms are stored in \p out->u.g.
  */
-static int
+static void
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -598,7 +592,6 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             out->u.g->index[out->u.g->isize++] = g->index[i];
         }
     }
-    return 0;
 }
 
 
@@ -615,12 +608,12 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  *
  * Calls the initialization method of the wrapped keyword.
  */
-static int
+static void
 init_kweval(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
-    return d->kwmethod->init(top, 0, NULL, d->kwmdata);
+    d->kwmethod->init(top, 0, NULL, d->kwmdata);
 }
 
 /*!
@@ -629,13 +622,12 @@ init_kweval(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_kweval.
  * \returns       0 for success.
  */
-static int
+static void
 init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
     out->nr = d->g.isize;
-    return 0;
 }
 
 /*!
@@ -661,12 +653,12 @@ free_data_kweval(void *data)
  * Creates a lookup structure that enables fast queries of whether a point
  * is within the solid angle or not.
  */
-static int
+static void
 init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
-    return d->kwmethod->init_frame(top, fr, pbc, d->kwmdata);
+    d->kwmethod->init_frame(top, fr, pbc, d->kwmdata);
 }
 
 /*!
@@ -677,13 +669,13 @@ init_frame_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * parameters, with the exception of using \c t_methoddata_kweval::g for the
  * evaluation group.
  */
-static int
+static void
 evaluate_kweval(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kweval *d = (t_methoddata_kweval *)data;
 
-    return d->kwmethod->update(top, fr, pbc, &d->g, out, d->kwmdata);
+    d->kwmethod->update(top, fr, pbc, &d->g, out, d->kwmdata);
 }
 
 /*!

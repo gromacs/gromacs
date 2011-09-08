@@ -293,11 +293,6 @@
 #include "selparam.h"
 #include "selvalue.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 struct gmx_ana_pos_t;
 struct gmx_ana_poscalc_coll_t;
 struct gmx_ana_selcollection_t;
@@ -439,7 +434,7 @@ typedef void  (*sel_posfunc)(struct gmx_ana_poscalc_coll_t *pcc, void *data);
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef int   (*sel_initfunc)(t_topology *top, int npar,
+typedef void  (*sel_initfunc)(t_topology *top, int npar,
                               gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output data structure.
@@ -468,7 +463,7 @@ typedef int   (*sel_initfunc)(t_topology *top, int npar,
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef int   (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
+typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
                                  void *data);
 /*! \brief
  * Frees the internal data.
@@ -509,7 +504,7 @@ typedef void  (*sel_freefunc)(void *data);
  * For static methods, it is called once, with \p fr and \p pbc set to
  * NULL.
  */
-typedef int   (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+typedef void  (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                void *data);
 /*! \brief
  * Evaluates a selection method.
@@ -536,7 +531,7 @@ typedef int   (*sel_framefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
  */
-typedef int   (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+typedef void  (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
                                 void *data);
 /*! \brief
@@ -564,7 +559,7 @@ typedef int   (*sel_updatefunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * without freeing; it is the responsibility of this function to provide
  * pointers that can be discarded without memory leaks.
  */
-typedef int   (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+typedef void  (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                     struct gmx_ana_pos_t *pos,
                                     gmx_ana_selvalue_t *out,
                                     void *data);
@@ -660,9 +655,5 @@ gmx_ana_selmethod_register_defaults(struct gmx_sel_symtab_t *symtab);
 /** Finds a parameter from a selection method by name. */
 gmx_ana_selparam_t *
 gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

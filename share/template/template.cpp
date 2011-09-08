@@ -28,6 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -170,15 +171,9 @@ TrajectoryAnalysisModuleData *
 AnalysisTemplate::startFrames(AnalysisDataParallelOptions opt,
                               const SelectionCollection &selections)
 {
-    ModuleData *pdata = new ModuleData(this, opt, selections);
-    int rc = NeighborhoodSearch::create(&pdata->_nb, _cutoff, _refsel->posCount());
-    if (rc != 0)
-    {
-        delete pdata;
-        // FIXME: Use exceptions in the neighborhood search API
-        GMX_THROW(InternalError("Neighborhood search initialization failed"));
-    }
-    return pdata;
+    std::auto_ptr<ModuleData> pdata(new ModuleData(this, opt, selections));
+    pdata->_nb = new NeighborhoodSearch(_cutoff, _refsel->posCount());
+    return pdata.release();
 }
 
 
@@ -189,12 +184,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnalysisDataHandle *dh = pdata->dataHandle("avedist");
     NeighborhoodSearch *nb = static_cast<ModuleData *>(pdata)->_nb;
 
-    int rc = nb->init(pbc, _refsel->positions());
-    if (rc != 0)
-    {
-        // FIXME: Use exceptions in the neighborhood search API
-        GMX_THROW(InternalError("Neighborhood search frame initialization failed"));
-    }
+    nb->init(pbc, _refsel->positions());
     dh->startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
