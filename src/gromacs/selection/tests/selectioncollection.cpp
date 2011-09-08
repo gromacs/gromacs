@@ -44,6 +44,10 @@
 #include "tpxio.h"
 #include "vec.h"
 
+// FIXME: This kind of hackery should not be necessary
+#undef min
+#undef max
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
@@ -72,6 +76,7 @@ class SelectionCollectionTest : public ::testing::Test
         void loadTopology(const char *filename);
 
         gmx::SelectionCollection _sc;
+        std::vector<gmx::Selection *> _sel;
         t_topology              *_top;
         t_trxframe              *_frame;
 };
@@ -156,7 +161,6 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         void runEvaluateFinal();
 
         gmx::test::TestReferenceData  _data;
-        std::vector<gmx::Selection *> _sel;
         size_t                        _count;
         int                           _framenr;
         TestFlags                     _flags;
@@ -321,7 +325,60 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
     EXPECT_NO_THROW(_sc.compile());
 }
 
-// TODO: Tests for error conditions
+// TODO: Tests for parser errors
+
+TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("group \"foo\"", &_sel));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    EXPECT_THROW(_sc.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW(_sc.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("molindex 1 to 5", &_sel));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromMissingAtomTypes)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("type CA", &_sel));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromMissingPDBInfo)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("altloc A", &_sel));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("all permute 1 1", &_sel));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    EXPECT_THROW(_sc.compile(), gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation2)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("all permute 3 2 1", &_sel));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    EXPECT_THROW(_sc.compile(), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
+{
+    ASSERT_NO_THROW(_sc.parseFromString("x < 1.5 permute 3 2 1", &_sel));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW(_sc.compile());
+    EXPECT_THROW(_sc.evaluate(_frame, NULL), gmx::InconsistentInputError);
+}
+
+// TODO: Tests for evaluation errors
 
 
 /********************************************************************
