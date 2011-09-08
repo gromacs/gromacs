@@ -59,8 +59,6 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
-#else
-#include "no_omp.h"
 #endif
 
 /* Find a better place for this? */
@@ -1077,6 +1075,44 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
 }
 
 
+void do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
+                         rvec r_ij,rvec r_kj,rvec r_kl,
+                         rvec m,rvec n,rvec f[])
+{
+  /* 143 FLOPS */
+  rvec f_i,f_j,f_k,f_l;
+  rvec uvec,vvec,svec,dx_jl;
+  real iprm,iprn,nrkj,nrkj2;
+  real a,p,q,toler;
+  ivec jt,dt_ij,dt_kj,dt_lj;  
+  
+  iprm  = iprod(m,m);		/*  5 	*/
+  iprn  = iprod(n,n);		/*  5	*/
+  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  toler = nrkj2*GMX_REAL_EPS;
+  if ((iprm > toler) && (iprn > toler)) {
+    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
+    a     = -ddphi*nrkj/iprm;	/* 11	*/
+    svmul(a,m,f_i);		/*  3	*/
+    a     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(a,n,f_l);		/*  3 	*/
+    p     = iprod(r_ij,r_kj);	/*  5	*/
+    p    /= nrkj2;		/* 10	*/
+    q     = iprod(r_kl,r_kj);	/*  5	*/
+    q    /= nrkj2;		/* 10	*/
+    svmul(p,f_i,uvec);		/*  3	*/
+    svmul(q,f_l,vvec);		/*  3	*/
+    rvec_sub(uvec,vvec,svec);	/*  3	*/
+    rvec_sub(f_i,svec,f_j);	/*  3	*/
+    rvec_add(f_l,svec,f_k);	/*  3	*/
+    rvec_inc(f[i],f_i);   	/*  3	*/
+    rvec_dec(f[j],f_j);   	/*  3	*/
+    rvec_dec(f[k],f_k);   	/*  3	*/
+    rvec_inc(f[l],f_l);   	/*  3	*/
+  }
+}
+
+
 real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 	     real phi,real lambda,real *V,real *F)
 {
@@ -1100,6 +1136,23 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
   return dvdl;
   
   /* That was 40 flops */
+}
+
+void dopdihs_noener(real cpA,real cpB,real phiA,real phiB,int mult,
+                    real phi,real lambda,real *F)
+{
+  real mdphi,sdphi,ddphi;
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real cp   = L1*cpA + lambda*cpB;
+  
+  mdphi =  mult*phi - ph0;
+  sdphi = sin(mdphi);
+  ddphi = -cp*mult*sdphi;
+  
+  *F = ddphi;
+  
+  /* That was 20 flops */
 }
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
@@ -1175,6 +1228,57 @@ real pdihs(int nbonds,
 }
 
 
+/* Same as pdihs above, but without calculating energies and shift forces */
+void pdihs_noener(int nbonds,
+                  const t_iatom forceatoms[],const t_iparams forceparams[],
+                  const rvec x[],rvec f[],
+                  const t_pbc *pbc,const t_graph *g,
+                  real lambda,
+                  const t_mdatoms *md,t_fcdata *fcd,
+                  int *global_atom_index)
+{
+    int  i,type,ai,aj,ak,al;
+    int  t1,t2,t3;
+    rvec r_ij,r_kj,r_kl,m,n;
+    real phi,sign,ddphi_tot,ddphi;
+
+    for(i=0; (i<nbonds); )
+    {
+        ai   = forceatoms[i+1];
+        aj   = forceatoms[i+2];
+        ak   = forceatoms[i+3];
+        al   = forceatoms[i+4];
+
+        phi = dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                        &sign,&t1,&t2,&t3);
+
+        ddphi_tot = 0;
+
+        /* Loop over dihedrals working on the same atoms,
+         * so we avoid recalculating angles and force distributions.
+         */
+        do
+        {
+            type = forceatoms[i];
+            dopdihs_noener(forceparams[type].pdihs.cpA,
+                           forceparams[type].pdihs.cpB,
+                           forceparams[type].pdihs.phiA,
+                           forceparams[type].pdihs.phiB,
+                           forceparams[type].pdihs.mult,
+                           phi,lambda,&ddphi);
+            ddphi_tot += ddphi;
+
+            i += 5;
+        }
+        while(i < nbonds &&
+              forceatoms[i+1] == ai &&
+              forceatoms[i+2] == aj &&
+              forceatoms[i+3] == ak &&
+              forceatoms[i+4] == al);
+
+        do_dih_fup_noshiftf(ai,aj,ak,al,ddphi_tot,r_ij,r_kj,r_kl,m,n,f);
+    }
+}
 
 real idihs(int nbonds,
 	   const t_iatom forceatoms[],const t_iparams forceparams[],
@@ -2661,16 +2765,10 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 gmx_bool bCalcEnerVir,
 		gmx_bool bPrintSepPot,gmx_large_int_t step)
 {
-  int    ftype,nbonds,ind,nat1;
-  real   *epot,v,dvdl_nl,dvdl;
-  const  t_pbc *pbc_null;
-  char   buf[22];
-  /* thread stuff */
-  int    t;
-  rvec   *ft,*fshift;
-  real   *ener,*dvdlt;
-  gmx_grppairener_t *grpp;
-  int    nb0,nbn;
+    real   *epot,dvdl_nl;
+    const  t_pbc *pbc_null;
+    char   buf[22];
+    int    thread;
 
   if (fr->bMolPBC)
     pbc_null = pbc;
@@ -2704,14 +2802,18 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 
     dvdl_nl = 0;
 
-/*
-#pragma omp parallel for private(ftype,v,dvdl,ind,nat1,ft,fshift,epot,grpp,dvdlt,nbonds,nb0,nbn) schedule(static)
-    for(t=0; t<fr->nthreads; t++)
-*/
-#pragma omp parallel num_threads(fr->nthreads) private(ftype,v,dvdl,ind,nat1,ft,fshift,epot,grpp,dvdlt,nbonds,nb0,nbn,t)
+#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
+    for(thread=0; thread<fr->nthreads; thread++)
     {
-        t = omp_get_thread_num();
-        if (t == 0)
+        int    ftype,nbonds,ind,nat1;
+        real   *epot,v,dvdl;
+        /* thread stuff */
+        rvec   *ft,*fshift;
+        real   *dvdlt;
+        gmx_grppairener_t *grpp;
+        int    nb0,nbn;
+
+        if (thread == 0)
         {
             ft     = f;
             fshift = fr->fshift;
@@ -2721,13 +2823,13 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
         }
         else
         {
-            zero_thread_forces(&fr->f_t[t],fr->natoms_force);
+            zero_thread_forces(&fr->f_t[thread],fr->natoms_force);
 
-            ft     = fr->f_t[t].f;
-            fshift = fr->f_t[t].fshift;
-            epot   = fr->f_t[t].ener;
-            grpp   = &fr->f_t[t].grpp;
-            dvdlt  = &fr->f_t[t].dvdl;
+            ft     = fr->f_t[thread].f;
+            fshift = fr->f_t[thread].fshift;
+            epot   = fr->f_t[thread].ener;
+            grpp   = &fr->f_t[thread].grpp;
+            dvdlt  = &fr->f_t[thread].dvdl;
         }
         /* Loop over all bonded force types to calculate the bonded forces */
         for(ftype=0; (ftype<F_NRE); ftype++)
@@ -2744,8 +2846,8 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                         nat1 = interaction_function[ftype].nratoms + 1;
                         nbonds /= nat1;
 
-                        nb0 = ((nbonds* t   )/(fr->nthreads))*nat1;
-                        nbn = ((nbonds*(t+1))/(fr->nthreads))*nat1 - nb0;
+                        nb0 = ((nbonds* thread   )/(fr->nthreads))*nat1;
+                        nbn = ((nbonds*(thread+1))/(fr->nthreads))*nat1 - nb0;
 
                         dvdl = 0;
                         if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB)
@@ -2757,6 +2859,18 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                                               (const rvec*)x,ft,fshift,
                                               pbc_null,g,lambda,&dvdl,md,fcd,
                                               global_atom_index);
+                            }
+                            else if (ftype == F_PDIHS &&
+                                     !bCalcEnerVir && fr->efep==efepNO)
+                            {
+                                /* No energies, shift forces, dvdl */
+                                pdihs_noener(nbn,idef->il[ftype].iatoms+nb0,
+                                             idef->iparams,
+                                             (const rvec*)x,ft,
+                                             pbc_null,g,lambda,md,fcd,
+                                             global_atom_index);
+                                v    = 0;
+                                dvdl = 0;
                             }
                             else
                             {
@@ -2789,7 +2903,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                                         interaction_function[F_COUL14].longname,nbonds,dvdl);
                             }
                         }
-                        if (ind != -1 && t == 0)
+                        if (ind != -1 && thread == 0)
                         {
                             inc_nrnb(nrnb,ind,nbonds);
                         }
