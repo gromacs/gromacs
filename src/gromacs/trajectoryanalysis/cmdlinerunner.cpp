@@ -223,12 +223,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     }
 
     common.initTopology(&selections);
-    rc = selections.compile();
-    if (rc != 0)
-    {
-        // Error message has already been printed.
-        return 1;
-    }
+    selections.compile();
 
     const TopologyInformation &topology = common.topologyInformation();
     module->initAnalysis(topology);
@@ -252,12 +247,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
 
-        rc = selections.evaluate(&frame, ppbc);
-        if (rc != 0)
-        {
-            // Error message has already been printed.
-            return 1;
-        }
+        selections.evaluate(&frame, ppbc);
         module->analyzeFrame(nframes, frame, ppbc, pdata.get());
 
         nframes++;

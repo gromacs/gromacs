@@ -264,7 +264,7 @@ class SelectionCollection
          * The covered fraction information is initialized to ::CFRAC_NONE for
          * all selections.
          */
-        int compile();
+        void compile();
         /*! \brief
          * Evaluates selections in the collection.
          *
@@ -272,7 +272,7 @@ class SelectionCollection
          * \param[in] pbc PBC data, or NULL if no PBC should be used.
          * \returns   0 on successful evaluation, a non-zero error code on error.
          */
-        int evaluate(t_trxframe *fr, t_pbc *pbc);
+        void evaluate(t_trxframe *fr, t_pbc *pbc);
         /*! \brief
          * Evaluates the largest possible index groups from dynamic selections.
          *

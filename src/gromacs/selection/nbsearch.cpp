@@ -152,17 +152,16 @@ struct gmx_ana_nbsearch_t
 };
 
 /*!
- * \param[out] data   Neighborhood search data structure pointer to initialize.
  * \param[in]  cutoff Cutoff distance for the search
  *   (<=0 stands for no cutoff).
  * \param[in]  maxn   Maximum number of reference particles.
- * \returns    0 on success.
+ * \returns  Created neighborhood search data structure.
  */
-int
-gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **data, real cutoff, int maxn)
+gmx_ana_nbsearch_t *
+gmx_ana_nbsearch_create(real cutoff, int maxn)
 {
     gmx_ana_nbsearch_t *d;
-    
+
     snew(d, 1);
     d->bTryGrid = TRUE;
     if (cutoff <= 0)
@@ -189,8 +188,7 @@ gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **data, real cutoff, int maxn)
     d->gnboffs = NULL;
     d->gnboffs_nalloc = 0;
 
-    *data = d;
-    return 0;
+    return d;
 }
 
 /*!
@@ -446,12 +444,11 @@ grid_add_to_cell(gmx_ana_nbsearch_t *d, const ivec cell, int i)
  * \param[in]     pbc PBC information for the frame.
  * \param[in]     n   Number of reference positions for the frame.
  * \param[in]     x   \p n reference positions for the frame.
- * \returns       0 on success.
  *
  * Initializes the data structure \p d such that it can be used to search
  * for the neighbors of \p x.
  */
-int
+void
 gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[])
 {
     d->pbc  = pbc;
@@ -495,25 +492,20 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[])
         d->xref = const_cast<rvec *>(x);
     }
     d->refid = NULL;
-    return 0;
 }
 
 /*!
  * \param[in,out] d   Neighborhood search data structure.
  * \param[in]     pbc PBC information for the frame.
  * \param[in]     p   Reference positions for the frame.
- * \returns       0 on success.
  *
  * A convenience wrapper for gmx_ana_nbsearch_init().
  */
-int
+void
 gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, const gmx_ana_pos_t *p)
 {
-    int rc;
-
-    rc = gmx_ana_nbsearch_init(d, pbc, p->nr, p->x);
+    gmx_ana_nbsearch_init(d, pbc, p->nr, p->x);
     d->refid = (p->nr < d->maxnref ? p->m.refid : NULL);
-    return rc;
 }
 
 /*!
@@ -521,17 +513,15 @@ gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, const gmx_ana_pos_t
  * \param[in]     nexcl Number of reference positions to exclude from next
  *      search.
  * \param[in]     excl  Indices of reference positions to exclude.
- * \returns       0 on success.
  *
  * The set exclusions remain in effect until the next call of this function.
  */
-int
+void
 gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
 {
 
     d->nexcl = nexcl;
     d->excl = excl;
-    return 0;
 }
 
 /*! \brief

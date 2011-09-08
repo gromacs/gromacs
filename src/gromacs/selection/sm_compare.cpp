@@ -42,8 +42,8 @@
 #include <maths.h>
 #include <macros.h>
 #include <smalloc.h>
-#include <gmx_fatal.h>
 
+#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
@@ -101,13 +101,13 @@ typedef struct
 static void *
 init_data_compare(int npar, gmx_ana_selparam_t *param);
 /** Initializes data for comparison expression evaluation. */
-static int
+static void
 init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for comparison expression evaluation. */
 static void
 free_data_compare(void *data);
 /** Evaluates comparison expressions. */
-static int
+static void
 evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
@@ -347,7 +347,7 @@ convert_int_real(int n, t_compare_value *val)
  *
  * The values are rounded such that the same comparison operator can be used.
  */
-static int
+static void
 convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRight)
 {
     int   i;
@@ -373,13 +373,15 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRig
                 break;
             case CMP_EQUAL:
             case CMP_NEQ:
-                fprintf(stderr, "comparing equality an integer expression and a real value\n");
                 sfree(iv);
-                return EINVAL;
+                /* TODO: Implement, although it isn't typically very useful.
+                 * Implementation is only a matter or proper initialization,
+                 * the evaluation function can already handle this case with
+                 * proper preparations. */
+                GMX_THROW(gmx::NotImplementedError("Equality comparison between dynamic integer and static real expressions not implemented"));
             case CMP_INVALID: /* Should not be reached */
-                gmx_bug("internal error");
                 sfree(iv);
-                return EINVAL;
+                GMX_THROW(gmx::InternalError("Invalid comparison type"));
         }
     }
     /* Free the previous value if one is present. */
@@ -387,7 +389,6 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRig
     val->i      = iv;
     val->flags &= ~CMP_REALVAL;
     val->flags |= CMP_ALLOCINT;
-    return 0;
 }
 
 /*!
@@ -397,7 +398,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRig
  * \param[in] data  Should point to a \c t_methoddata_compare.
  * \returns   0 if the input data is valid, -1 on error.
  */
-static int
+static void
 init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
@@ -408,15 +409,13 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     n2 = init_comparison_value(&d->right, &param[3]);
     if (n1 == 0 || n2 == 0)
     {
-        gmx_bug("one of the values for comparison missing");
-        return -1;
+        GMX_THROW(gmx::InternalError("One of the values for comparison missing"));
     }
     /* Store the comparison type */
     d->cmpt = comparison_type(d->cmpop);
     if (d->cmpt == CMP_INVALID)
     {
-        gmx_bug("invalid comparison type");
-        return -1;
+        GMX_THROW(gmx::InternalError("Invalid comparison type"));
     }
     /* Convert the values to the same type */
     if ((d->left.flags & CMP_REALVAL) && !(d->right.flags & CMP_REALVAL))
@@ -431,10 +430,7 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         else /* d->left is static */
         {
-            if (convert_real_int(n1, &d->left, d->cmpt, FALSE))
-            {
-                return -1;
-            }
+            convert_real_int(n1, &d->left, d->cmpt, FALSE);
         }
     }
     else if (!(d->left.flags & CMP_REALVAL) && (d->right.flags & CMP_REALVAL))
@@ -458,13 +454,9 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         else /* d->right is static */
         {
-            if (convert_real_int(n2, &d->right, d->cmpt, TRUE))
-            {
-                return -1;
-            }
+            convert_real_int(n2, &d->right, d->cmpt, TRUE);
         }
     }
-    return 0;
 }
 
 /*!
@@ -503,9 +495,8 @@ free_data_compare(void *data)
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
- * \returns    0 for success.
  */
-static int
+static void
 evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -543,7 +534,6 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
     }
     out->u.g->isize = ig;
-    return 0;
 }
 
 /*!
@@ -553,9 +543,8 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
- * \returns    0 for success.
  */
-static int
+static void
 evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -593,7 +582,6 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
     }
     out->u.g->isize = ig;
-    return 0;
 }
 
 /*!
@@ -603,9 +591,8 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
- * \returns    0 for success.
  */
-static int
+static void
 evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
@@ -613,11 +600,10 @@ evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
     if (!((d->left.flags | d->right.flags) & CMP_REALVAL))
     {
-        return evaluate_compare_int(top, fr, pbc, g, out, data);
+        evaluate_compare_int(top, fr, pbc, g, out, data);
     }
     else
     {
-        return evaluate_compare_real(top, fr, pbc, g, out, data);
+        evaluate_compare_real(top, fr, pbc, g, out, data);
     }
-    return 0;
 }

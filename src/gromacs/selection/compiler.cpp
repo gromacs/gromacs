@@ -273,6 +273,9 @@
 #include <string2.h>
 #include <vec.h>
 
+// FIXME: Should really be in the beginning, but causes compilation errors
+#include <algorithm>
+
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
@@ -285,10 +288,7 @@
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 
-static int min(int a, int b)
-{
-    return (a < b) ? a : b;
-}
+using std::min;
 
 /*! \internal \brief
  * Compiler flags.
@@ -316,6 +316,8 @@ enum
     SEL_CDATA_EVALMAX     =  8,
     /** Whether memory has been allocated for \p gmin and \p gmax. */
     SEL_CDATA_MINMAXALLOC = 16,
+    /** Whether to update \p gmin and \p gmax in static analysis. */
+    SEL_CDATA_DOMINMAX      = 128,
     /** Whether subexpressions use simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
     /** Whether this expressions is a part of a common subexpression. */
@@ -1138,7 +1140,7 @@ init_item_evalfunc(t_selelem *sel)
             break;
 
         case SEL_GROUPREF:
-            GMX_THROW(gmx::InconsistentInputError("Unresolved group reference in compilation"));
+            GMX_THROW(gmx::APIError("Unresolved group reference in compilation"));
     }
 }
 
@@ -1504,7 +1506,7 @@ init_item_minmax_groups(t_selelem *sel)
         }
         else
         {
-            sel->cdata->flags |= SEL_CDATA_MINMAXALLOC;
+            sel->cdata->flags |= SEL_CDATA_MINMAXALLOC | SEL_CDATA_DOMINMAX;
             snew(sel->cdata->gmin, 1);
             snew(sel->cdata->gmax, 1);
         }
@@ -1682,21 +1684,17 @@ make_static(t_selelem *sel)
  * \param[in]     g   The evaluation group.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int
+static void
 process_const(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    int  rc;
-
-    rc = 0;
     if (sel->v.type == GROUP_VALUE)
     {
         if (sel->cdata->evaluate)
         {
-            rc = sel->cdata->evaluate(data, sel, g);
+            sel->cdata->evaluate(data, sel, g);
         }
     }
     /* Other constant expressions do not need evaluation */
-    return rc;
 }
 
 /*! \brief
@@ -1747,12 +1745,11 @@ store_param_val(t_selelem *sel)
  * If no \ref SPAR_ATOMVAL parameters are present, multiple initialization
  * is prevented by using \ref SEL_METHODINIT and \ref SEL_OUTINIT flags.
  */
-static int
+static void
 init_method(t_selelem *sel, t_topology *top, int isize)
 {
     t_selelem *child;
     gmx_bool       bAtomVal;
-    int        rc;
 
     /* Find out whether there are any atom-valued parameters */
     bAtomVal = FALSE;
@@ -1771,23 +1768,15 @@ init_method(t_selelem *sel, t_topology *top, int isize)
         && (bAtomVal || !(sel->flags & SEL_METHODINIT)))
     {
         sel->flags |= SEL_METHODINIT;
-        rc = sel->u.expr.method->init(top, sel->u.expr.method->nparams,
+        sel->u.expr.method->init(top, sel->u.expr.method->nparams,
                 sel->u.expr.method->param, sel->u.expr.mdata);
-        if (rc != 0)
-        {
-            return rc;
-        }
     }
     if (bAtomVal || !(sel->flags & SEL_OUTINIT))
     {
         sel->flags |= SEL_OUTINIT;
         if (sel->u.expr.method->outinit)
         {
-            rc = sel->u.expr.method->outinit(top, &sel->v, sel->u.expr.mdata);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            sel->u.expr.method->outinit(top, &sel->v, sel->u.expr.mdata);
             if (sel->v.type != POS_VALUE && sel->v.type != GROUP_VALUE)
             {
                 alloc_selection_data(sel, isize, TRUE);
@@ -1809,8 +1798,7 @@ init_method(t_selelem *sel, t_topology *top, int isize)
                 /* A sanity check */
                 if (sel->v.type != STR_VALUE)
                 {
-                    gmx_bug("internal error");
-                    return -1;
+                    GMX_THROW(gmx::InternalError("Char-valued selection method in non-string element"));
                 }
                 sel->flags |= SEL_ALLOCDATA;
                 for (i = 0; i < isize; ++i)
@@ -1833,8 +1821,6 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             }
         }
     }
-
-    return 0;
 }
 
 /*! \brief
@@ -1848,12 +1834,11 @@ init_method(t_selelem *sel, t_topology *top, int isize)
  *
  * reorder_item_static_children() should have been called.
  */
-static int
+static void
 evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
     t_selelem *child, *next;
-    int        rc;
 
     /* Find the last static subexpression */
     child = sel->child;
@@ -1863,7 +1848,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     }
     if (!(child->cdata->flags & SEL_CDATA_STATIC))
     {
-        return 0;
+        return;
     }
 
     /* Evalute the static part if there is more than one expression */
@@ -1871,11 +1856,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     {
         next  = child->next;
         child->next = NULL;
-        rc = sel->cdata->evaluate(data, sel, g);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        sel->cdata->evaluate(data, sel, g);
         /* Replace the subexpressions with the result */
         _gmx_selelem_free_chain(sel->child);
         snew(child, 1);
@@ -1894,11 +1875,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     }
     else if (child->evaluate)
     {
-        rc = child->evaluate(data, child, g);
-        if (rc != 0)
-        {
-            return rc;
-        }
+        child->evaluate(data, child, g);
     }
     /* Set the evaluation function for the constant element.
      * We never need to evaluate the element again during compilation,
@@ -1934,7 +1911,6 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
             gmx_ana_index_copy(&child->u.cgrp, child->v.u.g, TRUE);
         }
     }
-    return 0;
 }
 
 /*! \brief
@@ -2026,7 +2002,7 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
             break;
 
         case BOOL_XOR: /* Should not be reached */
-            gmx_impl("xor expressions not implemented");
+            GMX_THROW(gmx::NotImplementedError("xor expressions not implemented"));
             break;
     }
 }
@@ -2050,19 +2026,18 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
  * another pass is required for subexpressions that are referred to more than
  * once and whose evaluation group is not known in advance.
  */
-static int
+static void
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
     t_selelem       *child, *next;
     gmx_bool             bDoMinMax;
-    int              rc;
 
     if (sel->type != SEL_ROOT && g)
     {
         alloc_selection_data(sel, g->isize, FALSE);
     }
 
-    bDoMinMax = (sel->cdata->flags & SEL_CDATA_MINMAXALLOC);
+    bDoMinMax = (sel->cdata->flags & SEL_CDATA_DOMINMAX);
     if (sel->type != SEL_SUBEXPR && bDoMinMax)
     {
         gmx_ana_index_deinit(sel->cdata->gmin);
@@ -2070,29 +2045,20 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
     }
 
     /* TODO: This switch is awfully long... */
-    rc = 0;
     switch (sel->type)
     {
         case SEL_CONST:
-            rc = process_const(data, sel, g);
+            process_const(data, sel, g);
             break;
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
-            rc = _gmx_sel_evaluate_method_params(data, sel, g);
-            if (rc != 0)
-            {
-                return rc;
-            }
-            rc = init_method(sel, data->top, g->isize);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            _gmx_sel_evaluate_method_params(data, sel, g);
+            init_method(sel, data->top, g->isize);
             if (!(sel->flags & SEL_DYNAMIC))
             {
-                rc = sel->cdata->evaluate(data, sel, g);
-                if (rc == 0 && (sel->cdata->flags & SEL_CDATA_STATIC))
+                sel->cdata->evaluate(data, sel, g);
+                if (sel->cdata->flags & SEL_CDATA_STATIC)
                 {
                     make_static(sel);
                 }
@@ -2104,7 +2070,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                  * maximum possible selections. */
                 if (sel->type == SEL_MODIFIER)
                 {
-                    rc = sel->cdata->evaluate(data, sel, g);
+                    sel->cdata->evaluate(data, sel, g);
                 }
                 if (bDoMinMax)
                 {
@@ -2116,8 +2082,8 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
         case SEL_BOOLEAN:
             if (!(sel->flags & SEL_DYNAMIC))
             {
-                rc = sel->cdata->evaluate(data, sel, g);
-                if (rc == 0 && (sel->cdata->flags & SEL_CDATA_STATIC))
+                sel->cdata->evaluate(data, sel, g);
+                if (sel->cdata->flags & SEL_CDATA_STATIC)
                 {
                     make_static(sel);
                 }
@@ -2125,11 +2091,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             else
             {
                 /* Evalute the static part if there is more than one expression */
-                rc = evaluate_gmx_boolean_static_part(data, sel, g);
-                if (rc != 0)
-                {
-                    return rc;
-                }
+                evaluate_gmx_boolean_static_part(data, sel, g);
 
                 /* Evaluate the selection.
                  * If the type is gmx_boolean, we must explicitly handle the
@@ -2137,15 +2099,11 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                  * here because g may be larger. */
                 if (sel->u.boolt == BOOL_AND && sel->child->type == SEL_CONST)
                 {
-                    rc = sel->cdata->evaluate(data, sel, sel->child->v.u.g);
+                    sel->cdata->evaluate(data, sel, sel->child->v.u.g);
                 }
                 else
                 {
-                    rc = sel->cdata->evaluate(data, sel, g);
-                }
-                if (rc != 0)
-                {
-                    return rc;
+                    sel->cdata->evaluate(data, sel, g);
                 }
 
                 /* Evaluate minimal and maximal selections */
@@ -2155,11 +2113,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_ARITHMETIC:
-            rc = sel->cdata->evaluate(data, sel, g);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            sel->cdata->evaluate(data, sel, g);
             if (!(sel->flags & SEL_DYNAMIC))
             {
                 if (sel->cdata->flags & SEL_CDATA_STATIC)
@@ -2174,19 +2128,19 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_ROOT:
-            rc = sel->cdata->evaluate(data, sel, g);
+            sel->cdata->evaluate(data, sel, g);
             break;
 
         case SEL_SUBEXPR:
             if (sel->cdata->flags & (SEL_CDATA_SIMPLESUBEXPR | SEL_CDATA_FULLEVAL))
             {
-                rc = sel->cdata->evaluate(data, sel, g);
+                sel->cdata->evaluate(data, sel, g);
                 _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
             }
             else if (sel->u.cgrp.isize == 0)
             {
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
-                rc = sel->cdata->evaluate(data, sel, g);
+                sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
                 {
                     gmx_ana_index_copy(sel->cdata->gmin, sel->child->cdata->gmin, TRUE);
@@ -2202,7 +2156,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                     gmx_ana_index_reserve(&sel->u.cgrp, isize);
                     alloc_selection_data(sel, isize, FALSE);
                 }
-                rc = sel->cdata->evaluate(data, sel, g);
+                sel->cdata->evaluate(data, sel, g);
                 if (isize > 0 && bDoMinMax)
                 {
                     gmx_ana_index_reserve(sel->cdata->gmin,
@@ -2227,11 +2181,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                  * selection). */
                 alloc_selection_data(sel, sel->child->cdata->gmax->isize, TRUE);
             }
-            rc = sel->cdata->evaluate(data, sel, g);
-            if (rc != 0)
-            {
-                return rc;
-            }
+            sel->cdata->evaluate(data, sel, g);
             if ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                 && (sel->child->child->flags & SEL_ALLOCVAL))
             {
@@ -2268,13 +2218,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             break;
 
         case SEL_GROUPREF:
-            gmx_incons("unresolved group reference in compilation");
-            return -1;
-    }
-    /* Exit if there was some problem */
-    if (rc != 0)
-    {
-        return rc;
+            GMX_THROW(gmx::APIError("Unresolved group reference in compilation"));
     }
 
     /* Update the minimal and maximal evaluation groups */
@@ -2304,8 +2248,6 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             gmx_ana_index_copy(sel->v.u.g, sel->cdata->gmin, FALSE);
         }
     }
-
-    return 0;
 }
 
 
@@ -2663,7 +2605,7 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
  * The covered fraction information in \p sc is initialized to
  * \ref CFRAC_NONE.
  */
-int
+void
 gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
@@ -2672,17 +2614,12 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     e_poscalc_t  post;
     size_t       i;
     int          flags;
-    int          rc;
     bool         bDebug = (coll->_impl->_debugLevel >= 2
                            && coll->_impl->_debugLevel != 3);
 
     /* FIXME: Clean up the collection on exceptions */
 
-    rc = _gmx_sel_mempool_create(&sc->mempool);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    sc->mempool = _gmx_sel_mempool_create();
     _gmx_sel_evaluate_init(&evaldata, sc->mempool, &sc->gall,
                            sc->top, NULL, NULL);
 
@@ -2763,12 +2700,7 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
             mark_subexpr_dynamic(item->child, TRUE);
         }
         set_evaluation_function(item, &analyze_static);
-        rc = item->evaluate(&evaldata, item, NULL);
-        if (rc != 0)
-        {
-            /* FIXME: Clean up the collection */
-            return rc;
-        }
+        item->evaluate(&evaldata, item, NULL);
         item = item->next;
     }
 
@@ -2788,7 +2720,7 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     {
         if (item->child->cdata->flags & SEL_CDATA_COMMONSUBEXPR)
         {
-            gmx_bool bMinMax = item->child->cdata->flags & SEL_CDATA_MINMAXALLOC;
+            bool bMinMax = item->child->cdata->flags & SEL_CDATA_DOMINMAX;
 
             mark_subexpr_dynamic(item->child, FALSE);
             item->child->u.cgrp.isize = 0;
@@ -2802,16 +2734,11 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
              * For the same reason, we clear the min/max flag so that the
              * evaluation group doesn't get messed up. */
             set_evaluation_function(item, &analyze_static);
-            item->child->cdata->flags &= ~SEL_CDATA_MINMAXALLOC;
-            rc = item->evaluate(&evaldata, item->child, item->child->cdata->gmax);
+            item->child->cdata->flags &= ~SEL_CDATA_DOMINMAX;
+            item->evaluate(&evaldata, item->child, item->child->cdata->gmax);
             if (bMinMax)
             {
-                item->child->cdata->flags |= SEL_CDATA_MINMAXALLOC;
-            }
-            if (rc != 0)
-            {
-                /* FIXME: Clean up the collection */
-                return rc;
+                item->child->cdata->flags |= SEL_CDATA_DOMINMAX;
             }
         }
         item = item->next;
@@ -2844,14 +2771,8 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     }
 
     /* Allocate memory for the evaluation memory pool. */
-    rc = _gmx_sel_mempool_reserve(sc->mempool, 0);
-    if (rc != 0)
-    {
-        return rc;
-    }
+    _gmx_sel_mempool_reserve(sc->mempool, 0);
 
     /* Finish up by calculating total masses and charges. */
     calculate_mass_charge(&sc->sel, sc->top);
-
-    return 0;
 }

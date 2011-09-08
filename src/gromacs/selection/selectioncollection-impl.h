@@ -191,14 +191,14 @@ class SelectionCollection::Impl
 /*! \internal \brief
  * Prepares the selections for evaluation and performs some optimizations.
  */
-int
+void
 gmx_ana_selcollection_compile(gmx::SelectionCollection *coll);
 
 /* In evaluate.cpp */
 /*! \internal \brief
  * Evaluates the selection.
  */
-int
+void
 gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
                                t_trxframe *fr, t_pbc *pbc);
 /*! \internal \brief

@@ -52,29 +52,20 @@ namespace gmx
 class NeighborhoodSearch
 {
     public:
+        NeighborhoodSearch(real cutoff, int maxn)
+            : _d(gmx_ana_nbsearch_create(cutoff, maxn))
+        {
+        }
         ~NeighborhoodSearch() { gmx_ana_nbsearch_free(_d); }
 
-        static int create(NeighborhoodSearch **nbp, real cutoff, int maxn)
-        {
-            gmx_ana_nbsearch_t *d;
-            int rc = gmx_ana_nbsearch_create(&d, cutoff, maxn);
-            if (rc != 0)
-            {
-                *nbp = NULL;
-                return rc;
-            }
-            *nbp = new NeighborhoodSearch(d);
-            return 0;
-        }
+        void init(t_pbc *pbc, int n, const rvec x[])
+        { gmx_ana_nbsearch_init(_d, pbc, n, x); }
 
-        int init(t_pbc *pbc, int n, const rvec x[])
-        { return gmx_ana_nbsearch_init(_d, pbc, n, x); }
+        void init(t_pbc *pbc, const gmx_ana_pos_t *p)
+        { gmx_ana_nbsearch_pos_init(_d, pbc, p); }
 
-        int init(t_pbc *pbc, const gmx_ana_pos_t *p)
-        { return gmx_ana_nbsearch_pos_init(_d, pbc, p); }
-
-        int setExclusions(int nexcl, atom_id *excl)
-        { return gmx_ana_nbsearch_set_excl(_d, nexcl, excl); }
+        void setExclusions(int nexcl, atom_id *excl)
+        { gmx_ana_nbsearch_set_excl(_d, nexcl, excl); }
 
 
         bool isWithin(const rvec x)
@@ -99,8 +90,6 @@ class NeighborhoodSearch
         { return gmx_ana_nbsearch_next_within(_d, jp); }
 
     private:
-        NeighborhoodSearch(gmx_ana_nbsearch_t *d) : _d(d) {}
-
         gmx_ana_nbsearch_t  *_d;
 };
 

@@ -562,7 +562,7 @@ SelectionCollection::parseFromString(const std::string &str,
 }
 
 
-int
+void
 SelectionCollection::compile()
 {
     if (!_impl->hasFlag(Impl::efExternalGroupsSet))
@@ -573,8 +573,8 @@ SelectionCollection::compile()
     {
         printTree(stderr, false);
     }
-    int rc = gmx_ana_selcollection_compile(this);
-    if (rc == 0 && _impl->hasFlag(Impl::efOwnPositionCollection))
+    gmx_ana_selcollection_compile(this);
+    if (_impl->hasFlag(Impl::efOwnPositionCollection))
     {
         if (_impl->_debugLevel >= 1)
         {
@@ -591,24 +591,22 @@ SelectionCollection::compile()
             std::fprintf(stderr, "\n");
         }
     }
-    return rc;
 }
 
 
-int
+void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
     if (_impl->hasFlag(Impl::efOwnPositionCollection))
     {
         gmx_ana_poscalc_init_frame(_impl->_sc.pcc);
     }
-    int rc = gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
-    if (rc == 0 && _impl->_debugLevel >= 3)
+    gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
+    if (_impl->_debugLevel >= 3)
     {
         std::fprintf(stderr, "\n");
         printTree(stderr, true);
     }
-    return rc;
 }
 
 

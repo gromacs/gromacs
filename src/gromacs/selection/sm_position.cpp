@@ -77,22 +77,22 @@ init_data_pos(int npar, gmx_ana_selparam_t *param);
 static void
 set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data);
 /** Initializes position evaluation keywords. */
-static int
+static void
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes the \p cog selection method. */
-static int
+static void
 init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes the \p cog selection method. */
-static int
+static void
 init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for position evaluation selection methods. */
-static int
+static void
 init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the data allocated for position evaluation selection methods. */
 static void
 free_data_pos(void *data);
 /** Evaluates position evaluation selection methods. */
-static int
+static void
 evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
@@ -256,11 +256,10 @@ _gmx_selelem_set_kwpos_flags(t_selelem *sel, int flags)
  * The \c t_methoddata_pos::type field should have been initialized
  * externally using _gmx_selelem_set_kwpos_type().
  */
-static int
+static void
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
-    int               rc;
 
     if (!(param[0].flags & SPAR_DYNAMIC))
     {
@@ -270,12 +269,8 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         d->flags |= POS_DYNAMIC;
     }
-    // FIXME: This may throw, but only on internal errors.
-    // Will be taken automatically care of when selection compilation fully
-    // uses exceptions.
     gmx_ana_poscalc_create_enum(&d->pc, d->pcc, d->type, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
-    return 0;
 }
 
 /*!
@@ -285,17 +280,15 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_pos.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int
+static void
 init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
-    int               rc;
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
                            d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
-    return 0;
 }
 
 /*!
@@ -305,18 +298,16 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_pos.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int
+static void
 init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
-    int               rc;
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
     gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
                            d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
-    return 0;
 }
 
 /*!
@@ -325,14 +316,13 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_pos.
  * \returns       0 for success.
  */
-static int
+static void
 init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
-    return 0;
 }
 
 /*!
@@ -357,12 +347,11 @@ free_data_pos(void *data)
  * Calculates the positions using \c t_methoddata_pos::pc for the index group
  * in \c t_methoddata_pos::g and stores the results in \p out->u.p.
  */
-static int
+static void
 evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr, pbc);
-    return 0;
 }
