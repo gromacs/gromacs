@@ -649,17 +649,22 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
           CHECK(ir->rlist > ir->rvdw);
       }
   }
-  if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
-      && (ir->rlistlong <= ir->rcoulomb)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
-	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(wi,warn_buf);
-  }
-  if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
-	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
-    warning_note(wi,warn_buf);
-  }
+    if (ir->cutoff_scheme == ecutsOLD)
+    {
+        if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
+            && (ir->rlistlong <= ir->rcoulomb))
+        {
+            sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
+                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            warning_note(wi,warn_buf);
+        }
+        if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw))
+        {
+            sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
+                    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
+            warning_note(wi,warn_buf);
+        }
+    }
 
   if (ir->vdwtype == evdwUSER && ir->eDispCorr != edispcNO) {
       warning_note(wi,"You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
