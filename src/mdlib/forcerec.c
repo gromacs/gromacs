@@ -1387,7 +1387,7 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
         {
             int gpu_device_id;
 
-            /* TODO initialize GPU */
+            /* TODO: do the multi-GPU initilization properly */
             /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
                each process will try to use the GPU with id = nodeid. */
             gpu_device_id = nodeid; 
@@ -1398,7 +1398,7 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
             }
             if (init_gpu(fp, gpu_device_id) != 0)
             {
-                gmx_warning("Could not initialize GPU #%d", gpu_device_id);
+                gmx_fatal(FARGS, "Could not initialize GPU #%d", gpu_device_id);
             }
             else
             {

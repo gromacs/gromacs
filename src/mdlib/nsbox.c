@@ -1508,6 +1508,11 @@ static void nb_realloc_void(void **ptr,
 
     ma(&ptr_new,nbytes_new);
 
+    if (nbytes_new > 0 && ptr_new == NULL)
+    {
+        gmx_fatal(FARGS, "Allocation of %d bytes failed", nbytes_new);
+    }
+
     if (nbytes_copy > 0)
     {
         if (nbytes_new < nbytes_copy)
