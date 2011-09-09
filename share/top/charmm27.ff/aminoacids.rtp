@@ -1672,3 +1672,43 @@
 [ ZN2 ]
  [ atoms ]
 	ZN	ZN	2.00	0
+
+[ ACE ]
+ [ atoms ]
+        CT3     CT3     -0.270  0
+        HT1     HA      0.090   1
+        HT2     HA      0.090   2
+        HT3     HA      0.090   3
+        C       C       0.510   4
+        O       O       -0.510  5
+ [ bonds ]
+        C       CT3
+        C       +N
+        CT3     HT31
+        CT3     HT32
+        CT3     HT33
+        O       C
+ [ impropers ]
+        C       CT3     +N      O
+
+[ CT3 ]
+; this can also be done with the .c.tdb, but the atom naming is different
+; and this can matter
+ [ atoms ]
+        N       NH1     -0.470  0
+        HN      H       0.310   1
+        CT      CT3     -0.110  2
+        HT1     HA      0.090   3
+        HT2     HA      0.090   4
+        HT3     HA      0.090   5
+ [ bonds ]
+        -C      N
+        N       HN
+        N       CAT
+        CT      HT1
+        CT      HT2
+        CT      HT3
+
+ [ impropers ]
+        N       -C      CAT     HN
+        -C      CAT     N       -O
