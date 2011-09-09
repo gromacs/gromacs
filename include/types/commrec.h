@@ -70,6 +70,13 @@ typedef struct {
 } gmx_domdec_ns_ranges_t;
 
 typedef struct {
+  rvec x0;       /* Zone lower corner in triclinic coordinates         */
+  rvec x1;       /* Zone upper corner in triclinic coordinates         */
+  rvec bb_x0;    /* Zone bounding box lower corner in Cartesian coords */
+  rvec bb_x1;    /* Zone bounding box upper corner in Cartesian coords */
+} gmx_domdec_zone_size_t;
+
+typedef struct {
   /* The number of zones including the home zone */
   int  n;
   /* The shift of the zones with respect to the home zone */
@@ -81,8 +88,9 @@ typedef struct {
   /* The neighbor search charge group ranges for each i-zone */
   gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
   /* Boundaries of the zones */
-  rvec zone_x0[DD_MAXZONE];
-  rvec zone_x1[DD_MAXZONE];
+  gmx_domdec_zone_size_t size[DD_MAXZONE];
+  /* The cg density of the home zone */
+  real dens_zone0;
 } gmx_domdec_zones_t;
 
 typedef struct gmx_ga2la *gmx_ga2la_t;

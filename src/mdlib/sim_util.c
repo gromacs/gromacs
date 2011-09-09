@@ -722,7 +722,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_LOCAL);
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
                                      0,vzero,box_diag,
-                                     0,mdatoms->homenr,fr->cginfo,x,
+                                     0,mdatoms->homenr,-1,fr->cginfo,x,
                                      0,NULL,
                                      fr->nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_LOCAL);

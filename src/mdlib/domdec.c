@@ -7905,13 +7905,18 @@ static void set_cg_boundaries(gmx_domdec_zones_t *zones)
     }
 }
 
-static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
+static void set_zones_size(gmx_domdec_t *dd,
+                           matrix box,const gmx_ddbox_t *ddbox,
+                           int zone_start,int zone_end)
 {
     gmx_domdec_comm_t *comm;
     gmx_domdec_zones_t *zones;
     gmx_bool bDistMB;
     int  z,zi,zj0,zj1,d,dim;
     real rcs,rcmbs;
+    int  i,j;
+    real size_j,add_tric;
+    real vol;
 
     comm = dd->comm;
 
@@ -7920,13 +7925,13 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
     /* Do we need to determine extra distances for multi-body bondeds? */
     bDistMB = (comm->bInterCGMultiBody && dd->bGridJump && dd->ndim > 1);
 
-    for(z=0; z<zones->n; z++)
+    for(z=zone_start; z<zone_end; z++)
     {
         /* Copy cell limits to zone limits.
          * Valid for non-DD dims and non-shifted dims.
          */
-        copy_rvec(comm->cell_x0,zones->zone_x0[z]);
-        copy_rvec(comm->cell_x1,zones->zone_x1[z]);
+        copy_rvec(comm->cell_x0,zones->size[z].x0);
+        copy_rvec(comm->cell_x1,zones->size[z].x1);
     }
 
     for(d=0; d<dd->ndim; d++)
@@ -7942,13 +7947,13 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
             {
                 if (d == 1)
                 {
-                    zones->zone_x0[z][dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].min0;
-                    zones->zone_x1[z][dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].max1;
+                    zones->size[z].x0[dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].min0;
+                    zones->size[z].x1[dim] = comm->zone_d1[zones->shift[z][dd->dim[d-1]]].max1;
                 }
                 else if (d == 2)
                 {
-                    zones->zone_x0[z][dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].min0;
-                    zones->zone_x1[z][dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].max1;
+                    zones->size[z].x0[dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].min0;
+                    zones->size[z].x1[dim] = comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].max1;
                 }
             }
         }
@@ -7962,15 +7967,15 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
         }
 
         /* Set the lower limit for the shifted zone dimensions */
-        for(z=0; z<zones->n; z++)
+        for(z=zone_start; z<zone_end; z++)
         {
             if (zones->shift[z][dim] > 0)
             {
                 dim = dd->dim[d];
                 if (!dd->bGridJump || d == 0)
                 {
-                    zones->zone_x0[z][dim] = comm->cell_x1[dim];
-                    zones->zone_x1[z][dim] = comm->cell_x1[dim] + rcs;
+                    zones->size[z].x0[dim] = comm->cell_x1[dim];
+                    zones->size[z].x1[dim] = comm->cell_x1[dim] + rcs;
                 }
                 else
                 {
@@ -7984,24 +7989,24 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
                      */
                     if (z<4)
                     {
-                        zones->zone_x0[z][dim] =
-                            zones->zone_x1[zone_perm[1][z-2]][dim];
+                        zones->size[z].x0[dim] =
+                            zones->size[zone_perm[1][z-2]].x1[dim];
                     }
                     else
                     {
                         if (d == 1)
                         {
-                            zones->zone_x0[z][dim] =
-                                zones->zone_x0[zone_perm[2][z-4]][dim];
+                            zones->size[z].x0[dim] =
+                                zones->size[zone_perm[2][z-4]].x0[dim];
                         }
                         else
                         {
-                            zones->zone_x0[z][dim] =
-                                zones->zone_x1[zone_perm[2][z-4]][dim];
+                            zones->size[z].x0[dim] =
+                                zones->size[zone_perm[2][z-4]].x1[dim];
                         }
                     }
                     /* A temporary limit, is updated below */
-                    zones->zone_x1[z][dim] = zones->zone_x0[z][dim];
+                    zones->size[z].x1[dim] = zones->size[z].x0[dim];
 
                     if (bDistMB)
                     {
@@ -8013,8 +8018,8 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
                                  * With multiple pulses this will lead
                                  * to a larger zone then strictly necessary.
                                  */
-                                zones->zone_x1[z][dim] = max(zones->zone_x1[z][dim],
-                                                             zones->zone_x1[zi][dim]+rcmbs);
+                                zones->size[z].x1[dim] = max(zones->size[z].x1[dim],
+                                                             zones->size[zi].x1[dim]+rcmbs);
                             }
                         }
                     }
@@ -8033,23 +8038,75 @@ static void set_zones_size(gmx_domdec_t *dd,const gmx_ddbox_t *ddbox)
                 {
                     if (zones->shift[z][dim] > 0)
                     {
-                        zones->zone_x1[z][dim] = max(zones->zone_x1[z][dim],
-                                                     zones->zone_x1[zi][dim]+rcs);
+                        zones->size[z].x1[dim] = max(zones->size[z].x1[dim],
+                                                     zones->size[zi].x1[dim]+rcs);
                     }
                 }
             }
         }
     }
 
+    for(z=zone_start; z<zone_end; z++)
+    {
+        for(i=0; i<DIM; i++)
+        {
+            zones->size[z].bb_x0[i] = zones->size[z].x0[i];
+            zones->size[z].bb_x1[i] = zones->size[z].x1[i];
+
+            for(j=i+1; j<ddbox->npbcdim; j++)
+            {
+                /* With 1D domain decomposition the cg's are not in
+                 * the triclinic box, but trilinic x-y and rectangular y-z.
+                 */
+                if (box[j][i] != 0 &&
+                    !(dd->ndim == 1 && i == YY && j == ZZ))
+                {
+                    /* Correct for triclinic offset of the lower corner */
+                    add_tric = zones->size[z].x0[j]*box[j][i]/box[j][j];
+                    zones->size[z].bb_x0[i] += add_tric;
+                    zones->size[z].bb_x1[i] += add_tric;
+
+                    /* Correct for triclinic offset of the upper corner */
+                    size_j = zones->size[z].x1[j] - zones->size[z].x0[j];
+                    add_tric = size_j*box[j][i]/box[j][j];
+
+                    if (box[j][i] < 0)
+                    {
+                        zones->size[z].bb_x0[i] += add_tric;
+                    }
+                    else
+                    {
+                        zones->size[z].bb_x1[i] += add_tric;
+                    }
+                }
+            }
+        }
+    }
+
+    if (zone_start == 0)
+    {
+        vol = 1;
+        for(dim=0; dim<DIM; dim++)
+        {
+            vol *= zones->size[0].x1[dim] - zones->size[0].x0[dim];
+        }
+        zones->dens_zone0 = (zones->cg_range[1] - zones->cg_range[0])/vol;
+    }
+
     if (debug)
     {
-        for(z=0; z<zones->n; z++)
+        for(z=zone_start; z<zone_end; z++)
         {
-            fprintf(debug,"zone %d %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
+            fprintf(debug,"zone %d    %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
                     z,
-                    zones->zone_x0[z][XX],zones->zone_x1[z][XX],
-                    zones->zone_x0[z][YY],zones->zone_x1[z][YY],
-                    zones->zone_x0[z][ZZ],zones->zone_x1[z][ZZ]);
+                    zones->size[z].x0[XX],zones->size[z].x1[XX],
+                    zones->size[z].x0[YY],zones->size[z].x1[YY],
+                    zones->size[z].x0[ZZ],zones->size[z].x1[ZZ]);
+            fprintf(debug,"zone %d bb %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
+                    z,
+                    zones->size[z].bb_x0[XX],zones->size[z].bb_x1[XX],
+                    zones->size[z].bb_x0[YY],zones->size[z].bb_x1[YY],
+                    zones->size[z].bb_x0[ZZ],zones->size[z].bb_x1[ZZ]);
         }
     }
 }
@@ -8219,7 +8276,7 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
 
     sort = dd->comm->sort;
 
-    if (fr->nbs == NULL)
+    if (fr->cutoff_scheme == ecutsOLD)
     {
         a = fr->ns.grid->cell_index;
 
@@ -8276,7 +8333,7 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
                     nsort2,nsort_new);
         }
         /* Sort efficiently */
-        if (fr->nbs == NULL)
+        if (fr->cutoff_scheme == ecutsOLD)
         {
             ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,
                          sort->sort);
@@ -8849,13 +8906,16 @@ void dd_partition_system(FILE            *fplog,
          */
         set_zones_ncg_home(dd);
 
-        bResortAll = bMasterState;
-
         if (fr->cutoff_scheme == ecutsVERLET)
         {
+            set_zones_size(dd,state_local->box,&ddbox,0,1);
+
             gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,state_local->box,
-                                     0,comm->cell_x0,comm->cell_x1,
+                                     0,
+                                     comm->zones.size[0].bb_x0,
+                                     comm->zones.size[0].bb_x1,
                                      0,dd->ncg_home,
+                                     comm->zones.dens_zone0,
                                      fr->cginfo,
                                      state_local->x,
                                      ncg_moved,comm->moved,
@@ -8870,7 +8930,9 @@ void dd_partition_system(FILE            *fplog,
             
             copy_ivec(fr->ns.grid->n,ncells_new);
         }
-    
+
+        bResortAll = bMasterState;
+   
         /* Check if we can user the old order and ns grid cell indices
          * of the charge groups to sort the charge groups efficiently.
          */
@@ -8906,9 +8968,10 @@ void dd_partition_system(FILE            *fplog,
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
 
-    if (fr->nbs != NULL)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
-        set_zones_size(dd,&ddbox);
+        set_zones_size(dd,state_local->box,&ddbox,
+                       bSortCG ? 1 : 0,comm->zones.n);
     }
 
     wallcycle_sub_stop(wcycle,ewcsDD_SETUPCOMM);

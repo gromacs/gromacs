@@ -50,6 +50,8 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
 
 /* Put the atoms on the neighborsearching grid.
  * Only atoms a0 to a1 in x are put on the grid.
+ * The atom_density is used to determine the grid size.
+ * When atom_density=-1, the density is determined from a1-a0 and the corners.
  * With domain decomposition part of the n particles might have migrated,
  * but have not been removed yet. This count is given by nmoved.
  * When move[i] < 0 particle i has migrated and will not be put on the grid.
@@ -60,6 +62,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               int dd_zone,
                               rvec corner0,rvec corner1,
                               int a0,int a1,
+                              real atom_density,
                               const int *atinfo,
                               rvec *x,
                               int nmoved,int *move,

@@ -421,14 +421,13 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
     }
 }
 
-static void set_grid_atom_density(gmx_nbs_grid_t *grid,
-                                  int n,rvec corner0,rvec corner1)
+static real grid_atom_density(int n,rvec corner0,rvec corner1)
 {
     rvec size;
 
     rvec_sub(corner1,corner0,size);
 
-    grid->atom_density = n/(size[XX]*size[YY]*size[ZZ]);
+    return n/(size[XX]*size[YY]*size[ZZ]);
 }
 
 static int set_grid_size_xy(const gmx_nbsearch_t nbs,
@@ -1586,6 +1585,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               int dd_zone,
                               rvec corner0,rvec corner1,
                               int a0,int a1,
+                              real atom_density,
                               const int *atinfo,
                               rvec *x,
                               int nmoved,int *move,
@@ -1606,7 +1606,14 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
         nbs->ePBC = ePBC;
         copy_mat(box,nbs->box);
 
-        set_grid_atom_density(grid,n-nmoved,corner0,corner1);
+        if (atom_density >= 0)
+        {
+            grid->atom_density = atom_density;
+        }
+        else
+        {
+            grid->atom_density = grid_atom_density(n-nmoved,corner0,corner1);
+        }
 
         grid->cell0 = 0;
 
@@ -1666,8 +1673,8 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
     {
         for(d=0; d<DIM; d++)
         {
-            c0[d] = zones->zone_x0[zone][d];
-            c1[d] = zones->zone_x1[zone][d];
+            c0[d] = zones->size[zone].bb_x0[d];
+            c1[d] = zones->size[zone].bb_x1[d];
         }
 
         nbs->grid[zone].cell0 = nbs->grid[zone-1].cell0 + nbs->grid[zone-1].nc;
@@ -1676,6 +1683,7 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                  zone,c0,c1,
                                  zones->cg_range[zone],
                                  zones->cg_range[zone+1],
+                                 -1,
                                  atinfo,
                                  x,
                                  0,NULL,
