@@ -45,13 +45,15 @@ void
 nb_cell_kernel(int                        nnbl,
                gmx_nblist_t               **nbl,
                const gmx_nb_atomdata_t    *nbat,
-               const t_forcerec *         fr,
+               const interaction_const_t  *ic,
                real                       tabscale,  
-               const real *               VFtab,
+               const real                 *VFtab,
+               rvec                       *shift_vec,
                int                        force_flags,
                gmx_bool                   clearF,
-               real *                     Vc,
-               real *                     Vvdw);
+               real                       *fshift,
+               real                       *Vc,
+               real                       *Vvdw);
 
 #ifdef __cplusplus
 }

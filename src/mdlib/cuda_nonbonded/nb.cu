@@ -182,8 +182,7 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
 void cu_stream_nb(cu_nonbonded_t cu_nb,
                   const gmx_nb_atomdata_t *nbatom,
                   int flags,
-                  gmx_bool nonLocal,
-                  gmx_bool sync)
+                  gmx_bool nonLocal)
 {
     cu_atomdata_t   *adat = cu_nb->atomdata;
     cu_nb_params_t  *nb_params = cu_nb->nb_params;
@@ -267,14 +266,7 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist, 
                                                  calc_fshift);
 
-    if (sync)
-    {
-        CU_LAUNCH_ERR_SYNC("k_calc_nb");
-    }
-    else
-    {
-        CU_LAUNCH_ERR("k_calc_nb");
-    }
+    CU_LAUNCH_ERR("k_calc_nb");
 
     cudaEventRecord(stop_nb, stream);
 }

@@ -44,7 +44,7 @@ extern "C" {
 void
 nsbox_generic_kernel(const gmx_nblist_t         *nbl,
                      const gmx_nb_atomdata_t    *nbat,
-                     const t_forcerec *         fr,
+                     const interaction_const_t  *iconst,
                      real                       tabscale,  
                      const real *               VFtab,
                      gmx_bool                   clearF,

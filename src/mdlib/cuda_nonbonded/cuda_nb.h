@@ -10,8 +10,7 @@ extern "C" {
 void cu_stream_nb(cu_nonbonded_t /*cu_nb*/, 
                   const gmx_nb_atomdata_t * /*nbdata*/,                  
                   int /*flags*/,
-                  gmx_bool /*nonLocal*/,
-                  gmx_bool /*sync*/);
+                  gmx_bool /*nonLocal*/);
 
 void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
                   const gmx_nb_atomdata_t *nbatom,

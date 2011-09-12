@@ -37,8 +37,8 @@
 #include "genborn.h"
 #include "qmmmrec.h"
 #include "idef.h"
-
-#include "cutypedefs_ext.h"
+#include "nb_verlet.h"
+#include "interaction_const.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,6 +101,8 @@ typedef struct {
  */
 #define GMX_CUTOFF_INF 1E+18
 
+/*! Nonbonded kernel types: SSE, GPU CUDA, GPU emulation, etc */
+enum { nbkNotSet = 0, nbk4x4SSE, nbk8x8x8CUDA, nbk8x8x8PlainC };
 
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egGB, egNR };
@@ -157,7 +159,6 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  gmx_bool  useGPU;  /* use GPU acceleration */
   gmx_bool  UseOptimizedKernels;
 
   /* Use special N*N kernels? */
@@ -249,14 +250,9 @@ typedef struct {
   int  *gid2nblists;
   t_nblists *nblists;
 
-  /* The bounding box type neighbor searching data */
-  gmx_bool cutoff_scheme; /* old- or Verlet-style cutoff */ 
-  gmx_nbsearch_t nbs;
-  int            nnbl;
-  gmx_nblist_t   **nbl;
-  int            nnbl_nl;
-  gmx_nblist_t   **nbl_nl;
-  gmx_nb_atomdata_t *nbat;
+  gmx_bool cutoff_scheme; /* old- or Verlet-style cutoff */
+  gmx_bool bNonbonded;    /* true if nonbonded calculations are turned off */
+  nonbonded_verlet_t *nbv;
 
   /* The wall tables (if used) */
   int  nwall;
@@ -402,11 +398,6 @@ typedef struct {
 
   /* Exclusion load distribution over the threads */
   int  *excl_load;
-
-  /* CUDA nonbonded data structure */
-  cu_nonbonded_t gpu_nb; /*gpu_data*/
-  gmx_bool  emulateGPU;
-  gmx_bool  streamGPU;
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

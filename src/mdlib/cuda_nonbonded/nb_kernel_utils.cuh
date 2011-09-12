@@ -4,7 +4,6 @@
 #define CELL_SIZE_2         (CELL_SIZE * CELL_SIZE)
 #define STRIDE_DIM          (CELL_SIZE_2)
 #define STRIDE_SI           (3*STRIDE_DIM)
-#define GPU_FACEL           (138.935485f)
 
 /* texture reference bound to the cudata.nbfp array */
 texture<float, 1, cudaReadModeElementType> tex_nbfp;

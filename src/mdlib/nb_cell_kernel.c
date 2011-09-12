@@ -66,20 +66,22 @@
 
 typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
                                 const gmx_nb_atomdata_t    *nbat,
-                                const t_forcerec *         fr,
-                                real                       tabscale,  
-                                const real *               VFtab,
-                                real *                     f,
-                                real *                     fshift,
-                                real *                     Vc,
-                                real *                     Vvdw);
+                                const interaction_const_t  *ic,
+                                real                       tabscale,
+                                const real                 *VFtab,
+                                rvec                       *shift_vec,
+                                real                       *f,
+                                real                       *fshift,
+                                real                       *Vc,
+                                real                       *Vvdw);
 
 typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
                                   const gmx_nb_atomdata_t    *nbat,
-                                  const t_forcerec *         fr,
+                                  const interaction_const_t  *ic,
                                   real                       tabscale,  
-                                  const real *               VFtab,
-                                  real *                     f);
+                                  const real                 *VFtab,
+                                  rvec                       *shift_vec,
+                                  real                       *f);
 
 p_nbk_func_ener p_nbk_ener[ljcrNR] =
 { nb_cell_kernel_sse2_single_comb_geom_ener,
@@ -116,13 +118,15 @@ void
 nb_cell_kernel(int                        nnbl,
                gmx_nblist_t               **nbl,
                const gmx_nb_atomdata_t    *nbat,
-               const t_forcerec *         fr,
+               const interaction_const_t  *ic,
                real                       tabscale,  
-               const real *               VFtab,
+               const real                 *VFtab,
+               rvec                       *shift_vec, 
                int                        force_flags,
                gmx_bool                   clearF,
-               real *                     Vc,
-               real *                     Vvdw)
+               real                       *fshift,
+               real                       *Vc,
+               real                       *Vvdw)
 {
     int i;
 
@@ -145,10 +149,11 @@ nb_cell_kernel(int                        nnbl,
             nbat->out[i].Vvdw = 0;
 
             p_nbk_ener[nbat->comb_rule](nbl[i],nbat,
-                                        fr,tabscale,VFtab,
+                                        ic,tabscale,VFtab,
+                                        shift_vec,
                                         nbat->out[i].f,
                                         nnbl == 1 ?
-                                        fr->fshift[0] :
+                                        fshift :
                                         nbat->out[i].fshift,
                                         &nbat->out[i].Vc,
                                         &nbat->out[i].Vvdw);
@@ -156,7 +161,8 @@ nb_cell_kernel(int                        nnbl,
         else
         {
             p_nbk_noener[nbat->comb_rule](nbl[i],nbat,
-                                          fr,tabscale,VFtab,
+                                          ic,tabscale,VFtab,
+                                          shift_vec,
                                           nbat->out[i].f);
         }
     }

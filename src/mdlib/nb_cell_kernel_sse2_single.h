@@ -79,18 +79,19 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #undef NBK_FUNC_NAME
                             (const gmx_nblist_t         *nbl,
                              const gmx_nb_atomdata_t    *nbat,
-                             const t_forcerec *         fr,
+                             const interaction_const_t  *ic,
                              real                       tabscale,  
-                             const real *               VFtab,
-                             real *                     f
+                             const real                 *VFtab,
+                             rvec                       *shift_vec, 
+                             real                       *f
 #ifdef CALC_SHIFTFORCES
                              ,
-                             real *                     fshift
+                             real                       *fshift
 #endif
 #ifdef CALC_ENERGIES
                              ,
-                             real *                     Vc,
-                             real *                     Vvdw
+                             real                       *Vc,
+                             real                       *Vvdw
 #endif
                             )
 {
@@ -198,8 +199,8 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 
     q                   = nbat->q;
     type                = nbat->type;
-    facel               = fr->epsfac;
-    shiftvec            = fr->shift_vec[0];
+    facel               = ic->epsfac;
+    shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
 #ifdef CALC_ENERGIES    

@@ -139,6 +139,17 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+gmx_bool is_nbl_type_simple(int nb_kernel_type);
+/* Return TRUE if the Verlet-style neighborlist has simple type.
+ */
+
+void init_interaction_const(FILE *fp, 
+                            interaction_const_t **interaction_const,
+                            const t_forcerec *fr);
+/* Initializes the interaction constant data structure. Currently it 
+ * uses forcerec as input. 
+ */
+
 void init_forcerec(FILE       *fplog,     
                           const output_env_t oenv,
 			  t_forcerec *fr,   
@@ -228,7 +239,8 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
 		     real lambda,t_graph *graph,
-		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+		     t_forcerec *fr, interaction_const_t *ic,
+                     gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     gmx_bool bBornRadii,
 		     int flags);

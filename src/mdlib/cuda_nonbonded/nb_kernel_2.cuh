@@ -149,7 +149,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
-                    qj_f    = GPU_FACEL * xqbuf.w;
+                    qj_f    = nb_params.epsfac * xqbuf.w;
                     typej   = atom_types[aj];
                     xj      -= shift;
 

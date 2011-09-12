@@ -964,7 +964,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_state *state_global,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,t_forcerec *fr,
+             gmx_edsam_t ed,t_forcerec *fr, interaction_const_t *ic,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
@@ -1789,7 +1789,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       constr,enerd,fcd,
                                       state,f,force_vir,mdatoms,
                                       nrnb,wcycle,graph,groups,
-                                      shellfc,fr,bBornRadii,t,mu_tot,
+                                      shellfc,fr,ic,bBornRadii,t,mu_tot,
                                       state->natoms,&bConverged,vsite,
                                       outf->fp_field);
             tcount+=count;
@@ -1811,7 +1811,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
-                     fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
+                     fr,ic,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
@@ -2651,7 +2651,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,fr->gpu_nb);
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,fr->nbv->gpu_nb);
             wcycle_set_reset_counters(wcycle,-1);
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
@@ -2740,6 +2740,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_nrnb     *nrnb;
     gmx_mtop_t *mtop=NULL;
     t_mdatoms  *mdatoms=NULL;
+    interaction_const_t *ic=NULL;
     t_forcerec *fr=NULL;
     t_fcdata   *fcd=NULL;
     real       ewaldcoeff=0;
@@ -3246,6 +3247,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
                       FALSE,pforce);
+        init_interaction_const(fplog, &ic, fr); 
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -3423,7 +3425,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,
-                                      mdatoms,nrnb,wcycle,ed,fr,
+                                      mdatoms,nrnb,wcycle,ed,fr,ic,
                                       repl_ex_nst,repl_ex_seed,
                                       cpt_period,max_hours,
                                       deviceOptions,
@@ -3467,7 +3469,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
+               fr->nbv->useGPU ? get_gpu_timings(fr->nbv->gpu_nb) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr),
@@ -3488,11 +3490,11 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
 #ifdef GMX_GPU
-    if (fr->useGPU)
+    if (fr->nbv->useGPU)
     {
-        int gpu_device_id = 0; /* TODO get dev_id */
+        int gpu_device_id = cr->nodeid; /* TODO get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->gpu_nb);
+        destroy_cudata(fplog, fr->nbv->gpu_nb);
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {

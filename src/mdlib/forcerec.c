@@ -1359,33 +1359,52 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
     }
 }
 
-static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
+static void gmx_pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
+                              int *napc, int nodeid)
 {
     char *env;
+    gmx_bool emulateGPU;
 
-    env = getenv("GMX_EMULATE_GPU");
-    fr->emulateGPU = (env != NULL);
-
-    /* Try to turn GPU acceleration on if GMX_GPU is defined */
-    fr->useGPU = FALSE;
-    if (fr->emulateGPU)
+    /* by default we'll use the 4x4 SSE kernels */
+    if (nbv->kernel_type == nbkNotSet)
     {
-        sscanf(env,"%d",napc);
-        if (*napc == 0)
+        nbv->kernel_type = nbk4x4SSE;
+    }
+
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
+       calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
+       to also turn off GPU/CUDA initializations. */
+    emulateGPU = (((env = getenv("GMX_EMULATE_GPU")) != NULL) ||
+                  (getenv("GMX_NO_NONBONDED") != NULL));
+
+    nbv->useGPU = FALSE;
+    if (emulateGPU)
+    {
+        nbv->kernel_type = nbk8x8x8PlainC;
+
+        if (env != NULL)
+        {
+            sscanf(env,"%d",napc);
+        }
+
+        if (*napc == 0 || env == NULL)
         {
             *napc = GPU_NS_CELL_SIZE;
         }
         if (fp != NULL)
         {
-            fprintf(fp, "Emulating GPU, using %d atoms per cell\n", *napc);
+            fprintf(fp, "Emulating GPU, using %d atoms per sub-cell\n", *napc);
         }
     }    
     else
     {
 #ifdef GMX_GPU
+        /* Try to turn use GPUs if GMX_GPU is not defined */
         if (getenv("GMX_NO_GPU") == NULL)
         {
             int gpu_device_id;
+
+            nbv->kernel_type = nbk8x8x8CUDA;
 
             /* TODO: do the multi-GPU initilization properly */
             /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
@@ -1402,16 +1421,88 @@ static void gmx_check_use_gpu(FILE *fp, t_forcerec *fr, int *napc, int nodeid)
             }
             else
             {
-                fr->useGPU = TRUE;
+                nbv->useGPU = TRUE;
             }
+
+            *napc = GPU_NS_CELL_SIZE;
         }
         else 
         {
-            gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
+            if (nodeid == 0)
+            {
+                gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
+            }
         }
-        *napc = GPU_NS_CELL_SIZE;
 #endif
     }
+}
+
+gmx_bool is_nbl_type_simple(int nb_kernel_type)
+{
+    if (nb_kernel_type == nbkNotSet)
+    {
+        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style neighbor list.");
+    }
+
+    switch (nb_kernel_type)
+    {
+        case nbk8x8x8CUDA:
+        case nbk8x8x8PlainC:
+            return FALSE;
+
+        case nbk4x4SSE:
+            return TRUE;
+
+        default:
+            gmx_incons("Invalid nonbonded kernel type passed!");
+            return FALSE;
+    }
+}
+
+void init_interaction_const(FILE *fp, 
+                            interaction_const_t **interaction_const,
+                            const t_forcerec *fr)
+{
+    interaction_const_t *ic;
+
+    snew(ic, 1);
+
+    ic->rvdw        = fr->rvdw;
+    ic->rlist       = fr->rlist;
+    ic->ewaldcoeff  = fr->ewaldcoeff;
+    ic->epsilon_r   = fr->epsilon_r;
+    ic->epsilon_rf  = fr->epsilon_rf;
+    ic->epsfac      = fr->epsfac;
+
+    ic->k_rf        = fr->k_rf;
+    ic->c_rf        = fr->c_rf;
+
+    ic->eeltype     = fr->eeltype;
+
+    *interaction_const = ic;
+
+    if (fr->nbv->useGPU)
+    {
+#ifdef GMX_GPU
+        init_cudata_ff(fp, &(fr->nbv->gpu_nb), ic, fr->nbv);
+#endif
+    }
+}
+
+static void init_nb_verlet(nonbonded_verlet_t **nb_verlet,
+                           const t_forcerec *fr)
+{
+    nonbonded_verlet_t *nbv;
+
+    snew(nbv, 1);
+
+    nbv->nbs        = NULL;
+    nbv->nbl        = NULL;
+    nbv->nbl_nl     = NULL;
+    nbv->nbat       = NULL;
+    nbv->kernel_type = nbkNotSet;
+
+    *nb_verlet = nbv;
 }
 
 void init_forcerec(FILE *fp,
@@ -1440,6 +1531,7 @@ void init_forcerec(FILE *fp,
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     int     napc;
+    nonbonded_verlet_t *nbv;
     
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -1496,6 +1588,18 @@ void init_forcerec(FILE *fp,
         }
     }
 
+    fr->bNonbonded = TRUE;
+    if (getenv("GMX_NO_NONBONDED") != NULL)
+    {
+        /* turn off non-bonded calculations */
+        fr->bNonbonded = FALSE;
+        if (fp)
+        {
+            fprintf(fp, "Found environment varialbe GMX_NO_NONBONDED.\n"
+                        "Disabling nonbonded calculations.\n\n");
+        }
+    }
+
     bGenericKernelOnly = FALSE;
     if (getenv("GMX_NB_GENERIC") != NULL)
     {
@@ -1508,7 +1612,7 @@ void init_forcerec(FILE *fp,
         bGenericKernelOnly = TRUE;
         bNoSolvOpt         = TRUE;
     }
-    
+
     fr->UseOptimizedKernels = (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL);
     if(fp && fr->UseOptimizedKernels==FALSE)
     {
@@ -1928,89 +2032,90 @@ void init_forcerec(FILE *fp,
     
     snew(fr->excl_load,fr->nthreads+1);
 
-    if (fr->cutoff_scheme == ecutsOLD)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
-        fr->useGPU     = FALSE;
-        fr->emulateGPU = FALSE;
-    }
-    else
-    {
+        int kernel_type;
+        gmx_nbat_alloc_t *nb_alloc = NULL;
+        gmx_nbat_free_t  *nb_free = NULL;
+
+        init_nb_verlet(&fr->nbv, fr);
+        nbv = fr->nbv;
+
         /* nsbox neighbor searching and GPU stuff */
-        gmx_check_use_gpu(fp, fr, &napc, cr->nodeid);
+        gmx_pick_nb_kernel(fp, nbv, &napc, cr->nodeid);
+        kernel_type = nbv->kernel_type;
+
+        if (kernel_type == nbk8x8x8CUDA)
+        {
+#ifdef GMX_GPU
+            nb_alloc = &pmalloc;
+            nb_free  = &pfree;
+#endif
+        }
 
         if (ir->rcoulomb != ir->rvdw)
         {
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        gmx_nbsearch_init(&fr->nbs,
+        gmx_nbsearch_init(&nbv->nbs,
                           DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                           DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                          !(fr->useGPU || fr->emulateGPU),
+                          is_nbl_type_simple(kernel_type),
                           napc,
                           fr->nthreads);
 
-        fr->nnbl = 1;
+        nbv->nnbl = 1;
 #ifdef GMX_OPENMP
-        fr->nnbl = omp_get_max_threads();
+        nbv->nnbl = omp_get_max_threads();
 #endif
-        snew(fr->nbl,fr->nnbl);
+        snew(nbv->nbl,nbv->nnbl);
 #pragma omp parallel for schedule(static)
-        for(i=0; i<fr->nnbl; i++)
+        for(i=0; i<nbv->nnbl; i++)
         {
             /* Allocate the nblist data structure locally on each thread
              * to optimize memory access for NUMA architectures.
              */
-            snew(fr->nbl[i],1);
-            gmx_nblist_init(fr->nbl[i],
-#ifdef GMX_GPU
+            snew(nbv->nbl[i],1);
+            gmx_nblist_init(nbv->nbl[i],
                             /* Only list 0 is used on the GPU */
-                            (fr->useGPU && i==0) ? &pmalloc : NULL,
-                            (fr->useGPU && i==0) ? &pfree   : NULL);
-#else
-                            NULL,NULL);
-#endif
+                            (i==0) ? nb_alloc : NULL,
+                            (i==0) ? nb_free  : NULL);
+
         }
         if (DOMAINDECOMP(cr))
         {
-            fr->nnbl_nl = fr->nnbl;
-            snew(fr->nbl_nl,fr->nnbl_nl);
+            nbv->nnbl_nl = nbv->nnbl;
+            snew(nbv->nbl_nl,nbv->nnbl_nl);
 #pragma omp parallel for schedule(static)
-            for(i=0; i<fr->nnbl_nl; i++)
+            for(i=0; i<nbv->nnbl_nl; i++)
             {
                 /* Allocate the nblist data structure locally on each thread
                  * to optimize memory access for NUMA architectures.
                  */
-                snew(fr->nbl_nl[i],1);
-                gmx_nblist_init(fr->nbl_nl[i],
-#ifdef GMX_GPU
+                snew(nbv->nbl_nl[i],1);
+                gmx_nblist_init(nbv->nbl_nl[i],
                                 /* Only list 0 is used on the GPU */
-                                (fr->useGPU && i==0) ? &pmalloc : NULL,
-                                (fr->useGPU && i==0) ? &pfree   : NULL);
-#else
-                                NULL,NULL);
-#endif
+                                (i==0) ? nb_alloc : NULL,
+                                (i==0) ? nb_free  : NULL);
              }
         }
         else
         {
-            fr->nnbl_nl = 0;
+            nbv->nnbl_nl = 0;
         }
 
-        snew(fr->nbat,1);
+        snew(nbv->nbat,1);
 
-        gmx_nb_atomdata_init(fr->nbat,fr->ntype,fr->nbfp,
-                             !(fr->useGPU || fr->emulateGPU) ? nbatXXXX : nbatXYZQ,
-                             !(fr->useGPU || fr->emulateGPU) ? fr->nthreads : 1,
-#ifdef GMX_GPU
-                             fr->useGPU ? &pmalloc : NULL,
-                             fr->useGPU ? &pfree   : NULL);
-#else
-                             NULL,NULL);
-#endif
-        if (!(fr->useGPU || fr->emulateGPU) && fp != NULL)
+        gmx_nb_atomdata_init(nbv->nbat,fr->ntype,fr->nbfp,
+                             is_nbl_type_simple(kernel_type) ? nbatXXXX : nbatXYZQ,
+                             is_nbl_type_simple(kernel_type) ? fr->nthreads : 1,
+                             nb_alloc, nb_free);
+
+        /* TODO move these notes to a separate function */
+        if (kernel_type == nbk4x4SSE && fp != NULL)
         {
-            if (fr->nbat->comb_rule==ljcrNONE)
+            if (nbv->nbat->comb_rule==ljcrNONE)
             {
                 fprintf(fp,"Using full Lennard-Jones parameter combination matrix\n");
                 fprintf(fp,"\nNOTE: the SSE kernels are a LOT slower when the LJ parameters do not obey a combination rule\n\n");
@@ -2018,17 +2123,8 @@ void init_forcerec(FILE *fp,
             else
             {
                 fprintf(fp,"Using %s Lennard-Jones combination rule\n",
-                        fr->nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                        nbv->nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
             }
-        }
-
-        if (fr->useGPU)
-        {
-
-            fr->streamGPU = (getenv("GMX_GPU_DONT_STREAM") == NULL);
-#ifdef GMX_GPU
-            init_cudata_ff(fp, &(fr->gpu_nb), fr);
-#endif
         }
     }
 }

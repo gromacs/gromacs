@@ -10,21 +10,15 @@ extern "C" {
 
 void init_cudata_ff(FILE * /*fplog*/, 
                     cu_nonbonded_t * /*p_cu_nb*/,
-                    const t_forcerec * /*fr*/);
+                    const interaction_const_t * /*ic*/,
+                    const nonbonded_verlet_t * /*nbv*/);
 
 void init_cudata_nblist(cu_nonbonded_t /*cu_nb*/,
                         const gmx_nblist_t * /*h_nblist*/,
-                        gmx_bool /*nonLocal*/,
-                        gmx_bool /*doStream*/);
-
-void init_cudata_nblist(cu_nonbonded_t /*cu_nb*/,
-                        const gmx_nblist_t * /*h_nblist*/,
-                        gmx_bool /*nonLocal*/,
-                        gmx_bool /*doStream*/);
+                        gmx_bool /*nonLocal*/);
 
 void init_cudata_atoms(cu_nonbonded_t /*cu_nb*/,
-                       const gmx_nb_atomdata_t * /*atomdata*/,
-                       gmx_bool /*doStream*/);
+                       const gmx_nb_atomdata_t * /*atomdata*/);
 
 void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
                        const gmx_nb_atomdata_t * /*nbatom*/);

@@ -570,9 +570,73 @@ static void post_process_forces(FILE *fplog,
     }
 }
 
-void do_nonbonded_verlet()
+static void do_nb_verlet(t_forcerec *fr,
+                         interaction_const_t *ic,
+                         gmx_enerdata_t *enerd,
+                         int flags,
+                         gmx_bool clearF, gmx_bool nonLocal)
 {
+    int     nnbl, kernel_type;
+    char    *env;
+    nonbonded_verlet_t  *nbv;
+    gmx_nblist_t        **nbl;
 
+    if (!(flags & GMX_FORCE_NONBONDED))
+    {
+        /* skip non-bonded calculation */
+        return;
+    }
+
+    nbv = fr->nbv;
+
+    nnbl = nonLocal ? nbv->nnbl_nl : nbv->nnbl;
+    nbl  = nonLocal ? nbv->nbl_nl : nbv->nbl;
+
+    if (fr->cutoff_scheme != ecutsVERLET)
+    {
+        gmx_incons("Invalid cut-off scheme passed!");
+    }
+
+    switch (nbv->kernel_type)
+    {
+        case nbk4x4SSE:
+            nb_cell_kernel(nbv->nnbl,nbl,
+                           nbv->nbat, ic,
+                           fr->nblists[0].tab.scale,
+                           fr->nblists[0].tab.tab,
+                           fr->shift_vec,
+                           flags,
+                           clearF,
+                           fr->fshift[0],
+                           enerd->grpp.ener[egCOULSR],
+                           fr->bBHAM ?
+                             enerd->grpp.ener[egBHAMSR] :
+                             enerd->grpp.ener[egLJSR]);
+            break;
+
+        case nbk8x8x8CUDA:
+#ifdef GMX_GPU
+            cu_stream_nb(nbv->gpu_nb, nbv->nbat, flags, nonLocal);
+#endif
+            break;
+
+        case nbk8x8x8PlainC:
+            nsbox_generic_kernel(nbl[0],nbv->nbat, ic,
+                                 fr->nblists[0].tab.scale,
+                                 fr->nblists[0].tab.tab,
+                                 clearF,
+                                 nbv->nbat->out[0].f,
+                                 fr->fshift[0],
+                                 enerd->grpp.ener[egCOULSR],
+                                 fr->bBHAM ?
+                                    enerd->grpp.ener[egBHAMSR] :
+                                    enerd->grpp.ener[egLJSR]);
+            break;
+
+        default:
+            gmx_incons("Invalid nonbonded kernel type passed!");
+
+    }
 }
 
 void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
@@ -587,20 +651,27 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
               real lambda,t_graph *graph,
-              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              t_forcerec *fr, interaction_const_t *ic,
+              gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               gmx_bool bBornRadii,
               int flags)
 {
-    int    cg0,cg1,i,j;
-    int    start,homenr;
+    int     cg0,cg1,i,j;
+    int     start,homenr;
+    int     nb_kernel_type;
     double mu[2*DIM]; 
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
-    gmx_bool   bDoLongRange,bDoForces,bSepLRF,bUseGPU;
+    gmx_bool   bDoLongRange,bDoForces,bSepLRF,bUseGPU,bUseEmulateGPU;
     matrix boxs;
     rvec   vzero,box_diag;
     real   e,v,dvdl;
     float  cycles_pme,cycles_force;
+    nonbonded_verlet_t *nbv;
+
+    nbv = fr->nbv;
+    nb_kernel_type = fr->nbv->kernel_type;
+
 
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
@@ -630,7 +701,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
-    bUseGPU       = fr->useGPU;
+    bUseGPU       = fr->nbv->useGPU;
+    bUseEmulateGPU = bUseGPU || (nbv->kernel_type == nbk8x8x8PlainC);
 
     if (bStateChanged)
     {
@@ -667,7 +739,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
     gmx_nb_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
-                                      fr->shift_vec,fr->nbat);
+                                      fr->shift_vec,nbv->nbat);
     if (bCalcCGCM) {
         if (PAR(cr)) {
             move_cgcm(fplog,cr,fr->cg_cm);
@@ -720,24 +792,24 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (!fr->bDomDec)
         {
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_LOCAL);
-            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,box,
+            gmx_nbsearch_put_on_grid(nbv->nbs,fr->ePBC,box,
                                      0,vzero,box_diag,
                                      0,mdatoms->homenr,-1,fr->cginfo,x,
                                      0,NULL,
-                                     fr->nbat);
+                                     nbv->nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_LOCAL);
         }
         else
         {
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_NONLOCAL);
-            gmx_nbsearch_put_on_grid_nonlocal(fr->nbs,domdec_zones(cr->dd),
-                                              fr->cginfo,x,fr->nbat);
+            gmx_nbsearch_put_on_grid_nonlocal(nbv->nbs,domdec_zones(cr->dd),
+                                              fr->cginfo,x,nbv->nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
-        gmx_nb_atomdata_set_atomtypes(fr->nbat,fr->nbs,mdatoms->typeA);
+        gmx_nb_atomdata_set_atomtypes(nbv->nbat,nbv->nbs,mdatoms->typeA);
 
-        gmx_nb_atomdata_set_charges(fr->nbat,fr->nbs,mdatoms->chargeA);
+        gmx_nb_atomdata_set_charges(nbv->nbat,nbv->nbs,mdatoms->chargeA);
     }
 
 #ifdef GMX_GPU
@@ -746,10 +818,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         if (bNS)
         {
-            init_cudata_atoms(fr->gpu_nb, fr->nbat, fr->streamGPU);
+            init_cudata_atoms(nbv->gpu_nb, nbv->nbat);
         }
 
-        cu_move_shift_vec(fr->gpu_nb, fr->nbat);
+        cu_move_shift_vec(nbv->gpu_nb, nbv->nbat);
     }
 #endif
         
@@ -757,32 +829,30 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (bNS)
     {
         wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_LOCAL);
-        gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
+        gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
                                  &top->excls,
-                                 fr->rvdw,fr->rlist,
+                                 ic->rvdw, ic->rlist,
                                  700,
-                                 FALSE,fr->nnbl,fr->nbl,
-                                 bUseGPU || fr->emulateGPU);
+                                 FALSE,nbv->nnbl,nbv->nbl,
+                                 !is_nbl_type_simple(nb_kernel_type));
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
 #ifdef GMX_GPU
         if (bUseGPU)
         {
             /* initialize GPU local neighbor list */
-            init_cudata_nblist(fr->gpu_nb, fr->nbl[0], FALSE, fr->streamGPU);
+            init_cudata_nblist(nbv->gpu_nb, nbv->nbl[0], FALSE);
         }
 #endif    
         wallcycle_stop(wcycle, ewcNS);
     }
-    gmx_nb_atomdata_copy_x_to_nbat_x(fr->nbs,enbatATOMSlocal,x,fr->nbat);
+    gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,enbatATOMSlocal,x,nbv->nbat);
 
 #ifdef GMX_GPU
     if (bUseGPU)
     { 
         wallcycle_start(wcycle,ewcSEND_X_GPU);
-
-        /* launch local nonbonded F on GPU */ 
-        cu_stream_nb(fr->gpu_nb, fr->nbat, flags, FALSE, !fr->streamGPU);
-
+        /* launch local nonbonded F on GPU */
+        do_nb_verlet(fr, ic, enerd, flags, FALSE, FALSE);
         wallcycle_stop(wcycle,ewcSEND_X_GPU);
     }
 #endif
@@ -796,18 +866,18 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_start_nocount(wcycle,ewcNS);
             
             wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_NONLOCAL);
-            gmx_nbsearch_make_nblist(fr->nbs,fr->nbat,
+            gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
                                      &top->excls,
-                                     fr->rvdw,fr->rlist,
+                                     ic->rvdw,ic->rlist,
                                      700,
-                                     TRUE,fr->nnbl_nl,fr->nbl_nl,
-                                     bUseGPU || fr->emulateGPU);
+                                     TRUE,nbv->nnbl_nl,nbv->nbl_nl,
+                                     !is_nbl_type_simple(nb_kernel_type));
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 #ifdef GMX_GPU
             if (bUseGPU)
             {
                 /* initialize GPU non-local neighbor list */
-                init_cudata_nblist(fr->gpu_nb, fr->nbl_nl[0], TRUE, fr->streamGPU);
+                init_cudata_nblist(nbv->gpu_nb, nbv->nbl_nl[0], TRUE);
             }
 #endif
             wallcycle_stop(wcycle,ewcNS);
@@ -815,7 +885,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         else
         {
             wallcycle_start(wcycle,ewcMOVEX);
-
             dd_move_x(cr->dd,box,x);
 
             /* When we don't need the total dipole we sum it in global_stat */
@@ -825,32 +894,30 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             }
             wallcycle_stop(wcycle,ewcMOVEX);
         }
-        gmx_nb_atomdata_copy_x_to_nbat_x(fr->nbs,enbatATOMSnonlocal,x,fr->nbat);
+        gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,enbatATOMSnonlocal,x,nbv->nbat);
 
 #ifdef GMX_GPU
         if (bUseGPU)
         { 
             wallcycle_start(wcycle,ewcSEND_X_GPU);
-
             /* launch non-local nonbonded F on GPU */
-            cu_stream_nb(fr->gpu_nb, fr->nbat, flags, TRUE, !fr->streamGPU);
-            
+            do_nb_verlet(fr, ic, enerd, flags, FALSE, TRUE);
             wallcycle_stop(wcycle,ewcSEND_X_GPU);
         }
 #endif
     }
 
 #ifdef GMX_GPU
-    if (bUseGPU && !fr->emulateGPU)
+    if (bUseGPU)
     {
         /* launch copy-back of non-local or if not running in parallel the local F */
         if (DOMAINDECOMP(cr))
         {
-            cu_copyback_nb_data(fr->gpu_nb, fr->nbat, flags, TRUE);
+            cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, TRUE);
         }
         else
         {
-            cu_copyback_nb_data(fr->gpu_nb, fr->nbat, flags, FALSE);
+            cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, FALSE);
         }
     }
 #endif /* GMX_GPU */ 
@@ -897,7 +964,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
      * since that will interfere with the dynamic load balancing.
      */
     wallcycle_start(wcycle,ewcFORCE);
-    
     if (bDoForces)
     {
         /* Reset forces for which the virial is calculated separately:
@@ -970,46 +1036,29 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       lambda,graph,&(top->excls),fr->mu_tot,
-                      ((bUseGPU || fr->emulateGPU) ? flags&~GMX_FORCE_NONBONDED : flags),
+                      ((nb_kernel_type == nbk8x8x8CUDA || nb_kernel_type == nbk8x8x8PlainC) 
+                        ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
 
-    if (fr->nbl[0]->simple)
+    if (nbv->nbl[0]->simple)
     {
         /* Maybe we should move this into do_force_lowlevel */
-        nb_cell_kernel(fr->nnbl,fr->nbl,
-                       fr->nbat,fr,
-                       fr->nblists[0].tab.scale,
-                       fr->nblists[0].tab.tab,
-                       flags,
-                       TRUE,
-                       enerd->grpp.ener[egCOULSR],
-                       fr->bBHAM ?
-                       enerd->grpp.ener[egBHAMSR] :
-                       enerd->grpp.ener[egLJSR]);
+        do_nb_verlet(fr, ic, enerd, flags, TRUE, FALSE);
         
         if (DOMAINDECOMP(cr))
         {
-            nb_cell_kernel(fr->nnbl_nl,fr->nbl_nl,
-                           fr->nbat,fr,
-                           fr->nblists[0].tab.scale,
-                           fr->nblists[0].tab.tab,
-                           flags,
-                           FALSE,
-                           enerd->grpp.ener[egCOULSR],
-                           fr->bBHAM ?
-                           enerd->grpp.ener[egBHAMSR] :
-                           enerd->grpp.ener[egLJSR]);
+            do_nb_verlet(fr, ic, enerd, flags, FALSE, TRUE);
         }
 
         /* Add all the non-bonded force to the normal force array.
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSall,fr->nbat,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,enbatATOMSall,nbv->nbat,f);
 
-        if ((flags & GMX_FORCE_VIRIAL) && fr->nnbl > 1)
+        if ((flags & GMX_FORCE_VIRIAL) && nbv->nnbl > 1)
         {
-            gmx_nb_atomdata_add_nbat_fshift_to_fshift(fr->nbat,fr->fshift);
+            gmx_nb_atomdata_add_nbat_fshift_to_fshift(nbv->nbat,fr->fshift);
         }
     }
     
@@ -1021,7 +1070,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         do_flood(fplog,cr,x,f,ed,box,step);
     }
 
-    if (bUseGPU || fr->emulateGPU)
+    if (bUseEmulateGPU)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
         if (DOMAINDECOMP(cr))
@@ -1030,38 +1079,27 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             {
 #ifdef GMX_GPU
                 wallcycle_start_nocount(wcycle,ewcRECV_F_GPU);                    
-
-                cu_blockwait_nb(fr->gpu_nb, flags, TRUE,
+                cu_blockwait_nb(nbv->gpu_nb, flags, TRUE,
                         enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                         fr->fshift);
-
                 cycles_force += wallcycle_stop(wcycle,ewcRECV_F_GPU);
 #endif
             }
             else
             {
                 wallcycle_start_nocount(wcycle,ewcFORCE);
-                nsbox_generic_kernel(fr->nbl_nl[0],fr->nbat,fr,
-                        fr->nblists[0].tab.scale,
-                        fr->nblists[0].tab.tab,
-                        TRUE,
-                        fr->nbat->out[0].f,fr->fshift[0],
-                        enerd->grpp.ener[egCOULSR],
-                        fr->bBHAM ?
-                        enerd->grpp.ener[egBHAMSR] :
-                        enerd->grpp.ener[egLJSR]);
-
+                do_nb_verlet(fr, ic, enerd, flags, TRUE, TRUE);
                 wallcycle_stop(wcycle,ewcFORCE);
             }            
-            gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSnonlocal,fr->nbat,f);
+            gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,enbatATOMSnonlocal,nbv->nbat,f);
 
 #ifdef GMX_GPU
-            if (!fr->emulateGPU)
+            if (bUseGPU)
             {
                 /* When runing in parallel we can only launch local copy-back after the 
                    non-local is done! (CUDA can't synchronize streams with async operations
                    wrt the CPU).*/
-                cu_copyback_nb_data(fr->gpu_nb, fr->nbat, flags, FALSE);
+                cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, FALSE);
             }
 #endif
         }
@@ -1073,7 +1111,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (PAR(cr))
         {
             wallcycle_start(wcycle,ewcMOVEF);
-
             if (DOMAINDECOMP(cr))
             {
                 dd_move_f(cr->dd,f,fr->fshift);
@@ -1097,48 +1134,34 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                     dd_move_f(cr->dd,fr->f_twin,NULL);
                 }
             }
-
             wallcycle_stop(wcycle,ewcMOVEF);
         }
     }
  
-    if (bUseGPU || fr->emulateGPU)
+    if (bUseEmulateGPU)
     {
-
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
 #ifdef GMX_GPU
             wallcycle_start(wcycle,ewcRECV_F_GPU);
-
-            cu_blockwait_nb(fr->gpu_nb, flags, FALSE,
+            cu_blockwait_nb(nbv->gpu_nb, flags, FALSE,
                             enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                             fr->fshift);
-
             cycles_force += wallcycle_stop(wcycle,ewcRECV_F_GPU);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-            cu_clear_nb_f_out(fr->gpu_nb);
-            cu_clear_nb_e_fs_out(fr->gpu_nb);
+            cu_clear_nb_f_out(nbv->gpu_nb);
+            cu_clear_nb_e_fs_out(nbv->gpu_nb);
 #endif
         }
         else
         {            
             wallcycle_start_nocount(wcycle,ewcFORCE);
-
-            nsbox_generic_kernel(fr->nbl[0],fr->nbat,fr,
-                                 fr->nblists[0].tab.scale,
-                                 fr->nblists[0].tab.tab,
-                                 !DOMAINDECOMP(cr),
-                                 fr->nbat->out[0].f,fr->fshift[0],
-                                 enerd->grpp.ener[egCOULSR],
-                                 fr->bBHAM ?
-                                 enerd->grpp.ener[egBHAMSR] :
-                                 enerd->grpp.ener[egLJSR]);
-            
+            do_nb_verlet(fr, ic, enerd, flags, !DOMAINDECOMP(cr), FALSE);
             wallcycle_stop(wcycle,ewcFORCE);
         }
-        gmx_nb_atomdata_add_nbat_f_to_f(fr->nbs,enbatATOMSlocal,fr->nbat,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,enbatATOMSlocal,nbv->nbat,f);
     }
     
     if (DOMAINDECOMP(cr))
@@ -1652,11 +1675,18 @@ void do_force(FILE *fplog,t_commrec *cr,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
               real lambda,t_graph *graph,
-              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              t_forcerec *fr, interaction_const_t *ic,
+              gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               gmx_bool bBornRadii,
               int flags)
 {
+    /* modify force flag if not doing nonbonded */
+    if (!fr->bNonbonded)
+    {
+        flags &= ~GMX_FORCE_NONBONDED;
+    }
+
     switch (inputrec->cutoff_scheme)
     {
         case ecutsVERLET:
@@ -1669,7 +1699,8 @@ void do_force(FILE *fplog,t_commrec *cr,
                                 mdatoms,
                                 enerd, fcd,
                                 lambda, graph,
-                                fr, vsite, mu_tot,
+                                fr, ic, 
+                                vsite, mu_tot,
                                 t, field, ed,
                                 bBornRadii,
                                 flags);
@@ -1690,7 +1721,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                               flags);
             break;
         default:
-            gmx_incons("Invalid cuto-off scheme encountered in do_force!");
+            gmx_incons("Invalid cut-off scheme passed!");
     }
 }
 

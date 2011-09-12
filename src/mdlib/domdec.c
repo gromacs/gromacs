@@ -8284,7 +8284,7 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
     }
     else
     {
-        gmx_nbsearch_get_atomorder(fr->nbs,&a,&moved);
+        gmx_nbsearch_get_atomorder(fr->nbv->nbs,&a,&moved);
     }
 
     if (ncg_home_old >= 0)
@@ -8488,7 +8488,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     if (fr->cutoff_scheme == ecutsVERLET)
     {
         /* The atoms are now exactly in grid order, update the grid order */
-        gmx_nbsearch_set_atomorder(fr->nbs);
+        gmx_nbsearch_set_atomorder(fr->nbv->nbs);
     }
     else
     {
@@ -8886,7 +8886,7 @@ void dd_partition_system(FILE            *fplog,
     }
     else
     {
-        gmx_nbsearch_get_ncells(fr->nbs,&ncells_old[XX],&ncells_old[YY]);
+        gmx_nbsearch_get_ncells(fr->nbv->nbs,&ncells_old[XX],&ncells_old[YY]);
     }
     /* We need to store tric_dir for dd_get_ns_ranges called from ns.c */
     copy_ivec(ddbox.tric_dir,comm->tric_dir);
@@ -8910,7 +8910,7 @@ void dd_partition_system(FILE            *fplog,
         {
             set_zones_size(dd,state_local->box,&ddbox,0,1);
 
-            gmx_nbsearch_put_on_grid(fr->nbs,fr->ePBC,state_local->box,
+            gmx_nbsearch_put_on_grid(fr->nbv->nbs,fr->ePBC,state_local->box,
                                      0,
                                      comm->zones.size[0].bb_x0,
                                      comm->zones.size[0].bb_x1,
@@ -8919,9 +8919,9 @@ void dd_partition_system(FILE            *fplog,
                                      fr->cginfo,
                                      state_local->x,
                                      ncg_moved,comm->moved,
-                                     fr->nbat);
+                                     fr->nbv->nbat);
 
-            gmx_nbsearch_get_ncells(fr->nbs,&ncells_new[XX],&ncells_new[YY]);
+            gmx_nbsearch_get_ncells(fr->nbv->nbs,&ncells_new[XX],&ncells_new[YY]);
         }
         else
         {

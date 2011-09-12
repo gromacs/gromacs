@@ -47,7 +47,7 @@
 void
 nsbox_generic_kernel(const gmx_nblist_t         *nbl,
                      const gmx_nb_atomdata_t    *nbat,
-                     const t_forcerec *         fr,
+                     const interaction_const_t  *iconst,
                      real                       tabscale,  
                      const real *               VFtab,
                      gmx_bool                   clearF,
@@ -101,16 +101,20 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
             f[n] = 0;
         }
     }
-	
-    if (fr->bcoultab && fr->eeltype != eelRF_ZERO)
+
+    if (iconst->eeltype == eelCUT)
+    {
+        icoul           = 1;
+    }
+    else if (EEL_RF(iconst->eeltype))
+    {
+        icoul           = 2;
+    }
+    else 
     {
         icoul           = 3;
     }
-    else
-    {
-        /* Coulomb is temporary hard-coded to RF */
-        icoul           = 2;
-    }
+
     ivdw                = 1;
 
     /* avoid compiler warnings for cases that cannot happen */
@@ -131,7 +135,7 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
 
     //charge              = mdatoms->chargeA;
     type                = nbat->type;
-    facel               = fr->epsfac;
+    facel               = iconst->epsfac;
     shiftvec            = nbat->shift_vec[0];
     vdwparam            = nbat->nbfp;
     ntype               = nbat->ntype;
@@ -241,8 +245,8 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
                                         
                                     case 2:
                                         /* Reaction-field */
-                                        krsq             = fr->k_rf*rsq;      
-                                        vcoul            = qq*(rinv+krsq-fr->c_rf);
+                                        krsq             = iconst->k_rf*rsq;
+                                        vcoul            = qq*(rinv+krsq-iconst->c_rf);
                                         fscal            = qq*(rinv-2.0*krsq)*rinvsq;
                                         break;
                                         

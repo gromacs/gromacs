@@ -368,6 +368,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_nrnb     *nrnb;
     gmx_mtop_t *mtop=NULL;
     t_mdatoms  *mdatoms=NULL;
+    interaction_const_t *ic=NULL;
     t_forcerec *fr=NULL;
     t_fcdata   *fcd=NULL;
     real       ewaldcoeff=0;
@@ -723,6 +724,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
                       FALSE,pforce);
+        init_interaction_const(fplog, &ic, fr); 
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -913,7 +915,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,
-                                      mdatoms,nrnb,wcycle,ed,fr,
+                                      mdatoms,nrnb,wcycle,ed,fr,ic,
                                       repl_ex_nst,repl_ex_seed,
                                       cpt_period,max_hours,
                                       deviceOptions,
@@ -955,7 +957,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->useGPU ? get_gpu_timings(fr->gpu_nb) :
+               fr->nbv != NULL && fr->nbv->useGPU ? 
+                 get_gpu_timings(fr->nbv->gpu_nb) :
 #endif
                NULL,
                nthreads_pp, 
@@ -983,11 +986,11 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #endif
 
 #ifdef GMX_GPU
-    if (fr->useGPU)
+    if (fr->nbv != NULL && fr->nbv->useGPU)
     {
-        int gpu_device_id = 0; /* TODO get dev_id */
+        int gpu_device_id = cr->nodeid; /* TODO get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->gpu_nb);
+        destroy_cudata(fplog, fr->nbv->gpu_nb);
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {

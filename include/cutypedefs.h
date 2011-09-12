@@ -55,7 +55,7 @@ struct cu_nb_params
 {
     int  eeltype;       /* type of electrostatics */ 
     
-    float   eps_r; /* TODO rename this to epsfac  and get rid of the FACEL constant */
+    float   epsfac;
     float   c_rf;       
     float   two_k_rf;   
     float   ewald_beta; 
@@ -116,8 +116,6 @@ struct cu_timers
 /* main data structure for CUDA nonbonded force evaluation */
 struct cu_nonbonded 
 {
-    gmx_bool        streamGPU;  /* XXX are we streaming or not (debugging)              */
-    
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
     cu_nblist_t     *nblist; 

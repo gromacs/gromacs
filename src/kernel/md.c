@@ -114,7 +114,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_state *state_global,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,t_forcerec *fr,
+             gmx_edsam_t ed,t_forcerec *fr, interaction_const_t *ic,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
@@ -1001,7 +1001,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       constr,enerd,fcd,
                                       state,f,force_vir,mdatoms,
                                       nrnb,wcycle,graph,groups,
-                                      shellfc,fr,bBornRadii,t,mu_tot,
+                                      shellfc,fr,ic,bBornRadii,t,mu_tot,
                                       state->natoms,&bConverged,vsite,
                                       outf->fp_field);
             tcount+=count;
@@ -1022,7 +1022,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
-                     fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
+                     fr,ic,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
     
@@ -1821,7 +1821,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,
-                        fr->useGPU ? fr->gpu_nb : NULL);
+                               fr->nbv != NULL && fr->nbv->useGPU ? fr->nbv->gpu_nb : NULL);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
             max_hours -= run_time/(60.0*60.0);

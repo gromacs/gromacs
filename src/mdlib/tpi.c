@@ -125,7 +125,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
               t_mdatoms *mdatoms,
               t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_edsam_t ed,
-              t_forcerec *fr,
+              t_forcerec *fr, interaction_const_t *ic,
               int repl_ex_nst,int repl_ex_seed,
               real cpt_period,real max_hours,
               const char *deviceOptions,
@@ -567,7 +567,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                          step,nrnb,wcycle,top,top_global,&top_global->groups,
                          rerun_fr.box,state->x,&state->hist,
                          f,force_vir,mdatoms,enerd,fcd,
-                         lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
+                         lambda,NULL,fr,ic,NULL,mu_tot,t,NULL,NULL,FALSE,
                          GMX_FORCE_NONBONDED |
                          (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
