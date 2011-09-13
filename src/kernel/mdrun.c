@@ -404,6 +404,7 @@ int main(int argc,char *argv[])
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
+  int  nsteps=-2; /* the value -2 means that the mdp option will be used */
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
@@ -469,6 +470,8 @@ int main(int argc,char *argv[])
       "Keep and number checkpoint files" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
+    { "-nsteps",  FALSE, etINT, {&nsteps},
+      "HIDDENRun this amount of steps (overrides mdp option)" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -662,7 +665,7 @@ int main(int argc,char *argv[])
   rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                nsteps, nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
