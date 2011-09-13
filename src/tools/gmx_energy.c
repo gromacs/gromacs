@@ -962,6 +962,7 @@ static void calc_fluctuation_props(FILE *fp,
         fprintf(fp,"\nHeat capacities obtained from fluctuations do *not* include\n");
         fprintf(fp,"quantum corrections. If you want to get a more accurate estimate\n");
         fprintf(fp,"please use the g_dos program.\n\n");
+        fprintf(fp,"WARNING: Please verify that your simulations are converged and perform a block-averaging error analysis (not implemented in g_energy yet)\n");
 
         if (debug != NULL)
         {
