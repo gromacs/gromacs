@@ -807,9 +807,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
-        gmx_nb_atomdata_set_atomtypes(nbv->nbat,nbv->nbs,mdatoms->typeA);
-
-        gmx_nb_atomdata_set_charges(nbv->nbat,nbv->nbs,mdatoms->chargeA);
+        gmx_nb_atomdata_set(nbv->nbat,nbv->nbs,mdatoms,fr->cginfo);
     }
 
 #ifdef GMX_GPU

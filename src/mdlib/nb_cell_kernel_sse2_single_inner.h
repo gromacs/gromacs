@@ -76,6 +76,12 @@
             __m128     vcoul_SSE1;
             __m128     vcoul_SSE2;
             __m128     vcoul_SSE3;
+#ifdef ENERGY_GROUPS
+            __m128     vct_SSE0;
+            __m128     vct_SSE1;
+            __m128     vct_SSE2;
+            __m128     vct_SSE3;
+#endif
 #endif
 #endif
             __m128     fscal_SSE0;
@@ -112,9 +118,24 @@
 
             __m128     Vvdw6_SSE0,Vvdw12_SSE0;
             __m128     Vvdw6_SSE1,Vvdw12_SSE1;
+#ifndef HALF_LJ
             __m128     Vvdw6_SSE2,Vvdw12_SSE2;
             __m128     Vvdw6_SSE3,Vvdw12_SSE3;
-   
+#endif
+#ifdef CALC_ENERGIES
+            __m128     Vvdw_SSE0,Vvdw_SSE1;
+#ifndef HALF_LJ
+            __m128     Vvdw_SSE2,Vvdw_SSE3;
+#endif
+#ifdef ENERGY_GROUPS
+            __m128     vvdwt_SSE0;
+            __m128     vvdwt_SSE1;
+#ifndef HALF_LJ
+            __m128     vvdwt_SSE2;
+            __m128     vvdwt_SSE3;
+#endif
+#endif
+#endif
 
             sj               = cj[sjind].c;
 
@@ -354,24 +375,55 @@
 #endif /* LJ_COMB_LB */
             
 #ifdef CALC_ENERGIES
-#ifdef CALC_COULOMB
-            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+#ifdef ENERGY_GROUPS
+            egps_j4            = nbat->energrp[sj]*4;
 #endif
+
+#ifdef CALC_COULOMB
+#ifndef ENERGY_GROUPS
+            vctotSSE           = _mm_add_ps(vctotSSE, gmx_mm_sum4_ps(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+#else
+            vct_SSE0           = _mm_load_ps(vctp[0]+egps_j4);
+            _mm_store_ps(vctp[0]+egps_j4,_mm_add_ps(vct_SSE0,vcoul_SSE0));
+            vct_SSE1           = _mm_load_ps(vctp[1]+egps_j4);
+            _mm_store_ps(vctp[1]+egps_j4,_mm_add_ps(vct_SSE1,vcoul_SSE1));
+            vct_SSE2           = _mm_load_ps(vctp[2]+egps_j4);
+            _mm_store_ps(vctp[2]+egps_j4,_mm_add_ps(vct_SSE2,vcoul_SSE2));
+            vct_SSE3           = _mm_load_ps(vctp[3]+egps_j4);
+            _mm_store_ps(vctp[3]+egps_j4,_mm_add_ps(vct_SSE3,vcoul_SSE3));
+#endif
+#endif
+            Vvdw_SSE0          = _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE0),_mm_mul_ps(sixthSSE,Vvdw6_SSE0));
+            Vvdw_SSE1          = _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE1),_mm_mul_ps(sixthSSE,Vvdw6_SSE1));
+#ifndef HALF_LJ
+            Vvdw_SSE2          = _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE2),_mm_mul_ps(sixthSSE,Vvdw6_SSE2));
+            Vvdw_SSE3          = _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE3),_mm_mul_ps(sixthSSE,Vvdw6_SSE3));
+#endif
+#ifndef ENERGY_GROUPS
             VvdwtotSSE         = _mm_add_ps(VvdwtotSSE,
 #ifndef HALF_LJ
                                             gmx_mm_sum4_ps(
 #else
                                                 _mm_add_ps(
 #endif
-                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE0),_mm_mul_ps(sixthSSE,Vvdw6_SSE0)),
-                                                                       
-                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE1),_mm_mul_ps(sixthSSE,Vvdw6_SSE1))
+                                                           Vvdw_SSE0,Vvdw_SSE1
 #ifndef HALF_LJ
-                                                ,
-                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE2),_mm_mul_ps(sixthSSE,Vvdw6_SSE2)),
-                                                _mm_sub_ps(_mm_mul_ps(twelvethSSE,Vvdw12_SSE3),_mm_mul_ps(sixthSSE,Vvdw6_SSE3))
+                                                           ,
+                                                           Vvdw_SSE2,Vvdw_SSE3
 #endif
-                                                ));
+                                                           ));
+#else
+            vvdwt_SSE0         = _mm_load_ps(vvdwtp[0]+egps_j4);
+            _mm_store_ps(vvdwtp[0]+egps_j4,_mm_add_ps(vvdwt_SSE0,Vvdw_SSE0));
+            vvdwt_SSE1         = _mm_load_ps(vvdwtp[1]+egps_j4);
+            _mm_store_ps(vvdwtp[1]+egps_j4,_mm_add_ps(vvdwt_SSE1,Vvdw_SSE1));
+#ifndef HALF_LJ
+            vvdwt_SSE2         = _mm_load_ps(vvdwtp[2]+egps_j4);
+            _mm_store_ps(vvdwtp[2]+egps_j4,_mm_add_ps(vvdwt_SSE2,Vvdw_SSE2));
+            vvdwt_SSE3         = _mm_load_ps(vvdwtp[3]+egps_j4);
+            _mm_store_ps(vvdwtp[3]+egps_j4,_mm_add_ps(vvdwt_SSE3,Vvdw_SSE3));
+#endif
+#endif
 #endif
                                                                             
             fscal_SSE0         = _mm_mul_ps(rinvsq_SSE0,

@@ -2274,6 +2274,10 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.egp_flags,nr*nr);
 
   bExcl = do_egp_flag(ir,groups,"energygrp_excl",egpexcl,EGP_EXCL);
+    if (bExcl && ir->cutoff_scheme == ecutsVERLET) 
+    {
+        warning_error(wi,"Energy groups exclusions are not (yet) implemented for the Verlet scheme");
+    } 
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning(wi,"Can not exclude the lattice Coulomb energy between energy groups");
 

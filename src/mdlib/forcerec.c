@@ -2107,8 +2107,10 @@ void init_forcerec(FILE *fp,
 
         snew(nbv->nbat,1);
 
-        gmx_nb_atomdata_init(nbv->nbat,fr->ntype,fr->nbfp,
-                             is_nbl_type_simple(kernel_type) ? nbatXXXX : nbatXYZQ,
+        gmx_nb_atomdata_init(nbv->nbat,
+                             nbv->nbs,
+                             fr->ntype,fr->nbfp,
+                             ir->opts.ngener,
                              is_nbl_type_simple(kernel_type) ? fr->nthreads : 1,
                              nb_alloc, nb_free);
 

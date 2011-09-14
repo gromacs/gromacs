@@ -1571,6 +1571,13 @@ static void gmx_nb_atomdata_realloc(gmx_nb_atomdata_t *nbat,int n)
                         n*sizeof(nbat->q),
                         nbat->alloc,nbat->free);
     }
+    if (nbat->nenergrp > 1)
+    {
+        nb_realloc_void((void **)&nbat->energrp,
+                        nbat->natoms/nbat->naps*sizeof(nbat->energrp),
+                        n/nbat->naps*sizeof(nbat->energrp),
+                        nbat->alloc,nbat->free);
+    }
     nb_realloc_void((void **)&nbat->x,
                     nbat->natoms*nbat->xstride*sizeof(nbat->x),
                     n*nbat->xstride*sizeof(nbat->x),
@@ -4038,9 +4045,32 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     }
 }
 
+static void gmx_nb_atomdata_output_init(gmx_nb_atomdata_output_t *out,
+                                        const gmx_nbsearch_t nbs,
+                                        int nenergrp,
+                                        gmx_nbat_alloc_t *ma)
+{
+    out->f = NULL;
+    ma((void **)&out->fshift,SHIFTS*DIM*sizeof(out->fshift[0]));
+    out->nV = nenergrp*nenergrp;
+    ma((void **)&out->Vvdw,out->nV*sizeof(out->Vvdw));
+    ma((void **)&out->Vc  ,out->nV*sizeof(out->Vc  ));
+    if (nbs->simple)
+    {
+        out->nVS = nenergrp*nenergrp*nenergrp*nenergrp*nenergrp*4;
+        ma((void **)&out->VSvdw,out->nVS*sizeof(out->VSvdw));
+        ma((void **)&out->VSc  ,out->nVS*sizeof(out->VSc  ));
+    }
+    else
+    {
+        out->nVS = 0;
+    }
+}
+
 void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
+                          const gmx_nbsearch_t nbs,
                           int ntype,const real *nbfp,
-                          int XFormat,
+                          int n_energygroups,
                           int nout,
                           gmx_nbat_alloc_t *alloc,
                           gmx_nbat_free_t  *free)
@@ -4202,8 +4232,16 @@ void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
     nbat->natoms  = 0;
     nbat->type    = NULL;
     nbat->lj_comb = NULL;
-    nbat->XFormat = XFormat;
+    nbat->XFormat = (nbs->simple ? nbatXXXX : nbatXYZQ);
     nbat->q       = NULL;
+    nbat->naps    = nbs->naps;
+    nbat->nenergrp = n_energygroups;
+    if (!nbs->simple)
+    {
+        /* Energy groups not supported yet for super-sub lists */
+        nbat->nenergrp = 1;
+    }
+    nbat->energrp = NULL;
     nbat->alloc((void **)&nbat->shift_vec,SHIFTS*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? 4 : 3);
     nbat->x       = NULL;
@@ -4212,8 +4250,8 @@ void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
     nbat->nalloc  = 0;
     for(i=0; i<nbat->nout; i++)
     {
-        nbat->out[i].f = NULL;
-        nbat->alloc((void **)&nbat->out[i].fshift,SHIFTS*DIM*sizeof(nbat->out[i].fshift[0]));
+        gmx_nb_atomdata_output_init(&nbat->out[i],
+                                    nbs,nbat->nenergrp,nbat->alloc);
     }
 }
 
@@ -4237,9 +4275,9 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
     }
 }
 
-void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
-                                   const gmx_nbsearch_t nbs,
-                                   const int *type)
+static void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
+                                          const gmx_nbsearch_t nbs,
+                                          const int *type)
 {
     int g,i,ncz,ash;
     const gmx_nbs_grid_t *grid;
@@ -4267,9 +4305,9 @@ void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
     }
 }
 
-void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
-                                 const gmx_nbsearch_t nbs,
-                                 const real *charge)
+static void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
+                                        const gmx_nbsearch_t nbs,
+                                        const real *charge)
 {
     int  g,cxy,ncz,ash,na,na_round,i,j;
     real *q;
@@ -4317,6 +4355,76 @@ void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
                 }
             }
         }
+    }
+}
+
+static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
+                                  int naps,int negp,
+                                  const int *in,int *innb)
+{
+    int i,j,sa,at;
+    int comb,fac;
+
+    j = 0;
+    for(i=0; i<na; i+=naps)
+    {
+        /* Store naps energy groups number into one int */
+        comb = 0;
+        fac  = 1;
+        for(sa=0; sa<naps; sa++)
+        {
+            at = a[i+sa];
+            if (at >= 0)
+            {
+                comb += GET_CGINFO_GID(in[at])*fac;
+            }
+            fac *= negp;
+        }
+        innb[j++] = comb;
+    }
+    /* Complete the partially filled last cell with fill */
+    for(; i<na_round; i+=naps)
+    {
+        innb[j++] = 0;
+    }
+}
+
+static void gmx_nb_atomdata_set_energygroups(gmx_nb_atomdata_t *nbat,
+                                             const gmx_nbsearch_t nbs,
+                                             const int *atinfo)
+{
+    int g,i,ncz,ash;
+    const gmx_nbs_grid_t *grid;
+
+    for(g=0; g<nbs->ngrid; g++)
+    {
+        grid = &nbs->grid[g];
+
+        /* Loop over all columns and copy and fill */
+        for(i=0; i<grid->ncx*grid->ncy; i++)
+        {
+            ncz = grid->cxy_ind[i+1] - grid->cxy_ind[i];
+            ash = (grid->cell0 + grid->cxy_ind[i])*nbs->napc;
+
+            copy_egp_to_nbat_egps(nbs->a+ash,grid->cxy_na[i],ncz*nbs->napc,
+                                  nbat->naps,nbat->nenergrp,
+                                  atinfo,nbat->energrp+(ash>>nbs->naps2log));
+        }
+    }
+}
+
+void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
+                         const gmx_nbsearch_t nbs,
+                         const t_mdatoms *mdatoms,
+                         const int *atinfo)
+{
+    gmx_nb_atomdata_set_atomtypes(nbat,nbs,mdatoms->typeA);
+
+    gmx_nb_atomdata_set_charges(nbat,nbs,mdatoms->chargeA);
+
+    if (nbat->nenergrp > 1)
+    {
+        gmx_nb_atomdata_set_energygroups(nbat,nbs,atinfo);
     }
 }
 

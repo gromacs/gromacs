@@ -115,21 +115,18 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
  * to the atom data structure.
  */
 void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
+                          const gmx_nbsearch_t nbs,
                           int ntype,const real *nbfp,
-                          int XFormat,
+                          int n_energygroups,
                           int nout,
                           gmx_nbat_alloc_t *alloc,
                           gmx_nbat_free_t  *free);
 
-/* Copy the atom types to the non-bonded atom data structure */
-void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
-                                   const gmx_nbsearch_t nbs,
-                                   const int *type);
-
-/* Copy the charges to the non-bonded atom data structure */
-void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
-                                 const gmx_nbsearch_t nbs,
-                                 const real *charge);
+/* Copy the atom data to the non-bonded atom data structure */
+void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
+                         const gmx_nbsearch_t nbs,
+                         const t_mdatoms *mdatoms,
+                         const int *atinfo);
 
 /* Copy the shift vectors to nbat */
 void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,

@@ -74,7 +74,11 @@ static void
 #ifndef CALC_ENERGIES
 NBK_FUNC_NAME(nb_cell_kernel_sse2_single,noener)
 #else
+#ifndef ENERGY_GROUPS
 NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
+#else
+NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
+#endif
 #endif
 #undef NBK_FUNC_NAME
                             (const gmx_nblist_t         *nbl,
@@ -90,8 +94,8 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #endif
 #ifdef CALC_ENERGIES
                              ,
-                             real                       *Vc,
-                             real                       *Vvdw
+                             real                       *Vvdw,
+                             real                       *Vc
 #endif
                             )
 {
@@ -113,6 +117,13 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #ifndef LJ_COMB_GEOM
     real       pvdw_array[2*UNROLLI*UNROLLJ+3];
     real       *pvdw_c6,*pvdw_c12;
+#endif
+
+#ifdef ENERGY_GROUPS
+    int        Vstride_i;
+    int        egps_i,egps_j4;
+    real       *vvdwtp[4];
+    real       *vctp[4];
 #endif
     
     __m128     shX_SSE;
@@ -227,7 +238,7 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
 #ifdef CALC_ENERGIES
     tmpsum = (float *)(((size_t)(tmpsum_array+3)) & (~((size_t)15)));
 #endif
-#ifdef CALC_ENERGIES
+#ifdef CALC_SHIFTFORCES
     shf = (float *)(((size_t)(shf_array+3)) & (~((size_t)15)));
 #endif
 
@@ -255,6 +266,10 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     c12_SSE3           = _mm_load_ps(pvdw_c12+3*UNROLLJ);
 #endif /* FIX_LJ_C */
 
+#ifdef ENERGY_GROUPS
+    Vstride_i = nbat->nenergrp*nbat->nenergrp*nbat->nenergrp*nbat->nenergrp*4;
+#endif
+
     cj = nbl->cj;
 
     ninner = 0;
@@ -276,6 +291,36 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
        
         half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
         do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
+
+#ifdef ENERGY_GROUPS
+        egps_i = nbat->energrp[si];
+
+        if (nbat->nenergrp == 2)
+        {
+            /* Special, faster, implementation for the common case of 2 */
+            int ia;
+
+            for(ia=0; ia<4; ia++)
+            {
+                vvdwtp[ia] = Vvdw + ((egps_i>>ia) & 1)*Vstride_i;
+                vctp[ia]   = Vc   + ((egps_i>>ia) & 1)*Vstride_i;
+            }
+        }
+        else
+        {
+            int d,ia,egp_ia;
+
+            d = nbat->nenergrp*nbat->nenergrp*nbat->nenergrp;
+            for(ia=3; ia>=0; ia--)
+            {
+                egp_ia = egps_i/d;
+                vvdwtp[ia] = Vvdw + egp_ia*Vstride_i;
+                vctp[ia]   = Vc   + egp_ia*Vstride_i;
+                egps_i -= egp_ia*d;
+                d /= nbat->nenergrp;
+            }
+        }
+#endif
 
 		/* Load i atom data */
         ssix             = ssi*DIM;

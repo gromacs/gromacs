@@ -143,8 +143,12 @@ typedef struct {
 typedef struct {
     real *f;      /* f, size natoms*xstride                             */
     real *fshift; /* Shift force array, size SHIFTS*DIM                 */
-    real Vc;      /* Temporary Coulomb energy storage                   */
-    real Vvdw;    /* Temporary Van der Waals energy storage             */
+    int  nV;      /* The size of *Vvdw and *Vc                          */
+    real *Vvdw;   /* Temporary Van der Waals group energy storage       */
+    real *Vc;     /* Temporary Coulomb group energy storage             */
+    int  nVS;     /* The size of *VSvdw and *VSc                        */
+    real *VSvdw;  /* Temporary Van der Waals group energy storage       */
+    real *VSc;    /* Temporary Coulomb group energy storage             */
 } gmx_nb_atomdata_output_t;
 
     enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
@@ -162,6 +166,9 @@ typedef struct {
     real *lj_comb;   /* LJ parameters per atom for combining for pairs     */
     int  XFormat;    /* The format of x (and q), enum                      */
     real *q;         /* Charges, can be NULL if incorporated in x          */
+    int  naps;       /* The number of atoms per sub cell                   */
+    int  nenergrp;   /* The number of energy groups                        */
+    int  *energrp;   /* The energy groups per sub cell, can be NULL        */
     gmx_bool dynamic_box; /* Do we need to update shift_vec every step?    */
     rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */

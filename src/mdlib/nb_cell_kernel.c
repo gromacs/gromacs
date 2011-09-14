@@ -55,7 +55,10 @@
 #undef CALC_ENERGIES
 #undef CALC_SHIFTFORCES
 
-/* Include the force only kernels */
+/* Include the force+energygroups kernels */
+#define CALC_SHIFTFORCES
+#define CALC_ENERGIES
+#define ENERGY_GROUPS
 #define LJ_COMB_GEOM
 #include "nb_cell_kernel_sse2_single.h"
 #undef LJ_COMB_GEOM
@@ -63,6 +66,20 @@
 #include "nb_cell_kernel_sse2_single.h"
 #undef LJ_COMB_LB
 #include "nb_cell_kernel_sse2_single.h"
+#undef ENERGY_GROUPS
+#undef CALC_ENERGIES
+#undef CALC_SHIFTFORCES
+
+/* Include the force only kernels */
+#define CALC_SHIFTFORCES
+#define LJ_COMB_GEOM
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_GEOM
+#define LJ_COMB_LB
+#include "nb_cell_kernel_sse2_single.h"
+#undef LJ_COMB_LB
+#include "nb_cell_kernel_sse2_single.h"
+#undef CALC_SHIFTFORCES
 
 typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
                                 const gmx_nb_atomdata_t    *nbat,
@@ -72,8 +89,8 @@ typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
                                 rvec                       *shift_vec,
                                 real                       *f,
                                 real                       *fshift,
-                                real                       *Vc,
-                                real                       *Vvdw);
+                                real                       *Vvdw,
+                                real                       *Vc);
 
 typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
                                   const gmx_nb_atomdata_t    *nbat,
@@ -81,12 +98,18 @@ typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
                                   real                       tabscale,  
                                   const real                 *VFtab,
                                   rvec                       *shift_vec,
-                                  real                       *f);
+                                  real                       *f,
+                                  real                       *fshift);
 
 p_nbk_func_ener p_nbk_ener[ljcrNR] =
 { nb_cell_kernel_sse2_single_comb_geom_ener,
   nb_cell_kernel_sse2_single_comb_lb_ener,
   nb_cell_kernel_sse2_single_comb_none_ener };
+
+p_nbk_func_ener p_nbk_energrp[ljcrNR] =
+{ nb_cell_kernel_sse2_single_comb_geom_energrp,
+  nb_cell_kernel_sse2_single_comb_lb_energrp,
+  nb_cell_kernel_sse2_single_comb_none_energrp };
 
 p_nbk_func_noener p_nbk_noener[ljcrNR] =
 { nb_cell_kernel_sse2_single_comb_geom_noener,
@@ -114,6 +137,46 @@ static void clear_fshift(real *fshift)
     }
 }
 
+static void reduce_group_energies(int ng,
+                                  const real *VSvdw,const real *VSc,
+                                  real *Vvdw,real *Vc)
+{
+    int c,i,j,j0,j1,j2,j3;
+
+    /* The size of the SSE energy group buffer array is ng^5 */
+    c = 0;
+    for(i=0; i<ng; i++)
+    {
+        for(j=0; j<ng; j++)
+        {
+            Vvdw[i*ng+j] = 0;
+            Vc[i*ng+j]   = 0;
+        }
+
+        for(j3=0; j3<ng; j3++)
+        {
+            for(j2=0; j2<ng; j2++)
+            {
+                for(j1=0; j1<ng; j1++)
+                {
+                    for(j0=0; j0<ng; j0++)
+                    {
+                        Vvdw[i*ng+j0] += VSvdw[c+0];
+                        Vvdw[i*ng+j1] += VSvdw[c+1];
+                        Vvdw[i*ng+j2] += VSvdw[c+2];
+                        Vvdw[i*ng+j3] += VSvdw[c+3];
+                        Vc  [i*ng+j0] += VSc  [c+0];
+                        Vc  [i*ng+j1] += VSc  [c+1];
+                        Vc  [i*ng+j2] += VSc  [c+2];
+                        Vc  [i*ng+j3] += VSc  [c+3];
+                        c += 4;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void
 nb_cell_kernel(int                        nnbl,
                gmx_nblist_t               **nbl,
@@ -128,52 +191,97 @@ nb_cell_kernel(int                        nnbl,
                real                       *Vc,
                real                       *Vvdw)
 {
-    int i;
+    int nb;
 
 #pragma omp parallel for schedule(static)
-    for(i=0; i<nnbl; i++)
+    for(nb=0; nb<nnbl; nb++)
     {
+        gmx_nb_atomdata_output_t *out;
+        real *fshift_p;
+
+        out = &nbat->out[nb];
+
         if (clearF)
         {
-            clear_f(nbat,nbat->out[i].f);
-
-            if (nnbl > 1)
-            {
-                clear_fshift(nbat->out[i].fshift);
-            }
+            clear_f(nbat,out->f);
         }
 
-        if (force_flags & GMX_FORCE_ENERGY)
+        if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)
         {
-            nbat->out[i].Vc   = 0;
-            nbat->out[i].Vvdw = 0;
-
-            p_nbk_ener[nbat->comb_rule](nbl[i],nbat,
-                                        ic,tabscale,VFtab,
-                                        shift_vec,
-                                        nbat->out[i].f,
-                                        nnbl == 1 ?
-                                        fshift :
-                                        nbat->out[i].fshift,
-                                        &nbat->out[i].Vc,
-                                        &nbat->out[i].Vvdw);
+            fshift_p = fshift;
         }
         else
         {
-            p_nbk_noener[nbat->comb_rule](nbl[i],nbat,
+            fshift_p = out->fshift;
+
+            if (clearF)
+            {
+                clear_fshift(fshift_p);
+            }
+        }
+
+        if (!(force_flags & GMX_FORCE_ENERGY))
+        {
+            /* Don't calculate energies */
+            p_nbk_noener[nbat->comb_rule](nbl[nb],nbat,
                                           ic,tabscale,VFtab,
                                           shift_vec,
-                                          nbat->out[i].f);
+                                          out->f,
+                                          fshift_p);
+        }
+        else if (out->nV == 1)
+        {
+            /* No energy groups */
+            out->Vvdw[0] = 0;
+            out->Vc[0]   = 0;
+
+            p_nbk_ener[nbat->comb_rule](nbl[nb],nbat,
+                                        ic,tabscale,VFtab,
+                                        shift_vec,
+                                        out->f,
+                                        fshift_p,
+                                        out->Vvdw,
+                                        out->Vc);
+        }
+        else
+        {
+            /* Calculate energy group contributions */
+            int i;
+
+            for(i=0; i<out->nVS; i++)
+            {
+                out->VSvdw[i] = 0;
+            }
+            for(i=0; i<out->nVS; i++)
+            {
+                out->VSc[i] = 0;
+            }
+
+            p_nbk_energrp[nbat->comb_rule](nbl[nb],nbat,
+                                           ic,tabscale,VFtab,
+                                           shift_vec,
+                                           out->f,
+                                           fshift_p,
+                                           out->VSvdw,
+                                           out->VSc);
+
+            reduce_group_energies(nbat->nenergrp,out->VSvdw,out->VSc,
+                                  out->Vvdw,out->Vc);
         }
     }
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
         /* Reduce the energies */
-        for(i=0; i<nnbl; i++)
+        for(nb=0; nb<nnbl; nb++)
         {
-            *Vc   += nbat->out[i].Vc;
-            *Vvdw += nbat->out[i].Vvdw;
+            int i;
+
+            for(i=0; i<nbat->out[nb].nV; i++)
+            {
+                Vvdw[i] += nbat->out[nb].Vvdw[i];
+                Vc[i]   += nbat->out[nb].Vc[i];
+            }
         }
     }
 }
