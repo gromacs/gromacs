@@ -210,14 +210,14 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
     ifourSSE    = _mm_set1_epi32(4);
     ioneSSE     = _mm_set1_epi32(1);
 
-    rc2_SSE   = _mm_set1_ps(nbl->rcut*nbl->rcut);
+    rc2_SSE   = _mm_set1_ps(ic->rvdw*ic->rvdw);
 
-    mrc_3_SSE = _mm_set1_ps(-1.0/(nbl->rcut*nbl->rcut*nbl->rcut));
+    mrc_3_SSE = _mm_set1_ps(-2*ic->k_rf);
 
 #ifdef CALC_ENERGIES
-    hrc_3_SSE = _mm_set1_ps(0.5/(nbl->rcut*nbl->rcut*nbl->rcut));
+    hrc_3_SSE = _mm_set1_ps(ic->k_rf);
     
-    moh_rc_SSE = _mm_set1_ps(-1.5/nbl->rcut); 
+    moh_rc_SSE = _mm_set1_ps(-ic->c_rf); 
 #endif
 
     wco_any_align = (float *)(((size_t)(wco_any_array+3)) & (~((size_t)15)));

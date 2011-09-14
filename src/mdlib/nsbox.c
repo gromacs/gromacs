@@ -3478,7 +3478,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                           gmx_nbs_work_t *work,
                                           const gmx_nb_atomdata_t *nbat,
                                           const t_blocka *excl,
-                                          real rcut,real rlist,
+                                          real rlist,
                                           int min_ci_balanced,
                                           int th,int nth,
                                           gmx_nblist_t *nbl)
@@ -3517,7 +3517,6 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     /* Currently this code only makes two-way lists */
     nbl->TwoWay = FALSE;
 
-    nbl->rcut   = rcut;
     nbl->rlist  = rlist;
 
     max_j4list = get_max_j4list(nbs,nbl,min_ci_balanced);
@@ -3922,7 +3921,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                               const gmx_nb_atomdata_t *nbat,
                               const t_blocka *excl,
-                              real rcut,real rlist,
+                              real rlist,
                               int min_ci_balanced,
                               gmx_bool nonLocal,
                               int nnbl,gmx_nblist_t **nbl,
@@ -3990,7 +3989,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                 /* Divide the i super cell equally over the nblists */
                 gmx_nbsearch_make_nblist_part(nbs,gridi,gridj,
                                               &nbs->work[th],nbat,excl,
-                                              rcut,rlist,min_ci_balanced,
+                                              rlist,min_ci_balanced,
                                               th,nnbl,
                                               nbl[th]);
             }

@@ -123,7 +123,7 @@ nsbox_generic_kernel(const gmx_nblist_t         *nbl,
     eps                 = 0.0;
     eps2                = 0.0;
 
-    rcut2               = nbl->rcut*nbl->rcut;
+    rcut2               = iconst->rvdw*iconst->rvdw;
 	
     /* 3 VdW parameters for buckingham, otherwise 2 */
     nvdwparam           = (ivdw==2) ? 3 : 2;

@@ -116,7 +116,6 @@ typedef struct {
     int      napc;         /* The number of atoms per super cell       */
     int      naps;         /* The number of atoms per sub cell         */
     gmx_bool TwoWay;       /* Each pair once or twice in the list?     */
-    real     rcut;         /* The cut-off distance                     */
     real     rlist;        /* The radius for constructing the list     */
     int      nci;          /* The number of i super cells in the list  */
     gmx_nbl_ci_t *ci;      /* The i super cell list                    */
