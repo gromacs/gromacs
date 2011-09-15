@@ -957,6 +957,11 @@ int gmx_trjconv(int argc,char *argv[])
                           " trajectories.\ntry splitting the index file in %d parts.\n"
                           "FOPEN_MAX = %d",
                           clust->clust->nr,1+clust->clust->nr/FOPEN_MAX,FOPEN_MAX);
+	    gmx_warning("The -sub option could require as many open output files as there are\n"
+			"index groups in the file (%d). If you get I/O errors opening new files,\n"
+			"try reducing the number of index groups in the file, and perhaps\n"
+			"using trjconv -sub several times on different chunks of your index file.\n",
+			clust->clust->nr);
 
             snew(clust_status,clust->clust->nr);
             snew(clust_status_id,clust->clust->nr);
