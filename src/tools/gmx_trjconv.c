@@ -1460,6 +1460,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         (clust->clust->index[my_clust+1]-
                                             clust->clust->index[my_clust])) {
                                         close_trx(clust_status[my_clust]);
+					clust_status[my_clust] = NULL;
                                         clust_status_id[my_clust] = -2;
                                         ntrxopen--;
                                         if (ntrxopen < 0)
