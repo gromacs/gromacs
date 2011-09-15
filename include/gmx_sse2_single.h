@@ -2518,4 +2518,21 @@ gmx_mm_update_iforce_4atoms_ps(__m128 *fix1, __m128 *fiy1, __m128 *fiz1,
 }
 
 
+#define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0,in1,in2,in3,out0,out1)        \
+{                                                                           \
+    __m128 _c01,_c23;                                                       \
+    _c01 = _mm_shuffle_ps(in0,in1,_MM_SHUFFLE(1,0,1,0));                    \
+    _c23 = _mm_shuffle_ps(in2,in3,_MM_SHUFFLE(1,0,1,0));                    \
+    out0 = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(2,0,2,0));                  \
+    out1 = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(3,1,3,1));                  \
+}
+
+#define GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(in0,in1,in2,in3,out)               \
+{                                                                           \
+    __m128 _c01,_c23;                                                       \
+    _c01 = _mm_shuffle_ps(in0,in1,_MM_SHUFFLE(3,2,3,2));                    \
+    _c23 = _mm_shuffle_ps(in2,in3,_MM_SHUFFLE(3,2,3,2));                    \
+    out  = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(2,0,2,0));                  \
+}
+
 #endif /* _gmx_sse2_single_h_ */

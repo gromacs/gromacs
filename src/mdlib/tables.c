@@ -131,14 +131,15 @@ static double v_ewald(double beta,double r)
     return erfc(beta*r)/r;
 }
 
-void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
-                                    real beta)
+void table_spline3_fill_ewald(real *tab,int ntab,int tableformat,
+                              real dx,real beta)
 {
     real tab_max;
-    int i;
+    int stride=0;
+    int i,i_inrange;
     double dc,dc_new;
     gmx_bool OutOfRange;
-    double v_r0,v_r1,a0,a1,a2dx;
+    double v_r0,v_r1,v_inrange,a0,a1,a2dx;
     double x_r0;
 
     if (ntab < 2)
@@ -156,7 +157,16 @@ void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
      * The rms force error is the max error times 1/sqrt(5)=0.45.
      */
 
+    switch (tableformat)
+    {
+    case tableformatF:    stride = 1; break;
+    case tableformatFDV0: stride = 4; break;
+    default: gmx_incons("Unknown table format");
+    }
+
     OutOfRange = FALSE;
+    i_inrange = ntab;
+    v_inrange = 0;
     dc = 0;
     for(i=ntab-1; i>0; i--)
     {
@@ -164,6 +174,24 @@ void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
 
         v_r0 = v_ewald(beta,x_r0);
         v_r1 = v_ewald(beta,x_r0-dx);
+
+        if (tableformat == tableformatFDV0)
+        {
+            if (!OutOfRange)
+            {
+                i_inrange = i;
+                v_inrange = v_r0;
+
+                tab[i*stride+2] = v_r0;
+            }
+            else
+            {
+                /* Linear continuation for the last point in range */
+                tab[i*stride+2] = v_inrange - dc*(i - i_inrange)*dx;
+            }
+
+            tab[i*stride+3] = 0;
+        }
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
@@ -175,7 +203,7 @@ void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
             /* Calculate the average second derivative times dx over interval i-1 to i.
              * Using the function values at the end points and in the middle.
              */
-            a2dx = (v_r0+ v_r1 - 2*v_ewald(beta,x_r0-0.5*dx))/(0.25*dx);
+            a2dx = (v_r0 + v_r1 - 2*v_ewald(beta,x_r0-0.5*dx))/(0.25*dx);
             /* Set the derivative of the spline to match the difference in potential
              * over the interval plus the average effect of the quadratic term.
              * This is the essential step for minimizing the error in the force.
@@ -186,12 +214,12 @@ void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
         if (i == ntab - 1)
         {
             /* Fill the table with the force, minus the derivative of the spline */
-            tab[i] = -dc;
+            tab[i*stride] = -dc;
         }
         else
         {
             /* tab[i] will contain the average of the splines over the two intervals */
-            tab[i] += -0.5*dc;
+            tab[i*stride] += -0.5*dc;
         }
 
         if (!OutOfRange)
@@ -217,10 +245,25 @@ void table_spline3_fill_ewald_force(real *tab,int ntab,real dx,
             }
         }
 
-        tab[i-1] = -0.5*dc;
+        tab[(i-1)*stride] = -0.5*dc;
     }
     /* Currently the last value only contains half the force: double it */
     tab[0] *= 2;
+
+    if (tableformat == tableformatFDV0)
+    {
+        /* The potential should be 0 at 0 to avoid extra operations
+         * for exclusions in SSE.
+         */
+        tab[2] = 0;
+
+        /* Store the force difference in the second entry */
+        for(i=0; i<ntab-1; i++)
+        {
+            tab[i*stride+1] = tab[(i+1)*stride] - tab[i*stride];
+        }
+        tab[(ntab-1)*stride+1] = -tab[i*stride];
+    }
 }
 
 /* Calculate the potential and force for an r value

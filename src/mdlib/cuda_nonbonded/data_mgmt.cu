@@ -80,7 +80,8 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params)
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
-    table_spline3_fill_ewald_force(ftmp, tabsize, 1/tabscale, nb_params->ewald_beta);
+    table_spline3_fill_ewald(ftmp, tabsize, tableformatF,
+                             1/tabscale, nb_params->ewald_beta);
 
     stat = cudaMalloc((void **)&coul_tab, tabsize*sizeof(*coul_tab));
     CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");

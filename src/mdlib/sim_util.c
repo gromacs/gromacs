@@ -602,8 +602,6 @@ static void do_nb_verlet(t_forcerec *fr,
         case nbk4x4SSE:
             nb_cell_kernel(nbv->nnbl,nbl,
                            nbv->nbat, ic,
-                           fr->nblists[0].tab.scale,
-                           fr->nblists[0].tab.tab,
                            fr->shift_vec,
                            flags,
                            clearF,

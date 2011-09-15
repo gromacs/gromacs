@@ -1459,6 +1459,28 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type)
     }
 }
 
+void init_interaction_const_tables(FILE *fp, 
+                                   interaction_const_t *ic,
+                                   int verlet_kernel_type)
+{
+    real spacing;
+
+    if ((ic->eeltype == eelEWALD || EEL_PME(ic->eeltype)) &&
+        verlet_kernel_type == nbk4x4SSE)
+    {
+        /* With a spacing of 0.0005 we are at the force summation accuracy
+         * for the SSE kernels for "normal" atomistic simulations.
+         */
+        spacing = 0.0005;
+        ic->tabq_scale = 1/spacing;
+        ic->tabq_size    = (int)(ic->rvdw*ic->tabq_scale) + 1;
+        snew(ic->tabq_coul_FDV0,ic->tabq_size*4);
+        table_spline3_fill_ewald(ic->tabq_coul_FDV0,ic->tabq_size,
+                                 tableformatFDV0,
+                                 spacing,ic->ewaldcoeff);
+    }
+}
+
 void init_interaction_const(FILE *fp, 
                             interaction_const_t **interaction_const,
                             const t_forcerec *fr)
@@ -1486,6 +1508,11 @@ void init_interaction_const(FILE *fp,
 #ifdef GMX_GPU
         init_cudata_ff(fp, &(fr->nbv->gpu_nb), ic, fr->nbv);
 #endif
+    }
+
+    if (fr->cutoff_scheme == ecutsVERLET)
+    {
+        init_interaction_const_tables(fp,ic,fr->nbv->kernel_type);
     }
 }
 

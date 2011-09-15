@@ -35,13 +35,16 @@
 
 #include <math.h>
 
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#ifdef GMX_SSE4_1
+#include <smmintrin.h>
+#endif
+
 #include "typedefs.h"
 
 #include "gmx_sse2_single.h"
 
-
-#include <xmmintrin.h>
-#include <emmintrin.h>
 
 #define SIMD_WIDTH 4
 #define UNROLLI    4
@@ -49,7 +52,7 @@
 
 
 /* All functionality defines are set here, except for:
- * CALC_ENERGIES, which is set before calling the kernel function,
+ * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
  * CHECK_EXCLS, which is set just before including the inner loop contents.
  * The combination rule defines, LJ_COMB_GEOM or LJ_COMB_LB are currently
  * set before calling the kernel function. We might want to move that
@@ -57,16 +60,31 @@
  * ci's, as no combination rule gives a 50% performance hit for LJ.
  */
 
-/* Assumes all LJ parameters are indentical */
-//#define FIX_LJ_C
+/* We always calculate shift forces, because it's cheap anyhow */
+#define CALC_SHIFTFORCES
 
+/* Assumes all LJ parameters are identical */
+/* #define FIX_LJ_C */
+
+#ifdef CALC_COUL_RF
 #if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME(x,y) x##_comb_geom_##y
+#define NBK_FUNC_NAME(x,y) x##_rf_comb_geom_##y
 #else
 #if defined LJ_COMB_LB
-#define NBK_FUNC_NAME(x,y) x##_comb_lb_##y
+#define NBK_FUNC_NAME(x,y) x##_rf_comb_lb_##y
 #else
-#define NBK_FUNC_NAME(x,y) x##_comb_none_##y
+#define NBK_FUNC_NAME(x,y) x##_rf_comb_none_##y
+#endif
+#endif
+#else
+#if defined LJ_COMB_GEOM
+#define NBK_FUNC_NAME(x,y) x##_tab_comb_geom_##y
+#else
+#if defined LJ_COMB_LB
+#define NBK_FUNC_NAME(x,y) x##_tab_comb_lb_##y
+#else
+#define NBK_FUNC_NAME(x,y) x##_tab_comb_none_##y
+#endif
 #endif
 #endif
 
@@ -84,8 +102,6 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
                             (const gmx_nblist_t         *nbl,
                              const gmx_nb_atomdata_t    *nbat,
                              const interaction_const_t  *ic,
-                             real                       tabscale,  
-                             const real                 *VFtab,
                              rvec                       *shift_vec, 
                              real                       *f
 #ifdef CALC_SHIFTFORCES
@@ -143,13 +159,26 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
     __m128     mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0800, 0x0400, 0x0200, 0x0100) );
     __m128     mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0x8000, 0x4000, 0x2000, 0x1000) );
     __m128     zero_SSE = gmx_mm_castsi128_ps( _mm_set_epi32(0x0, 0x0, 0x0, 0x0) );
-	__m128     iq_SSE0={0,0,0,0};
-	__m128     iq_SSE1={0,0,0,0};
-	__m128     iq_SSE2={0,0,0,0};
-	__m128     iq_SSE3={0,0,0,0};
+    __m128     one_SSE={1.0,1.0,1.0,1.0};
+	__m128     iq_SSE0={0.0,0.0,0.0,0.0};
+	__m128     iq_SSE1={0.0,0.0,0.0,0.0};
+	__m128     iq_SSE2={0.0,0.0,0.0,0.0};
+	__m128     iq_SSE3={0.0,0.0,0.0,0.0};
     __m128     mrc_3_SSE;
 #ifdef CALC_ENERGIES
     __m128     hrc_3_SSE,moh_rc_SSE;
+#endif
+#ifndef CALC_COUL_RF
+    /* Coulomb table variables */
+    __m128     invtsp_SSE;
+    const real *tab_coul_FDV0;
+    int        ti0_array[7],*ti0;
+    int        ti1_array[7],*ti1;
+    int        ti2_array[7],*ti2;
+    int        ti3_array[7],*ti3;
+#ifdef CALC_ENERGIES
+    __m128     mhalfsp_SSE;
+#endif
 #endif
 
 #ifdef LJ_COMB_LB
@@ -208,13 +237,27 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
     pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 #endif
 
+#ifndef CALC_COUL_RF
+    ti0 = (int *)(((size_t)(ti0_array+3)) & (~((size_t)15)));
+    ti1 = (int *)(((size_t)(ti1_array+3)) & (~((size_t)15)));
+    ti2 = (int *)(((size_t)(ti2_array+3)) & (~((size_t)15)));
+    ti3 = (int *)(((size_t)(ti3_array+3)) & (~((size_t)15)));
+
+    invtsp_SSE  = _mm_set1_ps(ic->tabq_scale);
+#ifdef CALC_ENERGIES
+    mhalfsp_SSE = _mm_set1_ps(-0.5/ic->tabq_scale);
+#endif
+
+    tab_coul_FDV0 = ic->tabq_coul_FDV0;
+#endif
+
     q                   = nbat->q;
     type                = nbat->type;
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
-#ifdef CALC_ENERGIES    
+#ifdef CALC_ENERGIES
     sixthSSE    = _mm_set1_ps(0.16666667);
     twelvethSSE = _mm_set1_ps(0.08333333);
 #endif
@@ -493,6 +536,8 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
     printf("atom pairs %d\n",npair);
 #endif
 }
+
+#undef CALC_SHIFTFORCES
 
 #undef SIMD_WIDTH
 #undef UNROLLI   

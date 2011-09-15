@@ -67,10 +67,37 @@
             __m128     qq_SSE1;
             __m128     qq_SSE2;
             __m128     qq_SSE3;
+#ifndef CALC_COUL_RF
             __m128     fcoul_SSE0;
             __m128     fcoul_SSE1;
             __m128     fcoul_SSE2;
             __m128     fcoul_SSE3;
+#endif
+            __m128     frcoul_SSE0;
+            __m128     frcoul_SSE1;
+            __m128     frcoul_SSE2;
+            __m128     frcoul_SSE3;
+#ifndef CALC_COUL_RF
+            __m128     r_SSE0,rs_SSE0,rf_SSE0,frac_SSE0;
+            __m128     r_SSE1,rs_SSE1,rf_SSE1,frac_SSE1;
+            __m128     r_SSE2,rs_SSE2,rf_SSE2,frac_SSE2;
+            __m128     r_SSE3,rs_SSE3,rf_SSE3,frac_SSE3;
+            __m128i    ti_SSE0;
+            __m128i    ti_SSE1;
+            __m128i    ti_SSE2;
+            __m128i    ti_SSE3;
+            int        e;
+            __m128     ctab_SSE0[4],ctab0_SSE0,ctab1_SSE0;
+            __m128     ctab_SSE1[4],ctab0_SSE1,ctab1_SSE1;
+            __m128     ctab_SSE2[4],ctab0_SSE2,ctab1_SSE2;
+            __m128     ctab_SSE3[4],ctab0_SSE3,ctab1_SSE3;
+#ifdef CALC_ENERGIES
+            __m128     ctabv_SSE0;
+            __m128     ctabv_SSE1;
+            __m128     ctabv_SSE2;
+            __m128     ctabv_SSE3;
+#endif
+#endif
 #ifdef CALC_ENERGIES
             __m128     vcoul_SSE0;
             __m128     vcoul_SSE1;
@@ -267,9 +294,7 @@
                 pvdw_c6 [2*UNROLLJ+jp] = nbfp2[type[ssj+2]*2];
                 pvdw_c6 [3*UNROLLJ+jp] = nbfp3[type[ssj+3]*2];
 #endif
-#endif
                 pvdw_c12[0*UNROLLJ+jp] = nbfp0[type[ssj+0]*2+1];
-#ifndef ONE_LJ
                 pvdw_c12[1*UNROLLJ+jp] = nbfp1[type[ssj+1]*2+1];
 #ifndef HALF_LJ
                 pvdw_c12[2*UNROLLJ+jp] = nbfp2[type[ssj+2]*2+1];
@@ -301,15 +326,18 @@
 
             rinvsq_SSE0        = _mm_mul_ps(rinv_SSE0,rinv_SSE0);
             rinvsq_SSE1        = _mm_mul_ps(rinv_SSE1,rinv_SSE1);
+#if !defined HALF_LJ || defined CALC_COUL_RF
             rinvsq_SSE2        = _mm_mul_ps(rinv_SSE2,rinv_SSE2);
             rinvsq_SSE3        = _mm_mul_ps(rinv_SSE3,rinv_SSE3);
+#endif
 
 #ifdef CALC_COULOMB
+#ifdef CALC_COUL_RF
             /* Coulomb interaction */
-            fcoul_SSE0         = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_SSE0,_mm_mul_ps(rsq_SSE0,mrc_3_SSE)));
-            fcoul_SSE1         = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_SSE1,_mm_mul_ps(rsq_SSE1,mrc_3_SSE)));
-            fcoul_SSE2         = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_SSE2,_mm_mul_ps(rsq_SSE2,mrc_3_SSE)));
-            fcoul_SSE3         = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_SSE3,_mm_mul_ps(rsq_SSE3,mrc_3_SSE)));
+            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_SSE0,_mm_mul_ps(rsq_SSE0,mrc_3_SSE)));
+            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_SSE1,_mm_mul_ps(rsq_SSE1,mrc_3_SSE)));
+            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_SSE2,_mm_mul_ps(rsq_SSE2,mrc_3_SSE)));
+            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_SSE3,_mm_mul_ps(rsq_SSE3,mrc_3_SSE)));
 
 #ifdef CALC_ENERGIES
             vcoul_SSE0         = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_SSE0,_mm_add_ps(_mm_mul_ps(rsq_SSE0,hrc_3_SSE),moh_rc_SSE)));
@@ -321,7 +349,112 @@
             vcoul_SSE2         = _mm_and_ps(vcoul_SSE2,wco_SSE2);
             vcoul_SSE3         = _mm_and_ps(vcoul_SSE3,wco_SSE3);
 #endif
-#endif            
+#else
+            r_SSE0             = _mm_mul_ps(rsq_SSE0,rinv_SSE0);
+            r_SSE1             = _mm_mul_ps(rsq_SSE1,rinv_SSE1);
+            r_SSE2             = _mm_mul_ps(rsq_SSE2,rinv_SSE2);
+            r_SSE3             = _mm_mul_ps(rsq_SSE3,rinv_SSE3);
+            /* Convert r to scaled table units */
+            rs_SSE0            = _mm_mul_ps(r_SSE0,invtsp_SSE);
+            rs_SSE1            = _mm_mul_ps(r_SSE1,invtsp_SSE);
+            rs_SSE2            = _mm_mul_ps(r_SSE2,invtsp_SSE);
+            rs_SSE3            = _mm_mul_ps(r_SSE3,invtsp_SSE);
+            /* Truncate scaled r to an int */
+            ti_SSE0            = _mm_cvttps_epi32(rs_SSE0);
+            ti_SSE1            = _mm_cvttps_epi32(rs_SSE1);
+            ti_SSE2            = _mm_cvttps_epi32(rs_SSE2);
+            ti_SSE3            = _mm_cvttps_epi32(rs_SSE3);
+#ifdef GMX_SSE4_1
+            /* SSE4.1 floor is faster than _mm_cvtepi32_ps int->float cast */
+            rf_SSE0            = _mm_floor_ps(rs_SSE0);
+            rf_SSE1            = _mm_floor_ps(rs_SSE1);
+            rf_SSE2            = _mm_floor_ps(rs_SSE2);
+            rf_SSE3            = _mm_floor_ps(rs_SSE3);
+#else
+            rf_SSE0            = _mm_cvtepi32_ps(ti_SSE0);
+            rf_SSE1            = _mm_cvtepi32_ps(ti_SSE1);
+            rf_SSE2            = _mm_cvtepi32_ps(ti_SSE2);
+            rf_SSE3            = _mm_cvtepi32_ps(ti_SSE3);
+#endif
+            frac_SSE0          = _mm_sub_ps(rs_SSE0,rf_SSE0);
+            frac_SSE1          = _mm_sub_ps(rs_SSE1,rf_SSE1);
+            frac_SSE2          = _mm_sub_ps(rs_SSE2,rf_SSE2);
+            frac_SSE3          = _mm_sub_ps(rs_SSE3,rf_SSE3);
+
+            /* Load 4 table floats, 2 are used with force only, 3 with energy */
+            _mm_store_si128((__m128i *)ti0,ti_SSE0);
+            for(e=0; e<4; e++)
+            {
+                ctab_SSE0[e]   = _mm_load_ps(tab_coul_FDV0+ti0[e]*4);
+
+            }
+            _mm_store_si128((__m128i *)ti1,ti_SSE1);
+            for(e=0; e<4; e++)
+            {
+                ctab_SSE1[e]   = _mm_load_ps(tab_coul_FDV0+ti1[e]*4);
+
+            }
+            _mm_store_si128((__m128i *)ti2,ti_SSE2);
+            for(e=0; e<4; e++)
+            {
+                ctab_SSE2[e]   = _mm_load_ps(tab_coul_FDV0+ti2[e]*4);
+
+            }
+            _mm_store_si128((__m128i *)ti3,ti_SSE3);
+            for(e=0; e<4; e++)
+            {
+                ctab_SSE3[e]   = _mm_load_ps(tab_coul_FDV0+ti3[e]*4);
+
+            }
+            /* Shuffle the force table entries to a convenient order */
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE0[0],ctab_SSE0[1],ctab_SSE0[2],ctab_SSE0[3],ctab0_SSE0,ctab1_SSE0);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE1[0],ctab_SSE1[1],ctab_SSE1[2],ctab_SSE1[3],ctab0_SSE1,ctab1_SSE1);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE2[0],ctab_SSE2[1],ctab_SSE2[2],ctab_SSE2[3],ctab0_SSE2,ctab1_SSE2);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE3[0],ctab_SSE3[1],ctab_SSE3[2],ctab_SSE3[3],ctab0_SSE3,ctab1_SSE3);
+            fcoul_SSE0         = _mm_add_ps(ctab0_SSE0,_mm_mul_ps(frac_SSE0,ctab1_SSE0));
+            fcoul_SSE1         = _mm_add_ps(ctab0_SSE1,_mm_mul_ps(frac_SSE1,ctab1_SSE1));
+            fcoul_SSE2         = _mm_add_ps(ctab0_SSE2,_mm_mul_ps(frac_SSE2,ctab1_SSE2));
+            fcoul_SSE3         = _mm_add_ps(ctab0_SSE3,_mm_mul_ps(frac_SSE3,ctab1_SSE3));
+            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_mul_ps(fcoul_SSE0,r_SSE0));
+            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_mul_ps(fcoul_SSE1,r_SSE1));
+#ifndef HALF_LJ
+            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_mul_ps(fcoul_SSE2,r_SSE2));
+            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_mul_ps(fcoul_SSE3,r_SSE3));
+#endif
+#ifdef CALC_ENERGIES
+            GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE0[0],ctab_SSE0[1],ctab_SSE0[2],ctab_SSE0[3],ctabv_SSE0);
+            GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE1[0],ctab_SSE1[1],ctab_SSE1[2],ctab_SSE1[3],ctabv_SSE1);
+            GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE2[0],ctab_SSE2[1],ctab_SSE2[2],ctab_SSE2[3],ctabv_SSE2);
+            GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE3[0],ctab_SSE3[1],ctab_SSE3[2],ctab_SSE3[3],ctabv_SSE3);
+            vcoul_SSE0 = _mm_mul_ps(qq_SSE0,_mm_add_ps(ctabv_SSE0,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE0),_mm_add_ps(ctab0_SSE0,fcoul_SSE0))));
+            vcoul_SSE1 = _mm_mul_ps(qq_SSE1,_mm_add_ps(ctabv_SSE1,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE1),_mm_add_ps(ctab0_SSE1,fcoul_SSE1))));
+            vcoul_SSE2 = _mm_mul_ps(qq_SSE2,_mm_add_ps(ctabv_SSE2,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE2),_mm_add_ps(ctab0_SSE2,fcoul_SSE2))));
+            vcoul_SSE3 = _mm_mul_ps(qq_SSE3,_mm_add_ps(ctabv_SSE3,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE3),_mm_add_ps(ctab0_SSE3,fcoul_SSE3))));
+            /*
+            {
+                float r[4];
+                float rs[4];
+                float rf[4];
+                float fr[4];
+                float tf[4];
+                float tv[4];
+                float f[4];
+                float v[4];
+                _mm_storeu_ps(r,r_SSE0);
+                _mm_storeu_ps(rs,rs_SSE0);
+                _mm_storeu_ps(rf,rf_SSE0);
+                _mm_storeu_ps(fr,frac_SSE0);
+                _mm_storeu_ps(tf,ctab_SSE0[0]);
+                _mm_storeu_ps(tv,ctabv_SSE0);
+                _mm_storeu_ps(f,fcoul_SSE0);
+                _mm_storeu_ps(v,vcoul_SSE0);
+                printf("r %5.3f rs %6.2f rf %5.1f fr %5.3f ri %3d tf %5.3f %5.3f tv %5.2f f %5.3f v %5.2f\n",
+                       r[0],rs[0],rf[0],fr[0],ti0[0],tf[0],tf[1],tv[0],f[0],v[0]);
+            }
+            */
+#endif
+#endif
+#endif
 
             /* Lennard-Jones interaction */
 #ifdef LJ_COMB_LB
@@ -428,14 +561,14 @@
                                                                             
             fscal_SSE0         = _mm_mul_ps(rinvsq_SSE0,
 #ifdef CALC_COULOMB
-                                           _mm_add_ps(fcoul_SSE0,
+                                           _mm_add_ps(frcoul_SSE0,
 #else
                                                      (
 #endif
                                                       _mm_sub_ps(Vvdw12_SSE0,Vvdw6_SSE0)));
             fscal_SSE1         = _mm_mul_ps(rinvsq_SSE1,
 #ifdef CALC_COULOMB
-                                           _mm_add_ps(fcoul_SSE1,
+                                           _mm_add_ps(frcoul_SSE1,
 #else
                                                      (
 #endif
@@ -443,21 +576,27 @@
 #ifndef HALF_LJ
             fscal_SSE2         = _mm_mul_ps(rinvsq_SSE2,
 #ifdef CALC_COULOMB
-                                           _mm_add_ps(fcoul_SSE2,
+                                           _mm_add_ps(frcoul_SSE2,
 #else
                                                      (
 #endif
                                                       _mm_sub_ps(Vvdw12_SSE2,Vvdw6_SSE2)));
             fscal_SSE3         = _mm_mul_ps(rinvsq_SSE3,
 #ifdef CALC_COULOMB
-                                           _mm_add_ps(fcoul_SSE3,
+                                           _mm_add_ps(frcoul_SSE3,
 #else
                                                      (
 #endif
                                                       _mm_sub_ps(Vvdw12_SSE3,Vvdw6_SSE3)));
 #else
-            fscal_SSE2         = _mm_mul_ps(rinvsq_SSE2,fcoul_SSE2);
-            fscal_SSE3         = _mm_mul_ps(rinvsq_SSE3,fcoul_SSE3);
+            /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
+#ifdef CALC_COUL_RF
+            fscal_SSE2         = _mm_mul_ps(rinvsq_SSE2,frcoul_SSE2);
+            fscal_SSE3         = _mm_mul_ps(rinvsq_SSE3,frcoul_SSE3);
+#else
+            fscal_SSE2         = _mm_mul_ps(qq_SSE2,_mm_mul_ps(rinv_SSE2,fcoul_SSE2));
+            fscal_SSE3         = _mm_mul_ps(qq_SSE3,_mm_mul_ps(rinv_SSE3,fcoul_SSE3));
+#endif
 #endif
             
             /* Calculate temporary vectorial force */
@@ -495,6 +634,4 @@
                          _mm_sub_ps( _mm_load_ps(f+ssjy), gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
             _mm_store_ps(f+ssjz,
                          _mm_sub_ps( _mm_load_ps(f+ssjz), gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
-            
-            /* Inner loop uses 38 flops/iteration */
         }
