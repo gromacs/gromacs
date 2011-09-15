@@ -922,6 +922,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
     if (bStateChanged)
     {
+        if (PAR(cr) && NEED_MUTOT(*inputrec))
+        {
+            gmx_sumd(2*DIM,mu,cr);
+        } 
+
         for(i=0; i<2; i++)
         {
             for(j=0;j<DIM;j++)
