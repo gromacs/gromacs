@@ -157,9 +157,10 @@ typedef struct {
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
     int  ntype;      /* The number of different atom types                 */
-    real *nbfp;      /* The Lennard-Jones 6*C6 and 12*C12 params, size ntype^2  */
+    real *nbfp;      /* The Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
     int  comb_rule;  /* Combination rule, see enum above                   */
-    real *nbfp_comb; /* LJ parameter per atom type, size ntype             */
+    real *nbfp_comb; /* LJ parameter per atom type, size ntype*2           */
+    real *nbfp_s4;   /* As nbfp, but with stride 4, size ntype^2*4         */
     int  natoms;     /* Number of atoms                                    */
     int  natoms_local;  /* Number of local atoms                           */
     int  *type;      /* Atom types                                         */

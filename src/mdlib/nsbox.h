@@ -114,7 +114,8 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
  */
-void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
+void gmx_nb_atomdata_init(FILE *fp,
+                          gmx_nb_atomdata_t *nbat,
                           const gmx_nbsearch_t nbs,
                           int ntype,const real *nbfp,
                           int n_energygroups,

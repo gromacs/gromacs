@@ -124,6 +124,14 @@
             __m128     c6s_j_SSE,c12s_j_SSE;
 #endif
 
+#if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB
+            int         p;
+            __m128      clj_SSE0[4];
+            __m128      clj_SSE1[4];
+            __m128      clj_SSE2[4];
+            __m128      clj_SSE3[4];
+#endif
+
 #ifndef FIX_LJ_C
             __m128     c6_SSE0,c12_SSE0;
             __m128     c6_SSE1,c12_SSE1;
@@ -286,33 +294,29 @@
 #endif
 #else
 #ifndef FIX_LJ_C
-            for(jp=0; jp<UNROLLJ; jp++)
+            for(p=0; p<4; p++)
             {
-                pvdw_c6 [0*UNROLLJ+jp] = nbfp0[type[ssj+0]*2];
-                pvdw_c6 [1*UNROLLJ+jp] = nbfp1[type[ssj+1]*2];
-#ifndef HALF_LJ
-                pvdw_c6 [2*UNROLLJ+jp] = nbfp2[type[ssj+2]*2];
-                pvdw_c6 [3*UNROLLJ+jp] = nbfp3[type[ssj+3]*2];
-#endif
-                pvdw_c12[0*UNROLLJ+jp] = nbfp0[type[ssj+0]*2+1];
-                pvdw_c12[1*UNROLLJ+jp] = nbfp1[type[ssj+1]*2+1];
-#ifndef HALF_LJ
-                pvdw_c12[2*UNROLLJ+jp] = nbfp2[type[ssj+2]*2+1];
-                pvdw_c12[3*UNROLLJ+jp] = nbfp3[type[ssj+3]*2+1];
-#endif
+                clj_SSE0[p]   = _mm_load_ps(nbfp0+type[ssj+p]*4);
             }
-
-            c6_SSE0            = _mm_load_ps(pvdw_c6 +0*UNROLLJ);
-            c6_SSE1            = _mm_load_ps(pvdw_c6 +1*UNROLLJ);
+            for(p=0; p<4; p++)
+            {
+                clj_SSE1[p]   = _mm_load_ps(nbfp1+type[ssj+p]*4);
+            }
 #ifndef HALF_LJ
-            c6_SSE2            = _mm_load_ps(pvdw_c6 +2*UNROLLJ);
-            c6_SSE3            = _mm_load_ps(pvdw_c6 +3*UNROLLJ);
+            for(p=0; p<4; p++)
+            {
+                clj_SSE2[p]   = _mm_load_ps(nbfp2+type[ssj+p]*4);
+            }
+            for(p=0; p<4; p++)
+            {
+                clj_SSE3[p]   = _mm_load_ps(nbfp3+type[ssj+p]*4);
+            }
 #endif
-            c12_SSE0           = _mm_load_ps(pvdw_c12+0*UNROLLJ);
-            c12_SSE1           = _mm_load_ps(pvdw_c12+1*UNROLLJ);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE0[0],clj_SSE0[1],clj_SSE0[2],clj_SSE0[3],c6_SSE0,c12_SSE0);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE1[0],clj_SSE1[1],clj_SSE1[2],clj_SSE1[3],c6_SSE1,c12_SSE1);
 #ifndef HALF_LJ
-            c12_SSE2           = _mm_load_ps(pvdw_c12+2*UNROLLJ);
-            c12_SSE3           = _mm_load_ps(pvdw_c12+3*UNROLLJ);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE2[0],clj_SSE2[1],clj_SSE2[2],clj_SSE2[3],c6_SSE2,c12_SSE2);
+            GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE3[0],clj_SSE3[1],clj_SSE3[2],clj_SSE3[3],c6_SSE3,c12_SSE3);
 #endif
 #endif /* FIX_LJ_C */
 #endif /* LJ_COMB_GEOM */

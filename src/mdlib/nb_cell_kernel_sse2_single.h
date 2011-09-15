@@ -130,10 +130,6 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
     int        ssi,ssix,ssiy,ssiz;
     int        sjind0,sjind1,sjind;
     int        ip,jp;
-#ifndef LJ_COMB_GEOM
-    real       pvdw_array[2*UNROLLI*UNROLLJ+3];
-    real       *pvdw_c6,*pvdw_c12;
-#endif
 
 #ifdef ENERGY_GROUPS
     int        Vstride_i;
@@ -190,6 +186,8 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
     __m128     hsig_i_SSE3,seps_i_SSE3;
 #else
 #ifdef FIX_LJ_C
+    real       pvdw_array[2*UNROLLI*UNROLLJ+3];
+    real       *pvdw_c6,*pvdw_c12;
     __m128     c6_SSE0,c12_SSE0;
     __m128     c6_SSE1,c12_SSE1;
     __m128     c6_SSE2,c12_SSE2;
@@ -230,11 +228,6 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
     ljc = nbat->lj_comb;
-#endif
-
-#ifndef LJ_COMB_GEOM
-    pvdw_c6  = (float *)(((size_t)(pvdw_array+3)) & (~((size_t)15)));
-    pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 #endif
 
 #ifndef CALC_COUL_RF
@@ -286,6 +279,9 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
 #endif
 
 #ifdef FIX_LJ_C
+    pvdw_c6  = (float *)(((size_t)(pvdw_array+3)) & (~((size_t)15)));
+    pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+
     for(jp=0; jp<UNROLLJ; jp++)
     {
         pvdw_c6 [0*UNROLLJ+jp] = nbat->nbfp[0*2];
@@ -417,12 +413,12 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
             c12s_SSE3    = _mm_load1_ps(ljc+ssi*2+7);
         }
 #else
-        nbfp0     = nbat->nbfp + type[ssi  ]*nbat->ntype*2;
-        nbfp1     = nbat->nbfp + type[ssi+1]*nbat->ntype*2;
+        nbfp0     = nbat->nbfp_s4 + type[ssi  ]*nbat->ntype*4;
+        nbfp1     = nbat->nbfp_s4 + type[ssi+1]*nbat->ntype*4;
         if (!half_LJ)
         {
-            nbfp2 = nbat->nbfp + type[ssi+2]*nbat->ntype*2;
-            nbfp3 = nbat->nbfp + type[ssi+3]*nbat->ntype*2;
+            nbfp2 = nbat->nbfp_s4 + type[ssi+2]*nbat->ntype*4;
+            nbfp3 = nbat->nbfp_s4 + type[ssi+3]*nbat->ntype*4;
         }
 #endif
 #endif

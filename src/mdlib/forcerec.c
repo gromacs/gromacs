@@ -2134,28 +2134,14 @@ void init_forcerec(FILE *fp,
 
         snew(nbv->nbat,1);
 
-        gmx_nb_atomdata_init(nbv->nbat,
+        gmx_nb_atomdata_init(fp,
+                             nbv->nbat,
                              nbv->nbs,
                              fr->ntype,fr->nbfp,
                              ir->opts.ngener,
                              is_nbl_type_simple(kernel_type) ? fr->nthreads : 1,
                              nb_alloc, nb_free);
-
-        /* TODO move these notes to a separate function */
-        if (kernel_type == nbk4x4SSE && fp != NULL)
-        {
-            if (nbv->nbat->comb_rule==ljcrNONE)
-            {
-                fprintf(fp,"Using full Lennard-Jones parameter combination matrix\n");
-                fprintf(fp,"\nNOTE: the SSE kernels are a LOT slower when the LJ parameters do not obey a combination rule\n\n");
-            }
-            else
-            {
-                fprintf(fp,"Using %s Lennard-Jones combination rule\n",
-                        nbv->nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
-            }
-        }
-        
+       
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.
          */

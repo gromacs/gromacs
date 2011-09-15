@@ -4067,7 +4067,67 @@ static void gmx_nb_atomdata_output_init(gmx_nb_atomdata_output_t *out,
     }
 }
 
-void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
+static void set_combination_rule_data(gmx_nb_atomdata_t *nbat)
+{
+    int  nt,i,j;
+    real c6,c12;
+
+    nt = nbat->ntype;
+
+    switch (nbat->comb_rule)
+    {
+    case  ljcrGEOM:
+        nbat->comb_rule = ljcrGEOM;
+        
+        for(i=0; i<nt; i++)
+        {
+            /* Copy the diagonal from the nbfp matrix */
+            nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nt+i)*2  ]);
+            nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nt+i)*2+1]);
+        }
+        break;
+    case ljcrLB:
+        for(i=0; i<nt; i++)
+        {
+            /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
+            c6  = nbat->nbfp[(i*nt+i)*2  ];
+            c12 = nbat->nbfp[(i*nt+i)*2+1];
+            if (c6 > 0 && c12 > 0)
+            {
+                /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
+                 * so we get 6*C6 and 12*C12 after combining.
+                 */
+                nbat->nbfp_comb[i*2  ] = 0.5*pow(c12/c6,1.0/6.0);
+                nbat->nbfp_comb[i*2+1] = sqrt(c6*c6/c12);
+            }
+            else
+            {
+                nbat->nbfp_comb[i*2  ] = 0;
+                nbat->nbfp_comb[i*2+1] = 0;
+            }
+        }
+        break;
+    case ljcrNONE:
+        nbat->alloc((void **)&nbat->nbfp_s4,nt*nt*4*sizeof(nbat->nbfp_s4[0]));
+        for(i=0; i<nt; i++)
+        {
+            for(j=0; j<nt; j++)
+            {
+                nbat->nbfp_s4[(i*nt+j)*4+0] = nbat->nbfp[(i*nt+j)*2+0];
+                nbat->nbfp_s4[(i*nt+j)*4+1] = nbat->nbfp[(i*nt+j)*2+1];
+                nbat->nbfp_s4[(i*nt+j)*4+2] = 0;
+                nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
+            }
+        }
+        break;
+    default:
+        gmx_incons("Unknown combination rule");
+        break;
+    }
+}
+
+void gmx_nb_atomdata_init(FILE *fp,
+                          gmx_nb_atomdata_t *nbat,
                           const gmx_nbsearch_t nbs,
                           int ntype,const real *nbfp,
                           int n_energygroups,
@@ -4184,49 +4244,47 @@ void gmx_nb_atomdata_init(gmx_nb_atomdata_t *nbat,
                 bCombGeom,bCombLB);
     }
 
-    /* We prefer the geometic combination rule,
-     * as that give a slightly faster kernel than the LB rule.
-     */
-    if (bCombGeom)
+    /* This should be switched by the kernel type, not nblist type */
+    if (nbs->simple)
     {
-        nbat->comb_rule = ljcrGEOM;
-
-        for(i=0; i<nbat->ntype; i++)
+        /* We prefer the geometic combination rule,
+         * as that give a slightly faster kernel than the LB rule.
+         */
+        if (bCombGeom)
         {
-            /* Copy the diagonal from the nbfp matrix */
-            nbat->nbfp_comb[i*2  ] = sqrt(nbat->nbfp[(i*nbat->ntype+i)*2  ]);
-            nbat->nbfp_comb[i*2+1] = sqrt(nbat->nbfp[(i*nbat->ntype+i)*2+1]);
+            nbat->comb_rule = ljcrGEOM;
         }
-    }
-    else if (bCombLB)
-    {
-        nbat->comb_rule = ljcrLB;
-
-        for(i=0; i<nbat->ntype; i++)
+        else if (bCombLB)
         {
-            /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
-            c6  = nbat->nbfp[(i*nbat->ntype+i)*2  ];
-            c12 = nbat->nbfp[(i*nbat->ntype+i)*2+1];
-            if (c6 > 0 && c12 > 0)
+            nbat->comb_rule = ljcrLB;
+        }
+        else
+        {
+            nbat->comb_rule = ljcrNONE;
+
+            nbat->free(nbat->nbfp_comb);           
+        }
+
+        if (fp)
+        {
+            if (nbat->comb_rule == ljcrNONE)
             {
-                /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
-                 * so we get 6*C6 and 12*C12 after combining.
-                 */
-                nbat->nbfp_comb[i*2  ] = 0.5*pow(c12/c6,1.0/6.0);
-                nbat->nbfp_comb[i*2+1] = sqrt(c6*c6/c12);
+                fprintf(fp,"Using full Lennard-Jones parameter combination matrix\n\n");
             }
             else
             {
-                nbat->nbfp_comb[i*2  ] = 0;
-                nbat->nbfp_comb[i*2+1] = 0;
+                fprintf(fp,"Using %s Lennard-Jones combination rule\n\n",
+                        nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
             }
         }
+
+        set_combination_rule_data(nbat);
     }
     else
     {
         nbat->comb_rule = ljcrNONE;
 
-        sfree(nbat->nbfp_comb);
+        nbat->free(nbat->nbfp_comb);
     }
 
     nbat->natoms  = 0;
