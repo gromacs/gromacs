@@ -970,7 +970,7 @@ void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
                 int *order,
                 int *flags)
 {
-    int subc,s,a,ni,nj,i,j;
+    int subc,s,a,ni,nj,a_lj_max,i,j;
     int sorti[NBL_NAPC_MAX/NSUBCELL];
     int sortj[NBL_NAPC_MAX/NSUBCELL];
     gmx_bool haveQ;
@@ -982,6 +982,7 @@ void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
         ni = 0;
         nj = 0;
         haveQ = FALSE;
+        a_lj_max = -1;
         for(a=s; a<min(s+naps,a1); a++)
         {
             haveQ = haveQ || GET_CGINFO_HAS_Q(atinfo[order[a]]);
@@ -989,23 +990,33 @@ void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
             if (GET_CGINFO_HAS_LJ(atinfo[order[a]]))
             {
                 sorti[ni++] = order[a];
+                a_lj_max = a;
             }
             else
             {
                 sortj[nj++] = order[a];
             }
         }
-        for(i=0; i<ni; i++)
-        {
-            order[a0+i] = sorti[i];
-        }
-        for(j=0; j<nj; j++)
-        {
-            order[a0+ni+j] = sortj[j];
-        }
+
         *flags = 0;
-        if (ni*2 <= naps)
+
+        if (2*ni <= naps)
         {
+            /* Only sort when strictly necessary, so we avoid summation
+             * order precision loss as much as possible.
+             */
+            if (2*(a_lj_max - s) >= naps)
+            {
+                for(i=0; i<ni; i++)
+                {
+                    order[a0+i] = sorti[i];
+                }
+                for(j=0; j<nj; j++)
+                {
+                    order[a0+ni+j] = sortj[j];
+                }
+            }
+
             *flags |= NBL_CI_HALF_LJ(subc);
         }
         if (haveQ)
