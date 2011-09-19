@@ -2205,7 +2205,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
         "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
-        "Lauch the real simulation after optimization" },
+        "Launch the real simulation after optimization" },
       /******************/
       /* mdrun options: */
       /******************/

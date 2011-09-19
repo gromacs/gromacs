@@ -558,8 +558,8 @@ static void writeraw(real ***surf, int tblocks,int xbins, int ybins,char **fnms)
 int gmx_hydorder(int argc,char *argv[])
 {
     static const char *desc[] = {
-        "The tetrahedrality order parameters can be determined",
-        "around an atom. Both angle an distance order parameters are calculated. See",
+        "g_hydorder computes the tetrahedrality order parameters around a ",
+        "given atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
         "for more details.[BR]"
         "This application calculates the orderparameter in a 3d-mesh in the box, and",
