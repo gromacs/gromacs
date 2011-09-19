@@ -39,6 +39,7 @@
 #endif
 #include <stdio.h>
 #include "types/simple.h"
+#include "gmx_fatal.h"
 
 /*Make range-array (Permutation identity) for sorting */
 void rangeArray(int *ar,int size)
@@ -126,6 +127,7 @@ int BinarySearch (real *array, int low, int high, real key,int direction)
         return min-1;
 
     }/*end -ifelse direction*/
+   return -1;
 }
 
 
