@@ -165,7 +165,8 @@ int LinearSearch (double *array,int startindx, int stopindx,
     }
 
     else 
-        fprintf(stderr,"Error: startindex=stopindex=%d\n",startindx);
-
+        gmx_fatal(FARGS,"Startindex=stopindex=%d\n",startindx);
+        
+    return -1;
 }
 		
