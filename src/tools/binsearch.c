@@ -39,6 +39,7 @@
 #endif
 #include <stdio.h>
 #include "types/simple.h"
+#include "gmx_fatal.h"
 
 /*Make range-array (Permutation identity) for sorting */
 void rangeArray(int *ar,int size)
