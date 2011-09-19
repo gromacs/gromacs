@@ -2230,42 +2230,60 @@ static void check_disre(gmx_mtop_t *mtop)
   }
 }
 
-static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
+static gmx_bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,
+                                   gmx_bool posres_only,
+                                   ivec AbsRef)
 {
-  int d,g,i;
-  gmx_mtop_ilistloop_t iloop;
-  t_ilist *ilist;
-  int nmol;
-  t_iparams *pr;
+    int d,g,i;
+    gmx_mtop_ilistloop_t iloop;
+    t_ilist *ilist;
+    int nmol;
+    t_iparams *pr;
 
-  /* Check the COM */
-  for(d=0; d<DIM; d++) {
-    AbsRef[d] = (d < ndof_com(ir) ? 0 : 1);
-  }
-  /* Check for freeze groups */
-  for(g=0; g<ir->opts.ngfrz; g++) {
-    for(d=0; d<DIM; d++) {
-      if (ir->opts.nFreeze[g][d] != 0) {
-	AbsRef[d] = 1;
-      }
-    }
-  }
-  /* Check for position restraints */
-  iloop = gmx_mtop_ilistloop_init(sys);
-  while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol)) {
-    if (nmol > 0) {
-      for(i=0; i<ilist[F_POSRES].nr; i+=2) {
-	pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
-	for(d=0; d<DIM; d++) {
-	  if (pr->posres.fcA[d] != 0) {
-	    AbsRef[d] = 1;
-	  }
-	}
-      }
-    }
-  }
+    clear_ivec(AbsRef);
 
-  return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
+    if (!posres_only)
+    {
+        /* Check the COM */
+        for(d=0; d<DIM; d++)
+        {
+            AbsRef[d] = (d < ndof_com(ir) ? 0 : 1);
+        }
+        /* Check for freeze groups */
+        for(g=0; g<ir->opts.ngfrz; g++)
+        {
+            for(d=0; d<DIM; d++)
+            {
+                if (ir->opts.nFreeze[g][d] != 0)
+                {
+                    AbsRef[d] = 1;
+                }
+            }
+        }
+    }
+
+    /* Check for position restraints */
+    iloop = gmx_mtop_ilistloop_init(sys);
+    while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol))
+    {
+        if (nmol > 0 &&
+            (AbsRef[XX] == 0 || AbsRef[YY] == 0 || AbsRef[ZZ] == 0))
+        {
+            for(i=0; i<ilist[F_POSRES].nr; i+=2)
+            {
+                pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
+                for(d=0; d<DIM; d++)
+                {
+                    if (pr->posres.fcA[d] != 0)
+                    {
+                        AbsRef[d] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
 void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
@@ -2286,10 +2304,26 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 
   if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD &&
       ir->comm_mode == ecmNO &&
-      !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
+      !(absolute_reference(ir,sys,FALSE,AbsRef) || ir->nsteps <= 10)) {
     warning(wi,"You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
   }
-  
+
+    /* Check for pressure coupling with absolute position restraints */
+    if (ir->epc != epcNO && ir->refcoord_scaling == erscNO)
+    {
+        absolute_reference(ir,sys,TRUE,AbsRef);
+        {
+            for(m=0; m<DIM; m++)
+            {
+                if (AbsRef[m] && norm2(ir->compress[m]) > 0)
+                {
+                    warning(wi,"You are using pressure coupling with absolute position restraints, this will give artifacts. Use the refcoord_scaling option.");
+                    break;
+                }
+            }
+        }
+    }
+
   bCharge = FALSE;
   aloopb = gmx_mtop_atomloop_block_init(sys);
   while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
@@ -2384,7 +2418,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 
   if (ir->ePull != epullNO) {
     if (ir->pull->grp[0].nat == 0) {
-      absolute_reference(ir,sys,AbsRef);
+        absolute_reference(ir,sys,FALSE,AbsRef);
       for(m=0; m<DIM; m++) {
 	if (ir->pull->dim[m] && !AbsRef[m]) {
 	  warning(wi,"You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
