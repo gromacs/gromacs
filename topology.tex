@@ -209,12 +209,11 @@ two or three columns `{\tt a b} . .'). Obviously, the atom numbers
 on the molecule. It may be instructive to study the topologies for
 TIP4P or TIP5P water models that are included with the {\gromacs} distribution.
 
-{\bf Note} that if any constant bonded interactions defined between
-virtual sites and/or normal atoms will be removed by {\tt grompp},
-which happens after the exclusions have been generated.
-This way, exclusions will not be affected by an atom being
-defined as virtual site or not, but by the bonding configuration of the
-atom.
+{\bf Note} that if any constant bonded interactions are defined between
+virtual sites and/or normal atoms, they will be removed by {\tt grompp}
+(unless the option {tt -normvsbds} is used).
+This removal of bonded interactions is done after generating exclusions,
+as the generation of exclusions is based on ``chemically'' bonded interactions.
 
 Virtual sites can be constructed in a more generic way using basic geometric
 parameters.  The directive that can be used is {\tt [ virtual_sitesn ]}.  Required
