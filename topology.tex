@@ -453,7 +453,7 @@ will give a warning for each pair type for which no parameters are given.
 
 \ifthenelse{\equal{\gmxmajor}{4}}{
 The normal pair interactions, intended for \normindex{1-4 interaction}s,
-have function type 1. Function types 2 and 3 are intended
+have function type 1. Function type 2 and the {\tt [~pairs_nb~]} are intended
 for free-energy simulations. When determining hydration
 free energies, the solute needs to be decoupled from the solvent.
 This can be done by adding a B-state topology (see \secref{fecalc})
@@ -468,19 +468,18 @@ function type 2, which is identical to function type 1, except
 that the B-state parameters are always identical to the A-state
 parameters. For searching the parameters in the {\tt [~pairtypes~]} section,
 no distinction is made between function type 1 and 2.
-Function type 3 is intended to replace the non-bonded interaction.
-It uses the unscaled charges and the non-bonded LJ parameters.
-Type 3 also only uses the A-state parameters. {\bf Note} that
-one should add exclusions for all atom pairs participating in pair
-interactions type 3, otherwise such pairs will also end
-up in the normal neighbor lists.
+The pairs section {\tt [~pairs_nb~]} is intended to replace the non-bonded interaction.
+It uses the unscaled charges and the non-bonded LJ parameters;
+it also only uses the A-state parameters. {\bf Note} that
+one should add exclusions for all atom pairs listed in {\tt [~pairs_nb~]},
+otherwise such pairs will also end up in the normal neighbor lists.
 
 All three pair types always use plain Coulomb interactions,
 even when Reaction-field, PME, Ewald or shifted Coulomb interactions
 are selected for the non-bonded interactions.
 Energies for types 1 and 2 are written to the energy and log file
 in separate ``LJ-14'' and ``Coulomb-14'' entries per energy group pair.
-Energies for type 3 are added to the ``LJ-(SR)'' and ``Coulomb-(SR)'' terms.
+Energies for {\tt [~pairs_nb~]} are added to the ``LJ-(SR)'' and ``Coulomb-(SR)'' terms.
 }{}
 
 \subsection{\normindex{Implicit Solvent parameters}}
