@@ -2003,7 +2003,7 @@ In {\gromacs} the equations are integrated with a simple, explicit scheme:
 \eeq
 where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
 The friction coefficients $\gamma_i$ can be chosen the same for all
-particles or as $\gamma_i = m_i/\xi_i$, where the friction constants
+particles or as $\gamma_i = m_i\,\xi_i$, where the friction constants
 $\xi_i$ can be different for different groups of atoms. 
 Because the system is assumed to be over-damped, large timesteps
 can be used. LINCS should be used for the constraints since SHAKE
