@@ -8,8 +8,11 @@
 extern "C" {
 #endif
 
+void init_cu_nonbonded(FILE * /*fplog*/,
+                    cu_nonbonded_t * /*p_cu_nb*/);
+
 void init_cudata_ff(FILE * /*fplog*/, 
-                    cu_nonbonded_t * /*p_cu_nb*/,
+                    cu_nonbonded_t /*p_cu_nb*/,
                     const interaction_const_t * /*ic*/,
                     const nonbonded_verlet_t * /*nbv*/);
 
@@ -23,8 +26,8 @@ void init_cudata_atoms(cu_nonbonded_t /*cu_nb*/,
 void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
                        const gmx_nb_atomdata_t * /*nbatom*/);
 
-void cu_clear_nb_f_out(cu_nonbonded_t cu_nb);
-void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb);
+void cu_clear_nb_f_out(cu_nonbonded_t /*cu_nb*/);
+void cu_clear_nb_e_fs_out(cu_nonbonded_t /*cu_nb*/);
 
 void destroy_cudata(FILE * /*fplog*/, 
                     cu_nonbonded_t /*cu_nb*/);
@@ -35,6 +38,8 @@ void cu_synchstream_atomdata(cu_nonbonded_t /*cu_nb*/, gmx_bool /*nonLocal*/);
 cu_timings_t * get_gpu_timings(cu_nonbonded_t /*cu_nb*/);
 
 void reset_gpu_timings(cu_nonbonded_t /*cu_nb*/);
+
+int cu_calc_min_ci_balanced(cu_nonbonded_t /*cu_nb*/);
 
 int cu_upload_X(cu_nonbonded_t /*cu_nb*/, real * /*h_x*/);
 int cu_download_F(real * /*h_f*/, cu_nonbonded_t /*cu_nb*/);

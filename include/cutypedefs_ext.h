@@ -3,10 +3,12 @@
 
 #define GPU_NS_CELL_SIZE    8
 
+#define GPU_MIN_CI_BALANCED_FACTOR 40
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Abstract type for CUDA nonbonded data structure */
+/* Abstract types for CUDA nonbonded and device info data structures */
 typedef struct cu_nonbonded * cu_nonbonded_t;
 
 typedef struct cu_timings cu_timings_t;

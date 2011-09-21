@@ -842,7 +842,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
                                  &top->excls,
                                  ic->rlist,
-                                 700,
+                                 nbv->min_ci_balanced,
                                  FALSE,nbv->nnbl,nbv->nbl,
                                  !is_nbl_type_simple(nb_kernel_type));
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
@@ -879,7 +879,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
                                      &top->excls,
                                      ic->rlist,
-                                     700,
+                                     nbv->min_ci_balanced,
                                      TRUE,nbv->nnbl_nl,nbv->nbl_nl,
                                      !is_nbl_type_simple(nb_kernel_type));
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);

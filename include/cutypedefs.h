@@ -3,6 +3,7 @@
 
 #include "types/nblist_box.h"
 #include "cutypedefs_ext.h"
+#include "cudautils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,6 +117,7 @@ struct cu_timers
 /* main data structure for CUDA nonbonded force evaluation */
 struct cu_nonbonded 
 {
+    cu_dev_info_t   *dev_info;
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
     cu_nblist_t     *nblist; 

@@ -581,6 +581,7 @@ int init_gpu(FILE *fplog, int dev_id)
             fprintf(fplog, "Failed to initilized initilized CUDA device #%d.\n",
                     dev_id);
         }
+
         return -1;
     }
     else 
@@ -590,6 +591,7 @@ int init_gpu(FILE *fplog, int dev_id)
             fprintf(fplog, "Succesfully initilized CUDA device #%d, %s.\n",
                     dev_id, dev_prop.name);
         }
+
         return 0;
     }
     

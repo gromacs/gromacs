@@ -76,6 +76,13 @@
 extern "C" {
 #endif
 
+typedef struct cu_dev_info  cu_dev_info_t;
+struct cu_dev_info
+{
+    int dev_id;                 /* id of the CUDA device in use */
+    cudaDeviceProp dev_prop;    /* CUDA device properties */
+};
+
 int download_cudata(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 int download_cudata_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*stream = 0*/);
 int download_cudata_alloc(void ** /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);

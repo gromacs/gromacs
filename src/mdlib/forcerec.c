@@ -1359,7 +1359,8 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
     }
 }
 
-static void gmx_pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
+/* Selects the non-bonded (Verlet) kernel to be used. */
+static void pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
                               int *napc, int nodeid)
 {
     char *env;
@@ -1408,7 +1409,7 @@ static void gmx_pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
     else
     {
 #ifdef GMX_GPU
-        /* Try to turn use GPUs if GMX_GPU is not defined */
+        /* Try to use a GPU if GMX_GPU is not defined */
         if (getenv("GMX_NO_GPU") == NULL)
         {
             int gpu_device_id;
@@ -1522,7 +1523,7 @@ void init_interaction_const(FILE *fp,
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
 #ifdef GMX_GPU
-        init_cudata_ff(fp, &(fr->nbv->gpu_nb), ic, fr->nbv);
+        init_cudata_ff(fp, fr->nbv->gpu_nb, ic, fr->nbv);
 #endif
     }
 
@@ -1532,18 +1533,54 @@ void init_interaction_const(FILE *fp,
     }
 }
 
-static void init_nb_verlet(nonbonded_verlet_t **nb_verlet,
-                           const t_forcerec *fr)
+static void init_nb_verlet(FILE *fp, 
+                           nonbonded_verlet_t **nb_verlet,
+                           int *napc,
+                           const t_forcerec *fr,
+                           const t_commrec *cr)
 {
     nonbonded_verlet_t *nbv;
+    char *env;
 
     snew(nbv, 1);
 
-    nbv->nbs        = NULL;
-    nbv->nbl        = NULL;
-    nbv->nbl_nl     = NULL;
-    nbv->nbat       = NULL;
-    nbv->kernel_type = nbkNotSet;
+    nbv->nbs             = NULL;
+    nbv->nbl             = NULL;
+    nbv->nbl_nl          = NULL;
+    nbv->nbat            = NULL;
+    nbv->kernel_type     = nbkNotSet;
+
+    pick_nb_kernel(fp, nbv, napc, cr->nodeid);
+
+    if (nbv->useGPU)
+    {
+#ifdef GMX_GPU
+        init_cu_nonbonded(fp, &(nbv->gpu_nb));
+        env = getenv("GMX_NB_MIN_CI");
+        if (env)
+        {
+            sscanf(env, "%d", &nbv->min_ci_balanced);
+            if (debug)
+            {
+                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n", 
+                        nbv->min_ci_balanced);
+            }
+        }
+        else
+        {
+            nbv->min_ci_balanced = cu_calc_min_ci_balanced(nbv->gpu_nb);
+            if (debug)
+            {
+                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
+                        nbv->min_ci_balanced);
+            }
+        }
+#endif
+    }
+    else
+    {
+        nbv->min_ci_balanced = 0;
+    }
 
     *nb_verlet = nbv;
 }
@@ -2077,18 +2114,13 @@ void init_forcerec(FILE *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        int kernel_type;
         gmx_nbat_alloc_t *nb_alloc = NULL;
         gmx_nbat_free_t  *nb_free = NULL;
 
-        init_nb_verlet(&fr->nbv, fr);
+        init_nb_verlet(fp, &fr->nbv, &napc, fr, cr);
         nbv = fr->nbv;
 
-        /* nsbox neighbor searching and GPU stuff */
-        gmx_pick_nb_kernel(fp, nbv, &napc, cr->nodeid);
-        kernel_type = nbv->kernel_type;
-
-        if (kernel_type == nbk8x8x8CUDA)
+        if (nbv->kernel_type == nbk8x8x8CUDA)
         {
 #ifdef GMX_GPU
             nb_alloc = &pmalloc;
@@ -2104,7 +2136,7 @@ void init_forcerec(FILE *fp,
         gmx_nbsearch_init(&nbv->nbs,
                           DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                           DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                          is_nbl_type_simple(kernel_type),
+                          is_nbl_type_simple(nbv->kernel_type),
                           napc,
                           fr->nthreads);
 
@@ -2153,10 +2185,10 @@ void init_forcerec(FILE *fp,
         gmx_nb_atomdata_init(fp,
                              nbv->nbat,
                              nbv->nbs,
-                             kernel_type == nbk4x4SSE,
+                             nbv->kernel_type == nbk4x4SSE,
                              fr->ntype,fr->nbfp,
                              ir->opts.ngener,
-                             is_nbl_type_simple(kernel_type) ? fr->nthreads : 1,
+                             is_nbl_type_simple(nbv->kernel_type) ? fr->nthreads : 1,
                              nb_alloc, nb_free);
        
         /* initilize interaction constants; 

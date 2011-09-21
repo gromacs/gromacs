@@ -21,7 +21,9 @@ typedef struct {
     int kernel_type; /* non-bonded kernel - see enum above */
 
     /* GPU/CUDA nonbonded data structure */
-    cu_nonbonded_t gpu_nb; /*gpu_data*/
+    cu_nonbonded_t gpu_nb;  /*gpu_data*/
+    int min_ci_balanced;    /* balance lists to this size - only used for 
+                               the 8x8x8 CUDA kernels */
 } nonbonded_verlet_t;
 
 #ifdef __cplusplus

@@ -277,19 +277,16 @@ static void init_timings(cu_timings_t *t)
     }
 }
 
-/*! Initilizes force-field related data (called only once in the beginning).
- */
-void init_cudata_ff(FILE *fplog, 
-                    cu_nonbonded_t *p_cu_nb,
-                    const interaction_const_t *ic,
-                    const nonbonded_verlet_t *nbv)
+void init_cu_nonbonded(FILE *fplog,
+                    cu_nonbonded_t *p_cu_nb)
 {
-    cudaError_t     stat;
+    cudaError_t stat;
     cu_nonbonded_t  nb;
 
     if (p_cu_nb == NULL) return;
-    
+
     snew(nb, 1); 
+    snew(nb->dev_info, 1);
     snew(nb->atomdata, 1); 
     snew(nb->nb_params, 1); 
     snew(nb->nblist, 1); 
@@ -297,20 +294,22 @@ void init_cudata_ff(FILE *fplog,
     snew(nb->timers, 1); 
     snew(nb->timings, 1); 
 
-    init_atomdata(nb->atomdata, nbv->nbat->ntype);
-    init_nb_params(nb->nb_params, ic, nbv);
-    init_nblist(nb->nblist);
-    init_nblist(nb->nblist_nl);
-    init_timers(nb->timers);
-    init_timings(nb->timings);
-
-    /* clear energy and shift force outputs first time */
-    cu_clear_nb_e_fs_out(nb);
+    /* init device info */
+    /* FIXME this should not be done here! */
+    stat = cudaGetDevice(&nb->dev_info->dev_id);
+    CU_RET_ERR(stat, "cudaGetDevice failed");
+    stat = cudaGetDeviceProperties(&nb->dev_info->dev_prop, nb->dev_info->dev_id);
+    CU_RET_ERR(stat, "cudaGetDeviceProperties failed");
 
     /* init tmpdata */
     pmalloc((void**)&nb->tmpdata.e_lj, sizeof(*nb->tmpdata.e_lj));
     pmalloc((void**)&nb->tmpdata.e_el, sizeof(*nb->tmpdata.e_el));
     pmalloc((void**)&nb->tmpdata.f_shift, SHIFTS * sizeof(*nb->tmpdata.f_shift));
+
+    init_nblist(nb->nblist);
+    init_nblist(nb->nblist_nl);
+    init_timers(nb->timers);
+    init_timings(nb->timings);
 
     *p_cu_nb = nb;
 
@@ -336,6 +335,20 @@ void init_cudata_ff(FILE *fplog,
     /* TODO: move this to gpu_utils module */
     k_empty_test<<<1, 512>>>();
     CU_LAUNCH_ERR_SYNC("test kernel");
+}
+
+/*! Initilizes force-field related data (called only once in the beginning).
+ */
+void init_cudata_ff(FILE *fplogi,
+                    cu_nonbonded_t cu_nb,
+                    const interaction_const_t *ic,
+                    const nonbonded_verlet_t *nbv)
+{
+    init_atomdata(cu_nb->atomdata, nbv->nbat->ntype);
+    init_nb_params(cu_nb->nb_params, ic, nbv);
+
+    /* clear energy and shift force outputs */
+    cu_clear_nb_e_fs_out(cu_nb);
 }
 
 /*! Initilizes neighbor list on the GPU, called at every neighbor search step. 
@@ -723,6 +736,13 @@ void reset_gpu_timings(cu_nonbonded_t cu_nb)
 {
     init_timings(cu_nb->timings);
 }
+
+int cu_calc_min_ci_balanced(cu_nonbonded_t cu_nb)
+{
+    return cu_nb != NULL ? 
+        GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->dev_prop.multiProcessorCount : 0;
+}
+
 
 /*** Old stuff ***/
 int cu_upload_X(cu_nonbonded_t cu_nb, real *h_x) 
