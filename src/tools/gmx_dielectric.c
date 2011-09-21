@@ -214,7 +214,7 @@ int gmx_dielectric(int argc,char *argv[])
     "known as the Cole-Cole plot, in which the imaginary",
     "component is plotted as a function of the real component.",
     "For a pure exponential relaxation (Debye relaxation) the latter",
-    "plot should be one half of a circle.",
+    "plot should be one half of a circle."
   };
   t_filenm fnm[] = {
     { efXVG, "-f", "dipcorr",ffREAD  },
