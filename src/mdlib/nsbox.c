@@ -130,6 +130,7 @@ gmx_icell_set_x_t(int ci,
                   gmx_nbl_work_t *work);
 
 static gmx_icell_set_x_t icell_set_x_simple;
+static gmx_icell_set_x_t icell_set_x_simple_xxxx;
 static gmx_icell_set_x_t icell_set_x_supersub;
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 
@@ -371,34 +372,25 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
 
     if (nbs->simple)
     {
-        nbs->icell_set_x = icell_set_x_simple;
         nbs->subc_dc = NULL;
     }
     else
     {
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+        nbs->subc_dc = subc_in_range_sse8;
+#else
         if (getenv("GMX_NSBOX_BB") != NULL)
         {
             /* Use only bounding box sub cell pair distances,
              * fast, but produces slightly more sub cell pairs.
              */
-            nbs->icell_set_x = icell_set_x_supersub;
             nbs->subc_dc = NULL;
         }
         else
         {
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-            if (natoms_subcell == 8 && getenv("GMX_NSBOX_NOSSE") == NULL)
-            {
-                nbs->icell_set_x = icell_set_x_supersub_sse8;
-                nbs->subc_dc = subc_in_range_sse8;
-            }
-            else
-#endif
-            {
-                nbs->icell_set_x = icell_set_x_supersub;
-                nbs->subc_dc = subc_in_range_x;
-            }
+            nbs->subc_dc = subc_in_range_x;
         }
+#endif
     }
 
     nbs->nthread_max = nthread_max;
@@ -1074,9 +1066,9 @@ void fill_cell(const gmx_nbsearch_t nbs,
         
         calc_bounding_box_x_xxxx(na,xnb,bb_ptr);
     }
-    else
-    {
 #ifdef GMX_NBS_BBXXXX
+    else if (!nbs->simple)
+    {
         /* Store the bounding boxes in a format convenient
          * for SSE calculations: xxxxyyyyzzzz...
                              */
@@ -1108,9 +1100,12 @@ void fill_cell(const gmx_nbsearch_t nbs,
                     bb_ptr[4],bb_ptr[16],
                     bb_ptr[8],bb_ptr[20]);
         }
-#else
+    }
+#endif
+    else
+    {
         /* Store the bounding boxes as xyz.xyz. */
-        bb_ptr = grid->bb+((ash_x-grid->cell0*nbs->napc)>>nbs->naps2log)*NNBSBB_B;
+        bb_ptr = grid->bb+((a0-grid->cell0*nbs->napc)>>nbs->naps2log)*NNBSBB_B;
         
         calc_bounding_box(na,nbat->xstride,xnb,
                           bb_ptr);
@@ -1118,9 +1113,9 @@ void fill_cell(const gmx_nbsearch_t nbs,
         if (gmx_debug_at)
         {
             int bbo;
-            bbo = (ash_x - grid->cell0*nbs->napc)/nbs->naps;
-            fprintf(debug,"%2d %2d %2d %d %d %d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
-                    cx,cy,cz,sub_x,sub_y,sub_z,
+            bbo = (a0 - grid->cell0*nbs->napc)/nbs->naps;
+            fprintf(debug,"%2d %2d %2d bb %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+                    sx,sy,sz,
                     (grid->bb+bbo*NNBSBB_B)[0],
                     (grid->bb+bbo*NNBSBB_B)[4],
                     (grid->bb+bbo*NNBSBB_B)[1],
@@ -1128,7 +1123,6 @@ void fill_cell(const gmx_nbsearch_t nbs,
                     (grid->bb+bbo*NNBSBB_B)[2],
                     (grid->bb+bbo*NNBSBB_B)[6]);
         }
-#endif
     }
 }
 
@@ -2494,6 +2488,118 @@ static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
                                      const real *x_j,
                                      real rl2,real rbb2)
 {
+    const gmx_nbl_work_t *work;
+
+    const real *bb_ci;
+    const real *x_ci;
+
+    gmx_bool   InRange;
+    real       d2;
+    int        cjf_gl,cjl_gl,cj;
+
+    work = nbl->work;
+
+    bb_ci = nbl->work->bb_ci;
+    x_ci  = nbl->work->x_ci;
+
+    InRange = FALSE;
+    while (!InRange && cjf <= cjl)
+    {
+        d2 = subc_bb_dist2(4,0,bb_ci,cjf,gridj->bb);
+        
+        /* Check if the distance is within the distance where
+         * we use only the bounding box distance rbb,
+         * or within the cut-off and there is at least one atom pair
+         * within the cut-off.
+         */
+        if (d2 < rbb2)
+        {
+            InRange = TRUE;
+        }
+        else if (d2 < rl2)
+        {
+            int i,j;
+
+            cjf_gl = gridj->cell0 + cjf;
+            for(i=0; i<4 && !InRange; i++)
+            {
+                for(j=0; j<4; j++)
+                {
+                    InRange = InRange ||
+                        (sqr(x_ci[i*DIM+0] - x_j[(cjf_gl*4+j)*DIM+0]) +
+                         sqr(x_ci[i*DIM+1] - x_j[(cjf_gl*4+j)*DIM+1]) +
+                         sqr(x_ci[i*DIM+2] - x_j[(cjf_gl*4+j)*DIM+2]) < rl2);
+                }
+            }
+        }
+        if (!InRange)
+        {
+            cjf++;
+        }
+    }
+    if (!InRange)
+    {
+        return;
+    }
+
+    InRange = FALSE;
+    while (!InRange && cjl > cjf)
+    {
+        d2 = subc_bb_dist2(4,0,bb_ci,cjl,gridj->bb);
+        
+        /* Check if the distance is within the distance where
+         * we use only the bounding box distance rbb,
+         * or within the cut-off and there is at least one atom pair
+         * within the cut-off.
+         */
+        if (d2 < rbb2)
+        {
+            InRange = TRUE;
+        }
+        else if (d2 < rl2)
+        {
+            int i,j;
+
+            cjl_gl = gridj->cell0 + cjl;
+            for(i=0; i<4 && !InRange; i++)
+            {
+                for(j=0; j<4; j++)
+                {
+                    InRange = InRange ||
+                        (sqr(x_ci[i*DIM+0] - x_j[(cjl_gl*4+j)*DIM+0]) +
+                         sqr(x_ci[i*DIM+1] - x_j[(cjl_gl*4+j)*DIM+1]) +
+                         sqr(x_ci[i*DIM+2] - x_j[(cjl_gl*4+j)*DIM+2]) < rl2);
+                }
+            }
+        }
+        if (!InRange)
+        {
+            cjl--;
+        }
+    }
+
+    if (cjf <= cjl)
+    {
+        for(cj=cjf; cj<=cjl; cj++)
+        {
+            /* Store cj and the interaction mask */
+            nbl->cj[nbl->ncj].c    = gridj->cell0 + cj;
+            nbl->cj[nbl->ncj].excl = (remove_sub_diag && ci == cj ?
+                                      SIMD_INT_MASK_DIAG : SIMD_INT_MASK_ALL);
+            nbl->ncj++;
+        }
+        /* Increase the closing index in i super-cell list */
+        nbl->ci[nbl->nci].cj_ind_end = nbl->ncj;
+    }
+}
+
+static void make_subcell_list_simple_xxxx(const gmx_nbs_grid_t *gridj,
+                                          gmx_nblist_t *nbl,
+                                          int ci,int cjf,int cjl,
+                                          gmx_bool remove_sub_diag,
+                                          const real *x_j,
+                                          real rl2,real rbb2)
+{
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
 
     const gmx_nbl_work_t *work;
@@ -3273,6 +3379,24 @@ static void icell_set_x_simple(int ci,
                                int naps,
                                int stride,const real *x,
                                gmx_nbl_work_t *work)
+{
+    int  ia,i;
+
+    ia = ci*4;
+
+    for(i=0; i<4; i++)
+    {
+        work->x_ci[i*DIM+0] = x[(ia+i)*stride+XX] + shx;
+        work->x_ci[i*DIM+1] = x[(ia+i)*stride+YY] + shy;
+        work->x_ci[i*DIM+2] = x[(ia+i)*stride+ZZ] + shz;
+    }
+}
+
+static void icell_set_x_simple_xxxx(int ci,
+                                    real shx,real shy,real shz,
+                                    int naps,
+                                    int stride,const real *x,
+                                    gmx_nbl_work_t *work)
 {
     int  ia;
 
@@ -4055,11 +4179,22 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                     {
                                         check_subcell_list_space_simple(nbl,cl-cf+1);
 
-                                        make_subcell_list_simple(gridj,
-                                                                 nbl,ci,cf,cl,
-                                                                 (gridi == gridj && shift == CENTRAL),
-                                                                 nbat->x,
-                                                                 rl2,rbb2);
+                                        if (nbat->XFormat == nbatXXXX)
+                                        {
+                                            make_subcell_list_simple_xxxx(gridj,
+                                                                          nbl,ci,cf,cl,
+                                                                          (gridi == gridj && shift == CENTRAL),
+                                                                          nbat->x,
+                                                                          rl2,rbb2);
+                                        }
+                                        else
+                                        {
+                                            make_subcell_list_simple(gridj,
+                                                                     nbl,ci,cf,cl,
+                                                                     (gridi == gridj && shift == CENTRAL),
+                                                                     nbat->x,
+                                                                     rl2,rbb2);
+                                        }
                                     }
                                     else
                                     {
@@ -4138,6 +4273,26 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     if (debug)
     {
         fprintf(debug,"ns making %d nblists\n",nnbl);
+    }
+
+    if (nbs->simple)
+    {
+        if (nbat->XFormat == nbatXXXX)
+        {
+            nbs->icell_set_x = icell_set_x_simple_xxxx;
+        }
+        else
+        {
+            nbs->icell_set_x = icell_set_x_simple;
+        }
+    }
+    else
+    {
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+        nbs->icell_set_x = icell_set_x_supersub_sse8;
+#else
+        nbs->icell_set_x = icell_set_x_supersub;
+#endif
     }
 
     if (!nonLocal)
@@ -4342,6 +4497,7 @@ static void set_combination_rule_data(gmx_nb_atomdata_t *nbat)
 void gmx_nb_atomdata_init(FILE *fp,
                           gmx_nb_atomdata_t *nbat,
                           const gmx_nbsearch_t nbs,
+                          gmx_bool XFormatXXXX,
                           int ntype,const real *nbfp,
                           int n_energygroups,
                           int nout,
@@ -4503,7 +4659,14 @@ void gmx_nb_atomdata_init(FILE *fp,
     nbat->natoms  = 0;
     nbat->type    = NULL;
     nbat->lj_comb = NULL;
-    nbat->XFormat = (nbs->simple ? nbatXXXX : nbatXYZQ);
+    if (nbs->simple)
+    {
+        nbat->XFormat = (XFormatXXXX ? nbatXXXX : nbatXYZ);
+    }
+    else
+    {
+        nbat->XFormat = nbatXYZQ;
+    }
     nbat->q       = NULL;
     nbat->naps    = nbs->naps;
     nbat->nenergrp = n_energygroups;
@@ -4630,7 +4793,7 @@ static void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
 }
 
 static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
-                                  int naps,int negp,
+                                  int naps,int comb_fac,
                                   const int *in,int *innb)
 {
     int i,j,sa,at;
@@ -4649,7 +4812,7 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
             {
                 comb += GET_CGINFO_GID(in[at])*fac;
             }
-            fac *= negp;
+            fac *= comb_fac;
         }
         innb[j++] = comb;
     }
@@ -4666,6 +4829,18 @@ static void gmx_nb_atomdata_set_energygroups(gmx_nb_atomdata_t *nbat,
 {
     int g,i,ncz,ash;
     const gmx_nbs_grid_t *grid;
+    int comb_fac;
+
+    if (nbat->XFormat == nbatXXXX)
+    {
+        /* Minimize the maximum combined energy group number */
+        comb_fac = nbat->nenergrp;
+    }
+    else
+    {
+        /* Easy access through bit operations by using a power of 2 */
+        comb_fac = (1<<8);
+    }
 
     for(g=0; g<nbs->ngrid; g++)
     {
@@ -4678,7 +4853,7 @@ static void gmx_nb_atomdata_set_energygroups(gmx_nb_atomdata_t *nbat,
             ash = (grid->cell0 + grid->cxy_ind[i])*nbs->napc;
 
             copy_egp_to_nbat_egps(nbs->a+ash,grid->cxy_na[i],ncz*nbs->napc,
-                                  nbat->naps,nbat->nenergrp,
+                                  nbat->naps,comb_fac,
                                   atinfo,nbat->energrp+(ash>>nbs->naps2log));
         }
     }

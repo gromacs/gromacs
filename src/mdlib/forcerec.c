@@ -1368,7 +1368,16 @@ static void gmx_pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
     /* by default we'll use the 4x4 SSE kernels */
     if (nbv->kernel_type == nbkNotSet)
     {
-        nbv->kernel_type = nbk4x4SSE;
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) ) && ! defined GMX_DOUBLE
+        if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
+        {
+            nbv->kernel_type = nbk4x4SSE;
+        }
+        else
+#endif
+        {
+            nbv->kernel_type = nbk4x4PlainC;
+        }
     }
 
     /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
@@ -1435,6 +1444,11 @@ static void gmx_pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
         }
 #endif
     }
+
+    if (fp != NULL)
+    {
+        fprintf(fp,"Using %s non-bonded kernels\n\n",nbk_name[nbv->kernel_type]);
+    }
 }
 
 gmx_bool is_nbl_type_simple(int nb_kernel_type)
@@ -1450,6 +1464,7 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type)
         case nbk8x8x8PlainC:
             return FALSE;
 
+        case nbk4x4PlainC:
         case nbk4x4SSE:
             return TRUE;
 
@@ -1466,7 +1481,8 @@ void init_interaction_const_tables(FILE *fp,
     real spacing;
 
     if ((ic->eeltype == eelEWALD || EEL_PME(ic->eeltype)) &&
-        verlet_kernel_type == nbk4x4SSE)
+        (verlet_kernel_type == nbk4x4PlainC ||
+         verlet_kernel_type == nbk4x4SSE))
     {
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
@@ -2137,6 +2153,7 @@ void init_forcerec(FILE *fp,
         gmx_nb_atomdata_init(fp,
                              nbv->nbat,
                              nbv->nbs,
+                             kernel_type == nbk4x4SSE,
                              fr->ntype,fr->nbfp,
                              ir->opts.ngener,
                              is_nbl_type_simple(kernel_type) ? fr->nthreads : 1,

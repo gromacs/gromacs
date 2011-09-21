@@ -88,6 +88,7 @@
 #include "genborn.h"
 #include "nsbox.h"
 #include "nsbox_kernel.h"
+#include "nb_cell_kernel_c.h"
 #include "nb_cell_kernel.h"
 
 #ifdef GMX_LIB_MPI
@@ -599,6 +600,19 @@ static void do_nb_verlet(t_forcerec *fr,
 
     switch (nbv->kernel_type)
     {
+        case nbk4x4PlainC:
+            nb_cell_kernel_c(nbv->nnbl,nbl,
+                             nbv->nbat, ic,
+                             fr->shift_vec,
+                             flags,
+                             clearF,
+                             fr->fshift[0],
+                             enerd->grpp.ener[egCOULSR],
+                             fr->bBHAM ?
+                             enerd->grpp.ener[egBHAMSR] :
+                             enerd->grpp.ener[egLJSR]);
+            break;
+        
         case nbk4x4SSE:
             nb_cell_kernel(nbv->nnbl,nbl,
                            nbv->nbat, ic,
