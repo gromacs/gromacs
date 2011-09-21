@@ -1,31 +1,8 @@
 #!/bin/sh
-# This is a script to create all the configuration files when
-# you compile from the CVS source. You should NOT use it to
-# compile the distribution.
-#
-# Step 1 - check if the necessary tools appear to be there.
-#          Ideally we should check versions too, which we don't...
+# This is a stub script to help developers during the final
+# part of the change-over from autotools to CMake.
 
-if ! autoconf --version 2>&1 | grep GNU >/dev/null 2>&1; then
-    echo "Cannot find GNU autoconf! Exiting..."
-    exit 0
-fi
-if ! automake --version 2>&1 | grep GNU >/dev/null 2>&1; then
-    echo "Cannot find GNU automake! Exiting..."
-    exit 0
-fi
-
-if ! libtool --version 2>&1 | grep GNU >/dev/null 2>&1; then
-# on Mac OS X the GNU version is called glibtool...
-    if ! glibtool --version 2>&1 | grep GNU >/dev/null 2>&1; then
-        echo "Cannot find GNU libtool! Exiting..."
-        exit 0
-    fi
-fi
-
-aclocal -I config
-# fix for OSX producing debug directories; replace rm -f with rm -rf in built-in scripts
-cat aclocal.m4 | sed -e 's/rm="rm -f"/rm="rm -rf"/' | sed -e 's/rm -f /rm -rf /' > aclocal.tmp && mv aclocal.tmp aclocal.m4
-autoheader
-automake
-autoconf
+echo "\
+The use of autotools for installing GROMACS is deprecated for 4.6 onwards
+Please switch to CMake. Check http://www.gromacs.org/Developer_Zone/Cmake
+for instructions."
