@@ -52,6 +52,10 @@
 #include "vcm.h"
 #include "nrnb.h"
 
+#ifdef GMX_GPU
+#include "cuda_data_mgmt.h"
+#endif
+
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
