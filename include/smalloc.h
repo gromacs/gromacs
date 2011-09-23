@@ -142,7 +142,8 @@ size_t memavail(void);
 /* Aligned-memory counterparts */
 
 void *save_calloc_aligned(const char *name,const char *file,int line,
-			  unsigned nelem,size_t elsize,size_t alignment); 
+			  unsigned nelem,size_t elsize,size_t alignment,
+			  int set_to_zero); 
 void save_free_aligned(const char *name,const char *file,int line, void *ptr);
 
 #ifdef __cplusplus
@@ -188,7 +189,7 @@ template <typename T>
 void _snew_aligned(const char *name, const char *file, int line,
 		   T *&ptr, size_t nelem, size_t elsize,size_t alignment)
 {
-  ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
+  ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment, 1);
 }
 
 #define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
@@ -209,7 +210,7 @@ void _snew_aligned(const char *name, const char *file, int line,
 		(ptr)=save_calloc(#ptr,__FILE__,__LINE__,nelem,elsize)
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
 			(ptr),size,1)
-#define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment)
+#define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment,1)
 #endif
 
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))

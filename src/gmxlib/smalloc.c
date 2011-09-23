@@ -285,7 +285,8 @@ size_t memavail(void)
  * freeing memory that needed to be adjusted to achieve
  * the necessary alignment. */
 void *save_calloc_aligned(const char *name,const char *file,int line,
-                          unsigned nelem,size_t elsize,size_t alignment)
+                          unsigned nelem,size_t elsize,size_t alignment,
+			  int set_to_zero)
 {
     void **aligned=NULL;
     void *malloced=NULL;
@@ -345,7 +346,10 @@ void *save_calloc_aligned(const char *name,const char *file,int line,
            pointer we're going to return */
         aligned[-1] = malloced;
 #endif
-	memset(aligned, 0,(size_t) (nelem * elsize));
+	if (set_to_zero)
+        {
+            memset(aligned, 0,(size_t) (nelem * elsize));
+        }
     }
     return (void*)aligned;
 }

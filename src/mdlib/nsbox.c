@@ -184,6 +184,7 @@ typedef struct {
     gmx_cache_protect_t cp0;
 
     int *cxy_na;
+    int cxy_na_nalloc;
 
     int  *sort_work;
     int  sort_work_nalloc;
@@ -399,7 +400,9 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
     snew(nbs->work,nbs->nthread_max);
     for(t=0; t<nbs->nthread_max; t++)
     {
-        nbs->work[t].sort_work   = NULL;
+        nbs->work[t].cxy_na           = NULL;
+        nbs->work[t].cxy_na_nalloc    = 0;
+        nbs->work[t].sort_work        = NULL;
         nbs->work[t].sort_work_nalloc = 0;
 
         snew_aligned(nbs->work[t].bb_tmp,SIMD_WIDTH*NNBSBB_D,16);
@@ -470,10 +473,13 @@ static int set_grid_size_xy(const gmx_nbsearch_t nbs,
         grid->cxy_nalloc = over_alloc_large(grid->ncx*grid->ncy+1);
         srenew(grid->cxy_na,grid->cxy_nalloc);
         srenew(grid->cxy_ind,grid->cxy_nalloc+1);
-
-        for(t=0; t<nbs->nthread_max; t++)
+    }
+    for(t=0; t<nbs->nthread_max; t++)
+    {
+        if (grid->ncx*grid->ncy+1 > nbs->work[t].cxy_na_nalloc)
         {
-            srenew(nbs->work[t].cxy_na,grid->cxy_nalloc);
+            nbs->work[t].cxy_na_nalloc = over_alloc_large(grid->ncx*grid->ncy+1);
+            srenew(nbs->work[t].cxy_na,nbs->work[t].cxy_na_nalloc);
         }
     }
 
@@ -1565,36 +1571,36 @@ static void gmx_nb_atomdata_realloc(gmx_nb_atomdata_t *nbat,int n)
     int t;
 
     nb_realloc_void((void **)&nbat->type,
-                    nbat->natoms*sizeof(nbat->type),
-                    n*sizeof(nbat->type),
+                    nbat->natoms*sizeof(*nbat->type),
+                    n*sizeof(*nbat->type),
                     nbat->alloc,nbat->free);
     nb_realloc_void((void **)&nbat->lj_comb,
-                    nbat->natoms*2*sizeof(nbat->lj_comb),
-                    n*2*sizeof(nbat->lj_comb),
+                    nbat->natoms*2*sizeof(*nbat->lj_comb),
+                    n*2*sizeof(*nbat->lj_comb),
                     nbat->alloc,nbat->free);
     if (nbat->XFormat != nbatXYZQ)
     {
         nb_realloc_void((void **)&nbat->q,
-                        nbat->natoms*sizeof(nbat->q),
-                        n*sizeof(nbat->q),
+                        nbat->natoms*sizeof(*nbat->q),
+                        n*sizeof(*nbat->q),
                         nbat->alloc,nbat->free);
     }
     if (nbat->nenergrp > 1)
     {
         nb_realloc_void((void **)&nbat->energrp,
-                        nbat->natoms/nbat->naps*sizeof(nbat->energrp),
-                        n/nbat->naps*sizeof(nbat->energrp),
+                        nbat->natoms/nbat->naps*sizeof(*nbat->energrp),
+                        n/nbat->naps*sizeof(*nbat->energrp),
                         nbat->alloc,nbat->free);
     }
     nb_realloc_void((void **)&nbat->x,
-                    nbat->natoms*nbat->xstride*sizeof(nbat->x),
-                    n*nbat->xstride*sizeof(nbat->x),
+                    nbat->natoms*nbat->xstride*sizeof(*nbat->x),
+                    n*nbat->xstride*sizeof(*nbat->x),
                     nbat->alloc,nbat->free);
     for(t=0; t<nbat->nout; t++)
     {
         nb_realloc_void((void **)&nbat->out[t].f,
-                        nbat->natoms*nbat->xstride*sizeof(nbat->out[t].f[0]),
-                        n*nbat->xstride*sizeof(nbat->out[t].f[0]),
+                        nbat->natoms*nbat->xstride*sizeof(*nbat->out[t].f),
+                        n*nbat->xstride*sizeof(*nbat->out[t].f),
                         nbat->alloc,nbat->free);
     }
     nbat->nalloc = n;
@@ -2204,7 +2210,7 @@ static void check_subcell_list_space_supersub(gmx_nblist_t *nbl,
 
 static void nblist_alloc_aligned(void **ptr,size_t nbytes)
 {
-    *ptr = save_calloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,16);
+    *ptr = save_calloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,16,0);
 }
 
 static void nblist_free_aligned(void *ptr)
@@ -3724,7 +3730,6 @@ static void combine_nblists(int nnbl,gmx_nblist_t **nbl,
             {
                 nblc->excl[nblc->nexcl+j4] = nbli->excl[j4];
             }
-            //memcpy(nbli->excl,nblc->excl+nblc->nexcl+j0,(j1-j0)*sizeof(*nblc->excl));
         }
 
         nblc->nsj4  += nbli->nsj4;
@@ -4419,15 +4424,15 @@ static void gmx_nb_atomdata_output_init(gmx_nb_atomdata_output_t *out,
                                         gmx_nbat_alloc_t *ma)
 {
     out->f = NULL;
-    ma((void **)&out->fshift,SHIFTS*DIM*sizeof(out->fshift[0]));
+    ma((void **)&out->fshift,SHIFTS*DIM*sizeof(*out->fshift));
     out->nV = nenergrp*nenergrp;
-    ma((void **)&out->Vvdw,out->nV*sizeof(out->Vvdw));
-    ma((void **)&out->Vc  ,out->nV*sizeof(out->Vc  ));
+    ma((void **)&out->Vvdw,out->nV*sizeof(*out->Vvdw));
+    ma((void **)&out->Vc  ,out->nV*sizeof(*out->Vc  ));
     if (nbs->simple)
     {
         out->nVS = nenergrp*nenergrp*nenergrp*nenergrp*nenergrp*4;
-        ma((void **)&out->VSvdw,out->nVS*sizeof(out->VSvdw));
-        ma((void **)&out->VSc  ,out->nVS*sizeof(out->VSc  ));
+        ma((void **)&out->VSvdw,out->nVS*sizeof(*out->VSvdw));
+        ma((void **)&out->VSc  ,out->nVS*sizeof(*out->VSc  ));
     }
     else
     {
@@ -4476,7 +4481,7 @@ static void set_combination_rule_data(gmx_nb_atomdata_t *nbat)
         }
         break;
     case ljcrNONE:
-        nbat->alloc((void **)&nbat->nbfp_s4,nt*nt*4*sizeof(nbat->nbfp_s4[0]));
+        nbat->alloc((void **)&nbat->nbfp_s4,nt*nt*4*sizeof(*nbat->nbfp_s4));
         for(i=0; i<nt; i++)
         {
             for(j=0; j<nt; j++)
