@@ -1335,7 +1335,7 @@ _gmx_sel_handle_empty_cmd(yyscan_t scanner)
     if (grps)
     {
         fprintf(stderr, "Available index groups:\n");
-        gmx_ana_indexgrps_print(_gmx_sel_lexer_indexgrps(scanner), 0);
+        gmx_ana_indexgrps_print(stderr, _gmx_sel_lexer_indexgrps(scanner), 0);
     }
     if (sc->nvars > 0 || !sc->sel.empty())
     {
@@ -1363,7 +1363,7 @@ _gmx_sel_handle_help_cmd(char *topic, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-    _gmx_sel_print_help(sc->symtab, topic);
+    _gmx_sel_print_help(stderr, sc->symtab, topic);
     if (topic)
     {
         sfree(topic);

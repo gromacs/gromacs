@@ -327,13 +327,14 @@ static const t_selection_help_item helpitems[] = {
 /*! \brief
  * Prints a brief list of keywords (selection methods) available.
  *
+ * \param[in] fp    Where to write the list.
  * \param[in] symtab  Symbol table to use to find available keywords.
  * \param[in] type  Only methods that return this type are printed.
  * \param[in] bMod  If FALSE, \ref SMETH_MODIFIER methods are excluded, otherwise
  *     only them are printed.
  */
 static void
-print_keyword_list(gmx_sel_symtab_t *symtab, e_selvalue_t type,
+print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
                    gmx_bool bMod)
 {
     gmx_sel_symrec_t *symbol;
@@ -348,22 +349,22 @@ print_keyword_list(gmx_sel_symtab_t *symtab, e_selvalue_t type,
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));
         if (bShow)
         {
-            fprintf(stderr, " %c ",
+            fprintf(fp, " %c ",
                     (method->help.nlhelp > 0 && method->help.help) ? '*' : ' ');
             if (method->help.syntax)
             {
-                fprintf(stderr, "%s\n", method->help.syntax);
+                fprintf(fp, "%s\n", method->help.syntax);
             }
             else
             {
                 const char *symname = _gmx_sel_sym_name(symbol);
 
-                fprintf(stderr, "%s", symname);
+                fprintf(fp, "%s", symname);
                 if (strcmp(symname, method->name) != 0)
                 {
-                    fprintf(stderr, " (synonym for %s)", method->name);
+                    fprintf(fp, " (synonym for %s)", method->name);
                 }
-                fprintf(stderr, "\n");
+                fprintf(fp, "\n");
             }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
@@ -371,14 +372,15 @@ print_keyword_list(gmx_sel_symtab_t *symtab, e_selvalue_t type,
 }
 
 /*!
- * \param[in]   symtab  Symbol table to use to find available keywords.
+ * \param[in]  fp      Where to write the help.
+ * \param[in]  symtab  Symbol table to use to find available keywords.
  * \param[in]  topic Topic to print help on, or NULL for general help.
  *
- * \p sc is used to get information on which keywords are available in the
+ * \p symtab is used to get information on which keywords are available in the
  * present context.
  */
 void
-_gmx_sel_print_help(gmx_sel_symtab_t *symtab, const char *topic)
+_gmx_sel_print_help(FILE *fp, gmx_sel_symtab_t *symtab, const char *topic)
 {
     const t_selection_help_item *item = NULL;
     size_t i;
@@ -393,10 +395,10 @@ _gmx_sel_print_help(gmx_sel_symtab_t *symtab, const char *topic)
         for (i = 0; i < asize(helpitems); ++i)
         {
             item = &helpitems[i];
-            _gmx_sel_print_help(symtab, item->topic);
+            _gmx_sel_print_help(fp, symtab, item->topic);
             if (i != asize(helpitems) - 1)
             {
-                fprintf(stderr, "\n\n");
+                fprintf(fp, "\n\n");
             }
         }
         return;
@@ -425,25 +427,25 @@ _gmx_sel_print_help(gmx_sel_symtab_t *symtab, const char *topic)
             if (method->help.nlhelp > 0 && method->help.help
                 && strncmp(method->name, topic, strlen(topic)) == 0)
             {
-                print_tty_formatted(stderr, method->help.nlhelp,
+                print_tty_formatted(fp, method->help.nlhelp,
                         method->help.help, 0, NULL, NULL, FALSE);
                 return;
             }
             symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
         }
 
-        fprintf(stderr, "No help available for '%s'.\n", topic);
+        fprintf(fp, "No help available for '%s'.\n", topic);
         return;
     }
     /* Print the help */
-    print_tty_formatted(stderr, item->nl, item->text, 0, NULL, NULL, FALSE);
+    print_tty_formatted(fp, item->nl, item->text, 0, NULL, NULL, FALSE);
     /* Special handling of certain pages */
     if (!topic)
     {
         int len = 0;
 
         /* Print the subtopics on the main page */
-        fprintf(stderr, "\nAvailable subtopics:\n");
+        fprintf(fp, "\nAvailable subtopics:\n");
         for (i = 1; i < asize(helpitems); ++i)
         {
             int len1 = strlen(helpitems[i].topic) + 2;
@@ -451,37 +453,37 @@ _gmx_sel_print_help(gmx_sel_symtab_t *symtab, const char *topic)
             len += len1;
             if (len > 79)
             {
-                fprintf(stderr, "\n");
+                fprintf(fp, "\n");
                 len = len1;
             }
-            fprintf(stderr, "  %s", helpitems[i].topic);
+            fprintf(fp, "  %s", helpitems[i].topic);
         }
-        fprintf(stderr, "\n");
+        fprintf(fp, "\n");
     }
     else if (strcmp(item->topic, "keywords") == 0)
     {
         /* Print the list of keywords */
-        fprintf(stderr, "\nKeywords that select atoms by an integer property:\n");
-        fprintf(stderr, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
-        print_keyword_list(symtab, INT_VALUE, FALSE);
+        fprintf(fp, "\nKeywords that select atoms by an integer property:\n");
+        fprintf(fp, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
+        print_keyword_list(fp, symtab, INT_VALUE, FALSE);
 
-        fprintf(stderr, "\nKeywords that select atoms by a numeric property:\n");
-        fprintf(stderr, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
-        print_keyword_list(symtab, REAL_VALUE, FALSE);
+        fprintf(fp, "\nKeywords that select atoms by a numeric property:\n");
+        fprintf(fp, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
+        print_keyword_list(fp, symtab, REAL_VALUE, FALSE);
 
-        fprintf(stderr, "\nKeywords that select atoms by a string property:\n");
-        fprintf(stderr, "(use like \"name PATTERN [PATTERN] ...\")\n");
-        print_keyword_list(symtab, STR_VALUE, FALSE);
+        fprintf(fp, "\nKeywords that select atoms by a string property:\n");
+        fprintf(fp, "(use like \"name PATTERN [PATTERN] ...\")\n");
+        print_keyword_list(fp, symtab, STR_VALUE, FALSE);
 
-        fprintf(stderr, "\nAdditional keywords that directly select atoms:\n");
-        print_keyword_list(symtab, GROUP_VALUE, FALSE);
+        fprintf(fp, "\nAdditional keywords that directly select atoms:\n");
+        print_keyword_list(fp, symtab, GROUP_VALUE, FALSE);
 
-        fprintf(stderr, "\nKeywords that directly evaluate to positions:\n");
-        fprintf(stderr, "(see also \"help positions\")\n");
-        print_keyword_list(symtab, POS_VALUE, FALSE);
+        fprintf(fp, "\nKeywords that directly evaluate to positions:\n");
+        fprintf(fp, "(see also \"help positions\")\n");
+        print_keyword_list(fp, symtab, POS_VALUE, FALSE);
 
-        fprintf(stderr, "\nAdditional keywords:\n");
-        print_keyword_list(symtab, POS_VALUE, TRUE);
-        print_keyword_list(symtab, NO_VALUE, TRUE);
+        fprintf(fp, "\nAdditional keywords:\n");
+        print_keyword_list(fp, symtab, POS_VALUE, TRUE);
+        print_keyword_list(fp, symtab, NO_VALUE, TRUE);
     }
 }

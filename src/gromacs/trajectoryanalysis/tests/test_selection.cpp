@@ -88,7 +88,7 @@ SelectionTester::printSelections()
     fprintf(stderr, "\nSelections:\n");
     for (size_t g = 0; g < _selections.size(); ++g)
     {
-        _selections[g]->printDebugInfo(_nmaxind);
+        _selections[g]->printDebugInfo(stderr, _nmaxind);
     }
     fprintf(stderr, "\n");
 }
@@ -129,7 +129,7 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
     {
         const Selection *sel = _selections[g];
 
-        gmx_ana_index_dump(sel->indexGroup(), g, _nmaxind);
+        gmx_ana_index_dump(stderr, sel->indexGroup(), g, _nmaxind);
         fprintf(stderr, "  Positions (%d pcs):\n", sel->posCount());
         n = sel->posCount();
         if (_nmaxind >= 0 && n > _nmaxind)

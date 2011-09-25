@@ -171,15 +171,20 @@ class Selection
          */
         bool initCoveredFraction(e_coverfrac_t type);
 
-        //! Prints out one-line description of the selection.
-        void printInfo() const;
+        /*! \brief
+         * Prints out one-line description of the selection.
+         *
+         * \param[in] fp      Where to print the information.
+         */
+        void printInfo(FILE *fp) const;
         /*! \brief
          * Prints out extended information about the selection for debugging.
          *
+         * \param[in] fp      Where to print the information.
          * \param[in] nmaxind Maximum number of values to print in lists
          *      (-1 = print all).
          */
-        void printDebugInfo(int nmaxind) const;
+        void printDebugInfo(FILE *fp, int nmaxind) const;
 
         gmx_ana_selection_t     _sel;
 
