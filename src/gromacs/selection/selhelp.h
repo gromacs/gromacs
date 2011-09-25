@@ -40,10 +40,12 @@
 #ifndef GMX_SELECTION_HELP_H
 #define GMX_SELECTION_HELP_H
 
+#include <stdio.h>
+
 struct gmx_sel_symtab_t;
 
 /** Prints help for writing selections. */
 void
-_gmx_sel_print_help(struct gmx_sel_symtab_t *symtab, const char *topic);
+_gmx_sel_print_help(FILE *fp, struct gmx_sel_symtab_t *symtab, const char *topic);
 
 #endif

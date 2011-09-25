@@ -128,13 +128,13 @@ Selection::~Selection()
 
 
 void
-Selection::printInfo() const
+Selection::printInfo(FILE *fp) const
 {
-    fprintf(stderr, "\"%s\" (%d position%s, %d atom%s%s)", _sel.name,
+    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", _sel.name,
             _sel.p.nr,     _sel.p.nr     == 1 ? "" : "s",
             _sel.g->isize, _sel.g->isize == 1 ? "" : "s",
             _sel.bDynamic ? ", dynamic" : "");
-    fprintf(stderr, "\n");
+    fprintf(fp, "\n");
 }
 
 
@@ -164,17 +164,17 @@ Selection::initCoveredFraction(e_coverfrac_t type)
 
 
 void
-Selection::printDebugInfo(int nmaxind) const
+Selection::printDebugInfo(FILE *fp, int nmaxind) const
 {
-    fprintf(stderr, "  ");
-    printInfo();
-    fprintf(stderr, "    ");
-    gmx_ana_index_dump(_sel.g, -1, nmaxind);
+    fprintf(fp, "  ");
+    printInfo(fp);
+    fprintf(fp, "    ");
+    gmx_ana_index_dump(fp, _sel.g, -1, nmaxind);
 
-    fprintf(stderr, "    Block (size=%d):", _sel.p.m.mapb.nr);
+    fprintf(fp, "    Block (size=%d):", _sel.p.m.mapb.nr);
     if (!_sel.p.m.mapb.index)
     {
-        fprintf(stderr, " (null)");
+        fprintf(fp, " (null)");
     }
     else
     {
@@ -182,42 +182,42 @@ Selection::printDebugInfo(int nmaxind) const
         if (nmaxind >= 0 && n > nmaxind)
             n = nmaxind;
         for (int i = 0; i <= n; ++i)
-            fprintf(stderr, " %d", _sel.p.m.mapb.index[i]);
+            fprintf(fp, " %d", _sel.p.m.mapb.index[i]);
         if (n < _sel.p.m.mapb.nr)
-            fprintf(stderr, " ...");
+            fprintf(fp, " ...");
     }
-    fprintf(stderr, "\n");
+    fprintf(fp, "\n");
 
     int n = _sel.p.m.nr;
     if (nmaxind >= 0 && n > nmaxind)
         n = nmaxind;
-    fprintf(stderr, "    RefId:");
+    fprintf(fp, "    RefId:");
     if (!_sel.p.m.refid)
     {
-        fprintf(stderr, " (null)");
+        fprintf(fp, " (null)");
     }
     else
     {
         for (int i = 0; i < n; ++i)
-            fprintf(stderr, " %d", _sel.p.m.refid[i]);
+            fprintf(fp, " %d", _sel.p.m.refid[i]);
         if (n < _sel.p.m.nr)
-            fprintf(stderr, " ...");
+            fprintf(fp, " ...");
     }
-    fprintf(stderr, "\n");
+    fprintf(fp, "\n");
 
-    fprintf(stderr, "    MapId:");
+    fprintf(fp, "    MapId:");
     if (!_sel.p.m.mapid)
     {
-        fprintf(stderr, " (null)");
+        fprintf(fp, " (null)");
     }
     else
     {
         for (int i = 0; i < n; ++i)
-            fprintf(stderr, " %d", _sel.p.m.mapid[i]);
+            fprintf(fp, " %d", _sel.p.m.mapid[i]);
         if (n < _sel.p.m.nr)
-            fprintf(stderr, " ...");
+            fprintf(fp, " ...");
     }
-    fprintf(stderr, "\n");
+    fprintf(fp, "\n");
 }
 
 } // namespace gmx
