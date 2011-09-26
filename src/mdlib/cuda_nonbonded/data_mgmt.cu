@@ -656,7 +656,7 @@ static void realloc_cudata_array(void **d_dest, void *h_src, size_t type_size,
 {
     cudaError_t stat;
 
-    if (d_dest == NULL || req_size <= 0)
+    if (d_dest == NULL || req_size < 0)
     {
         return;
     }
