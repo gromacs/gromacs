@@ -189,10 +189,6 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
 if(GMX_MPI)
-	MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     OpenMPI version < 1.4.1
-                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
@@ -210,6 +206,30 @@ if(GMX_MPI)
         if (GMX_MPI_IN_PLACE)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
         endif (GMX_MPI_IN_PLACE)
+
+	# test for unsuitable versions of OpenMPI
+	exec_program(${MPIEXEC}
+	  ARGS --version
+	  OUTPUT_VARIABLE MPI_TYPE
+	  RETURN_VALUE MPI_EXEC_RETURN)
+	if(MPI_EXEC_RETURN EQUAL 0)
+	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
+	    if(MPI_VERSION VERSION_LESS "1.4.1")
+	      MESSAGE(WARNING "
+            There are known problems with OpenMPI version < 1.4.1.
+            Please consider updating your OpenMPI.")
+	    endif(MPI_VERSION VERSION_LESS "1.4.1")
+	    unset(MPI_VERSION)
+	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    # This is not OpenMPI, so give the old generic warning message
+	    MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     MVAPICH2 version <= 1.4.1
+            Please consider updating your MPI if applicable.")
+	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	  unset(MPI_TYPE)
+	endif(MPI_EXEC_RETURN EQUAL 0)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
