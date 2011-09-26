@@ -603,8 +603,8 @@ int gmx_trjconv(int argc,char *argv[])
         "[TT]rect[tt] is the ordinary brick shape.",
         "[TT]tric[tt] is the triclinic unit cell.", 
         "[TT]compact[tt] puts all atoms at the closest distance from the center",
-        "of the box. This can be useful for visualizing e.g. truncated",
-        "octahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
+        "of the box. This can be useful for visualizing e.g. truncated octahedra",
+        "or rhombic dodecahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
         "is [TT]tric[tt] (see below), unless the option [TT]-boxcenter[tt]",
         "is set differently.[PAR]",
 
