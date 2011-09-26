@@ -637,7 +637,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
                             gmx_vsite_t *vsite,gmx_constr_t constr,
                             t_fcdata *fcd,
                             t_graph *graph,t_mdatoms *mdatoms,
-                            t_forcerec *fr, interaction_const_t *ic,rvec mu_tot,
+                            t_forcerec *fr,rvec mu_tot,
                             gmx_enerdata_t *enerd,tensor vir,tensor pres,
                             gmx_large_int_t count,gmx_bool bFirst)
 {
@@ -689,7 +689,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
              count,nrnb,wcycle,top,top_global,&top_global->groups,
              ems->s.box,ems->s.x,&ems->s.hist,
              ems->f,force_vir,mdatoms,enerd,fcd,
-             ems->s.lambda,graph,fr,ic,vsite,mu_tot,t,NULL,NULL,TRUE,
+             ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
              (bNS ? GMX_FORCE_NS | GMX_FORCE_DOLR : 0));
 	
@@ -876,7 +876,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,
-             t_forcerec *fr, interaction_const_t *ic,
+             t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
@@ -939,7 +939,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state_global,top_global,s_min,top,
 		  inputrec,nrnb,wcycle,gstat,
-		  vsite,constr,fcd,graph,mdatoms,fr,ic,
+		  vsite,constr,fcd,graph,mdatoms,fr,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 
@@ -1093,7 +1093,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_c,top,
 		    inputrec,nrnb,wcycle,gstat,
-		    vsite,constr,fcd,graph,mdatoms,fr,ic,
+		    vsite,constr,fcd,graph,mdatoms,fr,
 		    mu_tot,enerd,vir,pres,-1,FALSE);
     
     /* Calc derivative along line */
@@ -1180,7 +1180,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state_global,top_global,s_b,top,
 			inputrec,nrnb,wcycle,gstat,
-			vsite,constr,fcd,graph,mdatoms,fr,ic,
+			vsite,constr,fcd,graph,mdatoms,fr,
 			mu_tot,enerd,vir,pres,-1,FALSE);
 	
 	/* p does not change within a step, but since the domain decomposition
@@ -1396,7 +1396,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                 gmx_edsam_t ed,
-                t_forcerec *fr, interaction_const_t *ic,
+                t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
@@ -1520,7 +1520,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state,top_global,&ems,top,
 		  inputrec,nrnb,wcycle,gstat,
-		  vsite,constr,fcd,graph,mdatoms,fr,ic,
+		  vsite,constr,fcd,graph,mdatoms,fr,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 	
@@ -1675,7 +1675,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state,top_global,&ems,top,
 		    inputrec,nrnb,wcycle,gstat,
-		    vsite,constr,fcd,graph,mdatoms,fr,ic,
+		    vsite,constr,fcd,graph,mdatoms,fr,
 		    mu_tot,enerd,vir,pres,step,FALSE);
     EpotC = ems.epot;
     
@@ -1753,7 +1753,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state,top_global,&ems,top,
 			inputrec,nrnb,wcycle,gstat,
-			vsite,constr,fcd,graph,mdatoms,fr,ic,
+			vsite,constr,fcd,graph,mdatoms,fr,
 			mu_tot,enerd,vir,pres,step,FALSE);
 	EpotB = ems.epot;
 	
@@ -2030,7 +2030,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
                 gmx_edsam_t ed,
-                t_forcerec *fr, interaction_const_t *ic,
+                t_forcerec *fr,
                 int repl_ex_nst,int repl_ex_seed,
                 real cpt_period,real max_hours,
                 const char *deviceOptions,
@@ -2106,7 +2106,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_try,top,
 		    inputrec,nrnb,wcycle,gstat,
-		    vsite,constr,fcd,graph,mdatoms,fr,ic,
+		    vsite,constr,fcd,graph,mdatoms,fr,
 		    mu_tot,enerd,vir,pres,count,count==0);
 	 
     if (MASTER(cr))
@@ -2234,7 +2234,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,
-             t_forcerec *fr, interaction_const_t *ic,
+             t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
@@ -2360,7 +2360,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
                     state_global,top_global,state_work,top,
                     inputrec,nrnb,wcycle,gstat,
-                    vsite,constr,fcd,graph,mdatoms,fr,ic,
+                    vsite,constr,fcd,graph,mdatoms,fr,
                     mu_tot,enerd,vir,pres,-1,TRUE);
     cr->nnodes = nnodes;
 
@@ -2403,7 +2403,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
             evaluate_energy(fplog,bVerbose,cr,
                             state_global,top_global,state_work,top,
                             inputrec,nrnb,wcycle,gstat,
-                            vsite,constr,fcd,graph,mdatoms,fr,ic,
+                            vsite,constr,fcd,graph,mdatoms,fr,
                             mu_tot,enerd,vir,pres,atom*2,FALSE);
 			
             for(i=0; i<natoms; i++)
@@ -2416,7 +2416,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
             evaluate_energy(fplog,bVerbose,cr,
                             state_global,top_global,state_work,top,
                             inputrec,nrnb,wcycle,gstat,
-                            vsite,constr,fcd,graph,mdatoms,fr,ic,
+                            vsite,constr,fcd,graph,mdatoms,fr,
                             mu_tot,enerd,vir,pres,atom*2+1,FALSE);
             cr->nnodes = nnodes;
 

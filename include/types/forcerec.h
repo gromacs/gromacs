@@ -149,6 +149,8 @@ typedef struct {
 } f_thread_t;
 
 typedef struct {
+  interaction_const_t *ic;
+
   /* Domain Decomposition */
   gmx_bool bDomDec;
 

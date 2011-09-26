@@ -1481,7 +1481,7 @@ void init_interaction_const(FILE *fp,
 
     *interaction_const = ic;
 
-    if (fr->nbv->useGPU)
+    if (fr->nbv != NULL && fr->nbv->useGPU)
     {
 #ifdef GMX_GPU
         init_cudata_ff(fp, &(fr->nbv->gpu_nb), ic, fr->nbv);
@@ -2126,6 +2126,11 @@ void init_forcerec(FILE *fp,
                         nbv->nbat->comb_rule==ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
             }
         }
+        
+        /* initilize interaction constants; 
+           TODO should be moved out during modularizzation.
+         */
+        init_interaction_const(fp, &fr->ic, fr);
     }
 }
 
