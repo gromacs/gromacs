@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.5)
 
 project(Gromacs)
 include(Dart)
@@ -229,7 +229,6 @@ endif(GMX_MPI)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
