@@ -478,7 +478,7 @@ void init_cudata_atoms(cu_nonbonded_t cu_nb,
         {
             destroy_cudata_array(d_atomd->f, &d_atomd->natoms, &d_atomd->nalloc);
             destroy_cudata_array(d_atomd->xq);
-            destroy_cudata_array(d_atomd->atom_types, &d_atomd->ntypes);             
+            destroy_cudata_array(d_atomd->atom_types);
         }
         
         stat = cudaMalloc((void **)&d_atomd->f, nalloc*sizeof(*(d_atomd->f)));
