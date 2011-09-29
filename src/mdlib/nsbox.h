@@ -89,8 +89,14 @@ void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved);
 /* Renumber the atom indices on the grid to consecutive order */
 void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs);
 
+/* FIXME */
+void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
+                       gmx_bool simple, gmx_bool combined,
+                       gmx_nbat_alloc_t *alloc,
+                       gmx_nbat_free_t  *free);
+
 /* Initialize a neighbor list data structure */
-void gmx_nblist_init(gmx_nblist_t * nbl,
+void gmx_nblist_init(gmx_nblist_t *nbl,
                      gmx_nbat_alloc_t *alloc,
                      gmx_nbat_free_t  *free);
 
@@ -105,9 +111,8 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                               const t_blocka *excl,
                               real rlist,
                               int min_ci_balanced,
-                              gmx_bool nonLocal,
-                              int nnbl,gmx_nblist_t **nbl,
-                              gmx_bool CombineNBLists);
+                              gmx_nbl_lists_t *nbl_list,
+                              int iloc);
 
 /* Initialize the non-bonded atom data structure.
  * The enum for nbatXFormat is in the file defining gmx_nb_atomdata_t.
@@ -135,17 +140,15 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
                                    gmx_nb_atomdata_t *nbat);
 
-enum { enbatATOMSall, enbatATOMSlocal, enbatATOMSnonlocal };
-
 /* Copy x to nbat->x */
 void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
-                                      int enbatATOMS,
+                                      int aloc,
                                       rvec *x,
                                       gmx_nb_atomdata_t *nbat);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
-                                     int enbatATOMS,
+                                     int aloc,
                                      const gmx_nb_atomdata_t *nbat,
                                      rvec *f);
 

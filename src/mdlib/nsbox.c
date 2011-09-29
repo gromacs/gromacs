@@ -2229,6 +2229,36 @@ static void set_no_excls(gmx_nbl_excl_t *excl)
     }
 }
 
+void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
+                       gmx_bool simple, gmx_bool combined,
+                       gmx_nbat_alloc_t *alloc,
+                       gmx_nbat_free_t  *free)
+{
+    int i;
+
+    nbl_list->simple    = simple;
+    nbl_list->combined  = combined;
+
+    nbl_list->nnbl = 1;
+#ifdef GMX_OPENMP
+        nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
+#endif
+        snew(nbl_list->nbl,nbl_list->nnbl);
+#pragma omp parallel for schedule(static)
+        for(i=0; i<nbl_list->nnbl; i++)
+        {
+            /* Allocate the nblist data structure locally on each thread
+             * to optimize memory access for NUMA architectures.
+             */
+            snew(nbl_list->nbl[i],1);
+            gmx_nblist_init(nbl_list->nbl[i],
+                            /* Only list 0 is used on the GPU */
+                            (i==0) ? alloc : NULL,
+                            (i==0) ? free  : NULL);
+        }
+
+}
+
 void gmx_nblist_init(gmx_nblist_t *nbl,
                      gmx_nbat_alloc_t *alloc,
                      gmx_nbat_free_t  *free)
@@ -2383,13 +2413,13 @@ static void print_nblist_statistics_supersub(FILE *fp,const gmx_nblist_t *nbl,
 
 static void print_supersub_nsp(const char *fn,
                                const gmx_nblist_t *nbl,
-                               gmx_bool nonLocal)
+                               int iloc)
 {
     char buf[STRLEN];
     FILE *fp;
     int i,nsp,j4,p;
 
-    sprintf(buf,"%s_%s.xvg",fn,nonLocal ? "nl" : "l");
+    sprintf(buf,"%s_%s.xvg",fn,NONLOCAL_I(iloc) ? "nl" : "l");
     fp = ffopen(buf,"w");
 
     for(i=0; i<nbl->nci; i++)
@@ -3518,7 +3548,7 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
 }
 
 static int get_nsubpair_max(const gmx_nbsearch_t nbs,
-                            gmx_bool nonLocal,
+                            int iloc,
                             real rlist,
                             int min_ci_balanced)
 {
@@ -3550,7 +3580,7 @@ static int get_nsubpair_max(const gmx_nbsearch_t nbs,
             nonlocal_vol2(nbs->zones,ls,r_eff_sup);
     }
 
-    if (!nonLocal)
+    if (LOCAL_I(iloc))
     {
         /* Sub-cell interacts with itself */
         vol_est  = ls[XX]*ls[YY]*ls[ZZ];
@@ -4266,18 +4296,24 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                               const t_blocka *excl,
                               real rlist,
                               int min_ci_balanced,
-                              gmx_bool nonLocal,
-                              int nnbl,gmx_nblist_t **nbl,
-                              gmx_bool CombineNBLists)
+                              gmx_nbl_lists_t *nbl_list,
+                              int iloc)
 {
     const gmx_nbs_grid_t *gridi,*gridj;
     int nzi,zi,zj0,zj1,zj;
     int nsubpair_max;
     int nth,th;
+    int nnbl;
+    gmx_nblist_t **nbl;
+    gmx_bool CombineNBLists;
+
+    nnbl            = nbl_list->nnbl;
+    nbl             = nbl_list->nbl;
+    CombineNBLists  = nbl_list->combined;
 
     if (debug)
     {
-        fprintf(debug,"ns making %d nblists\n",nnbl);
+        fprintf(debug,"ns making %d nblists\n", nnbl);
     }
 
     if (nbs->simple)
@@ -4300,7 +4336,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
 #endif
     }
 
-    if (!nonLocal)
+    if (LOCAL_I(iloc))
     {
         /* Only zone (grid) 0 vs 0 */
         nzi = 1;
@@ -4314,7 +4350,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
 
     if (!nbs->simple && min_ci_balanced > 0)
     {
-        nsubpair_max = get_nsubpair_max(nbs,nonLocal,rlist,min_ci_balanced);
+        nsubpair_max = get_nsubpair_max(nbs,iloc,rlist,min_ci_balanced);
     }
     else
     {
@@ -4331,7 +4367,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     {
         gridi = &nbs->grid[zi];
 
-        if (nonLocal)
+        if (NONLOCAL_I(iloc))
         {
             zj0 = nbs->zones->izone[zi].j0;
             zj1 = nbs->zones->izone[zi].j1;
@@ -4364,7 +4400,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
                                               &nbs->work[th],nbat,excl,
                                               rlist,
                                               nsubpair_max,
-                                              (!nonLocal || nbs->zones->n <= 2),
+                                              (LOCAL_I(iloc) || nbs->zones->n <= 2),
                                               min_ci_balanced,
                                               th,nnbl,
                                               nbl[th]);
@@ -4383,7 +4419,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     }
 
     /*
-    print_supersub_nsp("nsubpair",nbl[0],nonLocal);
+    print_supersub_nsp("nsubpair",nbl[0],iloc);
     */
 
     if (nbs->print_cycles &&
@@ -4893,24 +4929,24 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
 }
 
 void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
-                                      int enbatATOMS,
+                                      int aloc,
                                       rvec *x,
                                       gmx_nb_atomdata_t *nbat)
 {
     int g0=0,g1=0,g,cxy,na,ash;
     const gmx_nbs_grid_t *grid;
 
-    switch (enbatATOMS)
+    switch (aloc)
     {
-    case enbatATOMSall:
+    case eatAll:
         g0 = 0;
         g1 = nbs->ngrid;
         break;
-    case enbatATOMSlocal:
+    case eatLocal:
         g0 = 0;
         g1 = 1;
         break;
-    case enbatATOMSnonlocal:
+    case eatNonlocal:
         g0 = 1;
         g1 = nbs->ngrid;
         break;
@@ -5018,7 +5054,7 @@ static void gmx_nb_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
 }
 
 void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
-                                     int enbatATOMS,
+                                     int aloc,
                                      const gmx_nb_atomdata_t *nbat,
                                      rvec *f)
 {
@@ -5027,17 +5063,17 @@ void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);
 
-    switch (enbatATOMS)
+    switch (aloc)
     {
-    case enbatATOMSall:
+    case eatAll:
         a0 = 0;
         na = nbs->natoms_nonlocal;
         break;
-    case enbatATOMSlocal:
+    case eatLocal:
         a0 = 0;
         na = nbs->natoms_local;
         break;
-    case enbatATOMSnonlocal:
+    case eatNonlocal:
         a0 = nbs->natoms_local;
         na = nbs->natoms_nonlocal - nbs->natoms_local;
         break;

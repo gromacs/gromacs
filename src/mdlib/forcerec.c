@@ -1536,26 +1536,30 @@ void init_interaction_const(FILE *fp,
 static void init_nb_verlet(FILE *fp, 
                            nonbonded_verlet_t **nb_verlet,
                            int *napc,
+                           const t_inputrec *ir,
                            const t_forcerec *fr,
                            const t_commrec *cr)
 {
     nonbonded_verlet_t *nbv;
     char *env;
 
+    gmx_nbat_alloc_t *nb_alloc = NULL;
+    gmx_nbat_free_t  *nb_free  = NULL;
+
     snew(nbv, 1);
 
-    nbv->nbs             = NULL;
-    nbv->nbl             = NULL;
-    nbv->nbl_nl          = NULL;
-    nbv->nbat            = NULL;
-    nbv->kernel_type     = nbkNotSet;
+    nbv->nbs                     = NULL;
+    nbv->nbl_lists[eintLocal]    = NULL;
+    nbv->nbl_lists[eintNonlocal] = NULL;
+    nbv->nbat                    = NULL;
+    nbv->kernel_type             = nbkNotSet;
 
     pick_nb_kernel(fp, nbv, napc, cr->nodeid);
 
     if (nbv->useGPU)
     {
 #ifdef GMX_GPU
-        init_cu_nonbonded(fp, &(nbv->gpu_nb));
+        init_cu_nonbonded(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
         if (env)
         {
@@ -1583,6 +1587,54 @@ static void init_nb_verlet(FILE *fp,
     }
 
     *nb_verlet = nbv;
+
+
+    if (nbv->kernel_type == nbk8x8x8CUDA)
+    {
+#ifdef GMX_GPU
+        nb_alloc = &pmalloc;
+        nb_free  = &pfree;
+#endif
+    }
+
+    gmx_nbsearch_init(&nbv->nbs,
+                      DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
+                      DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
+                      is_nbl_type_simple(nbv->kernel_type),
+                      *napc,
+                      fr->nthreads);
+
+    snew(nbv->nbl_lists[eintLocal], 1);
+    gmx_nbl_list_init(nbv->nbl_lists[eintLocal],
+                      is_nbl_type_simple(nbv->kernel_type),
+                      /* 8x8x8 "non-simple" lists are ATM always combined */
+                      !is_nbl_type_simple(nbv->kernel_type),
+                      nb_alloc, nb_free);
+
+    if (DOMAINDECOMP(cr))
+    {
+        snew(nbv->nbl_lists[eintNonlocal], 1);
+        gmx_nbl_list_init(nbv->nbl_lists[eintNonlocal],
+                          is_nbl_type_simple(nbv->kernel_type),
+                          /* 8x8x8 "non-simple" lists are ATM always combined */
+                          !is_nbl_type_simple(nbv->kernel_type),
+                          nb_alloc, nb_free);
+    }
+    else
+    {
+        nbv->nbl_lists[eintNonlocal] = NULL;
+    }
+
+    snew(nbv->nbat,1);
+    gmx_nb_atomdata_init(fp,
+                         nbv->nbat,
+                         nbv->nbs,
+                         nbv->kernel_type == nbk4x4SSE,
+                         fr->ntype,fr->nbfp,
+                         ir->opts.ngener,
+                         is_nbl_type_simple(nbv->kernel_type) ? fr->nthreads : 1,
+                         nb_alloc, nb_free);
+
 }
 
 void init_forcerec(FILE *fp,
@@ -1611,7 +1663,6 @@ void init_forcerec(FILE *fp,
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
     int     napc;
-    nonbonded_verlet_t *nbv;
     
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2114,83 +2165,13 @@ void init_forcerec(FILE *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        gmx_nbat_alloc_t *nb_alloc = NULL;
-        gmx_nbat_free_t  *nb_free = NULL;
-
-        init_nb_verlet(fp, &fr->nbv, &napc, fr, cr);
-        nbv = fr->nbv;
-
-        if (nbv->kernel_type == nbk8x8x8CUDA)
-        {
-#ifdef GMX_GPU
-            nb_alloc = &pmalloc;
-            nb_free  = &pfree;
-#endif
-        }
-
         if (ir->rcoulomb != ir->rvdw)
         {
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        gmx_nbsearch_init(&nbv->nbs,
-                          DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
-                          DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                          is_nbl_type_simple(nbv->kernel_type),
-                          napc,
-                          fr->nthreads);
+        init_nb_verlet(fp, &fr->nbv, &napc, ir, fr, cr);
 
-        nbv->nnbl = 1;
-#ifdef GMX_OPENMP
-        nbv->nnbl = omp_get_max_threads();
-#endif
-        snew(nbv->nbl,nbv->nnbl);
-#pragma omp parallel for schedule(static)
-        for(i=0; i<nbv->nnbl; i++)
-        {
-            /* Allocate the nblist data structure locally on each thread
-             * to optimize memory access for NUMA architectures.
-             */
-            snew(nbv->nbl[i],1);
-            gmx_nblist_init(nbv->nbl[i],
-                            /* Only list 0 is used on the GPU */
-                            (i==0) ? nb_alloc : NULL,
-                            (i==0) ? nb_free  : NULL);
-
-        }
-        if (DOMAINDECOMP(cr))
-        {
-            nbv->nnbl_nl = nbv->nnbl;
-            snew(nbv->nbl_nl,nbv->nnbl_nl);
-#pragma omp parallel for schedule(static)
-            for(i=0; i<nbv->nnbl_nl; i++)
-            {
-                /* Allocate the nblist data structure locally on each thread
-                 * to optimize memory access for NUMA architectures.
-                 */
-                snew(nbv->nbl_nl[i],1);
-                gmx_nblist_init(nbv->nbl_nl[i],
-                                /* Only list 0 is used on the GPU */
-                                (i==0) ? nb_alloc : NULL,
-                                (i==0) ? nb_free  : NULL);
-             }
-        }
-        else
-        {
-            nbv->nnbl_nl = 0;
-        }
-
-        snew(nbv->nbat,1);
-
-        gmx_nb_atomdata_init(fp,
-                             nbv->nbat,
-                             nbv->nbs,
-                             nbv->kernel_type == nbk4x4SSE,
-                             fr->ntype,fr->nbfp,
-                             ir->opts.ngener,
-                             is_nbl_type_simple(nbv->kernel_type) ? fr->nthreads : 1,
-                             nb_alloc, nb_free);
-       
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.
          */

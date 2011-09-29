@@ -988,7 +988,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         int gpu_device_id = cr->nodeid; /* TODO get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->nbv->gpu_nb);
+        destroy_cudata(fplog, fr->nbv->gpu_nb, DOMAINDECOMP(cr));
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {

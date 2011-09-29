@@ -93,25 +93,23 @@ struct cu_nblist
                                    done during the  current step                */
 };
 
-/* timers for the GPU kernels and H2D/D2H trasfers */
+/* Structure with timers for the CUDA GPU kernels and H2D/D2H trasfers and 
+   local/non-local streams.
+   The two-sized arrays are for the local and non-local values (respectively) 
+   and should always be indexed with enbatATOMSlocal = 0, enbatATOMSnonlocal = 1.
+ */
 struct cu_timers
 {
-    cudaEvent_t start_nb, stop_nb;          /* events for timing nonbonded calculation + related 
-                                                   data transfers                                           */
-    cudaEvent_t start_nb_nl, stop_nb_nl;    /* events for timing nonbonded calculation on non-local data
-                                                   + related data transfers                                 */   
-    cudaEvent_t start_clear, stop_clear;
+    cudaEvent_t start_clear, stop_clear;            /* events for GPU f/f_shift/e output clearing       */
+    cudaEvent_t start_atdat, stop_atdat;            /* events for atom data transfer (every NS step)    */
 
-    gmx_bool    time_transfers;             /* enable/disable separate host-device data trasnfer timing     */
-    cudaEvent_t start_nb_h2d, stop_nb_h2d;  /* events for timing host to device transfer (every step)       */
-    cudaEvent_t start_nb_h2d_nl, stop_nb_h2d_nl;  /* events for timing host to device transfer (every step) */
-    cudaEvent_t start_nb_d2h, stop_nb_d2h;  /* events for timing device to host transfer (every step)       */
-    cudaEvent_t start_nb_d2h_nl, stop_nb_d2h_nl; /* events for timing device to host transfer (every step) */
-    cudaEvent_t start_atdat, stop_atdat;    /* events for timing atom data transfer (every NS step)         */
-    cudaEvent_t start_nbl_h2d, stop_nbl_h2d;
-    cudaEvent_t start_nbl_h2d_nl, stop_nbl_h2d_nl;
+    gmx_bool    time_transfers;                     /* enable/disable separate H2D/D2H timing           */
+    cudaEvent_t start_nb_h2d[2], stop_nb_h2d[2];    /* events for H2D transfer (every step)             */
+    cudaEvent_t start_nb_d2h[2], stop_nb_d2h[2];    /* events for D2H transfer (every step)             */
+    cudaEvent_t start_nbl_h2d[2], stop_nbl_h2d[2];
 
-    cudaStream_t nbstream, nbstream_nl;      /* local and non-local calculation streams */
+    cudaEvent_t  start_nb[2], stop_nb[2];       /* events for non-bonded kernels                        */
+    cudaStream_t nbstream[2];                   /* non-bonded (local and non-local) calculation streams */
 };
 
 /* main data structure for CUDA nonbonded force evaluation */
@@ -120,8 +118,7 @@ struct cu_nonbonded
     cu_dev_info_t   *dev_info;
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
-    cu_nblist_t     *nblist; 
-    cu_nblist_t     *nblist_nl; 
+    cu_nblist_t     *nblist[2]; /* nbl data structures, local and non-local (only with DD) */
     cu_timers_t     *timers;
     cu_timings_t    *timings;
     nb_tmp_data     tmpdata;

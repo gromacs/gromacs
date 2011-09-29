@@ -42,8 +42,7 @@ extern "C" {
 
 /* Wrapper call for the non-bonded cell vs cell kernels */
 void
-nb_cell_kernel(int                        nnbl,
-               gmx_nblist_t               **nbl,
+nb_cell_kernel(gmx_nbl_lists_t            *nbl_list,
                const gmx_nb_atomdata_t    *nbat,
                const interaction_const_t  *ic,
                rvec                       *shift_vec,

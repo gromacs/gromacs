@@ -138,6 +138,15 @@ typedef struct {
     gmx_cache_protect_t cp1;
 } gmx_nblist_t;
 
+typedef struct {    
+    int          nnbl;      /* number of lists */
+    gmx_nblist_t **nbl;     /* lists */
+    gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
+    gmx_bool     simple;    /* TRUE if the list of of type "simple" 
+                               (napc=naps, no subcells used) */
+
+} gmx_nbl_lists_t; /* FIXME confusing name */
+
     enum { nbatXYZ, nbatXYZQ, nbatXXXX };
 
 typedef struct {

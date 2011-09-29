@@ -220,8 +220,7 @@ static void reduce_group_energies(int ng,
 }
 
 void
-nb_cell_kernel(int                        nnbl,
-               gmx_nblist_t               **nbl,
+nb_cell_kernel(gmx_nbl_lists_t            *nbl_list,
                const gmx_nb_atomdata_t    *nbat,
                const interaction_const_t  *ic,
                rvec                       *shift_vec, 
@@ -231,8 +230,13 @@ nb_cell_kernel(int                        nnbl,
                real                       *Vc,
                real                       *Vvdw)
 {
+    int          nnbl;
+    gmx_nblist_t **nbl;
     int coult;
     int nb;
+
+    nnbl = nbl_list->nnbl;
+    nbl  = nbl_list->nbl;
 
     if (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT)
     {
