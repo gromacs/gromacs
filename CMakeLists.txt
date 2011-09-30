@@ -198,7 +198,16 @@ if(GMX_MPI)
         set(GMX_THREADS OFF CACHE BOOL 
             "Thread-based parallelization conflicts with MPI." FORCE)
     endif(GMX_THREADS)
-    find_package(MPI)
+
+    # Work-around for Cray MPI
+    TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
+      "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
+      COMPILE_DEFINITIONS )
+    if(NOT MPI_FOUND)
+      # search for normal MPI installations
+      find_package(MPI)
+    endif(NOT MPI_FOUND)
+
     if(MPI_FOUND)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
 	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
@@ -452,12 +461,22 @@ endif(CYGWIN)
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
         # We need at least git v1.5.1 be able to parse git's date output. If not 
-        # fund or the version is too small, we can't generate version information.
-        find_package(Git 1.5.1)
-        # this should at some point become VERSION_LESS
-        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
-            message("No compatible git version found, won't be able to generate proper development version information.")
-            set(USE_VERSION_H OFF)
+        # found or the version is too small, we can't generate version information.
+        find_package(Git)
+
+	# Find out the git version
+	if(GIT_FOUND AND NOT GIT_VERSION)
+	  execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
+            OUTPUT_VARIABLE _exec_out
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+	  string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
+	  set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
+	  mark_as_advanced(GIT_VERSION)
+	endif()
+
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.1")
+          message("No compatible git version found, won't be able to generate proper development version information.")
+          set(USE_VERSION_H OFF)
         endif()
     endif()
 else()
