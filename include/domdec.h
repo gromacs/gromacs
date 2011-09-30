@@ -198,13 +198,14 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
 int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
-                                     gmx_mtop_t *mtop,
-                                     gmx_constr_t constr,int nrec,
-                                     t_ilist *il_local);
+                              const gmx_mtop_t *mtop,
+                              const int *cginfo,
+                              gmx_constr_t constr,int nrec,
+                              t_ilist *il_local);
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-                                    int natoms,gmx_mtop_t *mtop,
-                                    gmx_constr_t constr);
+                             gmx_mtop_t *mtop,
+                             gmx_constr_t constr);
 
 void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 

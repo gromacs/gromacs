@@ -542,6 +542,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
     int  *cginfo;
     int  cg_offset,a_offset,cgm,am;
     int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
+    int  *a_con;
+    int  ia;
     gmx_bool bId,*bExcl,bExclIntraAll,bExclInter,bHaveLJ,bHaveQ;
 
     ncg_tot = ncg_mtop(mtop);
@@ -611,6 +613,24 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
         snew(cginfo_mb[mb].cginfo,cginfo_mb[mb].cg_mod);
         cginfo = cginfo_mb[mb].cginfo;
 
+        snew(a_con,molt->atoms.nr);
+        for(ia=0; ia<molt->ilist[F_CONSTR].nr; ia+=3)
+        {
+            a_con[molt->ilist[F_CONSTR].iatoms[ia+1]] = 1;
+            a_con[molt->ilist[F_CONSTR].iatoms[ia+2]] = 1;
+        }
+        for(ia=0; ia<molt->ilist[F_CONSTRNC].nr; ia+=3)
+        {
+            a_con[molt->ilist[F_CONSTRNC].iatoms[ia+1]] = 1;
+            a_con[molt->ilist[F_CONSTRNC].iatoms[ia+2]] = 1;
+        }
+        for(ia=0; ia<molt->ilist[F_SETTLE].nr; ia+=4)
+        {
+            a_con[molt->ilist[F_SETTLE].iatoms[ia+1]] = 2;
+            a_con[molt->ilist[F_SETTLE].iatoms[ia+2]] = 2;
+            a_con[molt->ilist[F_SETTLE].iatoms[ia+3]] = 2;
+        }
+
         for(m=0; m<(bId ? 1 : molb->nmol); m++)
         {
             cgm = m*cgs->nr;
@@ -666,6 +686,15 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                             bExclIntraAll = FALSE;
                         }
                     }
+
+                    if (a_con[ai] == 1)
+                    {
+                        SET_CGINFO_CONSTR(cginfo[cgm+cg]);
+                    }
+                    else if (a_con[ai] == 2)
+                    {
+                        SET_CGINFO_SETTLE(cginfo[cgm+cg]);
+                    }
                 }
                 if (bExclIntraAll)
                 {
@@ -697,6 +726,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
                 }
             }
         }
+
+        sfree(a_con);
+
         cg_offset += molb->nmol*cgs->nr;
         a_offset  += molb->nmol*cgs->index[cgs->nr];
     }

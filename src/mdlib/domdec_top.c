@@ -667,7 +667,7 @@ void dd_make_reverse_top(FILE *fplog,
                          gmx_vsite_t *vsite,gmx_constr_t constr,
                          t_inputrec *ir,gmx_bool bBCheck)
 {
-    int mb,natoms,n_recursive_vsite,nexcl,nexcl_icg,a;
+    int mb,n_recursive_vsite,nexcl,nexcl_icg,a;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
     
@@ -718,8 +718,6 @@ void dd_make_reverse_top(FILE *fplog,
                     dd->n_intercg_excl,eel_names[ir->coulombtype]);
         }
     }
-    
-    natoms = mtop->natoms;
 
     if (vsite && vsite->n_intercg_vsite > 0)
     {
@@ -729,12 +727,12 @@ void dd_make_reverse_top(FILE *fplog,
                     "will an extra communication step for selected coordinates and forces\n",
 	      vsite->n_intercg_vsite);
         }
-        init_domdec_vsites(dd,natoms);
+        init_domdec_vsites(dd,mtop->natoms);
     }
     
     if (dd->bInterCGcons || dd->bInterCGsettles)
     {
-        init_domdec_constraints(dd,natoms,mtop,constr);
+        init_domdec_constraints(dd,mtop,constr);
     }
     if (fplog)
     {

@@ -9008,7 +9008,7 @@ void dd_partition_system(FILE            *fplog,
             if (dd->bInterCGcons || dd->bInterCGsettles)
             {
                 /* Only for inter-cg constraints we need special code */
-                n = dd_make_local_constraints(dd,n,top_global,
+                n = dd_make_local_constraints(dd,n,top_global,fr->cginfo,
                                               constr,ir->nProjOrder,
                                               top_local->idef.il);
             }
