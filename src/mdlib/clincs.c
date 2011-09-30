@@ -55,8 +55,6 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
-#else
-#include "no_omp.h"
 #endif
 
 typedef struct gmx_lincsdata {
@@ -1305,19 +1303,22 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
         }
-        
+
+#ifdef GMX_OPENMP
         {
-            int nth;
+            int nth,th;
+
+            /* do_lincs can run on any number of threads */
             nth = omp_get_max_threads();
             if (debug)
             {
                 fprintf(debug,"LINCS: using %d threads\n",nth);
             }
-#pragma omp parallel
+#pragma omp parallel for num_threads(nth) schedule(static)
+            for(th=0; th<nth; th++)
             {
-                int th;
                 int b0,b1;
-                th = omp_get_thread_num();
+
                 b0 = (lincsd->nc* th   )/nth;
                 b1 = (lincsd->nc*(th+1))/nth;
                 do_lincs(x,xprime,box,pbc_null,lincsd,b0,b1,
@@ -1327,6 +1328,13 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                          invdt,v,bCalcVir,rmdr);
             }
         }
+#else
+        do_lincs(x,xprime,box,pbc_null,lincsd,0,lincsd->nc,
+                 md->invmass,cr,
+                 bCalcVir || (ir->efep != efepNO),
+                 ir->LincsWarnAngle,&warn,
+                 invdt,v,bCalcVir,rmdr);
+#endif
         
         if (ir->efep != efepNO)
         {
