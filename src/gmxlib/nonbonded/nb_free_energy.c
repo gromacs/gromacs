@@ -349,10 +349,12 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 dvdl_vdw      += Vvdw[i]*DLF[i];
                 dvdl_vdw      += LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
 
-                //dvdl_vdw     += dvdl_part;
-                //if (i==1) {
-                //    fprintf(stdout,"%5i %5i %10.5g\n",n,k,dvdl_part);
-                //}
+                /*
+                  dvdl_vdw     += dvdl_part;
+                  if (i==1) {
+                     fprintf(stdout,"%5i %5i %10.5g\n",n,k,dvdl_part);
+                  }
+                */
             }
             if (bDoForces)
             {

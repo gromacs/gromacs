@@ -220,7 +220,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 
         /* subblock 3 */
         /* check if there's actual data to be written. */
-        //if (dh->ndh > 1)
+        /*if (dh->ndh > 1)*/
         if (dh->ndh > 0)
         {
             blk->sub[2].nr=dh->ndh;

@@ -168,13 +168,13 @@ void GenerateWeightedGibbsProbabilities(real *ene, real *p_k, real *pks, int nli
 
 real do_logsum(int N, real *a_n) {
     
-    //     RETURN VALUE
-    // log(\sum_{i=0}^(N-1) exp[a_n])
+    /*     RETURN VALUE */
+    /* log(\sum_{i=0}^(N-1) exp[a_n]) */
     real maxarg;
     real sum;
     int i;
     real logsum;
-    //     compute maximum argument to exp(.)
+    /*     compute maximum argument to exp(.) */
 
     maxarg = a_n[0];
     for(i=1;i<N;i++) 
@@ -182,14 +182,14 @@ real do_logsum(int N, real *a_n) {
         maxarg = max(maxarg,a_n[i]);
     }
   
-    // compute sum of exp(a_n - maxarg)
+    /* compute sum of exp(a_n - maxarg) */
     sum = 0.0;
     for (i=0;i<N;i++) 
     {
         sum = sum + exp(a_n[i] - maxarg);
     }
   
-    //     compute log sum
+    /*     compute log sum */
     logsum = log(sum) + maxarg;
     return logsum;
 } 

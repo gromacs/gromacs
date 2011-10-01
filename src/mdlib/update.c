@@ -1230,7 +1230,7 @@ void update_tcouple(FILE         *fplog,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            // MRS -- need to understand what is happening here!!! //
+            /* MRS -- need to understand what is happening here!!! */
             rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
         }
     }
