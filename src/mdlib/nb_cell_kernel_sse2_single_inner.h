@@ -128,27 +128,35 @@
             int         p;
             __m128      clj_SSE0[4];
             __m128      clj_SSE1[4];
+#ifndef HALF_LJ
             __m128      clj_SSE2[4];
             __m128      clj_SSE3[4];
+#endif
 #endif
 
 #ifndef FIX_LJ_C
             __m128     c6_SSE0,c12_SSE0;
             __m128     c6_SSE1,c12_SSE1;
+#ifndef HALF_LJ
             __m128     c6_SSE2,c12_SSE2;
             __m128     c6_SSE3,c12_SSE3;
+#endif
 #endif
 
 #ifdef LJ_COMB_LB
             __m128     sir_SSE0,sir2_SSE0,sir6_SSE0;
             __m128     sir_SSE1,sir2_SSE1,sir6_SSE1;
+#ifndef HALF_LJ
             __m128     sir_SSE2,sir2_SSE2,sir6_SSE2;
             __m128     sir_SSE3,sir2_SSE3,sir6_SSE3;
+#endif
 #else
             __m128     rinvsix_SSE0;
             __m128     rinvsix_SSE1;
+#ifndef HALF_LJ
             __m128     rinvsix_SSE2;
             __m128     rinvsix_SSE3;
+#endif
 #endif
 
             __m128     Vvdw6_SSE0,Vvdw12_SSE0;
@@ -495,8 +503,10 @@
 #else /* LJ_COMB_LB */
             rinvsix_SSE0       = _mm_mul_ps(rinvsq_SSE0,_mm_mul_ps(rinvsq_SSE0,rinvsq_SSE0));
             rinvsix_SSE1       = _mm_mul_ps(rinvsq_SSE1,_mm_mul_ps(rinvsq_SSE1,rinvsq_SSE1));
+#ifndef HALF_LJ
             rinvsix_SSE2       = _mm_mul_ps(rinvsq_SSE2,_mm_mul_ps(rinvsq_SSE2,rinvsq_SSE2));
             rinvsix_SSE3       = _mm_mul_ps(rinvsq_SSE3,_mm_mul_ps(rinvsq_SSE3,rinvsq_SSE3));
+#endif
             Vvdw6_SSE0         = _mm_mul_ps(c6_SSE0,rinvsix_SSE0);
             Vvdw6_SSE1         = _mm_mul_ps(c6_SSE1,rinvsix_SSE1);
 #ifndef HALF_LJ
