@@ -5201,11 +5201,12 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                                    int dim_ind,ivec loc)
 {
-    MPI_Group g_row;
+    MPI_Group g_row = MPI_GROUP_EMPTY;
     MPI_Comm  c_row;
     int  dim,i,*rank;
     ivec loc_c;
     gmx_domdec_root_t *root;
+    gmx_bool bPartOfGroup = FALSE;
     
     dim = dd->dim[dim_ind];
     copy_ivec(loc,loc_c);
@@ -5214,18 +5215,19 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     {
         loc_c[dim] = i;
         rank[i] = dd_index(dd->nc,loc_c);
+        if (rank[i] == dd->rank)
+        {
+            /* This process is part of the group */
+            bPartOfGroup = TRUE;
+        }
     }
-    /* Here we create a new group, that does not necessarily
-     * include our process. But MPI_Comm_create needs to be
-     * called by all the processes in the original communicator.
-     * Calling MPI_Group_free afterwards gives errors, so I assume
-     * also the group is needed by all processes. (B. Hess)
-     */
-    MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
-    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
-    if (c_row != MPI_COMM_NULL)
+    if (bPartOfGroup)
     {
-        /* This process is part of the group */
+        MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
+    }
+    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
+    if (bPartOfGroup)
+    {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
         if (dd->comm->eDLB != edlbNO)
         {
