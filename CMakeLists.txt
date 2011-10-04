@@ -494,8 +494,14 @@ else()
           COMPONENT development)
 endif()
 
-find_package(GTest)
-find_package(GMock)
+option(GMX_USE_GTEST "Build tests that require Google C++ Testing Framework" ON)
+option(GMX_USE_GMOCK "Build tests that require Google C++ Mocking Framework" ON)
+mark_as_advanced(GMX_USE_GTEST)
+mark_as_advanced(GMX_USE_GMOCK)
+if (BUILD_TESTING)
+    add_subdirectory(src/external/gmock-1.6.0)
+endif (BUILD_TESTING)
+
 find_package(Doxygen)
 
 ########################################################################
@@ -881,7 +887,7 @@ endif (DOXYGEN_FOUND)
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
-	enable_testing()
-	add_subdirectory(tests)
+    enable_testing()
+    add_subdirectory(tests)
 ENDIF()
 
