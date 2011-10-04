@@ -21,6 +21,9 @@ to keep track of the number of users since no signature is required anymore.
 If you are a developer, or change the source for any other reason, check
 out http://www.gromacs.org/developer for details on using automake & autoconf!
 
+
+adding some feature
+
                                * * * * *
 
 GROMACS is free software, distributed under the GNU General Public License. 
