@@ -73,16 +73,15 @@ class TestReferenceData::Impl
         static const char * const cSequenceVectorType;
         static const char * const cSequenceLengthName;
 
-        Impl();
+        Impl(ReferenceDataMode mode);
         ~Impl();
-
-        void Initialize(ReferenceDataMode mode);
 
         xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
         std::string processItem(const xmlChar *name, const char *id,
-                                const char *value);
+                                const char *value, bool *bFound);
         std::string processItem(const xmlChar *name, const char *id,
-                                const std::string &value);
+                                const std::string &value, bool *bFound);
+        bool shouldIgnore() const;
 
         //! Full path of the reference data file.
         std::string             _fullFilename;
@@ -119,6 +118,13 @@ class TestReferenceData::Impl
          * Otherwise, always points to a direct child of \a _currNode.
          */
         xmlNodePtr              _nextSearchNode;
+        /*! \brief
+         * Count of currently failed startCompound() calls.
+         *
+         * If larger than 0, currently we are within a non-existent compound,
+         * so all comparisons should be ignored.
+         */
+        int                     _failedCompounds;
 };
 
 } // namespace test
