@@ -51,17 +51,17 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        ASSERT_NO_FATAL_FAILURE(data.checkBoolean(true, "int"));
-        ASSERT_NO_FATAL_FAILURE(data.checkInteger(1, "int"));
-        ASSERT_NO_FATAL_FAILURE(data.checkDouble(0.5, "real"));
-        ASSERT_NO_FATAL_FAILURE(data.checkString("Test", "string"));
+        data.checkBoolean(true, "int");
+        data.checkInteger(1, "int");
+        data.checkDouble(0.5, "real");
+        data.checkString("Test", "string");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        ASSERT_NO_FATAL_FAILURE(data.checkBoolean(true, "int"));
-        ASSERT_NO_FATAL_FAILURE(data.checkInteger(1, "int"));
-        ASSERT_NO_FATAL_FAILURE(data.checkDouble(0.5, "real"));
-        ASSERT_NO_FATAL_FAILURE(data.checkString("Test", "string"));
+        data.checkBoolean(true, "int");
+        data.checkInteger(1, "int");
+        data.checkDouble(0.5, "real");
+        data.checkString("Test", "string");
     }
 }
 
@@ -75,15 +75,15 @@ TEST(ReferenceDataTest, HandlesVectorData)
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(veci, "ivec"));
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(vecf, "fvec"));
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(vecd, "dvec"));
+        data.checkVector(veci, "ivec");
+        data.checkVector(vecf, "fvec");
+        data.checkVector(vecd, "dvec");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(veci, "ivec"));
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(vecf, "fvec"));
-        ASSERT_NO_FATAL_FAILURE(data.checkVector(vecd, "dvec"));
+        data.checkVector(veci, "ivec");
+        data.checkVector(vecf, "fvec");
+        data.checkVector(vecd, "dvec");
     }
 }
 
@@ -95,40 +95,69 @@ TEST(ReferenceDataTest, HandlesSequenceData)
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        ASSERT_NO_FATAL_FAILURE(data.checkSequenceInteger(5, seq, "seq"));
+        data.checkSequenceInteger(5, seq, "seq");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        ASSERT_NO_FATAL_FAILURE(data.checkSequenceInteger(5, seq, "seq"));
+        data.checkSequenceInteger(5, seq, "seq");
     }
 }
-
 
 
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {
     using gmx::test::TestReferenceData;
+    int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        ASSERT_NO_FATAL_FAILURE(data.checkInteger(1, "int"));
-        ASSERT_NO_FATAL_FAILURE(data.checkDouble(0.5, "real"));
-        ASSERT_NO_FATAL_FAILURE(data.checkString("Test", "string"));
+        data.checkInteger(1, "int");
+        data.checkDouble(0.5, "real");
+        data.checkString("Test", "string");
+        data.checkSequenceInteger(5, seq, "seq");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
         EXPECT_NONFATAL_FAILURE(data.checkInteger(2, "int"), "");
         EXPECT_NONFATAL_FAILURE(data.checkDouble(0.3, "real"), "");
         EXPECT_NONFATAL_FAILURE(data.checkString("Test2", "string"), "");
+        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(4, seq, "seq"), "");
+        seq[0] = 2;
+        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(5, seq, "seq"), "");
     }
 }
 
 
-TEST(ReferenceDataTest, HandlesMissingReferenceData)
+TEST(ReferenceDataTest, HandlesMissingData)
 {
     using gmx::test::TestReferenceData;
+    int seq[5] = { -1, 3, 5, 2, 4 };
 
-    EXPECT_FATAL_FAILURE(TestReferenceData data(gmx::test::erefdataCompare), "");
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        data.checkInteger(1, "int");
+        data.checkSequenceInteger(5, seq, "seq");
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        EXPECT_NONFATAL_FAILURE(data.checkInteger(1, "missing"), "");
+        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(5, seq, "missing"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
+{
+    using gmx::test::TestReferenceData;
+    int seq[5] = { -1, 3, 5, 2, 4 };
+
+    EXPECT_NONFATAL_FAILURE({
+        TestReferenceData data(gmx::test::erefdataCompare);
+        data.checkInteger(1, "int");
+        data.checkDouble(0.5, "real");
+        data.checkString("Test", "string");
+        data.checkSequenceInteger(5, seq, "seq");
+    }, "");
 }
 
 
@@ -138,11 +167,11 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        ASSERT_NO_FATAL_FAILURE(data.checkString("\"<'>\n \r &\\/;", "string"));
+        data.checkString("\"<'>\n \r &\\/;", "string");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        ASSERT_NO_FATAL_FAILURE(data.checkString("\"<'>\n \r &\\/;", "string"));
+        data.checkString("\"<'>\n \r &\\/;", "string");
     }
 }
 
