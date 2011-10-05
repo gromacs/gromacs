@@ -108,7 +108,10 @@ void NB_KERNEL (
 	int k,ggid;
 
 	real _iq   = _facel * charge[ii];
+
+#if COULOMB == GENERALIZED_BORN
 	real _isai = invsqrta[ii];
+#endif
 
 	// add the shift vector to all water atoms
 
