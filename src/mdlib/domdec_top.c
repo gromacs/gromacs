@@ -64,6 +64,7 @@ typedef struct gmx_reverse_top {
     int  ril_mt_tot_size;
     int  ilsort;        /* The sorting state of bondeds for free energy */
     gmx_molblock_ind_t *mbi;
+    int nmolblock;
 
     /* Work data structures for multi-threading */
     int      nthread;
@@ -374,16 +375,36 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count,  g
     }
 }
 
-static void global_atomnr_to_moltype_ind(gmx_molblock_ind_t *mbi,int i_gl,
+static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt,int i_gl,
 					 int *mb,int *mt,int *mol,int *i_mol)
 {
   int molb;
 
-  *mb = 0;
-  while (i_gl >= mbi->a_end) {
-    (*mb)++;
-    mbi++;
+
+  gmx_molblock_ind_t *mbi = rt->mbi;
+  int start = 0;
+  int end =  rt->nmolblock; /* exclusive */
+  int mid;
+
+  /* binary search for molblock_ind */
+  while (TRUE) {
+      mid = (start+end)/2;
+      if (i_gl >= mbi[mid].a_end)
+      {
+          start = mid+1;
+      }
+      else if (i_gl < mbi[mid].a_start)
+      {
+          end = mid;
+      }
+      else
+      {
+          break;
+      }
   }
+
+  *mb = mid;
+  mbi += mid;
 
   *mt    = mbi->type;
   *mol   = (i_gl - mbi->a_start) / mbi->natoms_mol;
@@ -628,6 +649,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
     
     /* Make a molblock index for fast searching */
     snew(rt->mbi,mtop->nmolblock);
+    rt->nmolblock = mtop->nmolblock;
     i = 0;
     for(mb=0; mb<mtop->nmolblock; mb++)
     {
@@ -1077,7 +1099,6 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
     int  nizone;
     const gmx_domdec_ns_ranges_t *izone;
     gmx_reverse_top_t *rt;
-    gmx_molblock_ind_t *mbi;
     int nbonded_local;
 
     nizone = zones->nizone;
@@ -1089,15 +1110,13 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
     
     nbonded_local = 0;
     
-    mbi = rt->mbi;
-
     ga2la = dd->ga2la;
 
     for(i=at_start; i<at_end; i++)
     {
         /* Get the global atom number */
         i_gl = dd->gatindex[i];
-        global_atomnr_to_moltype_ind(mbi,i_gl,&mb,&mt,&mol,&i_mol);
+        global_atomnr_to_moltype_ind(rt,i_gl,&mb,&mt,&mol,&i_mol);
         /* Check all interactions assigned to this atom */
         index = rt->ril_mt[mt].index;
         rtil  = rt->ril_mt[mt].il;
@@ -1269,9 +1288,6 @@ static int make_exclusions_zone(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
     gmx_ga2la_t ga2la;
     int  a_loc;
     int  cell;
-    gmx_molblock_ind_t *mbi;
-    
-    mbi = dd->reverse_top->mbi;
     
     ga2la = dd->ga2la;
 
@@ -1302,7 +1318,7 @@ static int make_exclusions_zone(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
             for(la=la0; la<la1; la++) {
                 lexcls->index[la] = n;
                 a_gl = dd->gatindex[la];
-                global_atomnr_to_moltype_ind(mbi,a_gl,&mb,&mt,&mol,&a_mol);
+                global_atomnr_to_moltype_ind(dd->reverse_top,a_gl,&mb,&mt,&mol,&a_mol);
                 excls = &moltype[mt].excls;
                 for(j=excls->index[a_mol]; j<excls->index[a_mol+1]; j++)
                 {
