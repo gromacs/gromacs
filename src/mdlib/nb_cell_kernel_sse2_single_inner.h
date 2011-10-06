@@ -37,11 +37,13 @@
         {
             int        sj,ssj,ssjx,ssjy,ssjz;
 
-            __m128     mask_int;
-            __m128     int_SSE0;
-            __m128     int_SSE1;
-            __m128     int_SSE2;
-            __m128     int_SSE3;
+#ifdef CHECK_EXCLS
+            __m128i    mask_int;
+            __m128i    int_SSE0;
+            __m128i    int_SSE1;
+            __m128i    int_SSE2;
+            __m128i    int_SSE3;
+#endif
 
             __m128     jxSSE,jySSE,jzSSE;
             __m128     dx_SSE0,dy_SSE0,dz_SSE0;
@@ -188,12 +190,14 @@
             ssjz             = ssj*DIM + 2*SIMD_WIDTH;
 
 #ifdef CHECK_EXCLS
-            /* Load integer interaction mask as float to avoid sse casts */
-            mask_int         = _mm_load1_ps((float *)&cj[sjind].excl);
-            int_SSE0         = _mm_cmpneq_ps(_mm_and_ps(mask_int,mask0),zero_SSE);
-            int_SSE1         = _mm_cmpneq_ps(_mm_and_ps(mask_int,mask1),zero_SSE);
-            int_SSE2         = _mm_cmpneq_ps(_mm_and_ps(mask_int,mask2),zero_SSE);
-            int_SSE3         = _mm_cmpneq_ps(_mm_and_ps(mask_int,mask3),zero_SSE);
+            /* Load integer interaction mask */
+            mask_int         = _mm_set1_epi32(cj[sjind].excl);
+
+            /* The is no unequal sse instruction, so we need a not here */
+            int_SSE0         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE);
+            int_SSE1         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE);
+            int_SSE2         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE);
+            int_SSE3         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE);
 #endif
             /* load j atom coordinates */
             jxSSE            = _mm_load_ps(x+ssjx);
@@ -226,10 +230,10 @@
             wco_SSE3           = _mm_cmplt_ps(rsq_SSE3,rc2_SSE);
 
 #ifdef CHECK_EXCLS
-            wco_SSE0           = _mm_and_ps(wco_SSE0,int_SSE0);
-            wco_SSE1           = _mm_and_ps(wco_SSE1,int_SSE1);
-            wco_SSE2           = _mm_and_ps(wco_SSE2,int_SSE2);
-            wco_SSE3           = _mm_and_ps(wco_SSE3,int_SSE3);
+            wco_SSE0           = _mm_and_ps(wco_SSE0,gmx_mm_castsi128_ps(int_SSE0));
+            wco_SSE1           = _mm_and_ps(wco_SSE1,gmx_mm_castsi128_ps(int_SSE1));
+            wco_SSE2           = _mm_and_ps(wco_SSE2,gmx_mm_castsi128_ps(int_SSE2));
+            wco_SSE3           = _mm_and_ps(wco_SSE3,gmx_mm_castsi128_ps(int_SSE3));
 #endif
 
 #ifdef COUNT_PAIRS

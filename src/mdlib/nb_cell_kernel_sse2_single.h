@@ -150,11 +150,13 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
 	__m128     fix_SSE2,fiy_SSE2,fiz_SSE2;
 	__m128     fix_SSE3,fiy_SSE3,fiz_SSE3;
 
-    __m128     mask0 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0008, 0x0004, 0x0002, 0x0001) );
-    __m128     mask1 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0080, 0x0040, 0x0020, 0x0010) );
-    __m128     mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0x0800, 0x0400, 0x0200, 0x0100) );
-    __m128     mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0x8000, 0x4000, 0x2000, 0x1000) );
-    __m128     zero_SSE = gmx_mm_castsi128_ps( _mm_set_epi32(0x0, 0x0, 0x0, 0x0) );
+    __m128i    mask0 = _mm_set_epi32( 0x0008, 0x0004, 0x0002, 0x0001 );
+    __m128i    mask1 = _mm_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010 );
+    __m128i    mask2 = _mm_set_epi32( 0x0800, 0x0400, 0x0200, 0x0100 );
+    __m128i    mask3 = _mm_set_epi32( 0x8000, 0x4000, 0x2000, 0x1000 );
+
+    __m128i    zero_SSE = _mm_set_epi32( 0, 0, 0, 0 );
+
     __m128     one_SSE={1.0,1.0,1.0,1.0};
 	__m128     iq_SSE0={0.0,0.0,0.0,0.0};
 	__m128     iq_SSE1={0.0,0.0,0.0,0.0};
