@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -294,44 +294,42 @@ int gmx_host_num()
 
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
-  gmx_nodecomm_t *nc;
-  int  n,rank,hostnum,ng,ni;
+    gmx_nodecomm_t *nc;
+    int  n,rank,hostnum,ng,ni;
 
-  /* Many MPI implementations do not optimize MPI_Allreduce
-   * (and probably also other global communication calls)
-   * for multi-core nodes connected by a network.
-   * We can optimize such communication by using one MPI call
-   * within each node and one between the nodes.
-   * For MVAPICH2 and Intel MPI this reduces the time for
-   * the global_stat communication by 25%
-   * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
-   * B. Hess, November 2007
-   */
+    /* Many MPI implementations do not optimize MPI_Allreduce
+     * (and probably also other global communication calls)
+     * for multi-core nodes connected by a network.
+     * We can optimize such communication by using one MPI call
+     * within each node and one between the nodes.
+     * For MVAPICH2 and Intel MPI this reduces the time for
+     * the global_stat communication by 25%
+     * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
+     * B. Hess, November 2007
+     */
 
-  nc = &cr->nc;
+    nc = &cr->nc;
 
-  nc->bUse = FALSE;
+    nc->bUse = FALSE;
 #ifndef GMX_THREADS
-  if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
     MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
 
     hostnum = gmx_host_num();
 
-    if (debug) {
-      fprintf(debug,
-	      "In gmx_setup_nodecomm: splitting communicator of size %d\n",
-	      n);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: splitting communicator of size %d\n",n);
     }
-
 
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
-    if (debug) {
-      fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
-	      rank,nc->rank_intra);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
+                rank,nc->rank_intra);
     }
     /* The inter-node communicator, split on rank_intra.
      * We actually only need the one for rank=0,
@@ -341,23 +339,40 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     /* Check if this really created two step communication */
     MPI_Comm_size(nc->comm_inter,&ng);
     MPI_Comm_size(nc->comm_intra,&ni);
-    if (debug) {
-      fprintf(debug,"In gmx_setup_nodecomm: groups %d, my group size %d\n",
-	      ng,ni);
+    if (debug)
+    {
+        fprintf(debug,"In gmx_setup_nodecomm: groups %d, my group size %d\n",
+                ng,ni);
     }
-    if ((ng > 1 && ng < n) || (ni > 1 && ni < n)) {
-      nc->bUse = TRUE;
-      if (fplog)
-	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
-      if (nc->rank_intra > 0)
-	MPI_Comm_free(&nc->comm_inter);
-    } else {
-      /* One group or all processes in a separate group, use normal summing */
-      MPI_Comm_free(&nc->comm_inter);
-      MPI_Comm_free(&nc->comm_intra);
+
+    if (getenv("GMX_NO_NODECOMM") == NULL &&
+        ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
+    {
+        nc->bUse = TRUE;
+        if (fplog)
+        {
+            fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",
+                    ng,(real)n/(real)ng);
+        }
+        if (nc->rank_intra > 0)
+        {
+            MPI_Comm_free(&nc->comm_inter);
+        }
+    }
+    else
+    {
+        /* One group or all processes in a separate group, use normal summing */
+        MPI_Comm_free(&nc->comm_inter);
+        MPI_Comm_free(&nc->comm_intra);
+        if (debug)
+        {
+            fprintf(debug,"In gmx_setup_nodecomm: not unsing separate inter- and intra-node communicators.\n");
+        }
     }
 #endif
-  }
+#else
+    /* tMPI runs only on a single node so just use the nodeid */
+    nc->rank_intra = cr->nodeid;
 #endif
 }
 

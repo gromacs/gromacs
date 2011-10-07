@@ -1392,8 +1392,8 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 }
 
 /* Selects the non-bonded (Verlet) kernel to be used. */
-static void pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
-                              int *napc, int nodeid)
+static void pick_nb_kernel(FILE *fp, const t_commrec *cr,
+                           nonbonded_verlet_t *nbv, int *napc)
 {
     char *env;
     gmx_bool emulateGPU;
@@ -1450,12 +1450,16 @@ static void pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
 
             /* TODO: do the multi-GPU initilization properly */
             /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
-               each process will try to use the GPU with id = nodeid. */
-            gpu_device_id = nodeid; 
+               each process will try to use the GPU with id = procid
+               (within the node). */
+            gpu_device_id = cr->nc.rank_intra;
             env = getenv("GMX_GPU_ID");
             if (env != NULL)
             {
                 sscanf(env, "%d",&gpu_device_id);
+                if (DOMAINDECOMP(cr) && MASTER(cr))
+                gmx_warning("Running in parallel and GMX_GPU_ID is set, "
+                            "all processes on the same node will share GPU #%d.");
             }
             if (init_gpu(fp, gpu_device_id) != 0)
             {
@@ -1470,7 +1474,7 @@ static void pick_nb_kernel(FILE *fp, nonbonded_verlet_t *nbv,
         }
         else 
         {
-            if (nodeid == 0)
+            if (MASTER(cr) == 0)
             {
                 gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
             }
@@ -1586,7 +1590,7 @@ static void init_nb_verlet(FILE *fp,
     nbv->nbat                    = NULL;
     nbv->kernel_type             = nbkNotSet;
 
-    pick_nb_kernel(fp, nbv, napc, cr->nodeid);
+    pick_nb_kernel(fp, cr, nbv, napc);
 
     if (nbv->useGPU)
     {
