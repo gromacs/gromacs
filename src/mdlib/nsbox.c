@@ -3949,14 +3949,24 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
     while (next_ci(gridi,nth,ci_block,&ci_x,&ci_y,&ci_b,&ci))
     {
         d2cx = 0;
-        if (gridj != gridi && shp[XX] == 0 &&
-            gridi->c0[XX] + (ci_x+1)*gridi->sx < gridj->c0[XX])
+        if (gridj != gridi && shp[XX] == 0)
         {
-            d2cx = sqr(gridj->c0[XX] - (gridi->c0[XX] + (ci_x+1)*gridi->sx));
-            
-            if (d2cx >= rl2)
+            if (nbl->simple)
             {
-                continue;
+                bx1 = gridi->bb[ci*NNBSBB_B+NNBSBB_C+XX];
+            }
+            else
+            {
+                bx1 = gridi->c0[XX] + (ci_x+1)*gridi->sx;
+            }
+            if (bx1 < gridj->c0[XX])
+            {
+                d2cx = sqr(gridj->c0[XX] - bx1);
+
+                if (d2cx >= rl2)
+                {
+                    continue;
+                }
             }
         }
 
@@ -4001,9 +4011,17 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
             for (ty=-shp[YY]; ty<=shp[YY]; ty++)
             {
                 shy = ty*box[YY][YY] + tz*box[ZZ][YY];
-            
-                by0 = gridi->c0[YY] + (ci_y  )*gridi->sy + shy;
-                by1 = gridi->c0[YY] + (ci_y+1)*gridi->sy + shy;
+
+                if (nbl->simple)
+                {
+                    by0 = gridi->bb[ci*NNBSBB_B         +YY] + shy;
+                    by1 = gridi->bb[ci*NNBSBB_B+NNBSBB_C+YY] + shy;
+                }
+                else
+                {
+                    by0 = gridi->c0[YY] + (ci_y  )*gridi->sy + shy;
+                    by1 = gridi->c0[YY] + (ci_y+1)*gridi->sy + shy;
+                }
 
                 get_cell_range(by0,by1,
                                gridj->ncy,gridj->c0[YY],gridj->sy,gridj->inv_sy,
@@ -4038,8 +4056,16 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
                     shx = tx*box[XX][XX] + ty*box[YY][XX] + tz*box[ZZ][XX];
 
-                    bx0 = gridi->c0[XX] + (ci_x  )*gridi->sx + shx;
-                    bx1 = gridi->c0[XX] + (ci_x+1)*gridi->sx + shx;
+                    if (nbl->simple)
+                    {
+                        bx0 = gridi->bb[ci*NNBSBB_B         +XX] + shx;
+                        bx1 = gridi->bb[ci*NNBSBB_B+NNBSBB_C+XX] + shx;
+                    }
+                    else
+                    {
+                        bx0 = gridi->c0[XX] + (ci_x  )*gridi->sx + shx;
+                        bx1 = gridi->c0[XX] + (ci_x+1)*gridi->sx + shx;
+                    }
 
                     get_cell_range(bx0,bx1,
                                    gridj->ncx,gridj->c0[XX],gridj->sx,gridj->inv_sx,
