@@ -49,6 +49,20 @@ namespace gmx
  * TrajectoryAnalysisModuleData::Impl
  */
 
+TrajectoryAnalysisModuleData::Impl::Impl(
+        TrajectoryAnalysisModule *module,
+        AnalysisDataParallelOptions opt,
+        const SelectionCollection &selections)
+    : _selections(selections)
+{
+    TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
+    for (i = module->_impl->_analysisDatasets.begin();
+         i != module->_impl->_analysisDatasets.end(); ++i)
+    {
+        _handles[i->first] = i->second->startData(opt);
+    }
+}
+
 TrajectoryAnalysisModuleData::Impl::~Impl()
 {
     try
@@ -81,15 +95,8 @@ TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
         TrajectoryAnalysisModule *module,
         AnalysisDataParallelOptions opt,
         const SelectionCollection &selections)
-    : _impl(new Impl)
+    : _impl(new Impl(module, opt, selections))
 {
-    TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
-    for (i = module->_impl->_analysisDatasets.begin();
-         i != module->_impl->_analysisDatasets.end(); ++i)
-    {
-        _impl->_handles[i->first] = i->second->startData(opt);
-    }
-    _impl->_selections = &selections;
 }
 
 

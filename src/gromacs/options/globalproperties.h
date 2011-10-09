@@ -66,12 +66,23 @@ enum OptionGlobalPropertyId
  * option that specifies the unit for these times, all the time options need to
  * know the scaling factor to get the time in internal units.
  *
+ * \todo
+ * The current implementation introduces a "weak" cyclic dependency between the
+ * selection and options modules in that the SelectionCollection class has to
+ * be forward-declared here. Also, there are things in this class that would be
+ * better placed in the analysisdata module (for selecting plot formats).
+ * It should be considered whether this should be implemented in some other way
+ * (a generic implementation is possible, but is a lot more complex, and
+ * requires some RTTI, either in this class or somewhere else).
+ *
  * \inlibraryapi
  * \ingroup module_options
  */
 class OptionsGlobalProperties
 {
     public:
+        ~OptionsGlobalProperties();
+
         //! Request for a global property to be used.
         void request(OptionGlobalPropertyId id)
         {
@@ -107,7 +118,6 @@ class OptionsGlobalProperties
 
     private:
         OptionsGlobalProperties();
-        ~OptionsGlobalProperties();
 
         //! Returns true if request() has been called for the given property.
         bool isPropertyUsed(OptionGlobalPropertyId id) const

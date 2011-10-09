@@ -39,6 +39,7 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -237,7 +238,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         ValueList              *_values;
         T                      *_store;
         int                    *_countptr;
-        T                      *_defaultValueIfSet;
+        // Could be scoped_ptr
+        std::auto_ptr<T>        _defaultValueIfSet;
 
         // Copy and assign disallowed by base.
 };
@@ -251,15 +253,16 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
     : AbstractOptionStorage(settings, options, staticFlags),
       _values(settings._storeVector),
       _store(settings._store),
-      _countptr(settings._countptr),
-      _defaultValueIfSet(NULL)
+      _countptr(settings._countptr)
 {
+    std::auto_ptr<std::vector<T> > valueGuard;
     if (!_values)
     {
         // The flag should be set for proper error checking.
         GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
                            "Internal inconsistency");
-        _values = new std::vector<T>;
+        valueGuard.reset(new std::vector<T>);
+        _values = valueGuard.get();
     }
     if (hasFlag(efNoDefaultValue)
         && (settings._defaultValue != NULL
@@ -295,9 +298,10 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         }
         if (settings._defaultValueIfSet != NULL)
         {
-            _defaultValueIfSet = new T(*settings._defaultValueIfSet);
+            _defaultValueIfSet.reset(new T(*settings._defaultValueIfSet));
         }
     }
+    valueGuard.release();
 }
 
 
@@ -308,7 +312,6 @@ OptionStorageTemplate<T>::~OptionStorageTemplate()
     {
         delete _values;
     }
-    delete _defaultValueIfSet;
 }
 
 
@@ -323,7 +326,7 @@ template <typename T>
 void OptionStorageTemplate<T>::processSet()
 {
     processSetValues(&_setValues);
-    if (_setValues.empty() && _defaultValueIfSet != NULL)
+    if (_setValues.empty() && _defaultValueIfSet.get() != NULL)
     {
         addValue(*_defaultValueIfSet);
     }

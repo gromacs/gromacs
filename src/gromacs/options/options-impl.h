@@ -38,6 +38,7 @@
 #ifndef GMX_OPTIONS_OPTIONS_IMPL_H
 #define GMX_OPTIONS_OPTIONS_IMPL_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -125,7 +126,8 @@ class Options::Impl
          * For subsections, the global properties are kept in the parent, and
          * this pointer is NULL.
          */
-        OptionsGlobalProperties *_globalProperties;
+        // Could be scoped_ptr
+        std::auto_ptr<OptionsGlobalProperties>  _globalProperties;
 };
 
 } // namespace gmx

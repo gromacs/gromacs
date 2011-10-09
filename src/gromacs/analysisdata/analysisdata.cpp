@@ -229,11 +229,11 @@ AnalysisData::finishData(AnalysisDataHandle *handle)
  */
 
 AnalysisDataHandle::Impl::Impl(AnalysisData *data)
-    : _data(*data), _frame(NULL)
+    : _data(*data)
 {
     if (!_data.isMultipoint())
     {
-        _frame = new AnalysisDataFrame();
+        _frame.reset(new AnalysisDataFrame());
         _frame->allocate(_data.columnCount());
     }
 }
@@ -241,7 +241,6 @@ AnalysisDataHandle::Impl::Impl(AnalysisData *data)
 
 AnalysisDataHandle::Impl::~Impl()
 {
-    delete _frame;
 }
 
 
@@ -330,7 +329,7 @@ AnalysisDataHandle::finishFrame()
     }
     else
     {
-        _impl->_data._impl->addPendingFrame(_impl->_frame);
+        _impl->_data._impl->addPendingFrame(_impl->_frame.get());
     }
 }
 

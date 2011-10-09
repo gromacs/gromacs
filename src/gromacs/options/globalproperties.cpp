@@ -64,6 +64,7 @@ OptionsGlobalProperties::OptionsGlobalProperties()
     : _usedProperties(0), _timeUnit(1), _plotFormat(1),
       _selectionCollection(NULL), _oenv(NULL)
 {
+    // TODO: If/when this is refactored, exception safety should be considered
     snew(_oenv, 1);
     output_env_init_default(_oenv);
 }

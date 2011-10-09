@@ -97,6 +97,7 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
     _sc.mempool   = NULL;
     _sc.symtab    = NULL;
 
+    // TODO: This is not exception-safe if any called function throws.
     if (_sc.pcc == NULL)
     {
         int rc = gmx_ana_poscalc_coll_create(&_sc.pcc);

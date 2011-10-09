@@ -57,13 +57,15 @@ class TrajectoryAnalysisModuleData::Impl
     public:
         typedef std::map<std::string, AnalysisDataHandle *> HandleContainer;
 
-        Impl() : _selections(NULL) {}
+        Impl(TrajectoryAnalysisModule *module,
+             /*AnalysisDataParallelOptions*/ void* opt,
+             const SelectionCollection &selections);
         ~Impl();
 
         void finishHandles();
 
         HandleContainer         _handles;
-        const SelectionCollection *_selections;
+        const SelectionCollection &_selections;
 };
 
 class TrajectoryAnalysisModule::Impl
