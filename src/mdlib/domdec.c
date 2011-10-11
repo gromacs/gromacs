@@ -5201,7 +5201,11 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                                    int dim_ind,ivec loc)
 {
-    MPI_Group g_row = MPI_GROUP_EMPTY;
+#ifdef GMX_THREADS
+    MPI_Group g_row = tMPI_GROUP_EMPTY;
+#else
+    MPI_Group g_row =  MPI_GROUP_EMPTY;
+#endif
     MPI_Comm  c_row;
     int  dim,i,*rank;
     ivec loc_c;
