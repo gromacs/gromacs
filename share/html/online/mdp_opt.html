@@ -248,7 +248,7 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
-<dt><b>comm_mode:</b></dt>
+<dt><b>comm-mode:</b></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
 <dd>Remove center of mass translation</dd>
@@ -260,7 +260,7 @@ set <tt>init_step</tt> to the step number of the restart frame.
 </dl></dd>
 <dt><b>nstcomm: (10) [steps]</b></dt>
 <dd>frequency for center of mass motion removal</dd>
-<dt><b>comm_grps:</b></dt>
+<dt><b>comm-grps:</b></dt>
 <dd>group(s) for center of mass motion removal, default is the whole system</dd>
 </dl>
 
@@ -269,16 +269,16 @@ set <tt>init_step</tt> to the step number of the restart frame.
 <h3><!--Idx-->Langevin dynamics<!--EIdx--></h3>
 
 <dl>
-<dt><b>bd_fric: (0) [amu ps<sup>-1</sup>]</b></dt>
+<dt><b>bd-fric: (0) [amu ps<sup>-1</sup>]</b></dt>
 <dd>Brownian dynamics friction coefficient.
-When <b>bd_fric</b><tt>=0</tt>, the friction coefficient for each
+When <b>bd-fric</b><tt>=0</tt>, the friction coefficient for each
 particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
-<dt><b>ld_seed: (1993) [integer]</b></dt>
+<dt><b>ld-seed: (1993) [integer]</b></dt>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
-When <b>ld_seed</b> is set to -1, the seed is calculated from the process ID.
+When <b>ld-seed</b> is set to -1, the seed is calculated from the process ID.
 When running BD or SD on multiple processors, each processor uses a seed equal
-to <b>ld_seed</b> plus the processor number.</dd>
+to <b>ld-seed</b> plus the processor number.</dd>
 </dl>
 
 <A NAME="em"><br>
@@ -371,7 +371,7 @@ so <tt>g_energy</tt> can report exact
 energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 <dt><b>nstxtcout: (0) [steps]</b></dt>
 <dd>frequency to write coordinates to xtc trajectory</dd>
-<dt><b>xtc_precision: (1000) [real]</b></dt>
+<dt><b>xtc-precision: (1000) [real]</b></dt>
 <dd>precision to write to xtc trajectory</dd>
 <dt><b>xtc_grps:</b></dt>
 <dd>group(s) to write to xtc trajectory, default the whole system is written
@@ -617,7 +617,7 @@ i.e. both to the user supplied function and the PME Mesh correction part.</dd>
 </dl></dd>
 
 <A NAME="el2">
-<dt><b>rcoulomb_switch: (0) [nm]</b></dt>
+<dt><b>rcoulomb-switch: (0) [nm]</b></dt>
 <dd>where to start switching the Coulomb potential</dd>
 
 <dt><b>rcoulomb: (1) [nm]</b></dt>
@@ -637,7 +637,7 @@ A value of 0 means infinity.</dd>
 <hr>
 <h3>VdW</h3>
 <dl>
-<dt><b>vdwtype:</b></dt>
+<dt><b>vdw-type:</b></dt>
 <dd><dl compact>
 <dt><b>Cut-off</b></dt>
 <dd>Twin range cut-off's with neighbor list cut-off <b>rlist</b> and 
@@ -653,7 +653,7 @@ updates.</dd>
 
 <dt><b>Switch</b></dt>
 <dd>The LJ (not Buckingham)
-potential is normal out to <b>rvdw_switch</b>, after which it is switched
+potential is normal out to <b>rvdw-switch</b>, after which it is switched
 off to reach zero at <b>rvdw</b>. Both the potential and force functions
 are continuously smooth, but be aware that all switch functions will give rise
 to a bulge (increase) in the force (since we are switching the potential).
@@ -675,7 +675,7 @@ When <b>coulombtype</b> is not set to <b>User</b> the values
 for f and -f' are ignored.</dd>
 </dl></dd>
 
-<dt><b>rvdw_switch: (0) [nm]</b></dt>
+<dt><b>rvdw-switch: (0) [nm]</b></dt>
 <dd>where to start switching the LJ potential</dd>
 
 <dt><b>rvdw: (1) [nm]</b></dt>
@@ -792,7 +792,7 @@ at start.</dd>
 <h3><!--Idx-->Temperature coupling<!--EIdx--></h3>
 
 <dl>
-<dt><b>tcoupl:</b></dt>
+<dt><b>Tcoupl:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>No temperature coupling.</dd>
@@ -809,7 +809,7 @@ of the temperature fluctuations at equilibrium, which is slightly
 different from a relaxation time.
 For NVT simulations the conserved energy quantity is written
 to energy and log file.</dd>
-<dt><b>v-rescale</b></dt>
+<dt><b>V-rescale</b></dt>
 <dd>Temperature coupling using velocity rescaling with a stochastic term
 (JCP 126, 014101).
 This thermostat is similar to Berendsen coupling, with the same scaling
@@ -842,7 +842,7 @@ For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
 <h3><!--Idx-->Pressure coupling<!--EIdx--></h3>
 
 <dl>
-<dt><b>pcoupl:</b></dt>
+<dt><b>Pcoupl:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>No pressure coupling. This means a fixed box size.</dd>
@@ -877,7 +877,7 @@ oscillations if you are starting from a different pressure. Currently only suppo
 </dl></dd>
 
 <dl>
-<dt><b>pcoupltype:</b></dt>
+<dt><b>Pcoupltype:</b></dt>
 <dd><dl compact>
 <dt><b>isotropic</b></dt>
 <dd>Isotropic pressure coupling with time constant <b>tau_p</b> [ps].
@@ -1022,12 +1022,12 @@ to bond-constraints.</dd>
 <dd>LINear Constraint Solver.
 With domain decomposition the parallel version P-LINCS is used.
 The accuracy in set with
-<b>lincs_order</b>, which sets the number of matrices in the expansion
+<b>lincs-order</b>, which sets the number of matrices in the expansion
 for the matrix inversion.
 After the matrix inversion correction the algorithm does
 an iterative correction to compensate for lengthening due to rotation.
 The number of such iterations can be controlled with
-<b>lincs_iter</b>. The root mean square relative constraint deviation
+<b>lincs-iter</b>. The root mean square relative constraint deviation
 is printed to the log file every <b>nstlog</b> steps.
 If a bond rotates more than <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
@@ -1054,9 +1054,9 @@ and do not reset shells, useful for exact coninuation and reruns</dd>
 </dl></dd>
 
 <A NAME="bond2">
-<dt><b>shake_tol: (0.0001)</b></dt>
+<dt><b>shake-tol: (0.0001)</b></dt>
 <dd>relative tolerance for SHAKE</dd>
-<dt><b>lincs_order: (4)</b></dt>
+<dt><b>lincs-order: (4)</b></dt>
 <dd>Highest order in the expansion of the constraint coupling matrix.
 When constraints form triangles, an additional expansion of the same
 order is applied on top of the normal expansion only for the couplings
@@ -1065,16 +1065,16 @@ For ``normal'' MD simulations an order of 4 usually suffices, 6 is
 needed for large time-steps with virtual sites or BD.
 For accurate energy minimization an order of 8 or more might be required.
 With domain decomposition, the cell size is limited by the distance
-spanned by <b>lincs_order</b>+1 constraints. When one wants to scale
-further than this limit, one can decrease <b>lincs_order</b> and increase
+spanned by <b>lincs-order</b>+1 constraints. When one wants to scale
+further than this limit, one can decrease <b>lincs-order</b> and increase
 <b>lincs_iter</b>, since the accuracy does not deteriorate
-when (1+<b>lincs_iter</b>)*<b>lincs_order</b> remains constant.</dd>
-<dt><b>lincs_iter: (1)</b></dt>
+when (1+<b>lincs-iter</b>)*<b>lincs-order</b> remains constant.</dd>
+<dt><b>lincs-iter: (1)</b></dt>
 <dd>Number of iterations to correct for rotational lengthening in LINCS.
 For normal runs a single step is sufficient, but for NVE
 runs where you want to conserve energy accurately or for accurate
 energy minimization you might want to increase it to 2.
-<dt><b>lincs_warnangle: </b>(30) [degrees]</dt>
+<dt><b>lincs-warnangle: </b>(30) [degrees]</dt>
 <dd>maximum angle that a bond can rotate before LINCS will complain</dd>
 
 <dt><b>morse:</b></dt>
@@ -1304,7 +1304,7 @@ of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> valu
 should only be used for special cases, such as dimers
 (this option is not fuctional in the current version of GROMACS)</dd>
 </dl></dd>
-<dt><b>disre_weighting:</b></dt>
+<dt><b>disre-weighting:</b></dt>
 <dd><dl compact>
 <dt><b>conservative</b></dt>
 <dd>the forces are the derivative of the restraint potential,
@@ -1312,7 +1312,7 @@ this results in an r<sup>-7</sup> weighting of the atom pairs</dd>
 <dt><b>equal</b></dt>
 <dd>divide the restraint force equally over all atom pairs in the restraint</dd>
 </dl></dd>
-<dt><b>disre_mixed:</b></dt>
+<dt><b>disre-mixed:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
@@ -1322,11 +1322,11 @@ time averaged violation </dd>
 square root of the time averaged violation times the instantaneous violation </dd>
 </dl></dd>
 
-<dt><b>disre_fc: (1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
+<dt><b>disre-fc: (1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
 <dd>force constant for distance restraints, which is multiplied by a
 (possibly) different factor for each restraint</dd>
 
-<dt><b>disre_tau: (0) [ps]</b></dt>
+<dt><b>disre-tau: (0) [ps]</b></dt>
 <dd>time constant for distance restraints running average</dd>
 
 <dt><b>nstdisreout: (100) [steps]</b></dt>
@@ -1344,13 +1344,13 @@ restraint information in topology file)</dd>
 <dd>use orientation restraints, ensemble averaging can be performed
 with <tt>mdrun -multi</tt></dd>
 </dl>
-<dt><b>orire_fc: (0) [kJ mol]</b></dt>
+<dt><b>orire-fc: (0) [kJ mol]</b></dt>
 <dd>force constant for orientation restraints, which is multiplied by a
 (possibly) different factor for each restraint, can be set to zero to
 obtain the orientations from a free simulation</dd>
-<dt><b>orire_tau: (0) [ps]</b></dt>
+<dt><b>orire-tau: (0) [ps]</b></dt>
 <dd>time constant for orientation restraints running average</dd>
-<dt><b>orire_fitgrp: </b></dt>
+<dt><b>orire-fitgrp: </b></dt>
 <dd>fit group for orientation restraining, for a protein backbone is a good
 choice</dd>
 <dt><b>nstorireout: (100) [steps]</b></dt>
@@ -1364,7 +1364,7 @@ for all restraints and the molecular order tensor to the energy file
 <h3><!--Idx-->Free energy calculations<!--EIdx--></h3>
 
 <dl>
-<dt><b>free_energy:</b></dt>
+<dt><b>free-energy:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>Only use topology A.</dd>
@@ -1376,24 +1376,24 @@ The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc_alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
 </dl></dd>
-<dt><b>init_lambda: (0)</b></dt>
+<dt><b>init-lambda: (0)</b></dt>
 <dd>starting value for lambda</dd>
-<dt><b>delta_lambda: (0)</b></dt>
+<dt><b>delta-lambda: (0)</b></dt>
 <dd>increment per time step for lambda</dd>
 <dt><b>foreign_lambda: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>.</dd>
-<dt><b>dhdl_derivatives: (yes)</b></dt>
+<dt><b>dhdl-derivatives: (yes)</b></dt>
 <dd>If yes (the default), the derivatives of the Hamiltonian with respect to lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
-<dt><b>sc_alpha: (0)</b></dt>
+<dt><b>sc-alpha: (0)</b></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
-<dt><b>sc_power: (0)</b></dt>
+<dt><b>sc-power: (0)</b></dt>
 <dd>the power for lambda in the soft-core function,
 only the values 1 and 2 are supported</dd>
-<dt><b>sc_sigma: (0.3) [nm]</b></dt>
+<dt><b>sc-sigma: (0.3) [nm]</b></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
 to zero or a sigma smaller than <b>sc_sigma</b></dd>
 <dt><b>couple-moltype:</b></dt>
@@ -1402,7 +1402,7 @@ for calculating solvation or coupling free energies.
 There is a special option <b>system</b> that couples all molecule types
 in the system. This can be useful for equilibrating a system
 starting from (nearly) random coordinates.
-<b>free_energy</b> has to be turned on.
+<b>free-energy</b> has to be turned on.
 The Van der Waals interactions and/or charges in this molecule type can be
 turned on or off between lambda=0 and lambda=1, depending on the settings
 of <b>couple-lambda0</b> and <b>couple-lambda1</b>. If you want to decouple
@@ -1431,7 +1431,7 @@ the molecule definition in the topology.</dd>
 <dt><b>nstdhdl: (10)</b></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
 0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>
-<dt><b>separate_dhdl_file: (yes)</b></dt>
+<dt><b>separate-dhdl-file: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
 <dd>the free energy values that are calculated (as specified with the <b>foreign-lambda</b> and <b>dhdl_derivatives</b> settings) are written out to a separate file, with the default name <tt>dhdl.xvg</tt>. This file can be used directly with <tt>g_bar</tt>.</dd>
@@ -1450,7 +1450,7 @@ the molecule definition in the topology.</dd>
 <h3><!--Idx-->Non-equilibrium MD<!--EIdx--></h3>
 
 <dl>
-<dt><b>acc_grps: </b></dt>
+<dt><b>acc-grps: </b></dt>
 <dd>groups for constant acceleration (e.g.: <tt>Protein Sol</tt>)
 all atoms in groups Protein and Sol will experience constant acceleration
 as specified in the <b>accelerate</b> line</dd>
@@ -1473,11 +1473,11 @@ specify <tt>Y</tt> or <tt>N</tt> for X, Y and Z and for each group
 (e.g. <tt>Y Y N N N N</tt> means that particles in the first group 
 can move only in Z direction. The particles in the second group can 
 move in any direction).</dd>
-<dt><b>cos_acceleration: (0) [nm ps<sup>-2</sup>]</b></dt>
+<dt><b>cos-acceleration: (0) [nm ps<sup>-2</sup>]</b></dt>
 <dd>the amplitude of the acceleration profile for calculating the
 <!--Idx-->viscosity<!--EIdx-->.
 The acceleration is in the X-direction and the magnitude is 
-<b>cos_acceleration</b> cos(2 pi z/boxheight).
+<b>cos-acceleration</b> cos(2 pi z/boxheight).
 Two terms are added to the energy file:
 the amplitude of the velocity profile and 1/viscosity.</dd>
 <dt><b><!--Idx-->deform<!--EIdx-->: (0 0 0 0 0 0) [nm ps<sup>-1</sup>]</b></dt>
