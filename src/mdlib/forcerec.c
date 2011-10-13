@@ -1526,7 +1526,7 @@ void init_interaction_const_tables(FILE *fp,
          */
         spacing = 0.0005;
         ic->tabq_scale = 1/spacing;
-        ic->tabq_size    = (int)(ic->rvdw*ic->tabq_scale) + 1;
+        ic->tabq_size    = (int)(ic->rcoulomb*ic->tabq_scale) + 1;
         snew(ic->tabq_coul_FDV0,ic->tabq_size*4);
         table_spline3_fill_ewald(ic->tabq_coul_FDV0,ic->tabq_size,
                                  tableformatFDV0,
@@ -1543,6 +1543,7 @@ void init_interaction_const(FILE *fp,
     snew(ic, 1);
 
     ic->rvdw        = fr->rvdw;
+    ic->rcoulomb    = fr->rcoulomb;
     ic->rlist       = fr->rlist;
     ic->ewaldcoeff  = fr->ewaldcoeff;
     ic->epsilon_r   = fr->epsilon_r;

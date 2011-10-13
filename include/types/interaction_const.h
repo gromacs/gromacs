@@ -27,6 +27,9 @@ typedef struct {
     /* VdW */
     real rvdw;
 
+    /* Coulomb */
+    real rcoulomb;
+
     /* Cut-off */
     real rlist;
 
