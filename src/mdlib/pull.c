@@ -524,7 +524,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         }
     }
     
-    bConverged_all = TRUE;
+    bConverged_all = FALSE;
     while (!bConverged_all && niter < max_iter)
     {
         bConverged_all = TRUE;
