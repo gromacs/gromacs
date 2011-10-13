@@ -24,6 +24,9 @@ void init_cudata_nblist(cu_nonbonded_t /*cu_nb*/,
 void init_cudata_atoms(cu_nonbonded_t /*cu_nb*/,
                        const gmx_nb_atomdata_t * /*atomdata*/);
 
+void reset_cu_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
+                             const interaction_const_t * /*ic*/);
+
 void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
                        const gmx_nb_atomdata_t * /*nbatom*/);
 

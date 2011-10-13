@@ -65,9 +65,11 @@ static void realloc_cudata_array(void **d_dest, void *h_src, size_t type_size,
                                  cudaStream_t stream, 
                                  gmx_bool doAsync);
 
-/*! Tabulates the Ewald Coulomb force and initializes the related GPU resources. 
+/*! Tabulates the Ewald Coulomb force and initializes the size/scale 
+    and the table GPU array. If called with an already allocated table,
+    it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params)
+static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
 {
     float       *ftmp, *coul_tab;
     int         tabsize;
@@ -75,21 +77,30 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nb_params)
     cudaError_t stat;
 
     tabsize     = EWALD_COULOMB_FORCE_TABLE_SIZE;
-    tabscale    = (tabsize - 1) / sqrt(nb_params->cutoff_sq);
+    tabscale    = (tabsize - 1) / sqrt(nbp->rcoulomb_sq);
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
     table_spline3_fill_ewald(ftmp, tabsize, tableformatF,
-                             1/tabscale, nb_params->ewald_beta);
+                             1/tabscale, nbp->ewald_beta);
 
-    stat = cudaMalloc((void **)&coul_tab, tabsize*sizeof(*coul_tab));
-    CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
+    /* If the table pointer == NULL the table is generated the first time =>
+       the array pointer will be saved to nb_params and the texture is bound.
+     */
+    coul_tab = nbp->coulomb_tab;
+    if (coul_tab == NULL)
+    {
+        stat = cudaMalloc((void **)&coul_tab, tabsize*sizeof(*coul_tab));
+        CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
+
+        nbp->coulomb_tab = coul_tab;
+        cu_bind_texture("tex_coulomb_tab", coul_tab, tabsize*sizeof(*coul_tab));
+    }
+
     upload_cudata(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
-    cu_bind_texture("tex_coulomb_tab", coul_tab, tabsize*sizeof(*coul_tab));
 
-    nb_params->coulomb_tab          = coul_tab;
-    nb_params->coulomb_tab_size     = tabsize;
-    nb_params->coulomb_tab_scale    = tabscale;
+    nbp->coulomb_tab_size     = tabsize;
+    nbp->coulomb_tab_scale    = tabscale;
 
     pfree(ftmp);
 }
@@ -133,14 +144,15 @@ void init_nb_params(cu_nb_params_t *nbp,
 
     ntypes  = nbv->nbat->ntype;
     
-    nbp->ewald_beta  = ic->ewaldcoeff;
-    nbp->epsfac      = ic->epsfac;
-    nbp->two_k_rf    = 2.0 * ic->k_rf;
-    nbp->c_rf        = ic->c_rf;
-    nbp->cutoff_sq   = ic->rvdw * ic->rvdw;
-    nbp->rlist_sq    = ic->rlist * ic->rlist;
-    nbp->lj_shift    = (getenv("GMX_LJ_SHIFT") == NULL) ?
-             0.0 : -1/(nbp->cutoff_sq * nbp->cutoff_sq * nbp->cutoff_sq);
+    nbp->ewald_beta = ic->ewaldcoeff;
+    nbp->epsfac     = ic->epsfac;
+    nbp->two_k_rf   = 2.0 * ic->k_rf;
+    nbp->c_rf       = ic->c_rf;
+    nbp->rvdw_sq    = ic->rvdw * ic->rvdw;
+    nbp->rcoulomb_sq= ic->rcoulomb * ic->rcoulomb;
+    nbp->rlist_sq   = ic->rlist * ic->rlist;
+    nbp->lj_shift   = (getenv("GMX_LJ_SHIFT") == NULL) ?
+             0.0 : -1/(nbp->rvdw_sq * nbp->rvdw_sq * nbp->rvdw_sq);
 
     if (ic->eeltype == eelCUT)
     {
@@ -162,6 +174,7 @@ void init_nb_params(cu_nb_params_t *nbp,
     /* generate table for PME */
     if (nbp->eeltype == cu_eelEWALD)
     {
+        nbp->coulomb_tab = NULL;
         init_ewald_coulomb_force_table(nbp);
     }
 
@@ -170,6 +183,18 @@ void init_nb_params(cu_nb_params_t *nbp,
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp"); 
     upload_cudata(nbp->nbfp, nbv->nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
     cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
+}
+
+void reset_cu_rlist_ewaldtab(cu_nonbonded_t cu_nb,
+                             const interaction_const_t *ic)
+{
+    cu_nb_params_t * nbp = cu_nb->nb_params;
+
+    nbp->rlist_sq       = ic->rlist * ic->rlist;
+    nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
+    nbp->ewald_beta     = ic->ewaldcoeff;
+
+    init_ewald_coulomb_force_table(cu_nb->nb_params);
 }
 
 /*! Initilizes the neighborlist data structure. */

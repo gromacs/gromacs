@@ -263,7 +263,7 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
                 (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
                 CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
      
-    nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
+nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
                                  nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist, 
                                                  calc_fshift);

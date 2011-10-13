@@ -32,39 +32,39 @@ struct nb_tmp_data
 
 struct cu_atomdata
 {
-    int     natoms;         /* number of atoms                      */
-    int     natoms_local;   /* number of local atoms                */
-    int     nalloc;     /* allocation size for the atom data (xq, f) */ 
+    int     natoms;             /* number of atoms                      */
+    int     natoms_local;       /* number of local atoms                */
+    int     nalloc;             /* allocation size for the atom data (xq, f) */
     
-    float4  *xq;        /* atom coordinates + charges, size natoms  */
-    float4  *f;         /* force output array, size natoms          */
+    float4  *xq;                /* atom coordinates + charges, size natoms  */
+    float4  *f;                 /* force output array, size natoms          */
     /* TODO: try float2 for the energies */
-    float   *e_lj,      /* LJ energy output, size 1                 */
-            *e_el;      /* Electrostatics energy intput, size 1     */
+    float   *e_lj,              /* LJ energy output, size 1                 */
+            *e_el;              /* Electrostatics energy intput, size 1     */
 
-    float4  *f_shift;   /* shift forces */
+    float4  *f_shift;           /* shift forces */
 
-    int     ntypes;     /* number of atom types             */
-    int     *atom_types;/* atom type indices, size natoms   */
+    int     ntypes;             /* number of atom types             */
+    int     *atom_types;        /* atom type indices, size natoms   */
  
-    float3  *shift_vec;  /* shifts */    
-    gmx_bool shift_vec_copied;   /* indicates whether shift vector has already been transfered */
+    float3  *shift_vec;         /* shifts */
+    gmx_bool shift_vec_copied;  /* has the shift vector already been transfered? */
 };
 
 /* nonbonded paramters */
 struct cu_nb_params
 {
-    int  eeltype;       /* type of electrostatics */ 
+    int  eeltype;           /* type of electrostatics */
     
-    float   epsfac;
-    float   c_rf;       
-    float   two_k_rf;   
-    float   ewald_beta; 
-    float   cutoff_sq;  /* cut-off */
-    float   rlist_sq;   /* neighborlist cut-off */
-    float   lj_shift;   /* LJ potential correction term */
+    float   epsfac;         /* charge multiplication factor */
+    float   c_rf, two_k_rf; /* Reaction-Field constants */
+    float   ewald_beta;     /* Ewald/PME parameter */
+    float   rvdw_sq;        /* VdW cut-off */
+    float   rcoulomb_sq;    /* Coulomb cut-off */
+    float   rlist_sq;       /* neighborlist cut-off */
+    float   lj_shift;       /* LJ potential correction term */
 
-    float   *nbfp;      /* nonbonded parameters C12, C6 */
+    float   *nbfp;          /* nonbonded parameter table with C6/C12 pairs  */
 
     /* Ewald Coulomb force table */
     int     coulomb_tab_size;

@@ -25,38 +25,41 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
             gmx_bool calc_fshift)
 {
     /* convenience variables */
-    const gmx_nbl_ci_t *nbl_ci = nblist.ci;
+    const gmx_nbl_ci_t *nbl_ci  = nblist.ci;
 #ifndef PRUNE_NBL
     const
 #endif
-        gmx_nbl_sj4_t *nbl_sj4 = nblist.sj4;
-    const gmx_nbl_excl_t *excl = nblist.excl;
-    const int *atom_types = atomdata.atom_types;
-    int ntypes = atomdata.ntypes;
-    const float4 *xq = atomdata.xq;
+        gmx_nbl_sj4_t *nbl_sj4  = nblist.sj4;
+    const gmx_nbl_excl_t *excl  = nblist.excl;
+    const int *atom_types       = atomdata.atom_types;
+    int ntypes                  = atomdata.ntypes;
+    const float4 *xq            = atomdata.xq;
     float4 *f                   = atomdata.f;
-    const float3 *shift_vec = atomdata.shift_vec;
-    float cutoff_sq = nb_params.cutoff_sq;
+    const float3 *shift_vec     = atomdata.shift_vec;
+    float rcoulomb_sq           = nb_params.rcoulomb_sq;
+#ifdef EL_EWALD
+    float rvdw_sq               = nb_params.rvdw_sq;
+#endif
 #ifdef EL_RF
-    float two_k_rf = nb_params.two_k_rf;
+    float two_k_rf              = nb_params.two_k_rf;
 #endif
 #ifdef EL_EWALD
-    float coulomb_tab_scale = nb_params.coulomb_tab_scale;
+    float coulomb_tab_scale     = nb_params.coulomb_tab_scale;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq = nb_params.rlist_sq;
+    float rlist_sq              = nb_params.rlist_sq;
 #endif
 
 #ifdef CALC_ENERGIES
-    float lj_shift = nb_params.lj_shift;
+    float lj_shift  = nb_params.lj_shift;
 #ifdef EL_EWALD
-    float beta = nb_params.ewald_beta;
+    float beta      = nb_params.ewald_beta;
 #endif
 #ifdef EL_RF
-    float c_rf = nb_params.c_rf;
+    float c_rf      = nb_params.c_rf;
 #endif
-    float *e_lj = atomdata.e_lj;
-    float *e_el = atomdata.e_el;
+    float *e_lj     = atomdata.e_lj;
+    float *e_el     = atomdata.e_el;
 #endif
 
     /* thread/block/warp id-s */
@@ -190,7 +193,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
                         excl_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
 
                         /* cutoff & exclusion check */
-                        if (r2 < cutoff_sq * excl_bit)
+                        if (r2 < rcoulomb_sq * excl_bit)
                         {
                             /* load the rest of the i-atom parameters */
                             qi      = xqbuf.w;
@@ -203,6 +206,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_2)
                             inv_r       = rsqrt(r2);
                             inv_r2      = inv_r * inv_r;
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
+#ifdef EL_EWALD
+                            /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
+                            inv_r6      *= r2 < rvdw_sq;
+#endif
 
                             F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 

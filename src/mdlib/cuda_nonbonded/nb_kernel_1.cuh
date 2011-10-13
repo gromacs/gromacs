@@ -40,7 +40,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
     const float4 *xq            = atomdata.xq;
     float4 *f                   = atomdata.f;
     const float3 *shift_vec     = atomdata.shift_vec;
-    float cutoff_sq             = nb_params.cutoff_sq;
+    float rcoulomb_sq           = nb_params.rcoulomb_sq;
+#ifdef EL_EWALD
+    float rvdw_sq               = nb_params.rvdw_sq;
+#endif
 #ifdef EL_RF
     float two_k_rf              = nb_params.two_k_rf;
 #endif
@@ -195,7 +198,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                         excl_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
 
                         /* cutoff & exclusion check */
-                        if (r2 < cutoff_sq * excl_bit)
+                        if (r2 < rcoulomb_sq * excl_bit)
                         {
                             /* load the rest of the i-atom parameters */
                             qi      = xqbuf.w;
@@ -208,9 +211,13 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             inv_r       = rsqrt(r2);
                             inv_r2      = inv_r * inv_r;
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
+#ifdef EL_EWALD
+                            /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
+                            inv_r6      *= r2 < rvdw_sq;
+#endif
 
                             F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
- 
+
 #ifdef CALC_ENERGIES
                             E_lj        += (inv_r6 + lj_shift) * (0.08333333f * c12 * (inv_r6 + lj_shift) - 0.16666667f * c6);
 #endif
