@@ -87,6 +87,7 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 #include "string2.h"
+#include "pme_switch.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -194,6 +195,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t multisim_nsteps=-1; /* number of steps to do  before first multisim 
                                           simulation stops. If equal to zero, don't
                                           communicate any more between multisims.*/
+    /* PME load balancing data for GPU kernels */
+    pme_switch_t    pme_switch=NULL;
+    double          cycles_pmes;
+    gmx_bool        pmetune_done=TRUE;
+
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -439,6 +445,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (repl_ex_nst > 0 && MASTER(cr))
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
+
+    if (fr->cutoff_scheme == ecutsVERLET &&
+        EEL_PME(fr->eeltype) && fr->nbv->useGPU &&
+        !bRerunMD &&
+        getenv("GMX_NO_TUNEPME") == NULL)
+    {
+        switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
+        cycles_pmes = 0;
+        pmetune_done = FALSE;
+    }
 
     if (!ir->bContinuation && !bRerunMD)
     {
@@ -890,7 +906,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
-                                    nrnb,wcycle,do_verbose);
+                                    nrnb,wcycle,
+                                    do_verbose && pmetune_done);
                 wallcycle_stop(wcycle,ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
             }
@@ -1741,7 +1758,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 
         /* Remaining runtime */
-        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal() ))
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && pmetune_done)
         {
             if (shellfc) 
             {
@@ -1814,6 +1831,33 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (DOMAINDECOMP(cr) && wcycle)
         {
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
+        }
+
+        if (pme_switch != NULL && !pmetune_done)
+        {
+            /* PME grid + cut-off optimization with GPUs */
+
+            /* Count the total cycles over the last steps */
+            cycles_pmes += cycles;
+
+            /* We can only switch cut-off at NS steps */
+            if (step % ir->nstlist == 0)
+            {
+                /* init_step might not be a multiple of nstlist,
+                 * but the first cycle is always skipped anyhow.
+                 */
+                pmetune_done =
+                    switch_pme(pme_switch,cr,
+                               (bVerbose && MASTER(cr)) ? stderr : NULL,
+                               fplog,
+                               ir,state,cycles_pmes,
+                               fr->ic,fr->nbv,&fr->pmedata,
+                               step);
+
+                fr->ewaldcoeff = fr->ic->ewaldcoeff;
+
+                cycles_pmes = 0;
+            }
         }
         
         if (step_rel == wcycle_get_reset_counters(wcycle) ||

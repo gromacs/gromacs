@@ -6962,19 +6962,120 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
     fflush(fplog);
 }
 
+static void set_cell_limits_dlb(gmx_domdec_t *dd,
+                                real dlb_scale,
+                                const t_inputrec *ir,
+                                const gmx_ddbox_t *ddbox)
+{
+    gmx_domdec_comm_t *comm;
+    int  d,dim,npulse,npulse_d_max,npulse_d;
+    gmx_bool bNoCutOff;
+
+    comm = dd->comm;
+
+    bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
+
+    /* Determine the maximum number of comm. pulses in one dimension */
+        
+    comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
+        
+    /* Determine the maximum required number of grid pulses */
+    if (comm->cellsize_limit >= comm->cutoff)
+    {
+        /* Only a single pulse is required */
+        npulse = 1;
+    }
+    else if (!bNoCutOff && comm->cellsize_limit > 0)
+    {
+        /* We round down slightly here to avoid overhead due to the latency
+         * of extra communication calls when the cut-off
+         * would be only slightly longer than the cell size.
+         * Later cellsize_limit is redetermined,
+         * so we can not miss interactions due to this rounding.
+         */
+        npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
+    }
+    else
+    {
+        /* There is no cell size limit */
+        npulse = max(dd->nc[XX]-1,max(dd->nc[YY]-1,dd->nc[ZZ]-1));
+    }
+
+    if (!bNoCutOff && npulse > 1)
+    {
+        /* See if we can do with less pulses, based on dlb_scale */
+        npulse_d_max = 0;
+        for(d=0; d<dd->ndim; d++)
+        {
+            dim = dd->dim[d];
+            npulse_d = (int)(1 + dd->nc[dim]*comm->cutoff
+                             /(ddbox->box_size[dim]*ddbox->skew_fac[dim]*dlb_scale));
+            npulse_d_max = max(npulse_d_max,npulse_d);
+        }
+        npulse = min(npulse,npulse_d_max);
+    }
+
+    /* This env var can override npulse */
+    d = dd_nst_env(debug,"GMX_DD_NPULSE",0);
+    if (d > 0)
+    {
+        npulse = d;
+    }
+
+    comm->maxpulse = 1;
+    comm->bVacDLBNoLimit = (ir->ePBC == epbcNONE);
+    for(d=0; d<dd->ndim; d++)
+    {
+        comm->cd[d].np_dlb = min(npulse,dd->nc[dd->dim[d]]-1);
+        comm->cd[d].np_nalloc = comm->cd[d].np_dlb;
+        snew(comm->cd[d].ind,comm->cd[d].np_nalloc);
+        comm->maxpulse = max(comm->maxpulse,comm->cd[d].np_dlb);
+        if (comm->cd[d].np_dlb < dd->nc[dd->dim[d]]-1)
+        {
+            comm->bVacDLBNoLimit = FALSE;
+        }
+    }
+
+    /* cellsize_limit is set for LINCS in init_domain_decomposition */
+    if (!comm->bVacDLBNoLimit)
+    {
+        comm->cellsize_limit = max(comm->cellsize_limit,
+                                   comm->cutoff/comm->maxpulse);
+    }
+    comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
+    /* Set the minimum cell size for each DD dimension */
+    for(d=0; d<dd->ndim; d++)
+    {
+        if (comm->bVacDLBNoLimit ||
+            comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
+        {
+            comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
+        }
+        else
+        {
+            comm->cellsize_min_dlb[dd->dim[d]] =
+                comm->cutoff/comm->cd[d].np_dlb;
+        }
+    }
+    if (comm->cutoff_mbody <= 0)
+    {
+        comm->cutoff_mbody = min(comm->cutoff,comm->cellsize_limit);
+    }
+    if (comm->bDynLoadBal)
+    {
+        set_dlb_limits(dd);
+    }
+}
+
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                        t_inputrec *ir,t_forcerec *fr,
                        gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
-    int  d,dim,npulse,npulse_d_max,npulse_d;
-    gmx_bool bNoCutOff;
     int  natoms_tot;
     real vol_frac;
 
     comm = dd->comm;
-
-    bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
 
     if (EEL_PME(ir->coulombtype))
     {
@@ -7014,96 +7115,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     }
     if (comm->eDLB != edlbNO)
     {
-        /* Determine the maximum number of comm. pulses in one dimension */
-        
-        comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
-        
-        /* Determine the maximum required number of grid pulses */
-        if (comm->cellsize_limit >= comm->cutoff)
-        {
-            /* Only a single pulse is required */
-            npulse = 1;
-        }
-        else if (!bNoCutOff && comm->cellsize_limit > 0)
-        {
-            /* We round down slightly here to avoid overhead due to the latency
-             * of extra communication calls when the cut-off
-             * would be only slightly longer than the cell size.
-             * Later cellsize_limit is redetermined,
-             * so we can not miss interactions due to this rounding.
-             */
-            npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
-        }
-        else
-        {
-            /* There is no cell size limit */
-            npulse = max(dd->nc[XX]-1,max(dd->nc[YY]-1,dd->nc[ZZ]-1));
-        }
-
-        if (!bNoCutOff && npulse > 1)
-        {
-            /* See if we can do with less pulses, based on dlb_scale */
-            npulse_d_max = 0;
-            for(d=0; d<dd->ndim; d++)
-            {
-                dim = dd->dim[d];
-                npulse_d = (int)(1 + dd->nc[dim]*comm->cutoff
-                                 /(ddbox->box_size[dim]*ddbox->skew_fac[dim]*dlb_scale));
-                npulse_d_max = max(npulse_d_max,npulse_d);
-            }
-            npulse = min(npulse,npulse_d_max);
-        }
-        
-        /* This env var can override npulse */
-        d = dd_nst_env(fplog,"GMX_DD_NPULSE",0);
-        if (d > 0)
-        {
-            npulse = d;
-        }
-
-        comm->maxpulse = 1;
-        comm->bVacDLBNoLimit = (ir->ePBC == epbcNONE);
-        for(d=0; d<dd->ndim; d++)
-        {
-            comm->cd[d].np_dlb = min(npulse,dd->nc[dd->dim[d]]-1);
-            comm->cd[d].np_nalloc = comm->cd[d].np_dlb;
-            snew(comm->cd[d].ind,comm->cd[d].np_nalloc);
-            comm->maxpulse = max(comm->maxpulse,comm->cd[d].np_dlb);
-            if (comm->cd[d].np_dlb < dd->nc[dd->dim[d]]-1)
-            {
-                comm->bVacDLBNoLimit = FALSE;
-            }
-        }
-        
-        /* cellsize_limit is set for LINCS in init_domain_decomposition */
-        if (!comm->bVacDLBNoLimit)
-        {
-            comm->cellsize_limit = max(comm->cellsize_limit,
-                                       comm->cutoff/comm->maxpulse);
-        }
-        comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
-        /* Set the minimum cell size for each DD dimension */
-        for(d=0; d<dd->ndim; d++)
-        {
-            if (comm->bVacDLBNoLimit ||
-                comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
-            {
-                comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
-            }
-            else
-            {
-                comm->cellsize_min_dlb[dd->dim[d]] =
-                    comm->cutoff/comm->cd[d].np_dlb;
-            }
-        }
-        if (comm->cutoff_mbody <= 0)
-        {
-            comm->cutoff_mbody = min(comm->cutoff,comm->cellsize_limit);
-        }
-        if (comm->bDynLoadBal)
-        {
-            set_dlb_limits(dd);
-        }
+        set_cell_limits_dlb(dd,dlb_scale,ir,ddbox);
     }
     
     print_dd_settings(fplog,dd,ir,comm->bDynLoadBal,dlb_scale,ddbox);
@@ -7132,6 +7144,53 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     natoms_tot = comm->cgs_gl.index[comm->cgs_gl.nr];
    
     dd->ga2la = ga2la_init(natoms_tot,vol_frac*natoms_tot);
+}
+
+gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
+                          real cutoff_req)
+{
+    gmx_domdec_t *dd;
+    gmx_ddbox_t ddbox;
+    int d,dim,np;
+    real inv_cell_size;
+
+    dd = cr->dd;
+
+    set_ddbox(dd,FALSE,cr,ir,state->box,
+              TRUE,&dd->comm->cgs_gl,state->x,&ddbox);
+
+    
+    for(d=0; d<dd->ndim; d++)
+    {
+        dim = dd->dim[d];
+
+        inv_cell_size = DD_CELL_MARGIN*dd->nc[dim]/ddbox.box_size[dim];
+        if (dynamic_dd_box(&ddbox,ir))
+        {
+            inv_cell_size *= DD_PRES_SCALE_MARGIN;
+        }
+
+        np = 1 + (int)(cutoff_req*inv_cell_size);
+
+        if (ir->cutoff_scheme == ecutsVERLET)
+        {
+            if (np > 1)
+            {
+                return FALSE;
+            }
+        }
+        else if (dim < ddbox.npbcdim && dd->comm->eDLB != edlbNO)
+        {
+            if (np > dd->comm->cd[d].np_dlb)
+            {
+                return FALSE;
+            }
+        }
+    }
+
+    dd->comm->cutoff = cutoff_req;
+
+    return TRUE;
 }
 
 static void merge_cg_buffers(int ncell,

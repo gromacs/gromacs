@@ -107,6 +107,13 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
  * should be called after calling dd_init_bondeds.
  */
 
+gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
+                          real cutoff_req );
+/* Change the DD non-bonded communication cut-off.
+ * This could fail when trying to increase the cut-off,
+ * then FALSE will be returned and the cut-off is not modified.
+ */
+
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 void dd_collect_vec(gmx_domdec_t *dd,
