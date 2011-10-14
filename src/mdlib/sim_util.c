@@ -574,12 +574,12 @@ static void post_process_forces(FILE *fplog,
 static void do_nb_verlet(t_forcerec *fr,
                          interaction_const_t *ic,
                          gmx_enerdata_t *enerd,
-                         int flags, int ilocaity,
+                         int flags, int ilocality,
                          gmx_bool clearF) /* FIXME this argument is very uncool */
 {
     int     nnbl, kernel_type;
     char    *env;
-    nonbonded_verlet_t  *nbv;
+    nonbonded_verlet_group_t  *nbvg;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -587,18 +587,18 @@ static void do_nb_verlet(t_forcerec *fr,
         return;
     }
 
-    nbv = fr->nbv;
+    nbvg = &fr->nbv->grp[ilocality];
 
     if (fr->cutoff_scheme != ecutsVERLET)
     {
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    switch (nbv->kernel_type)
+    switch (nbvg->kernel_type)
     {
         case nbk4x4PlainC:
-            nb_cell_kernel_c(nbv->nbl_lists[ilocaity],
-                             nbv->nbat, ic,
+            nb_cell_kernel_c(&nbvg->nbl_lists,
+                             nbvg->nbat, ic,
                              fr->shift_vec,
                              flags,
                              clearF,
@@ -610,35 +610,35 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
         
         case nbk4x4SSE:
-            nb_cell_kernel(nbv->nbl_lists[ilocaity],
-                           nbv->nbat, ic,
+            nb_cell_kernel(&nbvg->nbl_lists,
+                           nbvg->nbat, ic,
                            fr->shift_vec,
                            flags,
                            clearF,
                            fr->fshift[0],
                            enerd->grpp.ener[egCOULSR],
                            fr->bBHAM ?
-                             enerd->grpp.ener[egBHAMSR] :
-                             enerd->grpp.ener[egLJSR]);
+                           enerd->grpp.ener[egBHAMSR] :
+                           enerd->grpp.ener[egLJSR]);
             break;
 
         case nbk8x8x8CUDA:
 #ifdef GMX_GPU
-            cu_stream_nb(nbv->gpu_nb, nbv->nbat, flags, ilocaity);
+            cu_stream_nb(fr->nbv->gpu_nb, nbvg->nbat, flags, ilocality);
 #endif
             break;
 
         case nbk8x8x8PlainC:
-            nsbox_generic_kernel(nbv->nbl_lists[ilocaity]->nbl[0],nbv->nbat, ic,
+            nsbox_generic_kernel(nbvg->nbl_lists.nbl[0],nbvg->nbat, ic,
                                  fr->nblists[0].tab.scale,
                                  fr->nblists[0].tab.tab,
                                  clearF,
-                                 nbv->nbat->out[0].f,
+                                 nbvg->nbat->out[0].f,
                                  fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM ?
-                                    enerd->grpp.ener[egBHAMSR] :
-                                    enerd->grpp.ener[egLJSR]);
+                                 enerd->grpp.ener[egBHAMSR] :
+                                 enerd->grpp.ener[egLJSR]);
             break;
 
         default:
@@ -671,6 +671,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     double mu[2*DIM]; 
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF,bUseGPU,bUseOrEmulGPU;
+    gmx_bool   bDiffKernels=FALSE;
     matrix boxs;
     rvec   vzero,box_diag;
     real   e,v,dvdl;
@@ -678,7 +679,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     nonbonded_verlet_t *nbv;
 
     nbv = fr->nbv;
-    nb_kernel_type = fr->nbv->kernel_type;
+    nb_kernel_type = fr->nbv->grp[0].kernel_type;
 
 
     start  = mdatoms->start;
@@ -710,7 +711,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
     bUseGPU       = fr->nbv->useGPU;
-    bUseOrEmulGPU = bUseGPU || (nbv->kernel_type == nbk8x8x8PlainC);
+    bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbk8x8x8PlainC);
 
     if (bStateChanged)
     {
@@ -747,7 +748,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
     gmx_nb_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
-                                      fr->shift_vec,nbv->nbat);
+                                  fr->shift_vec,nbv->grp[0].nbat);
     if (bCalcCGCM) {
         if (PAR(cr)) {
             move_cgcm(fplog,cr,fr->cg_cm);
@@ -804,18 +805,33 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                                      0,vzero,box_diag,
                                      0,mdatoms->homenr,-1,fr->cginfo,x,
                                      0,NULL,
-                                     nbv->nbat);
+                                     nbv->grp[eintLocal].nbl_lists.simple,
+                                     nbv->grp[eintLocal].nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_LOCAL);
         }
         else
         {
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_NONLOCAL);
             gmx_nbsearch_put_on_grid_nonlocal(nbv->nbs,domdec_zones(cr->dd),
-                                              fr->cginfo,x,nbv->nbat);
+                                              fr->cginfo,x,
+                                              nbv->grp[eintNonlocal].nbl_lists.simple,
+                                              nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
-        gmx_nb_atomdata_set(nbv->nbat,nbv->nbs,mdatoms,fr->cginfo);
+        if (nbv->nloc == 1 ||
+            nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
+        {
+            gmx_nb_atomdata_set(nbv->grp[eintLocal].nbat,eatAll,
+                                nbv->nbs,mdatoms,fr->cginfo);
+        }
+        else
+        {
+            gmx_nb_atomdata_set(nbv->grp[eintLocal].nbat,eatLocal,
+                                nbv->nbs,mdatoms,fr->cginfo);
+            gmx_nb_atomdata_set(nbv->grp[eintNonlocal].nbat,eatAll,
+                                nbv->nbs,mdatoms,fr->cginfo);
+        }
     }
 
 #ifdef GMX_GPU
@@ -824,10 +840,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         if (bNS)
         {
-            init_cudata_atoms(nbv->gpu_nb, nbv->nbat);
+            init_cudata_atoms(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
         }
 
-        cu_move_shift_vec(nbv->gpu_nb, nbv->nbat);
+        cu_move_shift_vec(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
     }
 #endif
         
@@ -835,11 +851,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (bNS)
     {
         wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_LOCAL);
-        gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
+        gmx_nbsearch_make_nblist(nbv->nbs,nbv->grp[eintLocal].nbat,
                                  &top->excls,
                                  ic->rlist,
                                  nbv->min_ci_balanced,
-                                 nbv->nbl_lists[eintLocal],
+                                 &nbv->grp[eintLocal].nbl_lists,
                                  eintLocal);
 
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
@@ -847,13 +863,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bUseGPU)
         {
             /* initialize GPU local neighbor list */
-            init_cudata_nblist(nbv->gpu_nb, nbv->nbl_lists[eintLocal]->nbl[0],
+            init_cudata_nblist(nbv->gpu_nb,
+                               nbv->grp[eintLocal].nbl_lists.nbl[0],
                                eintLocal);
         }
 #endif    
         wallcycle_stop(wcycle, ewcNS);
     }
-    gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,x,nbv->nbat);
+    gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
+                                     nbv->grp[eintLocal].nbat);
 
 #ifdef GMX_GPU
     if (bUseGPU)
@@ -869,24 +887,40 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
        do non-local neighbor search */
     if (DOMAINDECOMP(cr))
     {
+        bDiffKernels = (nbv->grp[eintNonlocal].kernel_type !=
+                        nbv->grp[eintLocal].kernel_type);
+
+        if (bDiffKernels)
+        {
+            gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatAll,TRUE,x,
+                                             nbv->grp[eintNonlocal].nbat);
+        }
+
         if (bNS)
         {
             wallcycle_start_nocount(wcycle,ewcNS);
             
             wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_NONLOCAL);
-            gmx_nbsearch_make_nblist(nbv->nbs,nbv->nbat,
+
+            if (bDiffKernels)
+            {
+                gmx_nbsearch_grid_simple(nbv->nbs,nbv->grp[eintNonlocal].nbat);
+            }
+
+            gmx_nbsearch_make_nblist(nbv->nbs,nbv->grp[eintNonlocal].nbat,
                                      &top->excls,
                                      ic->rlist,
                                      nbv->min_ci_balanced,
-                                     nbv->nbl_lists[eintNonlocal],
+                                     &nbv->grp[eintNonlocal].nbl_lists,
                                      eintNonlocal);
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 #ifdef GMX_GPU
-            if (bUseGPU)
+            if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8CUDA)
             {
                 /* initialize GPU non-local neighbor list */
-                init_cudata_nblist(nbv->gpu_nb, nbv->nbl_lists[eintNonlocal]->nbl[0],
+                init_cudata_nblist(nbv->gpu_nb,
+                                   nbv->grp[eintNonlocal].nbl_lists.nbl[0],
                                    eintNonlocal);
             }
 #endif
@@ -904,10 +938,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             }
             wallcycle_stop(wcycle,ewcMOVEX);
         }
-        gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,x,nbv->nbat);
+        gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
+                                         nbv->grp[eintNonlocal].nbat);
 
 #ifdef GMX_GPU
-        if (bUseGPU)
+        if (bUseGPU && !bDiffKernels)
         { 
             wallcycle_start(wcycle,ewcSEND_X_GPU);
             /* launch non-local nonbonded F on GPU */
@@ -921,13 +956,13 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (bUseGPU)
     {
         /* launch copy-back of non-local or if not running in parallel the local F */
-        if (DOMAINDECOMP(cr))
+        if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
-            cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, eatNonlocal);
+            cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat, flags, eatNonlocal);
         }
         else
         {
-            cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, eatLocal);
+            cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintLocal].nbat, flags, eatLocal);
         }
     }
 #endif /* GMX_GPU */ 
@@ -1059,22 +1094,39 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE);
+    }
         
+
+    if (!bUseOrEmulGPU || bDiffKernels)
+    {
+        int aloc;
+
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE);
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, bDiffKernels);
+        }
+
+        if (!bUseOrEmulGPU)
+        {
+            aloc = eintLocal;
+        }
+        else
+        {
+            aloc = eintNonlocal;
         }
 
         /* Add all the non-bonded force to the normal force array.
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->nbat,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->grp[aloc].nbat,f);
 
         /* if there are multiple fshift output buffers reduce them */
-        if ((flags & GMX_FORCE_VIRIAL) && nbv->nbl_lists[eintLocal]->nnbl > 1)
+        if ((flags & GMX_FORCE_VIRIAL) &&
+            nbv->grp[aloc].nbl_lists.nnbl > 1)
         {
-            gmx_nb_atomdata_add_nbat_fshift_to_fshift(nbv->nbat,fr->fshift);
+            gmx_nb_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
+                                                      fr->fshift);
         }
     }
     
@@ -1086,7 +1138,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         do_flood(fplog,cr,x,f,ed,box,step);
     }
 
-    if (bUseOrEmulGPU)
+    if (bUseOrEmulGPU && !bDiffKernels)
     {
         /* wait for non-local forces (or calculate in emulation mode) */
         if (DOMAINDECOMP(cr))
@@ -1107,7 +1159,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE);
                 wallcycle_stop(wcycle,ewcFORCE);
             }            
-            gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,nbv->nbat,f);
+            gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
+                                            nbv->grp[eintNonlocal].nbat,f);
 
 #ifdef GMX_GPU
             if (bUseGPU)
@@ -1115,7 +1168,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 /* When runing in parallel we can only launch local copy-back after the 
                    non-local is done! (CUDA can't synchronize streams with async operations
                    wrt the CPU).*/
-                cu_copyback_nb_data(nbv->gpu_nb, nbv->nbat, flags, eatLocal);
+                cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
+                                    flags, eatLocal);
             }
 #endif
         }
@@ -1177,7 +1231,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr));
             wallcycle_stop(wcycle,ewcFORCE);
         }
-        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatLocal,nbv->nbat,f);
+        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatLocal,
+                                        nbv->grp[eintLocal].nbat,f);
     }
     
     if (DOMAINDECOMP(cr))

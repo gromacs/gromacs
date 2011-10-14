@@ -72,6 +72,7 @@ extern "C" {
 #define MD_READ_EKIN      (1<<17)
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
+#define MD_TUNEPME        (1<<20)
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
@@ -404,6 +405,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz,int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
+	     const char *nbpu_opt,
 	     int nsteps_cmdline, int nstepout, int resetstep, int nmultisim, int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
 	     const char *deviceOptions, unsigned long Flags);

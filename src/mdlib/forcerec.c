@@ -1392,37 +1392,60 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 }
 
 /* Selects the non-bonded (Verlet) kernel to be used. */
-static void pick_nb_kernel(FILE *fp, const t_commrec *cr,
-                           nonbonded_verlet_t *nbv, int *napc)
+static void pick_nb_kernel(FILE *fp,
+                           const t_commrec *cr,
+                           gmx_bool tryGPU, gmx_bool *useGPU,
+                           gmx_bool forceGPU,
+                           int *kernel_type,
+                           int *napc)
 {
     char *env;
-    gmx_bool emulateGPU;
+    gmx_bool emulateGPU=FALSE;
 
-    /* by default we'll use the 4x4 SSE kernels */
-    if (nbv->kernel_type == nbkNotSet)
+    if (tryGPU)
     {
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) ) && ! defined GMX_DOUBLE
-        if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
+        /* Try to use a GPU if GMX_GPU is not defined */
+        if (getenv("GMX_NO_GPU") != NULL)
         {
-            nbv->kernel_type = nbk4x4SSE;
-        }
-        else
-#endif
-        {
-            nbv->kernel_type = nbk4x4PlainC;
+            if (forceGPU)
+            {
+                gmx_fatal(FARGS,"Conflicting command line argument and env.var. for GPU use for non-bonded interactions");
+            }
+
+            tryGPU = FALSE;
+
+            if (MASTER(cr) == 0)
+            {
+                gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
+            }
         }
     }
 
-    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
-       calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
-       to also turn off GPU/CUDA initializations. */
-    emulateGPU = (((env = getenv("GMX_EMULATE_GPU")) != NULL) ||
-                  (getenv("GMX_NO_NONBONDED") != NULL));
+    /* by default we'll use the 4x4 SSE kernels */
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) ) && ! defined GMX_DOUBLE
+    if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
+    {
+        *kernel_type = nbk4x4SSE;
+    }
+    else
+#endif
+    {
+        *kernel_type = nbk4x4PlainC;
+    }
 
-    nbv->useGPU = FALSE;
+    if (tryGPU)
+    {
+        /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
+           calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
+       to also turn off GPU/CUDA initializations. */
+        emulateGPU = (((env = getenv("GMX_EMULATE_GPU")) != NULL) ||
+                      (getenv("GMX_NO_NONBONDED") != NULL));
+
+       *useGPU = FALSE;
+    }
     if (emulateGPU)
     {
-        nbv->kernel_type = nbk8x8x8PlainC;
+        *kernel_type = nbk8x8x8PlainC;
 
         if (env != NULL)
         {
@@ -1438,53 +1461,67 @@ static void pick_nb_kernel(FILE *fp, const t_commrec *cr,
             fprintf(fp, "Emulating GPU, using %d atoms per sub-cell\n", *napc);
         }
     }    
-    else
+    else if (tryGPU)
     {
-#ifdef GMX_GPU
-        /* Try to use a GPU if GMX_GPU is not defined */
-        if (getenv("GMX_NO_GPU") == NULL)
+#ifndef GMX_GPU
+        if (forceGPU)
         {
-            int gpu_device_id;
+            gmx_fatal(FARGS,"GPU requested for non-bonded interactions, but %s was compiled without GPU support",ShortProgram());
+        }
+#else
+        /* Try to use a GPU */
 
-            nbv->kernel_type = nbk8x8x8CUDA;
+        int gpu_device_id;
+        int ngpu;
 
-            /* TODO: do the multi-GPU initilization properly */
-            /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
-               each process will try to use the GPU with id = procid
-               (within the node). */
-            gpu_device_id = cr->nc.rank_intra;
-            env = getenv("GMX_GPU_ID");
-            if (env != NULL)
+        *kernel_type = nbk8x8x8CUDA;
+
+        /* TODO: do the multi-GPU initilization properly */
+        /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
+           each process will try to use the GPU with id = procid
+           (within the node). */
+        gpu_device_id = cr->nc.rank_intra;
+        env = getenv("GMX_GPU_ID");
+        if (env != NULL)
+        {
+            sscanf(env, "%d",&gpu_device_id);
+            if (DOMAINDECOMP(cr) && MASTER(cr))
             {
-                sscanf(env, "%d",&gpu_device_id);
-                if (DOMAINDECOMP(cr) && MASTER(cr))
                 gmx_warning("Running in parallel and GMX_GPU_ID is set, "
                             "all processes on the same node will share GPU #%d.");
             }
-            if (init_gpu(fp, gpu_device_id) != 0)
-            {
-                gmx_fatal(FARGS, "Could not initialize GPU #%d", gpu_device_id);
-            }
-            else
-            {
-                nbv->useGPU = TRUE;
-            }
+            /* If you set this env.var, you want to use a GPU */
+            forceGPU = TRUE;
+        }
+        if (init_gpu(fp, gpu_device_id) == 0)
+        {
+            ngpu = 1;
+        }
+        else
+        {
+            ngpu = 0;
+        }
+        /* In parallel we need to check if every node has a GPU */
+        if (PAR(cr))
+        {
+            gmx_sumi(1,&ngpu,cr);
+        }
+        if (ngpu < cr->nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
+        {
+            gmx_fatal(FARGS, "Could not initialize GPU #%d", gpu_device_id);
+        }
+        else if (ngpu > 0)
+        {
+            *useGPU = TRUE;
 
             *napc = GPU_NS_CELL_SIZE;
-        }
-        else 
-        {
-            if (MASTER(cr) == 0)
-            {
-                gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
-            }
         }
 #endif
     }
 
     if (fp != NULL)
     {
-        fprintf(fp,"Using %s non-bonded kernels\n\n",nbk_name[nbv->kernel_type]);
+        fprintf(fp,"Using %s non-bonded kernels\n\n",nbk_name[*kernel_type]);
     }
 }
 
@@ -1566,7 +1603,7 @@ void init_interaction_const(FILE *fp,
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        init_interaction_const_tables(fp,ic,fr->nbv->kernel_type);
+        init_interaction_const_tables(fp,ic,fr->nbv->grp[fr->nbv->nloc-1].kernel_type);
     }
 }
 
@@ -1575,23 +1612,52 @@ static void init_nb_verlet(FILE *fp,
                            int *napc,
                            const t_inputrec *ir,
                            const t_forcerec *fr,
-                           const t_commrec *cr)
+                           const t_commrec *cr,
+                           const char *nbpu_opt)
 {
     nonbonded_verlet_t *nbv;
+    int  i;
     char *env;
 
-    gmx_nbat_alloc_t *nb_alloc = NULL;
-    gmx_nbat_free_t  *nb_free  = NULL;
+    gmx_nbat_alloc_t *nb_alloc;
+    gmx_nbat_free_t  *nb_free;
 
     snew(nbv, 1);
 
     nbv->nbs                     = NULL;
-    nbv->nbl_lists[eintLocal]    = NULL;
-    nbv->nbl_lists[eintNonlocal] = NULL;
-    nbv->nbat                    = NULL;
-    nbv->kernel_type             = nbkNotSet;
 
-    pick_nb_kernel(fp, cr, nbv, napc);
+    nbv->nloc = (DOMAINDECOMP(cr) ? 2 : 1);
+    for(i=0; i<nbv->nloc; i++)
+    {
+        nbv->grp[i].nbl_lists.nnbl = 0;
+        nbv->grp[i].nbat           = NULL;
+        nbv->grp[i].kernel_type    = nbkNotSet;
+
+        if (i == 0)
+        {
+            pick_nb_kernel(fp, cr,
+                           (nbpu_opt != NULL &&
+                            (strncmp(nbpu_opt,"gpu",3) == 0 ||
+                             strcmp(nbpu_opt,"auto") == 0)),
+                           &nbv->useGPU,
+                           strncmp(nbpu_opt,"gpu",3) == 0,
+                           &nbv->grp[i].kernel_type, napc);
+        }
+        else
+        {
+            if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
+            {
+                /* Use GPU for local, select a CPU kernel for non-local */
+                pick_nb_kernel(fp, cr, FALSE, NULL, FALSE,
+                               &nbv->grp[i].kernel_type, napc);
+            }
+            else
+            {
+                /* Use the same kernel for local and non-local interactions */
+                 nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
+            }
+        }
+    }
 
     if (nbv->useGPU)
     {
@@ -1625,53 +1691,52 @@ static void init_nb_verlet(FILE *fp,
 
     *nb_verlet = nbv;
 
-
-    if (nbv->kernel_type == nbk8x8x8CUDA)
-    {
-#ifdef GMX_GPU
-        nb_alloc = &pmalloc;
-        nb_free  = &pfree;
-#endif
-    }
-
     gmx_nbsearch_init(&nbv->nbs,
                       DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                      is_nbl_type_simple(nbv->kernel_type),
+                      is_nbl_type_simple(nbv->grp[0].kernel_type),
                       *napc,
                       fr->nthreads);
 
-    snew(nbv->nbl_lists[eintLocal], 1);
-    gmx_nbl_list_init(nbv->nbl_lists[eintLocal],
-                      is_nbl_type_simple(nbv->kernel_type),
-                      /* 8x8x8 "non-simple" lists are ATM always combined */
-                      !is_nbl_type_simple(nbv->kernel_type),
-                      nb_alloc, nb_free);
-
-    if (DOMAINDECOMP(cr))
+    for(i=0; i<nbv->nloc; i++)
     {
-        snew(nbv->nbl_lists[eintNonlocal], 1);
-        gmx_nbl_list_init(nbv->nbl_lists[eintNonlocal],
-                          is_nbl_type_simple(nbv->kernel_type),
+#ifdef GMX_GPU
+        if (nbv->grp[0].kernel_type == nbk8x8x8CUDA)
+        {
+            nb_alloc = &pmalloc;
+            nb_free  = &pfree;
+        }
+        else
+#endif
+        {
+            nb_alloc = NULL;
+            nb_free  = NULL;
+        }
+
+        gmx_nbl_list_init(&nbv->grp[i].nbl_lists,
+                          is_nbl_type_simple(nbv->grp[i].kernel_type),
                           /* 8x8x8 "non-simple" lists are ATM always combined */
-                          !is_nbl_type_simple(nbv->kernel_type),
+                          !is_nbl_type_simple(nbv->grp[i].kernel_type),
                           nb_alloc, nb_free);
-    }
-    else
-    {
-        nbv->nbl_lists[eintNonlocal] = NULL;
-    }
 
-    snew(nbv->nbat,1);
-    gmx_nb_atomdata_init(fp,
-                         nbv->nbat,
-                         nbv->nbs,
-                         nbv->kernel_type == nbk4x4SSE,
-                         fr->ntype,fr->nbfp,
-                         ir->opts.ngener,
-                         is_nbl_type_simple(nbv->kernel_type) ? fr->nthreads : 1,
-                         nb_alloc, nb_free);
-
+        if (i == 0 ||
+            nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
+        {
+            snew(nbv->grp[i].nbat,1);
+            gmx_nb_atomdata_init(fp,
+                                 nbv->grp[i].nbat,
+                                 is_nbl_type_simple(nbv->grp[i].kernel_type),
+                                 nbv->grp[i].kernel_type == nbk4x4SSE,
+                                 fr->ntype,fr->nbfp,
+                                 ir->opts.ngener,
+                                 is_nbl_type_simple(nbv->grp[i].kernel_type) ? fr->nthreads : 1,
+                                 nb_alloc, nb_free);
+        }
+        else
+        {
+            nbv->grp[i].nbat = nbv->grp[0].nbat;
+        }
+    }
 }
 
 void init_forcerec(FILE *fp,
@@ -1686,7 +1751,8 @@ void init_forcerec(FILE *fp,
                    const char *tabfn,
                    const char *tabpfn,
                    const char *tabbfn,
-                   gmx_bool       bNoSolvOpt,
+                   const char *nbpu_opt,
+                   gmx_bool   bNoSolvOpt,
                    real       print_force)
 {
     int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
@@ -2207,7 +2273,7 @@ void init_forcerec(FILE *fp,
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, &napc, ir, fr, cr);
+        init_nb_verlet(fp, &fr->nbv, &napc, ir, fr, cr, nbpu_opt);
 
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.

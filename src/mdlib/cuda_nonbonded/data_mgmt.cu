@@ -142,7 +142,7 @@ void init_nb_params(cu_nb_params_t *nbp,
     cudaError_t stat;
     int         ntypes, nnbfp; 
 
-    ntypes  = nbv->nbat->ntype;
+    ntypes  = nbv->grp[0].nbat->ntype;
     
     nbp->ewald_beta = ic->ewaldcoeff;
     nbp->epsfac     = ic->epsfac;
@@ -181,7 +181,7 @@ void init_nb_params(cu_nb_params_t *nbp,
     nnbfp = 2*ntypes*ntypes;
     stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp"); 
-    upload_cudata(nbp->nbfp, nbv->nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
+    upload_cudata(nbp->nbfp, nbv->grp[0].nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
     cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
 }
 
@@ -362,7 +362,7 @@ void init_cudata_ff(FILE *fplogi,
                     const interaction_const_t *ic,
                     const nonbonded_verlet_t *nbv)
 {
-    init_atomdata(cu_nb->atomdata, nbv->nbat->ntype);
+    init_atomdata(cu_nb->atomdata, nbv->grp[0].nbat->ntype);
     init_nb_params(cu_nb->nb_params, ic, nbv);
 
     /* clear energy and shift force outputs */

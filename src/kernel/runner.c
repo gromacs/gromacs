@@ -143,6 +143,7 @@ struct mdrunner_arglist
     const char *ddcsx;
     const char *ddcsy;
     const char *ddcsz;
+    const char *nbpu_opt;
     int nsteps_cmdline;
     int nstepout;
     int resetstep;
@@ -186,6 +187,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
+                      mc.nbpu_opt,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
                       mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.Flags);
@@ -202,6 +204,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
               ivec ddxyz,int dd_node_order,real rdd,real rconstr,
               const char *dddlb_opt,real dlb_scale,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
+              const char *nbpu_opt,
               int nsteps_cmdline, int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
               int repl_ex_seed, real pforce,real cpt_period, real max_hours, 
               const char *deviceOptions, unsigned long Flags)
@@ -239,6 +242,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->ddcsx=ddcsx;
     mda->ddcsy=ddcsy;
     mda->ddcsz=ddcsz;
+    mda->nbpu_opt=nbpu_opt;
     mda->nsteps_cmdline=nsteps_cmdline;
     mda->nstepout=nstepout;
     mda->resetstep=resetstep;
@@ -354,6 +358,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
+             const char *nbpu_opt,
              int nsteps_cmdline, int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
              int repl_ex_seed, real pforce,real cpt_period,real max_hours,
              const char *deviceOptions, unsigned long Flags)
@@ -420,6 +425,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                       oenv, bVerbose, bCompact, nstglobalcomm, 
                                       ddxyz, dd_node_order, rdd, rconstr, 
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
+                                      nbpu_opt,
                                       nsteps_cmdline, nstepout, resetstep, nmultisim, 
                                       repl_ex_nst, repl_ex_seed, pforce, 
                                       cpt_period, max_hours, deviceOptions, 
@@ -722,6 +728,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
+                      nbpu_opt,
                       FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */

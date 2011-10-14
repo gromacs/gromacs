@@ -446,10 +446,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
 
-    if (fr->cutoff_scheme == ecutsVERLET &&
+    if ((Flags & MD_TUNEPME) &&
+        fr->cutoff_scheme == ecutsVERLET &&
         EEL_PME(fr->eeltype) && fr->nbv->useGPU &&
-        !bRerunMD &&
-        getenv("GMX_NO_TUNEPME") == NULL)
+        !bRerunMD)
     {
         switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
         cycles_pmes = 0;

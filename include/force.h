@@ -166,7 +166,8 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  gmx_bool       bNoSolvOpt,
+		          const char *nbpu_opt,
+			  gmx_bool   bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
  * The gmx_booleans have the following meaning:

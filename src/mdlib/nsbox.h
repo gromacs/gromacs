@@ -66,6 +66,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               const int *atinfo,
                               rvec *x,
                               int nmoved,int *move,
+                              gmx_bool simple,
                               gmx_nb_atomdata_t *nbat);
 
 /* As gmx_nbsearch_put_on_grid, but for the non-local atoms
@@ -76,7 +77,12 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        const gmx_domdec_zones_t *zones,
                                        const int *atinfo,
                                        rvec *x,
+                                       gmx_bool simple,
                                        gmx_nb_atomdata_t *nbat);
+
+/* Add simple grid type information to the local super/sub grid */
+void gmx_nbsearch_grid_simple(gmx_nbsearch_t nbs,
+                              gmx_nb_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy);
@@ -121,7 +127,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
  */
 void gmx_nb_atomdata_init(FILE *fp,
                           gmx_nb_atomdata_t *nbat,
-                          const gmx_nbsearch_t nbs,
+                          gmx_bool simple,
                           gmx_bool XFormatXXXX,
                           int ntype,const real *nbfp,
                           int n_energygroups,
@@ -131,6 +137,7 @@ void gmx_nb_atomdata_init(FILE *fp,
 
 /* Copy the atom data to the non-bonded atom data structure */
 void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
+                         int aloc,
                          const gmx_nbsearch_t nbs,
                          const t_mdatoms *mdatoms,
                          const int *atinfo);
@@ -140,9 +147,12 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
                                    gmx_nb_atomdata_t *nbat);
 
-/* Copy x to nbat->x */
+/* Copy x to nbat->x.
+ * FillLocal tells if the local filler particle coordinates should be zeroed.
+ */
 void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
                                       int aloc,
+                                      gmx_bool FillLocal,
                                       rvec *x,
                                       gmx_nb_atomdata_t *nbat);
 

@@ -8978,7 +8978,8 @@ void dd_partition_system(FILE            *fplog,
                                      fr->cginfo,
                                      state_local->x,
                                      ncg_moved,comm->moved,
-                                     fr->nbv->nbat);
+                                     fr->nbv->grp[eintLocal].nbl_lists.simple,
+                                     fr->nbv->grp[eintLocal].nbat);
 
             gmx_nbsearch_get_ncells(fr->nbv->nbs,&ncells_new[XX],&ncells_new[YY]);
         }
