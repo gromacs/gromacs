@@ -211,7 +211,7 @@ extern tMPI_Comm TMPI_COMM_WORLD;
 #define TMPI_GROUP_NULL NULL
 
 /** the empty group */
-extern tMPI_Group tMPI_GROUP_EMPTY;
+extern tMPI_Group TMPI_GROUP_EMPTY;
 
 
 /** The maximum processor name returned using tMPI_Get_processor_name(). */
