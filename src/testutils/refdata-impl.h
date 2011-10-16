@@ -59,6 +59,34 @@ class TestReferenceData::Impl
     public:
         static const xmlChar * const cXmlVersion;
         static const xmlChar * const cRootNodeName;
+
+        explicit Impl(ReferenceDataMode mode);
+        ~Impl();
+
+        //! Full path of the reference data file.
+        std::string             _fullFilename;
+        /*! \brief
+         * XML document for the reference data.
+         *
+         * May be NULL if there was an I/O error in initialization.
+         */
+        xmlDocPtr               _refDoc;
+        /*! \brief
+         * Whether the reference data is being written (true) or compared
+         * (false).
+         */
+        bool                    _bWrite;
+};
+
+
+/*! \internal \brief
+ * Private implementation class for TestReferenceChecker.
+ *
+ * \ingroup module_testutils
+ */
+class TestReferenceChecker::Impl
+{
+    public:
         static const xmlChar * const cCompoundNodeName;
         static const xmlChar * const cBooleanNodeName;
         static const xmlChar * const cStringNodeName;
@@ -73,8 +101,7 @@ class TestReferenceData::Impl
         static const char * const cSequenceVectorType;
         static const char * const cSequenceLengthName;
 
-        Impl(ReferenceDataMode mode);
-        ~Impl();
+        Impl(xmlNodePtr rootNode, bool bWrite);
 
         xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
         std::string processItem(const xmlChar *name, const char *id,
@@ -83,48 +110,32 @@ class TestReferenceData::Impl
                                 const std::string &value, bool *bFound);
         bool shouldIgnore() const;
 
-        //! Full path of the reference data file.
-        std::string             _fullFilename;
         /*! \brief
-         * Whether the reference data is being written (true) or compared
-         * (false).
-         */
-        bool                    _bWrite;
-        /*! \brief
-         * XML document for the reference data.
+         * Current node under which reference data is searched.
          *
-         * May be NULL if there was an I/O error in initialization.
-         */
-        xmlDocPtr               _refDoc;
-        /*! \brief
-         * Current nore in \a _refDoc under which reference data is searched.
+         * Points to either the root of TestReferenceData::Impl::_refDoc, or to
+         * a compound node.
          *
-         * On initialization, points to the root of \a _refDoc.  Is changed only
-         * when compound groups are started or finished.
-         *
-         * Is NULL if and only if \a _refDoc is NULL.
+         * Can be NULL, in which case this checker does nothing (doesn't even
+         * report errors).
          */
         xmlNodePtr              _currNode;
         /*! \brief
-         * Points to a child of \a _currNode where the next search shoudl start.
+         * Points to a child of \a _currNode where the next search should start.
          *
-         * On initialization or when entering a compound node, points to the
-         * first child of \a _currNode.  After every check, is updated to point
-         * to the node following the one found, with possible wrapping.
-         * On leaving a compound, is updated to point to the node following the
-         * compound.
+         * On initialization, points to the first child of \a _currNode.  After
+         * every check, is updated to point to the node following the one
+         * found, with possible wrapping.
          *
          * Is NULL if and only if \a _currNode contains no children.
          * Otherwise, always points to a direct child of \a _currNode.
          */
         xmlNodePtr              _nextSearchNode;
         /*! \brief
-         * Count of currently failed startCompound() calls.
-         *
-         * If larger than 0, currently we are within a non-existent compound,
-         * so all comparisons should be ignored.
+         * Whether the reference data is being written (true) or compared
+         * (false).
          */
-        int                     _failedCompounds;
+        bool                    _bWrite;
 };
 
 } // namespace test
