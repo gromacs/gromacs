@@ -146,7 +146,10 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
 
-        SelectionCollectionDataTest() : _count(0), _framenr(0) {}
+        SelectionCollectionDataTest()
+            : _checker(_data.rootChecker()), _count(0), _framenr(0)
+        {
+        }
 
         void setFlags(TestFlags flags) { _flags = flags; }
 
@@ -161,6 +164,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
         void runEvaluateFinal();
 
         gmx::test::TestReferenceData  _data;
+        gmx::test::TestReferenceChecker _checker;
         size_t                        _count;
         int                           _framenr;
         TestFlags                     _flags;
@@ -170,6 +174,8 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 void
 SelectionCollectionDataTest::runParser(const char *const *selections)
 {
+    using gmx::test::TestReferenceChecker;
+
     size_t varcount = 0;
     _count = 0;
     for (size_t i = 0; selections[i] != NULL; ++i)
@@ -181,20 +187,18 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
         if (_sel.size() == _count)
         {
             snprintf(buf, 50, "Variable%dParse", static_cast<int>(varcount + 1));
-            _data.startCompound("VariableParse", buf);
-            _data.checkString(selections[i], "Input");
-            _data.finishCompound();
+            TestReferenceChecker compound(_checker.checkCompound("VariableParse", buf));
+            compound.checkString(selections[i], "Input");
             ++varcount;
         }
         else
         {
             snprintf(buf, 50, "Selection%dParse", static_cast<int>(_count + 1));
-            _data.startCompound("SelectionParse", buf);
-            _data.checkString(selections[i], "Input");
-            _data.checkString(_sel[_count]->name(), "Name");
-            _data.checkString(_sel[_count]->selectionText(), "Text");
-            _data.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
-            _data.finishCompound();
+            TestReferenceChecker compound(_checker.checkCompound("SelectionParse", buf));
+            compound.checkString(selections[i], "Input");
+            compound.checkString(_sel[_count]->name(), "Name");
+            compound.checkString(_sel[_count]->selectionText(), "Text");
+            compound.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
             ++_count;
         }
     }
@@ -213,30 +217,31 @@ SelectionCollectionDataTest::runCompiler()
 void
 SelectionCollectionDataTest::checkCompiled()
 {
+    using gmx::test::TestReferenceChecker;
+
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
                      _sel[i]->selectionText() + "\"");
         char buf[50];
         snprintf(buf, 50, "Selection%dCompile", static_cast<int>(i + 1));
-        _data.startCompound("SelectionCompile", buf);
+        TestReferenceChecker compound(_checker.checkCompound("SelectionCompile", buf));
         if (_sel[i]->indexGroup() != NULL)
         {
-            _data.checkSequenceInteger(_sel[i]->indexGroup()->isize,
-                                       _sel[i]->indexGroup()->index,
-                                       "Atoms");
+            compound.checkSequenceInteger(_sel[i]->indexGroup()->isize,
+                                          _sel[i]->indexGroup()->index,
+                                          "Atoms");
         }
         else
         {
-            _data.checkSequenceInteger(0, NULL, "Atoms");
+            compound.checkSequenceInteger(0, NULL, "Atoms");
         }
         if (_flags.test(efTestPositionBlocks))
         {
-            _data.checkSequenceInteger(_sel[i]->posCount() + 1,
-                                       _sel[i]->positions()->m.mapb.index,
-                                       "PositionBlocks");
+            compound.checkSequenceInteger(_sel[i]->posCount() + 1,
+                                          _sel[i]->positions()->m.mapb.index,
+                                          "PositionBlocks");
         }
-        _data.finishCompound();
     }
 }
 
@@ -244,6 +249,8 @@ SelectionCollectionDataTest::checkCompiled()
 void
 SelectionCollectionDataTest::runEvaluate()
 {
+    using gmx::test::TestReferenceChecker;
+
     ++_framenr;
     ASSERT_NO_THROW(_sc.evaluate(_frame, NULL));
     for (size_t i = 0; i < _count; ++i)
@@ -253,30 +260,29 @@ SelectionCollectionDataTest::runEvaluate()
         char buf[50];
         snprintf(buf, 50, "Selection%dFrame%d",
                  static_cast<int>(i + 1), _framenr);
-        _data.startCompound("SelectionFrame", buf);
+        TestReferenceChecker compound(_checker.checkCompound("SelectionFrame", buf));
         if (_sel[i]->indexGroup() != NULL)
         {
-            _data.checkSequenceInteger(_sel[i]->indexGroup()->isize,
-                                       _sel[i]->indexGroup()->index,
-                                       "Atoms");
+            compound.checkSequenceInteger(_sel[i]->indexGroup()->isize,
+                                          _sel[i]->indexGroup()->index,
+                                          "Atoms");
         }
         else
         {
-            _data.checkSequenceInteger(0, NULL, "Atoms");
+            compound.checkSequenceInteger(0, NULL, "Atoms");
         }
         if (_flags.test(efTestPositionBlocks))
         {
-            _data.checkSequenceInteger(_sel[i]->posCount() + 1,
-                                       _sel[i]->positions()->m.mapb.index,
-                                       "PositionBlocks");
+            compound.checkSequenceInteger(_sel[i]->posCount() + 1,
+                                          _sel[i]->positions()->m.mapb.index,
+                                          "PositionBlocks");
         }
         if (_flags.test(efTestPositions))
         {
-            _data.checkSequenceVector(_sel[i]->posCount(),
-                                      _sel[i]->positions()->x,
-                                       "Positions");
+            compound.checkSequenceVector(_sel[i]->posCount(),
+                                         _sel[i]->positions()->x,
+                                         "Positions");
         }
-        _data.finishCompound();
     }
 }
 
@@ -285,7 +291,7 @@ void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
     ASSERT_NO_THROW(_sc.evaluateFinal(_framenr));
-    if (!_data.isWriteMode())
+    if (!_checker.isWriteMode())
     {
         checkCompiled();
     }
