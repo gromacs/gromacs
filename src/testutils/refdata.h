@@ -109,6 +109,8 @@ std::string getReferenceDataPath();
  */
 int initReferenceData(int *argc, char **argv);
 
+class TestReferenceChecker;
+
 /*! \libinternal \brief
  * Handles creation of and comparison to test reference data.
  *
@@ -117,24 +119,15 @@ int initReferenceData(int *argc, char **argv);
  * reference.  The mode in which the class operates (writing reference data or
  * comparing against existing data) is set with parseReferenceDataArgs(), which
  * is automatically called when using the testutils module to implement tests.
- * Tests only need to create an instance of TestReferenceData and use the
- * various check*() methods to indicate values to check.  If the test is running
- * in reference data creation mode, it will produce an XML file with the values
- * recorder.  In comparison mode, it will read that same XML file and produce a
- * Google Test non-fatal assertion for every discrepancy it detects with the
- * reference data.  Fatal Google Test assertions are produced for I/O errors,
- * syntax errors in the reference data, and inability to find the value to be
- * checked in the reference data (indicative of out-of-date reference data).
- *
- * Every check*() method takes an id string as the last parameter.  This id is
- * used to uniquely identify the value in the reference data, and it makes the
- * output XML more human-friendly and more robust to errors.  The id can be
- * NULL; in this case, multiple elements with no id are created, and they will
- * be matched in the same order as in which they are created.  The
- * startCompound() method can be used to create a set of reference values
- * grouped together.  In this case, all check*() calls until the corresponding
- * finishCompound() will create the reference data within this group, and the
- * ids only need to be unique within the compound.  Compounds can be nested.
+ * Tests only need to create an instance of TestReferenceData, obtain a
+ * TestReferenceChecker using the rootChecker() method and use the various
+ * check*() methods in TestReferenceChecker to indicate values to check.  If
+ * the test is running in reference data creation mode, it will produce an XML
+ * file with the values recorder.  In comparison mode, it will read that same
+ * XML file and produce a Google Test non-fatal assertion for every discrepancy
+ * it detects with the reference data (including missing reference data file or
+ * individual item).  Exceptions derived from TestException are thrown for I/O
+ * errors and syntax errors in the reference data.
  *
  * Simple example (using Google Test):
  * \code
@@ -144,8 +137,13 @@ TEST(MyTest, SimpleTest)
 {
     gmx::test::TestReferenceData data;
 
-    data.checkInteger(functionToTest(3), "ValueWith3");
-    data.checkInteger(functionToTest(5), "ValueWith5");
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    checker.checkInteger(functionToTest(3), "ValueWith3");
+    checker.checkInteger(functionToTest(5), "ValueWith5");
+    gmx::test::TestReferenceChecker compound(checker.startCompound("CustomCompound", "Item"));
+    compound.checkInteger(function2ToTest(3), "ValueWith3");
+    compound.checkInteger(function2ToTest(5), "ValueWith5");
+    checker.checkInteger(functionToTest(4), "ValueWith4");
 }
  * \endcode
  *
@@ -183,20 +181,75 @@ class TestReferenceData
         bool isWriteMode() const;
 
         /*! \brief
-         * Starts a group of related data items.
+         * Returns a root-level checker object for comparisons.
+         *
+         * Each call returns an independent instance.
+         */
+        TestReferenceChecker rootChecker();
+
+    private:
+        class Impl;
+
+        Impl                   *_impl;
+
+        // Disallow copy and assign.
+        TestReferenceData(const TestReferenceData &);
+        void operator =(const TestReferenceData &);
+};
+
+/*! \libinternal \brief
+ * Handles comparison to test reference data.
+ *
+ * Every check*() method takes an id string as the last parameter.  This id is
+ * used to uniquely identify the value in the reference data, and it makes the
+ * output XML more human-friendly and more robust to errors.  The id can be
+ * NULL; in this case, multiple elements with no id are created, and they will
+ * be matched in the same order as in which they are created.  The
+ * checkCompound() method can be used to create a set of reference values
+ * grouped together.  In this case, all check*() calls using the returned child
+ * TestReferenceChecker object will create the reference data within this
+ * group, and the ids only need to be unique within the compound.  Compounds
+ * can be nested.
+ *
+ * For usage example, see TestReferenceData.
+ *
+ * Copies of this class behave have independent internal state.
+ *
+ * This class is only available if both Google Test and libxml2 are enabled.
+ * If either one is missing, trying to use this class will result in unresolved
+ * symbols in linking.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class TestReferenceChecker
+{
+    public:
+        /*! \brief
+         * Creates a deep copy of the other checker.
+         */
+        TestReferenceChecker(const TestReferenceChecker &other);
+        ~TestReferenceChecker();
+
+        TestReferenceChecker &operator =(const TestReferenceChecker &other);
+
+        //! Returns true if reference data is currently being written.
+        bool isWriteMode() const;
+
+        /*! \brief
+         * Initializes comparison of a group of related data items.
          *
          * \param[in] type Informational type for the compound.
          * \param[in] id   Unique identifier for the compound among its
          *                 siblings.
+         * \returns   Checker to use for comparison within the compound.
          *
-         * All checks performed before the corresponding finishCompound() only
+         * All checks performed with the returned checker only
          * need to have unique ids within the compound, not globally.
          *
          * Compound structures can be nested.
          */
-        void startCompound(const char *type, const char *id);
-        //! Finish a compound structure started with startCompound().
-        void finishCompound();
+        TestReferenceChecker checkCompound(const char *type, const char *id);
 
         //! Check a single boolean value.
         void checkBoolean(bool value, const char *id);
@@ -239,11 +292,21 @@ class TestReferenceData
     private:
         class Impl;
 
+        /*! \brief
+         * Constructs a checker with a specific internal state.
+         *
+         * Is private to only allow users of this class to create instances
+         * using TestReferenceData::rootChecker() or checkCompound()
+         * (or by copying).
+         */
+        explicit TestReferenceChecker(Impl *impl);
+
         Impl                   *_impl;
 
-        // Disallow copy and assign.
-        TestReferenceData(const TestReferenceData &);
-        void operator =(const TestReferenceData &);
+        /*! \brief
+         * Needed to expose the constructor only to TestReferenceData.
+         */
+        friend class TestReferenceData;
 };
 
 } // namespace test

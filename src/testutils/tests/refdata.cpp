@@ -48,20 +48,23 @@ namespace
 TEST(ReferenceDataTest, HandlesSimpleData)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkBoolean(true, "int");
-        data.checkInteger(1, "int");
-        data.checkDouble(0.5, "real");
-        data.checkString("Test", "string");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkBoolean(true, "int");
+        checker.checkInteger(1, "int");
+        checker.checkDouble(0.5, "real");
+        checker.checkString("Test", "string");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        data.checkBoolean(true, "int");
-        data.checkInteger(1, "int");
-        data.checkDouble(0.5, "real");
-        data.checkString("Test", "string");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkBoolean(true, "int");
+        checker.checkInteger(1, "int");
+        checker.checkDouble(0.5, "real");
+        checker.checkString("Test", "string");
     }
 }
 
@@ -69,21 +72,24 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 TEST(ReferenceDataTest, HandlesVectorData)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
     int veci[3] = { -1, 3, 5 };
     float vecf[3] = { -2.3, 1.43, 2.5 };
     double vecd[3] = { -2.3, 1.43, 2.5 };
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkVector(veci, "ivec");
-        data.checkVector(vecf, "fvec");
-        data.checkVector(vecd, "dvec");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVector(veci, "ivec");
+        checker.checkVector(vecf, "fvec");
+        checker.checkVector(vecd, "dvec");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        data.checkVector(veci, "ivec");
-        data.checkVector(vecf, "fvec");
-        data.checkVector(vecd, "dvec");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVector(veci, "ivec");
+        checker.checkVector(vecf, "fvec");
+        checker.checkVector(vecd, "dvec");
     }
 }
 
@@ -91,15 +97,18 @@ TEST(ReferenceDataTest, HandlesVectorData)
 TEST(ReferenceDataTest, HandlesSequenceData)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkSequenceInteger(5, seq, "seq");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequenceInteger(5, seq, "seq");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        data.checkSequenceInteger(5, seq, "seq");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequenceInteger(5, seq, "seq");
     }
 }
 
@@ -107,23 +116,26 @@ TEST(ReferenceDataTest, HandlesSequenceData)
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkInteger(1, "int");
-        data.checkDouble(0.5, "real");
-        data.checkString("Test", "string");
-        data.checkSequenceInteger(5, seq, "seq");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkDouble(0.5, "real");
+        checker.checkString("Test", "string");
+        checker.checkSequenceInteger(5, seq, "seq");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        EXPECT_NONFATAL_FAILURE(data.checkInteger(2, "int"), "");
-        EXPECT_NONFATAL_FAILURE(data.checkDouble(0.3, "real"), "");
-        EXPECT_NONFATAL_FAILURE(data.checkString("Test2", "string"), "");
-        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(4, seq, "seq"), "");
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkInteger(2, "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkDouble(0.3, "real"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test2", "string"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceInteger(4, seq, "seq"), "");
         seq[0] = 2;
-        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(5, seq, "seq"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceInteger(5, seq, "seq"), "");
     }
 }
 
@@ -131,17 +143,20 @@ TEST(ReferenceDataTest, HandlesIncorrectData)
 TEST(ReferenceDataTest, HandlesMissingData)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkInteger(1, "int");
-        data.checkSequenceInteger(5, seq, "seq");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkSequenceInteger(5, seq, "seq");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        EXPECT_NONFATAL_FAILURE(data.checkInteger(1, "missing"), "");
-        EXPECT_NONFATAL_FAILURE(data.checkSequenceInteger(5, seq, "missing"), "");
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkInteger(1, "missing"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceInteger(5, seq, "missing"), "");
     }
 }
 
@@ -149,14 +164,16 @@ TEST(ReferenceDataTest, HandlesMissingData)
 TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     EXPECT_NONFATAL_FAILURE({
         TestReferenceData data(gmx::test::erefdataCompare);
-        data.checkInteger(1, "int");
-        data.checkDouble(0.5, "real");
-        data.checkString("Test", "string");
-        data.checkSequenceInteger(5, seq, "seq");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkDouble(0.5, "real");
+        checker.checkString("Test", "string");
+        checker.checkSequenceInteger(5, seq, "seq");
     }, "");
 }
 
@@ -164,14 +181,17 @@ TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
 TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
 {
     using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
 
     {
         TestReferenceData data(gmx::test::erefdataUpdateAll);
-        data.checkString("\"<'>\n \r &\\/;", "string");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("\"<'>\n \r &\\/;", "string");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
-        data.checkString("\"<'>\n \r &\\/;", "string");
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("\"<'>\n \r &\\/;", "string");
     }
 }
 

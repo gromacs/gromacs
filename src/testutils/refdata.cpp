@@ -66,37 +66,36 @@ const xmlChar * const TestReferenceData::Impl::cXmlVersion =
     (const xmlChar *)"1.0";
 const xmlChar * const TestReferenceData::Impl::cRootNodeName =
     (const xmlChar *)"ReferenceData";
-const xmlChar * const TestReferenceData::Impl::cCompoundNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cCompoundNodeName =
     (const xmlChar *)"Compound";
-const xmlChar * const TestReferenceData::Impl::cBooleanNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cBooleanNodeName =
     (const xmlChar *)"Bool";
-const xmlChar * const TestReferenceData::Impl::cStringNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cStringNodeName =
     (const xmlChar *)"String";
-const xmlChar * const TestReferenceData::Impl::cIntegerNodeName  =
+const xmlChar * const TestReferenceChecker::Impl::cIntegerNodeName  =
     (const xmlChar *)"Int";
-const xmlChar * const TestReferenceData::Impl::cRealNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cRealNodeName =
     (const xmlChar *)"Real";
-const xmlChar * const TestReferenceData::Impl::cVectorIntegerNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cVectorIntegerNodeName =
     (const xmlChar *)"Vector";
-const xmlChar * const TestReferenceData::Impl::cVectorRealNodeName =
+const xmlChar * const TestReferenceChecker::Impl::cVectorRealNodeName =
     (const xmlChar *)"Vector";
-const xmlChar * const TestReferenceData::Impl::cIdAttrName =
+const xmlChar * const TestReferenceChecker::Impl::cIdAttrName =
     (const xmlChar *)"Name";
-const xmlChar * const TestReferenceData::Impl::cCompoundTypeAttrName =
+const xmlChar * const TestReferenceChecker::Impl::cCompoundTypeAttrName =
     (const xmlChar *)"Subtype";
-const char * const TestReferenceData::Impl::cSequenceIntegerType =
+const char * const TestReferenceChecker::Impl::cSequenceIntegerType =
     "SequenceInteger";
-const char * const TestReferenceData::Impl::cSequenceRealType =
+const char * const TestReferenceChecker::Impl::cSequenceRealType =
     "SequenceReal";
-const char * const TestReferenceData::Impl::cSequenceVectorType =
+const char * const TestReferenceChecker::Impl::cSequenceVectorType =
     "SequenceVector";
-const char * const TestReferenceData::Impl::cSequenceLengthName =
+const char * const TestReferenceChecker::Impl::cSequenceLengthName =
     "Length";
 
 
 TestReferenceData::Impl::Impl(ReferenceDataMode mode)
-    : _bWrite(false), _refDoc(NULL), _currNode(NULL), _nextSearchNode(NULL),
-      _failedCompounds(0)
+    : _refDoc(NULL), _bWrite(false)
 {
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
@@ -123,10 +122,10 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
     }
     if (_bWrite)
     {
+        // TODO: Error checking
         _refDoc = xmlNewDoc(cXmlVersion);
-        _currNode = xmlNewDocNode(_refDoc, NULL, cRootNodeName, NULL);
-        _nextSearchNode = NULL;
-        xmlDocSetRootElement(_refDoc, _currNode);
+        xmlNodePtr rootNode = xmlNewDocNode(_refDoc, NULL, cRootNodeName, NULL);
+        xmlDocSetRootElement(_refDoc, rootNode);
     }
     else
     {
@@ -135,18 +134,17 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
         {
             GMX_THROW(TestException("Reference data not parsed successfully: " + _fullFilename));
         }
-        _currNode = xmlDocGetRootElement(_refDoc);
-        if (_currNode == NULL)
+        xmlNodePtr rootNode = xmlDocGetRootElement(_refDoc);
+        if (rootNode == NULL)
         {
             xmlFreeDoc(_refDoc);
             GMX_THROW(TestException("Reference data is empty: " + _fullFilename));
         }
-        if (xmlStrcmp(_currNode->name, cRootNodeName))
+        if (xmlStrcmp(rootNode->name, cRootNodeName) != 0)
         {
             xmlFreeDoc(_refDoc);
             GMX_THROW(TestException("Invalid root node type in " + _fullFilename));
         }
-        _nextSearchNode = _currNode->xmlChildrenNode;
     }
 }
 
@@ -167,8 +165,20 @@ TestReferenceData::Impl::~Impl()
 }
 
 
+/********************************************************************
+ * TestReferenceChecker::Impl
+ */
+
+TestReferenceChecker::Impl::Impl(xmlNodePtr rootNode, bool bWrite)
+    : _currNode(rootNode),
+      _nextSearchNode(rootNode != NULL ? rootNode->xmlChildrenNode : NULL),
+      _bWrite(bWrite)
+{
+}
+
+
 xmlNodePtr
-TestReferenceData::Impl::findOrCreateNode(const xmlChar *name, const char *id)
+TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id)
 {
     const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
     xmlNodePtr node = _nextSearchNode;
@@ -234,8 +244,8 @@ TestReferenceData::Impl::findOrCreateNode(const xmlChar *name, const char *id)
 
 
 std::string
-TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
-                                     const char *value, bool *bFound)
+TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
+                                        const char *value, bool *bFound)
 {
     *bFound = false;
     xmlNodePtr node = findOrCreateNode(name, id);
@@ -262,17 +272,17 @@ TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
 
 
 std::string
-TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
-                                     const std::string &value, bool *bFound)
+TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
+                                        const std::string &value, bool *bFound)
 {
     return processItem(name, id, value.c_str(), bFound);
 }
 
 
 bool
-TestReferenceData::Impl::shouldIgnore() const
+TestReferenceChecker::Impl::shouldIgnore() const
 {
-    return _refDoc == NULL || _currNode == NULL || _failedCompounds > 0;
+    return _currNode == NULL;
 }
 
 
@@ -304,23 +314,65 @@ bool TestReferenceData::isWriteMode() const
 }
 
 
-void TestReferenceData::startCompound(const char *type, const char *id)
+TestReferenceChecker TestReferenceData::rootChecker()
+{
+    xmlNodePtr rootNode =
+        _impl->_refDoc != NULL ? xmlDocGetRootElement(_impl->_refDoc) : NULL;
+    return TestReferenceChecker(new TestReferenceChecker::Impl(rootNode, isWriteMode()));
+}
+
+
+/********************************************************************
+ * TestReferenceChecker
+ */
+
+TestReferenceChecker::TestReferenceChecker(Impl *impl)
+    : _impl(impl)
+{
+}
+
+
+TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
+    : _impl(new Impl(*other._impl))
+{
+}
+
+
+TestReferenceChecker &
+TestReferenceChecker::operator =(const TestReferenceChecker &other)
+{
+    Impl *newImpl = new Impl(*other._impl);
+    std::swap(_impl, newImpl);
+    delete newImpl;
+    return *this;
+}
+
+
+TestReferenceChecker::~TestReferenceChecker()
+{
+    delete _impl;
+}
+
+
+bool TestReferenceChecker::isWriteMode() const
+{
+    return _impl->_bWrite;
+}
+
+
+TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const char *id)
 {
     if (_impl->shouldIgnore())
     {
-        ++_impl->_failedCompounds;
-        return;
+        return TestReferenceChecker(new Impl(NULL, isWriteMode()));
     }
     xmlNodePtr newNode = _impl->findOrCreateNode(Impl::cCompoundNodeName, id);
     if (newNode == NULL)
     {
         GMX_RELEASE_ASSERT(!isWriteMode(), "Node creation failed without exception");
-        ++_impl->_failedCompounds;
         ADD_FAILURE() << "Reference data item not found";
-        return;
+        return TestReferenceChecker(new Impl(NULL, isWriteMode()));
     }
-    _impl->_currNode = newNode;
-    _impl->_nextSearchNode = newNode->xmlChildrenNode;
     if (isWriteMode())
     {
         if (xmlNewProp(newNode, Impl::cCompoundTypeAttrName,
@@ -329,31 +381,11 @@ void TestReferenceData::startCompound(const char *type, const char *id)
             GMX_THROW(TestException("XML property creation failed"));
         }
     }
+    return TestReferenceChecker(new Impl(newNode, isWriteMode()));
 }
 
 
-void TestReferenceData::finishCompound()
-{
-    if (_impl->shouldIgnore())
-    {
-        GMX_RELEASE_ASSERT(_impl->_failedCompounds > 0,
-                           "startCompound() not called");
-        --_impl->_failedCompounds;
-        return;
-    }
-    GMX_RELEASE_ASSERT(NULL != _impl->_currNode, "Internal error");
-    GMX_RELEASE_ASSERT(NULL != _impl->_currNode->parent,
-                       "startCompound() not called");
-    _impl->_nextSearchNode = _impl->_currNode->next;
-    _impl->_currNode = _impl->_currNode->parent;
-    if (_impl->_nextSearchNode == NULL)
-    {
-        _impl->_nextSearchNode = _impl->_currNode->xmlChildrenNode;
-    }
-}
-
-
-void TestReferenceData::checkBoolean(bool value, const char *id)
+void TestReferenceChecker::checkBoolean(bool value, const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -370,7 +402,7 @@ void TestReferenceData::checkBoolean(bool value, const char *id)
 }
 
 
-void TestReferenceData::checkString(const char *value, const char *id)
+void TestReferenceChecker::checkString(const char *value, const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -386,13 +418,13 @@ void TestReferenceData::checkString(const char *value, const char *id)
 }
 
 
-void TestReferenceData::checkString(const std::string &value, const char *id)
+void TestReferenceChecker::checkString(const std::string &value, const char *id)
 {
     checkString(value.c_str(), id);
 }
 
 
-void TestReferenceData::checkInteger(int value, const char *id)
+void TestReferenceChecker::checkInteger(int value, const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -410,7 +442,7 @@ void TestReferenceData::checkInteger(int value, const char *id)
 }
 
 
-void TestReferenceData::checkDouble(double value, const char *id)
+void TestReferenceChecker::checkDouble(double value, const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -431,25 +463,25 @@ void TestReferenceData::checkDouble(double value, const char *id)
 }
 
 
-void TestReferenceData::checkFloat(float value, const char *id)
+void TestReferenceChecker::checkFloat(float value, const char *id)
 {
     checkDouble(value, id);
 }
 
 
-void TestReferenceData::checkReal(float value, const char *id)
+void TestReferenceChecker::checkReal(float value, const char *id)
 {
     checkDouble(value, id);
 }
 
 
-void TestReferenceData::checkReal(double value, const char *id)
+void TestReferenceChecker::checkReal(double value, const char *id)
 {
     checkDouble(value, id);
 }
 
 
-void TestReferenceData::checkVector(int value[3], const char *id)
+void TestReferenceChecker::checkVector(int value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -467,7 +499,7 @@ void TestReferenceData::checkVector(int value[3], const char *id)
 }
 
 
-void TestReferenceData::checkVector(float value[3], const char *id)
+void TestReferenceChecker::checkVector(float value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -493,7 +525,7 @@ void TestReferenceData::checkVector(float value[3], const char *id)
 }
 
 
-void TestReferenceData::checkVector(double value[3], const char *id)
+void TestReferenceChecker::checkVector(double value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -519,68 +551,63 @@ void TestReferenceData::checkVector(double value[3], const char *id)
 }
 
 
-void TestReferenceData::checkSequenceInteger(size_t length, int *values,
-                                             const char *id)
+void TestReferenceChecker::checkSequenceInteger(size_t length, int *values,
+                                                const char *id)
 {
-    startCompound(Impl::cSequenceIntegerType, id);
-    checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceIntegerType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     for (size_t i = 0; i < length; ++i)
     {
-        checkInteger(values[i], NULL);
+        compound.checkInteger(values[i], NULL);
     }
-    finishCompound();
 }
 
 
-void TestReferenceData::checkSequenceDouble(size_t length, double *values,
-                                            const char *id)
+void TestReferenceChecker::checkSequenceDouble(size_t length, double *values,
+                                               const char *id)
 {
-    startCompound(Impl::cSequenceRealType, id);
-    checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceRealType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     for (size_t i = 0; i < length; ++i)
     {
-        checkDouble(values[i], NULL);
+        compound.checkDouble(values[i], NULL);
     }
-    finishCompound();
 }
 
 
-void TestReferenceData::checkSequenceVector(size_t length, int values[][3],
-                                            const char *id)
+void TestReferenceChecker::checkSequenceVector(size_t length, int values[][3],
+                                               const char *id)
 {
-    startCompound(Impl::cSequenceVectorType, id);
-    checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     for (size_t i = 0; i < length; ++i)
     {
-        checkVector(values[i], NULL);
+        compound.checkVector(values[i], NULL);
     }
-    finishCompound();
 }
 
 
-void TestReferenceData::checkSequenceVector(size_t length, float values[][3],
-                                            const char *id)
+void TestReferenceChecker::checkSequenceVector(size_t length, float values[][3],
+                                               const char *id)
 {
-    startCompound(Impl::cSequenceVectorType, id);
-    checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     for (size_t i = 0; i < length; ++i)
     {
-        checkVector(values[i], NULL);
+        compound.checkVector(values[i], NULL);
     }
-    finishCompound();
 }
 
 
-void TestReferenceData::checkSequenceVector(size_t length, double values[][3],
-                                            const char *id)
+void TestReferenceChecker::checkSequenceVector(size_t length, double values[][3],
+                                              const char *id)
 {
-    startCompound(Impl::cSequenceVectorType, id);
-    checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     for (size_t i = 0; i < length; ++i)
     {
-        checkVector(values[i], NULL);
+        compound.checkVector(values[i], NULL);
     }
-    finishCompound();
 }
 
 } // namespace test
