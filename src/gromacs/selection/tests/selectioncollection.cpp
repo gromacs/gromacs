@@ -224,19 +224,19 @@ SelectionCollectionDataTest::checkCompiled()
         TestReferenceChecker compound(_checker.checkCompound("SelectionCompile", buf));
         if (_sel[i]->indexGroup() != NULL)
         {
-            compound.checkSequenceInteger(_sel[i]->indexGroup()->isize,
-                                          _sel[i]->indexGroup()->index,
-                                          "Atoms");
+            compound.checkSequenceArray(_sel[i]->indexGroup()->isize,
+                                        _sel[i]->indexGroup()->index,
+                                        "Atoms");
         }
         else
         {
-            compound.checkSequenceInteger(0, NULL, "Atoms");
+            compound.checkSequenceArray(0, (int *)NULL, "Atoms");
         }
         if (_flags.test(efTestPositionBlocks))
         {
-            compound.checkSequenceInteger(_sel[i]->posCount() + 1,
-                                          _sel[i]->positions()->m.mapb.index,
-                                          "PositionBlocks");
+            compound.checkSequenceArray(_sel[i]->posCount() + 1,
+                                        _sel[i]->positions()->m.mapb.index,
+                                        "PositionBlocks");
         }
     }
 }
@@ -259,25 +259,25 @@ SelectionCollectionDataTest::runEvaluate()
         TestReferenceChecker compound(_checker.checkCompound("SelectionFrame", buf));
         if (_sel[i]->indexGroup() != NULL)
         {
-            compound.checkSequenceInteger(_sel[i]->indexGroup()->isize,
-                                          _sel[i]->indexGroup()->index,
-                                          "Atoms");
+            compound.checkSequenceArray(_sel[i]->indexGroup()->isize,
+                                        _sel[i]->indexGroup()->index,
+                                        "Atoms");
         }
         else
         {
-            compound.checkSequenceInteger(0, NULL, "Atoms");
+            compound.checkSequenceArray(0, (int *)NULL, "Atoms");
         }
         if (_flags.test(efTestPositionBlocks))
         {
-            compound.checkSequenceInteger(_sel[i]->posCount() + 1,
-                                          _sel[i]->positions()->m.mapb.index,
-                                          "PositionBlocks");
+            compound.checkSequenceArray(_sel[i]->posCount() + 1,
+                                        _sel[i]->positions()->m.mapb.index,
+                                        "PositionBlocks");
         }
         if (_flags.test(efTestPositions))
         {
-            compound.checkSequenceVector(_sel[i]->posCount(),
-                                         _sel[i]->positions()->x,
-                                         "Positions");
+            compound.checkSequenceArray(_sel[i]->posCount(),
+                                        _sel[i]->positions()->x,
+                                        "Positions");
         }
     }
 }
