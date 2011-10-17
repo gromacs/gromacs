@@ -481,7 +481,7 @@ void TestReferenceChecker::checkReal(double value, const char *id)
 }
 
 
-void TestReferenceChecker::checkVector(int value[3], const char *id)
+void TestReferenceChecker::checkVector(const int value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -499,7 +499,7 @@ void TestReferenceChecker::checkVector(int value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkVector(float value[3], const char *id)
+void TestReferenceChecker::checkVector(const float value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -525,7 +525,7 @@ void TestReferenceChecker::checkVector(float value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkVector(double value[3], const char *id)
+void TestReferenceChecker::checkVector(const double value[3], const char *id)
 {
     if (_impl->shouldIgnore())
     {
@@ -551,8 +551,8 @@ void TestReferenceChecker::checkVector(double value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkSequenceInteger(size_t length, int *values,
-                                                const char *id)
+void TestReferenceChecker::checkSequenceArray(size_t length, const int *values,
+                                              const char *id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cSequenceIntegerType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
@@ -563,8 +563,20 @@ void TestReferenceChecker::checkSequenceInteger(size_t length, int *values,
 }
 
 
-void TestReferenceChecker::checkSequenceDouble(size_t length, double *values,
-                                               const char *id)
+void TestReferenceChecker::checkSequenceArray(size_t length, const float *values,
+                                              const char *id)
+{
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceRealType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    for (size_t i = 0; i < length; ++i)
+    {
+        compound.checkFloat(values[i], NULL);
+    }
+}
+
+
+void TestReferenceChecker::checkSequenceArray(size_t length, const double *values,
+                                              const char *id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cSequenceRealType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
@@ -575,32 +587,32 @@ void TestReferenceChecker::checkSequenceDouble(size_t length, double *values,
 }
 
 
-void TestReferenceChecker::checkSequenceVector(size_t length, int values[][3],
-                                               const char *id)
-{
-    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
-    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
-    for (size_t i = 0; i < length; ++i)
-    {
-        compound.checkVector(values[i], NULL);
-    }
-}
-
-
-void TestReferenceChecker::checkSequenceVector(size_t length, float values[][3],
-                                               const char *id)
-{
-    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
-    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
-    for (size_t i = 0; i < length; ++i)
-    {
-        compound.checkVector(values[i], NULL);
-    }
-}
-
-
-void TestReferenceChecker::checkSequenceVector(size_t length, double values[][3],
+void TestReferenceChecker::checkSequenceArray(size_t length, const int values[][3],
                                               const char *id)
+{
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    for (size_t i = 0; i < length; ++i)
+    {
+        compound.checkVector(values[i], NULL);
+    }
+}
+
+
+void TestReferenceChecker::checkSequenceArray(size_t length, const float values[][3],
+                                              const char *id)
+{
+    TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
+    compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
+    for (size_t i = 0; i < length; ++i)
+    {
+        compound.checkVector(values[i], NULL);
+    }
+}
+
+
+void TestReferenceChecker::checkSequenceArray(size_t length, const double values[][3],
+                                             const char *id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cSequenceVectorType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);

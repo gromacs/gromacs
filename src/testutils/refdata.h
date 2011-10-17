@@ -268,26 +268,29 @@ class TestReferenceChecker
         //! Check a single floating point value.
         void checkReal(double value, const char *id);
         //! Check a vector of three integer values.
-        void checkVector(int value[3], const char *id);
+        void checkVector(const int value[3], const char *id);
         //! Check a vector of three single-precision floating point values.
-        void checkVector(float value[3], const char *id);
+        void checkVector(const float value[3], const char *id);
         //! Check a vector of three double-precision floating point values.
-        void checkVector(double value[3], const char *id);
+        void checkVector(const double value[3], const char *id);
         //! Check an arbitrary-length sequence of integer values.
-        void checkSequenceInteger(size_t length, int *values,
-                                  const char *id);
-        //! Check an arbitrary-length sequence of double-precision values.
-        void checkSequenceDouble(size_t length, double *values,
-                                 const char *id);
+        void checkSequenceArray(size_t length, const int *values,
+                                const char *id);
+        //! Check an arbitrary-length sequence of floating-point values.
+        void checkSequenceArray(size_t length, const float *values,
+                                const char *id);
+        //! Check an arbitrary-length sequence of floating-point values.
+        void checkSequenceArray(size_t length, const double *values,
+                                const char *id);
         //! Check an arbitrary-length sequence of integer vector values.
-        void checkSequenceVector(size_t length, int values[][3],
-                                 const char *id);
+        void checkSequenceArray(size_t length, const int values[][3],
+                                const char *id);
         //! Check an arbitrary-length sequence of floating-point vector values.
-        void checkSequenceVector(size_t length, float values[][3],
-                                 const char *id);
+        void checkSequenceArray(size_t length, const float values[][3],
+                                const char *id);
         //! Check an arbitrary-length sequence of floating-point vector values.
-        void checkSequenceVector(size_t length, double values[][3],
-                                 const char *id);
+        void checkSequenceArray(size_t length, const double values[][3],
+                                const char *id);
 
     private:
         class Impl;
