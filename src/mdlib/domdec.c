@@ -8293,58 +8293,18 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
     }
 }
 
-static void ordered_sort_nsbox(int nsort2,gmx_cgsort_t *sort2,
-                               int nsort_new,gmx_cgsort_t *sort_new,
-                               gmx_cgsort_t *sort1)
-{
-    int i1,i2,i_new;
-    
-    /* The new indices are not very ordered, so we qsort them */
-    qsort_threadsafe(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
-    
-    /* sort2 is already ordered, so now we can merge the two arrays */
-    i1 = 0;
-    i2 = 0;
-    i_new = 0;
-    while(i2 < nsort2 || i_new < nsort_new)
-    {
-        if (i2 == nsort2)
-        {
-            sort1[i1++] = sort_new[i_new++];
-        }
-        else if (i_new == nsort_new)
-        {
-            sort1[i1++] = sort2[i2++];
-        }
-        else if (sort2[i2].nsc < sort_new[i_new].nsc)
-        {
-            sort1[i1++] = sort2[i2++];
-        }
-        else
-        {
-            sort1[i1++] = sort_new[i_new++];
-        }
-    }
-}
-
 static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
 {
     gmx_domdec_sort_t *sort;
     gmx_cgsort_t *cgsort,*sort_i;
     int  ncg_new,nsort2,nsort_new,i,*a,moved,*ibuf;
+    int  sort_last,sort_skip;
 
     sort = dd->comm->sort;
 
-    if (fr->cutoff_scheme == ecutsOLD)
-    {
-        a = fr->ns.grid->cell_index;
+    a = fr->ns.grid->cell_index;
 
-        moved = 4*fr->ns.grid->ncells;
-    }
-    else
-    {
-        gmx_nbsearch_get_atomorder(fr->nbv->nbs,&a,&moved);
-    }
+    moved = 4*fr->ns.grid->ncells;
 
     if (ncg_home_old >= 0)
     {
@@ -8392,16 +8352,8 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
                     nsort2,nsort_new);
         }
         /* Sort efficiently */
-        if (fr->cutoff_scheme == ecutsOLD)
-        {
-            ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,
-                         sort->sort);
-        }
-        else
-        {
-            ordered_sort_nsbox(nsort2,sort->sort2,nsort_new,sort->sort_new,
-                               sort->sort);
-        }
+        ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,
+                     sort->sort);
     }
     else
     {
@@ -8431,6 +8383,28 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
     return ncg_new;
 }
 
+static int dd_sort_order_nsbox(gmx_domdec_t *dd,t_forcerec *fr)
+{
+    gmx_cgsort_t *sort;
+    int  ncg_new,i,*a,na;
+
+    sort = dd->comm->sort->sort;
+
+    gmx_nbsearch_get_atomorder(fr->nbv->nbs,&a,&na);
+
+    ncg_new = 0;
+    for(i=0; i<na; i++)
+    {
+        if (a[i] >= 0)
+        {
+            sort[ncg_new].ind = a[i];
+            ncg_new++;
+        }
+    }
+
+    return ncg_new;
+}
+
 static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
                           rvec *cgcm,t_forcerec *fr,t_state *state,
                           int ncg_home_old)
@@ -8451,8 +8425,15 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     cgsort = sort->sort;
 
-    ncg_new = dd_sort_order(dd,fr,ncg_home_old);
-    
+    if (fr->cutoff_scheme == ecutsOLD)
+    {
+        ncg_new = dd_sort_order(dd,fr,ncg_home_old);
+    }
+    else
+    {
+        ncg_new = dd_sort_order_nsbox(dd,fr);
+    }
+
     /* We alloc with the old size, since cgindex is still old */
     vec_rvec_check_alloc(&dd->comm->vbuf,dd->cgindex[dd->ncg_home]);
     vbuf = dd->comm->vbuf.v;

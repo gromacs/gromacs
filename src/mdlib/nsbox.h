@@ -87,10 +87,8 @@ void gmx_nbsearch_grid_simple(gmx_nbsearch_t nbs,
 /* Return the number of x and y cells in the local grid */
 void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy);
 
-/* Return the order indices *a of the atoms on the ns grid.
- * An index >= *moved indicates and atom that moved to another domain.
- */
-void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved);
+/* Return the order indices *a of the atoms on the ns grid, size n */
+void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *n);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs);

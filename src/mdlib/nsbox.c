@@ -1314,78 +1314,90 @@ static void sort_columns_supersub(const gmx_nbsearch_t nbs,
     }
 }
 
+static void calc_column_indices(gmx_nbs_grid_t *grid,
+                                int a0,int a1,
+                                rvec *x,const int *move,
+                                int thread,int nthread,
+                                int *cell,
+                                int *cxy_na)
+{
+    int  n0,n1,i;
+    int  cx,cy;
+
+    /* We add one extra cell for particles which moved during DD */
+    for(i=0; i<grid->ncx*grid->ncy+1; i++)
+    {
+        cxy_na[i] = 0;
+    }
+
+    n0 = a0 + (int)((thread+0)*(a1 - a0))/nthread;
+    n1 = a0 + (int)((thread+1)*(a1 - a0))/nthread;
+    for(i=n0; i<n1; i++)
+    {
+        if (move == NULL || move[i] >= 0)
+        {
+            /* We need to be careful with rounding,
+             * particles might be a few bits outside the local box.
+             * The int cast takes care of the lower bound,
+             * we need to explicitly take care of the upper bound.
+             */
+            cx = (int)((x[i][XX] - grid->c0[XX])*grid->inv_sx);
+            if (cx == grid->ncx)
+            {
+                cx = grid->ncx - 1;
+            }
+            cy = (int)((x[i][YY] - grid->c0[YY])*grid->inv_sy);
+            if (cy == grid->ncy)
+            {
+                cy = grid->ncy - 1;
+            }
+            /* For the moment cell contains only the, grid local,
+             * x and y indices, not z.
+             */
+            cell[i] = cx*grid->ncy + cy;
+
+#ifdef DEBUG_NSBOX_GRIDDING
+            if (cell[i] < 0 || cell[i] >= grid->ncx*grid->ncy)
+            {
+                gmx_fatal(FARGS,
+                          "grid cell cx %d cy %d out of range (max %d %d)",
+                          cx,cy,grid->ncx,grid->ncy);
+            }
+#endif
+        }
+        else
+        {
+            /* Put this moved particle after the end of the grid,
+             * so we can process it later without using conditionals.
+             */
+            cell[i] = grid->ncx*grid->ncy;
+        }
+
+        cxy_na[cell[i]]++;
+    }
+}
+
 static void calc_cell_indices(const gmx_nbsearch_t nbs,
                               int dd_zone,
                               gmx_nbs_grid_t *grid,
                               int a0,int a1,
                               const int *atinfo,
                               rvec *x,
-                              int *move,
+                              const int *move,
                               gmx_nb_atomdata_t *nbat)
 {
     int  n0,n1,i;
     int  cx,cy,cxy,ncz_max,ncz;
-    int  nthread,t;
+    int  nthread,thread;
     int  *cxy_na,cxy_na_i;
 
     nthread = omp_get_max_threads();
 
-#pragma omp parallel  for private(cxy_na,n0,n1,i,cx,cy)
-    for(t=0; t<nthread; t++)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
     {
-        cxy_na = nbs->work[t].cxy_na;
-
-        /* We add one extra cell for particles which moved during DD */
-        for(i=0; i<grid->ncx*grid->ncy+1; i++)
-        {
-            cxy_na[i] = 0;
-        }
-
-        n0 = a0 + (int)((t+0)*(a1 - a0))/nthread;
-        n1 = a0 + (int)((t+1)*(a1 - a0))/nthread;
-        for(i=n0; i<n1; i++)
-        {
-            if (move == NULL || move[i] >= 0)
-            {
-                /* We need to be careful with rounding,
-                 * particles might be a few bits outside the local box.
-                 * The int cast takes care of the lower bound,
-                 * we need to explicitly take care of the upper bound.
-                 */
-                cx = (int)((x[i][XX] - grid->c0[XX])*grid->inv_sx);
-                if (cx == grid->ncx)
-                {
-                    cx = grid->ncx - 1;
-                }
-                cy = (int)((x[i][YY] - grid->c0[YY])*grid->inv_sy);
-                if (cy == grid->ncy)
-                {
-                    cy = grid->ncy - 1;
-                }
-                /* For the moment cell contains only the, grid local,
-                 * x and y indices, not z.
-                 */
-                nbs->cell[i] = cx*grid->ncy + cy;
-
-#ifdef DEBUG_NSBOX_GRIDDING
-                if (nbs->cell[i] < 0 || nbs->cell[i] >= grid->ncx*grid->ncy)
-                {
-                    gmx_fatal(FARGS,
-                              "grid cell cx %d cy %d out of range (max %d %d)",
-                              cx,cy,grid->ncx,grid->ncy);
-                }
-#endif
-            }
-            else
-            {
-                /* Put this moved particle after the end of the grid,
-                 * so we can process it later without using conditionals.
-                 */
-                nbs->cell[i] = grid->ncx*grid->ncy;
-            }
-            
-            cxy_na[nbs->cell[i]]++;
-        }
+        calc_column_indices(grid,a0,a1,x,move,thread,nthread,
+                            nbs->cell,nbs->work[thread].cxy_na);
     }
 
     /* Make the cell index as a function of x and y */
@@ -1403,9 +1415,9 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
             ncz_max = ncz;
         }
         cxy_na_i = nbs->work[0].cxy_na[i];
-        for(t=1; t<nthread; t++)
+        for(thread=1; thread<nthread; thread++)
         {
-            cxy_na_i += nbs->work[t].cxy_na[i];
+            cxy_na_i += nbs->work[thread].cxy_na[i];
         }
         ncz = (cxy_na_i + grid->na_stx - 1)/grid->na_stx;
         grid->cxy_ind[i+1] = grid->cxy_ind[i] + ncz;
@@ -1440,11 +1452,12 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
     /* Make sure the work array for sorting is large enough */
     if (ncz_max*grid->na_stx*SGSF > nbs->work[0].sort_work_nalloc)
     {
-        for(t=0; t<nbs->nthread_max; t++)
+        for(thread=0; thread<nbs->nthread_max; thread++)
         {
-            nbs->work[t].sort_work_nalloc =
+            nbs->work[thread].sort_work_nalloc =
                 over_alloc_large(ncz_max*grid->na_stx*SGSF);
-            srenew(nbs->work[t].sort_work,nbs->work[t].sort_work_nalloc);
+            srenew(nbs->work[thread].sort_work,
+                   nbs->work[thread].sort_work_nalloc);
         }
     }
 
@@ -1467,23 +1480,22 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
     }
 
     /* Sort the super-cell columns along z into the sub-cells. */
-    nthread = omp_get_max_threads();
-#pragma omp parallel for schedule(static)
-    for(t=0; t<nthread; t++)
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for(thread=0; thread<nthread; thread++)
     {
         if (grid->simple)
         {
             sort_columns_simple(nbs,dd_zone,grid,a0,a1,atinfo,x,nbat,
-                                ((t+0)*grid->ncx*grid->ncy)/nthread,
-                                ((t+1)*grid->ncx*grid->ncy)/nthread,
-                                nbs->work[t].sort_work);
+                                ((thread+0)*grid->ncx*grid->ncy)/nthread,
+                                ((thread+1)*grid->ncx*grid->ncy)/nthread,
+                                nbs->work[thread].sort_work);
         }
         else
         {
             sort_columns_supersub(nbs,dd_zone,grid,a0,a1,atinfo,x,nbat,
-                                  ((t+0)*grid->ncx*grid->ncy)/nthread,
-                                  ((t+1)*grid->ncx*grid->ncy)/nthread,
-                                  nbs->work[t].sort_work);
+                                  ((thread+0)*grid->ncx*grid->ncy)/nthread,
+                                  ((thread+1)*grid->ncx*grid->ncy)/nthread,
+                                  nbs->work[thread].sort_work);
         }
     }
 
@@ -1823,16 +1835,16 @@ void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy)
     *ncy = nbs->grid[0].ncy;
 }
 
-void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *moved)
+void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *n)
 {
     const gmx_nbs_grid_t *grid;
 
     grid = &nbs->grid[0];
 
     /* Return the atom order for the home cell (index 0) */
-    *a  = nbs->cell;
+    *a  = nbs->a;
 
-    *moved = grid->cxy_ind[grid->ncx*grid->ncy]*grid->na_stx;
+    *n = grid->cxy_ind[grid->ncx*grid->ncy]*grid->na_stx;
 }
 
 void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs)
