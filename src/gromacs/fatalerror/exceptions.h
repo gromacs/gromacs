@@ -69,12 +69,12 @@ typedef boost::error_info<struct errinfo_message_, std::string> errinfo_message;
  *
  * Although boost recommends using virtual inheritance in exception hiearchies,
  * it is not used here for two reasons:
- * 1. It is only useful when there is diamond inheritance, and that should
+ * -# It is only useful when there is diamond inheritance, and that should
  *    never occur in this exception hierarchy because this class is the only
  *    instance of multiple inheritance (Gromacs programming guidelines prohibit
  *    multiple inheritance from concrete classes, but it is unavoidable here
  *    because of the design of boost::exception).
- * 2. Because the constructor takes an argument, virtual inheritance would
+ * -# Because the constructor takes an argument, virtual inheritance would
  *    complicate any classes that inherit indirectly from this class.
  *
  * \ingroup module_fatalerror
@@ -82,10 +82,23 @@ typedef boost::error_info<struct errinfo_message_, std::string> errinfo_message;
 class GromacsException : public std::exception, public boost::exception
 {
     public:
+        /*! \brief
+         * Returns the reason string for the exception.
+         *
+         * The return value is the string that was passed to the constructor.
+         */
         virtual const char *what() const throw();
+        /*! \brief
+         * Returns the error code corresponding to the exception type.
+         */
         virtual int errorCode() const = 0;
 
     protected:
+        /*! \brief
+         * Creates an exception object with the provided detailed reason.
+         *
+         * \param[in] reason Detailed reason for the exception.
+         */
         explicit GromacsException(const std::string &reason);
 };
 
@@ -97,6 +110,11 @@ class GromacsException : public std::exception, public boost::exception
 class FileIOError : public GromacsException
 {
     public:
+        /*! \brief
+         * Creates an exception object with the provided detailed reason.
+         *
+         * \param[in] reason Detailed reason for the exception.
+         */
         explicit FileIOError(const std::string &reason)
             : GromacsException(reason) {}
 
@@ -114,6 +132,7 @@ class FileIOError : public GromacsException
 class UserInputError : public GromacsException
 {
     protected:
+        //! \copydoc FileIOError::FileIOError()
         explicit UserInputError(const std::string &reason)
             : GromacsException(reason) {}
 };
@@ -126,6 +145,7 @@ class UserInputError : public GromacsException
 class InvalidInputError : public UserInputError
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit InvalidInputError(const std::string &reason)
             : UserInputError(reason) {}
 
@@ -140,6 +160,7 @@ class InvalidInputError : public UserInputError
 class InconsistentInputError : public UserInputError
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit InconsistentInputError(const std::string &reason)
             : UserInputError(reason) {}
 
@@ -154,6 +175,7 @@ class InconsistentInputError : public UserInputError
 class SimulationInstabilityError : public GromacsException
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit SimulationInstabilityError(const std::string &reason)
             : GromacsException(reason) {}
 
@@ -168,6 +190,7 @@ class SimulationInstabilityError : public GromacsException
 class InternalError : public GromacsException
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit InternalError(const std::string &reason)
             : GromacsException(reason) {}
 
@@ -182,6 +205,7 @@ class InternalError : public GromacsException
 class APIError : public GromacsException
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit APIError(const std::string &reason)
             : GromacsException(reason) {}
 
@@ -196,12 +220,12 @@ class APIError : public GromacsException
 class NotImplementedError : public APIError
 {
     public:
+        //! \copydoc FileIOError::FileIOError()
         explicit NotImplementedError(const std::string &reason)
             : APIError(reason) {}
 
         virtual int errorCode() const;
 };
-
 
 
 /*! \brief

@@ -197,10 +197,25 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
     public:
         explicit AnalysisDataVectorPlotModule(const Options &options);
 
+        /*! \brief
+         * Set whether to write X component.
+         */
         void setWriteX(bool bWrite);
+        /*! \brief
+         * Set whether to write Y component.
+         */
         void setWriteY(bool bWrite);
+        /*! \brief
+         * Set whether to write Z component.
+         */
         void setWriteZ(bool bWrite);
+        /*! \brief
+         * Set whether to write norm of the vector.
+         */
         void setWriteNorm(bool bWrite);
+        /*! \brief
+         * Set mask for what to write.
+         */
         void setWriteMask(bool bWrite[4]);
 
         virtual void pointsAdded(real x, real dx, int firstcol, int n,

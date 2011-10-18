@@ -66,7 +66,7 @@ class TrajectoryAnalysisSettings;
  * using dataHandle() and parallelSelection().
  *
  * \see TrajectoryAnalysisModule::startFrames()
- * \see TrajectoryAnalysisModule::analyzeFrames()
+ * \see TrajectoryAnalysisModule::analyzeFrame()
  * \see TrajectoryAnalysisModule::finishFrames()
  *
  * \inpublicapi
@@ -89,7 +89,7 @@ class TrajectoryAnalysisModuleData
          * Returns a data handle for a dataset with a given name.
          *
          * Allowed names are those that have been registered with
-         * TrajectoryAnalysisModule::registerAnalysisData().
+         * TrajectoryAnalysisModule::registerAnalysisDataset().
          */
         AnalysisDataHandle *dataHandle(const char *name);
         /*! \brief

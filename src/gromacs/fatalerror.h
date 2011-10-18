@@ -33,18 +33,24 @@
  * \brief
  * Provides functions for handling fatal errors.
  *
- * Facilities for handling fatal errors are provided by the fatalerror.h header
- * file.  It provides a set of error codes (the enum ::ErrorCode) that should
- * be used for return codes in functions.  It also provides function fatalError()
- * for reporting the cause of the error to the user, and convenience macros
- * ::GMX_ERROR and ::GMX_ERROR_NORET for calling fatalError().  If the reason
- * string needs formatting, fatalErrorFormatted() is also provided.
+ * Exception classes used in the library are defined in the exceptions.h header
+ * file.  This header also declares a ::GMX_THROW macro that should be used for
+ * throwing exceptions.  It also declares helper functions formatErrorMessage()
+ * and translateException() for creating standard error messages and
+ * translating exceptions to error return codes.
  *
- * For users of the library, setFatalErrorHandler() is provided to alter the
- * behavior of fatalError() and fatalErrorFormatted().  fatalError() simply
- * calls the provided handler, while fatalErrorFormatted() does the formatting
- * internally and then calls the same handler.  The default handler prints the
- * reason of the error to standard error and aborts the execution.
+ * Use of error return codes should be avoided in new code except in C wrappers
+ * and similar, but for compatibility, facilities for handling them are
+ * provided by the errorcodes.h header file.  It provides a set of error codes
+ * (the enum ::ErrorCode) that should be used for return codes in functions.
+ * It also provides macros ::GMX_ERROR and ::GMX_ERROR_NORET that should be
+ * used for returning an error code.  setFatalErrorHandler() is provided to
+ * alter the behavior of ::GMX_ERROR and ::GMX_ERROR_NORET.  The default
+ * handler prints the reason of the error to standard error and aborts the
+ * execution.
+ *
+ * Header file gmxassert.h is also provided for assertions.  It declares macros
+ * ::GMX_ASSERT and ::GMX_RELEASE_ASSERT that should be used for assertions.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */

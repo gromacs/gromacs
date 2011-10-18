@@ -301,7 +301,7 @@ class OptionTemplate : public AbstractOption
          * Values are added to the vector after each successful set of values
          * is parsed.  Note that for some options, the value may be changed
          * later, and is only guaranteed to be correct after Options::finish()
-         * has been called (see, e.g., DoubleOption::time()).
+         * has been called (see, e.g., DoubleOption::timeValue()).
          *
          * The pointer provided should remain valid as long as the associated
          * Options object exists.
