@@ -33,6 +33,7 @@
  * Implements functions in datapath.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_testutils
  */
 #include "datapath.h"
 

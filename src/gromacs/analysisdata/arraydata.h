@@ -56,6 +56,7 @@ namespace gmx
  * should initialize the in-memory array through the provided protected member
  * functions.
  *
+ * \inlibraryapi
  * \ingroup module_analysisdata
  */
 class AbstractAnalysisArrayData : public AbstractAnalysisData

@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::AbstractAnalysisData and gmx::AbstractAnalysisDataStored.
  *
@@ -46,7 +46,7 @@ namespace gmx
 
 class AnalysisDataModuleInterface;
 
-/*! \libinternal \brief
+/*! \brief
  * Abstract base class for all objects that provide data.
  *
  * The public interface includes functions for querying the data
@@ -309,7 +309,7 @@ class AbstractAnalysisData
 };
 
 
-/*! \libinternal \brief
+/*! \brief
  * Abstract class that implements storage of data.
  *
  * This class implements a standard way of storing data, to avoid implementing

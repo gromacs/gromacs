@@ -66,7 +66,6 @@ class Options;
  * data, setPlainOutput() should be called since the output does not make sense
  * as an xvgr file, but this is not enforced.
  *
- * \inpublicapi
  * \ingroup module_analysisdata
  */
 class AbstractPlotModule : public AnalysisDataModuleInterface

@@ -195,7 +195,7 @@ class ConcreteOption : public OptionTemplate<int, ConcreteOption>
  * For examples of how to use classes derived from this class, see the class
  * documentation for Options.
  *
- * \inpublicapi
+ * \inlibraryapi
  * \ingroup module_options
  */
 template <typename T, class U>

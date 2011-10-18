@@ -28,12 +28,13 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal \file
+/*! \file
  * \brief
  * Declares gmx::FlagsTemplate.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
+ * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_FLAGS_H
 #define GMX_UTILITY_FLAGS_H
@@ -41,12 +42,16 @@
 namespace gmx
 {
 
-/*! \libinternal \brief
+/*! \brief
  * Template class for typesafe handling of combination of flags.
  *
  * \tparam T An enumerated type that holds the possible single flags.
  *
+ * This class is not used publicly, but is present in an installed header
+ * because it is used internally in public template classes.
+ *
  * \inlibraryapi
+ * \ingroup module_utility
  */
 template <typename T>
 class FlagsTemplate

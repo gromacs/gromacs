@@ -28,6 +28,15 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
+/*! \internal \file
+ * \brief
+ * Declares mock implementation of gmx::AnalysisDataModuleInterface.
+ *
+ * Requires Google Mock.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_analysisdata
+ */
 #ifndef GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
 #define GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
 

@@ -33,6 +33,7 @@
  * Functions for accessing test input files.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
 #ifndef GMX_TESTUTILS_DATAPATH_H
@@ -50,18 +51,26 @@ namespace gmx
 namespace test
 {
 
-/*! \brief
+/*! \libinternal \brief
  * Returns the path to a test input file.
+ *
+ * \inlibraryapi
  */
 std::string getTestFilePath(const char *filename);
-/*! \brief
+/*! \libinternal \brief
  * Returns the path to the test input directory.
+ *
+ * \inlibraryapi
  */
 const char *getTestDataPath();
-/*! \brief
+/*! \libinternal \brief
  * Sets the test input directory.
+ *
+ * \inlibraryapi
  */
 void setTestDataPath(const char *path);
+
+/*!\}*/
 
 } // namespace test
 } // namespace gmx
