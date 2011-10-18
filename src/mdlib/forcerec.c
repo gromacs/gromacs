@@ -1391,6 +1391,67 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
     }
 }
 
+static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
+{
+    int gpu_device_id;
+    char *env;
+    gmx_bool GPU_OK;
+    int *gpus,ngpu,i;
+
+    /* TODO: do the multi-GPU initilization properly */
+    /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
+       each process will try to use the GPU with id = procid
+       (within the node). */
+    gpu_device_id = cr->nc.rank_intra;
+    env = getenv("GMX_GPU_ID");
+    if (env != NULL)
+    {
+        sscanf(env, "%d",&gpu_device_id);
+        if (DOMAINDECOMP(cr) && MASTER(cr))
+        {
+            gmx_warning("Running in parallel and GMX_GPU_ID is set, "
+                        "all processes on the same node will share GPU #%d.");
+        }
+        /* If you set this env.var, you want to use a GPU */
+        forceGPU = TRUE;
+    }
+    GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
+    snew(gpus,cr->nnodes);
+    gpus[cr->nodeid] = (GPU_OK ? -1 : gpu_device_id);
+    /* In parallel we need to check if every node has a GPU */
+    if (PAR(cr))
+    {
+        gmx_sumi(cr->nnodes,gpus,cr);
+    }
+    ngpu = 0;
+    for(i=0; i<cr->nnodes; i++)
+    {
+        if (gpus[i] == -1)
+        {
+            ngpu++;
+        }
+    }
+    if (ngpu < cr->nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
+    {
+        char *buf,buf2[40];
+        
+        snew(buf,40+40*cr->nnodes);
+        sprintf(buf,"Could not initialize");
+        for(i=0; i<cr->nnodes; i++)
+        {
+            if (gpus[i] >= 0)
+            {
+                sprintf(buf2," on node %d: GPU #%d",gpus[i],i);
+                strcat(buf,buf2);
+            }
+        }
+        gmx_fatal_collective(FARGS,cr,NULL,buf);
+    }
+    sfree(gpus);
+
+    return (ngpu > 0);
+}
+
 /* Selects the non-bonded (Verlet) kernel to be used. */
 static void pick_nb_kernel(FILE *fp,
                            const t_commrec *cr,
@@ -1470,49 +1531,11 @@ static void pick_nb_kernel(FILE *fp,
         }
 #else
         /* Try to use a GPU */
+        *useGPU = init_gpu_nb(fp,cr,forceGPU);
 
-        int gpu_device_id;
-        int ngpu;
-
-        *kernel_type = nbk8x8x8CUDA;
-
-        /* TODO: do the multi-GPU initilization properly */
-        /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
-           each process will try to use the GPU with id = procid
-           (within the node). */
-        gpu_device_id = cr->nc.rank_intra;
-        env = getenv("GMX_GPU_ID");
-        if (env != NULL)
+        if (*useGPU)
         {
-            sscanf(env, "%d",&gpu_device_id);
-            if (DOMAINDECOMP(cr) && MASTER(cr))
-            {
-                gmx_warning("Running in parallel and GMX_GPU_ID is set, "
-                            "all processes on the same node will share GPU #%d.");
-            }
-            /* If you set this env.var, you want to use a GPU */
-            forceGPU = TRUE;
-        }
-        if (init_gpu(fp, gpu_device_id) == 0)
-        {
-            ngpu = 1;
-        }
-        else
-        {
-            ngpu = 0;
-        }
-        /* In parallel we need to check if every node has a GPU */
-        if (PAR(cr))
-        {
-            gmx_sumi(1,&ngpu,cr);
-        }
-        if (ngpu < cr->nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
-        {
-            gmx_fatal(FARGS, "Could not initialize GPU #%d", gpu_device_id);
-        }
-        else if (ngpu > 0)
-        {
-            *useGPU = TRUE;
+            *kernel_type = nbk8x8x8CUDA;
 
             *napc = GPU_NS_CELL_SIZE;
         }

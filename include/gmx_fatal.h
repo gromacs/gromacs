@@ -83,7 +83,7 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
 
 void
 gmx_fatal_collective(int f_errno,const char *file,int line,
-		     t_commrec *cr,gmx_domdec_t *dd,
+		     const t_commrec *cr,gmx_domdec_t *dd,
 		     const char *fmt,...);
 /* As gmx_fatal, but only the master process prints the error message.
  * This should only be called one of the following two situations:
