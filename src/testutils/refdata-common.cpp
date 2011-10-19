@@ -39,7 +39,6 @@
 
 #include <cstring>
 
-#include "gromacs/utility/path.h"
 #include "testutils/datapath.h"
 
 namespace gmx
@@ -88,11 +87,6 @@ int initReferenceData(int *argc, char **argv)
     }
     *argc = newi;
 
-    std::string dirname = getReferenceDataPath();
-    if (!Directory::exists(dirname))
-    {
-        return Directory::create(dirname);
-    }
     return 0;
 }
 

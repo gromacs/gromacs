@@ -148,6 +148,10 @@ TEST(MyTest, SimpleTest)
 }
  * \endcode
  *
+ * If rootChecker() is never called, no comparison is done (i.e., missing
+ * reference data file is not reported as an error, nor is empty reference data
+ * file created in write mode).
+ *
  * This class is only available if both Google Test and libxml2 are enabled.
  * If either one is missing, trying to use this class will result in unresolved
  * symbols in linking.
