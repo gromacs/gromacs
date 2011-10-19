@@ -95,7 +95,7 @@ const char * const TestReferenceChecker::Impl::cSequenceLengthName =
 
 
 TestReferenceData::Impl::Impl(ReferenceDataMode mode)
-    : _refDoc(NULL), _bWrite(false)
+    : _refDoc(NULL), _bWrite(false), _bInUse(false)
 {
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
@@ -116,7 +116,6 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
         else if (mode == erefdataCompare)
         {
             _bWrite = false;
-            ADD_FAILURE() << "Reference data file not found: " << _fullFilename;
             return;
         }
     }
@@ -151,8 +150,16 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
 
 TestReferenceData::Impl::~Impl()
 {
-    if (_bWrite && _refDoc != NULL)
+    if (_bWrite && _bInUse && _refDoc != NULL)
     {
+        std::string dirname = getReferenceDataPath();
+        if (!Directory::exists(dirname))
+        {
+            if (Directory::create(dirname) != 0)
+            {
+                ADD_FAILURE() << "Creation of reference data directory failed for " << dirname;
+            }
+        }
         if (xmlSaveFormatFile(_fullFilename.c_str(), _refDoc, 1) == -1)
         {
             ADD_FAILURE() << "Saving reference data failed for " + _fullFilename;
@@ -316,6 +323,12 @@ bool TestReferenceData::isWriteMode() const
 
 TestReferenceChecker TestReferenceData::rootChecker()
 {
+    if (!isWriteMode() && !_impl->_bInUse && _impl->_refDoc == NULL)
+    {
+        ADD_FAILURE() << "Reference data file not found: "
+                      << _impl->_fullFilename;
+    }
+    _impl->_bInUse = true;
     xmlNodePtr rootNode =
         _impl->_refDoc != NULL ? xmlDocGetRootElement(_impl->_refDoc) : NULL;
     return TestReferenceChecker(new TestReferenceChecker::Impl(rootNode, isWriteMode()));

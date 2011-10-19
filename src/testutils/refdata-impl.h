@@ -76,6 +76,10 @@ class TestReferenceData::Impl
          * (false).
          */
         bool                    _bWrite;
+        /*! \brief
+         * Whether any reference checkers have been created for this data.
+         */
+        bool                    _bInUse;
 };
 
 
