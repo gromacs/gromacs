@@ -19,9 +19,9 @@ tinit                    = 0
 dt                       = 0.002
 nsteps                   = 10000
 ; For exact run continuation or redoing part of a run
-init_step                = 0
+init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
-simulation_part          = 1
+simulation-part          = 1
 ; mode for center of mass motion removal
 comm-mode                = Linear
 ; number of steps for center of mass motion removal
@@ -38,7 +38,7 @@ ld-seed                  = 1993
 ; Force tolerance and initial step-size
 emtol                    = 100
 emstep                   = 0.01
-; Max number of iterations in relax_shells
+; Max number of iterations in relax-shells
 niter                    = 20
 ; Step size (ps^2) for minimization of flexible constraints
 fcstep                   = 0
@@ -71,10 +71,10 @@ energygrps               =
 ; nblist update frequency
 nstlist                  = 5
 ; ns algorithm (simple or grid)
-ns_type                  = grid
+ns-type                  = grid
 ; Periodic boundary conditions: xyz, no, xy
 pbc                      = xyz
-periodic_molecules       = no
+periodic-molecules       = no
 ; nblist cut-off        
 rlist                    = 0.9
 ; long-range cut-off for switched potentials
@@ -87,7 +87,7 @@ rcoulomb-switch          = 0
 rcoulomb                 = 0.9
 ; Relative dielectric constant for the medium and the reaction field
 epsilon-r                = 1
-epsilon_rf               = 1
+epsilon-rf               = 1
 ; Method for doing Van der Waals
 vdw-type                 = Cut-off
 ; cut-off lengths       
@@ -98,44 +98,44 @@ DispCorr                 = EnerPres
 ; Extension of the potential lookup tables beyond the cut-off
 table-extension          = 1
 ; Seperate tables between energy group pairs
-energygrp_table          = 
+energygrp-table          = 
 ; Spacing for the PME/PPPM FFT grid
 fourierspacing           = 0.12
 ; FFT grid size, when a value is 0 fourierspacing will be used
-fourier_nx               = 0
-fourier_ny               = 0
-fourier_nz               = 0
+fourier-nx               = 0
+fourier-ny               = 0
+fourier-nz               = 0
 ; EWALD/PME/PPPM parameters
-pme_order                = 4
-ewald_rtol               = 1e-05
-ewald_geometry           = 3d
-epsilon_surface          = 0
-optimize_fft             = no
+pme-order                = 4
+ewald-rtol               = 1e-05
+ewald-geometry           = 3d
+epsilon-surface          = 0
+optimize-fft             = no
 
 ; IMPLICIT SOLVENT ALGORITHM
-implicit_solvent         = No
+implicit-solvent         = No
 
 ; GENERALIZED BORN ELECTROSTATICS
 ; Algorithm for calculating Born radii
-gb_algorithm             = Still
+gb-algorithm             = Still
 ; Frequency of calculating the Born radii inside rlist
 nstgbradii               = 1
 ; Cutoff for Born radii calculation; the contribution from atoms
 ; between rlist and rgbradii is updated every nstlist steps
 rgbradii                 = 2
 ; Dielectric coefficient of the implicit solvent
-gb_epsilon_solvent       = 80
+gb-epsilon-solvent       = 80
 ; Salt concentration in M for Generalized Born models
-gb_saltconc              = 0
+gb-saltconc              = 0
 ; Scaling factors used in the OBC GB model. Default values are OBC(II)
-gb_obc_alpha             = 1
-gb_obc_beta              = 0.8
-gb_obc_gamma             = 4.85
-gb_dielectric_offset     = 0.009
-sa_algorithm             = Ace-approximation
+gb-obc-alpha             = 1
+gb-obc-beta              = 0.8
+gb-obc-gamma             = 4.85
+gb-dielectric-offset     = 0.009
+sa-algorithm             = Ace-approximation
 ; Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA
 ; The value -1 will set default value for Still/HCT/OBC GB-models.
-sa_surface_tension       = -1
+sa-surface-tension       = -1
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
 ; Temperature coupling  
@@ -145,20 +145,20 @@ nh-chain-length          = 10
 ; Groups to couple separately
 tc-grps                  = System
 ; Time constant (ps) and reference temperature (K)
-tau_t                    = 0.1
-ref_t                    = 300
+tau-t                    = 0.1
+ref-t                    = 300
 ; Pressure coupling     
 Pcoupl                   = berendsen
 Pcoupltype               = isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau_p                    = 0.5
+tau-p                    = 0.5
 compressibility          = 4.5e-5
-ref_p                    = 1.0
+ref-p                    = 1.0
 ; Scaling of reference coordinates, No, All or COM
-refcoord_scaling         = No
+refcoord-scaling         = No
 ; Random seed for Andersen thermostat
-andersen_seed            = 815131
+andersen-seed            = 815131
 
 ; OPTIONS FOR QMMM calculations
 QMMM                     = no
@@ -192,16 +192,16 @@ bTS                      =
 ; Type of annealing for each temperature group (no/single/periodic)
 annealing                = no
 ; Number of time points to use for specifying annealing in each group
-annealing_npoints        = 
+annealing-npoints        = 
 ; List of times at the annealing points for each group
-annealing_time           = 
+annealing-time           = 
 ; Temp. at each annealing point, for each group.
-annealing_temp           = 
+annealing-temp           = 
 
 ; GENERATE VELOCITIES FOR STARTUP RUN
-gen_vel                  = yes
-gen_temp                 = 300
-gen_seed                 = 1993
+gen-vel                  = yes
+gen-temp                 = 300
+gen-seed                 = 1993
 
 ; OPTIONS FOR BONDS    
 constraints              = none
@@ -227,19 +227,19 @@ morse                    = no
 
 ; ENERGY GROUP EXCLUSIONS
 ; Pairs of energy groups for which all non-bonded interactions are excluded
-energygrp_excl           = 
+energygrp-excl           = 
 
 ; WALLS                
 ; Number of walls, type, atom types, densities and box-z scale factor for Ewald
 nwall                    = 0
-wall_type                = 9-3
-wall_r_linpot            = -1
-wall_atomtype            = 
-wall_density             = 
-wall_ewald_zfac          = 3
+wall-type                = 9-3
+wall-r-linpot            = -1
+wall-atomtype            = 
+wall-density             = 
+wall-ewald-zfac          = 3
 
 ; COM PULLING          
-; Pull type: no, umbrella, constraint or constant_force
+; Pull type: no, umbrella, constraint or constant-force
 pull                     = no
 
 ; NMR refinement stuff 
@@ -269,15 +269,15 @@ dihre-fc                 = 1000
 free-energy              = no
 init-lambda              = 0
 delta-lambda             = 0
-foreign_lambda           = 
+foreign-lambda           = 
 sc-alpha                 = 0
 sc-power                 = 0
 sc-sigma                 = 0.3
 nstdhdl                  = 10
 separate-dhdl-file       = yes
 dhdl-derivatives         = yes
-dh_hist_size             = 0
-dh_hist_spacing          = 0.1
+dh-hist-size             = 0
+dh-hist-spacing          = 0.1
 couple-moltype           = 
 couple-lambda0           = vdw-q
 couple-lambda1           = vdw-q
