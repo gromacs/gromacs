@@ -1587,7 +1587,8 @@ void init_interaction_const_tables(FILE *fp,
         spacing = 0.0005;
         ic->tabq_scale = 1/spacing;
         ic->tabq_size    = (int)(ic->rcoulomb*ic->tabq_scale) + 1;
-        snew(ic->tabq_coul_FDV0,ic->tabq_size*4);
+        sfree_aligned(ic->tabq_coul_FDV0);
+        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
         table_spline3_fill_ewald(ic->tabq_coul_FDV0,ic->tabq_size,
                                  tableformatFDV0,
                                  spacing,ic->ewaldcoeff);

@@ -147,6 +147,12 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type);
 /* Return TRUE if the Verlet-style neighborlist has simple type.
  */
 
+void init_interaction_const_tables(FILE *fp, 
+                                   interaction_const_t *ic,
+                                   int verlet_kernel_type);
+/* Initializes the tables in the interaction constant data structure.
+ */
+
 void init_interaction_const(FILE *fp, 
                             interaction_const_t **interaction_const,
                             const t_forcerec *fr);
