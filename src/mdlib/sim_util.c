@@ -876,10 +876,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
     if (bUseGPU)
     { 
-        wallcycle_start(wcycle,ewcSEND_X_GPU);
+        wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE);
-        wallcycle_stop(wcycle,ewcSEND_X_GPU);
+        wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 #endif
 
@@ -944,10 +944,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
         if (bUseGPU && !bDiffKernels)
         { 
-            wallcycle_start(wcycle,ewcSEND_X_GPU);
+            wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE);
-            wallcycle_stop(wcycle,ewcSEND_X_GPU);
+            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
 #endif
     }
@@ -1146,11 +1146,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             if (bUseGPU)
             {
 #ifdef GMX_GPU
-                wallcycle_start_nocount(wcycle,ewcRECV_F_GPU);                    
+                wallcycle_start(wcycle,ewcWAIT_GPU_NB_NL);
                 cu_blockwait_nb(nbv->gpu_nb, flags, eatNonlocal,
                         enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                         fr->fshift);
-                cycles_force += wallcycle_stop(wcycle,ewcRECV_F_GPU);
+                cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_NL);
 #endif
             }
             else
@@ -1214,11 +1214,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bUseGPU)
         {
 #ifdef GMX_GPU
-            wallcycle_start(wcycle,ewcRECV_F_GPU);
+            wallcycle_start(wcycle,ewcWAIT_GPU_NB_L);
             cu_blockwait_nb(nbv->gpu_nb, flags, eatLocal,
                             enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                             fr->fshift);
-            cycles_force += wallcycle_stop(wcycle,ewcRECV_F_GPU);
+            cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
             cu_clear_nb_f_out(nbv->gpu_nb);
