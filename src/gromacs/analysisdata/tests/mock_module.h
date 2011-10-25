@@ -44,14 +44,23 @@
 
 #include "gromacs/analysisdata/datamodule.h"
 
-class MockModule : public gmx::AnalysisDataModuleInterface
+namespace gmx
+{
+namespace test
+{
+
+class AnalysisDataTestInput;
+class TestReferenceChecker;
+
+class MockAnalysisModule : public AnalysisDataModuleInterface
 {
     public:
-        explicit MockModule(int flags) : _flags(flags) {}
+        explicit MockAnalysisModule(int flags);
+        virtual ~MockAnalysisModule();
 
-        int flags() const { return _flags; }
+        virtual int flags() const;
 
-        MOCK_METHOD1(dataStarted, void(gmx::AbstractAnalysisData *data));
+        MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
         MOCK_METHOD2(frameStarted, void(real x, real dx));
         MOCK_METHOD7(pointsAdded, void(real x, real dx, int firstcol, int n,
                                        const real *y, const real *dy,
@@ -59,8 +68,24 @@ class MockModule : public gmx::AnalysisDataModuleInterface
         MOCK_METHOD0(frameFinished, void());
         MOCK_METHOD0(dataFinished, void());
 
+        void setupStaticCheck(const AnalysisDataTestInput &data,
+                              AbstractAnalysisData *source);
+        void setupStaticColumnCheck(const AnalysisDataTestInput &data,
+                                    int firstcol, int n,
+                                    AbstractAnalysisData *source);
+        void setupStaticStorageCheck(const AnalysisDataTestInput &data,
+                                     int storageCount,
+                                     AbstractAnalysisData *source);
+        void setupReferenceCheck(const TestReferenceChecker &checker,
+                                 AbstractAnalysisData *source);
+
     private:
-        int         _flags;
+        class Impl;
+
+        Impl                   *impl_;
 };
+
+} // namespace test
+} // namespace gmx
 
 #endif
