@@ -32,6 +32,11 @@
  * \brief
  * Tests for analysis data functionality.
  *
+ * These tests check the functionality of gmx::AnalysisData, as well as its
+ * base classes gmx::AbstractAnalysisData and gmx::AbstractAnalysisDataStored.
+ * Most checking is done using gmx::test::AnalysisDataTestFixture and mock
+ * modules that implement gmx::AnalysisDataModuleInterface.
+ *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
@@ -43,7 +48,10 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/fatalerror/exceptions.h"
 
+#include "datatest.h"
 #include "mock_module.h"
+
+using gmx::test::MockAnalysisModule;
 
 namespace
 {
@@ -52,7 +60,10 @@ namespace
  * Tests for gmx::AnalysisData.
  */
 
-TEST(AnalysisDataTest, BasicInitialization)
+/*
+ * Tests that simple initialization works.
+ */
+TEST(AnalysisDataInitializationTest, BasicInitialization)
 {
     gmx::AnalysisData data;
     EXPECT_EQ(0, data.columnCount());
@@ -72,76 +83,174 @@ TEST(AnalysisDataTest, BasicInitialization)
     EXPECT_FALSE(data.isMultipoint());
 }
 
-
-TEST(AnalysisDataTest, ChecksMultiColumnModules)
+/*
+ * Tests that checking for compatibility of modules with multicolumn data
+ * works.
+ */
+TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
 {
     gmx::AnalysisData data;
     data.setColumns(2);
 
-    std::auto_ptr<MockModule> mod(new MockModule(0));
+    std::auto_ptr<MockAnalysisModule> mod(new MockAnalysisModule(0));
     EXPECT_THROW(data.addModule(mod.release()), gmx::APIError);
 
-    mod.reset(new MockModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+    mod.reset(new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
     EXPECT_NO_THROW(data.addModule(mod.release()));
 }
 
-
-TEST(AnalysisDataTest, ChecksMultiPointModules)
+/*
+ * Tests that checking for compatibility of modules with multipoint data
+ * works.
+ */
+TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
 {
     gmx::AnalysisData data;
     data.setColumns(1, true);
 
-    std::auto_ptr<MockModule> mod(new MockModule(0));
+    std::auto_ptr<MockAnalysisModule> mod(new MockAnalysisModule(0));
     EXPECT_THROW(data.addModule(mod.release()), gmx::APIError);
 
-    mod.reset(new MockModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+    mod.reset(new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     EXPECT_NO_THROW(data.addModule(mod.release()));
 }
 
 
-TEST(AnalysisDataTest, CallsModuleCorrectly)
+typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
+
+// Input data for the tests below.
+using gmx::test::END_OF_DATA;
+using gmx::test::END_OF_FRAME;
+static const real inputdata[] = {
+    1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
+    2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
+    3.0,  2.0, 0.0, 0.0, END_OF_FRAME,
+    END_OF_DATA
+};
+
+/*
+ * Tests that data is forwarded correctly to modules using two independent
+ * modules.
+ */
+TEST_F(AnalysisDataTest, CallsModuleCorrectly)
 {
+    gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
-    data.setColumns(1);
+    data.setColumns(input.columnCount());
 
-    std::auto_ptr<MockModule> mod(new MockModule(0));
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
+}
+
+/*
+ * Tests that data is forwarded correctly to modules that are added using
+ * addColumnModule().
+ * Uses two independent modules.
+ */
+TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
+
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 0, 2, &data));
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 2, 1, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
+}
+
+/*
+ * Tests that data is forwarded correctly to modules when the data is added as
+ * individual points and not as full frames.
+ */
+TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithIndividualPoints)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
+
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
+    gmx::AnalysisDataHandle *handle = NULL;
+    ASSERT_NO_THROW(handle = data.startData(NULL));
+    for (int row = 0; row < input.frameCount(); ++row)
     {
-        ::testing::InSequence dummy;
-        using ::testing::_;
-
-        EXPECT_CALL(*mod, dataStarted(&data));
-        EXPECT_CALL(*mod, frameStarted(1.0, 0.0));
-        EXPECT_CALL(*mod, pointsAdded(1.0, 0.0, 0, 1, _, _, _));
-        EXPECT_CALL(*mod, frameFinished());
-        EXPECT_CALL(*mod, frameStarted(2.0, 0.0));
-        EXPECT_CALL(*mod, pointsAdded(2.0, 0.0, 0, 1, _, _, _));
-        EXPECT_CALL(*mod, frameFinished());
-        EXPECT_CALL(*mod, frameStarted(3.0, 0.0));
-        EXPECT_CALL(*mod, pointsAdded(3.0, 0.0, 0, 1, _, _, _));
-        EXPECT_CALL(*mod, frameFinished());
-        EXPECT_CALL(*mod, dataFinished());
+        const gmx::test::AnalysisDataTestInputFrame &frame = input.frame(row);
+        ASSERT_NO_THROW(handle->startFrame(row, frame.x(), frame.dx()));
+        for (int column = 0; column < input.columnCount(); ++column)
+        {
+            ASSERT_NO_THROW(handle->addPoint(column, frame.yptr()[column]));
+        }
+        ASSERT_NO_THROW(handle->finishFrame());
+        EXPECT_EQ(row + 1, data.frameCount());
     }
-    ASSERT_NO_THROW(data.addModule(mod.release()));
+    ASSERT_NO_THROW(handle->finishData());
+}
 
-    gmx::AnalysisDataHandle *dh = NULL;
-    ASSERT_NO_THROW(dh = data.startData(NULL));
+/*
+ * Tests that data is forwarded correctly (in frame order) to modules when the
+ * data is added through multiple handles in non-increasing order.
+ */
+TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
 
-    ASSERT_NO_THROW(dh->startFrame(0, 1.0));
-    EXPECT_NO_THROW(dh->addPoint(0, 1.5));
-    EXPECT_NO_THROW(dh->finishFrame());
-    EXPECT_EQ(1, data.frameCount());
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
+    gmx::AnalysisDataHandle *handle1 = NULL;
+    gmx::AnalysisDataHandle *handle2 = NULL;
+    ASSERT_NO_THROW(handle1 = data.startData(NULL));
+    ASSERT_NO_THROW(handle2 = data.startData(NULL));
+    ASSERT_NO_THROW(presentDataFrame(input, 1, handle1));
+    ASSERT_NO_THROW(presentDataFrame(input, 0, handle2));
+    ASSERT_NO_THROW(presentDataFrame(input, 2, handle1));
+    ASSERT_NO_THROW(handle1->finishData());
+    ASSERT_NO_THROW(handle2->finishData());
+}
 
-    ASSERT_NO_THROW(dh->startFrame(1, 2.0));
-    EXPECT_NO_THROW(dh->addPoint(0, 2.5));
-    EXPECT_NO_THROW(dh->finishFrame());
-    EXPECT_EQ(2, data.frameCount());
+/*
+ * Tests that data can be accessed correctly from a module that requests
+ * storage using AbstractAnalysisData::requestStorage() with parameter -1.
+ */
+TEST_F(AnalysisDataTest, FullStorageWorks)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
 
-    ASSERT_NO_THROW(dh->startFrame(2, 3.0));
-    EXPECT_NO_THROW(dh->addPoint(0, 3.5));
-    EXPECT_NO_THROW(dh->finishFrame());
-    EXPECT_EQ(3, data.frameCount());
+    ASSERT_NO_THROW(addStaticStorageCheckerModule(input, -1, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
+}
 
-    EXPECT_NO_THROW(data.finishData(dh));
+/*
+ * Tests that a data module can be added to an AnalysisData object after data
+ * has been added if all data is still available in storage.
+ */
+TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
+    data.requestStorage(-1);
+
+    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+}
+
+/*
+ * Tests that data can be accessed correctly from a module that requests
+ * storage using AbstractAnalysisData::requestStorage() only for one frame.
+ */
+TEST_F(AnalysisDataTest, LimitedStorageWorks)
+{
+    gmx::test::AnalysisDataTestInput input(inputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount());
+
+    ASSERT_NO_THROW(addStaticStorageCheckerModule(input, 1, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
 }
 
 } // namespace
