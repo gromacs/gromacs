@@ -481,7 +481,8 @@ AbstractAnalysisDataStored::requestStorage(int nframes)
     {
         return true;
     }
-    _impl->_nalloc = nframes;
+    // nframes previous frames plus the current one
+    _impl->_nalloc = nframes + 1;
     return true;
 }
 
