@@ -9,7 +9,8 @@ function (add_gtest_test NAME EXENAME)
         endif ()
         list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
         set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
-        add_test(${NAME} ${EXENAME})
+        add_test(NAME ${NAME}
+                 COMMAND ${EXENAME})
     endif ()
 endfunction ()
 
@@ -24,7 +25,8 @@ function (add_gmock_test NAME EXENAME)
         endif ()
         list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
         set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
-        add_test(${NAME} ${EXENAME})
+        add_test(NAME ${NAME}
+                 COMMAND ${EXENAME})
     endif ()
 endfunction ()
 

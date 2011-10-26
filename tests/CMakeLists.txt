@@ -1,2 +1,2 @@
-enable_testing()
-add_test(TestExec_mdrun-h ../src/kernel/mdrun -h)
+add_test(NAME TestExec_mdrun-h
+         COMMAND mdrun -h)
