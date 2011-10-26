@@ -147,10 +147,12 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         virtual void dataFinished();
 
     protected:
+        /*! \cond libapi */
         explicit AbstractPlotModule(const Options &options);
 
         bool isFileOpen() const;
         void writeValue(real value) const;
+        //! \endcond
 
     private:
         class Impl;

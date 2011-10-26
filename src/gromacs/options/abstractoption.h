@@ -84,6 +84,7 @@ class AbstractOption
         virtual ~AbstractOption() { }
 
     protected:
+        /*! \cond libapi */
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : _minValueCount(1), _maxValueCount(1),
@@ -156,6 +157,7 @@ class AbstractOption
         int                     _minValueCount;
         //! Maximum number of values allowed for the option.
         int                     _maxValueCount;
+        //! \endcond
 
     private:
         //! Returns true if a flag has been set.
@@ -206,8 +208,6 @@ class OptionTemplate : public AbstractOption
         typedef T ValueType;
         //! Alias for the derived class type.
         typedef U MyClass;
-        //! Alias for the template class for use in base classes.
-        typedef OptionTemplate<T, U> MyBase;
 
         /*! \brief
          * Sets a description for the option.
@@ -310,6 +310,10 @@ class OptionTemplate : public AbstractOption
         { setFlag(efExternalValueVector); _storeVector = store; return me(); }
 
     protected:
+        /*! \cond libapi */
+        //! Alias for the template class for use in base classes.
+        typedef OptionTemplate<T, U> MyBase;
+
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
@@ -329,6 +333,7 @@ class OptionTemplate : public AbstractOption
         const T *defaultValueIfSet() const { return _defaultValueIfSet; }
         //! Returns \p *this casted into MyClass to reduce typing.
         MyClass &me() { return static_cast<MyClass &>(*this); }
+        //! \endcond
 
     private:
         const T                *_defaultValue;

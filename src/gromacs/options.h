@@ -54,7 +54,8 @@
  * Currently, only one is defined: AsciiHelpWriter
  * (implementation is not yet complete).
  *
- * <H3>Advanced Use</H3>
+ * \if libapi
+ * <H3>Advanced Use (in library API)</H3>
  *
  * It is possible to extend the module with new option types and/or parsers for
  * option values.
@@ -77,6 +78,7 @@
  * There is also an interface to iterate over all options in an Options object.
  * One should implement the OptionsVisitor interface, and then use
  * OptionsIterator to apply this visitor to the Options object.
+ * \endif
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */

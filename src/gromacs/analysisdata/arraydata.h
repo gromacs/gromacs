@@ -164,6 +164,8 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
     public:
         AnalysisArrayData() {}
 
+        // TODO: These statements cause Doxygen to generate confusing
+        // documentation.
         using AbstractAnalysisArrayData::rowCount;
         using AbstractAnalysisArrayData::setColumnCount;
         using AbstractAnalysisArrayData::setRowCount;
