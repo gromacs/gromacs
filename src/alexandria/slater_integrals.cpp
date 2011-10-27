@@ -5,8 +5,11 @@ using namespace std;
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef HAVE_CLN_CLN_H
+
+#include "slater_integrals.h"
 #include "slater_low.h"
+
+#ifdef HAVE_LIBCLN
 
 cl_R Nuclear_1S(cl_R r,cl_R xi)
 {
@@ -238,13 +241,13 @@ static char *my_ftoa(double d)
 }
 
 #endif
-/* HAVE_CLN_CLN_H */
+/* HAVE_LIBCLN */
 
 extern "C" double Coulomb_SS(double r,int i,int j,double xi,double xj)
 {
   char buf[256];
   double S;
-#ifdef HAVE_CLN_CLN_H
+#ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
   if ((i > SLATER_MAX) || (j > SLATER_MAX)) {
@@ -286,7 +289,7 @@ extern "C" double Nuclear_SS(double r,int i,double xi)
 {
   char buf[256];
   double S;
-#ifdef HAVE_CLN_CLN_H
+#ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
   if (xi == 0) {
@@ -315,7 +318,7 @@ extern "C" double DCoulomb_SS(double r,int i,int j,double xi,double xj)
 {
   char buf[256];
   double S;
-#ifdef HAVE_CLN_CLN_H
+#ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
   if ((i > SLATER_MAX) || (j > SLATER_MAX)) {
@@ -357,7 +360,7 @@ extern "C" double DNuclear_SS(double r,int i,double xi)
 {
   char buf[256];
   double S;
-#ifdef HAVE_CLN_CLN_H
+#ifdef HAVE_LIBCLN
   cl_R cr,cxi,cxj,cS;
 
   if (i > SLATER_MAX) {
@@ -382,7 +385,7 @@ extern "C" double DNuclear_SS(double r,int i,double xi)
 #endif
 }
 
-#ifdef HAVE_CLN_CLN_H
+#ifdef HAVE_LIBCLN
 cl_R Power(cl_R a,int b)
 {
   int  minus = 0;
@@ -415,4 +418,3 @@ cl_R Power(cl_R a,int b)
   return ZERO;
 }
 #endif
-

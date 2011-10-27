@@ -168,7 +168,7 @@ static real calc_jab(int iModel,
     int  i,j;
     rvec dx;
     real r;
-    real eTot;
+    real eTot=0;
 
     rvec_sub(xi,xj,dx);
     r = norm(dx);
