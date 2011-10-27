@@ -62,6 +62,7 @@
 #include "copyrite.h"
 #include "mtop_util.h"
 #include "nsbox.h"
+#include "statutil.h"
 
 
 #ifdef _MSC_VER
@@ -1398,6 +1399,15 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     gmx_bool GPU_OK;
     int *gpus,ngpu,i;
 
+#ifndef GMX_GPU
+    if (forceGPU)
+    {
+        gmx_fatal(FARGS,"GPU requested for non-bonded interactions, but %s was compiled without GPU support",ShortProgram());
+    }
+
+    return FALSE;
+#endif
+
     /* TODO: do the multi-GPU initilization properly */
     /* for now to enable parallel runs, unless GMX_GPU_ID is set, 
        each process will try to use the GPU with id = procid
@@ -1415,7 +1425,9 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
         /* If you set this env.var, you want to use a GPU */
         forceGPU = TRUE;
     }
+#ifdef GMX_GPU
     GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
+#endif
     snew(gpus,cr->nnodes);
     gpus[cr->nodeid] = (GPU_OK ? -1 : gpu_device_id);
     /* In parallel we need to check if every node has a GPU */
@@ -1524,12 +1536,6 @@ static void pick_nb_kernel(FILE *fp,
     }    
     else if (tryGPU)
     {
-#ifndef GMX_GPU
-        if (forceGPU)
-        {
-            gmx_fatal(FARGS,"GPU requested for non-bonded interactions, but %s was compiled without GPU support",ShortProgram());
-        }
-#else
         /* Try to use a GPU */
         *useGPU = init_gpu_nb(fp,cr,forceGPU);
 
@@ -1539,7 +1545,6 @@ static void pick_nb_kernel(FILE *fp,
 
             *napc = GPU_NS_CELL_SIZE;
         }
-#endif
     }
 
     if (fp != NULL)
