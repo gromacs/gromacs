@@ -776,6 +776,7 @@ void gmx_resp_calc_rho(gmx_resp_t gr)
         V = 0;
         for(j=0; (j<gr->natom); j++) 
         {
+            vv = 0;
             rvec_sub(gr->esp[i],gr->x[j],dx);
             r = norm(dx);
             switch (gr->iModel) 
@@ -822,6 +823,7 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
         V = 0;
         for(j=0; (j<gr->natom); j++) 
         {
+            vv = 0;
             rvec_sub(gr->esp[i],gr->x[j],dx);
             r = norm(dx);
             switch (gr->iModel) 
@@ -1082,7 +1084,7 @@ static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom
 {
     int    i,n,zz,zzz,nrest;
     double qtot,dq,qi,zeta;
-    gmx_rng_t rnd;
+    gmx_rng_t rnd=NULL;
     
     if (bSet && bRandom)
         rnd = gmx_rng_init(gmx_rng_make_seed());

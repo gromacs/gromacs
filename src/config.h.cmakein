@@ -221,6 +221,9 @@
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
 
+/* Define to 1 if you have the CLN library (-lcln). */
+#cmakedefine HAVE_LIBCLN
+
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
