@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     t_symtab   symtab;
     int        nqa=0,iModel;
     real       cutoff,qtot,mtot;
-    char       *gentop_version = (char *)PACKAGE_STRING;
+    char       *gentop_version = (char *)"v0.99";
     const char *fn,*xmlf;
     char       rtp[STRLEN],forcefield[STRLEN],ffdir[STRLEN];
     char       ffname[STRLEN],suffix[STRLEN],buf[STRLEN],gentopdat[STRLEN];
