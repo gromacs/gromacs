@@ -37,7 +37,7 @@
 #ifndef slater_integrals_h
 #define slater_integrals_h
 
-#define SLATER_MAX 6
+#define SLATER_MAX 3
 
 #ifdef __cplusplus
 extern "C"
