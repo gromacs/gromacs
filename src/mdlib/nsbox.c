@@ -110,6 +110,7 @@ typedef struct gmx_nbl_work {
     float *d2;         /* Bounding box distance work array                  */
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+    /* The i-tixel coordinates for simple search */
     __m128 ix_SSE0,iy_SSE0,iz_SSE0;
     __m128 ix_SSE1,iy_SSE1,iz_SSE1;
     __m128 ix_SSE2,iy_SSE2,iz_SSE2;
@@ -3465,8 +3466,11 @@ static void close_ci_entry_supersub(gmx_nblist_t *nbl,
 
 static void sync_work(gmx_nblist_t *nbl)
 {
-    nbl->work->sj_ind   = nbl->nsj4*4;
-    nbl->work->sj4_init = nbl->nsj4;
+    if (!nbl->simple)
+    {
+        nbl->work->sj_ind   = nbl->nsj4*4;
+        nbl->work->sj4_init = nbl->nsj4;
+    }
 }
 
 static void clear_nblist(gmx_nblist_t *nbl)
@@ -3981,12 +3985,12 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
-    sync_work(nbl);
+    if (gridj->simple != nbl->simple)
+    {
+        gmx_incons("Grid incompatible with neighbor list");
+    }
 
-    /* Maybe we should not set the type of neighborlist at search time,
-     * but rather in gmx_nblist_init?
-     */
-    nbl->simple = gridj->simple;
+    sync_work(nbl);
 
     nbl->napc = gridj->na_stx;
     nbl->naps = gridj->na_tx;
