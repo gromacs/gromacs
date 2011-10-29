@@ -121,6 +121,7 @@ typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
 // Input data for the tests below.
 using gmx::test::END_OF_DATA;
 using gmx::test::END_OF_FRAME;
+using gmx::test::MPSTOP;
 static const real inputdata[] = {
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
@@ -176,10 +177,11 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithIndividualPoints)
     for (int row = 0; row < input.frameCount(); ++row)
     {
         const gmx::test::AnalysisDataTestInputFrame &frame = input.frame(row);
+        const gmx::test::AnalysisDataTestInputPointSet &points = frame.points();
         ASSERT_NO_THROW(handle->startFrame(row, frame.x(), frame.dx()));
         for (int column = 0; column < input.columnCount(); ++column)
         {
-            ASSERT_NO_THROW(handle->addPoint(column, frame.yptr()[column]));
+            ASSERT_NO_THROW(handle->addPoint(column, points.y(column)));
         }
         ASSERT_NO_THROW(handle->finishFrame());
         EXPECT_EQ(row + 1, data.frameCount());
@@ -250,6 +252,45 @@ TEST_F(AnalysisDataTest, LimitedStorageWorks)
     data.setColumns(input.columnCount());
 
     ASSERT_NO_THROW(addStaticStorageCheckerModule(input, 1, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
+}
+
+// Input data for the tests below.
+static const real multipointinputdata[] = {
+    1.0,  0.0, 1.0, 2.0, MPSTOP, 1.1, 2.1, 1.1, MPSTOP, 2.2, 1.2, 0.2, END_OF_FRAME,
+    2.0,  1.0, 1.0, 1.0, MPSTOP, 2.1, 1.1, 0.1, MPSTOP, 1.2, 0.2, 1.2, END_OF_FRAME,
+    3.0,  2.0, 0.0, 0.0, MPSTOP, 3.1, 2.1, 1.1, MPSTOP, 0.2, 2.2, 1.2, END_OF_FRAME,
+    END_OF_DATA
+};
+
+/*
+ * Tests that multipoint data is forwarded correctly to modules using two
+ * independent modules.
+ */
+TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
+{
+    gmx::test::AnalysisDataTestInput input(multipointinputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount(), true);
+
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(presentAllData(input, &data));
+}
+
+/*
+ * Tests that multipoint data is forwarded correctly to modules that are added
+ * using addColumnModule().
+ * Uses two independent modules.
+ */
+TEST_F(AnalysisDataTest, MultipointCallsColumnModuleCorrectly)
+{
+    gmx::test::AnalysisDataTestInput input(multipointinputdata);
+    gmx::AnalysisData data;
+    data.setColumns(input.columnCount(), true);
+
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 0, 2, &data));
+    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 2, 1, &data));
     ASSERT_NO_THROW(presentAllData(input, &data));
 }
 
