@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 #include "testutils/refdata.h"
 
@@ -64,6 +65,35 @@ class MockAnalysisModule;
 const real END_OF_DATA = std::numeric_limits<real>::max();
 //! Constant to use to signify end of one data frame for AnalysisDataTestInput.
 const real END_OF_FRAME = std::numeric_limits<real>::min();
+//! Constant to use to signify end of one multipoint set for AnalysisDataTestInput.
+const real MPSTOP = 0.999*std::numeric_limits<real>::max();
+
+/*! \libinternal \brief
+ * Represents a single set of points in AnalysisDataTestInputFrame structure.
+ *
+ * If the data is not multipoint, each frame contains exactly one set of
+ * points.  If there is more than one set of points, each of these sets is
+ * passed separately to AnalysisDataHandle::addPoints().
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataTestInputPointSet
+{
+    public:
+        AnalysisDataTestInputPointSet();
+
+        int size() const { return y_.size(); }
+        real y(int i) const { return y_[i]; }
+        const std::vector<real> &yvector() const { return y_; }
+        const real *yptr() const { return &y_[0]; }
+        const real *dyptr() const { return NULL; }
+        const bool *presentptr() const { return NULL; }
+
+    private:
+        std::vector<real>       y_;
+
+        friend class AnalysisDataTestInput;
+};
 
 /*! \libinternal \brief
  * Represents a single frame in AnalysisDataTestInput structure.
@@ -75,17 +105,22 @@ class AnalysisDataTestInputFrame
     public:
         AnalysisDataTestInputFrame();
 
+        bool isMultipoint() const { return points_.size() > 1; }
+
         real x() const { return x_; }
         real dx() const { return 0.0; }
-        real y(int i) const { return y_[i]; }
-        const std::vector<real> &yvector() const { return y_; }
-        const real *yptr() const { return &y_[0]; }
-        const real *dyptr() const { return NULL; }
-        const bool *presentptr() const { return NULL; }
+
+        int pointSetCount() const { return points_.size(); }
+        const AnalysisDataTestInputPointSet &points(int index = 0) const
+        {
+            GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < points_.size(),
+                       "Point set index out of range");
+            return points_[index];
+        }
 
     private:
         real                    x_;
-        std::vector<real>       y_;
+        std::vector<AnalysisDataTestInputPointSet>  points_;
 
         friend class AnalysisDataTestInput;
 };
@@ -106,10 +141,12 @@ class AnalysisDataTestInput
 
         int frameCount() const { return frames_.size(); }
         int columnCount() const { return columnCount_; }
+        bool isMultipoint() const { return bMultipoint_; }
         const AnalysisDataTestInputFrame &frame(int index) const;
 
     private:
         int                     columnCount_;
+        bool                    bMultipoint_;
         std::vector<AnalysisDataTestInputFrame> frames_;
 };
 
@@ -117,7 +154,7 @@ class AnalysisDataTestInput
  * Test fixture for AbstractAnalysisData testing.
  *
  * \todo
- * Support for errors and for multipoint data.
+ * Support for errors and for arbitrary multipoint data.
  *
  * \ingroup module_analysisdata
  */

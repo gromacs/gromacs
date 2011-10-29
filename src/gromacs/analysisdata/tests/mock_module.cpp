@@ -85,23 +85,35 @@ MockAnalysisModule::Impl::checkReferencePoints(real x, real dx, int firstcol, in
 namespace
 {
 
-void checkFrame(real x, real dx, int firstcol, int n, const real *y,
-                const AnalysisDataTestInputFrame &frame)
+void checkFrame(real x, real dx, const AnalysisDataTestInputFrame &frame)
 {
     EXPECT_FLOAT_EQ(frame.x(), x);
     EXPECT_FLOAT_EQ(frame.dx(), dx);
+}
+
+void checkPoints(int firstcol, int n, const real *y,
+                 const AnalysisDataTestInputPointSet &points)
+{
     for (int i = 0; i < n; ++i)
     {
-        EXPECT_FLOAT_EQ(frame.y(firstcol + i), y[i]);
+        EXPECT_FLOAT_EQ(points.y(firstcol + i), y[i]);
     }
+}
+
+void checkFrame(real x, real dx, int firstcol, int n, const real *y,
+                const AnalysisDataTestInputFrame &frame)
+{
+    checkFrame(x, dx, frame);
+    checkPoints(firstcol, n, y, frame.points());
 }
 
 class StaticDataPointsChecker
 {
     public:
         StaticDataPointsChecker(const AnalysisDataTestInputFrame *frame,
+                                const AnalysisDataTestInputPointSet *points,
                                 int firstcol, int n)
-            : frame_(frame), firstcol_(firstcol), n_(n)
+            : frame_(frame), points_(points), firstcol_(firstcol), n_(n)
         {
         }
 
@@ -111,11 +123,13 @@ class StaticDataPointsChecker
         {
             EXPECT_EQ(0, firstcol);
             EXPECT_EQ(n_, n);
-            checkFrame(x, dx, firstcol_ + firstcol, n, y, *frame_);
+            checkFrame(x, dx, *frame_);
+            checkPoints(firstcol_ + firstcol, n, y, *points_);
         }
 
     private:
         const AnalysisDataTestInputFrame *frame_;
+        const AnalysisDataTestInputPointSet *points_;
         int                     firstcol_;
         int                     n_;
 };
@@ -224,9 +238,14 @@ MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(frame.x(), frame.dx()));
-        EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0,
-                                       data.columnCount(), _, _, _))
-            .WillOnce(Invoke(StaticDataPointsChecker(&frame, 0, data.columnCount())));
+        for (int ps = 0; ps < frame.pointSetCount(); ++ps)
+        {
+            const AnalysisDataTestInputPointSet &points = frame.points(ps);
+            EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0,
+                                           points.size(), _, _, _))
+                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
+                                                         data.columnCount())));
+        }
         EXPECT_CALL(*this, frameFinished());
     }
     EXPECT_CALL(*this, dataFinished());
@@ -256,8 +275,12 @@ MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(frame.x(), frame.dx()));
-        EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0, n, _, _, _))
-            .WillOnce(Invoke(StaticDataPointsChecker(&frame, firstcol, n)));
+        for (int ps = 0; ps < frame.pointSetCount(); ++ps)
+        {
+            const AnalysisDataTestInputPointSet &points = frame.points(ps);
+            EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0, n, _, _, _))
+                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
+        }
         EXPECT_CALL(*this, frameFinished());
     }
     EXPECT_CALL(*this, dataFinished());
@@ -272,6 +295,10 @@ MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
     if (data.columnCount() != source->columnCount())
     {
         GMX_THROW(gmx::test::TestException("Mismatching data column count"));
+    }
+    if (data.isMultipoint() || source->isMultipoint())
+    {
+        GMX_THROW(gmx::test::TestException("Storage testing not implemented for multipoint data"));
     }
 
     ::testing::InSequence dummy;

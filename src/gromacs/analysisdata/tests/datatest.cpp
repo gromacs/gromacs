@@ -57,6 +57,15 @@ namespace test
 {
 
 /********************************************************************
+ * AnalysisDataTestInputPointSet
+ */
+
+AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet()
+{
+}
+
+
+/********************************************************************
  * AnalysisDataTestInputFrame
  */
 
@@ -73,44 +82,54 @@ namespace
 {
     void checkValidDataItem(real data)
     {
-        if (data == END_OF_DATA || data == END_OF_FRAME)
-        {
-            GMX_THROW(gmx::test::TestException("Inconsistent data array"));
-        }
+        GMX_RELEASE_ASSERT(data != END_OF_DATA && data != END_OF_FRAME
+                           && data != MPSTOP,
+                           "Inconsistent data array");
     }
 }
 
 AnalysisDataTestInput::AnalysisDataTestInput(const real *data)
-    : columnCount_(0)
+    : columnCount_(0), bMultipoint_(false)
 {
     // Count rows and columns.
     int rows = 0, columns = -1;
+    bool bFirst = true;
+
     const real *dataptr = data;
-    for (int i = 0; dataptr[i] != END_OF_DATA; ++i)
+    int i = 0;
+    for ( ; dataptr[i] != END_OF_DATA; ++i)
     {
-        if (dataptr[i] == END_OF_FRAME)
+        if (bFirst)
         {
-            if (i < 1)
+            checkValidDataItem(dataptr[i]);
+            ++dataptr;
+            --i;
+            bFirst = false;
+        }
+        else if (dataptr[i] == MPSTOP || dataptr[i] == END_OF_FRAME)
+        {
+            GMX_RELEASE_ASSERT(i > 0, "Empty data frame");
+            if (dataptr[i] == MPSTOP)
             {
-                GMX_THROW(gmx::test::TestException("Inconsistent data array"));
+                bMultipoint_ = true;
             }
-            if (columns == -1)
+            GMX_RELEASE_ASSERT(!(!bMultipoint_ && columns > 0 && columns != i),
+                               "Different frames have different number of columns");
+            if (columns < i)
             {
-                columns = i - 1;
+                columns = i;
             }
-            if (columns != i - 1)
+            if (dataptr[i] == END_OF_FRAME)
             {
-                GMX_THROW(gmx::test::TestException("Inconsistent data array"));
+                ++rows;
+                bFirst = true;
             }
-            ++rows;
             dataptr += i + 1;
             i = -1;
         }
     }
-    if (rows < 1)
-    {
-        GMX_THROW(gmx::test::TestException("Inconsistent data array"));
-    }
+    GMX_RELEASE_ASSERT(i == 0, "Extra data after last frame");
+    GMX_RELEASE_ASSERT(rows > 0, "Empty data");
     columnCount_ = columns;
 
     // Store the data.
@@ -122,22 +141,37 @@ AnalysisDataTestInput::AnalysisDataTestInput(const real *data)
         checkValidDataItem(*dataptr);
         frame.x_ = *dataptr;
         ++dataptr;
-        frame.y_.resize(columns);
-        for (int c = 0; c < columns; ++c)
+        if (bMultipoint_)
         {
-            checkValidDataItem(dataptr[c]);
-            frame.y_[c] = dataptr[c];
+            while (*(dataptr - 1) != END_OF_FRAME)
+            {
+                frame.points_.push_back(AnalysisDataTestInputPointSet());
+                AnalysisDataTestInputPointSet &points = frame.points_.back();
+                while (*dataptr != MPSTOP && *dataptr != END_OF_FRAME)
+                {
+                    checkValidDataItem(*dataptr);
+                    points.y_.push_back(*dataptr);
+                    ++dataptr;
+                }
+                ++dataptr;
+            }
         }
-        if (dataptr[columns] != END_OF_FRAME)
+        else
         {
-            GMX_THROW(gmx::test::TestException("Inconsistent data array"));
+            frame.points_.push_back(AnalysisDataTestInputPointSet());
+            AnalysisDataTestInputPointSet &points = frame.points_.back();
+            points.y_.reserve(columns);
+            for (int c = 0; c < columns; ++c)
+            {
+                checkValidDataItem(dataptr[c]);
+                points.y_.push_back(dataptr[c]);
+            }
+            GMX_RELEASE_ASSERT(dataptr[columns] == END_OF_FRAME,
+                               "Inconsistent data array");
+            dataptr += columns + 1;
         }
-        dataptr += columns + 1;
     }
-    if (*dataptr != END_OF_DATA)
-    {
-        GMX_THROW(gmx::test::TestException("Inconsistent data array"));
-    }
+    GMX_RELEASE_ASSERT(*dataptr == END_OF_DATA, "Inconsistent data array");
 }
 
 
@@ -182,8 +216,12 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
 {
     const AnalysisDataTestInputFrame &frame = input.frame(row);
     handle->startFrame(row, frame.x(), frame.dx());
-    handle->addPoints(0, input.columnCount(), frame.yptr(), frame.dyptr(),
-                      frame.presentptr());
+    for (int i = 0; i < frame.pointSetCount(); ++i)
+    {
+        const AnalysisDataTestInputPointSet &points = frame.points(i);
+        handle->addPoints(0, points.size(), points.yptr(), points.dyptr(),
+                          points.presentptr());
+    }
     handle->finishFrame();
 }
 
@@ -193,7 +231,8 @@ AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &dat
                                                 AbstractAnalysisData *source)
 {
     std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn |
+                                   gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     module->setupStaticCheck(data, source);
     source->addModule(module.release());
 }
@@ -205,7 +244,8 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
                                                       AbstractAnalysisData *source)
 {
     std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn |
+                                   gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     module->setupStaticColumnCheck(data, firstcol, n, source);
     source->addColumnModule(firstcol, n, module.release());
 }

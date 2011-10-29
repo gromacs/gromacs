@@ -57,13 +57,6 @@ AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
 }
 
 
-int
-AbstractAnalysisArrayData::frameCount() const
-{
-    return _bReady ? _nrows : 0;
-}
-
-
 bool
 AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
                                        const real **y, const real **dy,
