@@ -106,13 +106,6 @@ AnalysisDataDisplacementModule::setMSDHistogram(AnalysisDataBinAverageModule *hi
 }
 
 
-int
-AnalysisDataDisplacementModule::frameCount() const
-{
-    return _impl->nstored > 1 ? _impl->nstored - 1 : 0;
-}
-
-
 bool
 AnalysisDataDisplacementModule::getDataWErr(int index, real *x, real *dx,
                                             const real **y, const real **dy,
