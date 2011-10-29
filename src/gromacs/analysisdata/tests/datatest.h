@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/fatalerror/gmxassert.h"
 
 #include "testutils/refdata.h"
 
@@ -64,6 +65,35 @@ class MockAnalysisModule;
 const real END_OF_DATA = std::numeric_limits<real>::max();
 //! Constant to use to signify end of one data frame for AnalysisDataTestInput.
 const real END_OF_FRAME = std::numeric_limits<real>::min();
+//! Constant to use to signify end of one multipoint set for AnalysisDataTestInput.
+const real MPSTOP = -std::numeric_limits<real>::max();
+
+/*! \libinternal \brief
+ * Represents a single set of points in AnalysisDataTestInputFrame structure.
+ *
+ * If the data is not multipoint, each frame contains exactly one set of
+ * points.  If there is more than one set of points, each of these sets is
+ * passed separately to AnalysisDataHandle::addPoints().
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataTestInputPointSet
+{
+    public:
+        AnalysisDataTestInputPointSet();
+
+        int size() const { return y_.size(); }
+        real y(int i) const { return y_[i]; }
+        const std::vector<real> &yvector() const { return y_; }
+        const real *yptr() const { return &y_[0]; }
+        const real *dyptr() const { return NULL; }
+        const bool *presentptr() const { return NULL; }
+
+    private:
+        std::vector<real>       y_;
+
+        friend class AnalysisDataTestInput;
+};
 
 /*! \libinternal \brief
  * Represents a single frame in AnalysisDataTestInput structure.
@@ -75,19 +105,24 @@ class AnalysisDataTestInputFrame
     public:
         AnalysisDataTestInputFrame();
 
+        bool isMultipoint() const { return points_.size() > 1; }
+
         int index() const { return index_; }
         real x() const { return x_; }
         real dx() const { return 0.0; }
-        real y(int i) const { return y_[i]; }
-        const std::vector<real> &yvector() const { return y_; }
-        const real *yptr() const { return &y_[0]; }
-        const real *dyptr() const { return NULL; }
-        const bool *presentptr() const { return NULL; }
+
+        int pointSetCount() const { return points_.size(); }
+        const AnalysisDataTestInputPointSet &points(int index = 0) const
+        {
+            GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < points_.size(),
+                       "Point set index out of range");
+            return points_[index];
+        }
 
     private:
         int                     index_;
         real                    x_;
-        std::vector<real>       y_;
+        std::vector<AnalysisDataTestInputPointSet>  points_;
 
         friend class AnalysisDataTestInput;
 };
@@ -113,6 +148,12 @@ class AnalysisDataTestInput
          * The input array should consist of a set of frames, separated by a
          * END_OF_FRAME marker.  The first value for a frame is the X value,
          * all following values are Y values.
+         * For multipoint data, one frame can contain several point sets,
+         * separated by MPSTOP markers.  There should be no MPSTOP marker after
+         * the last point set, only an END_OF_FRAME marker.  All point sets are
+         * assumed to start from column zero, but the sets may contain
+         * different number of columns.  For non-multipoint data, all frames
+         * must containt the same number of columns.
          * The final element in the array (after the last END_OF_FRAME) should
          * be END_OF_DATA.
          */
@@ -121,10 +162,12 @@ class AnalysisDataTestInput
 
         int frameCount() const { return frames_.size(); }
         int columnCount() const { return columnCount_; }
+        bool isMultipoint() const { return bMultipoint_; }
         const AnalysisDataTestInputFrame &frame(int index) const;
 
     private:
         int                     columnCount_;
+        bool                    bMultipoint_;
         std::vector<AnalysisDataTestInputFrame> frames_;
 };
 
@@ -156,7 +199,7 @@ class AnalysisDataTestInput
  * checks are done during the these methods, by the added mock modules.
  *
  * \todo
- * Support for errors and for multipoint data.
+ * Support for errors and for arbitrary multipoint data.
  *
  * \see AnalysisDataTestInput
  *

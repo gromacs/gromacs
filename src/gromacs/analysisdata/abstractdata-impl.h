@@ -92,6 +92,12 @@ class AbstractAnalysisData::Impl
         real                    _currx;
         //! dx value for the current frame.
         real                    _currdx;
+        /*! \brief
+         * Total number of frames in the data.
+         *
+         * The counter is incremented in notifyFrameStart().
+         */
+        int                     _nframes;
 };
 
 /*! \internal \brief
@@ -141,15 +147,12 @@ class AbstractAnalysisDataStored::Impl
          *
          * \param[in] index  Zero-based index for the frame to query.
          *      Negative value counts backwards from the current frame.
+         * \param[in] nframes  Total number of frames in the data.
          * \returns Index in \a _store corresponding to \p index,
          *      or -1 if not available.
          */
-        int getStoreIndex(int index) const;
+        int getStoreIndex(int index, int nframes) const;
 
-        /*! \brief
-         * Total number of complete frames in the data.
-         */
-        int                     _nframes;
         /*! \brief
          * Number of elements in \a _store.
          *
