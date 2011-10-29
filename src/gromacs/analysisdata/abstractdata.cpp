@@ -57,7 +57,7 @@ namespace gmx
 
 AbstractAnalysisData::Impl::Impl()
     : _bDataStart(false), _bInData(false), _bInFrame(false),
-      _bAllowMissing(true)
+      _bAllowMissing(true), _nframes(0)
 {
 }
 
@@ -123,6 +123,13 @@ AbstractAnalysisData::AbstractAnalysisData()
 AbstractAnalysisData::~AbstractAnalysisData()
 {
     delete _impl;
+}
+
+
+int
+AbstractAnalysisData::frameCount() const
+{
+    return _impl->_nframes;
 }
 
 
@@ -258,6 +265,7 @@ AbstractAnalysisData::notifyFrameStart(real x, real dx) const
     _impl->_bInFrame = true;
     _impl->_currx  = x;
     _impl->_currdx = dx;
+    ++_impl->_nframes;
 
     Impl::ModuleList::const_iterator i;
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
@@ -358,7 +366,7 @@ void AnalysisDataFrame::allocate(int ncol)
  */
 
 AbstractAnalysisDataStored::Impl::Impl()
-    : _nframes(0), _nalloc(0), _bStoreAll(false), _nextind(-1)
+    : _nalloc(0), _bStoreAll(false), _nextind(-1)
 {
 }
 
@@ -374,11 +382,11 @@ AbstractAnalysisDataStored::Impl::~Impl()
 
 
 int
-AbstractAnalysisDataStored::Impl::getStoreIndex(int index) const
+AbstractAnalysisDataStored::Impl::getStoreIndex(int index, int nframes) const
 {
     // Check that the requested index is available.
-    if ((index < 0 && (-index > _nalloc || -index > _nframes))
-        || index >= _nframes || (index >= 0 && index < _nframes - _nalloc))
+    if ((index < 0 && (-index > _nalloc || -index > nframes))
+        || index >= nframes || (index >= 0 && index < nframes - _nalloc))
     {
         return -1;
     }
@@ -391,7 +399,7 @@ AbstractAnalysisDataStored::Impl::getStoreIndex(int index) const
             index += _nalloc;
         }
     }
-    else if (_nframes > _nalloc)
+    else if (nframes > _nalloc)
     {
         index %= _nalloc;
     }
@@ -415,19 +423,12 @@ AbstractAnalysisDataStored::~AbstractAnalysisDataStored()
 }
 
 
-int
-AbstractAnalysisDataStored::frameCount() const
-{
-    return _impl->_nframes;
-}
-
-
 bool
 AbstractAnalysisDataStored::getDataWErr(int index, real *x, real *dx,
                                         const real **y, const real **dy,
                                         const bool **present) const
 {
-    index = _impl->getStoreIndex(index);
+    index = _impl->getStoreIndex(index, frameCount());
     if (index < 0)
     {
         return false;
@@ -578,7 +579,6 @@ AbstractAnalysisDataStored::storeThisFrame(const real *y, const real *dy,
             }
         }
     }
-    ++_impl->_nframes;
 
     // Notify modules of new data.
     notifyPointsAdd(0, ncol, y, dy, present);
