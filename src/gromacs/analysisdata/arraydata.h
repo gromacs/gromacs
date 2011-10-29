@@ -64,7 +64,6 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
     public:
         virtual ~AbstractAnalysisArrayData();
 
-        virtual int frameCount() const;
         virtual bool getDataWErr(int index, real *x, real *dx,
                                  const real **y, const real **dy,
                                  const bool **present = 0) const;

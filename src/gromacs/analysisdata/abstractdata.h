@@ -131,7 +131,7 @@ class AbstractAnalysisData
          * produced. If requestStorage() has been successfully called,
          * getData() can be used to access some or all of these frames.
          */
-        virtual int frameCount() const = 0;
+        int frameCount() const;
         /*! \brief
          * Access stored data.
          *
@@ -348,7 +348,6 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
     public:
         virtual ~AbstractAnalysisDataStored();
 
-        virtual int frameCount() const;
         virtual bool getDataWErr(int index, real *x, real *dx,
                                  const real **y, const real **dy,
                                  const bool **present = 0) const;
