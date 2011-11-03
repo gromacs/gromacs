@@ -2395,6 +2395,9 @@ void do_index(const char* mdparin, const char *ndx,
 
       if (EI_VV(ir->eI)) 
       {
+          if ((ir->etc==etcNOSEHOOVER) || (ir->epc==epcBERENDSEN)) {
+              gmx_fatal(FARGS,"Cannot do Nose-Hoover temperature with Berendsen pressure control with md-vv; use either vrescale temperature with berendsen pressure or Nose-Hoover temperature with MTTK pressure");
+          }
           if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
           {
               int mincouple;
