@@ -264,15 +264,14 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
 
     /* launch async nonbonded calculations */        
     /* size of force buffers in shmem */
-     shmem = !doKernel2 ?
-                (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
-                CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
-     
-    nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
-                                 nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist, 
-                                                 calc_fshift);
+    shmem = !doKernel2 ?
+        (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
+        CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
 
+    nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene,
+                                 nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
+    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist,
+                                                      calc_fshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
     if (do_time)
@@ -283,13 +282,14 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
 }
 
 void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
-                  const gmx_nb_atomdata_t *nbatom,
-                  int flags,
-                  int aloc)
+                         const gmx_nb_atomdata_t *nbatom,
+                         int flags,
+                         int aloc)
 {
     cudaError_t stat;
-    int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
+    int adat_begin, adat_len, adat_last;  /* local/nonlocal offset and length used for xq and f */
     int iloc = -1;
+    float4 *signal_field;
 
     gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
@@ -321,11 +321,13 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
+        adat_last   = cu_nb->atomdata->natoms_local - 1;
     }
     else
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
+        adat_last = cu_nb->atomdata->natoms - 1;
     }
 
     /* beginning of timed D2H section */
@@ -333,6 +335,22 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     {
         stat = cudaEventRecord(start, stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
+    /* TODO: maybe move this to cu_clear_nb_f_out() 
+             -> it's just that gmx_nb_atomdata_t is not available there */
+
+    if (!cu_nb->use_stream_sync)
+    {
+        /* Set the 4th unsused component of the last element in the GPU force array
+           (separately for l/nl parts) to a specific bit-pattern that we can check 
+           for while waiting for the transfer to be done. */
+        signal_field = adat->f + adat_last;
+        stat = cudaMemsetAsync(&signal_field->w, 0xAA, sizeof(signal_field->z));
+        CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
+
+        /* Clear the bits in the force array (on the CPU) that we are going to poll on. */
+        nbatom->out[0].f[adat_last*4 + 3] = 0;
     }
 
     /* DtoH f */
@@ -366,12 +384,16 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
 
 /*! Blocking wait for the asynchrounously launched nonbonded calculations to finish. */
 void cu_blockwait_nb(cu_nonbonded_t cu_nb,
+                     const gmx_nb_atomdata_t *nbatom,
                      int flags,
                      int aloc,
                      float *e_lj, float *e_el, rvec *fshift)
 {
-    int i, iloc = -1;
-    cudaError_t s;
+    cudaError_t stat;
+    int i, adat_last, iloc = -1;
+    unsigned int *signal_bytes;
+    unsigned int signal_pattern;
+
     gmx_bool    calc_ene   = flags & GMX_FORCE_VIRIAL;
     gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
 
@@ -394,7 +416,6 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     cu_timers_t     *timers  = cu_nb->timers;
     cu_timings_t    *timings = cu_nb->timings;
     nb_tmp_data     td       = cu_nb->tmpdata;
-    cudaStream_t    stream   = cu_nb->stream[iloc];
 
     cudaEvent_t start_nb_k      = timers->start_nb_k[iloc];
     cudaEvent_t stop_nb_k       = timers->stop_nb_k[iloc];
@@ -405,8 +426,32 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     cudaEvent_t start_nbl_h2d   = timers->start_nbl_h2d[iloc];
     cudaEvent_t stop_nbl_h2d    = timers->stop_nbl_h2d[iloc];
 
-    s = cudaStreamSynchronize(stream);
-    CU_RET_ERR(s, "cudaStreamSynchronize failed in cu_blockwait_nb");
+    if (LOCAL_A(aloc))
+    {
+        adat_last = cu_nb->atomdata->natoms_local - 1;
+    }
+    else
+    {
+        adat_last = cu_nb->atomdata->natoms - 1;
+    }
+
+    if (cu_nb->use_stream_sync)
+    {
+        stat = cudaStreamSynchronize(cu_nb->stream[iloc]);
+        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
+    }
+    else 
+    {
+        /* Busy-wait until we get the signalling pattern set in last 4-bytes 
+           of the l/nl float vector. */
+        signal_bytes    = (unsigned int*)&nbatom->out[0].f[adat_last*4 + 3];
+        signal_pattern  = 0xAAAAAAAA;
+        while (*signal_bytes != signal_pattern) 
+        {
+            /* back off, otherwise we get stuck. why??? */
+            usleep(0); 
+        }
+    }
 
     if (cu_nb->do_time)
     {

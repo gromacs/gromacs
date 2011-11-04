@@ -325,6 +325,17 @@ void init_cu_nonbonded(FILE *fplog,
     stat = cudaGetDeviceProperties(&nb->dev_info->dev_prop, nb->dev_info->dev_id);
     CU_RET_ERR(stat, "cudaGetDeviceProperties failed");
 
+    /* If ECC is enabled cudaStreamSynchronize introduces huge idling so we'll 
+       switch to the (atmittedly fragile) memory polling waiting to preserve 
+       performance. Event-timing also needs to be disabled. */
+    nb->use_stream_sync = TRUE;
+    if (nb->dev_info->dev_prop.ECCEnabled == 1 ||
+        (getenv("GMX_NO_CUDA_STREAMSYNC") != NULL))
+    {
+        nb->use_stream_sync = FALSE;
+        nb->do_time         = FALSE;
+    }
+
     *p_cu_nb = nb;
 
     if (debug)

@@ -158,7 +158,7 @@ void cu_unbind_texture(const char *tex_name)
 /*! Caculates and returns the time difference between event start and stop. */
 float cu_event_elapsed(cudaEvent_t start, cudaEvent_t stop)
 {
-    float t;
+    float t = 0.0;
     cudaError_t stat;
 
     stat = cudaEventElapsedTime(&t, start, stop);

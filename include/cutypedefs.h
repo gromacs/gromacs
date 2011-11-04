@@ -113,7 +113,8 @@ struct cu_timers
 struct cu_nonbonded 
 {
     cu_dev_info_t   *dev_info;
-
+    gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instread 
+                                        of cudaStreamSynchronize */
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
     cu_nblist_t     *nblist[2]; /* nbl data structures, local and non-local (only with DD) */

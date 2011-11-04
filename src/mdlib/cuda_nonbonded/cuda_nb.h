@@ -20,6 +20,7 @@ void cu_copyback_nb_data(cu_nonbonded_t /*cu_nb*/,
 void cu_do_nb(cu_nonbonded_t /*cu_nb*/, rvec /*shiftvec*/[]);
 
 void cu_blockwait_nb(cu_nonbonded_t /*cu_nb*/,
+                     const gmx_nb_atomdata_t * /*nbatom*/,
                      int /*flags*/,
                      int /*aloc*/,
                      float * /*e_lj*/, float * /*e_el*/, rvec * /*fshift*/);
