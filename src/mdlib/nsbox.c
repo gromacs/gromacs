@@ -2346,39 +2346,10 @@ static void set_no_excls(gmx_nbl_excl_t *excl)
     }
 }
 
-void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
-                       gmx_bool simple, gmx_bool combined,
-                       gmx_nbat_alloc_t *alloc,
-                       gmx_nbat_free_t  *free)
-{
-    int i;
-
-    nbl_list->simple    = simple;
-    nbl_list->combined  = combined;
-
-    nbl_list->nnbl = 1;
-#ifdef GMX_OPENMP
-        nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
-#endif
-        snew(nbl_list->nbl,nbl_list->nnbl);
-#pragma omp parallel for schedule(static)
-        for(i=0; i<nbl_list->nnbl; i++)
-        {
-            /* Allocate the nblist data structure locally on each thread
-             * to optimize memory access for NUMA architectures.
-             */
-            snew(nbl_list->nbl[i],1);
-            gmx_nblist_init(nbl_list->nbl[i],
-                            /* Only list 0 is used on the GPU */
-                            (i==0) ? alloc : NULL,
-                            (i==0) ? free  : NULL);
-        }
-
-}
-
-void gmx_nblist_init(gmx_nblist_t *nbl,
-                     gmx_nbat_alloc_t *alloc,
-                     gmx_nbat_free_t  *free)
+static void gmx_nblist_init(gmx_nblist_t *nbl,
+                            gmx_bool simple,
+                            gmx_nbat_alloc_t *alloc,
+                            gmx_nbat_free_t  *free)
 {
     if (alloc == NULL)
     {
@@ -2397,6 +2368,7 @@ void gmx_nblist_init(gmx_nblist_t *nbl,
         nbl->free = free;
     }
 
+    nbl->simple      = simple;
     nbl->napc        = 0;
     nbl->naps        = 0;
     nbl->nci         = 0;
@@ -2425,6 +2397,37 @@ void gmx_nblist_init(gmx_nblist_t *nbl,
 #endif
     snew_aligned(nbl->work->x_ci,NBL_NAPC_MAX*DIM,16);
     snew_aligned(nbl->work->d2,NSUBCELL,16);
+}
+
+void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
+                       gmx_bool simple, gmx_bool combined,
+                       gmx_nbat_alloc_t *alloc,
+                       gmx_nbat_free_t  *free)
+{
+    int i;
+
+    nbl_list->simple    = simple;
+    nbl_list->combined  = combined;
+
+    nbl_list->nnbl = 1;
+#ifdef GMX_OPENMP
+        nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
+#endif
+        snew(nbl_list->nbl,nbl_list->nnbl);
+#pragma omp parallel for schedule(static)
+        for(i=0; i<nbl_list->nnbl; i++)
+        {
+            /* Allocate the nblist data structure locally on each thread
+             * to optimize memory access for NUMA architectures.
+             */
+            snew(nbl_list->nbl[i],1);
+            gmx_nblist_init(nbl_list->nbl[i],
+                            nbl_list->simple,
+                            /* Only list 0 is used on the GPU */
+                            (i==0) ? alloc : NULL,
+                            (i==0) ? free  : NULL);
+        }
+
 }
 
 static void print_nblist_statistics_simple(FILE *fp,const gmx_nblist_t *nbl,

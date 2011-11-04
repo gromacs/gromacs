@@ -99,11 +99,6 @@ void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
                        gmx_nbat_alloc_t *alloc,
                        gmx_nbat_free_t  *free);
 
-/* Initialize a neighbor list data structure */
-void gmx_nblist_init(gmx_nblist_t *nbl,
-                     gmx_nbat_alloc_t *alloc,
-                     gmx_nbat_free_t  *free);
-
 /* Make a neighborlist with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
  * number or roughly equally sized ci blocks in nbl.
