@@ -2383,11 +2383,15 @@ static void gmx_nblist_init(gmx_nblist_t *nbl,
     nbl->sj4         = NULL;
     nbl->nsi         = 0;
 
-    nbl->excl_nalloc = 0;
-    nbl->nexcl       = 0;
-    check_excl_space(nbl,1);
-    nbl->nexcl       = 1;
-    set_no_excls(&nbl->excl[0]);
+    if (!nbl->simple)
+    {
+        nbl->excl        = NULL;
+        nbl->excl_nalloc = 0;
+        nbl->nexcl       = 0;
+        check_excl_space(nbl,1);
+        nbl->nexcl       = 1;
+        set_no_excls(&nbl->excl[0]);
+    }
 
     snew(nbl->work,1);
 #ifdef GMX_NBS_BBXXXX
@@ -2411,23 +2415,28 @@ void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
 
     nbl_list->nnbl = 1;
 #ifdef GMX_OPENMP
-        nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
+    nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
 #endif
-        snew(nbl_list->nbl,nbl_list->nnbl);
-#pragma omp parallel for schedule(static)
-        for(i=0; i<nbl_list->nnbl; i++)
-        {
-            /* Allocate the nblist data structure locally on each thread
-             * to optimize memory access for NUMA architectures.
-             */
-            snew(nbl_list->nbl[i],1);
-            gmx_nblist_init(nbl_list->nbl[i],
-                            nbl_list->simple,
-                            /* Only list 0 is used on the GPU */
-                            (i==0) ? alloc : NULL,
-                            (i==0) ? free  : NULL);
-        }
+    snew(nbl_list->nbl,nbl_list->nnbl);
+    /* Execute in order to avoid memory interleaving between threads */
+#pragma omp parallel for schedule(static),ordered
+    for(i=0; i<nbl_list->nnbl; i++)
+    {
+        /* Allocate the nblist data structure locally on each thread
+         * to optimize memory access for NUMA architectures.
+         */
+        snew(nbl_list->nbl[i],1);
 
+        /* Only list 0 is used on the GPU, use normal allocation for i>0 */
+        if (i == 0)
+        {
+            gmx_nblist_init(nbl_list->nbl[i],nbl_list->simple,alloc,free);
+        }
+        else
+        {
+            gmx_nblist_init(nbl_list->nbl[i],nbl_list->simple,NULL,NULL);
+        }
+    }
 }
 
 static void print_nblist_statistics_simple(FILE *fp,const gmx_nblist_t *nbl,
