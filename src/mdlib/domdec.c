@@ -182,6 +182,7 @@ typedef struct
 {
     real min0;    /* The minimum bottom of this zone                        */
     real max1;    /* The maximum top of this zone                           */
+    real min1;    /* The minimum top of this zone                           */
     real mch0;    /* The maximum bottom communicaton height for this zone   */
     real mch1;    /* The maximum top communicaton height for this zone      */
     real p1_0;    /* The bottom value of the first cell in this zone        */
@@ -961,31 +962,35 @@ static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
                                gmx_ddzone_t *buf_s,int n_s,
                                gmx_ddzone_t *buf_r,int n_r)
 {
-    rvec vbuf_s[5*2],vbuf_r[5*2];
+    rvec vbuf_s[5*3],vbuf_r[5*3];
     int i;
 
     for(i=0; i<n_s; i++)
     {
-        vbuf_s[i*2  ][0] = buf_s[i].min0;
-        vbuf_s[i*2  ][1] = buf_s[i].max1;
-        vbuf_s[i*2  ][2] = buf_s[i].mch0;
-        vbuf_s[i*2+1][0] = buf_s[i].mch1;
-        vbuf_s[i*2+1][1] = buf_s[i].p1_0;
-        vbuf_s[i*2+1][2] = buf_s[i].p1_1;
+        vbuf_s[i*3  ][0] = buf_s[i].min0;
+        vbuf_s[i*3  ][1] = buf_s[i].max1;
+        vbuf_s[i*3  ][2] = buf_s[i].min1;
+        vbuf_s[i*3+1][0] = buf_s[i].mch0;
+        vbuf_s[i*3+1][1] = buf_s[i].mch1;
+        vbuf_s[i*3+1][2] = 0;
+        vbuf_s[i*3+2][0] = buf_s[i].p1_0;
+        vbuf_s[i*3+2][1] = buf_s[i].p1_1;
+        vbuf_s[i*3+2][2] = 0;
     }
 
     dd_sendrecv_rvec(dd, ddimind, direction,
-                     vbuf_s, n_s*2,
-                     vbuf_r, n_r*2);
+                     vbuf_s, n_s*3,
+                     vbuf_r, n_r*3);
 
     for(i=0; i<n_r; i++)
     {
-        buf_r[i].min0 = vbuf_r[i*2  ][0];
-        buf_r[i].max1 = vbuf_r[i*2  ][1];
-        buf_r[i].mch0 = vbuf_r[i*2  ][2];
-        buf_r[i].mch1 = vbuf_r[i*2+1][0];
-        buf_r[i].p1_0 = vbuf_r[i*2+1][1];
-        buf_r[i].p1_1 = vbuf_r[i*2+1][2];
+        buf_r[i].min0 = vbuf_r[i*3  ][0];
+        buf_r[i].max1 = vbuf_r[i*3  ][1];
+        buf_r[i].min1 = vbuf_r[i*3  ][2];
+        buf_r[i].mch0 = vbuf_r[i*3+1][0];
+        buf_r[i].mch1 = vbuf_r[i*3+1][1];
+        buf_r[i].p1_0 = vbuf_r[i*3+2][0];
+        buf_r[i].p1_1 = vbuf_r[i*3+2][1];
     }
 }
 
@@ -1008,6 +1013,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         zp = (d == 1) ? &comm->zone_d1[0] : &comm->zone_d2[0][0];
         zp->min0 = cell_ns_x0[dim];
         zp->max1 = cell_ns_x1[dim];
+        zp->min1 = cell_ns_x1[dim];
         zp->mch0 = cell_ns_x0[dim];
         zp->mch1 = cell_ns_x1[dim];
         zp->p1_0 = cell_ns_x0[dim];
@@ -1022,7 +1028,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         /* Use an rvec to store two reals */
         extr_s[d][0] = comm->cell_f0[d+1];
         extr_s[d][1] = comm->cell_f1[d+1];
-        extr_s[d][2] = 0;
+        extr_s[d][2] = comm->cell_f1[d+1];
 
         pos = 0;
         /* Store the extremes in the backward sending buffer,
@@ -1033,6 +1039,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
             /* We invert the order to be able to use the same loop for buf_e */
             buf_s[pos].min0 = extr_s[d1][1];
             buf_s[pos].max1 = extr_s[d1][0];
+            buf_s[pos].min1 = extr_s[d1][2];
             buf_s[pos].mch0 = 0;
             buf_s[pos].mch1 = 0;
             /* Store the cell corner of the dimension we communicate along */
@@ -1085,6 +1092,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                 {
                     extr_s[d1][0] = max(extr_s[d1][0],extr_r[d1][0]);
                     extr_s[d1][1] = min(extr_s[d1][1],extr_r[d1][1]);
+                    extr_s[d1][2] = min(extr_s[d1][2],extr_r[d1][2]);
                 }
             }
         }
@@ -1147,6 +1155,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                     {
                         buf_e[i].min0 = min(buf_e[i].min0,buf_r[i].min0);
                         buf_e[i].max1 = max(buf_e[i].max1,buf_r[i].max1);
+                        buf_e[i].min1 = min(buf_e[i].min1,buf_r[i].min1);
                     }
 
                     if (dd->ndim == 3 && d == 0 && i == buf_size - 1)
@@ -1178,6 +1187,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                 {
                     extr_s[d1][1] = min(extr_s[d1][1],buf_e[pos].min0);
                     extr_s[d1][0] = max(extr_s[d1][0],buf_e[pos].max1);
+                    extr_s[d1][2] = min(extr_s[d1][2],buf_e[pos].min1);
                     pos++;
                 }
 
@@ -7159,7 +7169,6 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
     set_ddbox(dd,FALSE,cr,ir,state->box,
               TRUE,&dd->comm->cgs_gl,state->x,&ddbox);
 
-    
     for(d=0; d<dd->ndim; d++)
     {
         dim = dd->dim[d];
@@ -7172,19 +7181,10 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
 
         np = 1 + (int)(cutoff_req*inv_cell_size);
 
-        if (ir->cutoff_scheme == ecutsVERLET)
+        if (dim < ddbox.npbcdim && dd->comm->eDLB != edlbNO &&
+            np > dd->comm->cd[d].np_dlb)
         {
-            if (np > 1)
-            {
-                return FALSE;
-            }
-        }
-        else if (dim < ddbox.npbcdim && dd->comm->eDLB != edlbNO)
-        {
-            if (np > dd->comm->cd[d].np_dlb)
-            {
-                return FALSE;
-            }
+            return FALSE;
         }
     }
 
@@ -8038,18 +8038,13 @@ static void set_zones_size(gmx_domdec_t *dd,
                 }
                 else
                 {
-                    if (comm->cd[d].np > 1)
-                    {
-                        gmx_fatal(FARGS,"Sorry, multiple pulses not supported yet in combination with dynamic load balancing");
-                    }
-                    /* Here we take the lower limit of the zone equal to
-                     * the upper limit of the one below, which is only
-                     * valid with only one domain in the zone.
+                    /* Here we take the lower limit of the zone from
+                     * the lowest domain of the zone below.
                      */
-                    if (z<4)
+                    if (z < 4)
                     {
                         zones->size[z].x0[dim] =
-                            zones->size[zone_perm[1][z-2]].x1[dim];
+                             comm->zone_d1[zones->shift[z][dd->dim[d-1]]].min1;
                     }
                     else
                     {
@@ -8061,7 +8056,7 @@ static void set_zones_size(gmx_domdec_t *dd,
                         else
                         {
                             zones->size[z].x0[dim] =
-                                zones->size[zone_perm[2][z-4]].x1[dim];
+                                comm->zone_d2[zones->shift[z][dd->dim[d-2]]][zones->shift[z][dd->dim[d-1]]].min1;
                         }
                     }
                     /* A temporary limit, is updated below */
