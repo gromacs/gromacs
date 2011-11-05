@@ -1,6 +1,6 @@
-/*!
- *  Generate kernels for the different electrostatics types:
- *  Cut-off, Reaction-Field, and Ewald/PME.
+/*! \file
+ *  This header has the sole purporse of generating kernels for the 
+ *  type of electrostatics supported: Cut-off, Reaction-Field, and Ewald/PME.
  *  (No include fence as it can be included multiple times.)
  */
 

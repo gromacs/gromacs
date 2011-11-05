@@ -5,11 +5,6 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
-/*
-TODO:
-  - fix GPU_FACEL
-  - make utility functions "static inline __device___"
- */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void FUNCTION_NAME(k_calc_nb, forces_energies_prunenbl_1)

@@ -539,7 +539,7 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
     if (gpu_nb)
     {
-        reset_gpu_timings(gpu_nb);
+        cu_reset_gpu_timings(gpu_nb);
     }
 #endif 
 

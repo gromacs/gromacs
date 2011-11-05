@@ -76,26 +76,35 @@
 extern "C" {
 #endif
 
-typedef struct cu_dev_info  cu_dev_info_t;
-struct cu_dev_info
+/*! Device information: ID and properties of CUDA GPU use in the current process. */
+typedef struct cu_dev_info
 {
     int dev_id;                 /* id of the CUDA device in use */
     cudaDeviceProp dev_prop;    /* CUDA device properties */
-};
+} cu_dev_info_t;
 
-int download_cudata(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
-int download_cudata_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*stream = 0*/);
-int download_cudata_alloc(void ** /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
+int cu_copy_D2H(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
+int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*stream = 0*/);
+int cu_copy_D2H_alloc(void ** /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 
-int upload_cudata(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
-int upload_cudata_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*stream = 0*/);
-int upload_cudata_alloc(void ** /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
+int cu_copy_H2D(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
+int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*stream = 0*/);
+int cu_copy_H2D_alloc(void ** /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 
-int cu_blockwait_event(cudaEvent_t /*stop*/, cudaEvent_t /*start*/, float * /*time*/);
+int cu_wait_event(cudaEvent_t /*stop*/, cudaEvent_t /*start*/, float * /*time*/);
 
 void cu_unbind_texture(const char * /*tex_name*/);
 
 float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*stop*/);
+
+/*** CUDA buffered device data management operations ***/
+void cu_free_buffered(void *d_ptr,
+                      int *n = NULL, int *nalloc = NULL);
+void cu_realloc_buffered(void **d_dest, void *h_src, size_t type_size,
+                         int *curr_size, int *curr_alloc_size,
+                         int req_size,
+                         cudaStream_t stream,
+                         gmx_bool doAsync);
 
 #ifdef __cplusplus
 }
@@ -105,5 +114,7 @@ float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*stop*/);
 template <typename T>
 size_t cu_bind_texture(const char * /*tex_name*/, const T * /*d_ptr*/, int /*size*/);
 #endif
+
+
 
 #endif /* CUDAUTILS_H */

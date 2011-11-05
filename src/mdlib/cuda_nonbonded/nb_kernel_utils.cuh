@@ -1,18 +1,22 @@
 #ifndef _NB_KERNEL_UTILS_CUH_
 #define _NB_KERNEL_UTILS_CUH_
 
-#define CELL_SIZE_2         (CELL_SIZE * CELL_SIZE)
-#define STRIDE_DIM          (CELL_SIZE_2)
-#define STRIDE_SI           (3*STRIDE_DIM)
+#define CELL_SIZE_POW2_EXPONENT (3)  /* change this together with GPU_NS_CELL_SIZE !*/
+#define CELL_SIZE_2             (CELL_SIZE * CELL_SIZE)
+#define STRIDE_DIM              (CELL_SIZE_2)
+#define STRIDE_SI               (3*STRIDE_DIM)
 
-/* texture reference bound to the cudata.nbfp array */
+/*! texture ref for nonbonded parameters; bound to cu_nb_params_t.nbfp*/
 texture<float, 1, cudaReadModeElementType> tex_nbfp;
 
-/* texture reference bound to the cudata.coulomb_tab array */
+/*! texture ref for Ewald coulomb force table; bound to cu_nb_params_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
 
-/* Original idea: OpenMM */
-static inline __device__ float interpolate_coulomb_force_r(float r, float scale)
+/*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture. 
+ *  Original idea: OpenMM 
+ */
+static inline __device__
+float interpolate_coulomb_force_r(float r, float scale)
 {  
     float   normalized = scale * r;
     int     index = (int) normalized;
@@ -23,6 +27,9 @@ static inline __device__ float interpolate_coulomb_force_r(float r, float scale)
             + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
 }
 
+/*! Final j-force reduction; this generic implementation works with 
+ *  arbitrary array sizes. 
+ */
 static inline __device__ 
 void reduce_force_j_generic(float *fbuf, float4 *fout, 
                             int tidxi, int tidxj, int aidx)
@@ -43,6 +50,9 @@ void reduce_force_j_generic(float *fbuf, float4 *fout,
     }
 }
 
+/*! Final i-force reduction; this generic implementation works with 
+ *  arbitrary array sizes. 
+ */
 static inline __device__ 
 void reduce_force_i_generic(float *fbuf, float4 *fout, 
                             float3 *fbuf_shift, gmx_bool calc_fshift, 
@@ -71,6 +81,9 @@ void reduce_force_i_generic(float *fbuf, float4 *fout,
     }
 }
 
+/*! Final i-force reduction; this implementation works only with power of two
+ *  array sizes. 
+ */
 static inline __device__ 
 void reduce_force_i_pow2(volatile float *fbuf, float4 *fout, 
                          float3 *fbuf_shift, gmx_bool calc_fshift, 
@@ -115,6 +128,9 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
     }
 }
 
+/*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
+ *  on whether the size of the array to be reduced is power of two or not.
+ */
 static inline __device__ 
 void reduce_force_i(float *fbuf, float4 *f,
                     float3 *fbuf_shift, gmx_bool calc_fshift, 
@@ -130,9 +146,13 @@ void reduce_force_i(float *fbuf, float4 *f,
     }
 }
 
-static inline __device__ void reduce_energy_pow2(volatile float *buf,
-                                          float *e_lj, float *e_el,
-                                          unsigned int tidx)
+/*! Energy reduction; this implementation works only with power of two
+ *  array sizes. 
+ */
+static inline __device__ 
+void reduce_energy_pow2(volatile float *buf,
+                        float *e_lj, float *e_el,
+                        unsigned int tidx)
 {
     int     i, j; 
     float   e1, e2;
@@ -164,13 +184,17 @@ static inline __device__ void reduce_energy_pow2(volatile float *buf,
 /*********************************************************************************/
 /* Old stuff  */
 #if 0
-inline __device__ float coulomb(float q1, 
-                                float q2,
-                                float r2, 
-                                float inv_r, 
-                                float inv_r2, 
-                                float beta,
-                                float erfc_tab_scale)
+/* This function wa used to calculate the Ewald coulomb force, but it's not 
+ * used as it's much slower than tabulate f interpolation with texture mem.
+ */
+inline __device__ float 
+coulomb(float q1,
+        float q2,
+        float r2,
+        float inv_r,
+        float inv_r2,
+        float beta,
+        float erfc_tab_scale)
 {
     float x      = r2 * inv_r * beta;
     float x2     = x * x; 

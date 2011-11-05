@@ -9,8 +9,8 @@
 /*** General CUDA data operations ***/
 /* TODO: create a cusmalloc module that implements similar things as smalloc */
 
-int _download_cudata_generic(void * h_dest, void * d_src, size_t bytes, 
-                             gmx_bool async = FALSE, cudaStream_t stream = 0)
+static int cu_copy_D2H_generic(void * h_dest, void * d_src, size_t bytes, 
+                               gmx_bool async = FALSE, cudaStream_t stream = 0)
 {
     cudaError_t stat;
     
@@ -32,29 +32,29 @@ int _download_cudata_generic(void * h_dest, void * d_src, size_t bytes,
     return 0;
 }
 
-int download_cudata(void * h_dest, void * d_src, size_t bytes)
+int cu_copy_D2H(void * h_dest, void * d_src, size_t bytes)
 {
-    return _download_cudata_generic(h_dest, d_src, bytes, FALSE);
+    return cu_copy_D2H_generic(h_dest, d_src, bytes, FALSE);
 }
 
-int download_cudata_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t stream = 0)
+int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t stream = 0)
 {
-    return _download_cudata_generic(h_dest, d_src, bytes, TRUE, stream);
+    return cu_copy_D2H_generic(h_dest, d_src, bytes, TRUE, stream);
 }
 
-int download_cudata_alloc(void ** h_dest, void * d_src, size_t bytes)
+int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
 { 
     if (h_dest == 0 || d_src == 0 || bytes <= 0)
         return -1;
 
     smalloc(*h_dest, bytes);
 
-    return download_cudata(*h_dest, d_src, bytes);
+    return cu_copy_D2H(*h_dest, d_src, bytes);
 }
 
 
-int _upload_cudata_generic(void * d_dest, void * h_src, size_t bytes, 
-                                 gmx_bool async = FALSE, cudaStream_t stream = 0)
+static int cu_copy_H2D_generic(void * d_dest, void * h_src, size_t bytes, 
+                               gmx_bool async = FALSE, cudaStream_t stream = 0)
 {
     cudaError_t stat;
 
@@ -75,17 +75,17 @@ int _upload_cudata_generic(void * d_dest, void * h_src, size_t bytes,
     return 0;
 }
 
-int upload_cudata(void * d_dest, void * h_src, size_t bytes)
+int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
 {   
-    return _upload_cudata_generic(d_dest, h_src, bytes, FALSE);
+    return cu_copy_H2D_generic(d_dest, h_src, bytes, FALSE);
 }
 
-int upload_cudata_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t stream = 0)
+int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t stream = 0)
 {   
-    return _upload_cudata_generic(d_dest, h_src, bytes, TRUE, stream);
+    return cu_copy_H2D_generic(d_dest, h_src, bytes, TRUE, stream);
 }
 
-int upload_cudata_alloc(void ** d_dest, void * h_src, size_t bytes)
+int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
 {
     cudaError_t stat;
 
@@ -93,20 +93,20 @@ int upload_cudata_alloc(void ** d_dest, void * h_src, size_t bytes)
         return -1;
 
     stat = cudaMalloc(d_dest, bytes);
-    CU_RET_ERR(stat, "cudaMalloc failed in upload_cudata_alloc");
+    CU_RET_ERR(stat, "cudaMalloc failed in cu_copy_H2D_alloc");
 
-    return upload_cudata(*d_dest, h_src, bytes);
+    return cu_copy_H2D(*d_dest, h_src, bytes);
 }
 
-int cu_blockwait_event(cudaEvent_t stop, cudaEvent_t start, float *time)
+int cu_wait_event(cudaEvent_t stop, cudaEvent_t start, float *time)
 {
     cudaError_t s;
 
     s = cudaEventSynchronize(stop);
-    CU_RET_ERR(s, "cudaEventSynchronize failed in cu_blockwait_event");
+    CU_RET_ERR(s, "cudaEventSynchronize failed in cu_wait_event");
 
     s = cudaEventElapsedTime(time, start, stop);
-    CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_blockwait_event");
+    CU_RET_ERR(s, "cudaEventElapsedTime failed in cu_wait_event");
 
     return 0;
 }
@@ -165,4 +165,81 @@ float cu_event_elapsed(cudaEvent_t start, cudaEvent_t stop)
     CU_RET_ERR(stat, "cudaEventElapsedTime failed in cu_event_elapsed");
 
     return t;
+}
+
+
+/**** Operation on buffered arrays (arrays with "over-allocation" in gmx wording) */
+/*! Frees the device memory pointed by d_ptr and resets the associated 
+ *  size and allocation size variables to -1.
+ */
+void cu_free_buffered(void *d_ptr, int *n, int *nalloc)
+{
+    cudaError_t stat;
+
+    if (d_ptr)
+    {
+        stat = cudaFree(d_ptr);
+        CU_RET_ERR(stat, "cudaFree failed");
+    }
+
+    if (n)
+    {
+        *n = -1;
+    }
+
+    if (nalloc)
+    {
+        *nalloc = -1;
+    }
+}
+
+/*! Reallocates the device memory pointed by d_ptr and copies the data from the 
+ * location pointed by h_src host-side pointer. Allocation is buffered and 
+ * therefor freeing is only needed if the previously allocated space is not 
+ * enough. 
+ */
+void cu_realloc_buffered(void **d_dest, void *h_src, size_t type_size,
+                                    int *curr_size, int *curr_alloc_size,
+                                    int req_size,
+                                    cudaStream_t stream,
+                                    gmx_bool doAsync)
+{
+    cudaError_t stat;
+
+    if (d_dest == NULL || req_size < 0)
+    {
+        return;
+    }
+
+    /* reallocate only if the data does not fit = allocation size is smaller 
+       than the current requested size */
+    if (req_size > *curr_alloc_size)
+    {
+        /* only free if the array has already been initialized */
+        if (*curr_alloc_size >= 0)
+        {
+            cu_free_buffered(*d_dest, curr_size, curr_alloc_size);
+        }
+
+        *curr_alloc_size = 1.2 * req_size + 100;
+
+        stat = cudaMalloc(d_dest, *curr_alloc_size * type_size);
+        CU_RET_ERR(stat, "cudaMalloc failed in cu_free_buffered");
+    }
+
+    /* size could have changed without actual reallocation */
+    *curr_size = req_size;
+
+    /* upload to device */
+    if (h_src)
+    {
+        if (doAsync)
+        {
+            cu_copy_H2D_async(*d_dest, h_src, *curr_size * type_size, stream);
+        }
+        else
+        {
+            cu_copy_H2D(*d_dest, h_src,  *curr_size * type_size);
+        }
+    }
 }

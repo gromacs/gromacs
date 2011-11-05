@@ -13,31 +13,31 @@
 #include "cupmalloc.h"
 
 #define CELL_SIZE               (GPU_NS_CELL_SIZE)
-#define CELL_SIZE_POW2_EXPONENT (3) /* NOTE: change this together with GPU_NS_CELL_SIZE !*/
 #define NB_DEFAULT_THREADS      (CELL_SIZE * CELL_SIZE)
 
 #include "cutype_utils.cuh"
 #include "nb_kernel_utils.cuh"
 
-/* Generate all combinations of force and energy-calculation and/or pruning kernels. */
-/** Force only kernels **/
+/* Generate all combinations of kernels through multiple inclusion:
+   F, F + E, F + prune, F + E + prune. */
+/** Force only **/
 #include "nb_kernels.cuh"
-/** Force & energy kernels **/
+/** Force & energy **/
 #define CALC_ENERGIES
 #include "nb_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Neighborlist pruning kernels ***/
-/** Force only kernels **/
+/** Force only **/
 #define PRUNE_NBL
 #include "nb_kernels.cuh"
-/** Force & energy kernels **/
+/** Force & energy **/
 #define CALC_ENERGIES
 #include "nb_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 
-/*! nonbonded kernel function pointer type */
+/*! Nonbonded kernel function pointer type */
 typedef void (*p_k_calc_nb)(const cu_atomdata_t,
                             const cu_nb_params_t, 
                             const cu_nblist_t,
@@ -62,8 +62,8 @@ static inline int calc_nb_blocknr(int nwork_units)
     return retval;
 }
 
-/*! Selects the kernel version (force / energy / pruning) to execute and 
- * returns a function pointer to it. 
+/*! Selects the kernel version to execute at the current step and 
+ *  returns a function pointer to it. 
  */
 static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne, 
                                            gmx_bool doPrune, gmx_bool doKernel2)
@@ -166,25 +166,14 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
     return k;
 }
 
-/*!  Launch asynchronously the nonbonded force calculations. 
-
-    This consists of the following (async) steps launched in the default stream 0: 
-   - initilize to zero force output;
-   - upload x and q;
-   - upload shift vector;
-   - launch kernel;
-   - download forces/energies.
-    
-    Timing is done using:
-    - start_k/stop_nb_k events for total execution time;
-    - start_nb_h2d/stop_nb_h2d and start_nb_h2d/stop_nb_h2d event for 
-    the CPU->GPU and GPU->CPU transfers, respectively.
- */
-void cu_stream_nb(cu_nonbonded_t cu_nb,
-                  const gmx_nb_atomdata_t *nbatom,
-                  int flags,
-                  int iloc)
+void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
+                         const gmx_nb_atomdata_t *nbatom,
+                         int flags,
+                         int iloc)
 {
+    cudaError_t stat;
+    int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
+
     cu_atomdata_t   *adat       = cu_nb->atomdata;
     cu_nb_params_t  *nb_params  = cu_nb->nb_params;
     cu_nblist_t     *nblist     = cu_nb->nblist[iloc];
@@ -195,9 +184,6 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     cudaEvent_t stop_nb_k   = timers->stop_nb_k[iloc];
     cudaEvent_t start_h2d   = timers->start_nb_h2d[iloc];
     cudaEvent_t stop_h2d    = timers->stop_nb_h2d[iloc];
-
-    cudaError_t stat;
-    int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
 
     /* kernel lunch stuff */
     p_k_calc_nb nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
@@ -213,6 +199,7 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     static gmx_bool doKernel2 = (getenv("GMX_NB_K2") != NULL);        
     static gmx_bool doAlwaysNsPrune = (getenv("GMX_GPU_ALWAYS_NS_PRUNE") != NULL);
 
+    /* calculate the atom data index range based on locality */
     if (LOCAL_I(iloc))
     {
         adat_begin  = 0;
@@ -229,12 +216,14 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
 
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\tGrid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",         
-        dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, nblist->nci*NSUBCELL, 
-        NSUBCELL, nblist->naps);
+        fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
+                "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
+                dim_block.x, dim_block.y, dim_block.z,
+                dim_grid.x, dim_grid.y, nblist->nci*NSUBCELL,
+                NSUBCELL, nblist->naps);
     }
 
-    /* FIXME: not necessary as it's launched in stream0
+    /* FIXME: not necessary as it's launched in stream 0
        wait for the atomdata trasfer to be finished */
     // cu_synchstream_atomdata(cu_nb, iloc);
 
@@ -246,8 +235,8 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     }
 
     /* HtoD x, q */
-    upload_cudata_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
-                        adat_len * sizeof(*adat->xq), stream); 
+    cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
+                      adat_len * sizeof(*adat->xq), stream); 
 
     if (do_time)
     {
@@ -262,12 +251,12 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* launch async nonbonded calculations */        
     /* size of force buffers in shmem */
     shmem = !doKernel2 ?
         (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
         CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
 
+    /* get the pointer to the kernel we need & launch it */
     nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene,
                                  nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist,
@@ -281,21 +270,17 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     }
 }
 
-void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
-                         const gmx_nb_atomdata_t *nbatom,
-                         int flags,
-                         int aloc)
+void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
+                          const gmx_nb_atomdata_t *nbatom,
+                          int flags,
+                          int aloc)
 {
     cudaError_t stat;
     int adat_begin, adat_len, adat_last;  /* local/nonlocal offset and length used for xq and f */
     int iloc = -1;
     float4 *signal_field;
 
-    gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
-    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
-
-    /* determine interaction locality from atom locality 
-       (needed for indexing timers/streams) */
+    /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
     {
         iloc = eintLocal;
@@ -311,12 +296,14 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     }
 
     cu_atomdata_t   *adat   = cu_nb->atomdata;
-    cu_timers_t     *timers = cu_nb->timers;
-    cudaStream_t    stream  = cu_nb->stream[iloc];
-    cudaEvent_t     start   = timers->start_nb_d2h[iloc];
-    cudaEvent_t     stop    = timers->stop_nb_d2h[iloc];
+    cu_timers_t     *t      = cu_nb->timers;
     gmx_bool        do_time = cu_nb->do_time;
+    cudaStream_t    stream  = cu_nb->stream[iloc];
 
+    gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
+    gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
         adat_begin  = 0;
@@ -327,13 +314,13 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-        adat_last = cu_nb->atomdata->natoms - 1;
+        adat_last   = cu_nb->atomdata->natoms - 1;
     }
 
     /* beginning of timed D2H section */
     if (do_time)
     {
-        stat = cudaEventRecord(start, stream);
+        stat = cudaEventRecord(t->start_nb_d2h[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
@@ -354,8 +341,8 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     }
 
     /* DtoH f */
-    download_cudata_async(nbatom->out[0].f + adat_begin * 4, adat->f + adat_begin, 
-                          adat_len * sizeof(*adat->f), stream);
+    cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 4, adat->f + adat_begin, 
+                      adat_len * sizeof(*adat->f), stream);
 
     /* only transfer energies in the local stream */
     if (LOCAL_I(iloc))
@@ -363,42 +350,38 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
         /* DtoH f_shift */
         if (calc_fshift)
         {
-            download_cudata_async(cu_nb->tmpdata.f_shift, adat->f_shift,
-                    SHIFTS * sizeof(*cu_nb->tmpdata.f_shift), stream);
+            cu_copy_D2H_async(cu_nb->tmpdata.f_shift, adat->f_shift,
+                              SHIFTS * sizeof(*cu_nb->tmpdata.f_shift), stream);
         }
 
         /* DtoH energies */
         if (calc_ene)
         {
-            download_cudata_async(cu_nb->tmpdata.e_lj, adat->e_lj, sizeof(*cu_nb->tmpdata.e_lj), stream);
-            download_cudata_async(cu_nb->tmpdata.e_el, adat->e_el, sizeof(*cu_nb->tmpdata.e_el), stream);
+            cu_copy_D2H_async(cu_nb->tmpdata.e_lj, adat->e_lj, 
+                              sizeof(*cu_nb->tmpdata.e_lj), stream);
+            cu_copy_D2H_async(cu_nb->tmpdata.e_el, adat->e_el, 
+                              sizeof(*cu_nb->tmpdata.e_el), stream);
         }
     }
 
     if (do_time)
     {
-        stat = cudaEventRecord(stop, stream);
+        stat = cudaEventRecord(t->stop_nb_d2h[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 }
 
-/*! Blocking wait for the asynchrounously launched nonbonded calculations to finish. */
-void cu_blockwait_nb(cu_nonbonded_t cu_nb,
-                     const gmx_nb_atomdata_t *nbatom,
-                     int flags,
-                     int aloc,
-                     float *e_lj, float *e_el, rvec *fshift)
+void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
+                    const gmx_nb_atomdata_t *nbatom,
+                    int flags, int aloc,
+                    float *e_lj, float *e_el, rvec *fshift)
 {
     cudaError_t stat;
     int i, adat_last, iloc = -1;
     unsigned int *signal_bytes;
     unsigned int signal_pattern;
 
-    gmx_bool    calc_ene   = flags & GMX_FORCE_VIRIAL;
-    gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
-
-    /* determine interaction locality from atom locality 
-       (needed for indexing timers/streams) */
+    /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
     {
         iloc = eintLocal;
@@ -426,6 +409,10 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     cudaEvent_t start_nbl_h2d   = timers->start_nbl_h2d[iloc];
     cudaEvent_t stop_nbl_h2d    = timers->stop_nbl_h2d[iloc];
 
+    gmx_bool    calc_ene   = flags & GMX_FORCE_VIRIAL;
+    gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
         adat_last = cu_nb->atomdata->natoms_local - 1;
@@ -453,6 +440,7 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
         }
     }
 
+    /* timing data accumulation */
     if (cu_nb->do_time)
     {
         /* only increase counter once (at local F wait) */
@@ -462,7 +450,7 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
             timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].c += 1;
         }
 
-        /* accumulate kernel timings */
+        /* kernel timings */
         timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t +=
             cu_event_elapsed(start_nb_k, stop_nb_k);
 
@@ -470,10 +458,10 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
         timings->nb_h2d_time += cu_event_elapsed(start_h2d, stop_h2d);
         timings->nb_d2h_time += cu_event_elapsed(start_d2h, stop_d2h);
 
-        /* only count atomdata and nbl H2D if it's neighbor search step */
+        /* only count atomdata and nbl H2D at neighbor search step */
         if (nblist->prune_nbl)
         {
-            /* only add atomdata transfer time once (at local F wait) */
+            /* atomdata transfer timing (add only once, at local F wait) */
             if (LOCAL_A(aloc))
             {
                 timings->nbl_h2d_count++;
@@ -486,7 +474,7 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
         }
     }
    
-    /* turn off neighborlist pruning */
+    /* turn off pruning (doesn't matter if this is neighbor search step or not) */
     nblist->prune_nbl = FALSE;
 
     /* add up enegies and shift forces (only once at local F wait) */

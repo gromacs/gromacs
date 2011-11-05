@@ -1626,7 +1626,7 @@ void init_interaction_const(FILE *fp,
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
 #ifdef GMX_GPU
-        init_cudata_ff(fp, fr->nbv->gpu_nb, ic, fr->nbv);
+        cu_init_ff_data(fp, fr->nbv->gpu_nb, ic, fr->nbv);
 #endif
     }
 
@@ -1691,7 +1691,7 @@ static void init_nb_verlet(FILE *fp,
     if (nbv->useGPU)
     {
 #ifdef GMX_GPU
-        init_cu_nonbonded(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
+        cu_init_nonbonded(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
         if (env)
         {

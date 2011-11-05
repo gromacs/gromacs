@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-/* Atom-related locality indicator: local, non-local, all (used for f, x). */
+/* Atom locality indicator: local, non-local, all (used for f, x). */
 enum { eatLocal = 0, eatNonlocal = 1, eatAll  };
 
 #define LOCAL_A(x)               ((x) == eatLocal)

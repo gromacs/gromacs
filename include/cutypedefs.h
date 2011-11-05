@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-/* Types of electrostatics available in the CUDA nonbonded force kernels. */
+/*! Types of electrostatics available in the CUDA nonbonded force kernels. */
 enum {
     cu_eelEWALD, cu_eelRF, cu_eelCUT
 };
@@ -20,9 +20,9 @@ typedef struct cu_nb_params cu_nb_params_t;
 typedef struct cu_timers    cu_timers_t;
 typedef struct gpu_tmp_data gpu_tmp_data_t;
 
-/* Staging area for temporary data. The energies get downloaded here first, 
- * before getting added to the CPU-side aggregate values.
- * */
+/*! Staging area for temporary data. The energies get downloaded here first, 
+ *  before getting added to the CPU-side aggregate values.
+ */
 struct nb_tmp_data
 {
     float   *e_lj;      /* LJ energy */
@@ -30,6 +30,7 @@ struct nb_tmp_data
     float4  *f_shift;   /* shift forces */
 };
 
+/*! Nonbonded atom data */
 struct cu_atomdata
 {
     int     natoms;             /* number of atoms                      */
@@ -51,10 +52,10 @@ struct cu_atomdata
     gmx_bool shift_vec_copied;  /* has the shift vector already been transfered? */
 };
 
-/* nonbonded paramters */
+/*! Nonbonded paramters */
 struct cu_nb_params
 {
-    int  eeltype;           /* type of electrostatics */
+    int     eeltype;        /* type of electrostatics */
     
     float   epsfac;         /* charge multiplication factor */
     float   c_rf, two_k_rf; /* Reaction-Field constants */
@@ -72,7 +73,7 @@ struct cu_nb_params
     float   *coulomb_tab;
 };
 
-/* neighbor list data */
+/*! Neighbor list data */
 struct cu_nblist 
 {
     int             naps;       /* number of atoms per subcell                  */
@@ -93,10 +94,10 @@ struct cu_nblist
                                    done during the  current step                */
 };
 
-/* Structure with timers for the CUDA GPU kernels and H2D/D2H trasfers and 
-   local/non-local streams.
-   The two-sized arrays are for the local and non-local values (respectively) 
-   and should always be indexed with enbatATOMSlocal = 0, enbatATOMSnonlocal = 1.
+/* CUDA events for timing GPU kernels and H2D/D2H transfers and for 
+ * synchronization purposes (not neded for this purpose ATM). 
+ * The two-sized arrays hold the local and non-local values (respectively)
+ * and should always be indexed with eintLocal or eintNonlocal.
  */
 struct cu_timers
 {
@@ -109,7 +110,7 @@ struct cu_timers
     cudaEvent_t  start_nb_k[2], stop_nb_k[2];       /* events for non-bonded kernels                        */
 };
 
-/* main data structure for CUDA nonbonded force evaluation */
+/* Main data structure for CUDA nonbonded force calculations. */
 struct cu_nonbonded 
 {
     cu_dev_info_t   *dev_info;

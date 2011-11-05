@@ -963,7 +963,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
                fr->nbv != NULL && fr->nbv->useGPU ? 
-                 get_gpu_timings(fr->nbv->gpu_nb) :
+                 cu_get_gpu_timings(fr->nbv->gpu_nb) :
 #endif
                NULL,
                nthreads_pp, 
@@ -993,9 +993,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifdef GMX_GPU
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
-        int gpu_device_id = cr->nodeid; /* TODO get dev_id */
+        int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
         /* free GPU memory and uninitialize GPU */
-        destroy_cudata(fplog, fr->nbv->gpu_nb, DOMAINDECOMP(cr));
+        cu_free_nbdata(fplog, fr->nbv->gpu_nb, DOMAINDECOMP(cr));
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {
