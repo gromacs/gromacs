@@ -176,7 +176,7 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
    - download forces/energies.
     
     Timing is done using:
-    - start_nb/stop_nb events for total execution time;
+    - start_k/stop_nb_k events for total execution time;
     - start_nb_h2d/stop_nb_h2d and start_nb_h2d/stop_nb_h2d event for 
     the CPU->GPU and GPU->CPU transfers, respectively.
  */
@@ -189,13 +189,14 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
     cu_nb_params_t  *nb_params  = cu_nb->nb_params;
     cu_nblist_t     *nblist     = cu_nb->nblist[iloc];
     cu_timers_t     *timers     = cu_nb->timers;
-    cudaStream_t    stream      = timers->nbstream[iloc];
+    cudaStream_t    stream      = cu_nb->stream[iloc];
 
-    cudaEvent_t start_nb   = timers->start_nb[iloc];
-    cudaEvent_t stop_nb    = timers->stop_nb[iloc];
-    cudaEvent_t start_h2d  = timers->start_nb_h2d[iloc];
-    cudaEvent_t stop_h2d   = timers->stop_nb_h2d[iloc];
+    cudaEvent_t start_nb_k  = timers->start_nb_k[iloc];
+    cudaEvent_t stop_nb_k   = timers->stop_nb_k[iloc];
+    cudaEvent_t start_h2d   = timers->start_nb_h2d[iloc];
+    cudaEvent_t stop_h2d    = timers->stop_nb_h2d[iloc];
 
+    cudaError_t stat;
     int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
 
     /* kernel lunch stuff */
@@ -207,7 +208,7 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
 
     gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
-    gmx_bool time_trans  = timers->time_transfers;
+    gmx_bool do_time     = cu_nb->do_time;
 
     static gmx_bool doKernel2 = (getenv("GMX_NB_K2") != NULL);        
     static gmx_bool doAlwaysNsPrune = (getenv("GMX_GPU_ALWAYS_NS_PRUNE") != NULL);
@@ -232,30 +233,34 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
         dim_block.x, dim_block.y, dim_block.z, dim_grid.x, dim_grid.y, nblist->nci*NSUBCELL, 
         NSUBCELL, nblist->naps);
     }
-    
-    /* wait for the atomdata trasfer to be finished */
-    cu_synchstream_atomdata(cu_nb, iloc);
-    // FIXME fix this mess - all this waiting is not necessary!
-    cudaError_t stat = cudaStreamWaitEvent(stream, timers->stop_clear, 0);
-    CU_RET_ERR(stat, "cudaEventElapsedTime on stop_clear failed in cu_blockwait_nb");
+
+    /* FIXME: not necessary as it's launched in stream0
+       wait for the atomdata trasfer to be finished */
+    // cu_synchstream_atomdata(cu_nb, iloc);
 
     /* beginning of timed HtoD section */
-    if (time_trans)
+    if (do_time)
     {
-        cudaEventRecord(start_h2d, stream);
+        stat = cudaEventRecord(start_h2d, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* HtoD x, q */
     upload_cudata_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                         adat_len * sizeof(*adat->xq), stream); 
 
-    if (time_trans)
+    if (do_time)
     {
-        cudaEventRecord(stop_h2d, stream);
+        stat = cudaEventRecord(stop_h2d, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* beginning of timed nonbonded calculation section */
-    cudaEventRecord(start_nb, stream);
+    if (do_time)
+    {
+        stat = cudaEventRecord(start_nb_k, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
 
     /* launch async nonbonded calculations */        
     /* size of force buffers in shmem */
@@ -263,14 +268,18 @@ void cu_stream_nb(cu_nonbonded_t cu_nb,
                 (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
                 CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
      
-nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
+    nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene, 
                                  nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
     nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist, 
                                                  calc_fshift);
 
     CU_LAUNCH_ERR("k_calc_nb");
 
-    cudaEventRecord(stop_nb, stream);
+    if (do_time)
+    {
+        stat = cudaEventRecord(stop_nb_k, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
 }
 
 void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
@@ -278,6 +287,7 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
                   int flags,
                   int aloc)
 {
+    cudaError_t stat;
     int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
     int iloc = -1;
 
@@ -302,10 +312,10 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
 
     cu_atomdata_t   *adat   = cu_nb->atomdata;
     cu_timers_t     *timers = cu_nb->timers;
-    cudaStream_t    stream  = timers->nbstream[iloc];
+    cudaStream_t    stream  = cu_nb->stream[iloc];
     cudaEvent_t     start   = timers->start_nb_d2h[iloc];
     cudaEvent_t     stop    = timers->stop_nb_d2h[iloc];
-    gmx_bool        time_trans  = timers->time_transfers;
+    gmx_bool        do_time = cu_nb->do_time;
 
     if (LOCAL_A(aloc))
     {
@@ -319,9 +329,10 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
     }
 
     /* beginning of timed D2H section */
-    if (time_trans)
+    if (do_time)
     {
-        cudaEventRecord(start, stream);
+        stat = cudaEventRecord(start, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
     /* DtoH f */
@@ -346,9 +357,10 @@ void cu_copyback_nb_data(cu_nonbonded_t cu_nb,
         }
     }
 
-    if (time_trans)
+    if (do_time)
     {
-        cudaEventRecord(stop, stream);
+        stat = cudaEventRecord(stop, stream);
+        CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 }
 
@@ -382,10 +394,10 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     cu_timers_t     *timers  = cu_nb->timers;
     cu_timings_t    *timings = cu_nb->timings;
     nb_tmp_data     td       = cu_nb->tmpdata;
-    cudaStream_t    stream   = timers->nbstream[iloc];
+    cudaStream_t    stream   = cu_nb->stream[iloc];
 
-    cudaEvent_t start_nb        = timers->start_nb[iloc];
-    cudaEvent_t stop_nb         = timers->stop_nb[iloc];
+    cudaEvent_t start_nb_k      = timers->start_nb_k[iloc];
+    cudaEvent_t stop_nb_k       = timers->stop_nb_k[iloc];
     cudaEvent_t start_h2d       = timers->start_nb_h2d[iloc];
     cudaEvent_t stop_h2d        = timers->stop_nb_h2d[iloc];
     cudaEvent_t start_d2h       = timers->start_nb_d2h[iloc];
@@ -396,20 +408,19 @@ void cu_blockwait_nb(cu_nonbonded_t cu_nb,
     s = cudaStreamSynchronize(stream);
     CU_RET_ERR(s, "cudaStreamSynchronize failed in cu_blockwait_nb");
 
-    /* only increase counter once (at local F wait) */
-    if (LOCAL_I(iloc))
+    if (cu_nb->do_time)
     {
-        timings->nb_count++;
-        timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].c += 1;
-    }
-    
-    /* accumulate kernel timings */
-    timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t +=
-        cu_event_elapsed(start_nb, stop_nb);
+        /* only increase counter once (at local F wait) */
+        if (LOCAL_I(iloc))
+        {
+            timings->nb_count++;
+            timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].c += 1;
+        }
 
-    // FIXME remove the time_transfers conditional 
-    if (timers->time_transfers)
-    {
+        /* accumulate kernel timings */
+        timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t +=
+            cu_event_elapsed(start_nb_k, stop_nb_k);
+
         /* X/q H2D and F D2H timings */
         timings->nb_h2d_time += cu_event_elapsed(start_h2d, stop_h2d);
         timings->nb_d2h_time += cu_event_elapsed(start_d2h, stop_d2h);

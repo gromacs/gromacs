@@ -36,7 +36,7 @@ void cu_clear_nb_e_fs_out(cu_nonbonded_t /*cu_nb*/);
 void destroy_cudata(FILE * /*fplog*/, cu_nonbonded_t /*cu_nb*/,
                     gmx_bool /*bDomDec*/);
 
-void cu_blockwait_atomdata(cu_nonbonded_t /*cu_nb*/);
+void cu_wait_atomdata(cu_nonbonded_t /*cu_nb*/);
 void cu_synchstream_atomdata(cu_nonbonded_t /*cu_nb*/, int /*enbatATOMS*/);
 
 cu_timings_t * get_gpu_timings(cu_nonbonded_t /*cu_nb*/);

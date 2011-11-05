@@ -100,28 +100,30 @@ struct cu_nblist
  */
 struct cu_timers
 {
-    cudaEvent_t start_clear, stop_clear;            /* events for GPU f/f_shift/e output clearing       */
     cudaEvent_t start_atdat, stop_atdat;            /* events for atom data transfer (every NS step)    */
 
-    gmx_bool    time_transfers;                     /* enable/disable separate H2D/D2H timing           */
     cudaEvent_t start_nb_h2d[2], stop_nb_h2d[2];    /* events for H2D transfer (every step)             */
     cudaEvent_t start_nb_d2h[2], stop_nb_d2h[2];    /* events for D2H transfer (every step)             */
-    cudaEvent_t start_nbl_h2d[2], stop_nbl_h2d[2];
+    cudaEvent_t start_nbl_h2d[2], stop_nbl_h2d[2];  /* events for pair-list H2D strnasfer (every nstlist step) */
 
-    cudaEvent_t  start_nb[2], stop_nb[2];       /* events for non-bonded kernels                        */
-    cudaStream_t nbstream[2];                   /* non-bonded (local and non-local) calculation streams */
+    cudaEvent_t  start_nb_k[2], stop_nb_k[2];       /* events for non-bonded kernels                        */
 };
 
 /* main data structure for CUDA nonbonded force evaluation */
 struct cu_nonbonded 
 {
     cu_dev_info_t   *dev_info;
+
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
     cu_nblist_t     *nblist[2]; /* nbl data structures, local and non-local (only with DD) */
+    nb_tmp_data     tmpdata;
+    
+    cudaStream_t    stream[2];  /* local and non-local GPU streams */
+
+    gmx_bool        do_time;    /* true if CUDA event-based timing is enabled, off with DD */
     cu_timers_t     *timers;
     cu_timings_t    *timings;
-    nb_tmp_data     tmpdata;
 };
 
 #ifdef __cplusplus
