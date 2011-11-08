@@ -55,8 +55,6 @@
 #include "tpxio.h"
 #include "viewit.h"
 
-/* defined in gmx_wheel.c*/
-extern gmx_bool *bPhobics(int ,char *);
 
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,
@@ -169,6 +167,26 @@ static int strip_dssp(char *dsspfile,int nres,
    * of redidues plus chain separator lines).
    * This is the number of y elements needed for the area xpm file */
   return nr;
+}
+
+static gmx_bool *bPhobics(t_atoms *atoms)
+{
+    int       i,nb;
+    char      **cb;
+    gmx_bool  *bb;
+
+
+    nb = get_strings("phbres.dat",&cb);
+    snew(bb,atoms->nres);
+
+    for (i=0; (i<atoms->nres); i++)
+    {
+        if ( -1 != search_str(nb,cb,*atoms->resinfo[i].name) )
+        {
+            bb[i]=TRUE;
+        }
+    }
+    return bb;
 }
 
 static void check_oo(t_atoms *atoms)
@@ -462,7 +480,7 @@ int main(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  bPhbres=bPhobics((int)atoms->nres,(char *)atoms->resinfo);
+  bPhbres = bPhobics(atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
   nres=0;
