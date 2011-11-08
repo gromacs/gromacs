@@ -81,6 +81,18 @@ add_executable(gentop gentop.c)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gentop PROPERTIES OUTPUT_NAME "gentop${GMX_BINARY_SUFFIX}")
 
+add_executable(analyze_mp analyze_mp.c molprop_tables.c)
+target_link_libraries(analyze_mp ${GMX_EXTRA_LIBRARIES})
+set_target_properties(analyze_mp PROPERTIES OUTPUT_NAME "analyze_mp${GMX_BINARY_SUFFIX}")
+
+#add_executable(mkice mkice.c)
+#target_link_libraries(mkice ${GMX_EXTRA_LIBRARIES})
+#set_target_properties(mkice PROPERTIES OUTPUT_NAME "mkice${GMX_BINARY_SUFFIX}")
+
+add_executable(mkyaw mkyaw.c)
+target_link_libraries(mkyaw ${GMX_EXTRA_LIBRARIES})
+set_target_properties(mkyaw PROPERTIES OUTPUT_NAME "mkyaw${GMX_BINARY_SUFFIX}")
+
 add_executable(gen_table gen_table.c)
 target_link_libraries(gen_table ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_table PROPERTIES OUTPUT_NAME "gen_table${GMX_BINARY_SUFFIX}")
@@ -104,6 +116,8 @@ set_target_properties(addquote PROPERTIES OUTPUT_NAME "addquote${GMX_BINARY_SUFF
 install(TARGETS alexandria DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
         gentop
+	analyze_mp
+	mkyaw
 	addquote
 	gen_table
         COMPONENT runtime
