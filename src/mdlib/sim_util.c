@@ -835,15 +835,19 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
 #ifdef GMX_GPU
-    /* initialize the gpu atom datastructures and clear outputs */
+    /* initialize the GPU atom data and copy shift vector */
     if (bUseGPU)
     {
         if (bNS)
         {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             init_cudata_atoms(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         cu_move_shift_vec(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 #endif
         
@@ -958,11 +962,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         /* launch copy-back of non-local or if not running in parallel the local F */
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat, flags, eatNonlocal);
+            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
         else
         {
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintLocal].nbat, flags, eatLocal);
+            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
     }
 #endif /* GMX_GPU */ 
@@ -1167,11 +1175,13 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
             if (bUseGPU)
             {
+                wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
                 /* When runing in parallel we can only launch local copy-back after the 
                    non-local is done! (CUDA can't synchronize streams with async operations
                    wrt the CPU).*/
                 cu_copyback_nb_data(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
                                     flags, eatLocal);
+                wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
             }
 #endif
         }
