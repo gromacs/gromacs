@@ -81,6 +81,18 @@ add_executable(gentop gentop.c)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gentop PROPERTIES OUTPUT_NAME "gentop${GMX_BINARY_SUFFIX}")
 
+add_executable(tune_pol tune_pol.c)
+target_link_libraries(tune_pol ${GMX_EXTRA_LIBRARIES})
+set_target_properties(tune_pol PROPERTIES OUTPUT_NAME "tune_pol${GMX_BINARY_SUFFIX}")
+
+add_executable(tune_dip tune_dip.c)
+target_link_libraries(tune_dip ${GMX_EXTRA_LIBRARIES})
+set_target_properties(tune_dip PROPERTIES OUTPUT_NAME "tune_dip${GMX_BINARY_SUFFIX}")
+
+add_executable(bastat bastat.c)
+target_link_libraries(bastat ${GMX_EXTRA_LIBRARIES})
+set_target_properties(bastat PROPERTIES OUTPUT_NAME "bastat${GMX_BINARY_SUFFIX}")
+
 add_executable(analyze_mp analyze_mp.c molprop_tables.c)
 target_link_libraries(analyze_mp ${GMX_EXTRA_LIBRARIES})
 set_target_properties(analyze_mp PROPERTIES OUTPUT_NAME "analyze_mp${GMX_BINARY_SUFFIX}")
@@ -116,6 +128,9 @@ set_target_properties(addquote PROPERTIES OUTPUT_NAME "addquote${GMX_BINARY_SUFF
 install(TARGETS alexandria DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
         gentop
+	tune_dip
+	tune_pol
+	bastat
 	analyze_mp
 	mkyaw
 	addquote
