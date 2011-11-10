@@ -1455,66 +1455,6 @@ extern void dd_make_local_swap_groups(t_commrec *cr, gmx_domdec_t *dd,t_swapcoor
 }
 
 
-//static int projection_compare(const void *a, const void *b)
-//{
-//    sort_along_vec_t *xca, *xcb;
-//
-//
-//    xca = (sort_along_vec_t *)a;
-//    xcb = (sort_along_vec_t *)b;
-//
-//    if (xca->xcproj < xcb->xcproj)
-//        return 1;
-//    else if (xca->xcproj > xcb->xcproj)
-//        return -1;
-//    else
-//        return 0;
-//}
-
-
-///* Sort the swap list such that the ions most far off the center get swapped first */
-//static void sort_ionlist(
-//        t_commrec *cr,
-//        t_swapcoords *si_pub,
-//        int iarea,
-//        const rvec center,
-//        const rvec direction)
-//{
-//    int i,ind,type;
-//    t_gmx_swapions *s;
-//    rvec dr; /* distance of an ion to the center */
-//
-//
-//    s = si_pub->si_private;
-//
-//    /* Loop over anions and cations */
-//    for (type=0; type < eIonNr; type++)
-//    {
-//        /* Sort the ions in the swap areas: */
-//        for (i=0; i<s->nions[iarea][type]; i++)
-//        {
-//            ind = s->ion_ind[iarea][type][i];
-//            rvec_sub(s->xc[ind], center, dr);
-//            s->data[iarea][type][i].xcproj = fabs(iprod(dr, direction));
-//            if (s->fpout)
-//            {
-//                fprintf(s->fpout, "i=%2d, pos=%6.3f %6.3f %6.3f, xcproj=%7.3f\n",i,
-//                        s->xc[ind][XX], s->xc[ind][YY], s->xc[ind][ZZ], s->data[iarea][type][i].xcproj);
-//            }
-//            s->data[iarea][type][i].ind = ind;
-//        }
-//        qsort(s->data[iarea][type], s->nions[iarea][type], sizeof(sort_along_vec_t), projection_compare);
-//
-//        /* Copy back the sorted indices */
-//        for (i=0; i<s->nions[iarea][type]; i++)
-//        {
-//            s->ion_ind[iarea][type][i] = s->data[iarea][type][i].ind;
-//        }
-//    }
-//}
-
-
-
 static gmx_bool need_swap(t_commrec *cr, t_swapcoords *sc)
 {
     t_swap *s;
