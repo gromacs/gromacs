@@ -55,6 +55,7 @@ namespace gmx
 
 Selection::Selection(t_selelem *elem, const char *selstr)
 {
+    // TODO: This is not exception-safe if any called function throws.
     _sel.name = strdup(elem->name);
     _sel.selstr = strdup(selstr);
     gmx_ana_pos_clear(&_sel.p);

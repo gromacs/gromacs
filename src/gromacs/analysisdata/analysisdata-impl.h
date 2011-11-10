@@ -38,6 +38,7 @@
 #ifndef GMX_ANALYSISDATA_ANALYSISDATA_IMPL_H
 #define GMX_ANALYSISDATA_ANALYSISDATA_IMPL_H
 
+#include <memory>
 #include <vector>
 
 #include "analysisdata.h"
@@ -110,7 +111,8 @@ class AnalysisDataHandle::Impl
         //! The data object that this handle belongs to.
         AnalysisData            &_data;
         //! Frame object where the current frame is being accumulated.
-        AnalysisDataFrame       *_frame;
+        // Could be scoped_ptr
+        std::auto_ptr<AnalysisDataFrame> _frame;
 };
 
 } // namespace gmx

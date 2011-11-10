@@ -90,7 +90,6 @@ Options::Impl::~Impl()
     {
         delete *i;
     }
-    delete _globalProperties;
 }
 
 Options *Options::Impl::findSubSection(const char *name) const
@@ -182,8 +181,7 @@ void Options::addSubSection(Options *section)
 
     globalProperties()._usedProperties |=
         section->_impl->_globalProperties->_usedProperties;
-    delete section->_impl->_globalProperties;
-    section->_impl->_globalProperties = NULL;
+    section->_impl->_globalProperties.reset();
 }
 
 void Options::addOption(const AbstractOption &settings)
@@ -240,7 +238,7 @@ void Options::finish()
     }
     if (_impl->_parent == NULL)
     {
-        GMX_RELEASE_ASSERT(_impl->_globalProperties != NULL,
+        GMX_RELEASE_ASSERT(_impl->_globalProperties.get() != NULL,
                            "Global properties should exist for the top-level options");
         _impl->_globalProperties->finish();
     }
@@ -258,7 +256,7 @@ OptionsGlobalProperties &Options::globalProperties()
     {
         section = section->_impl->_parent;
     }
-    GMX_RELEASE_ASSERT(section->_impl->_globalProperties != NULL,
+    GMX_RELEASE_ASSERT(section->_impl->_globalProperties.get() != NULL,
                        "Global properties should exist for the top-level options");
     return *section->_impl->_globalProperties;
 }
