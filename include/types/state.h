@@ -130,6 +130,31 @@ energyhistory_t;
 
 typedef struct
 {
+    /* Which type of coordinate swapping is chosen? */
+    int       eSwapCoords;
+    int       csteps;            /* Averaging (coupling) steps                */
+
+    int       nat_req[eCompNr][eIonNr];         /* Requested ion numbers      */
+    int       *nat_req_p[eCompNr][eIonNr];
+
+    int       inflow_netto[eCompNr][eIonNr];    /* Flux determined from the   */
+    int       *inflow_netto_p[eCompNr][eIonNr]; /* ... number of swaps        */
+
+    int       *nat_past[eCompNr][eIonNr];       /* Array with csteps entries */
+    int       *nat_past_p[eCompNr][eIonNr];     /* The pointer points to the
+                                                             first entry only */
+    /* Channel flux detection: */
+    int       fluxfromAtoB[eCompNr][eIonNr];    /* Flux determined from the   */
+    int       *fluxfromAtoB_p[eCompNr][eIonNr]; /* ... channel cylinders      */
+    int       *fluxleak;          /* Flux not going through any channel       */
+    int       nions;              /* Size of the following arrays             */
+    unsigned char *dom_from;      /* Ion came from which compartment?         */
+    unsigned char *chan_pass;     /* Through which channel did this ion pass? */
+}
+swapstate_t;
+
+typedef struct
+{
   int           natoms;
   int           ngtc;
   int           nnhpres;
@@ -165,6 +190,8 @@ typedef struct
   ekinstate_t   ekinstate; /* The state of the kinetic energy data      */
 
   energyhistory_t  enerhist; /* Energy history for statistics           */
+
+  swapstate_t   swapstate;    /* Coordinate swapping                    */
 	
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */

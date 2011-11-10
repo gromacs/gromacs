@@ -145,6 +145,35 @@ typedef struct {
   FILE       *out_f;      /* output file for pull data */
 } t_pull;
 
+
+/* Abstract types for position swapping only defined in swapcoords.c */
+typedef struct swap *gmx_swapcoords_t;
+
+typedef struct {
+    int      nstswap;         /* Every how many steps a swap is attempted?    */
+    int      nat;             /* Number of atoms in the ion group             */
+    int      nat_split[2];    /* Number of atoms in the split group           */
+    int      nat_sol;         /* Number of atoms in the solvent group         */
+    atom_id  *ind;            /* The global ion group atoms numbers           */
+    atom_id  *ind_split[2];   /* Split groups for compartment partitioning    */
+    atom_id  *ind_sol;        /* The global solvent group atom numbers        */
+    gmx_bool massw_split[2];  /* Use mass-weighted positions in split group?  */
+    real     cyl0r, cyl1r;    /* Split cylinders defined by radius, upper and */
+    real     cyl0u, cyl1u;    /* ... lower extension. The split cylinders de- */
+    real     cyl0l, cyl1l;    /* ... fine the channels and are each anchored  */
+                              /* ... in the center of the split group         */
+    real     r_sol;           /* All solvent atoms with a mutual distance of
+                                 at most r_sol are considered as belonging to
+                                 the same compartment                         */
+    int      nanions[eCompNr]; /* Requested number of anions and              */
+    int      csteps;          /* Coupling constant (nr of time steps)         */
+    real     threshold;       /* Ion counts may deviate from the requested
+                                 values by +-threshold before a swap is done  */
+    int      ncations[eCompNr]; /* ... cations for both compartments          */
+    gmx_swapcoords_t si_priv; /* swap private data accessible in
+                               * swapcoords.c                                 */
+} t_swapcoords;
+
 typedef struct {
   int  eI;              /* Integration method 				*/
   gmx_large_int_t nsteps;	/* number of steps to be taken			*/
@@ -267,6 +296,8 @@ typedef struct {
   real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */
   int  ePull;           /* Type of pulling: no, umbrella or constraint  */
   t_pull *pull;         /* The data for center of mass pulling          */
+  int eSwapCoords;      /* Perform coordinate exchanges?                */
+  t_swapcoords *swap;
   real cos_accel;       /* Acceleration for viscosity calculation       */
   tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */

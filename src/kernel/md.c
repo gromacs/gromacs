@@ -86,6 +86,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "swapcoords.h"
 #include "string2.h"
 
 #ifdef GMX_LIB_MPI
@@ -1746,22 +1747,37 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Replica exchange */
         bExchanged = FALSE;
+
+        /* Ion/water position swapping */
+        if ( (ir->eSwapCoords != eswapNO) && (step > 0) && (do_per_step(step, ir->swap->nstswap)) )
+        {
+            bExchanged = do_swapcoords(cr, fplog, step, t, ir,
+                                       bRerunMD ? rerun_fr.x   : state->x,
+                                       bRerunMD ? rerun_fr.v   : state->v,
+                                       bRerunMD ? rerun_fr.box : state->box,
+                                       top_global, fr, &state->swapstate,
+                                       MASTER(cr) && bVerbose, bRerunMD);
+
+            if (bExchanged && DOMAINDECOMP(cr))
+                dd_collect_state(cr->dd,state,state_global);
+        }
+
         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
             do_per_step(step,repl_ex_nst)) 
         {
             bExchanged = replica_exchange(fplog,cr,repl_ex,
                                           state_global,enerd->term,
                                           state,step,t);
-
-            if (bExchanged && DOMAINDECOMP(cr)) 
-            {
-                dd_partition_system(fplog,step,cr,TRUE,1,
-                                    state_global,top_global,ir,
-                                    state,&f,mdatoms,top,fr,
-                                    vsite,shellfc,constr,
-                                    nrnb,wcycle,FALSE);
-            }
         }
+        if (bExchanged && DOMAINDECOMP(cr))
+        {
+            dd_partition_system(fplog,step,cr,TRUE,1,
+                    state_global,top_global,ir,
+                    state,&f,mdatoms,top,fr,
+                    vsite,shellfc,constr,
+                    nrnb,wcycle,FALSE);
+        }
+
         
         bFirstStep = FALSE;
         bInitStep = FALSE;

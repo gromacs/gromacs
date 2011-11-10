@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
+#include "swapcoords.h"
 #include "gmx_sort.h"
 
 #ifdef GMX_LIB_MPI
@@ -8598,6 +8599,12 @@ void dd_partition_system(FILE            *fplog,
     {
         /* Update the local pull groups */
         dd_make_local_pull_groups(dd,ir->pull,mdatoms);
+    }
+
+    if ( ir->eSwapCoords != eswapNO) // && do_per_step(step, ir->swap->nstswap) )
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(cr,dd,ir->swap,mdatoms);
     }
 
     add_dd_statistics(dd);

@@ -184,6 +184,10 @@ const char *epull_names[epullNR+1] = {
   "no", "umbrella", "constraint", "constant_force", NULL
 };
 
+const char *eSwapTypes_names[eSwapTypesNR+1] = {
+  "no", "X", "Y", "Z", "auto", NULL
+};
+
 const char *epullg_names[epullgNR+1] = { 
   "distance", "direction", "cylinder", "position", "direction_periodic", NULL
 };

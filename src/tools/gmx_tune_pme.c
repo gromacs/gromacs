@@ -1153,8 +1153,9 @@ static void make_benchmark_tprs(
  * not on mdrun command line options! */
 static gmx_bool tpr_triggers_file(const char *opt)
 {
-    if ( (0 == strcmp(opt, "-pf"))
-      || (0 == strcmp(opt, "-px")) )
+    if ( (0 == strcmp(opt, "-pf"  ))
+      || (0 == strcmp(opt, "-px"  ))
+      || (0 == strcmp(opt, "-swap")) )
         return TRUE;
     else
         return FALSE;
@@ -2109,6 +2110,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-pf",     "pullf",    ffOPTWR },
       { efMTX, "-mtx",    "nm",       ffOPTWR },
       { efNDX, "-dn",     "dipole",   ffOPTWR },
+      { efXVG, "-swap",   "swapions", ffOPTWR },
       /* Output files that are deleted after each benchmark run */
       { efTRN, "-bo",     "bench",    ffWRITE },
       { efXTC, "-bx",     "bench",    ffWRITE },
@@ -2128,7 +2130,8 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-bpx",    "benchpx",  ffOPTWR },
       { efXVG, "-bpf",    "benchpf",  ffOPTWR },
       { efMTX, "-bmtx",   "benchn",   ffOPTWR },
-      { efNDX, "-bdn",    "bench",    ffOPTWR }
+      { efNDX, "-bdn",    "bench",    ffOPTWR },
+      { efXVG, "-bswap",  "benchswp", ffOPTWR }
     };
 
     /* Command line options of mdrun */

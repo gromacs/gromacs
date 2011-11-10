@@ -70,6 +70,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
+#include "swapcoords.h"
 #include "tpxio.h"
 #include "txtdump.h"
 
@@ -793,6 +794,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             /* Initialize pull code */
             init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
+        }
+
+        if (inputrec->eSwapCoords != eswapNO)
+        {
+            /* Initialize ion swapping code */
+            init_swapcoords(fplog,bVerbose,inputrec,opt2fn_master("-swap",nfile,fnm,cr),
+                    mtop,state->x,state->box,&state->swapstate,cr,oenv,Flags);
         }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);

@@ -378,6 +378,7 @@ int main(int argc,char *argv[])
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efXVG, "-swap",   "swapions", ffOPTWR },
     { efRND, "-multidir",NULL,      ffOPTRDMULT}
   };
 #define NFILE asize(fnm)
