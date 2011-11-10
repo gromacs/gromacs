@@ -20,6 +20,7 @@
 #include "mdrun.h"
 #include "xvgr.h"
 #include "gmxfio.h"
+#include "copyrite.h"
 
 
 static char* IonString[eIonNr] = {"anion", "cation" };
@@ -1169,6 +1170,12 @@ extern void init_swapcoords(
         fprintf(stderr, "%s Rerun - using every available frame\n", SwS);
         sc->nstswap = 1;
         sc->csteps  = 1;  /* averaging makes no sense for reruns */
+    }
+
+    if (MASTER(cr) && !bAppend)
+    {
+        fprintf(fplog, "\nInitializing ion/water position exchanges\n");
+        please_cite(fplog,"Kutzner2011");
     }
 
     switch (ir->eSwapCoords)

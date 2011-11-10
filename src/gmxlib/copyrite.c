@@ -528,6 +528,12 @@ void please_cite(FILE *fp,const char *key)
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
       133, 2010, "034117"
+    },
+    { "Kutzner2011",
+      "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
+      "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
+      "Biophys. J.",
+      101, 2011, "809-817"
     }
   };
 #define NSTR (int)asize(citedb)
