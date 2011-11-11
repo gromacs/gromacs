@@ -73,6 +73,7 @@
 #include "titration_db.h"
 #include "titration.h"
 #include "titration_util.h"
+//#include "forcerec.h"
 
 #define DOO   0.35
 #define BOND  0.15
@@ -2013,11 +2014,323 @@ static void print_hop(t_hop hop)
             hop.donor_id,hop.acceptor_id,hop.proton_id);
 } /* print_hop */
 
-static void get_self_energy(t_commrec *cr, t_qhop_residue donor, 
+/* return the residue index (in tres) if i in an atom index in a qhop_residue of interest */
+static int is_res_nr(int i, int *tres, int nres, titration *t_rec)
+{
+    int r, ri, a;
+
+    for (r=0; r<nres; r++)
+    {
+        ri = tres[r];
+        for (a=0; a < t_rec->qhop_residues[ri].nr_atoms; a++)
+        {
+            if (i == t_rec->qhop_residues[ri].atoms[a])
+            {
+                return r;
+            }
+        }
+    }
+
+    return -1;
+}
+
+/* Redundant */
+static gmx_bool is_in_reactant(int a, t_qhop_residue *reac, t_atoms *atoms)
+{
+    /* Is this OK? It's fast :-) */
+    return reac->res_nr == atoms->atom[a].resind;
+
+    /* int i; */
+
+    /* for (i=0; i < reac->nr_atoms; i++) */
+    /* { */
+    /*     if (a == reac->atoms[i]) */
+    /*         return TRUE; */
+    /* } */
+    /* return FALSE; */
+}
+
+static t_nblist* reduce_nblist(titration *t_rec,
+                               int nhops,
+                               t_hop *hops,
+                               t_nblist *nlist)
+{
+    /* The idea here is to make a reduced nblist from an full one.
+       It will contain all neighbors that are part of
+       {donors} U {acceptors}.
+       Later, further reduction will produce nblists that connect
+       individual pairs of reactants by calling this function again. */
+
+    int i, j, h, min_id, max_id, npairs, nres, maxres, ii, jj, nj0, nj1, restemp, r, r1, r2, rr1, rr2, ri1, ri2, jtot, nri;
+    int *pairs=NULL, *res=NULL, *tres=NULL;
+    gmx_bool bNew, bSort;
+    t_nblist *nlist_short = NULL;
+    t_qhop_residue *d, *a;
+    t_hop *hop;
+
+    /* min_id = INT_MAX; */
+    /* max_id = 0; */
+
+    maxres = t_rec->nr_hop*2; /* decent estimate. Not too big, not too small. */
+
+    snew(res,  maxres);
+    snew(tres, maxres);
+
+    snew(nlist_short,1);
+
+    /* nlist_short->enlist = nlist->enlist; */
+    /* nlist_short->il_code = nlist->il_code; */
+    *nlist_short = *nlist;
+    nlist_short->nri = 0;
+    nlist_short->maxnri = 0;
+    nlist_short->nrj = 0;
+    nlist_short->maxnrj = 0;
+    nlist_short->iinr = NULL;
+    nlist_short->iinr_end = NULL;
+    nlist_short->jindex = NULL;
+    nlist_short->jjnr = NULL;
+    nlist_short->jjnr_end = NULL;
+    /* Just copy the mutex and counter?
+       It will not be run at the same
+       time as the ordinary nonbondeds anyway */
+    nlist_short->mtx = nlist->mtx;
+    nlist_short->count = nlist->count;
+    nres = 0;
+    /* Find what pairs of residues are connected by looking at the hops */
+    for (h=0; h < nhops; h++)
+    {
+        hop = &(hops[h]);
+        d = &(t_rec->qhop_residues[hop->donor_id]);
+        a = &(t_rec->qhop_residues[hop->acceptor_id]);
+
+        bNew = TRUE;
+
+        for (i=0; i<nres; i++)
+        {
+            if (res[i] == d->res_nr)
+            {
+                bNew = FALSE;             
+                break;
+            }
+        }
+        if (bNew)
+        {
+            while (maxres <= nres)
+            {
+                maxres += 4; /* Other chunk size? */
+                srenew(res,  maxres);
+                srenew(tres, maxres);
+            }
+
+            res[nres]    = d->res_nr;
+            tres[nres++] = hop->donor_id;
+        }
+        
+        bNew = TRUE;
+        for (i=0; i<nres; i++)
+        {
+            if (res[i] == a->res_nr)
+            {
+                bNew = FALSE;
+                break;
+            }
+        }
+        if (bNew)
+        {
+            while (maxres <= nres)
+            {
+                maxres += 4; /* Other chunk size? */
+                srenew(res,  maxres);
+                srenew(tres, maxres);
+            }
+
+            res[nres]    = a->res_nr;
+            tres[nres++] = hop->acceptor_id;
+        }
+    }
+
+    /* Sort the residue list */
+    bSort = FALSE;
+    while (!bSort)
+    {
+        bSort = TRUE;
+        for (r=0; r<nres-1; r++)
+        {
+            if (res[r]>res[r+1])
+            {
+                restemp = res[r];
+                res[r] = res[r+1];
+                res[r+1] = restemp;
+
+                restemp = tres[r];
+                tres[r] = tres[r+1];
+                tres[r+1] = restemp;
+
+                bSort = FALSE;
+            }
+        }
+    }
+
+    snew(pairs, nres*nres); /* Make it square. Who cares? It'll be small anyway. */
+
+    /* Make a bolean matrix showing what residues interact */
+    for (h=0; h < nhops; h++)
+    {
+        hop = &(hops[h]);
+
+        r1 = (t_rec->qhop_residues[hop->donor_id]).res_nr;
+        r2 = (t_rec->qhop_residues[hop->acceptor_id]).res_nr;
+        
+        /* Get positions in res[] */
+        for (rr1=0; rr1<nres; rr1++)
+        {
+            if (r1 == res[rr1])
+            {
+                break;
+            }
+        }
+
+        for (rr2=0; rr2<nres; rr2++)
+        {
+            if (r2 == res[rr2])
+            {
+                break;
+            }
+        }
+
+        if (rr1 >= nres || rr2 >= nres)
+        {
+            gmx_fatal(FARGS, "Couldn't find residue in H-transfer list");
+        }
+
+
+        if (r1<r2)
+        {
+            pairs[rr1*nres + rr2] = 1;
+        }
+        else
+        {
+            pairs[rr2*nres + rr1] = 1;
+        }
+    }    
+
+
+    /* scan nblist */
+
+    /* The nblist is not very intuitive at first glance.
+     * ---- i-particles ----
+     * loop n from 0 to nlist->nri
+     *   ii = nlist->iinr[n] = atom id of the i-particle.
+     *   x = shX+ x[ii*3 + 0]
+     *   y = shY+ x[ii*3 + 1]
+     *   z = shZ+ x[ii*3 + 2],
+     *     where sh? are shift vectors in XYZ:
+     *   shX = shiftvec[is3 + 0]
+     *   shX = shiftvec[is3 + 1]
+     *   shX = shiftvec[is3 + 2],
+     *     where is3 = nlist->shift[n] * 3
+     *
+     * ---- j-particles ----
+     * loop k from nlist->jindex[n] to nlist->jindex[n+1]
+     *   jnr = nlist->jjnr[k] = atom id of the j-particle
+     *   x = x[j3 + 0]
+     *   y = x[j3 + 1]
+     *   z = x[j3 + 2]
+     *
+     * Here, we're only interested in the indices and shift vectors.
+     */
+
+    jtot = 0; /* corroesponds to the last element of nlist_short->jjnr */
+
+    snew(nlist_short->jjnr, 1);
+    snew(nlist_short->jindex, 1);
+    nlist_short->jindex[0] = 0;
+
+
+    for (i=0; i < nlist->nri; i++)
+    {        
+        bNew = TRUE; /* This is a new i-particle */
+
+        ii = nlist->iinr[i];
+
+        ri1 = is_res_nr(ii, tres, nres, t_rec);
+
+        if (ri1 < 0)
+        {
+            continue;
+        }
+
+        r1 = res[ri1];
+
+        /* Find pairs that link reacting groups */
+        nj0 = nlist->jindex[i];
+        nj1 = nlist->jindex[i+1];
+
+        for (j=nj0; j<nj1; j++)
+        {
+            jj = nlist->jjnr[j];
+            
+            ri2 = is_res_nr(jj, tres, nres, t_rec);
+
+            if (ri2 < 0)
+            {
+                /* These are not the particles you're looking for */
+                continue;
+            }
+
+            r2 = res[ri2];
+
+            /* If atoms are within the same reacting residue, or if they are in different residues that react, go! */
+            if (pairs[ri1*nres + ri2] || pairs[ri2*nres + ri1] || ri1==ri2)
+            {
+                /* Add to new nblist. */
+                if (bNew)
+                {
+                    bNew = FALSE;
+
+                    nri = nlist_short->nri;
+
+                    srenew(nlist_short->iinr, nri+1);
+                    nlist_short->iinr[nri] = ii;
+
+                    srenew(nlist_short->shift, nri+1);
+                    nlist_short->shift[nri] = nlist->shift[i];
+
+                    srenew(nlist_short->jindex, nri+2);
+
+                    srenew(nlist_short->gid, nri+1);
+                    nlist_short->gid[nri] = nlist->gid[i];
+
+                    nlist_short->nri++;
+                }
+
+                srenew(nlist_short->jjnr, jtot+1);
+                nlist_short->jjnr[jtot] = jj;
+                jtot++;
+                nlist_short->jindex[nri+1] = jtot; /* This will keep on changing */
+            }
+        }
+    }
+
+    nlist_short->nrj = jtot;
+
+    sfree(res);
+    sfree(pairs);
+
+    return nlist_short;
+}
+
+static void get_self_energy(FILE *fplog, t_inputrec *ir, t_commrec *cr, t_qhop_residue donor, 
                             t_qhop_residue acceptor, t_mdatoms *md, 
                             gmx_localtop_t *top,
-                            rvec *x, t_pbc *pbc, t_forcerec *fr, 
-                            real *Ecoul_self,real *Evdw_self)
+                            gmx_mtop_t *mtop,
+                            gmx_wallcycle_t wcycle,
+                            gmx_groups_t *groups,
+                            t_fcdata *fcd, t_graph *graph, gmx_vsite_t *vsite,
+                            rvec mu_tot,
+                            rvec *x, t_pbc *pbc, t_forcerec *fr, matrix box, history_t *hist,
+                            real *Ecoul_self,real *Evdw_self, t_nblists *nlists_pair,
+                            t_nrnb *nrnb, int step)
 {
     /* the internal energy of the hoppers together Is difficult because
        the internal energy of the individal residues, eg. if part of
@@ -2025,19 +2338,25 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
        matter.
     */
     int
-        iat, ia, jat, ja, i, j, nti, nvdwparam,  vdwparam, ivdw, DA, e, efirst, elast;
+        iat, ia, jat, ja, i, j, nti, nvdwparam,  vdwparam, ivdw, DA, e, efirst, elast, ni;
     gmx_bool
         bSkip;
     real
         qa, qq, Ecoul, Evdw, ek, ec, eps, drsq,
-        rinv, rinvsq, r6, r12, c6, c12, ce1, ce2;
+        rinv, rinvsq, r6, r12, c6, c12, ce1, ce2, Ec;
     qhop_db
         *db;
     rvec
         vec;
     t_qhop_residue res;
     titration_t T;
-    
+    t_nblists _nblists_tmp;
+    t_ilist ilist[F_NRE];
+    t_nblists *nblists_tmp;
+    t_idef idef_tmp;
+    tensor force_vir;
+    gmx_enerdata_t *enerd;
+
     T = fr->titration;                        
     db = T->db;
 
@@ -2045,7 +2364,7 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
     Evdw  = 0.0;
     ek    = 0.0;
     ec    = 0.0;
-  
+
     if (EEL_RF(fr->eeltype))
     {
         ek = fr->k_rf;
@@ -2091,7 +2410,16 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
             rinv = gmx_invsqrt(drsq);
             rinvsq = rinv*rinv;
 
-            Ecoul +=  qq*(rinv+ek*drsq-ec);
+            Ec = qq*(rinv+ek*drsq-ec); /* = qq*rinv if not RF. */
+
+            if (fr->bEwald)
+            {
+                Ecoul += Ec*erfc(fr->ewaldcoeff/rinv);
+            }
+            else
+            {
+                Ecoul +=  Ec;
+            }
 
             /* Add vdw! */
             switch (ivdw)
@@ -2127,6 +2455,7 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
         }
     }
 
+#if 0 /* Removing 14 for now */
     /* Now remove intramolecular non-bonded stuff */
     for (DA=0; DA<2; DA++)
     {
@@ -2174,9 +2503,17 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
                 drsq = norm2(vec);
                 rinv = gmx_invsqrt(drsq);
                 rinvsq = rinv*rinv;
-	      
-                Ecoul +=  qq*(rinv+ek*drsq-ec);
-	      
+
+                Ec = qq*(rinv+ek*drsq-ec);
+                if (fr-bEwald)
+                {
+                    Ecoul += Ec*erfc(fr->ewaldcoeff/rinv);
+                }
+                else
+                {
+                    Ecoul +=  Ec;
+                }
+
                 /* Add vdw! */
                 switch (ivdw)
                 {
@@ -2211,13 +2548,147 @@ static void get_self_energy(t_commrec *cr, t_qhop_residue donor,
             }
         }
     }
+#endif /* 1-4 interactions */
 
     Ecoul *= eps;
 
     *Ecoul_self = Ecoul;
     *Evdw_self  = Evdw;
 
+#ifdef TITRATION_NB_KERNELS
+
     /* reaction field correction STILL needed!!!! nu even geen zin in*/
+    /* return; */
+
+    /* Instead: use the non-bonded kernels to get the numbers right.
+     * Strip the nblist and feed it to the kernel. */
+    int flags;
+    /* int min_id, max_id; */
+    /* gmx_bool bReac; */
+    /* t_nblist *nlist_short; */
+    
+    /* /\* Can't do this with CG *\/ */
+    /* if (nlist->enlist == enlistCG_CG) */
+    /* { */
+    /*     gmx_fatal(FARGS, "Can't do titration with CG."); */
+    /* } */
+    
+    /* /\* === Strip nblist === *\/ */
+    /* nlist_short = reduce_nblist(t_rec, nlist) */
+
+    /* /\* Find highest and lowest atom id in the titrating residues to speed up search. *\/ */
+    
+    /* min_id = INT_MAX; */
+    /* max_id = 0; */
+
+    /* for (i=0; i<donor->nr_atoms; i++) */
+    /* { */
+    /*     min_id = min(min_id, donor->atoms[i]); */
+    /*     max_id = max(max_id, donor->atoms[i]); */
+    /* } */
+
+    /* for (i=0; i<acceptor->nr_atoms; i++) */
+    /* { */
+    /*     min_id = min(min_id, acceptor->atoms[i]); */
+    /*     max_id = max(max_id, acceptor->atoms[i]); */
+    /* } */
+
+    /* === Extract the 1-4 interactions that needs undoing === */
+    
+#define N_TERMS 3
+    const int term[N_TERMS] = {F_LJ14, F_COUL14, F_LJC14_Q};
+
+    memset(ilist, 0, sizeof(t_ilist)*F_NRE); /* Just make sure it's all NULL */
+    for (i=0; i < N_TERMS; i++)
+    {
+        ni = 0;
+        for (j=0; j < donor.bindex.nr[term[i]] ; j++)
+        {
+            {
+                /* Always ft + 2 atoms = 3 elements for these interactions */
+                ni = j*3;
+                srenew(ilist[term[i]].iatoms, ni+3);
+                memcpy(&(ilist[term[i]].iatoms[ni]), &(top->idef.il[term[i]].iatoms[donor.bindex.ilist_pos[i][ni]]), 3);
+            }
+        }
+        if (ilist[term[i]].iatoms)
+        {
+            ilist[term[i]].nr     = ni+3;
+            ilist[term[i]].nalloc = ni+3;
+        }
+    }
+
+#undef N_TERMS
+
+    /* Add the LJ/Coul */
+
+    /* === Call non-boded kernels === */
+
+    snew(enerd, 1);
+
+    init_enerdata(groups->grps[egcENER].nr, ir->n_flambda, enerd);
+
+    /* Temporarily switch the nblists and t_idef in ft, top and mtop . */
+
+    nblists_tmp = fr->nblists;
+    fr->nblists = nlists_pair;
+    idef_tmp = top->idef;
+    for (i=0; i<F_NRE; i++)
+    {
+        top->idef.il[i] = ilist[i];
+    }
+
+    do_force(fplog, cr, ir, step, nrnb, wcycle, top, mtop, groups, box, x, hist,
+             T->f,
+             force_vir,
+             md,
+             enerd,
+             fcd,
+             0 /* lambda */,
+             graph,
+             fr,
+             vsite,
+             mu_tot,
+             step*ir->delta_t,
+             NULL,
+             NULL,
+             FALSE,
+             GMX_FORCE_BONDED | /* GMX_FORCE_NONBONDED | */ GMX_FORCE_SUBSYSTEM);
+
+    /* Swap back. */
+    fr->nblists = nblists_tmp;
+    top->idef = idef_tmp;
+
+    *Ecoul_self = enerd->term[F_COUL_SR]
+        + enerd->term[F_COUL_LR]
+        + enerd->term[F_RF_EXCL]
+        + enerd->term[F_COUL_RECIP]
+        /* + enerd->term[F_COUL14] */
+        + enerd->term[F_RF_EXCL]
+        + enerd->term[F_POLARIZATION];
+
+    *Evdw_self = enerd->term[F_LJ]
+        /* + enerd->term[F_LJ14] */
+        + enerd->term[F_BHAM]
+        + enerd->term[F_LJ_LR]
+        + enerd->term[F_BHAM_LR]
+        + enerd->term[F_DISPCORR];
+
+        /* And these? */
+  /* + enerd->term[F_LJC14_Q] */
+  /* + enerd->term[F_LJC_PAIRS_NB] */
+
+  /* + enerd->term[F_COUL_SR] */
+  /* + enerd->term[F_COUL_LR] */
+  /* + enerd->term[F_COUL_RECIP] */
+  /* + enerd->term[F_DPD] */
+  /* + enerd->term[F_POLARIZATION] */
+  /* + enerd->term[F_WATER_POL] */
+  /* + enerd->term[F_THOLE_POL] */
+#endif /* TITRATION_NB_KERNELS */
+
+    return;
+
 } /* get_self_energy */
 
 static real calc_S(const qhop_parameters *p,
@@ -2470,9 +2941,10 @@ static void get_hop_prob(FILE *fplog,
                          gmx_vsite_t *vsite,rvec mu_tot,
                          t_hop *hop, t_pbc *pbc,gmx_large_int_t step, qhop_db *db,
                          gmx_bool *bHaveEbefore,
-                         gmx_enerdata_t *Ebefore,gmx_enerdata_t *Eafter)
+                         gmx_enerdata_t *Ebefore, gmx_enerdata_t *Eafter, t_nblists *nlists_reduced)
 {
     /* compute the hopping probability based on the Q-hop criteria */
+    int i,j,nnlists;
     real Ebefore_mm, Ebefore_self,
         Eafter_mm, Eafter_self,
         Ebefore_self_coul, Ebefore_self_vdw,
@@ -2480,8 +2952,9 @@ static void get_hop_prob(FILE *fplog,
         Edelta, Edelta_coul,
         r_TST, r_SE, r_log, Thop;
     qhop_parameters *p;
-    titration_t T;
-    
+    titration_t T; 
+    t_nblists *nlists_pair;
+   
     T = fr->titration;
     
     /* Is this the primary titrating site, or do we need swapping? */
@@ -2499,10 +2972,30 @@ static void get_hop_prob(FILE *fplog,
         *bHaveEbefore = TRUE;
     }
     /* This needs to be evaluated for each possible hop */
-    get_self_energy(cr,T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
+
+#ifdef TITRATION_NB_KERNELS
+    /* Make a nblist containing only the atoms form the residues involved in this hop.
+       This is a slice of the full nblist(s), so it can be used for a good energy evaluation. */
+    nnlists = fr->nnblists;
+    nlists_pair = NULL;
+    snew(nlists_pair, nnlists);
+    
+    for (i=0; i<nnlists; i++)
+    {
+        nlists_pair[i] = nlists_reduced[i];
+        for (j=0; j<eNL_NR; j++)
+        {
+            nlists_pair[i].nlist_sr[j] = *(reduce_nblist(T, 1, hop, &(nlists_reduced[i].nlist_sr[j])));
+            nlists_pair[i].nlist_lr[j] = *(reduce_nblist(T, 1, hop, &(nlists_reduced[i].nlist_lr[j])));
+        }
+    }
+#endif
+
+    get_self_energy(fplog, ir, cr,T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
                     T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
-                    md, top, state->x, pbc, fr,
-                    &Ebefore_self_coul,&Ebefore_self_vdw);
+                    md, top, mtop, wcycle, groups, fcd, graph, vsite, mu_tot, state->x, pbc, fr,
+                    state->box, &(state->hist),
+                    &Ebefore_self_coul, &Ebefore_self_vdw, nlists_pair, nrnb, step);
     Ebefore_mm = (Ebefore->term[F_EPOT] - 
                   (Ebefore->term[F_COUL14] + Ebefore->term[F_LJ14]));
     Ebefore_self = (Ebefore_self_coul + Ebefore_self_vdw); 
@@ -2513,9 +3006,11 @@ static void get_hop_prob(FILE *fplog,
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
                         fcd,graph,fr,vsite,mu_tot,step, Eafter);
         dump_enerd(debug,"After ",Eafter,eTitrationAlg_names[ir->titration_alg]);
-        get_self_energy(cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
+        get_self_energy(fplog, ir, cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
                         T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
-                        md,top,state->x,pbc,fr,&Eafter_self_coul,&Eafter_self_vdw);
+                        md, top, mtop, wcycle, groups, fcd, graph, vsite, mu_tot, state->x, pbc, fr,
+                        state->box, &(state->hist),
+                        &Eafter_self_coul, &Eafter_self_vdw, nlists_pair, nrnb, step);
         Eafter_mm = (Eafter->term[F_EPOT] - 
                      (Eafter->term[F_COUL14] + Eafter->term[F_LJ14]));
         Eafter_self = (Eafter_self_coul + Eafter_self_vdw); 
@@ -2606,6 +3101,9 @@ static void get_hop_prob(FILE *fplog,
     }
   
     sfree(p);
+#ifdef TITRATION_NB_KERNELS
+    sfree(nlists_pair)
+#endif
 }
 	    
 real distance_dependence(rvec x, rvec c, real rc, t_pbc *pbc)
@@ -2617,7 +3115,11 @@ real distance_dependence(rvec x, rvec c, real rc, t_pbc *pbc)
     r = norm(dx);
 
     if (r < rc)
-        return 1.0 - exp(-r/rc);
+        return exp(-r/rc);
+        /* return 1.0 - exp(-r/rc);
+           This has gotta be wrong. The function should have
+           a maximum at r=0 and decline with increasing r.
+           Replace by exp(-r/rc) */
     else
         return 0.0;
 }  /* distance_dependence */
@@ -2907,7 +3409,7 @@ real do_titration(FILE *fplog,
     char
         stepstr[STEPSTRSIZE];
     int
-        i,j,a,nTransfers;
+        i,j,a,nTransfers, nnlists;
     gmx_bool
         bAgain,bHop;
     real 
@@ -2922,6 +3424,8 @@ real do_titration(FILE *fplog,
     real
         deqmmm,eqmmm,veta, vetanew;
     titration_t T;
+    
+    t_nblists *nlists_reduced;
     
     T = fr->titration;
     db = T->db;
@@ -2955,11 +3459,36 @@ real do_titration(FILE *fplog,
     } 
 
     find_acceptors(fplog,cr, fr, T, state->x, &pbc, md, &(db->H_map));
+
+
     deqmmm = 0;
     eqmmm = 0;
     
     if(T->nr_hop > 0)
     {
+#ifdef TITRATION_NB_KERNELS
+        /* make first reduction of neighborlists */
+        nnlists = fr->nnblists;
+        nlists_reduced = NULL;
+        snew(nlists_reduced, nnlists);
+
+        for (i=0; i<nnlists; i++)
+        {
+            /* if (!fr->nblists[i]) */
+            /* { */
+            /*     continue; */
+            /* } */
+
+            nlists_reduced[i] = fr->nblists[i];
+
+            for (j=0; j<eNL_NR; j++)
+            {
+                nlists_reduced[i].nlist_sr[j] = *(reduce_nblist(T, T->nr_hop, T->hop, &(fr->nblists[i].nlist_sr[j])));
+                nlists_reduced[i].nlist_lr[j] = *(reduce_nblist(T, T->nr_hop, T->hop, &(fr->nblists[i].nlist_lr[j])));
+            }                
+        }
+#endif
+
         bHaveEbefore = FALSE;
         if (ir->titration_mode == eTitrationModeList) 
         {
@@ -2971,7 +3500,7 @@ real do_titration(FILE *fplog,
                 get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                              fcd,graph,fr,vsite,mu_tot,
                              &(T->hop[i]),&pbc,step, db,
-                             &bHaveEbefore,Ebefore,Eafter);
+                             &bHaveEbefore,Ebefore,Eafter, nlists_reduced);
             }
         }
         scramble_hops(T, ir->titration_mode);
@@ -3007,7 +3536,7 @@ real do_titration(FILE *fplog,
                     get_hop_prob(fplog,cr,ir,nrnb,wcycle,top,mtop,constr,groups,state,md,
                                  fcd,graph,fr,vsite,mu_tot,
                                  &(T->hop[i]),&pbc,step, db,
-                                 &bHaveEbefore,Ebefore,Eafter);
+                                 &bHaveEbefore,Ebefore,Eafter, nlists_reduced);
                 }
             
                 rnr = gmx_rng_uniform_real(T->rng); 
@@ -3104,7 +3633,10 @@ real do_titration(FILE *fplog,
             }
         }
     }  
-    return eqmmm;
+#ifdef TITRATION_NB_KERNELS
+    sfree(nlist_reduced);
+#endif
+   return eqmmm;
 }
 
 /* paramStr is the string from the rtp file.
