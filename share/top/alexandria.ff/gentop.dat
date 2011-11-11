@@ -27,7 +27,8 @@
     <atype elem="N" description="Nitrogen in sp1" gt_name="N1a" gt_type="NDI" miller_equiv="NDI" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Nitrogen in sp1" gt_name="N1b" gt_type="NDI" miller_equiv="NDI" geometry="linear" numbonds="2" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Nitrogen in sp2" gt_name="N2a" gt_type="NTR2" miller_equiv="NTR2" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.761262" sigma_pol="0" vdwparams=""/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h2" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Aromatic Nitrogen" gt_name="N2b" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2o" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Aromatic Nitrogen" gt_name="N2q" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2s" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Nitro Nitrogen" gt_name="N2d" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>

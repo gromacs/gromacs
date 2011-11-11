@@ -521,6 +521,7 @@ int main(int argc, char *argv[])
                            bZatype,watoms,rDecrZeta,bRandZeta,pfac,bFitZeta,
                            bEntropy,dzatoms);
         gmx_resp_read_log(gr,aps,pd,opt2fn("-g03",NFILE,fnm));
+        
         gmx_resp_get_atom_info(gr,atoms,&symtab,&x);
         if ((NULL != reffn) && bFitCube)
             gmx_resp_read_cube(gr,reffn,TRUE);
