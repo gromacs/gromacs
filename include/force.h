@@ -196,6 +196,8 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 #define GMX_FORCE_VIRIAL       (1<<8)
 /* Calculate dHdl */
 #define GMX_FORCE_DHDL         (1<<9)
+/* Calculate the energies for a subsystem, using existing pme-data etc. */
+#define GMX_FORCE_SUBSYSTEM    (1<<10)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
