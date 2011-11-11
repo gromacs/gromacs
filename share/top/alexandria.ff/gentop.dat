@@ -30,7 +30,8 @@
     <atype elem="N" description="Aromatic Nitrogen" gt_name="N2h" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="H H" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Aromatic Nitrogen" gt_name="N2b" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2o" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Aromatic Nitrogen" gt_name="N2q" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="C2s" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
-    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2d" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="2 2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Nitro Nitrogen" gt_name="N2d" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="O2 O2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
+    <atype elem="N" description="Aromatic Nitrogen" gt_name="N2e" gt_type="NPI2" miller_equiv="NPI2" geometry="planar" numbonds="3" neighbors="2 2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams=""/>
     <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3a" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/>
     <!-- atype elem="N" description="Tetahedral Nitrogen" gt_name="N3q" gt_type="NTE" miller_equiv="NTE" geometry="planar" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/-->
     <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3b" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams=""/>
@@ -257,6 +258,7 @@
     <sym_charge central="C" attached="H" numattach="3"/>
     <sym_charge central="N" attached="H" numattach="3"/>
     <sym_charge central="N" attached="H" numattach="2"/>
+    <sym_charge central="N" attached="O" numattach="2">
     <sym_charge central="O" attached="H" numattach="2"/>
     <sym_charge central="C" attached="F" numattach="3"/>
     <sym_charge central="C" attached="Cl" numattach="3"/>
