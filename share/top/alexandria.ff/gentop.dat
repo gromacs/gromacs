@@ -258,7 +258,7 @@
     <sym_charge central="C" attached="H" numattach="3"/>
     <sym_charge central="N" attached="H" numattach="3"/>
     <sym_charge central="N" attached="H" numattach="2"/>
-    <sym_charge central="N" attached="O" numattach="2">
+    <sym_charge central="N" attached="O" numattach="2"/>
     <sym_charge central="O" attached="H" numattach="2"/>
     <sym_charge central="C" attached="F" numattach="3"/>
     <sym_charge central="C" attached="Cl" numattach="3"/>
