@@ -74,7 +74,7 @@ extern gpp_atomtype_t set_atom_type(FILE *fp,char *molname,
 		     
 extern void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
                        gpp_atomtype_t atype,t_params plist[],
-                       rvec *x,t_symtab *symtab,t_excls *excls,
+                       rvec *x,t_symtab *symtab,t_excls **excls,
                        char **smnames);
 		       
 extern int *symmetrize_charges(gmx_bool bQsym,

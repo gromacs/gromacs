@@ -689,20 +689,9 @@ void copy_atoms(t_atoms *src,t_atoms *dest)
     }
 }
 
-void copy_t_excls(t_excls *src,t_excls *dest)
-{
-    int i;
-    
-    if (dest->nr < src->nr)
-        srenew(dest->e,src->nr);
-    dest->nr = src->nr;
-    for(i=0; (i<dest->nr); i++)
-        dest->e[i] = src->e[i];
-}
-
 void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
                 gpp_atomtype_t atype,t_params plist[],
-                rvec *x,t_symtab *symtab,t_excls *excls,
+                rvec *x,t_symtab *symtab,t_excls **excls,
                 char **smnames)
 {
     int     i,j,k,ai,aj,iat,shell,ns=0;
@@ -774,8 +763,8 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
         for(i=0; (i<atoms->nr); i++) 
         {
             iat = renum[i];
-            for(k=0; (k<excls[i].nr); k++)
-                add_excl(&(newexcls[iat]),renum[excls[i].e[k]]);
+            for(k=0; (k<(*excls)[i].nr); k++)
+                add_excl(&(newexcls[iat]),renum[(*excls)[i].e[k]]);
             for(j=iat+1; (j<renum[i+1]); j++) 
             {
                 newa->atom[j]       = atoms->atom[i];
@@ -797,10 +786,10 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
                 sprintf(buf,"%ss",*(atoms->atomname[i]));
                 newa->atomname[j] = put_symtab(symtab,buf);
                 copy_rvec(x[i],newx[j]);
-                for(k=0; (k<excls[i].nr); k++) 
+                for(k=0; (k<(*excls)[i].nr); k++) 
                 {
                     ai = j;
-                    aj = renum[excls[i].e[k]];
+                    aj = renum[(*excls)[i].e[k]];
                     if (ai != aj) 
                     {
                         add_excl(&(newexcls[ai]),aj);
@@ -838,11 +827,8 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
         sfree(newx);
         sfree(newname);
         /* Copy exclusions */
-        copy_t_excls(newexcls,excls); 
-        for(i=0; (i<newa->nr); i++)
-            sfree(newexcls[i].e);
-        sfree(newexcls);
-        
+        *excls = newexcls;
+
         for(i=0; (i<F_NRE); i++) 
         {
             if (i != F_POLARIZATION)

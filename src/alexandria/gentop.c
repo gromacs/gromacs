@@ -750,8 +750,9 @@ int main(int argc, char *argv[])
         if (atoms->nr > anr) 
         {
             srenew(smnames,atoms->nr);
-            for(i=anr; (i<atoms->nr); i++)
+            for(i=anr; (i<atoms->nr); i++) {
                 smnames[i] = strdup("ML");
+            }
         }
     
     
@@ -766,7 +767,7 @@ int main(int argc, char *argv[])
             srenew(x,nalloc);
             srenew(smnames,nalloc);
             srenew(excls,nalloc);
-            add_shells(pd,nalloc,atoms,atype,plist,x,&symtab,excls,smnames);
+            add_shells(pd,nalloc,atoms,atype,plist,x,&symtab,&excls,smnames);
         }
         mu = calc_dip(atoms,x);
         
@@ -817,12 +818,12 @@ int main(int argc, char *argv[])
             if (strlen(dbname) > 0)
             {
                 fprintf(fp,"; This topology was generated based on calculations\n");
-                fprintf(fp,"; due to Paul J. van Maaren, Carl Caleman, Luciano T. Costa, E. Roos van der Spoel and David van der Spoel\n");
+                fprintf(fp,"; due to Paul J. van Maaren and David van der Spoel\n");
                 fprintf(fp,"; (in preparation)\n");
             }
+            write_top(fp,NULL,mymol.name,atoms,FALSE,bts,plist,excls,atype,cgnr,nexcl);
             if (bAddShells)
                 write_zeta_q(fp,qqgen,atoms,pd,iModel);
-            write_top(fp,NULL,mymol.name,atoms,FALSE,bts,plist,excls,atype,cgnr,nexcl);
             if (!bITP)
                 print_top_mols(fp,mymol.name,forcefield,NULL,0,NULL,1,&mymol);
             fclose(fp);
