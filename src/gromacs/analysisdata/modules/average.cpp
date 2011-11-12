@@ -72,6 +72,7 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     int nrows = data->columnCount();
     setRowCount(nrows);
+    allocateValues();
     snew(_nsamples, nrows);
 }
 

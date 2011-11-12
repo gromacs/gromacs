@@ -101,7 +101,6 @@ AnalysisDataDisplacementModule::setMSDHistogram(AnalysisDataBinAverageModule *hi
 {
     GMX_RELEASE_ASSERT(!_impl->histm, "Can only set MSD histogram once");
     _impl->histm = histm;
-    histm->setIgnoreMissing(true);
     addModule(histm);
 }
 
@@ -227,8 +226,8 @@ AnalysisDataDisplacementModule::frameFinished()
     {
         if (_impl->histm)
         {
-            _impl->histm->initNBins(0, _impl->dt,
-                                    _impl->max_store / _impl->nmax, true);
+            _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
+                                                 _impl->dt).integerBins());
         }
         notifyDataStart();
     }
