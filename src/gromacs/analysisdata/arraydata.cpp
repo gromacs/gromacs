@@ -122,9 +122,17 @@ AbstractAnalysisArrayData::setRowCount(int nrows)
     GMX_RELEASE_ASSERT(nrows > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!_value,
                        "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(columnCount() > 0, "Column count must be set before row count");
     _nrows = nrows;
-    snew(_value, _nrows * columnCount());
+}
+
+
+void
+AbstractAnalysisArrayData::allocateValues()
+{
+    GMX_RELEASE_ASSERT(_value == NULL, "Can only allocate values once");
+    GMX_RELEASE_ASSERT(rowCount() > 0 && columnCount() > 0,
+                       "Row and column counts must be set before allocating values");
+    snew(_value, rowCount() * columnCount());
 }
 
 
@@ -169,6 +177,7 @@ AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
     GMX_RELEASE_ASSERT(!dest->_value, "Destination data must not be allocated");
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->_nrows);
+    dest->allocateValues();
     dest->setXAxis(src->_xstart, src->_xstep);
     for (int i = 0; i < src->_nrows * src->columnCount(); ++i)
     {

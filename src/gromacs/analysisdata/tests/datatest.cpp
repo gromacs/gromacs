@@ -178,9 +178,7 @@ void
 AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
                                                 AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn |
-                                   gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
     module->setupStaticCheck(data, source);
     source->addModule(module.release());
 }
@@ -191,9 +189,7 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
                                                       int firstcol, int n,
                                                       AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn |
-                                   gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
     source->addColumnModule(firstcol, n, module.release());
 }
@@ -204,8 +200,7 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
                                                        int storageCount,
                                                        AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
     source->addModule(module.release());
 }
@@ -215,8 +210,7 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &checker,
                                                    AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(
-            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
     module->setupReferenceCheck(checker, source);
     source->addModule(module.release());
 }
