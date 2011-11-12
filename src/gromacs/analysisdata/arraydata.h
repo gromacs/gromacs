@@ -81,12 +81,22 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         int rowCount() const { return _nrows; }
         /*! \brief
          * Sets the number of columns in the data array.
+         *
+         * Cannot be called after allocateValues().
          */
         void setColumnCount(int ncols);
         /*! \brief
          * Sets the number of rows in the data array.
+         *
+         * Cannot be called after allocateValues().
          */
         void setRowCount(int nrows);
+        /*! \brief
+         * Allocates memory for the values.
+         *
+         * setColumnCount() and setRowCount() must have been called.
+         */
+        void allocateValues();
         //! Returns the x value of the first frame.
         real xstart() const { return _xstart; }
         //! Returns the step between frame x values.
@@ -168,6 +178,7 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
         using AbstractAnalysisArrayData::rowCount;
         using AbstractAnalysisArrayData::setColumnCount;
         using AbstractAnalysisArrayData::setRowCount;
+        using AbstractAnalysisArrayData::allocateValues;
         using AbstractAnalysisArrayData::xstart;
         using AbstractAnalysisArrayData::xstep;
         using AbstractAnalysisArrayData::setXAxis;

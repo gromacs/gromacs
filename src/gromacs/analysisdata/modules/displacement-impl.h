@@ -44,7 +44,7 @@
 namespace gmx
 {
 
-class AbstractHistogramModule;
+class AnalysisDataBinAverageModule;
 
 /*! \internal \brief
  * Private implementation class for AnalysisDataDisplacementModule.
@@ -85,7 +85,7 @@ class AnalysisDataDisplacementModule::Impl
         real                   *currd;
 
         //! Histogram module for calculating MSD histograms, or NULL if not set.
-        AbstractHistogramModule *histm;
+        AnalysisDataBinAverageModule *histm;
 };
 
 } // namespace gmx

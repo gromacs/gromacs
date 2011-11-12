@@ -65,15 +65,35 @@ MockAnalysisModule::Impl::Impl(int flags)
 
 
 void
+MockAnalysisModule::Impl::startReferenceFrame(real x, real dx)
+{
+    EXPECT_TRUE(frameChecker_.get() == NULL);
+    frameChecker_.reset(new TestReferenceChecker(
+        rootChecker_->checkCompound("DataFrame",
+                                    formatString("Frame%d", frameIndex_).c_str())));
+    ++frameIndex_;
+    frameChecker_->checkReal(x, "X");
+}
+
+
+void
 MockAnalysisModule::Impl::checkReferencePoints(real x, real dx, int firstcol, int n,
                                                const real *y, const real *dy,
                                                const bool *present)
 {
-    TestReferenceChecker frame(
-        checker_->checkCompound("DataFrame", formatString("Frame%d", frameIndex_).c_str()));
-    ++frameIndex_;
-    frame.checkReal(x, "X");
-    frame.checkSequenceArray(n, y, "Y");
+    EXPECT_TRUE(frameChecker_.get() != NULL);
+    if (frameChecker_.get() != NULL)
+    {
+        frameChecker_->checkSequenceArray(n, y, "Y");
+    }
+}
+
+
+void
+MockAnalysisModule::Impl::finishReferenceFrame()
+{
+    EXPECT_TRUE(frameChecker_.get() != NULL);
+    frameChecker_.reset();
 }
 
 
@@ -225,6 +245,7 @@ MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -258,6 +279,7 @@ MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
                        "Mismatching data column count");
     GMX_RELEASE_ASSERT(firstcol >= 0 && n > 0 && firstcol + n <= data.columnCount(),
                        "Out-of-range columns");
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -289,6 +311,7 @@ MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
                        "Mismatching data column count");
     GMX_RELEASE_ASSERT(!data.isMultipoint() && !source->isMultipoint(),
                        "Storage testing not implemented for multipoint data");
+    impl_->flags_ |= efAllowMulticolumn;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -314,9 +337,13 @@ void
 MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
                                         AbstractAnalysisData *source)
 {
-    impl_->checker_.reset(new TestReferenceChecker(checker));
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
+
+    impl_->rootChecker_.reset(new TestReferenceChecker(checker));
     // Google Mock does not support checking the order fully, because
     // the number of frames is not known.
+    // Order of the frameStarted(), pointsAdded() and frameFinished()
+    // calls is checked using Google Test assertions in the invoked methods.
     using ::testing::_;
     using ::testing::AnyNumber;
     using ::testing::Expectation;
@@ -324,14 +351,14 @@ MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
 
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_, _))
-        .Times(AnyNumber())
-        .After(dataStart);
+        .After(dataStart)
+        .WillRepeatedly(Invoke(impl_, &Impl::startReferenceFrame));
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_, _, _, _, _, _, _))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_, &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished())
-        .Times(AnyNumber())
-        .After(dataStart);
+        .After(dataStart)
+        .WillRepeatedly(Invoke(impl_, &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())
         .After(frameStart, pointsAdd, frameFinish);
 }
