@@ -57,12 +57,15 @@ class MockAnalysisModule::Impl
     public:
         explicit Impl(int flags);
 
+        void startReferenceFrame(real x, real dx);
         void checkReferencePoints(real x, real dx, int firstcol, int n,
                                   const real *y, const real *dy,
                                   const bool *present);
+        void finishReferenceFrame();
 
-        // Could be scoped_ptr
-        std::auto_ptr<TestReferenceChecker>  checker_;
+        // Could be scoped_ptrs
+        std::auto_ptr<TestReferenceChecker>  rootChecker_;
+        std::auto_ptr<TestReferenceChecker>  frameChecker_;
         int                     flags_;
         int                     frameIndex_;
 };

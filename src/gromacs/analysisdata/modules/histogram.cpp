@@ -37,318 +37,257 @@
  */
 #include "gromacs/analysisdata/modules/histogram.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <cmath>
 
+#include <algorithm>
+#include <limits>
 #include <memory>
-
-// Legacy include.
-#include "smalloc.h"
 
 #include "gromacs/basicmath.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
+#include "histogram-impl.h"
+
+static const real UNDEFINED = std::numeric_limits<real>::max();
+static bool isDefined(real value)
+{
+    return value != UNDEFINED;
+}
+
 namespace gmx
 {
 
 /********************************************************************
- * AbstractHistogramModule
+ * AnalysisHistogramSettingsInitializer
  */
 
-AbstractHistogramModule::AbstractHistogramModule()
-    : _hist(NULL), _averager(NULL), _nbins(0)
+AnalysisHistogramSettingsInitializer::AnalysisHistogramSettingsInitializer()
+    : min_(UNDEFINED), max_(UNDEFINED), binWidth_(UNDEFINED),
+      binCount_(0), bIntegerBins_(false), bRoundRange_(false),
+      bIncludeAll_(false)
 {
-}
-
-AbstractHistogramModule::~AbstractHistogramModule()
-{
-    sfree(_hist);
-}
-
-
-void
-AbstractHistogramModule::initNBins(real miny, real binw, int nbins,
-                                   bool bIntegerBins)
-{
-    GMX_RELEASE_ASSERT(nbins > 0 && binw > 0, "Invalid histogram parameters");
-    if (bIntegerBins)
-    {
-        miny -= 0.5*binw;
-    }
-    _nbins    = nbins;
-    _miny     = miny;
-    _binwidth = binw;
-    _maxy     = miny + nbins * binw;
-    _invbw    = 1.0/binw;
-    setColumnCount(_nbins);
-}
-
-
-void
-AbstractHistogramModule::initRange(real miny, real maxy, real binw,
-                                   bool bIntegerBins)
-{
-    GMX_RELEASE_ASSERT(miny < maxy && binw > 0, "Invalid histogram parameters");
-    if (bIntegerBins)
-    {
-        _nbins = (int)ceil((maxy - miny) / binw) + 1;
-        miny -= 0.5 * binw;
-        maxy  = miny + _nbins * binw;
-    }
-    else
-    {
-        miny = binw * floor(miny / binw);
-        maxy = binw * ceil(maxy / binw);
-        if (miny != 0)
-        {
-            miny -= binw;
-        }
-        maxy += binw;
-        _nbins = (int)((maxy - miny) / binw + 0.5);
-    }
-    _miny     = miny;
-    _maxy     = maxy;
-    _binwidth = binw;
-    _invbw    = 1.0/binw;
-    setColumnCount(_nbins);
-}
-
-
-void
-AbstractHistogramModule::setAll(bool bAll)
-{
-    _bAll = bAll;
-}
-
-
-int
-AbstractHistogramModule::findBin(real y) const
-{
-    if (y < _miny)
-    {
-        return _bAll ? 0 : -1;
-    }
-    else if (y >= _maxy)
-    {
-        return _bAll ? _nbins-1 : -1;
-    }
-    return (int)((y - _miny) * _invbw);
-}
-
-
-HistogramAverageModule *
-AbstractHistogramModule::averager()
-{
-    if (!_averager)
-    {
-        createAverager();
-    }
-    return _averager;
-}
-
-
-int
-AbstractHistogramModule::flags() const
-{
-    return efAllowMultipoint;
-}
-
-
-void
-AbstractHistogramModule::dataStarted(AbstractAnalysisData *data)
-{
-    if (!_averager)
-    {
-        createAverager();
-    }
-    _averager->setXAxis(_miny + 0.5 * _binwidth, _binwidth);
-    snew(_hist, nbins());
-    startDataStore();
-}
-
-
-void
-AbstractHistogramModule::frameStarted(real x, real dx)
-{
-    for (int i = 0; i < nbins(); ++i)
-    {
-        _hist[i] = 0.0;
-    }
-    startNextFrame(x, dx);
-}
-
-
-void
-AbstractHistogramModule::frameFinished()
-{
-    storeThisFrame(_hist, NULL, NULL);
-}
-
-
-void
-AbstractHistogramModule::dataFinished()
-{
-    notifyDataFinish();
-}
-
-
-void
-AbstractHistogramModule::createAverager()
-{
-    _averager = new HistogramAverageModule();
-    addModule(_averager);
-    _averager->setXAxis(_miny + 0.5 * _binwidth, _binwidth);
 }
 
 
 /********************************************************************
- * HistogramAverageModule
+ * AnalysisHistogramSettings
  */
 
-HistogramAverageModule::HistogramAverageModule()
-    : _nframes(0), _bIgnoreMissing(false)
+AnalysisHistogramSettings::AnalysisHistogramSettings()
+    : firstEdge_(0.0), lastEdge_(0.0), binWidth_(0.0), inverseBinWidth_(0.0),
+      binCount_(0), bAll_(false)
 {
-    setColumnCount(2);
 }
 
 
-void
-HistogramAverageModule::setIgnoreMissing(bool bIgnoreMissing)
+AnalysisHistogramSettings::AnalysisHistogramSettings(
+        const AnalysisHistogramSettingsInitializer &settings)
 {
-    _bIgnoreMissing = bIgnoreMissing;
-    setColumnCount(bIgnoreMissing ? 3 : 2);
+    GMX_RELEASE_ASSERT(isDefined(settings.min_),
+                       "Histogram start value must be defined");
+    GMX_RELEASE_ASSERT(!isDefined(settings.max_) || settings.max_ > settings.min_,
+                       "Histogram end value must be larger than start value");
+    GMX_RELEASE_ASSERT(!isDefined(settings.binWidth_) || settings.binWidth_ > 0.0,
+                       "Histogram bin width must be positive");
+    GMX_RELEASE_ASSERT(settings.binCount_ >= 0,
+                       "Histogram bin count must be positive");
+
+    if (!isDefined(settings.max_))
+    {
+        GMX_RELEASE_ASSERT(isDefined(settings.binWidth_) && settings.binCount_ > 0,
+                           "Not all required values provided");
+        GMX_RELEASE_ASSERT(!settings.bRoundRange_,
+                           "Rounding only supported for min/max ranges");
+
+        firstEdge_ = settings.min_;
+        binCount_  = settings.binCount_;
+        binWidth_  = settings.binWidth_;
+        if (settings.bIntegerBins_)
+        {
+            firstEdge_ -= 0.5 * binWidth_;
+        }
+        lastEdge_ = firstEdge_ + binCount_ * binWidth_;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(!(isDefined(settings.binWidth_) && settings.binCount_ > 0),
+                           "Conflicting histogram bin specifications");
+        GMX_RELEASE_ASSERT(isDefined(settings.binWidth_) || settings.binCount_ > 0,
+                           "Not all required values provided");
+
+        if (settings.bRoundRange_)
+        {
+            GMX_RELEASE_ASSERT(!settings.bIntegerBins_,
+                               "Rounding and integer bins cannot be combined");
+            GMX_RELEASE_ASSERT(isDefined(settings.binWidth_),
+                               "Rounding only makes sense with defined binwidth");
+            binWidth_  = settings.binWidth_;
+            firstEdge_ = binWidth_ * floor(settings.min_ / binWidth_);
+            lastEdge_  = binWidth_ * ceil(settings.max_ / binWidth_);
+            binCount_  = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+        }
+        else
+        {
+            firstEdge_     = settings.min_;
+            lastEdge_     = settings.max_;
+            if (settings.binCount_ > 0)
+            {
+                binCount_ = settings.binCount_;
+                if (settings.bIntegerBins_)
+                {
+                    GMX_RELEASE_ASSERT(settings.binCount_ > 1,
+                                       "Bin count must be at least two with integer bins");
+                    binWidth_   = (lastEdge_ - firstEdge_) / (binCount_ - 1);
+                    firstEdge_ -= 0.5 * binWidth_;
+                    lastEdge_  += 0.5 * binWidth_;
+                }
+                else
+                {
+                    binWidth_ = (lastEdge_ - firstEdge_) / binCount_;
+                }
+            }
+            else
+            {
+                binWidth_ = settings.binWidth_;
+                binCount_ = static_cast<int>((lastEdge_ - firstEdge_) / binWidth_ + 0.5);
+                if (settings.bIntegerBins_)
+                {
+                    firstEdge_ -= 0.5 * binWidth_;
+                    ++binCount_;
+                }
+                lastEdge_ = firstEdge_ + binCount_ * binWidth_;
+            }
+        }
+    }
+
+    inverseBinWidth_ = 1.0 / binWidth_;
+    bAll_            = settings.bIncludeAll_;
 }
 
 
 int
-HistogramAverageModule::flags() const
+AnalysisHistogramSettings::findBin(real y) const
 {
-    return efAllowMulticolumn | efAllowMissing;
-}
-
-
-void
-HistogramAverageModule::dataStarted(AbstractAnalysisData *data)
-{
-    setRowCount(data->columnCount());
-}
-
-
-void
-HistogramAverageModule::frameStarted(real /*x*/, real /*dx*/)
-{
-}
-
-
-void
-HistogramAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                    const real *y, const real *dy,
-                                    const bool *present)
-{
-    for (int i = 0; i < n; ++i)
+    if (y < firstEdge_)
     {
-        value(firstcol + i, 0) += y[i];
-        value(firstcol + i, 1) += y[i] * y[i];
+        return bAll_ ? 0 : -1;
     }
-    if (_bIgnoreMissing)
+    int bin = static_cast<int>((y - firstEdge_) * inverseBinWidth_);
+    if (bin >= binCount_)
     {
-        GMX_ASSERT(present != NULL, "Required data not available");
-        for (int i = 0; i < n; ++i)
-        {
-            if (present[i])
-            {
-                value(firstcol + i, 2) += 1;
-            }
-        }
+        return bAll_ ? binCount_ - 1 : -1;
     }
+    return bin;
+}
+
+
+/********************************************************************
+ * AbstractAverageHistogram
+ */
+
+AbstractAverageHistogram::AbstractAverageHistogram()
+{
+}
+
+
+AbstractAverageHistogram::AbstractAverageHistogram(
+        const AnalysisHistogramSettings &settings)
+    : settings_(settings)
+{
+    setRowCount(settings.binCount());
+    setXAxis(settings.firstEdge() + 0.5 * settings.binWidth(),
+             settings.binWidth());
+}
+
+
+AbstractAverageHistogram::~AbstractAverageHistogram()
+{
 }
 
 
 void
-HistogramAverageModule::frameFinished()
+AbstractAverageHistogram::init(const AnalysisHistogramSettings &settings)
 {
-    ++_nframes;
+    settings_ = settings;
+    setRowCount(settings.binCount());
+    setXAxis(settings.firstEdge() + 0.5 * settings.binWidth(),
+             settings.binWidth());
 }
 
 
-void
-HistogramAverageModule::dataFinished()
+AbstractAverageHistogram *
+AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 {
-    for (int i = 0; i < rowCount(); ++i)
-    {
-        real ave = 0.0;
-        real std = 0.0;
-        if (_bIgnoreMissing)
-        {
-            if (value(i, 2) > 0)
-            {
-                ave = value(i, 0) / value(i, 2);
-                std = sqrt(value(i, 1) / value(i, 2) - ave * ave);
-            }
-        }
-        else
-        {
-            ave = value(i, 0) / _nframes;
-            std = sqrt(value(i, 1) / _nframes - ave * ave);
-        }
-        setValue(i, 0, ave);
-        setValue(i, 1, std);
-    }
-}
-
-
-HistogramAverageModule *
-HistogramAverageModule::resampleDoubleBinWidth(bool bIntegerBins) const
-{
-    std::auto_ptr<HistogramAverageModule> dest(new HistogramAverageModule());
-    int nbins = rowCount() / 2;
-    dest->setRowCount(nbins);
-    real minx = xstart() + xstep() / 2;
+    int nbins;
     if (bIntegerBins)
     {
-        minx -= xstep();
+        nbins = (rowCount() + 1) / 2;
     }
-    dest->setXAxis(minx, xstep() * 2);
+    else
+    {
+        nbins = rowCount() / 2;
+    }
+
+    real minx = xstart();
+    std::auto_ptr<AbstractAverageHistogram> dest(
+        new internal::StaticAverageHistogram(
+            histogramFromBins(xstart(), nbins, 2*xstep())
+                .integerBins(bIntegerBins)));
+    dest->setColumnCount(columnCount());
+    dest->allocateValues();
 
     int  i, j;
     for (i = j = 0; i < nbins; ++i)
     {
-        real  v, ve;
-        if (bIntegerBins && i == 0)
+        const bool bFirstHalfBin = (bIntegerBins && i == 0);
+        for (int c = 0; c < columnCount(); ++c)
         {
-            v  = value(0, 0);
-            ve = sqr(value(0, 1));
+            real  v1, v2;
+            if (bFirstHalfBin)
+            {
+                v1 = value(0, c);
+                v2 = 0;
+            }
+            else
+            {
+                v1 = value(j, c);
+                v2 = value(j + 1, c);
+            }
+            if (c == 1)
+            {
+                dest->setValue(i, c, sqrt(v1 * v1 + v2 * v2));
+            }
+            else
+            {
+                dest->setValue(i, c, v1 + v2);
+            }
+        }
+        if (bFirstHalfBin)
+        {
             ++j;
         }
         else
         {
-            v  =     value(j, 0)  +     value(j+1, 0);
-            ve = sqr(value(j, 1)) + sqr(value(j+1, 1));
             j += 2;
         }
-        ve = sqrt(ve);
-        dest->setValue(i, 0, v);
-        dest->setValue(i, 1, ve);
     }
     return dest.release();
 }
 
 
-HistogramAverageModule *
-HistogramAverageModule::clone() const
+AbstractAverageHistogram *
+AbstractAverageHistogram::clone() const
 {
-    std::auto_ptr<HistogramAverageModule> dest(new HistogramAverageModule());
+    std::auto_ptr<AbstractAverageHistogram> dest(
+            new internal::StaticAverageHistogram());
     copyContents(this, dest.get());
     return dest.release();
 }
 
 
 void
-HistogramAverageModule::normalizeProbability()
+AbstractAverageHistogram::normalizeProbability()
 {
     real sum = 0;
     for (int i = 0; i < rowCount(); ++i)
@@ -360,7 +299,7 @@ HistogramAverageModule::normalizeProbability()
 
 
 void
-HistogramAverageModule::scale(real norm)
+AbstractAverageHistogram::scale(real norm)
 {
     for (int i = 0; i < rowCount(); ++i)
     {
@@ -371,7 +310,7 @@ HistogramAverageModule::scale(real norm)
 
 
 void
-HistogramAverageModule::scaleVector(real norm[])
+AbstractAverageHistogram::scaleVector(real norm[])
 {
     for (int i = 0; i < rowCount(); ++i)
     {
@@ -382,8 +321,203 @@ HistogramAverageModule::scaleVector(real norm[])
 
 
 /********************************************************************
+ * StaticAverageHistogram
+ */
+
+namespace internal
+{
+
+StaticAverageHistogram::StaticAverageHistogram()
+{
+}
+
+
+StaticAverageHistogram::StaticAverageHistogram(
+        const AnalysisHistogramSettings &settings)
+    : AbstractAverageHistogram(settings)
+{
+}
+
+
+/********************************************************************
+ * BasicAverageHistogramModule
+ */
+
+BasicAverageHistogramModule::BasicAverageHistogramModule(
+        const AnalysisHistogramSettings &settings)
+    : AbstractAverageHistogram(settings), frameCount_(0)
+{
+    setColumnCount(2);
+}
+
+
+int
+BasicAverageHistogramModule::flags() const
+{
+    return efAllowMulticolumn;
+}
+
+
+void
+BasicAverageHistogramModule::dataStarted(AbstractAnalysisData *data)
+{
+    GMX_RELEASE_ASSERT(rowCount() == data->columnCount(),
+                       "Inconsistent data sizes, something is wrong in the initialization");
+    allocateValues();
+}
+
+
+void
+BasicAverageHistogramModule::frameStarted(real /*x*/, real /*dx*/)
+{
+}
+
+
+void
+BasicAverageHistogramModule::pointsAdded(real x, real dx, int firstcol, int n,
+                                         const real *y, const real *dy,
+                                         const bool *present)
+{
+    for (int i = 0; i < n; ++i)
+    {
+        value(firstcol + i, 0) += y[i];
+        value(firstcol + i, 1) += y[i] * y[i];
+    }
+}
+
+
+void
+BasicAverageHistogramModule::frameFinished()
+{
+    ++frameCount_;
+}
+
+
+void
+BasicAverageHistogramModule::dataFinished()
+{
+    for (int i = 0; i < rowCount(); ++i)
+    {
+        real ave = value(i, 0) / frameCount_;
+        real std = sqrt(value(i, 1) / frameCount_ - ave * ave);
+        setValue(i, 0, ave);
+        setValue(i, 1, std);
+    }
+}
+
+
+/********************************************************************
+ * BasicHistogramImpl
+ */
+
+BasicHistogramImpl::BasicHistogramImpl()
+    : averager_(NULL)
+{
+}
+
+
+BasicHistogramImpl::BasicHistogramImpl(const AnalysisHistogramSettings &settings)
+    : settings_(settings), averager_(NULL)
+{
+}
+
+
+BasicHistogramImpl::~BasicHistogramImpl()
+{
+}
+
+
+void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
+{
+    settings_ = settings;
+    if (averager_ != NULL)
+    {
+        averager_->init(settings);
+    }
+}
+
+
+void
+BasicHistogramImpl::ensureAveragerExists(AbstractAnalysisData *data)
+{
+    if (averager_ == NULL)
+    {
+        averager_ = new BasicAverageHistogramModule(settings_);
+        data->addModule(averager_);
+    }
+}
+
+} // namespace internal
+
+
+/********************************************************************
  * AnalysisDataSimpleHistogramModule
  */
+
+AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
+    : impl_(new internal::BasicHistogramImpl())
+{
+}
+
+
+AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
+        const AnalysisHistogramSettings &settings)
+    : impl_(new internal::BasicHistogramImpl(settings))
+{
+}
+
+
+AnalysisDataSimpleHistogramModule::~AnalysisDataSimpleHistogramModule()
+{
+    delete impl_;
+}
+
+
+void AnalysisDataSimpleHistogramModule::init(const AnalysisHistogramSettings &settings)
+{
+    impl_->init(settings);
+}
+
+
+AbstractAverageHistogram *
+AnalysisDataSimpleHistogramModule::averager()
+{
+    impl_->ensureAveragerExists(this);
+    return impl_->averager_;
+}
+
+
+const AnalysisHistogramSettings &
+AnalysisDataSimpleHistogramModule::settings() const
+{
+    return impl_->settings_;
+}
+
+
+int
+AnalysisDataSimpleHistogramModule::flags() const
+{
+    return efAllowMulticolumn | efAllowMultipoint;
+}
+
+
+void
+AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
+{
+    impl_->ensureAveragerExists(this);
+    impl_->hist_.resize(settings().binCount());
+    setColumnCount(settings().binCount());
+    startDataStore();
+}
+
+
+void
+AnalysisDataSimpleHistogramModule::frameStarted(real x, real dx)
+{
+    std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
+    startNextFrame(x, dx);
+}
+
 
 void
 AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
@@ -393,9 +527,26 @@ AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
 {
     for (int i = 0; i < n; ++i)
     {
-        int bin = findBin(y[i]);
-        _hist[bin] += 1;
+        int bin = settings().findBin(y[i]);
+        if (bin != -1)
+        {
+            impl_->hist_[bin] += 1;
+        }
     }
+}
+
+
+void
+AnalysisDataSimpleHistogramModule::frameFinished()
+{
+    storeThisFrame(&impl_->hist_[0], NULL, NULL);
+}
+
+
+void
+AnalysisDataSimpleHistogramModule::dataFinished()
+{
+    notifyDataFinish();
 }
 
 
@@ -403,10 +554,68 @@ AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
  * AnalysisDataWeightedHistogramModule
  */
 
+AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule()
+    : impl_(new internal::BasicHistogramImpl())
+{
+}
+
+
+AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
+        const AnalysisHistogramSettings &settings)
+    : impl_(new internal::BasicHistogramImpl(settings))
+{
+}
+
+
+AnalysisDataWeightedHistogramModule::~AnalysisDataWeightedHistogramModule()
+{
+    delete impl_;
+}
+
+
+void AnalysisDataWeightedHistogramModule::init(const AnalysisHistogramSettings &settings)
+{
+    impl_->init(settings);
+}
+
+
+AbstractAverageHistogram *
+AnalysisDataWeightedHistogramModule::averager()
+{
+    impl_->ensureAveragerExists(this);
+    return impl_->averager_;
+}
+
+
+const AnalysisHistogramSettings &
+AnalysisDataWeightedHistogramModule::settings() const
+{
+    return impl_->settings_;
+}
+
+
 int
 AnalysisDataWeightedHistogramModule::flags() const
 {
-    return AbstractHistogramModule::flags() | efAllowMulticolumn;
+    return efAllowMulticolumn | efAllowMultipoint;
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
+{
+    impl_->ensureAveragerExists(this);
+    impl_->hist_.resize(settings().binCount());
+    setColumnCount(settings().binCount());
+    startDataStore();
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::frameStarted(real x, real dx)
+{
+    std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
+    startNextFrame(x, dx);
 }
 
 
@@ -419,11 +628,28 @@ AnalysisDataWeightedHistogramModule::pointsAdded(real x, real dx, int firstcol, 
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = findBin(y[0]);
-    for (int i = 1; i < n; ++i)
+    int bin = settings().findBin(y[0]);
+    if (bin != -1)
     {
-        _hist[bin] += y[i];
+        for (int i = 1; i < n; ++i)
+        {
+            impl_->hist_[bin] += y[i];
+        }
     }
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::frameFinished()
+{
+    storeThisFrame(&impl_->hist_[0], NULL, NULL);
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::dataFinished()
+{
+    notifyDataFinish();
 }
 
 
@@ -432,51 +658,54 @@ AnalysisDataWeightedHistogramModule::pointsAdded(real x, real dx, int firstcol, 
  */
 
 AnalysisDataBinAverageModule::AnalysisDataBinAverageModule()
-    : _n(NULL), _present(NULL), _bIgnoreMissing(false)
 {
+    setColumnCount(3);
 }
+
+
+AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
+        const AnalysisHistogramSettings &settings)
+    : settings_(settings)
+{
+    setColumnCount(3);
+    setRowCount(settings.binCount());
+    setXAxis(settings.firstEdge() + 0.5 * settings.binWidth(),
+             settings.binWidth());
+}
+
 
 AnalysisDataBinAverageModule::~AnalysisDataBinAverageModule()
 {
-    sfree(_n);
-    sfree(_present);
 }
 
 
 void
-AnalysisDataBinAverageModule::setIgnoreMissing(bool bIgnoreMissing)
+AnalysisDataBinAverageModule::init(const AnalysisHistogramSettings &settings)
 {
-    // Changes can only be made before there is data.
-    GMX_RELEASE_ASSERT(_n == NULL, "Cannot make changes after data is allocated");
-    _bIgnoreMissing = bIgnoreMissing;
-    averager()->setIgnoreMissing(bIgnoreMissing);
+    settings_ = settings;
+    setRowCount(settings.binCount());
+    setXAxis(settings.firstEdge() + 0.5 * settings.binWidth(),
+             settings.binWidth());
 }
 
 
 int
 AnalysisDataBinAverageModule::flags() const
 {
-    return AbstractHistogramModule::flags() | efAllowMulticolumn;
+    return efAllowMulticolumn | efAllowMultipoint;
 }
 
 
 void
-AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData *data)
+AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
-    snew(_n, nbins());
-    snew(_present, nbins());
-    AbstractHistogramModule::dataStarted(data);
+    allocateValues();
 }
 
 
 void
-AnalysisDataBinAverageModule::frameStarted(real x, real dx)
+AnalysisDataBinAverageModule::frameStarted(real /*x*/, real /*dx*/)
 {
-    for (int i = 0; i < nbins(); ++i)
-    {
-        _n[i] = 0;
-    }
-    AbstractHistogramModule::frameStarted(x, dx);
 }
 
 
@@ -489,31 +718,40 @@ AnalysisDataBinAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = findBin(y[0]);
-    for (int i = 1; i < n; ++i)
+    int bin = settings().findBin(y[0]);
+    if (bin != -1)
     {
-        _hist[bin] += y[i];
+        for (int i = 1; i < n; ++i)
+        {
+            value(bin, 0) += y[i];
+            value(bin, 1) += y[i] * y[i];
+        }
+        value(bin, 2) += n - 1;
     }
-    _n[bin] += n - 1;
 }
 
 
 void
 AnalysisDataBinAverageModule::frameFinished()
 {
-    for (int i = 0; i < nbins(); ++i)
+}
+
+
+void
+AnalysisDataBinAverageModule::dataFinished()
+{
+    for (int i = 0; i < settings().binCount(); ++i)
     {
-        _present[i] = (_n[i] > 0);
-        if (_n[i] > 0)
+        real n = value(i, 2);
+        if (n > 0)
         {
-            _hist[i] /= _n[i];
+            real ave = value(i, 0) / n;
+            real std = sqrt(value(i, 1) / n - ave * ave);
+            setValue(i, 0, ave);
+            setValue(i, 1, std);
         }
     }
-    if (!_bIgnoreMissing)
-    {
-        AbstractHistogramModule::frameFinished();
-    }
-    storeThisFrame(_hist, NULL, _present);
+    valuesReady();
 }
 
 } // namespace gmx
