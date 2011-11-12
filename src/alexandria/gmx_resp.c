@@ -899,7 +899,7 @@ void gmx_resp_read(gmx_resp_t gr,const char *fn)
         gr->esp[i][ZZ] = convert2gmx(z,eg2cAngstrom);
     }
   
-    fclose(fp);
+    ffclose(fp);
 }
 
 static void gmx_resp_warning(const char *fn,int line)
@@ -1475,6 +1475,7 @@ void gmx_resp_potcomp(gmx_resp_t gr,const char *potcomp,
     FILE *fp;
     char buf[STRLEN];
     int unit = 0;
+    
     const char *units[2] = { "Hartree/e", "kJ/mol e" };
     if (NULL != potcomp) 
     {
