@@ -269,7 +269,7 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
                 com,I,rVV,mV,rB,rC);
 	mI    = (mJ+mK+mI-mV);
 	if (mI <= 0)
-		gmx_fatal(FARGS,"Negative mass %f in virtual site construction",mI);
+		gmx_fatal(FARGS,"Zero or negative mass %f in virtual site construction",mI);
     ac[0] = 0;
     ac[1] = (rB/rVV);
     ac[2] = (rC/rVV);

@@ -185,18 +185,24 @@ void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
         if (k == -1)
             gmx_fatal(FARGS,"The first atom must be a real atom, not a shell");
         nz = gentop_qgen_get_nzeta(qgen,k);
-        fprintf(fp,"%5d %6s %5d",i+1,get_eemtype_name(iModel),(bAtom) ? nz-1 : 1);
-        qtot = 0;
-        for(j=(bAtom ? 0 : nz-1); (j<(bAtom ? nz-1 : nz)); j++)
+        if (nz != NOTSET)
         {
-            row   = gentop_qgen_get_row(qgen,k,j);
-            q     = gentop_qgen_get_q(qgen,k,j);
-            qtot += q;
-            zeta  = gentop_qgen_get_zeta(qgen,k,j);
-            fprintf(fp,"%5d %10g %10g",row,zeta,q);
+            fprintf(fp,"%5d %6s %5d",i+1,get_eemtype_name(iModel),(bAtom) ? nz-1 : 1);
+            qtot = 0;
+            for(j=(bAtom ? 0 : nz-1); (j<(bAtom ? nz-1 : nz)); j++)
+            {
+                row   = gentop_qgen_get_row(qgen,k,j);
+                q     = gentop_qgen_get_q(qgen,k,j);
+                zeta  = gentop_qgen_get_zeta(qgen,k,j);
+                if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET)) 
+                {
+                    qtot += q;
+                    fprintf(fp,"%5d %10g %10g",row,zeta,q);
+                }
+            }
+            atoms->atom[i].q = qtot;
+            fprintf(fp,"\n");
         }
-        atoms->atom[i].q = qtot;
-        fprintf(fp,"\n");
     }
     fprintf(fp,"\n");
 }

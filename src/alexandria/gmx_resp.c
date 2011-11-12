@@ -1080,8 +1080,6 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
         gr->qsum = charge;
     }
     snew(gr->pot_calc,gr->nesp);
-    
-    return TRUE;
 }
 
 static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom,

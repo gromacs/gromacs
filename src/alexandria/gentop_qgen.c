@@ -136,22 +136,37 @@ static void gentop_qgen_get_params(gentop_qgen_t qgen,gmx_resp_t gr)
 
 int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom)
 {
-    return qgen->nZeta[atom];
+    if ((0 <= atom) && (atom < qgen->natom))
+        return qgen->nZeta[atom];
+    else
+        return NOTSET;
 }
 
 int gentop_qgen_get_row(gentop_qgen_t qgen,int atom,int z)
 {
-    return qgen->row[atom][z];
+    if ((0 <= atom) && (atom < qgen->natom) && 
+        (0 <= z) && (z <= qgen->nZeta[atom]))
+        return qgen->row[atom][z];
+    else
+        return NOTSET;
 }
 
 double gentop_qgen_get_q(gentop_qgen_t qgen,int atom,int z)
 {
-    return qgen->q[atom][z];
+    if ((0 <= atom) && (atom < qgen->natom) && 
+        (0 <= z) && (z <= qgen->nZeta[atom]))
+        return qgen->q[atom][z];
+    else
+        return NOTSET;
 }
 
 double gentop_qgen_get_zeta(gentop_qgen_t qgen,int atom,int z)
 {
-    return qgen->zeta[atom][z];
+    if ((0 <= atom) && (atom < qgen->natom) && 
+        (0 <= z) && (z <= qgen->nZeta[atom]))
+        return qgen->zeta[atom][z];
+    else
+        return NOTSET;
 }
 
 static real Coulomb_NN(real r)

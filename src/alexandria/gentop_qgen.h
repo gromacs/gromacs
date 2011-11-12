@@ -76,6 +76,7 @@ qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);
 extern gmx_bool 
 bSplitQ(int iModel);
 
+/* The routines below return NOTSET if something is out of the ordinary */
 extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom);
 
 extern int gentop_qgen_get_row(gentop_qgen_t qgen,int atom,int z);

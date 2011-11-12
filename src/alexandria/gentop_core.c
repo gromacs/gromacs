@@ -716,7 +716,8 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
     {
         renum[i] = i+ns;
         gt_type = gmx_poldata_get_gt_type(pd,smnames[i]);
-        if (1 == gmx_poldata_gt_type_polarizability(pd,gt_type,&pol,&sigpol))
+        if ((NULL != gt_type) &&
+            (1 == gmx_poldata_gt_type_polarizability(pd,gt_type,&pol,&sigpol)))
         { 
             ns++;
             p.AI = renum[i];
