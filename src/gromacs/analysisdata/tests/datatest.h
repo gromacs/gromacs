@@ -195,6 +195,9 @@ class AnalysisDataTestInput
  * presentAllData() and presentDataFrame() are provided to push data from an
  * AnalysisDataTestInput into an AnalysisData object.  In typical tests, most
  * checks are done during the these methods, by the added mock modules.
+ * setupArrayData() performs the same function for classes derived from
+ * AbstractAnalysisArrayData.  In that case, the test should separately ensure
+ * that AbstractAnalysisArrayData::valuesReady() gets called.
  *
  * \todo
  * Support for errors and for arbitrary multipoint data.
@@ -218,6 +221,24 @@ class AnalysisDataTestFixture : public ::testing::Test
          */
         static void presentDataFrame(const AnalysisDataTestInput &input, int row,
                                      AnalysisDataHandle *handle);
+        /*! \brief
+         * Initializes an array data object from AnalysisDataTestInput.
+         *
+         * \tparam ArrayData  Class derived from AbstractAnalysisArrayData.
+         *
+         * The ArrayData class should expose the setter methods
+         * (setColumnCount(), setRowCount(), allocateValues(), setValue())
+         * publicly or declare the fixture class as a friend.
+         * The X axis in \p data must be configured to match \p input before
+         * calling this method.
+         *
+         * Does not call AbstractAnalysisArrayData::valuesReady().
+         * The test must ensure that this method gets called, otherwise the
+         * mock modules never get called.
+         */
+        template <class ArrayData>
+        static void setupArrayData(const AnalysisDataTestInput &input,
+                                   ArrayData *data);
 
         /*! \brief
          * Adds a mock module that verifies output against
@@ -314,6 +335,32 @@ class AnalysisDataTestFixture : public ::testing::Test
     protected:
         gmx::test::TestReferenceData  data_;
 };
+
+
+template <class ArrayData>
+void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
+                                             ArrayData *data)
+{
+    GMX_RELEASE_ASSERT(!input.isMultipoint(),
+                       "Array data cannot be initialized from multipoint data");
+    GMX_RELEASE_ASSERT(data->columnCount() == 0 || data->columnCount() == input.columnCount(),
+                       "Mismatching input and target data");
+    GMX_RELEASE_ASSERT(data->rowCount() == 0 || data->rowCount() == input.frameCount(),
+                       "Mismatching input and target data");
+    data->setColumnCount(input.columnCount());
+    data->setRowCount(input.frameCount());
+    data->allocateValues();
+    for (int row = 0; row < input.frameCount(); ++row)
+    {
+        const AnalysisDataTestInputFrame &frame = input.frame(row);
+        EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
+        const AnalysisDataTestInputPointSet &points = frame.points();
+        for (int column = 0; column < input.columnCount(); ++column)
+        {
+            data->setValue(row, column, points.y(column));
+        }
+    }
+}
 
 } // namespace test
 

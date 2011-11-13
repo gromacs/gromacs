@@ -42,6 +42,8 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -290,6 +292,9 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
 
 /********************************************************************
  * Tests for gmx::AbstractAverageHistogram.
+ *
+ * This class derives from gmx::AbstractAnalysisArrayData, and is tested using
+ * corresponding facilities in gmx::test::AnalysisDataTestFixture.
  */
 
 typedef gmx::test::AnalysisDataTestFixture AbstractAverageHistogramTest;
