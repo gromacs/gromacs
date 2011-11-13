@@ -41,6 +41,8 @@
 
 #include <cstddef>
 
+#include <vector>
+
 #include "../fatalerror/gmxassert.h"
 
 #include "abstractdata.h"
@@ -69,9 +71,6 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
                                  const bool **present = 0) const;
         virtual bool requestStorage(int nframes = -1);
 
-    protected:
-        AbstractAnalysisArrayData();
-
         /*! \brief
          * Returns the number of rows in the data array.
          *
@@ -79,6 +78,30 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * returns 0 before valuesReady() has been called.
          */
         int rowCount() const { return _nrows; }
+        //! Returns true if values have been allocated.
+        bool isAllocated() const { return !_value.empty(); }
+        //! Returns the x value of the first frame.
+        real xstart() const { return _xstart; }
+        //! Returns the step between frame x values.
+        real xstep() const { return _xstep; }
+        //! Returns the x value of a row.
+        real xvalue(int row) const
+        {
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+            return xstart() + row * xstep();
+        }
+        //! Returns a given array element.
+        real value(int row, int col) const
+        {
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+            GMX_ASSERT(isAllocated(), "Data array not allocated");
+            return _value[row * columnCount() + col];
+        }
+
+    protected:
+        AbstractAnalysisArrayData();
+
         /*! \brief
          * Sets the number of columns in the data array.
          *
@@ -97,10 +120,6 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          * setColumnCount() and setRowCount() must have been called.
          */
         void allocateValues();
-        //! Returns the x value of the first frame.
-        real xstart() const { return _xstart; }
-        //! Returns the step between frame x values.
-        real xstep() const { return _xstep; }
         /*! \brief
          * Sets the values reported as x values for frames.
          */
@@ -108,17 +127,9 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         //! Returns a reference to a given array element.
         real &value(int row, int col)
         {
-            GMX_ASSERT(row >= 0 && row < _nrows, "Row index out of range");
+            GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
-            GMX_ASSERT(_value != NULL, "Data array not allocated");
-            return _value[row * columnCount() + col];
-        }
-        //! Returns a given array element.
-        const real &value(int row, int col) const
-        {
-            GMX_ASSERT(row >= 0 && row < _nrows, "Row index out of range");
-            GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
-            GMX_ASSERT(_value != NULL, "Data array not allocated");
+            GMX_ASSERT(isAllocated(), "Data array not allocated");
             return _value[row * columnCount() + col];
         }
         /*! \brief
@@ -150,7 +161,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 
     private:
         int                  _nrows;
-        real                *_value;
+        std::vector<real>    _value;
         real                 _xstart;
         real                 _xstep;
         bool                 _bReady;
@@ -175,12 +186,9 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
 
         // TODO: These statements cause Doxygen to generate confusing
         // documentation.
-        using AbstractAnalysisArrayData::rowCount;
         using AbstractAnalysisArrayData::setColumnCount;
         using AbstractAnalysisArrayData::setRowCount;
         using AbstractAnalysisArrayData::allocateValues;
-        using AbstractAnalysisArrayData::xstart;
-        using AbstractAnalysisArrayData::xstep;
         using AbstractAnalysisArrayData::setXAxis;
         using AbstractAnalysisArrayData::value;
         using AbstractAnalysisArrayData::setValue;
