@@ -42,6 +42,8 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -285,6 +287,102 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage", module));
     ASSERT_NO_THROW(presentAllData(input, &data));
+}
+
+
+/********************************************************************
+ * Tests for gmx::AbstractAverageHistogram.
+ *
+ * This class derives from gmx::AbstractAnalysisArrayData, and is tested using
+ * corresponding facilities in gmx::test::AnalysisDataTestFixture.
+ */
+
+typedef gmx::test::AnalysisDataTestFixture AbstractAverageHistogramTest;
+
+// Input data for average histogram tests.
+static const real averageinputdata[] = {
+    1.0, 2.0, 1.0, END_OF_FRAME,
+    1.5, 1.0, 1.0, END_OF_FRAME,
+    2.0, 3.0, 2.0, END_OF_FRAME,
+    2.5, 4.0, 2.0, END_OF_FRAME,
+    3.0, 2.0, 1.0, END_OF_FRAME,
+    3.5, 0.0, 3.0, END_OF_FRAME,
+    4.0, 1.0, 3.0, END_OF_FRAME,
+    END_OF_DATA
+};
+
+/*! \internal \brief
+ * Mock object for testing gmx::AbstractAverageHistogram.
+ *
+ * Exposes necessary methods from gmx::AbstractAverageHistogram to use with
+ * gmx::test::AnalysisDataTestFixture::setupArrayData().
+ */
+class MockAverageHistogram : public gmx::AbstractAverageHistogram
+{
+    public:
+        MockAverageHistogram() {}
+        explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
+            : AbstractAverageHistogram(settings)
+        {
+        }
+
+        using AbstractAverageHistogram::init;
+        using AbstractAverageHistogram::setColumnCount;
+        using AbstractAverageHistogram::setRowCount;
+        using AbstractAverageHistogram::allocateValues;
+        using AbstractAverageHistogram::setValue;
+};
+
+
+TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
+{
+    gmx::test::AnalysisDataTestInput input(averageinputdata);
+    MockAverageHistogram data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    std::auto_ptr<gmx::AbstractAverageHistogram> copy(data.clone());
+    ASSERT_NO_THROW(addStaticCheckerModule(input, copy.get()));
+    ASSERT_NO_THROW(copy->done());
+    ASSERT_NO_THROW(data.done());
+    std::auto_ptr<gmx::AbstractAverageHistogram> copy2(data.clone());
+    ASSERT_NO_THROW(addStaticCheckerModule(input, copy2.get()));
+    ASSERT_NO_THROW(copy2->done());
+}
+
+
+TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
+{
+    gmx::test::AnalysisDataTestInput input(averageinputdata);
+    MockAverageHistogram data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
+    std::auto_ptr<gmx::AbstractAverageHistogram> resampled(
+            data.resampleDoubleBinWidth(false));
+    ASSERT_NO_THROW(addReferenceCheckerModule("ResampledHistogram", resampled.get()));
+    ASSERT_NO_THROW(data.done());
+    ASSERT_NO_THROW(resampled->done());
+}
+
+
+TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidthWithIntegerBins)
+{
+    gmx::test::AnalysisDataTestInput input(averageinputdata);
+    MockAverageHistogram data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
+    std::auto_ptr<gmx::AbstractAverageHistogram> resampled(
+            data.resampleDoubleBinWidth(true));
+    ASSERT_NO_THROW(addReferenceCheckerModule("ResampledHistogram", resampled.get()));
+    ASSERT_NO_THROW(data.done());
+    ASSERT_NO_THROW(resampled->done());
 }
 
 } // namespace
