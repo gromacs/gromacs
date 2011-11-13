@@ -46,7 +46,8 @@
 #include "gentop_vsite.h"
 
 typedef struct {
-    int a[3];
+    int nline; /* Must be 3 or 4 */
+    int a[4];
 } gv_linear;
 	
 typedef struct {
@@ -238,42 +239,55 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
 {
     int     i,j,natoms,mt;
     const   char    *ml = "ML";
-    double  mI,mJ,mK,mT,com,I;
-    double  rB,rC,rVV,mV,ac[3];
+    double  mI,mJ,mK,mL,mT,com,I;
+    double  rB,rC,rD,rVV,mV,ac[4];
     rvec    dx,mcom;
     t_param pp,nbml;
     t_atom  aml;
 
+    if (gvl->nline <= 0)
+        return;
     memset(&nbml,0,sizeof(nbml));        
     rvec_sub((*x)[gvl->AI],(*x)[gvl->AJ],dx);
     rB    = norm(dx);
     rvec_sub((*x)[gvl->AJ],(*x)[gvl->AK],dx);
     rC    = rB+norm(dx);
-    
     mI    = atoms->atom[gvl->AI].m;
     mJ    = atoms->atom[gvl->AJ].m;
     mK    = atoms->atom[gvl->AK].m;
-    mT    = mI+mJ+mK;
+    if (gvl->nline == 4) 
+    {
+        rvec_sub((*x)[gvl->AK],(*x)[gvl->AL],dx);
+        rD = rC+norm(dx);
+        mL = atoms->atom[gvl->AL].m;
+    }
+    else 
+    {
+        mL = 0;
+        rD = 0;
+    }
+    mT    = mI+mJ+mK+mL;
 	/* We need to keep the COM at the same position and the moment of inertia.
 	 * In order to do this we have two variables, the position of the dummy
 	 * and the relative masses (we also need to keep the total mass constant).
 	 * The atom I should be the one connecting to the remainder of the molecule.
 	 * We put the first atom I at coordinate 0.
 	 */
-    com   = (mJ*rB+mK*rC)/(mT);
-    I     = mI*sqr(com) + mJ*sqr(rB-com) + mK*sqr(rC-com);
+    com   = (mJ*rB+mK*rC+mL*rD)/(mT);
+    I     = mI*sqr(com) + mJ*sqr(rB-com) + mK*sqr(rC-com) + mL*sqr(rD-com);
     rVV   = com+I/(com*mT);
 	mV    = com*mT/rVV;
     if (NULL != debug)
-        fprintf(debug,"com = %g, I = %g, rVV = %g mV = %g rB = %g rC = %g\n",
-                com,I,rVV,mV,rB,rC);
-	mI    = (mJ+mK+mI-mV);
+        fprintf(debug,"com = %g, I = %g, rVV = %g mV = %g rB = %g rC = %g rD = %g\n",
+                com,I,rVV,mV,rB,rC,rD);
+	mI    = (mJ+mK+mL-mV);
 	if (mI <= 0)
 		gmx_fatal(FARGS,"Zero or negative mass %f in virtual site construction",mI);
     ac[0] = 0;
     ac[1] = (rB/rVV);
     ac[2] = (rC/rVV);
-
+    ac[3] = (rD/rVV);
+    
     natoms = atoms->nr;
     add_t_atoms(atoms,1,0);
     srenew(*x,natoms+1);
@@ -317,7 +331,7 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     add_param_to_list(&(plist[F_CONSTR]), &pp);
     
     /* Add vsites */
-    for(i=1; (i<3); i++)
+    for(i=1; (i<gvl->nline); i++)
     {
         memset(&pp,0,sizeof(pp));
         pp.AI = gvl->a[i];
@@ -330,31 +344,93 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
 
 void gentop_vsite_check(gentop_vsite_t gvt,int natom)
 {
-    int i,j;
-    int *batom;
+    int i,j,k,l,ai,aj,ndbl,found;
     
-    snew(batom,natom);
     for(i=0; (i<gvt->nlinear); i++)
-        for(j=0; (j<3); j++)
-            batom[gvt->lin[i].a[j]]++;
-    for(i=0; (i<natom); i++)
-        if (batom[i] > 1)
-            fprintf(stderr,"WARNING: Atom %d is involved in more than one virtual site. Check topology\n",i+1);
-    sfree(batom);
+        gvt->lin[i].nline = 3;
+    
+    for(i=0; (i<gvt->nlinear); i++)
+    {
+        for(j=i+1; (j<gvt->nlinear); j++)
+        {
+            ndbl = 0;
+            for(k=0; (k<gvt->lin[i].nline); k++) 
+            {
+                ai = gvt->lin[i].a[k];
+                for(l=0; (l<gvt->lin[j].nline); l++) 
+                {
+                    aj = gvt->lin[j].a[l];
+                    if (ai == aj)
+                    {
+                        ndbl++;
+                    }
+                }
+            }
+            
+            ndbl /= 2;
+            if (ndbl > 0) 
+            {
+                fprintf(stderr,"WARNING: merging two linear vsites into one. Please check result.\n");
+                if (NULL != debug)
+                {
+                    fprintf(debug,"Linear group j");
+                    for(l=0; (l<gvt->lin[j].nline); l++) 
+                        fprintf(debug," %d",gvt->lin[j].a[l]);
+                    fprintf(debug,"\n");
+                    fprintf(debug,"Linear group i");
+                    for(k=0; (k<gvt->lin[i].nline); k++) 
+                        fprintf(debug," %d",gvt->lin[i].a[k]);
+                    fprintf(debug,"\n");
+                }
+                if ((gvt->lin[j].AI == gvt->lin[i].AJ) && 
+                    (gvt->lin[j].AJ == gvt->lin[i].AK)) 
+                {
+                    gvt->lin[i].AL = gvt->lin[j].AK;
+                    gvt->lin[i].nline = 4;
+                    gvt->lin[j].nline = 0;
+                }
+                else if ((gvt->lin[i].AI == gvt->lin[j].AJ) && 
+                         (gvt->lin[i].AJ == gvt->lin[j].AK)) 
+                {
+                    gvt->lin[j].AL = gvt->lin[i].AK;
+                    gvt->lin[j].nline = 4;
+                    gvt->lin[i].nline = 0;
+                }
+                else
+                {
+                    gmx_fatal(FARGS,"Atoms in strange order in linear vsites. Check debug file.");
+                }
+                if (NULL != debug)
+                {
+                    fprintf(debug,"Linear group j");
+                    for(l=0; (l<gvt->lin[j].nline); l++) 
+                        fprintf(debug," %d",gvt->lin[j].a[l]);
+                    fprintf(debug,"\n");
+                    fprintf(debug,"Linear group i");
+                    for(k=0; (k<gvt->lin[i].nline); k++) 
+                        fprintf(debug," %d",gvt->lin[i].a[k]);
+                    fprintf(debug,"\n");
+                }
+            }
+        }
+    }
 }
 
 void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
                                   t_params plist[],t_symtab *symtab,
                                   gpp_atomtype_t atype,t_excls **excls)
 {
-    int     i,j,k,l;
-    int     a[MAXATOMLIST];
+    int     i,j,k,l,natoms_old,nlin_at;
+    int     a[MAXATOMLIST],aa[2];
     t_param pp;
     
     gentop_vsite_check(gvt,atoms->nr);
-    
+    nlin_at = 0;
+    for(i=0; (i<gvt->nlinear); i++) 
+        nlin_at += gvt->lin[i].nline;
+        
     printf("Generating %d linear vsites and %d impropers\n",
-           gvt->nlinear*3,gvt->nplanar);
+           nlin_at,gvt->nplanar);
     if ((gvt->egvt == egvtLINEAR) || (gvt->egvt == egvtALL))
     {
         /* Each triplet of atoms in a linear arrangement is described by
@@ -365,16 +441,20 @@ void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
          */
         for(i=0; (i<gvt->nlinear); i++) 
         {
-            for(j=0; (j<3); j++)
+            for(j=0; (j<gvt->lin[i].nline); j++)
                 a[j] = gvt->lin[i].a[j];
+            for( ; (j<MAXATOMLIST); j++)
+                a[j] = -1;
             delete_params(plist,F_ANGLES,a);
-            a[3] = -1;
             delete_params(plist,F_RBDIHS,a);
             delete_params(plist,F_PDIHS,a);
-            delete_params(plist,F_BONDS,a);
-            a[0] = a[1];
-            a[1] = a[2];
-            delete_params(plist,F_BONDS,a);
+            /* Complicated algorithm, watch out */
+            for(j=0; (j<gvt->lin[i].nline-1); j++)
+            {
+                aa[0] = a[j+0];
+                aa[1] = a[j+1];
+                delete_params(plist,F_BONDS,aa);
+            }
             
             /* Compute details for the new masses and vsites, and update everything */
             calc_vsite2parm(atoms,plist,x,&gvt->lin[i],symtab,atype);

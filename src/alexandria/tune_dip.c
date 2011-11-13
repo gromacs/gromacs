@@ -702,7 +702,7 @@ static int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             srenew(mymol->x,mymol->nalloc);
             add_shells(pd,mymol->nalloc,&(mymol->mtop.moltype[0].atoms),
                        atype,plist,mymol->x,&mymol->symtab,
-                       newexcls,smnames);
+                       &newexcls,smnames);
             mymol->mtop.natoms = mymol->mtop.moltype[0].atoms.nr;
             mymol->mtop.molblock[0].natoms_mol = mymol->mtop.natoms;
             excls_to_blocka(mymol->nalloc,newexcls,&(mymol->mtop.moltype[0].excls));

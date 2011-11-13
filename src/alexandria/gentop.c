@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
     static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
-    static gmx_bool bSkipVSites=TRUE;
+    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
     static char *molnm = "",*dbname = "", *symm_string = "";
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
@@ -349,6 +349,8 @@ int main(int argc, char *argv[])
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "Use CONECT records in the pdb file to signify bonds" },
+        { "-genvsites", FALSE, etBOOL, {&bGenVSites},
+          "[HIDDEN]Generate virtual sites for linear groups. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
           "[HIDDEN]Skip virtual sites in the input pdb file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
@@ -751,16 +753,18 @@ int main(int argc, char *argv[])
         generate_excls(&nnb,nexcl,excls);
         done_nnb(&nnb);
     
-        anr = atoms->nr;    
-        gentop_vsite_generate_vsites(gvt,atoms,&x,plist,&symtab,atype,&excls);
-        if (atoms->nr > anr) 
+        if (bGenVSites)
         {
-            srenew(smnames,atoms->nr);
-            for(i=anr; (i<atoms->nr); i++) {
-                smnames[i] = strdup("ML");
+            anr = atoms->nr;    
+            gentop_vsite_generate_vsites(gvt,atoms,&x,plist,&symtab,atype,&excls);
+            if (atoms->nr > anr) 
+            {
+                srenew(smnames,atoms->nr);
+                for(i=anr; (i<atoms->nr); i++) {
+                    smnames[i] = strdup("ML");
+                }
             }
         }
-    
     
         if (!bPairs)
             plist[F_LJ14].nr = 0;
