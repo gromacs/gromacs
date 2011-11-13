@@ -37,8 +37,7 @@
  */
 #include "gromacs/analysisdata/arraydata.h"
 
-// Legacy header.
-#include "smalloc.h"
+#include <algorithm>
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
@@ -47,13 +46,12 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : _nrows(0), _value(NULL), _xstart(0.0), _xstep(1.0), _bReady(false)
+    : _nrows(0), _xstart(0.0), _xstep(1.0), _bReady(false)
 {
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
 {
-    sfree(_value);
 }
 
 
@@ -64,7 +62,7 @@ AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
 {
     if (index < 0)
     {
-        index += _nrows;
+        index += frameCount() - 1;
         if (index < 0)
         {
             return false;
@@ -76,7 +74,7 @@ AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
     }
     if (x != NULL)
     {
-        *x = _xstart + index * _xstep;
+        *x = xvalue(index);
     }
     if (dx != NULL)
     {
@@ -84,7 +82,7 @@ AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
     }
     if (y != NULL)
     {
-        *y = _value + (index * columnCount());
+        *y = &_value[index * columnCount()];
     }
     if (dy != NULL)
     {
@@ -110,7 +108,7 @@ AbstractAnalysisArrayData::requestStorage(int /*nframes*/)
 void
 AbstractAnalysisArrayData::setColumnCount(int ncols)
 {
-    GMX_RELEASE_ASSERT(!_value,
+    GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change column count after data has been allocated");
     AbstractAnalysisData::setColumnCount(ncols);
 }
@@ -120,7 +118,7 @@ void
 AbstractAnalysisArrayData::setRowCount(int nrows)
 {
     GMX_RELEASE_ASSERT(nrows > 0, "Invalid number of rows");
-    GMX_RELEASE_ASSERT(!_value,
+    GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change row count after data has been allocated");
     _nrows = nrows;
 }
@@ -129,10 +127,10 @@ AbstractAnalysisArrayData::setRowCount(int nrows)
 void
 AbstractAnalysisArrayData::allocateValues()
 {
-    GMX_RELEASE_ASSERT(_value == NULL, "Can only allocate values once");
+    GMX_RELEASE_ASSERT(!isAllocated(), "Can only allocate values once");
     GMX_RELEASE_ASSERT(rowCount() > 0 && columnCount() > 0,
                        "Row and column counts must be set before allocating values");
-    snew(_value, rowCount() * columnCount());
+    _value.resize(rowCount() * columnCount());
 }
 
 
@@ -148,8 +146,7 @@ AbstractAnalysisArrayData::setXAxis(real start, real step)
 void
 AbstractAnalysisArrayData::valuesReady()
 {
-    GMX_RELEASE_ASSERT(columnCount() > 0 && _nrows > 0 && _value,
-                       "There must be some data");
+    GMX_RELEASE_ASSERT(isAllocated(), "There must be some data");
     if (_bReady)
     {
         return;
@@ -157,10 +154,10 @@ AbstractAnalysisArrayData::valuesReady()
     _bReady = true;
 
     notifyDataStart();
-    for (int i = 0; i < _nrows; ++i)
+    for (int i = 0; i < rowCount(); ++i)
     {
-        notifyFrameStart(_xstart + i * _xstep, 0);
-        notifyPointsAdd(0, columnCount(), _value + (i * columnCount()),
+        notifyFrameStart(xvalue(i), 0);
+        notifyPointsAdd(0, columnCount(), &_value[i * columnCount()],
                         NULL, NULL);
         notifyFrameFinish();
     }
@@ -172,17 +169,14 @@ void
 AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
                                         AbstractAnalysisArrayData *dest)
 {
-    GMX_RELEASE_ASSERT(src->columnCount() > 0 && src->_nrows > 0 && src->_value,
-                       "Source data must not be empty");
-    GMX_RELEASE_ASSERT(!dest->_value, "Destination data must not be allocated");
+    GMX_RELEASE_ASSERT(src->isAllocated(), "Source data must not be empty");
+    GMX_RELEASE_ASSERT(!dest->isAllocated(),
+                       "Destination data must not be allocated");
     dest->setColumnCount(src->columnCount());
-    dest->setRowCount(src->_nrows);
+    dest->setRowCount(src->rowCount());
     dest->allocateValues();
-    dest->setXAxis(src->_xstart, src->_xstep);
-    for (int i = 0; i < src->_nrows * src->columnCount(); ++i)
-    {
-        dest->_value[i] = src->_value[i];
-    }
+    dest->setXAxis(src->xstart(), src->xstep());
+    std::copy(src->_value.begin(), src->_value.end(), dest->_value.begin());
 }
 
 } // namespace gmx
