@@ -172,10 +172,11 @@ void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
     double zeta,q,qtot;
     gmx_bool   bAtom;
     
-    fprintf(fp,"[ zeta_q ]\n");
-    fprintf(fp,"; i     type    nq  row       zeta          q\n");
     if (NULL == qgen)
         return;
+        
+    fprintf(fp,"[ zeta_q ]\n");
+    fprintf(fp,"; i     type    nq  row       zeta          q\n");
     k = -1;
     for(i=0; (i<atoms->nr); i++)
     {
@@ -288,6 +289,7 @@ int main(int argc, char *argv[])
         { efSTO, "-c",    "out",  ffWRITE },
         { efRTP, "-r",    "out",  ffOPTWR },
         { efLOG, "-g03",  "gauss",  ffOPTRD },
+        { efNDX, "-n",    "renum", ffOPTWR },
         { efDAT, "-q",    "qout", ffOPTWR },
         { efDAT, "-x",    "mol",  ffOPTWR },
         { efDAT, "-mpdb", "molprops", ffOPTRD },
@@ -308,7 +310,7 @@ int main(int argc, char *argv[])
     static real dbox=0.370424,pfac=1,epsr=1;
     static int  qtotref=0,nexcl = 2;
     static int  maxiter=25000,maxcycle=1;
-    static int  idihtp=1,pdihtp=3;
+    static int  idihtp=1,pdihtp=3,nmol=1;
     static real rDecrZeta = -1;
     static gmx_bool bRemoveDih=FALSE,bQsym=TRUE,bZatype=TRUE,bFitCube=FALSE;
     static gmx_bool bParam=FALSE,bH14=TRUE,bRound=TRUE,bITP,bAddShells=FALSE;
@@ -416,7 +418,9 @@ int main(int argc, char *argv[])
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers ,minus 1, and point to either the atom itself or to a previous atom." },
         { "-cgsort", FALSE, etSTR, {cgopt},
-          "Option for assembling charge groups: based on Group (default, e.g. CH3 groups are kept together), Atom, or Neutral sections" },
+          "Option for assembling charge groups: based on Group (default, e.g. CH3 groups are kept together), Atom, or Neutral sections. If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
+        { "-nmolsort", FALSE, etINT, {&nmol},
+          "[HIDDEN]Number of molecules to output to the index file in case of sorting. This is a convenience option to reorder trajectories for use with a new force field." },
         { "-th_toler",FALSE, etREAL, {&th_toler},
           "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
@@ -789,7 +793,8 @@ int main(int argc, char *argv[])
                                            &qtot,&mtot)) == NULL)
             gmx_fatal(FARGS,"Error generating charge groups");
         if (cgtp != ecgAtom)
-            sort_on_charge_groups(cgnr,atoms,plist,x,excls,smnames,NULL);
+            sort_on_charge_groups(cgnr,atoms,plist,x,excls,smnames,
+                                  opt2fn("-n",NFILE,fnm),nmol);
     
         if (bVerbose) 
         {

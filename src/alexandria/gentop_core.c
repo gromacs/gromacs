@@ -1071,24 +1071,35 @@ int *generate_charge_groups(int cgtp,t_atoms *atoms,
 }
 
 static int *cgnr_copy;
-static int *atomnumber;
+static double *atomnumber;
 static int cg_comp(const void *a,const void *b)
 {
     int *aa = (int *)a;
     int *bb = (int *)b;
-  
+    double c;
+    
     int d = cgnr_copy[*aa] - cgnr_copy[*bb];
     if (d == 0)
-        return atomnumber[*bb] - atomnumber[*aa];
+    {
+        c = atomnumber[*aa] - atomnumber[*bb];
+        if (c < 0)
+            return -1;
+        else if (c > 0)
+            return 1;
+        else 
+            return 0;
+    }
     else
         return d;
 }
 
 void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
                            rvec x[],t_excls excls[],
-                           char *smnames[],char *ndxout)
+                           char *smnames[],const char *ndxout,
+                           int nmol)
 {
-    int     i,j,k,newi,ri,*cg_renum,*ccgg,*inv_renum;
+    FILE    *fp;
+    int     i,j,j0,k,newi,ri,*cg_renum,*ccgg,*inv_renum;
     rvec    *rx;
     t_atom  *ra;
     t_excls *newexcls;
@@ -1102,7 +1113,9 @@ void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
     for(i=0; (i<atoms->nr); i++)
     {
         cg_renum[i] = i;
-        atomnumber[i] = atoms->atom[i].atomnumber;
+        atomnumber[i] = 1+i; /*atoms->atom[i].atomnumber;*/
+        if ((atoms->atom[i].ptype == eptShell) && (i > 0))
+            atomnumber[i] = atomnumber[i-1]+0.1;
     }
     cgnr_copy = cgnr;
     qsort(cg_renum,atoms->nr,sizeof(cg_renum[0]),cg_comp);
@@ -1136,11 +1149,15 @@ void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
         smnames[i] = smn[newi];
     }
     for(i=0; (i<F_NRE); i++) 
+    {
         for(j=0; (j<plist[i].nr); j++) 
+        {
             for(k=0; (k<NRAL(i)); k++) 
             {
                 plist[i].param[j].a[k] = inv_renum[plist[i].param[j].a[k]];
             }
+        }
+    }
     snew(newexcls,atoms->nr);
     for(i=0; (i<atoms->nr); i++) 
     {
@@ -1157,6 +1174,41 @@ void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
         for(j=0; (j<newexcls[i].nr); j++)
             excls[newi].e[j] = inv_renum[newexcls[i].e[j]];
         excls[newi].nr = newexcls[i].nr;
+    }
+    if (NULL != ndxout)
+    {
+        fp = fopen(ndxout,"w");
+        fprintf(fp,"[ number_backward ]\n");
+        for(j=0; (j<nmol); j++) 
+        {
+            j0 = j*atoms->nr;
+            for(i=0; (i<atoms->nr); i++)
+            {
+                if (atoms->atom[inv_renum[i]].ptype == eptShell)
+                    k = j0+inv_renum[i-1]+1;
+                else
+                    k = j0+inv_renum[i]+1;
+                fprintf(fp," %d",k);
+                if (j == 0)
+                    cg_renum[inv_renum[i]] = i;
+            }
+            fprintf(fp,"\n");
+        }
+        for(j=0; (j<nmol); j++) 
+        {
+            j0 = j*atoms->nr;
+            fprintf(fp,"[ number_forward ]\n");
+            for(i=0; (i<atoms->nr); i++)
+            {
+                if (atoms->atom[cg_renum[i]].ptype == eptShell)
+                    k = j0+cg_renum[i-1]+1;
+                else
+                    k = j0+cg_renum[i]+1;
+                fprintf(fp," %d",k);
+            }
+            fprintf(fp,"\n");
+        }
+        fclose(fp);
     }
     sfree(rx);
     sfree(ra);

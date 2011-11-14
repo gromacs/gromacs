@@ -90,6 +90,7 @@ extern int *generate_charge_groups(int cgtp,t_atoms *atoms,
 
 extern void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
                                   rvec x[],t_excls excls[],
-                                  char *smnames[],char *ndxout);
+                                  char *smnames[],const char *ndxout,
+                                  int nmol);
 
 #endif
