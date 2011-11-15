@@ -8255,7 +8255,8 @@ void dd_partition_system(FILE            *fplog,
         /* Print load every nstlog, first and last step to the log file */
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
                     comm->n_load_collect == 0 ||
-                    (step + ir->nstlist > ir->init_step + ir->nsteps));
+                    (ir->nsteps >= 0 &&
+                     (step + ir->nstlist > ir->init_step + ir->nsteps)));
 
         /* Avoid extra communication due to verbose screen output
          * when nstglobalcomm is set.
