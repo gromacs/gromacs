@@ -902,7 +902,9 @@ int generate_charges(FILE *fp,
         gentop_qgen_get_params(qgen,gr);
         qgen_print(fp,atoms,qgen);
     }
-    
-    return qgen->eQGEN;
+    if (chi2min < 0.01)
+        return qgen->eQGEN;
+    else
+        return eQGEN_NOTCONVERGED;
 }
 

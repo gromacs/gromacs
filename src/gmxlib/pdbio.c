@@ -442,13 +442,15 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
   char nc='\0';
   real eval;
   
-  if (!atoms->pdbinfo) {
+  /*if (!atoms->pdbinfo) {
     gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
-  }
+    }*/
   for(i=0; (i<atoms->nr); i++) {
     strcpy(anm,atoms->pdbinfo[i].atomnm);
-    strcpy(anm_copy,atoms->pdbinfo[i].atomnm);
     len = strlen(anm);
+    if (len == 0)
+      strcpy(anm,*atoms->atomname[i]);
+    strcpy(anm_copy,anm);
     atomnumber = NOTSET;
     if ((anm[0] != ' ') && ((len <=2) || ((len > 2) && !isdigit(anm[2])))) {
       anm_copy[2] = nc;

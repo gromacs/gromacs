@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
     int        nres;         /* number of molecules? */
     int        i,j,k,l,m,ndih,dih,cgtp,eQGEN,*symmetric_charges=NULL;
     real       mu;
-    gmx_bool       bRTP,bTOP;
+    gmx_bool   bPDB,bRTP,bTOP;
     t_symtab   symtab;
     int        nqa=0,iModel;
     real       cutoff,qtot,mtot;
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
     char qgen_msg[STRLEN];
     
     t_filenm fnm[] = {
-        { efPDB, "-f",    "conf", ffOPTRD },
+        { efSTX, "-f",    "conf", ffOPTRD },
         { efTOP, "-o",    "out",  ffOPTWR },
         { efITP, "-oi",   "out",  ffOPTWR },
         { efSTO, "-c",    "out",  ffWRITE },
@@ -350,11 +350,11 @@ int main(int argc, char *argv[])
         { "-pbc",    FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
-          "Use CONECT records in the pdb file to signify bonds" },
+          "Use CONECT records in an input pdb file to signify bonds" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "[HIDDEN]Generate virtual sites for linear groups. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
-          "[HIDDEN]Skip virtual sites in the input pdb file" },
+          "[HIDDEN]Skip virtual sites in the input file" },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
           "[HIDDEN]Use the B-factor supplied in a pdb file for the atomic charges" },
         { "-btol",  FALSE, etREAL, {&btol},
@@ -569,9 +569,20 @@ int main(int argc, char *argv[])
         init_t_atoms(atoms,natoms,TRUE);
         snew(x,natoms);              
     
-        if (bCONECT)
-            gc = gmx_conect_init();
-        read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,&ePBC,box,FALSE,gc);
+        bPDB = (fn2ftp(opt2fn("-f",NFILE,fnm)) == efPDB);
+        if (bPDB) 
+        {
+            if (bCONECT)
+                gc = gmx_conect_init();
+            read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,
+                          &ePBC,box,FALSE,gc);
+        }
+        else
+        {
+            bCONECT = FALSE;
+            read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,
+                          &ePBC,box);
+        }
         if (bSkipVSites) 
         {
             for(i=0; (i<atoms->nr); i++) {

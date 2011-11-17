@@ -163,19 +163,7 @@ void gmx_poldata_add_ffatype(gmx_poldata_t pd,char *elem,char *desc,
         sp->numbonds       = numbonds;
         sp->polarizability = polarizability;
         sp->sig_pol        = sig_pol;
-        if (NULL != vdwparams)
-        {
-            ptr = split(' ',vdwparams);
-            for(j=0; (ptr[j] != NULL); j++)
-                ;
-            snew(sp->vdwparams,j);
-            for(j=0; (ptr[j] != NULL); j++)
-            {
-                sp->vdwparams[j] = atof(ptr[j]);
-                sfree(ptr[j]);
-            }
-            sfree(ptr);
-        }
+        sp->vdwparams      = strdup(vdwparams);
     }
     else 
         fprintf(stderr,"Atom %s was already added to poldata record\n",gt_name);

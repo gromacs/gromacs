@@ -125,6 +125,10 @@ add_executable(addquote addquote.c)
 target_link_libraries(addquote ${GMX_EXTRA_LIBRARIES})
 set_target_properties(addquote PROPERTIES OUTPUT_NAME "addquote${GMX_BINARY_SUFFIX}")
 
+add_executable(gen_ff gen_ff.c)
+target_link_libraries(gen_ff ${GMX_EXTRA_LIBRARIES})
+set_target_properties(gen_ff PROPERTIES OUTPUT_NAME "gen_ff${GMX_BINARY_SUFFIX}")
+
 install(TARGETS alexandria DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
         gentop
@@ -134,6 +138,7 @@ install(TARGETS
 	analyze_mp
 	mkyaw
 	addquote
+	gen_ff
 	gen_table
         COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
