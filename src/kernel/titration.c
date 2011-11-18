@@ -2411,8 +2411,9 @@ static void get_self_energy(FILE *fplog, t_inputrec *ir, t_commrec *cr, t_qhop_r
             rinvsq = rinv*rinv;
 
             Ec = qq*(rinv+ek*drsq-ec); /* = qq*rinv if not RF. */
-
-            if (fr->bEwald)
+            
+            /* Hack to remove the erfc call. */
+            if (0 && fr->bEwald)
             {
                 Ecoul += Ec*erfc(fr->ewaldcoeff/rinv);
             }

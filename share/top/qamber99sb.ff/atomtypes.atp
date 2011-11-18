@@ -53,6 +53,9 @@ Rb                85.47000	; rubidium
 Cs               132.90000	; cesium
 OW_spc            15.99940      ; SPC Water OW
 HW_spc             1.00800      ; SPC Water HW
+OW_hydronium      15.99940      ; Hydronium OW
+HW_hydronium       1.00800      ; Hydronium HW
+OW_hydronium      15.99940      ; SPC Water OW
 Li                 6.94000      ; lithium, ions pol:J.PhysC,11,1541,(1978)
 Zn                65.40000      ; Zn2+
 HW_tip4pew         1.00800      ; tip4pEW HW
