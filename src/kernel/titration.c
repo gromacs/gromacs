@@ -1732,6 +1732,14 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     else
         vvv = NULL;
     db = T->db;
+    
+    if (NULL != debug)
+    {
+        fprintf(debug,"There are %d atoms. bRealHop = %d\n",md->nr,bRealHop);
+        fprintf(debug,"Donors: %d - %d, Acceptors: %d -  %d\n",
+                hop->primary_d, hop->donor_id,hop->primary_a, hop->acceptor_id);
+        pr_rvecs(debug,0,"before change_protonation",x,md->nr);
+    }   
     if (eHOP_FORWARD == ehop)
     {
         qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id);
@@ -1924,6 +1932,8 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
         qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id );
         qhop_tautomer_swap(T, x, vvv, hop->primary_a, hop->acceptor_id );
     }
+    if (NULL != debug)
+        pr_rvecs(debug,0,"after change_protonation",x,md->nr);
 
     return TRUE; /* Ok, this is not very good for error checking. */
 } /* change_protonation */
@@ -1966,7 +1976,7 @@ static void evaluate_energy(FILE *fplog,
              T->f,force_vir,md,enerd,fcd,
              state->lambda,graph,
              fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,FALSE,
-             GMX_FORCE_VIRIAL|GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
+             GMX_FORCE_ALLFORCES|GMX_FORCE_VIRIAL|GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
 
     T->bFreshNlists = TRUE;
 
@@ -2890,7 +2900,7 @@ static void dump_enerd(FILE *fplog,const char *s,gmx_enerdata_t *e,
     
     if (NULL != fplog)
     {
-        for(k=0; (k<F_ECONSERVED); k++)
+        for(k=0; (k<F_NRE); k++)
             if (e->term[k] != 0)
                 fprintf(fplog,"%s: %s %s %g\n",alg,s,interaction_function[k].name,
                         e->term[k]);
@@ -3285,7 +3295,8 @@ static gmx_bool scale_velocities(FILE *fplog,
     ekin_before = check_ekin(state->v,md);
     ekin_old = ekin_before;
     ekin_new = 0;
-    DE = hop->E12;
+    /*  DE = hop->E12;*/
+    DE = hop->DE_Environment;
    
     if (T->db->bConstraints)
         maxiter = 10;
@@ -3308,7 +3319,7 @@ static gmx_bool scale_velocities(FILE *fplog,
                 if (NULL != fplog)
                     fprintf(fplog,"%s: Before constr. ekin_old = %f\n",
                             eTitrationAlg_names[ir->titration_alg],ekin_old);
-                
+
                 constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
                           step,1,md,state->x,state->v,state->v,state->box,
                           state->lambda,&dvdl,NULL,NULL,nrnb,
@@ -3321,9 +3332,12 @@ static gmx_bool scale_velocities(FILE *fplog,
             
             ekin_new = check_ekin(state->v ,md);   
             if (NULL != fplog)
+            {
                 fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE = %f\n",
                         eTitrationAlg_names[ir->titration_alg],iter,ekin_new,ekin_old,DE);
-            
+                pr_rvecs(fplog,0,"Ekin Tensor",
+                         ekindata->ekin,DIM);
+            }
             DE = DE + (ekin_new - ekin_old);
             ekin_old = ekin_new;
             bConverged = (DE*DE < 1); /* hard coded treshold.... */
@@ -3637,7 +3651,7 @@ real do_titration(FILE *fplog,
 #ifdef TITRATION_NB_KERNELS
     sfree(nlist_reduced);
 #endif
-   return eqmmm;
+    return 0; /*eqmmm;*/
 }
 
 /* paramStr is the string from the rtp file.
