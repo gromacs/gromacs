@@ -2419,7 +2419,7 @@ void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
 #endif
     snew(nbl_list->nbl,nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
-#pragma omp parallel for schedule(static),ordered
+#pragma omp parallel for schedule(static), num_threads(nbl_list->nnbl)
     for(i=0; i<nbl_list->nnbl; i++)
     {
         /* Allocate the nblist data structure locally on each thread
