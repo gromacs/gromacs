@@ -72,7 +72,7 @@ enum {
 };
 
 enum { 
-  ecutsOLD, ecutsVERLET, ecutsNR
+  ecutsGROUP, ecutsVERLET, ecutsNR
 };
 
 /*

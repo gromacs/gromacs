@@ -8420,7 +8420,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     cgsort = sort->sort;
 
-    if (fr->cutoff_scheme == ecutsOLD)
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
         ncg_new = dd_sort_order(dd,fr,ncg_home_old);
     }
@@ -8912,7 +8912,7 @@ void dd_partition_system(FILE            *fplog,
         comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
     }
 
-    if (fr->cutoff_scheme == ecutsOLD)
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
         copy_ivec(fr->ns.grid->n,ncells_old);
         grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,

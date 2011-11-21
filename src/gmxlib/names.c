@@ -71,7 +71,7 @@ const char *ptype_str[eptNR+1] = {
 };
 
 const char *ecutscheme_names[ecutsNR+1] = {
-  "Old", "Verlet", NULL
+  "Group", "Verlet", NULL
 };
 
 const char *eel_names[eelNR+1] = {

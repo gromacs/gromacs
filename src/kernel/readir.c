@@ -164,7 +164,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   set_warning_line(wi,mdparin,-1);
 
-    if (ir->cutoff_scheme == ecutsOLD)
+    if (ir->cutoff_scheme == ecutsGROUP)
     {
         /* BASIC CUT-OFF STUFF */
         if (ir->rlist == 0 ||
@@ -594,7 +594,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
   } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
-      if (ir->cutoff_scheme == ecutsOLD) {
+      if (ir->cutoff_scheme == ecutsGROUP) {
           sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
                   eel_names[ir->coulombtype]);
           CHECK(ir->rlist > ir->rcoulomb);
@@ -607,7 +607,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
-    } else if (ir->cutoff_scheme == ecutsOLD) {
+    } else if (ir->cutoff_scheme == ecutsGROUP) {
       if (ir->coulombtype == eelPME) {
 	sprintf(err_buf,
 		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
@@ -644,12 +644,12 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
   } else if (ir->vdwtype == evdwCUT) {
-      if (ir->cutoff_scheme == ecutsOLD) {
+      if (ir->cutoff_scheme == ecutsGROUP) {
           sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
           CHECK(ir->rlist > ir->rvdw);
       }
   }
-    if (ir->cutoff_scheme == ecutsOLD)
+    if (ir->cutoff_scheme == ecutsGROUP)
     {
         if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
             && (ir->rlistlong <= ir->rcoulomb))
@@ -701,7 +701,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
     /* ENERGY CONSERVATION */
-    if (ir_NVE(ir) && ir->cutoff_scheme == ecutsOLD)
+    if (ir_NVE(ir) && ir->cutoff_scheme == ecutsGROUP)
     {
         if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
         {

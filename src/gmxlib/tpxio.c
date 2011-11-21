@@ -329,7 +329,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     else
     {
-        ir->cutoff_scheme = ecutsOLD;
+        ir->cutoff_scheme = ecutsGROUP;
     }
     gmx_fio_do_int(fio,ir->ns_type);
     gmx_fio_do_int(fio,ir->nstlist);

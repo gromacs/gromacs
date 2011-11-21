@@ -151,7 +151,7 @@ typedef struct {
   int  simulation_part; /* Used in checkpointing to separate chunks */
   gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  nstcalcenergy;	/* frequency of energy calc. and T/P coupl. upd.	*/
-  int  cutoff_scheme;   /* cut-off scheme: old or verlet                */
+  int  cutoff_scheme;   /* cut-off scheme: group or verlet              */
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/

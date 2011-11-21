@@ -1321,7 +1321,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     sum_epot(&(inputrec->opts),enerd);
 }
 
-void do_force_cutsOLD(FILE *fplog,t_commrec *cr,
+void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
               t_inputrec *inputrec,
               gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
@@ -1790,20 +1790,20 @@ void do_force(FILE *fplog,t_commrec *cr,
                                 bBornRadii,
                                 flags);
             break;
-        case ecutsOLD:
-             do_force_cutsOLD(fplog, cr, inputrec,
-                              step, nrnb, wcycle,
-                              top, mtop,
-                              groups,
-                              box, x, hist,
-                              f, vir_force,
-                              mdatoms,
-                              enerd, fcd,
-                              lambda, graph,
-                              fr, vsite, mu_tot,
-                              t, field, ed,
-                              bBornRadii,
-                              flags);
+        case ecutsGROUP:
+             do_force_cutsGROUP(fplog, cr, inputrec,
+                                step, nrnb, wcycle,
+                                top, mtop,
+                                groups,
+                                box, x, hist,
+                                f, vir_force,
+                                mdatoms,
+                                enerd, fcd,
+                                lambda, graph,
+                                fr, vsite, mu_tot,
+                                t, field, ed,
+                                bBornRadii,
+                                flags);
             break;
         default:
             gmx_incons("Invalid cut-off scheme passed!");
