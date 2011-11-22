@@ -2436,6 +2436,7 @@ static void get_self_energy(FILE *fplog, t_inputrec *ir, t_commrec *cr, t_qhop_r
             switch (ivdw)
             {
             case 1:
+            case 3:
                 /* LJ */
                 r6  = rinvsq*rinvsq*rinvsq;
                 r12 = r6*r6;
@@ -2454,11 +2455,11 @@ static void get_self_energy(FILE *fplog, t_inputrec *ir, t_commrec *cr, t_qhop_r
                 Evdw += ce1*exp(-ce2*drsq*rinv) - c6*r6;
                 break;
 
-            case 3:
+                /*case 3: */
                 /* Tabulated */
-                gmx_fatal(FARGS, "Tabulated vdw not yet supported with qhop. Stay tuned.");
+                /* gmx_fatal(FARGS, "Tabulated vdw not yet supported with qhop. Stay tuned.");
                 break;
-
+                */
             default:
                 gmx_fatal(FARGS, "Unknown vdw type!");
                 break;
