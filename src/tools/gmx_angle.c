@@ -213,7 +213,11 @@ int gmx_g_angle(int argc,char *argv[])
   bAver=opt2bSet("-ov",NFILE,fnm);
   bTrans=opt2bSet("-ot",NFILE,fnm);
   bFrac=opt2bSet("-of",NFILE,fnm);
-
+  if (bTrans && opt[0][0] != 'd') {
+    fprintf(stderr, "Option -ot should only accompany -type dihedral. Disabling -ot.\n");
+    bTrans = FALSE;
+  }
+  
   if (bChandler && !bCorr)
     bCorr=TRUE;
     
