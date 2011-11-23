@@ -101,6 +101,7 @@ static int lfactor(int z) {
 	int i;
 	for (i=sqrt(z);;i--)
 		if (z%i==0) return i;
+	return 1;
 }
 
 /* largest factor */
@@ -109,6 +110,7 @@ static int l2factor(int z) {
 	if (z==1) return 1;
 	for (i=z/2;;i--)
 		if (z%i==0) return i;
+	return 1;
 }
 
 /* largest prime factor: WARNING: slow recursion, only use for small numbers */
@@ -795,7 +797,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
             rotate(NG);            
         }
     }
-    if (plan->flags&FFT5D_REALCOMPLEX && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || (plan->flags&FFT5D_BACKWARD && s==2))) {
+    if ((plan->flags&FFT5D_REALCOMPLEX) && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || ((plan->flags&FFT5D_BACKWARD) && s==2))) {
         xl[0] = rC[s];
     }
 }
@@ -1033,7 +1035,7 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
     int x,y,z,l;
     int *coor = plan->coor;
     int ll=2; /*compare ll values per element (has to be 2 for complex)*/
-    if (plan->flags&FFT5D_REALCOMPLEX && plan->flags&FFT5D_BACKWARD) 
+    if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD))
     {
         ll=1;
     }
