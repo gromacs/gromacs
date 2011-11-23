@@ -105,13 +105,13 @@ typedef struct
 #define NRFP(ftype)  (NRFPA(ftype)+NRFPB(ftype))
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
-#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CHEMBOND)
+#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
 /* IS_ANGLE tells if a function type ftype represents an angle 
  * Per Larsson, 2007-11-06
  */
-#define IS_ANGLE(ftype) (interaction_function[(ftype)].nratoms==3 && interaction_function[(ftype)].flags & IF_ATYPE)
+#define IS_ANGLE(ftype) (interaction_function[(ftype)].nratoms==3 && (interaction_function[(ftype)].flags & IF_ATYPE))
 #define IS_VSITE(ftype) (interaction_function[(ftype)].flags & IF_VSITE)
 
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
