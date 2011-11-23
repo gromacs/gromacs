@@ -1153,7 +1153,11 @@ static void make_benchmark_tprs(
  * not on mdrun command line options! */
 static gmx_bool tpr_triggers_file(const char *opt)
 {
-    if ( (0 == strcmp(opt, "-pf"))
+    if ( (0 == strcmp(opt, "-ro"))
+      || (0 == strcmp(opt, "-ra"))
+      || (0 == strcmp(opt, "-rt"))
+      || (0 == strcmp(opt, "-rs"))
+      || (0 == strcmp(opt, "-pf"))
       || (0 == strcmp(opt, "-px")) )
         return TRUE;
     else
@@ -2107,6 +2111,10 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-runav",  "runaver",  ffOPTWR },
       { efXVG, "-px",     "pullx",    ffOPTWR },
       { efXVG, "-pf",     "pullf",    ffOPTWR },
+      { efXVG, "-ro",     "rotation", ffOPTWR },
+      { efLOG, "-ra",     "rotangles",ffOPTWR },
+      { efLOG, "-rs",     "rotslabs", ffOPTWR },
+      { efLOG, "-rt",     "rottorque",ffOPTWR },
       { efMTX, "-mtx",    "nm",       ffOPTWR },
       { efNDX, "-dn",     "dipole",   ffOPTWR },
       /* Output files that are deleted after each benchmark run */
@@ -2127,6 +2135,10 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-brunav", "benchrnav",ffOPTWR },
       { efXVG, "-bpx",    "benchpx",  ffOPTWR },
       { efXVG, "-bpf",    "benchpf",  ffOPTWR },
+      { efXVG, "-bro",    "benchrot", ffOPTWR },
+      { efLOG, "-bra",    "benchrota",ffOPTWR },
+      { efLOG, "-brs",    "benchrots",ffOPTWR },
+      { efLOG, "-brt",    "benchrott",ffOPTWR },
       { efMTX, "-bmtx",   "benchn",   ffOPTWR },
       { efNDX, "-bdn",    "bench",    ffOPTWR }
     };

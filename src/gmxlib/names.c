@@ -188,6 +188,14 @@ const char *epullg_names[epullgNR+1] = {
   "distance", "direction", "cylinder", "position", "direction_periodic", NULL
 };
 
+const char *erotg_names[erotgNR+1] = { 
+  "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", NULL
+};
+
+const char *erotg_fitnames[erotgFitNR+1] = { 
+  "rmsd", "norm", "potential", NULL
+};
+
 const char *eQMmethod_names[eQMmethodNR+1] = {
   "AM1", "PM3", "RHF",
   "UHF", "DFT", "B3LYP", "MP2", "CASSCF","B3LYPLAN",
