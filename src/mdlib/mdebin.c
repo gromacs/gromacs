@@ -229,7 +229,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else if (i == F_CONNBONDS)
             md->bEner[i] = FALSE;
         else if (i == F_COM_PULL)
-            md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
+            md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F || ir->bRot);
         else if (i == F_ECONSERVED)
             md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
                             (ir->epc == epcNO || ir->epc==epcMTTK));

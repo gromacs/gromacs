@@ -461,6 +461,27 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
   }
 }
 
+static void bc_rotgrp(const t_commrec *cr,t_rotgrp *rotg)
+{
+  block_bc(cr,*rotg);
+  if (rotg->nat > 0) {
+    snew_bc(cr,rotg->ind,rotg->nat);
+    nblock_bc(cr,rotg->nat,rotg->ind);
+    snew_bc(cr,rotg->x_ref,rotg->nat);
+    nblock_bc(cr,rotg->nat,rotg->x_ref);
+  }
+}
+
+static void bc_rot(const t_commrec *cr,t_rot *rot)
+{
+  int g;
+
+  block_bc(cr,*rot);
+  snew_bc(cr,rot->grp,rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    bc_rotgrp(cr,&rot->grp[g]);
+}
+
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   gmx_bool bAlloc=TRUE;
@@ -473,6 +494,10 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);
     bc_pull(cr,inputrec->pull);
+  }
+  if (inputrec->bRot) {
+    snew_bc(cr,inputrec->rot,1);
+    bc_rot(cr,inputrec->rot);
   }
   for(i=0; (i<DIM); i++) {
     bc_cosines(cr,&(inputrec->ex[i]));
