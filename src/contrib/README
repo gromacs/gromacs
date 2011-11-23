@@ -4,24 +4,7 @@ GROMACS developers and users. It is not really officially supported
 or documented, so if there are problems your best bet is probably
 either the mailing lists or to contact the author listed in the file.
 
-To add a program, you should edit Makefile.am. Have a look at 
-www.gromacs.org/developer if you are unfamiliar with automake/autoconf.
-Since gromacs uses both assembly, fortran, shared libraries and 
-dynamic dependency tracking on all platforms we rely on features in
-the prereleases of autoconf 1.5. Until this is released,
-you can get version 1.4j or later from ftp.gromacs.org/developer
-
-The EXTRA_PROGRAMS tag used here means they are not compiled and
-installed for the default package configuration setup.
-
-You should always be able to execute the program in this directory,
-but it is not installed automatically. Since we use libtool to handle
-shared/static libraries the "program file" you see is actually a libtool
-wrapper script, and if you move this script it will not work. To install
-e.g. "options" as "/usr/local/gromacs/i686-pc-linux-gnu/bin/options"
-you should give the command:
-
-../../libtool install options /usr/local/gromacs/i686-pc-linux-gnu/bin/options
+To add a program, you should edit CMakeLists.txt.
 
 
 
