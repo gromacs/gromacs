@@ -80,7 +80,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "copyrite.h"
-
+#include "pull_rotation.h"
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
@@ -630,14 +630,21 @@ void do_force(FILE *fplog,t_commrec *cr,
             dd_force_flop_start(cr->dd,nrnb);
         }
     }
-	
+    
+    if (inputrec->bRot)
+    {
+        /* Enforced rotation has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF */
+        do_rotation(cr,inputrec,box,x,t,step,wcycle,bNS);
+    }
+
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
      * since that will interfere with the dynamic load balancing.
      */
     wallcycle_start(wcycle,ewcFORCE);
-    
+
     if (bDoForces)
     {
         /* Reset forces for which the virial is calculated separately:
@@ -840,6 +847,13 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
         enerd->dvdl_lin += dvdl;
     }
+    else
+        enerd->term[F_COM_PULL] = 0.0;
+    
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr,step,t);
+    
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
