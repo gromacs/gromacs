@@ -16,6 +16,7 @@ set(GMXPREPROCESS_SOURCES
     pgutil.c        
     readir.c        
     readpull.c      
+    readrot.c
     resall.c        
     sorting.c       
     specbond.c      
