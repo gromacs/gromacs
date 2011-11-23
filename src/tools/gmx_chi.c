@@ -1271,7 +1271,7 @@ int gmx_chi(int argc,char *argv[])
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
 		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
-		    *time,  dt, FALSE, core_frac,oenv) ; 
+		    time, FALSE, core_frac,oenv) ; 
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,

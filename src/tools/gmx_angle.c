@@ -107,7 +107,11 @@ int gmx_g_angle(int argc,char *argv[])
     "If this is not the case, the program will crash.[PAR]",
     "With option [TT]-or[tt] a trajectory file is dumped containing cos and",
     "sin of selected dihedral angles which subsequently can be used as",
-    "input for a PCA analysis using [TT]g_covar[tt]."
+    "input for a PCA analysis using [TT]g_covar[tt].[PAR]",
+    "Option [TT]-ot[tt] plots when transitions occur between",
+    "dihedral rotamers of multiplicity 3 and [TT]-oh[tt]",
+    "records a histogram of the times between such transitions,",
+    "assuming the input trajectory frames are equally spaced in time."
   };
   static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static gmx_bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
@@ -285,7 +289,7 @@ int gmx_g_angle(int argc,char *argv[])
   
   if (bTrans) 
     ana_dih_trans(opt2fn("-ot",NFILE,fnm),opt2fn("-oh",NFILE,fnm),
-		  dih,nframes,nangles,grpname,time[0],dt,bRb,oenv);
+		  dih,nframes,nangles,grpname,time,bRb,oenv);
 		  
   if (bCorr) {
     /* Autocorrelation function */
