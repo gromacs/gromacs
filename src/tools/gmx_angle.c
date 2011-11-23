@@ -211,7 +211,7 @@ int gmx_g_angle(int argc,char *argv[])
   /* Check whether specific analysis has to be performed */
   bCorr=opt2bSet("-oc",NFILE,fnm);
   bAver=opt2bSet("-ov",NFILE,fnm);
-  bTrans=opt2bSet("-ot",NFILE,fnm);
+  bTrans=opt2bSet("-ot",NFILE,fnm) && opt[0][0] == 'd';
   bFrac=opt2bSet("-of",NFILE,fnm);
 
   if (bChandler && !bCorr)
