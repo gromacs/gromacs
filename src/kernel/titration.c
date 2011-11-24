@@ -1147,7 +1147,7 @@ static gmx_bool has_constraints(gmx_mtop_t *mtop)
     int i;
     
     for(i=0; (i<mtop->ffparams.ntypes); i++)
-        if (mtop->ffparams.functype[i] == F_CONSTR)
+        if ((mtop->ffparams.functype[i] == F_CONSTR) || (mtop->ffparams.functype[i] == F_SETTLE))
             return TRUE;
     return FALSE;
 }
@@ -1177,7 +1177,6 @@ void init_titration(FILE *fplog,const char *ff,
     }
     
     snew(T->global_atom_to_qhop_atom, mtop->natoms);
-    snew(T->f, mtop->natoms);
 
     nr_qhop_atoms = get_qhop_atoms(fplog,cr, mtop, T ,ir, db);
 
@@ -1298,11 +1297,15 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr,
                         {
                             T->max_nr_hop++;
                             srenew(T->hop,T->max_nr_hop);
+                            memset(&(T->hop[nr_hop]),0,sizeof(T->hop[0]));
+                            snew(T->hop[nr_hop].f,md->nr);
                         }
-                        memset(&(T->hop[nr_hop]),0,sizeof(T->hop[0]));
                         T->hop[nr_hop].donor_id    = don;
                         T->hop[nr_hop].acceptor_id = acc;
                         T->hop[nr_hop].proton_id   = k;
+                        T->hop[nr_hop].regime      = NOTSET;
+                        T->hop[nr_hop].primary_d   = NOTSET;
+                        T->hop[nr_hop].primary_a   = NOTSET;
                         T->hop[nr_hop].rda         = norm(vecc);
                         T->hop[nr_hop].ang         = ang;
                         T->hop[nr_hop].prob        = 0;
@@ -1947,7 +1950,8 @@ static void evaluate_energy(FILE *fplog,
                             t_graph *graph, t_forcerec *fr, 
                             gmx_vsite_t *vsite,rvec mu_tot,
                             gmx_large_int_t step,
-                            gmx_enerdata_t *enerd)
+                            gmx_enerdata_t *enerd,
+                            rvec *f)
 {
     real t,etot,terminate;
     tensor force_vir;
@@ -1973,7 +1977,7 @@ static void evaluate_energy(FILE *fplog,
   
     do_force(fplog,cr,ir,step,nrnb,wcycle,top,mtop,groups,
              state->box,state->x,&state->hist,
-             T->f,force_vir,md,enerd,fcd,
+             f,force_vir,md,enerd,fcd,
              state->lambda,graph,
              fr,vsite,mu_tot,step*ir->delta_t,NULL,NULL,FALSE,
              GMX_FORCE_ALLFORCES|GMX_FORCE_VIRIAL|GMX_FORCE_STATECHANGED|GMX_FORCE_NS);
@@ -2979,7 +2983,7 @@ static void get_hop_prob(FILE *fplog,
     {
         evaluate_energy(fplog,cr, ir, nrnb, wcycle,top, mtop,
                         groups, state, md, fcd, graph,
-                        fr,vsite,mu_tot,step,Ebefore);
+                        fr,vsite,mu_tot,step,Ebefore,hop->f);
         dump_enerd(debug,"Before",Ebefore,eTitrationAlg_names[ir->titration_alg]);
         *bHaveEbefore = TRUE;
     }
@@ -3016,7 +3020,7 @@ static void get_hop_prob(FILE *fplog,
                            eHOP_FORWARD, mtop, top, constr, pbc, FALSE))
     {
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-                        fcd,graph,fr,vsite,mu_tot,step, Eafter);
+                        fcd,graph,fr,vsite,mu_tot,step, Eafter,hop->f);
         dump_enerd(debug,"After ",Eafter,eTitrationAlg_names[ir->titration_alg]);
         get_self_energy(fplog, ir, cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
                         T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
@@ -3270,20 +3274,32 @@ static gmx_bool scale_velocities(FILE *fplog,
                                  titration_t T,gmx_large_int_t step,
                                  gmx_constr_t constr,t_pbc *pbc,  
                                  t_hop *hop,gmx_ekindata_t *ekindata,
-                                 real veta,real vetanew)
+                                 real veta,real vetanew,rvec *f)
 {
     /* takes as input the total MM potential energy change for the hop
        and alters the kinetic energy so that the total energy remains
        constant.
     */
     gmx_bool bPscal, bConverged, bSufficientEkin;
-    int      donor_atom, acceptor_atom, iter, maxiter;
-    real     ekin_old, ekin_new, dvdl, ekin_before, DE;
+    int      donor_atom, acceptor_atom, iter, maxiter, i, m;
+    real     ekin_old, ekin_new, dvdl, ekin_before, DE, mI, dt_m;
     char     stepstr[STEPSTRSIZE];
-
+    rvec     *v;
+    
     if (ir->titration_vscale_radius <= 0)
         return TRUE;
-        
+    
+    /* Compute new velocities */
+    snew(v,md->nr);
+    for(i=0; (i<md->nr); i++) {
+        mI = md->massT[i];
+        if (mI > 0) {
+            dt_m = ir->delta_t/mI;
+            for(m=0; (m<DIM); m++) {
+                v[i][m] = state->v[i][m] + f[i][m]*dt_m;
+            }
+        }
+    }
     bPscal = (ir->epc != epcNO) && ((step % ir->nstpcouple) == 0);
     
     /* iterate until the velocities satisfy both constraints and
@@ -3293,7 +3309,8 @@ static gmx_bool scale_velocities(FILE *fplog,
     donor_atom    = T->qhop_atoms[hop->donor_id].atom_id;
     acceptor_atom = T->qhop_atoms[hop->acceptor_id].atom_id;
 
-    ekin_before = check_ekin(state->v,md);
+    /* Compute ekin based on old velocities */
+    ekin_before = check_ekin(v,md);
     ekin_old = ekin_before;
     ekin_new = 0;
     /*  DE = hop->E12;*/
@@ -3302,13 +3319,13 @@ static gmx_bool scale_velocities(FILE *fplog,
     if (T->db->bConstraints)
         maxiter = 10;
     else
-        maxiter = 1;
+        maxiter = 10;
         
     bSufficientEkin = TRUE;
     bConverged = FALSE;
     for(iter=0; (iter<maxiter) && !bConverged && bSufficientEkin; iter++)
     {
-        bSufficientEkin = scale_v(fplog,ir, state->x, state->v,
+        bSufficientEkin = scale_v(fplog,ir, state->x, v,
                                   md, donor_atom, acceptor_atom,
                                   DE, pbc);
     
@@ -3322,16 +3339,19 @@ static gmx_bool scale_velocities(FILE *fplog,
                             eTitrationAlg_names[ir->titration_alg],ekin_old);
 
                 constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
-                          step,1,md,state->x,state->v,state->v,state->box,
-                          state->lambda,&dvdl,NULL,NULL,nrnb,
+                          step,1,md,state->x,v,v,state->box,
+                          state->lambda,&dvdl,v,NULL,nrnb,
                           econqVeloc,bPscal,veta,vetanew);
-                /* and send the veloities around again, bit expensive, 
+                /* Correct the velocities for constraints */
+                
+                
+                /* And send the velocities around again, bit expensive, 
                    so there must be an easier way
                    of doing this...
                 */
             }
             
-            ekin_new = check_ekin(state->v ,md);   
+            ekin_new = check_ekin(v ,md);   
             if (NULL != fplog)
             {
                 fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE = %f\n",
@@ -3350,6 +3370,16 @@ static gmx_bool scale_velocities(FILE *fplog,
         fprintf(fplog,"%s: Energy correction at step %s: %f, DE_Environment: %f\n",
                 eTitrationAlg_names[ir->titration_alg],stepstr,ekin_new-ekin_before,hop->DE_Environment);
     }
+    if (bSufficientEkin && bConverged) {
+        /* Copy new velocities */
+        for(i=0; (i<md->nr); i++) {
+            for(m=0; (m<DIM); m++) {
+                state->v[i][m] = v[i][m];
+            }
+        }
+    }
+    sfree(v);
+    
     return (bSufficientEkin && bConverged);
 } /* scale_velocities */
 
@@ -3583,7 +3613,8 @@ real do_titration(FILE *fplog,
                         vetanew = 0;
                         bHop = scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
                                                 state,md,T,step,constr,
-                                                &pbc,&(T->hop[i]),ekindata,veta,vetanew);
+                                                &pbc,&(T->hop[i]),ekindata,veta,vetanew,
+                                                T->hop[i].f);
                     }
                         
                     if (bHop && (ir->titration_mode != eTitrationModeOne))

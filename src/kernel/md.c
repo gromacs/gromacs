@@ -86,6 +86,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "titration.h"
+#include "titration_db.h"
 #include "genborn.h"
 #include "sighandler.h"
 #include "string2.h"
@@ -1852,8 +1853,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     }
     /* End of main MD loop */
-    debug_gmx();
-    qhop_db_done(fr->titration);
+    /*debug_gmx();*/
+    /* qhop_db_done(fr->titration);*/
 
     /* Stop the time */
     runtime_end(runtime);

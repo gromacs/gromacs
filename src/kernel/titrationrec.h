@@ -81,6 +81,7 @@ typedef struct {
   gmx_bool bFlip,bDonated;
     rvec xold,vold,   /* Where the acceptor proton used to be */
         xnew;    /* Where the acceptor proton may end up */
+    rvec *f; /* We need to store the forces from each trial hop in case we do more than one */
 } t_hop;
 
 /* Keeps track of where bonded interactions are in an ilist.
@@ -146,8 +147,7 @@ typedef struct {
 } t_qhop_residue;
 
 typedef struct titration {
-  gmx_constr_t   constr; /* for some reason we can't pass constr as an
-			  * argument to do_qhop(). It turns into 0x0. */
+  gmx_constr_t   constr; 
   int            nr_hop,max_nr_hop;
   t_hop          *hop;
   int            nr_qhop_atoms;
@@ -157,9 +157,6 @@ typedef struct titration {
   qhop_db_s      db;
   gmx_rng_t      rng, rng_int;
   gmx_bool       bFreshNlists, bHaveEbefore;
-  rvec           *f; /* Use this to avoid stupid segfaults that occur,
-                      * but shouldn't have to occur, when do_force() is
-                      * called with f==NULL */
   int *global_atom_to_qhop_atom;
 } titration;
 

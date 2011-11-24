@@ -15,10 +15,6 @@ extern "C" {
 /* Initiate the data structure */
 extern titration mk_titration(void);
 
-/* Sets the interactions according to the hydrogen exstence map.
- * This requires a finalized t_mdatoms. */
-extern void finalize_titration(titration_t T, gmx_localtop_t *top, t_mdatoms *md,t_commrec *cr);
-
 /* Exchanges the qhopatoms indexed by prim and sec
  * when sec is being titrated. Since prim holds the
  * titrating hydrogen the two must be exchanged.

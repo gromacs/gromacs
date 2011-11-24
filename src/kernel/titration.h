@@ -64,4 +64,9 @@ extern real do_titration(FILE *fplog,
 
 extern void fold_inactive_protons(titration_t T, rvec x[], rvec v[]);
 
+/* Sets the interactions according to the hydrogen exstence map.
+ * This requires a finalized t_mdatoms. */
+extern void finalize_titration(titration_t T, gmx_localtop_t *top, t_mdatoms *md,t_commrec *cr);
+
+
 #endif	/* _qhop_h */
