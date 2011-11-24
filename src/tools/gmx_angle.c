@@ -56,7 +56,7 @@
 
 
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
-                         real dt)
+                         real *time)
 {
   int    i,j,k,l,m,na;
   t_fileio *trn;
@@ -84,7 +84,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
 	}
       }
     }
-    fwrite_trn(trn,i,(real)i*dt,0,box,na,x,NULL,NULL);
+    fwrite_trn(trn,i,time[i],0,box,na,x,NULL,NULL);
   }
   close_trn(trn);
   sfree(x);
@@ -265,7 +265,7 @@ int gmx_g_angle(int argc,char *argv[])
     ffclose(out);
   }
   if (opt2bSet("-or",NFILE,fnm)) 
-    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),dt);
+    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),time);
   
   if (bFrac) {
     sprintf(title,"Trans fraction: %s",grpname);
