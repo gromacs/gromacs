@@ -3,7 +3,7 @@
 #include "smalloc.h"
 #include "force.h"
 #include "types/simple.h" 
-#include "types/nblist_box.h"
+#include "types/nbnxn_pairlist.h"
 #include "nb_verlet.h"
 
 #include "cutypedefs.h"
@@ -167,7 +167,7 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
 }
 
 void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
-                         const gmx_nb_atomdata_t *nbatom,
+                         const nbnxn_atomdata_t *nbatom,
                          int flags,
                          int iloc)
 {
@@ -271,7 +271,7 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
 }
 
 void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
-                          const gmx_nb_atomdata_t *nbatom,
+                          const nbnxn_atomdata_t *nbatom,
                           int flags,
                           int aloc)
 {
@@ -325,7 +325,7 @@ void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
     }
 
     /* TODO: maybe move this to cu_clear_nb_f_out() 
-             -> it's just that gmx_nb_atomdata_t is not available there */
+             -> it's just that nbnxn_atomdata_t is not available there */
 
     if (!cu_nb->use_stream_sync)
     {
@@ -372,7 +372,7 @@ void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
 }
 
 void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
-                    const gmx_nb_atomdata_t *nbatom,
+                    const nbnxn_atomdata_t *nbatom,
                     int flags, int aloc,
                     float *e_lj, float *e_el, rvec *fshift)
 {

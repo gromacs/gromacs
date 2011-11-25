@@ -1,7 +1,7 @@
 #ifndef CUTYPEDEFS_H
 #define CUTYPEDEFS_H
 
-#include "types/nblist_box.h"
+#include "types/nbnxn_pairlist.h"
 #include "cutypedefs_ext.h"
 #include "cudautils.h"
 

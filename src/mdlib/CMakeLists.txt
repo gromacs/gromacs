@@ -1,5 +1,7 @@
 
-file(GLOB MDLIB_SOURCES *.c)
+file(GLOB MDLIB_SOURCES *.c nbnxn_kernels/*.c)
+
+include_directories(nbnxn_kernels)
 
 if(GMX_GPU)
     add_subdirectory(cuda_tools)

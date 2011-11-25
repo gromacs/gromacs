@@ -21,12 +21,12 @@ void cu_init_ff_data(FILE * /*fplog*/,
 
 /*! Initilizes pair-list data for GPU, called at every neighbor search step. */
 void cu_init_nblist(cu_nonbonded_t /*cu_nb*/,
-                    const gmx_nblist_t * /*h_nblist*/,
+                    const nbnxn_pairlist_t * /*h_nblist*/,
                     int /*iloc*/);
 
 /*! Initilizes atom-data on the GPU, called at every neighbor search step. */
 void cu_init_atomdata(cu_nonbonded_t /*cu_nb*/,
-                      const gmx_nb_atomdata_t * /*atomdata*/);
+                      const nbnxn_atomdata_t * /*atomdata*/);
 
 /*! Re-genrates the GPU Ewald force table and resets rlist - used during 
  *  cut-off auto-tuning. */
@@ -35,7 +35,7 @@ void cu_reset_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
 
 /*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
-                       const gmx_nb_atomdata_t * /*nbatom*/);
+                       const nbnxn_atomdata_t * /*nbatom*/);
 
 /*! Clears nonbonded force output array on the GPU. */
 void cu_clear_nb_f_out(cu_nonbonded_t /*cu_nb*/);

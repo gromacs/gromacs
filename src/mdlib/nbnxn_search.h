@@ -31,8 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nsbox_h
-#define _nsbox_h
+#ifndef _nbnxn_search_h
+#define _nsnxn_search_h
 
 #include "typedefs.h"
 
@@ -67,7 +67,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               rvec *x,
                               int nmoved,int *move,
                               gmx_bool simple,
-                              gmx_nb_atomdata_t *nbat);
+                              nbnxn_atomdata_t *nbat);
 
 /* As gmx_nbsearch_put_on_grid, but for the non-local atoms
  * with domain decomposition. Should be called after calling
@@ -78,11 +78,11 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        const int *atinfo,
                                        rvec *x,
                                        gmx_bool simple,
-                                       gmx_nb_atomdata_t *nbat);
+                                       nbnxn_atomdata_t *nbat);
 
 /* Add simple grid type information to the local super/sub grid */
 void gmx_nbsearch_grid_simple(gmx_nbsearch_t nbs,
-                              gmx_nb_atomdata_t *nbat);
+                              nbnxn_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void gmx_nbsearch_get_ncells(gmx_nbsearch_t nbs,int *ncx,int *ncy);
@@ -94,7 +94,7 @@ void gmx_nbsearch_get_atomorder(gmx_nbsearch_t nbs,int **a,int *n);
 void gmx_nbsearch_set_atomorder(gmx_nbsearch_t nbs);
 
 /* FIXME */
-void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
+void gmx_nbl_list_init(nbnxn_pairlist_set_t *nbl_list,
                        gmx_bool simple, gmx_bool combined,
                        gmx_nbat_alloc_t *alloc,
                        gmx_nbat_free_t  *free);
@@ -106,20 +106,20 @@ void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  */
 void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
-                              const gmx_nb_atomdata_t *nbat,
+                              const nbnxn_atomdata_t *nbat,
                               const t_blocka *excl,
                               real rlist,
                               int min_ci_balanced,
-                              gmx_nbl_lists_t *nbl_list,
+                              nbnxn_pairlist_set_t *nbl_list,
                               int iloc);
 
 /* Initialize the non-bonded atom data structure.
- * The enum for nbatXFormat is in the file defining gmx_nb_atomdata_t.
+ * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
  */
-void gmx_nb_atomdata_init(FILE *fp,
-                          gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_init(FILE *fp,
+                          nbnxn_atomdata_t *nbat,
                           gmx_bool simple,
                           gmx_bool XFormatXXXX,
                           int ntype,const real *nbfp,
@@ -129,34 +129,34 @@ void gmx_nb_atomdata_init(FILE *fp,
                           gmx_nbat_free_t  *free);
 
 /* Copy the atom data to the non-bonded atom data structure */
-void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
                          int aloc,
                          const gmx_nbsearch_t nbs,
                          const t_mdatoms *mdatoms,
                          const int *atinfo);
 
 /* Copy the shift vectors to nbat */
-void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
+void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
-                                   gmx_nb_atomdata_t *nbat);
+                                   nbnxn_atomdata_t *nbat);
 
 /* Copy x to nbat->x.
  * FillLocal tells if the local filler particle coordinates should be zeroed.
  */
-void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
+void nbnxn_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
                                       int aloc,
                                       gmx_bool FillLocal,
                                       rvec *x,
-                                      gmx_nb_atomdata_t *nbat);
+                                      nbnxn_atomdata_t *nbat);
 
 /* Add the forces stored in nbat to f, zeros the forces in nbat */
-void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
+void nbnxn_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
                                      int aloc,
-                                     const gmx_nb_atomdata_t *nbat,
+                                     const nbnxn_atomdata_t *nbat,
                                      rvec *f);
 
 /* Add the fshift force stored in nbat to fshift */
-void gmx_nb_atomdata_add_nbat_fshift_to_fshift(const gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                                rvec *fshift);
 
 #ifdef __cplusplus

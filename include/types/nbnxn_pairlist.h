@@ -31,8 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nblist_box_h
-#define _nblist_box_h
+#ifndef _nbnxn_pairlist_h
+#define _nbnxn_pairlist_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -136,16 +136,16 @@ typedef struct {
     struct gmx_nbl_work *work;
 
     gmx_cache_protect_t cp1;
-} gmx_nblist_t;
+} nbnxn_pairlist_t;
 
 typedef struct {    
     int          nnbl;      /* number of lists */
-    gmx_nblist_t **nbl;     /* lists */
+    nbnxn_pairlist_t **nbl; /* lists */
     gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
     gmx_bool     simple;    /* TRUE if the list of of type "simple" 
                                (napc=naps, no subcells used) */
 
-} gmx_nbl_lists_t; /* FIXME confusing name */
+} nbnxn_pairlist_set_t;
 
     enum { nbatXYZ, nbatXYZQ, nbatXXXX };
 
@@ -158,7 +158,7 @@ typedef struct {
     int  nVS;     /* The size of *VSvdw and *VSc                        */
     real *VSvdw;  /* Temporary Van der Waals group energy storage       */
     real *VSc;    /* Temporary Coulomb group energy storage             */
-} gmx_nb_atomdata_output_t;
+} nbnxn_atomdata_output_t;
 
     enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
 
@@ -184,9 +184,9 @@ typedef struct {
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
     real *x;         /* x and possibly q, size natoms*xstride              */
     int  nout;       /* The number of force arrays                         */
-    gmx_nb_atomdata_output_t *out;  /* Output data structures              */
+    nbnxn_atomdata_output_t *out;  /* Output data structures               */
     int  nalloc;     /* Allocation size of all arrays (time xstride for x) */
-} gmx_nb_atomdata_t;
+} nbnxn_atomdata_t;
 
 #ifdef __cplusplus
 }

@@ -39,25 +39,25 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "force.h"
-#include "nb_cell_kernel_c.h"
+#include "nbnxn_kernel_ref.h"
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 
 #undef CALC_COUL_RF
 
@@ -66,22 +66,22 @@
 
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
-#include "nb_cell_kernel_c_outer.h"
+#include "nbnxn_kernel_ref_outer.h"
 
 
-typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
-                                const gmx_nb_atomdata_t    *nbat,
+typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
+                                const nbnxn_atomdata_t     *nbat,
                                 const interaction_const_t  *ic,
                                 rvec                       *shift_vec,
                                 real                       *f,
@@ -89,8 +89,8 @@ typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
                                 real                       *Vvdw,
                                 real                       *Vc);
 
-typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
-                                  const gmx_nb_atomdata_t    *nbat,
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+                                  const nbnxn_atomdata_t     *nbat,
                                   const interaction_const_t  *ic,
                                   rvec                       *shift_vec,
                                   real                       *f,
@@ -107,7 +107,7 @@ p_nbk_func_ener p_nbk_c_energrp[coultNR] =
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
 { nb_cell_kernel_c_rf_noener, nb_cell_kernel_c_tab_noener };
 
-static void clear_f(const gmx_nb_atomdata_t *nbat,
+static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)
 {
     int i;
@@ -129,8 +129,8 @@ static void clear_fshift(real *fshift)
 }
 
 void
-nb_cell_kernel_c(gmx_nbl_lists_t            *nbl_list,
-                 const gmx_nb_atomdata_t    *nbat,
+nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
+                 const nbnxn_atomdata_t     *nbat,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,
                  int                        force_flags,
@@ -139,8 +139,8 @@ nb_cell_kernel_c(gmx_nbl_lists_t            *nbl_list,
                  real                       *Vc,
                  real                       *Vvdw)
 {
-    int          nnbl;
-    gmx_nblist_t **nbl;
+    int              nnbl;
+    nbnxn_pairlist_t **nbl;
     int coult;
     int nb;
 
@@ -159,7 +159,7 @@ nb_cell_kernel_c(gmx_nbl_lists_t            *nbl_list,
 #pragma omp parallel for schedule(static)
     for(nb=0; nb<nnbl; nb++)
     {
-        gmx_nb_atomdata_output_t *out;
+        nbnxn_atomdata_output_t *out;
         real *fshift_p;
 
         out = &nbat->out[nb];

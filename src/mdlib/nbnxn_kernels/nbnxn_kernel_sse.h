@@ -31,8 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nb_cell_kernel_c_h
-#define _nb_cell_Kernel_c_h
+#ifndef _nbnxn_kernel_sse_single_h
+#define _nbnxn_kernel_sse_single_h
 
 #include "typedefs.h"
 
@@ -42,8 +42,8 @@ extern "C" {
 
 /* Wrapper call for the non-bonded cell vs cell kernels */
 void
-nb_cell_kernel_c(gmx_nbl_lists_t            *nbl_list,
-                 const gmx_nb_atomdata_t    *nbat,
+nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
+                 const nbnxn_atomdata_t     *nbat,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,
                  int                        force_flags,

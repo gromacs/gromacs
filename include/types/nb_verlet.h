@@ -24,8 +24,8 @@ enum { eintLocal = 0, eintNonlocal = 1 };
 #define NONLOCAL_I(x)            ((x) == eintNonlocal)
 
 typedef struct {
-    gmx_nbl_lists_t   nbl_lists;    /* pair list(s) */
-    gmx_nb_atomdata_t *nbat;        /* atom data */
+    nbnxn_pairlist_set_t nbl_lists; /* pair list(s) */
+    nbnxn_atomdata_t *nbat;         /* atom data */
     int         kernel_type;        /* non-bonded kernel - see enum above */
 } nonbonded_verlet_group_t;
 

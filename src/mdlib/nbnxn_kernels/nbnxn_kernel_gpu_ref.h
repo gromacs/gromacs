@@ -31,8 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nsbox_kernel_h
-#define _nsbox_Kernel_h
+#ifndef _nbnxn_kernel_gpu_ref_h
+#define _nbnxn_kernel_gpu_ref_h
 
 #include "typedefs.h"
 
@@ -40,10 +40,10 @@
 extern "C" {
 #endif
 
-/* Reference (slow) kernel for nsbox neighbor lists */
+/* Reference (slow) kernel for nb n vs n GPU type pair lists */
 void
-nsbox_generic_kernel(const gmx_nblist_t         *nbl,
-                     const gmx_nb_atomdata_t    *nbat,
+nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
+                     const nbnxn_atomdata_t     *nbat,
                      const interaction_const_t  *iconst,
                      real                       tabscale,  
                      const real *               VFtab,

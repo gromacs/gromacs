@@ -90,17 +90,17 @@
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nb_cell_kernel_sse2_single,noener)
+NBK_FUNC_NAME(nbnxn_kernel_sse_single,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nb_cell_kernel_sse2_single,ener)
+NBK_FUNC_NAME(nbnxn_kernel_sse_single,ener)
 #else
-NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
-                            (const gmx_nblist_t         *nbl,
-                             const gmx_nb_atomdata_t    *nbat,
+                            (const nbnxn_pairlist_t     *nbl,
+                             const nbnxn_atomdata_t     *nbat,
                              const interaction_const_t  *ic,
                              rvec                       *shift_vec, 
                              real                       *f
@@ -451,17 +451,17 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
 #undef HALF_LJ
             }
             else if (do_coul)
             {
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
             }
 #undef CHECK_EXCLS
             sjind++;
@@ -473,17 +473,17 @@ NBK_FUNC_NAME(nb_cell_kernel_sse2_single,energrp)
             {
 #define CALC_COULOMB
 #define HALF_LJ
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
 #undef HALF_LJ
             }
             else if (do_coul)
             {
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
 #undef CALC_COULOMB
             }
             else
             {
-#include "nb_cell_kernel_sse2_single_inner.h"
+#include "nbnxn_kernel_sse_single_inner.h"
             }
         }
         ninner += sjind1 - sjind0;

@@ -61,7 +61,7 @@
 #include "qmmm.h"
 #include "copyrite.h"
 #include "mtop_util.h"
-#include "nsbox.h"
+#include "nbnxn_search.h"
 #include "statutil.h"
 
 
@@ -1752,7 +1752,7 @@ static void init_nb_verlet(FILE *fp,
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
         {
             snew(nbv->grp[i].nbat,1);
-            gmx_nb_atomdata_init(fp,
+            nbnxn_atomdata_init(fp,
                                  nbv->grp[i].nbat,
                                  is_nbl_type_simple(nbv->grp[i].kernel_type),
                                  nbv->grp[i].kernel_type == nbk4x4SSE,

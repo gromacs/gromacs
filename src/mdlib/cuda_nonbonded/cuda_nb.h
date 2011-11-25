@@ -16,7 +16,7 @@ extern "C" {
  *  separate streams.
  */
 void cu_nb_launch_kernel(cu_nonbonded_t /*cu_nb*/, 
-                         const gmx_nb_atomdata_t * /*nbdata*/,                  
+                         const nbnxn_atomdata_t * /*nbdata*/,                  
                          int /*flags*/,
                          int /*iloc*/);
 
@@ -24,7 +24,7 @@ void cu_nb_launch_kernel(cu_nonbonded_t /*cu_nb*/,
  *  (also energies/shift forces if required). 
  */
 void cu_nb_launch_cpyback(cu_nonbonded_t /*cu_nb*/,
-                          const gmx_nb_atomdata_t * /*nbatom*/,
+                          const nbnxn_atomdata_t * /*nbatom*/,
                           int /*flags*/,
                           int /*aloc*/);
 
@@ -32,7 +32,7 @@ void cu_nb_launch_cpyback(cu_nonbonded_t /*cu_nb*/,
  *  transfers to finish. 
  */
 void cu_nb_wait_gpu(cu_nonbonded_t /*cu_nb*/,
-                    const gmx_nb_atomdata_t * /*nbatom*/,
+                    const nbnxn_atomdata_t * /*nbatom*/,
                     int /*flags*/, int /*aloc*/,
                     float * /*e_lj*/, float * /*e_el*/, rvec * /*fshift*/);
 

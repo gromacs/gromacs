@@ -31,8 +31,8 @@
  * For more info, check our website at http://www.gromacs.org
  */
 
-#ifndef _nb_cell_kernel_h
-#define _nb_cell_Kernel_h
+#ifndef _nbnxn_kernel_ref_h
+#define _nbnxn_Kernel_ref_h
 
 #include "typedefs.h"
 
@@ -40,17 +40,17 @@
 extern "C" {
 #endif
 
-/* Wrapper call for the non-bonded cell vs cell kernels */
+/* Wrapper call for the non-bonded n vs n reference kernels */
 void
-nb_cell_kernel(gmx_nbl_lists_t            *nbl_list,
-               const gmx_nb_atomdata_t    *nbat,
-               const interaction_const_t  *ic,
-               rvec                       *shift_vec,
-               int                        force_flags,
-               gmx_bool                   clearF,
-               real                       *fshift,
-               real                       *Vc,
-               real                       *Vvdw);
+nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
+                 const nbnxn_atomdata_t     *nbat,
+                 const interaction_const_t  *ic,
+                 rvec                       *shift_vec,
+                 int                        force_flags,
+                 gmx_bool                   clearF,
+                 real                       *fshift,
+                 real                       *Vc,
+                 real                       *Vvdw);
 
 #ifdef __cplusplus
 }

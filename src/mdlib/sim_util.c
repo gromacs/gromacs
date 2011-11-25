@@ -86,10 +86,10 @@
 #include "partdec.h"
 #include "gmx_wallcycle.h"
 #include "genborn.h"
-#include "nsbox.h"
-#include "nsbox_kernel.h"
-#include "nb_cell_kernel_c.h"
-#include "nb_cell_kernel.h"
+#include "nbnxn_search.h"
+#include "nbnxn_kernels/nbnxn_kernel_sse.h"
+#include "nbnxn_kernels/nbnxn_kernel_ref.h"
+#include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -597,7 +597,7 @@ static void do_nb_verlet(t_forcerec *fr,
     switch (nbvg->kernel_type)
     {
         case nbk4x4PlainC:
-            nb_cell_kernel_c(&nbvg->nbl_lists,
+            nbnxn_kernel_ref(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,
                              flags,
@@ -610,16 +610,16 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
         
         case nbk4x4SSE:
-            nb_cell_kernel(&nbvg->nbl_lists,
-                           nbvg->nbat, ic,
-                           fr->shift_vec,
-                           flags,
-                           clearF,
-                           fr->fshift[0],
-                           enerd->grpp.ener[egCOULSR],
-                           fr->bBHAM ?
-                           enerd->grpp.ener[egBHAMSR] :
-                           enerd->grpp.ener[egLJSR]);
+            nbnxn_kernel_sse(&nbvg->nbl_lists,
+                             nbvg->nbat, ic,
+                             fr->shift_vec,
+                             flags,
+                             clearF,
+                             fr->fshift[0],
+                             enerd->grpp.ener[egCOULSR],
+                             fr->bBHAM ?
+                             enerd->grpp.ener[egBHAMSR] :
+                             enerd->grpp.ener[egLJSR]);
             break;
 
         case nbk8x8x8CUDA:
@@ -629,7 +629,7 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbk8x8x8PlainC:
-            nsbox_generic_kernel(nbvg->nbl_lists.nbl[0],nbvg->nbat, ic,
+            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],nbvg->nbat, ic,
                                  fr->nblists[0].tab.scale,
                                  fr->nblists[0].tab.tab,
                                  clearF,
@@ -747,7 +747,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         inc_nrnb(nrnb,eNR_CGCM,homenr);
     }
 
-    gmx_nb_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
+    nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                   fr->shift_vec,nbv->grp[0].nbat);
     if (bCalcCGCM) {
         if (PAR(cr)) {
@@ -822,14 +822,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (nbv->nloc == 1 ||
             nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
         {
-            gmx_nb_atomdata_set(nbv->grp[eintLocal].nbat,eatAll,
+            nbnxn_atomdata_set(nbv->grp[eintLocal].nbat,eatAll,
                                 nbv->nbs,mdatoms,fr->cginfo);
         }
         else
         {
-            gmx_nb_atomdata_set(nbv->grp[eintLocal].nbat,eatLocal,
+            nbnxn_atomdata_set(nbv->grp[eintLocal].nbat,eatLocal,
                                 nbv->nbs,mdatoms,fr->cginfo);
-            gmx_nb_atomdata_set(nbv->grp[eintNonlocal].nbat,eatAll,
+            nbnxn_atomdata_set(nbv->grp[eintNonlocal].nbat,eatAll,
                                 nbv->nbs,mdatoms,fr->cginfo);
         }
     }
@@ -874,7 +874,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #endif    
         wallcycle_stop(wcycle, ewcNS);
     }
-    gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
+    nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
                                      nbv->grp[eintLocal].nbat);
 
 #ifdef GMX_GPU
@@ -896,7 +896,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         if (bDiffKernels)
         {
-            gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatAll,TRUE,x,
+            nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatAll,TRUE,x,
                                              nbv->grp[eintNonlocal].nbat);
         }
 
@@ -942,7 +942,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             }
             wallcycle_stop(wcycle,ewcMOVEX);
         }
-        gmx_nb_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
+        nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
                                          nbv->grp[eintNonlocal].nbat);
 
 #ifdef GMX_GPU
@@ -1129,13 +1129,13 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->grp[aloc].nbat,f);
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->grp[aloc].nbat,f);
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
             nbv->grp[aloc].nbl_lists.nnbl > 1)
         {
-            gmx_nb_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
+            nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
                                                       fr->fshift);
         }
     }
@@ -1171,7 +1171,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE);
                 wallcycle_stop(wcycle,ewcFORCE);
             }            
-            gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
+            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
                                             nbv->grp[eintNonlocal].nbat,f);
 
 #ifdef GMX_GPU
@@ -1247,7 +1247,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr));
             wallcycle_stop(wcycle,ewcFORCE);
         }
-        gmx_nb_atomdata_add_nbat_f_to_f(nbv->nbs,eatLocal,
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatLocal,
                                         nbv->grp[eintLocal].nbat,f);
     }
     

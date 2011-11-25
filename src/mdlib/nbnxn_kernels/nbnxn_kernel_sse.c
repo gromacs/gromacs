@@ -39,7 +39,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "force.h"
-#include "nb_cell_kernel.h"
+#include "nbnxn_kernel_sse.h"
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -47,35 +47,35 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 
 #undef CALC_COUL_RF
 
@@ -85,39 +85,39 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 #undef LJ_COMB_LB
-#include "nb_cell_kernel_sse2_single.h"
+#include "nbnxn_kernel_sse_single_outer.h"
 
 
-typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
-                                const gmx_nb_atomdata_t    *nbat,
+typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
+                                const nbnxn_atomdata_t     *nbat,
                                 const interaction_const_t  *ic,
                                 rvec                       *shift_vec,
                                 real                       *f,
@@ -125,8 +125,8 @@ typedef void (*p_nbk_func_ener)(const gmx_nblist_t         *nbl,
                                 real                       *Vvdw,
                                 real                       *Vc);
 
-typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
-                                  const gmx_nb_atomdata_t    *nbat,
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+                                  const nbnxn_atomdata_t     *nbat,
                                   const interaction_const_t  *ic,
                                   rvec                       *shift_vec,
                                   real                       *f,
@@ -135,30 +135,30 @@ typedef void (*p_nbk_func_noener)(const gmx_nblist_t         *nbl,
 enum { coultRF, coultTAB, coultNR };
 
 p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { nb_cell_kernel_sse2_single_rf_comb_geom_ener,
-    nb_cell_kernel_sse2_single_rf_comb_lb_ener,
-    nb_cell_kernel_sse2_single_rf_comb_none_ener },
-  { nb_cell_kernel_sse2_single_tab_comb_geom_ener,
-    nb_cell_kernel_sse2_single_tab_comb_lb_ener,
-    nb_cell_kernel_sse2_single_tab_comb_none_ener } };
+{ { nbnxn_kernel_sse_single_rf_comb_geom_ener,
+    nbnxn_kernel_sse_single_rf_comb_lb_ener,
+    nbnxn_kernel_sse_single_rf_comb_none_ener },
+  { nbnxn_kernel_sse_single_tab_comb_geom_ener,
+    nbnxn_kernel_sse_single_tab_comb_lb_ener,
+    nbnxn_kernel_sse_single_tab_comb_none_ener } };
 
 p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { nb_cell_kernel_sse2_single_rf_comb_geom_energrp,
-    nb_cell_kernel_sse2_single_rf_comb_lb_energrp,
-    nb_cell_kernel_sse2_single_rf_comb_none_energrp },
-  { nb_cell_kernel_sse2_single_tab_comb_geom_energrp,
-    nb_cell_kernel_sse2_single_tab_comb_lb_energrp,
-    nb_cell_kernel_sse2_single_tab_comb_none_energrp } };
+{ { nbnxn_kernel_sse_single_rf_comb_geom_energrp,
+    nbnxn_kernel_sse_single_rf_comb_lb_energrp,
+    nbnxn_kernel_sse_single_rf_comb_none_energrp },
+  { nbnxn_kernel_sse_single_tab_comb_geom_energrp,
+    nbnxn_kernel_sse_single_tab_comb_lb_energrp,
+    nbnxn_kernel_sse_single_tab_comb_none_energrp } };
 
 p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { nb_cell_kernel_sse2_single_rf_comb_geom_noener,
-    nb_cell_kernel_sse2_single_rf_comb_lb_noener,
-    nb_cell_kernel_sse2_single_rf_comb_none_noener },
-  { nb_cell_kernel_sse2_single_tab_comb_geom_noener,
-    nb_cell_kernel_sse2_single_tab_comb_lb_noener,
-    nb_cell_kernel_sse2_single_tab_comb_none_noener } };
+{ { nbnxn_kernel_sse_single_rf_comb_geom_noener,
+    nbnxn_kernel_sse_single_rf_comb_lb_noener,
+    nbnxn_kernel_sse_single_rf_comb_none_noener },
+  { nbnxn_kernel_sse_single_tab_comb_geom_noener,
+    nbnxn_kernel_sse_single_tab_comb_lb_noener,
+    nbnxn_kernel_sse_single_tab_comb_none_noener } };
 
-static void clear_f(const gmx_nb_atomdata_t *nbat,
+static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)
 {
     int i;
@@ -220,18 +220,18 @@ static void reduce_group_energies(int ng,
 }
 
 void
-nb_cell_kernel(gmx_nbl_lists_t            *nbl_list,
-               const gmx_nb_atomdata_t    *nbat,
-               const interaction_const_t  *ic,
-               rvec                       *shift_vec, 
-               int                        force_flags,
-               gmx_bool                   clearF,
-               real                       *fshift,
-               real                       *Vc,
-               real                       *Vvdw)
+nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
+                 const nbnxn_atomdata_t     *nbat,
+                 const interaction_const_t  *ic,
+                 rvec                       *shift_vec, 
+                 int                        force_flags,
+                 gmx_bool                   clearF,
+                 real                       *fshift,
+                 real                       *Vc,
+                 real                       *Vvdw)
 {
-    int          nnbl;
-    gmx_nblist_t **nbl;
+    int              nnbl;
+    nbnxn_pairlist_t **nbl;
     int coult;
     int nb;
 
@@ -250,7 +250,7 @@ nb_cell_kernel(gmx_nbl_lists_t            *nbl_list,
 #pragma omp parallel for schedule(static)
     for(nb=0; nb<nnbl; nb++)
     {
-        gmx_nb_atomdata_output_t *out;
+        nbnxn_atomdata_output_t *out;
         real *fshift_p;
 
         out = &nbat->out[nb];

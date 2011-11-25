@@ -47,7 +47,7 @@
 #include "maths.h"
 #include "vec.h"
 #include "pbc.h"
-#include "nsbox.h"
+#include "nbnxn_search.h"
 #include "gmx_cyclecounter.h"
 #include "gmxfio.h"
 
@@ -90,7 +90,7 @@
 #define NNBSBB_XXXX      (NNBSBB_D*DIM*SIMD_WIDTH)
 #endif
 
-#define NSBOX_SHIFT_BACKWARD
+#define NBNXN_SHIFT_BACKWARD
 
 
 /* This define is a lazy way to avoid interdependence of the grid
@@ -317,7 +317,7 @@ static int get_2log(int n)
     }
     if ((1<<log2) != n)
     {
-        gmx_fatal(FARGS,"nsbox naps (%d) is not a power of 2",n);
+        gmx_fatal(FARGS,"nbnxn naps (%d) is not a power of 2",n);
     }
 
     return log2;
@@ -386,7 +386,7 @@ void gmx_nbsearch_init(gmx_nbsearch_t * nbs_ptr,
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
     nbs->subc_dc = subc_in_range_sse8;
 #else
-    if (getenv("GMX_NSBOX_BB") != NULL)
+    if (getenv("GMX_NBNXN_BB") != NULL)
     {
         /* Use only bounding box sub cell pair distances,
          * fast, but produces slightly more sub cell pairs.
@@ -558,7 +558,7 @@ static void sort_atoms(int dim,gmx_bool Backwards,
          */
         zi = (int)((x[a[i]][dim] - h0)*invh);
 
-#ifdef DEBUG_NSBOX_GRIDDING
+#ifdef DEBUG_NBNXN_GRIDDING
         if (zi < 0 || zi >= nsort)
         {
             gmx_fatal(FARGS,"(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d\n",
@@ -963,7 +963,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
     }
 }
 
-void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
+void sort_on_lj(nbnxn_atomdata_t *nbat,int naps,
                 int a0,int a1,const int *atinfo,
                 int *order,
                 int *flags)
@@ -1027,7 +1027,7 @@ void sort_on_lj(gmx_nb_atomdata_t *nbat,int naps,
 
 void fill_cell(const gmx_nbsearch_t nbs,
                gmx_nbs_grid_t *grid,
-               gmx_nb_atomdata_t *nbat,
+               nbnxn_atomdata_t *nbat,
                int a0,int a1,
                const int *atinfo,
                rvec *x,
@@ -1138,7 +1138,7 @@ static void sort_columns_simple(const gmx_nbsearch_t nbs,
                                 int a0,int a1,
                                 const int *atinfo,
                                 rvec *x,
-                                gmx_nb_atomdata_t *nbat,
+                                nbnxn_atomdata_t *nbat,
                                 int cxy_start,int cxy_end,
                                 int *sort_work)
 {
@@ -1206,7 +1206,7 @@ static void sort_columns_supersub(const gmx_nbsearch_t nbs,
                                   int a0,int a1,
                                   const int *atinfo,
                                   rvec *x,
-                                  gmx_nb_atomdata_t *nbat,
+                                  nbnxn_atomdata_t *nbat,
                                   int cxy_start,int cxy_end,
                                   int *sort_work)
 {
@@ -1357,7 +1357,7 @@ static void calc_column_indices(gmx_nbs_grid_t *grid,
              */
             cell[i] = cx*grid->ncy + cy;
 
-#ifdef DEBUG_NSBOX_GRIDDING
+#ifdef DEBUG_NBNXN_GRIDDING
             if (cell[i] < 0 || cell[i] >= grid->ncx*grid->ncy)
             {
                 gmx_fatal(FARGS,
@@ -1385,7 +1385,7 @@ static void calc_cell_indices(const gmx_nbsearch_t nbs,
                               const int *atinfo,
                               rvec *x,
                               const int *move,
-                              gmx_nb_atomdata_t *nbat)
+                              nbnxn_atomdata_t *nbat)
 {
     int  n0,n1,i;
     int  cx,cy,cxy,ncz_max,ncz;
@@ -1578,7 +1578,7 @@ static void nb_realloc_real(real **ptr,int n,
     ma((void **)ptr,n*sizeof(**ptr));
 }
 
-static void gmx_nb_atomdata_realloc(gmx_nb_atomdata_t *nbat,int n)
+static void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
 {
     int t;
 
@@ -1628,7 +1628,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
                               rvec *x,
                               int nmoved,int *move,
                               gmx_bool simple,
-                              gmx_nb_atomdata_t *nbat)
+                              nbnxn_atomdata_t *nbat)
 {
     gmx_nbs_grid_t *grid;
     int n;
@@ -1714,7 +1714,7 @@ void gmx_nbsearch_put_on_grid(gmx_nbsearch_t nbs,
 
     if (nc_max*grid->na_stx > nbat->nalloc)
     {
-        gmx_nb_atomdata_realloc(nbat,nc_max*grid->na_stx);
+        nbnxn_atomdata_realloc(nbat,nc_max*grid->na_stx);
     }
     
     calc_cell_indices(nbs,dd_zone,grid,a0,a1,atinfo,x,move,nbat);
@@ -1732,7 +1732,7 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
                                        const int *atinfo,
                                        rvec *x,
                                        gmx_bool simple,
-                                       gmx_nb_atomdata_t *nbat)
+                                       nbnxn_atomdata_t *nbat)
 {
     int  zone,d;
     rvec c0,c1;
@@ -1759,7 +1759,7 @@ void gmx_nbsearch_put_on_grid_nonlocal(gmx_nbsearch_t nbs,
 }
 
 void gmx_nbsearch_grid_simple(gmx_nbsearch_t nbs,
-                              gmx_nb_atomdata_t *nbat)
+                              nbnxn_atomdata_t *nbat)
 {
     gmx_nbs_grid_t *grid;
     real *bbcz,*bb;
@@ -2247,17 +2247,17 @@ static gmx_bool subc_in_range_sse8(int naps,
 #endif
 }
 
-static int nbl_sj(const gmx_nblist_t *nbl,int sj_ind)
+static int nbl_sj(const nbnxn_pairlist_t *nbl,int sj_ind)
 {
     return nbl->sj4[sj_ind>>2].sj[sj_ind & 3];
 }
 
-static unsigned nbl_imask0(const gmx_nblist_t *nbl,int sj_ind)
+static unsigned nbl_imask0(const nbnxn_pairlist_t *nbl,int sj_ind)
 {
     return nbl->sj4[sj_ind>>2].imei[0].imask;
 }
 
-static void check_excl_space(gmx_nblist_t *nbl,int extra)
+static void check_excl_space(nbnxn_pairlist_t *nbl,int extra)
 {
     if (nbl->nexcl+extra > nbl->excl_nalloc)
     {
@@ -2269,7 +2269,7 @@ static void check_excl_space(gmx_nblist_t *nbl,int extra)
     }
 }
 
-static void check_subcell_list_space_simple(gmx_nblist_t *nbl,
+static void check_subcell_list_space_simple(nbnxn_pairlist_t *nbl,
                                             int ncell)
 {
     int cj_max;
@@ -2286,7 +2286,7 @@ static void check_subcell_list_space_simple(gmx_nblist_t *nbl,
     }
 }
 
-static void check_subcell_list_space_supersub(gmx_nblist_t *nbl,
+static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
                                               int nsupercell)
 {
     int nsj4_max,j4,j,w,t;
@@ -2346,7 +2346,7 @@ static void set_no_excls(gmx_nbl_excl_t *excl)
     }
 }
 
-static void gmx_nblist_init(gmx_nblist_t *nbl,
+static void gmx_nblist_init(nbnxn_pairlist_t *nbl,
                             gmx_bool simple,
                             gmx_nbat_alloc_t *alloc,
                             gmx_nbat_free_t  *free)
@@ -2403,7 +2403,7 @@ static void gmx_nblist_init(gmx_nblist_t *nbl,
     snew_aligned(nbl->work->d2,NSUBCELL,16);
 }
 
-void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
+void gmx_nbl_list_init(nbnxn_pairlist_set_t *nbl_list,
                        gmx_bool simple, gmx_bool combined,
                        gmx_nbat_alloc_t *alloc,
                        gmx_nbat_free_t  *free)
@@ -2439,7 +2439,7 @@ void gmx_nbl_list_init(gmx_nbl_lists_t *nbl_list,
     }
 }
 
-static void print_nblist_statistics_simple(FILE *fp,const gmx_nblist_t *nbl,
+static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
                                            const gmx_nbsearch_t nbs,real rl)
 {
     const gmx_nbs_grid_t *grid;
@@ -2489,7 +2489,7 @@ static void print_nblist_statistics_simple(FILE *fp,const gmx_nblist_t *nbl,
     }
 }
 
-static void print_nblist_statistics_supersub(FILE *fp,const gmx_nblist_t *nbl,
+static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nbl,
                                              const gmx_nbsearch_t nbs,real rl)
 {
     const gmx_nbs_grid_t *grid;
@@ -2541,7 +2541,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const gmx_nblist_t *nbl,
 }
 
 static void print_supersub_nsp(const char *fn,
-                               const gmx_nblist_t *nbl,
+                               const nbnxn_pairlist_t *nbl,
                                int iloc)
 {
     char buf[STRLEN];
@@ -2570,7 +2570,7 @@ static void print_supersub_nsp(const char *fn,
     fclose(fp);
 }
 
-static void low_get_nbl_exclusions(gmx_nblist_t *nbl,int sj4,
+static void low_get_nbl_exclusions(nbnxn_pairlist_t *nbl,int sj4,
                                    int warp,gmx_nbl_excl_t **excl)
 {
     if (nbl->sj4[sj4].imei[warp].excl_ind == 0)
@@ -2588,7 +2588,7 @@ static void low_get_nbl_exclusions(gmx_nblist_t *nbl,int sj4,
     }
 }
 
-static void get_nbl_exclusions_1(gmx_nblist_t *nbl,int sj4,
+static void get_nbl_exclusions_1(nbnxn_pairlist_t *nbl,int sj4,
                                  int warp,gmx_nbl_excl_t **excl)
 {
     if (nbl->sj4[sj4].imei[warp].excl_ind == 0)
@@ -2599,7 +2599,7 @@ static void get_nbl_exclusions_1(gmx_nblist_t *nbl,int sj4,
     low_get_nbl_exclusions(nbl,sj4,warp,excl);
 }
 
-static void get_nbl_exclusions_2(gmx_nblist_t *nbl,int sj4,
+static void get_nbl_exclusions_2(nbnxn_pairlist_t *nbl,int sj4,
                                  gmx_nbl_excl_t **excl_w0,
                                  gmx_nbl_excl_t **excl_w1)
 {
@@ -2610,7 +2610,7 @@ static void get_nbl_exclusions_2(gmx_nblist_t *nbl,int sj4,
     low_get_nbl_exclusions(nbl,sj4,1,excl_w1);
 }
 
-static void set_self_and_newton_excls(gmx_nblist_t *nbl,
+static void set_self_and_newton_excls(nbnxn_pairlist_t *nbl,
                                       int sj4_ind,int sj_offset,
                                       int si)
 {
@@ -2647,7 +2647,7 @@ static void set_self_and_newton_excls(gmx_nblist_t *nbl,
 }
 
 static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
-                                     gmx_nblist_t *nbl,
+                                     nbnxn_pairlist_t *nbl,
                                      int ci,int cjf,int cjl,
                                      gmx_bool remove_sub_diag,
                                      const real *x_j,
@@ -2759,7 +2759,7 @@ static void make_subcell_list_simple(const gmx_nbs_grid_t *gridj,
 }
 
 static void make_subcell_list_simple_xxxx(const gmx_nbs_grid_t *gridj,
-                                          gmx_nblist_t *nbl,
+                                          nbnxn_pairlist_t *nbl,
                                           int ci,int cjf,int cjl,
                                           gmx_bool remove_sub_diag,
                                           const real *x_j,
@@ -2965,7 +2965,7 @@ static void make_subcell_list_simple_xxxx(const gmx_nbs_grid_t *gridj,
 static void make_subcell_list(const gmx_nbsearch_t nbs,
                               const gmx_nbs_grid_t *gridi,
                               const gmx_nbs_grid_t *gridj,
-                              gmx_nblist_t *nbl,
+                              nbnxn_pairlist_t *nbl,
                               int ci,int cj,
                               gmx_bool ci_equals_cj,
                               int stride,const real *x,
@@ -3102,7 +3102,7 @@ static void make_subcell_list(const gmx_nbsearch_t nbs,
 }
 
 static void set_ci_excls(const gmx_nbsearch_t nbs,
-                         gmx_nblist_t *nbl,
+                         nbnxn_pairlist_t *nbl,
                          gmx_bool diagRemoved,
                          int na_tx_2log,
                          const gmx_nbl_ci_t *nbl_ci,
@@ -3271,7 +3271,7 @@ static void set_ci_excls(const gmx_nbsearch_t nbs,
     }
 }
 
-static void nb_realloc_ci(gmx_nblist_t *nbl,int n)
+static void nb_realloc_ci(nbnxn_pairlist_t *nbl,int n)
 {
     nbl->ci_nalloc = over_alloc_small(n);
     nb_realloc_void((void **)&nbl->ci,
@@ -3280,7 +3280,7 @@ static void nb_realloc_ci(gmx_nblist_t *nbl,int n)
                     nbl->alloc,nbl->free);
 }
 
-static void new_ci_entry(gmx_nblist_t *nbl,int ci,int shift,int flags,
+static void new_ci_entry(nbnxn_pairlist_t *nbl,int ci,int shift,int flags,
                          gmx_nbl_work_t *work)
 {
     if (nbl->nci + 1 > nbl->ci_nalloc)
@@ -3341,7 +3341,7 @@ static void sort_cj_excl(gmx_nbl_cj_t *cj,int ncj,
     }
 }
 
-static void close_ci_entry_simple(gmx_nblist_t *nbl)
+static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
 {
     int jlen;
 
@@ -3357,7 +3357,7 @@ static void close_ci_entry_simple(gmx_nblist_t *nbl)
     }
 }
 
-static void split_ci_entry(gmx_nblist_t *nbl,
+static void split_ci_entry(nbnxn_pairlist_t *nbl,
                            int nsp_max_av,gmx_bool progBal,int nc_bal,
                            int thread,int nthread)
 {
@@ -3447,7 +3447,7 @@ static void split_ci_entry(gmx_nblist_t *nbl,
     }
 }
 
-static void close_ci_entry_supersub(gmx_nblist_t *nbl,
+static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
                                     int nsp_max_av,
                                     gmx_bool progBal,int nc_bal,
                                     int thread,int nthread)
@@ -3476,7 +3476,7 @@ static void close_ci_entry_supersub(gmx_nblist_t *nbl,
     }
 }
 
-static void sync_work(gmx_nblist_t *nbl)
+static void sync_work(nbnxn_pairlist_t *nbl)
 {
     if (!nbl->simple)
     {
@@ -3485,7 +3485,7 @@ static void sync_work(gmx_nblist_t *nbl)
     }
 }
 
-static void clear_nblist(gmx_nblist_t *nbl)
+static void clear_nblist(nbnxn_pairlist_t *nbl)
 {
     nbl->nci          = 0;
     nbl->ncj          = 0;
@@ -3769,7 +3769,7 @@ static int get_nsubpair_max(const gmx_nbsearch_t nbs,
     return nsubpair_max;
 }
 
-static void print_nblist_ci_cj(FILE *fp,const gmx_nblist_t *nbl)
+static void print_nblist_ci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j;
 
@@ -3788,7 +3788,7 @@ static void print_nblist_ci_cj(FILE *fp,const gmx_nblist_t *nbl)
     }
 }
 
-static void print_nblist_ci_sj(FILE *fp,const gmx_nblist_t *nbl)
+static void print_nblist_ci_sj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j4,j;
 
@@ -3810,13 +3810,13 @@ static void print_nblist_ci_sj(FILE *fp,const gmx_nblist_t *nbl)
     }
 }
 
-static void combine_nblists(int nnbl,gmx_nblist_t **nbl,
-                            gmx_nblist_t *nblc)
+static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
+                            nbnxn_pairlist_t *nblc)
 {
     int nci,nsj4,nsi,nexcl;
     int n,i,j4;
     int sj4_offset,si_offset,excl_offset;
-    const gmx_nblist_t *nbli;
+    const nbnxn_pairlist_t *nbli;
 
     nci   = nblc->nci;
     nsj4  = nblc->nsj4;
@@ -3965,14 +3965,14 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                           const gmx_nbs_grid_t *gridi,
                                           const gmx_nbs_grid_t *gridj,
                                           gmx_nbs_work_t *work,
-                                          const gmx_nb_atomdata_t *nbat,
+                                          const nbnxn_atomdata_t *nbat,
                                           const t_blocka *excl,
                                           real rlist,
                                           int nsubpair_max,
                                           gmx_bool progBal,
                                           int min_ci_balanced,
                                           int th,int nth,
-                                          gmx_nblist_t *nbl)
+                                          nbnxn_pairlist_t *nbl)
 {
     matrix box;
     real rl2,rbb2;
@@ -4217,7 +4217,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                 {
                     shift = XYZ2IS(tx,ty,tz);
 
-#ifdef NSBOX_SHIFT_BACKWARD
+#ifdef NBNXN_SHIFT_BACKWARD
                     if (gridi == gridj && shift > CENTRAL)
                     {
                         continue;
@@ -4250,7 +4250,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                     new_ci_entry(nbl,cell0_i+ci,shift,flags_i[ci],
                                  nbl->work);
 
-#ifndef NSBOX_SHIFT_BACKWARD
+#ifndef NBNXN_SHIFT_BACKWARD
                     if (!nbl->TwoWay && cxf < ci_x)
 #else
                     if (!nbl->TwoWay && shift == CENTRAL && gridi == gridj &&
@@ -4289,7 +4289,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                             d2zx += sqr(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
                         }
 
-#ifndef NSBOX_SHIFT_BACKWARD
+#ifndef NBNXN_SHIFT_BACKWARD
                         if (!nbl->TwoWay && gridi == gridj &&
                             cx == 0 && cyf < ci_y)
 #else
@@ -4311,7 +4311,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                         {
                             c0 = gridj->cxy_ind[cx*gridj->ncy+cy];
                             c1 = gridj->cxy_ind[cx*gridj->ncy+cy+1];
-#ifdef NSBOX_SHIFT_BACKWARD
+#ifdef NBNXN_SHIFT_BACKWARD
                             if (!nbl->TwoWay && gridi == gridj &&
                                 shift == CENTRAL && c0 < ci)
                             {
@@ -4360,7 +4360,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                     cl++;
                                 }
 
-#ifdef NSBOX_REFCODE
+#ifdef NBNXN_REFCODE
                                 {
                                     /* Simple reference code */
                                     int k;
@@ -4389,7 +4389,7 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
                                     /* We want each atom/cell pair only once,
                                      * only use cj >= ci.
                                      */
-#ifndef NSBOX_SHIFT_BACKWARD
+#ifndef NBNXN_SHIFT_BACKWARD
                                     cf = max(cf,ci);
 #else
                                     if (shift == CENTRAL)
@@ -4484,11 +4484,11 @@ static void gmx_nbsearch_make_nblist_part(const gmx_nbsearch_t nbs,
 }
 
 void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
-                              const gmx_nb_atomdata_t *nbat,
+                              const nbnxn_atomdata_t *nbat,
                               const t_blocka *excl,
                               real rlist,
                               int min_ci_balanced,
-                              gmx_nbl_lists_t *nbl_list,
+                              nbnxn_pairlist_set_t *nbl_list,
                               int iloc)
 {
     const gmx_nbs_grid_t *gridi,*gridj;
@@ -4496,7 +4496,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     int nsubpair_max;
     int nth,th;
     int nnbl;
-    gmx_nblist_t **nbl;
+    nbnxn_pairlist_t **nbl;
     gmx_bool CombineNBLists;
 
     nnbl            = nbl_list->nnbl;
@@ -4646,7 +4646,7 @@ void gmx_nbsearch_make_nblist(const gmx_nbsearch_t nbs,
     }
 }
 
-static void gmx_nb_atomdata_output_init(gmx_nb_atomdata_output_t *out,
+static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
                                         gmx_bool simple,
                                         int nenergrp,
                                         gmx_nbat_alloc_t *ma)
@@ -4668,7 +4668,7 @@ static void gmx_nb_atomdata_output_init(gmx_nb_atomdata_output_t *out,
     }
 }
 
-static void set_combination_rule_data(gmx_nb_atomdata_t *nbat)
+static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
 {
     int  nt,i,j;
     real c6,c12;
@@ -4727,8 +4727,8 @@ static void set_combination_rule_data(gmx_nb_atomdata_t *nbat)
     }
 }
 
-void gmx_nb_atomdata_init(FILE *fp,
-                          gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_init(FILE *fp,
+                          nbnxn_atomdata_t *nbat,
                           gmx_bool simple,
                           gmx_bool XFormatXXXX,
                           int ntype,const real *nbfp,
@@ -4761,7 +4761,7 @@ void gmx_nb_atomdata_init(FILE *fp,
 
     if (debug)
     {
-        fprintf(debug,"There are %d atom types in the system, adding one for gmx_nb_atomdata_t\n",ntype);
+        fprintf(debug,"There are %d atom types in the system, adding one for nbnxn_atomdata_t\n",ntype);
     }
     nbat->ntype = ntype + 1;
     nbat->alloc((void **)&nbat->nbfp,
@@ -4916,7 +4916,7 @@ void gmx_nb_atomdata_init(FILE *fp,
     nbat->nalloc  = 0;
     for(i=0; i<nbat->nout; i++)
     {
-        gmx_nb_atomdata_output_init(&nbat->out[i],
+        nbnxn_atomdata_output_init(&nbat->out[i],
                                     simple,nbat->nenergrp,nbat->alloc);
     }
 }
@@ -4941,7 +4941,7 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
     }
 }
 
-static void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
+static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
                                           int ngrid,
                                           const gmx_nbsearch_t nbs,
                                           const int *type)
@@ -4972,7 +4972,7 @@ static void gmx_nb_atomdata_set_atomtypes(gmx_nb_atomdata_t *nbat,
     }
 }
 
-static void gmx_nb_atomdata_set_charges(gmx_nb_atomdata_t *nbat,
+static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
                                         int ngrid,
                                         const gmx_nbsearch_t nbs,
                                         const real *charge)
@@ -5057,7 +5057,7 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
     }
 }
 
-static void gmx_nb_atomdata_set_energygroups(gmx_nb_atomdata_t *nbat,
+static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t *nbat,
                                              int ngrid,
                                              const gmx_nbsearch_t nbs,
                                              const int *atinfo)
@@ -5094,7 +5094,7 @@ static void gmx_nb_atomdata_set_energygroups(gmx_nb_atomdata_t *nbat,
     }
 }
 
-void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
                          int aloc,
                          const gmx_nbsearch_t nbs,
                          const t_mdatoms *mdatoms,
@@ -5111,19 +5111,19 @@ void gmx_nb_atomdata_set(gmx_nb_atomdata_t *nbat,
         ngrid = nbs->ngrid;
     }
 
-    gmx_nb_atomdata_set_atomtypes(nbat,ngrid,nbs,mdatoms->typeA);
+    nbnxn_atomdata_set_atomtypes(nbat,ngrid,nbs,mdatoms->typeA);
 
-    gmx_nb_atomdata_set_charges(nbat,ngrid,nbs,mdatoms->chargeA);
+    nbnxn_atomdata_set_charges(nbat,ngrid,nbs,mdatoms->chargeA);
 
     if (nbat->nenergrp > 1)
     {
-        gmx_nb_atomdata_set_energygroups(nbat,ngrid,nbs,atinfo);
+        nbnxn_atomdata_set_energygroups(nbat,ngrid,nbs,atinfo);
     }
 }
 
-void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
+void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
-                                   gmx_nb_atomdata_t *nbat)
+                                   nbnxn_atomdata_t *nbat)
 {
     int i;
 
@@ -5134,11 +5134,11 @@ void gmx_nb_atomdata_copy_shiftvec(gmx_bool dynamic_box,
     }
 }
 
-void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
+void nbnxn_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
                                       int aloc,
                                       gmx_bool FillLocal,
                                       rvec *x,
-                                      gmx_nb_atomdata_t *nbat)
+                                      nbnxn_atomdata_t *nbat)
 {
     int g0=0,g1=0,g,cxy,na,ash,na_fill;
     const gmx_nbs_grid_t *grid;
@@ -5194,9 +5194,9 @@ void gmx_nb_atomdata_copy_x_to_nbat_x(const gmx_nbsearch_t nbs,
     }
 }
 
-static void gmx_nb_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
-                                                 const gmx_nb_atomdata_t *nbat,
-                                                 gmx_nb_atomdata_output_t *out,
+static void nbnxn_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
+                                                 const nbnxn_atomdata_t *nbat,
+                                                 nbnxn_atomdata_output_t *out,
                                                  int nfa,
                                                  int a0,int a1,
                                                  rvec *f)
@@ -5274,9 +5274,9 @@ static void gmx_nb_atomdata_add_nbat_f_to_f_part(const gmx_nbsearch_t nbs,
     }
 }
 
-void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
+void nbnxn_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
                                      int aloc,
-                                     const gmx_nb_atomdata_t *nbat,
+                                     const nbnxn_atomdata_t *nbat,
                                      rvec *f)
 {
     int a0,na;
@@ -5304,7 +5304,7 @@ void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
 #pragma omp parallel for schedule(static)
     for(th=0; th<nth; th++)
     {
-        gmx_nb_atomdata_add_nbat_f_to_f_part(nbs,nbat,
+        nbnxn_atomdata_add_nbat_f_to_f_part(nbs,nbat,
                                              nbat->out,
                                              nbat->nout,
                                              a0+((th+0)*na)/nth,
@@ -5315,10 +5315,10 @@ void gmx_nb_atomdata_add_nbat_f_to_f(const gmx_nbsearch_t nbs,
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }
 
-void gmx_nb_atomdata_add_nbat_fshift_to_fshift(const gmx_nb_atomdata_t *nbat,
+void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                                rvec *fshift)
 {
-    const gmx_nb_atomdata_output_t *out;
+    const nbnxn_atomdata_output_t *out;
     int  nth,th;
     int  s;
     rvec sum;

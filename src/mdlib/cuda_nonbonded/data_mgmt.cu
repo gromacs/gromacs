@@ -371,7 +371,7 @@ void cu_init_ff_data(FILE *fplogi,
 }
 
 void cu_init_nblist(cu_nonbonded_t cu_nb, 
-                    const gmx_nblist_t *h_nblist,
+                    const nbnxn_pairlist_t *h_nblist,
                     int iloc)
 {
     char         sbuf[STRLEN];
@@ -426,7 +426,7 @@ void cu_init_nblist(cu_nonbonded_t cu_nb,
 }
 
 void cu_move_shift_vec(cu_nonbonded_t cu_nb, 
-                       const gmx_nb_atomdata_t *nbatom)
+                       const nbnxn_atomdata_t *nbatom)
 {
     cu_atomdata_t   *adat = cu_nb->atomdata;
 
@@ -471,7 +471,7 @@ void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb)
 
 /* TODO: add gmx over_alloc call */
 void cu_init_atomdata(cu_nonbonded_t cu_nb,
-                      const gmx_nb_atomdata_t *nbat)
+                      const nbnxn_atomdata_t *nbat)
 {
     cudaError_t stat;
     int         nalloc, natoms;
@@ -659,7 +659,7 @@ int cu_calc_min_ci_balanced(cu_nonbonded_t cu_nb)
 /* Upload asynchronously to the GPU the coordinate+charge array.
  * XXX not used  
  */
-void cu_move_xq(cu_nonbonded_t cu_nb, const gmx_nb_atomdata_t *nbat, int aloc)
+void cu_move_xq(cu_nonbonded_t cu_nb, const nbnxn_atomdata_t *nbat, int aloc)
 {
     int iloc = -1; 
 
