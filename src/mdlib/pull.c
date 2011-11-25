@@ -322,7 +322,7 @@ static void get_pullgrps_dr(const t_pull *pull,const t_pbc *pbc,int g,double t,
     for(m=0; m<DIM; m++)
     {
         dr[m] *= pull->dim[m];
-        dr2 += dr[m];
+        dr2 += dr[m]*dr[m];
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
