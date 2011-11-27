@@ -872,7 +872,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 
