@@ -69,12 +69,6 @@ const char *longs_ffn[effnNR] = {
   "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
 
-extern gmx_bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
-		   int ma,int lista[],int mfit,real **covar,real **alpha,
-		   real *chisq,
-		   void (*funcs)(real x,real a[],real *y,real dyda[]),
-		   real *alamda);
-
 extern gmx_bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		       void (*funcs)(real, real [], real *, real []), 
