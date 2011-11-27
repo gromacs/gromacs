@@ -65,4 +65,4 @@ ZN          1
 
 [ atoms ]
 ; id    at type     res nr  residu name at name  cg nr  charge   
-1       ZN          1       ZN          ZN       1      -2   
+1       ZN          1       ZN          ZN       1      2

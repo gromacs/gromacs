@@ -906,7 +906,9 @@ int gmx_analyze(int argc,char *argv[])
     "and fourth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
 
-    "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
+    "Option [TT]-ac[tt] produces the autocorrelation function(s).",
+    "Be sure that the time interval between data points is",
+    "much shorter than the time scale of the autocorrelation.[PAR]",
     
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
     "i/2 periods. The formula is:[BR]"

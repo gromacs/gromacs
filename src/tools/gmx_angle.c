@@ -56,7 +56,7 @@
 
 
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
-                         real dt)
+                         real *time)
 {
   int    i,j,k,l,m,na;
   t_fileio *trn;
@@ -84,7 +84,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
 	}
       }
     }
-    fwrite_trn(trn,i,(real)i*dt,0,box,na,x,NULL,NULL);
+    fwrite_trn(trn,i,time[i],0,box,na,x,NULL,NULL);
   }
   close_trn(trn);
   sfree(x);
@@ -213,7 +213,11 @@ int gmx_g_angle(int argc,char *argv[])
   bAver=opt2bSet("-ov",NFILE,fnm);
   bTrans=opt2bSet("-ot",NFILE,fnm);
   bFrac=opt2bSet("-of",NFILE,fnm);
-
+  if (bTrans && opt[0][0] != 'd') {
+    fprintf(stderr, "Option -ot should only accompany -type dihedral. Disabling -ot.\n");
+    bTrans = FALSE;
+  }
+  
   if (bChandler && !bCorr)
     bCorr=TRUE;
     
@@ -265,7 +269,7 @@ int gmx_g_angle(int argc,char *argv[])
     ffclose(out);
   }
   if (opt2bSet("-or",NFILE,fnm)) 
-    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),dt);
+    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),time);
   
   if (bFrac) {
     sprintf(title,"Trans fraction: %s",grpname);
