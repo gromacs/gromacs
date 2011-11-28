@@ -430,7 +430,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
     if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
             int fftwflags=FFTW_DESTROY_INPUT;
-            fftw_iodim dims[3];
+            FFTW(iodim) dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
 
             FFTW_LOCK;
