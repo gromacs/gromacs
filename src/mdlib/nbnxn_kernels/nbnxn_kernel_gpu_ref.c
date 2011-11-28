@@ -91,7 +91,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     int *         type;
     const gmx_nbl_excl_t *excl[2];
 
-    int           npair;
+    int           npair_tot,npair;
+    int           nhwu,nhwu_pruned;
 
     if (clearF)
     {
@@ -142,7 +143,10 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     x = nbat->x;
 
-    npair = 0;
+    npair_tot   = 0;
+    nhwu        = 0;
+    nhwu_pruned = 0;
+
     for(n=0; n<nbl->nci; n++)
     {
         nbln = &nbl->ci[n];
@@ -175,6 +179,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                     {
                         si               = ci*NSUBCELL + im;
 
+                        npair = 0;
                         for(ic=0; ic<nbl->naps; ic++)
                         {
                             ia               = si*nbl->naps + ic;
@@ -361,6 +366,22 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fshift[ish3]     = fshift[ish3]   + fix;
                             fshift[ish3+1]   = fshift[ish3+1] + fiy;
                             fshift[ish3+2]   = fshift[ish3+2] + fiz;
+
+                            /* Count in half work-units.
+                             * In CUDA one work-unit is 2 warps.
+                             */
+                            if ((ic+1) % (nbl->naps/2) == 0)
+                            {
+                                npair_tot += npair;
+
+                                nhwu++;
+                                if (npair > 0)
+                                {
+                                    nhwu_pruned++;
+                                }
+
+                                npair = 0;
+                            }
                         }
                     }
                 }
@@ -375,6 +396,16 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     if (debug)
     {
-        fprintf(debug,"generic kernel total real atom pairs: %d\n",npair);
+        fprintf(debug,"number of half %dx%d atom pairs: %d pruned: %d fraction %4.2f\n",
+                nbl->naps,nbl->naps,
+                nhwu,nhwu_pruned,nhwu_pruned/(double)nhwu);
+        fprintf(debug,"generic kernel pair interactions:            %d\n",
+                nhwu*nbl->naps/2*nbl->naps);
+        fprintf(debug,"generic kernel post-prune pair interactions: %d\n",
+                nhwu_pruned*nbl->naps/2*nbl->naps);
+        fprintf(debug,"generic kernel non-zero pair interactions:   %d\n",
+                npair_tot);
+        fprintf(debug,"ratio non-zero/post-prune pair interactions: %4.2f\n",
+                npair_tot/(double)(nhwu_pruned*nbl->naps/2*nbl->naps));
     }
 }
