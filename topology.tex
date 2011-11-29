@@ -867,7 +867,7 @@ from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90$^{\rm o}$.
 One hydrogen atom (n) is generated at a distance of 0.1 nm from atom
 i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans.
 
-\item[3]{\em two planar hydrogens, {\eg} -NH{$_2$}}\\
+\item[3]{\em two planar hydrogens, {\eg} ethylene -C=CH{$_2$}, or amide -C(=O)NH{$_2$}}\\
 Two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
 i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
 (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
@@ -918,6 +918,12 @@ Three or four control atoms (i,j,k,l), where the first always is the
 atom to which the H atoms are connected. The other two or three depend
 on the code selected. For water, there is only one control atom.
 \end{itemize}
+
+Some more exotic cases can be approximately constructed from the above tools,
+and with suitable use of energy minimization are good enough for beginning
+MD simulations. For example secondary amine hydrogen, nitrenyl hydrogen
+(C\nolinebreak[4]=\nolinebreak[4]NH) and even ethynyl hydrogen could be
+approximately constructed using method 2 above for hydroxyl hydrogen.
 
 \subsection{Termini database}
 \label{subsec:tdb}
