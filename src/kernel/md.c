@@ -179,7 +179,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,Etitration=0;
+	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,Etitration;
 	real        vetanew = 0;
     double      cycles;
 	real        saved_conserved_quantity = 0;
@@ -995,16 +995,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        (bDoDHDL ? GMX_FORCE_DHDL : 0)
             );
 
-        if (!bFirstStep)
-        {
-            if (fr->bTitration && do_per_step(step,ir->titration_freq))
-            { 
-                Etitration +=
-                    do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
-                                 mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
-                                 enerd->term[F_TEMP],step,ekind,force_vir);
-            }
+        if (!bFirstStep && (fr->bTitration && do_per_step(step,ir->titration_freq)))
+        { 
+            Etitration =
+                do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
+                             mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
+                             enerd->term[F_TEMP],step,ekind,force_vir,f);
         }
+        else 
+            Etitration = 0;
         
         /* Keep inactive hydrogens from drifting away. */
         if (fr->bTitration)
@@ -1046,9 +1045,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
-        enerd->term[F_EQM]   = Etitration;
-        enerd->term[F_EPOT] += Etitration;
-    
+        
         GMX_BARRIER(cr->mpi_comm_mygroup);
         
         if (bTCR)
@@ -1084,7 +1081,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
-                          cr,nrnb,constr,&top->idef);
+                          cr,nrnb,constr,&top->idef,Etitration);
             
             if (bIterations)
             {
@@ -1498,7 +1495,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_coords(fplog,step,ir,mdatoms,state,f,
                                   fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
-                                  cr,nrnb,constr,&top->idef);
+                                  cr,nrnb,constr,&top->idef,Etitration);
                 }
 
                 /* Above, initialize just copies ekinh into ekin,
@@ -1512,7 +1509,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,Etitration);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
                 update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
@@ -1536,7 +1533,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
                     update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
+                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,Etitration);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */

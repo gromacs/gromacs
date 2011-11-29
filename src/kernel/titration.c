@@ -3140,22 +3140,30 @@ real distance_dependence(rvec x, rvec c, real rc, t_pbc *pbc)
         return 0.0;
 }  /* distance_dependence */
 
-static real check_ekin(rvec *v, t_mdatoms *md)
+static real check_ekin(rvec *v, t_mdatoms *md,char *title)
 {
-    int  i,j;
-    real vsq,ekin=0;
-
+    int    i,j,k;
+    real   m_2,ekin;
+    tensor ekt;
+    
+    clear_mat(ekt);
     /* WARNING this routine is probably not needed */
     for(i=0;i<md->nr;i++)
     {
-        vsq = 0;
+        m_2 = 0.5*md->massT[i];
         for(j=0;j<DIM;j++)
         {
-            vsq += (v[i][j]*v[i][j]);
-        }
-        ekin += 0.5*md->massT[i]*vsq;
+            for(k=0; (k<DIM); k++)
+            {
+                ekt[j][k] += v[i][j]*v[i][k];
+            }
+        }   
     }
-  
+    ekin = trace(ekt);
+    if (debug) {
+        pr_rvecs(debug,0,title,ekt,DIM);
+        fprintf(debug,"title: scalar ekin: %g\n",ekin);
+    }
     return ekin;
 } /* check_ekin */
 
@@ -3274,7 +3282,8 @@ static gmx_bool scale_velocities(FILE *fplog,
                                  titration_t T,gmx_large_int_t step,
                                  gmx_constr_t constr,t_pbc *pbc,  
                                  t_hop *hop,gmx_ekindata_t *ekindata,
-                                 real veta,real vetanew,rvec *f)
+                                 real veta,real vetanew,rvec *f_hop,
+                                 rvec *f_old)
 {
     /* takes as input the total MM potential energy change for the hop
        and alters the kinetic energy so that the total energy remains
@@ -3282,24 +3291,29 @@ static gmx_bool scale_velocities(FILE *fplog,
     */
     gmx_bool bPscal, bConverged, bSufficientEkin;
     int      donor_atom, acceptor_atom, iter, maxiter, i, m;
-    real     ekin_old, ekin_new, dvdl, ekin_before, DE, mI, dt_m;
+    real     ekin_old, ekin_new, dvdl, ekin_before, DE, mI, dt_2m;
     char     stepstr[STEPSTRSIZE];
     rvec     *v;
+    gmx_bool TEST = TRUE;
     
     if (ir->titration_vscale_radius <= 0)
         return TRUE;
     
     /* Compute new velocities */
-    snew(v,md->nr);
-    for(i=0; (i<md->nr); i++) {
-        mI = md->massT[i];
-        if (mI > 0) {
-            dt_m = ir->delta_t/mI;
-            for(m=0; (m<DIM); m++) {
-                v[i][m] = state->v[i][m] + f[i][m]*dt_m;
+    if ( TEST ) {
+        snew(v,md->nr);
+        for(i=0; (i<md->nr); i++) {
+            mI = md->massT[i];
+            if (mI > 0) {
+                dt_2m = 0.5*ir->delta_t/mI;
+                for(m=0; (m<DIM); m++) {
+                    v[i][m] = state->v[i][m] + (f_old[i][m]+f_hop[i][m])*dt_2m;
+                }
             }
         }
     }
+    else
+        v = state->v;
     bPscal = (ir->epc != epcNO) && ((step % ir->nstpcouple) == 0);
     
     /* iterate until the velocities satisfy both constraints and
@@ -3310,7 +3324,7 @@ static gmx_bool scale_velocities(FILE *fplog,
     acceptor_atom = T->qhop_atoms[hop->acceptor_id].atom_id;
 
     /* Compute ekin based on old velocities */
-    ekin_before = check_ekin(v,md);
+    ekin_before = check_ekin(v,md,"before");
     ekin_old = ekin_before;
     ekin_new = 0;
     /*  DE = hop->E12;*/
@@ -3340,7 +3354,7 @@ static gmx_bool scale_velocities(FILE *fplog,
 
                 constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
                           step,1,md,state->x,v,v,state->box,
-                          state->lambda,&dvdl,v,NULL,nrnb,
+                          state->lambda,&dvdl,NULL,NULL,nrnb,
                           econqVeloc,bPscal,veta,vetanew);
                 /* Correct the velocities for constraints */
                 
@@ -3351,13 +3365,14 @@ static gmx_bool scale_velocities(FILE *fplog,
                 */
             }
             
-            ekin_new = check_ekin(v ,md);   
+            ekin_new = check_ekin(v ,md, "new");   
             if (NULL != fplog)
             {
                 fprintf(fplog,"%s: iteration %d, ekin_new = %f, ekin_old = %f. DE = %f\n",
                         eTitrationAlg_names[ir->titration_alg],iter,ekin_new,ekin_old,DE);
-                pr_rvecs(fplog,0,"Ekin Tensor",
+                pr_rvecs(fplog,0,"Original Ekin Tensor",
                          ekindata->ekin,DIM);
+                fprintf(fplog,"Scalar ekin: %g\n",trace(ekindata->ekin));
             }
             DE = DE + (ekin_new - ekin_old);
             ekin_old = ekin_new;
@@ -3370,11 +3385,15 @@ static gmx_bool scale_velocities(FILE *fplog,
         fprintf(fplog,"%s: Energy correction at step %s: %f, DE_Environment: %f\n",
                 eTitrationAlg_names[ir->titration_alg],stepstr,ekin_new-ekin_before,hop->DE_Environment);
     }
-    if (bSufficientEkin && bConverged) {
+    if (bSufficientEkin && bConverged && TEST) {
         /* Copy new velocities */
         for(i=0; (i<md->nr); i++) {
-            for(m=0; (m<DIM); m++) {
-                state->v[i][m] = v[i][m];
+            mI = md->massT[i];
+            if (mI > 0) {
+                dt_2m = 0.5*ir->delta_t/mI;
+                for(m=0; (m<DIM); m++) {
+                    state->v[i][m] = v[i][m] - (f_old[i][m]+f_hop[i][m])*dt_2m;
+                }
             }
         }
     }
@@ -3450,7 +3469,8 @@ real do_titration(FILE *fplog,
                   real Temperature,
                   gmx_large_int_t step,
                   gmx_ekindata_t *ekindata,
-                  tensor force_vir)
+                  tensor force_vir,
+                  rvec *f_old)
 {
     char
         stepstr[STEPSTRSIZE];
@@ -3468,7 +3488,7 @@ real do_titration(FILE *fplog,
     gmx_bool bHaveEbefore;
     gmx_enerdata_t *Ebefore,*Eafter;
     real
-        deqmmm,eqmmm,veta, vetanew;
+        veta, vetanew, DE_Env;
     titration_t T;
     
     t_nblists *nlists_reduced;
@@ -3507,8 +3527,7 @@ real do_titration(FILE *fplog,
     find_acceptors(fplog,cr, fr, T, state->x, &pbc, md, &(db->H_map));
 
 
-    deqmmm = 0;
-    eqmmm = 0;
+    DE_Env = 0;
     
     if(T->nr_hop > 0)
     {
@@ -3606,20 +3625,21 @@ real do_titration(FILE *fplog,
                     bHop = change_protonation(cr, ir, T, md, &(T->hop[i]), 
                                               state->x, state->v, 
                                               eHOP_FORWARD, mtop, top, constr, &pbc, TRUE);
-                                             
-                    if (bHop)
+                    DE_Env += T->hop[i].DE_Environment;
+                                                 
+                    if (bHop && 0)
                     {
                         veta = 0;
                         vetanew = 0;
                         bHop = scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
                                                 state,md,T,step,constr,
                                                 &pbc,&(T->hop[i]),ekindata,veta,vetanew,
-                                                T->hop[i].f);
+                                                T->hop[i].f,f_old);
                     }
                         
                     if (bHop && (ir->titration_mode != eTitrationModeOne))
                     {
-                        /* Zap all hops whose reactants just was consumed. */
+                        /* Zap all hops whose reactants were just consumed. */
                         for (j = i+1; j < T->nr_hop; j++)
                         {
                             if (T->hop[j].donor_id    == T->hop[i].donor_id    ||
@@ -3642,12 +3662,6 @@ real do_titration(FILE *fplog,
                                                 constr, &pbc, TRUE))
                             gmx_fatal(FARGS,"Oops could not hop back. WTH?");
                     }
-                    else 
-                    {
-                        /* Update QMMM energy */
-                        deqmmm = -(T->hop[i].DE_Environment - T->hop[i].E12);
-                        eqmmm += deqmmm;
-                    }
                 }
                 else
                 {
@@ -3666,9 +3680,9 @@ real do_titration(FILE *fplog,
                             T->qhop_atoms[T->hop[i].acceptor_id].res_id,
                             T->qhop_atoms[T->hop[i].acceptor_id].resname);
                     fprintf(fplog,
-                            " DE_Environment = %4.4f, Eb = %4.4f, rda = %2.4f, ang = %2.4f, DE_QMMM = %4.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", 
+                            " DE_Environment = %4.4f, Eb = %4.4f, rda = %2.4f, ang = %2.4f, El = %4.4f, Er = %4.4f prob. = %f, ran. = %f (%s)\n", 
                             T->hop[i].DE_Environment, T->hop[i].Eb,
-                            T->hop[i].rda, T->hop[i].ang, deqmmm,
+                            T->hop[i].rda, T->hop[i].ang,
                             T->hop[i].El, T->hop[i].Er,
                             T->hop[i].prob, rnr, qhopregimes[T->hop[i].regime]);
                 }
@@ -3683,7 +3697,10 @@ real do_titration(FILE *fplog,
 #ifdef TITRATION_NB_KERNELS
     sfree(nlist_reduced);
 #endif
-    return 0; /*eqmmm;*/
+    if (ir->titration_alg == eTitrationAlgQhop)
+        return 0;
+    else
+        return DE_Env;
 }
 
 /* paramStr is the string from the rtp file.

@@ -59,8 +59,8 @@ extern real do_titration(FILE *fplog,
 			 real Temperature,
 			 gmx_large_int_t step,
 			 gmx_ekindata_t *ekindata,
-			 tensor force_vir
-			 );
+			 tensor force_vir,
+			 rvec *f_old);
 
 extern void fold_inactive_protons(titration_t T, rvec x[], rvec v[]);
 
