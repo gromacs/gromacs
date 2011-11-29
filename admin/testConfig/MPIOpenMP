@@ -1,0 +1,2 @@
+GMX_MPI=on
+GMX_OPENMP=on
