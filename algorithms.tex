@@ -1604,7 +1604,17 @@ where $g$ and $h$ are group indices which differ per atom.
 \subsection{Output step}
 The most important output of the MD run is the {\em
 \swapindex{trajectory}{file}}, which contains particle coordinates
-and (optionally) velocities at regular intervals. Since the trajectory
+and (optionally) velocities at regular intervals.
+The trajectory file contains frames that could include positions,
+velocities and/or forces, as well as information about the dimensions
+of the simulation volume, integration step, integration time, etc. The
+interpretation of the time varies with the integrator chosen, as
+described above. For velocity-Verlet integrators, velocities labelled
+at time $t$ are for that time. For other integrators (e.g. leap-frog,
+stochastic dynamics), the velocities labelled at time $t$ are for time
+$t - \hDt$.
+
+Since the trajectory
 files are lengthy, one should not save every step! To retain all
 information it suffices to write a frame every 15 steps, since at
 least 30 steps are made per period of the highest frequency in the
@@ -1615,7 +1625,13 @@ the highest frequencies are not of interest, 10 or 20 samples per ps
 may suffice. Be aware of the distortion of high-frequency motions by
 the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
 are  mirrored with respect to the sampling frequency and appear as
-lower frequencies. 
+lower frequencies.
+
+{\gromacs} can also write reduced-precision coordinates for a subset of
+the simulation system to a special compressed trajectory file
+format. All the other tools can read and write this format. See
+\secref{mdpopt} for details on how to set up your {\tt .mdp} file
+to have {\tt mdrun} use this feature.
 
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Shell molecular dynamics}
