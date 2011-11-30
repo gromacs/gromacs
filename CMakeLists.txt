@@ -189,10 +189,6 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
 if(GMX_MPI)
-	MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     OpenMPI version < 1.4.1
-                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
@@ -219,6 +215,30 @@ if(GMX_MPI)
         if (GMX_MPI_IN_PLACE)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
         endif (GMX_MPI_IN_PLACE)
+
+	# test for unsuitable versions of OpenMPI
+	exec_program(${MPIEXEC}
+	  ARGS --version
+	  OUTPUT_VARIABLE MPI_TYPE
+	  RETURN_VALUE MPI_EXEC_RETURN)
+	if(MPI_EXEC_RETURN EQUAL 0)
+	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
+	    if(MPI_VERSION VERSION_LESS "1.4.1")
+	      MESSAGE(WARNING "
+            There are known problems with OpenMPI version < 1.4.1.
+            Please consider updating your OpenMPI.")
+	    endif(MPI_VERSION VERSION_LESS "1.4.1")
+	    unset(MPI_VERSION)
+	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    # This is not OpenMPI, so give the old generic warning message
+	    MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     MVAPICH2 version <= 1.4.1
+            Please consider updating your MPI if applicable.")
+	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	  unset(MPI_TYPE)
+	endif(MPI_EXEC_RETURN EQUAL 0)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
@@ -535,7 +555,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
 
     set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
@@ -622,9 +642,6 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-    set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
-    set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
-    list(APPEND GMX_EXTRA_LIBRARIES massv)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
