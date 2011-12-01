@@ -80,6 +80,7 @@ real ewald_LRcorrection(FILE *fplog,
 			int start,int end,
 			t_commrec *cr,int thread,t_forcerec *fr,
 			real *chargeA,real *chargeB,
+			gmx_bool calc_excl_corr,
 			t_blocka *excl,rvec x[],
 			matrix box,rvec mu_tot[],
 			int ewald_geometry,real epsilon_surface,
@@ -160,10 +161,13 @@ real ewald_LRcorrection(FILE *fplog,
   }
       
   clear_mat(dxdf);
-  if (!bFreeEnergy) {
+  if ((calc_excl_corr || dipole_coeff != 0) && !bFreeEnergy) {
     for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
+
+      if (calc_excl_corr)
+      {
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       
@@ -256,17 +260,21 @@ real ewald_LRcorrection(FILE *fplog,
 	  }
 	}
       }
+      }
       /* Dipole correction on force */
       if (dipole_coeff != 0) {
 	for(j=0; (j<DIM); j++)
 	  f[i][j] -= dipcorrA[j]*chargeA[i];
       }
     }
-  } else {
+  } else if (calc_excl_corr || dipole_coeff != 0) {
     for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
       qiB = chargeB[i]*one_4pi_eps;
+
+      if (calc_excl_corr)
+      {
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       
@@ -310,6 +318,7 @@ real ewald_LRcorrection(FILE *fplog,
 	    }
 	  }
 	}
+      }
       }
       /* Dipole correction on force */
       if (dipole_coeff != 0) {

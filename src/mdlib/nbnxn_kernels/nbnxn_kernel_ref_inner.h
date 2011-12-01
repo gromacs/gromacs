@@ -30,9 +30,16 @@
  * the papers people have written on it - you can find them on the website!
  */
 
-/* This is the innermost loop contents for the ns cell vs cell
- * SSE2 single precision kernels.
+
+/* When calculating RF or Ewald interactions we calculate the electrostatic
+ * forces on excluded atom pairs here in the non-bonded loops.
+ * But when energies and/or virial is required we calculate them
+ * separately to as then it is easier to separate the energy and virial
+ * contributions.
  */
+#if defined CHECK_EXCLS && !(defined CALC_ENERGIES) && defined CALC_COULOMB
+#define EXCL_FORCES
+#endif
 
         {
             int sj;
@@ -69,6 +76,7 @@
 #ifndef CALC_COUL_RF
                     real rs,frac;
                     int  ri;
+                    real fexcl;
 #endif
 #ifdef CALC_ENERGIES
                     real vcoul;
@@ -77,10 +85,24 @@
                     real fx,fy,fz;
 
 #ifdef CHECK_EXCLS
-                    if (((cj[sjind].excl>>(i*UNROLLI + j)) & 1) == 0)
+                    int interact;
+
+                    interact = ((cj[sjind].excl>>(i*UNROLLI + j)) & 1);
+#ifndef EXCL_FORCES
+                    /* Remove all exclused atom pairs from the list */
+                    if (interact == 0)
                     {
                         continue;
                     }
+#else
+                    /* Remove the (sub-)diagonal to avoid double counting */
+                    if (sj == si && j <= i)
+                    {
+                        continue;
+                    }
+#endif
+#else
+#define interact 1
 #endif
 
                     aj = sj*UNROLLJ + j;
@@ -95,6 +117,13 @@
                     {
                         continue;
                     }
+#ifdef EXCL_FORCES
+                    /* Avoid overflow of rinvsix */
+                    if (rsq < 1e-12)
+                    {
+                        continue;
+                    }
+#endif
 
 #ifdef COUNT_PAIRS
                     npair++;
@@ -108,7 +137,7 @@
                     if (i < UNROLLI/2)
 #endif
                     {
-                        rinvsix = rinvsq*rinvsq*rinvsq;
+                        rinvsix = interact*rinvsq*rinvsq*rinvsq;
 
                         Vvdw6   = nbfp[type_i_off+type[aj]*2  ]*rinvsix;
                         Vvdw12  = nbfp[type_i_off+type[aj]*2+1]*rinvsix*rinvsix;
@@ -126,18 +155,20 @@
                     qq = qi[i]*q[aj];
 
 #ifdef  CALC_COUL_RF
-                    fcoul  = qq*(rinv*rinvsq - k_rf2);
+                    fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
 #ifdef CALC_ENERGIES
-                    vcoul  = qq*(rinv + k_rf*rsq - c_rf);
+                    vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
 #endif
 #else
                     rs     = rsq*rinv*ic->tabq_scale;
                     ri     = (int)rs;
                     frac   = rs - ri;
-                    fcoul  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
+                    fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
+                    fcoul  = interact*rinvsq - fexcl;
 #ifdef CALC_ENERGIES
-                    vcoul  = qq*(tab_coul_FDV0[ri*4+2]
-                                 -halfsp*frac*(tab_coul_FDV0[ri*4] + fcoul));
+                    vcoul  = qq*(interact*rinv
+                                 -(tab_coul_FDV0[ri*4+2]
+                                   -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
 #endif
                     fcoul *= qq*rinv;
 #endif
@@ -186,3 +217,6 @@
                 }
             }
         }
+
+#undef interact
+#undef EXCL_FORCES

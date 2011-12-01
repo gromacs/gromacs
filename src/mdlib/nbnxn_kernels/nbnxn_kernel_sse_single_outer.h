@@ -155,6 +155,11 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     __m128i    mask2 = _mm_set_epi32( 0x0800, 0x0400, 0x0200, 0x0100 );
     __m128i    mask3 = _mm_set_epi32( 0x8000, 0x4000, 0x2000, 0x1000 );
 
+    __m128     diag_SSE0 = gmx_mm_castsi128_ps( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
+    __m128     diag_SSE1 = gmx_mm_castsi128_ps( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
+    __m128     diag_SSE2 = gmx_mm_castsi128_ps( _mm_set_epi32( 0xffffffff, 0x00000000, 0x00000000, 0x00000000 ));
+    __m128     diag_SSE3 = gmx_mm_castsi128_ps( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
+
     __m128i    zero_SSE = _mm_set_epi32( 0, 0, 0, 0 );
 
     __m128     one_SSE={1.0,1.0,1.0,1.0};

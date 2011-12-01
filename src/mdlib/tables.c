@@ -126,13 +126,13 @@ typedef struct {
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
 
 
-static double v_ewald(double beta,double r)
+static double v_ewald_lr(double beta,double r)
 {
-    return erfc(beta*r)/r;
+    return erf(beta*r)/r;
 }
 
-void table_spline3_fill_ewald(real *tab,int ntab,int tableformat,
-                              real dx,real beta)
+void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
+                                 real dx,real beta)
 {
     real tab_max;
     int stride=0;
@@ -172,8 +172,8 @@ void table_spline3_fill_ewald(real *tab,int ntab,int tableformat,
     {
         x_r0 = i*dx;
 
-        v_r0 = v_ewald(beta,x_r0);
-        v_r1 = v_ewald(beta,x_r0-dx);
+        v_r0 = v_ewald_lr(beta,x_r0);
+        v_r1 = v_ewald_lr(beta,x_r0-dx);
 
         if (tableformat == tableformatFDV0)
         {
@@ -203,7 +203,7 @@ void table_spline3_fill_ewald(real *tab,int ntab,int tableformat,
             /* Calculate the average second derivative times dx over interval i-1 to i.
              * Using the function values at the end points and in the middle.
              */
-            a2dx = (v_r0 + v_r1 - 2*v_ewald(beta,x_r0-0.5*dx))/(0.25*dx);
+            a2dx = (v_r0 + v_r1 - 2*v_ewald_lr(beta,x_r0-0.5*dx))/(0.25*dx);
             /* Set the derivative of the spline to match the difference in potential
              * over the interval plus the average effect of the quadratic term.
              * This is the essential step for minimizing the error in the force.

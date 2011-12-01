@@ -34,15 +34,26 @@
  * SSE2 single precision kernels.
  */
 
+
+/* When calculating RF or Ewald interactions we calculate the electrostatic
+ * forces on excluded atom pairs here in the non-bonded loops.
+ * But when energies and/or virial is required we calculate them
+ * separately to as then it is easier to separate the energy and virial
+ * contributions.
+ */
+#if defined CHECK_EXCLS && !defined CALC_ENERGIES && defined CALC_COULOMB
+#define EXCL_FORCES
+#endif
+
         {
             int        sj,ssj,ssjx,ssjy,ssjz;
 
 #ifdef CHECK_EXCLS
             __m128i    mask_int;
-            __m128i    int_SSE0;
-            __m128i    int_SSE1;
-            __m128i    int_SSE2;
-            __m128i    int_SSE3;
+            __m128     int_SSE0;
+            __m128     int_SSE1;
+            __m128     int_SSE2;
+            __m128     int_SSE3;
 #endif
 
             __m128     jxSSE,jySSE,jzSSE;
@@ -64,16 +75,22 @@
             __m128     wco_SSE3;
             __m128     wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
 #ifdef CALC_COULOMB
+#ifdef CHECK_EXCLS
+            __m128     rinv_ex_SSE0;
+            __m128     rinv_ex_SSE1;
+            __m128     rinv_ex_SSE2;
+            __m128     rinv_ex_SSE3;
+#endif
             __m128     jq_SSE;
             __m128     qq_SSE0;
             __m128     qq_SSE1;
             __m128     qq_SSE2;
             __m128     qq_SSE3;
 #ifndef CALC_COUL_RF
-            __m128     fcoul_SSE0;
-            __m128     fcoul_SSE1;
-            __m128     fcoul_SSE2;
-            __m128     fcoul_SSE3;
+            __m128     fexcl_SSE0;
+            __m128     fexcl_SSE1;
+            __m128     fexcl_SSE2;
+            __m128     fexcl_SSE3;
 #endif
             __m128     frcoul_SSE0;
             __m128     frcoul_SSE1;
@@ -194,10 +211,10 @@
             mask_int         = _mm_set1_epi32(cj[sjind].excl);
 
             /* The is no unequal sse instruction, so we need a not here */
-            int_SSE0         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE);
-            int_SSE1         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE);
-            int_SSE2         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE);
-            int_SSE3         = _mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE);
+            int_SSE0         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE));
+            int_SSE1         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE));
+            int_SSE2         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE));
+            int_SSE3         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE));
 #endif
             /* load j atom coordinates */
             jxSSE            = _mm_load_ps(x+ssjx);
@@ -230,10 +247,22 @@
             wco_SSE3           = _mm_cmplt_ps(rsq_SSE3,rc2_SSE);
 
 #ifdef CHECK_EXCLS
-            wco_SSE0           = _mm_and_ps(wco_SSE0,gmx_mm_castsi128_ps(int_SSE0));
-            wco_SSE1           = _mm_and_ps(wco_SSE1,gmx_mm_castsi128_ps(int_SSE1));
-            wco_SSE2           = _mm_and_ps(wco_SSE2,gmx_mm_castsi128_ps(int_SSE2));
-            wco_SSE3           = _mm_and_ps(wco_SSE3,gmx_mm_castsi128_ps(int_SSE3));
+#ifdef EXCL_FORCES
+            /* Only remove the (sub-)diagonal to avoid double counting */
+            if (sj == si)
+            {
+                wco_SSE0       = _mm_and_ps(wco_SSE0,diag_SSE0);
+                wco_SSE1       = _mm_and_ps(wco_SSE1,diag_SSE1);
+                wco_SSE2       = _mm_and_ps(wco_SSE2,diag_SSE2);
+                wco_SSE3       = _mm_and_ps(wco_SSE3,diag_SSE3);
+            }
+#else
+            /* Remove all exclused atom pairs from the list */
+            wco_SSE0           = _mm_and_ps(wco_SSE0,int_SSE0);
+            wco_SSE1           = _mm_and_ps(wco_SSE1,int_SSE1);
+            wco_SSE2           = _mm_and_ps(wco_SSE2,int_SSE2);
+            wco_SSE3           = _mm_and_ps(wco_SSE3,int_SSE3);
+#endif
 #endif
 
 #ifdef COUNT_PAIRS
@@ -342,24 +371,37 @@
 
             rinvsq_SSE0        = _mm_mul_ps(rinv_SSE0,rinv_SSE0);
             rinvsq_SSE1        = _mm_mul_ps(rinv_SSE1,rinv_SSE1);
-#if !defined HALF_LJ || defined CALC_COUL_RF
             rinvsq_SSE2        = _mm_mul_ps(rinv_SSE2,rinv_SSE2);
             rinvsq_SSE3        = _mm_mul_ps(rinv_SSE3,rinv_SSE3);
-#endif
 
 #ifdef CALC_COULOMB
+
+#ifdef EXCL_FORCES
+            /* Only add 1/r for non-excluded atom pairs */
+            rinv_ex_SSE0       = _mm_and_ps(rinv_SSE0,int_SSE0);
+            rinv_ex_SSE1       = _mm_and_ps(rinv_SSE1,int_SSE1);
+            rinv_ex_SSE2       = _mm_and_ps(rinv_SSE2,int_SSE2);
+            rinv_ex_SSE3       = _mm_and_ps(rinv_SSE3,int_SSE3);
+#else
+            /* No exclusion forces, we always need 1/r */
+#define     rinv_ex_SSE0         rinv_SSE0
+#define     rinv_ex_SSE1         rinv_SSE1
+#define     rinv_ex_SSE2         rinv_SSE2
+#define     rinv_ex_SSE3         rinv_SSE3
+#endif
+
 #ifdef CALC_COUL_RF
             /* Coulomb interaction */
-            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_SSE0,_mm_mul_ps(rsq_SSE0,mrc_3_SSE)));
-            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_SSE1,_mm_mul_ps(rsq_SSE1,mrc_3_SSE)));
-            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_SSE2,_mm_mul_ps(rsq_SSE2,mrc_3_SSE)));
-            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_SSE3,_mm_mul_ps(rsq_SSE3,mrc_3_SSE)));
+            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_ex_SSE0,_mm_mul_ps(rsq_SSE0,mrc_3_SSE)));
+            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_ex_SSE1,_mm_mul_ps(rsq_SSE1,mrc_3_SSE)));
+            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_ex_SSE2,_mm_mul_ps(rsq_SSE2,mrc_3_SSE)));
+            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_ex_SSE3,_mm_mul_ps(rsq_SSE3,mrc_3_SSE)));
 
 #ifdef CALC_ENERGIES
-            vcoul_SSE0         = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_SSE0,_mm_add_ps(_mm_mul_ps(rsq_SSE0,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE1         = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_SSE1,_mm_add_ps(_mm_mul_ps(rsq_SSE1,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE2         = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_SSE2,_mm_add_ps(_mm_mul_ps(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE3         = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_SSE3,_mm_add_ps(_mm_mul_ps(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE0         = _mm_mul_ps(qq_SSE0,_mm_add_ps(rinv_ex_SSE0,_mm_add_ps(_mm_mul_ps(rsq_SSE0,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE1         = _mm_mul_ps(qq_SSE1,_mm_add_ps(rinv_ex_SSE1,_mm_add_ps(_mm_mul_ps(rsq_SSE1,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE2         = _mm_mul_ps(qq_SSE2,_mm_add_ps(rinv_ex_SSE2,_mm_add_ps(_mm_mul_ps(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE3         = _mm_mul_ps(qq_SSE3,_mm_add_ps(rinv_ex_SSE3,_mm_add_ps(_mm_mul_ps(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
             vcoul_SSE0         = _mm_and_ps(vcoul_SSE0,wco_SSE0);
             vcoul_SSE1         = _mm_and_ps(vcoul_SSE1,wco_SSE1);
             vcoul_SSE2         = _mm_and_ps(vcoul_SSE2,wco_SSE2);
@@ -427,25 +469,24 @@
             GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE1[0],ctab_SSE1[1],ctab_SSE1[2],ctab_SSE1[3],ctab0_SSE1,ctab1_SSE1);
             GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE2[0],ctab_SSE2[1],ctab_SSE2[2],ctab_SSE2[3],ctab0_SSE2,ctab1_SSE2);
             GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE3[0],ctab_SSE3[1],ctab_SSE3[2],ctab_SSE3[3],ctab0_SSE3,ctab1_SSE3);
-            fcoul_SSE0         = _mm_add_ps(ctab0_SSE0,_mm_mul_ps(frac_SSE0,ctab1_SSE0));
-            fcoul_SSE1         = _mm_add_ps(ctab0_SSE1,_mm_mul_ps(frac_SSE1,ctab1_SSE1));
-            fcoul_SSE2         = _mm_add_ps(ctab0_SSE2,_mm_mul_ps(frac_SSE2,ctab1_SSE2));
-            fcoul_SSE3         = _mm_add_ps(ctab0_SSE3,_mm_mul_ps(frac_SSE3,ctab1_SSE3));
-            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_mul_ps(fcoul_SSE0,r_SSE0));
-            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_mul_ps(fcoul_SSE1,r_SSE1));
-#ifndef HALF_LJ
-            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_mul_ps(fcoul_SSE2,r_SSE2));
-            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_mul_ps(fcoul_SSE3,r_SSE3));
-#endif
+            fexcl_SSE0         = _mm_add_ps(ctab0_SSE0,_mm_mul_ps(frac_SSE0,ctab1_SSE0));
+            fexcl_SSE1         = _mm_add_ps(ctab0_SSE1,_mm_mul_ps(frac_SSE1,ctab1_SSE1));
+            fexcl_SSE2         = _mm_add_ps(ctab0_SSE2,_mm_mul_ps(frac_SSE2,ctab1_SSE2));
+            fexcl_SSE3         = _mm_add_ps(ctab0_SSE3,_mm_mul_ps(frac_SSE3,ctab1_SSE3));
+            frcoul_SSE0        = _mm_mul_ps(qq_SSE0,_mm_sub_ps(rinv_ex_SSE0,_mm_mul_ps(fexcl_SSE0,r_SSE0)));
+            frcoul_SSE1        = _mm_mul_ps(qq_SSE1,_mm_sub_ps(rinv_ex_SSE1,_mm_mul_ps(fexcl_SSE1,r_SSE1)));
+            frcoul_SSE2        = _mm_mul_ps(qq_SSE2,_mm_sub_ps(rinv_ex_SSE2,_mm_mul_ps(fexcl_SSE2,r_SSE2)));
+            frcoul_SSE3        = _mm_mul_ps(qq_SSE3,_mm_sub_ps(rinv_ex_SSE3,_mm_mul_ps(fexcl_SSE3,r_SSE3)));
+
 #ifdef CALC_ENERGIES
             GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE0[0],ctab_SSE0[1],ctab_SSE0[2],ctab_SSE0[3],ctabv_SSE0);
             GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE1[0],ctab_SSE1[1],ctab_SSE1[2],ctab_SSE1[3],ctabv_SSE1);
             GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE2[0],ctab_SSE2[1],ctab_SSE2[2],ctab_SSE2[3],ctabv_SSE2);
             GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE3[0],ctab_SSE3[1],ctab_SSE3[2],ctab_SSE3[3],ctabv_SSE3);
-            vcoul_SSE0 = _mm_mul_ps(qq_SSE0,_mm_add_ps(ctabv_SSE0,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE0),_mm_add_ps(ctab0_SSE0,fcoul_SSE0))));
-            vcoul_SSE1 = _mm_mul_ps(qq_SSE1,_mm_add_ps(ctabv_SSE1,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE1),_mm_add_ps(ctab0_SSE1,fcoul_SSE1))));
-            vcoul_SSE2 = _mm_mul_ps(qq_SSE2,_mm_add_ps(ctabv_SSE2,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE2),_mm_add_ps(ctab0_SSE2,fcoul_SSE2))));
-            vcoul_SSE3 = _mm_mul_ps(qq_SSE3,_mm_add_ps(ctabv_SSE3,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE3),_mm_add_ps(ctab0_SSE3,fcoul_SSE3))));
+            vcoul_SSE0 = _mm_mul_ps(qq_SSE0,_mm_sub_ps(rinv_ex_SSE0,_mm_add_ps(ctabv_SSE0,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE0),_mm_add_ps(ctab0_SSE0,fexcl_SSE0)))));
+            vcoul_SSE1 = _mm_mul_ps(qq_SSE1,_mm_sub_ps(rinv_ex_SSE1,_mm_add_ps(ctabv_SSE1,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE1),_mm_add_ps(ctab0_SSE1,fexcl_SSE1)))));
+            vcoul_SSE2 = _mm_mul_ps(qq_SSE2,_mm_sub_ps(rinv_ex_SSE2,_mm_add_ps(ctabv_SSE2,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE2),_mm_add_ps(ctab0_SSE2,fexcl_SSE2)))));
+            vcoul_SSE3 = _mm_mul_ps(qq_SSE3,_mm_sub_ps(rinv_ex_SSE3,_mm_add_ps(ctabv_SSE3,_mm_mul_ps(_mm_mul_ps(mhalfsp_SSE,frac_SSE3),_mm_add_ps(ctab0_SSE3,fexcl_SSE3)))));
             /*
             {
                 float r[4];
@@ -488,9 +529,17 @@
 #endif
             sir6_SSE0          = _mm_mul_ps(sir2_SSE0,_mm_mul_ps(sir2_SSE0,sir2_SSE0));
             sir6_SSE1          = _mm_mul_ps(sir2_SSE1,_mm_mul_ps(sir2_SSE1,sir2_SSE1));
+#ifdef EXCL_FORCES
+            sir6_SSE0          = _mm_and_ps(sir6_SSE0,int_SSE0);
+            sir6_SSE1          = _mm_and_ps(sir6_SSE1,int_SSE1);
+#endif
 #ifndef HALF_LJ
             sir6_SSE2          = _mm_mul_ps(sir2_SSE2,_mm_mul_ps(sir2_SSE2,sir2_SSE2));
             sir6_SSE3          = _mm_mul_ps(sir2_SSE3,_mm_mul_ps(sir2_SSE3,sir2_SSE3));
+#ifdef EXCL_FORCES
+            sir6_SSE2          = _mm_and_ps(sir6_SSE2,int_SSE2);
+            sir6_SSE3          = _mm_and_ps(sir6_SSE3,int_SSE3);
+#endif
 #endif
             Vvdw6_SSE0         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE0,seps_j_SSE),sir6_SSE0);
             Vvdw6_SSE1         = _mm_mul_ps(_mm_mul_ps(seps_i_SSE1,seps_j_SSE),sir6_SSE1);
@@ -507,9 +556,17 @@
 #else /* LJ_COMB_LB */
             rinvsix_SSE0       = _mm_mul_ps(rinvsq_SSE0,_mm_mul_ps(rinvsq_SSE0,rinvsq_SSE0));
             rinvsix_SSE1       = _mm_mul_ps(rinvsq_SSE1,_mm_mul_ps(rinvsq_SSE1,rinvsq_SSE1));
+#ifdef EXCL_FORCES
+            rinvsix_SSE0       = _mm_and_ps(rinvsix_SSE0,int_SSE0);
+            rinvsix_SSE1       = _mm_and_ps(rinvsix_SSE1,int_SSE1);
+#endif
 #ifndef HALF_LJ
             rinvsix_SSE2       = _mm_mul_ps(rinvsq_SSE2,_mm_mul_ps(rinvsq_SSE2,rinvsq_SSE2));
             rinvsix_SSE3       = _mm_mul_ps(rinvsq_SSE3,_mm_mul_ps(rinvsq_SSE3,rinvsq_SSE3));
+#ifdef EXCL_FORCES
+            rinvsix_SSE2       = _mm_and_ps(rinvsix_SSE2,int_SSE2);
+            rinvsix_SSE3       = _mm_and_ps(rinvsix_SSE3,int_SSE3);
+#endif
 #endif
             Vvdw6_SSE0         = _mm_mul_ps(c6_SSE0,rinvsix_SSE0);
             Vvdw6_SSE1         = _mm_mul_ps(c6_SSE1,rinvsix_SSE1);
@@ -608,13 +665,8 @@
                                                       _mm_sub_ps(Vvdw12_SSE3,Vvdw6_SSE3)));
 #else
             /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
-#ifdef CALC_COUL_RF
             fscal_SSE2         = _mm_mul_ps(rinvsq_SSE2,frcoul_SSE2);
             fscal_SSE3         = _mm_mul_ps(rinvsq_SSE3,frcoul_SSE3);
-#else
-            fscal_SSE2         = _mm_mul_ps(qq_SSE2,_mm_mul_ps(rinv_SSE2,fcoul_SSE2));
-            fscal_SSE3         = _mm_mul_ps(qq_SSE3,_mm_mul_ps(rinv_SSE3,fcoul_SSE3));
-#endif
 #endif
             
             /* Calculate temporary vectorial force */
@@ -653,3 +705,10 @@
             _mm_store_ps(f+ssjz,
                          _mm_sub_ps( _mm_load_ps(f+ssjz), gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
         }
+
+#undef  rinv_ex_SSE0
+#undef  rinv_ex_SSE1
+#undef  rinv_ex_SSE2
+#undef  rinv_ex_SSE3
+
+#undef  EXCL_FORCES

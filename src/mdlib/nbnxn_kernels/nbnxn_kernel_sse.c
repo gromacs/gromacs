@@ -274,7 +274,12 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
             }
         }
 
-        if (!(force_flags & GMX_FORCE_ENERGY))
+        /* With Ewald type electrostatics we the forces for excluded atom pairs
+         * should not contribute to the virial sum. The exclusion forces
+         * are not calculate in the energy kernels, but are in _noener.
+         */
+        if (!((force_flags & GMX_FORCE_ENERGY) ||
+              (EEL_FULL(ic->eeltype) && (force_flags & GMX_FORCE_VIRIAL))))
         {
             /* Don't calculate energies */
             p_nbk_noener[coult][nbat->comb_rule](nbl[nb],nbat,
@@ -283,7 +288,7 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                                                  out->f,
                                                  fshift_p);
         }
-        else if (out->nV == 1)
+        else if (out->nV == 1 || !(force_flags & GMX_FORCE_ENERGY))
         {
             /* No energy groups */
             out->Vvdw[0] = 0;

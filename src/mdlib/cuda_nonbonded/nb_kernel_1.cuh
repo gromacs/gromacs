@@ -86,7 +86,7 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
     float3  shift;
     float3  f_ij, fsj_buf, fbuf_shift;
     gmx_nbl_ci_t nb_ci;
-    unsigned int wexcl, excl_bit;
+    unsigned int wexcl, int_bit;
     int wexcl_idx;
     unsigned imask, imask_j;
 #ifdef PRUNE_NBL
@@ -190,10 +190,16 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                         }
 #endif
 
-                        excl_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
+                        int_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
 
                         /* cutoff & exclusion check */
-                        if (r2 < rcoulomb_sq * excl_bit)
+#if (defined EL_EWALD || defined EL_RF) && !defined CALC_ENERGIES
+                        /* small r2 check to avoid invr6 overflow */
+                        if (r2 < rcoulomb_sq * (si != sj || tidxj > tidxi) *
+                            (r2 > 1.0e-12f))
+#else
+                        if (r2 < rcoulomb_sq * int_bit)
+#endif
                         {
                             /* load the rest of the i-atom parameters */
                             qi      = xqbuf.w;
@@ -206,6 +212,11 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             inv_r       = rsqrt(r2);
                             inv_r2      = inv_r * inv_r;
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
+#if (defined EL_EWALD || defined EL_RF) && !defined CALC_ENERGIES
+                            /* We could mask inv_r2, but with Ewald
+                             * masking both inv_r6 and F_invr is faster */
+                            inv_r6      *= int_bit;
+#endif
 #ifdef EL_EWALD
                             /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
                             inv_r6      *= r2 < rvdw_sq;
@@ -221,10 +232,10 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             F_invr      += qi * qj_f * inv_r2 * inv_r;
 #endif
 #ifdef EL_RF
-                            F_invr      += qi * qj_f * (inv_r2 * inv_r - two_k_rf);
+                            F_invr      += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
 #endif
 #ifdef EL_EWALD
-                            F_invr      += qi * qj_f * interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale) * inv_r;
+                            F_invr      += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -235,7 +246,8 @@ __global__ void FUNCTION_NAME(k_calc_nb, forces_1)
                             E_el        += qi * qj_f * (inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
 #ifdef EL_EWALD
-                            E_el        += qi * qj_f * inv_r * erfcf(r2 * inv_r * beta);
+                            /* 1.0f - erff is faster than erfcf */
+                            E_el        += qi * qj_f * inv_r * (1.0f - erff(r2 * inv_r * beta));
 #endif
 #endif
                             f_ij    = rv * F_invr;

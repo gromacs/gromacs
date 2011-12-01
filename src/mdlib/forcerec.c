@@ -1487,7 +1487,7 @@ static void pick_nb_kernel(FILE *fp,
 
             tryGPU = FALSE;
 
-            if (MASTER(cr) == 0)
+            if (MASTER(cr))
             {
                 gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
             }
@@ -1591,12 +1591,12 @@ void init_interaction_const_tables(FILE *fp,
          */
         spacing = 0.0005;
         ic->tabq_scale = 1/spacing;
-        ic->tabq_size    = (int)(ic->rcoulomb*ic->tabq_scale) + 1;
+        ic->tabq_size    = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
         sfree_aligned(ic->tabq_coul_FDV0);
         snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-        table_spline3_fill_ewald(ic->tabq_coul_FDV0,ic->tabq_size,
-                                 tableformatFDV0,
-                                 spacing,ic->ewaldcoeff);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,ic->tabq_size,
+                                    tableformatFDV0,
+                                    spacing,ic->ewaldcoeff);
     }
 }
 

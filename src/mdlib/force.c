@@ -463,6 +463,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                            cr,t,fr,
                                            md->chargeA,
                                            md->nChargePerturbed ? md->chargeB : NULL,
+                                           !(ir->cutoff_scheme == ecutsVERLET &&
+                                             !(flags & (GMX_FORCE_ENERGY |
+                                                        GMX_FORCE_VIRIAL))),
                                            excl,x,bSB ? boxs : box,mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
@@ -606,7 +609,12 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         {
             dvdlambda = 0;
             
-            if (fr->eeltype != eelRF_NEC)
+            /* With the Verlet scheme exclusion forces are determined
+             * in the non-bonded kernel when energies are not calculated.
+             */
+            if (fr->eeltype != eelRF_NEC &&
+                !(ir->cutoff_scheme == ecutsVERLET &&
+                  !(flags & GMX_FORCE_ENERGY)))
             {
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fplog,fr,graph,md,excl,x,f,
