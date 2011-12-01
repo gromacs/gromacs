@@ -1,8 +1,8 @@
-#ifndef _CUDA_DATA_MGMT_H_
-#define _CUDA_DATA_MGMT_H_
+#ifndef _NBNXN_CUDA_DATA_MGMT_H_
+#define _NBNXN_CUDA_DATA_MGMT_H_
 
 #include "typedefs.h" 
-#include "cutypedefs_ext.h"
+#include "types/nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,4 +66,4 @@ int cu_calc_min_ci_balanced(cu_nonbonded_t /*cu_nb*/);
 }
 #endif
 
-#endif // _CUDA_DATA_MGMT_H_
+#endif // _NBNXN_CUDA_DATA_MGMT_H_

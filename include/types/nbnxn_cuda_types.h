@@ -2,8 +2,8 @@
 #define CUTYPEDEFS_H
 
 #include "types/nbnxn_pairlist.h"
-#include "cutypedefs_ext.h"
-#include "cudautils.h"
+#include "types/nbnxn_cuda_types_ext.h"
+#include "cudautils.cuh"
 
 #ifdef __cplusplus
 extern "C" {

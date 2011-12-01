@@ -63,7 +63,7 @@ using namespace std;
 #include "mdrun.h"
 #include "physics.h"
 #include "string2.h"
-#include "gmx_gpu_utils.h"
+#include "gpu_utils.h"
 #include "mtop_util.h"
 
 #include "openmm_wrapper.h"

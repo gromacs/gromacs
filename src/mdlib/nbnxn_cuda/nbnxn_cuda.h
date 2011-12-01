@@ -1,7 +1,7 @@
 #ifndef GPU_NB_H
 #define GPU_NB_H
 
-#include "cutypedefs_ext.h"
+#include "types/nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus
 extern "C" {

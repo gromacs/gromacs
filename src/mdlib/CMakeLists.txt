@@ -4,10 +4,9 @@ file(GLOB MDLIB_SOURCES *.c nbnxn_kernels/*.c)
 include_directories(nbnxn_kernels)
 
 if(GMX_GPU)
-    add_subdirectory(cuda_tools)
-    add_subdirectory(cuda_nonbonded)
-    include_directories(cuda_tools cuda_nonbonded)    
-    set(GMX_GPU_LIBRARIES gmx_gpu_utils cuda_nonbonded cuda_tools)
+    add_subdirectory(nbnxn_cuda)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/gmxlib/cuda_tools nbnxn_cuda)
+    set(GMX_GPU_LIBRARIES nbnxn_cuda)
 endif()
 
 # Files	called xxx_test.c are test drivers with a main() function for 
@@ -17,7 +16,7 @@ list(REMOVE_ITEM MDLIB_SOURCES ${NOT_MDLIB_SOURCES})
 
 add_library(md ${MDLIB_SOURCES})
 
-target_link_libraries(md gmx ${GMX_GPU_LIBRARIES} ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
+target_link_libraries(md nbnxn_cuda gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES})
 
 set_target_properties(md PROPERTIES OUTPUT_NAME "md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 

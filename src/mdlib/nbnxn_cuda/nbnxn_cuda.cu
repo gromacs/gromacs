@@ -4,36 +4,36 @@
 #include "force.h"
 #include "types/simple.h" 
 #include "types/nbnxn_pairlist.h"
-#include "nb_verlet.h"
+#include "types/nb_verlet.h"
 
-#include "cutypedefs.h"
-#include "cudautils.h"
-#include "cuda_nb.h"
-#include "cuda_data_mgmt.h"
-#include "cupmalloc.h"
+#include "types/nbnxn_cuda_types.h"
+#include "cudautils.cuh"
+#include "nbnxn_cuda.h"
+#include "nbnxn_cuda_data_mgmt.h"
+#include "pmalloc_cuda.h"
 
 #define CLUSTER_SIZE            (GPU_NS_CLUSTER_SIZE)
 #define NB_DEFAULT_THREADS      (CLUSTER_SIZE * CLUSTER_SIZE)
 
-#include "cutype_utils.cuh"
-#include "nb_kernel_utils.cuh"
+#include "vectype_ops.cuh"
+#include "nbnxn_cuda_kernel_utils.cuh"
 
 /* Generate all combinations of kernels through multiple inclusion:
    F, F + E, F + prune, F + E + prune. */
 /** Force only **/
-#include "nb_kernels.cuh"
+#include "nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nb_kernels.cuh"
+#include "nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Neighborlist pruning kernels ***/
 /** Force only **/
 #define PRUNE_NBL
-#include "nb_kernels.cuh"
+#include "nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nb_kernels.cuh"
+#include "nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 

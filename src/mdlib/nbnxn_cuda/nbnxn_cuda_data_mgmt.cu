@@ -4,13 +4,13 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "force.h"
-#include "nb_verlet.h"
-#include "interaction_const.h"
+#include "types/nb_verlet.h"
+#include "types/interaction_const.h"
 
-#include "cutypedefs.h"
-#include "cudautils.h"
-#include "cuda_data_mgmt.h"
-#include "cupmalloc.h"
+#include "types/nbnxn_cuda_types.h"
+#include "cudautils.cuh"
+#include "nbnxn_cuda_data_mgmt.h"
+#include "pmalloc_cuda.h"
 
 #define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread busy-wait! */
 /* couldomb talble size chosen such that it fits along the NB params in the texture cache */

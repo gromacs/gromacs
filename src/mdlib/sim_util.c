@@ -101,8 +101,8 @@
 #include "qmmm.h"
 
 #ifdef GMX_GPU
-#include "cuda_data_mgmt.h"
-#include "cuda_nb.h"
+#include "nbnxn_cuda_data_mgmt.h"
+#include "nbnxn_cuda.h"
 #endif
 
 #if 0

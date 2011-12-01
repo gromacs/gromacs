@@ -43,7 +43,7 @@
 #include "pme.h"
 #include "vec.h"
 #include "domdec.h"
-#include "cuda_data_mgmt.h"
+#include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"
 #include "pme_switch.h"
 

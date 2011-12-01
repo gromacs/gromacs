@@ -4,7 +4,7 @@
 #include "smalloc.h"
 
 #include "cuda.h"
-#include "cudautils.h"
+#include "cudautils.cuh"
 
 /*** General CUDA data operations ***/
 /* TODO: create a cusmalloc module that implements similar things as smalloc */

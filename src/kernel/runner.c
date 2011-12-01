@@ -101,8 +101,8 @@
 #endif
 
 #ifdef GMX_GPU
-#include "gmx_gpu_utils.h"
-#include "cuda_data_mgmt.h"
+#include "gpu_utils.h"
+#include "nbnxn_cuda_data_mgmt.h"
 #endif
 
 typedef struct { 

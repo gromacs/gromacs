@@ -97,7 +97,7 @@
 #endif
 
 #ifdef GMX_GPU
-#include "cuda_data_mgmt.h"
+#include "nbnxn_cuda_data_mgmt.h"
 #endif
 
 #ifdef GMX_FAHCORE

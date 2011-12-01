@@ -2,8 +2,8 @@
 
 #include "gmx_fatal.h"
 
-#include "cudautils.h"
-#include "cupmalloc.h"
+#include "cudautils.cuh"
+#include "pmalloc_cuda.h"
 
 /* page-locked alloc */
 void pmalloc(void **h_ptr, size_t nbytes)

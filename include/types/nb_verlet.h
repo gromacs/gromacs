@@ -1,7 +1,7 @@
 #ifndef _NB_VERLET_
 #define _NB_VERLET_
 
-#include "cutypedefs_ext.h"
+#include "types/nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus
 extern "C" {

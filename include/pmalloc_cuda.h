@@ -1,5 +1,5 @@
-#ifndef _CUPMALLOC_H_
-#define _CUPMALLOC_H_
+#ifndef _PMALLOC_CUDA_H_
+#define _PMALLOC_CUDA_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,6 +12,6 @@ void pfree(void * /*h_ptr*/);
 #ifdef __cplusplus
 }
 #endif
-#endif  /* __CUPMALLOC_H_ */
+#endif  /* __PMALLOC_CUDA_H_ */
 
 

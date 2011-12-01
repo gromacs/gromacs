@@ -41,7 +41,7 @@
 
 #include "memtestG80_core.h"
 
-#include "gmx_gpu_utils.h"
+#include "gpu_utils.h"
 
 /*! \cond  TEST */
 #ifdef _DEBUG_
