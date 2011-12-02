@@ -1,0 +1,6 @@
+if [ -n "${CMakeVersion}" ] ; then 
+   export PATH=$HOME/tools/cmake-${CMakeVersion}/bin:$PATH
+fi
+CC=gcc-${CompilerVersion} CXX=g++-${CompilerVersion} -D GMX_DOUBLE=${GMX_DOUBLE} -D GMX_MPI=${GMX_MPI} -D GMX_OPENMP=${GMX_OPENMP} -DGMX_DEFAULT_SUFFIX=off -DCMAKE_BUILD_TYPE=Debug . &&
+make &&
+ctest -D ExperimentalTest
