@@ -1,13 +1,25 @@
 <project>
 <target name="ConfigBuildTest">
   <property name="src.dir" value=".."/>
+  <condition property="cmake.args" value="-G 'Visual Studio 11 Win64'" else="">
+    <os family="windows"/>
+  </condition>
+  <condition property="builder" value="msbuild" else="make">
+    <os family="windows"/>
+  </condition>
+  <condition property="CC" value="cl" else="gcc-">
+    <os family="windows"/>
+  </condition>
+  <condition property="CXX" value="cl" else="g++-">
+    <os family="windows"/>
+  </condition>
   <exec executable="cmake" dir="${src.dir}" failonerror="true">
-    <env key="CC" value="gcc-${CompilerVersion}"/>
-    <env key="CXX" value="g++-${CompilerVersion}"/>
-    <arg line="-D GMX_DOUBLE=${GMX_DOUBLE} -D GMX_MPI=${GMX_MPI} -D GMX_OPENMP=${GMX_OPENMP} -DGMX_DEFAULT_SUFFIX=off -DCMAKE_BUILD_TYPE=Debug"/>
+    <env key="CC" value="${CC}${CompilerVersion}"/>
+    <env key="CXX" value="${CXX}${CompilerVersion}"/>
+    <arg line="${cmake.args} -D GMX_DOUBLE=${GMX_DOUBLE} -D GMX_MPI=${GMX_MPI} -D GMX_OPENMP=${GMX_OPENMP} -DGMX_DEFAULT_SUFFIX=off -DCMAKE_BUILD_TYPE=Debug"/>
     <arg value="."/>
   </exec>
-  <exec executable="make" dir="${src.dir}" failonerror="true"/>
+  <exec executable="${builder}" dir="${src.dir}" failonerror="true"/>
   <exec executable="ctest" dir="${src.dir}" failonerror="true">
     <arg line="-D ExperimentalTest"/>
   </exec>
