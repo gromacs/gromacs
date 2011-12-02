@@ -42,16 +42,16 @@
 #endif
 
         {
-            int sj;
+            int cj;
 #ifdef ENERGY_GROUPS
-            int egp_sj;
+            int egp_cj;
 #endif
             int i;
 
-            sj = cj[sjind].c;
+            cj = l_cj[cjind].c;
 
 #ifdef ENERGY_GROUPS
-            egp_sj = nbat->energrp[sj];
+            egp_cj = nbat->energrp[cj];
 #endif
             for(i=0; i<UNROLLI; i++)
             {
@@ -59,7 +59,7 @@
                 int type_i_off;
                 int j;
 
-                ai = si*UNROLLI + i;
+                ai = ci*UNROLLI + i;
 
                 type_i_off = type[ai]*ntype2;
 
@@ -87,7 +87,7 @@
 #ifdef CHECK_EXCLS
                     int interact;
 
-                    interact = ((cj[sjind].excl>>(i*UNROLLI + j)) & 1);
+                    interact = ((l_cj[cjind].excl>>(i*UNROLLI + j)) & 1);
 #ifndef EXCL_FORCES
                     /* Remove all exclused atom pairs from the list */
                     if (interact == 0)
@@ -96,7 +96,7 @@
                     }
 #else
                     /* Remove the (sub-)diagonal to avoid double counting */
-                    if (sj == si && j <= i)
+                    if (cj == ci && j <= i)
                     {
                         continue;
                     }
@@ -105,7 +105,7 @@
 #define interact 1
 #endif
 
-                    aj = sj*UNROLLJ + j;
+                    aj = cj*UNROLLJ + j;
 
                     dx  = xi[i*3+0] - x[aj*3+0];
                     dy  = xi[i*3+1] - x[aj*3+1];
@@ -143,7 +143,7 @@
                         Vvdw12  = nbfp[type_i_off+type[aj]*2+1]*rinvsix*rinvsix;
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-                        Vvdw[egp_sh_i[i]+((egp_sj>>(8*j)) & 255)] +=
+                        Vvdw[egp_sh_i[i]+((egp_cj>>(8*j)) & 255)] +=
                             Vvdw12/12 - Vvdw6/6;
 #else
                         Vvdw_ci += Vvdw12/12 - Vvdw6/6;
@@ -175,8 +175,8 @@
 
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-                    //printf("egp = %3d + %3d\n",egp_sh_i[i],((egp_sj>>(8*j)) & 255));
-                    Vc[egp_sh_i[i]+((egp_sj>>(8*j)) & 255)] += vcoul;
+                    //printf("egp = %3d + %3d\n",egp_sh_i[i],((egp_cj>>(8*j)) & 255));
+                    Vc[egp_sh_i[i]+((egp_cj>>(8*j)) & 255)] += vcoul;
 #else
                     Vc_ci += vcoul;
 #endif

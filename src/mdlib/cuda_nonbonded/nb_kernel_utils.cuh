@@ -1,9 +1,9 @@
 #ifndef _NB_KERNEL_UTILS_CUH_
 #define _NB_KERNEL_UTILS_CUH_
 
-#define CELL_SIZE_POW2_EXPONENT (3)  /* change this together with GPU_NS_CELL_SIZE !*/
-#define CELL_SIZE_2             (CELL_SIZE * CELL_SIZE)
-#define STRIDE_DIM              (CELL_SIZE_2)
+#define CLUSTER_SIZE_POW2_EXPONENT (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
+#define CLUSTER_SIZE_2          (CLUSTER_SIZE * CLUSTER_SIZE)
+#define STRIDE_DIM              (CLUSTER_SIZE_2)
 #define STRIDE_SI               (3*STRIDE_DIM)
 
 /*! texture ref for nonbonded parameters; bound to cu_nb_params_t.nbfp*/
@@ -37,7 +37,7 @@ void reduce_force_j_generic(float *fbuf, float4 *fout,
     if (tidxi == 0)
     {
         float4 f = make_float4(0.0f);
-        for (int j = tidxj * CELL_SIZE; j < (tidxj + 1) * CELL_SIZE; j++)
+        for (int j = tidxj * CLUSTER_SIZE; j < (tidxj + 1) * CLUSTER_SIZE; j++)
         {
             f.x += fbuf[                 j];
             f.y += fbuf[    STRIDE_DIM + j];
@@ -61,7 +61,7 @@ void reduce_force_i_generic(float *fbuf, float4 *fout,
     if (tidxj == 0)
     {
         float4 f = make_float4(0.0f);
-        for (int j = tidxi; j < CELL_SIZE_2; j += CELL_SIZE)
+        for (int j = tidxi; j < CLUSTER_SIZE_2; j += CLUSTER_SIZE)
         {
             f.x += fbuf[                 j];
             f.y += fbuf[    STRIDE_DIM + j];
@@ -92,18 +92,18 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
     int     i, j; 
     float4  f = make_float4(0.0f);
 
-    /* Reduce the initial CELL_SIZE values for each i atom to half
-       every step by using CELL_SIZE * i threads. */
-    i = CELL_SIZE/2;
+    /* Reduce the initial CLUSTER_SIZE values for each i atom to half
+       every step by using CLUSTER_SIZE * i threads. */
+    i = CLUSTER_SIZE/2;
     # pragma unroll 5
-    for (j = CELL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = CLUSTER_SIZE_POW2_EXPONENT - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
 
-            fbuf[                 tidxj * CELL_SIZE + tidxi] += fbuf[                 (tidxj + i) * CELL_SIZE + tidxi];
-            fbuf[    STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[    STRIDE_DIM + (tidxj + i) * CELL_SIZE + tidxi];
-            fbuf[2 * STRIDE_DIM + tidxj * CELL_SIZE + tidxi] += fbuf[2 * STRIDE_DIM + (tidxj + i) * CELL_SIZE + tidxi];
+            fbuf[                 tidxj * CLUSTER_SIZE + tidxi] += fbuf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
+            fbuf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += fbuf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+            fbuf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += fbuf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
         }
         i >>= 1;
     }
@@ -111,9 +111,9 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
     /* i == 1, last reduction step, writing to global mem */
     if (tidxj == 0)
     {
-        f.x = fbuf[                 tidxj * CELL_SIZE + tidxi] + fbuf[                 (tidxj + i) * CELL_SIZE + tidxi];
-        f.y = fbuf[    STRIDE_DIM + tidxj * CELL_SIZE + tidxi] + fbuf[    STRIDE_DIM + (tidxj + i) * CELL_SIZE + tidxi]; 
-        f.z = fbuf[2 * STRIDE_DIM + tidxj * CELL_SIZE + tidxi] + fbuf[2 * STRIDE_DIM + (tidxj + i) * CELL_SIZE + tidxi];
+        f.x = fbuf[                 tidxj * CLUSTER_SIZE + tidxi] + fbuf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
+        f.y = fbuf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + fbuf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi]; 
+        f.z = fbuf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + fbuf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
 
         atomicAdd(&fout[aidx].x, f.x);
         atomicAdd(&fout[aidx].y, f.y);
@@ -136,7 +136,7 @@ void reduce_force_i(float *fbuf, float4 *f,
                     float3 *fbuf_shift, gmx_bool calc_fshift, 
                     int tidxi, int tidxj, int ai)
 {
-    if ((CELL_SIZE & (CELL_SIZE - 1)))
+    if ((CLUSTER_SIZE & (CLUSTER_SIZE - 1)))
     {
         reduce_force_i_generic(fbuf, f, fbuf_shift, calc_fshift, tidxi, tidxj, ai);
     }
@@ -157,10 +157,10 @@ void reduce_energy_pow2(volatile float *buf,
     int     i, j; 
     float   e1, e2;
 
-    i = CELL_SIZE_2/2;
+    i = CLUSTER_SIZE_2/2;
 
 # pragma unroll 10
-    for (j = 2 * CELL_SIZE_POW2_EXPONENT - 1; j > 0; j--)
+    for (j = 2 * CLUSTER_SIZE_POW2_EXPONENT - 1; j > 0; j--)
     {
         if (tidx < i)
         {

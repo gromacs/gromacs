@@ -115,8 +115,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #endif
                             )
 {
-    const gmx_nbl_ci_t *nbln;
-    const gmx_nbl_cj_t *cj;
+    const nbnxn_ci_t   *nbln;
+    const nbnxn_cj_t   *l_cj;
     const int          *type;
     const real         *q;
     const real         *shiftvec;
@@ -124,11 +124,11 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     const real         *nbfp0,*nbfp1,*nbfp2=NULL,*nbfp3=NULL;
     real       facel;
     real       *nbfp_i;
-    int        n,si;
+    int        n,ci;
     int        ish3;
     gmx_bool   half_LJ,do_coul;
-    int        ssi,ssix,ssiy,ssiz;
-    int        sjind0,sjind1,sjind;
+    int        sci,scix,sciy,sciz;
+    int        cjind0,cjind1,cjind;
     int        ip,jp;
 
 #ifdef ENERGY_GROUPS
@@ -316,7 +316,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     Vstride_i = nbat->nenergrp*nbat->nenergrp*nbat->nenergrp*nbat->nenergrp*4;
 #endif
 
-    cj = nbl->cj;
+    l_cj = nbl->cj;
 
     ninner = 0;
     for(n=0; n<nbl->nci; n++)
@@ -324,22 +324,22 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
         nbln = &nbl->ci[n];
 
         ish3             = 3*(nbln->shift & NBL_CI_SHIFT);
-        sjind0           = nbln->cj_ind_start;      
-        sjind1           = nbln->cj_ind_end;    
+        cjind0           = nbln->cj_ind_start;      
+        cjind1           = nbln->cj_ind_end;    
         /* Currently only works super-cells equal to sub-cells */
-        si               = nbln->ci;
+        ci               = nbln->ci;
 
         shX_SSE = _mm_load1_ps(shiftvec+ish3);
         shY_SSE = _mm_load1_ps(shiftvec+ish3+1);
         shZ_SSE = _mm_load1_ps(shiftvec+ish3+2);
 
-        ssi              = si*SIMD_WIDTH;
+        sci              = ci*SIMD_WIDTH;
        
         half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
         do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
 
 #ifdef ENERGY_GROUPS
-        egps_i = nbat->energrp[si];
+        egps_i = nbat->energrp[ci];
 
         if (nbat->nenergrp == 2)
         {
@@ -369,63 +369,63 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #endif
 
 		/* Load i atom data */
-        ssix             = ssi*DIM;
-        ssiy             = ssix + SIMD_WIDTH;
-        ssiz             = ssiy + SIMD_WIDTH;
-		ix_SSE0          = _mm_add_ps(_mm_load1_ps(x+ssix)  ,shX_SSE);
-		ix_SSE1          = _mm_add_ps(_mm_load1_ps(x+ssix+1),shX_SSE);
-		ix_SSE2          = _mm_add_ps(_mm_load1_ps(x+ssix+2),shX_SSE);
-		ix_SSE3          = _mm_add_ps(_mm_load1_ps(x+ssix+3),shX_SSE);
-		iy_SSE0          = _mm_add_ps(_mm_load1_ps(x+ssiy)  ,shY_SSE);
-		iy_SSE1          = _mm_add_ps(_mm_load1_ps(x+ssiy+1),shY_SSE);
-		iy_SSE2          = _mm_add_ps(_mm_load1_ps(x+ssiy+2),shY_SSE);
-		iy_SSE3          = _mm_add_ps(_mm_load1_ps(x+ssiy+3),shY_SSE);
-        iz_SSE0          = _mm_add_ps(_mm_load1_ps(x+ssiz)  ,shZ_SSE);
-		iz_SSE1          = _mm_add_ps(_mm_load1_ps(x+ssiz+1),shZ_SSE);
-		iz_SSE2          = _mm_add_ps(_mm_load1_ps(x+ssiz+2),shZ_SSE);
-		iz_SSE3          = _mm_add_ps(_mm_load1_ps(x+ssiz+3),shZ_SSE);
+        scix             = sci*DIM;
+        sciy             = scix + SIMD_WIDTH;
+        sciz             = sciy + SIMD_WIDTH;
+		ix_SSE0          = _mm_add_ps(_mm_load1_ps(x+scix)  ,shX_SSE);
+		ix_SSE1          = _mm_add_ps(_mm_load1_ps(x+scix+1),shX_SSE);
+		ix_SSE2          = _mm_add_ps(_mm_load1_ps(x+scix+2),shX_SSE);
+		ix_SSE3          = _mm_add_ps(_mm_load1_ps(x+scix+3),shX_SSE);
+		iy_SSE0          = _mm_add_ps(_mm_load1_ps(x+sciy)  ,shY_SSE);
+		iy_SSE1          = _mm_add_ps(_mm_load1_ps(x+sciy+1),shY_SSE);
+		iy_SSE2          = _mm_add_ps(_mm_load1_ps(x+sciy+2),shY_SSE);
+		iy_SSE3          = _mm_add_ps(_mm_load1_ps(x+sciy+3),shY_SSE);
+        iz_SSE0          = _mm_add_ps(_mm_load1_ps(x+sciz)  ,shZ_SSE);
+		iz_SSE1          = _mm_add_ps(_mm_load1_ps(x+sciz+1),shZ_SSE);
+		iz_SSE2          = _mm_add_ps(_mm_load1_ps(x+sciz+2),shZ_SSE);
+		iz_SSE3          = _mm_add_ps(_mm_load1_ps(x+sciz+3),shZ_SSE);
 
         /* With half_LJ we currently always calculate Coulomb interactions */
         if (do_coul || half_LJ)
         {
-            iq_SSE0      = _mm_set1_ps(facel*q[ssi]);
-            iq_SSE1      = _mm_set1_ps(facel*q[ssi+1]);
-            iq_SSE2      = _mm_set1_ps(facel*q[ssi+2]);
-            iq_SSE3      = _mm_set1_ps(facel*q[ssi+3]);
+            iq_SSE0      = _mm_set1_ps(facel*q[sci]);
+            iq_SSE1      = _mm_set1_ps(facel*q[sci+1]);
+            iq_SSE2      = _mm_set1_ps(facel*q[sci+2]);
+            iq_SSE3      = _mm_set1_ps(facel*q[sci+3]);
         }
 
 #ifdef LJ_COMB_LB
-        hsig_i_SSE0      = _mm_load1_ps(ljc+ssi*2+0);
-        hsig_i_SSE1      = _mm_load1_ps(ljc+ssi*2+1);
-        hsig_i_SSE2      = _mm_load1_ps(ljc+ssi*2+2);
-        hsig_i_SSE3      = _mm_load1_ps(ljc+ssi*2+3);
-        seps_i_SSE0      = _mm_load1_ps(ljc+ssi*2+4);
-        seps_i_SSE1      = _mm_load1_ps(ljc+ssi*2+5);
-        seps_i_SSE2      = _mm_load1_ps(ljc+ssi*2+6);
-        seps_i_SSE3      = _mm_load1_ps(ljc+ssi*2+7);
+        hsig_i_SSE0      = _mm_load1_ps(ljc+sci*2+0);
+        hsig_i_SSE1      = _mm_load1_ps(ljc+sci*2+1);
+        hsig_i_SSE2      = _mm_load1_ps(ljc+sci*2+2);
+        hsig_i_SSE3      = _mm_load1_ps(ljc+sci*2+3);
+        seps_i_SSE0      = _mm_load1_ps(ljc+sci*2+4);
+        seps_i_SSE1      = _mm_load1_ps(ljc+sci*2+5);
+        seps_i_SSE2      = _mm_load1_ps(ljc+sci*2+6);
+        seps_i_SSE3      = _mm_load1_ps(ljc+sci*2+7);
 #else
 #ifdef LJ_COMB_GEOM
-        c6s_SSE0         = _mm_load1_ps(ljc+ssi*2+0);
-        c6s_SSE1         = _mm_load1_ps(ljc+ssi*2+1);
+        c6s_SSE0         = _mm_load1_ps(ljc+sci*2+0);
+        c6s_SSE1         = _mm_load1_ps(ljc+sci*2+1);
         if (!half_LJ)
         {
-            c6s_SSE2     = _mm_load1_ps(ljc+ssi*2+2);
-            c6s_SSE3     = _mm_load1_ps(ljc+ssi*2+3);
+            c6s_SSE2     = _mm_load1_ps(ljc+sci*2+2);
+            c6s_SSE3     = _mm_load1_ps(ljc+sci*2+3);
         }
-        c12s_SSE0        = _mm_load1_ps(ljc+ssi*2+4);
-        c12s_SSE1        = _mm_load1_ps(ljc+ssi*2+5);
+        c12s_SSE0        = _mm_load1_ps(ljc+sci*2+4);
+        c12s_SSE1        = _mm_load1_ps(ljc+sci*2+5);
         if (!half_LJ)
         {
-            c12s_SSE2    = _mm_load1_ps(ljc+ssi*2+6);
-            c12s_SSE3    = _mm_load1_ps(ljc+ssi*2+7);
+            c12s_SSE2    = _mm_load1_ps(ljc+sci*2+6);
+            c12s_SSE3    = _mm_load1_ps(ljc+sci*2+7);
         }
 #else
-        nbfp0     = nbat->nbfp_s4 + type[ssi  ]*nbat->ntype*4;
-        nbfp1     = nbat->nbfp_s4 + type[ssi+1]*nbat->ntype*4;
+        nbfp0     = nbat->nbfp_s4 + type[sci  ]*nbat->ntype*4;
+        nbfp1     = nbat->nbfp_s4 + type[sci+1]*nbat->ntype*4;
         if (!half_LJ)
         {
-            nbfp2 = nbat->nbfp_s4 + type[ssi+2]*nbat->ntype*4;
-            nbfp3 = nbat->nbfp_s4 + type[ssi+3]*nbat->ntype*4;
+            nbfp2 = nbat->nbfp_s4 + type[sci+2]*nbat->ntype*4;
+            nbfp3 = nbat->nbfp_s4 + type[sci+3]*nbat->ntype*4;
         }
 #endif
 #endif
@@ -448,8 +448,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 		fiz_SSE2           = _mm_setzero_ps();
 		fiz_SSE3           = _mm_setzero_ps();
 
-        sjind = sjind0;
-        while (sjind < sjind1 && nbl->cj[sjind].excl != 0xffff)
+        cjind = cjind0;
+        while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
         {
 #define CHECK_EXCLS
             if (half_LJ)
@@ -469,10 +469,10 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #include "nbnxn_kernel_sse_single_inner.h"
             }
 #undef CHECK_EXCLS
-            sjind++;
+            cjind++;
         }
 
-        for(; (sjind<sjind1); sjind++)
+        for(; (cjind<cjind1); cjind++)
         {
             if (half_LJ)
             {
@@ -491,26 +491,26 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #include "nbnxn_kernel_sse_single_inner.h"
             }
         }
-        ninner += sjind1 - sjind0;
+        ninner += cjind1 - cjind0;
 
 	/* Add i forces to mem and shiftedn force list */
         _MM_TRANSPOSE4_PS(fix_SSE0,fix_SSE1,fix_SSE2,fix_SSE3);
         fix_SSE0 = _mm_add_ps(fix_SSE0,fix_SSE1);
         fix_SSE2 = _mm_add_ps(fix_SSE2,fix_SSE3);
         fix_SSE0 = _mm_add_ps(fix_SSE0,fix_SSE2);
-        _mm_store_ps(f+ssix, _mm_add_ps(fix_SSE0, _mm_load_ps(f+ssix)));
+        _mm_store_ps(f+scix, _mm_add_ps(fix_SSE0, _mm_load_ps(f+scix)));
         
         _MM_TRANSPOSE4_PS(fiy_SSE0,fiy_SSE1,fiy_SSE2,fiy_SSE3);
         fiy_SSE0 = _mm_add_ps(fiy_SSE0,fiy_SSE1);
         fiy_SSE2 = _mm_add_ps(fiy_SSE2,fiy_SSE3);
         fiy_SSE0 = _mm_add_ps(fiy_SSE0,fiy_SSE2);
-        _mm_store_ps(f+ssiy, _mm_add_ps(fiy_SSE0, _mm_load_ps(f+ssiy)));
+        _mm_store_ps(f+sciy, _mm_add_ps(fiy_SSE0, _mm_load_ps(f+sciy)));
         
         _MM_TRANSPOSE4_PS(fiz_SSE0,fiz_SSE1,fiz_SSE2,fiz_SSE3);
         fiz_SSE0 = _mm_add_ps(fiz_SSE0,fiz_SSE1);
         fiz_SSE2 = _mm_add_ps(fiz_SSE2,fiz_SSE3);
         fiz_SSE0 = _mm_add_ps(fiz_SSE0,fiz_SSE2);
-        _mm_store_ps(f+ssiz, _mm_add_ps(fiz_SSE0, _mm_load_ps(f+ssiz)));
+        _mm_store_ps(f+sciz, _mm_add_ps(fiz_SSE0, _mm_load_ps(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
         _mm_store_ps(shf,fix_SSE0);

@@ -31,7 +31,7 @@ typedef struct {
 
 /* non-bonded data structure with Verlet-type cut-off */
 typedef struct {
-    gmx_nbsearch_t    nbs;          /* bounding box type neighbor searching data */
+    nbnxn_search_t    nbs;          /* n vs n atom pair searching data */
     int nloc;                       /* number of interaction groups */
     nonbonded_verlet_group_t grp[2]; /* local and non-local interaction group */
 

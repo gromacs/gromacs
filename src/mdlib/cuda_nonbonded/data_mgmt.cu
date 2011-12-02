@@ -198,16 +198,16 @@ static void init_nblist(cu_nblist_t *nbl)
 {
     /* initilize to NULL poiters to data that is not allocated here and will
        need reallocation in cu_init_atomdata */
-    nbl->ci      = NULL;
-    nbl->sj4     = NULL;
+    nbl->sci     = NULL;
+    nbl->cj4     = NULL;
     nbl->excl    = NULL;    
     
     /* size -1 indicates that the repective array hasn't been initialized yet */
-    nbl->naps        = -1;
-    nbl->nci         = -1;
-    nbl->ci_nalloc   = -1;
-    nbl->nsj4        = -1;
-    nbl->sj4_nalloc  = -1;
+    nbl->na_c        = -1;
+    nbl->nsci        = -1;
+    nbl->sci_nalloc  = -1;
+    nbl->ncj4        = -1;
+    nbl->cj4_nalloc  = -1;
     nbl->nexcl       = -1;
     nbl->excl_nalloc = -1;
     nbl->prune_nbl   = FALSE;
@@ -380,16 +380,16 @@ void cu_init_nblist(cu_nonbonded_t cu_nb,
     cudaStream_t stream     = cu_nb->stream[iloc];
     cu_nblist_t  *d_nblist  = cu_nb->nblist[iloc];
 
-    if (d_nblist->naps < 0)
+    if (d_nblist->na_c < 0)
     {
-        d_nblist->naps = h_nblist->naps;
+        d_nblist->na_c = h_nblist->na_c;
     }
     else
     {
-        if (d_nblist->naps != h_nblist->naps)
+        if (d_nblist->na_c != h_nblist->na_c)
         {
             sprintf(sbuf, "In cu_init_nblist: the #atoms per cell has changed (from %d to %d)",
-                    d_nblist->naps, h_nblist->naps);            
+                    d_nblist->na_c, h_nblist->na_c);
             gmx_incons(sbuf);
         }
     }
@@ -400,14 +400,14 @@ void cu_init_nblist(cu_nonbonded_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    cu_realloc_buffered((void **)&d_nblist->ci, h_nblist->ci, sizeof(*(d_nblist->ci)),
-                         &d_nblist->nci, &d_nblist->ci_nalloc,
-                         h_nblist->nci,
+    cu_realloc_buffered((void **)&d_nblist->sci, h_nblist->sci, sizeof(*(d_nblist->sci)),
+                         &d_nblist->nsci, &d_nblist->sci_nalloc,
+                         h_nblist->nsci,
                          stream, TRUE);
 
-    cu_realloc_buffered((void **)&d_nblist->sj4, h_nblist->sj4, sizeof(*(d_nblist->sj4)),
-                         &d_nblist->nsj4, &d_nblist->sj4_nalloc,
-                         h_nblist->nsj4,
+    cu_realloc_buffered((void **)&d_nblist->cj4, h_nblist->cj4, sizeof(*(d_nblist->cj4)),
+                         &d_nblist->ncj4, &d_nblist->cj4_nalloc,
+                         h_nblist->ncj4,
                          stream, TRUE);
 
     cu_realloc_buffered((void **)&d_nblist->excl, h_nblist->excl, sizeof(*(d_nblist->excl)),
@@ -606,13 +606,13 @@ void cu_free_nbdata(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
     cu_free_buffered(atomdata->xq);
     cu_free_buffered(atomdata->atom_types, &atomdata->ntypes);
 
-    cu_free_buffered(nblist->ci, &nblist->nci, &nblist->ci_nalloc);
-    cu_free_buffered(nblist->sj4, &nblist->nsj4, &nblist->sj4_nalloc);
+    cu_free_buffered(nblist->sci, &nblist->nsci, &nblist->sci_nalloc);
+    cu_free_buffered(nblist->cj4, &nblist->ncj4, &nblist->cj4_nalloc);
     cu_free_buffered(nblist->excl, &nblist->nexcl, &nblist->excl_nalloc);
     if (bDomDec)
     {
-        cu_free_buffered(nblist_nl->ci, &nblist_nl->nci, &nblist_nl->ci_nalloc);
-        cu_free_buffered(nblist_nl->sj4, &nblist_nl->nsj4, &nblist_nl->sj4_nalloc);
+        cu_free_buffered(nblist_nl->sci, &nblist_nl->nsci, &nblist_nl->sci_nalloc);
+        cu_free_buffered(nblist_nl->cj4, &nblist_nl->ncj4, &nblist_nl->cj4_nalloc);
         cu_free_buffered(nblist_nl->excl, &nblist_nl->nexcl, &nblist->excl_nalloc);
     }
 

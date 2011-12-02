@@ -1470,7 +1470,7 @@ static void pick_nb_kernel(FILE *fp,
                            gmx_bool tryGPU, gmx_bool *useGPU,
                            gmx_bool forceGPU,
                            int *kernel_type,
-                           int *napc)
+                           int *na_c)
 {
     char *env;
     gmx_bool emulateGPU=FALSE;
@@ -1522,16 +1522,16 @@ static void pick_nb_kernel(FILE *fp,
 
         if (env != NULL)
         {
-            sscanf(env,"%d",napc);
+            sscanf(env,"%d",na_c);
         }
 
-        if (*napc == 0 || env == NULL)
+        if (*na_c == 0 || env == NULL)
         {
-            *napc = GPU_NS_CELL_SIZE;
+            *na_c = GPU_NS_CLUSTER_SIZE;
         }
         if (fp != NULL)
         {
-            fprintf(fp, "Emulating GPU, using %d atoms per sub-cell\n", *napc);
+            fprintf(fp, "Emulating GPU, using %d atoms per sub-cell\n", *na_c);
         }
     }    
     else if (tryGPU)
@@ -1543,7 +1543,7 @@ static void pick_nb_kernel(FILE *fp,
         {
             *kernel_type = nbk8x8x8CUDA;
 
-            *napc = GPU_NS_CELL_SIZE;
+            *na_c = GPU_NS_CLUSTER_SIZE;
         }
     }
 
@@ -1638,7 +1638,7 @@ void init_interaction_const(FILE *fp,
 
 static void init_nb_verlet(FILE *fp, 
                            nonbonded_verlet_t **nb_verlet,
-                           int *napc,
+                           int *na_c,
                            const t_inputrec *ir,
                            const t_forcerec *fr,
                            const t_commrec *cr,
@@ -1670,7 +1670,7 @@ static void init_nb_verlet(FILE *fp,
                              strcmp(nbpu_opt,"auto") == 0)),
                            &nbv->useGPU,
                            strncmp(nbpu_opt,"gpu",3) == 0,
-                           &nbv->grp[i].kernel_type, napc);
+                           &nbv->grp[i].kernel_type, na_c);
         }
         else
         {
@@ -1678,7 +1678,7 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nb_kernel(fp, cr, FALSE, NULL, FALSE,
-                               &nbv->grp[i].kernel_type, napc);
+                               &nbv->grp[i].kernel_type, na_c);
             }
             else
             {
@@ -1720,11 +1720,11 @@ static void init_nb_verlet(FILE *fp,
 
     *nb_verlet = nbv;
 
-    gmx_nbsearch_init(&nbv->nbs,
+    nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       is_nbl_type_simple(nbv->grp[0].kernel_type),
-                      *napc,
+                      *na_c,
                       fr->nthreads);
 
     for(i=0; i<nbv->nloc; i++)
@@ -1742,11 +1742,11 @@ static void init_nb_verlet(FILE *fp,
             nb_free  = NULL;
         }
 
-        gmx_nbl_list_init(&nbv->grp[i].nbl_lists,
-                          is_nbl_type_simple(nbv->grp[i].kernel_type),
-                          /* 8x8x8 "non-simple" lists are ATM always combined */
-                          !is_nbl_type_simple(nbv->grp[i].kernel_type),
-                          nb_alloc, nb_free);
+        nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
+                                is_nbl_type_simple(nbv->grp[i].kernel_type),
+                                /* 8x8x8 "non-simple" lists are ATM always combined */
+                                !is_nbl_type_simple(nbv->grp[i].kernel_type),
+                                nb_alloc, nb_free);
 
         if (i == 0 ||
             nbv->grp[0].kernel_type != nbv->grp[i].kernel_type)
@@ -1794,7 +1794,7 @@ void init_forcerec(FILE *fp,
     gmx_bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
-    int     napc;
+    int     na_c;
     
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2302,7 +2302,7 @@ void init_forcerec(FILE *fp,
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, &napc, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, &fr->nbv, &na_c, ir, fr, cr, nbpu_opt);
 
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.

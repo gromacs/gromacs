@@ -30,7 +30,7 @@
  * the papers people have written on it - you can find them on the website!
  */
 
-/* This is the innermost loop contents for the ns cell vs cell
+/* This is the innermost loop contents for the n vs n atom
  * SSE2 single precision kernels.
  */
 
@@ -46,7 +46,7 @@
 #endif
 
         {
-            int        sj,ssj,ssjx,ssjy,ssjz;
+            int        cj,scj,scjx,scjy,scjz;
 
 #ifdef CHECK_EXCLS
             __m128i    mask_int;
@@ -199,16 +199,16 @@
 #endif
 #endif
 
-            sj               = cj[sjind].c;
+            cj               = l_cj[cjind].c;
 
-            ssj              = sj*SIMD_WIDTH;
-            ssjx             = ssj*DIM;
-            ssjy             = ssj*DIM + SIMD_WIDTH;
-            ssjz             = ssj*DIM + 2*SIMD_WIDTH;
+            scj              = cj*SIMD_WIDTH;
+            scjx             = scj*DIM;
+            scjy             = scj*DIM + SIMD_WIDTH;
+            scjz             = scj*DIM + 2*SIMD_WIDTH;
 
 #ifdef CHECK_EXCLS
             /* Load integer interaction mask */
-            mask_int         = _mm_set1_epi32(cj[sjind].excl);
+            mask_int         = _mm_set1_epi32(l_cj[cjind].excl);
 
             /* The is no unequal sse instruction, so we need a not here */
             int_SSE0         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE));
@@ -217,9 +217,9 @@
             int_SSE3         = gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE));
 #endif
             /* load j atom coordinates */
-            jxSSE            = _mm_load_ps(x+ssjx);
-            jySSE            = _mm_load_ps(x+ssjy);
-            jzSSE            = _mm_load_ps(x+ssjz);
+            jxSSE            = _mm_load_ps(x+scjx);
+            jySSE            = _mm_load_ps(x+scjy);
+            jzSSE            = _mm_load_ps(x+scjz);
             
             /* Calculate distance */
             dx_SSE0            = _mm_sub_ps(ix_SSE0,jxSSE);
@@ -249,7 +249,7 @@
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
             /* Only remove the (sub-)diagonal to avoid double counting */
-            if (sj == si)
+            if (cj == ci)
             {
                 wco_SSE0       = _mm_and_ps(wco_SSE0,diag_SSE0);
                 wco_SSE1       = _mm_and_ps(wco_SSE1,diag_SSE1);
@@ -307,7 +307,7 @@
 
 #ifdef CALC_COULOMB
             /* Load parameters for j atom */
-            jq_SSE             = _mm_load_ps(q+ssj);
+            jq_SSE             = _mm_load_ps(q+scj);
             qq_SSE0            = _mm_mul_ps(iq_SSE0,jq_SSE);
             qq_SSE1            = _mm_mul_ps(iq_SSE1,jq_SSE);
             qq_SSE2            = _mm_mul_ps(iq_SSE2,jq_SSE);
@@ -315,12 +315,12 @@
 #endif
 
 #ifdef LJ_COMB_LB
-            hsig_j_SSE         = _mm_load_ps(ljc+ssj*2+0);
-            seps_j_SSE         = _mm_load_ps(ljc+ssj*2+4);
+            hsig_j_SSE         = _mm_load_ps(ljc+scj*2+0);
+            seps_j_SSE         = _mm_load_ps(ljc+scj*2+4);
 #else
 #ifdef LJ_COMB_GEOM
-            c6s_j_SSE          = _mm_load_ps(ljc+ssj*2+0);
-            c12s_j_SSE         = _mm_load_ps(ljc+ssj*2+4);
+            c6s_j_SSE          = _mm_load_ps(ljc+scj*2+0);
+            c12s_j_SSE         = _mm_load_ps(ljc+scj*2+4);
             c6_SSE0            = _mm_mul_ps(c6s_SSE0 ,c6s_j_SSE );
             c6_SSE1            = _mm_mul_ps(c6s_SSE1 ,c6s_j_SSE );
 #ifndef HALF_LJ
@@ -337,20 +337,20 @@
 #ifndef FIX_LJ_C
             for(p=0; p<4; p++)
             {
-                clj_SSE0[p]   = _mm_load_ps(nbfp0+type[ssj+p]*4);
+                clj_SSE0[p]   = _mm_load_ps(nbfp0+type[scj+p]*4);
             }
             for(p=0; p<4; p++)
             {
-                clj_SSE1[p]   = _mm_load_ps(nbfp1+type[ssj+p]*4);
+                clj_SSE1[p]   = _mm_load_ps(nbfp1+type[scj+p]*4);
             }
 #ifndef HALF_LJ
             for(p=0; p<4; p++)
             {
-                clj_SSE2[p]   = _mm_load_ps(nbfp2+type[ssj+p]*4);
+                clj_SSE2[p]   = _mm_load_ps(nbfp2+type[scj+p]*4);
             }
             for(p=0; p<4; p++)
             {
-                clj_SSE3[p]   = _mm_load_ps(nbfp3+type[ssj+p]*4);
+                clj_SSE3[p]   = _mm_load_ps(nbfp3+type[scj+p]*4);
             }
 #endif
             GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE0[0],clj_SSE0[1],clj_SSE0[2],clj_SSE0[3],c6_SSE0,c12_SSE0);
@@ -584,7 +584,7 @@
             
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-            egps_j4            = nbat->energrp[sj]*4;
+            egps_j4            = nbat->energrp[cj]*4;
 #endif
 
 #ifdef CALC_COULOMB
@@ -698,12 +698,12 @@
             fiz_SSE3          = _mm_add_ps(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
-            _mm_store_ps(f+ssjx,
-                         _mm_sub_ps( _mm_load_ps(f+ssjx), gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
-            _mm_store_ps(f+ssjy,
-                         _mm_sub_ps( _mm_load_ps(f+ssjy), gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
-            _mm_store_ps(f+ssjz,
-                         _mm_sub_ps( _mm_load_ps(f+ssjz), gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
+            _mm_store_ps(f+scjx,
+                         _mm_sub_ps( _mm_load_ps(f+scjx), gmx_mm_sum4_ps(tx_SSE0,tx_SSE1,tx_SSE2,tx_SSE3) ));
+            _mm_store_ps(f+scjy,
+                         _mm_sub_ps( _mm_load_ps(f+scjy), gmx_mm_sum4_ps(ty_SSE0,ty_SSE1,ty_SSE2,ty_SSE3) ));
+            _mm_store_ps(f+scjz,
+                         _mm_sub_ps( _mm_load_ps(f+scjz), gmx_mm_sum4_ps(tz_SSE0,tz_SSE1,tz_SSE2,tz_SSE3) ));
         }
 
 #undef  rinv_ex_SSE0

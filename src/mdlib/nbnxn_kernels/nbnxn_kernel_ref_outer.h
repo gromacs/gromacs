@@ -58,12 +58,12 @@
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nb_cell_kernel_c,noener)
+NBK_FUNC_NAME(nbnxn_kernel_ref,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nb_cell_kernel_c,ener)
+NBK_FUNC_NAME(nbnxn_kernel_ref,ener)
 #else
-NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
@@ -83,8 +83,8 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
 #endif
                             )
 {
-    const gmx_nbl_ci_t *nbln;
-    const gmx_nbl_cj_t *cj;
+    const nbnxn_ci_t   *nbln;
+    const nbnxn_cj_t   *l_cj;
     const int          *type;
     const real         *q;
     const real         *shiftvec;
@@ -94,11 +94,10 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
     int        ntype2;
     real       facel;
     real       *nbfp_i;
-    int        n,si;
+    int        n,ci;
     int        ish3;
     gmx_bool   half_LJ,do_coul;
-    int        ssi;
-    int        sjind0,sjind1,sjind;
+    int        cjind0,cjind1,cjind;
     int        ip,jp;
 
     real       xi[UNROLLI*DIM];
@@ -157,7 +156,7 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
-    cj = nbl->cj;
+    l_cj = nbl->cj;
 
     ninner = 0;
     for(n=0; n<nbl->nci; n++)
@@ -167,10 +166,10 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
         nbln = &nbl->ci[n];
 
         ish3             = 3*(nbln->shift & NBL_CI_SHIFT);
-        sjind0           = nbln->cj_ind_start;      
-        sjind1           = nbln->cj_ind_end;    
+        cjind0           = nbln->cj_ind_start;      
+        cjind1           = nbln->cj_ind_end;    
         /* Currently only works super-cells equal to sub-cells */
-        si               = nbln->ci;
+        ci               = nbln->ci;
 
         half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
         do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
@@ -182,7 +181,7 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
 #else
         for(i=0; i<UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbat->energrp[si]>>(8*i)) & 255)*nbat->nenergrp;
+            egp_sh_i[i] = ((nbat->energrp[ci]>>(8*i)) & 255)*nbat->nenergrp;
         }
 #endif
 #endif
@@ -191,7 +190,7 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
         {
             for(d=0; d<DIM; d++)
             {
-                xi[i*DIM+d] = x[(si*UNROLLI+i)*DIM+d] + shiftvec[ish3+d];
+                xi[i*DIM+d] = x[(ci*UNROLLI+i)*DIM+d] + shiftvec[ish3+d];
                 fi[i*DIM+d] = 0;
             }
         }
@@ -201,12 +200,12 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
         {
             for(i=0; i<UNROLLI; i++)
             {
-                qi[i] = facel*q[si*UNROLLI+i];
+                qi[i] = facel*q[ci*UNROLLI+i];
             }
         }
 
-        sjind = sjind0;
-        while (sjind < sjind1 && nbl->cj[sjind].excl != 0xffff)
+        cjind = cjind0;
+        while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
         {
 #define CHECK_EXCLS
             if (half_LJ)
@@ -226,10 +225,10 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
 #include "nbnxn_kernel_ref_inner.h"
             }
 #undef CHECK_EXCLS
-            sjind++;
+            cjind++;
         }
 
-        for(; (sjind<sjind1); sjind++)
+        for(; (cjind<cjind1); cjind++)
         {
             if (half_LJ)
             {
@@ -248,14 +247,14 @@ NBK_FUNC_NAME(nb_cell_kernel_c,energrp)
 #include "nbnxn_kernel_ref_inner.h"
             }
         }
-        ninner += sjind1 - sjind0;
+        ninner += cjind1 - cjind0;
 
         /* Add i forces to mem force list */
         for(i=0; i<UNROLLI; i++)
         {
             for(d=0; d<DIM; d++)
             {
-                f[(si*UNROLLI+i)*DIM+d] += fi[i*DIM+d];
+                f[(ci*UNROLLI+i)*DIM+d] += fi[i*DIM+d];
             }
         }
 #ifdef CALC_SHIFTFORCES

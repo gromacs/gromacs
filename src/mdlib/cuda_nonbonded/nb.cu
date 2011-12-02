@@ -12,8 +12,8 @@
 #include "cuda_data_mgmt.h"
 #include "cupmalloc.h"
 
-#define CELL_SIZE               (GPU_NS_CELL_SIZE)
-#define NB_DEFAULT_THREADS      (CELL_SIZE * CELL_SIZE)
+#define CLUSTER_SIZE            (GPU_NS_CLUSTER_SIZE)
+#define NB_DEFAULT_THREADS      (CLUSTER_SIZE * CLUSTER_SIZE)
 
 #include "cutype_utils.cuh"
 #include "nb_kernel_utils.cuh"
@@ -188,8 +188,8 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
     /* kernel lunch stuff */
     p_k_calc_nb nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
     int         shmem;
-    int         nb_blocks = calc_nb_blocknr(nblist->nci);
-    dim3        dim_block(CELL_SIZE, CELL_SIZE, 1);
+    int         nb_blocks = calc_nb_blocknr(nblist->nsci);
+    dim3        dim_block(CLUSTER_SIZE, CLUSTER_SIZE, 1);
     dim3        dim_grid(nb_blocks, 1, 1);
 
     gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
@@ -219,8 +219,8 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
                 "Grid: %dx%d\n\t#Cells/Subcells: %d/%d (%d)\n",
                 dim_block.x, dim_block.y, dim_block.z,
-                dim_grid.x, dim_grid.y, nblist->nci*NSUBCELL,
-                NSUBCELL, nblist->naps);
+                dim_grid.x, dim_grid.y, nblist->nsci*NSUBCELL,
+                NSUBCELL, nblist->na_c);
     }
 
     /* FIXME: not necessary as it's launched in stream 0
@@ -253,8 +253,8 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
 
     /* size of force buffers in shmem */
     shmem = !doKernel2 ?
-        (1 + NSUBCELL) * CELL_SIZE * CELL_SIZE * 3 * sizeof(float) :
-        CELL_SIZE * CELL_SIZE * 3 * sizeof(float);
+        (1 + NSUBCELL) * CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float) :
+        CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
 
     /* get the pointer to the kernel we need & launch it */
     nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene,

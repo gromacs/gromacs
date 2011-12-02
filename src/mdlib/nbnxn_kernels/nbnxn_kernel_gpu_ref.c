@@ -56,16 +56,16 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      real *                     Vc,
                      real *                     Vvdw)
 {
-    const gmx_nbl_ci_t *nbln;
-    const real         *x;
+    const nbnxn_sci_t *nbln;
+    const real    *x;
     real          rcut2;
     int           ntype,table_nelements,icoul,ivdw;
     real          facel,gbtabscale;
     int           n;
     int           ish3;
-    int           ci;
-    int           sj4_ind0,sj4_ind1,sj4_ind;
-    int           si,sj;
+    int           sci;
+    int           cj4_ind0,cj4_ind1,cj4_ind;
+    int           ci,cj;
     int           ic,jc,ia,ja,is,js,im,jm;
     int           nnn,n0;
     int           ggid;
@@ -89,7 +89,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     real *        vdwparam;
     int *         shift;
     int *         type;
-    const gmx_nbl_excl_t *excl[2];
+    const nbnxn_excl_t *excl[2];
 
     int           npair_tot,npair;
     int           nhwu,nhwu_pruned;
@@ -147,42 +147,42 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     nhwu        = 0;
     nhwu_pruned = 0;
 
-    for(n=0; n<nbl->nci; n++)
+    for(n=0; n<nbl->nsci; n++)
     {
-        nbln = &nbl->ci[n];
+        nbln = &nbl->sci[n];
 
         ish3             = 3*nbln->shift;     
         shX              = shiftvec[ish3];  
         shY              = shiftvec[ish3+1];
         shZ              = shiftvec[ish3+2];
-        sj4_ind0         = nbln->sj4_ind_start;      
-        sj4_ind1         = nbln->sj4_ind_end;    
-        ci               = nbln->ci;
+        cj4_ind0         = nbln->cj4_ind_start;      
+        cj4_ind1         = nbln->cj4_ind_end;    
+        sci              = nbln->sci;
         vctot            = 0;              
         Vvdwtot          = 0;              
         
-        for(sj4_ind=sj4_ind0; (sj4_ind<sj4_ind1); sj4_ind++)
+        for(cj4_ind=cj4_ind0; (cj4_ind<cj4_ind1); cj4_ind++)
         {
-            excl[0]           = &nbl->excl[nbl->sj4[sj4_ind].imei[0].excl_ind];
-            excl[1]           = &nbl->excl[nbl->sj4[sj4_ind].imei[1].excl_ind];
+            excl[0]           = &nbl->excl[nbl->cj4[cj4_ind].imei[0].excl_ind];
+            excl[1]           = &nbl->excl[nbl->cj4[cj4_ind].imei[1].excl_ind];
 
             for(jm=0; jm<4; jm++)
             {
-                sj               = nbl->sj4[sj4_ind].sj[jm];
+                cj               = nbl->cj4[cj4_ind].cj[jm];
 
                 for(im=0; im<NSUBCELL; im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
-                    if ((nbl->sj4[sj4_ind].imei[0].imask >> (jm*NSUBCELL+im)) & 1)
+                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*NSUBCELL+im)) & 1)
                     {
-                        si               = ci*NSUBCELL + im;
+                        ci               = sci*NSUBCELL + im;
 
                         npair = 0;
-                        for(ic=0; ic<nbl->naps; ic++)
+                        for(ic=0; ic<nbl->na_c; ic++)
                         {
-                            ia               = si*nbl->naps + ic;
+                            ia               = ci*nbl->na_c + ic;
                     
                             is               = ia*nbat->xstride;
                             ix               = shX + x[is+0];
@@ -195,11 +195,11 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fiy              = 0;
                             fiz              = 0;
                     
-                            for(jc=0; jc<nbl->naps; jc++)
+                            for(jc=0; jc<nbl->na_c; jc++)
                             {
-                                ja               = sj*nbl->naps + jc;
+                                ja               = cj*nbl->na_c + jc;
                         
-                                if (!((excl[jc>>2]->pair[(jc & 3)*nbl->naps+ic] >> (jm*NSUBCELL+im)) & 1))
+                                if (!((excl[jc>>2]->pair[(jc & 3)*nbl->na_c+ic] >> (jm*NSUBCELL+im)) & 1))
                                 {
                                     continue;
                                 }
@@ -370,7 +370,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             /* Count in half work-units.
                              * In CUDA one work-unit is 2 warps.
                              */
-                            if ((ic+1) % (nbl->naps/2) == 0)
+                            if ((ic+1) % (nbl->na_c/2) == 0)
                             {
                                 npair_tot += npair;
 
@@ -397,15 +397,15 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     if (debug)
     {
         fprintf(debug,"number of half %dx%d atom pairs: %d pruned: %d fraction %4.2f\n",
-                nbl->naps,nbl->naps,
+                nbl->na_c,nbl->na_c,
                 nhwu,nhwu_pruned,nhwu_pruned/(double)nhwu);
         fprintf(debug,"generic kernel pair interactions:            %d\n",
-                nhwu*nbl->naps/2*nbl->naps);
+                nhwu*nbl->na_c/2*nbl->na_c);
         fprintf(debug,"generic kernel post-prune pair interactions: %d\n",
-                nhwu_pruned*nbl->naps/2*nbl->naps);
+                nhwu_pruned*nbl->na_c/2*nbl->na_c);
         fprintf(debug,"generic kernel non-zero pair interactions:   %d\n",
                 npair_tot);
         fprintf(debug,"ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot/(double)(nhwu_pruned*nbl->naps/2*nbl->naps));
+                npair_tot/(double)(nhwu_pruned*nbl->na_c/2*nbl->na_c));
     }
 }

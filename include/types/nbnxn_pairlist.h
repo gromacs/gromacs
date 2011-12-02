@@ -52,8 +52,8 @@ typedef struct {
 #define NSUBCELL_X 2
 #define NSUBCELL   (NSUBCELL_Z*NSUBCELL_Y*NSUBCELL_X)
 
-/* Abstract type for neighbor searching data */
-typedef struct gmx_nbsearch * gmx_nbsearch_t;
+/* Abstract type for pair searching data */
+typedef struct nbnxn_search * nbnxn_search_t;
 
 /* Function that should return a pointer *ptr to memory
  * of size nbytes.
@@ -67,42 +67,44 @@ typedef void gmx_nbat_alloc_t(void **ptr,size_t nbytes);
 typedef void gmx_nbat_free_t(void *ptr);
 
 typedef struct {
-    int c;     /* The j-cell                       */
+    int c;     /* The j-cluster                    */
     int excl;  /* The exclusion (interaction) bits */
-} gmx_nbl_cj_t;
+} nbnxn_cj_t;
 
 #define NBL_CI_SHIFT          4095
 #define NBL_CI_HALF_LJ(subc)  (1<<(12+2*(subc)))
 #define NBL_CI_DO_COUL(subc)  (1<<(13+2*(subc)))
 
-/* Smaller neighbor list list unit */
+/* Simple neighbor list i-unit */
 typedef struct {
-    int ci;            /* i-cell              */
-    int shift;         /* Shift vector index plus possible flags */
-    union {
-        int cj_ind_start;   /* Start index into cj  */
-        int sj4_ind_start;  /* Start index into sj4 */
-    };
-    union {
-        int cj_ind_end;     /* End index into cj    */
-        int sj4_ind_end;    /* End index into sj4   */
-    };        
-} gmx_nbl_ci_t;
+    int ci;             /* i-cluster             */
+    int shift;          /* Shift vector index plus possible flags */
+    int cj_ind_start;   /* Start index into cj   */
+    int cj_ind_end;     /* End index into cj     */
+} nbnxn_ci_t;
+
+/* Grouped neighbor list i-unit */
+typedef struct {
+    int sci;            /* i-super-cluster       */
+    int shift;          /* Shift vector index plus possible flags */
+    int cj4_ind_start;  /* Start index into cj4  */
+    int cj4_ind_end;    /* End index into cj4    */
+} nbnxn_sci_t;
 
 typedef struct {
-    unsigned imask;        /* The i-subcell interactions mask for 1 warp  */
+    unsigned imask;        /* The i-cluster interactions mask for 1 warp  */
     int excl_ind;          /* Index into the exclusion array for 1 warp   */
-} gmx_nbl_im_ei_t;
+} nbnxn_im_ei_t;
 
 typedef struct {
-    int sj[4];               /* The 4 j-subcells                          */
-    gmx_nbl_im_ei_t imei[2]; /* The i-subcell mask data       for 2 warps */
-} gmx_nbl_sj4_t;
+    int cj[4];             /* The 4 j-clusters                            */
+    nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
+} nbnxn_cj4_t;
 
 typedef struct {
     unsigned pair[32];     /* Exclusion bits for one warp,                *
-                            * each unsigned has bit for 4*8 i sub-cells   */ 
-} gmx_nbl_excl_t;
+                            * each unsigned has bit for 4*8 i clusters    */ 
+} nbnxn_excl_t;
 
 typedef struct {
     gmx_cache_protect_t cp0;
@@ -110,30 +112,33 @@ typedef struct {
     gmx_nbat_alloc_t *alloc;
     gmx_nbat_free_t  *free;
 
-    gmx_bool simple;       /* Simple list has napc=naps and uses cj    *
-                            * Complex list usese sj4                   */
+    gmx_bool simple;       /* Simple list has na_sc=na_s and uses cj   *
+                            * Complex list uses cj4                    */
 
-    int      napc;         /* The number of atoms per super cell       */
-    int      naps;         /* The number of atoms per sub cell         */
+    int      na_c;         /* The number of atoms per cluser           */
+    int      na_sc;        /* The number of atoms per super cluster    */
     gmx_bool TwoWay;       /* Each pair once or twice in the list?     */
     real     rlist;        /* The radius for constructing the list     */
-    int      nci;          /* The number of i super cells in the list  */
-    gmx_nbl_ci_t *ci;      /* The i super cell list                    */
+    int      nci;          /* The number of i clusters in the list     */
+    nbnxn_ci_t *ci;        /* The i-cluster list                       */
     int      ci_nalloc;    /* The allocation size of ci                */
+    int      nsci;         /* The number of i super clusters in the list */
+    nbnxn_sci_t *sci;      /* The i-super-cluster list                 */
+    int      sci_nalloc;   /* The allocation size of sci               */
 
-    int      ncj;          /* The number of j-cells                    */
-    gmx_nbl_cj_t *cj;      /* The j-cell list                          */
+    int      ncj;          /* The number of j-clusters                 */
+    nbnxn_cj_t *cj;        /* The j-cluster list                       */
     int      cj_nalloc;    /* The allocation size of cj                */
 
-    int      nsj4;         /* The total number of 4*j sub cells        */
-    gmx_nbl_sj4_t *sj4;    /* The 4*j sub cell list (size nsj4)        */
+    int      ncj4;         /* The total number of 4*j clusters         */
+    nbnxn_cj4_t *cj4;      /* The 4*j cluster list (size ncj4)         */
+    int      cj4_nalloc;   /* The allocation size of cj4               */
     int      nexcl;        /* The count for excl                       */
-    gmx_nbl_excl_t *excl;  /* Exclusions                               */
+    nbnxn_excl_t *excl;    /* Atom interaction bits (non-exclusions)   */
     int      excl_nalloc;  /* The allocation size for excl             */
-    int      sj4_nalloc;   /* The allocation size of sj                */
-    int      nsi;          /* The total number of i sub cells          */
+    int      nci_tot;      /* The total number of i clusters           */
 
-    struct gmx_nbl_work *work;
+    struct nbnxn_list_work *work;
 
     gmx_cache_protect_t cp1;
 } nbnxn_pairlist_t;
@@ -143,7 +148,7 @@ typedef struct {
     nbnxn_pairlist_t **nbl; /* lists */
     gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
     gmx_bool     simple;    /* TRUE if the list of of type "simple" 
-                               (napc=naps, no subcells used) */
+                               (na_sc=na_s, no super-clusters used) */
 
 } nbnxn_pairlist_set_t;
 
@@ -176,9 +181,9 @@ typedef struct {
     real *lj_comb;   /* LJ parameters per atom for combining for pairs     */
     int  XFormat;    /* The format of x (and q), enum                      */
     real *q;         /* Charges, can be NULL if incorporated in x          */
-    int  naps;       /* The number of atoms per sub cell                   */
+    int  na_c;       /* The number of atoms per cluster                    */
     int  nenergrp;   /* The number of energy groups                        */
-    int  *energrp;   /* The energy groups per sub cell, can be NULL        */
+    int  *energrp;   /* The energy groups per cluster, can be NULL         */
     gmx_bool dynamic_box; /* Do we need to update shift_vec every step?    */
     rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */

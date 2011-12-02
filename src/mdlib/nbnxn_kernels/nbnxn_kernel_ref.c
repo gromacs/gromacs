@@ -99,13 +99,13 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 enum { coultRF, coultTAB, coultNR };
 
 p_nbk_func_ener p_nbk_c_ener[coultNR] =
-{ nb_cell_kernel_c_rf_ener, nb_cell_kernel_c_tab_ener };
+{ nbnxn_kernel_ref_rf_ener, nbnxn_kernel_ref_tab_ener };
 
 p_nbk_func_ener p_nbk_c_energrp[coultNR] =
-{ nb_cell_kernel_c_rf_energrp, nb_cell_kernel_c_tab_energrp };
+{ nbnxn_kernel_ref_rf_energrp, nbnxn_kernel_ref_tab_energrp };
 
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
-{ nb_cell_kernel_c_rf_noener, nb_cell_kernel_c_tab_noener };
+{ nbnxn_kernel_ref_rf_noener, nbnxn_kernel_ref_tab_noener };
 
 static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)

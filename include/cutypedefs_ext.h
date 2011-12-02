@@ -1,7 +1,7 @@
 #ifndef CUTYPEDEFS_EXT_H
 #define CUTYPEDEFS_EXT_H
 
-#define GPU_NS_CELL_SIZE    8
+#define GPU_NS_CLUSTER_SIZE    8
 
 #define GPU_MIN_CI_BALANCED_FACTOR 40
 

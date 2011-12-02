@@ -801,21 +801,21 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (!fr->bDomDec)
         {
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_LOCAL);
-            gmx_nbsearch_put_on_grid(nbv->nbs,fr->ePBC,box,
-                                     0,vzero,box_diag,
-                                     0,mdatoms->homenr,-1,fr->cginfo,x,
-                                     0,NULL,
-                                     nbv->grp[eintLocal].nbl_lists.simple,
-                                     nbv->grp[eintLocal].nbat);
+            nbnxn_put_on_grid(nbv->nbs,fr->ePBC,box,
+                              0,vzero,box_diag,
+                              0,mdatoms->homenr,-1,fr->cginfo,x,
+                              0,NULL,
+                              nbv->grp[eintLocal].nbl_lists.simple,
+                              nbv->grp[eintLocal].nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_LOCAL);
         }
         else
         {
             wallcycle_sub_start(wcycle,ewcsNBS_GRID_NONLOCAL);
-            gmx_nbsearch_put_on_grid_nonlocal(nbv->nbs,domdec_zones(cr->dd),
-                                              fr->cginfo,x,
-                                              nbv->grp[eintNonlocal].nbl_lists.simple,
-                                              nbv->grp[eintNonlocal].nbat);
+            nbnxn_put_on_grid_nonlocal(nbv->nbs,domdec_zones(cr->dd),
+                                       fr->cginfo,x,
+                                       nbv->grp[eintNonlocal].nbl_lists.simple,
+                                       nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle,ewcsNBS_GRID_NONLOCAL);
         }
 
@@ -855,12 +855,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (bNS)
     {
         wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_LOCAL);
-        gmx_nbsearch_make_nblist(nbv->nbs,nbv->grp[eintLocal].nbat,
-                                 &top->excls,
-                                 ic->rlist,
-                                 nbv->min_ci_balanced,
-                                 &nbv->grp[eintLocal].nbl_lists,
-                                 eintLocal);
+        nbnxn_make_pairlist(nbv->nbs,nbv->grp[eintLocal].nbat,
+                            &top->excls,
+                            ic->rlist,
+                            nbv->min_ci_balanced,
+                            &nbv->grp[eintLocal].nbl_lists,
+                            eintLocal);
 
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
 #ifdef GMX_GPU
@@ -908,15 +908,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
             if (bDiffKernels)
             {
-                gmx_nbsearch_grid_simple(nbv->nbs,nbv->grp[eintNonlocal].nbat);
+                nbnxn_grid_simple(nbv->nbs,nbv->grp[eintNonlocal].nbat);
             }
 
-            gmx_nbsearch_make_nblist(nbv->nbs,nbv->grp[eintNonlocal].nbat,
-                                     &top->excls,
-                                     ic->rlist,
-                                     nbv->min_ci_balanced,
-                                     &nbv->grp[eintNonlocal].nbl_lists,
-                                     eintNonlocal);
+            nbnxn_make_pairlist(nbv->nbs,nbv->grp[eintNonlocal].nbat,
+                                &top->excls,
+                                ic->rlist,
+                                nbv->min_ci_balanced,
+                                &nbv->grp[eintNonlocal].nbl_lists,
+                                eintNonlocal);
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 #ifdef GMX_GPU
