@@ -267,11 +267,11 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                v[n][d]             = lambda_titration*mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d] = mv1*lambda_titration*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
-                v[n][d]        = 0.0;
+                v[n][d] = 0.0;
             }
         }
     }
@@ -1576,7 +1576,7 @@ void update_coords(FILE         *fplog,
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
                    t_idef       *idef,
-                   real         DE_Titration)
+                   real         lambda_titration)
 {
     gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
@@ -1588,17 +1588,7 @@ void update_coords(FILE         *fplog,
     int              *icom = NULL;
     tensor           vir_con;
     rvec             *vcom,*xcom,*vall,*xall,*xin,*vin,*forcein,*fall,*xpall,*xprimein,*xprime;
-    double           lambda_titration=1.0,ek;
 
-    if ((DE_Titration != 0) && ((UpdatePart == etrtVELOCITY1)))
-    {
-        /* Compute extra scaling for Ekin */
-        ek = trace(ekind->ekin);
-        lambda_titration = sqrt(1.0-DE_Titration/ek);
-        if (NULL != debug)
-            fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
-                    ek,lambda_titration);
-    }
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
         !EI_VV(inputrec->eI))

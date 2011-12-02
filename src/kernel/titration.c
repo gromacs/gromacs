@@ -3143,26 +3143,49 @@ real distance_dependence(rvec x, rvec c, real rc, t_pbc *pbc)
 static real check_ekin(rvec *v, t_mdatoms *md,char *title)
 {
     int    i,j,k;
-    real   m_2,ekin;
+    real   m_2,ekin,mtot,mi;
+    rvec   vcm,dv;
     tensor ekt;
+    
+    clear_rvec(vcm);
+    mtot = 0;
+    for(i=0;i<md->nr;i++)
+    {
+        if (md->ptype[i] == eptAtom) {
+            mi    = md->massT[i];
+            mtot += mi;
+            for(j=0;j<DIM;j++)
+            {
+                vcm[j]+=v[i][j]*mi;
+            }
+        }
+    }
+    for(j=0;j<DIM;j++)
+    {
+        vcm[j] /= mtot;
+    }
     
     clear_mat(ekt);
     /* WARNING this routine is probably not needed */
     for(i=0;i<md->nr;i++)
     {
-        m_2 = 0.5*md->massT[i];
-        for(j=0;j<DIM;j++)
-        {
-            for(k=0; (k<DIM); k++)
+        if (md->ptype[i] == eptAtom) {
+            m_2 = 0.5*md->massT[i];
+            rvec_sub(v[i],vcm,dv);
+            for(j=0;j<DIM;j++)
             {
-                ekt[j][k] += v[i][j]*v[i][k];
-            }
-        }   
+                for(k=0; (k<DIM); k++)
+                {
+                    ekt[j][k] += m_2*dv[j]*dv[k];
+                }
+            }   
+        }
     }
     ekin = trace(ekt);
     if (debug) {
+        pr_rvec(debug,0,"vcm",vcm,DIM,FALSE);
         pr_rvecs(debug,0,title,ekt,DIM);
-        fprintf(debug,"title: scalar ekin: %g\n",ekin);
+        fprintf(debug,"%s: scalar ekin: %g\n",title,ekin);
     }
     return ekin;
 } /* check_ekin */
@@ -3526,7 +3549,6 @@ real do_titration(FILE *fplog,
 
     find_acceptors(fplog,cr, fr, T, state->x, &pbc, md, &(db->H_map));
 
-
     DE_Env = 0;
     
     if(T->nr_hop > 0)
@@ -3671,6 +3693,9 @@ real do_titration(FILE *fplog,
                 if ((NULL != fplog))
                 {
                     gmx_step_str(step, stepstr);
+                    fprintf(fplog,"%s: Ekin = %g\n",
+                            eTitrationAlg_names[ir->titration_alg],
+                            check_ekin(state->v,md,"Check"));
                     fprintf(fplog,"%s: %5s at step %s. E12 = %8.3f, hopper: %d don: %d (%s) acc: %d (%s)",
                             eTitrationAlg_names[ir->titration_alg],
                             (bHop ? "P-hop" : "no hop"),
