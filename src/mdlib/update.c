@@ -267,7 +267,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                v[n][d] = mv1*lambda_titration*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d] = mv1*(lambda_titration*mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
@@ -1148,7 +1148,8 @@ void update_tcouple(FILE         *fplog,
                     gmx_wallcycle_t wcycle,
                     gmx_update_t upd,
                     t_extmass    *MassQ,
-                    t_mdatoms  *md)
+                    t_mdatoms  *md,
+                    real lambda_titration)
     
 {
     gmx_bool   bTCouple=FALSE;
@@ -1188,7 +1189,7 @@ void update_tcouple(FILE         *fplog,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
+            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v,lambda_titration);
         }
     }
     else 

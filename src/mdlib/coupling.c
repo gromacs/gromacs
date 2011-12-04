@@ -1270,7 +1270,7 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[])
 }
 
 void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
-                        int start,int end,rvec v[])
+                        int start,int end,rvec v[],real lambda_titration)
 {
     t_grp_acc      *gstat;
     t_grp_tcstat   *tcstat;
@@ -1301,7 +1301,7 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
             }
             /* Only scale the velocity component relative to the COM velocity */
             rvec_sub(v[n],gstat[ga].u,vrel);
-            lg = tcstat[gt].lambda;
+            lg = tcstat[gt].lambda*lambda_titration;
             for(d=0; d<DIM; d++)
             {
                 v[n][d] = gstat[ga].u[d] + lg*vrel[d];
@@ -1317,7 +1317,7 @@ void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
             {
                 gt   = cTC[n];
             }
-            lg = tcstat[gt].lambda;
+            lg = tcstat[gt].lambda*lambda_titration;
             for(d=0; d<DIM; d++)
             {
                 v[n][d] *= lg;

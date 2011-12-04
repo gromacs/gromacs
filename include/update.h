@@ -75,7 +75,8 @@ void update_tcouple(FILE         *fplog,
 			   gmx_wallcycle_t wcycle,
 			   gmx_update_t upd,
 			   t_extmass    *MassQ,
-			   t_mdatoms    *md
+		    t_mdatoms    *md,
+		    real lambda_titration
 );
 
 void update_pcouple(FILE         *fplog,
@@ -209,7 +210,7 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
 void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
-			       int start,int end,rvec v[]);
+			int start,int end,rvec v[],real lambda_titration);
 /* Rescale the velocities with the scaling factor in ekind */
 
 void update_annealing_target_temp(t_grpopts *opts,real t); 

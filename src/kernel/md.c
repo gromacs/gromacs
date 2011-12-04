@@ -103,34 +103,43 @@
 #endif
 
 double compute_lambda_titration(FILE *fplog,
-                                gmx_ekindata_t *ekind,real DE_Titration,t_inputrec *ir,
-                                gmx_enerdata_t *enerd)
+                                gmx_ekindata_t *ekind,real DE_Titration,
+                                t_inputrec *ir,
+                                gmx_enerdata_t *enerd,
+                                t_state *state_global)
 {
     real ek,l2,lambda_titration;
-    int  i,j;
+    int  i,j,gt;
     
     lambda_titration = 1;
     if (DE_Titration != 0) 
     {
         ek = trace(ekind->ekin);
-        fprintf(fplog,"trace(ekind->ekin) = %g enerd->term[F_EKIN] = %g\n",
+        fprintf(fplog,"Ekin from tensor: %g  enerd->term[F_EKIN] %g\n",
                 ek,enerd->term[F_EKIN]);
+                
         l2 = 1.0-DE_Titration/ek;
         lambda_titration = sqrt(l2);
         if (NULL != debug)
             fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
                     ek,lambda_titration);
-        for(i=0; (i<DIM); i++)
-        {
-            for(j=0; (j<DIM); j++)
+        
+        if (0) {
+            for(i=0; (i<DIM); i++)
             {
-                ekind->ekin[i][j] *= l2;
+                for(j=0; (j<DIM); j++)
+                {
+                    for(gt=0; (gt<ir->opts.ngtc); gt++) 
+                    {
+                        ekind->tcstat[gt].ekinf[i][j] *= l2;
+                    }
+                    ekind->ekin[i][j] *= l2;
+                }
             }
+            enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
+            enerd->term[F_EKIN] = trace(ekind->ekin);
+            enerd->term[F_ETOT] = enerd->term[F_EKIN]+enerd->term[F_EPOT];
         }
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
-        enerd->term[F_EKIN] = trace(ekind->ekin);
-        enerd->term[F_ETOT] = enerd->term[F_EKIN]+enerd->term[F_EPOT];
-
     }
     return lambda_titration;
 }
@@ -1114,8 +1123,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef,1.0);
+            lambda_titration = compute_lambda_titration(fplog,ekind,Etitration,ir,enerd,state_global);
             
-        
             if (bIterations)
             {
                 gmx_iterate_init(&iterate,bIterations && !bInitStep);
@@ -1199,7 +1208,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                 | CGLO_SCALEEKIN 
                     );
-                lambda_titration = compute_lambda_titration(fplog,ekind,Etitration,ir,enerd);
                 /* explanation of above: 
                    a) We compute Ekin at the full time step
                    if 1) we are using the AveVel Ekin, and it's not the
@@ -1217,7 +1225,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     } 
                     else 
                     {
-                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
                     }
                 }
                 
@@ -1518,7 +1526,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 else 
                 {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,lambda_titration);
                     update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                    upd,bInitStep);
                 }
