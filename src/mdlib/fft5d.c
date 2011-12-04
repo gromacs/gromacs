@@ -84,8 +84,8 @@ FILE* debug=0;
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
-#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
-#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
+#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
+#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
 #else /* GMX_THREADS */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
@@ -531,14 +531,14 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         plan->cart[1]=comm[0]; plan->cart[0]=comm[1];
     }
 #ifdef FFT5D_MPI_TRANSPOSE
-    FFTW_LOCK
+    FFTW_LOCK;
     for (s=0;s<2;s++) {
         if ((s==0 && !(flags&FFT5D_ORDER_YZ)) || (s==1 && (flags&FFT5D_ORDER_YZ))) 
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*K[s]*pM[s]*2, 1, 1, (real*)lin, (real*)lout, plan->cart[s], FFTW_PATIENT);
         else
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*pK[s]*M[s]*2, 1, 1, (real*)lin, (real*)lout, plan->cart[s], FFTW_PATIENT);
     }
-    FFTW_UNLOCK
+    FFTW_UNLOCK;
 #endif 
 
     
