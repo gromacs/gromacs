@@ -64,19 +64,17 @@
 /* macro's to print to two file pointers at once (i.e. stderr and log) */
 #define lo_ffprintf(fp1,fp2,buf) \
    fprintf(fp1,"%s",buf);\
-   fprintf(fp2,"%s",buf);
+   fprintf(fp2,"%s",buf)
 /* just print a prepared buffer to fp1 and fp2 */
-#define ffprintf(fp1,fp2,buf) { lo_ffprintf(fp1,fp2,buf) }
+#define ffprintf(fp1,fp2,buf) lo_ffprintf(fp1,fp2,buf)
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-#define ffprintf1(fp1,fp2,buf,fmt,arg) {\
+#define ffprintf1(fp1,fp2,buf,fmt,arg) \
    sprintf(buf,fmt,arg);\
-   lo_ffprintf(fp1,fp2,buf)\
-}
+   lo_ffprintf(fp1,fp2,buf)
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-#define ffprintf2(fp1,fp2,buf,fmt,arg1,arg2) {\
+#define ffprintf2(fp1,fp2,buf,fmt,arg1,arg2) \
    sprintf(buf,fmt,arg1,arg2);\
-   lo_ffprintf(fp1,fp2,buf)\
-}
+   lo_ffprintf(fp1,fp2,buf)
 
 typedef struct {
   int ncl;
