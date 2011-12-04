@@ -97,7 +97,7 @@
     vctot      += _vcoul;                                    \
     _dvdatmp    = _vcoul + _fijC * _rt;                      \
     dvdasum    -= _dvdatmp;                                  \
-    dvda[jnr]  -= _dvdatmp;
+    dvda[jnr]  -= _dvdatmp
 
   #define calc_coulomb_force_(_qq,_rinv,_rsq) \
     _fscal += _fijC * (_rinv * _gbscale)
@@ -516,7 +516,7 @@
     VV       = __fpmadd(Y,eps,__fpmadd(F,eps,GHeps));        \
     FF       = __fpmadd(F,eps,__fpmadd(__fpadd(GHeps,GHeps),eps,H)); \
     Vvdwtot  = __fxcpmadd(Vvdwtot,VV,_c12);                  \
-    fijD     = __fxcpmadd(fijD,FF,_c12);
+    fijD     = __fxcpmadd(fijD,FF,_c12)
 
  #else
 
@@ -630,7 +630,7 @@
 
 /* refines the reciprocal square root rinv of rsq with one Newton-Raphson iteration (scalar version)
  */
-#define sqrt_newton_scalar(rinv,rsq) ((0.5 * rinv) * (3.0 - rsq * (rinv * rinv)));
+#define sqrt_newton_scalar(rinv,rsq) ((0.5 * rinv) * (3.0 - rsq * (rinv * rinv)))
 
 
 /* refines two reciprocal estimates rinv of r with one Newton-Raphson iteration in parallel
