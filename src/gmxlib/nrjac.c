@@ -47,7 +47,7 @@
 
 
 #define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);\
-  a[k][l]=h+s*(g-h*tau);
+  a[k][l]=h+s*(g-h*tau)
 	
 void jacobi(double **a,int n,double d[],double **v,int *nrot)
 {
@@ -106,16 +106,16 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot)
           d[iq] += h;
           a[ip][iq]=0.0;
           for (j=0; j<ip; j++) {
-            ROTATE(a,j,ip,j,iq)
+            ROTATE(a,j,ip,j,iq);
 	  }
           for (j=ip+1; j<iq; j++) {
-            ROTATE(a,ip,j,j,iq)
+            ROTATE(a,ip,j,j,iq);
             }
           for (j=iq+1; j<n; j++) {
-            ROTATE(a,ip,j,iq,j)
+            ROTATE(a,ip,j,iq,j);
             }
           for (j=0; j<n; j++) {
-            ROTATE(v,j,ip,j,iq)
+            ROTATE(v,j,ip,j,iq);
             }
           ++(*nrot);
         }
