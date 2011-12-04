@@ -1356,23 +1356,18 @@ static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
  * This could be implemented slightly more efficient, but the code
  * would get much more complicated.
  */
-#define B(n,x,bTric,bEdge) ((n==1) ? x : bTric&&(bEdge) ? 0   : (x-1))
-#define E(n,x,bTric,bEdge) ((n==1) ? x : bTric&&(bEdge) ? n-1 : (x+1))
-#define GRIDMOD(j,n) (j+n)%(n)
-#define LOOPGRIDINNER(x,y,z,xx,yy,zz,xo,yo,zo,n,bTric)                  \
-    for(zz=B(n[ZZ],zo,bTric,FALSE); zz<=E(n[ZZ],zo,bTric,FALSE); zz++) { \
-    z=GRIDMOD(zz,n[ZZ]);                                                \
-    for(yy=B(n[YY],yo,bTric,z==0||z==n[ZZ]-1);                          \
-        yy<=E(n[YY],yo,bTric,z==0||z==n[ZZ]-1); yy++) {                 \
-    y=GRIDMOD(yy,n[YY]);                                                \
-    for(xx=B(n[XX],xo,bTric,y==0||y==n[YY]-1||z==0||z==n[ZZ]-1);		\
-        xx<=E(n[XX],xo,bTric,y==0||y==n[YY]-1||z==0||z==n[ZZ]-1); xx++) { \
-    x=GRIDMOD(xx,n[XX]);
-#define ENDLOOPGRIDINNER                                                \
-    }                                                                   \
-        }                                                               \
-                                        }								\
-                                                                        \
+static inline gmx_bool grid_loop_begin(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+{
+    return ((n==1) ? x : bTric && bEdge ? 0     : (x-1));
+}
+static inline gmx_bool grid_loop_end(int n, int x, gmx_bool bTric, gmx_bool bEdge)
+{
+    return ((n==1) ? x : bTric && bEdge ? (n-1) : (x+1));
+}
+static inline int grid_mod(int j, int n)
+{
+    return (j+n) % (n);
+}
 
 static void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 {
@@ -3757,50 +3752,68 @@ int gmx_hbond(int argc,char *argv[])
                                         i  = icell->atoms[ai];
 		
                                         /* loop over all adjacent gridcells (xj,yj,zj) */
-                                        /* This is a macro!!! */
-                                        LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
-                                            jcell=&(grid[zj][yj][xj].a[ogrp]);
-                                            /* loop over acceptor atoms from other group (ogrp) 
-                                             * in this adjacent gridcell (jcell) 
-                                             */
-                                            for (aj=0; (aj<jcell->nr); aj++) {
-                                                j = jcell->atoms[aj];
-		  
-                                                /* check if this once was a h-bond */
-                                                peri = -1;
-                                                ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
-                                                               hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
-		    
-                                                if (ihb) {
-                                                    /* add to index if not already there */
-                                                    /* Add a hbond */
-                                                    add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,bMerge,ihb,bContact,peri);
-		      
-                                                    /* make angle and distance distributions */
-                                                    if (ihb == hbHB && !bContact) {
-                                                        if (dist>rcut)
-                                                            gmx_fatal(FARGS,"distance is higher than what is allowed for an hbond: %f",dist);
-                                                        ang*=RAD2DEG;
-                                                        __ADIST[(int)( ang/abin)]++;
-                                                        __RDIST[(int)(dist/rbin)]++;
-                                                        if (!bTwo) {
-                                                            int id,ia;
-                                                            if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
-                                                                gmx_fatal(FARGS,"Invalid donor %d",i);
-                                                            if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
-                                                                gmx_fatal(FARGS,"Invalid acceptor %d",j);
-                                                            resdist=abs(top.atoms.atom[i].resind-
-                                                                        top.atoms.atom[j].resind);
-                                                            if (resdist >= max_hx)
-                                                                resdist = max_hx-1;
-                                                            __HBDATA->nhx[nframes][resdist]++;
+                                        for(zjj = grid_loop_begin(ngrid[ZZ],zi,bTric,FALSE);
+                                            zjj <= grid_loop_end(ngrid[ZZ],zi,bTric,FALSE);
+                                            zjj++)
+                                        {
+                                            zj = grid_mod(zjj,ngrid[ZZ]);
+                                            gmx_bool bEdge_yjj = zj == 0 || zj == ngrid[ZZ] - 1;
+                                            for(yjj = grid_loop_begin(ngrid[YY],yi,bTric,bEdge_yjj);
+                                                yjj <= grid_loop_end(ngrid[YY],yi,bTric,bEdge_yjj);
+                                                yjj++)
+                                            {
+                                                yj = grid_mod(yjj,ngrid[YY]);
+                                                gmx_bool bEdge_xjj =
+                                                    yj == 0 || yj == ngrid[YY] - 1 ||
+                                                    zj == 0 || zj == ngrid[ZZ] - 1;
+                                                for(xjj = grid_loop_begin(ngrid[XX],xi,bTric,bEdge_xjj);
+                                                    xjj <= grid_loop_end(ngrid[XX],xi,bTric,bEdge_xjj);
+                                                    xjj++)
+                                                {
+                                                    xj = grid_mod(xjj,ngrid[XX]);
+                                                    jcell=&(grid[zj][yj][xj].a[ogrp]);
+                                                    /* loop over acceptor atoms from other group (ogrp) 
+                                                     * in this adjacent gridcell (jcell) 
+                                                     */
+                                                    for (aj=0; (aj<jcell->nr); aj++) {
+                                                        j = jcell->atoms[aj];
+                                                        
+                                                        /* check if this once was a h-bond */
+                                                        peri = -1;
+                                                        ihb = is_hbond(__HBDATA,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
+                                                                       hbox,&dist,&ang,bDA,&h,bContact,bMerge,&peri);
+                                                        
+                                                        if (ihb) {
+                                                            /* add to index if not already there */
+                                                            /* Add a hbond */
+                                                            add_hbond(__HBDATA,i,j,h,grp,ogrp,nframes,bMerge,ihb,bContact,peri);
+                                                            
+                                                            /* make angle and distance distributions */
+                                                            if (ihb == hbHB && !bContact) {
+                                                                if (dist>rcut)
+                                                                    gmx_fatal(FARGS,"distance is higher than what is allowed for an hbond: %f",dist);
+                                                                ang*=RAD2DEG;
+                                                                __ADIST[(int)( ang/abin)]++;
+                                                                __RDIST[(int)(dist/rbin)]++;
+                                                                if (!bTwo) {
+                                                                    int id,ia;
+                                                                    if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
+                                                                        gmx_fatal(FARGS,"Invalid donor %d",i);
+                                                                    if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
+                                                                        gmx_fatal(FARGS,"Invalid acceptor %d",j);
+                                                                    resdist=abs(top.atoms.atom[i].resind-
+                                                                                top.atoms.atom[j].resind);
+                                                                    if (resdist >= max_hx)
+                                                                        resdist = max_hx-1;
+                                                                    __HBDATA->nhx[nframes][resdist]++;
+                                                                }
+                                                            }
+                                                            
                                                         }
-                                                    }
-
-                                                }
-                                            } /* for aj  */
-                                        }
-                                        ENDLOOPGRIDINNER;
+                                                    } /* for aj  */
+                                                } /* for xjj */
+                                            } /* for yjj */
+                                        } /* for zjj */
                                     } /* for ai  */
                                 } /* for grp */
                             } /* for xi,yi,zi */
