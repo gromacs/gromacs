@@ -6,14 +6,13 @@
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
 
-#include "types/nbnxn_cuda_types.h"
+#include "nbnxn_cuda_types.h"
 #include "cudautils.cuh"
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
 
 #define CLUSTER_SIZE            (GPU_NS_CLUSTER_SIZE)
-#define NB_DEFAULT_THREADS      (CLUSTER_SIZE * CLUSTER_SIZE)
 
 #include "vectype_ops.cuh"
 #include "nbnxn_cuda_kernel_utils.cuh"
@@ -38,17 +37,18 @@
 #undef PRUNE_NBL
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*p_k_calc_nb)(const cu_atomdata_t,
-                            const cu_nb_params_t, 
-                            const cu_nblist_t,
-                            gmx_bool /*calc virial*/);
+typedef void (*p_k_nbnxn)(const cu_atomdata_t,
+                          const cu_nb_params_t, 
+                          const cu_nblist_t,
+                          gmx_bool /*calc virial*/);
 
 /* XXX
     if GMX_GPU_ENE env var set it always runs the energy kernel unless the 
     GMX_GPU_NO_ENE env var is set, case in which it never runs the energy kernel.     
     --> only for benchmarking purposes */
-static gmx_bool alwaysE = (getenv("GMX_GPU_ALWAYS_ENE") != NULL); 
-static gmx_bool neverE  = (getenv("GMX_GPU_NEVER_ENE") != NULL);
+static gmx_bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
+static gmx_bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
+static gmx_bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
 /*! Returns the number of blocks to be used  for the nonbonded GPU kernel. */
 static inline int calc_nb_blocknr(int nwork_units)
@@ -65,10 +65,10 @@ static inline int calc_nb_blocknr(int nwork_units)
 /*! Selects the kernel version to execute at the current step and 
  *  returns a function pointer to it. 
  */
-static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne, 
-                                           gmx_bool doPrune, gmx_bool doKernel2)
+static inline p_k_nbnxn select_nbnxn_kernel(int eeltype, gmx_bool doEne, 
+                                            gmx_bool doPrune, gmx_bool doKernel2)
 {
-    p_k_calc_nb k = NULL;
+    p_k_nbnxn k = NULL;
 
     /* select which kernel will be used */
     switch (eeltype)
@@ -78,26 +78,26 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_cutoff_forces_1 : 
-                                   k_calc_nb_cutoff_forces_prunenbl_1;                                  
+                    k = !doPrune ? k_nbnxn_cutoff_1 :
+                                   k_nbnxn_cutoff_prune_1;
                 }
                 else 
                 {
-                    k = !doPrune ? k_calc_nb_cutoff_forces_energies_1 :
-                                   k_calc_nb_cutoff_forces_energies_prunenbl_1;
+                    k = !doPrune ? k_nbnxn_cutoff_ener_1 :
+                                   k_nbnxn_cutoff_ener_prune_1;
                 }
             }
             else 
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_cutoff_forces_2 :
-                                   k_calc_nb_cutoff_forces_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_cutoff_2 :
+                                   k_nbnxn_cutoff_prune_2;
                 }
                 else 
                 {
-                    k = !doPrune ? k_calc_nb_cutoff_forces_energies_2 :
-                                   k_calc_nb_cutoff_forces_energies_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_cutoff_ener_2 :
+                                   k_nbnxn_cutoff_ener_prune_2;
                 }
             }
             break;
@@ -107,26 +107,26 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_RF_forces_1 :
-                                   k_calc_nb_RF_forces_prunenbl_1;
+                    k = !doPrune ? k_nbnxn_rf_1 :
+                                   k_nbnxn_rf_prune_1;
                 }
                 else
                 {
-                    k = !doPrune ? k_calc_nb_RF_forces_energies_1 :
-                                   k_calc_nb_RF_forces_energies_prunenbl_1;
+                    k = !doPrune ? k_nbnxn_rf_ener_1 :
+                                   k_nbnxn_rf_ener_prune_1;
                 }
             }
             else 
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_RF_forces_2 :
-                                   k_calc_nb_RF_forces_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_rf_2 :
+                                   k_nbnxn_rf_prune_2;
                 }
                 else
                 {
-                    k = !doPrune ? k_calc_nb_RF_forces_energies_2 :
-                                   k_calc_nb_RF_forces_energies_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_rf_ener_2 :
+                                   k_nbnxn_rf_ener_prune_2;
                 }
             }
             break;
@@ -136,49 +136,61 @@ static inline p_k_calc_nb select_nb_kernel(int eeltype, gmx_bool doEne,
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_ewald_forces_1 :
-                                   k_calc_nb_ewald_forces_prunenbl_1;
+                    k = !doPrune ? k_nbnxn_ewald_1 :
+                                   k_nbnxn_ewald_prune_1;
                 }
                 else
                 {
-                    k = !doPrune ? k_calc_nb_ewald_forces_energies_1:
-                                   k_calc_nb_ewald_forces_energies_prunenbl_1;
+                    k = !doPrune ? k_nbnxn_ewald_ener_1:
+                                   k_nbnxn_ewald_ener_prune_1;
                 }
             }
             else 
             {
                 if (!doEne)
                 {
-                    k = !doPrune ? k_calc_nb_ewald_forces_2 :
-                                   k_calc_nb_ewald_forces_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_ewald_2 :
+                                   k_nbnxn_ewald_prune_2;
                 }
                 else
                 {
-                    k = !doPrune ? k_calc_nb_ewald_forces_energies_2 :
-                                   k_calc_nb_ewald_forces_energies_prunenbl_2;
+                    k = !doPrune ? k_nbnxn_ewald_ener_2 :
+                                   k_nbnxn_ewald_ener_prune_2;
                 }
             }
             break;
 
         default: 
-            gmx_incons("The provided electrostatics type does not exist in the  CUDA implementation!");
+            gmx_incons("The provided electrostatics type does not exist in the CUDA implementation!");
     }
     return k;
 }
 
-void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
-                         const nbnxn_atomdata_t *nbatom,
-                         int flags,
-                         int iloc)
+/*! As we execute nonbonded workload in separate streams, before launching 
+   the kernel we need to make sure that he following operations have completed:
+   - atomata allocation and related H2D transfers (every nstlist step);
+   - pair list H2D transfer (every nstlist step);
+   - shift vector H2D transfer (every nstlist step);
+   - force (+shift force and energy) output clearing (every step);
+
+   In CUDA all operations issued in stream 0 precede everything launched in 
+   other streams. As all the above operations are launched in sream 0 (default), 
+   while all nonbonded calculations are done in the respective local/non-local 
+   stream, no explicit synchronization is required.
+ */
+void nbnxn_cuda_launch_kernel(cu_nonbonded_t cu_nb,
+                              const nbnxn_atomdata_t *nbatom,
+                              int flags,
+                              int iloc)
 {
     cudaError_t stat;
     int adat_begin, adat_len;  /* local/nonlocal offset and length used for xq and f */
 
-    cu_atomdata_t   *adat       = cu_nb->atomdata;
-    cu_nb_params_t  *nb_params  = cu_nb->nb_params;
-    cu_nblist_t     *nblist     = cu_nb->nblist[iloc];
-    cu_timers_t     *timers     = cu_nb->timers;
-    cudaStream_t    stream      = cu_nb->stream[iloc];
+    cu_atomdata_t   *adat   = cu_nb->atomdata;
+    cu_nb_params_t  *nbp    = cu_nb->nb_params;
+    cu_nblist_t     *nblist = cu_nb->nblist[iloc];
+    cu_timers_t     *timers = cu_nb->timers;
+    cudaStream_t    stream  = cu_nb->stream[iloc];
 
     cudaEvent_t start_nb_k  = timers->start_nb_k[iloc];
     cudaEvent_t stop_nb_k   = timers->stop_nb_k[iloc];
@@ -186,18 +198,20 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
     cudaEvent_t stop_h2d    = timers->stop_nb_h2d[iloc];
 
     /* kernel lunch stuff */
-    p_k_calc_nb nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
+    p_k_nbnxn   nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
     int         shmem;
     int         nb_blocks = calc_nb_blocknr(nblist->nsci);
     dim3        dim_block(CLUSTER_SIZE, CLUSTER_SIZE, 1);
     dim3        dim_grid(nb_blocks, 1, 1);
 
-    gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
+    gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
     gmx_bool do_time     = cu_nb->do_time;
 
+    /* turn energy calculation always on/off (debugging/testing code) */
+    calc_ener = (calc_ener || always_ener) && !never_ener; 
+
     static gmx_bool doKernel2 = (getenv("GMX_NB_K2") != NULL);        
-    static gmx_bool doAlwaysNsPrune = (getenv("GMX_GPU_ALWAYS_NS_PRUNE") != NULL);
 
     /* calculate the atom data index range based on locality */
     if (LOCAL_I(iloc))
@@ -211,9 +225,6 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
         adat_len    = adat->natoms - adat->natoms_local;
     }
 
-    /* XXX debugging code, remove it */
-    calc_ene = (calc_ene || alwaysE) && !neverE; 
-
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
@@ -222,10 +233,6 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
                 dim_grid.x, dim_grid.y, nblist->nsci*NSUBCELL,
                 NSUBCELL, nblist->na_c);
     }
-
-    /* FIXME: not necessary as it's launched in stream 0
-       wait for the atomdata trasfer to be finished */
-    // cu_synchstream_atomdata(cu_nb, iloc);
 
     /* beginning of timed HtoD section */
     if (do_time)
@@ -257,9 +264,10 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
         CLUSTER_SIZE * CLUSTER_SIZE * 3 * sizeof(float);
 
     /* get the pointer to the kernel we need & launch it */
-    nb_kernel = select_nb_kernel(nb_params->eeltype, calc_ene,
-                                 nblist->prune_nbl || doAlwaysNsPrune, doKernel2);
-    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nb_params, *nblist,
+    nb_kernel = select_nbnxn_kernel(nbp->eeltype, calc_ener,
+                                    nblist->prune_nbl || always_prune,
+                                    doKernel2);
+    nb_kernel<<<dim_grid, dim_block, shmem, stream>>>(*adat, *nbp, *nblist,
                                                       calc_fshift);
     CU_LAUNCH_ERR("k_calc_nb");
 
@@ -270,10 +278,10 @@ void cu_nb_launch_kernel(cu_nonbonded_t cu_nb,
     }
 }
 
-void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
-                          const nbnxn_atomdata_t *nbatom,
-                          int flags,
-                          int aloc)
+void nbnxn_cuda_launch_cpyback(cu_nonbonded_t cu_nb,
+                               const nbnxn_atomdata_t *nbatom,
+                               int flags,
+                               int aloc)
 {
     cudaError_t stat;
     int adat_begin, adat_len, adat_last;  /* local/nonlocal offset and length used for xq and f */
@@ -300,7 +308,7 @@ void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
     gmx_bool        do_time = cu_nb->do_time;
     cudaStream_t    stream  = cu_nb->stream[iloc];
 
-    gmx_bool calc_ene    = flags & GMX_FORCE_VIRIAL;
+    gmx_bool calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
 
     /* calculate the atom data index range based on locality */
@@ -355,7 +363,7 @@ void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
         }
 
         /* DtoH energies */
-        if (calc_ene)
+        if (calc_ener)
         {
             cu_copy_D2H_async(cu_nb->tmpdata.e_lj, adat->e_lj, 
                               sizeof(*cu_nb->tmpdata.e_lj), stream);
@@ -371,10 +379,10 @@ void cu_nb_launch_cpyback(cu_nonbonded_t cu_nb,
     }
 }
 
-void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
-                    const nbnxn_atomdata_t *nbatom,
-                    int flags, int aloc,
-                    float *e_lj, float *e_el, rvec *fshift)
+void nbnxn_cuda_wait_gpu(cu_nonbonded_t cu_nb,
+                         const nbnxn_atomdata_t *nbatom,
+                         int flags, int aloc,
+                         float *e_lj, float *e_el, rvec *fshift)
 {
     cudaError_t stat;
     int i, adat_last, iloc = -1;
@@ -409,8 +417,11 @@ void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
     cudaEvent_t start_nbl_h2d   = timers->start_nbl_h2d[iloc];
     cudaEvent_t stop_nbl_h2d    = timers->stop_nbl_h2d[iloc];
 
-    gmx_bool    calc_ene   = flags & GMX_FORCE_VIRIAL;
+    gmx_bool    calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
+
+    /* turn energy calculation always on/off (debugging/testing code) */
+    calc_ener = (calc_ener || always_ener) && !never_ener; 
 
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
@@ -447,11 +458,11 @@ void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
         if (LOCAL_I(iloc))
         {
             timings->nb_count++;
-            timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].c += 1;
+            timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ener ? 1 : 0].c += 1;
         }
 
         /* kernel timings */
-        timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ene ? 1 : 0].t +=
+        timings->k_time[nblist->prune_nbl ? 1 : 0][calc_ener ? 1 : 0].t +=
             cu_event_elapsed(start_nb_k, stop_nb_k);
 
         /* X/q H2D and F D2H timings */
@@ -480,10 +491,7 @@ void cu_nb_wait_gpu(cu_nonbonded_t cu_nb,
     /* add up enegies and shift forces (only once at local F wait) */
     if (LOCAL_I(iloc))
     {
-        /* XXX debugging code, remove this */
-        calc_ene = (calc_ene || alwaysE) && !neverE; 
-
-        if (calc_ene)
+        if (calc_ener)
         {
             *e_lj += *td.e_lj;
             *e_el += *td.e_el;

@@ -14,7 +14,7 @@
 
 /* Reaction-Field */
 #define EL_RF
-#define FUNCTION_NAME(x, y) x##_RF_##y
+#define FUNCTION_NAME(x, y) x##_rf_##y
 #include "nbnxn_cuda_kernel_1.cuh"
 #include "nbnxn_cuda_kernel_2.cuh"
 #undef EL_RF

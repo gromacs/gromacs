@@ -1627,7 +1627,7 @@ void init_interaction_const(FILE *fp,
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
 #ifdef GMX_GPU
-        cu_init_ff_data(fp, fr->nbv->gpu_nb, ic, fr->nbv);
+        nbnxn_cuda_init_const(fp, fr->nbv->gpu_nb, ic, fr->nbv);
 #endif
     }
 
@@ -1692,7 +1692,7 @@ static void init_nb_verlet(FILE *fp,
     if (nbv->useGPU)
     {
 #ifdef GMX_GPU
-        cu_init_nonbonded(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
+        nbnxn_cuda_init(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
         if (env)
         {
@@ -1705,7 +1705,7 @@ static void init_nb_verlet(FILE *fp,
         }
         else
         {
-            nbv->min_ci_balanced = cu_calc_min_ci_balanced(nbv->gpu_nb);
+            nbv->min_ci_balanced = nbnxn_cuda_min_ci_balanced(nbv->gpu_nb);
             if (debug)
             {
                 fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",

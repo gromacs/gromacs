@@ -624,7 +624,7 @@ static void do_nb_verlet(t_forcerec *fr,
 
         case nbk8x8x8CUDA:
 #ifdef GMX_GPU
-            cu_nb_launch_kernel(fr->nbv->gpu_nb, nbvg->nbat, flags, ilocality);
+            nbnxn_cuda_launch_kernel(fr->nbv->gpu_nb, nbvg->nbat, flags, ilocality);
 #endif
             break;
 
@@ -841,12 +841,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            cu_init_atomdata(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+            nbnxn_cuda_init_atomdata(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        cu_move_shift_vec(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+        nbnxn_cuda_upload_shiftvec(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 #endif
@@ -867,9 +867,9 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bUseGPU)
         {
             /* initialize GPU local neighbor list */
-            cu_init_nblist(nbv->gpu_nb,
-                           nbv->grp[eintLocal].nbl_lists.nbl[0],
-                           eintLocal);
+            nbnxn_cuda_init_pairlist(nbv->gpu_nb,
+                                     nbv->grp[eintLocal].nbl_lists.nbl[0],
+                                     eintLocal);
         }
 #endif    
         wallcycle_stop(wcycle, ewcNS);
@@ -923,9 +923,9 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8CUDA)
             {
                 /* initialize GPU non-local neighbor list */
-                cu_init_nblist(nbv->gpu_nb,
-                               nbv->grp[eintNonlocal].nbl_lists.nbl[0],
-                               eintNonlocal);
+                nbnxn_cuda_init_pairlist(nbv->gpu_nb,
+                                         nbv->grp[eintNonlocal].nbl_lists.nbl[0],
+                                         eintNonlocal);
             }
 #endif
             wallcycle_stop(wcycle,ewcNS);
@@ -963,15 +963,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            cu_nb_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat, 
-                                 flags, eatNonlocal);
+            nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
+                                      flags, eatNonlocal);
             wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
         else
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            cu_nb_launch_cpyback(nbv->gpu_nb, nbv->grp[eintLocal].nbat, 
-                                 flags, eatLocal);
+            nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintLocal].nbat,
+                                      flags, eatLocal);
             wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
     }
@@ -1157,11 +1157,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             {
 #ifdef GMX_GPU
                 wallcycle_start(wcycle,ewcWAIT_GPU_NB_NL);
-                cu_nb_wait_gpu(nbv->gpu_nb,
-                               nbv->grp[eintNonlocal].nbat,
-                               flags, eatNonlocal,
-                               enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                               fr->fshift);
+                nbnxn_cuda_wait_gpu(nbv->gpu_nb,
+                                    nbv->grp[eintNonlocal].nbat,
+                                    flags, eatNonlocal,
+                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                    fr->fshift);
                 cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_NL);
 #endif
             }
@@ -1181,8 +1181,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 /* When runing in parallel we can only launch local copy-back after the 
                    non-local is done! (CUDA can't synchronize streams with async operations
                    wrt the CPU).*/
-                cu_nb_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
-                                     flags, eatLocal);
+                nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
+                                          flags, eatLocal);
                 wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
             }
 #endif
@@ -1229,16 +1229,16 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         {
 #ifdef GMX_GPU
             wallcycle_start(wcycle,ewcWAIT_GPU_NB_L);
-            cu_nb_wait_gpu(nbv->gpu_nb, 
-                           nbv->grp[eintLocal].nbat,
-                           flags, eatLocal,
-                           enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                           fr->fshift);
+            nbnxn_cuda_wait_gpu(nbv->gpu_nb,
+                                nbv->grp[eintLocal].nbat,
+                                flags, eatLocal,
+                                enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                fr->fshift);
             cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-            cu_clear_nb_f_out(nbv->gpu_nb);
-            cu_clear_nb_e_fs_out(nbv->gpu_nb);
+            nbnxn_cuda_clear_f(nbv->gpu_nb);
+            nbnxn_cuda_clear_e_fshift(nbv->gpu_nb);
 #endif
         }
         else

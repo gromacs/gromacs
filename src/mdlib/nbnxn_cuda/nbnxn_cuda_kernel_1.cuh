@@ -7,15 +7,15 @@
  */
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_calc_nb, forces_energies_prunenbl_1)
+__global__ void FUNCTION_NAME(k_nbnxn, ener_prune_1)
 #else
-__global__ void FUNCTION_NAME(k_calc_nb, forces_prunenbl_1)
+__global__ void FUNCTION_NAME(k_nbnxn, prune_1)
 #endif
 #else
 #ifdef CALC_ENERGIES
-__global__ void FUNCTION_NAME(k_calc_nb, forces_energies_1)
+__global__ void FUNCTION_NAME(k_nbnxn, ener_1)
 #else
-__global__ void FUNCTION_NAME(k_calc_nb, forces_1)
+__global__ void FUNCTION_NAME(k_nbnxn, 1)
 #endif
 #endif
             (const cu_atomdata_t atomdata,

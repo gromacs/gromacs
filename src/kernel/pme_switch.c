@@ -477,7 +477,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
     ic->ewaldcoeff = set->coeff;
 
 #ifdef GMX_GPU
-    cu_reset_rlist_ewaldtab(nbv->gpu_nb,ic);
+    reset_gpu_rlist_ewaldtab(nbv->gpu_nb,ic);
 #endif
 
     if (nbv->nloc > 1)

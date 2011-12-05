@@ -7,7 +7,7 @@
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
 
-#include "types/nbnxn_cuda_types.h"
+#include "nbnxn_cuda_types.h"
 #include "cudautils.cuh"
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
@@ -26,35 +26,35 @@
 /*! v1 nonbonded kernel names with name mangling. */
 static const char * const nb_k1_names[NUM_NB_KERNELS] = 
 {
-    "_Z21k_calc_nb_RF_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z24k_calc_nb_ewald_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z25k_calc_nb_cutoff_forces_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z30k_calc_nb_RF_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z30k_calc_nb_RF_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z33k_calc_nb_ewald_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z33k_calc_nb_ewald_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z34k_calc_nb_cutoff_forces_energies_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z34k_calc_nb_cutoff_forces_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z39k_calc_nb_RF_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_111cu_atomdata12cu_nb_params9cu_nblisti"
+    "_Z12k_nbnxn_rf_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z15k_nbnxn_ewald_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z16k_nbnxn_cutoff_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z17k_nbnxn_rf_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z18k_nbnxn_rf_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z20k_nbnxn_ewald_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z21k_nbnxn_ewald_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z21k_nbnxn_cutoff_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z22k_nbnxn_cutoff_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z23k_nbnxn_rf_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z26k_nbnxn_ewald_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z27k_nbnxn_cutoff_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti"
 };
 
 /*! v2 nonbonded kernel names with name mangling. */
 static const char * const nb_k2_names[NUM_NB_KERNELS] = 
 {
-    "_Z21k_calc_nb_RF_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z24k_calc_nb_ewald_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z25k_calc_nb_cutoff_forces_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z30k_calc_nb_RF_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z30k_calc_nb_RF_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z33k_calc_nb_ewald_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z33k_calc_nb_ewald_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z34k_calc_nb_cutoff_forces_energies_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z34k_calc_nb_cutoff_forces_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z39k_calc_nb_RF_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z42k_calc_nb_ewald_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z43k_calc_nb_cutoff_forces_energies_prunenbl_211cu_atomdata12cu_nb_params9cu_nblisti"
+    "_Z12k_nbnxn_rf_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z15k_nbnxn_ewald_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z16k_nbnxn_cutoff_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z17k_nbnxn_rf_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z18k_nbnxn_rf_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z20k_nbnxn_ewald_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z21k_nbnxn_ewald_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z21k_nbnxn_cutoff_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z22k_nbnxn_cutoff_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z23k_nbnxn_rf_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z26k_nbnxn_ewald_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
+    "_Z27k_nbnxn_cutoff_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti"
 };
 
 
@@ -181,8 +181,8 @@ static void init_nb_params(cu_nb_params_t *nbp,
     cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
 }
 
-void cu_reset_rlist_ewaldtab(cu_nonbonded_t cu_nb,
-                             const interaction_const_t *ic)
+void reset_gpu_rlist_ewaldtab(cu_nonbonded_t cu_nb,
+                              const interaction_const_t *ic)
 {
     cu_nb_params_t * nbp = cu_nb->nb_params;
 
@@ -271,9 +271,9 @@ static void init_timings(cu_timings_t *t)
     }
 }
 
-void cu_init_nonbonded(FILE *fplog,
-                       cu_nonbonded_t *p_cu_nb,
-                       gmx_bool bDomDec)
+void nbnxn_cuda_init(FILE *fplog,
+                     cu_nonbonded_t *p_cu_nb,
+                     gmx_bool bDomDec)
 {
     cudaError_t stat;
     cu_nonbonded_t  nb;
@@ -339,14 +339,14 @@ void cu_init_nonbonded(FILE *fplog,
         fprintf(debug, "Initialized CUDA data structures.\n");
     }
 
-    /* k_calc_nb_*_1 48/16 kB Shared/L1 */
+    /* k_nbnxn_*_1 48/16 kB Shared/L1 */
     for (int i = 0; i < NUM_NB_KERNELS; i++)
     {
         stat = cudaFuncSetCacheConfig(nb_k1_names[i],  cudaFuncCachePreferShared);
         CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
     }
 
-    /* k_calc_nb_*_2 16/48 kB Shared/L1 */
+    /* k_nbnxn_*_2 16/48 kB Shared/L1 */
     for (int i = 0; i < NUM_NB_KERNELS; i++)
     {
         stat = cudaFuncSetCacheConfig(nb_k2_names[i], cudaFuncCachePreferL1);
@@ -358,21 +358,21 @@ void cu_init_nonbonded(FILE *fplog,
     CU_LAUNCH_ERR_SYNC("dummy test kernel");
 }
 
-void cu_init_ff_data(FILE *fplogi,
-                     cu_nonbonded_t cu_nb,
-                     const interaction_const_t *ic,
-                     const nonbonded_verlet_t *nbv)
+void nbnxn_cuda_init_const(FILE *fplogi,
+                           cu_nonbonded_t cu_nb,
+                           const interaction_const_t *ic,
+                           const nonbonded_verlet_t *nbv)
 {
     init_atomdata(cu_nb->atomdata, nbv->grp[0].nbat->ntype);
     init_nb_params(cu_nb->nb_params, ic, nbv);
 
     /* clear energy and shift force outputs */
-    cu_clear_nb_e_fs_out(cu_nb);
+    nbnxn_cuda_clear_e_fshift(cu_nb);
 }
 
-void cu_init_nblist(cu_nonbonded_t cu_nb, 
-                    const nbnxn_pairlist_t *h_nblist,
-                    int iloc)
+void nbnxn_cuda_init_pairlist(cu_nonbonded_t cu_nb,
+                              const nbnxn_pairlist_t *h_nblist,
+                              int iloc)
 {
     char         sbuf[STRLEN];
     cudaError_t  stat;
@@ -400,17 +400,17 @@ void cu_init_nblist(cu_nonbonded_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    cu_realloc_buffered((void **)&d_nblist->sci, h_nblist->sci, sizeof(*(d_nblist->sci)),
+    cu_realloc_buffered((void **)&d_nblist->sci, h_nblist->sci, sizeof(*d_nblist->sci),
                          &d_nblist->nsci, &d_nblist->sci_nalloc,
                          h_nblist->nsci,
                          stream, TRUE);
 
-    cu_realloc_buffered((void **)&d_nblist->cj4, h_nblist->cj4, sizeof(*(d_nblist->cj4)),
+    cu_realloc_buffered((void **)&d_nblist->cj4, h_nblist->cj4, sizeof(*d_nblist->cj4),
                          &d_nblist->ncj4, &d_nblist->cj4_nalloc,
                          h_nblist->ncj4,
                          stream, TRUE);
 
-    cu_realloc_buffered((void **)&d_nblist->excl, h_nblist->excl, sizeof(*(d_nblist->excl)),
+    cu_realloc_buffered((void **)&d_nblist->excl, h_nblist->excl, sizeof(*d_nblist->excl),
                          &d_nblist->nexcl, &d_nblist->excl_nalloc,
                          h_nblist->nexcl, 
                          stream, TRUE);
@@ -425,8 +425,8 @@ void cu_init_nblist(cu_nonbonded_t cu_nb,
     d_nblist->prune_nbl = TRUE;
 }
 
-void cu_move_shift_vec(cu_nonbonded_t cu_nb, 
-                       const nbnxn_atomdata_t *nbatom)
+void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t cu_nb,
+                                const nbnxn_atomdata_t *nbatom)
 {
     cu_atomdata_t   *adat = cu_nb->atomdata;
 
@@ -441,8 +441,8 @@ void cu_move_shift_vec(cu_nonbonded_t cu_nb,
 
 
 /*! Clears nonbonded force output array on the GPU - muldule internal 
-    implementation that takes the number of atoms needed to clear for. */
-static void cu_clear_nb_f_out(cu_nonbonded_t cu_nb, int natoms_clear)
+    implementation that takes the number of atoms to clear the output for. */
+static void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb, int natoms_clear)
 {
     cudaError_t stat;
     cu_atomdata_t *adat = cu_nb->atomdata;
@@ -451,12 +451,12 @@ static void cu_clear_nb_f_out(cu_nonbonded_t cu_nb, int natoms_clear)
     CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
 }
 
-void cu_clear_nb_f_out(cu_nonbonded_t cu_nb)
+void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb)
 {
-    cu_clear_nb_f_out(cu_nb, cu_nb->atomdata->natoms);
+    nbnxn_cuda_clear_f(cu_nb, cu_nb->atomdata->natoms);
 }
 
-void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb)
+void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t cu_nb)
 {
     cudaError_t stat;    
     cu_atomdata_t *adat = cu_nb->atomdata;
@@ -470,8 +470,8 @@ void cu_clear_nb_e_fs_out(cu_nonbonded_t cu_nb)
 }
 
 /* TODO: add gmx over_alloc call */
-void cu_init_atomdata(cu_nonbonded_t cu_nb,
-                      const nbnxn_atomdata_t *nbat)
+void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
+                              const nbnxn_atomdata_t *nbat)
 {
     cudaError_t stat;
     int         nalloc, natoms;
@@ -503,12 +503,12 @@ void cu_init_atomdata(cu_nonbonded_t cu_nb,
             cu_free_buffered(d_atomd->atom_types);
         }
         
-        stat = cudaMalloc((void **)&d_atomd->f, nalloc*sizeof(*(d_atomd->f)));
+        stat = cudaMalloc((void **)&d_atomd->f, nalloc*sizeof(*d_atomd->f));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->f");                   
-        stat = cudaMalloc((void **)&d_atomd->xq, nalloc*sizeof(*(d_atomd->xq)));
+        stat = cudaMalloc((void **)&d_atomd->xq, nalloc*sizeof(*d_atomd->xq));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->xq");     
 
-        stat = cudaMalloc((void **)&d_atomd->atom_types, nalloc*sizeof(*(d_atomd->atom_types)));
+        stat = cudaMalloc((void **)&d_atomd->atom_types, nalloc*sizeof(*d_atomd->atom_types));
         CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->atom_types"); 
 
         d_atomd->nalloc = nalloc;
@@ -521,11 +521,11 @@ void cu_init_atomdata(cu_nonbonded_t cu_nb,
     /* need to clear GPU f output if realloc happened */
     if (realloced)
     {
-        cu_clear_nb_f_out(cu_nb, nalloc);
+        nbnxn_cuda_clear_f(cu_nb, nalloc);
     }
 
     cu_copy_H2D_async(d_atomd->atom_types, nbat->type,
-                        natoms*sizeof(*d_atomd->atom_types), 0);
+                      natoms*sizeof(*d_atomd->atom_types), 0);
 
     if (do_time)
     {
@@ -534,7 +534,7 @@ void cu_init_atomdata(cu_nonbonded_t cu_nb,
     }
 }
 
-void cu_free_nbdata(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
+void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atomdata;
@@ -634,12 +634,12 @@ void cu_synchstream_atomdata(cu_nonbonded_t cu_nb, int iloc)
     CU_RET_ERR(stat, "cudaStreamWaitEvent failed");
 }
 
-cu_timings_t * cu_get_gpu_timings(cu_nonbonded_t cu_nb)
+cu_timings_t * nbnxn_cuda_get_timings(cu_nonbonded_t cu_nb)
 {
     return (cu_nb != NULL && cu_nb->do_time) ? cu_nb->timings : NULL;
 }
 
-void cu_reset_gpu_timings(cu_nonbonded_t cu_nb)
+void nbnxn_cuda_reset_timings(cu_nonbonded_t cu_nb)
 {
     if (cu_nb->do_time)
     {
@@ -647,7 +647,7 @@ void cu_reset_gpu_timings(cu_nonbonded_t cu_nb)
     }
 }
 
-int cu_calc_min_ci_balanced(cu_nonbonded_t cu_nb)
+int nbnxn_cuda_min_ci_balanced(cu_nonbonded_t cu_nb)
 {
     return cu_nb != NULL ? 
         GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->dev_prop.multiProcessorCount : 0;

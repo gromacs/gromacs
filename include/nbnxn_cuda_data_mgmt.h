@@ -9,58 +9,55 @@ extern "C" {
 #endif
 
 /*! Initializes the data structures related to CUDA nonbonded calculations. */
-void cu_init_nonbonded(FILE * /*fplog*/,
-                       cu_nonbonded_t * /*p_cu_nb*/,
-                       gmx_bool /*bDomDec*/);
+void nbnxn_cuda_init(FILE * /*fplog*/,
+                     cu_nonbonded_t * /*p_cu_nb*/,
+                     gmx_bool /*bDomDec*/);
 
 /*! Initilizes force-field (FIXME) related data. */
-void cu_init_ff_data(FILE * /*fplog*/, 
-                     cu_nonbonded_t /*p_cu_nb*/,
-                     const interaction_const_t * /*ic*/,
-                     const nonbonded_verlet_t * /*nbv*/);
+void nbnxn_cuda_init_const(FILE * /*fplog*/,
+                           cu_nonbonded_t /*p_cu_nb*/,
+                           const interaction_const_t * /*ic*/,
+                           const nonbonded_verlet_t * /*nbv*/);
 
 /*! Initilizes pair-list data for GPU, called at every neighbor search step. */
-void cu_init_nblist(cu_nonbonded_t /*cu_nb*/,
-                    const nbnxn_pairlist_t * /*h_nblist*/,
-                    int /*iloc*/);
+void nbnxn_cuda_init_pairlist(cu_nonbonded_t /*cu_nb*/,
+                              const nbnxn_pairlist_t * /*h_nblist*/,
+                              int /*iloc*/);
 
 /*! Initilizes atom-data on the GPU, called at every neighbor search step. */
-void cu_init_atomdata(cu_nonbonded_t /*cu_nb*/,
-                      const nbnxn_atomdata_t * /*atomdata*/);
+void nbnxn_cuda_init_atomdata(cu_nonbonded_t /*cu_nb*/,
+                              const nbnxn_atomdata_t * /*atomdata*/);
 
 /*! Re-genrates the GPU Ewald force table and resets rlist - used during 
  *  cut-off auto-tuning. */
-void cu_reset_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
-                             const interaction_const_t * /*ic*/);
+void reset_gpu_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
+                              const interaction_const_t * /*ic*/);
 
 /*! Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
-void cu_move_shift_vec(cu_nonbonded_t /*cu_nb*/, 
-                       const nbnxn_atomdata_t * /*nbatom*/);
+void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t /*cu_nb*/,
+                                const nbnxn_atomdata_t * /*nbatom*/);
 
 /*! Clears nonbonded force output array on the GPU. */
-void cu_clear_nb_f_out(cu_nonbonded_t /*cu_nb*/);
+void nbnxn_cuda_clear_f(cu_nonbonded_t /*cu_nb*/);
 
 /*! Clears nonbonded shift force output array and energy outputs on the GPU. */
-void cu_clear_nb_e_fs_out(cu_nonbonded_t /*cu_nb*/);
+void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t /*cu_nb*/);
 
 /*! Frees all GPU resources used for the nonbonded calculations. */
-void cu_free_nbdata(FILE * /*fplog*/, cu_nonbonded_t /*cu_nb*/,
-                    gmx_bool /*bDomDec*/);
-
-/*! Synchronizes the stream passed with the atomdata init stop event. */
-void cu_synchstream_atomdata(cu_nonbonded_t /*cu_nb*/, int /*enbatATOMS*/);
+void nbnxn_cuda_free(FILE * /*fplog*/, cu_nonbonded_t /*cu_nb*/,
+                     gmx_bool /*bDomDec*/);
 
 /*! Returns the nonbonded GPU timings structure or NULL if GPU is not used 
  *  or timing is turned off. 
  */
-cu_timings_t * cu_get_gpu_timings(cu_nonbonded_t /*cu_nb*/);
+cu_timings_t * nbnxn_cuda_get_timings(cu_nonbonded_t /*cu_nb*/);
 
 /*! Resets nonbonded GPU timings. */
-void cu_reset_gpu_timings(cu_nonbonded_t /*cu_nb*/);
+void nbnxn_cuda_reset_timings(cu_nonbonded_t /*cu_nb*/);
 
 /*! Calculates the minimum size of prozimity lists to improve SM load balance 
     when executing the non-bonded kernels. */
-int cu_calc_min_ci_balanced(cu_nonbonded_t /*cu_nb*/);
+int nbnxn_cuda_min_ci_balanced(cu_nonbonded_t /*cu_nb*/);
 
 #ifdef __cplusplus
 }
