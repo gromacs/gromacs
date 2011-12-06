@@ -50,16 +50,13 @@
 #include "gmx_ga2la.h"
 #include "gmx_sort.h"
 #include "nbnxn_search.h"
+#include "gmx_omp_nthreads.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
 #ifdef GMX_THREADS
 #include "tmpi.h"
-#endif
-
-#ifdef GMX_OPENMP
-#include <omp.h>
 #endif
 
 #define DDRANK(dd,rank)    (rank)
@@ -4504,11 +4501,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     
     cgindex = dd->cgindex;
 
-#ifdef GMX_OPENMP    
-    nthread = omp_get_max_threads();
-#else
-    nthread = 1;
-#endif
+    nthread = gmx_omp_get_domdec_nthreads();
 
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.

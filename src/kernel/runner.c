@@ -76,6 +76,7 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "gmx_omp_nthreads.h"
 
 #include "md_openmm.h"
 
@@ -96,8 +97,6 @@
 
 #ifdef GMX_OPENMP
 #include <omp.h>
-#else 
-#include "no_omp.h"
 #endif
 
 #ifdef GMX_GPU
@@ -389,9 +388,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
-    int         nthreads_mpi=1;
-    int         nthreads_pp =1;
-    int         nthreads_pme=1;
+    int         nthreads_mpi;
+    int         nthreads_pp;
+    int         nthreads_pme;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -655,36 +654,17 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
+    init_module_nthreads(cr);
+
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 
        identical everywhere;
-       PP: is omp_get_max_threads for now.
      */
-#ifdef GMX_OPENMP
-    nthreads_pp = omp_get_max_threads();
-
-    if (EEL_PME(inputrec->coulombtype))
-    {
-        if (MASTER(cr))
-        {
-            char *ptr;
-            
-            nthreads_pme = omp_get_max_threads();
-            if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
-            {
-                sscanf(ptr,"%d",&nthreads_pme);
-            }
-            if (fplog != NULL && nthreads_pme > 1)
-            {
-                fprintf(fplog,"Using %d threads for PME\n",nthreads_pme);
-            }
-        }
-        if (PAR(cr))
-        {
-            gmx_bcast_sim(sizeof(nthreads_pme),&nthreads_pme,cr);
-        }
-    }
-#endif
+    /* nthreads_pp is only used for pinning threads.
+     * This is a temporary solution.
+     */
+    nthreads_pp  = gmx_omp_get_nonbonded_nthreads();
+    nthreads_pme = gmx_omp_get_pme_nthreads();
 
     wcycle = wallcycle_init(fplog,resetstep,cr,nthreads_pp,nthreads_pme);
 
@@ -820,7 +800,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            local_nthreads = omp_get_max_threads();
+            local_nthreads = gmx_omp_get_nonbonded_nthreads();
         }
         else
         {

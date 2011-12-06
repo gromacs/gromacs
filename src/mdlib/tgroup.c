@@ -50,10 +50,7 @@
 #include "update.h"
 #include "rbin.h"
 #include "mtop_util.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp_nthreads.h"
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
@@ -124,11 +121,8 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
       ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
-#ifdef GMX_OPENMP
-    nthread = omp_get_max_threads();
-#else
-    nthread = 1;
-#endif
+    nthread = gmx_omp_get_update_nthreads();
+
     snew(ekind->ekin_work,nthread);
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)

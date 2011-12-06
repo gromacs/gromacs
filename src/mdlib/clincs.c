@@ -52,10 +52,7 @@
 #include "partdec.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp_nthreads.h"
 
 typedef struct gmx_lincsdata {
     int  ncg;         /* the global number of constraints */
@@ -1309,7 +1306,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             int nth,th;
 
             /* do_lincs can run on any number of threads */
-            nth = omp_get_max_threads();
+            nth = gmx_omp_get_lincs_nthreads();
             if (debug)
             {
                 fprintf(debug,"LINCS: using %d threads\n",nth);

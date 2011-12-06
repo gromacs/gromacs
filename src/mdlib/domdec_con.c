@@ -27,10 +27,7 @@
 #include "domdec_network.h"
 #include "mtop_util.h"
 #include "gmx_ga2la.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp_nthreads.h"
 
 typedef struct {
     int nsend;
@@ -1344,11 +1341,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
         dc->ga2la[a] = -1;
     }
 
-#ifdef GMX_OPENMP
-    dc->nthread = omp_get_max_threads();
-#else
-    dc->nthread = 1;
-#endif
+    dc->nthread = gmx_omp_get_domdec_nthreads();
     snew(dc->ils,dc->nthread);
 
     dd->constraint_comm = specat_comm_init(dc->nthread);

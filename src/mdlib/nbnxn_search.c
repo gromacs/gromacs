@@ -50,12 +50,7 @@
 #include "nbnxn_search.h"
 #include "gmx_cyclecounter.h"
 #include "gmxfio.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#else
-#include "no_omp.h"
-#endif
+#include "gmx_omp_nthreads.h"
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
 #include "gmx_sse2_single.h"
@@ -1392,7 +1387,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     int  nthread,thread;
     int  *cxy_na,cxy_na_i;
 
-    nthread = omp_get_max_threads();
+    nthread = gmx_omp_get_pairsearch_nthreads();
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
@@ -1786,7 +1781,7 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_get_pairsearch_nthreads()) schedule(static)
     for(sc=0; sc<grid->nc; sc++)
     {
         int c,tx,na;
@@ -2413,13 +2408,11 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     nbl_list->simple    = simple;
     nbl_list->combined  = combined;
 
-    nbl_list->nnbl = 1;
-#ifdef GMX_OPENMP
-    nbl_list->nnbl = omp_get_max_threads(); // FIXME: remove omp_get_max_threads
-#endif
+    nbl_list->nnbl = gmx_omp_get_nonbonded_nthreads();
+
     snew(nbl_list->nbl,nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
-#pragma omp parallel for schedule(static), num_threads(nbl_list->nnbl)
+#pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
     for(i=0; i<nbl_list->nnbl; i++)
     {
         /* Allocate the nblist data structure locally on each thread
@@ -3985,7 +3978,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
             nblc->nsci++;
         }
 
-#pragma omp parallel
+#pragma omp parallel num_threads(gmx_omp_get_pairsearch_nthreads())
         {
 #pragma omp for schedule(static) nowait
             for(j4=0; j4<nbli->ncj4; j4++)
@@ -4713,7 +4706,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
             nbs_cycle_start(&nbs->cc[enbsCCsearch]);
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(nnbl) schedule(static)
             for(th=0; th<nnbl; th++)
             {
                 if (CombineNBLists && th > 0)
@@ -5302,7 +5295,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     {
         grid = &nbs->grid[g];
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_get_pairsearch_nthreads()) schedule(static)
         for(cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
         {
             int na,ash,na_fill;
@@ -5436,8 +5429,8 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
         break;
     }
 
-    nth = omp_get_max_threads();
-#pragma omp parallel for schedule(static)
+    nth = gmx_omp_get_nonbonded_nthreads();
+#pragma omp parallel for num_threads(nth) schedule(static)
     for(th=0; th<nth; th++)
     {
         nbnxn_atomdata_add_nbat_f_to_f_part(nbs,nbat,
@@ -5455,18 +5448,16 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                                rvec *fshift)
 {
     const nbnxn_atomdata_output_t *out;
-    int  nth,th;
+    int  th;
     int  s;
     rvec sum;
 
     out = nbat->out;
-
-    nth = omp_get_max_threads();
     
     for(s=0; s<SHIFTS; s++)
     {
         clear_rvec(sum);
-        for(th=0; th<nth; th++)
+        for(th=0; th<nbat->nout; th++)
         {
             sum[XX] += out[th].fshift[s*DIM+XX];
             sum[YY] += out[th].fshift[s*DIM+YY];

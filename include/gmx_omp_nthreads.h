@@ -21,11 +21,13 @@ int gmx_omp_get_bonded_nthreads();
 /*! Returns the number of threads for PME. */
 int gmx_omp_get_pme_nthreads();
 
-/*! Returns the number of threads for LINCS. */
-int gmx_omp_get_lincs_nthreads();
-
 /*! Returns the number of threads for update. */
 int gmx_omp_get_update_nthreads();
 
+/*! Returns the number of threads for LINCS. */
+int gmx_omp_get_lincs_nthreads();
+
+/*! Returns the number of threads for SETTLE. */
+int gmx_omp_get_settle_nthreads();
 
 #endif // _GMX_OMP_NTHREADS_

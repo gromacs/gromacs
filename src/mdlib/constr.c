@@ -55,12 +55,7 @@
 #include "splitter.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#else
-#include "no_omp.h"
-#endif
+#include "gmx_omp_nthreads.h"
 
 typedef struct gmx_constr {
   int              ncon_tot;     /* The total number of constraints    */
@@ -367,18 +362,14 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     settle  = &idef->il[F_SETTLE];
     nsettle = settle->nr/4;
 
-#ifdef GMX_OPENMP
     if (nsettle > 0)
     {
-        nth = omp_get_max_threads();
+        nth = gmx_omp_get_settle_nthreads();
     }
     else
     {
         nth = 1;
     }
-#else
-    nth = 1;
-#endif
 
     if (nth > 1 && constr->rmdr_th == NULL)
     {
@@ -477,7 +468,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         switch (econq)
         {
         case econqCoord:
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(nth) schedule(static)
             for(th=0; th<nth; th++)
             {
                 int start_th,end_th;
@@ -515,7 +506,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         case econqDeriv:
         case econqForce:
         case econqForceDispl:
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(nth) schedule(static)
             for(th=0; th<nth; th++)
             {
                 int start_th,end_th;

@@ -63,17 +63,12 @@
 #include "mtop_util.h"
 #include "nbnxn_search.h"
 #include "statutil.h"
+#include "gmx_omp_nthreads.h"
 
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
 #include <intrin.h>
-#endif
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#else
-#include "no_omp.h"
 #endif
 
 #ifdef GMX_GPU
@@ -1375,7 +1370,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 {
     int t,i;
 
-    fr->nthreads = omp_get_max_threads();
+    fr->nthreads = gmx_omp_get_bonded_nthreads();
 
     snew(fr->f_t,fr->nthreads);
     /* Thread 0 uses the global force and energy arrays */

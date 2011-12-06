@@ -63,12 +63,7 @@
 #include "partdec.h"
 #include "qmmm.h"
 #include "mpelogging.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#else
-#include "no_omp.h"
-#endif
+#include "gmx_omp_nthreads.h"
 
 void ns(FILE *fp,
         t_forcerec *fr,
@@ -125,7 +120,8 @@ static void reduce_thread_forces(int n,rvec *f,
 {
     int t,i;
 
-#pragma omp parallel for private(t) schedule(static)
+    /* This reduction can run over any number of threads */
+#pragma omp parallel for num_threads(gmx_omp_get_bonded_nthreads()) private(t) schedule(static)
     for(i=0; i<n; i++)
     {
         for(t=1; t<nthreads; t++)
@@ -429,14 +425,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         {
             if (fr->n_tpi == 0)
             {
+                int nthreads,t;
+
                 dvdlambda = 0;
-#pragma omp parallel
+                nthreads = gmx_omp_get_bonded_nthreads();
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+                for(t=0; t<nthreads; t++)
                 {
-                    int t,s,e,i;
+                    int s,e,i;
                     rvec *fnv;
                     tensor *vir;
                     real *Vcorrt,*dvdl;
-                    t = omp_get_thread_num();
                     if (t == 0)
                     {
                         fnv    = fr->f_novirsum;

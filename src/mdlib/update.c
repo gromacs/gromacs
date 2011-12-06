@@ -66,12 +66,7 @@
 #include "disre.h"
 #include "orires.h"
 #include "gmx_wallcycle.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#else 
-#include "no_omp.h"
-#endif
+#include "gmx_omp_nthreads.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -831,11 +826,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   }
   ekind->dekindl_old = ekind->dekindl;
   
-#ifdef GMX_OPENMP
-    nthread = omp_get_max_threads();
-#else
-    nthread = 1;
-#endif
+  nthread = gmx_omp_get_update_nthreads();
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
@@ -1686,7 +1677,6 @@ void update_coords(FILE         *fplog,
     dump_it_all(fplog,"Before update",
                 state->natoms,state->x,xprime,state->v,force);
     
-#ifdef GMX_OPENMP
     if (EI_RANDOM(inputrec->eI))
     {
         /* We still need to take care of generating random seeds properly
@@ -1696,13 +1686,10 @@ void update_coords(FILE         *fplog,
     }
     else
     {
-        nth = omp_get_max_threads();
+        nth = gmx_omp_get_update_nthreads();
     }
-#else
-    nth = 1;
-#endif
 
-# pragma omp parallel for schedule(static)
+# pragma omp parallel for num_threads(nth) schedule(static)
     for(th=0; th<nth; th++)
     {
         int start_th,end_th;

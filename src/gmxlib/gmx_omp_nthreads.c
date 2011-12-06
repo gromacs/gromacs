@@ -55,8 +55,9 @@ typedef struct
     int nonbonded;
     int bonded;
     int pme;
-    int lincs;
     int update;
+    int lincs;
+    int settle;
 
     gmx_bool initialized;
 } omp_module_nthreads_t;
@@ -71,7 +72,7 @@ static omp_module_nthreads_t mod_nth = {0, 0, 0, 0, 0, 0, 0, FALSE};
 enum 
 { 
     emodDomdec, emodPairsearch, emodNonbonded, 
-    emodBonded, emodPME, emodLincs, emodUpdate, 
+    emodBonded, emodPME,  emodUpdate, emodLincs, emodSettle,
     emodNR 
 };
 
@@ -81,8 +82,8 @@ enum
 static const char *mod_nth_env_var[emodNR] = 
 { 
     "GMX_OMP_DOMDEC_NTHREADS", "GMX_OMP_PAIRSEARCH_NTHREADS", "GMX_OMP_NONBONDED_NTHREADS",
-    "GMX_OMP_BONDED_NTHREADS", "GMX_OMP_PME_NTHREADS", "GMX_OMP_LINCS_NTHREADS",
-    "GMX_OMP_UPDATE_NTHREADS"
+    "GMX_OMP_BONDED_NTHREADS", "GMX_OMP_PME_NTHREADS",
+    "GMX_OMP_UPDATE_NTHREADS", "GMX_OMP_LINCS_NTHREADS", "GMX_OMP_SETTLE_NTHREADS"
 };
 
 /*! Determine the number of threads for the given module. The \module variable 
@@ -136,11 +137,15 @@ void init_module_nthreads(t_commrec *cr)
         mod_nth.nonbonded   = pick_module_nthreads(emodNonbonded);
         mod_nth.bonded      = pick_module_nthreads(emodBonded);
         mod_nth.pme         = pick_module_nthreads(emodPME);
-        mod_nth.lincs       = pick_module_nthreads(emodLincs);
         mod_nth.update      = pick_module_nthreads(emodUpdate);
+        mod_nth.lincs       = pick_module_nthreads(emodLincs);
+        mod_nth.settle      = pick_module_nthreads(emodSettle);
     }
 #ifdef GMX_THREADS
-    MPI_Barrier(cr->mpi_comm_mysim);
+    if (PAR(cr))
+    {
+        MPI_Barrier(cr->mpi_comm_mysim);
+    }
 #endif
 
     mod_nth.initialized = TRUE;
@@ -171,12 +176,17 @@ int gmx_omp_get_pme_nthreads()
     return mod_nth.pme;
 }
 
+int gmx_omp_get_update_nthreads()
+{
+    return mod_nth.update;
+}
+
 int gmx_omp_get_lincs_nthreads()
 {
     return mod_nth.lincs;
 }
 
-int gmx_omp_get_update_nthreads()
+int gmx_omp_get_settle_nthreads()
 {
-    return mod_nth.update;
+    return mod_nth.settle;
 }

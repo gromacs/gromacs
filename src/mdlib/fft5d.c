@@ -57,11 +57,6 @@
 
 #ifdef GMX_OPENMP
 #define FFT5D_THREADS
-#endif
-#ifdef FFT5D_THREADS
-#include <omp.h>
-#else 
-#include "no_omp.h"
 /* requires fftw compiled with openmp */
 /* #define FFT5D_FFTW_THREADS (now set by cmake) */
 #endif

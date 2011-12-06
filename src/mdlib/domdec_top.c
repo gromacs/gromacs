@@ -37,10 +37,7 @@
 #include "vsite.h"
 #include "gmx_ga2la.h"
 #include "force.h"
-
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
+#include "gmx_omp_nthreads.h"
 
 typedef struct {
     int  *index;  /* Index for each atom into il                  */ 
@@ -660,11 +657,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
         rt->mbi[mb].type       = mtop->molblock[mb].type;
     }
 
-#ifdef GMX_OPENMP
-    rt->nthread = omp_get_max_threads();
-#else
-    rt->nthread = 1;
-#endif
+    rt->nthread = gmx_omp_get_domdec_nthreads();
     snew(rt->idef_thread,rt->nthread);
     if (vsite_pbc_molt != NULL)
     {

@@ -57,10 +57,6 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
-#ifdef GMX_OPENMP
-#include <omp.h>
-#endif
-
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
 1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4 ,
@@ -2710,7 +2706,10 @@ static void reduce_thread_forces(int n,rvec *f,rvec *fshift,
 {
     int t,i,j;
 
-#pragma omp parallel for private(t) schedule(static)
+    /* This reduction can run on any number of threads,
+     * independently of nthreads.
+     */
+#pragma omp parallel for num_threads(nthreads) private(t) schedule(static)
     for(i=0; i<n; i++)
     {
         for(t=1; t<nthreads; t++)
