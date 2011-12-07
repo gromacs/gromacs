@@ -1513,11 +1513,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* at start of step, randomize the velocities */
         if (ETC_ANDERSEN(ir->etc) && EI_VV(ir->eI))
         {
-            update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr);
-            update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
-                               &top->idef,tmp_vir,NULL,
-                               cr,nrnb,wcycle,upd,constr,
-                               bInitStep,TRUE,FALSE,vetanew);
+            gmx_bool bDoAndersenConstr;
+            bDoAndersenConstr = update_randomize_velocities(ir,step,mdatoms,state,upd,&top->idef,constr);
+            /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */ 
+            if (bDoAndersenConstr) 
+            {
+                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                                   &top->idef,tmp_vir,NULL,
+                                   cr,nrnb,wcycle,upd,constr,
+                                   bInitStep,TRUE,FALSE,vetanew);
+            }
         }
 
         if (bIterations)

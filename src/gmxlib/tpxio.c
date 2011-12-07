@@ -1334,9 +1334,8 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
 	gmx_fio_do_int(fio,iparams->cmap.cmapB);
     break;
   default:
-    gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
-		
-    		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
+      gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
+                ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
   if (!bRead)
     gmx_fio_unset_comment(fio);

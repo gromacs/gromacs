@@ -1814,7 +1814,7 @@ void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
           mv[XX],mv[YY],mv[ZZ]);
 }
 
-extern void update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr) {
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr) {
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
     /* proceed with andersen if 1) it's fixed probability per
@@ -1827,5 +1827,8 @@ extern void update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_
                         constr?get_sblock(constr):NULL,
                         upd->randatom,upd->randatom_list,
                         upd->sd->randomize_group,upd->sd->boltzfac);
+        printf("Randomizing Step: %d\n",step);
+        return TRUE;
     }
+    return FALSE;
 }

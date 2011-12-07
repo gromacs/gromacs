@@ -167,6 +167,82 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 }
 #endif
 
+void compute_center(rvec q[], double *m, int Nat, rvec com, rvec rel[]) {
+
+    // computes center of mass and displacements of from 
+    int i,j;
+    float msum;
+
+    msum = 0;
+    for (i=0;i<Nat;i++) {
+        msum += m[i];
+    }
+    for (j=0;j<DIM;j++) {
+        com[j] = 0;
+        for (i=0;i<Nat;i++) {
+            rel[i][j] = 0;
+        }
+    }
+    for (i=0;i<Nat;i++) {
+        for (j=0;j<DIM;j++){
+            com[j] += q[i][j]*(m[i]/msum);
+        }
+    }
+    for (i=0;i<Nat;i++) {
+        for (j=0;j<DIM;j++){
+            rel[i][j] = q[i][j]-com[j];
+        }
+    }
+}
+
+void compute_KE(double *m, rvec vcom,rvec vrel[],int Nat,double *KE_com,double *KE_rel,double *KE_tot) {
+
+    int i,j;
+    double msum = 0;
+
+    for (i=0;i<Nat;i++) {
+        msum += m[i];
+    }
+
+    for (j=0;j<DIM;j++) {
+        *KE_com += 0.5*msum*vcom[j]*vcom[j];
+        for (i=0;i<Nat;i++) {
+            *KE_rel += 0.5*m[i]*vrel[i][j]*vrel[i][j];
+        }
+    }
+    *KE_tot = *KE_rel + *KE_com;
+}
+
+void compute_angular(double *m, rvec xcom,rvec vcom,rvec xrel[],rvec vrel[], rvec Lcom, rvec Lrel, rvec Ltot, int Nat) {
+
+    // compute angular momemtum around center of mass from displacements
+    int i,j;
+    float msum;
+    rvec mv;
+    rvec lvpart;
+
+    msum = 0;
+    for (j=0;j<DIM;j++) {
+        Lrel[j] = 0;
+        Lcom[j] = 0;
+        Ltot[j] = 0;
+    }
+    for (i=0;i<Nat;i++) {
+        msum += m[i];
+    }
+    svmul(msum,vcom,mv);
+    cprod(xcom,mv,Lcom);
+    for (i=0;i<Nat;i++) {
+        svmul(m[i],vrel[i],mv);
+        cprod(xrel[i],mv,lvpart);
+        for (j=0;j<DIM;j++) {
+            Lrel[j] += lvpart[j];
+        }
+    }
+    for (j=0;j<DIM;j++) {
+        Ltot[j] = Lrel[j] + Lcom[j];
+    }
+}
 
 void settle_proj(FILE *fp,
                  gmx_settledata_t settled,int econq,
@@ -188,6 +264,22 @@ void settle_proj(FILE *fp,
     real   invvscale,vscale_nhc,veta;
     real   kfacOH,kfacHH;
 
+    /* just for testing */
+#if 0
+    int j;
+    rvec Lcom0, Lrel0, Ltot0;
+    rvec Lcom1, Lrel1, Ltot1;
+    rvec dLcom, dLrel, dLtot;
+    rvec xcom,vcom;
+    int Nat = 3;
+    double mass[Nat];
+    rvec xrel[Nat];
+    rvec vrel[Nat];
+    double scom,srel,stot;
+    double KE_com0,KE_rel0,KE_tot0;
+    double KE_com1,KE_rel1,KE_tot1;
+#endif
+
     if (econq == econqForce)
     {
         p = &settled->mass1;
@@ -203,7 +295,11 @@ void settle_proj(FILE *fp,
     dHH    = p->dHH;
     invdOH = p->invdOH;
     invdHH = p->invdHH;
-    
+
+#if 0    
+    KE_com0 = KE_rel0 = KE_tot0 = 0;
+    KE_com1 = KE_rel1 = KE_tot1 = 0;
+#endif
     veta = vetavar->veta;     
     vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
 
@@ -217,7 +313,15 @@ void settle_proj(FILE *fp,
         hw2 = ow1 + 1;
         hw3 = ow1 + 2;
 
-
+#if 0        
+        mass[0] = 1.0/p->imO;
+        mass[1] = 1.0/p->imH;
+        mass[2] = 1.0/p->imH;
+        compute_center(&x[ow1],mass,Nat,xcom,xrel);
+        compute_center(&der[ow1],mass,Nat,vcom,vrel);
+        compute_angular(mass,xcom,vcom,xrel,vrel,Lcom0,Lrel0,Ltot0,Nat);
+        compute_KE(mass,vcom,vrel,Nat,&KE_com0,&KE_rel0,&KE_tot0);
+#endif
         for(m=0; m<DIM; m++)
         {
             /* in the velocity case, these are the velocities, so we 
@@ -284,7 +388,29 @@ void settle_proj(FILE *fp,
                 }
             }
         }
+#if 0
+        compute_center(&der[ow1],mass,Nat,vcom,vrel);
+        compute_angular(mass,xcom,vcom,xrel,vrel,Lcom1,Lrel1,Ltot1,Nat);
+        compute_KE(mass,vcom,vrel,Nat,&KE_com1,&KE_rel1,&KE_tot1);
+        scom = 0;
+        srel = 0;
+        stot = 0;
+        for (j=0;j<DIM;j++) {
+            dLcom[j] = Lcom1[j]-Lcom0[j];
+            dLrel[j] = Lrel1[j]-Lrel0[j];
+            dLtot[j] = Ltot1[j]-Ltot0[j];
+            scom += dLcom[j]*dLcom[j];
+            srel += dLrel[j]*dLrel[j];
+            stot += dLtot[j]*dLtot[j];
+        printf("%d %10.5g %10.5g %10.5g\n",i,scom,srel,stot);
+        }
+#endif
     }
+#if 0
+    printf("Bef: %15.8g %15.8g %15.8g\n",KE_com0,KE_rel0,KE_tot0);
+    printf("Aft: %15.8g %15.8g %15.8g\n",KE_com1,KE_rel1,KE_tot1);
+#endif
+
     /* conrect rmdder, which will be used to calcualate the virial; we need to use 
        the unscaled multipliers in the virial */
     msmul(rmdder,1.0/vetavar->vscale,rmdder);
