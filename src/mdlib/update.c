@@ -1827,7 +1827,6 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step
                         constr?get_sblock(constr):NULL,
                         upd->randatom,upd->randatom_list,
                         upd->sd->randomize_group,upd->sd->boltzfac);
-        printf("Randomizing Step: %d\n",step);
         return TRUE;
     }
     return FALSE;
