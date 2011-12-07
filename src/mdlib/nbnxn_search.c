@@ -5274,7 +5274,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                       rvec *x,
                                       nbnxn_atomdata_t *nbat)
 {
-    int g0=0,g1=0,g,cxy,na,ash,na_fill;
+    int g0=0,g1=0,g,cxy;
     const nbnxn_grid_t *grid;
 
     switch (aloc)
@@ -5302,9 +5302,11 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     {
         grid = &nbs->grid[g];
 
-#pragma omp parallel for schedule(static) private(na,ash)
+#pragma omp parallel for schedule(static)
         for(cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
         {
+            int na,ash,na_fill;
+
             na  = grid->cxy_na[cxy];
             ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
 
