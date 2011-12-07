@@ -665,7 +665,6 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
 #else
     rt->nthread = 1;
 #endif
-    rt->nthread = 1;
     snew(rt->idef_thread,rt->nthread);
     if (vsite_pbc_molt != NULL)
     {
@@ -987,43 +986,39 @@ static void combine_blocka(t_blocka *dest,const t_blocka *src,int nsrc)
     {
         na += src[s].nra;
     }
-    if (na > 0)
+    if (ni + 1 > dest->nalloc_index)
     {
-        if (dest->nr + ni + 1 > dest->nalloc_index)
+        dest->nalloc_index = over_alloc_large(ni+1);
+        srenew(dest->index,dest->nalloc_index);
+    }
+    if (dest->nra + na > dest->nalloc_a)
+    {
+        dest->nalloc_a = over_alloc_large(dest->nra+na);
+        srenew(dest->a,dest->nalloc_a);
+    }
+    for(s=0; s<nsrc; s++)
+    {
+        for(i=dest->nr+1; i<src[s].nr+1; i++)
         {
-            dest->nalloc_index = over_alloc_large(dest->nr+ni+1);
-            srenew(dest->index,dest->nalloc_index);
+            dest->index[i] = dest->nra + src[s].index[i];
         }
-        if (dest->nra + na > dest->nalloc_a)
+        for(i=0; i<src[s].nra; i++)
         {
-            dest->nalloc_a = over_alloc_large(dest->nra+na);
-            srenew(dest->a,dest->nalloc_a);
+            dest->a[dest->nra+i] = src[s].a[i];
         }
-        for(s=0; s<nsrc; s++)
-        {
-            for(i=dest->nr+1; i<src[s].nr+1; i++)
-            {
-                dest->index[i] = dest->nra + src[s].index[i];
-            }
-            for(i=0; i<src[s].nra; i++)
-            {
-                dest->a[dest->nra+i] = src[s].a[i];
-            }
-            dest->nr   = src[s].nr;
-            dest->nra += src[s].nra;
-        }
+        dest->nr   = src[s].nr;
+        dest->nra += src[s].nra;
     }
 }
 
 static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
-                         int **vsite_pbc,int *vsite_pbc_nalloc,
-                         int ***vsite_pbc_t)
+                         gmx_vsite_t *vsite,int ***vsite_pbc_t)
 {
     int ftype,n,s,i;
     t_ilist *ild;
     const t_ilist *ils;
     gmx_bool vpbc;
-    int nral1=0;
+    int nral1=0,ftv=0;
 
     for(ftype=0; ftype<F_NRE; ftype++)
     {
@@ -1043,14 +1038,17 @@ static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
             }
 
             vpbc = ((interaction_function[ftype].flags & IF_VSITE) &&
-                    vsite_pbc != NULL);
+                    vsite->vsite_pbc_loc != NULL);
             if (vpbc)
             {
                 nral1 = 1 + NRAL(ftype);
-                if ((ild->nr + n)/nral1 > vsite_pbc_nalloc[ftype])
+                ftv = ftype - F_VSITE2;
+                if ((ild->nr + n)/nral1 > vsite->vsite_pbc_loc_nalloc[ftv])
                 {
-                    vsite_pbc_nalloc[ftype] = over_alloc_large((ild->nr + n)/nral1);
-                    srenew(vsite_pbc[ftype],vsite_pbc_nalloc[ftype]);
+                    vsite->vsite_pbc_loc_nalloc[ftv] =
+                        over_alloc_large((ild->nr + n)/nral1);
+                    srenew(vsite->vsite_pbc_loc[ftv],
+                           vsite->vsite_pbc_loc_nalloc[ftv]);
                 }
             }
 
@@ -1065,8 +1063,8 @@ static void combine_idef(t_idef *dest,const t_idef *src,int nsrc,
                 {
                     for(i=0; i<ils->nr; i+=nral1)
                     {
-                        vsite_pbc[ftype][(ild->nr+i)/nral1] =
-                            vsite_pbc_t[s][ftype][i/nral1];
+                        vsite->vsite_pbc_loc[ftv][(ild->nr+i)/nral1] =
+                            vsite_pbc_t[s][ftv][i/nral1];
                     }
                 }
                 
@@ -1593,8 +1591,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         if (rt->nthread > 1)
         {
             combine_idef(idef,rt->idef_thread+1,rt->nthread-1,
-                         vsite->vsite_pbc_loc,vsite->vsite_pbc_loc_nalloc,
-                         rt->vsite_pbc-1);
+                         vsite,rt->vsite_pbc+1);
         }
 
         for(thread=0; thread<rt->nthread; thread++)
@@ -1603,9 +1600,12 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
         }
 
         if ((iz < zones->nizone) &&
-                !(dd->n_intercg_excl == 0 && iz > 0))
+            !(dd->n_intercg_excl == 0 && iz > 0))
         {
-            combine_blocka(lexcls,rt->excl_thread+1,rt->nthread-1);
+            if (rt->nthread > 1)
+            {
+                combine_blocka(lexcls,rt->excl_thread+1,rt->nthread-1);
+            }
 
             for(thread=0; thread<rt->nthread; thread++)
             {
