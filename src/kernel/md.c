@@ -102,46 +102,6 @@
 #include "corewrap.h"
 #endif
 
-double compute_lambda_titration(FILE *fplog,gmx_ekindata_t *ekind,
-                                t_inputrec *ir,real DE_Titration,
-                                gmx_enerdata_t *enerd,
-                                t_state *state_global)
-{
-    real ek,l2,lambda_titration;
-    int  i,j,gt;
-    
-    lambda_titration = 1;
-    //DE_Titration =  (enerd->term[F_EPOT] - ebefore_titration);
-    ek = trace(ekind->ekin);
-    l2 = 1.0-DE_Titration/ek;
-    lambda_titration = sqrt(l2);
-    
-    fprintf(fplog,"Ekin from tensor: %g  enerd->term[F_EKIN] %g lambda_t = %g\n",
-            ek,enerd->term[F_EKIN],lambda_titration);
-    
-    if (NULL != debug)
-        fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
-                ek,lambda_titration);
-    
-    if (0) {
-        for(i=0; (i<DIM); i++)
-        {
-            for(j=0; (j<DIM); j++)
-            {
-                for(gt=0; (gt<ir->opts.ngtc); gt++) 
-                {
-                    ekind->tcstat[gt].ekinf[i][j] *= l2;
-                }
-                ekind->ekin[i][j] *= l2;
-            }
-        }
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
-        enerd->term[F_EKIN] = trace(ekind->ekin);
-        enerd->term[F_ETOT] = enerd->term[F_EKIN]+enerd->term[F_EPOT];
-    }
-    return lambda_titration;
-}
-
 double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
              int nstglobalcomm,
@@ -206,7 +166,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     real        timestep=0;
     double      tcount=0;
     int         eTitration;
-    real        lambda_titration, ebefore_titration,DE_Titration;
+    real        ebefore_titration,DE_Titration;
     gmx_bool        bIonize=FALSE;
     gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     gmx_bool        bAppend;
@@ -1050,7 +1010,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             DE_Titration = 0;
             eTitration = eTitration_No;
         }
-        lambda_titration = 1;
 
         /* Keep inactive hydrogens from drifting away. */
         if (fr->bTitration)
@@ -1127,7 +1086,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
-                          cr,nrnb,constr,&top->idef,1);
+                          cr,nrnb,constr,&top->idef);
             
             if (bIterations)
             {
@@ -1187,7 +1146,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
-                
+                if (eTitration == eTitration_Ecorr) 
+                {
+                    couple_lambda_titration(fplog,ekind,DE_Titration,
+                                            enerd,state,mdatoms);
+                }
+
                 /* if VV, compute the pressure and constraints */
                 /* For VV2, we strictly only need this if using pressure
                  * control, but we really would like to have accurate pressures
@@ -1221,12 +1185,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                    EkinAveVel because it's needed for the pressure */
                 
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
-                if (eTitration == eTitration_Ecorr) 
-                {
-                    lambda_titration = compute_lambda_titration(fplog,ekind,ir,
-                                                                DE_Titration,
-                                                                enerd,state_global);
-                }
             
                 if (!bInitStep) 
                 {
@@ -1236,7 +1194,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     } 
                     else 
                     {
-                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
+                        update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                     }
                 }
                 
@@ -1537,7 +1495,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 else 
                 {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                     update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                    upd,bInitStep);
                 }
@@ -1548,9 +1506,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_coords(fplog,step,ir,mdatoms,state,f,
                                   fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
-                                  cr,nrnb,constr,&top->idef,lambda_titration);
-                    
-
+                                  cr,nrnb,constr,&top->idef);
                 }
 
                 /* Above, initialize just copies ekinh into ekin,
@@ -1564,7 +1520,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,1);
+                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
                 update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
@@ -1588,7 +1544,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
                     update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,1);
+                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */

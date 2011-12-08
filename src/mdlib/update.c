@@ -230,8 +230,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
                              unsigned short ptype[],
                              unsigned short cFREEZE[],unsigned short cACC[],
                              rvec v[],rvec f[],
-                             gmx_bool bExtended, real veta, real alpha,
-                             double lambda_titration)
+                             gmx_bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
@@ -267,7 +266,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
             {
-                v[n][d] = mv1*(lambda_titration*mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
+                v[n][d] = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             } 
             else 
             {
@@ -1140,6 +1139,30 @@ static void combine_forces(int nstlist,
     }
 }
 
+void couple_lambda_titration(FILE *fplog,gmx_ekindata_t *ekind,
+                             real DE_Titration,
+                             gmx_enerdata_t *enerd,
+                             t_state      *state,
+                             t_mdatoms  *md)
+{
+    real ek,l2,lambda_titration;
+    int  i,j,gt;
+    
+    ek = trace(ekind->ekin);
+    l2 = 1.0-DE_Titration/ek;
+    lambda_titration = sqrt(l2);
+    
+    fprintf(fplog,"Ekin from tensor: %g  enerd->term[F_EKIN] %g lambda_t = %g\n",
+            ek,enerd->term[F_EKIN],lambda_titration);
+    
+    if (NULL != debug)
+        fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
+                ek,lambda_titration);
+
+    rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v,&lambda_titration);
+    return;
+}
+
 void update_tcouple(FILE         *fplog,
                     gmx_large_int_t   step,
                     t_inputrec   *inputrec,   
@@ -1148,9 +1171,7 @@ void update_tcouple(FILE         *fplog,
                     gmx_wallcycle_t wcycle,
                     gmx_update_t upd,
                     t_extmass    *MassQ,
-                    t_mdatoms  *md,
-                    real lambda_titration)
-    
+                    t_mdatoms  *md)
 {
     gmx_bool   bTCouple=FALSE;
     real   dttc;
@@ -1186,10 +1207,11 @@ void update_tcouple(FILE         *fplog,
                             state->therm_integral,upd->sd->gaussrand);
             break;
         }
+
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v,lambda_titration);
+            rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v,NULL);
         }
     }
     else 
@@ -1201,6 +1223,8 @@ void update_tcouple(FILE         *fplog,
         }
     }
 }
+
+
 
 void update_pcouple(FILE         *fplog,
                     gmx_large_int_t   step,
@@ -1576,8 +1600,7 @@ void update_coords(FILE         *fplog,
                    t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
-                   t_idef       *idef,
-                   real         lambda_titration)
+                   t_idef       *idef)
 {
     gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
@@ -1702,8 +1725,7 @@ void update_coords(FILE         *fplog,
                              md->invmass,md->ptype,
                              md->cFREEZE,md->cACC,
                              state->v,force,
-                             bExtended,state->veta,alpha,
-                             lambda_titration);  
+                             bExtended,state->veta,alpha);  
             break;
         case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,

@@ -65,19 +65,24 @@ void set_stochd_state(gmx_update_t sd,t_state *state);
  * as a reference state for simulations with box deformation.
  */
 void set_deform_reference_box(gmx_update_t upd,
-				     gmx_large_int_t step,matrix box);
+			      gmx_large_int_t step,matrix box);
+
+void couple_lambda_titration(FILE *fplog,
+			     gmx_ekindata_t *ekind,
+			     real DE_Titration,
+                             gmx_enerdata_t *enerd,
+                             t_state      *state,
+                             t_mdatoms  *md);
 
 void update_tcouple(FILE         *fplog,
-			   gmx_large_int_t   step,
-			   t_inputrec   *inputrec,   
-			   t_state      *state,
-			   gmx_ekindata_t *ekind,
-			   gmx_wallcycle_t wcycle,
-			   gmx_update_t upd,
-			   t_extmass    *MassQ,
-		    t_mdatoms    *md,
-		    real lambda_titration
-);
+		    gmx_large_int_t   step,
+		    t_inputrec   *inputrec,   
+		    t_state      *state,
+		    gmx_ekindata_t *ekind,
+		    gmx_wallcycle_t wcycle,
+		    gmx_update_t upd,
+		    t_extmass    *MassQ,
+		    t_mdatoms    *md);
 
 void update_pcouple(FILE         *fplog,
 			   gmx_large_int_t   step,
@@ -107,8 +112,7 @@ void update_coords(FILE         *fplog,
 			  t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
 			  t_nrnb       *nrnb,
 			  gmx_constr_t constr,
-		          t_idef       *idef,
-		          real         lambda_titration);
+		          t_idef       *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -210,7 +214,7 @@ real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
 
 void rescale_velocities(gmx_ekindata_t *ekind,t_mdatoms *mdatoms,
-			int start,int end,rvec v[],real lambda_titration);
+			int start,int end,rvec v[],real *lambda_const);
 /* Rescale the velocities with the scaling factor in ekind */
 
 void update_annealing_target_temp(t_grpopts *opts,real t); 

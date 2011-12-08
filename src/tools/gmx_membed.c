@@ -1845,13 +1845,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		if (ir->eI == eiVVAK)
 		{
-		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
 		}
 
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
-                              cr,nrnb,constr,&top->idef,0);
+                              cr,nrnb,constr,&top->idef);
 
                 if (bIterations)
                 {
@@ -2266,7 +2266,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		if (ir->eI != eiVVAK)
                 {
-		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                 }
                 update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                 upd,bInitStep);
@@ -2275,7 +2275,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		{
 		    /* velocity half-step update */
 		    update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-				  ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef,0);
+				  ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,cr,nrnb,constr,&top->idef);
 		}
 
                 /* Above, initialize just copies ekinh into ekin,
@@ -2289,7 +2289,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
 
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,0);
+                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
                 update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
@@ -2313,7 +2313,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
                     update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef,0);
+                                  ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
