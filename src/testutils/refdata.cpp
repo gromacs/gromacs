@@ -46,7 +46,10 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
+#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/utility/path.h"
+#include "testutils/testexceptions.h"
 
 #include "refdata-impl.h"
 
@@ -91,8 +94,9 @@ const char * const TestReferenceData::Impl::cSequenceLengthName =
     "Length";
 
 
-TestReferenceData::Impl::Impl()
-    : _bWrite(false), _refDoc(NULL), _currNode(NULL), _nextSearchNode(NULL)
+TestReferenceData::Impl::Impl(ReferenceDataMode mode)
+    : _bWrite(false), _refDoc(NULL), _currNode(NULL), _nextSearchNode(NULL),
+      _failedCompounds(0)
 {
     const ::testing::TestInfo *test_info =
         ::testing::UnitTest::GetInstance()->current_test_info();
@@ -100,11 +104,7 @@ TestReferenceData::Impl::Impl()
     std::string filename = std::string(test_info->test_case_name())
         + "_" + test_info->name() + ".xml";
     _fullFilename = Path::join(dirname, filename);
-}
 
-
-void TestReferenceData::Impl::Initialize(ReferenceDataMode mode)
-{
     _bWrite = true;
     if (mode != erefdataUpdateAll)
     {
@@ -117,7 +117,8 @@ void TestReferenceData::Impl::Initialize(ReferenceDataMode mode)
         else if (mode == erefdataCompare)
         {
             _bWrite = false;
-            FAIL() << "Could not find reference data file: " << _fullFilename;
+            ADD_FAILURE() << "Reference data file not found: " << _fullFilename;
+            return;
         }
     }
     if (_bWrite)
@@ -132,16 +133,18 @@ void TestReferenceData::Impl::Initialize(ReferenceDataMode mode)
         _refDoc = xmlParseFile(_fullFilename.c_str());
         if (_refDoc == NULL)
         {
-            FAIL() << "Reference data not parsed successfully: " << _fullFilename;
+            GMX_THROW(TestException("Reference data not parsed successfully: " + _fullFilename));
         }
         _currNode = xmlDocGetRootElement(_refDoc);
         if (_currNode == NULL)
         {
-            FAIL() << "Reference data is empty: " << _fullFilename;
+            xmlFreeDoc(_refDoc);
+            GMX_THROW(TestException("Reference data is empty: " + _fullFilename));
         }
         if (xmlStrcmp(_currNode->name, cRootNodeName))
         {
-            FAIL() << "Invalid root node type in " << _fullFilename;
+            xmlFreeDoc(_refDoc);
+            GMX_THROW(TestException("Invalid root node type in " + _fullFilename));
         }
         _nextSearchNode = _currNode->xmlChildrenNode;
     }
@@ -150,9 +153,12 @@ void TestReferenceData::Impl::Initialize(ReferenceDataMode mode)
 
 TestReferenceData::Impl::~Impl()
 {
-    if (_bWrite)
+    if (_bWrite && _refDoc != NULL)
     {
-        EXPECT_NE(-1, xmlSaveFormatFile(_fullFilename.c_str(), _refDoc, 1));
+        if (xmlSaveFormatFile(_fullFilename.c_str(), _refDoc, 1) == -1)
+        {
+            ADD_FAILURE() << "Saving reference data failed for " + _fullFilename;
+        }
     }
     if (_refDoc != NULL)
     {
@@ -205,6 +211,10 @@ TestReferenceData::Impl::findOrCreateNode(const xmlChar *name, const char *id)
                     node = NULL;
                 }
             }
+            if (node == NULL)
+            {
+                GMX_THROW(TestException("XML node creation failed"));
+            }
         }
         else
         {
@@ -225,13 +235,17 @@ TestReferenceData::Impl::findOrCreateNode(const xmlChar *name, const char *id)
 
 std::string
 TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
-                                     const char *value)
+                                     const char *value, bool *bFound)
 {
+    *bFound = false;
     xmlNodePtr node = findOrCreateNode(name, id);
     if (node == NULL)
     {
+        GMX_RELEASE_ASSERT(!_bWrite, "Node creation failed without exception");
+        ADD_FAILURE() << "Reference data item not found";
         return std::string();
     }
+    *bFound = true;
     if (_bWrite)
     {
         xmlNodeAddContent(node, reinterpret_cast<const xmlChar *>(value));
@@ -249,9 +263,16 @@ TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
 
 std::string
 TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
-                                     const std::string &value)
+                                     const std::string &value, bool *bFound)
 {
-    return processItem(name, id, value.c_str());
+    return processItem(name, id, value.c_str(), bFound);
+}
+
+
+bool
+TestReferenceData::Impl::shouldIgnore() const
+{
+    return _refDoc == NULL || _currNode == NULL || _failedCompounds > 0;
 }
 
 
@@ -260,16 +281,14 @@ TestReferenceData::Impl::processItem(const xmlChar *name, const char *id,
  */
 
 TestReferenceData::TestReferenceData()
-    : _impl(new Impl)
+    : _impl(new Impl(getReferenceDataMode()))
 {
-    _impl->Initialize(getReferenceDataMode());
 }
 
 
 TestReferenceData::TestReferenceData(ReferenceDataMode mode)
-    : _impl(new Impl)
+    : _impl(new Impl(mode))
 {
-    _impl->Initialize(mode);
 }
 
 
@@ -287,22 +306,44 @@ bool TestReferenceData::isWriteMode() const
 
 void TestReferenceData::startCompound(const char *type, const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        ++_impl->_failedCompounds;
+        return;
+    }
     xmlNodePtr newNode = _impl->findOrCreateNode(Impl::cCompoundNodeName, id);
-    ASSERT_TRUE(NULL != newNode);
+    if (newNode == NULL)
+    {
+        GMX_RELEASE_ASSERT(!isWriteMode(), "Node creation failed without exception");
+        ++_impl->_failedCompounds;
+        ADD_FAILURE() << "Reference data item not found";
+        return;
+    }
     _impl->_currNode = newNode;
     _impl->_nextSearchNode = newNode->xmlChildrenNode;
     if (isWriteMode())
     {
-        ASSERT_TRUE(NULL != xmlNewProp(newNode, Impl::cCompoundTypeAttrName,
-                                       reinterpret_cast<const xmlChar *>(type)));
+        if (xmlNewProp(newNode, Impl::cCompoundTypeAttrName,
+                       reinterpret_cast<const xmlChar *>(type)) == NULL)
+        {
+            GMX_THROW(TestException("XML property creation failed"));
+        }
     }
 }
 
 
 void TestReferenceData::finishCompound()
 {
-    ASSERT_TRUE(NULL != _impl->_currNode);
-    ASSERT_TRUE(NULL != _impl->_currNode->parent);
+    if (_impl->shouldIgnore())
+    {
+        GMX_RELEASE_ASSERT(_impl->_failedCompounds > 0,
+                           "startCompound() not called");
+        --_impl->_failedCompounds;
+        return;
+    }
+    GMX_RELEASE_ASSERT(NULL != _impl->_currNode, "Internal error");
+    GMX_RELEASE_ASSERT(NULL != _impl->_currNode->parent,
+                       "startCompound() not called");
     _impl->_nextSearchNode = _impl->_currNode->next;
     _impl->_currNode = _impl->_currNode->parent;
     if (_impl->_nextSearchNode == NULL)
@@ -314,20 +355,34 @@ void TestReferenceData::finishCompound()
 
 void TestReferenceData::checkBoolean(bool value, const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     const char *strValue = value ? "true" : "false";
     std::string refStrValue =
-        _impl->processItem(Impl::cBooleanNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    EXPECT_EQ(refStrValue, strValue);
+        _impl->processItem(Impl::cBooleanNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, strValue);
+    }
 }
 
 
 void TestReferenceData::checkString(const char *value, const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     std::string refStrValue =
-        _impl->processItem(Impl::cStringNodeName, id, value);
-    ASSERT_FALSE(refStrValue.empty());
-    EXPECT_EQ(refStrValue, value);
+        _impl->processItem(Impl::cStringNodeName, id, value, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, value);
+    }
 }
 
 
@@ -339,26 +394,40 @@ void TestReferenceData::checkString(const std::string &value, const char *id)
 
 void TestReferenceData::checkInteger(int value, const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     char strValue[20];
     snprintf(strValue, 20, "%d", value);
     std::string refStrValue =
-        _impl->processItem(Impl::cIntegerNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    EXPECT_EQ(refStrValue, strValue);
+        _impl->processItem(Impl::cIntegerNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, strValue);
+    }
 }
 
 
 void TestReferenceData::checkDouble(double value, const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     char strValue[20];
     snprintf(strValue, 20, "%f", value);
     std::string refStrValue =
-        _impl->processItem(Impl::cRealNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    char *endptr = NULL;
-    double refValue = std::strtof(refStrValue.c_str(), &endptr);
-    EXPECT_EQ('\0', *endptr);
-    EXPECT_NEAR(refValue, value, 0.0001);
+        _impl->processItem(Impl::cRealNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        char *endptr = NULL;
+        double refValue = std::strtof(refStrValue.c_str(), &endptr);
+        EXPECT_EQ('\0', *endptr);
+        EXPECT_NEAR(refValue, value, 0.0001);
+    }
 }
 
 
@@ -382,44 +451,71 @@ void TestReferenceData::checkReal(double value, const char *id)
 
 void TestReferenceData::checkVector(int value[3], const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%d %d %d", value[0], value[1], value[2]);
     std::string refStrValue =
-        _impl->processItem(Impl::cVectorIntegerNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    EXPECT_EQ(refStrValue, strValue);
+        _impl->processItem(Impl::cVectorIntegerNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        EXPECT_EQ(refStrValue, strValue);
+    }
 }
 
 
 void TestReferenceData::checkVector(float value[3], const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%f %f %f", value[0], value[1], value[2]);
     std::string refStrValue =
-        _impl->processItem(Impl::cVectorRealNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    double refX, refY, refZ;
-    int count = std::sscanf(refStrValue.c_str(), " %lg %lg %lg", &refX, &refY, &refZ);
-    ASSERT_EQ(3, count);
-    EXPECT_NEAR(refX, value[0], 0.0001);
-    EXPECT_NEAR(refY, value[1], 0.0001);
-    EXPECT_NEAR(refZ, value[2], 0.0001);
+        _impl->processItem(Impl::cVectorRealNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        float refX, refY, refZ;
+        int count = std::sscanf(refStrValue.c_str(), " %g %g %g", &refX, &refY, &refZ);
+        if (count != 3)
+        {
+            GMX_THROW(TestException("Corrupt reference vector data"));
+        }
+        EXPECT_NEAR(refX, value[0], 0.0001);
+        EXPECT_NEAR(refY, value[1], 0.0001);
+        EXPECT_NEAR(refZ, value[2], 0.0001);
+    }
 }
 
 
 void TestReferenceData::checkVector(double value[3], const char *id)
 {
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%f %f %f", value[0], value[1], value[2]);
     std::string refStrValue =
-        _impl->processItem(Impl::cVectorRealNodeName, id, strValue);
-    ASSERT_FALSE(refStrValue.empty());
-    float refX, refY, refZ;
-    int count = std::sscanf(refStrValue.c_str(), " %g %g %g", &refX, &refY, &refZ);
-    ASSERT_EQ(3, count);
-    EXPECT_NEAR(refX, value[0], 0.0001);
-    EXPECT_NEAR(refY, value[1], 0.0001);
-    EXPECT_NEAR(refZ, value[2], 0.0001);
+        _impl->processItem(Impl::cVectorRealNodeName, id, strValue, &bFound);
+    if (bFound)
+    {
+        double refX, refY, refZ;
+        int count = std::sscanf(refStrValue.c_str(), " %lg %lg %lg", &refX, &refY, &refZ);
+        if (count != 3)
+        {
+            GMX_THROW(TestException("Corrupt reference vector data"));
+        }
+        EXPECT_NEAR(refX, value[0], 0.0001);
+        EXPECT_NEAR(refY, value[1], 0.0001);
+        EXPECT_NEAR(refZ, value[2], 0.0001);
+    }
 }
 
 
