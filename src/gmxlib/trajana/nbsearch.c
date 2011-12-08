@@ -163,7 +163,7 @@ gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **data, real cutoff, int maxn)
     d->bTryGrid = TRUE;
     if (cutoff <= 0)
     {
-        cutoff = HUGE_VAL;
+        cutoff = GMX_REAL_MAX;
         d->bTryGrid = FALSE;
     }
     d->cutoff = cutoff;
