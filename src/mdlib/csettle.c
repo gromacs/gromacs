@@ -265,20 +265,6 @@ void settle_proj(FILE *fp,
     real   kfacOH,kfacHH;
 
     /* just for testing */
-#if 0
-    int j;
-    rvec Lcom0, Lrel0, Ltot0;
-    rvec Lcom1, Lrel1, Ltot1;
-    rvec dLcom, dLrel, dLtot;
-    rvec xcom,vcom;
-    int Nat = 3;
-    double mass[Nat];
-    rvec xrel[Nat];
-    rvec vrel[Nat];
-    double scom,srel,stot;
-    double KE_com0,KE_rel0,KE_tot0;
-    double KE_com1,KE_rel1,KE_tot1;
-#endif
 
     if (econq == econqForce)
     {
@@ -296,10 +282,6 @@ void settle_proj(FILE *fp,
     invdOH = p->invdOH;
     invdHH = p->invdHH;
 
-#if 0    
-    KE_com0 = KE_rel0 = KE_tot0 = 0;
-    KE_com1 = KE_rel1 = KE_tot1 = 0;
-#endif
     veta = vetavar->veta;     
     vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
 
@@ -313,15 +295,6 @@ void settle_proj(FILE *fp,
         hw2 = ow1 + 1;
         hw3 = ow1 + 2;
 
-#if 0        
-        mass[0] = 1.0/p->imO;
-        mass[1] = 1.0/p->imH;
-        mass[2] = 1.0/p->imH;
-        compute_center(&x[ow1],mass,Nat,xcom,xrel);
-        compute_center(&der[ow1],mass,Nat,vcom,vrel);
-        compute_angular(mass,xcom,vcom,xrel,vrel,Lcom0,Lrel0,Ltot0,Nat);
-        compute_KE(mass,vcom,vrel,Nat,&KE_com0,&KE_rel0,&KE_tot0);
-#endif
         for(m=0; m<DIM; m++)
         {
             /* in the velocity case, these are the velocities, so we 
@@ -388,28 +361,7 @@ void settle_proj(FILE *fp,
                 }
             }
         }
-#if 0
-        compute_center(&der[ow1],mass,Nat,vcom,vrel);
-        compute_angular(mass,xcom,vcom,xrel,vrel,Lcom1,Lrel1,Ltot1,Nat);
-        compute_KE(mass,vcom,vrel,Nat,&KE_com1,&KE_rel1,&KE_tot1);
-        scom = 0;
-        srel = 0;
-        stot = 0;
-        for (j=0;j<DIM;j++) {
-            dLcom[j] = Lcom1[j]-Lcom0[j];
-            dLrel[j] = Lrel1[j]-Lrel0[j];
-            dLtot[j] = Ltot1[j]-Ltot0[j];
-            scom += dLcom[j]*dLcom[j];
-            srel += dLrel[j]*dLrel[j];
-            stot += dLtot[j]*dLtot[j];
-        printf("%d %10.5g %10.5g %10.5g\n",i,scom,srel,stot);
-        }
-#endif
     }
-#if 0
-    printf("Bef: %15.8g %15.8g %15.8g\n",KE_com0,KE_rel0,KE_tot0);
-    printf("Aft: %15.8g %15.8g %15.8g\n",KE_com1,KE_rel1,KE_tot1);
-#endif
 
     /* conrect rmdder, which will be used to calcualate the virial; we need to use 
        the unscaled multipliers in the virial */
