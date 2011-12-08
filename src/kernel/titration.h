@@ -12,6 +12,9 @@
 #include "titrationrec.h"
 #include "resall.h"
 
+/* Return value for do_titration */
+enum { eTitration_No, eTitration_Ecorr,  eTitration_NoEcorr,  eTitration_NR };
+
 /** \brief Initializes the titration structure inside forcerec.
  * 
  * What it does:
@@ -37,30 +40,31 @@ extern void init_titration(FILE *fplog,const char *ff,
  * every hop. The list of hops is scrambled according to the qhopmode
  * and the hops are tested against random numbers. The actual hopping
  * will be done later.
- * \return the QMMM energy add into the system.
+ * \return value according to enum above. 
  */
-extern real do_titration(FILE *fplog, 
-			 t_commrec *cr,
-			 t_inputrec *ir, 
-			 t_nrnb *nrnb,
-			 gmx_wallcycle_t wcycle, 
-			 gmx_localtop_t *top,
-			 gmx_mtop_t *mtop, 
-			 gmx_groups_t *groups,
-			 t_state *state,
-			 t_mdatoms *md, 
-			 t_fcdata *fcd,
-			 t_graph *graph, 
-			 t_forcerec *fr,
-			 gmx_constr_t constr,
-			 gmx_vsite_t *vsite,
-			 rvec mu_tot,
-			 gmx_bool bBornRadii,
-			 real Temperature,
-			 gmx_large_int_t step,
-			 gmx_ekindata_t *ekindata,
-			 tensor force_vir,
-			 rvec *f_old);
+extern int do_titration(FILE *fplog, 
+			t_commrec *cr,
+			t_inputrec *ir, 
+			t_nrnb *nrnb,
+			gmx_wallcycle_t wcycle, 
+			gmx_localtop_t *top,
+			gmx_mtop_t *mtop, 
+			gmx_groups_t *groups,
+			t_state *state,
+			t_mdatoms *md, 
+			t_fcdata *fcd,
+			t_graph *graph, 
+			t_forcerec *fr,
+			gmx_constr_t constr,
+			gmx_vsite_t *vsite,
+			rvec mu_tot,
+			gmx_bool bBornRadii,
+			real Temperature,
+			gmx_large_int_t step,
+			gmx_ekindata_t *ekindata,
+			tensor force_vir,
+			rvec *f_old,
+			real *DE_Titration);
 
 extern void fold_inactive_protons(titration_t T, rvec x[], rvec v[]);
 

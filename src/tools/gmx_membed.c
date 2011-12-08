@@ -1845,7 +1845,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		if (ir->eI == eiVVAK)
 		{
-		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
 		}
 
                 update_coords(fplog,step,ir,mdatoms,state,
@@ -2266,7 +2266,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		if (ir->eI != eiVVAK)
                 {
-		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
+		  update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
                 }
                 update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                 upd,bInitStep);

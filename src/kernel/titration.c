@@ -3472,28 +3472,29 @@ static void scramble_hops(titration_t T, int mode)      ///< etQhopMode????
     }
 }
 
-real do_titration(FILE *fplog,
-                  t_commrec *cr,
-                  t_inputrec *ir,
-                  t_nrnb *nrnb,
-                  gmx_wallcycle_t wcycle, 
-                  gmx_localtop_t *top,
-                  gmx_mtop_t *mtop,
-                  gmx_groups_t *groups,
-                  t_state *state,
-                  t_mdatoms *md,
-                  t_fcdata *fcd,
-                  t_graph *graph,
-                  t_forcerec *fr,
-                  gmx_constr_t constr,
-                  gmx_vsite_t *vsite,
-                  rvec mu_tot,
-                  gmx_bool bBornRadii,
-                  real Temperature,
-                  gmx_large_int_t step,
-                  gmx_ekindata_t *ekindata,
-                  tensor force_vir,
-                  rvec *f_old)
+int do_titration(FILE *fplog,
+                 t_commrec *cr,
+                 t_inputrec *ir,
+                 t_nrnb *nrnb,
+                 gmx_wallcycle_t wcycle, 
+                 gmx_localtop_t *top,
+                 gmx_mtop_t *mtop,
+                 gmx_groups_t *groups,
+                 t_state *state,
+                 t_mdatoms *md,
+                 t_fcdata *fcd,
+                 t_graph *graph,
+                 t_forcerec *fr,
+                 gmx_constr_t constr,
+                 gmx_vsite_t *vsite,
+                 rvec mu_tot,
+                 gmx_bool bBornRadii,
+                 real Temperature,
+                 gmx_large_int_t step,
+                 gmx_ekindata_t *ekindata,
+                 tensor force_vir,
+                 rvec *f_old,
+                 real *DE_Titration)
 {
     char
         stepstr[STEPSTRSIZE];
@@ -3722,10 +3723,17 @@ real do_titration(FILE *fplog,
 #ifdef TITRATION_NB_KERNELS
     sfree(nlist_reduced);
 #endif
-    if (ir->titration_alg == eTitrationAlgQhop)
-        return 0;
-    else
-        return DE_Env;
+    if (!bHop)
+        return eTitration_No;
+    else {
+        if (ir->titration_alg == eTitrationAlgQhop)
+            return eTitration_NoEcorr;
+        else
+        {
+            *DE_Titration = DE_Env;
+            return eTitration_Ecorr;
+        }
+    }
 }
 
 /* paramStr is the string from the rtp file.

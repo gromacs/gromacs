@@ -102,9 +102,8 @@
 #include "corewrap.h"
 #endif
 
-double compute_lambda_titration(FILE *fplog,
-                                gmx_ekindata_t *ekind,real DE_Titration,
-                                t_inputrec *ir,
+double compute_lambda_titration(FILE *fplog,gmx_ekindata_t *ekind,
+                                t_inputrec *ir,real DE_Titration,
                                 gmx_enerdata_t *enerd,
                                 t_state *state_global)
 {
@@ -112,34 +111,33 @@ double compute_lambda_titration(FILE *fplog,
     int  i,j,gt;
     
     lambda_titration = 1;
-    if (DE_Titration != 0) 
-    {
-        ek = trace(ekind->ekin);
-        fprintf(fplog,"Ekin from tensor: %g  enerd->term[F_EKIN] %g\n",
-                ek,enerd->term[F_EKIN]);
-                
-        l2 = 1.0-DE_Titration/ek;
-        lambda_titration = sqrt(l2);
-        if (NULL != debug)
-            fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
-                    ek,lambda_titration);
-        
-        if (0) {
-            for(i=0; (i<DIM); i++)
+    //DE_Titration =  (enerd->term[F_EPOT] - ebefore_titration);
+    ek = trace(ekind->ekin);
+    l2 = 1.0-DE_Titration/ek;
+    lambda_titration = sqrt(l2);
+    
+    fprintf(fplog,"Ekin from tensor: %g  enerd->term[F_EKIN] %g lambda_t = %g\n",
+            ek,enerd->term[F_EKIN],lambda_titration);
+    
+    if (NULL != debug)
+        fprintf(debug,"ICE: ek = %g, lambda_titration = %g\n",
+                ek,lambda_titration);
+    
+    if (0) {
+        for(i=0; (i<DIM); i++)
+        {
+            for(j=0; (j<DIM); j++)
             {
-                for(j=0; (j<DIM); j++)
+                for(gt=0; (gt<ir->opts.ngtc); gt++) 
                 {
-                    for(gt=0; (gt<ir->opts.ngtc); gt++) 
-                    {
-                        ekind->tcstat[gt].ekinf[i][j] *= l2;
-                    }
-                    ekind->ekin[i][j] *= l2;
+                    ekind->tcstat[gt].ekinf[i][j] *= l2;
                 }
+                ekind->ekin[i][j] *= l2;
             }
-            enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
-            enerd->term[F_EKIN] = trace(ekind->ekin);
-            enerd->term[F_ETOT] = enerd->term[F_EKIN]+enerd->term[F_EPOT];
         }
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
+        enerd->term[F_EKIN] = trace(ekind->ekin);
+        enerd->term[F_ETOT] = enerd->term[F_EKIN]+enerd->term[F_EPOT];
     }
     return lambda_titration;
 }
@@ -207,7 +205,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         count,nconverged=0;
     real        timestep=0;
     double      tcount=0;
-    real        lambda_titration;
+    int         eTitration;
+    real        lambda_titration, ebefore_titration,DE_Titration;
     gmx_bool        bIonize=FALSE;
     gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     gmx_bool        bAppend;
@@ -221,7 +220,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,Etitration;
+	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
 	real        saved_conserved_quantity = 0;
@@ -1039,14 +1038,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (!bFirstStep && (fr->bTitration && do_per_step(step,ir->titration_freq)))
         { 
-            Etitration =
+            ebefore_titration = enerd->term[F_EPOT];
+            eTitration =
                 do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                              mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
-                             enerd->term[F_TEMP],step,ekind,force_vir,f);
+                             enerd->term[F_TEMP],step,ekind,force_vir,f,&DE_Titration);
         }
         else 
-            Etitration = 0;
-        
+        {
+            ebefore_titration = 0;
+            DE_Titration = 0;
+            eTitration = eTitration_No;
+        }
+        lambda_titration = 1;
+
         /* Keep inactive hydrogens from drifting away. */
         if (fr->bTitration)
         {
@@ -1122,8 +1127,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
-                          cr,nrnb,constr,&top->idef,1.0);
-            lambda_titration = compute_lambda_titration(fplog,ekind,Etitration,ir,enerd,state_global);
+                          cr,nrnb,constr,&top->idef,1);
             
             if (bIterations)
             {
@@ -1217,6 +1221,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                    EkinAveVel because it's needed for the pressure */
                 
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
+                if (eTitration == eTitration_Ecorr) 
+                {
+                    lambda_titration = compute_lambda_titration(fplog,ekind,ir,
+                                                                DE_Titration,
+                                                                enerd,state_global);
+                }
+            
                 if (!bInitStep) 
                 {
                     if (bTrotter)
@@ -1526,7 +1537,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 else 
                 {
-                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,lambda_titration);
+                    update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms,1.0);
                     update_pcouple(fplog,step,ir,state,pcoupl_mu,M,wcycle,
                                    upd,bInitStep);
                 }
