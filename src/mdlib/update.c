@@ -1825,7 +1825,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step
                         (ir->etc==etcANDERSEN)?idef:NULL,
                         constr?get_nblocks(constr):0,
                         constr?get_sblock(constr):NULL,
-                        upd->randatom,upd->randatom_list,
+                        &(upd->randatom),&(upd->randatom_list),
                         upd->sd->randomize_group,upd->sd->boltzfac);
         return TRUE;
     }
