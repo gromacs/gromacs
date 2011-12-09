@@ -1496,9 +1496,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     {
         if (readmagic==666 || readmagic==667 || readmagic==668)
             gmx_fatal(FARGS,"Wrong magic number: Use newest version of make_edi to produce edi file");
-        else if (readmagic == 669)
-            ;
-        else
+        else if (readmagic != 669)
             gmx_fatal(FARGS,"Wrong magic number %d in %s",readmagic,ed->edinam);
     }
 

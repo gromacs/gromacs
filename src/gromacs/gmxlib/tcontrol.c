@@ -63,24 +63,6 @@ static t_timecontrol timecontrol[TNR] = {
 static tMPI_Thread_mutex_t tc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-typedef struct {
-  real tfactor;
-  const char *tstr,*xvgstr;
-} t_timeconvert;
-
-static const t_timeconvert timeconvert[] = {
-    { 0,                   NULL,  NULL       },
-    { 1e3,  		   "fs",  "fs"       },
-    { 1,    		   "ps",  "ps"       },
-    { 1e-3, 		   "ns",  "ns"       },
-    { 1e-6, 		   "us",  "\\mus"    }, 
-    { 1e-9, 		   "ms",  "ms"       },
-    { 1e-12, 		   "s",   "s"        },
-    { (1.0/60.0)*1e-12,    "m",   "m"        },
-    { (1.0/3600.0)*1e-12,  "h",   "h"        },
-    { 0,		   NULL,  NULL       }
-};
-
 gmx_bool bTimeSet(int tcontrol)
 {
     gmx_bool ret;

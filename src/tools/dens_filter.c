@@ -90,13 +90,15 @@ gmx_bool convolution(int dataSize,real *x, int kernelSize, real* kernel)
 
 /* Assuming kernel is shorter than x */
 
-gmx_bool periodic_convolution(int datasize, real *x, int kernelsize, real *kernel)
+gmx_bool periodic_convolution(int datasize, real *x, int kernelsize, 
+                              real *kernel)
 {
+    int i,j,k,nj;
+    real *filtered;
+
     if (!x || !kernel) return FALSE;
     if (kernelsize<=0|| datasize<=0|| kernelsize > datasize) return FALSE;
 
-    int i,j,k,nj;
-    real *filtered;
     snew(filtered,datasize);
     
     for(i=0;(i<datasize); i++){

@@ -222,6 +222,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
       for(i=0; i<nind; i++) 
 	copy_rvec(fr->f[ind[i]],fout[i]);
     }
+  /* no break */
   case efXTC:
   case efG87:
     if (fr->bX) {
@@ -277,6 +278,7 @@ int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
   case efTRR:
     if (vout) sfree(vout);
     if (fout) sfree(fout);
+  /* no break */
   case efXTC:
   case efG87:
     sfree(xout);
@@ -690,6 +692,9 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       /* Checkpoint files can not contain mulitple frames */
       break;
     case efG96:
+      gmx_fatal(FARGS,
+		"Reading trajectories in .g96 format is broken. Please use\n"
+		"a different file format.");
       read_g96_conf(gmx_fio_getfp(status->fio),NULL,fr);
       bRet = (fr->natoms > 0);
       break;
@@ -744,13 +749,13 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
     }
     
     if (bRet) {
-      bMissingData = ((fr->flags & TRX_NEED_X && !fr->bX) ||
-		      (fr->flags & TRX_NEED_V && !fr->bV) ||
-		      (fr->flags & TRX_NEED_F && !fr->bF));
+      bMissingData = (((fr->flags & TRX_NEED_X) && !fr->bX) ||
+		      ((fr->flags & TRX_NEED_V) && !fr->bV) ||
+		      ((fr->flags & TRX_NEED_F) && !fr->bF));
       bSkip = FALSE;
       if (!bMissingData) {
 	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf,fr->bDouble);
-	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
+	if (ct == 0 || ((fr->flags & TRX_DONT_SKIP) && ct<0)) {
 	  printcount(status, oenv,fr->time,FALSE);
 	} else if (ct > 0)
 	  bRet = FALSE;

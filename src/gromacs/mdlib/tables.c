@@ -1074,7 +1074,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 			fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 			
 		}
-		ffclose(fp);
+		gmx_fio_fclose(fp);
     }
 	
 	/*

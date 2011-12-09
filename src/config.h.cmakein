@@ -368,9 +368,6 @@
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
 #cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
 
-/* Define as the return type of signal handlers (int or void). */
-#cmakedefine RETSIGTYPE @RETSIGTYPE@
-
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
 

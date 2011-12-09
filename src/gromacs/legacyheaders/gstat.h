@@ -269,9 +269,9 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 			      gmx_bool bHisto, const char *fn_histo, int maxchi, 
 			      real **dih, int nlist, t_dlist dlist[], 
                               int nframes, int nangles, const char *grpname, 
-                              int xity[], real t0, real dt, gmx_bool bRb, 
+		               int multiplicity[], real t0, real dt, gmx_bool bRb, 
                               real core_frac, const output_env_t oenv); 
-  /* as above but passes dlist so can copy occupancies into it, and xity[] 
+  /* as above but passes dlist so can copy occupancies into it, and multiplicity[] 
    *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
    * rotamers. Also production of xvg output files is conditional 
    * and the fractional width of each rotamer can be set ie for a 3 fold 
@@ -402,12 +402,12 @@ int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
 			   int nlist, t_dlist dlist[]) ; 
 
-void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih, 
 				    int nlist, t_dlist dlist[],int nangle) ; 
 
 void get_chi_product_traj (real **dih,int nframes,int nangles, 
 				  int nlist,int maxchi, t_dlist dlist[], 
-                                  real time[], int **lookup,int *xity,
+                                  real time[], int **lookup,int *multiplicity,
                                   gmx_bool bRb,gmx_bool bNormalize,
 				  real core_frac,gmx_bool bAll,const char *fnall,
                                   const output_env_t oenv); 
