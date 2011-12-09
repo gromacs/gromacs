@@ -60,6 +60,7 @@
 #include "mdrun.h"
 #include "gmx_ga2la.h"
 #include "copyrite.h"
+#include "macros.h"
 
 static void pull_print_x_grp(FILE *out,gmx_bool bRef,ivec dim,t_pullgrp *pgrp) 
 {

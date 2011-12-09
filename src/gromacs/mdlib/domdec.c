@@ -50,6 +50,7 @@
 #include "gmxfio.h"
 #include "gmx_ga2la.h"
 #include "gmx_sort.h"
+#include "macros.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

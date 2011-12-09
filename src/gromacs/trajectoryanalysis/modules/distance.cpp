@@ -44,9 +44,6 @@
 #include <pbc.h>
 #include <vec.h>
 
-// FIXME: This kind of hackery should not be necessary
-#undef min
-#undef max
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"

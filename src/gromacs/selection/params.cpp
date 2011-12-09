@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include <algorithm>
+
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
@@ -55,17 +57,8 @@
 #include "scanner.h"
 #include "selelem.h"
 
-template <typename T>
-static T min(T a, T b)
-{
-    return (a < b) ? a : b;
-}
-
-template <typename T>
-static T max(T a, T b)
-{
-    return (a > b) ? a : b;
-}
+using std::min;
+using std::max;
 
 /*!
  * \param[in] name   Name of the parameter to search.

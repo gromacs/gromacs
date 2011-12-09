@@ -55,6 +55,7 @@
 #include "splitter.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+#include "macros.h"
 
 typedef struct gmx_constr {
   int              ncon_tot;     /* The total number of constraints    */

@@ -266,15 +266,14 @@
 #include <config.h>
 #endif
 
+#include <algorithm>
+
 #include <math.h>
 #include <stdarg.h>
 
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
-
-// FIXME: Should really be in the beginning, but causes compilation errors
-#include <algorithm>
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"

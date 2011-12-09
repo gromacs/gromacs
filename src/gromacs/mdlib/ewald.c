@@ -46,6 +46,7 @@
 #include "gmx_fatal.h"
 #include "physics.h"
 #include "coulomb.h"
+#include "macros.h"
 
 #define TOL 2e-5
 

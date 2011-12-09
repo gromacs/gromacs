@@ -47,7 +47,8 @@
 #include "statutil.h"
 #include "typedefs.h"
 #include "xvgr.h"
-	
+#include "macros.h"
+
 static const char *etitles[] = { "E-docked", "Free Energy" };
 
 typedef struct {

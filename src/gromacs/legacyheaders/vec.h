@@ -110,7 +110,6 @@
 #include "maths.h"
 #include "typedefs.h"
 #include "sysstuff.h"
-#include "macros.h"
 #include "gmx_fatal.h"
 #include "physics.h"
 

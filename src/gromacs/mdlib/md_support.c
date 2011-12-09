@@ -51,6 +51,7 @@
 #include "gmx_wallcycle.h"
 #include "vcm.h"
 #include "nrnb.h"
+#include "macros.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
