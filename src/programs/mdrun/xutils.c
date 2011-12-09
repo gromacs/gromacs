@@ -44,6 +44,7 @@
 #include "vec.h"
 #include "genalg.h"
 #include "random.h"
+#include "macros.h"
 
 real mol_dipole(int k0,int k1,rvec x[],real q[])
 {

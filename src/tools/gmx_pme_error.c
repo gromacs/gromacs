@@ -48,6 +48,7 @@
 #include "mtop_util.h"
 #include "network.h"
 #include "main.h"
+#include "macros.h"
 
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))

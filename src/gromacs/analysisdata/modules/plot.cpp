@@ -52,9 +52,6 @@
 #include <vec.h>
 #include <xvgr.h>
 
-// FIXME: This kind of trickery should not be necessary...
-#undef min
-#undef max
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/fatalerror/exceptions.h"

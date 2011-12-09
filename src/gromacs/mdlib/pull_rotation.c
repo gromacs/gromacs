@@ -58,6 +58,7 @@
 #include "groupcoord.h"
 #include "pull_rotation.h"
 #include "gmx_sort.h"
+#include "macros.h"
 
 
 static char *RotStr = {"Enforced rotation:"};

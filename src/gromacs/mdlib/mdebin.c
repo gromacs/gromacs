@@ -55,6 +55,7 @@
 #include "mtop_util.h"
 #include "xvgr.h"
 #include "gmxfio.h"
+#include "macros.h"
 
 #include "mdebin_bar.h"
 

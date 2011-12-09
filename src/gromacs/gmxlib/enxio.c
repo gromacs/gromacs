@@ -45,6 +45,7 @@
 #include "enxio.h"
 #include "vec.h"
 #include "xdrf.h"
+#include "macros.h"
 
 /* The source code in this file should be thread-safe. 
          Please keep it that way. */

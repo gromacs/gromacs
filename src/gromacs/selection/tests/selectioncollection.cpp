@@ -44,9 +44,6 @@
 #include "tpxio.h"
 #include "vec.h"
 
-// FIXME: This kind of hackery should not be necessary
-#undef min
-#undef max
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"

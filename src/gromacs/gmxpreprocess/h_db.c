@@ -47,6 +47,7 @@
 #include "gmxfio.h"
 #include "fflibutil.h"
 #include "gmx_fatal.h"
+#include "macros.h"
 
 /* There are 11 types of adding hydrogens, numbered from
  * 1 thru 11. Each of these has a specific number of

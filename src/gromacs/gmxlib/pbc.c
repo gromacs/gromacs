@@ -48,6 +48,7 @@
 #include "txtdump.h"
 #include "gmx_fatal.h"
 #include "names.h"
+#include "macros.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,

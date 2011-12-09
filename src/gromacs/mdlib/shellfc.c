@@ -55,6 +55,7 @@
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"
+#include "macros.h"
 
 
 typedef struct {
