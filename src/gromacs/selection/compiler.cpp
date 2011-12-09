@@ -689,7 +689,7 @@ create_subexpression_name(t_selelem *sel, int i)
     int   len, ret;
     char *name;
 
-    len = 8 + (int)log10(abs(i)) + 3;
+    len = 8 + (int)log10((double)abs(i)) + 3;
     snew(name, len+1);
     /* FIXME: snprintf used to be used here for extra safety, but this
      * requires extra checking on Windows since it only provides a
