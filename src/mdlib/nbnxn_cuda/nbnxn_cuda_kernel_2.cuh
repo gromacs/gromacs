@@ -112,6 +112,27 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
 #ifdef CALC_ENERGIES
     E_lj = 0.0f;
     E_el = 0.0f;
+
+#if defined EL_EWALD || defined EL_RF
+    if (nbl_cj4[cij4_start].cj[0] == sci*NSUBCELL)
+    {
+        /* we have the diagonal: add the charge self interaction energy term */
+        for (i = 0; i < NSUBCELL; i++)
+        {
+            ci    = sci * NSUBCELL + i;
+            ai    = ci * CLUSTER_SIZE + tidxi;  /* i atom index */
+            qi    = xq[ai].w;
+            E_el += qi*qi;
+        }
+        /* divide the self term equally over the j-threads */
+        E_el /= CLUSTER_SIZE;
+#ifdef EL_RF
+        E_el *= -nb_params.epsfac*0.5f*c_rf;
+#else
+        E_el *= -nb_params.epsfac*beta*0.56418958f; /* last factor 1/sqrt(pi) */
+#endif
+    }
+#endif
 #endif
 
     /* skip central shifts when summing shift forces */
@@ -193,7 +214,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
                         int_bit = ((wexcl >> (jm * NSUBCELL + i)) & 1);
 
                         /* cutoff & exclusion check */
-#if (defined EL_EWALD || defined EL_RF) && !defined CALC_ENERGIES
+#if defined EL_EWALD || defined EL_RF
                         /* small r2 check to avoid invr6 overflow */
                         if (r2 < rcoulomb_sq * (ci != cj || tidxj > tidxi) *
                             (r2 > 1.0e-12f))
@@ -212,7 +233,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
                             inv_r       = rsqrt(r2);
                             inv_r2      = inv_r * inv_r;
                             inv_r6      = inv_r2 * inv_r2 * inv_r2;
-#if (defined EL_EWALD || defined EL_RF) && !defined CALC_ENERGIES
+#if defined EL_EWALD || defined EL_RF
                             /* We could mask inv_r2, but with Ewald
                              * masking both inv_r6 and F_invr is faster */
                             inv_r6      *= int_bit;
@@ -243,11 +264,11 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
                             E_el        += qi * qj_f * inv_r;
 #endif
 #ifdef EL_RF
-                            E_el        += qi * qj_f * (inv_r + 0.5f * two_k_rf * r2 - c_rf);
+                            E_el        += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
 #ifdef EL_EWALD
                             /* 1.0f - erff is faster than erfcf */
-                            E_el        += qi * qj_f * inv_r * (1.0f - erff(r2 * inv_r * beta));
+                            E_el        += qi * qj_f * inv_r * (int_bit - erff(r2 * inv_r * beta));
 #endif
 #endif
                             f_ij    = rv * F_invr;

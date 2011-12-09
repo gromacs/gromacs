@@ -41,6 +41,9 @@
 #include "force.h"
 #include "nbnxn_kernel_sse.h"
 
+#ifndef GMX_DOUBLE
+/* Include all flavors of the single precision SSE kernel loops */
+
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
 
@@ -115,6 +118,7 @@
 #undef LJ_COMB_LB
 #include "nbnxn_kernel_sse_single_outer.h"
 
+#endif /* not GMX_DOUBLE */
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 const nbnxn_atomdata_t     *nbat,
@@ -134,6 +138,7 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 
 enum { coultRF, coultTAB, coultNR };
 
+#ifndef GMX_DOUBLE
 p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
 { { nbnxn_kernel_sse_single_rf_comb_geom_ener,
     nbnxn_kernel_sse_single_rf_comb_lb_ener,
@@ -157,6 +162,7 @@ p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
   { nbnxn_kernel_sse_single_tab_comb_geom_noener,
     nbnxn_kernel_sse_single_tab_comb_lb_noener,
     nbnxn_kernel_sse_single_tab_comb_none_noener } };
+#endif
 
 static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)
@@ -230,6 +236,9 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                  real                       *Vc,
                  real                       *Vvdw)
 {
+#ifdef GMX_DOUBLE
+    gmx_incons("nbnxn_kernel_sse called with double precision");
+#else
     int              nnbl;
     nbnxn_pairlist_t **nbl;
     int coult;
@@ -343,4 +352,5 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
             }
         }
     }
+#endif
 }

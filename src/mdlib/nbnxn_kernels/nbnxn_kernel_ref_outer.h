@@ -201,6 +201,22 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             for(i=0; i<UNROLLI; i++)
             {
                 qi[i] = facel*q[ci*UNROLLI+i];
+
+#ifdef CALC_ENERGIES
+                if (l_cj[nbln->cj_ind_start].c == ci)
+                {
+#ifdef ENERGY_GROUPS
+                    Vc[egp_sh_i[i]+((nbat->energrp[ci]>>(8*i)) & 255)]
+#else
+                    Vc[0]
+#endif
+#ifdef CALC_COUL_RF
+                        -= qi[i]*q[ci*UNROLLI+i]*0.5*c_rf;
+#else
+                        -= qi[i]*q[ci*UNROLLI+i]*ic->ewaldcoeff*0.564189583548;
+#endif
+                }
+#endif
             }
         }
 

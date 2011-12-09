@@ -338,8 +338,10 @@ real ewald_LRcorrection(FILE *fplog,
   /* Global corrections only on master process */
   if (MASTER(cr) && thread == 0) {
     for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
-      /* Self-energy correction */
-      Vself[q] = ewc*one_4pi_eps*fr->q2sum[q]/sqrt(M_PI);
+      if (calc_excl_corr) {
+        /* Self-energy correction */
+        Vself[q] = ewc*one_4pi_eps*fr->q2sum[q]/sqrt(M_PI);
+      }
       /* Apply charge correction */
       /* use vc as a dummy variable */
       vc = fr->qsum[q]*fr->qsum[q]*M_PI*one_4pi_eps/(2.0*vol*vol*ewc*ewc);

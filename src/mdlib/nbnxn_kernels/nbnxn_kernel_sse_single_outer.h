@@ -367,6 +367,29 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
             }
         }
 #endif
+#if defined CALC_ENERGIES
+        if (do_coul && l_cj[nbln->cj_ind_start].c == ci)
+        {
+            int ia;
+
+            for(ia=0; ia<4; ia++)
+            {
+                real qi;
+
+                qi = q[sci+ia];
+#ifdef ENERGY_GROUPS
+                vctp[ia][nbat->energrp[ci]*4+ia]
+#else
+                Vc[0]
+#endif
+#ifdef CALC_COUL_RF
+                    -= facel*qi*qi*0.5*ic->c_rf;
+#else
+                    -= facel*ic->ewaldcoeff*qi*qi*0.564189583548;
+#endif
+            }
+        }
+#endif
 
 		/* Load i atom data */
         scix             = sci*DIM;

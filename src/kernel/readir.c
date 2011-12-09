@@ -208,7 +208,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi,"With Verlet lists only cut-off LJ interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype) || EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
+        if (!(ir->coulombtype == eelCUT ||
+              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+              EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi,"With Verlet lists only cut-off, reaction-field, PME and EWALD electrostatics are supported");
         }

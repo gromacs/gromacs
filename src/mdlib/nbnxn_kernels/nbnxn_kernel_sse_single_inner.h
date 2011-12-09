@@ -41,7 +41,7 @@
  * separately to as then it is easier to separate the energy and virial
  * contributions.
  */
-#if defined CHECK_EXCLS && !defined CALC_ENERGIES && defined CALC_COULOMB
+#if defined CHECK_EXCLS && defined CALC_COULOMB
 #define EXCL_FORCES
 #endif
 
