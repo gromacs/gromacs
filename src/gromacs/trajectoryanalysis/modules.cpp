@@ -74,7 +74,7 @@ TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name)
 
     for (int i = 0; modules[i].name != NULL; ++i)
     {
-        if (strncasecmp(name, modules[i].name, len) == 0)
+        if (gmx_strncasecmp(name, modules[i].name, len) == 0)
         {
             if (strlen(modules[i].name) == len)
             {

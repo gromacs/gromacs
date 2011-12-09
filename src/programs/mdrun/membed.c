@@ -646,6 +646,7 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 	atom_id *list,*new_mols;
 	unsigned char  *new_egrp[egcNR];
 	gmx_bool bRM;
+        int RMmolblock=0;
 
 	snew(list,state->natoms);
 	n=0;
@@ -749,7 +750,6 @@ void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p
 	}
 
         /* remove empty molblocks */
-        int RMmolblock=0;
         for (i=0;i<mtop->nmolblock;i++)
         {
            if(mtop->molblock[i].nmol==0)
