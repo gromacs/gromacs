@@ -50,6 +50,7 @@
 #include "txtdump.h"
 #include "string2.h"
 #include "vec.h"
+#include "macros.h"
 
 
 int pr_indent(FILE *fp,int n)

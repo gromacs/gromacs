@@ -51,6 +51,7 @@
 #include "gmx_fatal.h"
 #include "string2.h"
 #include "physics.h"
+#include "macros.h"
 
 typedef struct {
   t_iatom a[4];

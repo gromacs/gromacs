@@ -70,6 +70,7 @@
 #include "index.h"
 #include "hizzie.h"
 #include "fflibutil.h"
+#include "macros.h"
 
 
 typedef struct {

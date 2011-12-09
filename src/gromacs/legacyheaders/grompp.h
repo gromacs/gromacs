@@ -38,7 +38,6 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "macros.h"
 
 #ifdef __cplusplus
 extern "C" {

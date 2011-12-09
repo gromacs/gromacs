@@ -38,9 +38,7 @@
 
 #include "typedefs.h" /* for real definition only */
 
-#ifdef __cplusplus
-extern "C" { 
-#endif
+/* no extern "C" for this header because it only defines Macros */
 
 /* 
  * With the macros below you don't
@@ -61,6 +59,7 @@ extern "C" {
 #define C4 	c[4]
 #define C5 	c[5]
 
+#ifndef __cplusplus
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b) )
 #endif
@@ -69,6 +68,11 @@ extern "C" {
 #endif
 #ifndef even
 #define even(a) ( ( (a+1) / 2) == (a / 2) )
+#endif
+#else
+#include <algorithm>
+using std::min;
+using std::max;
 #endif
 
 /* This macro calculates the size of a array */
@@ -83,10 +87,6 @@ extern const real THREE;
 extern const real SIX;
 extern const real TEN;
 extern const real TWELVE;
-
-#ifdef __cplusplus
-}
-#endif
 
 
 #endif	/* _macros_h */

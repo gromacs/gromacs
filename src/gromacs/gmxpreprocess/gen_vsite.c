@@ -52,6 +52,7 @@
 #include "futil.h"
 #include "gpp_atomtype.h"
 #include "fflibutil.h"
+#include "macros.h"
 
 #define MAXNAME 32
 #define OPENDIR  	'['	/* starting sign for directive		*/

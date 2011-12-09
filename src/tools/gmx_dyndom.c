@@ -47,6 +47,7 @@
 #include "physics.h"
 #include "random.h"
 #include "gmx_ana.h"
+#include "macros.h"
 
 
 static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,

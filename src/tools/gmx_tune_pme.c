@@ -56,6 +56,7 @@
 #include "checkpoint.h"
 #include "gmx_ana.h"
 #include "names.h"
+#include "macros.h"
 
 
 

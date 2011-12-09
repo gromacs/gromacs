@@ -42,7 +42,6 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "macros.h"
 
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 

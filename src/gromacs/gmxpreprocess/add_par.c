@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "grompp.h"
+#include "macros.h"
 #include "toputil.h"
 #include "hackblock.h"
 #include "string2.h"

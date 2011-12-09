@@ -42,6 +42,7 @@
 #include "symtab.h"
 #include "vec.h"
 #include "pbc.h"
+#include "macros.h"
 #include <string.h>
 
 #ifdef GMX_THREADS

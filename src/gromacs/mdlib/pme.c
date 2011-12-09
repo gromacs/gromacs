@@ -87,6 +87,7 @@
 #include "gmx_wallcycle.h"
 #include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
+#include "macros.h"
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
 #include "gmx_sse2_single.h"
