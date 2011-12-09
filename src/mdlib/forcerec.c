@@ -1393,6 +1393,7 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     int gpu_device_id;
     char *env;
     gmx_bool GPU_OK;
+    int nnodes;
     int *gpus,ngpu,i;
 
 #ifndef GMX_GPU
@@ -1424,8 +1425,16 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 #ifdef GMX_GPU
     GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
 #endif
+    if (PAR(cr))
+    {
+        nnodes = cr->dd->nnodes;
+    }
+    else
+    {
+        nnodes = 1;
+    }
     snew(gpus,cr->nnodes);
-    gpus[cr->nodeid] = (GPU_OK ? -1 : gpu_device_id);
+    gpus[cr->nodeid] = (GPU_OK ? -1 : 1+gpu_device_id);
     /* In parallel we need to check if every node has a GPU */
     if (PAR(cr))
     {
@@ -1439,7 +1448,7 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
             ngpu++;
         }
     }
-    if (ngpu < cr->nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
+    if (ngpu < nnodes && (ngpu > 0 || (ngpu == 0 && forceGPU)))
     {
         char *buf,buf2[40];
         
@@ -1447,9 +1456,9 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
         sprintf(buf,"Could not initialize");
         for(i=0; i<cr->nnodes; i++)
         {
-            if (gpus[i] >= 0)
+            if (gpus[i] > 0)
             {
-                sprintf(buf2," on node %d: GPU #%d",gpus[i],i);
+                sprintf(buf2," on node %d: GPU #%d",gpus[i]-1,i);
                 strcat(buf,buf2);
             }
         }
