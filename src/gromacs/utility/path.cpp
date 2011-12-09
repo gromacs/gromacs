@@ -68,7 +68,11 @@ int Directory::create(const char *path)
     {
         return 0;
     }
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    if (_mkdir(path))
+#else
     if (mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH) != 0)
+#endif
     {
         // TODO: Proper error handling.
         return -1;
@@ -94,7 +98,11 @@ bool Directory::exists(const char *path)
         }
         return false;
     }
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    return (_S_IFDIR & info.st_mode) != 0
+#else
     return S_ISDIR(info.st_mode);
+#endif
 }
 
 
