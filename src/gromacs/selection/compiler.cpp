@@ -280,12 +280,14 @@
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/format.h"
 
 #include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+
 
 using std::min;
 
@@ -685,20 +687,8 @@ remove_unused_subexpressions(t_selelem *root)
 static void
 create_subexpression_name(t_selelem *sel, int i)
 {
-    int   len, ret;
-    char *name;
+    char *name = strdup(gmx::formatString("SubExpr %d", i).c_str());
 
-    len = 8 + (int)log10(abs(i)) + 3;
-    snew(name, len+1);
-    /* FIXME: snprintf used to be used here for extra safety, but this
-     * requires extra checking on Windows since it only provides a
-     * non-C99-conforming implementation as _snprintf()... */
-    ret = sprintf(name, "SubExpr %d", i);
-    if (ret < 0 || ret > len)
-    {
-        sfree(name);
-        name = NULL;
-    }
     sel->name        = name;
     sel->u.cgrp.name = name;
 }
