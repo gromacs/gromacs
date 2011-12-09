@@ -1020,8 +1020,8 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
-  real iprm,iprn,nrkj,nrkj2;
-  real a,p,q,toler;
+  real iprm,iprn,nrkj,nrkj2,nrkj_1,nrkj_2;
+  real a,b,p,q,toler;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
   iprm  = iprod(m,m);		/*  5 	*/
@@ -1029,15 +1029,17 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
   toler = nrkj2*GMX_REAL_EPS;
   if ((iprm > toler) && (iprn > toler)) {
-    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_1 = gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_2 = nrkj_1*nrkj_1;	/*  1	*/
+    nrkj  = nrkj2*nrkj_1;	/*  1	*/
     a     = -ddphi*nrkj/iprm;	/* 11	*/
     svmul(a,m,f_i);		/*  3	*/
-    a     = ddphi*nrkj/iprn;	/* 11	*/
-    svmul(a,n,f_l);		/*  3 	*/
+    b     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(b,n,f_l);		/*  3 	*/
     p     = iprod(r_ij,r_kj);	/*  5	*/
-    p    /= nrkj2;		/* 10	*/
+    p    *= nrkj_2;		/*  1	*/
     q     = iprod(r_kl,r_kj);	/*  5	*/
-    q    /= nrkj2;		/* 10	*/
+    q    *= nrkj_2;		/*  1	*/
     svmul(p,f_i,uvec);		/*  3	*/
     svmul(q,f_l,vvec);		/*  3	*/
     rvec_sub(uvec,vvec,svec);	/*  3	*/
@@ -1075,11 +1077,10 @@ void do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
                          rvec r_ij,rvec r_kj,rvec r_kl,
                          rvec m,rvec n,rvec f[])
 {
-  /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
-  real iprm,iprn,nrkj,nrkj2;
-  real a,p,q,toler;
+  real iprm,iprn,nrkj,nrkj2,nrkj_1,nrkj_2;
+  real a,b,p,q,toler;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
   iprm  = iprod(m,m);		/*  5 	*/
@@ -1087,15 +1088,17 @@ void do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
   toler = nrkj2*GMX_REAL_EPS;
   if ((iprm > toler) && (iprn > toler)) {
-    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_1 = gmx_invsqrt(nrkj2);	/* 10	*/
+    nrkj_2 = nrkj_1*nrkj_1;	/*  1	*/
+    nrkj  = nrkj2*nrkj_1;	/*  1	*/
     a     = -ddphi*nrkj/iprm;	/* 11	*/
     svmul(a,m,f_i);		/*  3	*/
-    a     = ddphi*nrkj/iprn;	/* 11	*/
-    svmul(a,n,f_l);		/*  3 	*/
+    b     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(b,n,f_l);		/*  3 	*/
     p     = iprod(r_ij,r_kj);	/*  5	*/
-    p    /= nrkj2;		/* 10	*/
+    p    *= nrkj_2;		/*  1	*/
     q     = iprod(r_kl,r_kj);	/*  5	*/
-    q    /= nrkj2;		/* 10	*/
+    q    *= nrkj_2;		/*  1	*/
     svmul(p,f_i,uvec);		/*  3	*/
     svmul(q,f_l,vvec);		/*  3	*/
     rvec_sub(uvec,vvec,svec);	/*  3	*/
