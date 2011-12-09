@@ -81,7 +81,7 @@ typedef struct {
   gmx_bool bFlip,bDonated;
     rvec xold,vold,   /* Where the acceptor proton used to be */
         xnew;    /* Where the acceptor proton may end up */
-    rvec *f; /* We need to store the forces from each trial hop in case we do more than one */
+    rvec *f_before,*f_after; /* We need to store the forces from each trial hop in case we do more than one */
 } t_hop;
 
 /* Keeps track of where bonded interactions are in an ilist.

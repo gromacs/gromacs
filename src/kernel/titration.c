@@ -1298,7 +1298,8 @@ static void find_acceptors(FILE *fplog,t_commrec *cr, t_forcerec *fr,
                             T->max_nr_hop++;
                             srenew(T->hop,T->max_nr_hop);
                             memset(&(T->hop[nr_hop]),0,sizeof(T->hop[0]));
-                            snew(T->hop[nr_hop].f,md->nr);
+                            snew(T->hop[nr_hop].f_before,md->nr);
+                            snew(T->hop[nr_hop].f_after,md->nr);
                         }
                         T->hop[nr_hop].donor_id    = don;
                         T->hop[nr_hop].acceptor_id = acc;
@@ -2983,7 +2984,7 @@ static void get_hop_prob(FILE *fplog,
     {
         evaluate_energy(fplog,cr, ir, nrnb, wcycle,top, mtop,
                         groups, state, md, fcd, graph,
-                        fr,vsite,mu_tot,step,Ebefore,hop->f);
+                        fr,vsite,mu_tot,step,Ebefore,hop->f_before);
         dump_enerd(debug,"Before",Ebefore,eTitrationAlg_names[ir->titration_alg]);
         *bHaveEbefore = TRUE;
     }
@@ -3020,7 +3021,7 @@ static void get_hop_prob(FILE *fplog,
                            eHOP_FORWARD, mtop, top, constr, pbc, FALSE))
     {
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
-                        fcd,graph,fr,vsite,mu_tot,step, Eafter,hop->f);
+                        fcd,graph,fr,vsite,mu_tot,step, Eafter,hop->f_after);
         dump_enerd(debug,"After ",Eafter,eTitrationAlg_names[ir->titration_alg]);
         get_self_energy(fplog, ir, cr, T->qhop_residues[T->qhop_atoms[hop->donor_id].qres_id],
                         T->qhop_residues[T->qhop_atoms[hop->acceptor_id].qres_id],
@@ -3505,7 +3506,7 @@ int do_titration(FILE *fplog,
     real 
         rnr;
     int 
-        start_seed=0;
+        start_seed=0,iHop=0;
     t_pbc pbc;
     qhop_db
         *db;
@@ -3649,7 +3650,10 @@ int do_titration(FILE *fplog,
                                               state->x, state->v, 
                                               eHOP_FORWARD, mtop, top, constr, &pbc, TRUE);
                     DE_Env += T->hop[i].DE_Environment;
-                                                 
+                        
+                    if (bHop)
+                        iHop = i;
+                        
                     if (bHop && 0)
                     {
                         veta = 0;
@@ -3657,7 +3661,7 @@ int do_titration(FILE *fplog,
                         bHop = scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
                                                 state,md,T,step,constr,
                                                 &pbc,&(T->hop[i]),ekindata,veta,vetanew,
-                                                T->hop[i].f,f_old);
+                                                T->hop[i].f_after,f_old);
                     }
                         
                     if (bHop && (ir->titration_mode != eTitrationModeOne))
@@ -3730,7 +3734,21 @@ int do_titration(FILE *fplog,
             return eTitration_NoEcorr;
         else
         {
-            *DE_Titration = DE_Env;
+            real hdt,dek2 = 0;
+            rvec df,dv,vnew;
+            
+            /* How should we treat multiple hops? */
+            hdt = 0.5*ir->delta_t;
+            for(i=0; (i<md->nr); i++) 
+            {
+                rvec_sub(T->hop[iHop].f_before[i],T->hop[iHop].f_after[i],df);
+                svmul(md->invmass[i]*hdt,df,dv);
+                rvec_add(state->v[i],dv,vnew);
+                dek2 += md->massT[i]*(2*iprod(vnew,dv)+iprod(dv,dv));
+            }
+            dek2 *= 2;
+            fprintf(fplog,"dek2 = %g\n",dek2);
+            *DE_Titration = DE_Env-dek2;
             return eTitration_Ecorr;
         }
     }
