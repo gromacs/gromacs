@@ -281,7 +281,7 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
                       * 10 / d->nref);
 #else
     targetsize = pow(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]
-                      * 10 / d->nref, 1./3.);
+		     * 10 / d->nref, (real)(1./3.));
 #endif
 
     d->ncells = 1;
