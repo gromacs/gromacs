@@ -46,6 +46,7 @@
 #include "specbond.h"
 #include "pdb2top.h"
 #include "vec.h"
+#include "macros.h"
 
 gmx_bool yesno(void)
 {

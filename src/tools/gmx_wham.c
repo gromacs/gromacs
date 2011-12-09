@@ -49,6 +49,7 @@
 #include "names.h"
 #include "gmx_random.h"
 #include "gmx_ana.h"
+#include "macros.h"
 
 #ifndef HAVE_STRDUP
 #define HAVE_STRDUP

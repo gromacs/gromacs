@@ -73,6 +73,7 @@
 #include "tpxio.h"
 #include "txtdump.h"
 #include "membed.h"
+#include "macros.h"
 
 #include "md_openmm.h"
 

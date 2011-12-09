@@ -50,6 +50,7 @@
 #include "pbc.h"
 #include "rmpbc.h"
 #include "gmx_ana.h"
+#include "macros.h"
 
 
 static const double bohr=0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */

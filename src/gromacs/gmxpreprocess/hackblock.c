@@ -42,6 +42,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "string2.h"
+#include "macros.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
