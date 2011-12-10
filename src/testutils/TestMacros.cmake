@@ -10,7 +10,7 @@ function (add_gtest_test NAME EXENAME)
         list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
         set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
         add_test(NAME ${NAME}
-                 COMMAND ${EXENAME})
+                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${EXENAME}.xml)
     endif ()
 endfunction ()
 
@@ -26,7 +26,7 @@ function (add_gmock_test NAME EXENAME)
         list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
         set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
         add_test(NAME ${NAME}
-                 COMMAND ${EXENAME})
+                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${EXENAME}.xml)
     endif ()
 endfunction ()
 
