@@ -86,7 +86,12 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             setFlag(gmx::efSet);
         }
         using MyBase::addValue;
-        using MyBase::commitValues;
+        //using MyBase::commitValues; //is correct but MSVC gives error C2248.
+        //Workaround:
+        void commitValues()
+        {
+            MyBase::commitValues();
+        }
 
         virtual const char *typeString() const { return "mock"; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
