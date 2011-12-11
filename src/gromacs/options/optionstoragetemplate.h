@@ -92,7 +92,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
-        virtual int valueCount() const { return _values->size(); }
+        virtual int valueCount() const { return static_cast<int>(_values->size()); }
         virtual std::string formatValue(int i) const = 0;
 
     protected:
@@ -374,7 +374,7 @@ void OptionStorageTemplate<T>::refreshValues()
 {
     if (_countptr != NULL)
     {
-        *_countptr = _values->size();
+        *_countptr = static_cast<int>(_values->size());
     }
     if (_store != NULL)
     {
