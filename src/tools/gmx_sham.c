@@ -792,7 +792,7 @@ int gmx_sham(int argc,char *argv[])
     { efXPM, "-lss",  "entropy",  ffOPTWR  },
     { efXPM, "-map",  "map",      ffOPTWR  },
     { efPDB, "-ls3",  "gibbs3",   ffOPTWR  },
-    { efXVG, "-mdata","mapdata",  ffOPTWR  },
+    { efXVG, "-mdata","mapdata",  ffOPTRD  },
     { efLOG, "-g",    "shamlog",  ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 

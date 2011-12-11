@@ -1196,7 +1196,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         case egbSTILL:
             if(fr->UseOptimizedKernels)
             {            
-                calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born); 
+                calc_gb_rad_still_sse2_double(cr,fr,born->nr,top, atype, x[0], nl, born);
             }
             else
             {

@@ -68,7 +68,7 @@ static volatile sig_atomic_t last_signal_name=0;
 
 static volatile sig_atomic_t usr_condition=0;
 
-static RETSIGTYPE signal_handler(int n)
+static void signal_handler(int n)
 {
     switch (n) {
 /* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in 

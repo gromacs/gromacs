@@ -125,7 +125,7 @@ static gmx_bool EWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   case ClientMessage:
     ew->etype=event->xclient.data.l[0];
     ExposeWin(x11->disp,ew->wd.self);
-    /* Fall thru... */
+    /* no break */
   case ButtonRelease:
     hide_menu(x11,ew->selener);
     break;

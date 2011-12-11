@@ -906,7 +906,9 @@ int gmx_analyze(int argc,char *argv[])
     "and fourth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
 
-    "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
+    "Option [TT]-ac[tt] produces the autocorrelation function(s).",
+    "Be sure that the time interval between data points is",
+    "much shorter than the time scale of the autocorrelation.[PAR]",
     
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
     "i/2 periods. The formula is:[BR]"
@@ -955,7 +957,7 @@ int gmx_analyze(int argc,char *argv[])
     "Option [TT]-gem[tt] fits bimolecular rate constants ka and kb",
     "(and optionally kD) to the hydrogen bond autocorrelation function",
     "according to the reversible geminate recombination model. Removal of",
-    "the ballistic component first is strongly adviced. The model is presented in",
+    "the ballistic component first is strongly advised. The model is presented in",
     "O. Markovitch, J. Chem. Phys. 129:084505, 2008.[PAR]",
 
     "Option [TT]-filter[tt] prints the RMS high-frequency fluctuation",

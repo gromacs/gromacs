@@ -401,7 +401,7 @@ int main (int argc, char *argv[])
 
   if (bTraj) {
     fprintf(stderr,"\n"
-	    "NOTE: Reading the state from trajectory is an obsolete feaure of tpbconv.\n"
+	    "NOTE: Reading the state from trajectory is an obsolete feature of tpbconv.\n"
 	    "      Continuation should be done by loading a checkpoint file with mdrun -cpi\n"
 	    "      This guarantees that all state variables are transferred.\n"
 	    "      tpbconv is now only useful for increasing nsteps,\n"

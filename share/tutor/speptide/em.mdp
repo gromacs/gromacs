@@ -4,7 +4,7 @@
 ;	Input file
 ;
 cpp                 =  /usr/bin/cpp
-define              =  -DFLEX_SPC
+define              =  -DFLEX-SPC
 constraints         =  none
 integrator          =  steep
 nsteps              =  100
@@ -15,10 +15,10 @@ emtol               =  2000
 emstep              =  0.01
 
 nstcomm             =  1
-ns_type             =  grid
+ns-type             =  grid
 rlist               =  1
 rcoulomb            =  1.0
 rvdw                =  1.0
 Tcoupl              =  no
 Pcoupl              =  no
-gen_vel             =  no
+gen-vel             =  no

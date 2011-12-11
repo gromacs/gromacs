@@ -18,7 +18,7 @@ tinit                    = 0
 dt                       = 0.002
 nsteps                   = 500000
 ; For exact run continuation or redoing part of a run
-init_step                = 0
+init-step                = 0
 ; mode for center of mass motion removal
 comm-mode                = Linear
 ; number of steps for center of mass motion removal
@@ -36,7 +36,7 @@ ld-seed                  = 1993
 ; Force tolerance and initial step-size
 emtol                    = 100
 emstep                   = 0.01
-; Max number of iterations in relax_shells
+; Max number of iterations in relax-shells
 niter                    = 20
 ; Step size (1/ps^2) for minimization of flexible constraints
 fcstep                   = 0
@@ -67,7 +67,7 @@ energygrps               =
 ; nblist update frequency
 nstlist                  = 5
 ; ns algorithm (simple or grid)
-ns_type                  = grid
+ns-type                  = grid
 ; Periodic boundary conditions: xyz (default), no (vacuum)
 ; or full (infinite systems only)
 pbc                      = xyz
@@ -94,29 +94,29 @@ table-extension          = 1
 ; Spacing for the PME/PPPM FFT grid
 fourierspacing           = 0.12
 ; FFT grid size, when a value is 0 fourierspacing will be used
-fourier_nx               = 0
-fourier_ny               = 0
-fourier_nz               = 0
+fourier-nx               = 0
+fourier-ny               = 0
+fourier-nz               = 0
 ; EWALD/PME/PPPM parameters
-pme_order                = 4
-ewald_rtol               = 1e-05
-ewald_geometry           = 3d
-epsilon_surface          = 0
-optimize_fft             = no
+pme-order                = 4
+ewald-rtol               = 1e-05
+ewald-geometry           = 3d
+epsilon-surface          = 0
+optimize-fft             = no
 
 ; GENERALIZED BORN ELECTROSTATICS
 ; Algorithm for calculating Born radii
-gb_algorithm             = Still
+gb-algorithm             = Still
 ; Frequency of calculating the Born radii inside rlist
 nstgbradii               = 1
 ; Cutoff for Born radii calculation; the contribution from atoms
 ; between rlist and rgbradii is updated every nstlist steps
 rgbradii                 = 2
 ; Salt concentration in M for Generalized Born models
-gb_saltconc              = 0
+gb-saltconc              = 0
 
 ; IMPLICIT SOLVENT (for use with Generalized Born electrostatics)
-implicit_solvent         = No
+implicit-solvent         = No
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
 ; Temperature coupling  
@@ -124,32 +124,32 @@ Tcoupl                   = berendsen
 ; Groups to couple separately
 tc-grps                  = MeOH	SOL
 ; Time constant (ps) and reference temperature (K)
-tau_t                    = 0.1	0.1
-ref_t                    = 300	300
+tau-t                    = 0.1	0.1
+ref-t                    = 300	300
 ; Pressure coupling     
 Pcoupl                   = berendsen
 Pcoupltype               = anisotropic
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau_p                    = 2.0
+tau-p                    = 2.0
 compressibility          = 5e-5 5e-5 5e-5 0 0 0
-ref_p                    = 1	1	1	0	0	0
+ref-p                    = 1	1	1	0	0	0
 ; Random seed for Andersen thermostat
-andersen_seed            = 815131
+andersen-seed            = 815131
 
 ; SIMULATED ANNEALING  
 ; Type of annealing for each temperature group (no/single/periodic)
 annealing                = no no
 ; Number of time points to use for specifying annealing in each group
-annealing_npoints        = 
+annealing-npoints        = 
 ; List of times at the annealing points for each group
-annealing_time           = 
+annealing-time           = 
 ; Temp. at each annealing point, for each group.
-annealing_temp           = 
+annealing-temp           = 
 
 ; GENERATE VELOCITIES FOR STARTUP RUN
-gen_vel                  = yes
-gen_temp                 = 300
-gen_seed                 = 1993
+gen-vel                  = yes
+gen-temp                 = 300
+gen-seed                 = 1993
 
 ; OPTIONS FOR BONDS    
 constraints              = all-bonds
@@ -175,7 +175,7 @@ morse                    = no
 
 ; ENERGY GROUP EXCLUSIONS
 ; Pairs of energy groups for which all non-bonded interactions are excluded
-energygrp_excl           = 
+energygrp-excl           = 
 
 ; NMR refinement stuff 
 ; Distance restraints type: No, Simple or Ensemble

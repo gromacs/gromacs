@@ -116,7 +116,11 @@ int gmx_velacc(int argc,char *argv[])
     "function is calculated.[PAR]",
     "With option [TT]-mol[tt] the velocity autocorrelation function of",
     "molecules is calculated. In this case the index group should consist",
-    "of molecule numbers instead of atom numbers."
+    "of molecule numbers instead of atom numbers.[PAR]",
+    "Be sure that your trajectory contains frames with velocity information",
+    "(i.e. [TT]nstvout[tt] was set in your original [TT].mdp[tt] file),",
+    "and that the time interval between data collection points is",
+    "much shorter than the time scale of the autocorrelation."
   };
   
   static gmx_bool bM=FALSE,bMol=FALSE;

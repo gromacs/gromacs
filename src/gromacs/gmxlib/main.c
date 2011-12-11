@@ -449,9 +449,11 @@ void init_multisystem(t_commrec *cr,int nsim, char **multidirs,
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(ms->mpb, 1);
     ms->mpb->ibuf=NULL;
+    ms->mpb->libuf=NULL;
     ms->mpb->fbuf=NULL;
     ms->mpb->dbuf=NULL;
     ms->mpb->ibuf_alloc=0;
+    ms->mpb->libuf_alloc=0;
     ms->mpb->fbuf_alloc=0;
     ms->mpb->dbuf_alloc=0;
 #endif
@@ -572,9 +574,11 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   /* initialize the MPI_IN_PLACE replacement buffers */
   snew(cr->mpb, 1);
   cr->mpb->ibuf=NULL;
+  cr->mpb->libuf=NULL;
   cr->mpb->fbuf=NULL;
   cr->mpb->dbuf=NULL;
   cr->mpb->ibuf_alloc=0;
+  cr->mpb->libuf_alloc=0;
   cr->mpb->fbuf_alloc=0;
   cr->mpb->dbuf_alloc=0;
 #endif

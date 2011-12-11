@@ -668,9 +668,11 @@ int gmx_rmsdist (int argc,char *argv[])
   fprintf(stderr, "\n");
 
   ffclose(fp);
-  close_trj(status);
 
   teller = nframes_read(status);
+
+  close_trj(status);
+
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   
