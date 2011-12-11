@@ -817,7 +817,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 	{
 		for(i=n0;i<n1;i++)
 		{
-      rbi   = born->bRad[k];
+      rbi   = born->bRad[i];
 			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
 		}
 	}

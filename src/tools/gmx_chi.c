@@ -1133,7 +1133,7 @@ int gmx_chi(int argc,char *argv[])
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;
-  int        i,j,**chi_lookup,*xity; 
+  int        i,j,**chi_lookup,*multiplicity; 
   
   t_filenm  fnm[] = {
     { efSTX, "-s",  NULL,     ffREAD  },
@@ -1252,8 +1252,8 @@ int gmx_chi(int argc,char *argv[])
    *
    * added multiplicity */ 
 
-  snew(xity,ndih) ;
-  mk_multiplicity_lookup(xity, maxchi, dih, nlist, dlist,ndih); 
+  snew(multiplicity,ndih) ;
+  mk_multiplicity_lookup(multiplicity, maxchi, dih, nlist, dlist,ndih); 
  
   strcpy(grpname, "All residues, "); 
   if(bPhi) 
@@ -1270,7 +1270,7 @@ int gmx_chi(int argc,char *argv[])
 
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
-		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
+		    dih, nlist, dlist, nf, nactdih, grpname, multiplicity, 
 		    *time,  dt, FALSE, core_frac,oenv) ; 
 
   /* Order parameters */  
@@ -1303,7 +1303,7 @@ int gmx_chi(int argc,char *argv[])
     mk_chi_lookup(chi_lookup, maxchi, dih, nlist, dlist); 
     
     get_chi_product_traj(dih,nf,nactdih,nlist,
-			 maxchi,dlist,time,chi_lookup,xity,
+			 maxchi,dlist,time,chi_lookup,multiplicity,
 			 FALSE,bNormHisto, core_frac,bAll,
 			 opt2fn("-cp",NFILE,fnm),oenv); 
 

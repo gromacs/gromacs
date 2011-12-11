@@ -106,9 +106,10 @@ int main(int argc,char *argv[])
       break;
     case 5:
       if (i==0)
-	data[i] = 1;
+        data[i] = 1;
       else
-	data[i] = sin(x)/(x);
+        data[i] = sin(x)/(x);
+      break;
     default:
       /* Data remains 0.0 */
       break;

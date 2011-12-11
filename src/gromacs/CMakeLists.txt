@@ -49,8 +49,8 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${GMX_SSEKERNEL_ASM_SRC} ${MDLI
 if (USE_VERSION_H)
     add_custom_target(gmx_version ALL
             COMMAND ${CMAKE_COMMAND} 
-                -D Git_EXECUTABLE="${Git_EXECUTABLE}"
-                -D Git_VERSION="${Git_VERSION}"
+                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
                 -D VERSION_C_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/version.c.cmakein"

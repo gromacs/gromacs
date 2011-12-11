@@ -69,12 +69,6 @@ const char *longs_ffn[effnNR] = {
   "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
 
-extern gmx_bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
-		   int ma,int lista[],int mfit,real **covar,real **alpha,
-		   real *chisq,
-		   void (*funcs)(real x,real a[],real *y,real dyda[]),
-		   real *alamda);
-
 extern gmx_bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		       void (*funcs)(real, real [], real *, real []), 
@@ -112,7 +106,7 @@ real derf;
  erfarg=(x-a[3])/(a[4]*a[4]);
         erfarg2=erfarg*erfarg;
         erfval=gmx_erf(erfarg)/2;
-        derf=M_2_SQRTPI*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
+        derf=(2./sqrt(M_PI))*(a[1]-a[2])/2*exp(-erfarg2)/(a[4]*a[4]);
 
         *y=(a[1]+a[2])/2-(a[1]-a[2])*erfval;
         dyda[1]=1/2-erfval;

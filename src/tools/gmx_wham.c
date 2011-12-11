@@ -2562,7 +2562,7 @@ int gmx_wham(int argc,char *argv[])
         "to the file defined with [TT]-oiact[tt]. In verbose mode, all ",
         "autocorrelation functions (ACFs) are written to [TT]hist_autocorr.xvg[tt]. ",
         "Because the IACTs can be severely underestimated in case of limited ",
-        "sampling, option [TT]-acsig[tt] allows to smooth the IACTs along the ",
+        "sampling, option [TT]-acsig[tt] allows one to smooth the IACTs along the ",
         "reaction coordinate with a Gaussian ([GRK]sigma[grk] provided with [TT]-acsig[tt], ",
         "see output in [TT]iact.xvg[tt]). Note that the IACTs are estimated by simple ",
         "integration of the ACFs while the ACFs are larger 0.05.",

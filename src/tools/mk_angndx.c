@@ -173,7 +173,7 @@ static int *select_ftype(const char *opt,int *nft,int *mult)
   if (opt[0] == 'a') {
     *mult = 3;
     for(ftype=0; ftype<F_NRE; ftype++) {
-      if (interaction_function[ftype].flags & IF_ATYPE ||
+      if ((interaction_function[ftype].flags & IF_ATYPE) ||
 	  ftype == F_TABANGLES) {
 	(*nft)++;
 	srenew(ft,*nft);

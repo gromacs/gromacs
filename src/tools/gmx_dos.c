@@ -559,7 +559,8 @@ int gmx_dos(int argc,char *argv[])
     cP = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_CP],NULL,
                                    nframes/4,&stddev);
     fprintf(fplog,"Heat capacity %g J/mol K\n",1000*cP/Nmol);
-    
+
+    /*    
     S  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_S],NULL,
                                    nframes/4,&stddev);
     fprintf(fplog,"Entropy %g J/mol K\n",1000*S/Nmol);
@@ -569,6 +570,7 @@ int gmx_dos(int argc,char *argv[])
     E  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_E],NULL,
                                    nframes/4,&stddev);
     fprintf(fplog,"Internal energy %g kJ/mol\n",E/Nmol);
+    */
     fprintf(fplog,"\nArrivederci!\n");
     fclose(fplog);
     

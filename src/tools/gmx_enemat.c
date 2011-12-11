@@ -352,8 +352,6 @@ int gmx_enemat(int argc,char *argv[])
     }
    
     emid = 0.0;/*(emin+emax)*0.5;*/
-    for(m=0; (m<egNR); m++)
-      egrp_nm[m]=egrp_nm[m];
     egrp_nm[egTotal]="total";
     for (m=0; (m<egNR+egSP); m++) 
       if (egrp_use[m]) {

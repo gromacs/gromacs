@@ -72,7 +72,7 @@ files.
 /* there are a few global variables that maintain information about the
    running threads. Some are defined by the MPI standard: */
 tMPI_Comm TMPI_COMM_WORLD=NULL;
-tMPI_Group tMPI_GROUP_EMPTY=NULL;
+tMPI_Group TMPI_GROUP_EMPTY=NULL;
 
 
 /* the threads themselves (tmpi_comm only contains lists of pointers to this
@@ -408,7 +408,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N, int *argc, char ***argv,
         /* allocate world and thread data */
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
         TMPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
-        tMPI_GROUP_EMPTY=tMPI_Group_alloc();
+        TMPI_GROUP_EMPTY=tMPI_Group_alloc();
 
         if (tMPI_Thread_key_create(&id_key, NULL))
         {
@@ -598,10 +598,10 @@ int tMPI_Finalize(void)
             tMPI_Comm_destroy(TMPI_COMM_WORLD);
         }
 
-        tMPI_Group_free(&tMPI_GROUP_EMPTY);
+        tMPI_Group_free(&TMPI_GROUP_EMPTY);
         threads=0;
         TMPI_COMM_WORLD=NULL;
-        tMPI_GROUP_EMPTY=NULL;
+        TMPI_GROUP_EMPTY=NULL;
         Nthreads=0;
 
         /* deallocate the 'global' structure */

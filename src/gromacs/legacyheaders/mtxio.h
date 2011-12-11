@@ -70,7 +70,7 @@ gmx_mtxio_write(const char *             filename,
  * structure is simply nrow*ncol floating-point elements. The sparse                                                  
  * matrix structure should be freed with gmx_sparsematrix_destroy() when you are done.
  *
- * To determine the format you should set full_matrix and sparse_matrix to NULL
+ * To determine the format you should set *full_matrix and *sparse_matrix to NULL
  * before calling this routine, and check which one is non-NULL on return.
  */
 void
