@@ -159,7 +159,7 @@ DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings, Options *
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return hasFlag(efVector) > 0 ? "vector" : (_bTime ? "time" : "double");
+    return hasFlag(efVector) ? "vector" : (_bTime ? "time" : "double");
 }
 
 std::string DoubleOptionStorage::formatValue(int i) const

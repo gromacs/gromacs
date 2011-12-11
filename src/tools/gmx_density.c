@@ -324,7 +324,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void plot_density(double *slDensity[], const char *afile, int nslices,
+void plot_density(real *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
 		  gmx_bool bSymmetrize, const output_env_t oenv)
