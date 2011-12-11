@@ -1,0 +1,298 @@
+/*
+ *
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2009, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ */
+/*! \libinternal \file
+ * \brief
+ * Declares gmx::AbstractOptionStorage.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+#ifndef GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
+#define GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
+
+#include <string>
+
+#include "optionflags.h"
+
+namespace gmx
+{
+
+class AbstractOption;
+class Options;
+
+/*! \libinternal \brief
+ * Abstract base class for converting, validating, and storing option values.
+ *
+ * This class should normally not be subclassed directly, but the
+ * OptionStorageTemplate should be used instead.  The templated class provides
+ * basic functionality for most of the pure virtual methods, and also
+ * integrates well with option setting objects derived from OptionTemplate.
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ *
+ * \internal
+ * This class really consists of two parts: the public interface that is
+ * used by the internal implementation of the options module, and the
+ * interface that derived classes use to provide type-dependent functionality.
+ * The latter consists of a few pure virtual methods, of which a few simple
+ * query methods are also part of the module-internal interface, others are
+ * protected and called by the non-virtual methods when needed.
+ * The reason why these two roles are in one class is twofold:
+ *  -# Both the derived classes and the internal module implementation may need
+ *     access to the same information like the allowed number of values and the
+ *     name of the option.
+ *  -# Having only one class is consistent with the structure used for options
+ *     settings objects: there is very direct correspondence between
+ *     AbstractOption and AbstractOptionStorage and between OptionTemplate and
+ *     OptionStorageTemplate.
+ */
+class AbstractOptionStorage
+{
+    public:
+        virtual ~AbstractOptionStorage();
+
+        //! Returns true if the option has been set.
+        bool isSet() const { return hasFlag(efSet); }
+        //! Returns true if the option is a boolean option.
+        bool isBoolean() const { return hasFlag(efBoolean); }
+        //! Returns true if the option is a file option.
+        bool isFile() const { return hasFlag(efFile); }
+        //! Returns true if the option is a hidden option.
+        bool isHidden() const { return hasFlag(efHidden); }
+        //! Returns the name of the option.
+        const std::string &name() const { return _name; }
+        //! Returns the description of the option.
+        const std::string &description() const { return _descr; }
+        /*! \brief
+         * Returns a short string describing the type of the option.
+         *
+         * The caller is free to discard the returned string.
+         */
+        virtual const char *typeString() const = 0;
+        /*! \brief
+         * Returns the number of option values added so far.
+         */
+        virtual int valueCount() const = 0;
+        /*! \brief
+         * Returns the i'th value formatted as a string.
+         */
+        virtual std::string formatValue(int i) const = 0;
+
+        /*! \brief
+         * Starts adding values from a new source for the option.
+         *
+         * This marks the vurrent value of the option as a default value,
+         * causing next call to startSet() to clear it.  This allows values
+         * from the new source to overwrite old values.
+         *
+         * This method does not throw.
+         */
+        void startSource();
+        /*! \brief
+         * Starts adding a new set of values for the option.
+         *
+         * \throws  InvalidInputError if option is specified multiple times,
+         *      but is not specified to accept it.
+         *
+         * If the parameter is specified multiple times, startSet() should be
+         * called before the values for each instance.
+         *
+         * Strong exception safety guarantee.
+         */
+        void startSet();
+        /*! \brief
+         * Adds a new value for the option, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \throws  InvalidInputError if value cannot be converted, or
+         *      if there are too many values.
+         *
+         * This method should only be called between startSet() and
+         * finishSet().
+         */
+        void appendValue(const std::string &value);
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \throws  InvalidInputError if too few values have been provided, or
+         *      if the valid values since previous startSet() are invalid as a
+         *      set.
+         *
+         * If the parameter is specified multiple times, finishSet() should be
+         * called after the values for each instance.
+         */
+        void finishSet();
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \throws InvalidInputError if the option is required but not set, or
+         *      if all valid values together are invalid as a set.
+         *
+         * This method should be called after all values have been provided
+         * with appendValue().
+         */
+        void finish();
+
+    protected:
+        /*! \brief
+         * Initializes the storage object from the settings object.
+         *
+         * \param[in] settings  Option settings.
+         * \param[in] options   Option collection that will contain the
+         *      option.
+         * \param[in] staticFlags Option flags that are always set and specify
+         *      generic behavior of the option.
+         * \throws  APIError if invalid settings have been provided.
+         */
+        AbstractOptionStorage(const AbstractOption &settings, Options *options,
+                              OptionFlags staticFlags);
+
+        //! Returns true if the given flag is set.
+        bool hasFlag(OptionFlag flag) const { return _flags.test(flag); }
+        //! Sets the given flag.
+        void setFlag(OptionFlag flag) { return _flags.set(flag); }
+        //! Clears the given flag.
+        void clearFlag(OptionFlag flag) { return _flags.clear(flag); }
+
+        //! Returns the minimum number of values required in one set.
+        int minValueCount() const { return _minValueCount; }
+        //! Returns the maximum allowed number of values in one set (-1 = no limit).
+        int maxValueCount() const { return _maxValueCount; }
+        /*! \brief
+         * Sets a new minimum number of values required in one set.
+         *
+         * \param[in] count  New minimum number of values (must be > 0).
+         * \throws InvalidInputError if already provided values violate the limit.
+         *
+         * If values have already been provided, it is checked that there are
+         * enough.
+         *
+         * Cannot be called for options with ::efMulti set, because it is
+         * impossible to check the requirement after the values have been set.
+         * If attempted, will assert.
+         */
+        void setMinValueCount(int count);
+        /*! \brief
+         * Sets a new maximum number of values required in one set.
+         *
+         * \param[in] count  New maximum number of values
+         *                   (must be > 0, or -1 for no limit).
+         * \throws InvalidInputError if already provided values violate the limit.
+         *
+         * If values have already been provided, it is checked that there are
+         * not too many.
+         *
+         * Cannot be called for options with ::efMulti set, because it is
+         * impossible to check the requirement after the values have been set.
+         * If attempted, will assert.
+         */
+        void setMaxValueCount(int count);
+
+        //! Returns the Options object that houses the option.
+        Options &hostOptions() { return *_options; }
+        //! \copydoc hostOptions()
+        const Options &hostOptions() const { return *_options; }
+
+        /*! \brief
+         * Removes all values from temporary storage for a set.
+         *
+         * This function is always called before starting to add values to
+         * a set, allowing the storage to clear its internal buffers.
+         *
+         * Should not throw.
+         */
+        virtual void clearSet() = 0;
+        /*! \brief
+         * Adds a new value, converting it from a string.
+         *
+         * \param[in] value  String value to convert.
+         * \throws  InvalidInputError if \p value is not valid for this option
+         *      or if there have been too many values in the set.
+         *
+         * This method may be called multiple times if the underlying
+         * option is defined to accept multiple values.
+         *
+         * \see OptionStorageTemplate::convertValue()
+         */
+        virtual void convertValue(const std::string &value) = 0;
+        /*! \brief
+         * Performs validation and/or actions once a set of values has been
+         * added.
+         *
+         * \throws  InvalidInputError if the values in the set are not valid
+         *      as a whole.
+         *
+         * This method may be called multiple times if the underlying option
+         * can be specified multiple times.
+         *
+         * \see OptionStorageTemplate::processSetValues()
+         */
+        virtual void processSet() = 0;
+        /*! \brief
+         * Performs validation and/or actions once all values have been added.
+         *
+         * \throws  InvalidInputError if all provided values are not valid as
+         *      a set.
+         *
+         * This method is always called once.
+         *
+         * If the method throws, implementation should take care to leave the
+         * option in a consistent, meaningful state.  However, currently none
+         * of the implementations actually throw in any situation where the
+         * option may be left in an inconsistent state.
+         */
+        virtual void processAll() = 0;
+
+    private:
+        std::string             _name;
+        std::string             _descr;
+        //! Flags for the option.
+        OptionFlags             _flags;
+        //! Minimum number of values required (in one set).
+        int                     _minValueCount;
+        //! Maximum allowed number of values (in one set), or -1 if no limit.
+        int                     _maxValueCount;
+        //! Whether we are currently assigning values to a set.
+        bool                    _inSet;
+        //! Parent Options object.
+        Options                *_options;
+
+        // Disallow copy and assign.
+        AbstractOptionStorage(const AbstractOptionStorage &);
+        void operator =(const AbstractOptionStorage &);
+};
+
+} // namespace gmx
+
+#endif

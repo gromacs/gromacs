@@ -1,0 +1,22 @@
+set(TESTUTILS_HAVE_REFDATA FALSE)
+set(COMMON_SOURCES datapath.cpp refdata-common.cpp)
+if (GMX_USE_GTEST AND LIBXML2_FOUND)
+    include_directories(${GTEST_INCLUDE_DIRS})
+    list(APPEND COMMON_SOURCES refdata.cpp)
+    set(TESTUTILS_HAVE_REFDATA TRUE)
+endif ()
+
+add_library(testutils STATIC ${COMMON_SOURCES})
+set(TESTUTILS_LIBS testutils)
+target_link_libraries(testutils libgromacs)
+if (GMX_USE_GTEST AND LIBXML2_FOUND)
+    list(APPEND TESTUTILS_LIBS ${GTEST_LIBRARIES} ${LIBXML2_LIBRARIES})
+    target_link_libraries(testutils ${GTEST_LIBRARIES} ${LIBXML2_LIBRARIES})
+endif ()
+
+set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)
+set(TESTUTILS_LIBS ${TESTUTILS_LIBS} PARENT_SCOPE)
+set(TESTUTILS_HAVE_REFDATA ${TESTUTILS_HAVE_REFDATA} PARENT_SCOPE)
+
+add_subdirectory(tests)

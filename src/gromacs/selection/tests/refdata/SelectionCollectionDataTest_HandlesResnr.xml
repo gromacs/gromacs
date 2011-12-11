@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<ReferenceData>
+  <Compound Name="Selection1Parse" Subtype="SelectionParse">
+    <String Name="Input">resnr 1 2 5</String>
+    <String Name="Name">resnr 1 2 5</String>
+    <String Name="Text">resnr 1 2 5</String>
+    <Bool Name="Dynamic">false</Bool>
+  </Compound>
+  <Compound Name="Selection2Parse" Subtype="SelectionParse">
+    <String Name="Input">resnr 4 to 3</String>
+    <String Name="Name">resnr 4 to 3</String>
+    <String Name="Text">resnr 4 to 3</String>
+    <Bool Name="Dynamic">false</Bool>
+  </Compound>
+  <Compound Name="Selection1Compile" Subtype="SelectionCompile">
+    <Compound Name="Atoms" Subtype="SequenceInteger">
+      <Int Name="Length">9</Int>
+      <Int>0</Int>
+      <Int>1</Int>
+      <Int>2</Int>
+      <Int>3</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>12</Int>
+      <Int>13</Int>
+      <Int>14</Int>
+    </Compound>
+  </Compound>
+  <Compound Name="Selection2Compile" Subtype="SelectionCompile">
+    <Compound Name="Atoms" Subtype="SequenceInteger">
+      <Int Name="Length">6</Int>
+      <Int>6</Int>
+      <Int>7</Int>
+      <Int>8</Int>
+      <Int>9</Int>
+      <Int>10</Int>
+      <Int>11</Int>
+    </Compound>
+  </Compound>
+</ReferenceData>

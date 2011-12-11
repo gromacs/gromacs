@@ -38,6 +38,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
+enable_language(CXX)
 
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
@@ -509,6 +510,38 @@ else(GMX_DLOPEN)
     set(PKG_DL_LIBS)
 endif (GMX_DLOPEN)
 
+option(GMX_INTERNAL_BOOST "Use minimal internal version of boost" OFF)
+if ( NOT GMX_INTERNAL_BOOST )
+  find_package( Boost 1.36.0 )
+else ( NOT GMX_INTERNAL_BOOST )
+  set (Boost_FOUND FALSE)
+endif( NOT GMX_INTERNAL_BOOST )
+
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+else()
+  message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
+  include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+  add_definitions( -DBOOST_NO_TYPEID )  #TYPEID not supported for minimal internal version (would add significant more code)
+  # TODO: Propagate the above settings to the installed CMakeFiles.txt template
+  # (from share/template/)
+  # TODO: Reorder stuff such that INCL_INSTALL_DIR could be used here
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost")
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost
+          COMPONENT development)
+endif()
+
+option(GMX_USE_GTEST "Build tests that require Google C++ Testing Framework" ON)
+option(GMX_USE_GMOCK "Build tests that require Google C++ Mocking Framework" ON)
+mark_as_advanced(GMX_USE_GTEST)
+mark_as_advanced(GMX_USE_GMOCK)
+if (BUILD_TESTING)
+    add_subdirectory(src/external/gmock-1.6.0)
+endif (BUILD_TESTING)
+
+find_package(Doxygen)
+
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -520,8 +553,11 @@ endif (GMX_DLOPEN)
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
+include_directories(${CMAKE_SOURCE_DIR}/src)
+# Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# Required for now to make old code compile
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxCheckBuildUserTime)
 gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
@@ -860,7 +896,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 add_subdirectory(share)
-add_subdirectory(include)
 add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
@@ -878,6 +913,25 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
 
+########################################################################
+# Doxygen configuration
+########################################################################
+if (DOXYGEN_FOUND)
+    FILE(GLOB NB_KERNEL_DIRS src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
+    LIST(REMOVE_ITEM NB_KERNEL_DIRS
+         ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
+    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
+        SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
+            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
+    ENDFOREACH(NB_KERNEL_DIR)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-lib.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-lib)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-user)
+endif (DOXYGEN_FOUND)
+
 
 ########################################################################
 # Tests                                                                #
@@ -886,7 +940,7 @@ ADD_CUSTOM_TARGET(uninstall
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
-	enable_testing()
-	add_subdirectory(tests)
+    enable_testing()
+    add_subdirectory(tests)
 ENDIF()
 

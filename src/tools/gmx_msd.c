@@ -508,7 +508,7 @@ void printmol(t_corr *curr,const char *fn,
     for(j=0; (j<curr->nrestart); j++) {
       real xx,yy,dx,dy;
       
-      while(gmx_stats_get_point(curr->lsq[j][i],&xx,&yy,&dx,&dy) == estatsOK)
+      while(gmx_stats_get_point(curr->lsq[j][i],&xx,&yy,&dx,&dy,0) == estatsOK)
           gmx_stats_add_point(lsq1,xx,yy,dx,dy);
     }
     gmx_stats_get_ab(lsq1,elsqWEIGHT_NONE,&a,&b,NULL,NULL,NULL,NULL);

@@ -9,7 +9,7 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
     if (NOT DEFINED TMPI_ATOMICS)
         try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
                 "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
-                COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/include" )
+                COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders" )
 
         if (TEST_ATOMICS)
             message(STATUS "Atomics found")

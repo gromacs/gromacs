@@ -10,6 +10,8 @@ log
 Makefile
 lib*.pc
 Doxyfile
+Doxyfile-lib
+Doxyfile-user
 doxygen-doc
 .project
 .cproject

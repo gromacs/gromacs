@@ -1,0 +1,15 @@
+This directory contains source code for Google C++ Testing and Mocking
+Frameworks.
+
+The code has been copied verbatim from the source distribution for GMock 1.6.0
+by copying the following files/directories recursively, excluding *.pump files:
+gmock-1.6.0/COPYING
+gmock-1.6.0/README
+gmock-1.6.0/include/
+gmock-1.6.0/src/
+gmock-1.6.0/gtest/COPYING
+gmock-1.6.0/gtest/include/
+gmock-1.6.0/gtest/src/
+
+The file CMakeLists.txt in this directory is part of the Gromacs build system
+and has been written from scratch.
