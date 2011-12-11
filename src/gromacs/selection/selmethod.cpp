@@ -204,7 +204,7 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * \param[in]     name    Name of the method (used for error messages).
  * \param[in]     nparams Number of parameters in \p param.
  * \param[in,out] param   Parameter array
- *   (only the \c flags field of gmx_boolean parameters may be modified).
+ *   (only the \c flags field of boolean parameters may be modified).
  * \param[in]     symtab  Symbol table (used for checking overlaps).
  * \returns       TRUE if there are no problems with the parameters,
  *   FALSE otherwise.
@@ -217,11 +217,11 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * If you remove a check, make sure that the parameter parser can handle the
  * resulting parameters.
  */
-static gmx_bool
+static bool
 check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
              gmx_sel_symtab_t *symtab)
 {
-    gmx_bool              bOk = TRUE;
+    bool              bOk = TRUE;
     gmx_sel_symrec_t *sym;
     int               i, j;
 
@@ -311,21 +311,21 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
                 bOk = FALSE;
             }
         }
-        /* Check gmx_boolean parameters */
+        /* Check boolean parameters */
         if (param[i].val.type == NO_VALUE)
         {
             if (param[i].val.nr != 0)
             {
-                report_param_error(fp, name, param[i].name, "error: number of values should be zero for gmx_boolean parameters");
+                report_param_error(fp, name, param[i].name, "error: number of values should be zero for boolean parameters");
                 bOk = FALSE;
             }
-            /* The gmx_boolean parameters should always be optional, so set the
+            /* The boolean parameters should always be optional, so set the
              * flag for convenience. */
             param[i].flags |= SPAR_OPTIONAL;
             /* Any other flags should not be specified */
             if (param[i].flags & ~SPAR_OPTIONAL)
             {
-                report_param_error(fp, name, param[i].name, "error: gmx_boolean parameter should not have any flags set");
+                report_param_error(fp, name, param[i].name, "error: boolean parameter should not have any flags set");
                 bOk = FALSE;
             }
         }
@@ -416,11 +416,11 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
  * This function checks that all the required callbacks are defined, i.e.,
  * not NULL, to find programming errors.
  */
-static gmx_bool
+static bool
 check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
-    gmx_bool         bOk = TRUE;
-    gmx_bool         bNeedInit;
+    bool         bOk = TRUE;
+    bool         bNeedInit;
     int          i;
 
     /* Make some checks on init_data and free */
@@ -487,10 +487,10 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static gmx_bool
+static bool
 check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    gmx_bool         bOk = TRUE;
+    bool         bOk = TRUE;
 
     /* Check the type */
     if (method->type == NO_VALUE)
@@ -557,10 +557,10 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static gmx_bool
+static bool
 check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    gmx_bool         bOk = TRUE;
+    bool         bOk = TRUE;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
@@ -620,7 +620,7 @@ int
 gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
                            const char *name, gmx_ana_selmethod_t *method)
 {
-    gmx_bool bOk;
+    bool bOk;
 
     /* Check the method */
     if (method->flags & SMETH_MODIFIER)
@@ -657,7 +657,7 @@ gmx_ana_selmethod_register_defaults(gmx_sel_symtab_t *symtab)
 {
     size_t i;
     int  rc;
-    gmx_bool bOk;
+    bool bOk;
 
     bOk = TRUE;
     for (i = 0; i < asize(smtable_def); ++i)

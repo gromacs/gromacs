@@ -217,7 +217,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    gmx_bool                bChanged;
+    bool                bChanged;
     int                 m, j, ai, iter;
     rvec                dx, xtest;
 
@@ -274,7 +274,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    gmx_bool                bChanged;
+    bool                bChanged;
     int                 m, j, ai, iter;
     real                mass, mtot;
     rvec                dx, xtest;

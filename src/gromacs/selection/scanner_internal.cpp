@@ -81,7 +81,7 @@
 #undef yytext
 #undef yyleng
 
-static gmx_bool
+static bool
 read_stdin_line(gmx_sel_lexer_t *state)
 {
     char *ptr     = state->inputstr;
@@ -147,7 +147,7 @@ int
 _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
-    gmx_bool bCmdStart;
+    bool bCmdStart;
     int token;
 
     if (!state->bBuffer && !state->inputstr)
@@ -174,7 +174,7 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 }
 
 static int
-init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, gmx_bool bBoolNo)
+init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
     if (bBoolNo)
     {
@@ -191,7 +191,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, gmx_bool bBoolNo)
 }
 
 static int
-init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod,
+init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                   gmx_sel_lexer_t *state)
 {
     /* If the previous token was not KEYWORD_POS, return EMPTY_POSMOD
@@ -265,7 +265,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
     if (state->nextparam)
     {
         gmx_ana_selparam_t *param = state->nextparam;
-        gmx_bool                bBoolNo = state->bBoolNo;
+        bool                bBoolNo = state->bBoolNo;
 
         if (state->neom > 0)
         {
@@ -302,7 +302,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (state->msp >= 0)
     {
         gmx_ana_selparam_t *param = NULL;
-        gmx_bool                bBoolNo = FALSE;
+        bool                bBoolNo = FALSE;
         int                 sp = state->msp;
         while (!param && sp >= 0)
         {
@@ -320,7 +320,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     param = &state->mstack[sp]->param[i];
                     break;
                 }
-                /* Check separately for a 'no' prefix on gmx_boolean parameters */
+                /* Check separately for a 'no' prefix on boolean parameters */
                 if (state->mstack[sp]->param[i].val.type == NO_VALUE
                     && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
                     && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
@@ -523,7 +523,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
     _gmx_sel_yylex_destroy(scanner);
 }
 
-gmx_bool
+bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);

@@ -63,7 +63,7 @@ void
 _gmx_sel_free_lexer(yyscan_t scanner);
 
 /** Returns TRUE if the scanner is interactive. */
-gmx_bool
+bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *

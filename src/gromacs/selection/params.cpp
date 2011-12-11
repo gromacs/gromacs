@@ -95,7 +95,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
         {
             return &param[i];
         }
-        /* Check for 'no' prefix on gmx_boolean parameters */
+        /* Check for 'no' prefix on boolean parameters */
         if (param[i].val.type == NO_VALUE
             && strlen(name) > 2 && name[0] == 'n' && name[1] == 'o'
             && !strcmp(param[i].name, name+2))
@@ -298,7 +298,7 @@ cmp_real_range(const void *a, const void *b)
  * \param[in] scanner Scanner data structure.
  * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
  */
-static gmx_bool
+static bool
 parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                    void *scanner)
 {
@@ -481,7 +481,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
-static gmx_bool
+static bool
 parse_values_varnum(int nval, t_selexpr_value *values,
                     gmx_ana_selparam_t *param, t_selelem *root, void *scanner)
 {
@@ -688,7 +688,7 @@ on_error:
  * \param[in] scanner Scanner data structure.
  * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
  */
-static gmx_bool
+static bool
 parse_values_varnum_expr(int nval, t_selexpr_value *values,
                          gmx_ana_selparam_t *param, t_selelem *root,
                          void *scanner)
@@ -754,7 +754,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
  * as the value \p i of \p param.
  * This function is used internally by parse_values_std().
  */
-static gmx_bool
+static bool
 set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
                      void *scanner)
 {
@@ -792,14 +792,14 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
-static gmx_bool
+static bool
 parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                  t_selelem *root, void *scanner)
 {
     t_selexpr_value   *value;
     t_selelem         *child;
     int                i, j;
-    gmx_bool               bDynamic;
+    bool               bDynamic;
 
     /* Handle atom-valued parameters */
     if (param->flags & SPAR_ATOMVAL)
@@ -973,11 +973,11 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * \param[in] scanner Scanner data structure.
  * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
  */
-static gmx_bool
+static bool
 parse_values_bool(const char *name, int nval, t_selexpr_value *values,
                   gmx_ana_selparam_t *param, void *scanner)
 {
-    gmx_bool bSetNo;
+    bool bSetNo;
     int  len;
 
     if (param->val.type != NO_VALUE)
@@ -1023,7 +1023,7 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values,
  * \param[in] scanner Scanner data structure.
  * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
  */
-static gmx_bool
+static bool
 parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                   void *scanner)
 {
@@ -1129,14 +1129,14 @@ convert_const_values(t_selexpr_value *values)
  * The list \p pparams and any associated values are freed after the parameters
  * have been processed, no matter is there was an error or not.
  */
-gmx_bool
+bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
                       t_selelem *root, void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
-    gmx_bool                bOk, rc;
+    bool                bOk, rc;
     int                 i;
 
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and

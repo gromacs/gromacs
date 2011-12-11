@@ -102,7 +102,7 @@ _gmx_sel_value_type_str(gmx_ana_selvalue_t *val)
 
 /*! \copydoc _gmx_selelem_type_str() */
 const char *
-_gmx_selelem_gmx_boolean_type_str(t_selelem *sel)
+_gmx_selelem_boolean_type_str(t_selelem *sel)
 {
     switch (sel->u.boolt)
     {
@@ -119,7 +119,7 @@ _gmx_selelem_gmx_boolean_type_str(t_selelem *sel)
  * \returns   Pointer to the newly allocated and initialized element.
  *
  * \c t_selelem::type is set to \p type,
- * \c t_selelem::v::type is set to \ref GROUP_VALUE for gmx_boolean and comparison
+ * \c t_selelem::v::type is set to \ref GROUP_VALUE for boolean and comparison
  * expressions and \ref NO_VALUE for others,
  * \ref SEL_ALLOCVAL is set for non-root elements (\ref SEL_ALLOCDATA is also
  * set for \ref SEL_BOOLEAN elements),
@@ -479,7 +479,7 @@ _gmx_selelem_free_chain(t_selelem *first)
  * \param[in] level   Indentation level, starting from zero.
  */
 void
-_gmx_selelem_print_tree(FILE *fp, t_selelem *sel, gmx_bool bValues, int level)
+_gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
 {
     t_selelem *child;
     int          i;
@@ -539,7 +539,7 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, gmx_bool bValues, int level)
     }
     else if (sel->type == SEL_BOOLEAN)
     {
-        fprintf(fp, " %s", _gmx_selelem_gmx_boolean_type_str(sel));
+        fprintf(fp, " %s", _gmx_selelem_boolean_type_str(sel));
     }
     else if (sel->type == SEL_EXPRESSION
              && sel->u.expr.method->name == sm_compare.name)
@@ -661,7 +661,7 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, gmx_bool bValues, int level)
  * \returns TRUE if \p root or any any of its elements require topology
  *   information, FALSE otherwise.
  */
-gmx_bool
+bool
 _gmx_selelem_requires_top(t_selelem *root)
 {
     t_selelem *child;

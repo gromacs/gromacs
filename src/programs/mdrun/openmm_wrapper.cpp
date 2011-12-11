@@ -89,7 +89,7 @@ using namespace OpenMM;
  * \param[out] t    Destination variable to convert to.
  */
 template <class T>
-static gmx_bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
+static bool from_string(T& t, const string& s, ios_base& (*f)(ios_base&))
 {
     istringstream iss(s);
     return !(iss >> f >> t).fail();
@@ -142,7 +142,7 @@ static void splitOptionValue(const string &s, string &opt, string &val)
                  integer less than, equal to, or greater than 0 if \p s1 less than, 
                  identical to, or greater than \p s2.
  */
-static gmx_bool isStringEqNCase(const string s1, const string s2)
+static bool isStringEqNCase(const string s1, const string s2)
 {
     return (gmx_strncasecmp(s1.c_str(), s2.c_str(), max(s1.length(), s2.length())) == 0);
 }
@@ -383,7 +383,7 @@ public:
     System* system;      /*! The system to simulate. */
     Context* context;   /*! The OpenMM context in which the simulation is carried out. */
     Integrator* integrator; /*! The integrator used in the simulation. */
-    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
+    bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
     GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
 };
 
@@ -762,7 +762,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 {
 
     char warn_buf[STRLEN];
-    static gmx_bool hasLoadedPlugins = false;
+    static bool hasLoadedPlugins = false;
     string usedPluginDir;
     int devId;
 
@@ -1444,7 +1444,7 @@ void openmm_cleanup(FILE* fplog, void* data)
 void openmm_copy_state(void *data,
                        t_state *state, double *time,
                        rvec f[], gmx_enerdata_t *enerd,
-                       gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy)
+                       bool includePos, bool includeVel, bool includeForce, bool includeEnergy)
 {
     int types = 0;
     if (includePos)

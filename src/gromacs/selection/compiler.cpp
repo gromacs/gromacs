@@ -81,7 +81,7 @@
  *     here.
  *  -# A second pass with simple reordering and initialization is done:
  *    -# Boolean expressions are combined such that one element can evaluate,
- *       e.g., "A and B and C". The subexpressions in gmx_boolean expression are
+ *       e.g., "A and B and C". The subexpressions in boolean expression are
  *       reordered such that static expressions come first without otherwise
  *       altering the relative order of the expressions.
  *    -# The \c t_selelem::evaluate field is set to the correct evaluation
@@ -102,7 +102,7 @@
  *     possible selections, and these are stored in the internal compiler
  *     data structure for each element.
  *     To be able to do this for all possible values of dynamical expressions,
- *     special care needs to be taken with gmx_boolean expressions because they
+ *     special care needs to be taken with boolean expressions because they
  *     are short-circuiting. This is done through the
  *     \c SEL_CDATA_EVALMAX flag, which makes dynamic child expressions
  *     of \c BOOL_OR expressions evaluate to empty groups, while subexpressions
@@ -247,7 +247,7 @@
  * information, but do not unnecessarily copy the values.
  *
  *
- * \subsection selcompiler_tree_gmx_bool Boolean elements
+ * \subsection selcompiler_tree_bool Boolean elements
  *
  * \ref SEL_BOOLEAN elements have been merged such that one element
  * may carry out evaluation of more than one operation of the same type.
@@ -458,8 +458,8 @@ _gmx_selelem_free_compiler_data(t_selelem *sel)
  * If called more than once, memory is (re)allocated to ensure that the
  * maximum of the \p isize values can be stored.
  */
-static gmx_bool
-alloc_selection_data(t_selelem *sel, int isize, gmx_bool bChildEval)
+static bool
+alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 {
     int        nalloc;
 
@@ -831,15 +831,15 @@ extract_subexpressions(t_selelem *sel)
  ********************************************************************/
 
 /*! \brief
- * Removes redundant gmx_boolean selection elements.
+ * Removes redundant boolean selection elements.
  *
  * \param  sel Root of the selection subtree to optimize.
  *
- * This function merges similar gmx_boolean operations (e.g., (A or B) or C becomes
+ * This function merges similar boolean operations (e.g., (A or B) or C becomes
  * a single OR operation with three operands).
  */
 static void
-optimize_gmx_boolean_expressions(t_selelem *sel)
+optimize_boolean_expressions(t_selelem *sel)
 {
     t_selelem *child, *prev;
 
@@ -850,7 +850,7 @@ optimize_gmx_boolean_expressions(t_selelem *sel)
         child = sel->child;
         while (child)
         {
-            optimize_gmx_boolean_expressions(child);
+            optimize_boolean_expressions(child);
             /* Remove double negations */
             if (child->type == SEL_BOOLEAN && child->u.boolt == BOOL_NOT
                 && child->child->type == SEL_BOOLEAN && child->child->u.boolt == BOOL_NOT)
@@ -915,7 +915,7 @@ optimize_gmx_boolean_expressions(t_selelem *sel)
 }
 
 /*! \brief
- * Reorders children of gmx_boolean expressions such that static selections
+ * Reorders children of boolean expressions such that static selections
  * come first.
  *
  * \param  sel Root of the selection subtree to reorder.
@@ -924,7 +924,7 @@ optimize_gmx_boolean_expressions(t_selelem *sel)
  * The same is true for the dynamic expressions.
  */
 static void
-reorder_gmx_boolean_static_children(t_selelem *sel)
+reorder_boolean_static_children(t_selelem *sel)
 {
     t_selelem *child, *prev, *next;
 
@@ -934,12 +934,12 @@ reorder_gmx_boolean_static_children(t_selelem *sel)
         child = sel->child;
         while (child)
         {
-            reorder_gmx_boolean_static_children(child);
+            reorder_boolean_static_children(child);
             child = child->next;
         }
     }
 
-    /* Reorder gmx_boolean expressions such that static selections come first */
+    /* Reorder boolean expressions such that static selections come first */
     if (sel->type == SEL_BOOLEAN && (sel->flags & SEL_DYNAMIC))
     {
         t_selelem  start;
@@ -1305,7 +1305,7 @@ init_item_compilerdata(t_selelem *sel)
      * for the children of this element. */
     if (sel->type == SEL_BOOLEAN)
     {
-        gmx_bool  bEvalMax;
+        bool  bEvalMax;
 
         bEvalMax = (sel->u.boolt == BOOL_AND);
         child = sel->child;
@@ -1343,7 +1343,7 @@ init_item_compilerdata(t_selelem *sel)
  * for any element for which the evaluation group may depend on the trajectory
  * frame, the flag is cleared.
  *
- * reorder_gmx_boolean_static_children() should have been called.
+ * reorder_boolean_static_children() should have been called.
  */
 static void
 init_item_staticeval(t_selelem *sel)
@@ -1378,7 +1378,7 @@ init_item_staticeval(t_selelem *sel)
     }
     else /* bStaticEval is set */
     {
-        /* For gmx_boolean expressions, any expression after the first dynamic
+        /* For boolean expressions, any expression after the first dynamic
          * expression should not have bStaticEval. */
         if (sel->type == SEL_BOOLEAN)
         {
@@ -1551,7 +1551,7 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
  * are evaluated for each atom.
  */
 static void
-mark_subexpr_dynamic(t_selelem *sel, gmx_bool bDynamic)
+mark_subexpr_dynamic(t_selelem *sel, bool bDynamic)
 {
     t_selelem *child;
 
@@ -1738,7 +1738,7 @@ static void
 init_method(t_selelem *sel, t_topology *top, int isize)
 {
     t_selelem *child;
-    gmx_bool       bAtomVal;
+    bool       bAtomVal;
 
     /* Find out whether there are any atom-valued parameters */
     bAtomVal = FALSE;
@@ -1813,7 +1813,7 @@ init_method(t_selelem *sel, t_topology *top, int isize)
 }
 
 /*! \brief
- * Evaluates the static part of a gmx_boolean expression.
+ * Evaluates the static part of a boolean expression.
  *
  * \param[in]     data Evaluation data.
  * \param[in,out] sel Boolean selection element whose children should be
@@ -1824,7 +1824,7 @@ init_method(t_selelem *sel, t_topology *top, int isize)
  * reorder_item_static_children() should have been called.
  */
 static void
-evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
+evaluate_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
     t_selelem *child, *next;
@@ -1903,7 +1903,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
 }
 
 /*! \brief
- * Evaluates the minimum and maximum groups for a gmx_boolean expression.
+ * Evaluates the minimum and maximum groups for a boolean expression.
  *
  * \param[in]  sel  \ref SEL_BOOLEAN element currently being evaluated.
  * \param[in]  g    Group for which \p sel has been evaluated.
@@ -1923,7 +1923,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
  * problem.
  */
 static void
-evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
+evaluate_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
                              gmx_ana_index_t *gmin, gmx_ana_index_t *gmax)
 {
     t_selelem *child;
@@ -2019,7 +2019,7 @@ static void
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
     t_selelem       *child, *next;
-    gmx_bool             bDoMinMax;
+    bool             bDoMinMax;
 
     if (sel->type != SEL_ROOT && g)
     {
@@ -2080,11 +2080,11 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             else
             {
                 /* Evalute the static part if there is more than one expression */
-                evaluate_gmx_boolean_static_part(data, sel, g);
+                evaluate_boolean_static_part(data, sel, g);
 
                 /* Evaluate the selection.
-                 * If the type is gmx_boolean, we must explicitly handle the
-                 * static part evaluated in evaluate_gmx_boolean_static_part()
+                 * If the type is boolean, we must explicitly handle the
+                 * static part evaluated in evaluate_boolean_static_part()
                  * here because g may be larger. */
                 if (sel->u.boolt == BOOL_AND && sel->child->type == SEL_CONST)
                 {
@@ -2096,7 +2096,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
                 }
 
                 /* Evaluate minimal and maximal selections */
-                evaluate_gmx_boolean_minmax_grps(sel, g, sel->cdata->gmin,
+                evaluate_boolean_minmax_grps(sel, g, sel->cdata->gmin,
                                              sel->cdata->gmax);
             }
             break;
@@ -2222,7 +2222,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
     }
 
     /* Replace the result of the evaluation */
-    /* This is not necessary for subexpressions or for gmx_boolean negations
+    /* This is not necessary for subexpressions or for boolean negations
      * because the evaluation function already has done it properly. */
     if (sel->v.type == GROUP_VALUE && (sel->flags & SEL_DYNAMIC)
         && sel->type != SEL_SUBEXPR
@@ -2641,9 +2641,9 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     item = sc->root;
     while (item)
     {
-        /* Process gmx_boolean and arithmetic expressions. */
-        optimize_gmx_boolean_expressions(item);
-        reorder_gmx_boolean_static_children(item);
+        /* Process boolean and arithmetic expressions. */
+        optimize_boolean_expressions(item);
+        reorder_boolean_static_children(item);
         optimize_arithmetic_expressions(item);
         /* Initialize evaluation */
         init_item_evalfunc(item);

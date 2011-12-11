@@ -283,7 +283,7 @@ static const char *help_syntax[] = {
     "1. An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
     "[TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
     "is true.[BR]",
-    "2. Atom expressions can be combined with gmx_boolean operations such as",
+    "2. Atom expressions can be combined with boolean operations such as",
     "[TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
     "[TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
     "evaluation order.[BR]",
@@ -335,7 +335,7 @@ static const t_selection_help_item helpitems[] = {
  */
 static void
 print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
-                   gmx_bool bMod)
+                   bool bMod)
 {
     gmx_sel_symrec_t *symbol;
 
@@ -343,7 +343,7 @@ print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
     while (symbol)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-        gmx_bool                 bShow;
+        bool                 bShow;
         bShow = (method->type == type)
             && ((bMod && (method->flags & SMETH_MODIFIER))
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));

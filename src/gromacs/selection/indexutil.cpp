@@ -1322,7 +1322,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                         gmx_bool bMaskOnly)
 {
     int i, j, bi, bj;
-    gmx_bool bStatic;
+    bool bStatic;
 
     /* Process the simple cases first */
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)

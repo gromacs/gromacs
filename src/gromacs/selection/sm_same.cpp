@@ -91,7 +91,7 @@ typedef struct
      */
     char                   **as_s_sorted;
     /** Whether simple matching can be used. */
-    gmx_bool                     bSorted;
+    bool                     bSorted;
 } t_methoddata_same;
 
 /** Allocates data for the \p same selection method. */

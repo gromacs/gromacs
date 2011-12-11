@@ -589,7 +589,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
                 case POS_VALUE:
                     /* TODO: Implement this */
                     GMX_THROW(gmx::NotImplementedError("position subexpressions not implemented properly"));
-
+                    break;
                 case NO_VALUE:
                 case GROUP_VALUE:
                     GMX_THROW(gmx::InternalError("Invalid subexpression type"));

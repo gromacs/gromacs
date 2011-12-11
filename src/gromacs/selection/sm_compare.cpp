@@ -348,7 +348,7 @@ convert_int_real(int n, t_compare_value *val)
  * The values are rounded such that the same comparison operator can be used.
  */
 static void
-convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRight)
+convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 {
     int   i;
     int  *iv;
@@ -503,7 +503,7 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     int                   a, b;
-    gmx_bool                  bAccept;
+    bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
@@ -551,7 +551,7 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     real                  a, b;
-    gmx_bool                  bAccept;
+    bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {

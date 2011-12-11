@@ -80,7 +80,7 @@ typedef struct gmx_sel_lexer_t
     int                              nexpsel;
 
     //! Whether the parser is interactive.
-    gmx_bool                             bInteractive;
+    bool                             bInteractive;
     //! Current input string (line) for an interactive scanner.
     char                            *inputstr;
     //! Number of bytes allocated for \a inputstr.
@@ -105,7 +105,7 @@ typedef struct gmx_sel_lexer_t
     //! Parameter symbol to return before resuming scanning.
     struct gmx_ana_selparam_t       *nextparam;
     //! Whether \a nextparam was a boolean parameter with a 'no' prefix.
-    gmx_bool                             bBoolNo;
+    bool                             bBoolNo;
     /*! \brief
      * Method symbol to return before resuming scanning
      *
@@ -116,14 +116,14 @@ typedef struct gmx_sel_lexer_t
     int                              prev_pos_kw;
 
     //! Whether the 'of' keyword is acceptable as the next token.
-    gmx_bool                             bMatchOf;
+    bool                             bMatchOf;
     //! Whether boolean values (yes/no/on/off) are acceptable as the next token.
-    gmx_bool                             bMatchBool;
+    bool                             bMatchBool;
     //! Whether the next token starts a new selection.
-    gmx_bool                             bCmdStart;
+    bool                             bCmdStart;
 
     //! Whether an external buffer is set for the scanner.
-    gmx_bool                             bBuffer;
+    bool                             bBuffer;
     //! The current buffer for the scanner.
     YY_BUFFER_STATE                  buffer;
 } gmx_sel_lexer_t;
