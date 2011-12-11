@@ -201,7 +201,9 @@ if(GMX_MPI)
         
         include_directories(${MPI_INCLUDE_PATH})
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        add_definitions( -DMPI ) #for FAHCORE
+	if(GMX_FAHCORE)
+            add_definitions( -DMPI ) #for FAHCORE
+	endif(GMX_FAHCORE)
         include(gmxTestMPI_IN_PLACE)
         if (GMX_MPI_IN_PLACE)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
