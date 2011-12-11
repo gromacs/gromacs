@@ -184,7 +184,7 @@ gmx_ana_pos_free(gmx_ana_pos_t *pos)
 /*!
  * \param[in,out] dest   Destination positions.
  * \param[in]     src    Source positions.
- * \param[in]     bFirst If TRUE, memory is allocated for \p dest and a full
+ * \param[in]     bFirst If true, memory is allocated for \p dest and a full
  *   copy is made; otherwise, only variable parts are copied, and no memory
  *   is allocated.
  *
@@ -262,8 +262,8 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
     pos->m.b.index[0] = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic = TRUE;
-    pos->m.bMapStatic = TRUE;
+    pos->m.bStatic = true;
+    pos->m.bMapStatic = true;
 }
 
 /*!
@@ -279,12 +279,12 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
     pos->m.mapb.nr = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    /* We set the flags to TRUE, although really in the empty state they
-     * should be FALSE. This makes it possible to update the flags in
+    /* We set the flags to true, although really in the empty state they
+     * should be false. This makes it possible to update the flags in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic = TRUE;
-    pos->m.bMapStatic = TRUE;
+    pos->m.bStatic = true;
+    pos->m.bMapStatic = true;
 }
 
 /*!
@@ -389,7 +389,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         if (refid < 0)
         {
             dest->m.refid[j] = -1;
-            dest->m.bStatic = FALSE;
+            dest->m.bStatic = false;
             /* If we are using masks, there is no need to alter the
              * mapid field. */
         }
@@ -397,8 +397,8 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         {
             if (refid != j)
             {
-                dest->m.bStatic = FALSE;
-                dest->m.bMapStatic = FALSE;
+                dest->m.bStatic = false;
+                dest->m.bMapStatic = false;
             }
             dest->m.refid[j] = refid;
             /* Use the original IDs from the output structure to correctly
@@ -424,7 +424,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic = FALSE;
-        pos->m.bMapStatic = FALSE;
+        pos->m.bStatic = false;
+        pos->m.bMapStatic = false;
     }
 }

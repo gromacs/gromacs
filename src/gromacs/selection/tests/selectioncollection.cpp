@@ -113,15 +113,15 @@ SelectionCollectionTest::loadTopology(const char *filename)
 
     snew(_top, 1);
     read_tps_conf(gmx::test::getTestFilePath(filename).c_str(),
-                  title, _top, &ePBC, &xtop, NULL, box, FALSE);
+                  title, _top, &ePBC, &xtop, NULL, box, false);
 
     snew(_frame, 1);
     _frame->flags  = TRX_NEED_X;
     _frame->natoms = _top->atoms.nr;
-    _frame->bX     = TRUE;
+    _frame->bX     = true;
     snew(_frame->x, _frame->natoms);
     memcpy(_frame->x, xtop, sizeof(*_frame->x) * _frame->natoms);
-    _frame->bBox   = TRUE;
+    _frame->bBox   = true;
     copy_mat(box, _frame->box);
 
     ASSERT_NO_THROW(_sc.setTopology(_top, -1));

@@ -194,7 +194,7 @@ add_position_symbols(gmx_sel_symtab_t *tab)
     gmx_sel_symrec_t  *last;
     int                i;
 
-    postypes = gmx_ana_poscalc_create_type_enum(TRUE);
+    postypes = gmx_ana_poscalc_create_type_enum(true);
     last = tab->first;
     while (last && last->next)
     {
@@ -263,15 +263,15 @@ _gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
 /*!
  * \param[in] tab    Symbol table to search.
  * \param[in] name   Symbol name to find.
- * \param[in] bExact If FALSE, symbols that begin with \p name are also
+ * \param[in] bExact If false, symbols that begin with \p name are also
  *   considered.
  * \returns   Pointer to the symbol with name \p name, or NULL if not found.
  *
- * If no exact match is found and \p bExact is FALSE, returns a symbol that
+ * If no exact match is found and \p bExact is false, returns a symbol that
  * begins with \p name if a unique matching symbol is found.
  */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, gmx_bool bExact)
+_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
 {
     return _gmx_sel_find_symbol_len(tab, name, strlen(name), bExact);
 }
@@ -280,11 +280,11 @@ _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, gmx_bool bExact)
  * \param[in] tab    Symbol table to search.
  * \param[in] name   Symbol name to find.
  * \param[in] len    Only consider the first \p len characters of \p name.
- * \param[in] bExact If FALSE, symbols that begin with \p name are also
+ * \param[in] bExact If false, symbols that begin with \p name are also
  *   considered.
  * \returns   Pointer to the symbol with name \p name, or NULL if not found.
  *
- * If no exact match is found and \p bExact is FALSE, returns a symbol that
+ * If no exact match is found and \p bExact is false, returns a symbol that
  * begins with \p name if a unique matching symbol is found.
  *
  * The parameter \p len is there to allow using this function from scanner.l
@@ -292,16 +292,16 @@ _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, gmx_bool bExact)
  */
 gmx_sel_symrec_t *
 _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
-                         gmx_bool bExact)
+                         bool bExact)
 {
     gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *match;
-    gmx_bool              bUnique;
-    gmx_bool              bMatch;
+    bool              bUnique;
+    bool              bMatch;
 
     match = NULL;
-    bUnique = TRUE;
-    bMatch  = FALSE;
+    bUnique = true;
+    bMatch  = false;
     sym = tab->first;
     while (sym)
     {
@@ -313,9 +313,9 @@ _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
             }
             if (bMatch)
             {
-                bUnique = FALSE;
+                bUnique = false;
             }
-            bMatch = TRUE;
+            bMatch = true;
             if (sym->type == SYMBOL_METHOD)
             {
                 match = sym;

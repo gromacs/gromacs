@@ -91,7 +91,7 @@ typedef struct
      */
     char                   **as_s_sorted;
     /** Whether simple matching can be used. */
-    gmx_bool                     bSorted;
+    bool                     bSorted;
 } t_methoddata_same;
 
 /** Allocates data for the \p same selection method. */
@@ -327,14 +327,14 @@ init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
     int                i, j;
 
     /* Collapse adjacent values, and check whether the array is sorted. */
-    d->bSorted = TRUE;
+    d->bSorted = true;
     for (i = 1, j = 0; i < d->nas; ++i)
     {
         if (d->as.i[i] != d->as.i[j])
         {
             if (d->as.i[i] < d->as.i[j])
             {
-                d->bSorted = FALSE;
+                d->bSorted = false;
             }
             ++j;
             d->as.i[j] = d->as.i[i];
@@ -424,7 +424,7 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
         if (j < g->isize && d->val.i[j] < d->val.i[j - 1])
         {
-            d->bSorted = FALSE;
+            d->bSorted = false;
         }
     }
 }
@@ -455,8 +455,8 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 
     /* Collapse adjacent values.
      * For strings, it's unlikely that the values would be sorted originally,
-     * so set bSorted always to FALSE. */
-    d->bSorted = FALSE;
+     * so set bSorted always to false. */
+    d->bSorted = false;
     d->as_s_sorted[0] = d->as.s[0];
     for (i = 1, j = 0; i < d->nas; ++i)
     {

@@ -190,9 +190,9 @@
  *    from a variable, otherwise the child type is not \ref SEL_SUBEXPR.
  *
  *
- * \subsection selparser_tree_gmx_bool Boolean elements
+ * \subsection selparser_tree_bool Boolean elements
  *
- * One \ref SEL_BOOLEAN element is created for each gmx_boolean keyword in the
+ * One \ref SEL_BOOLEAN element is created for each boolean keyword in the
  * input, and the tree structure represents the evaluation order.
  * The \c t_selelem::boolt type gives the type of the operation.
  * Each element has exactly two children (one for \ref BOOL_NOT elements),
@@ -259,7 +259,7 @@ _gmx_selexpr_create_value(e_selvalue_t type)
     t_selexpr_value *value;
     snew(value, 1);
     value->type  = type;
-    value->bExpr = FALSE;
+    value->bExpr = false;
     value->next  = NULL;
     return value;
 }
@@ -274,7 +274,7 @@ _gmx_selexpr_create_value_expr(t_selelem *expr)
     t_selexpr_value *value;
     snew(value, 1);
     value->type   = expr->v.type;
-    value->bExpr  = TRUE;
+    value->bExpr  = true;
     value->u.expr = expr;
     value->next   = NULL;
     return value;
@@ -370,8 +370,8 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
 {
     t_selelem          *child;
     int                 rc;
-    gmx_bool                bUseChildType=FALSE;
-    gmx_bool                bOnlySingleChildren;
+    bool                bUseChildType=false;
+    bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
     if (sel->flags & SEL_FLAGSSET)
@@ -384,7 +384,7 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
         case SEL_CONST:
         case SEL_GROUPREF:
             sel->flags |= SEL_SINGLEVAL;
-            bUseChildType = FALSE;
+            bUseChildType = false;
             break;
 
         case SEL_EXPRESSION:
@@ -404,12 +404,12 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
             {
                 sel->flags |= SEL_ATOMVAL;
             }
-            bUseChildType = FALSE;
+            bUseChildType = false;
             break;
 
         case SEL_ARITHMETIC:
             sel->flags |= SEL_ATOMVAL;
-            bUseChildType = FALSE;
+            bUseChildType = false;
             break;
 
         case SEL_MODIFIER:
@@ -417,21 +417,21 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
             {
                 sel->flags |= SEL_VARNUMVAL;
             }
-            bUseChildType = FALSE;
+            bUseChildType = false;
             break;
 
         case SEL_ROOT:
-            bUseChildType = FALSE;
+            bUseChildType = false;
             break;
 
         case SEL_BOOLEAN:
         case SEL_SUBEXPR:
         case SEL_SUBEXPRREF:
-            bUseChildType = TRUE;
+            bUseChildType = true;
             break;
     }
     /* Loop through children to propagate their flags upwards */
-    bOnlySingleChildren = TRUE;
+    bOnlySingleChildren = true;
     child = sel->child;
     while (child)
     {
@@ -456,7 +456,7 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
         }
         if (!(child->flags & SEL_SINGLEVAL))
         {
-            bOnlySingleChildren = FALSE;
+            bOnlySingleChildren = false;
         }
 
         child = child->next;
@@ -1304,7 +1304,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
 
 /*!
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the parser should finish, FALSE if parsing should
+ * \returns   true if the parser should finish, false if parsing should
  *   continue.
  *
  * This function is called always after _gmx_sel_append_selection() to
@@ -1312,7 +1312,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
  * This is used to terminate interactive parsers when the correct number of
  * selections has been provided.
  */
-gmx_bool
+bool
 _gmx_sel_parser_should_finish(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);

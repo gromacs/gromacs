@@ -279,7 +279,7 @@ SelectionCollection::initOptions()
     */
 
     Options &options = _impl->_options;
-    const char **postypes = gmx_ana_poscalc_create_type_enum(TRUE);
+    const char **postypes = gmx_ana_poscalc_create_type_enum(true);
     if (postypes == NULL)
     {
         // TODO: Use an out-of-memory exception here
@@ -392,7 +392,7 @@ SelectionCollection::requiresTopology() const
         gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
         if (type != POS_ATOM)
         {
-            return TRUE;
+            return true;
         }
     }
     if (!_impl->_spost.empty())
@@ -402,7 +402,7 @@ SelectionCollection::requiresTopology() const
         gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
         if (type != POS_ATOM)
         {
-            return TRUE;
+            return true;
         }
     }
 
@@ -411,11 +411,11 @@ SelectionCollection::requiresTopology() const
     {
         if (_gmx_selelem_requires_top(sel))
         {
-            return TRUE;
+            return true;
         }
         sel = sel->next;
     }
-    return FALSE;
+    return false;
 }
 
 

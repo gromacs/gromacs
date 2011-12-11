@@ -535,7 +535,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     if (mdh != NULL)
     {
-        gmx_ana_indexmap_update(d->_mmap, sel[0]->indexGroup(), TRUE);
+        gmx_ana_indexmap_update(d->_mmap, sel[0]->indexGroup(), true);
         mdh->startFrame(frnr, fr.time);
         for (int b = 0; b < d->_mmap->nr; ++b)
         {

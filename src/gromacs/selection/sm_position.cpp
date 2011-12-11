@@ -62,7 +62,7 @@ typedef struct
     gmx_ana_index_t    g;
     /** Position evaluation data structure. */
     gmx_ana_poscalc_t *pc;
-    /** TRUE if periodic boundary conditions should be used. */
+    /** true if periodic boundary conditions should be used. */
     gmx_bool               bPBC;
     /** Type of positions to calculate. */
     char              *type;
@@ -175,7 +175,7 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
         param[1].val.u.b = &data->bPBC;
     }
     data->pc       = NULL;
-    data->bPBC     = FALSE;
+    data->bPBC     = false;
     data->type     = NULL;
     data->flags    = -1;
     return data;
