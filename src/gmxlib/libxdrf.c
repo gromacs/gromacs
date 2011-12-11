@@ -803,7 +803,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    int prealloc_size=3*16;
+    unsigned prealloc_size=3*16;
     int prealloc_ip[3*16], prealloc_buf[3*20];
     int we_should_free=0;
 
