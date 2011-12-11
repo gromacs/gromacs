@@ -113,7 +113,7 @@ int string2unit(char *string)
     int i;
     
     for(i=0; (i<eg2cNR); i++)
-        if (strcasecmp(string,eg2c_names[i]) == 0)
+        if (gmx_strcasecmp(string,eg2c_names[i]) == 0)
             return i;
     return -1;
 }

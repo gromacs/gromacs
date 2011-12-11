@@ -105,6 +105,15 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CFLAGS_OPT "-qarch=auto -qtune=auto" GMXC_CXXFLAGS)
     endif()
 
+    # msvc
+    if (MSVC)
+        # disable warnings for: 
+        #      forcing value to bool
+        #      "this" in initializer list
+        #      deprecated (posix, secure) functions
+        GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CXXFLAGS)
+    endif()
 
     # now actually set the flags:
     # C
