@@ -804,10 +804,11 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
             prob[i] = -1;
             bEx[i] = FALSE;
         }
-        print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
-        print_prob(fplog,"pr",re->nrepl,prob);
-        fprintf(fplog,"\n");
     }
+    print_ind(fplog,"ex",re->nrepl,re->ind,bEx);
+    print_prob(fplog,"pr",re->nrepl,prob);
+    fprintf(fplog,"\n");
+
     
     sfree(bEx);
     sfree(prob);
