@@ -3735,7 +3735,7 @@ int do_titration(FILE *fplog,
         else
         {
             real hdt,ddek2,dek2 = 0;
-            rvec df,dv,vnew;
+            rvec df,dv,vnew,dv_before,vbefore;
             
             /* How should we treat multiple hops? Check indices in T->hop
              */
@@ -3745,16 +3745,16 @@ int do_titration(FILE *fplog,
                 for(i=0; (i<md->nr); i++) 
                 {
                     rvec_sub(T->hop[0].f_before[i],T->hop[iHop].f_after[i],df);
+                    svmul(md->invmass[i]*hdt,T->hop[0].f_before[i],dv_before);
+                    rvec_add(state->v[i],dv_before,vbefore);
                     svmul(md->invmass[i]*hdt,df,dv);
-                    rvec_add(state->v[i],dv,vnew);
-                    ddek2 = md->massT[i]*(2*iprod(vnew,dv)+iprod(dv,dv));
+                    /*rvec_add(state->v[i],dv,vnew);*/
+                    ddek2 = md->massT[i]*(2*iprod(vbefore,dv)+iprod(dv,dv));
                     dek2 += ddek2;
-                    if (ddek2 > 0) {
-                        fprintf(fplog,"df[%5d] = %8.3f  %8.3f  %8.3f  dek2 = %8.3f\n",
-                                i,df[XX],df[YY],df[ZZ],ddek2);
-                    }
+                    fprintf(fplog,"df[%5d] = %8.3f  %8.3f  %8.3f  dek2 = %8.3f\n",
+                            i,df[XX],df[YY],df[ZZ],ddek2);
                 }
-                dek2 *= 2;
+                dek2 /= 2;
                 fprintf(fplog,"dek2 = %g\n",dek2);
             }
             *DE_Titration = DE_Env-dek2;
