@@ -112,6 +112,7 @@ typedef struct gmx_update
     /* variable size arrays for andersen */
     gmx_bool *randatom;
     int *randatom_list;
+    gmx_bool randatom_list_init;
 
     /* Variables for the deform algorithm */
     gmx_large_int_t deformref_step;
@@ -551,6 +552,7 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
     upd->xp_nalloc = 0;
     upd->randatom = NULL;
     upd->randatom_list = NULL;
+    upd->randatom_list_init = FALSE; /* we have not yet cleared the data structure at this point */
 
     return upd;
 }
@@ -1816,16 +1818,26 @@ void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr) {
 
+    int i;
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
     if ((ir->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
     {
+        srenew(upd->randatom,state->nalloc);
+        srenew(upd->randatom_list,state->nalloc);
+        if (upd->randatom_list_init == FALSE) {
+            for (i=0;i<state->nalloc;i++) {
+                upd->randatom[i] = FALSE;
+                upd->randatom_list[i] = 0;                
+            }
+            upd->randatom_list_init == TRUE;
+        }
         andersen_tcoupl(ir,md,state,upd->sd->gaussrand,rate,
                         (ir->etc==etcANDERSEN)?idef:NULL,
                         constr?get_nblocks(constr):0,
                         constr?get_sblock(constr):NULL,
-                        &(upd->randatom),&(upd->randatom_list),
+                        upd->randatom,upd->randatom_list,
                         upd->sd->randomize_group,upd->sd->boltzfac);
         return TRUE;
     }

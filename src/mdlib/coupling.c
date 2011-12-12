@@ -620,24 +620,17 @@ static int poisson_variate(real lambda,gmx_rng_t rng) {
     return k-1;
 }
 
-void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool **randatom_add, int **randatom_list_add, gmx_bool *randomize, real *boltzfac)
+void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng, real rate, t_idef *idef, int nblocks, int *sblock,gmx_bool *randatom, int *randatom_list, gmx_bool *randomize, real *boltzfac)
 {
     t_grpopts *opts;
     int    i,j,k,d,len,n,ngtc,gc=0;
     int    nshake, nsettle, nrandom, nrand_group;
     real   boltz,scal,reft,prand;
-    gmx_bool *randatom;
-    int *randatom_list;
     t_iatom *iatoms; 
 
     /* convenience variables */
     opts = &ir->opts;
     ngtc = opts->ngtc;
-
-    srenew(*randatom_add,state->nalloc);
-    srenew(*randatom_list_add,state->nalloc);
-    randatom = *randatom_add;
-    randatom_list = *randatom_list_add;
 
     /* idef is only passed in if it's chance-per-particle andersen, so it essentially serves as a boolean 
        to determine which type of andersen is being used */
@@ -778,6 +771,7 @@ void andersen_tcoupl(t_inputrec *ir,t_mdatoms *md,t_state *state, gmx_rng_t rng,
                 state->v[n][d] = scal*gmx_rng_gaussian_table(rng);  /* more efficient? */
             }
         }
+        randatom[n] = FALSE; /* unmark this for randomization */
     }
 }
 
