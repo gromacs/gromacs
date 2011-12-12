@@ -3744,7 +3744,8 @@ int do_titration(FILE *fplog,
                 hdt = 0.5*ir->delta_t;
                 for(i=0; (i<md->nr); i++) 
                 {
-                    rvec_sub(T->hop[0].f_before[i],T->hop[iHop].f_after[i],df);
+                    /* Do we need to swap forces as well? */
+                    rvec_sub(T->hop[iHop].f_after[i],T->hop[0].f_before[i],df);
                     svmul(md->invmass[i]*hdt,T->hop[0].f_before[i],dv_before);
                     rvec_add(state->v[i],dv_before,vbefore);
                     svmul(md->invmass[i]*hdt,df,dv);
@@ -3757,7 +3758,7 @@ int do_titration(FILE *fplog,
                 dek2 /= 2;
                 fprintf(fplog,"dek2 = %g\n",dek2);
             }
-            *DE_Titration = DE_Env-dek2;
+            *DE_Titration = DE_Env+dek2;
             return eTitration_Ecorr;
         }
     }
