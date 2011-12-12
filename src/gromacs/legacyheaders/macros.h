@@ -55,9 +55,6 @@
 #define C0 	c[0]
 #define C1 	c[1]
 #define C2 	c[2]
-#define C3 	c[3]
-#define C4 	c[4]
-#define C5 	c[5]
 
 #ifndef __cplusplus
 #ifndef min
@@ -66,28 +63,10 @@
 #ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b) )
 #endif
-#ifndef even
-#define even(a) ( ( (a+1) / 2) == (a / 2) )
-#endif
-#else
-#include <algorithm>
-using std::min;
-using std::max;
 #endif
 
 /* This macro calculates the size of a array */
 #define asize(a) (sizeof(a)/sizeof((a)[0]))
-
-extern const real ZERO;
-extern const real THIRD;
-extern const real HALF;
-extern const real ONE;
-extern const real TWO;
-extern const real THREE;
-extern const real SIX;
-extern const real TEN;
-extern const real TWELVE;
-
 
 #endif	/* _macros_h */
 
