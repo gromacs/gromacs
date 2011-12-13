@@ -1040,7 +1040,9 @@ int gmx_chi(int argc,char *argv[])
     "The total number of rotamer transitions per timestep", 
     "(argument [TT]-ot[tt]), the number of transitions per rotamer", 
     "(argument [TT]-rt[tt]), and the ^3J couplings (argument [TT]-jc[tt]), ", 
-    "can also be written to [TT].xvg[tt] files.[PAR]", 
+    "can also be written to [TT].xvg[tt] files. Note that the analysis",
+    "of rotamer transitions assumes that the supplied trajectory frames",
+    "are equally spaced in time.[PAR]",
 
     "If [TT]-chi_prod[tt] is set (and [TT]-maxchi[tt] > 0), cumulative rotamers, e.g.", 
     "1+9([GRK]chi[grk]1-1)+3([GRK]chi[grk]2-1)+([GRK]chi[grk]3-1) (if the residue has three 3-fold ", 
@@ -1271,7 +1273,7 @@ int gmx_chi(int argc,char *argv[])
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
 		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
-		    *time,  dt, FALSE, core_frac,oenv) ; 
+		    time, FALSE, core_frac,oenv);
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
