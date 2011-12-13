@@ -1243,7 +1243,7 @@ static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
 }
 
 void read_expandedparams(int *ninp_p,t_inpfile **inp_p,
-                         t_expanded *expanded,warninp_t wi) 
+                         t_expanded *expand,warninp_t wi) 
 {
   int  ninp,nerror=0;
   t_inpfile *inp;
@@ -1640,7 +1640,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* read them regardless, because we don't know if we're running until the end, since either 
      we need free energy defined, or we need simulated tempering defined, which we might not know
      at this point. */
-  read_expandedparams(&ninp,&inp,expand,opts,wi);      
+  read_expandedparams(&ninp,&inp,expand,wi);      
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");
