@@ -376,6 +376,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               fep->sc_power);
       CHECK(fep->sc_alpha!=0 && fep->sc_power!=1 && fep->sc_power!=2);
 
+      sprintf(err_buf,"The soft-core r-power is %d and can only be 6 or 48",
+              (int)fep->r_power);
+      CHECK(fep->sc_alpha!=0 && fep->r_power!=6.0 && fep->r_power!=48.0);
+
       /* check validity of options */
       if (fep->n_lambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) 
       {
@@ -1140,6 +1144,13 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
         }
     }
 
+    /* make it easier if r_power = 48 by increasing it to the 4th power, to be in the right scale? */
+    if (fep->r_power == 48) {
+        if (fep->sc_alpha > 0.3) {
+            gmx_fatal(FARGS,"sc_alpha (%f) for r_power = 48 should usually be between 0.001 and 0.004", fep->sc_alpha);
+        }
+    }
+
     expand = ir->expandedvals;
     /* now read in the weights - error handling? */
     parse_n_double(weights,&nweights,&(expand->init_lambda_weights));
@@ -1624,7 +1635,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("init-lambda-weights",lambda_weights,NULL);
   EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
   RTYPE ("sc-alpha",fep->sc_alpha,0.0);
-  ITYPE ("sc-power",fep->sc_power,0);
+  ITYPE ("sc-power",fep->sc_power,1);
+  RTYPE ("r-power",fep->r_power,6.0);
   RTYPE ("sc-sigma",fep->sc_sigma,0.3);
   EETYPE("sc-coul",fep->bScCoul,yesno_names);
   ITYPE ("nstfep",fep->nstfep, 10);

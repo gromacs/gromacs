@@ -589,6 +589,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
     PS("bScCoul",BOOL(fep->bScCoul));
     PS("bScPrintEnergy",BOOL(fep->bPrintEnergy));
     PI("sc-power",fep->sc_power);
+    PR("r-power",fep->r_power);
     PR("sc-sigma",fep->sc_sigma);
     PR("sc-sigma_min",fep->sc_sigma_min);
     PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));

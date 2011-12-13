@@ -205,11 +205,12 @@ typedef struct {
   real rvdw_switch,rvdw;
   real bham_b_max;
 
-  /* Free energy ? */
+  /* Free energy */
   int  efep;
   real sc_alphavdw;
   real sc_alphacoul;
   int  sc_power;
+  real r_power;
   real sc_sigma6_def;
   real sc_sigma6_min;
   gmx_bool bSepDVDL;

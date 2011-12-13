@@ -138,6 +138,7 @@ typedef struct {
   double **all_lambda;   /* The array of all lambda values                    */
   real sc_alpha;         /* free energy soft-core parameter                   */
   int  sc_power;         /* lambda power for soft-core interactions           */
+  real r_power;          /* r power for soft-core interactions                */
   real sc_sigma;         /* free energy soft-core sigma when c6 or c12=0      */
   real sc_sigma_min;     /* free energy soft-core sigma for ?????             */
   gmx_bool bScCoul;      /* use softcore for the coulomb portion as well 

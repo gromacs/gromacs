@@ -370,6 +370,14 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   {
       fepvals->sc_power = 2;
   }
+  if (file_version >= 74) 
+  {
+      gmx_fio_do_real(fio,fepvals->r_power);
+  }
+  else
+  {
+      fepvals->r_power = 6.0;
+  }
   if (file_version >= 15)
   {
       gmx_fio_do_real(fio,fepvals->sc_sigma);

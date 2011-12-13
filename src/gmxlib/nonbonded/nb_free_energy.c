@@ -75,6 +75,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 alpha_coul,
                           real                 alpha_vdw,
                           int                  lam_power,
+                          real                 r_power,
                           real                 sigma6_def,
                           real                 sigma6_min,
                           gmx_bool             bDoForces,
@@ -94,12 +95,14 @@ gmx_nb_free_energy_kernel(int                  icoul,
     int           ntiA,ntiB,tj[NSTATES];
     real          Vvdw6, Vvdw12,vvtot;
     real          ix,iy,iz,fix,fiy,fiz;
-    real          dx,dy,dz,rsq,r4,r6,rinv;
+    real          dx,dy,dz,rsq,rinv;
     real          c6[NSTATES],c12[NSTATES];
     real          dvdl_vdw,dvdl_coul,LFC[NSTATES],LFV[NSTATES],DLF[NSTATES];
     real          alf_coul[NSTATES],dalf_coul[NSTATES],alf_vdw[NSTATES],dalf_vdw[NSTATES];
     real          sigma6[NSTATES],alpha_vdw_eff,alpha_coul_eff;
-    real          rC,rV,rinvC,rinvV,rinv4C[NSTATES],rinv4V[NSTATES];
+    real          rp,rpm2,rC,rV,rinvC,rpinvC,rinvV,rpinvV;
+    real          rpinvm2C[NSTATES],rpinvm2V[NSTATES];
+    real          sigma2[NSTATES],sigma_pow[NSTATES],sigma_powm2[NSTATES],rs,rs2;
     int           do_coultab,do_vdwtab,do_tab,tab_elemsize;
     int           n0,n1C,n1V,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,epsC,eps2C,epsV,eps2V,VV,FF;
@@ -170,8 +173,24 @@ gmx_nb_free_energy_kernel(int                  icoul,
             rsq              = dx*dx+dy*dy+dz*dz;
             rinv             = gmx_invsqrt(rsq);
             r                = rsq*rinv;
-            r4               = rsq*rsq;
-            r6               = r4*rsq;
+            if (r_power == 6.0)
+            {
+                rpm2             = rsq*rsq;
+                rp               = rpm2*rsq;
+            }
+            else if (r_power == 48.0) 
+            {
+                rp               = rsq*rsq*rsq;  /* r6 */
+                rp               = rp*rp; /* r12 */
+                rp               = rp*rp; /* r24 */
+                rp               = rp*rp; /* r48 */
+                rpm2             = rp/rsq; /* r46 */
+            }
+            else
+            {
+                rp             = pow(r,r_power);  /* not currently supported, but can handle it */
+                rpm2           = rp/rsq;
+            }
 
             tj[STATE_A]      = ntiA+2*typeA[jnr];
             tj[STATE_B]      = ntiB+2*typeB[jnr];
@@ -184,16 +203,36 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 c12[i]             = nbfp[tj[i]+1];
                 if((c6[i] > 0) && (c12[i] > 0)) 
                 {
-                    sigma6[i]           = c12[i]/c6[i];
+                    sigma6[i]       = c12[i]/c6[i];
+                    sigma2[i]        = pow(c12[i]/c6[i],1.0/3.0);   
+                    /* should be able to get rid of this internal pow call eventually, required structuring! */
                 }
                 else 
                 {
-                    sigma6[i]           = sigma6_def;
+                    sigma6[i]       = sigma6_def;
+                    sigma2[i]        = pow(sigma6_def,1.0/3.0);
+                }
+                if (r_power == 6.0)
+                {
+                    sigma_pow[i]    = sigma6[i];
+                    sigma_powm2[i]  = sigma6[i]/sigma2[i];
+                }
+                else if (r_power == 48.0) 
+                {
+                    sigma_pow[i]    = sigma6[i]*sigma6[i];   /* sigma^12 */
+                    sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
+                    sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
+                    sigma_powm2[i]  = sigma_pow[i]/sigma2[i];                    
+                }
+                else 
+                {    /* not really supported, but in here for testing */
+                    sigma_pow[i]    = pow(sigma2[i],r_power/2);
+                    sigma_powm2[i]  = sigma_pow[i]/(sigma2[i]);
                 }
             }
 
-            /* only use softcore if one of the states has a zero endstate - it's for avoiding infinities!*/
-            if((c12[STATE_A] > 0) && (c12[STATE_B] > 0)) {
+            /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
+            if ((c12[STATE_A] > 0) && (c12[STATE_B] > 0)) {
                 alpha_vdw_eff    = 0;
                 alpha_coul_eff   = 0;
             } else {
@@ -205,29 +244,29 @@ gmx_nb_free_energy_kernel(int                  icoul,
             for (i=0;i<NSTATES;i++) 
             {
                 alf_coul[i]  = alpha_coul_eff*(lam_power==2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
-                dalf_coul[i] = DLF[i]*alpha_coul_eff*lam_power/6.0*(lam_power==2 ? (1-LFC[i]) : 1); 
+                dalf_coul[i] = DLF[i]*alpha_coul_eff*lam_power/r_power*(lam_power==2 ? (1-LFC[i]) : 1); 
                 alf_vdw[i]   = alpha_vdw_eff *(lam_power==2 ? (1-LFV[i])*(1-LFV[i]) : (1-LFV[i]));
-                dalf_vdw[i]  = DLF[i]*alpha_vdw_eff*lam_power/6.0*(lam_power==2 ? (1-LFV[i]) : 1); 
+                dalf_vdw[i]  = DLF[i]*alpha_vdw_eff*lam_power/r_power*(lam_power==2 ? (1-LFV[i]) : 1); 
                 
                 FscalC[i]    = 0;
                 FscalV[i]    = 0;
                 Vcoul[i]     = 0;
                 Vvdw[i]      = 0;
-                rinv4C[i]    = 0;
-                rinv4V[i]    = 0;
+                rpinvm2C[i]  = 0;
+                rpinvm2V[i]  = 0;
             
                 /* Only spend time on A or B state if it is non-zero */
                 if( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) ) 
                 {
-                    rC             = pow(alf_coul[i]*sigma6[i]+r6,1.0/6.0);
-                    rinvC          = 1.0/rC;
-                    rinv4C[i]      = rinvC*rinvC;
-                    rinv4C[i]      = rinv4C[i]*rinv4C[i];
+                    rpinvC         = 1.0/(alf_coul[i]*sigma_pow[i]+rp);
+                    rinvC          = pow(rpinvC,1.0/r_power);
+                    rC             = 1.0/rinvC;
+                    rpinvm2C[i]    = rpinvC/(rinvC*rinvC);
                     
-                    rV             = pow(alf_vdw[i]*sigma6[i]+r6,1.0/6.0);
-                    rinvV          = 1.0/rV;
-                    rinv4V[i]      = rinvV*rinvV;
-                    rinv4V[i]      = rinv4V[i]*rinv4V[i];
+                    rpinvV         = 1.0/(alf_vdw[i]*sigma_pow[i]+rp);
+                    rinvV          = pow(rpinvV,1.0/r_power);
+                    rV             = 1.0/rinvV;
+                    rpinvm2V[i]    = rpinvV/(rinvV*rinvV);
                     
                     if (do_tab)
                     {
@@ -248,14 +287,14 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     {
                         /* simple cutoff */
                         Vcoul[i]   = qq[i]*rinvC;
-                        FscalC[i]  = Vcoul[i]*rinvC*rinvC;
+                        FscalC[i]  = Vcoul[i]*rpinvC;
                     }
                     else if(icoul==enbcoulRF)
                     {
                         /* reaction-field */
                         krsq       = krf*rC*rC;      
                         Vcoul[i]   = qq[i]*(rinvC+krsq-crf);
-                        FscalC[i]  = qq[i]*(rinvC-2.0*krsq)*rinvC*rinvC;
+                        FscalC[i]  = qq[i]*(rinvC-2.0*krsq)*rpinvC;
                     }
                     else if (icoul==enbcoulTAB)
                     {
@@ -269,17 +308,24 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         VV         = Y+epsC*Fp;
                         FF         = Fp+Geps+2.0*Heps2;
                         Vcoul[i]   = qq[i]*VV;
-                        FscalC[i]  = -qq[i]*tabscale*FF*rinvC;                    
+                        FscalC[i]  = -qq[i]*tabscale*FF*rC*rpinvC;                    
                     }
                     
                     if(ivdw==enbvdwLJ)
                     {
                         /* cutoff LJ */
-                        rinv6            = rinvV*rinvV*rinv4V[i];
+                        if (r_power == 6.0)
+                        {
+                            rinv6            = rpinvV;
+                        }
+                        else 
+                        {
+                            rinv6            = pow(rinvV,6.0);
+                        }
                         Vvdw6            = c6[i]*rinv6;     
                         Vvdw12           = c12[i]*rinv6*rinv6;
                         Vvdw[i]          = Vvdw12-Vvdw6;
-                        FscalV[i]        = (12.0*Vvdw12-6.0*Vvdw6)*rinvV*rinvV;                    
+                        FscalV[i]        = (12.0*Vvdw12-6.0*Vvdw6)*rpinvV;                    
                     }
                     else if(ivdw==enbvdwTAB)
                     {
@@ -295,7 +341,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         VV         = Y+epsV*Fp;
                         FF         = Fp+Geps+2.0*Heps2;
                         Vvdw[i]   += c6[i]*VV;
-                        FscalV[i] -= c6[i]*tabscale*FF*rinvV;                    
+                        FscalV[i] -= c6[i]*tabscale*FF*rV*rpinvV;                    
                     
                         /* repulsion */
                         Y          = VFtab[nnn+4];
@@ -306,7 +352,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         VV         = Y+epsV*Fp;
                         FF         = Fp+Geps+2.0*Heps2;
                         Vvdw[i]   += c12[i]*VV;
-                        FscalV[i] -= c12[i]*tabscale*FF*rinvV;
+                        FscalV[i] -= c12[i]*tabscale*FF*rV*rpinvV;
                     }           
                     /* Buckingham vdw free energy not supported for now */
                 }
@@ -340,21 +386,15 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 vctot         += LFC[i]*Vcoul[i];
                 vvtot         += LFV[i]*Vvdw[i];
                 
-                Fscal         += (LFC[i]*FscalC[i]*rinv4C[i])*r4;
-                Fscal         += (LFV[i]*FscalV[i]*rinv4V[i])*r4;
+                Fscal         += LFC[i]*FscalC[i]*rpm2;
+                Fscal         += LFV[i]*FscalV[i]*rpm2;
                 
                 dvdl_coul     += Vcoul[i]*DLF[i];
-                dvdl_coul     += LFC[i]*dalf_coul[i]*FscalC[i]*sigma6[i]*rinv4C[i];
+                dvdl_coul     += LFC[i]*dalf_coul[i]*FscalC[i]*sigma_pow[i];
                 
                 dvdl_vdw      += Vvdw[i]*DLF[i];
-                dvdl_vdw      += LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
+                dvdl_vdw      += LFV[i]*dalf_vdw[i]*FscalV[i]*sigma_pow[i];
 
-                /*
-                  dvdl_vdw     += dvdl_part;
-                  if (i==1) {
-                     fprintf(stdout,"%5i %5i %10.5g\n",n,k,dvdl_part);
-                  }
-                */
             }
             if (bDoForces)
             {
