@@ -84,8 +84,8 @@ FILE* debug=0;
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
-#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
-#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
+#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
+#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
 #else /* GMX_THREADS */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
@@ -101,6 +101,7 @@ static int lfactor(int z) {
 	int i;
 	for (i=sqrt(z);;i--)
 		if (z%i==0) return i;
+	return 1;
 }
 
 /* largest factor */
@@ -109,6 +110,7 @@ static int l2factor(int z) {
 	if (z==1) return 1;
 	for (i=z/2;;i--)
 		if (z%i==0) return i;
+	return 1;
 }
 
 /* largest prime factor: WARNING: slow recursion, only use for small numbers */
@@ -430,7 +432,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 #ifdef GMX_FFT_FFTW3  /*if not FFTW - then we don't do a 3d plan but insead only 1D plans */
     if ((!(flags&FFT5D_INPLACE)) && (!(P[0]>1 || P[1]>1))) {  /*don't do 3d plan in parallel or if in_place requested */  
             int fftwflags=FFTW_DESTROY_INPUT;
-            fftw_iodim dims[3];
+            FFTW(iodim) dims[3];
             int inNG=NG,outMG=MG,outKG=KG;
 
             FFTW_LOCK;
@@ -529,14 +531,14 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         plan->cart[1]=comm[0]; plan->cart[0]=comm[1];
     }
 #ifdef FFT5D_MPI_TRANSPOSE
-    FFTW_LOCK
+    FFTW_LOCK;
     for (s=0;s<2;s++) {
         if ((s==0 && !(flags&FFT5D_ORDER_YZ)) || (s==1 && (flags&FFT5D_ORDER_YZ))) 
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*K[s]*pM[s]*2, 1, 1, (real*)lin, (real*)lout, plan->cart[s], FFTW_PATIENT);
         else
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*pK[s]*M[s]*2, 1, 1, (real*)lin, (real*)lout, plan->cart[s], FFTW_PATIENT);
     }
-    FFTW_UNLOCK
+    FFTW_UNLOCK;
 #endif 
 
     
@@ -795,7 +797,7 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
             rotate(NG);            
         }
     }
-    if (plan->flags&FFT5D_REALCOMPLEX && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || (plan->flags&FFT5D_BACKWARD && s==2))) {
+    if ((plan->flags&FFT5D_REALCOMPLEX) && ((!(plan->flags&FFT5D_BACKWARD) && s==0) || ((plan->flags&FFT5D_BACKWARD) && s==2))) {
         xl[0] = rC[s];
     }
 }
@@ -1033,7 +1035,7 @@ void fft5d_compare_data(const t_complex* lin, const t_complex* in, fft5d_plan pl
     int x,y,z,l;
     int *coor = plan->coor;
     int ll=2; /*compare ll values per element (has to be 2 for complex)*/
-    if (plan->flags&FFT5D_REALCOMPLEX && plan->flags&FFT5D_BACKWARD) 
+    if ((plan->flags&FFT5D_REALCOMPLEX) && (plan->flags&FFT5D_BACKWARD))
     {
         ll=1;
     }

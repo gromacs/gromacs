@@ -589,25 +589,25 @@ void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr)
 #else
     int i;
 
-    if (nr > cr->mpb->ibuf_alloc) {
-        cr->mpb->ibuf_alloc = nr;
-        srenew(cr->mpb->ibuf,cr->mpb->ibuf_alloc);
+    if (nr > cr->mpb->libuf_alloc) {
+        cr->mpb->libuf_alloc = nr;
+        srenew(cr->mpb->libuf,cr->mpb->libuf_alloc);
     }
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+        MPI_Allreduce(r,cr->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                       cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(cr->mpb->ibuf,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+            MPI_Allreduce(cr->mpb->libuf,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                           cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,GMX_MPI_LARGE_INT,0,cr->nc.comm_intra);
     } else {
-        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+        MPI_Allreduce(r,cr->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                       cr->mpi_comm_mygroup);
         for(i=0; i<nr; i++)
-            r[i] = cr->mpb->ibuf[i];
+            r[i] = cr->mpb->libuf[i];
     }
 #endif
 #endif
@@ -709,14 +709,14 @@ void gmx_sumli_sim(int nr,gmx_large_int_t r[], const gmx_multisim_t *ms)
     /* this is thread-unsafe, but it will do for now: */
     int i;
 
-    if (nr > ms->mpb->ibuf_alloc) {
-        ms->mpb->ibuf_alloc = nr;
-        srenew(ms->mpb->ibuf,ms->mpb->ibuf_alloc);
+    if (nr > ms->mpb->libuf_alloc) {
+        ms->mpb->libuf_alloc = nr;
+        srenew(ms->mpb->libuf,ms->mpb->libuf_alloc);
     }
-    MPI_Allreduce(r,ms->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+    MPI_Allreduce(r,ms->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                   ms->mpi_comm_masters);
     for(i=0; i<nr; i++)
-        r[i] = ms->mpb->ibuf[i];
+        r[i] = ms->mpb->libuf[i];
 #endif
 #endif
 }

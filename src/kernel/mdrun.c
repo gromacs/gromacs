@@ -595,6 +595,11 @@ int main(int argc,char *argv[])
       {
           sim_part = sim_part_fn + 1;
       }
+
+      if (MULTISIM(cr) && MASTER(cr))
+      {
+          check_multi_int(stdout,cr->ms,sim_part,"simulation part");
+      }
   } 
   else
   {

@@ -201,11 +201,11 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = { 
-  "no", "umbrella", "constraint", "constant_force", NULL
+  "no", "umbrella", "constraint", "constant-force", NULL
 };
 
 const char *epullg_names[epullgNR+1] = { 
-  "distance", "direction", "cylinder", "position", "direction_periodic", NULL
+  "distance", "direction", "cylinder", "position", "direction-periodic", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {

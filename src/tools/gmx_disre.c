@@ -668,7 +668,7 @@ int gmx_disre(int argc,char *argv[])
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
-    xvg=xvgropen(opt2fn("-dr",NFILE,fnm),"Inidividual Restraints","Time (ps)",
+    xvg=xvgropen(opt2fn("-dr",NFILE,fnm),"Individual Restraints","Time (ps)",
 		 "nm",oenv);
     snew(vvindex,isize);
     snew(leg,isize);

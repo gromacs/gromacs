@@ -249,12 +249,13 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
   gmx_bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   t_trxstatus *status;
   gmx_mtop_t   mtop;
-  gmx_localtop_t *top;
+  gmx_localtop_t *top=NULL;
   t_state      state;
   t_inputrec   ir;
   
   if (tpr) {
     read_tpx_state(tpr,&ir,&state,NULL,&mtop);
+    top = gmx_mtop_generate_local_top(&mtop,&ir);
   }
   new_natoms = -1;
   natoms = -1;  
@@ -314,7 +315,6 @@ void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
     }
     natoms=new_natoms;
     if (tpr) {
-      top = gmx_mtop_generate_local_top(&mtop,&ir);
       chk_bonds(&top->idef,ir.ePBC,fr.x,fr.box,tol);
     }
     if (fr.bX)

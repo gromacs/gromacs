@@ -820,7 +820,7 @@ int gmx_anaeig(int argc,char *argv[])
     "computed based on the Quasiharmonic approach and based on",
     "Schlitter's formula."
   };
-  static int  first=1,last=8,skip=1,nextr=2,nskip=6;
+  static int  first=1,last=-1,skip=1,nextr=2,nskip=6;
   static real max=0.0,temp=298.15;
   static gmx_bool bSplit=FALSE,bEntropy=FALSE;
   t_pargs pa[] = {
