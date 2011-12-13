@@ -113,7 +113,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
 
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 		   real **dih,int nframes,int nangles,
-		   const char *grpname,real t0,real dt,gmx_bool bRb,
+		   const char *grpname,real *time,gmx_bool bRb,
                    const output_env_t oenv)
 {
   /* just a wrapper; declare extra args, then chuck away at end. */ 
@@ -131,7 +131,7 @@ void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 
   low_ana_dih_trans(TRUE, fn_trans,TRUE, fn_histo, maxchi, 
                     dih, nlist, dlist, nframes,
-		    nangles, grpname, xity, t0, dt, bRb, 0.5,oenv); 
+		    nangles, grpname, xity, time, bRb, 0.5,oenv);
   sfree(dlist); 
   sfree(xity); 
   
@@ -140,8 +140,8 @@ void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 		       gmx_bool bHisto, const char *fn_histo, int maxchi, 
 		       real **dih, int nlist, t_dlist dlist[], int nframes,
-		       int nangles, const char *grpname, int xity[], 
-		       real t0, real dt, gmx_bool bRb, real core_frac,
+		       int nangles, const char *grpname, int xity[],
+		       real *time, gmx_bool bRb, real core_frac,
                        const output_env_t oenv)
 {
   FILE *fp;
@@ -152,6 +152,13 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
   real ttime,tt;
   real *rot_occ[NROT] ; 
   int  (*calc_bin)(real,int,real);  
+  real dt;
+
+  if (1 <= nframes) {
+    return;
+  }
+  /* Assumes the frames are equally spaced in time */
+  dt=(time[nframes-1]-time[0])/(nframes-1);
   
   /* Analysis of dihedral transitions */
   fprintf(stderr,"Now calculating transitions...\n");
@@ -248,8 +255,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     sprintf(title,"Number of transitions: %s",grpname);
     fp=xvgropen(fn_trans,title,"Time (ps)","# transitions/timeframe",oenv);
     for(j=0; (j<nframes); j++) {
-      tt = t0+j*dt;
-      fprintf(fp,"%10.3f  %10d\n",tt,tr_f[j]);
+      fprintf(fp,"%10.3f  %10d\n",time[j],tr_f[j]);
     }
     ffclose(fp);
   }
