@@ -977,7 +977,7 @@ void qhop_swap_m_and_q(const t_qhop_residue *swapres,
                        t_mdatoms *md,
                        const qhop_db *db, titration_t T)
 {
-    int i, j, nH;
+    int i, j, k, nH;
     t_restp *rtp;
     real m;
     gmx_bool bWater;
@@ -1025,28 +1025,22 @@ void qhop_swap_m_and_q(const t_qhop_residue *swapres,
         }
 
         /* Hardcoded = ugly. Sorry. This will have to go. */
-        if (md->massA != NULL)
-        {
-            md->massA[qa->protons[0]] = 1.008;
-            md->massA[qa->protons[1]] = 1.008;
-            md->massA[qa->protons[2]] = 0; /* vsite */
-            md->massA[qa->protons[3]] = 0; /* vsite */
-            md->massA[qa->protons[4]] = 0; /* vsite */
-            md->massA[qa->atom_id]    = 15.9994 + (nH-2)*1.008;
-        }
         md->massT[qa->protons[0]] = 1.008;
         md->massT[qa->protons[1]] = 1.008;
         md->massT[qa->protons[2]] = 0; /* vsite */
         md->massT[qa->protons[3]] = 0; /* vsite */
         md->massT[qa->protons[4]] = 0; /* vsite */
-        md->massT[qa->atom_id]    = 15.9994 + (nH-2)*1.008;
-
-        md->invmass[qa->protons[0]] = 1/1.008;
-        md->invmass[qa->protons[1]] = 1/1.008;
-        md->invmass[qa->protons[2]] = 0; /* vsite */
-        md->invmass[qa->protons[3]] = 0; /* vsite */
-        md->invmass[qa->protons[4]] = 0; /* vsite */
-        md->invmass[qa->atom_id]    = 1 / (15.9994 + (nH-2)*1.008);
+        md->massT[qa->atom_id]    = 15.9994 /*+ (nH-2)*1.008*/;
+        for(k=0; (k<=4); k++) 
+        {
+            if (md->massA != NULL)
+                md->massA[qa->protons[k]] = md->massT[qa->protons[k]];
+            if (md->massT[qa->protons[k]] != 0)
+                md->invmass[qa->protons[k]] = 1.0/md->massT[qa->protons[k]];
+        }
+        if (md->massA != NULL)
+            md->massA[qa->atom_id] = md->massT[qa->atom_id];
+        md->invmass[qa->atom_id]   = 1.0/md->massT[qa->atom_id];
     }
 }
 

@@ -91,6 +91,7 @@ static void swap_rvec(rvec a,rvec b)
     copy_rvec(b,a);
     copy_rvec(tmp,b);
 }
+
 void fold_inactive_protons(const titration_t T, rvec x[], rvec v[])
 {
     int r, t, h;
@@ -1692,7 +1693,7 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     /* alters the topology in order to evaluate the new energy. In case
        of hydronium donating a proton, we might have to change the
        position of the resulting HW1, and HW2 in order to create a
-       correct water confiuration after the hop.  This is easiest done
+       correct water configuration after the hop.  This is easiest done
        by a reflection in the plane of Hw1, OW, HW2 in the line
        OW-HW. We do not need to put this all back, if the proposal is
        not accepted. Water-Hydronium hops will be topology
@@ -3646,9 +3647,28 @@ int do_titration(FILE *fplog,
                 if (T->hop[i].prob > rnr)
                 {
                     /* Hoppen maar! */
+                    int k;
+                    
+                    for(k=0; (k<md->nr); k++) 
+                    {
+                        fprintf(fplog,"B_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
+                                k,md->massT[k],state->v[k][XX],
+                                state->v[k][YY],state->v[k][ZZ]);
+                    }
+                    fprintf(fplog,"EKIN before CP %g\n",
+                            check_ekin(state->v,md,"before"));
+                    
                     bHop = change_protonation(cr, ir, T, md, &(T->hop[i]), 
                                               state->x, state->v, 
                                               eHOP_FORWARD, mtop, top, constr, &pbc, TRUE);
+                    for(k=0; (k<md->nr); k++) 
+                    {
+                        fprintf(fplog,"A_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
+                                k,md->massT[k],state->v[k][XX],
+                                state->v[k][YY],state->v[k][ZZ]);
+                    }
+                    fprintf(fplog,"EKIN after CP %g\n",
+                            check_ekin(state->v,md,"after"));
                     DE_Env += T->hop[i].DE_Environment;
                         
                     if (bHop)
