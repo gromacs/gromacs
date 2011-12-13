@@ -177,7 +177,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     atom_id     *grpindex=NULL;
     char        *grpname;
     t_coupl_rec *tcr=NULL;
-    rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
+    rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL,*ftitration=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
@@ -999,10 +999,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (!bFirstStep && (fr->bTitration && do_per_step(step,ir->titration_freq)))
         { 
             ebefore_titration = enerd->term[F_EPOT];
+            if (NULL == ftitration)
+                snew(ftitration,mdatoms->nr);
             eTitration =
                 do_titration(fplog,cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                              mdatoms,fcd,graph,fr,constr,vsite,mu_tot,bBornRadii,
-                             enerd->term[F_TEMP],step,ekind,force_vir,f,&DE_Titration);
+                             enerd->term[F_TEMP],step,ekind,force_vir,ftitration,&DE_Titration);
         }
         else 
         {
@@ -1051,7 +1053,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
-        
+        if (!bFirstStep && (fr->bTitration && do_per_step(step,ir->titration_freq)))
+        {
+            rvec df;
+            real df2;
+            
+            for(i=0; (i<mdatoms->nr); i++) 
+            {
+                rvec_sub(ftitration[i],f[i],df);
+                df2 = iprod(df,df);
+                if (df2 > 1e-3) 
+                    fprintf(fplog,"%5d FTITR-FMD %10.5f %10.5f %10.5f\n",
+                            i,df[XX],df[YY],df[ZZ]);
+            }
+        }        
         GMX_BARRIER(cr->mpi_comm_mygroup);
         
         if (bTCR)

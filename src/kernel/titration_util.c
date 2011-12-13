@@ -48,11 +48,19 @@
 
 const char *qhopregimes[etQhopNR] = { "NONE", "SE", "Intermediate", "TST" };
 
-void qhop_tautomer_swap(const titration_t T,
-                        rvec x[], rvec v[],
-                        int prim, int sec)
+static void swap_rvec(rvec a,rvec b)
 {
     rvec tmp;
+    
+    copy_rvec(a,tmp);
+    copy_rvec(b,a);
+    copy_rvec(tmp,b);
+}
+
+void qhop_tautomer_swap(const titration_t T,
+                        rvec x[], rvec v[], rvec fbefore[], rvec fafter[],
+                        int prim, int sec)
+{
     int i, xv;
     t_qhop_atom *qprim, *qsec;
 
@@ -65,30 +73,27 @@ void qhop_tautomer_swap(const titration_t T,
     }
 
     /* Swap titrating atom */
-    copy_rvec(x[qprim->atom_id], tmp);
-    copy_rvec(x[qsec->atom_id], x[qprim->atom_id]);
-    copy_rvec(tmp, x[qsec->atom_id]);
+    swap_rvec(x[qprim->atom_id],x[qsec->atom_id]);
+
     if (v != NULL)
-    {
-        copy_rvec(v[qprim->atom_id], tmp);
-        copy_rvec(v[qsec->atom_id], v[qprim->atom_id]);
-        copy_rvec(tmp, v[qsec->atom_id]);
-    }
+        swap_rvec(v[qprim->atom_id],v[qsec->atom_id]);
+    if (fbefore != NULL)
+        swap_rvec(fbefore[qprim->atom_id],fbefore[qsec->atom_id]);
+    if (fafter != NULL)
+        swap_rvec(fafter[qprim->atom_id],fafter[qsec->atom_id]);
 
     /* swap hydrogens */
     for (i=0; i < qsec->nr_protons; i++)
         /* qsec->nr_protons <= qprim->nr_protons */
     {
-        copy_rvec(x[qprim->protons[i]], tmp);
-        copy_rvec(x[qsec->protons[i]], x[qprim->protons[i]]);
-        copy_rvec(tmp, x[qsec->protons[i]]);
+        swap_rvec(x[qprim->protons[i]],x[qsec->protons[i]]);
       
         if (v != NULL)
-        {
-            copy_rvec(v[qprim->protons[i]], tmp);
-            copy_rvec(v[qsec->protons[i]], v[qprim->protons[i]]);
-            copy_rvec(tmp, v[qsec->protons[i]]);
-        }
+            swap_rvec(v[qprim->protons[i]],v[qsec->protons[i]]);
+        if (fbefore != NULL)
+            swap_rvec(fbefore[qprim->protons[i]],fbefore[qsec->protons[i]]);
+        if (fafter != NULL)
+            swap_rvec(fafter[qprim->protons[i]],fafter[qsec->protons[i]]);
     }
 }
 

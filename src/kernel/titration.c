@@ -1683,9 +1683,11 @@ static void qhop_deprotonate(qhop_db *db, titration_t T,
 
 }
 
-static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir, 
+static gmx_bool change_protonation(FILE *fplog,
+                                   t_commrec *cr, const t_inputrec *ir, 
                                    titration_t T, 
-                                   t_mdatoms *md, t_hop *hop, rvec *x,rvec *v,
+                                   t_mdatoms *md, t_hop *hop, rvec *x,rvec *v, 
+                                   rvec *f_before, rvec *f_after,
                                    eHOP_t ehop,gmx_mtop_t *mtop,
                                    gmx_localtop_t *top, gmx_constr_t constr,
                                    t_pbc *pbc,gmx_bool bRealHop)
@@ -1721,7 +1723,7 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
         OH1,
         OH2,
         w_third,
-        *vvv;
+        *vvv,*fbefore,*fafter;
     real
         planedist, d;
     qhop_db 
@@ -1732,10 +1734,18 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
          * See if we can avoid this hardcoding. */
         out_of_plane_proton = 2;
 
-    if (bRealHop)
+    if (bRealHop) 
+    {
         vvv = v;
+        fbefore = f_before;
+        fafter = f_after;
+    }
     else
+    {
         vvv = NULL;
+        fbefore = NULL;
+        fafter = NULL;
+    }
     db = T->db;
     
     if (NULL != debug)
@@ -1747,8 +1757,8 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     }   
     if (eHOP_FORWARD == ehop)
     {
-        qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id);
-        qhop_tautomer_swap(T, x, vvv, hop->primary_a, hop->acceptor_id);
+        qhop_tautomer_swap(T, x, vvv, fbefore, fafter, hop->primary_d, hop->donor_id);
+        qhop_tautomer_swap(T, x, vvv, fbefore, fafter, hop->primary_a, hop->acceptor_id);
     }
 
     donor_atom    = &T->qhop_atoms[hop->primary_d];
@@ -1775,6 +1785,7 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     {
         /* assumuming the user uses the correct water topology..... */
         /* WARNING */
+        fprintf(fplog,"WARNING: rotating water, proton_id = %d\n",hop->proton_id);
         switch (hop->proton_id)
         {
         case 3:
@@ -1864,6 +1875,9 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
             swap_rvec(x[acceptor->atoms[i]], x[donor->atoms[i]]);
             /* vel */
             swap_rvec(vvv[acceptor->atoms[i]], vvv[donor->atoms[i]]);
+            /* force */
+            swap_rvec(fbefore[acceptor->atoms[i]], fbefore[donor->atoms[i]]);
+            swap_rvec(fafter[acceptor->atoms[i]], fafter[donor->atoms[i]]);
         }
     }
     else
@@ -1934,8 +1948,8 @@ static gmx_bool change_protonation(t_commrec *cr, const t_inputrec *ir,
     }
     if (eHOP_BACKWARD == ehop)
     {
-        qhop_tautomer_swap(T, x, vvv, hop->primary_d, hop->donor_id );
-        qhop_tautomer_swap(T, x, vvv, hop->primary_a, hop->acceptor_id );
+        qhop_tautomer_swap(T, x, vvv, fbefore, fafter, hop->primary_d, hop->donor_id );
+        qhop_tautomer_swap(T, x, vvv, fbefore, fafter, hop->primary_a, hop->acceptor_id );
     }
     if (NULL != debug)
         pr_rvecs(debug,0,"after change_protonation",x,md->nr);
@@ -3018,7 +3032,8 @@ static void get_hop_prob(FILE *fplog,
                   (Ebefore->term[F_COUL14] + Ebefore->term[F_LJ14]));
     Ebefore_self = (Ebefore_self_coul + Ebefore_self_vdw); 
 
-    if (change_protonation(cr, ir, T, md, hop, state->x, state->v, 
+    if (change_protonation(fplog, 
+                           cr, ir, T, md, hop, state->x, state->v, hop->f_before, hop->f_after,
                            eHOP_FORWARD, mtop, top, constr, pbc, FALSE))
     {
         evaluate_energy(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
@@ -3107,7 +3122,9 @@ static void get_hop_prob(FILE *fplog,
             }
         }
         /* now undo the move */
-        if (!change_protonation(cr, ir, T, md, hop, state->x, state->v, 
+        if (!change_protonation(fplog,
+                                cr, ir, T, md, hop, state->x, state->v, hop->f_before,
+                                hop->f_after,
                                 eHOP_BACKWARD, mtop, top, constr, pbc, FALSE))
         {
             gmx_fatal(FARGS,"Oops, cannot undo the change in protonation.");
@@ -3495,7 +3512,7 @@ int do_titration(FILE *fplog,
                  gmx_large_int_t step,
                  gmx_ekindata_t *ekindata,
                  tensor force_vir,
-                 rvec *f_old,
+                 rvec *ftitration,
                  real *DE_Titration)
 {
     char
@@ -3649,24 +3666,29 @@ int do_titration(FILE *fplog,
                     /* Hoppen maar! */
                     int k;
                     
-                    for(k=0; (k<md->nr); k++) 
-                    {
-                        fprintf(fplog,"B_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
-                                k,md->massT[k],state->v[k][XX],
-                                state->v[k][YY],state->v[k][ZZ]);
-                    }
+                    if (0)
+                        for(k=0; (k<md->nr); k++) 
+                        {
+                            fprintf(fplog,"B_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
+                                    k,md->massT[k],state->v[k][XX],
+                                    state->v[k][YY],state->v[k][ZZ]);
+                        }
                     fprintf(fplog,"EKIN before CP %g\n",
                             check_ekin(state->v,md,"before"));
                     
-                    bHop = change_protonation(cr, ir, T, md, &(T->hop[i]), 
-                                              state->x, state->v, 
+                    /* Note different indices to T->hop */
+                    bHop = change_protonation(fplog,
+                                              cr, ir, T, md, &(T->hop[i]), 
+                                              state->x, state->v, T->hop[0].f_before, 
+                                              T->hop[i].f_after, 
                                               eHOP_FORWARD, mtop, top, constr, &pbc, TRUE);
-                    for(k=0; (k<md->nr); k++) 
-                    {
-                        fprintf(fplog,"A_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
-                                k,md->massT[k],state->v[k][XX],
-                                state->v[k][YY],state->v[k][ZZ]);
-                    }
+                    if (0)
+                        for(k=0; (k<md->nr); k++) 
+                        {
+                            fprintf(fplog,"A_ATOM %5d  M %10.5f V %10.5f  %10.5f  %10.5f\n",
+                                    k,md->massT[k],state->v[k][XX],
+                                    state->v[k][YY],state->v[k][ZZ]);
+                        }
                     fprintf(fplog,"EKIN after CP %g\n",
                             check_ekin(state->v,md,"after"));
                     DE_Env += T->hop[i].DE_Environment;
@@ -3681,7 +3703,7 @@ int do_titration(FILE *fplog,
                         bHop = scale_velocities(fplog,cr,ir,nrnb,wcycle,top,mtop,groups,
                                                 state,md,T,step,constr,
                                                 &pbc,&(T->hop[i]),ekindata,veta,vetanew,
-                                                T->hop[i].f_after,f_old);
+                                                T->hop[i].f_after,ftitration);
                     }
                         
                     if (bHop && (ir->titration_mode != eTitrationModeOne))
@@ -3703,8 +3725,12 @@ int do_titration(FILE *fplog,
                     }
                     if (!bHop)
                     {
-                        if (!change_protonation(cr, ir, T, md, &(T->hop[i]), 
-                                                state->x, state->v, 
+
+                        /* Note different indices to T->hop */
+                        if (!change_protonation(fplog,
+                                                cr, ir, T, md, &(T->hop[i]), 
+                                                state->x, state->v, T->hop[0].f_before, 
+                                                T->hop[i].f_after, 
                                                 eHOP_BACKWARD, mtop, top, 
                                                 constr, &pbc, TRUE))
                             gmx_fatal(FARGS,"Oops could not hop back. WTH?");
@@ -3754,21 +3780,33 @@ int do_titration(FILE *fplog,
             return eTitration_NoEcorr;
         else
         {
-            real hdt,ddek2,dek2 = 0;
-            rvec df,dv,vnew,dv_before,vbefore;
+            real hdt,ddek2,ekbefore,ekafter,ekafter2,dek2 = 0;
+            rvec df,dv,vnew,vnew2,dv_after,dv_before,vbefore,vafter;
             
             /* How should we treat multiple hops? Check indices in T->hop
              */
             if (getenv("EK2") != NULL)
             {
                 hdt = 0.5*ir->delta_t;
+                ekbefore = ekafter = ekafter2 = 0;
                 for(i=0; (i<md->nr); i++) 
                 {
+                    copy_rvec(T->hop[iHop].f_after[i],ftitration[i]);
                     /* Do we need to swap forces as well? */
                     rvec_sub(T->hop[iHop].f_after[i],T->hop[0].f_before[i],df);
                     svmul(md->invmass[i]*hdt,T->hop[0].f_before[i],dv_before);
+                    svmul(md->invmass[i]*hdt,T->hop[iHop].f_after[i],dv_after);
+                    
                     rvec_add(state->v[i],dv_before,vbefore);
+                    ekbefore += 0.5*md->massT[i]*iprod(vbefore,vbefore);
+                    
                     svmul(md->invmass[i]*hdt,df,dv);
+                    rvec_add(vbefore,dv,vafter);
+                    ekafter += 0.5*md->massT[i]*iprod(vafter,vafter);
+                    
+                    rvec_add(state->v[i],dv_after,vnew2);
+                    ekafter2 += 0.5*md->massT[i]*iprod(vnew2,vnew2);
+                    
                     /*rvec_add(state->v[i],dv,vnew);*/
                     ddek2 = md->massT[i]*(2*iprod(vbefore,dv)+iprod(dv,dv));
                     dek2 += ddek2;
@@ -3776,7 +3814,8 @@ int do_titration(FILE *fplog,
                             i,df[XX],df[YY],df[ZZ],ddek2);
                 }
                 dek2 /= 2;
-                fprintf(fplog,"dek2 = %g\n",dek2);
+                fprintf(fplog,"dek2 = %g ekbefore = %g ekafter = %g ekafter2 = %g\n",
+                        dek2,ekbefore,ekafter,ekafter2);
             }
             *DE_Titration = DE_Env+dek2;
             return eTitration_Ecorr;

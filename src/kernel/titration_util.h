@@ -20,7 +20,7 @@ extern titration mk_titration(void);
  * titrating hydrogen the two must be exchanged.
  * If v==NULL then velocities will remain unchanged */
 extern void qhop_tautomer_swap(const titration_t T,
-			       rvec x[], rvec v[],
+			       rvec x[], rvec v[], rvec fbefore[], rvec fafter[],
 			       int prim, int sec);
 
 /* Find the inert hydrogen (zero vdw params).
