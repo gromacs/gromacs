@@ -49,7 +49,6 @@
 #include <config.h>
 #endif
 
-
 #include <string2.h>
 
 #include "parsetree.h"
@@ -64,6 +63,10 @@ process_param_list(t_selexpr_param *params);
 
 static void
 yyerror(yyscan_t, char const *s);
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4065)
+#endif
 %}
 
 %union{
