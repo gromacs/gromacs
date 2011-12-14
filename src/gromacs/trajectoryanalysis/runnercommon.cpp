@@ -391,7 +391,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
 bool
 TrajectoryAnalysisRunnerCommon::readNextFrame()
 {
-    bool bContinue = FALSE;
+    bool bContinue = false;
     if (hasTrajectory())
     {
         bContinue = read_next_frame(_impl->_oenv, _impl->_status, _impl->fr);

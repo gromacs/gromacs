@@ -283,7 +283,7 @@ static const char *help_syntax[] = {
     "1. An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
     "[TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
     "is true.[BR]",
-    "2. Atom expressions can be combined with gmx_boolean operations such as",
+    "2. Atom expressions can be combined with boolean operations such as",
     "[TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
     "[TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
     "evaluation order.[BR]",
@@ -330,12 +330,12 @@ static const t_selection_help_item helpitems[] = {
  * \param[in] fp    Where to write the list.
  * \param[in] symtab  Symbol table to use to find available keywords.
  * \param[in] type  Only methods that return this type are printed.
- * \param[in] bMod  If FALSE, \ref SMETH_MODIFIER methods are excluded, otherwise
+ * \param[in] bMod  If false, \ref SMETH_MODIFIER methods are excluded, otherwise
  *     only them are printed.
  */
 static void
 print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
-                   gmx_bool bMod)
+                   bool bMod)
 {
     gmx_sel_symrec_t *symbol;
 
@@ -343,7 +343,7 @@ print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
     while (symbol)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-        gmx_bool                 bShow;
+        bool                 bShow;
         bShow = (method->type == type)
             && ((bMod && (method->flags & SMETH_MODIFIER))
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));
@@ -428,7 +428,7 @@ _gmx_sel_print_help(FILE *fp, gmx_sel_symtab_t *symtab, const char *topic)
                 && strncmp(method->name, topic, strlen(topic)) == 0)
             {
                 print_tty_formatted(fp, method->help.nlhelp,
-                        method->help.help, 0, NULL, NULL, FALSE);
+                        method->help.help, 0, NULL, NULL, false);
                 return;
             }
             symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
@@ -438,7 +438,7 @@ _gmx_sel_print_help(FILE *fp, gmx_sel_symtab_t *symtab, const char *topic)
         return;
     }
     /* Print the help */
-    print_tty_formatted(fp, item->nl, item->text, 0, NULL, NULL, FALSE);
+    print_tty_formatted(fp, item->nl, item->text, 0, NULL, NULL, false);
     /* Special handling of certain pages */
     if (!topic)
     {
@@ -465,25 +465,25 @@ _gmx_sel_print_help(FILE *fp, gmx_sel_symtab_t *symtab, const char *topic)
         /* Print the list of keywords */
         fprintf(fp, "\nKeywords that select atoms by an integer property:\n");
         fprintf(fp, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
-        print_keyword_list(fp, symtab, INT_VALUE, FALSE);
+        print_keyword_list(fp, symtab, INT_VALUE, false);
 
         fprintf(fp, "\nKeywords that select atoms by a numeric property:\n");
         fprintf(fp, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
-        print_keyword_list(fp, symtab, REAL_VALUE, FALSE);
+        print_keyword_list(fp, symtab, REAL_VALUE, false);
 
         fprintf(fp, "\nKeywords that select atoms by a string property:\n");
         fprintf(fp, "(use like \"name PATTERN [PATTERN] ...\")\n");
-        print_keyword_list(fp, symtab, STR_VALUE, FALSE);
+        print_keyword_list(fp, symtab, STR_VALUE, false);
 
         fprintf(fp, "\nAdditional keywords that directly select atoms:\n");
-        print_keyword_list(fp, symtab, GROUP_VALUE, FALSE);
+        print_keyword_list(fp, symtab, GROUP_VALUE, false);
 
         fprintf(fp, "\nKeywords that directly evaluate to positions:\n");
         fprintf(fp, "(see also \"help positions\")\n");
-        print_keyword_list(fp, symtab, POS_VALUE, FALSE);
+        print_keyword_list(fp, symtab, POS_VALUE, false);
 
         fprintf(fp, "\nAdditional keywords:\n");
-        print_keyword_list(fp, symtab, POS_VALUE, TRUE);
-        print_keyword_list(fp, symtab, NO_VALUE, TRUE);
+        print_keyword_list(fp, symtab, POS_VALUE, true);
+        print_keyword_list(fp, symtab, NO_VALUE, true);
     }
 }

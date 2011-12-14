@@ -192,7 +192,7 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b, k;
 
-    gmx_ana_pos_copy(out->u.p, &d->p, TRUE);
+    gmx_ana_pos_copy(out->u.p, &d->p, true);
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     d->g.isize = 0;
     gmx_ana_pos_empty_init(out->u.p);
