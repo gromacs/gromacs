@@ -95,7 +95,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
         {
             return &param[i];
         }
-        /* Check for 'no' prefix on gmx_boolean parameters */
+        /* Check for 'no' prefix on boolean parameters */
         if (param[i].val.type == NO_VALUE
             && strlen(name) > 2 && name[0] == 'n' && name[1] == 'o'
             && !strcmp(param[i].name, name+2))
@@ -296,9 +296,9 @@ cmp_real_range(const void *a, const void *b)
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  */
-static gmx_bool
+static bool
 parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                    void *scanner)
 {
@@ -311,7 +311,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE)
     {
         GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range parameter type");
-        return FALSE;
+        return false;
     }
     idata = NULL;
     rdata = NULL;
@@ -330,12 +330,12 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
         if (value->bExpr)
         {
             _gmx_selparser_error(scanner, "expressions not supported within range parameters");
-            return FALSE;
+            return false;
         }
         if (value->type != param->val.type)
         {
             GMX_ERROR_NORET(gmx::eeInternalError, "Invalid range value type");
-            return FALSE;
+            return false;
         }
         if (param->val.type == INT_VALUE)
         {
@@ -446,7 +446,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
             _gmx_selparser_error(scanner, "the value should consist of exactly one range");
             sfree(idata);
             sfree(rdata);
-            return FALSE;
+            return false;
         }
         if (param->val.type == INT_VALUE)
         {
@@ -465,7 +465,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     }
     param->nvalptr = NULL;
 
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -476,12 +476,12 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  *
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
-static gmx_bool
+static bool
 parse_values_varnum(int nval, t_selexpr_value *values,
                     gmx_ana_selparam_t *param, t_selelem *root, void *scanner)
 {
@@ -509,7 +509,7 @@ parse_values_varnum(int nval, t_selexpr_value *values,
     {
         GMX_ERROR_NORET(gmx::eeInternalError,
                         "Variable-count value type not implemented");
-        return FALSE;
+        return false;
     }
 
     /* Reserve appropriate amount of memory */
@@ -531,12 +531,12 @@ parse_values_varnum(int nval, t_selexpr_value *values,
         if (value->bExpr)
         {
             _gmx_selparser_error(scanner, "expressions not supported within value lists");
-            return FALSE;
+            return false;
         }
         if (value->type != param->val.type)
         {
             GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return FALSE;
+            return false;
         }
         switch (param->val.type)
         {
@@ -560,7 +560,7 @@ parse_values_varnum(int nval, t_selexpr_value *values,
                 if (value->u.r.r1 != value->u.r.r2)
                 {
                     _gmx_selparser_error(scanner, "real ranges not supported");
-                    return FALSE;
+                    return false;
                 }
                 param->val.u.r[i++] = value->u.r.r1;
                 break;
@@ -568,7 +568,7 @@ parse_values_varnum(int nval, t_selexpr_value *values,
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
                 GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-                return FALSE;
+                return false;
         }
         value = value->next;
     }
@@ -599,7 +599,7 @@ parse_values_varnum(int nval, t_selexpr_value *values,
         place_child(root, child, param);
     }
 
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -686,9 +686,9 @@ on_error:
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  */
-static gmx_bool
+static bool
 parse_values_varnum_expr(int nval, t_selexpr_value *values,
                          gmx_ana_selparam_t *param, t_selelem *root,
                          void *scanner)
@@ -700,7 +700,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
     if (nval != 1 || !values->bExpr)
     {
         GMX_ERROR_NORET(gmx::eeInternalError, "Invalid expression value");
-        return FALSE;
+        return false;
     }
 
     value = values;
@@ -708,7 +708,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
     value->u.expr = NULL;
     if (!child)
     {
-        return FALSE;
+        return false;
     }
 
     /* Process single-valued expressions */
@@ -723,13 +723,13 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
             *param->nvalptr = param->val.nr;
         }
         param->nvalptr = NULL;
-        return TRUE;
+        return true;
     }
 
     if (!(child->flags & SEL_VARNUMVAL))
     {
         _gmx_selparser_error(scanner, "invalid expression value");
-        return FALSE;
+        return false;
     }
 
     child->flags   |= SEL_ALLOCVAL;
@@ -738,7 +738,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
     /* Rest of the initialization is done during compilation in
      * init_method(). */
 
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -754,14 +754,14 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
  * as the value \p i of \p param.
  * This function is used internally by parse_values_std().
  */
-static gmx_bool
+static bool
 set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
                      void *scanner)
 {
     if (sel->v.type != GROUP_VALUE && !(sel->flags & SEL_SINGLEVAL))
     {
         _gmx_selparser_error(scanner, "invalid expression value");
-        return FALSE;
+        return false;
     }
     switch (sel->v.type)
     {
@@ -772,11 +772,11 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
         case GROUP_VALUE: sel->v.u.g = &param->val.u.g[i]; break;
         default: /* Error */
             GMX_ERROR_NORET(gmx::eeInternalError, "Invalid value type");
-            return FALSE;
+            return false;
     }
     sel->v.nr = 1;
     sel->v.nalloc = -1;
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -787,19 +787,19 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i,
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  *
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
-static gmx_bool
+static bool
 parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                  t_selelem *root, void *scanner)
 {
     t_selexpr_value   *value;
     t_selelem         *child;
     int                i, j;
-    gmx_bool               bDynamic;
+    bool               bDynamic;
 
     /* Handle atom-valued parameters */
     if (param->flags & SPAR_ATOMVAL)
@@ -807,7 +807,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
         if (nval > 1)
         {
             _gmx_selparser_error(scanner, "more than one value not supported");
-            return FALSE;
+            return false;
         }
         value = values;
         if (value->bExpr)
@@ -816,7 +816,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
             value->u.expr = NULL;
             if (!child)
             {
-                return FALSE;
+                return false;
             }
             child->flags |= SEL_ALLOCVAL;
             if (child->v.type != GROUP_VALUE && (child->flags & SEL_ATOMVAL))
@@ -829,7 +829,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                 {
                     *param->nvalptr = -1;
                 }
-                return TRUE;
+                return true;
             }
             param->flags  &= ~SPAR_ATOMVAL;
             param->val.nr  = 1;
@@ -858,7 +858,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
 
     value = values;
     i = 0;
-    bDynamic = FALSE;
+    bDynamic = false;
     while (value && i < param->val.nr)
     {
         if (value->type != param->val.type)
@@ -875,15 +875,15 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
             /* Check that the expression is valid */
             if (!child)
             {
-                return FALSE;
+                return false;
             }
             if (!set_expr_value_store(child, param, i, scanner))
             {
-                return FALSE;
+                return false;
             }
             if (child->flags & SEL_DYNAMIC)
             {
-                bDynamic = TRUE;
+                bDynamic = true;
             }
         }
         else
@@ -920,7 +920,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                     if (value->u.r.r1 != value->u.r.r2)
                     {
                         _gmx_selparser_error(scanner, "real ranges not supported");
-                        return FALSE;
+                        return false;
                     }
                     param->val.u.r[i] = value->u.r.r1;
                     break;
@@ -934,7 +934,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                 case GROUP_VALUE:
                     GMX_ERROR_NORET(gmx::eeInternalError,
                                     "Invalid non-expression value");
-                    return FALSE;
+                    return false;
             }
         }
         ++i;
@@ -943,12 +943,12 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     if (value != NULL)
     {
         _gmx_selparser_error(scanner, "extra values'");
-        return FALSE;
+        return false;
     }
     if (i < param->val.nr)
     {
         _gmx_selparser_error(scanner, "not enough values");
-        return FALSE;
+        return false;
     }
     if (!bDynamic)
     {
@@ -960,7 +960,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     }
     param->nvalptr = NULL;
 
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -971,47 +971,47 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  */
-static gmx_bool
+static bool
 parse_values_bool(const char *name, int nval, t_selexpr_value *values,
                   gmx_ana_selparam_t *param, void *scanner)
 {
-    gmx_bool bSetNo;
+    bool bSetNo;
     int  len;
 
     if (param->val.type != NO_VALUE)
     {
         GMX_ERROR_NORET(gmx::eeInternalError, "Invalid boolean parameter");
-        return FALSE;
+        return false;
     }
     if (nval > 1 || (values && values->type != INT_VALUE))
     {
         _gmx_selparser_error(scanner, "parameter takes only a yes/no/on/off/0/1 value");
-        return FALSE;
+        return false;
     }
 
-    bSetNo = FALSE;
+    bSetNo = false;
     /* Check if the parameter name is given with a 'no' prefix */
     len = strlen(name);
     if (len > 2 && name[0] == 'n' && name[1] == 'o'
         && strncmp(name+2, param->name, len-2) == 0)
     {
-        bSetNo = TRUE;
+        bSetNo = true;
     }
     if (bSetNo && nval > 0)
     {
         _gmx_selparser_error(scanner, "parameter 'no%s' should not have a value",
                              param->name);
-        return FALSE;
+        return false;
     }
     if (values && values->u.i.i1 == 0)
     {
-        bSetNo = TRUE;
+        bSetNo = true;
     }
 
-    *param->val.u.b = bSetNo ? FALSE : TRUE;
-    return TRUE;
+    *param->val.u.b = bSetNo ? false : true;
+    return true;
 }
 
 /*! \brief
@@ -1021,9 +1021,9 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values,
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ * \returns   true if the values were parsed successfully, false otherwise.
  */
-static gmx_bool
+static bool
 parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                   void *scanner)
 {
@@ -1032,17 +1032,17 @@ parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     if (nval != 1)
     {
         _gmx_selparser_error(scanner, "a single value is required");
-        return FALSE;
+        return false;
     }
     if (values->type != STR_VALUE || param->val.type != STR_VALUE)
     {
         GMX_ERROR_NORET(gmx::eeInternalError, "Invalid enum parameter");
-        return FALSE;
+        return false;
     }
     if (values->bExpr)
     {
         _gmx_selparser_error(scanner, "expression value for enumerated parameter not supported");
-        return FALSE;
+        return false;
     }
 
     len = strlen(values->u.s);
@@ -1056,7 +1056,7 @@ parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
             if (match > 0)
             {
                 _gmx_selparser_error(scanner, "ambiguous value");
-                return FALSE;
+                return false;
             }
             match = i;
         }
@@ -1065,10 +1065,10 @@ parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     if (match == 0)
     {
         _gmx_selparser_error(scanner, "invalid value");
-        return FALSE;
+        return false;
     }
     param->val.u.s[0] = param->val.u.s[match];
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -1088,7 +1088,7 @@ convert_const_values(t_selexpr_value *values)
             val->u.expr->type == SEL_CONST)
         {
             t_selelem *expr = val->u.expr;
-            val->bExpr = FALSE;
+            val->bExpr = false;
             switch (expr->v.type)
             {
                 case INT_VALUE:
@@ -1120,7 +1120,7 @@ convert_const_values(t_selexpr_value *values)
  * \param     params  Array of parameters to parse.
  * \param     root    Selection element to which child expressions are added.
  * \param[in] scanner Scanner data structure.
- * \returns   TRUE if the parameters were parsed successfully, FALSE otherwise.
+ * \returns   true if the parameters were parsed successfully, false otherwise.
  *
  * Initializes the \p params array based on the parameters in \p pparams.
  * See the documentation of \c gmx_ana_selparam_t for different options
@@ -1129,19 +1129,19 @@ convert_const_values(t_selexpr_value *values)
  * The list \p pparams and any associated values are freed after the parameters
  * have been processed, no matter is there was an error or not.
  */
-gmx_bool
+bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
                       t_selelem *root, void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
-    gmx_bool                bOk, rc;
+    bool                bOk, rc;
     int                 i;
 
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and
      * that they are not NULL for other parameters */
-    bOk = TRUE;
+    bOk = true;
     for (i = 0; i < nparam; ++i)
     {
         std::string contextStr = gmx::formatString("In parameter '%s'", params[i].name);
@@ -1159,7 +1159,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             {
                 _gmx_selparser_error(scanner, "nvalptr is NULL but both "
                                      "SPAR_VARNUM and SPAR_DYNAMIC are specified");
-                bOk = FALSE;
+                bOk = false;
             }
         }
         else
@@ -1167,14 +1167,14 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             if (params[i].val.u.ptr == NULL)
             {
                 _gmx_selparser_error(scanner, "value pointer is NULL");
-                bOk = FALSE;
+                bOk = false;
             }
         }
     }
     if (!bOk)
     {
         _gmx_selexpr_free_params(pparams);
-        return FALSE;
+        return false;
     }
     /* Parse the parameters */
     pparam = pparams;
@@ -1197,7 +1197,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             {
                 oparam = NULL;
                 _gmx_selparser_error(scanner, "too many NULL parameters provided");
-                bOk = FALSE;
+                bOk = false;
                 pparam = pparam->next;
                 continue;
             }
@@ -1206,7 +1206,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         else
         {
             _gmx_selparser_error(scanner, "all NULL parameters should appear in the beginning of the list");
-            bOk = FALSE;
+            bOk = false;
             pparam = pparam->next;
             continue;
         }
@@ -1214,13 +1214,13 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         if (!oparam)
         {
             _gmx_selparser_error(scanner, "unknown parameter skipped");
-            bOk = FALSE;
+            bOk = false;
             goto next_param;
         }
         if (oparam->flags & SPAR_SET)
         {
             _gmx_selparser_error(scanner, "parameter set multiple times, extra values skipped");
-            bOk = FALSE;
+            bOk = false;
             goto next_param;
         }
         oparam->flags |= SPAR_SET;
@@ -1229,7 +1229,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         if (convert_values(pparam->value, oparam->val.type, scanner) != 0)
         {
             _gmx_selparser_error(scanner, "invalid value");
-            bOk = FALSE;
+            bOk = false;
             goto next_param;
         }
         if (oparam->val.type == NO_VALUE)
@@ -1261,7 +1261,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         }
         if (!rc)
         {
-            bOk = FALSE;
+            bOk = false;
         }
         /* Advance to the next parameter */
 next_param:
@@ -1273,7 +1273,7 @@ next_param:
         if (!(params[i].flags & SPAR_OPTIONAL) && !(params[i].flags & SPAR_SET))
         {
             _gmx_selparser_error(scanner, "required parameter '%s' not specified", params[i].name);
-            bOk = FALSE;
+            bOk = false;
         }
     }
 

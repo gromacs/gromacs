@@ -80,12 +80,12 @@ gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps)
  * \param[in]  isize Array of index group sizes.
  * \param[in]  index Array of pointers to indices of each group.
  * \param[in]  name  Array of names of the groups.
- * \param[in]  bFree If TRUE, the \p isize, \p index and \p name arrays
+ * \param[in]  bFree If true, the \p isize, \p index and \p name arrays
  *   are freed after they have been copied.
  */
 void
 gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
-                      atom_id **index, char **name, gmx_bool bFree)
+                      atom_id **index, char **name, bool bFree)
 {
     int  i;
 
@@ -130,7 +130,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     else if (top)
     {
         block = new_blocka();
-        analyse(&top->atoms, block, &names, FALSE, FALSE);
+        analyse(&top->atoms, block, &names, false, false);
     }
     else
     {
@@ -192,7 +192,7 @@ gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top,
     {
         get_index(&(top->atoms), fnm, ngrps, isize, index, name);
     }
-    gmx_ana_indexgrps_set(g, ngrps, isize, index, name, TRUE);
+    gmx_ana_indexgrps_set(g, ngrps, isize, index, name, true);
 }
 
 /*!
@@ -249,15 +249,15 @@ gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src)
     gmx_ana_indexgrps_alloc(dest, src->nr);
     for (g = 0; g < src->nr; ++g)
     {
-        gmx_ana_index_copy(&(*dest)->g[g], &src->g[g], TRUE);
+        gmx_ana_index_copy(&(*dest)->g[g], &src->g[g], true);
     }
 }
 
 /*!
  * \param[out] g     Index group structure.
- * \returns    TRUE if \p g is empty, i.e., has 0 index groups.
+ * \returns    true if \p g is empty, i.e., has 0 index groups.
  */
-gmx_bool
+bool
 gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g)
 {
     return g->nr == 0;
@@ -284,31 +284,31 @@ gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
  * \param[out] dest Output structure.
  * \param[in]  src  Input index groups.
  * \param[in]  n    Number of the group to extract.
- * \returns TRUE if \p n is a valid group in \p src, FALSE otherwise.
+ * \returns true if \p n is a valid group in \p src, false otherwise.
  */
-gmx_bool
+bool
 gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n)
 {
     if (n < 0 || n >= src->nr)
     {
         dest->isize = 0;
-        return FALSE;
+        return false;
     }
 
-    gmx_ana_index_copy(dest, &src->g[n], TRUE);
-    return TRUE;
+    gmx_ana_index_copy(dest, &src->g[n], true);
+    return true;
 }
 
 /*!
  * \param[out] dest Output structure.
  * \param[in]  src  Input index groups.
  * \param[in]  name Name (or part of the name) of the group to extract.
- * \returns TRUE if \p name is a valid group in \p src, FALSE otherwise.
+ * \returns true if \p name is a valid group in \p src, false otherwise.
  *
  * Uses the Gromacs routine find_group() to find the actual group;
  * the comparison is case-insensitive.
  */
-gmx_bool
+bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name)
 {
     int    i;
@@ -324,7 +324,7 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *na
     if (i == NOTSET)
     {
         dest->isize = 0;
-        return FALSE;
+        return false;
     }
 
     return gmx_ana_indexgrps_extract(dest, src, i);
@@ -452,13 +452,13 @@ gmx_ana_index_deinit(gmx_ana_index_t *g)
 /*!
  * \param[out] dest   Destination index group.
  * \param[in]  src    Source index group.
- * \param[in]  bAlloc If TRUE, memory is allocated at \p dest; otherwise,
+ * \param[in]  bAlloc If true, memory is allocated at \p dest; otherwise,
  *   it is assumed that enough memory has been allocated for index.
  *
- * A deep copy of the name is only made if \p bAlloc is TRUE.
+ * A deep copy of the name is only made if \p bAlloc is true.
  */
 void
-gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, gmx_bool bAlloc)
+gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 {
     dest->isize = src->isize;
     if (dest->isize > 0)
@@ -551,10 +551,10 @@ gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
 
 /*!
  * \param[in]  g      Index group to check.
- * \returns    TRUE if the index group is sorted and has no duplicates,
- *   FALSE otherwise.
+ * \returns    true if the index group is sorted and has no duplicates,
+ *   false otherwise.
  */
-gmx_bool
+bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 {
     int  i;
@@ -563,10 +563,10 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
     {
         if (g->index[i+1] <= g->index[i])
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /********************************************************************
@@ -594,37 +594,37 @@ gmx_ana_index_sort(gmx_ana_index_t *g)
 /*!
  * \param[in]  a      Index group to check.
  * \param[in]  b      Index group to check.
- * \returns    TRUE if \p a and \p b are equal, FALSE otherwise.
+ * \returns    true if \p a and \p b are equal, false otherwise.
  */
-gmx_bool
+bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i;
 
     if (a->isize != b->isize)
     {
-        return FALSE;
+        return false;
     }
     for (i = 0; i < a->isize; ++i)
     {
         if (a->index[i] != b->index[i])
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /*!
  * \param[in]  a      Index group to check against.
  * \param[in]  b      Index group to check.
- * \returns    TRUE if \p b is contained in \p a,
- *   FALSE otherwise.
+ * \returns    true if \p b is contained in \p a,
+ *   false otherwise.
  *
  * If the elements are not in the same order in both groups, the function
  * fails. However, the groups do not need to be sorted.
  */
-gmx_bool
+bool
 gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i, j;
@@ -636,10 +636,10 @@ gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
         }
         if (i == a->isize)
         {
-            return FALSE;
+            return false;
         }
     }
-    return TRUE;
+    return true;
 }
 
 /*!
@@ -757,7 +757,7 @@ gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
     {
         dest2->index[k--] = src->index[j--];
     }
-    gmx_ana_index_copy(dest1, g, FALSE);
+    gmx_ana_index_copy(dest1, g, false);
 }
 
 /*!
@@ -843,7 +843,7 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  *   (can be NULL if \p type is \ref INDEX_UNKNOWN).
  * \param[in]  type Type of partitioning to make.
  * \param[in]  bComplete
- *   If TRUE, the index group is expanded to include any residue/molecule
+ *   If true, the index group is expanded to include any residue/molecule
  *   (depending on \p type) that is partially contained in the group.
  *   If \p type is not INDEX_RES or INDEX_MOL, this has no effect.
  *
@@ -853,7 +853,7 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  */
 void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
-                         e_index_t type, gmx_bool bComplete)
+                         e_index_t type, bool bComplete)
 {
     int      i, j, ai;
     int      id, cur;
@@ -875,7 +875,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
      * off otherwise. */
     if (type != INDEX_RES && type != INDEX_MOL)
     {
-        bComplete = FALSE;
+        bComplete = false;
     }
     /* Allocate memory for the atom array and fill it unless we are using
      * completion. */
@@ -994,12 +994,12 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
 /*!
  * \param[in] g   Index group to check.
  * \param[in] b   Block data to check against.
- * \returns   TRUE if \p g consists of one or more complete blocks from \p b,
- *   FALSE otherwise.
+ * \returns   true if \p g consists of one or more complete blocks from \p b,
+ *   false otherwise.
  *
  * The atoms in \p g are assumed to be sorted.
  */
-gmx_bool
+bool
 gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
 {
     int  i, j, bi;
@@ -1016,31 +1016,31 @@ gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
         /* If not found, or if too large, return */
         if (bi == b->nr || i + b->index[bi+1] -  b->index[bi] > g->isize)
         {
-            return FALSE;
+            return false;
         }
         /* Check that the block matches the index */
         for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
         {
             if (g->index[i] != j)
             {
-                return FALSE;
+                return false;
             }
         }
         /* Move the search to the next block */
         ++bi;
     }
-    return TRUE;
+    return true;
 }
 
 /*!
  * \param[in] g   Index group to check.
  * \param[in] b   Block data to check against.
- * \returns   TRUE if \p g consists of one or more complete blocks from \p b,
- *   FALSE otherwise.
+ * \returns   true if \p g consists of one or more complete blocks from \p b,
+ *   false otherwise.
  *
  * The atoms in \p g and \p b->a are assumed to be in the same order.
  */
-gmx_bool
+bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
 {
     int  i, j, bi;
@@ -1057,34 +1057,34 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
         /* If not found, or if too large, return */
         if (bi == b->nr || i + b->index[bi+1] -  b->index[bi] > g->isize)
         {
-            return FALSE;
+            return false;
         }
         /* Check that the block matches the index */
         for (j = b->index[bi]; j < b->index[bi+1]; ++j, ++i)
         {
             if (b->a[j] != g->index[i])
             {
-                return FALSE;
+                return false;
             }
         }
         /* Move the search to the next block */
         ++bi;
     }
-    return TRUE;
+    return true;
 }
 
 /*!
  * \param[in] g     Index group to check.
  * \param[in] type  Block data to check against.
  * \param[in] top   Topology data.
- * \returns   TRUE if \p g consists of one or more complete elements of type
- *   \p type, FALSE otherwise.
+ * \returns   true if \p g consists of one or more complete elements of type
+ *   \p type, false otherwise.
  *
- * If \p type is \ref INDEX_ATOM, the return value is always TRUE.
+ * If \p type is \ref INDEX_ATOM, the return value is always true.
  * If \p type is \ref INDEX_UNKNOWN or \ref INDEX_ALL, the return value is
- * always FALSE.
+ * always false.
  */
-gmx_bool
+bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
                                  t_topology *top)
 {
@@ -1092,10 +1092,10 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
     {
         case INDEX_UNKNOWN:
         case INDEX_ALL:
-            return FALSE;
+            return false;
 
         case INDEX_ATOM:
-            return TRUE;
+            return true;
 
         case INDEX_RES:
         {
@@ -1111,12 +1111,12 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
                 {
                     if (ai > 0 && top->atoms.atom[ai-1].resind == id)
                     {
-                        return FALSE;
+                        return false;
                     }
                     if (i > 0 && g->index[i-1] < top->atoms.nr - 1
                         && top->atoms.atom[g->index[i-1]+1].resind == prev)
                     {
-                        return FALSE;
+                        return false;
                     }
                 }
                 prev = id;
@@ -1124,7 +1124,7 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
             if (g->index[i-1] < top->atoms.nr - 1
                 && top->atoms.atom[g->index[i-1]+1].resind == prev)
             {
-                return FALSE;
+                return false;
             }
             break;
         }
@@ -1132,7 +1132,7 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
         case INDEX_MOL:
             return gmx_ana_index_has_full_blocks(g, &top->mols);
     }
-    return TRUE;
+    return true;
 }
 
 /*!
@@ -1157,8 +1157,8 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
     m->b.a               = NULL;
     m->b.nalloc_index    = 0;
     m->b.nalloc_a        = 0;
-    m->bStatic           = TRUE;
-    m->bMapStatic        = TRUE;
+    m->bStatic           = true;
+    m->bMapStatic        = true;
 }
 
 /*!
@@ -1207,7 +1207,7 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     int      i, ii, mi;
 
     m->type   = type;
-    gmx_ana_index_make_block(&m->b, top, g, type, FALSE);
+    gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
     m->nr = m->b.nr;
     for (i = mi = 0; i < m->nr; ++i)
@@ -1241,8 +1241,8 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     }
     m->mapb.nr = m->nr;
     memcpy(m->mapb.index, m->b.index, (m->nr+1)*sizeof(*(m->mapb.index)));
-    m->bStatic    = TRUE;
-    m->bMapStatic = TRUE;
+    m->bStatic    = true;
+    m->bMapStatic = true;
 }
 
 /*!
@@ -1279,14 +1279,14 @@ gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
 /*!
  * \param[in,out] dest Destination data structure.
  * \param[in]     src  Source mapping.
- * \param[in]     bFirst If TRUE, memory is allocated for \p dest and a full
+ * \param[in]     bFirst If true, memory is allocated for \p dest and a full
  *   copy is made; otherwise, only variable parts are copied, and no memory
  *   is allocated.
  *
  * \p dest should have been initialized somehow (calloc() is enough).
  */
 void
-gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_bool bFirst)
+gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst)
 {
     if (bFirst)
     {
@@ -1310,7 +1310,7 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_boo
 /*!
  * \param[in,out] m         Mapping structure.
  * \param[in]     g         Current index group.
- * \param[in]     bMaskOnly TRUE if the unused blocks should be masked with
+ * \param[in]     bMaskOnly true if the unused blocks should be masked with
  *   -1 instead of removing them.
  *
  * Updates the index group mapping with the new index group \p g.
@@ -1319,10 +1319,10 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_boo
  */
 void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                        gmx_bool bMaskOnly)
+                        bool bMaskOnly)
 {
     int i, j, bi, bj;
-    gmx_bool bStatic;
+    bool bStatic;
 
     /* Process the simple cases first */
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
@@ -1358,13 +1358,13 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
             {
                 m->mapb.index[bj] = m->b.index[bj];
             }
-            m->bMapStatic = TRUE;
+            m->bMapStatic = true;
         }
     }
     /* Exit immediately if the group is static */
     if (bStatic)
     {
-        m->bStatic = TRUE;
+        m->bStatic = true;
         return;
     }
 
@@ -1421,10 +1421,10 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         /* Update the number of blocks */
         m->mapb.index[bi] = g->isize;
         m->nr             = bi;
-        m->bMapStatic     = FALSE;
+        m->bMapStatic     = false;
     }
     m->mapb.nr = m->nr;
-    m->bStatic = FALSE;
+    m->bStatic = false;
 }
 
 /*!

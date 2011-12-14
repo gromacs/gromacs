@@ -64,7 +64,7 @@ class AnalysisDataDisplacementModule::Impl
         //! Number of dimensions per data point.
         int                     ndim;
 
-        //! TRUE if no frames have been read.
+        //! true if no frames have been read.
         bool                    bFirst;
         //! Stores the time of the first frame.
         real                    t0;

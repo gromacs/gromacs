@@ -97,12 +97,12 @@ COMMENT    (#.*)
     if (state->bMatchOf)
     {
         BEGIN(matchof);
-        state->bMatchOf = FALSE;
+        state->bMatchOf = false;
     }
     else if (state->bMatchBool)
     {
         BEGIN(matchbool);
-        state->bMatchBool = FALSE;
+        state->bMatchBool = false;
     }
     else if (state->bCmdStart)
     {

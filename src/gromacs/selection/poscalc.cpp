@@ -143,7 +143,7 @@ struct gmx_ana_poscalc_coll_t
     /** Pointer to the last data structure. */
     gmx_ana_poscalc_t        *last;
     /** Whether the collection has been initialized for evaluation. */
-    gmx_bool                      bInit;
+    bool                      bInit;
 };
 
 /*! \internal \brief
@@ -194,8 +194,8 @@ struct gmx_ana_poscalc_t
     /** Position storage for calculations that are used as a base. */
     gmx_ana_pos_t            *p;
 
-    /** TRUE if the positions have been evaluated for the current frame. */
-    gmx_bool                      bEval;
+    /** true if the positions have been evaluated for the current frame. */
+    bool                      bEval;
     /*! \brief
      * Base position data for this calculation.
      *
@@ -330,7 +330,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
 }
 
 /*!
- * \param[in]  bAtom    If TRUE, the "atom" value is included.
+ * \param[in]  bAtom    If true, the "atom" value is included.
  * \returns    NULL-terminated array of strings that contains the string
  *   values acceptable for gmx_ana_poscalc_type_from_enum().
  *
@@ -338,7 +338,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
  * be used with Gromacs command-line parsing.
  */
 const char **
-gmx_ana_poscalc_create_type_enum(gmx_bool bAtom)
+gmx_ana_poscalc_create_type_enum(bool bAtom)
 {
     const char **pcenum;
     size_t       i;
@@ -376,7 +376,7 @@ gmx_ana_poscalc_coll_create(gmx_ana_poscalc_coll_t **pccp)
     pcc->top   = NULL;
     pcc->first = NULL;
     pcc->last  = NULL;
-    pcc->bInit = FALSE;
+    pcc->bInit = false;
     *pccp = pcc;
     return 0;
 }
@@ -634,7 +634,7 @@ remove_poscalc(gmx_ana_poscalc_t *pc)
  * \p bBase affects on how the \p pc->gmax field is initialized.
  */
 static void
-set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
+set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
     gmx_ana_index_make_block(&pc->b, pc->coll->top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
@@ -656,7 +656,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
     /* Setup the gmax field */
     if ((pc->flags & POS_COMPLWHOLE) && !bBase && pc->b.nra > g->isize)
     {
-        gmx_ana_index_copy(&pc->gmax, g, TRUE);
+        gmx_ana_index_copy(&pc->gmax, g, true);
         sfree(pc->gmax.name);
         pc->gmax.name  = NULL;
     }
@@ -670,32 +670,32 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
  * Checks whether a position calculation should use a base at all.
  *
  * \param[in] pc   Position calculation data to check.
- * \returns   TRUE if \p pc can use a base and gets some benefit out of it,
- *   FALSE otherwise.
+ * \returns   true if \p pc can use a base and gets some benefit out of it,
+ *   false otherwise.
  */
-static gmx_bool
+static bool
 can_use_base(gmx_ana_poscalc_t *pc)
 {
     /* For atoms, it should be faster to do a simple copy, so don't use a
      * base. */
     if (pc->type == POS_ATOM)
     {
-        return FALSE;
+        return false;
     }
     /* For dynamic selections that do not use completion, it is not possible
      * to use a base. */
     if ((pc->type == POS_RES || pc->type == POS_MOL)
         && (pc->flags & POS_DYNAMIC) && !(pc->flags & (POS_COMPLMAX | POS_COMPLWHOLE)))
     {
-        return FALSE;
+        return false;
     }
     /* Dynamic calculations for a single position cannot use a base. */
     if ((pc->type == POS_ALL || pc->type == POS_ALL_PBC)
         && (pc->flags & POS_DYNAMIC))
     {
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
 /*! \brief
@@ -707,10 +707,10 @@ can_use_base(gmx_ana_poscalc_t *pc)
  *   \p pc1.
  * \param[in,out] g   Working space, should have enough allocated memory to
  *   contain the intersection of the atoms in \p pc1 and \p pc2.
- * \returns   TRUE if the two calculations should be merged to use a common
- *   base, FALSE otherwise.
+ * \returns   true if the two calculations should be merged to use a common
+ *   base, false otherwise.
  */
-static gmx_bool
+static bool
 should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
              gmx_ana_index_t *g1, gmx_ana_index_t *g)
 {
@@ -719,12 +719,12 @@ should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
     /* Do not merge calculations with different mass weighting. */
     if ((pc1->flags & POS_MASS) != (pc2->flags & POS_MASS))
     {
-        return FALSE;
+        return false;
     }
     /* Avoid messing up complete calculations. */
     if ((pc1->flags & POS_COMPLWHOLE) != (pc2->flags & POS_COMPLWHOLE))
     {
-        return FALSE;
+        return false;
     }
     /* Find the overlap between the calculations. */
     gmx_ana_index_set(&g2, pc2->b.nra, pc2->b.a, NULL, 0);
@@ -732,22 +732,22 @@ should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
     /* Do not merge if there is no overlap. */
     if (g->isize == 0)
     {
-        return FALSE;
+        return false;
     }
     /* Full completion calculations always match if the type is correct. */
     if ((pc1->flags & POS_COMPLWHOLE) && (pc2->flags & POS_COMPLWHOLE)
         && pc1->type == pc2->type)
     {
-        return TRUE;
+        return true;
     }
     /* The calculations also match if the intersection consists of full
      * blocks. */
     if (gmx_ana_index_has_full_ablocks(g, &pc1->b)
         && gmx_ana_index_has_full_ablocks(g, &pc2->b))
     {
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /*! \brief
@@ -769,7 +769,7 @@ create_simple_base(gmx_ana_poscalc_t *pc)
 
     flags = pc->flags & ~(POS_DYNAMIC | POS_MASKONLY);
     gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
-    set_poscalc_maxindex(base, &pc->gmax, TRUE);
+    set_poscalc_maxindex(base, &pc->gmax, true);
 
     snew(base->p, 1);
 
@@ -1074,7 +1074,7 @@ gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags)
 void
 gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g)
 {
-    set_poscalc_maxindex(pc, g, FALSE);
+    set_poscalc_maxindex(pc, g, false);
     setup_base(pc);
 }
 
@@ -1155,17 +1155,17 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
 
 /*!
  * \param[in] pc  Position calculation data to query.
- * \returns   TRUE if \p pc requires topology for initialization and/or
- *   evaluation, FALSE otherwise.
+ * \returns   true if \p pc requires topology for initialization and/or
+ *   evaluation, false otherwise.
  */
-gmx_bool
+bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
     if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL)
     {
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /*!
@@ -1227,7 +1227,7 @@ gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc)
         }
         pc = pc->next;
     }
-    pcc->bInit = TRUE;
+    pcc->bInit = true;
 }
 
 /*!
@@ -1256,7 +1256,7 @@ gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc)
     pc = pcc->first;
     while (pc)
     {
-        pc->bEval = FALSE;
+        pc->bEval = false;
         pc = pc->next;
     }
 }
@@ -1278,7 +1278,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
 {
     int  i, j, bi, bj;
     
-    if (pc->bEval == TRUE && !(pc->flags & POS_MASKONLY))
+    if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
     {
         return;
     }
@@ -1299,18 +1299,18 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)
     {
-        gmx_ana_indexmap_update(&p->m, g, FALSE);
+        gmx_ana_indexmap_update(&p->m, g, false);
         p->nr = p->m.nr;
     }
     else if (pc->flags & POS_MASKONLY)
     {
-        gmx_ana_indexmap_update(&p->m, g, TRUE);
+        gmx_ana_indexmap_update(&p->m, g, true);
         if (pc->bEval)
             return;
     }
     if (!(pc->flags & POS_DYNAMIC))
     {
-        pc->bEval = TRUE;
+        pc->bEval = true;
     }
 
     /* Evaluate the positions */

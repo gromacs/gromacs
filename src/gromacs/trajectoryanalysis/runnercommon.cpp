@@ -285,7 +285,7 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
         snew(_impl->_topInfo._top, 1);
         _impl->_topInfo._bTop = read_tps_conf(_impl->_topfile.c_str(), title,
                 _impl->_topInfo._top, &_impl->_topInfo._ePBC,
-                &_impl->_topInfo._xtop, NULL, _impl->_topInfo._boxtop, TRUE);
+                &_impl->_topInfo._xtop, NULL, _impl->_topInfo._boxtop, true);
         if (hasTrajectory()
             && !settings.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
@@ -371,11 +371,11 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         }
         _impl->fr->flags  = frflags;
         _impl->fr->natoms = top.topology()->atoms.nr;
-        _impl->fr->bX     = TRUE;
+        _impl->fr->bX     = true;
         snew(_impl->fr->x, _impl->fr->natoms);
         memcpy(_impl->fr->x, top._xtop,
                sizeof(*_impl->fr->x) * _impl->fr->natoms);
-        _impl->fr->bBox   = TRUE;
+        _impl->fr->bBox   = true;
         copy_mat(const_cast<rvec *>(top._boxtop), _impl->fr->box);
     }
 
@@ -391,7 +391,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
 bool
 TrajectoryAnalysisRunnerCommon::readNextFrame()
 {
-    bool bContinue = FALSE;
+    bool bContinue = false;
     if (hasTrajectory())
     {
         bContinue = read_next_frame(_impl->_oenv, _impl->_status, _impl->fr);

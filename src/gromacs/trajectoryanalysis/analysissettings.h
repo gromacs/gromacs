@@ -148,7 +148,7 @@ class TrajectoryAnalysisSettings
         /*! \brief
          * Sets whether PBC are used.
          *
-         * \param[in]  bPBC   TRUE if PBC should be used.
+         * \param[in]  bPBC   true if PBC should be used.
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether PBC are used in the analysis.
@@ -169,7 +169,7 @@ class TrajectoryAnalysisSettings
         /*! \brief
          * Sets whether molecules are made whole.
          *
-         * \param[in]     bRmPBC TRUE if molecules should be made whole.
+         * \param[in]     bRmPBC true if molecules should be made whole.
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether molecules are made whole.

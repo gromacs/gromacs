@@ -41,10 +41,6 @@
 
 #include "indexutil.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief
  * Stores a set of positions together with their origins.
  */
@@ -105,7 +101,7 @@ void
 gmx_ana_pos_free(gmx_ana_pos_t *pos);
 /** Copies the evaluated positions to a preallocated data structure. */
 void
-gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, gmx_bool bFirst);
+gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
 
 /** Sets the number of positions in a position structure. */
 void
@@ -131,9 +127,5 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
 /** Updates position data structure state after appends. */
 void
 gmx_ana_pos_append_finish(gmx_ana_pos_t *pos);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

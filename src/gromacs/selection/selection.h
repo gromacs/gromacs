@@ -64,12 +64,12 @@ typedef struct gmx_ana_selection_t
     real                   *q;
     /** Pointer to the index group that holds the selected atoms. */
     struct gmx_ana_index_t *g;
-    /** TRUE if the value can change as a function of time. */
-    gmx_bool                    bDynamic;
+    /** true if the value can change as a function of time. */
+    bool                    bDynamic;
     /** Type of the covered fraction. */
     e_coverfrac_t           cfractype;
-    /** TRUE if the covered fraction depends on the frame. */
-    gmx_bool                    bCFracDyn;
+    /** true if the covered fraction depends on the frame. */
+    bool                    bCFracDyn;
     /** Covered fraction of the selection for the current frame. */
     real                    cfrac;
     /** The average covered fraction (over the trajectory). */

@@ -81,7 +81,7 @@
 #undef yytext
 #undef yyleng
 
-static gmx_bool
+static bool
 read_stdin_line(gmx_sel_lexer_t *state)
 {
     char *ptr     = state->inputstr;
@@ -90,7 +90,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
 
     if (feof(stdin))
     {
-        return FALSE;
+        return false;
     }
     if (state->bInteractive)
     {
@@ -147,7 +147,7 @@ int
 _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
-    gmx_bool bCmdStart;
+    bool bCmdStart;
     int token;
 
     if (!state->bBuffer && !state->inputstr)
@@ -174,7 +174,7 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 }
 
 static int
-init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, gmx_bool bBoolNo)
+init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
     if (bBoolNo)
     {
@@ -191,7 +191,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, gmx_bool bBoolNo)
 }
 
 static int
-init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod,
+init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
                   gmx_sel_lexer_t *state)
 {
     /* If the previous token was not KEYWORD_POS, return EMPTY_POSMOD
@@ -265,7 +265,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
     if (state->nextparam)
     {
         gmx_ana_selparam_t *param = state->nextparam;
-        gmx_bool                bBoolNo = state->bBoolNo;
+        bool                bBoolNo = state->bBoolNo;
 
         if (state->neom > 0)
         {
@@ -273,7 +273,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
             return END_OF_METHOD;
         }
         state->nextparam = NULL;
-        state->bBoolNo   = FALSE;
+        state->bBoolNo   = false;
         _gmx_sel_lexer_add_token(param->name, -1, state);
         return init_param_token(yylval, param, bBoolNo);
     }
@@ -286,7 +286,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
         gmx_ana_selmethod_t *method = state->nextmethod;
 
         state->nextmethod = NULL;
-        return init_method_token(yylval, method, TRUE, state);
+        return init_method_token(yylval, method, true, state);
     }
     return 0;
 }
@@ -302,7 +302,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (state->msp >= 0)
     {
         gmx_ana_selparam_t *param = NULL;
-        gmx_bool                bBoolNo = FALSE;
+        bool                bBoolNo = false;
         int                 sp = state->msp;
         while (!param && sp >= 0)
         {
@@ -320,13 +320,13 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     param = &state->mstack[sp]->param[i];
                     break;
                 }
-                /* Check separately for a 'no' prefix on gmx_boolean parameters */
+                /* Check separately for a 'no' prefix on boolean parameters */
                 if (state->mstack[sp]->param[i].val.type == NO_VALUE
                     && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
                     && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
                 {
                     param = &state->mstack[sp]->param[i];
-                    bBoolNo = TRUE;
+                    bBoolNo = true;
                     break;
                 }
             }
@@ -339,7 +339,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
         {
             if (param->val.type == NO_VALUE && !bBoolNo)
             {
-                state->bMatchBool = TRUE;
+                state->bMatchBool = true;
             }
             if (sp < state->msp)
             {
@@ -354,7 +354,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     }
 
     /* Check if the identifier matches with a symbol */
-    symbol = _gmx_sel_find_symbol_len(state->sc->symtab, yytext, yyleng, FALSE);
+    symbol = _gmx_sel_find_symbol_len(state->sc->symtab, yytext, yyleng, false);
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
@@ -422,7 +422,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
      * some additional handling. */
     if (symtype == SYMBOL_POS)
     {
-        state->bMatchOf = TRUE;
+        state->bMatchOf = true;
         yylval->str = _gmx_sel_sym_name(symbol);
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
@@ -498,11 +498,11 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->nextparam    = NULL;
     state->nextmethod   = NULL;
     state->prev_pos_kw  = 0;
-    state->bBoolNo      = FALSE;
-    state->bMatchOf     = FALSE;
-    state->bMatchBool   = FALSE;
-    state->bCmdStart    = TRUE;
-    state->bBuffer      = FALSE;
+    state->bBoolNo      = false;
+    state->bMatchOf     = false;
+    state->bMatchBool   = false;
+    state->bCmdStart    = true;
+    state->bBuffer      = false;
 
     _gmx_sel_yyset_extra(state, *scannerp);
 }
@@ -523,7 +523,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
     _gmx_sel_yylex_destroy(scanner);
 }
 
-gmx_bool
+bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
@@ -604,7 +604,7 @@ _gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
-    state->bBuffer = TRUE;
+    state->bBuffer = true;
     state->buffer  = _gmx_sel_yy_create_buffer(fp, YY_BUF_SIZE, scanner);
     _gmx_sel_yy_switch_to_buffer(state->buffer, scanner);
 }
@@ -618,6 +618,6 @@ _gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
     {
         _gmx_sel_yy_delete_buffer(state->buffer, scanner);
     }
-    state->bBuffer = TRUE;
+    state->bBuffer = true;
     state->buffer  = _gmx_sel_yy_scan_string(str, scanner);
 }

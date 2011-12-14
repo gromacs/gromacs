@@ -147,15 +147,15 @@ typedef struct t_methoddata_kwstr
      * Array of strings/regular expressions to match against.
      */
     struct t_methoddata_kwstr_match {
-        /** TRUE if the expression is a regular expression, FALSE otherwise. */
-        gmx_bool           bRegExp;
+        /** true if the expression is a regular expression, false otherwise. */
+        bool           bRegExp;
         /** The value to match against. */
         union {
 #ifdef USE_REGEX
-            /** Compiled regular expression if \p bRegExp is TRUE. */
+            /** Compiled regular expression if \p bRegExp is true. */
             regex_t    r;
 #endif
-            /** The string if \p bRegExp is FALSE; */
+            /** The string if \p bRegExp is false; */
             char      *s;
         }              u;
     }                 *m;
@@ -471,7 +471,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     char               *s;
     int                 i;
     size_t              j;
-    gmx_bool                bRegExp;
+    bool                bRegExp;
 
     d->v   = param[0].val.u.s;
     d->n   = param[1].val.nr;
@@ -484,12 +484,12 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     for (i = 0; i < d->n; ++i)
     {
         s = param[1].val.u.s[i];
-        bRegExp = FALSE;
+        bRegExp = false;
         for (j = 0; j < strlen(s); ++j)
         {
             if (ispunct(s[j]) && s[j] != '?' && s[j] != '*')
             {
-                bRegExp = TRUE;
+                bRegExp = true;
                 break;
             }
         }
@@ -501,13 +501,13 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
             sprintf(buf, "^%s$", s);
             if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))
             {
-                bRegExp = FALSE;
+                bRegExp = false;
                 fprintf(stderr, "WARNING: error in regular expression,\n"
                                 "         will match '%s' as a simple string\n", s);
             }
             sfree(buf);
 #else
-            bRegExp = FALSE;
+            bRegExp = false;
             fprintf(stderr, "WARNING: no regular expressions support,\n"
                             "         will match '%s' as a simple string\n", s);
 #endif
@@ -560,12 +560,12 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
     int                 i, j;
-    gmx_bool                bFound;
+    bool                bFound;
 
     out->u.g->isize = 0;
     for (i = 0; i < g->isize; ++i)
     {
-        bFound = FALSE;
+        bFound = false;
         for (j = 0; j < d->n && !bFound; ++j)
         {
             if (d->m[j].bRegExp)
@@ -575,7 +575,7 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  * are available, but the ifdef is still needed. */
                 if (!regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0))
                 {
-                    bFound = TRUE;
+                    bFound = true;
                 }
 #endif
             }
@@ -583,7 +583,7 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             {
                 if (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0)
                 {
-                    bFound = TRUE;
+                    bFound = true;
                 }
             }
         }
