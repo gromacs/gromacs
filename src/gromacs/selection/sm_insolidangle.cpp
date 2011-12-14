@@ -364,15 +364,16 @@ init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *da
 
     surf->distccut = -cos(surf->angcut);
     surf->targetbinsize = surf->angcut / 2;
-    surf->ntbins = (int) (M_PI / surf->targetbinsize);
+    surf->ntbins = static_cast<int>(M_PI / surf->targetbinsize);
     surf->tbinsize = (180.0 / surf->ntbins)*DEG2RAD;
 
-    snew(surf->tbin, (int)(M_PI/surf->tbinsize) + 1);
+    snew(surf->tbin, static_cast<int>(M_PI / surf->tbinsize) + 1);
     surf->maxbins = 0;
     for (i = 0; i < surf->ntbins; ++i)
     {
-        c = max(sin(surf->tbinsize*i), sin(surf->tbinsize*(i+1)))
-              * M_2PI / surf->targetbinsize + 1;
+        c = static_cast<int>(max(sin(surf->tbinsize*i),
+                                 sin(surf->tbinsize*(i+1)))
+                             * M_2PI / surf->targetbinsize) + 1;
         snew(surf->tbin[i].p, c+1);
         surf->maxbins += c;
     }
@@ -651,7 +652,7 @@ find_surface_bin(t_methoddata_insolidangle *surf, rvec x)
     
     theta = acos(x[ZZ]);
     phi = atan2(x[YY], x[XX]);
-    tbin = floor(theta / surf->tbinsize);
+    tbin = static_cast<int>(floor(theta / surf->tbinsize));
     if (tbin >= surf->ntbins)
     {
         tbin = surf->ntbins - 1;
@@ -674,8 +675,9 @@ clear_surface_points(t_methoddata_insolidangle *surf)
     surf->nbins = 0;
     for (i = 0; i < surf->ntbins; ++i)
     {
-        c = min(sin(surf->tbinsize*i), sin(surf->tbinsize*(i+1)))
-              * M_2PI / surf->targetbinsize + 1;
+        c = static_cast<int>(min(sin(surf->tbinsize*i), 
+                                 sin(surf->tbinsize*(i+1)))
+                             * M_2PI / surf->targetbinsize) + 1;
         if (c <= 0)
         {
             c = 1;
@@ -849,7 +851,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
         tmax = acos(cos(theta) / cos(surf->angcut));
     }
     /* Find the first affected bin */
-    tbin = max(floor((theta - surf->angcut) / surf->tbinsize), 0.0);
+    tbin = max(static_cast<int>(floor((theta - surf->angcut) / surf->tbinsize)), 0);
     theta1 = tbin * surf->tbinsize;
     if (theta1 < theta - surf->angcut)
     {
