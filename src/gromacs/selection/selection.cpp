@@ -62,8 +62,8 @@ Selection::Selection(t_selelem *elem, const char *selstr)
 
     if (elem->child->type == SEL_CONST)
     {
-        gmx_ana_pos_copy(&_sel.p, elem->child->v.u.p, TRUE);
-        _sel.bDynamic = FALSE;
+        gmx_ana_pos_copy(&_sel.p, elem->child->v.u.p, true);
+        _sel.bDynamic = false;
     }
     else
     {
@@ -146,16 +146,16 @@ Selection::initCoveredFraction(e_coverfrac_t type)
     sel->cfractype = type;
     if (type == CFRAC_NONE || !sel->selelem)
     {
-        sel->bCFracDyn = FALSE;
+        sel->bCFracDyn = false;
     }
     else if (!_gmx_selelem_can_estimate_cover(sel->selelem))
     {
         sel->cfractype = CFRAC_NONE;
-        sel->bCFracDyn = FALSE;
+        sel->bCFracDyn = false;
     }
     else
     {
-        sel->bCFracDyn = TRUE;
+        sel->bCFracDyn = true;
     }
     sel->cfrac     = sel->bCFracDyn ? 0.0 : 1.0;
     sel->avecfrac  = sel->cfrac;

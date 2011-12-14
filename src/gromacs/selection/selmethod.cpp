@@ -204,10 +204,10 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * \param[in]     name    Name of the method (used for error messages).
  * \param[in]     nparams Number of parameters in \p param.
  * \param[in,out] param   Parameter array
- *   (only the \c flags field of gmx_boolean parameters may be modified).
+ *   (only the \c flags field of boolean parameters may be modified).
  * \param[in]     symtab  Symbol table (used for checking overlaps).
- * \returns       TRUE if there are no problems with the parameters,
- *   FALSE otherwise.
+ * \returns       true if there are no problems with the parameters,
+ *   false otherwise.
  *
  * This function performs some checks common to both check_method() and
  * check_modifier().
@@ -217,19 +217,19 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * If you remove a check, make sure that the parameter parser can handle the
  * resulting parameters.
  */
-static gmx_bool
+static bool
 check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
              gmx_sel_symtab_t *symtab)
 {
-    gmx_bool              bOk = TRUE;
+    bool              bOk = true;
     gmx_sel_symrec_t *sym;
     int               i, j;
 
     if (nparams > 0 && !param)
     {
         report_error(fp, name, "error: missing parameter data");
-        bOk = FALSE;
-        return FALSE;
+        bOk = false;
+        return false;
     }
     if (nparams == 0 && param)
     {
@@ -242,7 +242,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         if (param[i].name == NULL && i > 0)
         {
             report_error(fp, name, "error: NULL parameter should be the first one");
-            bOk = FALSE;
+            bOk = false;
             continue;
         }
         /* Check for duplicates */
@@ -255,7 +255,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             if (!gmx_strcasecmp(param[i].name, param[j].name))
             {
                 report_error(fp, name, "error: duplicate parameter name '%s'", param[i].name);
-                bOk = FALSE;
+                bOk = false;
                 break;
             }
         }
@@ -270,7 +270,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             if (param[i].val.type != INT_VALUE && param[i].val.type != REAL_VALUE)
             {
                 report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-numeric parameter");
-                bOk = FALSE;
+                bOk = false;
             }
             if (param[i].flags & SPAR_DYNAMIC)
             {
@@ -280,53 +280,53 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             if (!(param[i].flags & SPAR_VARNUM) && param[i].val.nr != 1)
             {
                 report_param_error(fp, name, param[i].name, "error: range should take either one or an arbitrary number of values");
-                bOk = FALSE;
+                bOk = false;
             }
             if (param[i].flags & SPAR_ATOMVAL)
             {
                 report_param_error(fp, name, param[i].name, "error: SPAR_RANGES and SPAR_ATOMVAL both set");
-                bOk = FALSE;
+                bOk = false;
             }
         }
         if ((param[i].flags & SPAR_VARNUM) && (param[i].flags & SPAR_ATOMVAL))
         {
             report_param_error(fp, name, param[i].name, "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
-            bOk = FALSE;
+            bOk = false;
         }
         if (param[i].flags & SPAR_ENUMVAL)
         {
             if (param[i].val.type != STR_VALUE)
             {
                 report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL can only be set for string parameters");
-                bOk = FALSE;
+                bOk = false;
             }
             if (param[i].val.nr != 1)
             {
                 report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL parameters should take exactly one value");
-                bOk = FALSE;
+                bOk = false;
             }
             if (param[i].flags & (SPAR_DYNAMIC | SPAR_VARNUM | SPAR_ATOMVAL))
             {
                 report_param_error(fp, name, param[i].name, "error: only SPAR_OPTIONAL supported with SPAR_ENUMVAL");
-                bOk = FALSE;
+                bOk = false;
             }
         }
-        /* Check gmx_boolean parameters */
+        /* Check boolean parameters */
         if (param[i].val.type == NO_VALUE)
         {
             if (param[i].val.nr != 0)
             {
-                report_param_error(fp, name, param[i].name, "error: number of values should be zero for gmx_boolean parameters");
-                bOk = FALSE;
+                report_param_error(fp, name, param[i].name, "error: number of values should be zero for boolean parameters");
+                bOk = false;
             }
-            /* The gmx_boolean parameters should always be optional, so set the
+            /* The boolean parameters should always be optional, so set the
              * flag for convenience. */
             param[i].flags |= SPAR_OPTIONAL;
             /* Any other flags should not be specified */
             if (param[i].flags & ~SPAR_OPTIONAL)
             {
-                report_param_error(fp, name, param[i].name, "error: gmx_boolean parameter should not have any flags set");
-                bOk = FALSE;
+                report_param_error(fp, name, param[i].name, "error: boolean parameter should not have any flags set");
+                bOk = false;
             }
         }
         /* Check val.nr */
@@ -343,7 +343,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             if (param[i].val.nr <= 0)
             {
                 report_param_error(fp, name, param[i].name, "error: val.nr <= 0");
-                bOk = FALSE;
+                bOk = false;
             }
         }
         /* Check that the value pointer is NULL */
@@ -363,7 +363,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         if (!isalpha(param[i].name[0]))
         {
             report_param_error(fp, name, param[i].name, "error: name does not begin with a letter");
-            bOk = FALSE;
+            bOk = false;
             continue;
         }
         for (j = 1; param[i].name[j] != 0; ++j)
@@ -371,7 +371,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             if (param[i].name[j] != '_' && !isalnum(param[i].name[j]))
             {
                 report_param_error(fp, name, param[i].name, "error: name contains non-alphanumeric characters");
-                bOk = FALSE;
+                bOk = false;
                 break;
             }
         }
@@ -380,10 +380,10 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             continue;
         }
         /* Check that the name does not conflict with a method */
-        if (_gmx_sel_find_symbol(symtab, param[i].name, TRUE))
+        if (_gmx_sel_find_symbol(symtab, param[i].name, true))
         {
             report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
-            bOk = FALSE;
+            bOk = false;
         }
     } /* End of parameter loop */
     /* Check parameters of existing methods */
@@ -396,7 +396,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         if (param)
         {
             report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");
-            bOk = FALSE;
+            bOk = false;
         }
         sym = _gmx_sel_next_symbol(sym, SYMBOL_METHOD);
     }
@@ -409,25 +409,25 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
  * \param[in] fp        File handle to use for diagnostic messages
  *   (can be NULL).
  * \param[in] method    The method to check.
- * \returns   TRUE if there are no problems, FALSE otherwise.
+ * \returns   true if there are no problems, false otherwise.
  *
  * This function performs some checks common to both check_method() and
  * check_modifier().
  * This function checks that all the required callbacks are defined, i.e.,
  * not NULL, to find programming errors.
  */
-static gmx_bool
+static bool
 check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
-    gmx_bool         bOk = TRUE;
-    gmx_bool         bNeedInit;
+    bool         bOk = true;
+    bool         bNeedInit;
     int          i;
 
     /* Make some checks on init_data and free */
     if (method->nparams > 0 && !method->init_data)
     {
         report_error(fp, method->name, "error: init_data should be provided because the method has parameters");
-        bOk = FALSE;
+        bOk = false;
     }
     if (method->free && !method->init_data)
     {
@@ -437,7 +437,7 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     if (method->type == POS_VALUE && !method->outinit)
     {
         report_error(fp, method->name, "error: outinit should be provided because the method has POS_VALUE");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Warn of dynamic callbacks in static methods */
     if (!(method->flags & SMETH_MODIFIER))
@@ -452,24 +452,24 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     if (method->type != NO_VALUE && !method->update && !method->pupdate)
     {
         report_error(fp, method->name, "error: evaluation function missing");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Loop through the parameters to determine if initialization callbacks
      * are needed. */
-    bNeedInit = FALSE;
+    bNeedInit = false;
     for (i = 0; i < method->nparams; ++i)
     {
         if (method->param[i].val.type != POS_VALUE
             && (method->param[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
-            bNeedInit = TRUE;
+            bNeedInit = true;
         }
     }
     /* Check that the callbacks required by the parameters are present */
     if (bNeedInit && !method->init)
     {
         report_error(fp, method->name, "error: init should be provided");
-        bOk = FALSE;
+        bOk = false;
     }
     return bOk;
 }
@@ -487,21 +487,21 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static gmx_bool
+static bool
 check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    gmx_bool         bOk = TRUE;
+    bool         bOk = true;
 
     /* Check the type */
     if (method->type == NO_VALUE)
     {
         report_error(fp, method->name, "error: no value type specified");
-        bOk = FALSE;
+        bOk = false;
     }
     if (method->type == STR_VALUE && method->nparams > 0)
     {
         report_error(fp, method->name, "error: evaluates to a string but is not a keyword");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check flags */
     if (method->type == GROUP_VALUE)
@@ -513,7 +513,7 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
         if (method->flags & SMETH_VARNUMVAL)
         {
             report_error(fp, method->name, "error: SMETH_VARNUMVAL cannot be set for group-valued methods");
-            bOk = FALSE;
+            bOk = false;
         }
     }
     else
@@ -522,23 +522,23 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
             && (method->flags & SMETH_VARNUMVAL))
         {
             report_error(fp, method->name, "error: SMETH_SINGLEVAL and SMETH_VARNUMVAL both set");
-            bOk = FALSE;
+            bOk = false;
         }
     }
     if ((method->flags & SMETH_CHARVAL) && method->type != STR_VALUE)
     {
         report_error(fp, method->name, "error: SMETH_CHARVAL can only be specified for STR_VALUE methods");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check the parameters */
     if (!check_params(fp, method->name, method->nparams, method->param, symtab))
     {
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check the callback pointers */
     if (!check_callbacks(fp, method))
     {
-        bOk = FALSE;
+        bOk = false;
     }
 
     return bOk;
@@ -557,43 +557,43 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static gmx_bool
+static bool
 check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
 {
-    gmx_bool         bOk = TRUE;
+    bool         bOk = true;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
     {
         report_error(fp, method->name, "error: modifier should have type POS_VALUE or NO_VALUE");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check flags */
     if (method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
     {
         report_error(fp, method->name, "error: modifier should not have SMETH_SINGLEVAL or SMETH_VARNUMVAL set");
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check the parameters */
     /* The first parameter is skipped */
     if (!check_params(fp, method->name, method->nparams-1, method->param+1, symtab))
     {
-        bOk = FALSE;
+        bOk = false;
     }
     /* Check the callback pointers */
     if (!check_callbacks(fp, method))
     {
-        bOk = FALSE;
+        bOk = false;
     }
     if (method->update)
     {
         report_error(fp, method->name, "error: modifier should not have update");
-        bOk = FALSE;
+        bOk = false;
     }
     if (method->type == POS_VALUE && !method->pupdate)
     {
         report_error(fp, method->name, "error: evaluation function missing");
-        bOk = FALSE;
+        bOk = false;
     }
 
     return bOk;
@@ -620,7 +620,7 @@ int
 gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
                            const char *name, gmx_ana_selmethod_t *method)
 {
-    gmx_bool bOk;
+    bool bOk;
 
     /* Check the method */
     if (method->flags & SMETH_MODIFIER)
@@ -636,7 +636,7 @@ gmx_ana_selmethod_register(gmx_sel_symtab_t *symtab,
     {
         if (!_gmx_sel_add_method_symbol(symtab, name, method))
         {
-            bOk = FALSE;
+            bOk = false;
         }
     }
     if (!bOk)
@@ -657,9 +657,9 @@ gmx_ana_selmethod_register_defaults(gmx_sel_symtab_t *symtab)
 {
     size_t i;
     int  rc;
-    gmx_bool bOk;
+    bool bOk;
 
-    bOk = TRUE;
+    bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)
     {
         gmx_ana_selmethod_t *method = smtable_def[i].method;
@@ -674,7 +674,7 @@ gmx_ana_selmethod_register_defaults(gmx_sel_symtab_t *symtab)
         }
         if (rc != 0)
         {
-            bOk = FALSE;
+            bOk = false;
         }
     }
     return bOk ? 0 : -1;

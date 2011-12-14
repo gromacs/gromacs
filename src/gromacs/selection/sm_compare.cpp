@@ -341,14 +341,14 @@ convert_int_real(int n, t_compare_value *val)
  * \param[in]     n      Number of values in the \p val->u array.
  * \param[in,out] val    Value to convert.
  * \param[in]     cmpt   Comparison operator type.
- * \param[in]     bRight TRUE if \p val appears on the right hand size of
+ * \param[in]     bRight true if \p val appears on the right hand size of
  *   \p cmpt.
  * \returns       0 on success, EINVAL on error.
  *
  * The values are rounded such that the same comparison operator can be used.
  */
 static void
-convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, gmx_bool bRight)
+convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 {
     int   i;
     int  *iv;
@@ -430,7 +430,7 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         else /* d->left is static */
         {
-            convert_real_int(n1, &d->left, d->cmpt, FALSE);
+            convert_real_int(n1, &d->left, d->cmpt, false);
         }
     }
     else if (!(d->left.flags & CMP_REALVAL) && (d->right.flags & CMP_REALVAL))
@@ -454,7 +454,7 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         else /* d->right is static */
         {
-            convert_real_int(n2, &d->right, d->cmpt, TRUE);
+            convert_real_int(n2, &d->right, d->cmpt, true);
         }
     }
 }
@@ -503,13 +503,13 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     int                   a, b;
-    gmx_bool                  bAccept;
+    bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a = d->left.i[i1];
         b = d->right.i[i2];
-        bAccept = FALSE;
+        bAccept = false;
         switch (d->cmpt)
         {
             case CMP_INVALID: break;
@@ -551,13 +551,13 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     real                  a, b;
-    gmx_bool                  bAccept;
+    bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a = d->left.r[i1];
         b = (d->right.flags & CMP_REALVAL) ? d->right.r[i2] : d->right.i[i2];
-        bAccept = FALSE;
+        bAccept = false;
         switch (d->cmpt)
         {
             case CMP_INVALID: break;

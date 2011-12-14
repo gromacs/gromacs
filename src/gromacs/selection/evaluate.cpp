@@ -342,7 +342,7 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
         t_selelem *elem = sel->selelem;
         if (sel->bDynamic)
         {
-            gmx_ana_index_copy(sel->g, elem->v.u.g, FALSE);
+            gmx_ana_index_copy(sel->g, elem->v.u.g, false);
             sel->g->name = NULL;
             gmx_ana_indexmap_update(&sel->p.m, sel->g, bMaskOnly);
             sel->p.nr = sel->p.m.nr;
@@ -515,7 +515,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
         /* We need to keep the name for the cgrp across the copy to avoid
          * problems if g has a name set. */
         char *name = sel->u.cgrp.name;
-        gmx_ana_index_copy(&sel->u.cgrp, g, FALSE);
+        gmx_ana_index_copy(&sel->u.cgrp, g, false);
         sel->u.cgrp.name = name;
         gmiss.isize = 0;
     }
@@ -729,13 +729,13 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
             /* Currently, there is no need to do anything fancy here,
              * but some future extensions may need a more flexible
              * implementation. */
-            gmx_ana_pos_copy(sel->v.u.p, expr->v.u.p, FALSE);
+            gmx_ana_pos_copy(sel->v.u.p, expr->v.u.p, false);
             break;
 
         case GROUP_VALUE:
             if (!g)
             {
-                gmx_ana_index_copy(sel->v.u.g, expr->v.u.g, FALSE);
+                gmx_ana_index_copy(sel->v.u.g, expr->v.u.g, false);
             }
             else
             {
@@ -939,7 +939,7 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
     {
         MempoolSelelemReserver reserver(child, g->isize);
         child->evaluate(data, child, g);
-        gmx_ana_index_copy(sel->v.u.g, child->v.u.g, FALSE);
+        gmx_ana_index_copy(sel->v.u.g, child->v.u.g, false);
     }
     child = child->next;
     while (child && sel->v.u.g->isize > 0)

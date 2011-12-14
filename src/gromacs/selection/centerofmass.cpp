@@ -146,13 +146,13 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==FALSE).
+ *   (can be NULL if \p bMASS==false).
  * \param[in]  x     Position vectors of all atoms.
  * \param[in]  nrefat Number of atoms in the index.
  * \param[in]  index Indices of atoms.
- * \param[in]  bMass If TRUE, mass weighting is used.
+ * \param[in]  bMass If true, mass weighting is used.
  * \param[out] xout  COM/COG position for the indexed atoms.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
  * Calls either gmx_calc_com() or gmx_calc_cog() depending on the value of
  * \p bMass.
@@ -160,7 +160,7 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
  */
 int
 gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
-              gmx_bool bMass, rvec xout)
+              bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -174,13 +174,13 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==TRUE).
+ *   (can be NULL if \p bMASS==true).
  * \param[in]  f     Forces on all atoms.
  * \param[in]  nrefat Number of atoms in the index.
  * \param[in]  index Indices of atoms.
- * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[in]  bMass If true, force on COM is calculated.
  * \param[out] fout  Force on the COM/COG position for the indexed atoms.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is FALSE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is false.
  *
  * Calls either gmx_calc_cog() or gmx_calc_cog_f() depending on the value of
  * \p bMass.
@@ -188,7 +188,7 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
  */
 int
 gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
-                gmx_bool bMass, rvec fout)
+                bool bMass, rvec fout)
 {
     if (bMass)
     {
@@ -217,7 +217,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    gmx_bool                bChanged;
+    bool                bChanged;
     int                 m, j, ai, iter;
     rvec                dx, xtest;
 
@@ -229,7 +229,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
         iter = 0;
         do
         {
-            bChanged = FALSE;
+            bChanged = false;
             for (m = 0; m < nrefat; ++m)
             {
                 ai = index[m];
@@ -242,7 +242,7 @@ gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                         /* Here we have used the wrong image for contributing to the COM */
                         xout[j] += (xtest[j] - x[ai][j]) / nrefat;
                         x[ai][j] = xtest[j];
-                        bChanged = TRUE;
+                        bChanged = true;
                     }
                 }
             }
@@ -274,7 +274,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
     const real          tol = 1e-4;
-    gmx_bool                bChanged;
+    bool                bChanged;
     int                 m, j, ai, iter;
     real                mass, mtot;
     rvec                dx, xtest;
@@ -304,7 +304,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
         iter = 0;
         do
         {
-            bChanged = FALSE;
+            bChanged = false;
             for (m = 0; m < nrefat; ++m)
             {
                 ai = index[m];
@@ -318,7 +318,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                         /* Here we have used the wrong image for contributing to the COM */
                         xout[j] += mass * (xtest[j] - x[ai][j]);
                         x[ai][j] = xtest[j];
-                        bChanged = TRUE;
+                        bChanged = true;
                     }
                 }
             }
@@ -331,14 +331,14 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==FALSE).
+ *   (can be NULL if \p bMASS==false).
  * \param[in]  x     Position vectors of all atoms.
  * \param[in]  pbc    Periodic boundary conditions structure.
  * \param[in]  nrefat Number of atoms in the index.
  * \param[in]  index Indices of atoms.
- * \param[in]  bMass If TRUE, mass weighting is used.
+ * \param[in]  bMass If true, mass weighting is used.
  * \param[out] xout  COM/COG position for the indexed atoms.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
  * Calls either gmx_calc_com() or gmx_calc_cog() depending on the value of
  * \p bMass.
@@ -346,7 +346,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
  */
 int
 gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
-                  int nrefat, atom_id index[], gmx_bool bMass, rvec xout)
+                  int nrefat, atom_id index[], bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -472,13 +472,13 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==FALSE).
+ *   (can be NULL if \p bMASS==false).
  * \param[in]  x     Position vectors of all atoms.
  * \param[in]  block t_block structure that divides \p index into blocks.
  * \param[in]  index Indices of atoms.
- * \param[in]  bMass If TRUE, mass weighting is used.
+ * \param[in]  bMass If true, mass weighting is used.
  * \param[out] xout  \p block->nr COM/COG positions.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
  * Calls either gmx_calc_com_block() or gmx_calc_cog_block() depending on the
  * value of \p bMass.
@@ -486,7 +486,7 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
  */
 int
 gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
-                    gmx_bool bMass, rvec xout[])
+                    bool bMass, rvec xout[])
 {
     if (bMass)
     {
@@ -500,13 +500,13 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==FALSE).
+ *   (can be NULL if \p bMASS==false).
  * \param[in]  f     Forces on all atoms.
  * \param[in]  block t_block structure that divides \p index into blocks.
  * \param[in]  index Indices of atoms.
- * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[in]  bMass If true, force on COM is calculated.
  * \param[out] fout  \p block->nr forces on the COM/COG positions.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
  * Calls either gmx_calc_com_block() or gmx_calc_cog_block() depending on the
  * value of \p bMass.
@@ -514,7 +514,7 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  */
 int
 gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
-                      gmx_bool bMass, rvec fout[])
+                      bool bMass, rvec fout[])
 {
     if (bMass)
     {
@@ -528,12 +528,12 @@ gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[]
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==FALSE).
+ *   (can be NULL if \p bMASS==false).
  * \param[in]  x     Position vectors of all atoms.
  * \param[in]  block Blocks for calculation.
- * \param[in]  bMass If TRUE, mass weighting is used.
+ * \param[in]  bMass If true, mass weighting is used.
  * \param[out] xout  \p block->nr COM/COG positions.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
  * Calls gmx_calc_comg_block(), converting the \p t_blocka structure into
  * a \p t_block and an index. Other parameters are passed unmodified.
@@ -547,7 +547,7 @@ gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[]
  */
 int
 gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
-                     gmx_bool bMass, rvec xout[])
+                     bool bMass, rvec xout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     return gmx_calc_comg_block(top, x, (t_block *)block, block->a, bMass, xout);
@@ -555,12 +555,12 @@ gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
 
 /*!
  * \param[in]  top   Topology structure with masses
- *   (can be NULL if \p bMASS==TRUE).
+ *   (can be NULL if \p bMASS==true).
  * \param[in]  f     Forces on all atoms.
  * \param[in]  block Blocks for calculation.
- * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[in]  bMass If true, force on COM is calculated.
  * \param[out] fout  \p block->nr forces on the COM/COG positions.
- * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is FALSE.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is false.
  *
  * Calls gmx_calc_comg_f_block(), converting the \p t_blocka structure into
  * a \p t_block and an index. Other parameters are passed unmodified.
@@ -574,7 +574,7 @@ gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
  */
 int
 gmx_calc_comg_f_blocka(t_topology *top, rvec f[], t_blocka *block,
-                       gmx_bool bMass, rvec fout[])
+                       bool bMass, rvec fout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
     return gmx_calc_comg_f_block(top, f, (t_block *)block, block->a, bMass, fout);

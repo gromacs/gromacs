@@ -47,11 +47,6 @@
 #include "indexutil.h"
 #include "selvalue.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /*! \name Parameter flags
  * \anchor selparam_flags
  */
@@ -188,9 +183,5 @@ typedef struct gmx_ana_selparam_t
 /** Finds a parameter from an array by name. */
 gmx_ana_selparam_t *
 gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

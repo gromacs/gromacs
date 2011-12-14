@@ -59,11 +59,6 @@
 
 #include "../legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /** Stores a set of index groups. */
 typedef struct gmx_ana_indexgrps_t gmx_ana_indexgrps_t;
 
@@ -171,21 +166,21 @@ typedef struct gmx_ana_indexmap_t
      */
     t_blocka            b;
     /*! \brief
-     * TRUE if the current reference IDs are for the whole group (internal use only).
+     * true if the current reference IDs are for the whole group (internal use only).
      *
      * This is used internally to optimize the evaluation such that
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    gmx_bool                bStatic;
+    bool                bStatic;
     /*! \brief
-     * TRUE if the current mapping is for the whole group (internal use only).
+     * true if the current mapping is for the whole group (internal use only).
      *
      * This is used internally to optimize the evaluation such that
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    gmx_bool                bMapStatic;
+    bool                bMapStatic;
 } gmx_ana_indexmap_t;
 
 
@@ -198,7 +193,7 @@ gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps);
 /** Initializes index groups from arrays. */
 void
 gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
-                      atom_id **index, char **name, gmx_bool bFree);
+                      atom_id **index, char **name, bool bFree);
 /** Reads index groups from a file or constructs them from topology. */
 void
 gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
@@ -217,18 +212,18 @@ gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g);
 /** Create a deep copy of \c gmx_ana_indexgrps_t. */
 void
 gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src);
-/** Returns TRUE if the index group structure is emtpy. */
-gmx_bool
+/** Returns true if the index group structure is emtpy. */
+bool
 gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g);
 
 /** Returns a pointer to an index group. */
 gmx_ana_index_t *
 gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n);
 /** Extracts a single index group. */
-gmx_bool
+bool
 gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n);
 /** Finds and extracts a single index group by name. */
-gmx_bool
+bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name);
 
 /** Writes out a list of index groups. */
@@ -260,7 +255,7 @@ void
 gmx_ana_index_deinit(gmx_ana_index_t *g);
 /** Copies a \c gmx_ana_index_t. */
 void
-gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, gmx_bool bAlloc);
+gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 
 /** Writes out the contents of a index group. */
 void
@@ -270,7 +265,7 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn);
 void
 gmx_ana_index_check(gmx_ana_index_t *g, int natoms);
 /** Checks whether an index group is sorted. */
-gmx_bool
+bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);
 /*@}*/
 
@@ -281,10 +276,10 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g);
 void
 gmx_ana_index_sort(gmx_ana_index_t *g);
 /** Checks whether two index groups are equal. */
-gmx_bool
+bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b);
 /** Checks whether a sorted index group contains another sorted index group. */
-gmx_bool
+bool
 gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b);
 
 /** Calculates the intersection between two sorted index groups. */
@@ -318,15 +313,15 @@ gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
 /** Partition a group based on topology information. */
 void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
-                         e_index_t type, gmx_bool bComplete);
+                         e_index_t type, bool bComplete);
 /** Checks whether a group consists of full blocks. */
-gmx_bool
+bool
 gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b);
 /** Checks whether a group consists of full blocks. */
-gmx_bool
+bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);
 /** Checks whether a group consists of full residues/molecules. */
-gmx_bool
+bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type, t_topology *top);
 
 /** Initializes an empty index group mapping. */
@@ -347,14 +342,10 @@ void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);
 /** Makes a deep copy of an index group mapping. */
 void
-gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_bool bFirst);
+gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst);
 /** Updates an index group mapping. */
 void
-gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, gmx_bool bMaskOnly);
+gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, bool bMaskOnly);
 /*@}*/
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
