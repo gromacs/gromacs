@@ -286,14 +286,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->orires.kfac  = old[5];
     break;
   case F_DIHRES:
-    newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phiA  = old[1];
-    newparam->dihres.dphiA = old[2];
-    newparam->dihres.kfacA = old[3];
-    newparam->dihres.power = round_check(old[4],0,ftype,"power");
-    newparam->dihres.phiB   = old[5];
-    newparam->dihres.dphiB  = old[6];
-    newparam->dihres.kfacB  = old[7];
+    newparam->dihres.phiA  = old[0];
+    newparam->dihres.dphiA = old[1];
+    newparam->dihres.kfacA = old[2];
+    newparam->dihres.phiB   = old[3];
+    newparam->dihres.dphiB  = old[4];
+    newparam->dihres.kfacB  = old[5];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {

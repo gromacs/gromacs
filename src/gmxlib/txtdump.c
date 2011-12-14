@@ -916,8 +916,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
-      fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
-              iparams->dihres.label,iparams->dihres.power,
+      fprintf(fp,"phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
               iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
               iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
     break;

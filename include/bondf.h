@@ -144,7 +144,7 @@ void make_dp_periodic(real *dp);
   t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
   t_ifunc pdihs,idihs,rbdihs;
   t_ifunc tab_bonds,tab_angles,tab_dihs;
-  t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
+  t_ifunc polarize,water_pol,thole_pol,angres,angresz,dihres,unimplemented;
 
 #ifdef __cplusplus
 }

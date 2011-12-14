@@ -55,7 +55,6 @@
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
-#include "dihre.h"
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
@@ -656,12 +655,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             {
                 bcast_state(cr,state,TRUE);
             }
-        }
-
-        /* Dihedral Restraints */
-        if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
-        {
-            init_dihres(fplog,mtop,inputrec,fcd);
         }
 
         /* Initiate forcerecord */

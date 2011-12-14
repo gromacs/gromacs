@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 74;
+static const int tpx_version = 76;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -106,7 +106,6 @@ typedef struct {
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 26, F_DIHRES            },
-  { 26, F_DIHRESVIOL        },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -152,7 +151,6 @@ static const t_ftupd ftupd[] = {
   { 22, F_ORIRES            },
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
-  { 26, F_DIHRESVIOL        },
   { 49, F_VSITE4FDN         },
   { 50, F_VSITEN            },
   { 46, F_COM_PULL          },
@@ -238,7 +236,7 @@ static void do_expandedvals(t_fileio *fio,t_expanded *expand,int n_lambda, gmx_b
   gmx_bool bDum=TRUE;
   real rdum;
 
-  if (file_version >= 74)
+  if (file_version >= 76)
   {
       if (n_lambda>0)
       {
@@ -279,7 +277,7 @@ static void do_simtempvals(t_fileio *fio,t_simtemp *simtemp, int n_lambda, gmx_b
 {
   gmx_bool bDum=TRUE;
 
-  if (file_version >= 74)
+  if (file_version >= 76)
   {
       gmx_fio_do_int(fio,simtemp->eSimTempScale);
       gmx_fio_do_real(fio,simtemp->simtemp_high);
@@ -304,7 +302,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   real rdum;
 
   /* free energy values */
-  if (file_version >= 74)
+  if (file_version >= 76)
   {
       gmx_fio_do_int(fio,fepvals->init_fep_state);
       gmx_fio_do_double(fio,fepvals->init_lambda); 
@@ -320,7 +318,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       gmx_fio_do_real(fio,rdum);
       fv = rdum;
   }
-  if (file_version >= 74) 
+  if (file_version >= 76) 
   {
       gmx_fio_do_int(fio,fepvals->n_lambda);
       if (bRead) 
@@ -370,7 +368,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   {
       fepvals->sc_power = 2;
   }
-  if (file_version >= 74) 
+  if (file_version >= 76) 
   {
       gmx_fio_do_real(fio,fepvals->r_power);
   }
@@ -387,7 +385,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       fepvals->sc_sigma = 0.3;
   }    
 
-  if (file_version >= 74) 
+  if (file_version >= 76) 
   {
       gmx_fio_do_int(fio,fepvals->bScCoul);
   }
@@ -396,7 +394,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
       fepvals->bScCoul = TRUE;
   }
 
-  if (file_version >= 74)
+  if (file_version >= 76)
   {
       gmx_fio_do_int(fio,fepvals->bPrintEnergy);
   }
@@ -699,7 +697,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
      */
-    if (file_version >= 74) {
+    if (file_version >= 76) {
         gmx_fio_do_gmx_bool(fio,ir->bPrintNHChains);
     }
     if (file_version >= 71)
@@ -811,7 +809,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
         ir->efep = efepYES;
     }
     gmx_fio_do_gmx_bool(fio,ir->bSimTemp);
-    if (file_version >= 74 && ir->bSimTemp) {
+    if (file_version >= 76 && ir->bSimTemp) {
         ir->bSimTemp = TRUE;
     }
     if (ir->bSimTemp)
@@ -820,7 +818,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
 
     gmx_fio_do_gmx_bool(fio,ir->bExpanded);
-    if (file_version >= 74 && ir->bExpanded) {
+    if (file_version >= 76 && ir->bExpanded) {
         ir->bExpanded = TRUE;
     }
     if (ir->bExpanded) 
@@ -1257,8 +1255,6 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    gmx_fio_do_int(fio,iparams->dihres.power);
-    gmx_fio_do_int(fio,iparams->dihres.label);
     gmx_fio_do_real(fio,iparams->dihres.phiA);
     gmx_fio_do_real(fio,iparams->dihres.dphiA);
     gmx_fio_do_real(fio,iparams->dihres.kfacA);

@@ -109,7 +109,6 @@ enum {
   F_ANGRES,
   F_ANGRESZ,
   F_DIHRES,
-  F_DIHRESVIOL,
   F_CONSTR,
   F_CONSTRNC,
   F_SETTLE,
@@ -141,7 +140,7 @@ enum {
   F_NRE		/* This number is for the total number of energies	*/
 };
 
-#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
+#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES)))
 
 typedef union
 {
@@ -185,7 +184,7 @@ typedef union
   struct {int  n; real a;                                 } vsiten;   
   /* NOTE: npair is only set after reading the tpx file */
   struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
-  struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;int label,power;             } dihres;  
+  struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;         } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
   struct {real sar,st,pi,gbr,bmlt;                        } gb;

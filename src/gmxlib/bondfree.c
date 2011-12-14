@@ -1491,6 +1491,103 @@ real angresz(int nbonds,
 		    lambda,dvdl,TRUE);
 }
 
+real dihres(int nbonds,
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real lambda,real *dvdl,
+            const t_mdatoms *md,t_fcdata *fcd,
+            int *global_atom_index)
+{
+    real vtot = 0;
+    int  ai,aj,ak,al,i,k,type,t1,t2,t3;
+    real phi0A,phi0B,dphiA,dphiB,kfacA,kfacB,phi0,dphi,kfac;
+    real phi,ddphi,ddp,ddp2,dp,sign,d2r,fc,L1;
+    rvec r_ij,r_kj,r_kl,m,n;
+    
+    L1 = 1.0-lambda;
+    
+    fc  = fcd->dihre_fc;
+    d2r = DEG2RAD;
+    k   = 0;
+    
+    for (i=0; (i<nbonds); ) 
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+        al   = forceatoms[i++];
+        
+        phi0A  = forceparams[type].dihres.phiA*d2r;
+        dphiA  = forceparams[type].dihres.dphiA*d2r;
+        kfacA  = forceparams[type].dihres.kfacA*fc; 
+        
+        phi0B  = forceparams[type].dihres.phiB*d2r;
+        dphiB  = forceparams[type].dihres.dphiB*d2r;
+        kfacB  = forceparams[type].dihres.kfacB*fc; 
+        
+        phi0  = L1*phi0A + lambda*phi0B;
+        dphi  = L1*dphiA + lambda*dphiB;
+        kfac = L1*kfacA + lambda*kfacB;
+        
+        phi = dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                        &sign,&t1,&t2,&t3);	  
+        /* 84 flops */
+        
+        if (debug)
+        {
+            fprintf(debug,"dihres[%d]: %d %d %d %d : phi=%f, dphi=%f, kfac=%f\n",
+                    k++,ai,aj,ak,al,phi0,dphi,kfac);
+        }
+        /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
+         * force changes if we just apply a normal harmonic.
+         * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
+         * This means we will never have the periodicity problem, unless
+         * the dihedral is Pi away from phiO, which is very unlikely due to
+         * the potential.
+         */
+        dp = phi-phi0;
+        make_dp_periodic(&dp);
+
+        if (dp > dphi) 
+        {
+            ddp = dp-dphi;
+        }
+        else if (dp < -dphi)
+        { 
+            ddp = dp+dphi;
+        }
+        else 
+        {
+            ddp = 0;
+        }
+        
+        if (ddp != 0.0) 
+        {
+            ddp2 = ddp*ddp;
+            vtot += 0.5*kfac*ddp2;
+            ddphi = kfac*ddp;
+            
+            *dvdl += 0.5*(kfacB - kfacA)*ddp2; 	
+            /* lambda dependence from changing restraint distances */
+            if (ddp > 0)  
+            {
+                *dvdl -= kfac*ddp*((dphiB - dphiA)+(phi0B - phi0A));  
+                
+            } 
+            else if (ddp < 0 )
+            {
+                *dvdl += kfac*ddp*((dphiB - dphiA)-(phi0B - phi0A)); 
+            }
+            
+            do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
+                       f,fshift,pbc,g,x,t1,t2,t3);		/* 112		*/
+        }
+    }
+    return vtot;
+}
+
 
 real unimplemented(int nbonds,
 		   const t_iatom forceatoms[],const t_iparams forceparams[],
