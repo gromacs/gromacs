@@ -795,6 +795,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     //set CPU affinity
 #ifdef GMX_OPENMP
 #ifdef __linux
+    if (getenv("GMX_NO_THREAD_PINNING") == NULL)
     {
         int core, local_nthreads;
 
