@@ -110,7 +110,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              gmx_edsam_t ed,t_forcerec *fr,
-             int repl_ex_nst,int repl_ex_seed,
+             int repl_ex_nst,int repl_ex_nex, int repl_ex_seed,
              real cpt_period,real max_hours,
              const char *deviceOptions,
              unsigned long Flags,
@@ -286,8 +286,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
 
     /* lambda Monte carlo random number generator  */
-    mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
-
+    if (ir->bExpanded)
+    {
+        mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
+    }
     /* copy the state into df_history */
     copy_df_history(&df_history,&state_global->dfhist);
 
@@ -452,7 +454,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (repl_ex_nst > 0 && MASTER(cr))
     {
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
-                                        repl_ex_nst,repl_ex_seed);
+                                        repl_ex_nst,repl_ex_nex,repl_ex_seed); 
     }
     if (!ir->bContinuation && !bRerunMD)
     {
@@ -954,7 +956,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log && !bFFscan)
         {
-            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]); /* can we improve the information printed here? */
         }
 
         if (ir->efep > efepNO)
@@ -1280,7 +1282,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* ########  END FIRST UPDATE STEP  ############## */
         /* ########  If doing VV, we now have v(dt) ###### */
-#if 1        
         /* sum up the foreign energy and dhdl terms */
         sum_dhdl(enerd,state->lambda,ir->fepvals);
         if (bDoExpanded) {
@@ -1290,7 +1291,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
         }
-#endif
         /* ################## START TRAJECTORY OUTPUT ################# */
         
         /* Now we have the energies and forces corresponding to the 
@@ -1785,17 +1785,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
-#if 0        
-        /* sum up the foreign energy and dhdl terms */
-        sum_dhdl(enerd,state->lambda,ir->fepvals);
-        if (bDoExpanded) {
-            /* perform extended ensemble sampling in lambda - we don't actually move to the new state before 
-               outputting statistics, but if performing simulated tempering, we do update the velocities and 
-               the tau_t. */
-            
-            lamnew = ExpandedEnsembleDynamics(fplog,ir,enerd,state,&MassQ,&df_history,step,mcrng,state->v,mdatoms);
-        }
-#endif
+
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {

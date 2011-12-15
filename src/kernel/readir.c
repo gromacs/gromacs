@@ -316,18 +316,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   /* SHAKE / LINCS */
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
-    sprintf(warn_buf,
-	    "Using morse bond-potentials while constraining bonds is useless");
-    warning(wi,warn_buf);
+      sprintf(warn_buf,
+              "Using morse bond-potentials while constraining bonds is useless");
+      warning(wi,warn_buf);
   }
-  
-  sprintf(err_buf,"shake_tol must be > 0 instead of %g while using shake",
-	  ir->shake_tol);
-  CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
-	 (ir->eConstrAlg == econtSHAKE)));
-     
-  /* verify simulated tempering options */
 
+  if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
+      ir->bContinuation && ir->ld_seed != -1) {
+      warning_note(wi,"You are doing a continuation with SD or BD, make sure that ld_seed is different from the previous run (using ld_seed=-1 will ensure this)");
+  }
+  /* verify simulated tempering options */
+  
   if (ir->bSimTemp) {
       gmx_bool bAllTempZero = TRUE;
       for (i=0;i<fep->n_lambda;i++) 
@@ -1482,10 +1481,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("ref-p",       dumstr[1],      NULL);
   CTYPE ("Scaling of reference coordinates, No, All or COM");
   EETYPE ("refcoord-scaling",ir->refcoord_scaling,erefscaling_names);
-
-  /* andersen actually using ld_seed for now? THis doesn't apparently do anything. */
-  CTYPE ("Random seed for Andersen thermostat");
-  ITYPE ("andersen-seed", ir->andersen_seed, 815131);
 
   /* QMMM */
   CCTYPE ("OPTIONS FOR QMMM calculations");

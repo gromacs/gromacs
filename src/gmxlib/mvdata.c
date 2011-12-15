@@ -549,8 +549,9 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   if (inputrec->efep > efepNO || inputrec->bSimTemp) {
       bc_fepvals(cr,inputrec->fepvals);
   }
+  /* need to initialize this as well because of data checked for in the logic */
+  snew_bc(cr,inputrec->expandedvals,1);
   if (inputrec->bExpanded) {
-      snew_bc(cr,inputrec->expandedvals,1);
       bc_expandedvals(cr,inputrec->expandedvals,inputrec->fepvals->n_lambda);
   }
   if (inputrec->ePull != epullNO) {

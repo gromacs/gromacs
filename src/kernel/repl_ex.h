@@ -45,7 +45,7 @@ extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 					   const gmx_multisim_t *ms,
 					   const t_state *state,
 					   const t_inputrec *ir,
-					   int nst, int init_seed);
+					   int nst, int nmultiex, int init_seed);
 /* Should only be called on the master nodes */
 
 extern gmx_bool replica_exchange(FILE *fplog,

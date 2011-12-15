@@ -251,7 +251,7 @@ enum {
 
 /* Implicit solvent algorithms */
 enum { 
-	eisNO, eisGBSA, eisNR 
+  eisNO, eisGBSA, eisNR 
 };
 
 /* Algorithms for calculating GB radii */

@@ -779,10 +779,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       clear_rvec(ir->posres_com);
       clear_rvec(ir->posres_comB);
     }
-    if(file_version > 25)
-      gmx_fio_do_int(fio,ir->andersen_seed);
-    else
-      ir->andersen_seed=0;
     
     if(file_version < 26) {
       gmx_fio_do_gmx_bool(fio,bSimAnn); 
