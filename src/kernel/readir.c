@@ -2242,7 +2242,7 @@ void do_index(const char* mdparin, const char *ndx,
             /* search for the group name mathching the tf group name */
             k = 0;
             while ((k < nr) &&
-                 strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+                 gmx_strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
               k++;
             if (k==nr) gmx_fatal(FARGS,"Adress cg energy group %s not found\n",ptr1[i]);
             ir->adress_group_explicit[k] = FALSE;
@@ -2277,7 +2277,7 @@ void do_index(const char* mdparin, const char *ndx,
             /* search for the group name mathching the tf group name */
             k = 0;
             while ((k < nr) &&
-                 strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
+                 gmx_strcasecmp(ptr1[i],(char*)(gnames[groups->grps[egcENER].nm_ind[k]])))
               k++;
             if (k==nr) gmx_fatal(FARGS,"Adress tf energy group %s not found\n",ptr1[i]);
             

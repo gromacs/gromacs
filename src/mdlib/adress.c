@@ -307,6 +307,7 @@ update_adress_weights_cog(t_iparams            ip[],
     real           adressr,adressw;
     rvec *         ref;
     real *         wf;
+    int            n_hyb, n_ex, n_cg;
 
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
@@ -314,7 +315,6 @@ update_adress_weights_cog(t_iparams            ip[],
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refs);
 
-    int n_hyb, n_ex, n_cg;
 
     n_hyb=0;
     n_cg=0;
