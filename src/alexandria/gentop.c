@@ -208,6 +208,52 @@ void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
     fprintf(fp,"\n");
 }
 
+void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
+                   t_atoms *atoms,gmx_poldata_t pd,int iModel)
+{
+    FILE   *fp;
+    int    i,j,k,nz,row;
+    double zeta,q,qtot;
+    gmx_bool   bAtom;
+    
+    if (NULL == qgen)
+        return;
+
+    fp = fopen("zeta_q.txt","w");        
+    k = -1;
+    for(i=0; (i<atoms->nr); i++)
+    {
+        bAtom = (atoms->atom[i].ptype == eptAtom);
+        if (bAtom)
+            k++;
+        if (k == -1)
+            gmx_fatal(FARGS,"The first atom must be a real atom, not a shell");
+        nz = gentop_qgen_get_nzeta(qgen,k);
+        if (nz != NOTSET)
+        {
+            fprintf(fp,"%6s  %5s  %5d",get_eemtype_name(iModel),
+                    get_atomtype_name(atoms->atom[i].type,atype),
+                    (bAtom) ? nz-1 : 1);
+            qtot = 0;
+            for(j=(bAtom ? 0 : nz-1); (j<(bAtom ? nz-1 : nz)); j++)
+            {
+                row   = gentop_qgen_get_row(qgen,k,j);
+                q     = gentop_qgen_get_q(qgen,k,j);
+                zeta  = gentop_qgen_get_zeta(qgen,k,j);
+                if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET)) 
+                {
+                    qtot += q;
+                    fprintf(fp,"%5d %10g %10g",row,zeta,q);
+                }
+            }
+            atoms->atom[i].q = qtot;
+            fprintf(fp,"\n");
+        }
+    }
+    fprintf(fp,"\n");
+    fclose(fp);
+}
+
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -304,9 +350,9 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
-    static real btol=0.2,qtol=1e-2,zmin=5,zmax=100,delta_z=-1;
+    static real btol=0.2,qtol=1e-6,zmin=5,zmax=100,delta_z=-1;
     static real hfac=0,qweight=1e-3,bhyper=0.1;
-    static real th_toler=170,ph_toler=5,watoms=1,spacing=0.1;
+    static real th_toler=170,ph_toler=5,watoms=0,spacing=0.1;
     static real dbox=0.370424,pfac=1,epsr=1;
     static int  qtotref=0,nexcl = 2;
     static int  maxiter=25000,maxcycle=1;
@@ -394,7 +440,7 @@ int main(int argc, char *argv[])
         { "-pfac",   FALSE, etREAL, {&pfac},
           "Factor for weighing penalty function for e.g. [TT]-decrzeta[tt] option." },
         { "-watoms", FALSE, etREAL, {&watoms},
-          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended (the default)." },
+          "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
         { "-param", FALSE, etBOOL, {&bParam},
           "Print parameters in the output" },
         { "-round",  FALSE, etBOOL, {&bRound},
@@ -771,7 +817,8 @@ int main(int argc, char *argv[])
         if (bGenVSites)
         {
             anr = atoms->nr;    
-            gentop_vsite_generate_vsites(gvt,atoms,&x,plist,&symtab,atype,&excls);
+            gentop_vsite_generate_vsites(gvt,atoms,&x,plist,
+                                         &symtab,atype,&excls);
             if (atoms->nr > anr) 
             {
                 srenew(smnames,atoms->nr);
@@ -849,7 +896,10 @@ int main(int argc, char *argv[])
             }
             write_top(fp,NULL,mymol.name,atoms,FALSE,bts,plist,excls,atype,cgnr,nexcl);
             if (bAddShells)
-                write_zeta_q(fp,qqgen,atoms,pd,iModel);
+            {
+                /* write_zeta_q(fp,qqgen,atoms,pd,iModel);*/
+                write_zeta_q2(qqgen,atype,atoms,pd,iModel);
+            }
             if (!bITP)
                 print_top_mols(fp,mymol.name,forcefield,NULL,0,NULL,1,&mymol);
             fclose(fp);
