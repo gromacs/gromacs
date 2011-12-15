@@ -77,7 +77,7 @@ int gmx_dist(int argc,char *argv[])
     "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
     "of all atoms in group 2 that are closer than a certain distance",
     "to the center of mass of group 1 are plotted as a function of the time",
-    "that the contact was continously present.[PAR]",
+    "that the contact was continuously present.[PAR]",
     "Other programs that calculate distances are [TT]g_mindist[tt]",
     "and [TT]g_bond[tt]."
   };

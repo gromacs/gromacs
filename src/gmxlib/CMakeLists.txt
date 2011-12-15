@@ -6,8 +6,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(USE_VERSION_H)
     add_custom_target(gmx_version ALL
             COMMAND ${CMAKE_COMMAND} 
-                -D Git_EXECUTABLE="${Git_EXECUTABLE}"
-                -D Git_VERSION="${Git_VERSION}"
+                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
                 -D VERSION_C_CMAKEIN="${CMAKE_SOURCE_DIR}/src/gmxlib/version.c.cmakein"

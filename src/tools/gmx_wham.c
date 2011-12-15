@@ -1776,6 +1776,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     	nColRefEachGrp=0;
         nColRefOnce=0;
     }
+    
     nColExpect = 1 + nColRefOnce + header->npullgrps*(nColRefEachGrp+nColPerGrp);
     bHaveForce = opt->bPullf;
     
@@ -1801,7 +1802,8 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     }
     if (ny != nColExpect)
     {
-        gmx_fatal(FARGS,"Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n",
+        gmx_fatal(FARGS,"Found %d pull groups in %s,\n but %d data columns in %s (expected %d)\n"
+                  "\nMaybe you confused options -ix and -if ?\n",
                   header->npullgrps,fntpr,ny-1,fn,nColExpect-1);
     }
     
@@ -1914,13 +1916,19 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                         pos=dist_ndim(y + 1 + nColRefOnce + g*nColPerGrp,header->pull_ndim,i);
                         break;
                     case epullgPOS:
+                        /* Columns
+                           Time ref[ndim] group1[ndim] group2[ndim] ... */                         
                     case epullgCYL:
-                        /* with geometry==position, we have the reference once (nColRefOnce==ndim), but
+                        /* Columns
+                           Time ref1[ndim] group1[ndim] ref2[ndim] group2[ndim] ... */
+
+                        /* * with geometry==position, we have the reference once (nColRefOnce==ndim), but
                            no extra reference group columns before each group (nColRefEachGrp==0)
-                           with geometry==cylinder, we have no initial ref group column (nColRefOnce==0), 
+
+                           * with geometry==cylinder, we have no initial ref group column (nColRefOnce==0), 
                            but ndim ref group colums before every group (nColRefEachGrp==ndim)
                            Distance to reference: */
-                        pos=y[1 + nColRefOnce + g*(nColRefEachGrp+nColPerGrp)][i];
+                        pos=y[1 + nColRefOnce + nColRefEachGrp + g*(nColRefEachGrp+nColPerGrp)][i];
                         break;
                     default:
                         gmx_fatal(FARGS,"Bad error, this error should have been catched before. Ups.\n");
@@ -2554,7 +2562,7 @@ int gmx_wham(int argc,char *argv[])
         "to the file defined with [TT]-oiact[tt]. In verbose mode, all ",
         "autocorrelation functions (ACFs) are written to [TT]hist_autocorr.xvg[tt]. ",
         "Because the IACTs can be severely underestimated in case of limited ",
-        "sampling, option [TT]-acsig[tt] allows to smooth the IACTs along the ",
+        "sampling, option [TT]-acsig[tt] allows one to smooth the IACTs along the ",
         "reaction coordinate with a Gaussian ([GRK]sigma[grk] provided with [TT]-acsig[tt], ",
         "see output in [TT]iact.xvg[tt]). Note that the IACTs are estimated by simple ",
         "integration of the ACFs while the ACFs are larger 0.05.",

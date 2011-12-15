@@ -60,8 +60,6 @@
 void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
               const output_env_t oenv);
 
-int EventSignaller(t_manager *man);
-
 static void dump_xw(char *dispname,Window w,char *fn)
 {
   char comm[256];

@@ -1578,10 +1578,11 @@ static void check_input(
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
         gmx_fatal(FARGS, "File %s not found.", opt2fn("-s",nfile,fnm));
     
-    /* Make sure that the checkpoint file is not overwritten by the benchmark runs */
-    if ( (0 == strcmp(opt2fn("-cpi",nfile,fnm), opt2fn("-cpo",nfile,fnm)) ) && (sim_part > 1) )
-        gmx_fatal(FARGS, "Checkpoint input and output file must not be identical,\nbecause then the input file might change during the benchmarks.");
-    
+    /* Make sure that the checkpoint file is not overwritten during benchmarking */
+    if ( (0 == strcmp(opt2fn("-cpi",nfile,fnm), opt2fn("-bcpo",nfile,fnm)) ) && (sim_part > 1) )
+        gmx_fatal(FARGS, "Checkpoint input (-cpi) and benchmark checkpoint output (-bcpo) files must not be identical.\n"
+                         "The checkpoint input file must not be overwritten during the benchmarks.\n");
+
     /* Make sure that repeats is >= 0 (if == 0, only write tpr files) */
     if (repeats < 0)
         gmx_fatal(FARGS, "Number of repeats < 0!");
@@ -2206,7 +2207,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
         "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
-        "Lauch the real simulation after optimization" },
+        "Launch the real simulation after optimization" },
       /******************/
       /* mdrun options: */
       /******************/

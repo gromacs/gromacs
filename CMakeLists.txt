@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 project(Gromacs)
 include(Dart)
@@ -12,7 +12,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.5.4-dev")
+set(PROJECT_VERSION "4.6-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -22,8 +22,8 @@ endif (CUSTOM_VERSION_STRING)
 set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
-SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "4")
+SET(CPACK_PACKAGE_VERSION_MINOR "6")
+#SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -189,16 +189,21 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
 if(GMX_MPI)
-	MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     OpenMPI version < 1.4.1
-                     MVAPICH2 version <= 1.4.1                               *")
     if(GMX_THREADS)
         #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
         set(GMX_THREADS OFF CACHE BOOL 
             "Thread-based parallelization conflicts with MPI." FORCE)
     endif(GMX_THREADS)
-    find_package(MPI)
+
+    # Work-around for Cray MPI
+    TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
+      "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
+      COMPILE_DEFINITIONS )
+    if(NOT MPI_FOUND)
+      # search for normal MPI installations
+      find_package(MPI)
+    endif(NOT MPI_FOUND)
+
     if(MPI_FOUND)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
 	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
@@ -210,6 +215,30 @@ if(GMX_MPI)
         if (GMX_MPI_IN_PLACE)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
         endif (GMX_MPI_IN_PLACE)
+
+	# test for unsuitable versions of OpenMPI
+	exec_program(${MPIEXEC}
+	  ARGS --version
+	  OUTPUT_VARIABLE MPI_TYPE
+	  RETURN_VALUE MPI_EXEC_RETURN)
+	if(MPI_EXEC_RETURN EQUAL 0)
+	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
+	    if(MPI_VERSION VERSION_LESS "1.4.1")
+	      MESSAGE(WARNING "
+            There are known problems with OpenMPI version < 1.4.1.
+            Please consider updating your OpenMPI.")
+	    endif(MPI_VERSION VERSION_LESS "1.4.1")
+	    unset(MPI_VERSION)
+	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	    # This is not OpenMPI, so give the old generic warning message
+	    MESSAGE(WARNING "
+            There are known problems with some MPI implementations:
+                     MVAPICH2 version <= 1.4.1
+            Please consider updating your MPI if applicable.")
+	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
+	  unset(MPI_TYPE)
+	endif(MPI_EXEC_RETURN EQUAL 0)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
@@ -452,12 +481,22 @@ endif(CYGWIN)
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
         # We need at least git v1.5.1 be able to parse git's date output. If not 
-        # fund or the version is too small, we can't generate version information.
-        find_package(Git 1.5.1)
-        # this should at some point become VERSION_LESS
-        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
-            message("No compatible git version found, won't be able to generate proper development version information.")
-            set(USE_VERSION_H OFF)
+        # found or the version is too small, we can't generate version information.
+        find_package(Git)
+
+	# Find out the git version
+	if(GIT_FOUND AND NOT GIT_VERSION)
+	  execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
+            OUTPUT_VARIABLE _exec_out
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+	  string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
+	  set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
+	  mark_as_advanced(GIT_VERSION)
+	endif()
+
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.1")
+          message("No compatible git version found, won't be able to generate proper development version information.")
+          set(USE_VERSION_H OFF)
         endif()
     endif()
 else()
@@ -498,7 +537,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
-gmx_test_retsigtype(RETSIGTYPE)
 gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
@@ -516,7 +554,7 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
 
     set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
@@ -603,9 +641,6 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-    set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
-    set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
-    list(APPEND GMX_EXTRA_LIBRARIES massv)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
@@ -853,7 +888,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 
