@@ -1567,7 +1567,7 @@ void init_md(FILE *fplog,
     
     if (ir->adress_type != eAdressOff)
     {
-      please_cite(fplog,"Fritsch11");
+      please_cite(fplog,"Praprotnik05");
       please_cite(fplog,"Junghans10");
     }
     /* Initiate variables */  
