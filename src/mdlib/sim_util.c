@@ -1565,7 +1565,7 @@ void init_md(FILE *fplog,
                               mtop,ir, (*outf)->fp_dhdl);
     }
     
-    if (ir->adress_type != eAdressOff)
+    if (ir->bAdress)
     {
       please_cite(fplog,"Fritsch12");
       please_cite(fplog,"Junghans10");

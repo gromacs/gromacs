@@ -146,6 +146,26 @@ typedef struct {
 } t_pull;
 
 typedef struct {
+  int  type;     /* type of AdResS simulation                    */
+  gmx_bool bnew_wf;  /* enable new AdResS weighting function         */
+  gmx_bool bchempot_dx;  /*true:interaction table format input is F=-dmu/dx   false: dmu_dwp  */
+  gmx_bool btf_full_box; /* true: appy therm force everywhere in the box according to table false: only in hybrid region */
+  real const_wf; /* value of weighting function for eAdressConst */
+  real ex_width; /* center of the explicit zone                  */
+  real hy_width; /* width of the hybrid zone                     */
+  int  icor;     /* type of interface correction                 */
+  int  site;     /* AdResS CG site location                      */
+  rvec refs;     /* Coordinates for AdResS reference             */
+  real ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
+  gmx_bool do_hybridpairs; /* If true pair interaction forces are also scaled in an adress way*/
+
+  int * tf_table_index; /* contains mapping of energy group index -> i-th adress tf table*/
+  int n_tf_grps;
+  int *group_explicit;
+  int   n_energy_grps;
+} t_adress;
+
+typedef struct {
   int  eI;              /* Integration method 				*/
   gmx_large_int_t nsteps;	/* number of steps to be taken			*/
   int  simulation_part; /* Used in checkpointing to separate chunks */
@@ -285,23 +305,8 @@ typedef struct {
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
                         /* parameter needed for AdResS simulation       */
-  int  adress_type;     /* type of AdResS simulation                    */
-  gmx_bool badress_new_wf;  /* enable new AdResS weighting function         */
-  gmx_bool badress_chempot_dx;  /*true:interaction table format input is F=-dmu/dx   false: dmu_dwp  */
-  gmx_bool badress_tf_full_box; /* true: appy therm force everywhere in the box according to table false: only in hybrid region */
-  real adress_const_wf; /* value of weighting function for eAdressConst */
-  real adress_ex_width; /* center of the explicit zone                  */
-  real adress_hy_width; /* width of the hybrid zone                     */
-  int  adress_icor;     /* type of interface correction                 */
-  int  adress_site;     /* AdResS CG site location                      */
-  rvec adress_refs;     /* Coordinates for AdResS reference             */
-  real adress_ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
-  gmx_bool adress_do_hybridpairs; /* If true pair interaction forces are also scaled in an adress way*/
-
-  int * adress_tf_table_index; /* contains mapping of energy group index -> i-th adress tf table*/
-  int n_adress_tf_grps;
-  int *adress_group_explicit;
-  int   n_energy_grps;
+  gmx_bool bAdress;     /* Is AdResS enabled ? */
+  t_adress *adress;     /* The data for adress simulations */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

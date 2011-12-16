@@ -1195,13 +1195,13 @@ static void make_adress_tf_tables(FILE *fp,const output_env_t oenv,
     return;
   }
 
-  snew(fr->atf_tabs, ir->n_adress_tf_grps);
+  snew(fr->atf_tabs, ir->adress->n_tf_grps);
 
-  for (i=0; i<ir->n_adress_tf_grps; i++){
-    j = ir->adress_tf_table_index[i]; /* get energy group index */
+  for (i=0; i<ir->adress->n_tf_grps; i++){
+    j = ir->adress->tf_table_index[i]; /* get energy group index */
     sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"tf_%s.%s",
         *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]) ,ftp2ext(efXVG));
-    printf("loading tf table for energygrp index %d from %s\n", ir->adress_tf_table_index[j], buf);
+    printf("loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[j], buf);
     fr->atf_tabs[i] = make_atf_table(fp,oenv,fr,buf, box);
   }
 
@@ -1358,27 +1358,31 @@ void init_forcerec(FILE *fp,
     }
     
     /* Copy AdResS parameters */
-    fr->adress_type     = ir->adress_type;
-    fr->adress_const_wf = ir->adress_const_wf;
-    fr->adress_ex_width = ir->adress_ex_width;
-    fr->adress_hy_width = ir->adress_hy_width;
-    fr->adress_icor     = ir->adress_icor;
-    fr->adress_site     = ir->adress_site;
-    fr->adress_ex_forcecap = ir->adress_ex_forcecap;
-    fr->adress_do_hybridpairs = ir->adress_do_hybridpairs;
+    if (ir->bAdress) {
+      fr->adress_type     = ir->adress->type;
+      fr->adress_const_wf = ir->adress->const_wf;
+      fr->adress_ex_width = ir->adress->ex_width;
+      fr->adress_hy_width = ir->adress->hy_width;
+      fr->adress_icor     = ir->adress->icor;
+      fr->adress_site     = ir->adress->site;
+      fr->adress_ex_forcecap = ir->adress->ex_forcecap;
+      fr->adress_do_hybridpairs = ir->adress->do_hybridpairs;
 
 
-    snew(fr->adress_group_explicit , ir->n_energy_grps);
-    for (i=0; i< ir->n_energy_grps; i++){
-        fr->adress_group_explicit[i]= ir->adress_group_explicit[i];
+      snew(fr->adress_group_explicit , ir->adress->n_energy_grps);
+      for (i=0; i< ir->adress->n_energy_grps; i++){
+          fr->adress_group_explicit[i]= ir->adress->group_explicit[i];
+      }
+
+      fr->n_adress_tf_grps = ir->adress->n_tf_grps;
+      snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
+      for (i=0; i< fr->n_adress_tf_grps; i++){
+          fr->adress_tf_table_index[i]= ir->adress->tf_table_index[i];
+      }
+      copy_rvec(ir->adress->refs,fr->adress_refs);
+    } else {
+      fr->adress_type = eAdressOff;
     }
-
-    fr->n_adress_tf_grps = ir->n_adress_tf_grps;
-    snew(fr->adress_tf_table_index, fr->n_adress_tf_grps);
-    for (i=0; i< fr->n_adress_tf_grps; i++){
-        fr->adress_tf_table_index[i]= ir->adress_tf_table_index[i];
-    }
-    copy_rvec(ir->adress_refs,fr->adress_refs);
     
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;
@@ -1771,7 +1775,7 @@ void init_forcerec(FILE *fp,
     {
         /* old todo replace */ 
         
-        if (ir->n_adress_tf_grps > 0){
+        if (ir->adress->n_tf_grps > 0){
             make_adress_tf_tables(fp,oenv,fr,ir,tabfn, mtop, box);
 
         }else{
@@ -1849,7 +1853,7 @@ void init_forcerec(FILE *fp,
     
     if (cr->duty & DUTY_PP){
         gmx_setup_kernels(fp,bGenericKernelOnly);
-        if (ir->adress_type!=eAdressOff)
+        if (ir->bAdress)
             gmx_setup_adress_kernels(fp,bGenericKernelOnly);
     }
 }

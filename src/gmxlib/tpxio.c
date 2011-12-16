@@ -747,25 +747,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     
     /* AdResS stuff */
     if (file_version >= 74) {
-      gmx_fio_do_int(fio,ir->adress_type);
-      gmx_fio_do_real(fio,ir->adress_const_wf);
-      gmx_fio_do_real(fio,ir->adress_ex_width);
-      gmx_fio_do_real(fio,ir->adress_hy_width);
-      gmx_fio_do_int(fio,ir->adress_icor);
-      gmx_fio_do_int(fio,ir->adress_site);
-      gmx_fio_do_rvec(fio,ir->adress_refs);
-      gmx_fio_do_int(fio,ir->n_adress_tf_grps);
-      gmx_fio_do_real(fio, ir->adress_ex_forcecap);
-      gmx_fio_do_int(fio, ir->n_energy_grps);
-      gmx_fio_do_int(fio,ir->adress_do_hybridpairs);
+      gmx_fio_do_int(fio,ir->adress->type);
+      gmx_fio_do_real(fio,ir->adress->const_wf);
+      gmx_fio_do_real(fio,ir->adress->ex_width);
+      gmx_fio_do_real(fio,ir->adress->hy_width);
+      gmx_fio_do_int(fio,ir->adress->icor);
+      gmx_fio_do_int(fio,ir->adress->site);
+      gmx_fio_do_rvec(fio,ir->adress->refs);
+      gmx_fio_do_int(fio,ir->adress->n_tf_grps);
+      gmx_fio_do_real(fio, ir->adress->ex_forcecap);
+      gmx_fio_do_int(fio, ir->adress->n_energy_grps);
+      gmx_fio_do_int(fio,ir->adress->do_hybridpairs);
              
-      if (bRead)snew(ir->adress_tf_table_index,ir->n_adress_tf_grps);
-      if (ir->n_adress_tf_grps > 0) {
-        bDum=gmx_fio_ndo_int(fio,ir->adress_tf_table_index,ir->n_adress_tf_grps);
+      if (bRead)snew(ir->adress->tf_table_index,ir->adress->n_tf_grps);
+      if (ir->adress->n_tf_grps > 0) {
+        bDum=gmx_fio_ndo_int(fio,ir->adress->tf_table_index,ir->adress->n_tf_grps);
       }
-      if (bRead)snew(ir->adress_group_explicit,ir->n_energy_grps);
-      if (ir->n_energy_grps > 0) {
-        bDum=gmx_fio_ndo_int(fio, ir->adress_group_explicit,ir->n_energy_grps);
+      if (bRead)snew(ir->adress->group_explicit,ir->adress->n_energy_grps);
+      if (ir->adress->n_energy_grps > 0) {
+        bDum=gmx_fio_ndo_int(fio, ir->adress->group_explicit,ir->adress->n_energy_grps);
       }
     }
 

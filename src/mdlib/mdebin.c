@@ -250,7 +250,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 #endif
 
     /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (ir->adress_type != eAdressOff && !debug) {
+    if (ir->bAdress && !debug) {
         for (i = 0; i < F_NRE; i++) {
             md->bEner[i] = FALSE;
             if(i == F_EKIN){ md->bEner[i] = TRUE;}
@@ -379,7 +379,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     n=groups->grps[egcENER].nr;
     /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
-    if (ir->adress_type == eAdressOff){
+    if (!ir->bAdress){
         /*standard simulation*/
         md->nEg=n;
         md->nE=(n*(n+1))/2;
