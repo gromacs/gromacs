@@ -61,6 +61,10 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 /** Frees memory allocated for the selection scanner. */
 void
 _gmx_sel_free_lexer(yyscan_t scanner);
+/** Sets the error reporter object for the selection scanner. */
+void
+_gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
+                                  gmx::MessageStringCollector *errors);
 
 /** Returns true if the scanner is interactive. */
 bool

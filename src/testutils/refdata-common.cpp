@@ -86,6 +86,9 @@ int initReferenceData(int *argc, char **argv)
         }
     }
     *argc = newi;
+#ifdef TESTUTILS_HAVE_REFDATA
+    internal::addGlobalReferenceDataEnvironment();
+#endif
 
     return 0;
 }

@@ -155,9 +155,11 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
                                      std::vector<Selection *> *output)
 {
     gmx_ana_selcollection_t *sc = &_sc;
-    MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     GMX_ASSERT(sc == _gmx_sel_lexer_selcollection(scanner),
                "Incorrectly initialized lexer");
+
+    MessageStringCollector errors;
+    _gmx_sel_set_lexer_error_reporter(scanner, &errors);
 
     int oldCount = sc->sel.size();
     int bOk = !_gmx_sel_yybparse(scanner);
@@ -166,7 +168,7 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     if (maxnr > 0 && nr != maxnr)
     {
         bOk = false;
-        errors->append("Too few selections provided");
+        errors.append("Too few selections provided");
     }
 
     if (bOk)
@@ -178,10 +180,10 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
         }
     }
 
-    if (!bOk || !errors->isEmpty())
+    if (!bOk || !errors.isEmpty())
     {
-        GMX_ASSERT(!bOk && !errors->isEmpty(), "Inconsistent error reporting");
-        GMX_THROW(InvalidInputError(errors->toString()));
+        GMX_ASSERT(!bOk && !errors.isEmpty(), "Inconsistent error reporting");
+        GMX_THROW(InvalidInputError(errors.toString()));
     }
 }
 
@@ -545,7 +547,7 @@ SelectionCollection::parseFromFile(const std::string &filename,
     {
         _impl->runParser(scanner, -1, output);
     }
-    catch (std::exception &)
+    catch (...)
     {
         ffclose(fp);
         throw;

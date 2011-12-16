@@ -4,4 +4,5 @@ if [ -n "${CMakeVersion}" ] ; then
 fi
 CC=gcc-${CompilerVersion} CXX=g++-${CompilerVersion} cmake -D GMX_DOUBLE=${GMX_DOUBLE} -D GMX_MPI=${GMX_MPI} -D GMX_OPENMP=${GMX_OPENMP} -DGMX_DEFAULT_SUFFIX=off -DCMAKE_BUILD_TYPE=Debug . &&
 make &&
-ctest -D ExperimentalTest -V
+ctest -D ExperimentalMemCheck -L GTest -V  #TODO parse valgrind output and show on website
+ctest -D ExperimentalTest -LE GTest -V     #TODO valgrind should be run for integration tests but with leak-check=no

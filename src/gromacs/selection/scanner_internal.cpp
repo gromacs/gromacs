@@ -58,6 +58,7 @@
 
 #include "gromacs/fatalerror/errorcodes.h"
 #include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 
 #include "gromacs/selection/selmethod.h"
@@ -473,11 +474,9 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
         GMX_THROW(gmx::InternalError("Lexer initialization failed"));
     }
 
-    gmx::MessageStringCollector *errors = new gmx::MessageStringCollector;
-
     snew(state, 1);
     state->sc        = sc;
-    state->errors    = errors;
+    state->errors    = NULL;
     state->bGroups   = bGroups;
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? sc->sel.size() + maxnr : -1);
@@ -523,6 +522,14 @@ _gmx_sel_free_lexer(yyscan_t scanner)
     _gmx_sel_yylex_destroy(scanner);
 }
 
+void
+_gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
+                                  gmx::MessageStringCollector *errors)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    state->errors = errors;
+}
+
 bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner)
 {
@@ -541,6 +548,7 @@ gmx::MessageStringCollector *
 _gmx_sel_lexer_error_reporter(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    GMX_RELEASE_ASSERT(state->errors != NULL, "Error reporter not set");
     return state->errors;
 }
 
