@@ -1036,11 +1036,11 @@ static void lincs_warning(FILE *fplog,
             {
                 fprintf(fplog,"%s",buf);
             }
-            #ifdef HAS_ISFINITE
+            #ifdef HAVE_ISFINITE
             if (!isfinite(d1))	
                 gmx_fatal(FARGS,"Bond length not finite.")
             #else
-            #ifdef HAS__ISFINITE
+            #ifdef HAVE__ISFINITE
             if (!_isfinite(d1))	
                 gmx_fatal(FARGS,"Bond length not finite.")
             #endif

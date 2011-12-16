@@ -887,9 +887,9 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	for(i=0; i<GD->nData; i++)
 	  {
 	    dumpdata[i] = (real)(GD->ctTheory[i]);
-#ifdef HAS_ISFINITE
+#ifdef HAVE_ISFINITE
 	    if (!isfinite(dumpdata[i]))
-#elif defined HAS__ISFINITE
+#elif defined HAVE__ISFINITE
 	    if (!_isfinite(dumpdata[i]))
 #else
             if (0)
@@ -1276,9 +1276,9 @@ extern void fixGemACF(double *ct, int len)
   for (i=0; i<len; i++)
     {
       
-#ifdef HAS_ISFINITE
+#ifdef HAVE_ISFINITE
       if (isfinite(ct[i]))
-#elif defined(HAS__ISFINITE)
+#elif defined(HAVE__ISFINITE)
       if (_isfinite(ct[i]))
 #else
       if(1)
