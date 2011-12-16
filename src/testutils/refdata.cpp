@@ -53,10 +53,34 @@
 
 #include "refdata-impl.h"
 
+namespace
+{
+
+class TestReferenceDataEnvironment : public ::testing::Environment
+{
+    public:
+        virtual void TearDown()
+        {
+            xmlCleanupParser();
+        }
+};
+
+} // namespace
+
 namespace gmx
 {
 namespace test
 {
+
+namespace internal
+{
+
+void addGlobalReferenceDataEnvironment()
+{
+    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
+}
+
+} // namespace internal
 
 /********************************************************************
  * TestReferenceData::Impl
