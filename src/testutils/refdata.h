@@ -103,12 +103,27 @@ std::string getReferenceDataPath();
  * can be used to change it.
  * Recognized command-line arguments are removed from the list.
  *
- * Also creates the directory for storing the reference data.
- *
  * This function is automatically called by test_main_gtest.cpp and
  * test_main_gmock.cpp.
  */
 int initReferenceData(int *argc, char **argv);
+
+namespace internal
+{
+
+/*! \internal \brief
+ * Adds a global test teardown method for freeing libxml2 internal data.
+ *
+ * This method is called by initReferenceData(), and should not be called
+ * directly.
+ * It adds a global test environment object that calls xmlCleanupParser() at
+ * the end of all tests.  This makes memory reports from valgrind cleaner since
+ * otherwise they show the memory as "still reachable".
+ */
+void addGlobalReferenceDataEnvironment();
+
+} // namespace internal
+
 
 class TestReferenceChecker;
 

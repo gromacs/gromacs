@@ -192,9 +192,10 @@ AnalysisData::startData(AnalysisDataParallelOptions opt)
     std::auto_ptr<AnalysisDataHandle> handle(new AnalysisDataHandle(this));
     _impl->_handles.push_back(handle.get());
 
+    size_t oldSize = _impl->_pending.size();
     _impl->_pending.resize(2 * _impl->_handles.size() - 1);
     Impl::FrameList::iterator i;
-    for (i = _impl->_pending.begin(); i != _impl->_pending.end(); ++i)
+    for (i = _impl->_pending.begin() + oldSize; i != _impl->_pending.end(); ++i)
     {
         *i = new AnalysisDataFrame();
         (*i)->allocate(columnCount());
