@@ -57,6 +57,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 
+#include "compiler.h"
 #include "mempool.h"
 #include "scanner.h"
 #include "selectioncollection-impl.h"
@@ -421,27 +422,10 @@ SelectionCollection::requiresTopology() const
 }
 
 
-class RequestsClearer
-{
-    public:
-        RequestsClearer(SelectionCollection::Impl::RequestList *requests)
-            : _requests(requests)
-        {
-        }
-        ~RequestsClearer()
-        {
-            _requests->clear();
-        }
-
-    private:
-        SelectionCollection::Impl::RequestList *_requests;
-};
-
-
 void
 SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 {
-    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
@@ -477,7 +461,7 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 void
 SelectionCollection::parseRequestedFromString(const std::string &str)
 {
-    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
     std::vector<Selection *> selections;
     parseFromString(str, &selections);
@@ -585,7 +569,10 @@ SelectionCollection::compile()
     {
         printTree(stderr, false);
     }
-    gmx_ana_selcollection_compile(this);
+
+    SelectionCompiler compiler;
+    compiler.compile(this);
+
     if (_impl->hasFlag(Impl::efOwnPositionCollection))
     {
         if (_impl->_debugLevel >= 1)

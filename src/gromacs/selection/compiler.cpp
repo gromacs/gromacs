@@ -69,9 +69,9 @@
  * parts of the selection: in the end of the compilation, static parts have
  * been replaced by the result of the evaluation.
  *
- * The compiler is called by calling gmx_ana_selcollection_compile().
- * This functions then does the compilation in several passes over the
- * \c t_selelem tree.
+ * The compiler is invoked using gmx::SelectionCompiler.
+ * The gmx::SelectionCompiler::compile() method does the compilation in several
+ * passes over the \c t_selelem tree.
  *  -# Defaults are set for the position type and flags of position calculation
  *     methods that were not explicitly specified in the user input.
  *  -# Subexpressions are extracted: a separate root is created for each
@@ -262,6 +262,8 @@
  * calculated.
  * Currently, no other processing is done.
  */
+#include "compiler.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -287,7 +289,6 @@
 #include "mempool.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
-
 
 using std::min;
 
@@ -2581,6 +2582,13 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
 
+namespace gmx
+{
+
+SelectionCompiler::SelectionCompiler()
+{
+}
+
 /*!
  * \param[in,out] coll Selection collection to be compiled.
  * \returns       0 on successful compilation, a non-zero error code on error.
@@ -2595,7 +2603,7 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
  * \ref CFRAC_NONE.
  */
 void
-gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
+SelectionCompiler::compile(SelectionCollection *coll)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
     gmx_sel_evaluate_t  evaldata;
@@ -2765,3 +2773,5 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     /* Finish up by calculating total masses and charges. */
     calculate_mass_charge(&sc->sel, sc->top);
 }
+
+} // namespace gmx

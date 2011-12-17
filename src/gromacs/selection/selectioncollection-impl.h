@@ -103,7 +103,8 @@ class SelectionCollection::Impl
             SelectionRequest(const std::string &name, const std::string &descr,
                              SelectionOptionStorage *storage)
                 : name(name), descr(descr), storage(storage)
-            { }
+            {
+            }
 
             int count() const;
 
@@ -116,6 +117,21 @@ class SelectionCollection::Impl
         typedef std::vector<Selection *> SelectionList;
         //! Shorthand for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
+
+        class RequestsClearer
+        {
+            public:
+                RequestsClearer(RequestList *requests) : requests_(requests)
+                {
+                }
+                ~RequestsClearer()
+                {
+                    requests_->clear();
+                }
+
+            private:
+                RequestList    *requests_;
+        };
 
         //! Possible flags for the selection collection.
         enum Flag
@@ -186,13 +202,6 @@ class SelectionCollection::Impl
 /*! \addtogroup module_selection
  * \{
  */
-
-/* In compiler.cpp */
-/*! \internal \brief
- * Prepares the selections for evaluation and performs some optimizations.
- */
-void
-gmx_ana_selcollection_compile(gmx::SelectionCollection *coll);
 
 /* In evaluate.cpp */
 /*! \internal \brief
