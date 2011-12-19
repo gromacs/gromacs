@@ -11,72 +11,15 @@
 }
 
 {
-   gmx_fio_open1
-   Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
-   fun:gmx_fio_open
-}
-
-{
-   gmx_fio_open2
-   Memcheck:Leak
-   fun:malloc
-   fun:strdup
-   fun:gmx_fio_open
-}
-
-{
-   gmx_fio_open3
-   Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
-   fun:gmx_fio_make_dummy
-   fun:gmx_fio_insert
-   fun:gmx_fio_open
-}
-
-{
-   put_symtab1
-   Memcheck:Leak
-   fun:malloc
-   fun:strdup
-   fun:enter_buf
-   fun:put_symtab
-}
-
-{
-   put_symtab2
-   Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
-   fun:new_symbuf
-   fun:enter_buf
-   fun:put_symtab
-}
-
-{
-   tMPI_init_once
-   Memcheck:Leak
-   fun:malloc
-   fun:tMPI_Malloc
-   fun:tMPI_Thread_mutex_init_once
-   fun:tMPI_Thread_mutex_lock
-}
-
-{
-   get_w_conf
-   Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
-   fun:get_w_conf
-}
-
-{
    read_tps_conf
    Memcheck:Leak
-   fun:calloc
-   fun:save_calloc
+   ...
    fun:read_tps_conf
 }
 
+{
+   mdrun
+   Memcheck:Leak
+   ...
+   obj:*/mdrun*
+}
