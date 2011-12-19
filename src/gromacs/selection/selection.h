@@ -92,7 +92,9 @@ typedef struct gmx_ana_selection_t
 namespace gmx
 {
 
+class SelectionEvaluator;
 class SelectionCollection;
+class SelectionCompiler;
 
 /*! \brief
  * Provides access to a single selection.
@@ -186,14 +188,15 @@ class Selection
          */
         void printDebugInfo(FILE *fp, int nmaxind) const;
 
-        gmx_ana_selection_t     _sel;
-
     private:
         ~Selection();
 
+        gmx_ana_selection_t     _sel;
         SelectionFlags          _flags;
 
+        friend class SelectionCompiler;
         friend class SelectionCollection;
+        friend class SelectionEvaluator;
 
         // Disallow copy and assign.
         Selection(const Selection &);

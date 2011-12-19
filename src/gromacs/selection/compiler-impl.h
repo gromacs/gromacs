@@ -30,41 +30,32 @@
  */
 /*! \internal \file
  * \brief
- * Declares gmx::SelectionCompiler.
+ * Declares private implementation class for gmx::SelectionCompiler.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifndef GMX_SELECTION_COMPILER_H
-#define GMX_SELECTION_COMPILER_H
+#ifndef GMX_SELECTION_COMPILER_IMPL_H
+#define GMX_SELECTION_COMPILER_IMPL_H
+
+#include <vector>
+
+#include "compiler.h"
 
 namespace gmx
 {
 
-class SelectionCollection;
-
 /*! \internal \brief
- * Implements selection compilation.
- *
- * This class is used to implement SelectionCollection::compile().
- * It prepares the selections in a selection collection for evaluation and
- * performs some optimizations.
- *
- * See \ref page_module_selection_compiler.
+ * Private implementation class for gmx::SelectionCompiler.
  *
  * \ingroup module_selection
  */
-class SelectionCompiler
+class SelectionCompiler::Impl
 {
     public:
-        //! Creates a selection compiler.
-        SelectionCompiler();
-
         //! Compiles the given selection collection.
-        void compile(SelectionCollection *coll);
-
-    private:
-        class Impl;
+        static void calculateMassCharge(std::vector<gmx::Selection *> *selections,
+                                        t_topology *top);
 };
 
 } // namespace gmx

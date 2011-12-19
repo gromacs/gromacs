@@ -53,6 +53,7 @@ namespace gmx
 class Options;
 class Selection;
 class SelectionCompiler;
+class SelectionEvaluator;
 class SelectionOptionStorage;
 
 /*! \libinternal \brief
@@ -309,6 +310,10 @@ class SelectionCollection
          * Needed for the compiler to freely modify the collection.
          */
         friend class SelectionCompiler;
+        /*! \brief
+         * Needed for the compiler to freely modify the collection.
+         */
+        friend class SelectionEvaluator;
         /*! \brief
          * Needed for handling delayed selection parsing requests.
          */

@@ -284,6 +284,7 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/format.h"
 
+#include "compiler-impl.h"
 #include "evaluate.h"
 #include "keywords.h"
 #include "mempool.h"
@@ -2518,6 +2519,9 @@ free_item_compilerdata(t_selelem *sel)
 }
 
 
+namespace gmx
+{
+
 /********************************************************************
  * MASS AND CHARGE CALCULATION
  ********************************************************************/
@@ -2528,9 +2532,10 @@ free_item_compilerdata(t_selelem *sel)
  * \param[in,out] selections Array of selections to update.
  * \param[in]     top   Topology information.
  */
-static void
-calculate_mass_charge(std::vector<gmx::Selection *> *selections,
-                      t_topology *top)
+void
+SelectionCompiler::Impl::calculateMassCharge(
+        std::vector<gmx::Selection *> *selections,
+        t_topology *top)
 {
     int   b, i;
 
@@ -2581,9 +2586,6 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
 /********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
-
-namespace gmx
-{
 
 SelectionCompiler::SelectionCompiler()
 {
@@ -2771,7 +2773,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
     _gmx_sel_mempool_reserve(sc->mempool, 0);
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(&sc->sel, sc->top);
+    Impl::calculateMassCharge(&sc->sel, sc->top);
 }
 
 } // namespace gmx
