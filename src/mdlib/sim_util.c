@@ -629,9 +629,10 @@ static void do_nb_verlet(t_forcerec *fr,
             break;
 
         case nbk8x8x8PlainC:
-            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],nbvg->nbat, ic,
-                                 fr->nblists[0].tab.scale,
-                                 fr->nblists[0].tab.tab,
+            nbnxn_kernel_gpu_ref(nbvg->nbl_lists.nbl[0],
+                                 nbvg->nbat, ic,
+                                 fr->shift_vec,
+                                 flags,
                                  clearF,
                                  nbvg->nbat->out[0].f,
                                  fr->fshift[0],

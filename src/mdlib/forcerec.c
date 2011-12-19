@@ -1581,27 +1581,54 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type)
     }
 }
 
+static void init_ewald_f_table(interaction_const_t *ic,
+                               int verlet_kernel_type)
+{
+#define GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
+
+    switch (verlet_kernel_type)
+    {
+    case nbk4x4PlainC:
+    case nbk4x4SSE:
+        /* With a spacing of 0.0005 we are at the force summation accuracy
+         * for the SSE kernels for "normal" atomistic simulations.
+         */
+        ic->tabq_scale = 1/0.0005;
+        ic->tabq_size  = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
+        sfree_aligned(ic->tabq_coul_FDV0);
+        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,ic->tabq_size,
+                                    tableformatFDV0,
+                                    1/ic->tabq_scale,ic->ewaldcoeff);
+        break;
+    case nbk8x8x8CUDA:
+        /* This case is handled in the nbnxn CUDA module */
+        break;
+    case nbk8x8x8PlainC:
+        /* Table size identical to the CUDA implementation */
+        ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
+        /* Subtract 2 iso 1 to avoid access out of range due to rounding */
+        ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
+        sfree_aligned(ic->tabq_coul_F);
+        snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_size,
+                                    tableformatF,
+                                    1/ic->tabq_scale,ic->ewaldcoeff);
+        break;
+    default:
+        gmx_incons("Unimplemented nbnxn kernel type");
+    }
+}
+
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,
                                    int verlet_kernel_type)
 {
     real spacing;
 
-    if ((ic->eeltype == eelEWALD || EEL_PME(ic->eeltype)) &&
-        (verlet_kernel_type == nbk4x4PlainC ||
-         verlet_kernel_type == nbk4x4SSE))
+    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        /* With a spacing of 0.0005 we are at the force summation accuracy
-         * for the SSE kernels for "normal" atomistic simulations.
-         */
-        spacing = 0.0005;
-        ic->tabq_scale = 1/spacing;
-        ic->tabq_size    = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
-        sfree_aligned(ic->tabq_coul_FDV0);
-        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,ic->tabq_size,
-                                    tableformatFDV0,
-                                    spacing,ic->ewaldcoeff);
+        init_ewald_f_table(ic,verlet_kernel_type);
     }
 }
 

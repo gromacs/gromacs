@@ -42,14 +42,15 @@
 #include "types/simple.h"
 #include "vec.h"
 #include "typedefs.h"
+#include "force.h"
 #include "nbnxn_kernel_gpu_ref.h"
 
 void
 nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      const nbnxn_atomdata_t     *nbat,
                      const interaction_const_t  *iconst,
-                     real                       tabscale,  
-                     const real *               VFtab,
+                     rvec                       *shift_vec,
+                     int                        force_flags,
                      gmx_bool                   clearF,
                      real *                     f,
                      real *                     fshift,
@@ -58,34 +59,38 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 {
     const nbnxn_sci_t *nbln;
     const real    *x;
+    gmx_bool      bEner;
+    gmx_bool      bEwald;
+    const real    *Ftab=NULL;
     real          rcut2;
-    int           ntype,table_nelements,icoul,ivdw;
-    real          facel,gbtabscale;
+    int           ntype;
+    real          facel;
     int           n;
     int           ish3;
     int           sci;
     int           cj4_ind0,cj4_ind1,cj4_ind;
     int           ci,cj;
     int           ic,jc,ia,ja,is,js,im,jm;
-    int           nnn,n0;
+    int           n0;
     int           ggid;
     real          shX,shY,shZ;
     real          fscal,tx,ty,tz;
     real          rinvsq;
     real          iq;
-    real          qq,vcoul,krsq,vctot;
-    int           nti,nvdwparam;
+    real          qq,vcoul=0,krsq,vctot;
+    int           nti;
     int           tj;
-    real          rt,r,eps,eps2,Y,F,Geps,Heps2,VV,FF,Fp,fijD,fijR;
+    real          rt,r,eps;
     real          rinvsix;
     real          Vvdwtot;
     real          Vvdw_rep,Vvdw_disp;
     real          ix,iy,iz,fix,fiy,fiz;
     real          jx,jy,jz;
     real          dx,dy,dz,rsq,rinv;
+    int           int_bit;
+    real          fexcl;
     real          c6,c12,cexp1,cexp2,br;
-    real *        charge;
-    real *        shiftvec;
+    const real *  shiftvec;
     real *        vdwparam;
     int *         shift;
     int *         type;
@@ -103,41 +108,19 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         }
     }
 
-    if (iconst->eeltype == eelCUT)
-    {
-        icoul           = 1;
-    }
-    else if (EEL_RF(iconst->eeltype))
-    {
-        icoul           = 2;
-    }
-    else 
-    {
-        icoul           = 3;
-    }
+    bEner = (force_flags & GMX_FORCE_ENERGY);
 
-    ivdw                = 1;
-
-    /* avoid compiler warnings for cases that cannot happen */
-    nnn                 = 0;
-    vcoul               = 0.0;
-    eps                 = 0.0;
-    eps2                = 0.0;
+    bEwald = EEL_FULL(iconst->eeltype);
+    if (bEwald)
+    {
+        Ftab = iconst->tabq_coul_F;
+    }
 
     rcut2               = iconst->rvdw*iconst->rvdw;
-	
-    /* 3 VdW parameters for buckingham, otherwise 2 */
-    nvdwparam           = (ivdw==2) ? 3 : 2;
-    /* We currently pass the full Coulomb+LJ tables
-    table_nelements     = (icoul==3) ? 4 : 0;
-    table_nelements    += (ivdw==3) ? 8 : 0;
-    */
-    table_nelements     = 12;
 
-    //charge              = mdatoms->chargeA;
     type                = nbat->type;
     facel               = iconst->epsfac;
-    shiftvec            = nbat->shift_vec[0];
+    shiftvec            = shift_vec[0];
     vdwparam            = nbat->nbfp;
     ntype               = nbat->ntype;
 
@@ -160,6 +143,32 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         sci              = nbln->sci;
         vctot            = 0;              
         Vvdwtot          = 0;              
+
+        if (nbl->cj4[cj4_ind0].cj[0] == sci*NSUBCELL)
+        {
+            /* we have the diagonal:
+             * add the charge self interaction energy term
+             */
+            for(im=0; im<NSUBCELL; im++)
+            {
+                ci = sci*NSUBCELL + im;
+                for (ic=0; ic<nbl->na_c; ic++)
+                {
+                    ia     = ci*nbl->na_c + ic;
+                    iq     = x[ia*nbat->xstride+3];
+                    vctot += iq*iq;
+                }
+            }
+            if (!bEwald)
+            {
+                vctot *= -facel*0.5*iconst->c_rf;
+            }
+            else
+            {
+                /* last factor 1/sqrt(pi) */
+                vctot *= -facel*iconst->ewaldcoeff*0.564189583548;
+            }
+        }
         
         for(cj4_ind=cj4_ind0; (cj4_ind<cj4_ind1); cj4_ind++)
         {
@@ -189,7 +198,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             iy               = shY + x[is+1];
                             iz               = shZ + x[is+2];
                             iq               = facel*x[is+3];
-                            nti              = nvdwparam*ntype*type[ia];
+                            nti              = ntype*2*type[ia];
                     
                             fix              = 0;
                             fiy              = 0;
@@ -198,11 +207,13 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             for(jc=0; jc<nbl->na_c; jc++)
                             {
                                 ja               = cj*nbl->na_c + jc;
-                        
-                                if (!((excl[jc>>2]->pair[(jc & 3)*nbl->na_c+ic] >> (jm*NSUBCELL+im)) & 1))
+
+                                if (ci == cj && ja <= ia)
                                 {
                                     continue;
                                 }
+                        
+                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*nbl->na_c+ic] >> (jm*NSUBCELL+im)) & 1); 
 
                                 js               = ja*nbat->xstride;
                                 jx               = x[js+0];      
@@ -211,8 +222,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 dx               = ix - jx;      
                                 dy               = iy - jy;      
                                 dz               = iz - jz;      
-                                rsq              = dx*dx+dy*dy+dz*dz;
-                                if (rsq >= rcut2)
+                                rsq              = dx*dx + dy*dy + dz*dz;
+                                if (rsq >= rcut2 || rsq < 1e-12)
                                 {
                                     continue;
                                 }
@@ -225,139 +236,61 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 rinvsq           = rinv*rinv;  
                                 fscal            = 0;
                         
-                                if(icoul==3 || ivdw==3)
+                                qq               = iq*x[js+3];
+                                if (!bEwald)
                                 {
-                                    r                = rsq*rinv;
-                                    rt               = r*tabscale;     
-                                    n0               = rt;             
-                                    eps              = rt-n0;          
-                                    eps2             = eps*eps;        
-                                    nnn              = table_nelements*n0;
+                                    /* Reaction-field */
+                                    krsq  = iconst->k_rf*rsq;
+                                    fscal = qq*(int_bit*rinv - 2*krsq)*rinvsq;
+                                    if (bEner)
+                                    {
+                                        vcoul = qq*(int_bit*rinv + krsq - iconst->c_rf);
+                                    }
+                                }
+                                else
+                                {
+                                    r     = rsq*rinv;
+                                    rt    = r*iconst->tabq_scale;
+                                    n0    = rt;
+                                    eps   = rt - n0;
+
+                                    fexcl = (1 - eps)*Ftab[n0] + eps*Ftab[n0+1];
+
+                                    fscal = qq*(int_bit*rinvsq - fexcl)*rinv;
+
+                                    if (bEner)
+                                    {
+                                        vcoul = qq*(int_bit - erf(iconst->ewaldcoeff*r))*rinv;
+                                    }
+                                }
+
+                                tj        = nti + 2*type[ja];
+
+                                /* Vanilla Lennard-Jones cutoff */
+                                c6        = vdwparam[tj];
+                                c12       = vdwparam[tj+1];
+                                
+                                rinvsix   = int_bit*rinvsq*rinvsq*rinvsq;
+                                Vvdw_disp = c6*rinvsix;     
+                                Vvdw_rep  = c12*rinvsix*rinvsix;
+                                fscal    += (Vvdw_rep - Vvdw_disp)*rinvsq;
+
+                                if (bEner)
+                                {
+                                    vctot   += vcoul;
+
+                                    Vvdwtot += Vvdw_rep/12 - Vvdw_disp/6;
                                 }
                                 
-                                /* Coulomb interaction. icoul==0 means no interaction */
-                                if (icoul > 0)
-                                {
-                                    qq               = iq*x[js+3];
-                                    
-                                    switch(icoul)
-                                    {
-                                    case 1:
-                                        /* Vanilla cutoff coulomb */
-                                        vcoul            = qq*rinv;      
-                                        fscal            = vcoul*rinvsq; 
-                                        break;
-                                        
-                                    case 2:
-                                        /* Reaction-field */
-                                        krsq             = iconst->k_rf*rsq;
-                                        vcoul            = qq*(rinv+krsq-iconst->c_rf);
-                                        fscal            = qq*(rinv-2.0*krsq)*rinvsq;
-                                        break;
-                                        
-                                    case 3:
-                                        /* Tabulated coulomb */
-                                        Y                = VFtab[nnn];     
-                                        F                = VFtab[nnn+1];   
-                                        Geps             = eps*VFtab[nnn+2];
-                                        Heps2            = eps2*VFtab[nnn+3];
-                                        nnn             += 4;
-                                        Fp               = F+Geps+Heps2;   
-                                        VV               = Y+eps*Fp;       
-                                        FF               = Fp+Geps+2.0*Heps2;
-                                        vcoul            = qq*VV;          
-                                        fscal            = -qq*FF*tabscale*rinv;
-                                        break;
-                                        
-                                    case 4:
-                                        /* GB */
-                                        gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
-                                        break;
-                                        
-                                    default:
-                                        gmx_fatal(FARGS,"Death & horror! No generic coulomb interaction for icoul=%d.\n",icoul);
-                                        break;
-                                    }
-                                    vctot            = vctot+vcoul;    
-                                } /* End of coulomb interactions */
-                                
-                                
-                                /* VdW interaction. ivdw==0 means no interaction */
-                                if(ivdw > 0)
-                                {
-                                    tj               = nti+nvdwparam*type[ja];
-                                    
-                                    switch(ivdw)
-                                    {
-                                    case 1:
-                                        /* Vanilla Lennard-Jones cutoff */
-                                        c6               = vdwparam[tj];   
-                                        c12              = vdwparam[tj+1]; 
-                                        
-                                        rinvsix          = rinvsq*rinvsq*rinvsq;
-                                        Vvdw_disp        = c6*rinvsix;     
-                                        Vvdw_rep         = c12*rinvsix*rinvsix;
-                                        fscal           += (Vvdw_rep-Vvdw_disp)*rinvsq;
-                                        Vvdwtot          = Vvdwtot+Vvdw_rep/12-Vvdw_disp/6;
-                                        break;
-                                        
-                                    case 2:
-                                        /* Buckingham */
-                                        c6               = vdwparam[tj];   
-                                        cexp1            = vdwparam[tj+1]; 
-                                        cexp2            = vdwparam[tj+2]; 
-                                        
-                                        rinvsix          = rinvsq*rinvsq*rinvsq;
-                                        Vvdw_disp        = c6*rinvsix;     
-                                        br               = cexp2*rsq*rinv;
-                                        Vvdw_rep         = cexp1*exp(-br); 
-                                        fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
-                                        Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
-                                        break;
-                                        
-                                    case 3:
-                                        /* Tabulated VdW */
-                                        c6               = vdwparam[tj];   
-                                        c12              = vdwparam[tj+1]; 
-                                        
-                                        Y                = VFtab[nnn];     
-                                        F                = VFtab[nnn+1];   
-                                        Geps             = eps*VFtab[nnn+2];
-                                        Heps2            = eps2*VFtab[nnn+3];
-                                        Fp               = F+Geps+Heps2;   
-                                        VV               = Y+eps*Fp;       
-                                        FF               = Fp+Geps+2.0*Heps2;
-                                        Vvdw_disp        = c6*VV;          
-                                        fijD             = c6*FF;          
-                                        nnn             += 4;          
-                                        Y                = VFtab[nnn];     
-                                        F                = VFtab[nnn+1];   
-                                        Geps             = eps*VFtab[nnn+2];
-                                        Heps2            = eps2*VFtab[nnn+3];
-                                        Fp               = F+Geps+Heps2;   
-                                        VV               = Y+eps*Fp;       
-                                        FF               = Fp+Geps+2.0*Heps2;
-                                        Vvdw_rep         = c12*VV;         
-                                        fijR             = c12*FF;         
-                                        fscal           += -(fijD+fijR)*tabscale*rinv;
-                                        Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;
-                                        break;
-                                        
-                                    default:
-                                        gmx_fatal(FARGS,"Death & horror! No generic VdW interaction for ivdw=%d.\n",ivdw);
-                                        break;
-                                    }
-                                } /* end VdW interactions */
-                                
-                                tx               = fscal*dx;
-                                ty               = fscal*dy;
-                                tz               = fscal*dz;
-                                fix              = fix + tx;
-                                fiy              = fiy + ty;
-                                fiz              = fiz + tz;
-                                f[js+0]         -= tx;
-                                f[js+1]         -= ty;
-                                f[js+2]         -= tz;
+                                tx        = fscal*dx;
+                                ty        = fscal*dy;
+                                tz        = fscal*dz;
+                                fix       = fix + tx;
+                                fiy       = fiy + ty;
+                                fiz       = fiz + tz;
+                                f[js+0]  -= tx;
+                                f[js+1]  -= ty;
+                                f[js+2]  -= tz;
                             }
                     
                             f[is+0]          = f[is+0] + fix;
@@ -388,10 +321,12 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             }
         }
         
-        //ggid             = nlist->gid[n];         
-        ggid = 0;
-        Vc[ggid]         = Vc[ggid]   + vctot;
-        Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
+        if (bEner)
+        {
+            ggid = 0;
+            Vc[ggid]         = Vc[ggid]   + vctot;
+            Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
+        }
     }
 
     if (debug)

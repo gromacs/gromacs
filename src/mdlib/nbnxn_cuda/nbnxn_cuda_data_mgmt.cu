@@ -73,7 +73,8 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
     cudaError_t stat;
 
     tabsize     = EWALD_COULOMB_FORCE_TABLE_SIZE;
-    tabscale    = (tabsize - 1) / sqrt(nbp->rcoulomb_sq);
+    /* Subtract 2 iso 1 to avoid access out of range due to rounding */
+    tabscale    = (tabsize - 2) / sqrt(nbp->rcoulomb_sq);
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
