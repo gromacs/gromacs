@@ -1154,7 +1154,8 @@ static void make_benchmark_tprs(
 static gmx_bool tpr_triggers_file(const char *opt)
 {
     if ( (0 == strcmp(opt, "-pf"))
-      || (0 == strcmp(opt, "-px")) )
+      || (0 == strcmp(opt, "-px"))
+      || (0 == strcmp(opt, "-dhdl")) )
         return TRUE;
     else
         return FALSE;
