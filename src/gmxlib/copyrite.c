@@ -542,7 +542,13 @@ void please_cite(FILE *fp,const char *key)
       "C. Kutzner and J. Czub and H. Grubmuller",
       "Keep it Flexible: Driving Macromolecular Rotary Motions in Atomistic Simulations with GROMACS",
       "J. Chem. Theory Comput.",
-      7, 2011, "1381-1393" }
+      7, 2011, "1381-1393" },
+    { "Hoefling2011",
+      "M. Hoefling, N. Lima, D. Haenni, C.A.M. Seidel, B. Schuler, H. Grubmuller",
+      "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
+      "PLoS ONE",
+      6, 2011, "e19791"
+    }
   };
 #define NSTR (int)asize(citedb)
   
