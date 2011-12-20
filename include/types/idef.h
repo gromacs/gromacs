@@ -158,7 +158,7 @@ typedef union
   struct {real bm,kb;                                      } fene;
   struct {real r1e,r2e,krr;                                } cross_bb;
   struct {real r1e,r2e,r3e,krt;                            } cross_ba;
-  struct {real theta,ktheta,r13,kUB;                       } u_b;
+  struct {real thetaA,kthetaA,r13A,kUBA,thetaB,kthetaB,r13B,kUBB;} u_b;
   struct {real theta,c[5];                                 } qangle; 
   struct {real alpha;                                      } polarize;
   struct {real al_x,al_y,al_z,rOH,rHH,rOD;                 } wpol;

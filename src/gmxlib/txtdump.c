@@ -812,8 +812,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->cross_ba.r3e,iparams->cross_ba.krt);
     break;
   case F_UREY_BRADLEY:
-    fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
-	    iparams->u_b.theta,iparams->u_b.ktheta,iparams->u_b.r13,iparams->u_b.kUB);
+      fprintf(fp,"thetaA=%15.8e, kthetaA=%15.8e, r13A=%15.8e, kUBA=%15.8e, thetaB=%15.8e, kthetaB=%15.8e, r13B=%15.8e, kUBB=%15.8e\n",iparams->u_b.thetaA,iparams->u_b.kthetaA,iparams->u_b.r13A,iparams->u_b.kUBA,iparams->u_b.thetaB,iparams->u_b.kthetaB,iparams->u_b.r13B,iparams->u_b.kUBB);
     break;
   case F_QUARTIC_ANGLES:
     fprintf(fp,"theta=%15.8e",iparams->qangle.theta);

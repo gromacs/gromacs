@@ -101,7 +101,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_angle   ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
   def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0,0,          cross_bond_bond ),
   def_bonded  ("CROSS_BOND_ANGLE","BA-Cross",   3, 4, 0,0,          cross_bond_angle ),
-  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 0,  0,          urey_bradley ),
+  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 4,  0,          urey_bradley ),
   def_angle   ("QANGLES","Quartic Angles",    3, 6, 0,  eNR_QANGLES, quartic_angles ),
   def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
   def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),

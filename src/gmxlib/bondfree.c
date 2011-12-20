@@ -832,7 +832,8 @@ real urey_bradley(int nbonds,
   int  i,m,ai,aj,ak,t1,t2,type,ki;
   rvec r_ij,r_kj,r_ik;
   real cos_theta,cos_theta2,theta;
-  real dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
+  real dVdt,va,vtot,dr,dr2,vbond,fbond,fik;
+  real kthA,th0A,kUBA,r13A,kthB,th0B,kUBB,r13B;
   ivec jt,dt_ij,dt_kj,dt_ik;
   
   vtot = 0.0;
@@ -841,22 +842,26 @@ real urey_bradley(int nbonds,
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
     ak   = forceatoms[i++];
-    th0  = forceparams[type].u_b.theta*DEG2RAD;
-    kth  = forceparams[type].u_b.ktheta;
-    r13  = forceparams[type].u_b.r13;
-    kUB  = forceparams[type].u_b.kUB;
+    th0A  = forceparams[type].u_b.thetaA*DEG2RAD;
+    kthA  = forceparams[type].u_b.kthetaA;
+    r13A  = forceparams[type].u_b.r13A;
+    kUBA  = forceparams[type].u_b.kUBA;
+    th0B  = forceparams[type].u_b.thetaB*DEG2RAD;
+    kthB  = forceparams[type].u_b.kthetaB;
+    r13B  = forceparams[type].u_b.r13B;
+    kUBB  = forceparams[type].u_b.kUBB;
     
     theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-    *dvdl += harmonic(kth,kth,th0,th0,theta,lambda,&va,&dVdt);  /*  21  */
+    *dvdl += harmonic(kthA,kthB,th0A,th0B,theta,lambda,&va,&dVdt);  /*  21  */
     vtot += va;
     
     ki   = pbc_rvec_sub(pbc,x[ai],x[ak],r_ik);	/*   3 		*/
     dr2  = iprod(r_ik,r_ik);			/*   5		*/
     dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-    *dvdl += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19  */
+    *dvdl += harmonic(kUBA,kUBB,r13A,r13B,dr,lambda,&vbond,&fbond); /*  19  */
 
     cos_theta2 = sqr(cos_theta);                /*   1		*/
     if (cos_theta2 < 1) {

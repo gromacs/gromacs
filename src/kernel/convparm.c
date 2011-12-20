@@ -149,10 +149,14 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->cross_ba.krt=old[3];
     break;
   case F_UREY_BRADLEY:
-    newparam->u_b.theta=old[0];
-    newparam->u_b.ktheta=old[1];
-    newparam->u_b.r13=old[2];
-    newparam->u_b.kUB=old[3];
+    newparam->u_b.thetaA=old[0];
+    newparam->u_b.kthetaA=old[1];
+    newparam->u_b.r13A=old[2];
+    newparam->u_b.kUBA=old[3];
+    newparam->u_b.thetaB=old[4];
+    newparam->u_b.kthetaB=old[5];
+    newparam->u_b.r13B=old[6];
+    newparam->u_b.kUBB=old[7];
     break;
   case F_QUARTIC_ANGLES:
     newparam->qangle.theta=old[0];

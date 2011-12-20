@@ -1145,10 +1145,14 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     gmx_fio_do_real(fio,iparams->cross_ba.krt);
     break;
   case F_UREY_BRADLEY:
-    gmx_fio_do_real(fio,iparams->u_b.theta);
-    gmx_fio_do_real(fio,iparams->u_b.ktheta);
-    gmx_fio_do_real(fio,iparams->u_b.r13);
-    gmx_fio_do_real(fio,iparams->u_b.kUB);
+    gmx_fio_do_real(fio,iparams->u_b.thetaA);
+    gmx_fio_do_real(fio,iparams->u_b.kthetaA);
+    gmx_fio_do_real(fio,iparams->u_b.r13A);
+    gmx_fio_do_real(fio,iparams->u_b.kUBA);
+    gmx_fio_do_real(fio,iparams->u_b.thetaB);
+    gmx_fio_do_real(fio,iparams->u_b.kthetaB);
+    gmx_fio_do_real(fio,iparams->u_b.r13B);
+    gmx_fio_do_real(fio,iparams->u_b.kUBB);
     break;
   case F_QUARTIC_ANGLES:
     gmx_fio_do_real(fio,iparams->qangle.theta);
