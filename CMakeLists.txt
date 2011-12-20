@@ -560,12 +560,6 @@ if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
 
     set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
-    if (GMX_64_BIT)
-      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
-    else (GMX_64_BIT)
-      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
-    endif (GMX_64_BIT)
-
     # Determine the assembler/compiler to use
   else()
     set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
@@ -584,6 +578,12 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    
+    if (GMX_64_BIT)
+      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
+    else (GMX_64_BIT)
+      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
+    endif (GMX_64_BIT)
 
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
