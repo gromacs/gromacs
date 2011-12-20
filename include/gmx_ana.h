@@ -100,6 +100,9 @@ int
 gmx_dos(int argc,char *argv[]);
 
 int 
+gmx_dyecoupl(int argc,char *argv[]);
+
+int 
 gmx_dyndom(int argc,char *argv[]);
 
 int 
