@@ -47,16 +47,16 @@
  * In a similar fashion, you can use angle.AI[3] instead of
  * angle.a[0][3]
  */
+#ifndef __cplusplus
 #define AI 	a[0]
 #define AJ 	a[1]
 #define AK 	a[2]
 #define AL 	a[3]
-#define AM      a[4]
+#define AM  a[4]
 #define C0 	c[0]
 #define C1 	c[1]
 #define C2 	c[2]
 
-#ifndef __cplusplus
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b) )
 #endif
