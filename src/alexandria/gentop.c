@@ -254,6 +254,11 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
     fclose(fp);
 }
 
+static void unique_atomnames(t_atoms *atoms)
+{
+    fprintf(stderr,"WARNING: Generating unique atomnames is not implemented yet.\n");
+}
+
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -363,7 +368,7 @@ int main(int argc, char *argv[])
     static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
-    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
+    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE,bUnique=FALSE;
     static char *molnm = "",*dbname = "", *symm_string = "";
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
@@ -397,6 +402,8 @@ int main(int argc, char *argv[])
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "Use CONECT records in an input pdb file to signify bonds" },
+        { "-unique", FALSE, etBOOL, {bUnique},
+          "Make atom names unique" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "[HIDDEN]Generate virtual sites for linear groups. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
@@ -875,7 +882,10 @@ int main(int argc, char *argv[])
                                             get_atomtype_name(atoms->atom[i].type,atype));
     
         set_force_const(plist,kb,kt,kp,bRound,bParam);
-    
+        
+        if (bUnique)
+            uniqe_atomnames(atoms);
+            
         if (bTOP) 
         {    
             /* Write topology file */
