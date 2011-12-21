@@ -423,11 +423,27 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         
         if (fr->bEwald)
         {
-            if (fr->n_tpi == 0)
+            Vcorr     = 0;
+            dvdlambda = 0;
+
+            /* With the Verlet scheme exclusion forces are calculated
+             * in the non-bonded kernel.
+             */
+            /* The TPI molecule does not have exclusions with the rest
+             * of the system and no intra-molecular PME grid contributions
+             * will be calculated in gmx_pme_calc_energy.
+             */
+            if ((ir->cutoff_scheme == ecutsGROUP && fr->n_tpi == 0) ||
+                ir->ewald_geometry != eewg3D ||
+                ir->epsilon_surface != 0)
             {
                 int nthreads,t;
 
-                dvdlambda = 0;
+                if (fr->n_tpi > 0)
+                {
+                    gmx_fatal(FARGS,"TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
+                }
+
                 nthreads = gmx_omp_get_bonded_nthreads();
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for(t=0; t<nthreads; t++)
@@ -455,9 +471,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                         }
                         clear_mat(*vir);
                     }
-                    /* With the Verlet scheme exclusion forces are calculated
-                     * in the non-bonded kernel.
-                     */
                     *dvdl = 0;
                     *Vcorrt =
                         ewald_LRcorrection(fplog,
@@ -472,28 +485,23 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                            fnv,*vir,
                                            lambda,dvdl);
                 }
-                if (fr->nthreads > 1)
+                if (nthreads > 1)
                 {
                     reduce_thread_forces(fr->natoms_force,fr->f_novirsum,
                                          fr->vir_el_recip,
                                          &Vcorr,&dvdlambda,
-                                         fr->nthreads,fr->f_t);
+                                         nthreads,fr->f_t);
                 }
-                PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
-                enerd->dvdl_lin += dvdlambda;
             }
-            else
+
+            if (fr->n_tpi == 0)
             {
-                if (ir->ewald_geometry != eewg3D || ir->epsilon_surface != 0)
-                {
-                    gmx_fatal(FARGS,"TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
-                }
-                /* The TPI molecule does not have exclusions with the rest
-                 * of the system and no intra-molecular PME grid contributions
-                 * will be calculated in gmx_pme_calc_energy.
-                 */
-                Vcorr = 0;
+                Vcorr += ewald_charge_correction(cr,fr,lambda,box,
+                                                 &dvdlambda,fr->vir_el_recip);
             }
+
+            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
+            enerd->dvdl_lin += dvdlambda;
         }
         else
         {

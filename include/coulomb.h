@@ -78,8 +78,16 @@ ewald_LRcorrection(FILE *fp,
 		   int ewald_geometry,real epsilon_surface,
 		   rvec *f,tensor vir,
 		   real lambda,real *dvdlambda);
-/* Calculate the Long range correction to ewald, due to 
- * 1-4 interactions, surface dipole term and charge terms
+/* Calculate the Long range correction to the Ewald sum,
+ * due to excluded pairs and/or surface dipole terms.
+ */
+
+real
+ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
+			real *dvdlambda,tensor vir);
+/* Calculate the Long range correction to the Ewald sum,
+ * due to a net system charge.
+ * Should only be called on one thread.
  */
 
 /* Routines to set global constants for speeding up the calculation
