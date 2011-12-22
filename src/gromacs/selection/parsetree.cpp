@@ -216,6 +216,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <memory>
+
 #include <futil.h>
 #include <smalloc.h>
 #include <string2.h>
@@ -1292,9 +1294,10 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
         /* Add the new selection to the collection if it is not a variable. */
         if (sel->child->type != SEL_SUBEXPR)
         {
-            gmx::Selection *newsel
-                = new gmx::Selection(sel, _gmx_sel_lexer_pselstr(scanner));
-            sc->sel.push_back(newsel);
+            std::auto_ptr<gmx::Selection> newsel(
+                new gmx::Selection(sel, _gmx_sel_lexer_pselstr(scanner)));
+            sc->sel.push_back(newsel.get());
+            newsel.release();
         }
     }
     /* Clear the selection string now that we've saved it */

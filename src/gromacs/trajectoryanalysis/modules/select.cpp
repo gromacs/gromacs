@@ -495,7 +495,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         sdh->startFrame(frnr, fr.time);
         for (size_t g = 0; g < sel.size(); ++g)
         {
-            real normfac = _bFracNorm ? 1.0 / sel[g]->cfrac() : 1.0;
+            real normfac = _bFracNorm ? 1.0 / sel[g]->coveredFraction() : 1.0;
             normfac /= _totsize[g];
             sdh->addPoint(g, sel[g]->posCount() * normfac);
         }
@@ -507,7 +507,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         cdh->startFrame(frnr, fr.time);
         for (size_t g = 0; g < sel.size(); ++g)
         {
-            cdh->addPoint(g, sel[g]->cfrac());
+            cdh->addPoint(g, sel[g]->coveredFraction());
         }
         cdh->finishFrame();
     }
