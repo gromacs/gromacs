@@ -1286,6 +1286,11 @@ real posres(int nbonds,
     real vtot,kk,fm;
     real posA,posB,ref=0;
     rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
+    gmx_bool bForceValid = TRUE;
+
+    if ((f==NULL) || (vir_diag==NULL)) {  /* should both be null together! */
+        bForceValid = FALSE;
+    }
 
     npbcdim = ePBC2npbcdim(ePBC);
 
@@ -1371,14 +1376,16 @@ real posres(int nbonds,
         {
             kk          = L1*pr->posres.fcA[m] + lambda*pr->posres.fcB[m];
             fm          = -kk*dx[m];
-            f[ai][m]   += fm;
             vtot       += 0.5*kk*dx[m]*dx[m];
             *dvdl +=
                 0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
                 -fm*dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+            if (bForceValid) {     
+                f[ai][m]   += fm;
+                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+            }
         }
     }
 
