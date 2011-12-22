@@ -2572,7 +2572,7 @@ SelectionCompiler::compile(SelectionCollection *coll)
     for (i = 0; i < sc->sel.size(); ++i)
     {
         gmx::Selection *sel = sc->sel[i];
-        init_pos_keyword_defaults(sel->_sel.selelem,
+        init_pos_keyword_defaults(sel->rootElement_,
                                   coll->_impl->_spost.c_str(),
                                   coll->_impl->_rpost.c_str(),
                                   sel);

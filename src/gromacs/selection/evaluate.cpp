@@ -314,23 +314,13 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
         sel = sel->next;
     }
     /* Update selection information */
-    for (size_t g = 0; g < sc->sel.size(); ++g)
+    std::vector<Selection *>::iterator isel;
+    for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
+        Selection *sel = *isel;
 
-        if (sel->m != sel->orgm)
-        {
-            for (int i = 0; i < sel->p.nr; ++i)
-            {
-                sel->m[i] = sel->orgm[sel->p.m.refid[i]];
-                sel->q[i] = sel->orgq[sel->p.m.refid[i]];
-            }
-        }
-        if (sel->bCFracDyn)
-        {
-            sel->cfrac = _gmx_selelem_estimate_coverfrac(sel->selelem);
-            sel->avecfrac += sel->cfrac;
-        }
+        sel->refreshMassesAndCharges();
+        sel->updateCoveredFractionForFrame();
     }
 }
 
@@ -343,23 +333,13 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
 
-    for (size_t g = 0; g < sc->sel.size(); ++g)
+    std::vector<Selection *>::iterator isel;
+    for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        gmx_ana_selection_t *sel = &sc->sel[g]->_sel;
-        bool bMaskOnly = sc->sel[g]->hasFlag(gmx::efDynamicMask);
-        t_selelem *elem = sel->selelem;
-        if (sel->bDynamic)
-        {
-            gmx_ana_index_copy(sel->g, elem->v.u.g, false);
-            sel->g->name = NULL;
-            gmx_ana_indexmap_update(&sel->p.m, sel->g, bMaskOnly);
-            sel->p.nr = sel->p.m.nr;
-        }
-
-        if (sel->bCFracDyn)
-        {
-            sel->avecfrac /= nframes;
-        }
+        Selection *sel = *isel;
+        sel->restoreOriginalPositions();
+        sel->refreshMassesAndCharges();
+        sel->computeAverageCoveredFraction(nframes);
     }
 }
 
