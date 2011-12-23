@@ -97,13 +97,13 @@ t_forcerec *mk_forcerec(void);
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-enum { tableformatF, tableformatFDV0 };
-
-void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
-				 real dr,real beta);
+void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
+				 int ntab,int tableformat,
+                                 real dr,real beta);
 /* Fill table tab of size ntab with spacing dr with the ewald long-range
  * (mesh) force and optionally energy.
- * With tabelformatFDV0 the size of the tab array should be ntab*4.
+ * With tableformatF tabv can be NULL.
+ * With tableformatFDV0 the size of the tabf array should be ntab*4, tabv=NULL.
  * This function interpolates the Ewald mesh potential contribution
  * with coefficient beta using a quadratic spline.
  * The force can then be interpolated linearly.

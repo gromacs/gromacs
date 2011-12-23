@@ -106,8 +106,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
+    
     real       Vvdw_ci,Vc_ci;
 #else
+    int        egp_mask;
     int        egp_sh_i[UNROLLI];
 #endif
 #endif
@@ -122,7 +124,12 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #ifdef CALC_ENERGIES
     real       halfsp;
 #endif
+#ifndef GMX_DOUBLE
     const real *tab_coul_FDV0;
+#else
+    const real *tab_coul_F;
+    const real *tab_coul_V;
+#endif
 #endif
 
     int ninner;
@@ -143,8 +150,18 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     halfsp = 0.5/ic->tabq_scale;
 #endif
 
+#ifndef GMX_DOUBLE
     tab_coul_FDV0 = ic->tabq_coul_FDV0;
+#else
+    tab_coul_F    = ic->tabq_coul_F;
+    tab_coul_V    = ic->tabq_coul_V;
 #endif
+#endif
+
+#ifdef ENERGY_GROUPS
+    egp_mask = (1<<nbat->neg_2log) - 1;
+#endif
+
 
     rcut2               = ic->rvdw*ic->rvdw;
 
@@ -183,7 +200,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #else
         for(i=0; i<UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbat->energrp[ci]>>(8*i)) & 255)*nbat->nenergrp;
+            egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
         }
 #endif
 #endif
@@ -205,10 +222,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
                 qi[i] = facel*q[ci*UNROLLI+i];
 
 #ifdef CALC_ENERGIES
-                if (l_cj[nbln->cj_ind_start].c == ci_sh)
+                if (l_cj[nbln->cj_ind_start].cj == ci_sh)
                 {
 #ifdef ENERGY_GROUPS
-                    Vc[egp_sh_i[i]+((nbat->energrp[ci]>>(8*i)) & 255)]
+                    Vc[egp_sh_i[i]+((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)]
 #else
                     Vc[0]
 #endif

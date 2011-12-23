@@ -1499,11 +1499,11 @@ static void pick_nb_kernel(FILE *fp,
         }
     }
 
-    /* by default we'll use the 4x4 SSE kernels */
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) ) && ! defined GMX_DOUBLE
+    /* by default we'll use the 4xN SSE kernels */
+#if defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2)
     if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
     {
-        *kernel_type = nbk4x4SSE;
+        *kernel_type = nbk4xNSSE;
     }
     else
 #endif
@@ -1572,7 +1572,7 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type)
             return FALSE;
 
         case nbk4x4PlainC:
-        case nbk4x4SSE:
+        case nbk4xNSSE:
             return TRUE;
 
         default:
@@ -1589,34 +1589,55 @@ static void init_ewald_f_table(interaction_const_t *ic,
     switch (verlet_kernel_type)
     {
     case nbk4x4PlainC:
-    case nbk4x4SSE:
+    case nbk4xNSSE:
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
          */
         ic->tabq_scale = 1/0.0005;
         ic->tabq_size  = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
-        sfree_aligned(ic->tabq_coul_FDV0);
-        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,ic->tabq_size,
-                                    tableformatFDV0,
-                                    1/ic->tabq_scale,ic->ewaldcoeff);
+#ifndef GMX_DOUBLE
+        ic->tabq_format = tableformatFDV0;
+#else
+        ic->tabq_format = tableformatF;
+#endif
         break;
     case nbk8x8x8CUDA:
         /* This case is handled in the nbnxn CUDA module */
+        ic->tabq_format = tableformatNONE;
         break;
     case nbk8x8x8PlainC:
         /* Table size identical to the CUDA implementation */
         ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
-        sfree_aligned(ic->tabq_coul_F);
-        snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_size,
-                                    tableformatF,
-                                    1/ic->tabq_scale,ic->ewaldcoeff);
+        ic->tabq_format = tableformatF;
         break;
     default:
         gmx_incons("Unimplemented nbnxn kernel type");
+    }
+
+    switch (ic->tabq_format)
+    {
+    case tableformatNONE:
+        break;
+    case tableformatF:
+        sfree_aligned(ic->tabq_coul_F);
+        sfree_aligned(ic->tabq_coul_V);
+        snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
+        snew_aligned(ic->tabq_coul_V,ic->tabq_size,16);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_coul_V,
+                                    ic->tabq_size,ic->tabq_format,
+                                    1/ic->tabq_scale,ic->ewaldcoeff);
+        break;
+    case tableformatFDV0:
+        sfree_aligned(ic->tabq_coul_F);
+        snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
+        table_spline3_fill_ewald_lr(ic->tabq_coul_FDV0,NULL,
+                                    ic->tabq_size,ic->tabq_format,
+                                    1/ic->tabq_scale,ic->ewaldcoeff);
+        break;
+    default:
+        gmx_incons("Unknown table format");
     }
 }
 
@@ -1787,7 +1808,7 @@ static void init_nb_verlet(FILE *fp,
             nbnxn_atomdata_init(fp,
                                  nbv->grp[i].nbat,
                                  is_nbl_type_simple(nbv->grp[i].kernel_type),
-                                 nbv->grp[i].kernel_type == nbk4x4SSE,
+                                 nbv->grp[i].kernel_type == nbk4xNSSE,
                                  fr->ntype,fr->nbfp,
                                  ir->opts.ngener,
                                  is_nbl_type_simple(nbv->grp[i].kernel_type) ? fr->nthreads : 1,

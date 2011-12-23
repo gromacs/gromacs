@@ -78,7 +78,7 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
 
     pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
 
-    table_spline3_fill_ewald_lr(ftmp, tabsize, tableformatF,
+    table_spline3_fill_ewald_lr(ftmp, NULL, tabsize, tableformatF,
                                 1/tabscale, nbp->ewald_beta);
 
     /* If the table pointer == NULL the table is generated the first time =>

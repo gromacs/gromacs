@@ -41,8 +41,7 @@
 #include "force.h"
 #include "nbnxn_kernel_sse.h"
 
-#ifndef GMX_DOUBLE
-/* Include all flavors of the single precision SSE kernel loops */
+/* Include all flavors of the SSE kernel loops */
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -50,35 +49,35 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 
 #undef CALC_COUL_RF
 
@@ -88,37 +87,36 @@
 /* Include the force+energy kernels */
 #define CALC_ENERGIES
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef CALC_ENERGIES
 
 /* Include the force+energygroups kernels */
 #define CALC_ENERGIES
 #define ENERGY_GROUPS
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef ENERGY_GROUPS
 #undef CALC_ENERGIES
 
 /* Include the force only kernels */
 #define LJ_COMB_GEOM
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_GEOM
 #define LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 #undef LJ_COMB_LB
-#include "nbnxn_kernel_sse_single_outer.h"
+#include "nbnxn_kernel_sse_outer.h"
 
-#endif /* not GMX_DOUBLE */
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 const nbnxn_atomdata_t     *nbat,
@@ -138,7 +136,7 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 
 enum { coultRF, coultTAB, coultNR };
 
-#ifndef GMX_DOUBLE
+
 p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
 { { nbnxn_kernel_sse_single_rf_comb_geom_ener,
     nbnxn_kernel_sse_single_rf_comb_lb_ener,
@@ -162,7 +160,7 @@ p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
   { nbnxn_kernel_sse_single_tab_comb_geom_noener,
     nbnxn_kernel_sse_single_tab_comb_lb_noener,
     nbnxn_kernel_sse_single_tab_comb_none_noener } };
-#endif
+
 
 static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)
@@ -185,14 +183,25 @@ static void clear_fshift(real *fshift)
     }
 }
 
-static void reduce_group_energies(int ng,
+static void reduce_group_energies(int ng,int ng_2log,
                                   const real *VSvdw,const real *VSc,
                                   real *Vvdw,real *Vc)
 {
-    int c,i,j,j0,j1,j2,j3;
+    int ng_p2,i,j,j0,j1,c,s;
 
-    /* The size of the SSE energy group buffer array is ng^5 */
-    c = 0;
+#ifndef GMX_DOUBLE
+#define SIMD_WIDTH   4
+#define SIMD_WIDTH_2 2
+#else
+#define SIMD_WIDTH   2
+#define SIMD_WIDTH_2 1
+#endif
+
+    ng_p2 = (1<<ng_2log);
+
+    /* The size of the SSE energy group buffer array is:
+     * stride^3*SIMD_WIDTH_2*SIMD_WIDTH
+     */
     for(i=0; i<ng; i++)
     {
         for(j=0; j<ng; j++)
@@ -201,24 +210,18 @@ static void reduce_group_energies(int ng,
             Vc[i*ng+j]   = 0;
         }
 
-        for(j3=0; j3<ng; j3++)
+        for(j1=0; j1<ng; j1++)
         {
-            for(j2=0; j2<ng; j2++)
+            for(j0=0; j0<ng; j0++)
             {
-                for(j1=0; j1<ng; j1++)
+                c = ((i*ng + j1)*ng_p2 + j0)*SIMD_WIDTH_2*SIMD_WIDTH;
+                for(s=0; s<SIMD_WIDTH_2; s++)
                 {
-                    for(j0=0; j0<ng; j0++)
-                    {
-                        Vvdw[i*ng+j0] += VSvdw[c+0];
-                        Vvdw[i*ng+j1] += VSvdw[c+1];
-                        Vvdw[i*ng+j2] += VSvdw[c+2];
-                        Vvdw[i*ng+j3] += VSvdw[c+3];
-                        Vc  [i*ng+j0] += VSc  [c+0];
-                        Vc  [i*ng+j1] += VSc  [c+1];
-                        Vc  [i*ng+j2] += VSc  [c+2];
-                        Vc  [i*ng+j3] += VSc  [c+3];
-                        c += 4;
-                    }
+                    Vvdw[i*ng+j0] += VSvdw[c+0];
+                    Vvdw[i*ng+j1] += VSvdw[c+1];
+                    Vc  [i*ng+j0] += VSc  [c+0];
+                    Vc  [i*ng+j1] += VSc  [c+1];
+                    c += SIMD_WIDTH + 2;
                 }
             }
         }
@@ -236,9 +239,6 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                  real                       *Vc,
                  real                       *Vvdw)
 {
-#ifdef GMX_DOUBLE
-    gmx_incons("nbnxn_kernel_sse called with double precision");
-#else
     int              nnbl;
     nbnxn_pairlist_t **nbl;
     int coult;
@@ -333,7 +333,8 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                                                   out->VSvdw,
                                                   out->VSc);
 
-            reduce_group_energies(nbat->nenergrp,out->VSvdw,out->VSc,
+            reduce_group_energies(nbat->nenergrp,nbat->neg_2log,
+                                  out->VSvdw,out->VSc,
                                   out->Vvdw,out->Vc);
         }
     }
@@ -351,6 +352,6 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                 Vc[i]   += nbat->out[nb].Vc[i];
             }
         }
+        /* printf("vdw %f c %f\n",Vvdw[0],Vc[0]); */
     }
-#endif
 }

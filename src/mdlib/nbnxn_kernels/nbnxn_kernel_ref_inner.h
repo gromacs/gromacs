@@ -48,7 +48,7 @@
 #endif
             int i;
 
-            cj = l_cj[cjind].c;
+            cj = l_cj[cjind].cj;
 
 #ifdef ENERGY_GROUPS
             egp_cj = nbat->energrp[cj];
@@ -143,7 +143,7 @@
                         Vvdw12  = nbfp[type_i_off+type[aj]*2+1]*rinvsix*rinvsix;
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-                        Vvdw[egp_sh_i[i]+((egp_cj>>(8*j)) & 255)] +=
+                        Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] +=
                             Vvdw12/12 - Vvdw6/6;
 #else
                         Vvdw_ci += Vvdw12/12 - Vvdw6/6;
@@ -163,20 +163,29 @@
                     rs     = rsq*rinv*ic->tabq_scale;
                     ri     = (int)rs;
                     frac   = rs - ri;
+#ifndef GMX_DOUBLE
                     fexcl  = tab_coul_FDV0[ri*4] + frac*tab_coul_FDV0[ri*4+1];
+#else
+                    fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
+#endif
                     fcoul  = interact*rinvsq - fexcl;
 #ifdef CALC_ENERGIES
+#ifndef GMX_DOUBLE
                     vcoul  = qq*(interact*rinv
                                  -(tab_coul_FDV0[ri*4+2]
                                    -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
+#else
+                    vcoul  = qq*(interact*rinv
+                                 -(tab_coul_V[ri]
+                                   -halfsp*frac*(tab_coul_F[ri] + fexcl)));
+#endif
 #endif
                     fcoul *= qq*rinv;
 #endif
 
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
-                    //printf("egp = %3d + %3d\n",egp_sh_i[i],((egp_cj>>(8*j)) & 255));
-                    Vc[egp_sh_i[i]+((egp_cj>>(8*j)) & 255)] += vcoul;
+                    Vc[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += vcoul;
 #else
                     Vc_ci += vcoul;
 #endif

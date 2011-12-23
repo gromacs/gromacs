@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+enum { tableformatNONE, tableformatF, tableformatFDV0 };
+
 typedef struct {
     /* VdW */
     real rvdw;
@@ -48,9 +50,12 @@ typedef struct {
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real tabq_scale;
     int  tabq_size;
-    /* Coulomb table, size of array is tabsize*2 (when used) */
+    int  tabq_format;
+    /* Coulomb force table, size of array is tabsize (when used) */
     real *tabq_coul_F;
-    /* Coulomb table, size of array is tabsize*4 (when used) */
+    /* Coulomb energy table, size of array is tabsize (when used) */
+    real *tabq_coul_V;
+    /* Coulomb force+energy table, size of array is tabsize*4 (when used) */
     real *tabq_coul_FDV0;
 } interaction_const_t;
 

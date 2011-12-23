@@ -27,6 +27,9 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
+#ifndef _gmx_sse2_double_h_
+#define _gmx_sse2_double_h_
+
 /* We require SSE2 now! */
 
 #include <math.h>
@@ -1359,6 +1362,8 @@ gmx_mm_calc_rsq_pd(__m128d dx, __m128d dy, __m128d dz)
     return _mm_add_pd( _mm_add_pd( _mm_mul_pd(dx,dx), _mm_mul_pd(dy,dy) ), _mm_mul_pd(dz,dz) );
 }
 
+/* Normal sum of four __m128d registers */
+#define gmx_mm_sum4_pd(t0,t1,t2,t3)  _mm_add_pd(_mm_add_pd(t0,t1),_mm_add_pd(t2,t3))
 
 
 static inline void
@@ -1564,3 +1569,4 @@ gmx_mm_update_2pot_pd(__m128d pot1, double *ptr1, __m128d pot2, double *ptr2)
 }
 
 
+#endif /* _gmx_sse2_double_h_ */

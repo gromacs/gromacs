@@ -609,7 +609,7 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egLJSR]);
             break;
         
-        case nbk4x4SSE:
+        case nbk4xNSSE:
             nbnxn_kernel_sse(&nbvg->nbl_lists,
                              nbvg->nbat, ic,
                              fr->shift_vec,

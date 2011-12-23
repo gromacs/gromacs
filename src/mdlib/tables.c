@@ -131,7 +131,8 @@ static double v_ewald_lr(double beta,double r)
     return erf(beta*r)/r;
 }
 
-void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
+void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
+                                 int ntab,int tableformat,
                                  real dx,real beta)
 {
     real tab_max;
@@ -139,7 +140,7 @@ void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
     int i,i_inrange;
     double dc,dc_new;
     gmx_bool OutOfRange;
-    double v_r0,v_r1,v_inrange,a0,a1,a2dx;
+    double v_r0,v_r1,v_inrange,vi,a0,a1,a2dx;
     double x_r0;
 
     if (ntab < 2)
@@ -175,22 +176,33 @@ void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
         v_r0 = v_ewald_lr(beta,x_r0);
         v_r1 = v_ewald_lr(beta,x_r0-dx);
 
-        if (tableformat == tableformatFDV0)
+        if (!OutOfRange)
         {
-            if (!OutOfRange)
-            {
-                i_inrange = i;
-                v_inrange = v_r0;
+            i_inrange = i;
+            v_inrange = v_r0;
+    
+            vi = v_r0;
+        }
+        else
+        {
+            /* Linear continuation for the last point in range */
+            vi = v_inrange - dc*(i - i_inrange)*dx;
+        }
 
-                tab[i*stride+2] = v_r0;
-            }
-            else
+        switch (tableformat)
+        {
+        case tableformatF:
+            if (tabv != NULL)
             {
-                /* Linear continuation for the last point in range */
-                tab[i*stride+2] = v_inrange - dc*(i - i_inrange)*dx;
+                tabv[i] = vi;
             }
-
-            tab[i*stride+3] = 0;
+            break;
+        case tableformatFDV0:
+            tabf[i*stride+2] = vi;
+            tabf[i*stride+3] = 0;
+            break;
+        default:
+            gmx_incons("Unknown table format");
         }
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
@@ -214,12 +226,12 @@ void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
         if (i == ntab - 1)
         {
             /* Fill the table with the force, minus the derivative of the spline */
-            tab[i*stride] = -dc;
+            tabf[i*stride] = -dc;
         }
         else
         {
             /* tab[i] will contain the average of the splines over the two intervals */
-            tab[i*stride] += -0.5*dc;
+            tabf[i*stride] += -0.5*dc;
         }
 
         if (!OutOfRange)
@@ -245,24 +257,37 @@ void table_spline3_fill_ewald_lr(real *tab,int ntab,int tableformat,
             }
         }
 
-        tab[(i-1)*stride] = -0.5*dc;
+        tabf[(i-1)*stride] = -0.5*dc;
     }
     /* Currently the last value only contains half the force: double it */
-    tab[0] *= 2;
+    tabf[0] *= 2;
+
+    /* The potential should be 0 at 0 to avoid extra operations
+     * for exclusions in SSE.
+     */
+    switch (tableformat)
+    {
+    case tableformatF:
+        if (tabv != NULL)
+        {
+            tabv[0] = 0;
+        }
+        break;
+    case tableformatFDV0:
+        tabf[2] = 0;
+        break;
+    default:
+        gmx_incons("Unknown table format");
+    }
 
     if (tableformat == tableformatFDV0)
     {
-        /* The potential should be 0 at 0 to avoid extra operations
-         * for exclusions in SSE.
-         */
-        tab[2] = 0;
-
         /* Store the force difference in the second entry */
         for(i=0; i<ntab-1; i++)
         {
-            tab[i*stride+1] = tab[(i+1)*stride] - tab[i*stride];
+            tabf[i*stride+1] = tabf[(i+1)*stride] - tabf[i*stride];
         }
-        tab[(ntab-1)*stride+1] = -tab[i*stride];
+        tabf[(ntab-1)*stride+1] = -tabf[i*stride];
     }
 }
 

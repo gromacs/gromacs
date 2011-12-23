@@ -67,8 +67,8 @@ typedef void gmx_nbat_alloc_t(void **ptr,size_t nbytes);
 typedef void gmx_nbat_free_t(void *ptr);
 
 typedef struct {
-    int c;     /* The j-cluster                    */
-    int excl;  /* The exclusion (interaction) bits */
+    int      cj;    /* The j-cluster                    */
+    unsigned excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
 #define NBL_CI_SHIFT          127
@@ -184,6 +184,7 @@ typedef struct {
     real *q;         /* Charges, can be NULL if incorporated in x          */
     int  na_c;       /* The number of atoms per cluster                    */
     int  nenergrp;   /* The number of energy groups                        */
+    int  neg_2log;   /* Log2 of nenergrp                                   */
     int  *energrp;   /* The energy groups per cluster, can be NULL         */
     gmx_bool dynamic_box; /* Do we need to update shift_vec every step?    */
     rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
