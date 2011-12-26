@@ -39,6 +39,7 @@
 
 #include <algorithm>
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
@@ -156,9 +157,11 @@ AbstractAnalysisArrayData::valuesReady()
     notifyDataStart();
     for (int i = 0; i < rowCount(); ++i)
     {
-        notifyFrameStart(xvalue(i), 0);
-        notifyPointsAdd(0, columnCount(), &_value[i * columnCount()],
-                        NULL, NULL);
+        AnalysisDataFrameHeader header(i, xvalue(i), 0);
+        notifyFrameStart(header);
+        notifyPointsAdd(AnalysisDataPointSetRef(header, 0, columnCount(),
+                                                &_value[i * columnCount()],
+                                                NULL, NULL));
         notifyFrameFinish();
     }
     notifyDataFinish();

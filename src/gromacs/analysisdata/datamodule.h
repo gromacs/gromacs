@@ -45,6 +45,8 @@ namespace gmx
 {
 
 class AbstractAnalysisData;
+class AnalysisDataFrameHeader;
+class AnalysisDataPointSetRef;
 
 /*! \brief
  * Interface for a module that gets notified whenever data is added.
@@ -108,20 +110,11 @@ class AnalysisDataModuleInterface
         /*! \brief
          * Called at the start of each data frame.
          */
-        virtual void frameStarted(real x, real dx) = 0;
+        virtual void frameStarted(const AnalysisDataFrameHeader &frame) = 0;
         /*! \brief
          * Called one or more times during each data frame.
-         *
-         * For convenience, the \p x and \p dx values for the frame are
-         * passed to each call of this function.
-         *
-         * \todo
-         * For more flexibility, this function should take a data row/frame
-         * object, which could be used to access all relevant data.
          */
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present) = 0;
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
         /*! \brief
          * Called when a data frame is finished.
          */

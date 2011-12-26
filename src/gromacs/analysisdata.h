@@ -49,6 +49,7 @@
 
 #include "analysisdata/analysisdata.h"
 #include "analysisdata/arraydata.h"
+#include "analysisdata/dataframe.h"
 #include "analysisdata/modules/average.h"
 #include "analysisdata/modules/displacement.h"
 #include "analysisdata/modules/histogram.h"

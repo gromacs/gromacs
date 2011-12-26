@@ -37,6 +37,7 @@
  */
 #include "dataproxy.h"
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
 namespace gmx
@@ -110,44 +111,20 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AnalysisDataProxy::frameStarted(real x, real dx)
+AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 {
-    notifyFrameStart(x, dx);
+    notifyFrameStart(frame);
 }
 
 
 void
-AnalysisDataProxy::pointsAdded(real x, real dx, int firstcol, int n,
-                               const real *y, const real *dy,
-                               const bool *missing)
+AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (firstcol + n <= _col || firstcol >= _col + _span)
+    AnalysisDataPointSetRef columns(points, _col, _span);
+    if (columns.columnCount() > 0)
     {
-        return;
+        notifyPointsAdd(columns);
     }
-    firstcol -= _col;
-    if (firstcol < 0)
-    {
-        if (y)
-        {
-            y +=  -firstcol;
-        }
-        if (dy)
-        {
-            dy += -firstcol;
-        }
-        if (missing)
-        {
-            missing += -firstcol;
-        }
-        n -= -firstcol;
-        firstcol = 0;
-    }
-    if (firstcol + n > _span)
-    {
-        n = _span - firstcol;
-    }
-    notifyPointsAdd(firstcol, n, y, dy, missing);
 }
 
 

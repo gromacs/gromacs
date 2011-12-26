@@ -46,6 +46,7 @@
 #include "gromacs/fatalerror/gmxassert.h"
 
 #include "abstractdata-impl.h"
+#include "dataframe.h"
 #include "dataproxy.h"
 
 namespace gmx
@@ -99,8 +100,10 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
                 }
             }
         }
-        module->frameStarted(x, dx);
-        module->pointsAdded(x, dx, 0, ncol, y, dy, present);
+        AnalysisDataFrameHeader header(i, x, dx);
+        module->frameStarted(header);
+        module->pointsAdded(
+                AnalysisDataPointSetRef(header, 0, ncol, y, dy, present));
         module->frameFinished();
     }
     if (!_bInData)
@@ -257,20 +260,42 @@ AbstractAnalysisData::notifyDataStart()
 
 
 void
-AbstractAnalysisData::notifyFrameStart(real x, real dx) const
+AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) const
 {
     GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
     GMX_ASSERT(!_impl->_bInFrame,
                "notifyFrameStart() called while inside a frame");
+    GMX_ASSERT(header.index() == _impl->_nframes,
+               "Out of order frames");
     _impl->_bInFrame = true;
-    _impl->_currx  = x;
-    _impl->_currdx = dx;
+    _impl->_currHeader = header;
     ++_impl->_nframes;
 
     Impl::ModuleList::const_iterator i;
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
     {
-        (*i)->frameStarted(x, dx);
+        (*i)->frameStarted(header);
+    }
+}
+
+
+void
+AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) const
+{
+    GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
+    GMX_ASSERT(_impl->_bInFrame, "notifyFrameStart() not called");
+    GMX_ASSERT(points.lastColumn() < columnCount(), "Invalid columns");
+    GMX_ASSERT(points.frameIndex() == _impl->_currHeader.index(),
+               "Points do not correspond to current frame");
+    if (!_impl->_bAllowMissing && !points.allPresent())
+    {
+        GMX_THROW(APIError("Missing data not supported by a module"));
+    }
+
+    Impl::ModuleList::const_iterator i;
+    for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
+    {
+        (*i)->pointsAdded(points);
     }
 }
 
@@ -280,26 +305,8 @@ AbstractAnalysisData::notifyPointsAdd(int firstcol, int n,
                                       const real *y, const real *dy,
                                       const bool *present) const
 {
-    GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
-    GMX_ASSERT(_impl->_bInFrame, "notifyFrameStart() not called");
-    GMX_ASSERT(firstcol >= 0 && n > 0 && firstcol + n <= _ncol, "Invalid column");
-    if (present && !_impl->_bAllowMissing)
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            if (!present[i])
-            {
-                GMX_THROW(APIError("Missing data not supported by a module"));
-            }
-        }
-    }
-
-    Impl::ModuleList::const_iterator i;
-    for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
-    {
-        (*i)->pointsAdded(_impl->_currx, _impl->_currdx, firstcol, n,
-                          y, dy, present);
-    }
+    notifyPointsAdd(AnalysisDataPointSetRef(
+            _impl->_currHeader, firstcol, n, y, dy, present));
 }
 
 
@@ -521,7 +528,7 @@ AbstractAnalysisDataStored::startDataStore()
 
 
 void
-AbstractAnalysisDataStored::startNextFrame(real x, real dx)
+AbstractAnalysisDataStored::startNextFrame(const AnalysisDataFrameHeader &header)
 {
     // Start storing the frame if needed.
     if (_impl->_nalloc > 0)
@@ -546,12 +553,13 @@ AbstractAnalysisDataStored::startNextFrame(real x, real dx)
             }
         }
 
-        _impl->_store[_impl->_nextind]->_x  = x;
-        _impl->_store[_impl->_nextind]->_dx = dx;
+        _impl->_store[_impl->_nextind]->_index = header.index();
+        _impl->_store[_impl->_nextind]->_x     = header.x();
+        _impl->_store[_impl->_nextind]->_dx    = header.dx();
     }
 
     // Notify any modules.
-    notifyFrameStart(x, dx);
+    notifyFrameStart(header);
 }
 
 
@@ -596,7 +604,7 @@ void
 AbstractAnalysisDataStored::storeNextFrame(real x, real dx, const real *y,
                                            const real *dy, const bool *present)
 {
-    startNextFrame(x, dx);
+    startNextFrame(AnalysisDataFrameHeader(frameCount(), x, dx));
     storeThisFrame(y, dy, present);
 }
 

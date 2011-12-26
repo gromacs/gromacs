@@ -352,10 +352,8 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisDataStored,
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(real x, real dx);
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished();
         virtual void dataFinished();
 
@@ -402,10 +400,8 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisDataStored,
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(real x, real dx);
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished();
         virtual void dataFinished();
 
@@ -451,10 +447,8 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(real x, real dx);
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished();
         virtual void dataFinished();
 

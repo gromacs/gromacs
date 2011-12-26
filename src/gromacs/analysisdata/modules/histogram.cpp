@@ -44,6 +44,7 @@
 #include <memory>
 
 #include "gromacs/basicmath.h"
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
@@ -368,20 +369,20 @@ BasicAverageHistogramModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-BasicAverageHistogramModule::frameStarted(real /*x*/, real /*dx*/)
+BasicAverageHistogramModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
 
 void
-BasicAverageHistogramModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                         const real *y, const real *dy,
-                                         const bool *present)
+BasicAverageHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    for (int i = 0; i < n; ++i)
+    int firstcol = points.firstColumn();
+    for (int i = 0; i < points.columnCount(); ++i)
     {
-        value(firstcol + i, 0) += y[i];
-        value(firstcol + i, 1) += y[i] * y[i];
+        real y = points.y(i);
+        value(firstcol + i, 0) += y;
+        value(firstcol + i, 1) += y * y;
     }
 }
 
@@ -512,22 +513,19 @@ AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AnalysisDataSimpleHistogramModule::frameStarted(real x, real dx)
+AnalysisDataSimpleHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
-    startNextFrame(x, dx);
+    startNextFrame(header);
 }
 
 
 void
-AnalysisDataSimpleHistogramModule::pointsAdded(real /*x*/, real /*dx*/,
-                                               int /*firstcol*/, int n,
-                                               const real *y, const real * /*dy*/,
-                                               const bool * /*present*/)
+AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < points.columnCount(); ++i)
     {
-        int bin = settings().findBin(y[i]);
+        int bin = settings().findBin(points.y(i));
         if (bin != -1)
         {
             impl_->hist_[bin] += 1;
@@ -612,28 +610,26 @@ AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AnalysisDataWeightedHistogramModule::frameStarted(real x, real dx)
+AnalysisDataWeightedHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
-    startNextFrame(x, dx);
+    startNextFrame(header);
 }
 
 
 void
-AnalysisDataWeightedHistogramModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                                 const real *y, const real *dy,
-                                                 const bool *present)
+AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (firstcol != 0 || n < 2)
+    if (points.firstColumn() != 0 || points.columnCount() < 2)
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(y[0]);
+    int bin = settings().findBin(points.y(0));
     if (bin != -1)
     {
-        for (int i = 1; i < n; ++i)
+        for (int i = 1; i < points.columnCount(); ++i)
         {
-            impl_->hist_[bin] += y[i];
+            impl_->hist_[bin] += points.y(i);
         }
     }
 }
@@ -704,29 +700,28 @@ AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData * /*data*/)
 
 
 void
-AnalysisDataBinAverageModule::frameStarted(real /*x*/, real /*dx*/)
+AnalysisDataBinAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
 
 void
-AnalysisDataBinAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                          const real *y, const real *dy,
-                                          const bool *present)
+AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (firstcol != 0 || n < 2)
+    if (points.firstColumn() != 0 || points.columnCount() < 2)
     {
         GMX_THROW(APIError("Invalid data layout"));
     }
-    int bin = settings().findBin(y[0]);
+    int bin = settings().findBin(points.y(0));
     if (bin != -1)
     {
-        for (int i = 1; i < n; ++i)
+        for (int i = 1; i < points.columnCount(); ++i)
         {
-            value(bin, 0) += y[i];
-            value(bin, 1) += y[i] * y[i];
+            real y = points.y(i);
+            value(bin, 0) += y;
+            value(bin, 1) += y * y;
         }
-        value(bin, 2) += n - 1;
+        value(bin, 2) += points.columnCount() - 1;
     }
 }
 

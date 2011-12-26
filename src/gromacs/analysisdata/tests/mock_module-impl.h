@@ -57,10 +57,8 @@ class MockAnalysisModule::Impl
     public:
         explicit Impl(int flags);
 
-        void startReferenceFrame(real x, real dx);
-        void checkReferencePoints(real x, real dx, int firstcol, int n,
-                                  const real *y, const real *dy,
-                                  const bool *present);
+        void startReferenceFrame(const AnalysisDataFrameHeader &header);
+        void checkReferencePoints(const AnalysisDataPointSetRef &points);
         void finishReferenceFrame();
 
         // Could be scoped_ptrs

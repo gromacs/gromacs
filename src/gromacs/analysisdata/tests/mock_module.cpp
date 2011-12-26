@@ -41,6 +41,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/utility/format.h"
 
@@ -65,26 +66,32 @@ MockAnalysisModule::Impl::Impl(int flags)
 
 
 void
-MockAnalysisModule::Impl::startReferenceFrame(real x, real dx)
+MockAnalysisModule::Impl::startReferenceFrame(const AnalysisDataFrameHeader &header)
 {
     EXPECT_TRUE(frameChecker_.get() == NULL);
+    EXPECT_EQ(frameIndex_, header.index());
     frameChecker_.reset(new TestReferenceChecker(
         rootChecker_->checkCompound("DataFrame",
                                     formatString("Frame%d", frameIndex_).c_str())));
     ++frameIndex_;
-    frameChecker_->checkReal(x, "X");
+    frameChecker_->checkReal(header.x(), "X");
 }
 
 
 void
-MockAnalysisModule::Impl::checkReferencePoints(real x, real dx, int firstcol, int n,
-                                               const real *y, const real *dy,
-                                               const bool *present)
+MockAnalysisModule::Impl::checkReferencePoints(const AnalysisDataPointSetRef &points)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
     {
-        frameChecker_->checkSequenceArray(n, y, "Y");
+        // TODO: Add interface to points to make this easier.
+        std::vector<real> tmp;
+        tmp.reserve(points.columnCount());
+        for (int i = 0; i < points.columnCount(); ++i)
+        {
+            tmp.push_back(points.y(i));
+        }
+        frameChecker_->checkSequenceArray(tmp.size(), &tmp[0], "Y");
     }
 }
 
@@ -104,10 +111,25 @@ MockAnalysisModule::Impl::finishReferenceFrame()
 namespace
 {
 
-void checkFrame(real x, real dx, const AnalysisDataTestInputFrame &frame)
+void checkHeader(const AnalysisDataFrameHeader &header,
+                 const AnalysisDataTestInputFrame &refFrame)
 {
-    EXPECT_FLOAT_EQ(frame.x(), x);
-    EXPECT_FLOAT_EQ(frame.dx(), dx);
+    EXPECT_EQ(refFrame.index(), header.index());
+    EXPECT_FLOAT_EQ(refFrame.x(), header.x());
+    EXPECT_FLOAT_EQ(refFrame.dx(), header.dx());
+}
+
+void checkPoints(const AnalysisDataPointSetRef &points,
+                 const AnalysisDataTestInputPointSet &refPoints,
+                 int columnOffset)
+{
+    for (int i = 0; i < points.columnCount(); ++i)
+    {
+        EXPECT_FLOAT_EQ(refPoints.y(points.firstColumn() + columnOffset + i),
+                        points.y(i))
+            << "  Column: " << i << " (+" << points.firstColumn() << ") / "
+            << points.columnCount();
+    }
 }
 
 void checkPoints(int firstcol, int n, const real *y,
@@ -119,12 +141,33 @@ void checkPoints(int firstcol, int n, const real *y,
     }
 }
 
-void checkFrame(real x, real dx, int firstcol, int n, const real *y,
+void checkFrame(int index, real x, real dx, int firstcol, int n, const real *y,
                 const AnalysisDataTestInputFrame &frame)
 {
-    checkFrame(x, dx, frame);
+    checkHeader(AnalysisDataFrameHeader(index, x, dx), frame);
     checkPoints(firstcol, n, y, frame.points());
 }
+
+class StaticDataFrameHeaderChecker
+{
+    public:
+        StaticDataFrameHeaderChecker(const AnalysisDataTestInputFrame *frame,
+                                     int index)
+            : frame_(frame), index_(index)
+        {
+        }
+
+        void operator()(const AnalysisDataFrameHeader &header) const
+        {
+            SCOPED_TRACE(formatString("Frame %d", index_));
+            EXPECT_EQ(index_, header.index());
+            checkHeader(header, *frame_);
+        }
+
+    private:
+        const AnalysisDataTestInputFrame *frame_;
+        int                               index_;
+};
 
 class StaticDataPointsChecker
 {
@@ -136,15 +179,13 @@ class StaticDataPointsChecker
         {
         }
 
-        void operator()(real x, real dx, int firstcol, int n,
-                        const real *y, const real *dy,
-                        const bool *present) const
+        void operator()(const AnalysisDataPointSetRef &points) const
         {
             SCOPED_TRACE(formatString("Frame %d", frame_->index()));
-            EXPECT_EQ(0, firstcol);
-            EXPECT_EQ(n_, n);
-            checkFrame(x, dx, *frame_);
-            checkPoints(firstcol_ + firstcol, n, y, *points_);
+            EXPECT_EQ(0, points.firstColumn());
+            EXPECT_EQ(n_, points.columnCount());
+            checkHeader(points.header(), *frame_);
+            checkPoints(points, *points_, firstcol_);
         }
 
     private:
@@ -181,14 +222,13 @@ class StaticDataPointsStorageChecker
         {
         }
 
-        void operator()(real x, real dx, int firstcol, int n,
-                        const real *y, const real *dy,
-                        const bool *present) const
+        void operator()(const AnalysisDataPointSetRef &points) const
         {
             SCOPED_TRACE(formatString("Frame %d", frameIndex_));
-            EXPECT_EQ(0, firstcol);
-            EXPECT_EQ(data_->columnCount(), n);
-            checkFrame(x, dx, firstcol, n, y, data_->frame(frameIndex_));
+            EXPECT_EQ(0, points.firstColumn());
+            EXPECT_EQ(data_->columnCount(), points.columnCount());
+            checkHeader(points.header(), data_->frame(frameIndex_));
+            checkPoints(points, data_->frame(frameIndex_).points(), 0);
             for (int past = 0;
                  (storageCount_ < 0 || past <= storageCount_) && past <= frameIndex_;
                  ++past)
@@ -199,13 +239,13 @@ class StaticDataPointsStorageChecker
                 SCOPED_TRACE(formatString("Checking storage of frame %d", index));
                 ASSERT_TRUE(source_->getDataWErr(index,
                                                  &pastx, &pastdx, &pasty, NULL));
-                checkFrame(pastx, pastdx, 0, data_->columnCount(), pasty,
+                checkFrame(index, pastx, pastdx, 0, data_->columnCount(), pasty,
                            data_->frame(index));
                 if (past > 0)
                 {
                     ASSERT_TRUE(source_->getDataWErr(-past,
                                                      &pastx, &pastdx, &pasty, NULL));
-                    checkFrame(pastx, pastdx, 0, data_->columnCount(), pasty,
+                    checkFrame(index, pastx, pastdx, 0, data_->columnCount(), pasty,
                                data_->frame(index));
                 }
             }
@@ -255,12 +295,12 @@ MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
     for (int row = 0; row < data.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
-        EXPECT_CALL(*this, frameStarted(frame.x(), frame.dx()));
+        EXPECT_CALL(*this, frameStarted(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame, row)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
             const AnalysisDataTestInputPointSet &points = frame.points(ps);
-            EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0,
-                                           points.size(), _, _, _))
+            EXPECT_CALL(*this, pointsAdded(_))
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
                                                          data.columnCount())));
         }
@@ -289,11 +329,12 @@ MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
     for (int row = 0; row < data.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
-        EXPECT_CALL(*this, frameStarted(frame.x(), frame.dx()));
+        EXPECT_CALL(*this, frameStarted(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame, row)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
             const AnalysisDataTestInputPointSet &points = frame.points(ps);
-            EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0, n, _, _, _))
+            EXPECT_CALL(*this, pointsAdded(_))
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
         }
         EXPECT_CALL(*this, frameFinished());
@@ -322,9 +363,9 @@ MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
     for (int row = 0; row < data.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
-        EXPECT_CALL(*this, frameStarted(frame.x(), frame.dx()));
-        EXPECT_CALL(*this, pointsAdded(frame.x(), frame.dx(), 0,
-                                       data.columnCount(), _, _, _))
+        EXPECT_CALL(*this, frameStarted(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame, row)));
+        EXPECT_CALL(*this, pointsAdded(_))
             .WillOnce(Invoke(StaticDataPointsStorageChecker(source, &data, row,
                                                             storageCount)));
         EXPECT_CALL(*this, frameFinished());
@@ -350,10 +391,10 @@ MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Invoke;
 
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source));
-    Expectation frameStart = EXPECT_CALL(*this, frameStarted(_, _))
+    Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_, &Impl::startReferenceFrame));
-    Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_, _, _, _, _, _, _))
+    Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_, &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished())

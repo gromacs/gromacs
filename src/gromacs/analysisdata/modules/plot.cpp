@@ -52,6 +52,7 @@
 #include <vec.h>
 #include <xvgr.h>
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/fatalerror/exceptions.h"
@@ -260,7 +261,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AbstractPlotModule::frameStarted(real x, real dx)
+AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
 {
     if (!isFileOpen())
     {
@@ -268,7 +269,7 @@ AbstractPlotModule::frameStarted(real x, real dx)
     }
     if (!_impl->bOmitX)
     {
-        std::fprintf(_impl->fp, _impl->xfmt, x);
+        std::fprintf(_impl->fp, _impl->xfmt, frame.x());
     }
 }
 
@@ -317,17 +318,15 @@ AnalysisDataPlotModule::AnalysisDataPlotModule(const Options &options)
 
 
 void
-AnalysisDataPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                    const real *y, const real *dy,
-                                    const bool *present)
+AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     if (!isFileOpen())
     {
         return;
     }
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < points.columnCount(); ++i)
     {
-        writeValue(y[i]);
+        writeValue(points.y(i));
     }
 }
 
@@ -386,11 +385,9 @@ AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
 
 
 void
-AnalysisDataVectorPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                          const real *y, const real *dy,
-                                          const bool *present)
+AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (firstcol % DIM != 0)
+    if (points.firstColumn() % DIM != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
@@ -398,18 +395,19 @@ AnalysisDataVectorPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
     {
         return;
     }
-    for (int i = 0; i < n; i += 3)
+    for (int i = 0; i < points.columnCount(); i += 3)
     {
         for (int d = 0; d < DIM; ++d)
         {
             if (_bWrite[i])
             {
-                writeValue(y[i + d]);
+                writeValue(points.y(i + d));
             }
         }
         if (_bWrite[DIM])
         {
-            writeValue(norm(&y[i]));
+            rvec y = { points.y(i), points.y(i + 1), points.y(i + 2) };
+            writeValue(norm(y));
         }
     }
 }

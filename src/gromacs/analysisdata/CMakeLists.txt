@@ -5,6 +5,7 @@ set(ANALYSISDATA_PUBLIC_HEADERS
     abstractdata.h
     analysisdata.h
     arraydata.h
+    dataframe.h
     datamodule.h)
 install(FILES ${ANALYSISDATA_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/analysisdata

@@ -42,7 +42,9 @@
 #include <vector>
 
 #include "types/simple.h"
+
 #include "abstractdata.h"
+#include "dataframe.h"
 
 namespace gmx
 {
@@ -88,10 +90,8 @@ class AbstractAnalysisData::Impl
         bool                    _bInFrame;
         //! true if all modules support missing data.
         bool                    _bAllowMissing;
-        //! x value for the current frame.
-        real                    _currx;
-        //! dx value for the current frame.
-        real                    _currdx;
+        //! Header data for the current frame.
+        AnalysisDataFrameHeader _currHeader;
         /*! \brief
          * Total number of frames in the data.
          *
