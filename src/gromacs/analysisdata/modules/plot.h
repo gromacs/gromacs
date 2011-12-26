@@ -139,10 +139,8 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(real x, real dx);
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present) = 0;
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
         virtual void frameFinished();
         virtual void dataFinished();
 
@@ -178,9 +176,7 @@ class AnalysisDataPlotModule : public AbstractPlotModule
     public:
         explicit AnalysisDataPlotModule(const Options &options);
 
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
         // Copy and assign disallowed by base.
 };
@@ -220,9 +216,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
          */
         void setWriteMask(bool bWrite[4]);
 
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
 
     private:
         bool                    _bWrite[4];

@@ -61,10 +61,8 @@ class MockAnalysisModule : public AnalysisDataModuleInterface
         virtual int flags() const;
 
         MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
-        MOCK_METHOD2(frameStarted, void(real x, real dx));
-        MOCK_METHOD7(pointsAdded, void(real x, real dx, int firstcol, int n,
-                                       const real *y, const real *dy,
-                                       const bool *present));
+        MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
+        MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
         MOCK_METHOD0(frameFinished, void());
         MOCK_METHOD0(dataFinished, void());
 

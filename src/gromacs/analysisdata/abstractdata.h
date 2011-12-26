@@ -45,6 +45,8 @@ namespace gmx
 {
 
 class AnalysisDataModuleInterface;
+class AnalysisDataFrameHeader;
+class AnalysisDataPointSetRef;
 
 /*! \brief
  * Abstract base class for all objects that provide data.
@@ -275,9 +277,9 @@ class AbstractAnalysisData
          * Notifies attached modules of the start of a frame.
          *
          * Should be called once for each frame, before notifyPointsAdd() calls
-         * for thet frame.
+         * for that frame.
          */
-        void notifyFrameStart(real x, real dx) const;
+        void notifyFrameStart(const AnalysisDataFrameHeader &header) const;
         /*! \brief
          * Notifies attached modules of the addition of points to the
          * current frame.
@@ -289,6 +291,13 @@ class AbstractAnalysisData
          * whenever possible, i.e., it's better to handle multiple columns or
          * even the whole frame in a single call rather than calling the method
          * for each column separately.
+         */
+        void notifyPointsAdd(const AnalysisDataPointSetRef &points) const;
+        /*! \brief
+         * Deprecated convenience method for not needing to construct a
+         * AnalysisDataPointSetRef object.
+         *
+         * Will be removed as part of future work.
          */
         void notifyPointsAdd(int firstcol, int n,
                              const real *y, const real *dy,
@@ -367,7 +376,7 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         //! Start storing data.
         void startDataStore();
         //! Starts storing a next frame.
-        void startNextFrame(real x, real dx);
+        void startNextFrame(const AnalysisDataFrameHeader &header);
         //! Stores the whole frame in a single call after start_next_frame().
         void storeThisFrame(const real *y, const real *dy, const bool *present);
         //! Convenience function for storing a whole frame in a single call.

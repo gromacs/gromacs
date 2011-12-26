@@ -43,6 +43,7 @@
 #include "smalloc.h"
 
 #include "gromacs/basicmath.h"
+#include "gromacs/analysisdata/dataframe.h"
 
 namespace gmx
 {
@@ -78,22 +79,22 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AnalysisDataAverageModule::frameStarted(real x, real dx)
+AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
 
 void
-AnalysisDataAverageModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                       const real *y, const real *dy,
-                                       const bool *present)
+AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    for (int i = 0; i < n; ++i)
+    int firstcol = points.firstColumn();
+    for (int i = 0; i < points.columnCount(); ++i)
     {
-        if (!present || present[i])
+        if (points.present(i))
         {
-            value(firstcol + i, 0)  += y[i];
-            value(firstcol + i, 1)  += y[i] * y[i];
+            real y = points.y(i);
+            value(firstcol + i, 0)  += y;
+            value(firstcol + i, 1)  += y * y;
             _nsamples[firstcol + i] += 1;
         }
     }
