@@ -220,4 +220,47 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     fprintf(fp, "\n");
 }
 
+
+void
+Selection::initializeMassesAndCharges(const t_topology *top)
+{
+    snew(_sel.orgm, posCount());
+    snew(_sel.orgq, posCount());
+    for (int b = 0; b < posCount(); ++b)
+    {
+        _sel.orgq[b] = 0;
+        if (top)
+        {
+            _sel.orgm[b] = 0;
+            for (int i = _sel.p.m.mapb.index[b];
+                     i < _sel.p.m.mapb.index[b+1];
+                     ++i)
+            {
+                int index = _sel.p.g->index[i];
+                _sel.orgm[b] += top->atoms.atom[index].m;
+                _sel.orgq[b] += top->atoms.atom[index].q;
+            }
+        }
+        else
+        {
+            _sel.orgm[b] = 1;
+        }
+    }
+    if (isDynamic() && !hasFlag(efDynamicMask))
+    {
+        snew(_sel.m, posCount());
+        snew(_sel.q, posCount());
+        for (int b = 0; b < posCount(); ++b)
+        {
+            _sel.m[b] = _sel.orgm[b];
+            _sel.q[b] = _sel.orgq[b];
+        }
+    }
+    else
+    {
+        _sel.m = _sel.orgm;
+        _sel.q = _sel.orgq;
+    }
+}
+
 } // namespace gmx

@@ -52,6 +52,8 @@ namespace gmx
 
 class Options;
 class Selection;
+class SelectionCompiler;
+class SelectionEvaluator;
 class SelectionOptionStorage;
 
 /*! \libinternal \brief
@@ -299,10 +301,19 @@ class SelectionCollection
          */
         void printXvgrInfo(FILE *fp, output_env_t oenv) const;
 
+    private:
         class Impl;
+
         Impl                   *_impl;
 
-    private:
+        /*! \brief
+         * Needed for the compiler to freely modify the collection.
+         */
+        friend class SelectionCompiler;
+        /*! \brief
+         * Needed for the evaluator to freely modify the collection.
+         */
+        friend class SelectionEvaluator;
         /*! \brief
          * Needed for handling delayed selection parsing requests.
          */

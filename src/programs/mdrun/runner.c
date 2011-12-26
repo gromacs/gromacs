@@ -75,8 +75,6 @@
 #include "membed.h"
 #include "macros.h"
 
-#include "md_openmm.h"
-
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif

@@ -103,7 +103,8 @@ class SelectionCollection::Impl
             SelectionRequest(const std::string &name, const std::string &descr,
                              SelectionOptionStorage *storage)
                 : name(name), descr(descr), storage(storage)
-            { }
+            {
+            }
 
             int count() const;
 
@@ -116,6 +117,21 @@ class SelectionCollection::Impl
         typedef std::vector<Selection *> SelectionList;
         //! Shorthand for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
+
+        class RequestsClearer
+        {
+            public:
+                RequestsClearer(RequestList *requests) : requests_(requests)
+                {
+                }
+                ~RequestsClearer()
+                {
+                    requests_->clear();
+                }
+
+            private:
+                RequestList    *requests_;
+        };
 
         //! Possible flags for the selection collection.
         enum Flag
@@ -181,32 +197,29 @@ class SelectionCollection::Impl
         RequestList             _requests;
 };
 
+/*! \internal \brief
+ * Implements selection evaluation.
+ *
+ * This class is used to implement SelectionCollection::evaluate() and
+ * SelectionCollection::evaluateFinal().
+ *
+ * \ingroup module_selection
+ */
+class SelectionEvaluator
+{
+    public:
+        SelectionEvaluator();
+
+        /*! \brief
+         * Evaluates selections in a collection.
+         */
+        void evaluate(SelectionCollection *sc, t_trxframe *fr, t_pbc *pbc);
+        /*! \brief
+         * Evaluates the final state for dynamic selections.
+         */
+        void evaluateFinal(SelectionCollection *sc, int nframes);
+};
+
 } // namespace gmx
-
-/*! \addtogroup module_selection
- * \{
- */
-
-/* In compiler.cpp */
-/*! \internal \brief
- * Prepares the selections for evaluation and performs some optimizations.
- */
-void
-gmx_ana_selcollection_compile(gmx::SelectionCollection *coll);
-
-/* In evaluate.cpp */
-/*! \internal \brief
- * Evaluates the selection.
- */
-void
-gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
-                               t_trxframe *fr, t_pbc *pbc);
-/*! \internal \brief
- * Evaluates the largest possible index groups from dynamic selections.
- */
-void
-gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
-
-/*!\}*/
 
 #endif

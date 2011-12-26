@@ -69,9 +69,9 @@
  * parts of the selection: in the end of the compilation, static parts have
  * been replaced by the result of the evaluation.
  *
- * The compiler is called by calling gmx_ana_selcollection_compile().
- * This functions then does the compilation in several passes over the
- * \c t_selelem tree.
+ * The compiler is invoked using gmx::SelectionCompiler.
+ * The gmx::SelectionCompiler::compile() method does the compilation in several
+ * passes over the \c t_selelem tree.
  *  -# Defaults are set for the position type and flags of position calculation
  *     methods that were not explicitly specified in the user input.
  *  -# Subexpressions are extracted: a separate root is created for each
@@ -262,6 +262,8 @@
  * calculated.
  * Currently, no other processing is done.
  */
+#include "compiler.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -287,7 +289,6 @@
 #include "mempool.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
-
 
 using std::min;
 
@@ -2518,68 +2519,15 @@ free_item_compilerdata(t_selelem *sel)
 
 
 /********************************************************************
- * MASS AND CHARGE CALCULATION
- ********************************************************************/
-
-/*! \brief
- * Initializes total masses and charges for selections.
- *
- * \param[in,out] selections Array of selections to update.
- * \param[in]     top   Topology information.
- */
-static void
-calculate_mass_charge(std::vector<gmx::Selection *> *selections,
-                      t_topology *top)
-{
-    int   b, i;
-
-    for (size_t g = 0; g < selections->size(); ++g)
-    {
-        gmx_ana_selection_t *sel = &selections->at(g)->_sel;
-        bool bMaskOnly = selections->at(g)->hasFlag(gmx::efDynamicMask);
-
-        sel->g = sel->p.g;
-        snew(sel->orgm, sel->p.nr);
-        snew(sel->orgq, sel->p.nr);
-        for (b = 0; b < sel->p.nr; ++b)
-        {
-            sel->orgq[b] = 0;
-            if (top)
-            {
-                sel->orgm[b] = 0;
-                for (i = sel->p.m.mapb.index[b]; i < sel->p.m.mapb.index[b+1]; ++i)
-                {
-                    sel->orgm[b] += top->atoms.atom[sel->g->index[i]].m;
-                    sel->orgq[b] += top->atoms.atom[sel->g->index[i]].q;
-                }
-            }
-            else
-            {
-                sel->orgm[b] = 1;
-            }
-        }
-        if (sel->bDynamic && !bMaskOnly)
-        {
-            snew(sel->m, sel->p.nr);
-            snew(sel->q, sel->p.nr);
-            for (b = 0; b < sel->p.nr; ++b)
-            {
-                sel->m[b] = sel->orgm[b];
-                sel->q[b] = sel->orgq[b];
-            }
-        }
-        else
-        {
-            sel->m = sel->orgm;
-            sel->q = sel->orgq;
-        }
-    }
-}
-
-
-/********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
+
+namespace gmx
+{
+
+SelectionCompiler::SelectionCompiler()
+{
+}
 
 /*!
  * \param[in,out] coll Selection collection to be compiled.
@@ -2595,7 +2543,7 @@ calculate_mass_charge(std::vector<gmx::Selection *> *selections,
  * \ref CFRAC_NONE.
  */
 void
-gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
+SelectionCompiler::compile(SelectionCollection *coll)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
     gmx_sel_evaluate_t  evaldata;
@@ -2763,5 +2711,10 @@ gmx_ana_selcollection_compile(gmx::SelectionCollection *coll)
     _gmx_sel_mempool_reserve(sc->mempool, 0);
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(&sc->sel, sc->top);
+    for (i = 0; i < sc->sel.size(); ++i)
+    {
+        sc->sel[i]->initializeMassesAndCharges(sc->top);
+    }
 }
+
+} // namespace gmx

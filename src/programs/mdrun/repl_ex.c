@@ -466,8 +466,8 @@ static void copy_doubles(const double *s,double *d,int n)
     }
 }
 
-#define scopy_rvecs(v,n)   copy_rvecs(state->v,state_local->v,n);
-#define scopy_doubles(v,n) copy_doubles(state->v,state_local->v,n);
+#define scopy_rvecs(v,n)   copy_rvecs(state->v,state_local->v,n)
+#define scopy_doubles(v,n) copy_doubles(state->v,state_local->v,n)
 
 static void copy_state_nonatomdata(t_state *state,t_state *state_local)
 {

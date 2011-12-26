@@ -57,6 +57,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 
+#include "compiler.h"
 #include "mempool.h"
 #include "scanner.h"
 #include "selectioncollection-impl.h"
@@ -421,27 +422,10 @@ SelectionCollection::requiresTopology() const
 }
 
 
-class RequestsClearer
-{
-    public:
-        RequestsClearer(SelectionCollection::Impl::RequestList *requests)
-            : _requests(requests)
-        {
-        }
-        ~RequestsClearer()
-        {
-            _requests->clear();
-        }
-
-    private:
-        SelectionCollection::Impl::RequestList *_requests;
-};
-
-
 void
 SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 {
-    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
@@ -477,7 +461,7 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 void
 SelectionCollection::parseRequestedFromString(const std::string &str)
 {
-    RequestsClearer clearRequestsOnExit(&_impl->_requests);
+    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
     std::vector<Selection *> selections;
     parseFromString(str, &selections);
@@ -585,7 +569,10 @@ SelectionCollection::compile()
     {
         printTree(stderr, false);
     }
-    gmx_ana_selcollection_compile(this);
+
+    SelectionCompiler compiler;
+    compiler.compile(this);
+
     if (_impl->hasFlag(Impl::efOwnPositionCollection))
     {
         if (_impl->_debugLevel >= 1)
@@ -613,7 +600,10 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
     {
         gmx_ana_poscalc_init_frame(_impl->_sc.pcc);
     }
-    gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
+
+    SelectionEvaluator evaluator;
+    evaluator.evaluate(this, fr, pbc);
+
     if (_impl->_debugLevel >= 3)
     {
         std::fprintf(stderr, "\n");
@@ -625,7 +615,8 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 void
 SelectionCollection::evaluateFinal(int nframes)
 {
-    gmx_ana_selcollection_evaluate_fin(&_impl->_sc, nframes);
+    SelectionEvaluator evaluator;
+    evaluator.evaluateFinal(this, nframes);
 }
 
 
@@ -658,7 +649,7 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
         }
         for (i = 0; i < (int)sc->sel.size(); ++i)
         {
-            std::fprintf(out, "#   %s\n", sc->sel[i]->_sel.selstr);
+            std::fprintf(out, "#   %s\n", sc->sel[i]->selectionText());
         }
         std::fprintf(out, "#\n");
     }
