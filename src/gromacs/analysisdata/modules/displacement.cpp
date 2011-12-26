@@ -44,8 +44,9 @@
 // Legacy include.
 #include "smalloc.h"
 
-#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/basicmath.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
@@ -146,16 +147,16 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 
 
 void
-AnalysisDataDisplacementModule::frameStarted(real x, real dx)
+AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     // Initialize times.
     if (_impl->bFirst)
     {
-        _impl->t0 = x;
+        _impl->t0 = header.x();
     }
     else if (_impl->dt <= 0)
     {
-        _impl->dt = x - _impl->t0;
+        _impl->dt = header.x() - _impl->t0;
         if (_impl->dt < 0 || gmx_within_tol(_impl->dt, 0.0, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Identical or decreasing frame times"));
@@ -163,12 +164,12 @@ AnalysisDataDisplacementModule::frameStarted(real x, real dx)
     }
     else
     {
-        if (!gmx_within_tol(x - _impl->t, _impl->dt, GMX_REAL_EPS))
+        if (!gmx_within_tol(header.x() - _impl->t, _impl->dt, GMX_REAL_EPS))
         {
             GMX_THROW(APIError("Frames not evenly spaced"));
         }
     }
-    _impl->t = x;
+    _impl->t = header.x();
 
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
@@ -196,17 +197,16 @@ AnalysisDataDisplacementModule::frameStarted(real x, real dx)
 
 
 void
-AnalysisDataDisplacementModule::pointsAdded(real x, real dx, int firstcol, int n,
-                                            const real *y, const real *dy,
-                                            const bool *present)
+AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (firstcol % _impl->ndim != 0 || n % _impl->ndim != 0)
+    if (points.firstColumn() % _impl->ndim != 0
+        || points.columnCount() % _impl->ndim != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
-    for (int i = firstcol; i < firstcol + n; ++i)
+    for (int i = 0; i < points.columnCount(); ++i)
     {
-        _impl->oldval[_impl->ci + i] = y[i];
+        _impl->oldval[_impl->ci + points.firstColumn() + i] = points.y(i);
     }
 }
 
@@ -231,7 +231,8 @@ AnalysisDataDisplacementModule::frameFinished()
         }
         notifyDataStart();
     }
-    notifyFrameStart(_impl->t, 0);
+    AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
+    notifyFrameStart(header);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
          step < _impl->nstored && i != _impl->ci;
@@ -254,7 +255,8 @@ AnalysisDataDisplacementModule::frameFinished()
             }
             _impl->currd[k] = dist2;
         }
-        notifyPointsAdd(0, k, _impl->currd, NULL, NULL);
+        notifyPointsAdd(AnalysisDataPointSetRef(
+                header, 0, k, _impl->currd, NULL, NULL));
     }
 
     notifyFrameFinish();
