@@ -50,6 +50,7 @@
 #include <smalloc.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fatalerror/exceptions.h"
@@ -83,10 +84,8 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(real x, real dx);
-        virtual void pointsAdded(real x, real dx, int firstcol, int n,
-                                 const real *y, const real *dy,
-                                 const bool *present);
+        virtual void frameStarted(const AnalysisDataFrameHeader &header);
+        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished();
         virtual void dataFinished();
 
@@ -106,7 +105,6 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         std::string             _fnm;
         std::vector<GroupInfo>  _groups;
         FILE                   *_fp;
-        int                     _framenr;
         int                     _currentGroup;
         int                     _currentSize;
         bool                    _bAnyWritten;
@@ -116,7 +114,7 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
  * IndexFileWriterModule
  */
 
-IndexFileWriterModule::IndexFileWriterModule() : _fp(NULL), _framenr(0)
+IndexFileWriterModule::IndexFileWriterModule() : _fp(NULL)
 {
 }
 
@@ -166,7 +164,7 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 }
 
 
-void IndexFileWriterModule::frameStarted(real /*x*/, real /*dx*/)
+void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
     _bAnyWritten = false;
     _currentGroup = -1;
@@ -174,27 +172,26 @@ void IndexFileWriterModule::frameStarted(real /*x*/, real /*dx*/)
 
 
 void
-IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
-                                   const real *y, const real * /*dy*/,
-                                   const bool * /*present*/)
+IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     if (_fp == NULL)
     {
         return;
     }
-    if (firstcol == 0)
+    bool bFirstFrame = (points.frameIndex() == 0);
+    if (points.firstColumn() == 0)
     {
         ++_currentGroup;
-        if (_framenr == 0 || _groups[_currentGroup].bDynamic)
+        if (bFirstFrame || _groups[_currentGroup].bDynamic)
         {
-            if (_framenr > 0 || _currentGroup > 0)
+            if (!bFirstFrame || _currentGroup > 0)
             {
                 std::fprintf(_fp, "\n\n");
             }
             std::string name = _groups[_currentGroup].name;
             if (_groups[_currentGroup].bDynamic)
             {
-                name += formatString("_f%d_t%.3f", _framenr, x);
+                name += formatString("_f%d_t%.3f", points.frameIndex(), points.x());
             }
             std::fprintf(_fp, "[ %s ]", name.c_str());
             _bAnyWritten = true;
@@ -203,13 +200,13 @@ IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
     }
     else
     {
-        if (_framenr == 0 || _groups[_currentGroup].bDynamic)
+        if (bFirstFrame || _groups[_currentGroup].bDynamic)
         {
             if (_currentSize % 15 == 0)
             {
                 std::fprintf(_fp, "\n");
             }
-            std::fprintf(_fp, "%4d ", static_cast<int>(y[0]));
+            std::fprintf(_fp, "%4d ", static_cast<int>(points.y(0)));
             ++_currentSize;
         }
     }
@@ -218,7 +215,6 @@ IndexFileWriterModule::pointsAdded(real x, real /*dx*/, int firstcol, int n,
 
 void IndexFileWriterModule::frameFinished()
 {
-    ++_framenr;
 }
 
 

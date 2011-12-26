@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
@@ -266,7 +267,7 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
     if (_impl->_data.isMultipoint())
     {
-        _impl->_data.notifyFrameStart(x, dx);
+        _impl->_data.notifyFrameStart(AnalysisDataFrameHeader(index, x, dx));
     }
     else
     {
