@@ -133,20 +133,11 @@ void checkPoints(const AnalysisDataPointSetRef &points,
     }
 }
 
-void checkPoints(int firstcol, int n, const real *y,
-                 const AnalysisDataTestInputPointSet &points)
+void checkFrame(const AnalysisDataFrameRef &frame,
+                const AnalysisDataTestInputFrame &refFrame)
 {
-    for (int i = 0; i < n; ++i)
-    {
-        EXPECT_FLOAT_EQ(points.y(firstcol + i), y[i]);
-    }
-}
-
-void checkFrame(int index, real x, real dx, int firstcol, int n, const real *y,
-                const AnalysisDataTestInputFrame &frame)
-{
-    checkHeader(AnalysisDataFrameHeader(index, x, dx), frame);
-    checkPoints(firstcol, n, y, frame.points());
+    checkHeader(frame.header(), refFrame);
+    checkPoints(frame.points(), refFrame.points(), 0);
 }
 
 /*! \internal \brief
@@ -248,7 +239,7 @@ class DataStorageRequester
         //! Function call operator for the functor.
         void operator()(AbstractAnalysisData *data) const
         {
-            data->requestStorage(count_);
+            EXPECT_TRUE(data->requestStorage(count_));
         }
 
     private:
@@ -297,25 +288,17 @@ class StaticDataPointsStorageChecker
             EXPECT_EQ(data_->columnCount(), points.columnCount());
             checkHeader(points.header(), data_->frame(frameIndex_));
             checkPoints(points, data_->frame(frameIndex_).points(), 0);
-            for (int past = 0;
+            for (int past = 1;
                  (storageCount_ < 0 || past <= storageCount_) && past <= frameIndex_;
                  ++past)
             {
                 int   index = frameIndex_ - past;
-                real  pastx, pastdx;
-                const real *pasty;
                 SCOPED_TRACE(formatString("Checking storage of frame %d", index));
-                ASSERT_TRUE(source_->getDataWErr(index,
-                                                 &pastx, &pastdx, &pasty, NULL));
-                checkFrame(index, pastx, pastdx, 0, data_->columnCount(), pasty,
-                           data_->frame(index));
-                if (past > 0)
-                {
-                    ASSERT_TRUE(source_->getDataWErr(-past,
-                                                     &pastx, &pastdx, &pasty, NULL));
-                    checkFrame(index, pastx, pastdx, 0, data_->columnCount(), pasty,
-                               data_->frame(index));
-                }
+                ASSERT_NO_THROW({
+                    AnalysisDataFrameRef frame = source_->getDataFrame(index);
+                    ASSERT_TRUE(frame.isValid());
+                    checkFrame(frame, data_->frame(index));
+                });
             }
         }
 

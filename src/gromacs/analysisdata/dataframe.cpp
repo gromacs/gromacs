@@ -146,4 +146,37 @@ bool AnalysisDataPointSetRef::allPresent() const
     return true;
 }
 
+
+/********************************************************************
+ * AnalysisDataFrameRef
+ */
+
+AnalysisDataFrameRef::AnalysisDataFrameRef()
+    : points_(AnalysisDataFrameHeader(), 0, 0, NULL, NULL, NULL)
+{
+}
+
+
+AnalysisDataFrameRef::AnalysisDataFrameRef(
+        int index, real x, real dx, int columnCount,
+        const real *y, const real *dy, const bool *present)
+    : points_(index, x, dx, 0, columnCount, y, dy, present)
+{
+}
+
+
+AnalysisDataFrameRef::AnalysisDataFrameRef(
+        const AnalysisDataFrameHeader &header, int columnCount,
+        const real *y, const real *dy, const bool *present)
+    : points_(header, 0, columnCount, y, dy, present)
+{
+}
+
+
+AnalysisDataFrameRef::AnalysisDataFrameRef(
+        const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
+    : points_(frame.points(), firstColumn, columnCount)
+{
+}
+
 } // namespace gmx

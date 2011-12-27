@@ -143,6 +143,12 @@ class AnalysisDataFrameHeader
  * Methods in this class do not throw, but may contain asserts for incorrect
  * usage.
  *
+ * The design of the interfaces is such that all objects of this type should be
+ * valid, i.e., header().isValid() should always return true.  This is
+ * currently not strictly enforced in the constructors because of an
+ * implementation detail of AnalysisDataFrameRef, but this is subject to
+ * change.
+ *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -203,7 +209,7 @@ class AnalysisDataPointSetRef
          * \param[in] columnCount Number of columns to include.
          *
          * Creates a point set that contains \p columnCount columns starting
-         * from \p firstColumn from \p points, or a subset all requested
+         * from \p firstColumn from \p points, or a subset if all requested
          * columns are not present in \p points.  If the requested column range
          * and the range in \p points do not intersect, the result has
          * columnCount() == 0.
@@ -307,6 +313,181 @@ class AnalysisDataPointSetRef
         const real             *y_;
         const real             *dy_;
         const bool             *present_;
+};
+
+
+/*! \brief
+ * Value type wrapper for non-mutable access to a data frame.
+ *
+ * Default copy constructor and assignment operator are used and work as
+ * intended.
+ * Typically new objects of this type are only constructed internally by the
+ * library and in classes that are derived from AbstractAnalysisData.
+ *
+ * Methods in this class do not throw, but may contain asserts for incorrect
+ * usage.
+ *
+ * \todo
+ * Support for multipoint data.
+ *
+ * \inpublicapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataFrameRef
+{
+    public:
+        /*! \brief
+         * Constructs an invalid frame reference.
+         *
+         * Return values of other methods than isValid() are unspecified for
+         * the constructed object.
+         */
+        AnalysisDataFrameRef();
+        /*! \brief
+         * Constructs a frame reference from given values.
+         *
+         * \param[in] index       Index of the frame. Must be >= 0.
+         * \param[in] x           x coordinate for the frame.
+         * \param[in] dx          Error estimate for x.
+         * \param[in] columnCount Number of columns to include. Must be >= 0.
+         * \param[in] y           Array of values for each column.
+         *     Must not be NULL if columnCount > 0.
+         * \param[in] dy          Array of error estimates for corresponding y.
+         *     Can be NULL, in which case errors cannot be accessed.
+         * \param[in] present     Array of flags giving presence of each point.
+         *     Can be NULL, in which case all values are treated as present.
+         *
+         * Arrays \p y, \p dy and \p dy should all have \p columnCount
+         * elements.
+         */
+        AnalysisDataFrameRef(int index, real x, real dx,
+                             int columnCount,
+                             const real *y, const real *dy,
+                             const bool *present);
+        /*! \brief
+         * Constructs a frame reference from given values.
+         *
+         * \param[in] header      Header for the frame.
+         * \param[in] columnCount Number of columns to include.
+         * \param[in] y           Array of values for each column.
+         *     Must not be NULL if columnCount > 0.
+         * \param[in] dy          Array of error estimates for corresponding y.
+         *     Can be NULL, in which case errors cannot be accessed.
+         * \param[in] present     Array of flags giving presence of each point.
+         *     Can be NULL, in which case all values are treated as present.
+         *
+         * Arrays \p y, \p dy and \p dy should all have \p columnCount
+         * elements.
+         */
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
+                             int columnCount,
+                             const real *y, const real *dy,
+                             const bool *present);
+        /*! \brief
+         * Constructs a frame reference to a subset of columns.
+         *
+         * \param[in] frame       Frame to use as source.
+         * \param[in] firstColumn First column index to include.
+         * \param[in] columnCount Number of columns to include.
+         *
+         * Creates a frame reference that contains \p columnCount columns
+         * starting from \p firstColumn from \p frame, or a subset if all
+         * requested columns are not present in \p frame.
+         *
+         * Mainly intended for internal use.
+         */
+        AnalysisDataFrameRef(const AnalysisDataFrameRef &frame,
+                             int firstColumn, int columnCount);
+
+        /*! \brief
+         * Returns whether the object refers to a valid frame.
+         *
+         * If returns false, return values of other methods are not specified.
+         */
+        bool isValid() const
+        {
+            return header().isValid();
+        }
+        //! Returns the header for this frame.
+        const AnalysisDataFrameHeader &header() const
+        {
+            return points_.header();
+        }
+        //! \copydoc AnalysisDataFrameHeader::index()
+        int frameIndex() const
+        {
+            return header().index();
+        }
+        //! \copydoc AnalysisDataFrameHeader::x()
+        real x() const
+        {
+            return header().x();
+        }
+        //! \copydoc AnalysisDataFrameHeader::dx()
+        real dx() const
+        {
+            return header().dx();
+        }
+        /*! \brief
+         * Returns point set reference to the column values of this frame.
+         *
+         * Should not be called for invalid frames.
+         */
+        const AnalysisDataPointSetRef &points() const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            return points_;
+        }
+        /*! \brief
+         * Returns number of columns in this frame.
+         *
+         * Returns zero for an invalid frame.
+         */
+        int columnCount() const
+        {
+            return points().columnCount();
+        }
+        /*! \brief
+         * Convenience method for accessing a column value.
+         *
+         * \copydetails AnalysisDataPointSetRef::y()
+         */
+        real y(int i) const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            return points().y(i);
+        }
+        /*! \brief
+         * Convenience method for accessing error for a column value.
+         *
+         * \copydetails AnalysisDataPointSetRef::dy()
+         */
+        real dy(int i) const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            return points().dy(i);
+        }
+        /*! \brief
+         * Convenience method for accessing present status for a column.
+         *
+         * \copydetails AnalysisDataPointSetRef::present()
+         */
+        bool present(int i) const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            return points().present(i);
+        }
+        /*! \brief
+         * Returns true if all points in this frame are present.
+         */
+        bool allPresent() const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            return points().allPresent();
+        }
+
+    private:
+        AnalysisDataPointSetRef points_;
 };
 
 } // namespace gmx

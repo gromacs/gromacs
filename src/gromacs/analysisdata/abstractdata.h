@@ -46,14 +46,15 @@ namespace gmx
 
 class AnalysisDataModuleInterface;
 class AnalysisDataFrameHeader;
+class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
 
 /*! \brief
  * Abstract base class for all objects that provide data.
  *
  * The public interface includes functions for querying the data
- * (isMultipoint(), columnCount(), frameCount(), getDataWErr(), getData(),
- * getErrors(), requestStorage()) and functions for using modules for
+ * (isMultipoint(), columnCount(), frameCount(), tryGetDataFrame(),
+ * getDataFrame(), requestStorage()) and functions for using modules for
  * processing the data (addModule(), addColumnModule(), applyModule()).
  *
  * \if libapi
@@ -131,63 +132,53 @@ class AbstractAnalysisData
          *
          * This function returns the number of frames that the object has
          * produced. If requestStorage() has been successfully called,
-         * getData() can be used to access some or all of these frames.
+         * getDataFrame() can be used to access some or all of these frames.
          */
         int frameCount() const;
         /*! \brief
          * Access stored data.
          *
-         * \param[in]  index   Frame index to access
-         *      (negative indices count backwards from the current frame).
-         * \param[out] x
-         * \param[out] dx
-         * \param[out] y
-         * \param[out] dy
-         * \param[out] present Returns a pointer to an array that tells
-         *      whether the corresponding column is present in that frame.
-         *      If NULL, no missing information is returned.
-         * \retval \c false if data for the requested frame is no longer
-         *      available.
+         * \param[in] index  Zero-based frame index to access.
+         * \retval    Frame reference to frame \p index, or an invalid
+         *      reference if no such frame is available.
          *
-         * \if libapi
-         * Derived classes can choose to return false if requestStorage() has
-         * not been called at all, or if the frame is too old (compared to the
-         * value given to requestStorage()).
-         * \endif
+         * Does not throw.  Failure to access a frame with the given index is
+         * indicated through the return value.  Negative \p index is allowed,
+         * and will always result in an invalid reference being returned.
          *
-         * \todo
-         * For more flexibility, it would be better to return a data row/frame
-         * object from this method, which could then be used to access all the
-         * data for that frame.
+         * \see requestStorage()
+         * \see getDataFrame()
          */
-        virtual bool getDataWErr(int index, real *x, real *dx,
-                                 const real **y, const real **dy,
-                                 const bool **present = 0) const = 0;
+        AnalysisDataFrameRef tryGetDataFrame(int index) const;
         /*! \brief
-         * Convenience function for accessing stored data.
+         * Access stored data.
          *
-         * \see getDataWErr()
-         */
-        bool getData(int index, real *x, const real **y,
-                     const bool **present = 0) const;
-        /*! \brief
-         * Convenience function for accessing errors for stored data.
+         * \param[in] index  Zero-based frame index to access.
+         * \retval    Frame reference to frame \p index.
+         * \exception APIError if the requested frame is accessible.
          *
-         * \see getDataWErr()
+         * If the data is not certainly available, use tryGetDataFrame().
+         *
+         * \see requestStorage()
+         * \see tryGetDataFrame()
          */
-        bool getErrors(int index, real *dx, const real **dy) const;
+        AnalysisDataFrameRef getDataFrame(int index) const;
         /*! \brief
          * Request storage of frames.
          *
          * \param[in] nframes  Request storing at least \c nframes previous
-         *     frames (-1 = request storing all).
+         *     frames (-1 = request storing all). Must be >= -1.
          * \retval true if the request could be satisfied.
          *
-         * If called multiple times, the largest request should be honored.
+         * If called multiple times, the largest request is honored.
          *
-         * \see getData()
+         * Does not throw.  Failure to honor the request is indicated through
+         * the return value.
+         *
+         * \see getDataFrame()
+         * \see tryGetDataFrame()
          */
-        virtual bool requestStorage(int nframes = -1) = 0;
+        bool requestStorage(int nframes);
 
         /*! \brief
          * Adds a module to process the data.
@@ -196,11 +187,11 @@ class AbstractAnalysisData
          * \exception APIError if
          *      - \p module is not compatible with the data object
          *      - data has already been added to the data object and everything
-         *        is not available through getData().
+         *        is not available through getDataFrame().
          *
          * If data has already been added to the module, the new module
          * immediately processes all existing data.  APIError is thrown
-         * if all data is not available through getData().
+         * if all data is not available through getDataFrame().
          *
          * When this function is entered, the data object takes ownership of the
          * module, and automatically destructs it when the data object itself
@@ -228,7 +219,7 @@ class AbstractAnalysisData
          *
          * This function works as addModule(), except that it does not take
          * ownership of \p module. Also, it can only be called after the data
-         * is ready, and only if getData() gives access to all of the data.
+         * is ready, and only if getDataFrame() gives access to all of the data.
          * It is provided for additional flexibility in postprocessing
          * in-memory data.
          */
@@ -263,6 +254,44 @@ class AbstractAnalysisData
          * \see isMultipoint()
          */
         void setMultipoint(bool multipoint);
+
+        /*! \brief
+         * Implements access to data frames.
+         *
+         * \param[in] index  Zero-based frame index to access.
+         * \retval    Frame reference to frame \p index, or an invalid
+         *      reference if no such frame is available.
+         *
+         * Must not throw.  Failure to access a frame with the given index is
+         * indicated through the return value.
+         *
+         * Code in derived classes can assume that \p index is non-negative and
+         * less than frameCount().
+         *
+         * Derived classes can choose to return an invalid reference if
+         * requestStorageInternal() has not been called at all, or if the frame
+         * is too old (compared to the value given to requestStorageInternal()).
+         *
+         * This method is called internally by tryGetDataFrame() and
+         * getDataFrame().
+         */
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const = 0;
+        /*! \brief
+         * Implements storage requests.
+         *
+         * \param[in] nframes  Request storing at least \c nframes previous
+         *     frames (-1 = request storing all). Will be either -1 or >0.
+         * \retval true if the request could be satisfied.
+         *
+         * Must not throw.  Failure to access a frame with the given index is
+         * indicated through the return value.
+         *
+         * Derived classes should be prepared for any number of calls to this
+         * method before notifyDataStart() is called (and during that call).
+         *
+         * This method is called internally by requestStorage().
+         */
+        virtual bool requestStorageInternal(int nframes) = 0;
 
         /*! \brief
          * Notifies attached modules of the start of data.
@@ -363,11 +392,6 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
     public:
         virtual ~AbstractAnalysisDataStored();
 
-        virtual bool getDataWErr(int index, real *x, real *dx,
-                                 const real **y, const real **dy,
-                                 const bool **present = 0) const;
-        virtual bool requestStorage(int nframes = -1);
-
     protected:
         /*! \cond libapi */
         AbstractAnalysisDataStored();
@@ -391,6 +415,9 @@ class AbstractAnalysisDataStored : public AbstractAnalysisData
         //! \endcond
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         class Impl;
 
         Impl                   *_impl;

@@ -293,7 +293,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * Works like addStaticCheckerModule(), except that in addition, for
          * each frame, the mock module also checks that previous frames can be
-         * accessed using AbstractAnalysisData::getDataWErr().  In the
+         * accessed using AbstractAnalysisData::getDataFrame().  In the
          * AnalysisDataModuleInterface::dataStarted() callback, the mock module
          * calls AbstractAnalysisData::requestStorage() with \p storageCount as
          * the parameter.

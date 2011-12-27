@@ -68,12 +68,15 @@ class AbstractAnalysisData::Impl
          *
          * \param[in] data   Data object to read data from.
          * \param[in] module Module to present the data to.
-         * \retval ::eeInvalidValue if \p module is not compatible with the
+         * \exception APIError if \p module is not compatible with the
          *      data object.
-         * \retval ::eedataDataNotAvailable if all data is not  available
-         *      through getData().
+         * \exception APIError if all data is not  available
+         *      through getDataFrame().
          *
-         * Uses getData() in \p data to access all data in the object, and
+         * Other exceptions may also be thrown if methods called in \p module
+         * throw them.
+         *
+         * Uses getDataFrame() in \p data to access all data in the object, and
          * calls the notification functions in \p module as if the module had
          * been registered to the data object when the data was added.
          */
@@ -95,7 +98,7 @@ class AbstractAnalysisData::Impl
         /*! \brief
          * Total number of frames in the data.
          *
-         * The counter is incremented in notifyFrameStart().
+         * The counter is incremented in notifyFrameFinish().
          */
         int                     _nframes;
 };
@@ -108,11 +111,8 @@ class AbstractAnalysisData::Impl
 class AnalysisDataFrame
 {
     public:
-        AnalysisDataFrame();
+        explicit AnalysisDataFrame(int columnCount);
         ~AnalysisDataFrame();
-
-        //! Allocate memory for a given number of columns.
-        void allocate(int ncol);
 
         //! Zero-based global index of the frame.
         int                     _index;
@@ -120,6 +120,8 @@ class AnalysisDataFrame
         real                    _x;
         //! Error of x for the frame.
         real                    _dx;
+        //! Number of columns in the frame.
+        int                     _columnCount;
         //! Array of column values for the frame.
         real                   *_y;
         //! Array of column error values for the frame.

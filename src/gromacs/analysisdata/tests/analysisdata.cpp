@@ -235,7 +235,7 @@ TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
     gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount());
-    data.requestStorage(-1);
+    ASSERT_TRUE(data.requestStorage(-1));
 
     ASSERT_NO_THROW(presentAllData(input, &data));
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
