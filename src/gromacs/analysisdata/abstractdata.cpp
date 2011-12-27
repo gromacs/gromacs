@@ -82,29 +82,15 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
     int ncol = data->columnCount();
     for (int i = 0; i < data->frameCount(); ++i)
     {
-        real        x, dx;
-        const real *y, *dy;
-        const bool *present;
-
-        if (!data->getDataWErr(i, &x, &dx, &y, &dy, &present))
+        AnalysisDataFrameRef frame = data->getDataFrame(i);
+        GMX_RELEASE_ASSERT(frame.isValid(), "Invalid data frame returned");
+        if (bCheckMissing && !frame.allPresent())
         {
-            GMX_THROW(APIError("Data not available when module added"));
+            GMX_THROW(APIError("Missing data not supported by a module"));
         }
-        if (bCheckMissing && present)
-        {
-            for (int j = 0; j < ncol; ++j)
-            {
-                if (!present[j])
-                {
-                    GMX_THROW(APIError("Missing data not supported by a module"));
-                }
-            }
-        }
-        AnalysisDataFrameHeader header(i, x, dx);
-        module->frameStarted(header);
-        module->pointsAdded(
-                AnalysisDataPointSetRef(header, 0, ncol, y, dy, present));
-        module->frameFinished(header);
+        module->frameStarted(frame.header());
+        module->pointsAdded(frame.points());
+        module->frameFinished(frame.header());
     }
     if (!_bInData)
     {
@@ -136,18 +122,38 @@ AbstractAnalysisData::frameCount() const
 }
 
 
-bool
-AbstractAnalysisData::getData(int index, real *x, const real **y,
-                              const bool **missing) const
+AnalysisDataFrameRef
+AbstractAnalysisData::tryGetDataFrame(int index) const
 {
-    return getDataWErr(index, x, 0, y, 0, missing);
+    if (index < 0 || index >= frameCount())
+    {
+        return AnalysisDataFrameRef();
+    }
+    return tryGetDataFrameInternal(index);
+}
+
+
+AnalysisDataFrameRef
+AbstractAnalysisData::getDataFrame(int index) const
+{
+    AnalysisDataFrameRef frame = tryGetDataFrame(index);
+    if (!frame.isValid())
+    {
+        GMX_THROW(APIError("Invalid frame accessed"));
+    }
+    return frame;
 }
 
 
 bool
-AbstractAnalysisData::getErrors(int index, real *dx, const real **dy) const
+AbstractAnalysisData::requestStorage(int nframes)
 {
-    return getDataWErr(index, 0, dx, 0, dy, 0);
+    GMX_RELEASE_ASSERT(nframes >= -1, "Invalid number of frames requested");
+    if (nframes == 0)
+    {
+        return true;
+    }
+    return requestStorageInternal(nframes);
 }
 
 
@@ -247,7 +253,6 @@ AbstractAnalysisData::notifyDataStart()
     _impl->_bDataStart = _impl->_bInData = true;
 
     Impl::ModuleList::const_iterator i;
-
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
     {
         if (_ncol > 1 && !((*i)->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
@@ -269,7 +274,6 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
                "Out of order frames");
     _impl->_bInFrame = true;
     _impl->_currHeader = header;
-    ++_impl->_nframes;
 
     Impl::ModuleList::const_iterator i;
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
@@ -319,8 +323,11 @@ AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header) c
                "Header does not correspond to current frame");
     _impl->_bInFrame = false;
 
-    Impl::ModuleList::const_iterator i;
+    // Increment the counter before notifications to allow frame access from
+    // modules.
+    ++_impl->_nframes;
 
+    Impl::ModuleList::const_iterator i;
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
     {
         (*i)->frameFinished(header);
@@ -344,7 +351,6 @@ AbstractAnalysisData::notifyDataFinish() const
     _impl->_bInData = false;
 
     Impl::ModuleList::const_iterator i;
-
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
     {
         (*i)->dataFinished();
@@ -356,24 +362,21 @@ AbstractAnalysisData::notifyDataFinish() const
  * AnalysisDataFrame
  */
 
-AnalysisDataFrame::AnalysisDataFrame()
-    : _y(NULL), _dy(NULL), _present(NULL)
+AnalysisDataFrame::AnalysisDataFrame(int columnCount)
+    : _index(-1), _x(0.0), _dx(0.0), _columnCount(columnCount),
+      _y(NULL), _dy(NULL), _present(NULL)
 {
+    snew(_y, columnCount);
+    snew(_dy, columnCount);
+    snew(_present, columnCount);
 }
+
 
 AnalysisDataFrame::~AnalysisDataFrame()
 {
     sfree(_y);
     sfree(_dy);
     sfree(_present);
-}
-
-
-void AnalysisDataFrame::allocate(int ncol)
-{
-    snew(_y, ncol);
-    snew(_dy, ncol);
-    snew(_present, ncol);
 }
 
 
@@ -439,51 +442,22 @@ AbstractAnalysisDataStored::~AbstractAnalysisDataStored()
 }
 
 
-bool
-AbstractAnalysisDataStored::getDataWErr(int index, real *x, real *dx,
-                                        const real **y, const real **dy,
-                                        const bool **present) const
+AnalysisDataFrameRef
+AbstractAnalysisDataStored::tryGetDataFrameInternal(int index) const
 {
-    index = _impl->getStoreIndex(index, frameCount());
-    if (index < 0)
+    if (!_impl->_bStoreAll && index < frameCount() - _impl->_nalloc)
     {
-        return false;
+        return AnalysisDataFrameRef();
     }
-
-    // Retrieve the data.
-    AnalysisDataFrame *fr = _impl->_store[index];
-    if (x)
-    {
-        *x = fr->_x;
-    }
-    if (dx)
-    {
-        *dx = fr->_dx;
-    }
-    if (y)
-    {
-        *y = fr->_y;
-    }
-    if (dy)
-    {
-        *dy = fr->_dy;
-    }
-    if (present)
-    {
-        *present = fr->_present;
-    }
-    return true;
+    AnalysisDataFrame *fr = _impl->_store[index % _impl->_nalloc];
+    return AnalysisDataFrameRef(fr->_index, fr->_x, fr->_dx, fr->_columnCount,
+                                fr->_y, fr->_dy, fr->_present);
 }
 
 
 bool
-AbstractAnalysisDataStored::requestStorage(int nframes)
+AbstractAnalysisDataStored::requestStorageInternal(int nframes)
 {
-    GMX_RELEASE_ASSERT(nframes >= -1, "Invalid number of frames requested");
-    if (nframes == 0)
-    {
-        return true;
-    }
     GMX_RELEASE_ASSERT(!isMultipoint(), "Storage of multipoint data not supported");
 
     // Handle the case when everything needs to be stored.
@@ -520,16 +494,13 @@ AbstractAnalysisDataStored::startDataStore()
     // some storage.
     notifyDataStart();
 
-    int ncol = columnCount();
-
     // If any storage has been requested, preallocate it.
     if (_impl->_nalloc > 0)
     {
         _impl->_store.resize(_impl->_nalloc);
         for (int i = 0; i < _impl->_nalloc; ++i)
         {
-            _impl->_store[i] = new AnalysisDataFrame();
-            _impl->_store[i]->allocate(ncol);
+            _impl->_store[i] = new AnalysisDataFrame(columnCount());
         }
         _impl->_nextind = 0;
     }
@@ -546,14 +517,11 @@ AbstractAnalysisDataStored::startNextFrame(const AnalysisDataFrameHeader &header
         {
             if (_impl->_bStoreAll)
             {
-                int ncol = columnCount();
-
                 _impl->_nalloc = _impl->_nextind + 1;
                 _impl->_store.resize(_impl->_nalloc);
                 for (int i = _impl->_nextind; i < _impl->_nalloc; ++i)
                 {
-                    _impl->_store[i] = new AnalysisDataFrame();
-                    _impl->_store[i]->allocate(ncol);
+                    _impl->_store[i] = new AnalysisDataFrame(columnCount());
                 }
             }
             else
@@ -600,7 +568,7 @@ AbstractAnalysisDataStored::storeThisFrame(const real *y, const real *dy,
     // Notify modules of new data.
     notifyPointsAdd(0, ncol, y, dy, present);
     // The index needs to be incremented after the notifications to allow
-    // the modules to use getData() properly.
+    // the modules to use getDataFrame() properly.
     if (_impl->_nextind >= 0)
     {
         ++_impl->_nextind;

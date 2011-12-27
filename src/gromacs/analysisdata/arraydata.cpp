@@ -56,51 +56,16 @@ AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
 }
 
 
-bool
-AbstractAnalysisArrayData::getDataWErr(int index, real *x, real *dx,
-                                       const real **y, const real **dy,
-                                       const bool **present) const
+AnalysisDataFrameRef
+AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
 {
-    if (index < 0)
-    {
-        index += frameCount() - 1;
-        if (index < 0)
-        {
-            return false;
-        }
-    }
-    if (index >= frameCount())
-    {
-        return false;
-    }
-    if (x != NULL)
-    {
-        *x = xvalue(index);
-    }
-    if (dx != NULL)
-    {
-        *dx = 0.0;
-    }
-    if (y != NULL)
-    {
-        *y = &_value[index * columnCount()];
-    }
-    if (dy != NULL)
-    {
-        // TODO: Implement
-        *dy = NULL;
-    }
-    if (present != NULL)
-    {
-        // TODO: Implement
-        *present = NULL;
-    }
-    return true;
+    return AnalysisDataFrameRef(index, xvalue(index), 0.0, columnCount(),
+                                &_value[index * columnCount()], NULL, NULL);
 }
 
 
 bool
-AbstractAnalysisArrayData::requestStorage(int /*nframes*/)
+AbstractAnalysisArrayData::requestStorageInternal(int /*nframes*/)
 {
     return true;
 }

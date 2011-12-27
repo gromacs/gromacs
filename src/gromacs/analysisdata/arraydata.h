@@ -66,11 +66,6 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
     public:
         virtual ~AbstractAnalysisArrayData();
 
-        virtual bool getDataWErr(int index, real *x, real *dx,
-                                 const real **y, const real **dy,
-                                 const bool **present = 0) const;
-        virtual bool requestStorage(int nframes = -1);
-
         /*! \brief
          * Returns the number of rows in the data array.
          *
@@ -160,6 +155,9 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
                                  AbstractAnalysisArrayData *dest);
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         int                  _nrows;
         std::vector<real>    _value;
         real                 _xstart;
