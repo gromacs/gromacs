@@ -106,17 +106,15 @@ AnalysisDataDisplacementModule::setMSDHistogram(AnalysisDataBinAverageModule *hi
 }
 
 
-bool
-AnalysisDataDisplacementModule::getDataWErr(int index, real *x, real *dx,
-                                            const real **y, const real **dy,
-                                            const bool **present) const
+AnalysisDataFrameRef
+AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
 {
-    return false;
+    return AnalysisDataFrameRef();
 }
 
 
 bool
-AnalysisDataDisplacementModule::requestStorage(int nframes)
+AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
 {
     return false;
 }

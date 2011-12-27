@@ -54,40 +54,20 @@ AnalysisDataProxy::AnalysisDataProxy(int col, int span,
 }
 
 
-int
-AnalysisDataProxy::frameCount() const
+AnalysisDataFrameRef
+AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 {
-    return _source.frameCount();
-}
-
-
-bool
-AnalysisDataProxy::getDataWErr(int index, real *x, real *dx,
-                               const real **y, const real **dy,
-                               const bool **missing) const
-{
-    bool bExists = _source.getDataWErr(index, x, dx, y, dy, missing);
-    if (bExists)
+    AnalysisDataFrameRef frame = _source.tryGetDataFrame(index);
+    if (!frame.isValid())
     {
-        if (y && *y)
-        {
-            *y += _col;
-        }
-        if (dy && *dy)
-        {
-            *dy += _col;
-        }
-        if (missing && *missing)
-        {
-            *missing += _col;
-        }
+        return AnalysisDataFrameRef();
     }
-    return bExists;
+    return AnalysisDataFrameRef(frame, _col, _span);
 }
 
 
 bool
-AnalysisDataProxy::requestStorage(int nframes)
+AnalysisDataProxy::requestStorageInternal(int nframes)
 {
     return _source.requestStorage(nframes);
 }
