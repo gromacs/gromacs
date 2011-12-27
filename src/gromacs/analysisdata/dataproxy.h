@@ -65,12 +65,6 @@ class AnalysisDataProxy : public AbstractAnalysisData,
          */
         AnalysisDataProxy(int col, int span, AbstractAnalysisData *data);
 
-        virtual int frameCount() const;
-        virtual bool getDataWErr(int index, real *x, real *dx,
-                                 const real **y, const real **dy,
-                                 const bool **missing = 0) const;
-        virtual bool requestStorage(int nframes = -1);
-
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
@@ -80,6 +74,9 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual void dataFinished();
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         AbstractAnalysisData   &_source;
         int                     _col;
         int                     _span;

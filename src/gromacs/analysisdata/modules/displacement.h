@@ -79,11 +79,6 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
          */
         void setMSDHistogram(AnalysisDataBinAverageModule *histm);
 
-        virtual bool getDataWErr(int index, real *x, real *dx,
-                                 const real **y, const real **dy,
-                                 const bool **present = 0) const;
-        virtual bool requestStorage(int nframes = -1);
-
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
@@ -93,6 +88,9 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
         virtual void dataFinished();
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         class Impl;
 
         Impl                   *_impl;

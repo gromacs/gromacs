@@ -198,8 +198,7 @@ AnalysisData::startData(AnalysisDataParallelOptions opt)
     Impl::FrameList::iterator i;
     for (i = _impl->_pending.begin() + oldSize; i != _impl->_pending.end(); ++i)
     {
-        *i = new AnalysisDataFrame();
-        (*i)->allocate(columnCount());
+        *i = new AnalysisDataFrame(columnCount());
         (*i)->_index = -1;
     }
 
@@ -235,8 +234,7 @@ AnalysisDataHandle::Impl::Impl(AnalysisData *data)
 {
     if (!_data.isMultipoint())
     {
-        _frame.reset(new AnalysisDataFrame());
-        _frame->allocate(_data.columnCount());
+        _frame.reset(new AnalysisDataFrame(_data.columnCount()));
     }
 }
 

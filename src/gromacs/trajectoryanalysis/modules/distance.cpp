@@ -154,11 +154,8 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    const real *ave;
-
-    _avem->getData(0, NULL, &ave, NULL);
-    fprintf(stderr, "Average distance: %f\n", ave[0]);
-    fprintf(stderr, "Std. deviation:   %f\n", ave[1]);
+    fprintf(stderr, "Average distance: %f\n", _avem->average(0));
+    fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
 }
 
 
