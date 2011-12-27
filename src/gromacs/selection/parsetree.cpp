@@ -1346,7 +1346,7 @@ _gmx_sel_handle_empty_cmd(yyscan_t scanner)
         }
         for (i = 0; i < (int)sc->sel.size(); ++i)
         {
-            fprintf(stderr, " %2d. %s\n", i+1, sc->sel[i]->_sel.selstr);
+            fprintf(stderr, " %2d. %s\n", i+1, sc->sel[i]->selectionText());
         }
     }
 }

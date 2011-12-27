@@ -258,8 +258,15 @@ init_frame_eval(t_selelem *sel)
     }
 }
 
+namespace gmx
+{
+
+SelectionEvaluator::SelectionEvaluator()
+{
+}
+
 /*!
- * \param[in,out] sc  The selection collection to evaluate.
+ * \param[in,out] coll  The selection collection to evaluate.
  * \param[in] fr  Frame for which the evaluation should be carried out.
  * \param[in] pbc PBC data, or NULL if no PBC should be used.
  * \returns   0 on successful evaluation, a non-zero error code on error.
@@ -273,9 +280,10 @@ init_frame_eval(t_selelem *sel)
  * evaluate a selection for a new frame.
  */
 void
-gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
-                               t_trxframe *fr, t_pbc *pbc)
+SelectionEvaluator::evaluate(SelectionCollection *coll,
+                             t_trxframe *fr, t_pbc *pbc)
 {
+    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
     gmx_sel_evaluate_t  data;
     t_selelem          *sel;
 
@@ -327,13 +335,13 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
 }
 
 /*!
- * \param[in,out] sc  The selection collection to evaluate.
+ * \param[in,out] coll  The selection collection to evaluate.
  * \param[in]     nframes Total number of frames.
  */
 void
-gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
+SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
-    t_selelem          *sel;
+    gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
 
     for (size_t g = 0; g < sc->sel.size(); ++g)
     {
@@ -354,6 +362,8 @@ gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes)
         }
     }
 }
+
+} // namespace gmx
 
 /*!
  * \param[in] data Data for the current frame.

@@ -2519,66 +2519,6 @@ free_item_compilerdata(t_selelem *sel)
 
 
 /********************************************************************
- * MASS AND CHARGE CALCULATION
- ********************************************************************/
-
-/*! \brief
- * Initializes total masses and charges for selections.
- *
- * \param[in,out] selections Array of selections to update.
- * \param[in]     top   Topology information.
- */
-static void
-calculate_mass_charge(std::vector<gmx::Selection *> *selections,
-                      t_topology *top)
-{
-    int   b, i;
-
-    for (size_t g = 0; g < selections->size(); ++g)
-    {
-        gmx_ana_selection_t *sel = &selections->at(g)->_sel;
-        bool bMaskOnly = selections->at(g)->hasFlag(gmx::efDynamicMask);
-
-        sel->g = sel->p.g;
-        snew(sel->orgm, sel->p.nr);
-        snew(sel->orgq, sel->p.nr);
-        for (b = 0; b < sel->p.nr; ++b)
-        {
-            sel->orgq[b] = 0;
-            if (top)
-            {
-                sel->orgm[b] = 0;
-                for (i = sel->p.m.mapb.index[b]; i < sel->p.m.mapb.index[b+1]; ++i)
-                {
-                    sel->orgm[b] += top->atoms.atom[sel->g->index[i]].m;
-                    sel->orgq[b] += top->atoms.atom[sel->g->index[i]].q;
-                }
-            }
-            else
-            {
-                sel->orgm[b] = 1;
-            }
-        }
-        if (sel->bDynamic && !bMaskOnly)
-        {
-            snew(sel->m, sel->p.nr);
-            snew(sel->q, sel->p.nr);
-            for (b = 0; b < sel->p.nr; ++b)
-            {
-                sel->m[b] = sel->orgm[b];
-                sel->q[b] = sel->orgq[b];
-            }
-        }
-        else
-        {
-            sel->m = sel->orgm;
-            sel->q = sel->orgq;
-        }
-    }
-}
-
-
-/********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
 
@@ -2771,7 +2711,10 @@ SelectionCompiler::compile(SelectionCollection *coll)
     _gmx_sel_mempool_reserve(sc->mempool, 0);
 
     /* Finish up by calculating total masses and charges. */
-    calculate_mass_charge(&sc->sel, sc->top);
+    for (i = 0; i < sc->sel.size(); ++i)
+    {
+        sc->sel[i]->initializeMassesAndCharges(sc->top);
+    }
 }
 
 } // namespace gmx

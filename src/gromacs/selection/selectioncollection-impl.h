@@ -197,25 +197,29 @@ class SelectionCollection::Impl
         RequestList             _requests;
 };
 
+/*! \internal \brief
+ * Implements selection evaluation.
+ *
+ * This class is used to implement SelectionCollection::evaluate() and
+ * SelectionCollection::evaluateFinal().
+ *
+ * \ingroup module_selection
+ */
+class SelectionEvaluator
+{
+    public:
+        SelectionEvaluator();
+
+        /*! \brief
+         * Evaluates selections in a collection.
+         */
+        void evaluate(SelectionCollection *sc, t_trxframe *fr, t_pbc *pbc);
+        /*! \brief
+         * Evaluates the final state for dynamic selections.
+         */
+        void evaluateFinal(SelectionCollection *sc, int nframes);
+};
+
 } // namespace gmx
-
-/*! \addtogroup module_selection
- * \{
- */
-
-/* In evaluate.cpp */
-/*! \internal \brief
- * Evaluates the selection.
- */
-void
-gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
-                               t_trxframe *fr, t_pbc *pbc);
-/*! \internal \brief
- * Evaluates the largest possible index groups from dynamic selections.
- */
-void
-gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
-
-/*!\}*/
 
 #endif

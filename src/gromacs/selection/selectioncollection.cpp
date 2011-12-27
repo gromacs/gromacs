@@ -600,7 +600,10 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
     {
         gmx_ana_poscalc_init_frame(_impl->_sc.pcc);
     }
-    gmx_ana_selcollection_evaluate(&_impl->_sc, fr, pbc);
+
+    SelectionEvaluator evaluator;
+    evaluator.evaluate(this, fr, pbc);
+
     if (_impl->_debugLevel >= 3)
     {
         std::fprintf(stderr, "\n");
@@ -612,7 +615,8 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 void
 SelectionCollection::evaluateFinal(int nframes)
 {
-    gmx_ana_selcollection_evaluate_fin(&_impl->_sc, nframes);
+    SelectionEvaluator evaluator;
+    evaluator.evaluateFinal(this, nframes);
 }
 
 
@@ -645,7 +649,7 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
         }
         for (i = 0; i < (int)sc->sel.size(); ++i)
         {
-            std::fprintf(out, "#   %s\n", sc->sel[i]->_sel.selstr);
+            std::fprintf(out, "#   %s\n", sc->sel[i]->selectionText());
         }
         std::fprintf(out, "#\n");
     }
