@@ -402,7 +402,7 @@ int main(int argc, char *argv[])
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "Use CONECT records in an input pdb file to signify bonds" },
-        { "-unique", FALSE, etBOOL, {bUnique},
+        { "-unique", FALSE, etBOOL, {&bUnique},
           "Make atom names unique" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "[HIDDEN]Generate virtual sites for linear groups. Check and double check." },
@@ -884,7 +884,7 @@ int main(int argc, char *argv[])
         set_force_const(plist,kb,kt,kp,bRound,bParam);
         
         if (bUnique)
-            uniqe_atomnames(atoms);
+            unique_atomnames(atoms);
             
         if (bTOP) 
         {    
