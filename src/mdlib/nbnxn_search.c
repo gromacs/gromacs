@@ -178,7 +178,6 @@ typedef struct {
     int  *flags; /* Flag for the super cells                    */
     int  nc_nalloc;
 
-    gmx_bool *use_simple;
     real *bbcz_simple;
     real *bb_simple;
     int  *flags_simple;
@@ -993,24 +992,29 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
 
         *flags = 0;
 
-        if (2*ni <= na_c)
+        if (ni > 0)
         {
-            /* Only sort when strictly necessary, so we avoid summation
-             * order precision loss as much as possible.
-             */
-            if (2*(a_lj_max - s) >= na_c)
-            {
-                for(i=0; i<ni; i++)
-                {
-                    order[a0+i] = sorti[i];
-                }
-                for(j=0; j<nj; j++)
-                {
-                    order[a0+ni+j] = sortj[j];
-                }
-            }
+            *flags |= NBL_CI_DO_LJ(subc);
 
-            *flags |= NBL_CI_HALF_LJ(subc);
+            if (2*ni <= na_c)
+            {
+                /* Only sort when strictly necessary, so we avoid summation
+                 * order precision loss as much as possible.
+                 */
+                if (2*(a_lj_max - s) >= na_c)
+                {
+                    for(i=0; i<ni; i++)
+                    {
+                        order[a0+i] = sorti[i];
+                    }
+                    for(j=0; j<nj; j++)
+                    {
+                        order[a0+ni+j] = sortj[j];
+                    }
+                }
+
+                *flags |= NBL_CI_HALF_LJ(subc);
+            }
         }
         if (haveQ)
         {
@@ -1772,7 +1776,6 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
     if (grid->nc*ncd > grid->nc_nalloc_simple)
     {
         grid->nc_nalloc_simple = over_alloc_large(grid->nc*ncd);
-        srenew(grid->use_simple,grid->nc_nalloc_simple);
         srenew(grid->bbcz_simple,grid->nc_nalloc_simple*NNBSBB_D);
         srenew(grid->bb_simple,grid->nc_nalloc_simple*NNBSBB_B);
         srenew(grid->flags_simple,grid->nc_nalloc_simple);
@@ -1798,8 +1801,6 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
 
             if (na > 0)
             {
-                grid->use_simple[tx] = TRUE;
-
                 if (nbat->XFormat == nbatXXXX)
                 {
                     calc_bounding_box_x_xxxx(na,nbat->x+tx*SIMD_WIDTH*nbat->xstride,
@@ -1815,11 +1816,11 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
                 bbcz[tx*NNBSBB_D+1] = bb[tx*NNBSBB_B+NNBSBB_C+ZZ];
 
                 /* No interaction optimization yet here */
-                grid->flags_simple[tx] = NBL_CI_DO_COUL(0);
+                grid->flags_simple[tx] = NBL_CI_DO_LJ(0) | NBL_CI_DO_COUL(0);
             }
             else
             {
-                grid->use_simple[tx] = FALSE;
+                grid->flags_simple[tx] = 0;
             }
         }
     }
@@ -4089,7 +4090,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     gmx_bool bMakeList;
     real shx,shy,shz;
     int  conv_i,cell0_i;
-    const gmx_bool *use_c;
     const real *bb_i,*bbcz_i,*bbcz_j;
     const int *flags_i;
     real bx0,bx1,by0,by1,bz0,bz1;
@@ -4155,7 +4155,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     if (nbl->simple && !gridi->simple)
     {
         conv_i  = gridi->na_sc/gridj->na_sc;
-        use_c   = gridi->use_simple;
         bb_i    = gridi->bb_simple;
         bbcz_i  = gridi->bbcz_simple;
         flags_i = gridi->flags_simple;
@@ -4163,7 +4162,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     else
     {
         conv_i  = 1;
-        use_c   = NULL;
         bb_i    = gridi->bb;
         bbcz_i  = gridi->bbcz;
         flags_i = gridi->flags;
@@ -4218,7 +4216,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     ci_y = 0;
     while (next_ci(gridi,conv_i,nth,ci_block,&ci_x,&ci_y,&ci_b,&ci))
     {
-        if (conv_i > 1 && !use_c[ci])
+        if (nbl->simple && flags_i[ci] == 0)
         {
             continue;
         }

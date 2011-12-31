@@ -71,9 +71,10 @@ typedef struct {
     int excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
-#define NBL_CI_SHIFT          4095
-#define NBL_CI_HALF_LJ(subc)  (1<<(12+2*(subc)))
-#define NBL_CI_DO_COUL(subc)  (1<<(13+2*(subc)))
+#define NBL_CI_SHIFT          127
+#define NBL_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
+#define NBL_CI_HALF_LJ(subc)  (1<<(8+2*(subc)))
+#define NBL_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
 /* Simple neighbor list i-unit */
 typedef struct {
