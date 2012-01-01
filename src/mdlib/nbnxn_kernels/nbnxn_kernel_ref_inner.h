@@ -96,7 +96,7 @@
                     }
 #else
                     /* Remove the (sub-)diagonal to avoid double counting */
-                    if (cj == ci && j <= i)
+                    if (cj == ci_sh && j <= i)
                     {
                         continue;
                     }

@@ -114,7 +114,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
     E_el = 0.0f;
 
 #if defined EL_EWALD || defined EL_RF
-    if (nbl_cj4[cij4_start].cj[0] == sci*NSUBCELL)
+    if (nb_sci.shift == CENTRAL && nbl_cj4[cij4_start].cj[0] == sci*NSUBCELL)
     {
         /* we have the diagonal: add the charge self interaction energy term */
         for (i = 0; i < NSUBCELL; i++)
@@ -216,7 +216,8 @@ __global__ void FUNCTION_NAME(k_nbnxn, 1)
                         /* cutoff & exclusion check */
 #if defined EL_EWALD || defined EL_RF
                         /* small r2 check to avoid invr6 overflow */
-                        if (r2 < rcoulomb_sq * (ci != cj || tidxj > tidxi) *
+                        if (r2 < rcoulomb_sq *
+                            (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi) *
                             (r2 > 1.0e-12f))
 #else
                         if (r2 < rcoulomb_sq * int_bit)

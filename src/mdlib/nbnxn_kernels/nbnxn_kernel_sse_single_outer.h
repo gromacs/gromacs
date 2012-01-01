@@ -124,8 +124,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     const real         *nbfp0,*nbfp1,*nbfp2=NULL,*nbfp3=NULL;
     real       facel;
     real       *nbfp_i;
-    int        n,ci;
-    int        ish3;
+    int        n,ci,ci_sh;
+    int        ish,ish3;
     gmx_bool   half_LJ,do_coul;
     int        sci,scix,sciy,sciz;
     int        cjind0,cjind1,cjind;
@@ -323,11 +323,13 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     {
         nbln = &nbl->ci[n];
 
-        ish3             = 3*(nbln->shift & NBL_CI_SHIFT);
+        ish              = (nbln->shift & NBL_CI_SHIFT);
+        ish3             = ish*3;
         cjind0           = nbln->cj_ind_start;      
         cjind1           = nbln->cj_ind_end;    
         /* Currently only works super-cells equal to sub-cells */
         ci               = nbln->ci;
+        ci_sh            = (ish == CENTRAL ? ci : -1);
 
         shX_SSE = _mm_load1_ps(shiftvec+ish3);
         shY_SSE = _mm_load1_ps(shiftvec+ish3+1);
@@ -368,7 +370,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
         }
 #endif
 #if defined CALC_ENERGIES
-        if (do_coul && l_cj[nbln->cj_ind_start].c == ci)
+        if (do_coul && l_cj[nbln->cj_ind_start].c == ci_sh)
         {
             int ia;
 

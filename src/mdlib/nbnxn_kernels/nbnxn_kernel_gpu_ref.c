@@ -144,7 +144,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
         vctot            = 0;              
         Vvdwtot          = 0;              
 
-        if (nbl->cj4[cj4_ind0].cj[0] == sci*NSUBCELL)
+        if (nbln->shift == CENTRAL &&
+            nbl->cj4[cj4_ind0].cj[0] == sci*NSUBCELL)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
@@ -208,7 +209,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             {
                                 ja               = cj*nbl->na_c + jc;
 
-                                if (ci == cj && ja <= ia)
+                                if (nbln->shift == CENTRAL &&
+                                    ci == cj && ja <= ia)
                                 {
                                     continue;
                                 }

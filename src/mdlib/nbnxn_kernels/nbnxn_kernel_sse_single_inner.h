@@ -249,7 +249,7 @@
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
             /* Only remove the (sub-)diagonal to avoid double counting */
-            if (cj == ci)
+            if (cj == ci_sh)
             {
                 wco_SSE0       = _mm_and_ps(wco_SSE0,diag_SSE0);
                 wco_SSE1       = _mm_and_ps(wco_SSE1,diag_SSE1);

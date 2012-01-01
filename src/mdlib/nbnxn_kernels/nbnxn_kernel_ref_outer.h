@@ -94,8 +94,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     int        ntype2;
     real       facel;
     real       *nbfp_i;
-    int        n,ci;
-    int        ish3;
+    int        n,ci,ci_sh;
+    int        ish,ish3;
     gmx_bool   half_LJ,do_coul;
     int        cjind0,cjind1,cjind;
     int        ip,jp;
@@ -165,11 +165,13 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
         nbln = &nbl->ci[n];
 
-        ish3             = 3*(nbln->shift & NBL_CI_SHIFT);
+        ish              = (nbln->shift & NBL_CI_SHIFT);
+        ish3             = ish*3;
         cjind0           = nbln->cj_ind_start;      
         cjind1           = nbln->cj_ind_end;    
         /* Currently only works super-cells equal to sub-cells */
         ci               = nbln->ci;
+        ci_sh            = (ish == CENTRAL ? ci : -1);
 
         half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
         do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
@@ -203,7 +205,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
                 qi[i] = facel*q[ci*UNROLLI+i];
 
 #ifdef CALC_ENERGIES
-                if (l_cj[nbln->cj_ind_start].c == ci)
+                if (l_cj[nbln->cj_ind_start].c == ci_sh)
                 {
 #ifdef ENERGY_GROUPS
                     Vc[egp_sh_i[i]+((nbat->energrp[ci]>>(8*i)) & 255)]
