@@ -2162,14 +2162,10 @@ static gmx_bool subc_in_range_sse8(int na_c,
     
     __m128 rc2_SSE;
 
-    float      wco_any_array[7],*wco_any_align;
-
     int na_c_sse;
     int j0,j1;
 
     rc2_SSE   = _mm_set1_ps(rl2);
-
-    wco_any_align = (float *)(((size_t)(wco_any_array+3)) & (~((size_t)15)));
 
     na_c_sse = 8/4;
     ix_SSE0 = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*4);
@@ -2220,12 +2216,7 @@ static gmx_bool subc_in_range_sse8(int na_c,
         wco_any_SSE23      = _mm_or_ps(wco_SSE2,wco_SSE3);
         wco_any_SSE        = _mm_or_ps(wco_any_SSE01,wco_any_SSE23);
 
-        _mm_store_ps(wco_any_align,wco_any_SSE);
-
-        if (wco_any_align[0] != 0 ||
-            wco_any_align[1] != 0 || 
-            wco_any_align[2] != 0 ||
-            wco_any_align[3] != 0)
+        if (_mm_movemask_ps(wco_any_SSE))
         {
             return TRUE;
         }
@@ -2785,8 +2776,6 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     
     __m128 rc2_SSE;
 
-    float      wco_any_array[7],*wco_any_align;
-
     gmx_bool   InRange;
     real       d2;
     int        cjf_gl,cjl_gl,cj;
@@ -2796,8 +2785,6 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     bb_ci = nbl->work->bb_ci;
 
     rc2_SSE   = _mm_set1_ps(rl2);
-
-    wco_any_align = (float *)(((size_t)(wco_any_array+3)) & (~((size_t)15)));
 
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
@@ -2853,12 +2840,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = _mm_or_ps(wco_SSE2,wco_SSE3);
             wco_any_SSE        = _mm_or_ps(wco_any_SSE01,wco_any_SSE23);
             
-            _mm_store_ps(wco_any_align,wco_any_SSE);
-            
-            InRange = (wco_any_align[0] != 0 ||
-                       wco_any_align[1] != 0 || 
-                       wco_any_align[2] != 0 ||
-                       wco_any_align[3] != 0);
+            InRange            = _mm_movemask_ps(wco_any_SSE);
         }
         if (!InRange)
         {
@@ -2924,12 +2906,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = _mm_or_ps(wco_SSE2,wco_SSE3);
             wco_any_SSE        = _mm_or_ps(wco_any_SSE01,wco_any_SSE23);
             
-            _mm_store_ps(wco_any_align,wco_any_SSE);
-            
-            InRange = (wco_any_align[0] != 0 ||
-                       wco_any_align[1] != 0 || 
-                       wco_any_align[2] != 0 ||
-                       wco_any_align[3] != 0);
+            InRange            = _mm_movemask_ps(wco_any_SSE);
         }
         if (!InRange)
         {
