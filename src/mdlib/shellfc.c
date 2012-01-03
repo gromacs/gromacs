@@ -422,8 +422,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
     }
 
     if (shfc->bInterCG) {
-      if (fplog)
-	fprintf(fplog,"\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
+      gmx_fatal(FARGS,"There are shells that are connected to particles outside their own charge group, can not predict shells positions during a parallel run. Please fix your topology to make sure that shells and the atoms they are connected to are in the same charge group.");
       shfc->bPredict = FALSE;
     }
   }
