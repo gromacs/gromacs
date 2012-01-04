@@ -1150,22 +1150,6 @@ static void make_benchmark_tprs(
 }
 
 
-/* Whether these files are written depends on tpr (or mdp) settings,
- * not on mdrun command line options! */
-static gmx_bool tpr_triggers_file(const char *opt)
-{
-    if ( (0 == strcmp(opt, "-ro"))
-      || (0 == strcmp(opt, "-ra"))
-      || (0 == strcmp(opt, "-rt"))
-      || (0 == strcmp(opt, "-rs"))
-      || (0 == strcmp(opt, "-pf"))
-      || (0 == strcmp(opt, "-px")) )
-        return TRUE;
-    else
-        return FALSE;
-}
-
-
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
 static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
@@ -1227,8 +1211,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             }
         }
         /* Delete the files which are created for each benchmark run: (options -b*) */
-        else if ( ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) ) 
-                  || tpr_triggers_file(opt) )
+        else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) )
         {
             fn = opt2fn(opt, nfile, fnm);
             if (gmx_fexist(fn))
@@ -1944,6 +1927,49 @@ static void setopt(const char *opt,int nfile,t_filenm fnm[])
 }
 
 
+/* This routine checks for output files that get triggered by a tpr option.
+ * These output files are marked as set to allow for proper cleanup after 
+ * each tuning run. */
+static void get_tpr_outfiles(int nfile, t_filenm fnm[])
+{
+    gmx_bool     bPull;     /* Is pulling requested in .tpr file?             */
+    gmx_bool     bTpi;      /* Is test particle insertion requested?          */
+    gmx_bool     bFree;     /* Is a free energy simulation requested?         */
+    gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
+    t_inputrec   ir;
+    t_state      state;
+    gmx_mtop_t   mtop;
+
+
+    /* Check tpr file for options that trigger extra output files */
+    read_tpx_state(opt2fn("-s",nfile,fnm),&ir,&state,NULL,&mtop);
+    bPull = (epullNO != ir.ePull);
+    bFree = (efepNO  != ir.efep );
+    bNM   = (eiNM    == ir.eI   );
+    bTpi  = EI_TPI(ir.eI);
+
+    /* Set these output files on the tuning command-line */
+    if (bPull)
+    {
+        setopt("-pf"  , nfile, fnm);
+        setopt("-px"  , nfile, fnm);
+    }
+    if (bFree)
+    {
+        setopt("-dhdl", nfile, fnm);
+    }
+    if (bTpi)
+    {
+        setopt("-tpi" , nfile, fnm);
+        setopt("-tpid", nfile, fnm);
+    }
+    if (bNM)
+    {
+        setopt("-mtx" , nfile, fnm);
+    }
+}
+
+
 static void couple_files_options(int nfile, t_filenm fnm[])
 {
     int i;
@@ -2322,6 +2348,9 @@ int gmx_tune_pme(int argc,char *argv[])
         /* and now we just set this; a bit of an ugly hack*/
         nnodes=nthreads;
     }
+    /* tpr-triggered output files */
+    get_tpr_outfiles(NFILE,fnm);
+
     /* Automatically set -beo options if -eo is set etc. */
     couple_files_options(NFILE,fnm);
     

@@ -72,9 +72,9 @@
 #include "sighandler.h"
 #include "tpxio.h"
 #include "txtdump.h"
+#include "pull_rotation.h"
 #include "membed.h"
 #include "macros.h"
-
 #include "md_openmm.h"
 
 #ifdef GMX_LIB_MPI
