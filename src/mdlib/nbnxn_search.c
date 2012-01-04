@@ -53,6 +53,7 @@
 #include "gmx_omp_nthreads.h"
 
 #if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#define NBNXN_SEARCH_SSE
 #include "gmx_sse2_single.h"
 
 #include <xmmintrin.h>
@@ -79,7 +80,7 @@
 #define SIMD_INT_MASK_DIAG  0x8ce
 
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
 #define NBNXN_BBXXXX
 
 #define NNBSBB_XXXX      (NNBSBB_D*DIM*SIMD_WIDTH)
@@ -104,7 +105,7 @@ typedef struct nbnxn_list_work {
 
     float *d2;         /* Bounding box distance work array                  */
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
     /* The i-cluster coordinates for simple search */
     __m128 ix_SSE0,iy_SSE0,iz_SSE0;
     __m128 ix_SSE1,iy_SSE1,iz_SSE1;
@@ -194,8 +195,6 @@ typedef struct {
 
     int  *sort_work;
     int  sort_work_nalloc;
-
-    float *bb_tmp;
 
     nbnxn_cycle_t cc[enbsCCnr];
 
@@ -377,7 +376,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     nbs->a_nalloc    = 0;
 
     /* nbs->subc_dc is only used with super/sub setup */
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
     nbs->subc_dc = subc_in_range_sse8;
 #else
     if (getenv("GMX_NBNXN_BB") != NULL)
@@ -403,8 +402,6 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
         nbs->work[t].cxy_na_nalloc    = 0;
         nbs->work[t].sort_work        = NULL;
         nbs->work[t].sort_work_nalloc = 0;
-
-        snew_aligned(nbs->work[t].bb_tmp,SIMD_WIDTH*NNBSBB_D,16);
     }
 
     /* Initialize detailed nbsearch cycle counting */
@@ -720,7 +717,7 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,real *bb)
     bb[20] = zh;
 }
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
 
 static void calc_bounding_box_sse(int na,const real *x,float *bb)
 {
@@ -744,17 +741,17 @@ static void calc_bounding_box_sse(int na,const real *x,float *bb)
 }
 
 static void calc_bounding_box_xxxx_sse(int na,const real *x,
-                                       float *bb_tmp,
+                                       float *bb_work,
                                        real *bb)
 {
-    calc_bounding_box_sse(na,x,bb_tmp);
+    calc_bounding_box_sse(na,x,bb_work);
 
-    bb[ 0] = bb_tmp[0];
-    bb[ 4] = bb_tmp[1];
-    bb[ 8] = bb_tmp[2];
-    bb[12] = bb_tmp[4];
-    bb[16] = bb_tmp[5];
-    bb[20] = bb_tmp[6];
+    bb[ 0] = bb_work[0];
+    bb[ 4] = bb_work[1];
+    bb[ 8] = bb_work[2];
+    bb[12] = bb_work[4];
+    bb[16] = bb_work[5];
+    bb[20] = bb_work[6];
 }
 
 #endif
@@ -967,6 +964,8 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
     int sortj[NBL_NA_SC_MAX/NSUBCELL];
     gmx_bool haveQ;
 
+    *flags = 0;
+
     subc = 0;
     for(s=a0; s<a1; s+=na_c)
     {
@@ -989,8 +988,6 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                 sortj[nj++] = order[a];
             }
         }
-
-        *flags = 0;
 
         if (ni > 0)
         {
@@ -1030,7 +1027,8 @@ void fill_cell(const nbnxn_search_t nbs,
                int a0,int a1,
                const int *atinfo,
                rvec *x,
-               int sx,int sy, int sz)
+               int sx,int sy, int sz,
+               float *bb_work)
 {
     int  na,a;
     real *xnb;
@@ -1082,20 +1080,15 @@ void fill_cell(const nbnxn_search_t nbs,
             ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+SIMD_WIDTH_2LOG))*NNBSBB_XXXX +
             (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (SIMD_WIDTH-1));
         
-        /* There is something wrong with this
-         * calc_bounding_box_xxxx_sse function or call.
-         * the results are incorrect.
-         if (nbat->XFormat == nbatXYZQ)
-         {
-         calc_bounding_box_xxxx_sse(na,xnb,
-                                                            nbs->work->bb_tmp,
-                                                            bb_ptr);
-                             }
-                             else
-        */
+#ifdef NBNXN_SEARCH_SSE
+        if (nbat->xstride == 4)
         {
-            calc_bounding_box_xxxx(na,nbat->xstride,xnb,
-                                   bb_ptr);
+            calc_bounding_box_xxxx_sse(na,xnb,bb_work,bb_ptr);
+        }
+        else
+#endif
+        {
+            calc_bounding_box_xxxx(na,nbat->xstride,xnb,bb_ptr);
         }
         if (gmx_debug_at)
         {
@@ -1169,7 +1162,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
                    ncz*grid->na_sc*SORT_GRID_OVERSIZE/nbs->box[ZZ][ZZ],
                    ncz*grid->na_sc*SGSF,sort_work);
 
-        /* This loop goes over the supercells and subcells along z at once */
+        /* Fill the ncz cells in this column */
         for(cz=0; cz<ncz; cz++)
         {
             c  = grid->cxy_ind[cxy] + cz ;
@@ -1181,7 +1174,8 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
                       ash_c,ash_c+na_c,atinfo,x,
                       grid->na_sc*cx + (dd_zone >> 2),
                       grid->na_sc*cy + (dd_zone & 3),
-                      grid->na_sc*cz);
+                      grid->na_sc*cz,
+                      NULL);
 
             /* This copy to bbcz is not really necessary.
              * But it allows to use the same grid search code
@@ -1215,6 +1209,10 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     int  subdiv_z,sub_z,na_z,ash_z;
     int  subdiv_y,sub_y,na_y,ash_y;
     int  subdiv_x,sub_x,na_x,ash_x;
+
+    float bb_work_array[SIMD_WIDTH*NNBSBB_D+3],*bb_work_align;
+
+    bb_work_align = (float *)(((size_t)(bb_work_array+3)) & (~((size_t)15)));
 
     if (debug)
     {
@@ -1267,6 +1265,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
             }
 
 #if NSUBCELL_Y > 1
+            /* Sort the atoms along y */
             sort_atoms(YY,(sub_z & 1),
                        nbs->a+ash_z,na_z,x,
                        grid->c0[YY]+cy*grid->sy,grid->inv_sy,
@@ -1279,6 +1278,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 na_y  = min(subdiv_y,na-(ash_y-ash));
 
 #if NSUBCELL_X > 1
+                /* Sort the atoms along x */
                 sort_atoms(XX,((cz*NSUBCELL_Y + sub_y) & 1),
                            nbs->a+ash_y,na_y,x,
                            grid->c0[XX]+cx*grid->sx,grid->inv_sx,
@@ -1294,7 +1294,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                               ash_x,ash_x+na_x,atinfo,x,
                               grid->na_c*(cx*NSUBCELL_X+sub_x) + (dd_zone >> 2),
                               grid->na_c*(cy*NSUBCELL_Y+sub_y) + (dd_zone & 3),
-                              grid->na_c*sub_z);
+                              grid->na_c*sub_z,
+                              bb_work_align);
                 }
             }
         }
@@ -1304,13 +1305,6 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         {
             nbs->a[ash+ind] = -1;
         }
-
-        /*
-        copy_rvec_to_nbat_real(axy,na,ncz*grid->na_sc,x,nbat->xstride,xnb);
-
-        calc_bounding_box(ncz,grid->na_sc,nbat->xstride,xnb,
-                          grid->bb+grid->cxy_ind[i]*NNBSBB);
-        */
     }
 }
 
@@ -1951,7 +1945,7 @@ static real subc_bb_dist2(int na_c,
     return d2;
 }
 
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
 
 static real subc_bb_dist2_sse(int na_c,
                               int si,const real *bb_i_ci,
@@ -2138,7 +2132,7 @@ static gmx_bool subc_in_range_sse8(int na_c,
                                    int csj,int stride,const real *x_j,
                                    real rl2)
 {
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
     __m128 ix_SSE0,iy_SSE0,iz_SSE0;
     __m128 ix_SSE1,iy_SSE1,iz_SSE1;
     __m128 jx0_SSE,jy0_SSE,jz0_SSE;
@@ -2750,8 +2744,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
                                           const real *x_j,
                                           real rl2,real rbb2)
 {
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
-
+#ifdef NBNXN_SEARCH_SSE
     const nbnxn_list_work_t *work;
 
     const real *bb_ci;
@@ -3650,7 +3643,7 @@ static void icell_set_x_simple_xxxx(int ci,
     int  ia;
 
     ia = ci*DIM*SIMD_WIDTH;
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
     work->ix_SSE0 = _mm_set1_ps(x[ia +  0] + shx);
     work->iy_SSE0 = _mm_set1_ps(x[ia +  4] + shy);
     work->iz_SSE0 = _mm_set1_ps(x[ia +  8] + shz);
@@ -4623,7 +4616,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     }
     else
     {
-#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#ifdef NBNXN_SEARCH_SSE
         nbs->icell_set_x = icell_set_x_supersub_sse8;
 #else
         nbs->icell_set_x = icell_set_x_supersub;
