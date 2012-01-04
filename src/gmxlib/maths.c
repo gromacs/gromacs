@@ -659,3 +659,17 @@ float fast_float_erfc(float x)
 		t*(-0.82215223+t*0.17087277)))))))));
 	return ans;
 }
+
+gmx_bool gmx_isfinite(real x)
+{
+    gmx_bool returnval = TRUE;
+    /* If no suitable function was found, assume the value is
+     * finite. */
+
+#ifdef HAVE_ISFINITE
+    returnval = isfinite(x);
+#elif defined HAVE__ISFINITE
+    returnval = _isfinite(x);
+#endif
+    return returnval;
+}
