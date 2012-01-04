@@ -1008,7 +1008,9 @@ int gmx_cluster(int argc,char *argv[])
     "[TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
     "structure of each cluster or writes numbered files with cluster members",
     "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
-    "[TT]-nst[tt] and [TT]-rmsmin[tt]).[BR]",
+    "[TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
+    "structure with the smallest average RMSD from all other structures",
+    "of the cluster.[BR]",
   };
   
   FILE         *fp,*log;
