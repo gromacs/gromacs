@@ -122,7 +122,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
-        CTYPE("Pivot point for the potentials iso, pm, rm, and rm2 [nm]");
+        CTYPE("Pivot point for the potentials iso, pm, rm, and rm2 (nm)");
         sprintf(buf,"rot_pivot%d",g);
         STYPE(buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
@@ -131,7 +131,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
         for(m=0; m<DIM; m++)
             rotg->pivot[m] = vec[m];
 
-        CTYPE("Rotation rate [degree/ps] and force constant [kJ/(mol*nm^2)]");
+        CTYPE("Rotation rate (degree/ps) and force constant (kJ/(mol*nm^2))");
         sprintf(buf,"rot_rate%d",g);
         RTYPE(buf, rotg->rate, 0.0);
 
@@ -143,7 +143,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_note(wi, warn_buf);
         }
 
-        CTYPE("Slab distance for flexible axis rotation [nm]");
+        CTYPE("Slab distance for flexible axis rotation (nm)");
         sprintf(buf,"rot_slab_dist%d",g);
         RTYPE(buf, rotg->slab_dist, 1.5);
         if (rotg->slab_dist <= 0.0)
@@ -161,7 +161,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot,
             warning_error(wi, warn_buf);
         }
 
-        CTYPE("Value of additive constant epsilon' [nm^2] for rm2* and flex2* potentials");
+        CTYPE("Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
         sprintf(buf, "rot_eps%d",g);
         RTYPE(buf, rotg->eps, 1e-4);
         if ( (rotg->eps <= 0.0) && (rotg->eType==erotgRM2 || rotg->eType==erotgFLEX2) )

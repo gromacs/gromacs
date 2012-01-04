@@ -631,8 +631,11 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (inputrec->bRot)
     {
         /* Enforced rotation has its own cycle counter that starts after the collective
-         * coordinates have been communicated. It is added to ddCyclF */
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing */
+        wallcycle_start(wcycle,ewcROT);
         do_rotation(cr,inputrec,box,x,t,step,wcycle,bNS);
+        wallcycle_stop(wcycle,ewcROT);
     }
 
     /* Start the force cycle counter.
@@ -821,6 +824,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
     }
 
+    enerd->term[F_COM_PULL] = 0;
     if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
     {
         /* Calculate the center of mass forces, this requires communication,
@@ -830,7 +834,7 @@ void do_force(FILE *fplog,t_commrec *cr,
          */
         set_pbc(&pbc,inputrec->ePBC,box);
         dvdl = 0; 
-        enerd->term[F_COM_PULL] =
+        enerd->term[F_COM_PULL] +=
             pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
                            cr,t,lambda,x,f,vir_force,&dvdl);
         if (bSepDVDL)
@@ -839,13 +843,14 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
         enerd->dvdl_lin += dvdl;
     }
-    else
-        enerd->term[F_COM_PULL] = 0.0;
     
     /* Add the forces from enforced rotation potentials (if any) */
     if (inputrec->bRot)
-        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
-    
+    {
+        wallcycle_start(wcycle,ewcROTadd);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr,step,t);
+        wallcycle_stop(wcycle,ewcROTadd);
+    }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {

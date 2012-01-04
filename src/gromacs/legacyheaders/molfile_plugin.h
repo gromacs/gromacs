@@ -503,7 +503,7 @@ typedef struct {
   /**
    * Required header 
    */
-  vmdplugin_HEAD
+  vmdplugin_HEAD;
 
   /**
    * Filename extension for this file type.  May be NULL if no filename 
