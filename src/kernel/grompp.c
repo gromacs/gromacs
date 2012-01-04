@@ -1125,6 +1125,22 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
   
 }
 
+static void check_settle(gmx_mtop_t   *sys)
+{
+    int i,j,cgj1,nra;
+    
+    nra = interaction_function[F_SETTLE].nratoms;
+    for(i=0; (i<sys->nmoltype); i++) 
+    {
+        for(j=0; (j<sys->moltype[i].ilist[F_SETTLE].nr); j+=nra+1)
+        {
+            cgj1 = sys->moltype[i].cgs.index[j+1];
+            if (j+2 >= cgj1)
+                gmx_fatal(FARGS,"For SETTLE you need to have all atoms involved in one charge group. Please fix your topology.");
+        }
+    }
+}
+
 int main (int argc, char *argv[])
 {
   static const char *desc[] = {
@@ -1469,6 +1485,9 @@ int main (int argc, char *argv[])
     check_vel(sys,state.v);
   }
     
+  /* check for charge groups in settles */
+  check_settle(sys);
+  
   /* check masses */
   check_mol(sys,wi);
   
