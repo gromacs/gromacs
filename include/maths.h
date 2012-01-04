@@ -105,6 +105,8 @@ real    cuberoot (real a);
 real    gmx_erf(real x);
 real    gmx_erfc(real x);
 
+gmx_bool gmx_isfinite(real x);
+
 /*! \brief Check if two numbers are within a tolerance
  *
  *  This routine checks if the relative difference between two numbers is
