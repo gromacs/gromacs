@@ -535,6 +535,10 @@ improvements: make sure that each FFT is aligned. each should best start at a ca
              */
 #pragma omp parallel for num_threads(nthreads) schedule(static),ordered
             for(t=0; t<nthreads; t++)
+
+/* omp ciritical would be sufficient  
+   making the thread checker (valgrind drd) happy
+   has no performance disadvantage because only used once in planning phase */
 #pragma omp ordered
             {
                 int tsize = ((t+1)*pM[s]*pK[s]/nthreads)-(t*pM[s]*pK[s]/nthreads);
@@ -1153,7 +1157,7 @@ void fft5d_destroy(fft5d_plan plan) {
     
 #ifdef FFT5D_THREADS
 #ifdef FFT5D_FFTW_THREADS
-    //FFTW(cleanup_threads)();
+    /*FFTW(cleanup_threads)();*/
 #endif
 #endif
 

@@ -795,17 +795,26 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
 
 
-        //set CPU affinity
+        /* Set CPU affinity. Can be important for performance. 
+           On some systems (e.g. Cray) CPU Affinity is set by default. 
+           But default assinging doesn't work (well) with only some ranks 
+           having threads. This causes very low performance.
+           External tools have cumbersome syntax for setting affinity
+           in the case that only some ranks have threads.
+           Thus it is important that GROMACS sets the affinity internally at 
+           if only PME is using threads.
+        */
+
 #ifdef GMX_OPENMP
 #ifdef __linux
 #ifdef GMX_LIB_MPI
         {
             int core;
-            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
+            MPI_Comm comm_intra; /* intra communicator (but different to nc.comm_intra includes PME nodes) */
             MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-            int local_omp_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; //threads on this node
+            int local_omp_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; /* threads on this node */
             MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-            core-=local_omp_nthreads; //make exclusive scan
+            core-=local_omp_nthreads; /* make exclusive scan */
 #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
             {
                 cpu_set_t mask;
@@ -815,9 +824,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                 sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
             }
         }
-#endif //GMX_MPI
-#endif //__linux
-#endif //GMX_OPENMP
+#endif /*GMX_MPI*/
+#endif /*__linux*/
+#endif /*GMX_OPENMP*/
 
         if (cr->duty & DUTY_PME)
         {
