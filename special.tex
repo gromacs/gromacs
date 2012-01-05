@@ -1192,6 +1192,24 @@ Compatible hardware (for further details consult the
     \end{itemize}
 \end{itemize}
 
+\section{Using VMD plug-ins for trajectory file I/O}
+\index{VMD plug-ins}\index{trajectory file}{\gromacs} tools are able
+to use the plug-ins found in an existing installation of
+\href{http://www.ks.uiuc.edu/Research/vmd}{VMD} in order to read and
+write trajectory files in formats that are not native to
+{\gromacs}. You will be able to supply an AMBER DCD-format trajectory
+filename directly to GROMACS tools, for example.
+
+This requires a VMD installation not older than version 1.8, that your
+system provides the dlopen function so that programs can determine at
+run time what plug-ins exist, and that you build shared libraries when
+building GROMACS. CMake will find the vmd executable in your path, and
+from it, or the environment variable {\tt VMDDIR} at configuration or
+run time, locate the plug-ins. Alternatively, the {\tt VMD_PLUGIN_PATH}
+can be used at run time to specify a path where these plug-ins can be
+found. Note that these plug-ins are in a binary format, and that format
+must match the architecture of the machine attempting to use them.
+
 % LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
 % LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl
 % LocalWords:  vsitehydro planarity chirality pdb gmx virtualize virtualized xz
@@ -1206,3 +1224,4 @@ Compatible hardware (for further details consult the
 % LocalWords:  OBC obc CCMA tol pbc xyz barostat pcoupl acc gpu PLUGIN Cmake GX
 % LocalWords:  MSVC gcc installpath cmake DGMX DCMAKE functionalities GPGPU GTS
 % LocalWords:  OpenCL DeviceID gromacs gpus html GeForce Quadro FX Plex CX GF
+% LocalWords:  VMD DCD
