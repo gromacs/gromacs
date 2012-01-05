@@ -152,8 +152,11 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
-/* Compile with dlopen */
-#cmakedefine GMX_DLOPEN
+/* Compile with plugin support */
+#cmakedefine GMX_USE_PLUGINS
+
+/* Fallback path for VMD plug-ins */
+#define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
