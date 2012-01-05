@@ -124,8 +124,8 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_DLOPEN)
+option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
+mark_as_advanced(GMX_LOAD_PLUGINS)
 
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
@@ -505,13 +505,6 @@ else()
     set(USE_VERSION_H OFF)
 endif()
 
-if (GMX_DLOPEN)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
-    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-else(GMX_DLOPEN)
-    set(PKG_DL_LIBS)
-endif (GMX_DLOPEN)
-
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -811,6 +804,63 @@ else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
+
+set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+set(GMX_VMD_PLUGIN_PATH)
+mark_as_advanced(GMX_VMD_PLUGIN_PATH)
+
+if(GMX_LOAD_PLUGINS)
+  include(gmxTestdlopen)
+  gmx_test_dlopen(HAVE_DLOPEN)
+
+  find_package(VMD)
+
+  # Test for unsuitable versions of VMD
+
+  if(VMD_FOUND)
+    message(STATUS "Checking for suitable VMD version")
+    exec_program(${VMD_EXECUTABLE}
+      ARGS --help
+      OUTPUT_VARIABLE VMD_HELP
+      RETURN_VALUE VMD_EXEC_RETURN)
+
+    if(VMD_EXEC_RETURN EQUAL 0)
+      # This is the accepted idiom for subexpression matching, unfortunately
+      string(REGEX REPLACE ".*VMD for .*, version ([0-9]+\\.[0-9]*\\.?[0-9]*).*" "\\1" VMD_VERSION ${VMD_HELP})
+      string(REGEX REPLACE ".*VMD for (.*), version .*" "\\1" VMD_ARCH ${VMD_HELP})
+
+      if(VMD_VERSION VERSION_LESS "1.8")
+        MESSAGE(WARNING "Found VMD version ${VMD_VERSION}, but GROMACS needs at least 1.8")
+        unset(VMD_EXECUTABLE)
+        set(VMD_FOUND FALSE)
+      else()
+        message(STATUS "VMD version ${VMD_VERSION} is suitable")
+        if(DEFINED ENV{VMDDIR})
+          # This permits GROMACS to avoid hard-coding a fall-back
+          # path that it can tell right now would be useless.
+          set(GMX_VMD_PLUGIN_PATH "$ENV{VMDDIR}/plugins/${VMD_ARCH}/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
+        else()
+          set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
+        endif()
+      endif()
+
+      # clean up
+      unset(VMD_HELP)
+      unset(VMD_VERSION)
+      unset(VMD_ARCH)
+    endif()
+  endif()
+
+  # so, should we use plug-ins?
+  if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN) AND BUILD_SHARED_LIBS)
+    MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+    set(GMX_USE_PLUGINS ON)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
+    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+  else()
+    set(PKG_DL_LIBS)
+  endif()
+endif(GMX_LOAD_PLUGINS)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
