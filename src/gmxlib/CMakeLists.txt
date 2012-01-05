@@ -24,6 +24,10 @@ file(GLOB GMXLIB_SOURCES *.c
      selection/*.c trajana/*.c
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
 
+if(GMX_USE_PLUGINS)
+  file(GLOB VMDIO_SRC vmdio.c vmddlopen.c)
+endif()
+
 # This source file is generated
 file(GLOB VERSION_SOURCE version.c)
 
@@ -136,7 +140,7 @@ else(GMX_ASM_USEASM-NASM)
 endif(GMX_ASM_USEASM-NASM)
 endif(NOT GMX_OPENMM)
 
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${GMX_PPC_ALTIVEC_SRC} ${THREAD_MPI_SRC})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSEKERNEL_C_SRC} ${GMX_SSEKERNEL_ASM_SRC} ${FORTRAN_SOURCES} ${GMX_BLUEGENE_C_SRC} ${GMX_PPC_ALTIVEC_SRC} ${THREAD_MPI_SRC} ${VMDIO_SRC})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES}  ${THREAD_LIB})
 if(USE_VERSION_H)
 	add_dependencies(gmx gmx_version) 
