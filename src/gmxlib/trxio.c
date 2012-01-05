@@ -737,7 +737,7 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio),fr);
       break;
     default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_DLOPEN
       bRet = read_next_vmd_frame(dummy,fr);
 #else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
@@ -859,7 +859,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
     bFirst = FALSE;
     break;
   default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_DLOPEN
       fprintf(stderr,"The file format of %s is not a known trajectory format to GROMACS.\n"
 	      "Please make sure that the file is a trajectory!\n"
 	      "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"

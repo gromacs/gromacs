@@ -486,13 +486,6 @@ else()
     set(USE_VERSION_H OFF)
 endif()
 
-if (GMX_DLOPEN)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
-    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-else(GMX_DLOPEN)
-    set(PKG_DL_LIBS)
-endif (GMX_DLOPEN)
-
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -793,6 +786,61 @@ else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
+
+set(GMX_USE_DLOPEN OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+if(NOT GMX_VMD_PLUGIN_PATH)
+  set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" CACHE INTERNAL "Path to VMD plugins for molfile I/O")
+endif()
+
+if(GMX_DLOPEN)
+  include(gmxTestdlopen)
+  gmx_test_dlopen(HAVE_DLOPEN)
+
+  set(vmd_was_already_found ${VMD_EXECUTABLE})
+  find_package(VMD)
+
+  # Test for unsuitable versions of VMD
+  if(VMD_FOUND AND NOT vmd_was_already_found)
+    # Running `vmd --help` can take some time, so we avoid re-running it
+    message(STATUS "Checking for suitable VMD version")
+    exec_program(${VMD_EXECUTABLE}
+      ARGS --help
+      OUTPUT_VARIABLE VMD_HELP
+      RETURN_VALUE VMD_EXEC_RETURN)
+
+    if(VMD_EXEC_RETURN EQUAL 0)
+      # This is the accepted idiom for subexpression matching, unfortunately
+      string(REGEX REPLACE ".*VMD for .*, version ([0-9]+\\.[0-9]*\\.?[0-9]*).*" "\\1" VMD_VERSION ${VMD_HELP})
+      string(REGEX REPLACE ".*VMD for (.*), version .*" "\\1" VMD_ARCH ${VMD_HELP})
+
+      if(VMD_VERSION VERSION_LESS "1.8")
+	MESSAGE(WARNING "Found VMD version ${VMD_VERSION}, but GROMACS needs at least 1.8")
+	unset(VMD_EXECUTABLE)
+	set(VMD_FOUND FALSE)
+      else()
+	message(STATUS "VMD version ${VMD_VERSION} is suitable")
+	if(DEFINED ENV{VMDDIR})
+	  # This permits GROMACS to avoid hard-coding a fall-back
+	  # path that it can tell right now would be useless.
+	  set(GMX_VMD_PLUGIN_PATH "$ENV{VMDDIR}/plugins/${VMD_ARCH}/molfile")
+	endif()
+      endif()
+
+      # clean up
+      unset(VMD_HELP)
+      unset(VMD_VERSION)
+      unset(VMD_ARCH)
+    endif()
+  endif()
+  unset(vmd_was_already_found)
+
+  # so, should we use VMD?
+  if(VMD_FOUND AND HAVE_DLOPEN AND BUILD_SHARED_LIBS)
+    MESSAGE(STATUS "Found VMD and dlopen when building shared libaries, so will compile to read VMD-supported file formats")
+    set(GMX_USE_DLOPEN ON)
+  endif()
+endif(GMX_DLOPEN)
+mark_as_advanced(GMX_VMD_PLUGIN_PATH)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
