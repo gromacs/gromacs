@@ -236,14 +236,17 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     const char *err;
     int i;
     int ret=0;
+    char pathenv_buffer[GMX_PATH_MAX];
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
-    const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
+    const char *defpath_suffix = "/plugins/*/molfile";
+    const char *defpathenv = GMX_VMD_PLUGIN_PATH;
 #else
     WIN32_FIND_DATA ffd;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     char progfolder[GMX_PATH_MAX];
     char defpathenv[GMX_PATH_MAX];
+    const char *defpath_suffix = "\\plugins\\WIN32\\molfile";
     SHGetFolderPath(NULL,CSIDL_PROGRAM_FILES,NULL,SHGFP_TYPE_CURRENT,progfolder);
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
@@ -256,12 +259,31 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     }
     vmdplugin->filetype++;
 
+    /* First look for an explicit path given at run time for the
+     * plugins, then an implicit run-time path, and finally for one
+     * given at configure time. This last might be hard-coded to the
+     * default for VMD installs. */
     pathenv = getenv("VMD_PLUGIN_PATH");
     if (pathenv==NULL) 
     {
-        printf("\nVMD_PLUGIN_PATH not set. ");
-        printf("Using default location:\n%s\n",defpathenv);
-        pathenv=defpathenv;
+        pathenv = getenv("VMDDIR");
+        if (NULL == pathenv)
+        {
+            printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
+            printf("Using default location:\n%s\n",defpathenv);
+            pathenv=defpathenv;
+        }
+        else
+        {
+            printf("\nVMD_PLUGIN_PATH no set, but VMDDIR is set. ");
+#ifdef _MSC_VER
+            _snprintf_s(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
+#else
+            snprintf(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
+#endif
+            printf("Using semi-default location:\n%s\n",pathenv_buffer);
+            pathenv = pathenv_buffer;
+        }
     }
     strncpy(pathname,pathenv,sizeof(pathname));
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
@@ -364,6 +386,13 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         {
             snew(fr->v,fr->natoms);
         }
+    }
+    else
+    {
+        fprintf(stderr,
+                "\nThis trajectory is being read with a VMD plug-in from before VMD"
+                "\nversion 1.8, or from a trajectory that lacks time step metadata."
+                "\nEither way, GROMACS cannot tell whether the trajectory has velocities.\n");
     }
     return 1;
 
