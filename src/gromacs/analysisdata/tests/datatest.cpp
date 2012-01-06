@@ -43,6 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/utility/format.h"
 
@@ -149,8 +150,8 @@ AnalysisDataTestFixture::AnalysisDataTestFixture()
 void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput &input,
                                              AnalysisData *data)
 {
-    gmx::AnalysisDataHandle *handle = NULL;
-    handle = data->startData(NULL);
+    gmx::AnalysisDataParallelOptions options;
+    gmx::AnalysisDataHandle *handle = data->startData(options);
     for (int row = 0; row < input.frameCount(); ++row)
     {
         presentDataFrame(input, row, handle);
@@ -168,8 +169,14 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
     for (int i = 0; i < frame.pointSetCount(); ++i)
     {
         const AnalysisDataTestInputPointSet &points = frame.points(i);
-        handle->addPoints(0, points.size(), points.yptr(), points.dyptr(),
-                          points.presentptr());
+        for (int j = 0; j < points.size(); ++j)
+        {
+            handle->setPoint(j, points.y(j), points.dy(j), points.present(j));
+        }
+        if (input.isMultipoint())
+        {
+            handle->finishPointSet();
+        }
     }
     handle->finishFrame();
 }

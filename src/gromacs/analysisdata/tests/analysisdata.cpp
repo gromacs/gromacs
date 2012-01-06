@@ -32,8 +32,9 @@
  * \brief
  * Tests for analysis data functionality.
  *
- * These tests check the functionality of gmx::AnalysisData, as well as its
- * base classes gmx::AbstractAnalysisData and gmx::AbstractAnalysisDataStored.
+ * These tests check the functionality of gmx::AnalysisData, as well as classes
+ * used in its implementation: gmx::AbstractAnalysisData and
+ * gmx::AnalysisDataStorage.
  * Most checking is done using gmx::test::AnalysisDataTestFixture and mock
  * modules that implement gmx::AnalysisDataModuleInterface.
  *
@@ -46,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/fatalerror/exceptions.h"
 
 #include "datatest.h"
@@ -161,35 +163,6 @@ TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
 }
 
 /*
- * Tests that data is forwarded correctly to modules when the data is added as
- * individual points and not as full frames.
- */
-TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithIndividualPoints)
-{
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData data;
-    data.setColumns(input.columnCount());
-
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
-    gmx::AnalysisDataHandle *handle = NULL;
-    ASSERT_NO_THROW(handle = data.startData(NULL));
-    for (int row = 0; row < input.frameCount(); ++row)
-    {
-        const gmx::test::AnalysisDataTestInputFrame &frame = input.frame(row);
-        const gmx::test::AnalysisDataTestInputPointSet &points = frame.points();
-        ASSERT_NO_THROW(handle->startFrame(row, frame.x(), frame.dx()));
-        for (int column = 0; column < input.columnCount(); ++column)
-        {
-            ASSERT_NO_THROW(handle->addPoint(column, points.y(column)));
-        }
-        ASSERT_NO_THROW(handle->finishFrame());
-        EXPECT_EQ(row + 1, data.frameCount());
-    }
-    ASSERT_NO_THROW(handle->finishData());
-}
-
-/*
  * Tests that data is forwarded correctly (in frame order) to modules when the
  * data is added through multiple handles in non-increasing order.
  */
@@ -203,8 +176,9 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
     ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
     gmx::AnalysisDataHandle *handle1 = NULL;
     gmx::AnalysisDataHandle *handle2 = NULL;
-    ASSERT_NO_THROW(handle1 = data.startData(NULL));
-    ASSERT_NO_THROW(handle2 = data.startData(NULL));
+    gmx::AnalysisDataParallelOptions options(2);
+    ASSERT_NO_THROW(handle1 = data.startData(options));
+    ASSERT_NO_THROW(handle2 = data.startData(options));
     ASSERT_NO_THROW(presentDataFrame(input, 1, handle1));
     ASSERT_NO_THROW(presentDataFrame(input, 0, handle2));
     ASSERT_NO_THROW(presentDataFrame(input, 2, handle1));

@@ -46,6 +46,7 @@
 #include <rmpbc.h>
 #include <statutil.h>
 
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/asciihelpwriter.h"
@@ -234,8 +235,9 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
 
     int nframes = 0;
+    AnalysisDataParallelOptions dataOptions;
     std::auto_ptr<TrajectoryAnalysisModuleData>
-        pdata(module->startFrames(NULL, selections));
+        pdata(module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();

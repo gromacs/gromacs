@@ -58,7 +58,7 @@ class TrajectoryAnalysisModuleData::Impl
         typedef std::map<std::string, AnalysisDataHandle *> HandleContainer;
 
         Impl(TrajectoryAnalysisModule *module,
-             /*AnalysisDataParallelOptions*/ void* opt,
+             const AnalysisDataParallelOptions &opt,
              const SelectionCollection &selections);
         ~Impl();
 
@@ -89,7 +89,7 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
     public:
         TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
-                                          /*AnalysisDataParallelOptions*/ void* opt,
+                                          const AnalysisDataParallelOptions &opt,
                                           const SelectionCollection &selections);
 
         virtual void finish();

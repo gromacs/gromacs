@@ -51,7 +51,7 @@ namespace gmx
 
 TrajectoryAnalysisModuleData::Impl::Impl(
         TrajectoryAnalysisModule *module,
-        AnalysisDataParallelOptions opt,
+        const AnalysisDataParallelOptions &opt,
         const SelectionCollection &selections)
     : _selections(selections)
 {
@@ -86,7 +86,7 @@ void TrajectoryAnalysisModuleData::Impl::finishHandles()
 
 TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
         TrajectoryAnalysisModule *module,
-        AnalysisDataParallelOptions opt,
+        const AnalysisDataParallelOptions &opt,
         const SelectionCollection &selections)
     : _impl(new Impl(module, opt, selections))
 {
@@ -140,7 +140,7 @@ TrajectoryAnalysisModuleData::parallelSelections(const std::vector<Selection *> 
  */
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
         TrajectoryAnalysisModule *module,
-        /*AnalysisDataParallelOptions*/ void* opt,
+        const AnalysisDataParallelOptions &opt,
         const SelectionCollection &selections)
     : TrajectoryAnalysisModuleData(module, opt, selections)
 {
@@ -181,7 +181,7 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
 
 
 TrajectoryAnalysisModuleData *
-TrajectoryAnalysisModule::startFrames(AnalysisDataParallelOptions opt,
+TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
                                       const SelectionCollection &selections)
 {
     return new TrajectoryAnalysisModuleDataBasic(this, opt, selections);

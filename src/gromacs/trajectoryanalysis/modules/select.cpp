@@ -236,7 +236,7 @@ class Select::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
         ModuleData(TrajectoryAnalysisModule *module,
-                   AnalysisDataParallelOptions opt,
+                   const AnalysisDataParallelOptions &opt,
                    const SelectionCollection &selections)
             : TrajectoryAnalysisModuleData(module, opt, selections),
               _mmap(NULL)
@@ -469,7 +469,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 TrajectoryAnalysisModuleData *
-Select::startFrames(AnalysisDataParallelOptions opt,
+Select::startFrames(const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections)
 {
     ModuleData *pdata = new ModuleData(this, opt, selections);
@@ -498,7 +498,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             real normfac = _bFracNorm ? 1.0 / sel[g]->coveredFraction() : 1.0;
             normfac /= _totsize[g];
-            sdh->addPoint(g, sel[g]->posCount() * normfac);
+            sdh->setPoint(g, sel[g]->posCount() * normfac);
         }
         sdh->finishFrame();
     }
@@ -508,7 +508,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         cdh->startFrame(frnr, fr.time);
         for (size_t g = 0; g < sel.size(); ++g)
         {
-            cdh->addPoint(g, sel[g]->coveredFraction());
+            cdh->setPoint(g, sel[g]->coveredFraction());
         }
         cdh->finishFrame();
     }
@@ -518,17 +518,19 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         idh->startFrame(frnr, fr.time);
         for (size_t g = 0; g < sel.size(); ++g)
         {
-            idh->addPoint(0, sel[g]->posCount());
+            idh->setPoint(0, sel[g]->posCount());
+            idh->finishPointSet();
             for (int i = 0; i < sel[g]->posCount(); ++i)
             {
                 if (sel[g]->type() == INDEX_RES && !_bResInd)
                 {
-                    idh->addPoint(1, _top->atoms.resinfo[sel[g]->mapId(i)].nr);
+                    idh->setPoint(1, _top->atoms.resinfo[sel[g]->mapId(i)].nr);
                 }
                 else
                 {
-                    idh->addPoint(1, sel[g]->mapId(i) + 1);
+                    idh->setPoint(1, sel[g]->mapId(i) + 1);
                 }
+                idh->finishPointSet();
             }
         }
         idh->finishFrame();
@@ -540,7 +542,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         mdh->startFrame(frnr, fr.time);
         for (int b = 0; b < d->_mmap->nr; ++b)
         {
-            mdh->addPoint(b, d->_mmap->refid[b] == -1 ? 0 : 1);
+            mdh->setPoint(b, d->_mmap->refid[b] == -1 ? 0 : 1);
         }
         mdh->finishFrame();
     }
