@@ -45,16 +45,12 @@ namespace gmx
 {
 
 class AnalysisDataHandle;
-
-//! Placeholder type for parallelization options.
-typedef void *AnalysisDataParallelOptions;
+class AnalysisDataParallelOptions;
 
 /*! \brief
  * Parallelizable data container for raw data.
  *
- * This is the only data object (in addition to the tightly coupled
- * \c AnalysisDataHandle object) that needs explicit parallelization.
- *
+ * \if internal
  * Special note for MPI implementation: assuming that the initialization of
  * data objects is identical in all processes, associating the data objects
  * in different MPI processes should be possible without changes in the
@@ -62,11 +58,12 @@ typedef void *AnalysisDataParallelOptions;
  * Alternative, more robust implementation could get a unique ID as parameter
  * to the constructor or a separate function, but would require all tools to
  * provide it.
+ * \endif
  *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisData : public AbstractAnalysisDataStored
+class AnalysisData : public AbstractAnalysisData
 {
     public:
         //! Creates an empty analysis data object.
@@ -87,7 +84,7 @@ class AnalysisData : public AbstractAnalysisDataStored
          *     used.
          * \returns The created handle.
          */
-        AnalysisDataHandle *startData(AnalysisDataParallelOptions opt);
+        AnalysisDataHandle *startData(const AnalysisDataParallelOptions &opt);
         /*! \brief
          * Destroy a handle after all data has been added.
          *
@@ -98,11 +95,13 @@ class AnalysisData : public AbstractAnalysisDataStored
         void finishData(AnalysisDataHandle *handle);
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         class Impl;
 
-        Impl                *_impl;
+        Impl                *impl_;
 
-        friend class Impl;
         friend class AnalysisDataHandle;
 
         // Copy and assign disallowed by base class.
@@ -130,21 +129,14 @@ class AnalysisDataHandle
 
         //! Start data for a new frame.
         void startFrame(int index, real x, real dx = 0.0);
-        //! Add a data point for in single column for the current frame.
-        void addPoint(int col, real y, real dy = 0.0, bool present = true);
-        //! Add multiple data points in neighboring columns for the current frame.
-        void addPoints(int firstcol, int n,
-                       const real *y, const real *dy = 0,
-                       const bool *present = 0);
+        //! Set a value for a single column for the current frame.
+        void setPoint(int col, real y, real dy = 0.0, bool present = true);
+        //! Set values for consecutive columns for the current frame.
+        void setPoints(int firstcol, int n, const real *y);
+        //! Finish data for the current point set.
+        void finishPointSet();
         //! Finish data for the current frame.
         void finishFrame();
-        //! Convenience function for adding a complete frame.
-        void addFrame(int index, real x, const real *y, const real *dy = 0,
-                      const bool *present = 0);
-        //! Convenience function for adding a complete frame.
-        void addFrame(int index, real x, real dx,
-                      const real *y, const real *dy = 0,
-                      const bool *present = 0);
         //! Calls AnalysisData::finishData() for this handle.
         void finishData();
 
@@ -161,7 +153,7 @@ class AnalysisDataHandle
 
         class Impl;
 
-        Impl                *_impl;
+        Impl                   *impl_;
 
         friend class AnalysisData;
 

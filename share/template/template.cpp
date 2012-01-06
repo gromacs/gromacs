@@ -48,7 +48,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TopologyInformation &top);
 
         virtual TrajectoryAnalysisModuleData *startFrames(
-                    AnalysisDataParallelOptions opt,
+                    const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -75,7 +75,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
         ModuleData(TrajectoryAnalysisModule *module,
-                   AnalysisDataParallelOptions opt,
+                   const AnalysisDataParallelOptions &opt,
                    const SelectionCollection &selections)
             : TrajectoryAnalysisModuleData(module, opt, selections),
               _nb(NULL)
@@ -168,7 +168,7 @@ AnalysisTemplate::initAnalysis(const TopologyInformation & /*top*/)
 
 
 TrajectoryAnalysisModuleData *
-AnalysisTemplate::startFrames(AnalysisDataParallelOptions opt,
+AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
     std::auto_ptr<ModuleData> pdata(new ModuleData(this, opt, selections));
@@ -196,7 +196,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             frave += nb->minimumDistance(sel->x(i));
         }
         frave /= nr;
-        dh->addPoint(g, frave);
+        dh->setPoint(g, frave);
     }
     dh->finishFrame();
 }

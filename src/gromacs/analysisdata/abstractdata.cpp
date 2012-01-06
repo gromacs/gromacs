@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::AbstractAnalysisData and gmx::AbstractAnalysisDataStored.
+ * Implements gmx::AbstractAnalysisData.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
@@ -38,9 +38,6 @@
 #include "gromacs/analysisdata/abstractdata.h"
 
 #include <memory>
-
-// Legacy header.
-#include "smalloc.h"
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
@@ -305,16 +302,6 @@ AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) con
 
 
 void
-AbstractAnalysisData::notifyPointsAdd(int firstcol, int n,
-                                      const real *y, const real *dy,
-                                      const bool *present) const
-{
-    notifyPointsAdd(AnalysisDataPointSetRef(
-            _impl->_currHeader, firstcol, n, y, dy, present));
-}
-
-
-void
 AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header) const
 {
     GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
@@ -336,13 +323,6 @@ AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header) c
 
 
 void
-AbstractAnalysisData::notifyFrameFinish() const
-{
-    notifyFrameFinish(_impl->_currHeader);
-}
-
-
-void
 AbstractAnalysisData::notifyDataFinish() const
 {
     GMX_RELEASE_ASSERT(_impl->_bInData, "notifyDataStart() not called");
@@ -355,234 +335,6 @@ AbstractAnalysisData::notifyDataFinish() const
     {
         (*i)->dataFinished();
     }
-}
-
-
-/********************************************************************
- * AnalysisDataFrame
- */
-
-AnalysisDataFrame::AnalysisDataFrame(int columnCount)
-    : _index(-1), _x(0.0), _dx(0.0), _columnCount(columnCount),
-      _y(NULL), _dy(NULL), _present(NULL)
-{
-    snew(_y, columnCount);
-    snew(_dy, columnCount);
-    snew(_present, columnCount);
-}
-
-
-AnalysisDataFrame::~AnalysisDataFrame()
-{
-    sfree(_y);
-    sfree(_dy);
-    sfree(_present);
-}
-
-
-/********************************************************************
- * AbstractAnalysisDataStored::Impl
- */
-
-AbstractAnalysisDataStored::Impl::Impl()
-    : _nalloc(0), _bStoreAll(false), _nextind(-1)
-{
-}
-
-
-AbstractAnalysisDataStored::Impl::~Impl()
-{
-    FrameList::const_iterator i;
-    for (i = _store.begin(); i != _store.end(); ++i)
-    {
-        delete *i;
-    }
-}
-
-
-int
-AbstractAnalysisDataStored::Impl::getStoreIndex(int index, int nframes) const
-{
-    // Check that the requested index is available.
-    if ((index < 0 && (-index > _nalloc || -index > nframes))
-        || index >= nframes || (index >= 0 && index < nframes - _nalloc))
-    {
-        return -1;
-    }
-    // Calculate the index into the storage array.
-    if (index < 0)
-    {
-        index = _nextind + index;
-        if (index < 0)
-        {
-            index += _nalloc;
-        }
-    }
-    else if (nframes > _nalloc)
-    {
-        index %= _nalloc;
-    }
-    return index;
-}
-
-
-/********************************************************************
- * AbstractAnalysisDataStored
- */
-
-AbstractAnalysisDataStored::AbstractAnalysisDataStored()
-    : _impl(new Impl())
-{
-}
-
-
-AbstractAnalysisDataStored::~AbstractAnalysisDataStored()
-{
-    delete _impl;
-}
-
-
-AnalysisDataFrameRef
-AbstractAnalysisDataStored::tryGetDataFrameInternal(int index) const
-{
-    if (!_impl->_bStoreAll && index < frameCount() - _impl->_nalloc)
-    {
-        return AnalysisDataFrameRef();
-    }
-    AnalysisDataFrame *fr = _impl->_store[index % _impl->_nalloc];
-    return AnalysisDataFrameRef(fr->_index, fr->_x, fr->_dx, fr->_columnCount,
-                                fr->_y, fr->_dy, fr->_present);
-}
-
-
-bool
-AbstractAnalysisDataStored::requestStorageInternal(int nframes)
-{
-    GMX_RELEASE_ASSERT(!isMultipoint(), "Storage of multipoint data not supported");
-
-    // Handle the case when everything needs to be stored.
-    if (nframes == -1)
-    {
-        _impl->_bStoreAll = true;
-        _impl->_nalloc = 1;
-        return true;
-    }
-    // Check whether an earier call has requested more storage.
-    if (_impl->_bStoreAll || nframes < _impl->_nalloc)
-    {
-        return true;
-    }
-    // nframes previous frames plus the current one
-    _impl->_nalloc = nframes + 1;
-    return true;
-}
-
-
-void
-AbstractAnalysisDataStored::setMultipoint(bool multipoint)
-{
-    GMX_RELEASE_ASSERT(_impl->_nalloc == 0 || !multipoint,
-                       "Storage of multipoint data not supported");
-    AbstractAnalysisData::setMultipoint(multipoint);
-}
-
-
-void
-AbstractAnalysisDataStored::startDataStore()
-{
-    // We first notify any attached modules, because they also might request
-    // some storage.
-    notifyDataStart();
-
-    // If any storage has been requested, preallocate it.
-    if (_impl->_nalloc > 0)
-    {
-        _impl->_store.resize(_impl->_nalloc);
-        for (int i = 0; i < _impl->_nalloc; ++i)
-        {
-            _impl->_store[i] = new AnalysisDataFrame(columnCount());
-        }
-        _impl->_nextind = 0;
-    }
-}
-
-
-void
-AbstractAnalysisDataStored::startNextFrame(const AnalysisDataFrameHeader &header)
-{
-    // Start storing the frame if needed.
-    if (_impl->_nalloc > 0)
-    {
-        if (_impl->_nextind >= _impl->_nalloc)
-        {
-            if (_impl->_bStoreAll)
-            {
-                _impl->_nalloc = _impl->_nextind + 1;
-                _impl->_store.resize(_impl->_nalloc);
-                for (int i = _impl->_nextind; i < _impl->_nalloc; ++i)
-                {
-                    _impl->_store[i] = new AnalysisDataFrame(columnCount());
-                }
-            }
-            else
-            {
-                _impl->_nextind = 0;
-            }
-        }
-
-        _impl->_store[_impl->_nextind]->_index = header.index();
-        _impl->_store[_impl->_nextind]->_x     = header.x();
-        _impl->_store[_impl->_nextind]->_dx    = header.dx();
-    }
-
-    // Notify any modules.
-    notifyFrameStart(header);
-}
-
-
-void
-AbstractAnalysisDataStored::storeThisFrame(const real *y, const real *dy,
-                                           const bool *present)
-{
-    int ncol = columnCount();
-
-    // Store the values if required.
-    if (_impl->_nextind >= 0)
-    {
-        AnalysisDataFrame *fr = _impl->_store[_impl->_nextind];
-
-        for (int i = 0; i < ncol; ++i)
-        {
-            fr->_y[i] = y[i];
-            if (dy)
-            {
-                fr->_dy[i] = dy[i];
-            }
-            if (present)
-            {
-                fr->_present[i] = present[i];
-            }
-        }
-    }
-
-    // Notify modules of new data.
-    notifyPointsAdd(0, ncol, y, dy, present);
-    // The index needs to be incremented after the notifications to allow
-    // the modules to use getDataFrame() properly.
-    if (_impl->_nextind >= 0)
-    {
-        ++_impl->_nextind;
-    }
-    notifyFrameFinish();
-}
-
-
-void
-AbstractAnalysisDataStored::storeNextFrame(real x, real dx, const real *y,
-                                           const real *dy, const bool *present)
-{
-    startNextFrame(AnalysisDataFrameHeader(frameCount(), x, dx));
-    storeThisFrame(y, dy, present);
 }
 
 } // namespace gmx

@@ -51,6 +51,7 @@ namespace gmx
 class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;
+class AnalysisDataParallelOptions;
 class Options;
 class Selection;
 class SelectionCollection;
@@ -114,7 +115,7 @@ class TrajectoryAnalysisModuleData
          * The handles are accessible through dataHandle().
          */
         TrajectoryAnalysisModuleData(TrajectoryAnalysisModule *module,
-                                     /*AnalysisDataParallelOptions*/ void* opt,
+                                     const AnalysisDataParallelOptions &opt,
                                      const SelectionCollection &selections);
 
         /*! \brief
@@ -227,7 +228,7 @@ class TrajectoryAnalysisModule
          * \see TrajectoryAnalysisModuleData
          */
         virtual TrajectoryAnalysisModuleData *startFrames(
-                /*AnalysisDataParallelOptions*/ void* opt,
+                const AnalysisDataParallelOptions &opt,
                 const SelectionCollection &selections);
         /*! \brief
          * Analyzes a single frame.
