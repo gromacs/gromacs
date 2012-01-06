@@ -42,6 +42,8 @@
 
 #include "histogram.h"
 
+#include "../datastorage.h"
+
 namespace gmx
 {
 
@@ -123,11 +125,15 @@ class BasicHistogramImpl
          * not exist.
          */
         void ensureAveragerExists(AbstractAnalysisData *data);
+        /*! \brief
+         * Initializes data storage frame when a new frame starts.
+         */
+        void initFrame(AnalysisDataStorageFrame *frame);
 
+        //! Storage implementation object.
+        AnalysisDataStorage             storage_;
         //! Settings for the histogram object.
         AnalysisHistogramSettings       settings_;
-        //! Histogram data accumulated for a frame so far.
-        std::vector<real>               hist_;
         //! Averager module, or NULL if not yet allocated.
         BasicAverageHistogramModule    *averager_;
 };

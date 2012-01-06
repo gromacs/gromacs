@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::AbstractAnalysisData and gmx::AbstractAnalysisDataStored.
+ * Declares gmx::AbstractAnalysisData.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
@@ -48,6 +48,7 @@ class AnalysisDataModuleInterface;
 class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
+class AnalysisDataStorage;
 
 /*! \brief
  * Abstract base class for all objects that provide data.
@@ -323,27 +324,12 @@ class AbstractAnalysisData
          */
         void notifyPointsAdd(const AnalysisDataPointSetRef &points) const;
         /*! \brief
-         * Deprecated convenience method for not needing to construct a
-         * AnalysisDataPointSetRef object.
-         *
-         * Will be removed as part of future work.
-         */
-        void notifyPointsAdd(int firstcol, int n,
-                             const real *y, const real *dy,
-                             const bool *present) const;
-        /*! \brief
          * Notifies attached modules of the end of a frame.
          *
          * Should be called once for each call of notifyFrameStart(), after any
          * notifyPointsAdd() calls for the frame.
          */
         void notifyFrameFinish(const AnalysisDataFrameHeader &header) const;
-        /*! \brief
-         * Deprecated convenience method for not needing a frame header.
-         *
-         * Will be removed as part of future work.
-         */
-        void notifyFrameFinish() const;
         /*! \brief
          * Notifies attached modules of the end of data.
          *
@@ -359,70 +345,14 @@ class AbstractAnalysisData
         int                     _ncol;
         bool                    _bMultiPoint;
 
+        /*! \brief
+         * Needed to provide access to notification methods.
+         */
+        friend class AnalysisDataStorage;
+
         // Disallow copy and assign.
         AbstractAnalysisData(const AbstractAnalysisData &);
         void operator =(const AbstractAnalysisData &);
-};
-
-
-/*! \brief
- * Abstract class that implements storage of data.
- *
- * \if libapi
- * This class implements a standard way of storing data, to avoid implementing
- * storage in each derived class separately. All the pure virtual methods of
- * AbstractData are implemented, and protected methods are provided to add data
- * to the storage. These protected methods automatically call notifyDataStart(),
- * notifyFrameStart(), notifyPointsAdd() and notifyFrameFinish()
- * functions in AbstractAnalysisData, but the derived class should still
- * call notifyDataFinish().
- *
- * Additional protected functions could be implemented to allow optimization:
- * in the current interface, some data copying is unavoidable.
- * Some changes could make it possible to obtain a pointer to the
- * storage, allowing the calculated values to be stored there directly
- * instead of a temporary array.
- * \endif
- *
- * \inlibraryapi
- * \ingroup module_analysisdata
- */
-class AbstractAnalysisDataStored : public AbstractAnalysisData
-{
-    public:
-        virtual ~AbstractAnalysisDataStored();
-
-    protected:
-        /*! \cond libapi */
-        AbstractAnalysisDataStored();
-
-        /*! \copydoc AbstractAnalysisData::setMultipoint()
-         *
-         * The overridden method also asserts if
-         * storage has been requested and \p multipoint is \c true.
-         */
-        void setMultipoint(bool multipoint);
-
-        //! Start storing data.
-        void startDataStore();
-        //! Starts storing a next frame.
-        void startNextFrame(const AnalysisDataFrameHeader &header);
-        //! Stores the whole frame in a single call after start_next_frame().
-        void storeThisFrame(const real *y, const real *dy, const bool *present);
-        //! Convenience function for storing a whole frame in a single call.
-        void storeNextFrame(real x, real dx, const real *y, const real *dy,
-                            const bool *present);
-        //! \endcond
-
-    private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
-
-        class Impl;
-
-        Impl                   *_impl;
-
-        // Copy and assign disallowed by base class.
 };
 
 } // namespace gmx

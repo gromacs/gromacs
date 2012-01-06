@@ -316,7 +316,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataSimpleHistogramModule : public AbstractAnalysisDataStored,
+class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
                                           public AnalysisDataModuleInterface
 {
     public:
@@ -358,6 +358,9 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisDataStored,
         virtual void dataFinished();
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         internal::BasicHistogramImpl   *impl_;
 
         // Copy and assign disallowed by base.
@@ -378,7 +381,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisDataStored,
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataWeightedHistogramModule : public AbstractAnalysisDataStored,
+class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
                                             public AnalysisDataModuleInterface
 {
     public:
@@ -406,6 +409,9 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisDataStored,
         virtual void dataFinished();
 
     private:
+        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
+        virtual bool requestStorageInternal(int nframes);
+
         internal::BasicHistogramImpl   *impl_;
 
         // Copy and assign disallowed by base.

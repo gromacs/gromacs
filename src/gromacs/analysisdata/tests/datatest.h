@@ -73,7 +73,8 @@ const real MPSTOP = -std::numeric_limits<real>::max();
  *
  * If the data is not multipoint, each frame contains exactly one set of
  * points.  If there is more than one set of points, each of these sets is
- * passed separately to AnalysisDataHandle::addPoints().
+ * passed separately and AnalysisDataHandle::finishPointSet() called in
+ * between.
  *
  * \ingroup module_analysisdata
  */
@@ -84,10 +85,9 @@ class AnalysisDataTestInputPointSet
 
         int size() const { return y_.size(); }
         real y(int i) const { return y_[i]; }
+        real dy(int i) const { return 0.0; }
+        real present(int i) const { return true; }
         const std::vector<real> &yvector() const { return y_; }
-        const real *yptr() const { return &y_[0]; }
-        const real *dyptr() const { return NULL; }
-        const bool *presentptr() const { return NULL; }
 
     private:
         std::vector<real>       y_;

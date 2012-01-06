@@ -28,58 +28,51 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal file
  * \brief
- * Declares private implementation class for gmx::AnalysisData.
+ * Declares gmx::AnalysisDataParallelOptions.
+ *
+ * \if internal
+ * Implementation of this class is currently in datastorage.cpp.
+ * \endif
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  * \ingroup module_analysisdata
  */
-#ifndef GMX_ANALYSISDATA_ANALYSISDATA_IMPL_H
-#define GMX_ANALYSISDATA_ANALYSISDATA_IMPL_H
-
-#include <vector>
-
-#include "analysisdata.h"
-#include "datastorage.h"
+#ifndef GMX_ANALYSISDATA_PARALLELOPTIONS_H
+#define GMX_ANALYSISDATA_PARALLELOPTIONS_H
 
 namespace gmx
 {
 
-/*! \internal \brief
- * Private implementation class for AnalysisData.
+/*! \brief
+ * Parallelization options for analysis data objects.
  *
- * \ingroup module_analysisdata
+ * Methods in this class do not throw.
+ *
+ * \inlibraryapi
  */
-class AnalysisData::Impl
+class AnalysisDataParallelOptions
 {
     public:
-        //! Shorthand for a list of data handles.
-        typedef std::vector<AnalysisDataHandle *> HandleList;
+        //! Constructs options for serial execution.
+        AnalysisDataParallelOptions();
+        /*! \brief
+         * Constructs options for parallel execution with given number of
+         * concurrent frames.
+         *
+         * \param[in] parallelizationFactor
+         *      Number of frames that may be constructed concurrently.
+         *      Must be >= 1.
+         */
+        explicit AnalysisDataParallelOptions(int parallelizationFactor);
 
-        Impl();
-        ~Impl();
+        //! Returns the number of frames that may be constructed concurrently.
+        int parallelizationFactor() const { return parallelizationFactor_; }
 
-        AnalysisDataStorage     storage_;
-        //! List of handles for this data object.
-        HandleList              handles_;
-};
-
-/*! \internal \brief
- * Private implementation class for AnalysisDataHandle.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisDataHandle::Impl
-{
-    public:
-        //! Creates a handle associated with the given data object.
-        explicit Impl(AnalysisData *data);
-
-        //! The data object that this handle belongs to.
-        AnalysisData             &data_;
-        //! Current storage frame object, or NULL if no current frame.
-        AnalysisDataStorageFrame *currentFrame_;
+    private:
+        int                     parallelizationFactor_;
 };
 
 } // namespace gmx
