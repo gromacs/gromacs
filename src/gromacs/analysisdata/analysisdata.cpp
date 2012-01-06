@@ -41,10 +41,11 @@
 #include <memory>
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datastorage.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
-#include "abstractdata-impl.h"
 #include "analysisdata-impl.h"
 
 namespace gmx
@@ -52,17 +53,9 @@ namespace gmx
 
 /********************************************************************
  * AnalysisData::Impl
- ********************************************************************/
+ */
 
-static bool
-frame_index_gtr(AnalysisDataFrame *a, AnalysisDataFrame *b)
-{
-    return a->_index > b->_index;
-}
-
-
-AnalysisData::Impl::Impl(AnalysisData *data)
-    : _data(*data), _pstart(0)
+AnalysisData::Impl::Impl()
 {
 }
 
@@ -70,84 +63,10 @@ AnalysisData::Impl::Impl(AnalysisData *data)
 AnalysisData::Impl::~Impl()
 {
     HandleList::const_iterator i;
-    for (i = _handles.begin(); i != _handles.end(); ++i)
+    for (i = handles_.begin(); i != handles_.end(); ++i)
     {
         delete *i;
     }
-
-    FrameList::const_iterator j;
-    for (j = _pending.begin(); j != _pending.end(); ++j)
-    {
-        delete *j;
-    }
-}
-
-
-void
-AnalysisData::Impl::addPendingFrame(AnalysisDataFrame *fr)
-{
-    GMX_ASSERT(fr->_index >= _data.frameCount(),
-               "addPendingFrame() called for too old frame");
-    size_t pindex = fr->_index - _data.frameCount();
-    if (pindex == 0)
-    {
-        // Just store our frame if it is the next one.
-        _data.storeNextFrame(fr->_x, fr->_dx, fr->_y, fr->_dy, fr->_present);
-        incrementPStart();
-    }
-    else
-    {
-        if (pindex >= _pending.size())
-        {
-            // TODO: We need to wait until earlier frames are ready...
-        }
-        // TODO: This is not thread-safe.
-        pindex += _pstart;
-        if (pindex > _pending.size())
-        {
-            pindex -= _pending.size();
-        }
-
-        int ncol = _data.columnCount();
-        _pending[pindex]->_x     = fr->_x;
-        _pending[pindex]->_dx    = fr->_dx;
-        for (int i = 0; i < ncol; ++i)
-        {
-            _pending[pindex]->_y[i]       = fr->_y[i];
-            _pending[pindex]->_dy[i]      = fr->_dy[i];
-            _pending[pindex]->_present[i] = fr->_present[i];
-        }
-        _pending[pindex]->_index = fr->_index;
-    }
-    processPendingFrames();
-}
-
-
-void
-AnalysisData::Impl::processPendingFrames()
-{
-    while (_pending[_pstart]->_index != -1)
-    {
-        AnalysisDataFrame *fr = _pending[_pstart];
-
-        _data.storeNextFrame(fr->_x, fr->_dx, fr->_y, fr->_dy, fr->_present);
-        fr->_index = -1;
-        incrementPStart();
-    }
-}
-
-
-void
-AnalysisData::Impl::incrementPStart()
-{
-    size_t val = _pstart;
-
-    ++val;
-    if (val >= _pending.size())
-    {
-        val -= _pending.size();
-    }
-    _pstart = val;
 }
 
 
@@ -156,14 +75,14 @@ AnalysisData::Impl::incrementPStart()
  */
 
 AnalysisData::AnalysisData()
-    : _impl(new Impl(this))
+    : impl_(new Impl)
 {
 }
 
 
 AnalysisData::~AnalysisData()
 {
-    delete _impl;
+    delete impl_;
 }
 
 
@@ -171,19 +90,24 @@ void
 AnalysisData::setColumns(int ncol, bool multipoint)
 {
     GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
-    GMX_RELEASE_ASSERT(_impl->_handles.empty(),
+    GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
     setColumnCount(ncol);
     setMultipoint(multipoint);
+    impl_->storage_.setMultipoint(multipoint);
 }
 
 
 AnalysisDataHandle *
-AnalysisData::startData(AnalysisDataParallelOptions opt)
+AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 {
-    if (_impl->_handles.empty())
+    GMX_RELEASE_ASSERT(impl_->handles_.size() < static_cast<unsigned>(opt.parallelizationFactor()),
+                       "Too many calls to startData() compared to provided options");
+    if (impl_->handles_.empty())
     {
-        startDataStore();
+        notifyDataStart();
+        impl_->storage_.setParallelOptions(opt);
+        impl_->storage_.startDataStorage(this);
     }
     else if (isMultipoint())
     {
@@ -191,17 +115,7 @@ AnalysisData::startData(AnalysisDataParallelOptions opt)
     }
 
     std::auto_ptr<AnalysisDataHandle> handle(new AnalysisDataHandle(this));
-    _impl->_handles.push_back(handle.get());
-
-    size_t oldSize = _impl->_pending.size();
-    _impl->_pending.resize(2 * _impl->_handles.size() - 1);
-    Impl::FrameList::iterator i;
-    for (i = _impl->_pending.begin() + oldSize; i != _impl->_pending.end(); ++i)
-    {
-        *i = new AnalysisDataFrame(columnCount());
-        (*i)->_index = -1;
-    }
-
+    impl_->handles_.push_back(handle.get());
     return handle.release();
 }
 
@@ -211,17 +125,31 @@ AnalysisData::finishData(AnalysisDataHandle *handle)
 {
     Impl::HandleList::iterator i;
 
-    i = std::find(_impl->_handles.begin(), _impl->_handles.end(), handle);
-    GMX_RELEASE_ASSERT(i != _impl->_handles.end(),
+    i = std::find(impl_->handles_.begin(), impl_->handles_.end(), handle);
+    GMX_RELEASE_ASSERT(i != impl_->handles_.end(),
                        "finishData() called for an unknown handle");
 
-    _impl->_handles.erase(i);
+    impl_->handles_.erase(i);
     delete handle;
 
-    if (_impl->_handles.empty())
+    if (impl_->handles_.empty())
     {
         notifyDataFinish();
     }
+}
+
+
+AnalysisDataFrameRef
+AnalysisData::tryGetDataFrameInternal(int index) const
+{
+    return impl_->storage_.tryGetDataFrame(index);
+}
+
+
+bool
+AnalysisData::requestStorageInternal(int nframes)
+{
+    return impl_->storage_.requestStorage(nframes);
 }
 
 
@@ -230,16 +158,7 @@ AnalysisData::finishData(AnalysisDataHandle *handle)
  */
 
 AnalysisDataHandle::Impl::Impl(AnalysisData *data)
-    : _data(*data)
-{
-    if (!_data.isMultipoint())
-    {
-        _frame.reset(new AnalysisDataFrame(_data.columnCount()));
-    }
-}
-
-
-AnalysisDataHandle::Impl::~Impl()
+    : data_(*data), currentFrame_(NULL)
 {
 }
 
@@ -249,107 +168,67 @@ AnalysisDataHandle::Impl::~Impl()
  */
 
 AnalysisDataHandle::AnalysisDataHandle(AnalysisData *data)
-    : _impl(new Impl(data))
+    : impl_(new Impl(data))
 {
 }
 
 
 AnalysisDataHandle::~AnalysisDataHandle()
 {
-    delete _impl;
+    delete impl_;
 }
 
 
 void
 AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
-    if (_impl->_data.isMultipoint())
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ == NULL,
+                       "startFrame() called twice without calling finishFrame()");
+    impl_->currentFrame_ =
+        &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+}
+
+
+void
+AnalysisDataHandle::setPoint(int col, real y, real dy, bool present)
+{
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "setPoint() called without calling startFrame()");
+    impl_->currentFrame_->setValue(col, y, dy, present);
+}
+
+
+void
+AnalysisDataHandle::setPoints(int firstcol, int n, const real *y)
+{
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "setPoints() called without calling startFrame()");
+    for (int i = 0; i < n; ++i)
     {
-        _impl->_data.notifyFrameStart(AnalysisDataFrameHeader(index, x, dx));
-    }
-    else
-    {
-        _impl->_frame->_index = index;
-        _impl->_frame->_x  = x;
-        _impl->_frame->_dx = dx;
-        for (int i = 0; i < _impl->_data.columnCount(); ++i)
-        {
-            _impl->_frame->_y[i]  = 0.0;
-            _impl->_frame->_dy[i] = 0.0;
-            _impl->_frame->_present[i] = false;
-        }
+        impl_->currentFrame_->setValue(firstcol + i, y[i]);
     }
 }
 
 
 void
-AnalysisDataHandle::addPoint(int col, real y, real dy, bool present)
+AnalysisDataHandle::finishPointSet()
 {
-    if (_impl->_data.isMultipoint())
-    {
-        _impl->_data.notifyPointsAdd(col, 1, &y, &dy, &present);
-    }
-    else
-    {
-        GMX_ASSERT(!_impl->_frame->_present[col],
-                   "Data for a column set multiple times");
-        _impl->_frame->_y[col] = y;
-        _impl->_frame->_dy[col] = dy;
-        _impl->_frame->_present[col] = present;
-    }
-}
-
-
-void
-AnalysisDataHandle::addPoints(int firstcol, int n,
-                              const real *y, const real *dy,
-                              const bool *present)
-{
-    if (_impl->_data.isMultipoint())
-    {
-        _impl->_data.notifyPointsAdd(firstcol, n, y, dy, present);
-    }
-    else
-    {
-        for (int i = 0; i < n; ++i)
-        {
-            addPoint(firstcol + i, y[i], dy ? dy[i] : 0.0,
-                     present ? present[i] : true);
-        }
-    }
+    GMX_RELEASE_ASSERT(impl_->data_.isMultipoint(),
+                       "finishPointSet() called for non-multipoint data");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "finishPointSet() called without calling startFrame()");
+    impl_->currentFrame_->finishPointSet();
 }
 
 
 void
 AnalysisDataHandle::finishFrame()
 {
-    if (_impl->_data.isMultipoint())
-    {
-        _impl->_data.notifyFrameFinish();
-    }
-    else
-    {
-        _impl->_data._impl->addPendingFrame(_impl->_frame.get());
-    }
-}
-
-
-void
-AnalysisDataHandle::addFrame(int index, real x, const real *y, const real *dy,
-                             const bool *present)
-{
-    addFrame(index, x, 0.0, y, dy, present);
-}
-
-
-void
-AnalysisDataHandle::addFrame(int index, real x, real dx,
-                             const real *y, const real *dy,
-                             const bool *present)
-{
-    startFrame(index, x, dx);
-    addPoints(0, _impl->_data.columnCount(), y, dy, present);
-    finishFrame();
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "finishFrame() called without calling startFrame()");
+    int index = impl_->currentFrame_->frameIndex();
+    impl_->currentFrame_ = NULL;
+    impl_->data_.impl_->storage_.finishFrame(index);
 }
 
 
@@ -357,7 +236,7 @@ void
 AnalysisDataHandle::finishData()
 {
     // Calls delete this
-    _impl->_data.finishData(this);
+    impl_->data_.finishData(this);
 }
 
 } // namespace gmx

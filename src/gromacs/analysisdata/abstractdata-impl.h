@@ -30,8 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares internal implementation classes for gmx::AbstractAnalysisData and
- * gmx::AbstractAnalysisDataStored.
+ * Declares internal implementation class for gmx::AbstractAnalysisData.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
@@ -101,78 +100,6 @@ class AbstractAnalysisData::Impl
          * The counter is incremented in notifyFrameFinish().
          */
         int                     _nframes;
-};
-
-/*! \internal \brief
- * Internal implementation class for storing a single data frame.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisDataFrame
-{
-    public:
-        explicit AnalysisDataFrame(int columnCount);
-        ~AnalysisDataFrame();
-
-        //! Zero-based global index of the frame.
-        int                     _index;
-        //! x value of the frame.
-        real                    _x;
-        //! Error of x for the frame.
-        real                    _dx;
-        //! Number of columns in the frame.
-        int                     _columnCount;
-        //! Array of column values for the frame.
-        real                   *_y;
-        //! Array of column error values for the frame.
-        real                   *_dy;
-        //! Array of flags that tell whether a value is present.
-        bool                   *_present;
-};
-
-/*! \internal \brief
- * Private implementation class for AbstractAnalysisDataStored.
- *
- * \ingroup module_analysisdata
- */
-class AbstractAnalysisDataStored::Impl
-{
-    public:
-        //! Shorthand for a list of data frames that are currently stored.
-        typedef std::vector<AnalysisDataFrame *> FrameList;
-
-        Impl();
-        ~Impl();
-
-        /*! \brief
-         * Calculates the index of a frame in the storage vector.
-         *
-         * \param[in] index  Zero-based index for the frame to query.
-         *      Negative value counts backwards from the current frame.
-         * \param[in] nframes  Total number of frames in the data.
-         * \returns Index in \a _store corresponding to \p index,
-         *      or -1 if not available.
-         */
-        int getStoreIndex(int index, int nframes) const;
-
-        /*! \brief
-         * Number of elements in \a _store.
-         *
-         * Also holds the number of frames that should be stored, even before
-         * \a _store has been allocated.
-         */
-        int                     _nalloc;
-        //! Whether all frames should be stored.
-        bool                    _bStoreAll;
-        //! List of data frames that are currently stored.
-        FrameList               _store;
-        /*! \brief
-         * Index in \a _store where the next frame will be stored.
-         *
-         * This counter is incremented after notifyPointsAdd() has been called
-         * for the frame.
-         */
-        int                     _nextind;
 };
 
 } // namespace gmx

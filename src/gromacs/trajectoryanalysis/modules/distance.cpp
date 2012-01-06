@@ -137,8 +137,8 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
     r = norm(dx);
     dh->startFrame(frnr, fr.time);
-    dh->addPoint(0, r);
-    dh->addPoints(1, 3, dx);
+    dh->setPoint(0, r);
+    dh->setPoints(1, 3, dx);
     dh->finishFrame();
 }
 

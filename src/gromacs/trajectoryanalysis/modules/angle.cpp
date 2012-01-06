@@ -559,7 +559,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             if (_bAll)
             {
-                dh->addPoint(n + 1, angle);
+                dh->setPoint(n + 1, angle);
             }
             ave += angle;
             ++n;
@@ -568,7 +568,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             ave /= n;
         }
-        dh->addPoint(g, ave);
+        dh->setPoint(g, ave);
     }
     dh->finishFrame();
 }

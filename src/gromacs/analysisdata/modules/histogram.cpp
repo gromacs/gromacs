@@ -39,12 +39,12 @@
 
 #include <cmath>
 
-#include <algorithm>
 #include <limits>
 #include <memory>
 
 #include "gromacs/basicmath.h"
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
@@ -448,6 +448,16 @@ BasicHistogramImpl::ensureAveragerExists(AbstractAnalysisData *data)
     }
 }
 
+
+void
+BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
+{
+    for (int i = 0; i < frame->columnCount(); ++i)
+    {
+        frame->setValue(i, 0.0);
+    }
+}
+
 } // namespace internal
 
 
@@ -506,38 +516,40 @@ void
 AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     impl_->ensureAveragerExists(this);
-    impl_->hist_.resize(settings().binCount());
     setColumnCount(settings().binCount());
-    startDataStore();
+    notifyDataStart();
+    impl_->storage_.startDataStorage(this);
 }
 
 
 void
 AnalysisDataSimpleHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
-    std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
-    startNextFrame(header);
+    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
+    impl_->initFrame(&frame);
 }
 
 
 void
 AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
+    AnalysisDataStorageFrame &frame =
+        impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         int bin = settings().findBin(points.y(i));
         if (bin != -1)
         {
-            impl_->hist_[bin] += 1;
+            frame.value(bin) += 1;
         }
     }
 }
 
 
 void
-AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    storeThisFrame(&impl_->hist_[0], NULL, NULL);
+    impl_->storage_.finishFrame(header.index());
 }
 
 
@@ -545,6 +557,20 @@ void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
     notifyDataFinish();
+}
+
+
+AnalysisDataFrameRef
+AnalysisDataSimpleHistogramModule::tryGetDataFrameInternal(int index) const
+{
+    return impl_->storage_.tryGetDataFrame(index);
+}
+
+
+bool
+AnalysisDataSimpleHistogramModule::requestStorageInternal(int nframes)
+{
+    return impl_->storage_.requestStorage(nframes);
 }
 
 
@@ -603,17 +629,17 @@ void
 AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     impl_->ensureAveragerExists(this);
-    impl_->hist_.resize(settings().binCount());
     setColumnCount(settings().binCount());
-    startDataStore();
+    notifyDataStart();
+    impl_->storage_.startDataStorage(this);
 }
 
 
 void
 AnalysisDataWeightedHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
-    std::fill(impl_->hist_.begin(), impl_->hist_.end(), 0.0);
-    startNextFrame(header);
+    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
+    impl_->initFrame(&frame);
 }
 
 
@@ -627,18 +653,20 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     int bin = settings().findBin(points.y(0));
     if (bin != -1)
     {
+        AnalysisDataStorageFrame &frame =
+            impl_->storage_.currentFrame(points.frameIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            impl_->hist_[bin] += points.y(i);
+            frame.value(bin) += points.y(i);
         }
     }
 }
 
 
 void
-AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    storeThisFrame(&impl_->hist_[0], NULL, NULL);
+    impl_->storage_.finishFrame(header.index());
 }
 
 
@@ -646,6 +674,20 @@ void
 AnalysisDataWeightedHistogramModule::dataFinished()
 {
     notifyDataFinish();
+}
+
+
+AnalysisDataFrameRef
+AnalysisDataWeightedHistogramModule::tryGetDataFrameInternal(int index) const
+{
+    return impl_->storage_.tryGetDataFrame(index);
+}
+
+
+bool
+AnalysisDataWeightedHistogramModule::requestStorageInternal(int nframes)
+{
+    return impl_->storage_.requestStorage(nframes);
 }
 
 
