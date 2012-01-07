@@ -10,5 +10,5 @@ cmake -D GMX_DOUBLE=${GMX_DOUBLE} -D GMX_MPI=${GMX_MPI} -D GMX_OPENMP=${GMX_OPEN
     -DGMX_EXTERNAL_BLAS=${GMX_EXTERNAL} -DGMX_EXTERNAL_LAPACK=${GMX_EXTERNAL} \
     -DGMX_DEFAULT_SUFFIX=off -DCMAKE_BUILD_TYPE=Debug . &&
 make &&
-ctest -D ExperimentalMemCheck -L GTest -V  #TODO parse valgrind output and show on website
+ctest -D ExperimentalMemCheck -L GTest -V  && #TODO parse valgrind output and show on website
 ctest -D ExperimentalTest -LE GTest -V     #TODO valgrind should be run for integration tests but with leak-check=no
