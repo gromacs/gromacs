@@ -277,6 +277,11 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     }
     for (i=0; i<globbuf.gl_pathc && vmdplugin->api == NULL; i++)
     {
+        /* FIXME: Undefined which plugin is chosen if more than one plugin
+           can read a certain file ending. Requires some additional command
+           line option or enviroment variable to specify which plugin should
+           be picked.
+        */
         ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],vmdplugin);
     }
     globfree(&globbuf);
@@ -315,6 +320,12 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     if (vmdplugin->api == NULL)
     {
         printf("\nNo plugin for %s found\n",vmdplugin->filetype);
+        return 0;
+    }
+
+    if (vmdplugin->api->abiversion < 10) 
+    {
+        printf("\nPlugin and/or VMD is to old. At least VMD 1.8.6 is required.\n");
         return 0;
     }
 
