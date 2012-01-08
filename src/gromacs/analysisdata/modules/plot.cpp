@@ -275,7 +275,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
 
 
 void
-AbstractPlotModule::frameFinished()
+AbstractPlotModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     if (!isFileOpen())
     {

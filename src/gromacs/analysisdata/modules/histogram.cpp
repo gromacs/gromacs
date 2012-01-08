@@ -388,7 +388,7 @@ BasicAverageHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 
 
 void
-BasicAverageHistogramModule::frameFinished()
+BasicAverageHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     ++frameCount_;
 }
@@ -535,7 +535,7 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
 
 
 void
-AnalysisDataSimpleHistogramModule::frameFinished()
+AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     storeThisFrame(&impl_->hist_[0], NULL, NULL);
 }
@@ -636,7 +636,7 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
 
 
 void
-AnalysisDataWeightedHistogramModule::frameFinished()
+AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     storeThisFrame(&impl_->hist_[0], NULL, NULL);
 }
@@ -727,7 +727,7 @@ AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 
 
 void
-AnalysisDataBinAverageModule::frameFinished()
+AnalysisDataBinAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 

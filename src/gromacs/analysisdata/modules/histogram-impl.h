@@ -90,7 +90,7 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     private:
