@@ -308,6 +308,12 @@ class AbstractAnalysisData
          * Should be called once for each call of notifyFrameStart(), after any
          * notifyPointsAdd() calls for the frame.
          */
+        void notifyFrameFinish(const AnalysisDataFrameHeader &header) const;
+        /*! \brief
+         * Deprecated convenience method for not needing a frame header.
+         *
+         * Will be removed as part of future work.
+         */
         void notifyFrameFinish() const;
         /*! \brief
          * Notifies attached modules of the end of data.

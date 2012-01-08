@@ -354,7 +354,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisDataStored,
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     private:
@@ -402,7 +402,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisDataStored,
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     private:
@@ -449,7 +449,7 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     private:

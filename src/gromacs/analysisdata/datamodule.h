@@ -118,7 +118,7 @@ class AnalysisDataModuleInterface
         /*! \brief
          * Called when a data frame is finished.
          */
-        virtual void frameFinished() = 0;
+        virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
         /*! \brief
          * Called (once) when no more data is available.
          */

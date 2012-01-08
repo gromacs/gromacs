@@ -86,7 +86,7 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     private:
@@ -213,7 +213,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 }
 
 
-void IndexFileWriterModule::frameFinished()
+void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 
