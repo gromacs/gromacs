@@ -54,16 +54,18 @@ namespace gmx
 {
 
 Selection::Selection(t_selelem *elem, const char *selstr)
+    : name_(elem->name), selectionText_(selstr),
+      mass_(NULL), charge_(NULL), originalMass_(NULL), originalCharge_(NULL),
+      rootElement_(elem), coveredFractionType_(CFRAC_NONE),
+      coveredFraction_(1.0), averageCoveredFraction_(1.0),
+      bDynamic_(false), bDynamicCoveredFraction_(false)
 {
-    // TODO: This is not exception-safe if any called function throws.
-    _sel.name = strdup(elem->name);
-    _sel.selstr = strdup(selstr);
-    gmx_ana_pos_clear(&_sel.p);
+    gmx_ana_pos_clear(&rawPositions_);
 
     if (elem->child->type == SEL_CONST)
     {
-        gmx_ana_pos_copy(&_sel.p, elem->child->v.u.p, true);
-        _sel.bDynamic = false;
+        // TODO: This is not exception-safe if any called function throws.
+        gmx_ana_pos_copy(&rawPositions_, elem->child->v.u.p, true);
     }
     else
     {
@@ -71,7 +73,7 @@ Selection::Selection(t_selelem *elem, const char *selstr)
 
         child = elem->child;
         child->flags     &= ~SEL_ALLOCVAL;
-        _gmx_selvalue_setstore(&child->v, &_sel.p);
+        _gmx_selvalue_setstore(&child->v, &rawPositions_);
         /* We should also skip any modifiers to determine the dynamic
          * status. */
         while (child->type == SEL_MODIFIER)
@@ -96,44 +98,35 @@ Selection::Selection(t_selelem *elem, const char *selstr)
         {
             child = child->child->child;
         }
-        _sel.bDynamic = (child->child->flags & SEL_DYNAMIC);
+        bDynamic_ = (child->child->flags & SEL_DYNAMIC);
     }
-    /* The group will be set after compilation */
-    _sel.m        = NULL;
-    _sel.q        = NULL;
-    _sel.g        = NULL;
-    _sel.orgm     = NULL;
-    _sel.orgq     = NULL;
-    _sel.selelem  = elem;
     initCoveredFraction(CFRAC_NONE);
 }
 
 
 Selection::~Selection()
 {
-    sfree(_sel.name);
-    sfree(_sel.selstr);
-    gmx_ana_pos_deinit(&_sel.p);
-    if (_sel.m != _sel.orgm)
+    gmx_ana_pos_deinit(&rawPositions_);
+    if (mass_ != originalMass_)
     {
-        sfree(_sel.m);
+        sfree(mass_);
     }
-    if (_sel.q != _sel.orgq)
+    if (charge_ != originalCharge_)
     {
-        sfree(_sel.q);
+        sfree(charge_);
     }
-    sfree(_sel.orgm);
-    sfree(_sel.orgq);
+    sfree(originalMass_);
+    sfree(originalCharge_);
 }
 
 
 void
 Selection::printInfo(FILE *fp) const
 {
-    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", _sel.name,
-            _sel.p.nr,     _sel.p.nr     == 1 ? "" : "s",
-            _sel.g->isize, _sel.g->isize == 1 ? "" : "s",
-            _sel.bDynamic ? ", dynamic" : "");
+    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name_.c_str(),
+            posCount(),  posCount()  == 1 ? "" : "s",
+            atomCount(), atomCount() == 1 ? "" : "s",
+            isDynamic() ? ", dynamic" : "");
     fprintf(fp, "\n");
 }
 
@@ -141,80 +134,80 @@ Selection::printInfo(FILE *fp) const
 bool
 Selection::initCoveredFraction(e_coverfrac_t type)
 {
-    gmx_ana_selection_t *sel = &_sel;
-
-    sel->cfractype = type;
-    if (type == CFRAC_NONE || !sel->selelem)
+    coveredFractionType_ = type;
+    if (type == CFRAC_NONE || rootElement_ == NULL)
     {
-        sel->bCFracDyn = false;
+        bDynamicCoveredFraction_ = false;
     }
-    else if (!_gmx_selelem_can_estimate_cover(sel->selelem))
+    else if (!_gmx_selelem_can_estimate_cover(rootElement_))
     {
-        sel->cfractype = CFRAC_NONE;
-        sel->bCFracDyn = false;
+        coveredFractionType_ = CFRAC_NONE;
+        bDynamicCoveredFraction_ = false;
     }
     else
     {
-        sel->bCFracDyn = true;
+        bDynamicCoveredFraction_ = true;
     }
-    sel->cfrac     = sel->bCFracDyn ? 0.0 : 1.0;
-    sel->avecfrac  = sel->cfrac;
-    return type == CFRAC_NONE || sel->cfractype != CFRAC_NONE;
+    coveredFraction_ = bDynamicCoveredFraction_ ? 0.0 : 1.0;
+    averageCoveredFraction_ = coveredFraction_;
+    return type == CFRAC_NONE || coveredFractionType_ != CFRAC_NONE;
 }
 
 
 void
 Selection::printDebugInfo(FILE *fp, int nmaxind) const
 {
+    const gmx_ana_pos_t &p = rawPositions_;
+
     fprintf(fp, "  ");
     printInfo(fp);
     fprintf(fp, "    ");
-    gmx_ana_index_dump(fp, _sel.g, -1, nmaxind);
+    gmx_ana_index_dump(fp, p.g, -1, nmaxind);
 
-    fprintf(fp, "    Block (size=%d):", _sel.p.m.mapb.nr);
-    if (!_sel.p.m.mapb.index)
+    fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
+    if (!p.m.mapb.index)
     {
         fprintf(fp, " (null)");
     }
     else
     {
-        int n = _sel.p.m.mapb.nr;
+        int n = p.m.mapb.nr;
         if (nmaxind >= 0 && n > nmaxind)
             n = nmaxind;
         for (int i = 0; i <= n; ++i)
-            fprintf(fp, " %d", _sel.p.m.mapb.index[i]);
-        if (n < _sel.p.m.mapb.nr)
+            fprintf(fp, " %d", p.m.mapb.index[i]);
+        if (n < p.m.mapb.nr)
             fprintf(fp, " ...");
     }
     fprintf(fp, "\n");
 
-    int n = _sel.p.m.nr;
+    int n = posCount();
     if (nmaxind >= 0 && n > nmaxind)
         n = nmaxind;
     fprintf(fp, "    RefId:");
-    if (!_sel.p.m.refid)
+    if (!p.m.refid)
     {
         fprintf(fp, " (null)");
     }
     else
     {
         for (int i = 0; i < n; ++i)
-            fprintf(fp, " %d", _sel.p.m.refid[i]);
-        if (n < _sel.p.m.nr)
+            fprintf(fp, " %d", p.m.refid[i]);
+        if (n < posCount())
             fprintf(fp, " ...");
     }
     fprintf(fp, "\n");
 
     fprintf(fp, "    MapId:");
-    if (!_sel.p.m.mapid)
+    if (!p.m.mapid)
     {
         fprintf(fp, " (null)");
     }
     else
     {
         for (int i = 0; i < n; ++i)
-            fprintf(fp, " %d", _sel.p.m.mapid[i]);
-        if (n < _sel.p.m.nr)
+            fprintf(fp, " %d", p.m.mapid[i]);
+        if (n < posCount())
             fprintf(fp, " ...");
     }
     fprintf(fp, "\n");
@@ -224,42 +217,93 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 void
 Selection::initializeMassesAndCharges(const t_topology *top)
 {
-    snew(_sel.orgm, posCount());
-    snew(_sel.orgq, posCount());
+    snew(originalMass_,   posCount());
+    snew(originalCharge_, posCount());
     for (int b = 0; b < posCount(); ++b)
     {
-        _sel.orgq[b] = 0;
+        originalCharge_[b] = 0;
         if (top)
         {
-            _sel.orgm[b] = 0;
-            for (int i = _sel.p.m.mapb.index[b];
-                     i < _sel.p.m.mapb.index[b+1];
+            originalMass_[b] = 0;
+            for (int i = rawPositions_.m.mapb.index[b];
+                     i < rawPositions_.m.mapb.index[b+1];
                      ++i)
             {
-                int index = _sel.p.g->index[i];
-                _sel.orgm[b] += top->atoms.atom[index].m;
-                _sel.orgq[b] += top->atoms.atom[index].q;
+                int index = rawPositions_.g->index[i];
+                originalMass_[b]   += top->atoms.atom[index].m;
+                originalCharge_[b] += top->atoms.atom[index].q;
             }
         }
         else
         {
-            _sel.orgm[b] = 1;
+            originalMass_[b] = 1;
         }
     }
     if (isDynamic() && !hasFlag(efDynamicMask))
     {
-        snew(_sel.m, posCount());
-        snew(_sel.q, posCount());
+        snew(mass_,   posCount());
+        snew(charge_, posCount());
         for (int b = 0; b < posCount(); ++b)
         {
-            _sel.m[b] = _sel.orgm[b];
-            _sel.q[b] = _sel.orgq[b];
+            mass_[b]   = originalMass_[b];
+            charge_[b] = originalCharge_[b];
         }
     }
     else
     {
-        _sel.m = _sel.orgm;
-        _sel.q = _sel.orgq;
+        mass_   = originalMass_;
+        charge_ = originalCharge_;
+    }
+}
+
+
+void
+Selection::refreshMassesAndCharges()
+{
+    if (mass_ != originalMass_)
+    {
+        for (int i = 0; i < posCount(); ++i)
+        {
+            int refid  = rawPositions_.m.refid[i];
+            mass_[i]   = originalMass_[refid];
+            charge_[i] = originalCharge_[refid];
+        }
+    }
+}
+
+
+void
+Selection::updateCoveredFractionForFrame()
+{
+    if (isCoveredFractionDynamic())
+    {
+        real cfrac = _gmx_selelem_estimate_coverfrac(rootElement_);
+        coveredFraction_ = cfrac;
+        averageCoveredFraction_ += cfrac;
+    }
+}
+
+
+void
+Selection::computeAverageCoveredFraction(int nframes)
+{
+    if (isCoveredFractionDynamic() && nframes > 0)
+    {
+        averageCoveredFraction_ /= nframes;
+    }
+}
+
+
+void
+Selection::restoreOriginalPositions()
+{
+    if (isDynamic())
+    {
+        gmx_ana_pos_t &p = rawPositions_;
+        gmx_ana_index_copy(p.g, rootElement_->v.u.g, false);
+        p.g->name = NULL;
+        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efDynamicMask));
+        p.nr = p.m.nr;
     }
 }
 

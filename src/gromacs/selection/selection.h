@@ -39,6 +39,8 @@
 #ifndef GMX_SELECTION_SELECTION_H
 #define GMX_SELECTION_SELECTION_H
 
+#include <string>
+
 #include "../legacyheaders/typedefs.h"
 
 #include "position.h"
@@ -46,50 +48,6 @@
 #include "selectionenums.h"
 
 struct t_selelem;
-
-/*! \internal \brief
- * Describes a single selection.
- *
- * \ingroup module_selection
- */
-typedef struct gmx_ana_selection_t
-{
-    /** Name of the selection. */
-    char                   *name;
-    /** The actual selection string. */
-    char                   *selstr;
-    /** Selected positions. */
-    gmx_ana_pos_t           p;
-    /** Masses associated with the positions. */
-    real                   *m;
-    /** Charges associated with the positions. */
-    real                   *q;
-    /** Pointer to the index group that holds the selected atoms. */
-    struct gmx_ana_index_t *g;
-    /** true if the value can change as a function of time. */
-    bool                    bDynamic;
-    /** Type of the covered fraction. */
-    e_coverfrac_t           cfractype;
-    /** true if the covered fraction depends on the frame. */
-    bool                    bCFracDyn;
-    /** Covered fraction of the selection for the current frame. */
-    real                    cfrac;
-    /** The average covered fraction (over the trajectory). */
-    real                    avecfrac;
-
-    /*! \brief
-     * Pointer to the root of the selection element tree (internal use only).
-     *
-     * \internal
-     * This field is NULL if the selection has been loaded directly from an
-     * index file.
-     */
-    struct t_selelem       *selelem;
-    /** Original masses of all possible positions (internal use only). */
-    real                   *orgm;
-    /** Original charges of all possible positions (internal use only). */
-    real                   *orgq;
-} gmx_ana_selection_t;
 
 namespace gmx
 {
@@ -114,58 +72,72 @@ class Selection
          * \param[in] selstr String that was parsed to produce this selection.
          */
         Selection(t_selelem *elem, const char *selstr);
+        ~Selection();
 
         //! Returns the name of the selection.
-        const char *name() const  { return _sel.name; }
+        const char *name() const  { return name_.c_str(); }
         //! Returns the string that was parsed to produce this selection.
-        const char *selectionText() const { return _sel.selstr; }
+        const char *selectionText() const { return selectionText_.c_str(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
-        bool isDynamic() const { return _sel.bDynamic; }
+        bool isDynamic() const { return bDynamic_; }
         //! Returns the type of positions in the selection.
-        e_index_t type() const { return _sel.p.m.type; }
+        e_index_t type() const { return rawPositions_.m.type; }
         //! Number of positions in the selection.
-        int posCount() const { return _sel.p.nr; }
+        int posCount() const { return rawPositions_.nr; }
+        //! Total number of atoms in the selection.
+        int atomCount() const
+        {
+            return rawPositions_.g != NULL ? rawPositions_.g->isize : 0;
+        }
         //! Returns the \p i'th position for the selection.
-        const rvec &x(int i) const { return _sel.p.x[i]; }
+        const rvec &x(int i) const { return rawPositions_.x[i]; }
         //! Returns the velocity for the \p i'th position.
-        const rvec &v(int i) const { return _sel.p.v[i]; }
+        const rvec &v(int i) const { return rawPositions_.v[i]; }
         //! Returns the force for the \p i'th position.
-        const rvec &f(int i) const { return _sel.p.f[i]; }
+        const rvec &f(int i) const { return rawPositions_.f[i]; }
         /*! \brief
          * Returns the reference ID for the \p i'th position.
          */
-        int refId(int i) const { return _sel.p.m.refid[i]; }
+        int refId(int i) const { return rawPositions_.m.refid[i]; }
         /*! \brief
          * Returns the mapped ID for the \p i'th position.
          */
-        int mapId(int i) const { return _sel.p.m.mapid[i]; }
+        int mapId(int i) const { return rawPositions_.m.mapid[i]; }
         //! Returns the mass for the \p i'th position.
-        real mass(int i) const { return _sel.m[i]; }
+        real mass(int i) const { return mass_[i]; }
         //! Returns the charge for the \p i'th position.
-        real charge(int i) const { return _sel.q[i]; }
+        real charge(int i) const { return charge_[i]; }
         //! Returns the number of atoms contributing to the \p i'th position.
         int atomCount(int i) const
-            { return _sel.p.m.mapb.index[i+1] - _sel.p.m.mapb.index[i]; }
+        {
+            return rawPositions_.m.mapb.index[i+1] - rawPositions_.m.mapb.index[i];
+        }
         //! Returns the atom indices contributing to the \p i'th position.
         const int *atomIndices(int i) const
-            { return _sel.g ? _sel.g->index + _sel.p.m.mapb.index[i] : NULL; }
+        {
+            return rawPositions_.g != NULL
+                ? rawPositions_.g->index + rawPositions_.m.mapb.index[i]
+                : NULL;
+        }
+        //! Returns whether the covered fraction can change between frames.
+        bool isCoveredFractionDynamic() const { return bDynamicCoveredFraction_; }
         //! Returns the covered fraction for the current frame.
-        real cfrac() const { return _sel.cfrac; }
+        real coveredFraction() const { return coveredFraction_; }
         //! Deprecated method for direct access to position data.
-        const gmx_ana_pos_t *positions() const { return &_sel.p; }
+        const gmx_ana_pos_t *positions() const { return &rawPositions_; }
         //! Deprecated method for direct access to atom index data.
-        gmx_ana_index_t *indexGroup() const { return _sel.g; }
+        gmx_ana_index_t *indexGroup() const { return rawPositions_.g; }
         //! Deprecated method for direct access to to mapped ID array.
-        int *mapIds() const { return _sel.p.m.mapid; }
+        int *mapIds() const { return rawPositions_.m.mapid; }
 
         //! Returns true if the given flag is set.
-        bool hasFlag(SelectionFlag flag) const { return _flags.test(flag); }
+        bool hasFlag(SelectionFlag flag) const { return flags_.test(flag); }
         //! Sets the flags for this selection.
-        void setFlags(SelectionFlags flags) { _flags = flags; }
+        void setFlags(SelectionFlags flags) { flags_ = flags; }
         /*! \brief
          * Sets the ID for the \p i'th position for use with mapId().
          */
-        void setOriginalId(int i, int id) { _sel.p.m.orgid[i] = id; }
+        void setOriginalId(int i, int id) { rawPositions_.m.orgid[i] = id; }
         /*! \brief
          * Initializes information about covered fractions.
          *
@@ -191,15 +163,88 @@ class Selection
         void printDebugInfo(FILE *fp, int nmaxind) const;
 
     private:
-        ~Selection();
-
+        /*! \brief
+         * Computes total masses and charges for all selection positions.
+         *
+         * \param[in]  top   Topology information.
+         *
+         * Computed values are cached, and need to be updated for dynamic
+         * selections with refreshMassesAndCharges() after the selection has
+         * been evaluated.  This is done by SelectionEvaluator.
+         *
+         * This function is called by SelectionCompiler.
+         */
         void initializeMassesAndCharges(const t_topology *top);
+        /*! \brief
+         * Updates masses and charges after dynamic selection has been
+         * evaluated.
+         *
+         * Called by SelectionEvaluator.
+         */
+        void refreshMassesAndCharges();
+        /*! \brief
+         * Updates the covered fraction after a selection has been evaluated.
+         *
+         * Called by SelectionEvaluator.
+         */
+        void updateCoveredFractionForFrame();
+        /*! \brief
+         * Computes average covered fraction after all frames have been evaluated.
+         *
+         * \param[in] nframes  Number of frames that have been evaluated.
+         *
+         * \p nframes should be equal to the number of calls to
+         * updateCoveredFractionForFrame().
+         * Called by SelectionEvaluator::evaluateFinal().
+         */
+        void computeAverageCoveredFraction(int nframes);
+        /*! \brief
+         * Restores position information to state it was in after compilation.
+         *
+         * Depends on SelectionCompiler storing the original atoms in the
+         * \a rootElement_ object.
+         * Called by SelectionEvaluator::evaluateFinal().
+         */
+        void restoreOriginalPositions();
 
-        gmx_ana_selection_t     _sel;
-        SelectionFlags          _flags;
+        //! Name of the selection.
+        std::string             name_;
+        //! The actual selection string.
+        std::string             selectionText_;
+        //! Low-level representation of selected positions.
+        gmx_ana_pos_t           rawPositions_;
+        SelectionFlags          flags_;
+        //! Masses associated with the current positions.
+        real                   *mass_;
+        //! Charges associated with the current positions.
+        real                   *charge_;
+        //! Original masses of all possible positions.
+        real                   *originalMass_;
+        //! Original charges of all possible positions.
+        real                   *originalCharge_;
+        //! Pointer to the root of the selection evaluation tree.
+        t_selelem              *rootElement_;
+        //! Type of the covered fraction.
+        e_coverfrac_t           coveredFractionType_;
+        //! Covered fraction of the selection for the current frame.
+        real                    coveredFraction_;
+        //! The average covered fraction (over the trajectory).
+        real                    averageCoveredFraction_;
+        //! true if the value can change as a function of time.
+        bool                    bDynamic_;
+        //! true if the covered fraction depends on the frame.
+        bool                    bDynamicCoveredFraction_;
 
+        /*! \brief
+         * Needed for the compiler to access initializeMassesAndCharges().
+         *
+         * Currently the compiler also used rootElement_ directly for
+         * simplicity, but does not modify it.
+         */
         friend class SelectionCompiler;
-        friend class SelectionCollection;
+        /*! \brief
+         * Needed for the evaluator to access the private methods.
+         */
         friend class SelectionEvaluator;
 
         // Disallow copy and assign.
