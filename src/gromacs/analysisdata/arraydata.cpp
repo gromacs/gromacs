@@ -162,7 +162,7 @@ AbstractAnalysisArrayData::valuesReady()
         notifyPointsAdd(AnalysisDataPointSetRef(header, 0, columnCount(),
                                                 &_value[i * columnCount()],
                                                 NULL, NULL));
-        notifyFrameFinish();
+        notifyFrameFinish(header);
     }
     notifyDataFinish();
 }

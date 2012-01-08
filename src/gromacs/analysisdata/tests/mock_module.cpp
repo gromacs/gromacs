@@ -73,7 +73,6 @@ MockAnalysisModule::Impl::startReferenceFrame(const AnalysisDataFrameHeader &hea
     frameChecker_.reset(new TestReferenceChecker(
         rootChecker_->checkCompound("DataFrame",
                                     formatString("Frame%d", frameIndex_).c_str())));
-    ++frameIndex_;
     frameChecker_->checkReal(header.x(), "X");
 }
 
@@ -97,9 +96,11 @@ MockAnalysisModule::Impl::checkReferencePoints(const AnalysisDataPointSetRef &po
 
 
 void
-MockAnalysisModule::Impl::finishReferenceFrame()
+MockAnalysisModule::Impl::finishReferenceFrame(const AnalysisDataFrameHeader &header)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
+    EXPECT_EQ(frameIndex_, header.index());
+    ++frameIndex_;
     frameChecker_.reset();
 }
 
@@ -371,7 +372,8 @@ MockAnalysisModule::setupStaticCheck(const AnalysisDataTestInput &data,
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
                                                          data.columnCount())));
         }
-        EXPECT_CALL(*this, frameFinished());
+        EXPECT_CALL(*this, frameFinished(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -404,7 +406,8 @@ MockAnalysisModule::setupStaticColumnCheck(const AnalysisDataTestInput &data,
             EXPECT_CALL(*this, pointsAdded(_))
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
         }
-        EXPECT_CALL(*this, frameFinished());
+        EXPECT_CALL(*this, frameFinished(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -435,7 +438,8 @@ MockAnalysisModule::setupStaticStorageCheck(const AnalysisDataTestInput &data,
         EXPECT_CALL(*this, pointsAdded(_))
             .WillOnce(Invoke(StaticDataPointsStorageChecker(source, &data, row,
                                                             storageCount)));
-        EXPECT_CALL(*this, frameFinished());
+        EXPECT_CALL(*this, frameFinished(_))
+            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -464,7 +468,7 @@ MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_, &Impl::checkReferencePoints));
-    Expectation frameFinish = EXPECT_CALL(*this, frameFinished())
+    Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
         .After(dataStart)
         .WillRepeatedly(Invoke(impl_, &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())

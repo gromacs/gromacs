@@ -205,7 +205,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
     protected:
