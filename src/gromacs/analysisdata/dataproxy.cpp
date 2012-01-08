@@ -129,9 +129,9 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 
 
 void
-AnalysisDataProxy::frameFinished()
+AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    notifyFrameFinish();
+    notifyFrameFinish(header);
 }
 
 

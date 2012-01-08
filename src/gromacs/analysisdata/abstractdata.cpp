@@ -104,7 +104,7 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
         module->frameStarted(header);
         module->pointsAdded(
                 AnalysisDataPointSetRef(header, 0, ncol, y, dy, present));
-        module->frameFinished();
+        module->frameFinished(header);
     }
     if (!_bInData)
     {
@@ -311,18 +311,27 @@ AbstractAnalysisData::notifyPointsAdd(int firstcol, int n,
 
 
 void
-AbstractAnalysisData::notifyFrameFinish() const
+AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header) const
 {
     GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
     GMX_ASSERT(_impl->_bInFrame, "notifyFrameStart() not called");
+    GMX_ASSERT(header.index() == _impl->_currHeader.index(),
+               "Header does not correspond to current frame");
     _impl->_bInFrame = false;
 
     Impl::ModuleList::const_iterator i;
 
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
     {
-        (*i)->frameFinished();
+        (*i)->frameFinished(header);
     }
+}
+
+
+void
+AbstractAnalysisData::notifyFrameFinish() const
+{
+    notifyFrameFinish(_impl->_currHeader);
 }
 
 

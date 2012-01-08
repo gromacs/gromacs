@@ -74,7 +74,7 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         virtual void dataStarted(AbstractAnalysisData *data);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished();
+        virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
         //! Convenience access to the average of a data column.

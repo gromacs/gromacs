@@ -212,7 +212,7 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
 
 
 void
-AnalysisDataDisplacementModule::frameFinished()
+AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
     if (_impl->nstored <= 1)
     {
@@ -259,7 +259,7 @@ AnalysisDataDisplacementModule::frameFinished()
                 header, 0, k, _impl->currd, NULL, NULL));
     }
 
-    notifyFrameFinish();
+    notifyFrameFinish(header);
 }
 
 

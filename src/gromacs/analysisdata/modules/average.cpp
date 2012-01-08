@@ -102,7 +102,7 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 
 
 void
-AnalysisDataAverageModule::frameFinished()
+AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
 }
 

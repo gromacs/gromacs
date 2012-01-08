@@ -59,7 +59,7 @@ class MockAnalysisModule::Impl
 
         void startReferenceFrame(const AnalysisDataFrameHeader &header);
         void checkReferencePoints(const AnalysisDataPointSetRef &points);
-        void finishReferenceFrame();
+        void finishReferenceFrame(const AnalysisDataFrameHeader &header);
 
         // Could be scoped_ptrs
         std::auto_ptr<TestReferenceChecker>  rootChecker_;
