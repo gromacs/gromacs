@@ -852,7 +852,10 @@ if(GMX_LOAD_PLUGINS)
   endif()
 
   # so, should we use plug-ins?
-  if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN) AND BUILD_SHARED_LIBS)
+#  if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN) AND BUILD_SHARED_LIBS) # led to not compiling with plugins
+  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+#  if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN)) # led to compiling with plugins?
+#  if(((WIN32 AND NOT CYGWIN))) # led to compiling with plugins
     MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
