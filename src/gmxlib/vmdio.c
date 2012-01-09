@@ -277,7 +277,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         {
             printf("\nVMD_PLUGIN_PATH no set, but VMDDIR is set. ");
 #ifdef _MSC_VER
-            _snprintf_s(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
+            _snprintf_s(pathenv_buffer, sizeof(pathenv_buffer), _TRUNCATE, "%s%s", pathenv, defpath_suffix);
 #else
             snprintf(pathenv_buffer, sizeof(pathenv_buffer), "%s%s", pathenv, defpath_suffix);
 #endif
