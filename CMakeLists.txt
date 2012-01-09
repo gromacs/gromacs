@@ -187,74 +187,7 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
-include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
-if(GMX_MPI)
-    if(GMX_THREADS)
-        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
-        set(GMX_THREADS OFF CACHE BOOL 
-            "Thread-based parallelization conflicts with MPI." FORCE)
-    endif(GMX_THREADS)
-
-    # Work-around for Cray MPI
-    TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
-      "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
-      COMPILE_DEFINITIONS )
-    if(NOT MPI_FOUND)
-      # search for normal MPI installations
-      find_package(MPI)
-    endif(NOT MPI_FOUND)
-
-    if(MPI_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        
-        include_directories(${MPI_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        if(GMX_FAHCORE)
-            add_definitions( -DMPI ) #for FAHCORE
-        endif(GMX_FAHCORE)
-        include(gmxTestMPI_IN_PLACE)
-        if (GMX_MPI_IN_PLACE)
-            gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
-        endif (GMX_MPI_IN_PLACE)
-
-	# test for unsuitable versions of OpenMPI
-	exec_program(${MPIEXEC}
-	  ARGS --version
-	  OUTPUT_VARIABLE MPI_TYPE
-	  RETURN_VALUE MPI_EXEC_RETURN)
-	if(MPI_EXEC_RETURN EQUAL 0)
-	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
-	    if(MPI_VERSION VERSION_LESS "1.4.1")
-	      MESSAGE(WARNING "
-            There are known problems with OpenMPI version < 1.4.1.
-            Please consider updating your OpenMPI.")
-	    endif(MPI_VERSION VERSION_LESS "1.4.1")
-	    unset(MPI_VERSION)
-	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    # This is not OpenMPI, so give the old generic warning message
-	    MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     MVAPICH2 version <= 1.4.1
-            Please consider updating your MPI if applicable.")
-	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	  unset(MPI_TYPE)
-	endif(MPI_EXEC_RETURN EQUAL 0)
-    else(MPI_FOUND)
-        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-    endif(MPI_FOUND)
-    include(gmxTestCatamount)
-    gmx_test_catamount(GMX_CRAY_XT3)
-    if(GMX_CRAY_XT3)
-        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
-        set(GMX_NO_SYSTEM 1)
-        set(GMX_NO_NICE 1)
-    endif(GMX_CRAY_XT3)
-    set(GMX_LIB_MPI 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
-endif(GMX_MPI)
-
+include(gmxManageMPI)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
