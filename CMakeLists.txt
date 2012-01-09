@@ -195,21 +195,12 @@ if(GMX_MPI)
             "Thread-based parallelization conflicts with MPI." FORCE)
     endif(GMX_THREADS)
 
-    # Work-around for Cray MPI
+    # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
     TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
       "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
       COMPILE_DEFINITIONS )
-    if(NOT MPI_FOUND)
-      # search for normal MPI installations
-      find_package(MPI)
-    endif(NOT MPI_FOUND)
 
     if(MPI_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        
-        include_directories(${MPI_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         if(GMX_FAHCORE)
             add_definitions( -DMPI ) #for FAHCORE
         endif(GMX_FAHCORE)
@@ -218,29 +209,29 @@ if(GMX_MPI)
             gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
         endif (GMX_MPI_IN_PLACE)
 
-	# test for unsuitable versions of OpenMPI
-	exec_program(${MPIEXEC}
-	  ARGS --version
-	  OUTPUT_VARIABLE MPI_TYPE
-	  RETURN_VALUE MPI_EXEC_RETURN)
-	if(MPI_EXEC_RETURN EQUAL 0)
-	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
-	    if(MPI_VERSION VERSION_LESS "1.4.1")
-	      MESSAGE(WARNING "
-            There are known problems with OpenMPI version < 1.4.1.
-            Please consider updating your OpenMPI.")
-	    endif(MPI_VERSION VERSION_LESS "1.4.1")
-	    unset(MPI_VERSION)
-	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    # This is not OpenMPI, so give the old generic warning message
-	    MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     MVAPICH2 version <= 1.4.1
-            Please consider updating your MPI if applicable.")
-	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	  unset(MPI_TYPE)
-	endif(MPI_EXEC_RETURN EQUAL 0)
+        # Test for unsuitable versions of OpenMPI
+        exec_program(ompi_info
+          ARGS -v ompi full
+          OUTPUT_VARIABLE OPENMPI_TYPE
+          RETURN_VALUE OPENMPI_EXEC_RETURN)
+        if(OPENMPI_EXEC_RETURN EQUAL 0)
+          string(REGEX REPLACE ".*Open MPI: \([0-9]+\\.[0-9]*\\.?[0-9]*\).*" "\\1" OPENMPI_VERSION ${OPENMPI_TYPE})
+          if(OPENMPI_VERSION VERSION_LESS "1.4.1")
+            MESSAGE(WARNING "
+             CMake found OpenMPI version ${OPENMPI_VERSION} on your system.
+             There are known problems with GROMACS and OpenMPI version < 1.4.1.
+             Please consider updating your OpenMPI if your MPI wrapper compilers
+             are using the above OpenMPI version.")
+          endif()
+          unset(OPENMPI_VERSION)
+        else()
+          # This is not OpenMPI, so give the old generic warning message
+          MESSAGE(WARNING "
+             There are known problems with some MPI implementations:
+                      MVAPICH2 version <= 1.4.1
+             Please consider updating your MPI if applicable.")
+        endif()
+        unset(OPENMPI_TYPE)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
