@@ -254,13 +254,48 @@ int gmx_node_rank(void)
 #endif
 }
 
+
+int gmx_host_num() 
+{
+#ifndef GMX_MPI
+  return 0;
+#else
+  int  resultlen,hostnum,i,j;
+  char mpi_hostname[MPI_MAX_PROCESSOR_NAME],num[MPI_MAX_PROCESSOR_NAME];
+
+  MPI_Get_processor_name(mpi_hostname,&resultlen);
+  /* This procedure can only differentiate nodes with host names
+   * that end on unique numbers.
+   */
+  i = 0;
+  j = 0;
+  /* Only parse the host name up to the first dot */
+  while(i < resultlen && mpi_hostname[i] != '.') {
+    if (isdigit(mpi_hostname[i])) {
+      num[j++] = mpi_hostname[i];
+    }
+    i++;
+  }
+  num[j] = '\0';
+  if (j == 0) {
+    hostnum = 0;
+  } else {
+    /* Use only the last 9 decimals, so we don't overflow an int */
+    hostnum = strtol(num + max(0,j-9), NULL, 10); 
+  }
+  
+  if (debug) {
+    fprintf(debug,"In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
+	    mpi_hostname,hostnum);
+  }
+  return hostnum;
+#endif
+}
+
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
   gmx_nodecomm_t *nc;
-  int  n,rank,resultlen,hostnum,i,j,ng,ni;
-#ifdef GMX_MPI
-  char mpi_hostname[MPI_MAX_PROCESSOR_NAME],num[MPI_MAX_PROCESSOR_NAME];
-#endif
+  int  n,rank,hostnum,ng,ni;
 
   /* Many MPI implementations do not optimize MPI_Allreduce
    * (and probably also other global communication calls)
@@ -281,34 +316,15 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
     MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
-    MPI_Get_processor_name(mpi_hostname,&resultlen);
-    /* This procedure can only differentiate nodes with host names
-     * that end on unique numbers.
-     */
-    i = 0;
-    j = 0;
-    /* Only parse the host name up to the first dot */
-    while(i < resultlen && mpi_hostname[i] != '.') {
-      if (isdigit(mpi_hostname[i])) {
-	num[j++] = mpi_hostname[i];
-      }
-      i++;
-    }
-    num[j] = '\0';
-    if (j == 0) {
-      hostnum = 0;
-    } else {
-      /* Use only the last 9 decimals, so we don't overflow an int */
-      hostnum = strtol(num + max(0,j-9), NULL, 10); 
-    }
+
+    hostnum = gmx_host_num();
 
     if (debug) {
       fprintf(debug,
 	      "In gmx_setup_nodecomm: splitting communicator of size %d\n",
 	      n);
-      fprintf(debug,"In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
-	      mpi_hostname,hostnum);
     }
+
 
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
