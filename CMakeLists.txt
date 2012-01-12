@@ -132,6 +132,10 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
+option(USE_VERSION_H "Generate development version string/information" ON)
+
+option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
+
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -276,6 +280,11 @@ if(GMX_OPENMM)
         set(GMX_THREADS OFF CACHE BOOL 
 		"Threads are not compatible with OpenMM build, disabled!" FORCE)
     endif(GMX_THREADS)
+    if(GMX_OPENMP)
+        message(STATUS "OpenMP multithreading is not compatible with OpenMM, disabled")
+        set(GMX_THREADS OFF CACHE BOOL
+            "OpenMP multithreading is not compatible with OpenMM, disabled!" FORCE)
+    endif()
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
                 "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
@@ -469,6 +478,13 @@ if(GMX_OPENMM)
     endif()
     find_package(OpenMM) 
 endif(GMX_OPENMM)
+
+if(GMX_OPENMP)
+    find_package(OpenMP)
+    list(APPEND GROMACS_C_FLAGS ${OpenMP_C_FLAGS})
+    list(APPEND GROMACS_CXX_FLAGS ${OpenMP_CXX_FLAGS})
+    add_definitions(-DGMX_OPENMP)
+endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
