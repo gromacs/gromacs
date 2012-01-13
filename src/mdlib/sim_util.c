@@ -833,6 +833,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             nbnxn_atomdata_set(nbv->grp[eintNonlocal].nbat,eatAll,
                                 nbv->nbs,mdatoms,fr->cginfo);
         }
+        wallcycle_stop(wcycle, ewcNS);
     }
 
 #ifdef GMX_GPU
@@ -855,6 +856,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     /* do local neighbor search */
     if (bNS)
     {
+        wallcycle_start_nocount(wcycle,ewcNS);
         wallcycle_sub_start(wcycle,ewcsNBS_SEARCH_LOCAL);
         nbnxn_make_pairlist(nbv->nbs,nbv->grp[eintLocal].nbat,
                             &top->excls,
