@@ -165,13 +165,18 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_LIBS_SUFFIX "_gpu")
   endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"") 
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 else(GMX_DEFAULT_SUFFIX)
   mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 endif(GMX_DEFAULT_SUFFIX)
+set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -817,7 +822,7 @@ if(GMX_LOAD_PLUGINS)
 
   # Test for unsuitable versions of VMD
 
-  if(VMD_FOUND)
+  if(VMD_FOUND AND NOT GMX_VMD_PLUGIN_PATH)
     message(STATUS "Checking for suitable VMD version")
     exec_program(${VMD_EXECUTABLE}
       ARGS --help
@@ -853,7 +858,9 @@ if(GMX_LOAD_PLUGINS)
 
   # so, should we use plug-ins?
   if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN) AND BUILD_SHARED_LIBS)
-    MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+    if (NOT VMD_QUIETLY)
+      MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+    endif(NOT VMD_QUIETLY)
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
     set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
@@ -861,6 +868,7 @@ if(GMX_LOAD_PLUGINS)
     set(PKG_DL_LIBS)
   endif()
 endif(GMX_LOAD_PLUGINS)
+set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
