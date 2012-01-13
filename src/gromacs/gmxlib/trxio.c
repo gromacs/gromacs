@@ -739,7 +739,7 @@ gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,t_trxframe 
       bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio),fr);
       break;
     default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_PLUGINS
       bRet = read_next_vmd_frame(dummy,fr);
 #else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%s",
@@ -861,7 +861,7 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
     bFirst = FALSE;
     break;
   default:
-#ifdef GMX_DLOPEN
+#ifdef GMX_USE_PLUGINS
       fprintf(stderr,"The file format of %s is not a known trajectory format to GROMACS.\n"
 	      "Please make sure that the file is a trajectory!\n"
 	      "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
@@ -873,8 +873,8 @@ int read_first_frame(const output_env_t oenv,t_trxstatus **status,
       }
 #else
       gmx_fatal(FARGS,"Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
-		"GROMACS is not compiled with DLOPEN. Thus it cannot read non-GROMACS trajectory formats.\n"
-		"Please compile with DLOPEN support if you want to read non-GROMACS trajectory formats.\n",fn);
+		"GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
+		"Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n",fn);
 #endif
       break;
   }

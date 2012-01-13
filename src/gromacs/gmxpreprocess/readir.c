@@ -691,9 +691,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
     
   }
+
+  if (ir->bAdress && !EI_SD(ir->eI)){
+       warning_error(wi,"AdresS simulation supports only stochastic dynamics");
+  }
+  if (ir->bAdress && ir->epc != epcNO){
+       warning_error(wi,"AdresS simulation does not support pressure coupling");
+  }
+   if (ir->bAdress && (EEL_PME(ir->coulombtype))){
+       warning_error(wi,"AdresS simulation does not support long-range electrostatics");
+   }
+
 }
 
-static int str_nelem(const char *str,int maxptr,char *ptr[])
+int str_nelem(const char *str,int maxptr,char *ptr[])
 {
   int  np=0;
   char *copy0,*copy;
@@ -1156,6 +1167,14 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("E-z",   	efield_z,	NULL);
   STYPE ("E-zt",	efield_zt,	NULL);
   
+  /* AdResS defined thingies */
+  CCTYPE ("AdResS parameters");
+  EETYPE("adress",       ir->bAdress, yesno_names);
+  if (ir->bAdress) {
+    snew(ir->adress,1);
+    read_adressparams(&ninp,&inp,ir->adress,wi);
+  }
+
   /* User defined thingies */
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
@@ -2201,7 +2220,10 @@ void do_index(const char* mdparin, const char *ndx,
   decode_cos(efield_yt,&(ir->et[YY]),TRUE);
   decode_cos(efield_z,&(ir->ex[ZZ]),FALSE);
   decode_cos(efield_zt,&(ir->et[ZZ]),TRUE);
-  
+
+  if (ir->bAdress)
+    do_adress_index(ir->adress,groups,gnames,&(ir->opts),wi);
+
   for(i=0; (i<grps->nr); i++)
     sfree(gnames[i]);
   sfree(gnames);

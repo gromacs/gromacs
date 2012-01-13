@@ -704,6 +704,20 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("ld-seed",ir->ld_seed);
     PR("cos-accel",ir->cos_accel);
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
+
+    PS("adress",BOOL(ir->bAdress));
+    if (ir->bAdress){
+        PS("adress_type",EADRESSTYPE(ir->adress->type));
+        PR("adress_const_wf",ir->adress->const_wf);
+        PR("adress_ex_width",ir->adress->ex_width);
+        PR("adress_hy_width",ir->adress->hy_width);
+        PS("adress_interface_correction",EADRESSICTYPE(ir->adress->icor));
+        PS("adress_site",EADRESSSITETYPE(ir->adress->site));
+        PR("adress_ex_force_cap",ir->adress->ex_forcecap);
+        PS("adress_do_hybridpairs", BOOL(ir->adress->do_hybridpairs));
+
+        pr_rvec(fp,indent,"adress_reference_coords",ir->adress->refs,DIM,TRUE);
+    }
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);
