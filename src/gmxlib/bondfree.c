@@ -1519,7 +1519,6 @@ real dihres(int nbonds,
     
     L1 = 1.0-lambda;
     
-    fc  = fcd->dihre_fc;
     d2r = DEG2RAD;
     k   = 0;
     
@@ -1533,11 +1532,11 @@ real dihres(int nbonds,
         
         phi0A  = forceparams[type].dihres.phiA*d2r;
         dphiA  = forceparams[type].dihres.dphiA*d2r;
-        kfacA  = forceparams[type].dihres.kfacA*fc; 
+        kfacA  = forceparams[type].dihres.kfacA; 
         
         phi0B  = forceparams[type].dihres.phiB*d2r;
         dphiB  = forceparams[type].dihres.dphiB*d2r;
-        kfacB  = forceparams[type].dihres.kfacB*fc; 
+        kfacB  = forceparams[type].dihres.kfacB; 
         
         phi0  = L1*phi0A + lambda*phi0B;
         dphi  = L1*dphiA + lambda*dphiB;

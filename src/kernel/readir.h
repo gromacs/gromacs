@@ -64,7 +64,6 @@ typedef struct {
   real tempi;
   int  seed;
   gmx_bool bOrire;
-  gmx_bool bDihre;
   gmx_bool bMorse;
   char *wall_atomtype[2];
   gmx_bool pull_start;

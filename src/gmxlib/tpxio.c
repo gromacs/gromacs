@@ -845,14 +845,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       ir->orires_tau = 0;
       ir->nstorireout = 0;
     }
-    if(file_version >= 26) {
+    if(file_version >= 26 && file_version < 75) {
       gmx_fio_do_real(fio,ir->dihre_fc);
-      if (file_version < 56) {
-	gmx_fio_do_real(fio,rdum);
-	gmx_fio_do_int(fio,idum);
+      if (file_version < 56) 
+      {
+          gmx_fio_do_real(fio,rdum);
+          gmx_fio_do_int(fio,idum);
       }
     } else {
-      ir->dihre_fc=0;
+        ir->dihre_fc=0;
     }
 
     gmx_fio_do_real(fio,ir->em_stepsize); 

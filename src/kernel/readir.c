@@ -1315,8 +1315,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   REM_TYPE("cpp");
   REM_TYPE("domain-decomposition");
   REPL_TYPE("unconstrained-start","continuation");
-  REM_TYPE("dihre-tau");
-  REM_TYPE("nstdihreout");
   REM_TYPE("nstcheckpoint");
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
@@ -1595,9 +1593,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("orire-fitgrp",orirefitgrp,    NULL);
   CTYPE ("Output frequency for trace(SD) and S to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
-  CTYPE ("Dihedral angle restraints: No or Yes");
-  EETYPE("dihre",       opts->bDihre,   yesno_names);
-  RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
 
   /* simulated tempering variables */
   CCTYPE("simulated tempering variables");
