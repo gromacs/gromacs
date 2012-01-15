@@ -72,18 +72,19 @@ typedef struct gmx_wallcycle
 #ifdef GMX_MPI
     MPI_Comm     mpi_comm_mygroup;
 #endif
+    int          omp_nthreads;
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 characters */
 static const char *wcn[ewcNR] =
-{ "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Enforced rotation", "Add rot. forces", "Test" };
+{ "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Enforced rotation", "Add rot. forces", "Test" };
 
 gmx_bool wallcycle_have_counter(void)
 {
   return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
+gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_nthreads)
 {
     gmx_wallcycle_t wc;
     
@@ -100,6 +101,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
     wc->wc_depth   = 0;
     wc->ewc_prev   = -1;
     wc->reset_counters = resetstep;
+    wc->omp_nthreads = omp_nthreads;
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -246,6 +248,11 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
     }
 }
 
+static gmx_bool subdivision(int ewc)
+{
+    return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
+}
+
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     wallcc_t *wcc;
@@ -259,6 +266,17 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 
     wcc = wc->wcc;
 
+    if (wc->omp_nthreads>1)
+    {
+        for(i=0; i<ewcNR; i++)
+        {
+            if (subdivision(i) || i==ewcPMEMESH || (i==ewcRUN && cr->duty == DUTY_PME))
+            {
+                wcc[i].c *= wc->omp_nthreads;
+            }
+        }
+    }
+
     if (wcc[ewcDDCOMMLOAD].n > 0)
     {
         wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMLOAD].c;
@@ -267,6 +285,11 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     {
         wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMBOUND].c;
     }
+    if (wcc[ewcPME_FFTCOMM].n > 0)
+    {
+        wcc[ewcPME_FFT].c -= wcc[ewcPME_FFTCOMM].c;
+    }
+
     if (cr->npmenodes == 0)
     {
         /* All nodes do PME (or no PME at all) */
@@ -349,10 +372,6 @@ static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
     }
 }
 
-static gmx_bool subdivision(int ewc)
-{
-    return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
-}
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                      gmx_wallcycle_t wc, double cycles[])
@@ -377,10 +396,15 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         npme = nnodes;
     }
     tot = cycles[ewcRUN];
+    /* PME part has to be multiplied with number of threads */
+    if (npme == 0)
+    {
+        tot += cycles[ewcPMEMESH]*(wc->omp_nthreads-1);
+    }
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
     {
-      c2t = nnodes*realtime/tot;
+      c2t = (npp+npme*wc->omp_nthreads)*realtime/tot;
     }
     else
     {
