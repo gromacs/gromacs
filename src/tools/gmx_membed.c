@@ -36,8 +36,14 @@
 #include <config.h>
 #endif
 
+#ifdef __linux
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -93,6 +99,10 @@
 #endif
 #ifdef GMX_THREADS
 #include "tmpi.h"
+#endif
+
+#ifdef GMX_OPENMP
+#include <omp.h>
 #endif
 
 /* afm stuf */
@@ -2747,7 +2757,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr;
     int        nthreads=1,nthreads_requested=1;
-
+    int         omp_nthreads = 1;
 
 	char			*ins;
 	int 			rm_bonded_at,fr_id,fr_i=0,tmp_id,warn=0;
@@ -3159,7 +3169,32 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    wcycle = wallcycle_init(fplog,resetstep,cr);
+    /* getting number of threads
+    * env variable should be read only on one node to make sure it is identical everywhere */
+#ifdef GMX_OPENMP
+   if (EEL_PME(inputrec->coulombtype))
+   {
+       if (MASTER(cr))
+       {
+           char *ptr;
+           omp_nthreads = omp_get_max_threads();
+           if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
+           {
+               sscanf(ptr,"%d",&omp_nthreads);
+           }
+           if (fplog!=NULL)
+           {
+               fprintf(fplog,"Using %d threads for PME\n",omp_nthreads);
+           }
+       }
+       if (PAR(cr))
+       {
+           gmx_bcast_sim(sizeof(omp_nthreads),&omp_nthreads,cr);
+       }
+   }
+#endif
+
+    wcycle = wallcycle_init(fplog,resetstep,cr, omp_nthreads);
     if (PAR(cr))
     {
         /* Master synchronizes its value of reset_counters with all nodes
@@ -3300,11 +3335,37 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* The PME only nodes need to know nChargePerturbed */
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
+
+
+        /*set CPU affinity*/
+#ifdef GMX_OPENMP
+#ifdef __linux
+#ifdef GMX_LIB_MPI
+        {
+            int core;
+            MPI_Comm comm_intra; /*intra communicator (but different to nc.comm_intra includes PME nodes)*/
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
+            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; /*threads on this node*/
+            MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            core-=local_omp_nthreads; /*make exclusive scan*/
+    #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
+            {
+                cpu_set_t mask;
+                CPU_ZERO(&mask);
+                core+=omp_get_thread_num();
+                CPU_SET(core,&mask);
+                sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+            }
+        }
+#endif /*GMX_MPI*/
+#endif /*__linux*/
+#endif /*GMX_OPENMP*/
+
         if (cr->duty & DUTY_PME)
         {
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
-                                  (Flags & MD_REPRODUCIBLE));
+                                  (Flags & MD_REPRODUCIBLE),omp_nthreads);
             if (status != 0)
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);
