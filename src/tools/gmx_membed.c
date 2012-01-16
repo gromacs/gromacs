@@ -946,7 +946,7 @@ void top_update(const char *topfile, char *ins, rmm_t *rm_p, gmx_mtop_t *mtop)
 
 double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
+                    int nst_signal_intra, int nst_signal_inter,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
              gmx_mtop_t *top_global,
@@ -1000,7 +1000,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
-    globsig_t   gs;
+    gmx_signal signal;
 
     gmx_bool        bFFscan;
     gmx_groups_t *groups;
@@ -1032,6 +1032,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
 #endif
+    gmx_bool    bIntraSimSignal, bInterSimSignal;
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
@@ -1069,13 +1070,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         ir->nstlist       = 1;
         ir->nstcalcenergy = 1;
-        nstglobalcomm     = 1;
+        nst_signal_intra     = 1;
     }
 
     check_ir_old_tpx_versions(cr,fplog,ir,top_global);
 
-    nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
-    /*bGStatEveryStep = (nstglobalcomm == 1);*/
+    nst_signal_intra = check_nst_signal_intra(fplog,cr,nst_signal_intra,ir);
+    /*bGStatEveryStep = (nst_signal_intra == 1);*/
     bGStatEveryStep = FALSE;
 
     if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
@@ -1308,7 +1309,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,FALSE,state->box,
+                    constr,NULL,FALSE,FALSE,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */
@@ -1318,7 +1319,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,FALSE,state->box,
+                        constr,NULL,FALSE,FALSE,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1474,7 +1475,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     bExchanged   = FALSE;
 
-    init_global_signals(&gs,cr,ir,repl_ex_nst);
+    init_signals(fplog,&signal,cr,ir,nst_signal_intra,nst_signal_inter,max_hours);
 
     step = ir->init_step;
     step_rel = 0;
@@ -1621,9 +1622,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
 
+        bIntraSimSignal = (0 != signal.nst_signal_intra) && (0 == step_rel % signal.nst_signal_intra);
+        bInterSimSignal = FALSE;
+
         /* < 0 means stop at next step, > 0 means stop at next NS step */
-        if ( (gs.set[eglsSTOPCOND] < 0 ) ||
-             ( (gs.set[eglsSTOPCOND] > 0 ) && ( bNS || ir->nstlist==0)) )
+        if ( (signal.set[esignalSTOPCOND] < 0 ) ||
+             ( (signal.set[esignalSTOPCOND] > 0 ) && ( bNS || ir->nstlist==0)) )
         {
             bLastStep = TRUE;
         }
@@ -1667,7 +1671,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* Repartition the domain decomposition */
                 wallcycle_start(wcycle,ewcDOMDEC);
                 dd_partition_system(fplog,step,cr,
-                                    bMasterState,nstglobalcomm,
+                                    bMasterState,nst_signal_intra,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
@@ -1695,7 +1699,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
-                            constr,NULL,FALSE,state->box,
+                            constr,NULL,FALSE,FALSE,state->box,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
@@ -1729,12 +1733,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-/*        bCPT = (((gs.set[eglsCHKPT] && bNS) ||
+/*        bCPT = (((gs.set[esignalCHKPT] && bNS) ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step && !bRerunMD);
         if (bCPT)
         {
-            gs.set[eglsCHKPT] = 0;
+            gs.set[esignalCHKPT] = 0;
         }*/
 
         /* Determine the energy and pressure:
@@ -1919,7 +1923,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,FALSE,state->box,
+                                    constr,NULL,FALSE,FALSE,state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
@@ -2127,31 +2131,31 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                of sending signals around by MPI_Reduce with together with
                other floats */
             if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
-                gs.sig[eglsSTOPCOND]=1;
+                signal.init[esignalSTOPCOND]=1;
             if ( gmx_get_stop_condition() == gmx_stop_cond_next )
-                gs.sig[eglsSTOPCOND]=-1;
+                signal.init[esignalSTOPCOND]=-1;
             /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         gmx_get_signal_name(),
-                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
+                        signal.init[esignalSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     gmx_get_signal_name(),
-                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
+                    signal.init[esignalSTOPCOND]==1 ? "NS " : "");
             fflush(stderr);
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
+                 signal.init[esignalSTOPCOND] == 0 && signal.set[esignalSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.sig[eglsSTOPCOND] = 1;
+            signal.init[esignalSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -2162,7 +2166,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             run_time > max_hours*60.0*60.0*0.495)
         {
-            gs.sig[eglsRESETCOUNTERS] = 1;
+            signal.init[esignalRESETCOUNTERS] = 1;
         }
 
         if (ir->nstlist == -1 && !bRerunMD)
@@ -2194,13 +2198,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * where we do global communication,
          *  otherwise the other nodes don't know.
          */
-        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-                           cpt_period >= 0 &&
-                           (cpt_period == 0 ||
-                            run_time >= nchkpt*cpt_period*60.0)) &&
-            gs.set[eglsCHKPT] == 0)
+        if (MASTER(cr) &&
+            ((bGStat || !PAR(cr)) && cpt_period >= 0 &&
+             (cpt_period == 0 || run_time >= nchkpt*cpt_period*60.0)) &&
+            signal.set[esignalCHKPT] == 0)
         {
-            gs.sig[eglsCHKPT] = 1;
+            signal.init[esignalCHKPT] = 1;
         }
 
         if (bIterations)
@@ -2303,7 +2306,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,FALSE,lastbox,
+                                    constr,NULL,FALSE,FALSE,lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT
                         );
@@ -2367,12 +2370,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
             if (ir->nstlist == -1 && bFirstIterate)
             {
-                gs.sig[eglsNABNSB] = nlh.nabnsb;
+                signal.init[esignalNABNSB] = nlh.nabnsb;
             }
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,
-                            bFirstIterate ? &gs : NULL,(step % gs.nstms == 0),
+                            bFirstIterate ? &signal : NULL,
+                            bIntraSimSignal,bInterSimSignal,
                             lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags
@@ -2385,8 +2389,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 );
             if (ir->nstlist == -1 && bFirstIterate)
             {
-                nlh.nabnsb = gs.set[eglsNABNSB];
-                gs.set[eglsNABNSB] = 0;
+                nlh.nabnsb = signal.set[esignalNABNSB];
+                signal.set[esignalNABNSB] = 0;
             }
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
@@ -2638,13 +2642,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            gs.set[eglsRESETCOUNTERS] != 0)
+            signal.set[esignalRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
             wcycle_set_reset_counters(wcycle,-1);
             bResetCountersHalfMaxH = FALSE;
-            gs.set[eglsRESETCOUNTERS] = 0;
+            signal.set[esignalRESETCOUNTERS] = 0;
         }
     }
     /* End of main MD loop */
@@ -2708,7 +2712,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-             int nstglobalcomm,
+                    int nst_signal_intra, int nst_signal_inter,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -3352,7 +3356,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Now do whatever the user wants us to do (how flexible...) */
         do_md_membed(fplog,cr,nfile,fnm,
                                       oenv,bVerbose,bCompact,
-                                      nstglobalcomm,
+                                      nst_signal_intra,
+                     nst_signal_inter,
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,
@@ -3518,7 +3523,8 @@ int gmx_membed(int argc,char *argv[])
 
 	int  npme=-1;
 	int  nmultisim=0;
-	int  nstglobalcomm=-1;
+	int  nst_signal_intra=-1;
+	int  nst_signal_inter=-1;
 	int  repl_ex_nst=0;
 	int  repl_ex_seed=-1;
 	int  nstepout=100;
@@ -3596,8 +3602,10 @@ int gmx_membed(int argc,char *argv[])
     "HIDDENThe DD cell sizes in y" },
   { "-ddcsz",   FALSE, etSTR, {&ddcsz},
     "HIDDENThe DD cell sizes in z" },
-  { "-gcom",    FALSE, etINT,{&nstglobalcomm},
-    "HIDDENGlobal communication frequency" },
+  { "-intrasignal", FALSE, etINT,{&nst_signal_intra},
+    "Intra-simulation communication frequency" },
+  { "-intersignal", FALSE, etINT,{&nst_signal_inter},
+    "HIDDENInter-simulation communication frequency" },
   { "-compact", FALSE, etBOOL,{&bCompact},
     "Write a compact log file" },
   { "-seppot",  FALSE, etBOOL, {&bSepPot},
@@ -3788,7 +3796,7 @@ int gmx_membed(int argc,char *argv[])
 	/* even if nthreads = 1, we still call this one */
 
 	rc = mdrunner_membed(fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-			nstglobalcomm,
+                         nst_signal_intra,nst_signal_inter,
 			ddxyz, dd_node_order, rdd, rconstr, dddlb_opt[0], dlb_scale,
 			ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst,
 			repl_ex_seed, pforce, cpt_period, max_hours, deviceOptions, Flags,

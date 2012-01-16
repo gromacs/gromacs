@@ -8156,7 +8156,7 @@ void dd_partition_system(FILE            *fplog,
                          gmx_large_int_t      step,
                          t_commrec       *cr,
                          gmx_bool            bMasterState,
-                         int             nstglobalcomm,
+                         int             nst_signal_intra,
                          t_state         *state_global,
                          gmx_mtop_t      *top_global,
                          t_inputrec      *ir,
@@ -8215,7 +8215,7 @@ void dd_partition_system(FILE            *fplog,
         }
     }
 
-    bNStGlobalComm = (step >= comm->globalcomm_step + nstglobalcomm);
+    bNStGlobalComm = (step >= comm->globalcomm_step + nst_signal_intra);
 
     if (!comm->bDynLoadBal)
     {
@@ -8246,7 +8246,7 @@ void dd_partition_system(FILE            *fplog,
              * and every 100 partitionings,
              * so the extra communication cost is negligible.
              */
-            n = max(100,nstglobalcomm);
+            n = max(100,nst_signal_intra);
             bCheckDLB = (comm->n_load_collect == 0 ||
                          comm->n_load_have % n == n-1);
         }
@@ -8262,10 +8262,10 @@ void dd_partition_system(FILE            *fplog,
                      (step + ir->nstlist > ir->init_step + ir->nsteps)));
 
         /* Avoid extra communication due to verbose screen output
-         * when nstglobalcomm is set.
+         * when nst_signal_intra is set.
          */
         if (bDoDLB || bLogLoad || bCheckDLB ||
-            (bVerbose && (ir->nstlist == 0 || nstglobalcomm <= ir->nstlist)))
+            (bVerbose && (ir->nstlist == 0 || nst_signal_intra <= ir->nstlist)))
         {
             get_load_distribution(dd,wcycle);
             if (DDMASTER(dd))
