@@ -2184,7 +2184,8 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_bool bThreads     = FALSE;
 
     int  nmultisim=0;
-    int  nstglobalcomm=-1;
+    int  nst_signal_intra=-1;
+    int  nst_signal_inter=-1;
     int  repl_ex_nst=0;
     int  repl_ex_seed=-1;
     int  nstepout=100;
@@ -2271,8 +2272,10 @@ int gmx_tune_pme(int argc,char *argv[])
         "HIDDENThe DD cell sizes in y" },
       { "-ddcsz",     FALSE, etSTR,  {&ddcsz},
         "HIDDENThe DD cell sizes in z" },
-      { "-gcom",      FALSE, etINT,  {&nstglobalcomm},
-        "Global communication frequency" },
+      { "-intrasignal", FALSE, etINT,{&nst_signal_intra},
+        "Intra-simulation communication frequency" },
+      { "-intersignal", FALSE, etINT,{&nst_signal_inter},
+        "Inter-simulation communication frequency" },
       { "-v",         FALSE, etBOOL, {&bVerbose},
         "Be loud and noisy" },
       { "-compact",   FALSE, etBOOL, {&bCompact},
