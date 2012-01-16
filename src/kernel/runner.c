@@ -120,6 +120,7 @@ struct mdrunner_arglist
     gmx_bool bVerbose;
     gmx_bool bCompact;
     int nstglobalcomm;
+    int nstsignalcomm;
     ivec ddxyz;
     int dd_node_order;
     real rdd;
@@ -168,6 +169,7 @@ static void mdrunner_start_fn(void *arg)
 
     mda->ret=mdrunner(cr->nnodes, fplog, cr, mc.nfile, fnm, mc.oenv, 
                       mc.bVerbose, mc.bCompact, mc.nstglobalcomm, 
+                      mc.nstsignalcomm,
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
                       mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, 
@@ -182,7 +184,7 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(int nthreads, 
               FILE *fplog,t_commrec *cr,int nfile, 
               const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-              gmx_bool bCompact, int nstglobalcomm,
+                                         gmx_bool bCompact, int nstglobalcomm, int nstsignalcomm,
               ivec ddxyz,int dd_node_order,real rdd,real rconstr,
               const char *dddlb_opt,real dlb_scale,
               const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -212,6 +214,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->bVerbose=bVerbose;
     mda->bCompact=bCompact;
     mda->nstglobalcomm=nstglobalcomm;
+    mda->nstsignalcomm=nstsignalcomm;
     mda->ddxyz[XX]=ddxyz[XX];
     mda->ddxyz[YY]=ddxyz[YY];
     mda->ddxyz[ZZ]=ddxyz[ZZ];
@@ -331,7 +334,7 @@ static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
 
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
+             gmx_bool bCompact, int nstglobalcomm, int nstsignalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -397,6 +400,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             /* now start the threads. */
             cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
                                       oenv, bVerbose, bCompact, nstglobalcomm, 
+                                      nstsignalcomm,
                                       ddxyz, dd_node_order, rdd, rconstr, 
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
                                       nstepout, resetstep, nmultisim, 
@@ -819,6 +823,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
                                       oenv,bVerbose,bCompact,
                                       nstglobalcomm,
+                                      nstsignalcomm,
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,
