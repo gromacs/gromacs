@@ -100,7 +100,7 @@
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     const output_env_t oenv, gmx_bool bVerbose,gmx_bool bCompact,
-                    int nstglobalcomm,
+                    int nstglobalcomm, int nstsignalcomm,
                     gmx_vsite_t *vsite,gmx_constr_t constr,
                     int stepout,t_inputrec *ir,
                     gmx_mtop_t *top_global,
@@ -141,7 +141,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
-    globsig_t   gs;
+    gmx_signal *signal = NULL;
 
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
@@ -351,7 +351,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep = FALSE;
 
-    init_global_signals(&gs,cr,ir,repl_ex_nst);
+    init_signals(fplog,signal,cr,ir,nstglobalcomm,nstsignalcomm,max_hours);
 
     step = ir->init_step;
     step_rel = 0;
@@ -365,7 +365,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (gs.set[eglsSTOPCOND] != 0)
+        if (signal->set[esignalSTOPCOND] != 0)
         {
             bLastStep = TRUE;
         }
@@ -387,12 +387,12 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step.
          */
-        bCPT = ((gs.set[eglsCHKPT] ||
+        bCPT = ((signal->set[esignalCHKPT] ||
                  (bLastStep && (Flags & MD_CONFOUT))) &&
                 step > ir->init_step );
         if (bCPT)
         {
-            gs.set[eglsCHKPT] = 0;
+            signal->set[esignalCHKPT] = 0;
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -489,31 +489,31 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* NOTE: this only works for serial code. For code that allows
                MPI nodes to propagate their condition, see kernel/md.c*/
             if ( gmx_get_stop_condition() == gmx_stop_cond_next_ns )
-                gs.set[eglsSTOPCOND]=1;
+                signal->set[esignalSTOPCOND]=1;
             if ( gmx_get_stop_condition() == gmx_stop_cond_next )
-                gs.set[eglsSTOPCOND]=1;
+                signal->set[esignalSTOPCOND]=1;
             /* < 0 means stop at next step, > 0 means stop at next NS step */
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         gmx_get_signal_name(),
-                        gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
+                        signal->init[esignalSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     gmx_get_signal_name(),
-                    gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
+                    signal->init[esignalSTOPCOND]==1 ? "NS " : "");
             fflush(stderr);
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 gs.set[eglsSTOPCOND] == 0)
+                 signal->set[esignalSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
-            gs.set[eglsSTOPCOND] = 1;
+            signal->set[esignalSTOPCOND] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -522,12 +522,12 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* checkpoints */
-        if (MASTER(cr) && (cpt_period >= 0 &&
-                           (cpt_period == 0 ||
-                            run_time >= nchkpt*cpt_period*60.0)) &&
-                gs.set[eglsCHKPT] == 0)
+        if (MASTER(cr) &&
+            (cpt_period >= 0 &&
+             (cpt_period == 0 || run_time >= nchkpt*cpt_period*60.0)) &&
+            signal->set[esignalCHKPT] == 0)
         {
-            gs.set[eglsCHKPT] = 1;
+            signal->set[esignalCHKPT] = 1;
         }
 
         /* Time for performance */
