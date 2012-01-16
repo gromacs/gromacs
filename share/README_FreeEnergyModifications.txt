@@ -174,7 +174,6 @@ additional changes in readir.c and mdebin.c
 Things that would be nice to address:
 
   -nstdgdl not necessarily a multiple of nslist (especially with nstlist = -1)
-  -get simulated annealing in temperature working correctly
  
 Test to do:
 
@@ -200,12 +199,6 @@ doesn't matter very much.
 For distance and dihedral restraints, you need entries like this in
 the mdp -- for angle restraints, you don't.  This is a strange gromacs
 convention.
-
-;restraints
-dihre=simple
-dihre-fc=1
-disre=simple
-disre_fc=1
 
 Dihedral restraint entries look like this -- note the A->B state, the
 A state and the B state (last two commented).

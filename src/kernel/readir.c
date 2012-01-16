@@ -1265,7 +1265,7 @@ void read_expandedparams(int *ninp_p,t_inpfile **inp_p,
   CCTYPE ("expanded ensemble variables");
   ITYPE ("nstexpanded",expand->nstexpanded,-1);
   EETYPE("lmc-stats", expand->elamstats, elamstats_names);
-  EETYPE("lmc-mc-move", expand->elmcmove, elmcmove_names);
+  EETYPE("lmc-move", expand->elmcmove, elmcmove_names);
   EETYPE("lmc-weights-equil",expand->elmceq,elmceq_names);
   ITYPE ("weight-equil-number-all-lambda",expand->equil_n_at_lam,-1);
   ITYPE ("weight-equil-number-samples",expand->equil_samples,-1);
