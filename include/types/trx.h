@@ -66,7 +66,9 @@ typedef struct trxframe
   gmx_bool bTime;
   real time;      /* time of the frame                */
   gmx_bool bLambda;
+  gmx_bool bFepState; /* does it contain fep_state?       */
   real lambda;    /* free energy perturbation lambda  */
+  int  fep_state; /* which fep state are we in? */
   gmx_bool bAtoms;
   t_atoms *atoms; /* atoms struct (natoms)            */
   gmx_bool bPrec;

@@ -133,12 +133,18 @@ enum {
   F_VTEMP,
   F_PDISPCORR,
   F_PRES,
+  F_DHDL_CON,
   F_DVDL,
   F_DKDL,
-  F_DHDL_CON,
+  F_DVDL_COUL,
+  F_DVDL_VDW,
+  F_DVDL_BONDED,
+  F_DVDL_RESTRAINT,
   F_NRE		/* This number is for the total number of energies	*/
 };
-  
+
+#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES)))
+
 typedef union
 {
   /* Some parameters have A and B values for free energy calculations.
@@ -156,7 +162,7 @@ typedef union
   struct {real bm,kb;                                      } fene;
   struct {real r1e,r2e,krr;                                } cross_bb;
   struct {real r1e,r2e,r3e,krt;                            } cross_ba;
-  struct {real theta,ktheta,r13,kUB;                       } u_b;
+  struct {real thetaA,kthetaA,r13A,kUBA,thetaB,kthetaB,r13B,kUBB;} u_b;
   struct {real theta,c[5];                                 } qangle; 
   struct {real alpha;                                      } polarize;
   struct {real alpha,drcut,khyp;                           } anharm_polarize;
@@ -176,15 +182,14 @@ typedef union
    * Use shake (or lincs) instead if you have to change the water bonds.
    */
   struct {real doh,dhh;                                   } settle;
-  /* No free energy supported for morse bonds */ 
-  struct {real b0,cb,beta;                        	  } morse;
+  struct {real b0A,cbA,betaA,b0B,cbB,betaB;               } morse;
   struct {real pos0A[DIM],fcA[DIM],pos0B[DIM],fcB[DIM];   } posres;
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   
   struct {int  n; real a;                                 } vsiten;   
   /* NOTE: npair is only set after reading the tpx file */
   struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
-  struct {real phi,dphi,kfac;int label,power;             } dihres;  
+  struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;         } dihres;
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
   struct {real sar,st,pi,gbr,bmlt;                        } gb;

@@ -2230,7 +2230,7 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
     for(nn=0; nn<spline->n; nn++)
     {
         n  = spline->ind[nn];
-        qn = atc->q[n];
+        qn = scale*atc->q[n];
 
         if (bClearF)
         {
