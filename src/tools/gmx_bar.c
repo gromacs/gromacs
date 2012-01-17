@@ -92,12 +92,10 @@ typedef struct hist_t
                                    dx is the negative of the forward dx.*/
     gmx_large_int_t x0[2];      /* the (forward + reverse) histogram start 
                                    point(s) as int */
-
     int nbin[2];                /* the (forward+reverse) number of bins */
     gmx_large_int_t sum;        /* the total number of counts. Must be
                                    the same for forward + reverse.  */
     int nhist;                  /* number of hist datas (forward or reverse) */
-
     double start_time, delta_time;  /* start time, end time of histogram */
 } hist_t;
 
@@ -109,7 +107,6 @@ typedef struct samples_t
     double foreign_lambda;
     double temp; /* the temperature */
     gmx_bool derivative; /* whether this sample is a derivative */
-
     /* The samples come either as either delta U lists: */
     int ndu; /* the number of delta U samples */
     double *du; /* the delta u's */
@@ -118,7 +115,6 @@ typedef struct samples_t
 
     /* or as histograms: */
     hist_t *hist; /* a histogram */
-
     /* allocation data: (not NULL for data 'owned' by this struct) */
     double *du_alloc, *t_alloc; /* allocated delta u arrays  */
     size_t ndu_alloc, nt_alloc; /* pre-allocated sizes */
@@ -134,7 +130,6 @@ typedef struct sample_range_t
 {
     int start, end; /* start and end index for du style data */
     gmx_bool use; /* whether to use this sample */
-
     samples_t *s; /* the samples this range belongs to */
 } sample_range_t;
 
@@ -144,7 +139,7 @@ typedef struct sample_range_t
     foreign lambda) */
 typedef struct sample_coll_t
 {
-    double native_lambda;  /* these should be the same for all samples in the */
+    double native_lambda;  /* these should be the same for all samples in the histogram?*/
     double foreign_lambda; /* collection */
     double temp; /* the temperature */
 
@@ -2719,7 +2714,6 @@ int gmx_bar(int argc,char *argv[])
         fpb = xvgropen_type(opt2fn("-o",NFILE,fnm),"Free energy differences",
                             "\\lambda",buf,exvggtXYDY,oenv);
     }
-    
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {
