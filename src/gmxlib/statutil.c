@@ -255,6 +255,9 @@ static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
     int i,j;
     const char *select;
 
+    i = 0;
+    select = "ps";
+    
     if (bCanTime)
     {
         select = getenv("GMXTIMEUNIT");
