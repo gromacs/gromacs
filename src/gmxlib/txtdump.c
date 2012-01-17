@@ -492,6 +492,99 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   PR("kB",pg->kB);
 }
 
+static void pr_simtempvals(FILE *fp,int indent,t_simtemp *simtemp, int n_lambda, gmx_bool bMDPformat)
+{
+    PR("simtemp_low",simtemp->simtemp_low);
+    PR("simtemp_high",simtemp->simtemp_high);
+    PS("simulated-tempering-scaling",ESIMTEMP(simtemp->eSimTempScale));
+    pr_rvec(fp,indent,"simulated tempering temperatures",simtemp->temperatures,n_lambda,TRUE);
+}
+
+static void pr_expandedvals(FILE *fp,int indent,t_expanded *expand, int n_lambda, gmx_bool bMDPformat)
+{
+
+    PI("nstexpanded", expand->nstexpanded);
+    PS("lambda-stats", elamstats_names[expand->elamstats]);
+    PS("lambda-mc-move", elmcmove_names[expand->elmcmove]);
+    PI("lmc-repeats",expand->lmc_repeats);
+    PI("lmc-gibbsdelta",expand->gibbsdeltalam);
+    PI("lmc-nstart",expand->lmc_forced_nstart);
+    PS("symmetrized-transition-matrix", EBOOL(expand->bSymmetrizedTMatrix));
+    PI("nst-transition-matrix",expand->nstTij);
+    PI("mininum-var-min",expand->minvarmin); /*default is reasonable */
+    PI("weight-c-range",expand->c_range); /* default is just C=0 */
+    PR("wl-scale",expand->wl_scale);
+    PR("init-wl-delta",expand->init_wl_delta);
+    PR("wl-ratio",expand->wl_ratio);
+    PS("bWLoneovert",EBOOL(expand->bWLoneovert));
+    PI("lmc-seed",expand->lmc_seed);
+    PR("mc-temperature",expand->mc_temp);
+    PS("lmc-weights-equil",elmceq_names[expand->elmceq]);
+    if (expand->elmceq == elmceqNUMATLAM)
+    {
+        PI("weight-equil-number-all-lambda",expand->equil_n_at_lam);
+    }
+    if (expand->elmceq == elmceqSAMPLES)
+    {
+        PI("weight-equil-number-samples",expand->equil_samples);
+    }
+    if (expand->elmceq == elmceqSTEPS)
+    {
+        PI("weight-equil-number-steps",expand->equil_steps);
+    }
+    if (expand->elmceq == elmceqWLDELTA)
+    {
+        PR("weight-equil-wl-delta",expand->equil_wl_delta);
+    }
+    if (expand->elmceq == elmceqRATIO)
+    {
+        PR("weight-equil-count-ratio",expand->equil_ratio);
+    }
+
+    pr_indent(fp,indent);
+    pr_rvec(fp,indent,"init-lambda-weights",expand->init_lambda_weights,n_lambda,TRUE);
+    PS("init-weights",EBOOL(expand->bInit_weights));
+}
+
+static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
+{
+    int i,j;
+
+    PI("nstdhdl",fep->nstdhdl);
+    PI("init-fep_state",fep->init_fep_state);
+    PR("init-lambda",fep->init_lambda);
+    PR("delta-lambda",fep->delta_lambda);
+    if (!bMDPformat)
+    {
+        PI("n-lambdas",fep->n_lambda);
+    }
+    if (fep->n_lambda > 0)
+    {
+        pr_indent(fp,indent);
+        fprintf(fp,"all-lambdas%s\n",bMDPformat ? " = " : ":");
+        for(i=0; i<efptNR; i++) {
+            fprintf(fp,"%18s = ",efpt_names[i]);
+            for(j=0; j<fep->n_lambda; j++)
+            {
+                fprintf(fp,"  %10g",fep->all_lambda[i][j]);
+            }
+            fprintf(fp,"\n");
+        }
+    }
+
+    PR("sc-alpha",fep->sc_alpha);
+    PS("bScCoul",EBOOL(fep->bScCoul));
+    PS("bScPrintEnergy",EBOOL(fep->bPrintEnergy));
+    PI("sc-power",fep->sc_power);
+    PR("sc-r-power",fep->sc_r_power);
+    PR("sc-sigma",fep->sc_sigma);
+    PR("sc-sigma_min",fep->sc_sigma_min);
+    PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
+    PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
+    PI("dh-hist-size", fep->dh_hist_size);
+    PD("dh-hist-spacing", fep->dh_hist_spacing);
+};
+
 static void pr_pull(FILE *fp,int indent,t_pull *pull)
 {
   int g;
@@ -581,6 +674,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("bContinuation",EBOOL(ir->bContinuation));
     PS("bShakeSOR",EBOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
+    PS("bPrintNHChains",EBOOL(ir->bPrintNHChains));
     PI("nsttcouple",ir->nsttcouple);
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));
@@ -599,7 +693,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
 	      ir->posres_comB[YY],ir->posres_comB[ZZ]);
     else
       pr_rvec(fp,indent,"posres-comB",ir->posres_comB,DIM,TRUE);
-    PI("andersen-seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
     PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);
@@ -630,34 +723,18 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("gb-dielectric-offset",ir->gb_dielectric_offset);
     PS("sa-algorithm",ESAALGORITHM(ir->gb_algorithm));
     PR("sa-surface-tension",ir->sa_surface_tension);
-	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
+    PS("bSimTemp",EBOOL(ir->bSimTemp));
+    if (ir->bSimTemp) {
+        pr_simtempvals(fp,indent,ir->simtempvals,ir->fepvals->n_lambda,bMDPformat);
+    }
     PS("free-energy",EFEPTYPE(ir->efep));
-    PR("init-lambda",ir->init_lambda);
-    PR("delta-lambda",ir->delta_lambda);
-    if (!bMDPformat)
-    {
-        PI("n-foreign-lambda",ir->n_flambda);
+    if (ir->efep != efepNO || ir->bSimTemp) {
+        pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
     }
-    if (ir->n_flambda > 0)
-    {
-        pr_indent(fp,indent);
-        fprintf(fp,"foreign-lambda%s",bMDPformat ? " = " : ":");
-        for(i=0; i<ir->n_flambda; i++)
-        {
-            fprintf(fp,"  %10g",ir->flambda[i]);
-        }
-        fprintf(fp,"\n");
+    if (ir->bExpanded) {
+        pr_expandedvals(fp,indent,ir->expandedvals,ir->fepvals->n_lambda,bMDPformat);
     }
-    PR("sc-alpha",ir->sc_alpha);
-    PI("sc-power",ir->sc_power);
-    PR("sc-sigma",ir->sc_sigma);
-    PR("sc-sigma-min",ir->sc_sigma_min);
-    PI("nstdhdl", ir->nstdhdl);
-    PS("separate-dhdl-file", SEPDHDLFILETYPE(ir->separate_dhdl_file));
-    PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(ir->dhdl_derivatives));
-    PI("dh-hist-size", ir->dh_hist_size);
-    PD("dh-hist-spacing", ir->dh_hist_spacing);
 
     PI("nwall",ir->nwall);
     PS("wall-type",EWALLTYPE(ir->wall_type));
@@ -776,8 +853,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
             iparams->linangle.klinB,iparams->linangle.aB);
     break;
   case F_UREY_BRADLEY:
-    fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
-	    iparams->u_b.theta,iparams->u_b.ktheta,iparams->u_b.r13,iparams->u_b.kUB);
+      fprintf(fp,"thetaA=%15.8e, kthetaA=%15.8e, r13A=%15.8e, kUBA=%15.8e, thetaB=%15.8e, kthetaB=%15.8e, r13B=%15.8e, kUBB=%15.8e\n",iparams->u_b.thetaA,iparams->u_b.kthetaA,iparams->u_b.r13A,iparams->u_b.kUBA,iparams->u_b.thetaB,iparams->u_b.kthetaB,iparams->u_b.r13B,iparams->u_b.kUBB);
     break;
   case F_QUARTIC_ANGLES:
     fprintf(fp,"theta=%15.8e",iparams->qangle.theta);
@@ -798,8 +874,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     pr_harm(fp,iparams,"xi","cx");
     break;
   case F_MORSE:
-    fprintf(fp,"b0=%15.8e, cb=%15.8e, beta=%15.8e\n",
-	    iparams->morse.b0,iparams->morse.cb,iparams->morse.beta);
+    fprintf(fp,"b0A=%15.8e, cbA=%15.8e, betaA=%15.8e, b0B=%15.8e, cbB=%15.8e, betaB=%15.8e\n",
+            iparams->morse.b0A,iparams->morse.cbA,iparams->morse.betaA,
+            iparams->morse.b0B,iparams->morse.cbB,iparams->morse.betaB);
     break;
   case F_CUBICBONDS:
     fprintf(fp,"b0=%15.8e, kb=%15.8e, kcub=%15.8e\n",
@@ -884,9 +961,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    fprintf(fp,"label=%d, power=%4d phi=%15.8e, dphi=%15.8e, kfac=%15.8e)\n",
-	    iparams->dihres.label,iparams->dihres.power,
-	    iparams->dihres.phi,iparams->dihres.dphi,iparams->dihres.kfac);
+      fprintf(fp,"phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
+              iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
+              iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
     break;
   case F_POSRES:
     fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
