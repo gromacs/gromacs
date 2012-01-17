@@ -1064,9 +1064,9 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 }
 
 static void init_pull_group_index(FILE *fplog,t_commrec *cr,
-				  int start,int end,
-				  int g,t_pullgrp *pg,ivec pulldims,
-				  gmx_mtop_t *mtop,t_inputrec *ir)
+                                  int start,int end,
+                                  int g,t_pullgrp *pg,ivec pulldims,
+                                  gmx_mtop_t *mtop,t_inputrec *ir, real lambda)
 {
   int i,ii,d,nfrozen,ndim;
   real m,w,mbd;
@@ -1126,7 +1126,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     if (ir->efep == efepNO) {
       m = atom->m;
     } else {
-      m = (1 - ir->init_lambda)*atom->m + ir->init_lambda*atom->mB;
+      m = (1 - lambda)*atom->m + lambda*atom->mB;
     }
     if (pg->nweight > 0) {
       w = pg->weight[i];
@@ -1193,7 +1193,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-	       gmx_mtop_t *mtop,t_commrec *cr,const output_env_t oenv,
+               gmx_mtop_t *mtop,t_commrec *cr,const output_env_t oenv, real lambda,
                gmx_bool bOutFile, unsigned long Flags)
 {
     t_pull    *pull;
@@ -1298,7 +1298,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 }
             }
             /* Set the indices */
-            init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,mtop,ir);
+            init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,mtop,ir,lambda);
             if (PULL_CYL(pull) && pgrp->invtm == 0)
             {
                 gmx_fatal(FARGS,"Can not have frozen atoms in a cylinder pull group");
