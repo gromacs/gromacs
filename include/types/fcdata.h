@@ -111,7 +111,6 @@ typedef struct {
 
   t_disresdata disres;
   t_oriresdata orires;
-  real         dihre_fc;
 } t_fcdata;
 
 #ifdef __cplusplus
