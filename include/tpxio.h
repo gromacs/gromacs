@@ -64,6 +64,7 @@ typedef struct
   int	natoms;		/* The total number of atoms			*/
   int   ngtc;           /* The number of temperature coupling groups    */
   real	lambda;		/* Current value of lambda			*/
+  int   fep_state;      /* Current value of fep_state -- not yet printed */
 } t_tpxheader;
 
 /* 
