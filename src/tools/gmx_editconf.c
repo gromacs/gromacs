@@ -194,12 +194,12 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
     *n_bfac = get_lines(fn, &bfac_lines);
     snew(*bfac_val, *n_bfac);
     snew(*bfac_nr, *n_bfac);
-    fprintf(stderr, "Reading %d B-factors from %s\n", *n_bfac, fn);
+    fprintf(stdout, "Reading %d B-factors from %s\n", *n_bfac, fn);
     for (i = 0; (i < *n_bfac); i++)
     {
-        /*fprintf(stderr, "Line %d: %s",i,bfac_lines[i]);*/
+        /*fprintf(stdout, "Line %d: %s",i,bfac_lines[i]);*/
         sscanf(bfac_lines[i], "%d %lf", &(*bfac_nr)[i], &(*bfac_val)[i]);
-        /*fprintf(stderr," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
+        /*fprintf(stdout," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
     }
 
 }
@@ -228,7 +228,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
     while ((bfac_max > 99.99) || (bfac_min < -99.99))
     {
-        fprintf(stderr,
+        fprintf(stdout,
                 "Range of values for B-factors too large (min %g, max %g) "
                     "will scale down a factor 10\n", bfac_min, bfac_max);
         for (i = 0; (i < n_bfac); i++)
@@ -238,7 +238,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
     while ((fabs(bfac_max) < 0.5) && (fabs(bfac_min) < 0.5))
     {
-        fprintf(stderr,
+        fprintf(stdout,
                 "Range of values for B-factors too small (min %g, max %g) "
                     "will scale up a factor 10\n", bfac_min, bfac_max);
         for (i = 0; (i < n_bfac); i++)
@@ -252,7 +252,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
 
     if (!peratom)
     {
-        fprintf(stderr, "Will attach %d B-factors to %d residues\n", n_bfac,
+        fprintf(stdout, "Will attach %d B-factors to %d residues\n", n_bfac,
                 nres);
         for (i = 0; (i < n_bfac); i++)
         {
@@ -271,7 +271,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     }
     else
     {
-        fprintf(stderr, "Will attach %d B-factors to %d atoms\n", n_bfac,
+        fprintf(stdout, "Will attach %d B-factors to %d atoms\n", n_bfac,
                 natoms);
         for (i = 0; (i < n_bfac); i++)
         {
@@ -299,7 +299,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
         bfac_min = min(bfac_min,atoms->pdbinfo[i].bfac);
         bfac_max = max(bfac_max,atoms->pdbinfo[i].bfac);
     }
-    fprintf(stderr, "B-factors range from %g to %g\n", bfac_min, bfac_max);
+    fprintf(stdout, "B-factors range from %g to %g\n", bfac_min, bfac_max);
     for (i = 1; (i < 12); i++)
     {
         fprintf(out,
@@ -681,7 +681,7 @@ int gmx_editconf(int argc, char *argv[])
             { efDAT, "-bf", "bfact", ffOPTRD } };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
+    CopyRight(stdout, argv[0]);
     parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);
 
@@ -702,7 +702,7 @@ int gmx_editconf(int argc, char *argv[])
     bTranslate = opt2parg_bSet("-translate", NPA, pa);
     bRotate = opt2parg_bSet("-rotate", NPA, pa);
     if (bScale && bRho)
-        fprintf(stderr, "WARNING: setting -density overrides -scale\n");
+        fprintf(stdout, "WARNING: setting -density overrides -scale\n");
     bScale = bScale || bRho;
     bCalcGeom = bCenter || bRotate || bOrient || bScale;
     bCalcDiam = btype[0][0] == 'c' || btype[0][0] == 'd' || btype[0][0] == 'o';
@@ -818,7 +818,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bCalcGeom) {
         if (bIndex) {
-            fprintf(stderr,"\nSelect a group for determining the system size:\n");
+            fprintf(stdout,"\nSelect a group for determining the system size:\n");
             get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&ssize,&sindex,&sgrpname);
         } else {
@@ -852,7 +852,7 @@ int gmx_editconf(int argc, char *argv[])
         char    *grpnames;
 
         /* Get a group for principal component analysis */
-        fprintf(stderr,"\nSelect group for the determining the orientation\n");
+        fprintf(stdout,"\nSelect group for the determining the orientation\n");
         get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
 
         /* Orient the principal axes along the coordinate axes */
@@ -869,22 +869,22 @@ int gmx_editconf(int argc, char *argv[])
 
             vol = det(box);
             dens = (mass*AMU)/(vol*NANO*NANO*NANO);
-            fprintf(stderr,"Volume  of input %g (nm^3)\n",vol);
-            fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
-            fprintf(stderr,"Density of input %g (g/l)\n",dens);
+            fprintf(stdout,"Volume  of input %g (nm^3)\n",vol);
+            fprintf(stdout,"Mass    of input %g (a.m.u.)\n",mass);
+            fprintf(stdout,"Density of input %g (g/l)\n",dens);
             if (vol==0 || mass==0)
                 gmx_fatal(FARGS,"Cannot scale density with "
                           "zero mass (%g) or volume (%g)\n",mass,vol);
 
             scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
-            fprintf(stderr,"Scaling all box vectors by %g\n",scale[XX]);
+            fprintf(stdout,"Scaling all box vectors by %g\n",scale[XX]);
         }
         scale_conf(atoms.nr,x,box,scale);
     }
 
 	if (bAlign) {
 		if (bIndex) {
-            fprintf(stderr,"\nSelect a group that you want to align:\n");
+            fprintf(stdout,"\nSelect a group that you want to align:\n");
             get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&asize,&aindex,&agrpname);
         } else {
@@ -924,7 +924,7 @@ int gmx_editconf(int argc, char *argv[])
 
     if (bTranslate) {
         if (bIndex) {
-            fprintf(stderr,"\nSelect a group that you want to translate:\n");
+            fprintf(stdout,"\nSelect a group that you want to translate:\n");
             get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&ssize,&sindex,&sgrpname);
         } else {
@@ -1058,7 +1058,7 @@ int gmx_editconf(int argc, char *argv[])
         conect = NULL;
 
     if (bIndex) {
-        fprintf(stderr,"\nSelect a group for output:\n");
+        fprintf(stdout,"\nSelect a group for output:\n");
         get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
                   1,&isize,&index,&grpname);
 
@@ -1135,7 +1135,7 @@ int gmx_editconf(int argc, char *argv[])
 
     do_view(oenv,outfile,NULL);
 
-    thanx(stderr);
+    thanx(stdout);
 
     return 0;
 }
