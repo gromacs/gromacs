@@ -41,7 +41,6 @@
 #include "typedefs.h"
 #include "bondf.h"
 #include "disre.h"
-#include "dihre.h"
 #include "orires.h"
 #include "genborn.h"
 
@@ -90,7 +89,7 @@ const t_interaction_function interaction_function[F_NRE]=
 {
   def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
   def_bond    ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds      ),
-  def_bond    ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE,  morse_bonds   ),
+  def_bond    ("MORSE",    "Morse",           2, 3, 3,  eNR_MORSE,  morse_bonds   ),
   def_bond    ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubic_bonds),
   def_bondnb  ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented     ),
   def_bonded  ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
@@ -102,7 +101,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_angle   ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
   def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0,0,          cross_bond_bond ),
   def_bonded  ("CROSS_BOND_ANGLE","BA-Cross",   3, 4, 0,0,          cross_bond_angle ),
-  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 0,  0,          urey_bradley ),
+  def_angle   ("UREY_BRADLEY","U-B",          3, 4, 4,  0,          urey_bradley ),
   def_angle   ("QANGLES","Quartic Angles",    3, 6, 0,  eNR_QANGLES, quartic_angles ),
   def_bondedt ("TABANGLES", "Tab. Angles",    3, 2, 2,  eNR_TABANGLES, tab_angles ),
   def_bonded  ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
@@ -141,8 +140,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),  
   def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
   def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
-  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 5, 0,  eNR_DIHRES, ta_dihres     ),
-  def_nofc    ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
+  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 3, 3,  eNR_DIHRES, dihres        ),
   def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk     ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
   def_shkcb   ("SETTLE",   "Settle",          1, 2, 0                             ),
@@ -167,9 +165,13 @@ const t_interaction_function interaction_function[F_NRE]=
    */
   def_nofc    ("PDISPCORR","Pres. DC"         ),  
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
-  def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
-  def_nofc    ("DH/DL_CON","dH/dl constr."    )
+  def_nofc    ("DVM/DL",   "dVremain/dl"      ),
+  def_nofc    ("DK/DL",    "dEkin/dl"         ),
+  def_nofc    ("DVC/DL",   "dVcoul/dl"        ),
+  def_nofc    ("DVV/DL",   "dVvdw/dl"         ),
+  def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
+  def_nofc    ("DVR/DL",   "dVrestraint/dl"   )/*,
+  def_nofc    ("DH/DL_CON","dH/dl constr."    )*/
 };
 
 gmx_bool have_interaction(t_idef *idef,int ftype)

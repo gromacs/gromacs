@@ -231,7 +231,7 @@ void init_generalized_rf(FILE *fplog,
   const gmx_moltype_t *molt;
   const t_block *cgs;
 
-  if (ir->efep != efepNO && fplog) {
+  if (ir->efep > efepNO && fplog) {
     fprintf(fplog,"\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
   }
   zsq = 0.0;

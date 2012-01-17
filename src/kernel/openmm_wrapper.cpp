@@ -620,7 +620,7 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
         }
     }
 
-    if (ir->efep != efepNO)
+    if (ir->efep > efepNO)
         gmx_fatal(FARGS,"OpenMM does not support free energy calculations.");
 
     if (ir->opts.ngacc > 1)

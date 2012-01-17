@@ -1217,7 +1217,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 	
     if (econq == econqCoord)
     {
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             if (md->nMassPerturbed && lincsd->matlam != md->lambda)
             {
@@ -1267,7 +1267,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                  ir->LincsWarnAngle,&warn,
                  invdt,v,bCalcVir,rmdr);
         
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             real dt_2,dvdl=0;
             

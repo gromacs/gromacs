@@ -853,7 +853,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     }
     else
     {
-        if (ir->efep != efepNO && gmx_mtop_bondeds_free_energy(mtop))
+        if (ir->efep > efepNO && gmx_mtop_bondeds_free_energy(mtop))
         {
             snew(qA,mtop->natoms);
             snew(qB,mtop->natoms);
