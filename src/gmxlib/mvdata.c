@@ -218,6 +218,10 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
+  if (state->lambda==NULL)
+  {
+      snew_bc(cr,state->lambda,efptNR)
+  }
 }
 
 void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
@@ -238,7 +242,8 @@ void bcast_state(const t_commrec *cr,t_state *state,gmx_bool bAlloc)
   for(i=0; i<estNR; i++) {
     if (state->flags & (1<<i)) {
       switch (i) {
-      case estLAMBDA:  block_bc(cr,state->lambda); break;
+      case estLAMBDA:  nblock_bc(cr,efptNR,state->lambda); break;
+      case estFEPSTATE: block_bc(cr,state->fep_state); break;
       case estBOX:     block_bc(cr,state->box); break;
       case estBOX_REL: block_bc(cr,state->box_rel); break;
       case estBOXV:    block_bc(cr,state->boxv); break;
@@ -481,16 +486,96 @@ static void bc_adress(const t_commrec *cr,t_adress *adress)
       nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
   }
 }
+static void bc_fepvals(const t_commrec *cr,t_lambda *fep)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+
+    block_bc(cr,fep->nstdhdl);
+    block_bc(cr,fep->init_lambda);
+    block_bc(cr,fep->init_fep_state);
+    block_bc(cr,fep->delta_lambda);
+    block_bc(cr,fep->bPrintEnergy);
+    block_bc(cr,fep->n_lambda);
+    snew_bc(cr,fep->all_lambda,efptNR);
+    nblock_bc(cr,efptNR,fep->all_lambda);
+    for (i=0;i<efptNR;i++) {
+        snew_bc(cr,fep->all_lambda[i],fep->n_lambda);
+        nblock_bc(cr,fep->n_lambda,fep->all_lambda[i]);
+    }
+    block_bc(cr,fep->sc_alpha);
+    block_bc(cr,fep->sc_power);
+    block_bc(cr,fep->sc_r_power);
+    block_bc(cr,fep->sc_sigma);
+    block_bc(cr,fep->sc_sigma_min);
+    block_bc(cr,fep->bScCoul);
+    nblock_bc(cr,efptNR,&(fep->separate_dvdl[0]));
+    block_bc(cr,fep->dhdl_derivatives);
+    block_bc(cr,fep->dh_hist_size);
+    block_bc(cr,fep->dh_hist_spacing);
+    if (debug)
+    {
+        fprintf(debug,"after bc_fepvals\n");
+    }
+}
+
+static void bc_expandedvals(const t_commrec *cr,t_expanded *expand, int n_lambda)
+{
+    gmx_bool bAlloc=TRUE;
+    int i;
+
+    block_bc(cr,expand->nstexpanded);
+    block_bc(cr,expand->elamstats);
+    block_bc(cr,expand->elmcmove);
+    block_bc(cr,expand->elmceq);
+    block_bc(cr,expand->equil_n_at_lam);
+    block_bc(cr,expand->equil_wl_delta);
+    block_bc(cr,expand->equil_ratio);
+    block_bc(cr,expand->equil_steps);
+    block_bc(cr,expand->equil_samples);
+    block_bc(cr,expand->lmc_seed);
+    block_bc(cr,expand->minvar);
+    block_bc(cr,expand->minvar_const);
+    block_bc(cr,expand->c_range);
+    block_bc(cr,expand->bSymmetrizedTMatrix);
+    block_bc(cr,expand->nstTij);
+    block_bc(cr,expand->lmc_repeats);
+    block_bc(cr,expand->lmc_forced_nstart);
+    block_bc(cr,expand->gibbsdeltalam);
+    block_bc(cr,expand->wl_scale);
+    block_bc(cr,expand->wl_ratio);
+    block_bc(cr,expand->init_wl_delta);
+    block_bc(cr,expand->bInit_weights);
+    snew_bc(cr,expand->init_lambda_weights,n_lambda);
+    nblock_bc(cr,n_lambda,expand->init_lambda_weights);
+    block_bc(cr,expand->mc_temp);
+    if (debug)
+    {
+        fprintf(debug,"after bc_expandedvals\n");
+    }
+}
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   gmx_bool bAlloc=TRUE;
   int i;
-  
+
   block_bc(cr,*inputrec);
-  snew_bc(cr,inputrec->flambda,inputrec->n_flambda);
-  nblock_bc(cr,inputrec->n_flambda,inputrec->flambda);
+
   bc_grpopts(cr,&(inputrec->opts));
+
+  /* even if efep is efepNO, we need to initialize to make sure that
+   * n_lambda is set to zero */
+
+  snew_bc(cr,inputrec->fepvals,1);
+  if (inputrec->efep != efepNO || inputrec->bSimTemp) {
+      bc_fepvals(cr,inputrec->fepvals);
+  }
+  /* need to initialize this as well because of data checked for in the logic */
+  snew_bc(cr,inputrec->expandedvals,1);
+  if (inputrec->bExpanded) {
+      bc_expandedvals(cr,inputrec->expandedvals,inputrec->fepvals->n_lambda);
+  }
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);
     bc_pull(cr,inputrec->pull);
