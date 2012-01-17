@@ -353,7 +353,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bTemp || bPres || bEner || bConstrain) 
     {
-        if (!bGStat)
+        if (!bGStat) 
         {
             /* We will not sum ekinh_old,                                                            
              * so signal that we still have to do it.                                                
@@ -460,7 +460,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
@@ -468,9 +468,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     {
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
-        enerd->term[F_DVDL] += dvdlcorr;
+        enerd->term[F_DVDL_VDW] += dvdlcorr;
         if (fr->efep != efepNO) {
-            enerd->dvdl_lin += dvdlcorr;
+            enerd->dvdl_lin[efptVDW] += dvdlcorr;
         }
     }
     
@@ -499,7 +499,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
-        
     }    
 }
 
@@ -689,7 +688,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
         if (ir->efep != efepNO)
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
-                            "nstdhdl",&ir->nstdhdl);
+                            "nstdhdl",&ir->fepvals->nstdhdl);
         }
     }
 }
