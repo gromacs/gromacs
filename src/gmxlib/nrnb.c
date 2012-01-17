@@ -230,7 +230,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Pos. Restr.",                   50  },
     { "Angle Restr.",                  191 },
     { "Angle Restr. Z",                164 },
-    { "Morse Potent.",                 58  },
+    { "Morse Potent.",                 83  },
     { "Cubic Bonds",                   54  },
     { "Walls",                         31  },
     { "Polarization",                  59  },
