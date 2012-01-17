@@ -1454,7 +1454,10 @@ void dd_collect_state(gmx_domdec_t *dd,
 
     if (DDMASTER(dd))
     {
-        state->lambda = state_local->lambda;
+        for (i=0;i<efptNR;i++) {
+            state->lambda[i] = state_local->lambda[i];
+        }
+        state->fep_state = state_local->fep_state;
         state->veta = state_local->veta;
         state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
@@ -1707,13 +1710,17 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                                 t_state *state,t_state *state_local,
                                 rvec **f)
 {
-    int  i,j,ngtch,ngtcp,nh;
+    int  i,j,nh;
 
     nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
-        state_local->lambda = state->lambda;
+        for(i=0;i<efptNR;i++)
+        {
+            state_local->lambda[i] = state->lambda[i];
+        }
+        state_local->fep_state = state->fep_state;
         state_local->veta   = state->veta;
         state_local->vol0   = state->vol0;
         copy_mat(state->box,state_local->box);
@@ -1737,7 +1744,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
             }
         }
     }
-    dd_bcast(dd,sizeof(real),&state_local->lambda);
+    dd_bcast(dd,((efptNR)*sizeof(real)),state_local->lambda);
+    dd_bcast(dd,sizeof(int),&state_local->fep_state);
     dd_bcast(dd,sizeof(real),&state_local->veta);
     dd_bcast(dd,sizeof(real),&state_local->vol0);
     dd_bcast(dd,sizeof(state_local->box),state_local->box);

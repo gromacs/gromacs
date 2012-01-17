@@ -74,7 +74,6 @@
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
-#include "dihre.h"
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
@@ -1108,7 +1107,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,
+	    &(state_global->fep_state),&lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bSimAnn,&vcm,state_global,Flags);
@@ -1117,7 +1117,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,enerd);
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -1222,7 +1222,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             nrnb,wcycle,FALSE);
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
     if (MASTER(cr))
     {
@@ -1520,18 +1520,18 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             t = t0 + step*ir->delta_t;
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep!=efepNO)
         {
-            if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
+            if (bRerunMD && rerun_fr.bLambda && (ir->fepvals->delta_lambda!=0))
             {
-                state_global->lambda = rerun_fr.lambda;
+                state_global->lambda[efptFEP] = rerun_fr.lambda;
             }
             else
             {
-                state_global->lambda = lam0 + step*ir->delta_lambda;
+	      state_global->lambda[0] = lam0 + step*ir->fepvals->delta_lambda;
             }
             state->lambda = state_global->lambda;
-            bDoDHDL = do_per_step(step,ir->nstdhdl);
+            bDoDHDL = do_per_step(step,ir->fepvals->nstdhdl);
         }
 
         if (bSimAnn)
@@ -1689,12 +1689,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log && !bFFscan)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep!=efepNO)
         {
-            update_mdatoms(mdatoms,state->lambda);
+            update_mdatoms(mdatoms,state->lambda[efptMASS]);
         }
 
         if (bRerunMD && rerun_fr.bV)
@@ -1982,7 +1982,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
             }
-            enerd->term[F_DHDL_CON] += dvdl;
+            enerd->term[F_DVDL_BONDED] += dvdl;
 
             GMX_MPE_LOG(ev_timestep1);
 
@@ -2345,7 +2345,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
                 }
-                enerd->term[F_DHDL_CON] += dvdl;
+                enerd->term[F_DVDL_BONDED] += dvdl;
             }
             else if (graph)
             {
@@ -2466,7 +2466,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
 
-        sum_dhdl(enerd,state->lambda,ir);
+        sum_dhdl(enerd,state->lambda,ir->fepvals);
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV)
         {
@@ -2529,7 +2529,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bNstEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL,TRUE,
-                               t,mdatoms->tmass,enerd,state,lastbox,
+                               t,mdatoms->tmass,enerd,state,
+			       ir->fepvals,ir->expandedvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
                 }
@@ -3227,12 +3228,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
 
-        /* Dihedral Restraints */
-        if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
-        {
-            init_dihres(fplog,mtop,inputrec,fcd);
-        }
-
         /* Initiate forcerecord */
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -3394,7 +3389,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
-            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
+	  init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,inputrec->fepvals->init_lambda,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
 
@@ -3872,6 +3867,5 @@ int gmx_membed(int argc,char *argv[])
 	{
 		gmx_log_close(fplog);
 	}
-
-	return rc;
+	return 0;
 }

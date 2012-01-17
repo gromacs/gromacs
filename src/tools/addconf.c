@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -58,24 +58,24 @@ static real max_dist(rvec *x, real *r, int start, int end)
 {
   real maxd;
   int i,j;
-  
+
   maxd=0;
   for(i=start; i<end; i++)
     for(j=i+1; j<end; j++)
       maxd=max(maxd,sqrt(distance2(x[i],x[j]))+0.5*(r[i]+r[j]));
-  
+
   return 0.5*maxd;
 }
 
 static void set_margin(t_atoms *atoms, rvec *x, real *r)
 {
   int i,d,start;
-  
+
   box_margin=0;
-  
+
   start=0;
   for(i=0; i < atoms->nr; i++) {
-    if ( (i+1 == atoms->nr) || 
+    if ( (i+1 == atoms->nr) ||
 	 (atoms->atom[i+1].resind != atoms->atom[i].resind) ) {
       d=max_dist(x,r,start,i+1);
       if (debug && d>box_margin)
@@ -105,7 +105,7 @@ static gmx_bool outside_box_plus_margin(rvec x,matrix box)
 static int mark_res(int at, gmx_bool *mark, int natoms, t_atom *atom,int *nmark)
 {
   int resind;
-  
+
   resind = atom[at].resind;
   while( (at > 0) && (resind==atom[at-1].resind) )
     at--;
@@ -116,7 +116,7 @@ static int mark_res(int at, gmx_bool *mark, int natoms, t_atom *atom,int *nmark)
     }
     at++;
   }
-  
+
   return at;
 }
 
@@ -124,7 +124,7 @@ static real find_max_real(int n,real radius[])
 {
   int  i;
   real rmax;
-  
+
   rmax = 0;
   if (n > 0) {
     rmax = radius[0];
@@ -141,16 +141,16 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
   t_atoms *ac;
   rvec    *xc,*vc=NULL;
   int     i,j,natot,res0;
-  
+
   /* Total number of atoms */
   natot = ap->nr+as->nr;
-  
+
   snew(ac,1);
   init_t_atoms(ac,natot,FALSE);
-  
+
   snew(xc,natot);
   if (vp && vs) snew(vc,natot);
-    
+
   /* Fill the new structures */
   for(i=j=0; (i<ap->nr); i++,j++) {
     copy_rvec(xp[i],xc[j]);
@@ -204,15 +204,15 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   ivec       *nFreeze;
   int        i,m,natoms;
   rvec       box_size;
-  real       lambda=0,dvdlambda=0;
+  real       *lambda,*dvdl;
 
   natoms = atoms->nr;
-    
-  /* Charge group index */  
+
+  /* Charge group index */
   snew(cg_index,natoms);
   for(i=0; (i<natoms); i++)
     cg_index[i]=i;
-  
+
   /* Topology needs charge groups and exclusions */
   snew(mtop,1);
   init_mtop(mtop);
@@ -235,9 +235,9 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   mtop->groups.grps[egcENER].nr = 1;
   mtop->groups.ngrpnr[egcENER]  = 0;
   mtop->groups.grpnr[egcENER]   = NULL;
-  
+
   ffp = &mtop->ffparams;
-  
+
   ffp->ntypes = 1;
   ffp->atnr   = 1;
   ffp->reppow = 12;
@@ -245,7 +245,7 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   snew(ffp->iparams,1);
   ffp->iparams[0].lj.c6  = 1;
   ffp->iparams[0].lj.c12 = 1;
-  
+
   /* inputrec structure */
   snew(ir,1);
   ir->coulombtype = eelCUT;
@@ -253,60 +253,64 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   ir->ndelta      = 2;
   ir->ns_type     = ensGRID;
   snew(ir->opts.egp_flags,1);
-  
+
   top = gmx_mtop_generate_local_top(mtop,ir);
-	
+
   /* Some nasty shortcuts */
-  cgs  = &(top->cgs);	
-	
+  cgs  = &(top->cgs);
+
     /* mdatoms structure */
   snew(nFreeze,2);
   snew(md,1);
   md = init_mdatoms(fp,mtop,FALSE);
   atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
   sfree(nFreeze);
-  
+
   /* forcerec structure */
   if (fr == NULL)
     fr = mk_forcerec();
   snew(cr,1);
   cr->nnodes   = 1;
   /* cr->nthreads = 1; */
-  
+
   /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
 	printf("Neighborsearching with a cut-off of %g\n",rlong);
 	init_forcerec(stdout,fr,ir,top,cr,md,box,FALSE,NULL,NULL,NULL,TRUE);*/
   fr->cg0 = 0;
   fr->hcg = top->cgs.nr;
   fr->nWatMol = 0;
-  
+
   /* Prepare for neighboursearching */
   init_nrnb(&nrnb);
-  
-  /* Init things dependent on parameters */  
+
+  /* Init things dependent on parameters */
   ir->rlistlong = ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
+  /* create free energy data to avoid NULLs */
+  snew(ir->fepvals,1);
   printf("Neighborsearching with a cut-off of %g\n",rlong);
   init_forcerec(stdout,oenv,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,NULL,
                 TRUE,-1);
   if (debug)
     pr_forcerec(debug,fr,cr);
-		
+
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   calc_shifts(box,fr->shift_vec);
   put_charge_groups_in_box(fp,0,cgs->nr,fr->ePBC,box,cgs,x,fr->cg_cm);
-  
+
   /* Do the actual neighboursearching */
+  snew(lambda,efptNR);
+  snew(dvdl,efptNR);
   init_neighbor_list(fp,fr,md->homenr);
   search_neighbours(fp,fr,x,box,top,
-		    &mtop->groups,cr,&nrnb,md,lambda,&dvdlambda,NULL,
+		    &mtop->groups,cr,&nrnb,md,lambda,dvdl,NULL,
 		    TRUE,FALSE,FALSE,NULL);
 
   if (debug)
     dump_nblist(debug,cr,fr,0);
 
-  if (bVerbose)    
+  if (bVerbose)
     fprintf(stderr,"Successfully made neighbourlist\n");
 }
 
@@ -338,13 +342,13 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
     fprintf(stderr,"WARNING: Nothing to add\n");
     return;
   }
-  
+
   if (ePBC == epbcSCREW)
     gmx_fatal(FARGS,"Sorry, %s pbc is not yet supported",epbc_names[ePBC]);
 
   if (bVerbose)
     fprintf(stderr,"Calculating Overlap...\n");
-  
+
   /* Set margin around box edges to largest solvent dimension.
    * The maximum distance between atoms in a solvent molecule should
    * be calculated. At the moment a fudge factor of 3 is used.
@@ -353,7 +357,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   box_margin = 3*find_max_real(natoms_solvt,r_solvt);
   max_vdw    = max(3*find_max_real(natoms_prot,r_prot),box_margin);
   fprintf(stderr,"box_margin = %g\n",box_margin);
-  
+
   snew(remove,natoms_solvt);
 
   nremove = 0;
@@ -363,7 +367,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	i=mark_res(i,remove,atoms_solvt->nr,atoms_solvt->atom,&nremove);
     fprintf(stderr,"Removed %d atoms that were outside the box\n",nremove);
   }
-  
+
   /* Define grid stuff for genbox */
   /* Largest VDW radius */
   snew(r_all,natoms_prot+natoms_solvt);
@@ -375,10 +379,10 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   /* Combine arrays */
   combine_atoms(atoms,atoms_solvt,*x,v?*v:NULL,x_solvt,v_solvt,
 		&atoms_all,&x_all,&v_all);
-	     
+
   /* Do neighboursearching step */
   do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw,oenv);
-  
+
   /* check solvent with solute */
   nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
   fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
@@ -391,25 +395,25 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
       j0  = nlist->jindex[i];
       j1  = nlist->jindex[i+1];
       rvec_add(x_all[inr],fr->shift_vec[nlist->shift[i]],xi);
-      
+
       for(j=j0; (j<j1 && nremove<natoms_solvt); j++) {
 	jnr = nlist->jjnr[j];
 	copy_rvec(x_all[jnr],xj);
-	
+
 	/* Check solvent-protein and solvent-solvent */
 	is1 = inr-natoms_prot;
 	is2 = jnr-natoms_prot;
-	
+
 	/* Check if at least one of the atoms is a solvent that is not yet
 	 * listed for removal, and if both are solvent, that they are not in the
 	 * same residue.
 	 */
-	if ((!bSolSol && 
+	if ((!bSolSol &&
 	     bXor((is1 >= 0),(is2 >= 0)) &&  /* One atom is protein */
 	     ((is1 < 0) || ((is1 >= 0) && !remove[is1])) &&
 	     ((is2 < 0) || ((is2 >= 0) && !remove[is2]))) ||
-	    
-	    (bSolSol  && 
+
+	    (bSolSol  &&
 	     (is1 >= 0) && (!remove[is1]) &&   /* is1 is solvent */
 	     (is2 >= 0) && (!remove[is2]) &&   /* is2 is solvent */
 	     (bInsert || /* when inserting also check inside the box */
@@ -418,7 +422,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	      ) &&
 	     (atoms_solvt->atom[is1].resind !=  /* Not the same residue */
 	      atoms_solvt->atom[is2].resind))) {
-	  
+
 	  ntest++;
 	  rvec_sub(xi,xj,dx);
 	  n2 = norm2(dx);
@@ -447,10 +451,10 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
       fprintf(stderr," tested %d pairs, removed %d atoms.\n",ntest,nremove);
     }
   }
-  if (debug) 
+  if (debug)
     for(i=0; i<natoms_solvt; i++)
       fprintf(debug,"remove[%5d] = %s\n",i,bool_names[remove[i]]);
-      
+
   /* Search again, now with another cut-off */
   if (rshell > 0) {
     do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell,oenv);
@@ -462,21 +466,21 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
       inr = nlist->iinr[i];
       j0  = nlist->jindex[i];
       j1  = nlist->jindex[i+1];
-      
+
       for(j=j0; j<j1; j++) {
 	jnr = nlist->jjnr[j];
-	
+
 	/* Check solvent-protein and solvent-solvent */
 	is1 = inr-natoms_prot;
 	is2 = jnr-natoms_prot;
-	
+
 	/* Check if at least one of the atoms is a solvent that is not yet
 	 * listed for removal, and if both are solvent, that they are not in the
 	 * same residue.
 	 */
-	if (is1>=0 && is2<0) 
+	if (is1>=0 && is2<0)
 	  mark_res(is1,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
-	else if (is1<0 && is2>=0) 
+	else if (is1<0 && is2>=0)
 	  mark_res(is2,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
       }
     }
@@ -493,11 +497,11 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   } else {
     j     = 0;
     jnres = 0;
-    for (i=0; ((i<atoms_solvt->nr) && 
+    for (i=0; ((i<atoms_solvt->nr) &&
 	       ((max_sol == 0) || (jnres < max_sol))); i++) {
       if (!remove[i]) {
 	j++;
-	if ((i == 0) || 
+	if ((i == 0) ||
 	    (atoms_solvt->atom[i].resind != atoms_solvt->atom[i-1].resind))
 	  jnres++;
       }
@@ -524,7 +528,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
     if (v) srenew(*v,       atoms->nr+j);
     srenew(*r,              atoms->nr+j);
   }
-  
+
   /* add the selected atoms_solvt to atoms */
   if (atoms->nr > 0) {
     resnr = atoms->resinfo[atoms->atom[atoms->nr-1].resind].nr;
@@ -535,7 +539,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   nresadd = 0;
   for (i=0; i<atoms_solvt->nr; i++) {
     if (!remove[i]) {
-      if (prev == -1 || 
+      if (prev == -1 ||
 	  atoms_solvt->atom[i].resind != atoms_solvt->atom[prev].resind) {
 	nresadd ++;
 	atoms->nres++;
@@ -560,10 +564,10 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   }
   if (bSrenew)
     srenew(atoms->resinfo,  atoms->nres+nresadd);
-  
+
   if (bVerbose)
     fprintf(stderr,"Added %d molecules\n",nresadd);
-  
+
   sfree(remove);
   done_atom(atoms_all);
   sfree(x_all);
