@@ -250,6 +250,10 @@ gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 			    int maxwarn,int *warncount);
 /* Returns if the constraining succeeded */
 
+int *get_sblock(struct gmx_constr *constr);
+
+int get_nblocks(struct gmx_constr *constr);
+
 #ifdef __cplusplus
 }
 #endif
