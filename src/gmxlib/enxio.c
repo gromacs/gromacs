@@ -1122,7 +1122,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
       }
       fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
 
-      if (IR_NPT_TROTTER(ir)) 
+      if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
       {
           for(i=0; i<state->nnhpres; i++) {
               bufi = baro_nm[0]; /* All barostat DOF's together for now */
