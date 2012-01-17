@@ -149,10 +149,14 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->cross_ba.krt=old[3];
     break;
   case F_UREY_BRADLEY:
-    newparam->u_b.theta=old[0];
-    newparam->u_b.ktheta=old[1];
-    newparam->u_b.r13=old[2];
-    newparam->u_b.kUB=old[3];
+    newparam->u_b.thetaA=old[0];
+    newparam->u_b.kthetaA=old[1];
+    newparam->u_b.r13A=old[2];
+    newparam->u_b.kUBA=old[3];
+    newparam->u_b.thetaB=old[4];
+    newparam->u_b.kthetaB=old[5];
+    newparam->u_b.r13B=old[6];
+    newparam->u_b.kUBB=old[7];
     break;
   case F_QUARTIC_ANGLES:
     newparam->qangle.theta=old[0];
@@ -165,8 +169,8 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->linangle.aB    = old[2];
     newparam->linangle.klinB = old[3];
     break;
-  case F_ANGLES:
   case F_BONDS:
+  case F_ANGLES:
   case F_HARMONIC:
   case F_IDIHS:
     newparam->harmonic.rA =old[0];
@@ -175,9 +179,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->harmonic.krB=old[3];
     break;
   case F_MORSE:
-    newparam->morse.b0    =old[0];
-    newparam->morse.cb    =old[1];
-    newparam->morse.beta  =old[2];
+    newparam->morse.b0A    =old[0];
+    newparam->morse.cbA    =old[1];
+    newparam->morse.betaA  =old[2];
+    newparam->morse.b0B    =old[3];
+    newparam->morse.cbB    =old[4];
+    newparam->morse.betaB  =old[5];
     break;
   case F_CUBICBONDS:
     newparam->cubic.b0    =old[0];
@@ -294,11 +301,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->orires.kfac  = old[5];
     break;
   case F_DIHRES:
-    newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phi   = old[1];
-    newparam->dihres.dphi  = old[2];
-    newparam->dihres.kfac  = old[3];
-    newparam->dihres.power = round_check(old[4],0,ftype,"power");
+    newparam->dihres.phiA  = old[0];
+    newparam->dihres.dphiA = old[1];
+    newparam->dihres.kfacA = old[2];
+    newparam->dihres.phiB   = old[3];
+    newparam->dihres.dphiB  = old[4];
+    newparam->dihres.kfacB  = old[5];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {
