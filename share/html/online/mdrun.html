@@ -156,7 +156,9 @@ or orientation restraints are present these can be ensemble averaged
 over all the systems.<p>
 With <tt>-replex</tt> replica exchange is attempted every given number
 of steps. The number of replicas is set with the <tt>-multi</tt> option,
-see above.
+see above. The <tt>-nex</tt> option turns on Gibbs sampling replica exchange. N^3, where
+N is the number of replicas indicated by <tt>-multi</tt> appears to work relatively well.
+
 All run input files should use a different coupling temperature,
 the order of the files is not important. The random seed is set with
 <tt>-reseed</tt>. The velocities are scaled and neighbor searching
@@ -286,6 +288,7 @@ When mdrun is started with MPI, it does not run niced by default.
 <TR><TD ALIGN=RIGHT> <b><tt>-maxh</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Terminate after 0.99 times this time (hours) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-multi</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Do multiple simulations in parallel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange every # steps </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt $N$ Gibbs sampling replica exchanges at every exchange interval. $N^3$ is a suggested frequency. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-reseed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Seed for replica exchange, -1 is generate a seed </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
 </TABLE>
