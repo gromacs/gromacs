@@ -97,13 +97,23 @@ typedef struct {
   gmx_sd_sigma_t *sdsig;
   rvec *sd_V;
   int  sd_V_nalloc;
+  /* andersen temperature control stuff */
+  gmx_bool *randomize_group;
+  real *boltzfac;  
 } gmx_stochd_t;
 
 typedef struct gmx_update
 {
     gmx_stochd_t *sd;
+    /* xprime for constraint algorithms */
     rvec *xp;
     int  xp_nalloc;
+
+    /* variable size arrays for andersen */
+    gmx_bool *randatom;
+    int *randatom_list;
+    gmx_bool randatom_list_init;
+
     /* Variables for the deform algorithm */
     gmx_large_int_t deformref_step;
     matrix     deformref_box;
@@ -227,13 +237,12 @@ static void do_update_md(int start,int nrend,double dt,
 static void do_update_vv_vel(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
-                             unsigned short ptype[],
-                             unsigned short cFREEZE[],unsigned short cACC[],
-                             rvec v[],rvec f[],
+                             unsigned short ptype[],unsigned short cFREEZE[],
+                             unsigned short cACC[],rvec v[],rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
-    int    gf=0,ga=0,gt=0;
+    int    gf=0,ga=0;
     rvec   vrel;
     real   u,vn,vv,va,vb,vnrel;
     int    n,d;
@@ -250,6 +259,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         mv1      = 1.0;
         mv2      = 1.0;
     }
+
     for(n=start; n<nrend; n++) 
     {
         w_dt = invmass[n]*dt;
@@ -261,7 +271,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
         {
             ga   = cACC[n];
         }
-        
+
         for(d=0; d<DIM; d++) 
         {
             if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
@@ -279,8 +289,7 @@ static void do_update_vv_vel(int start,int nrend,double dt,
 static void do_update_vv_pos(int start,int nrend,double dt,
                              t_grp_tcstat *tcstat,t_grp_acc *gstat,
                              rvec accel[],ivec nFreeze[],real invmass[],
-                             unsigned short ptype[],
-                             unsigned short cFREEZE[],
+                             unsigned short ptype[],unsigned short cFREEZE[],
                              rvec x[],rvec xprime[],rvec v[],
                              rvec f[],gmx_bool bExtended, real veta, real alpha)
 {
@@ -289,18 +298,19 @@ static void do_update_vv_pos(int start,int nrend,double dt,
   int    n,d;
   double g,mr1,mr2;
 
-  if (bExtended) {
+  /* Should Parrinello-Rahman be here? */
+  if (bExtended)
+  {
       g        = 0.5*dt*veta;
       mr1      = exp(g);
       mr2      = series_sinhx(g);
-  }
-  else 
-  {
+  } else {
       mr1      = 1.0;
       mr2      = 1.0;
   }
   
   for(n=start; n<nrend; n++) {
+
       if (cFREEZE)
       {
           gf   = cFREEZE[n];
@@ -487,8 +497,33 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
                 fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
                         n,sdc[n].b,sdc[n].c,sdc[n].d);
         }
-    }
+    } 
+    else if (ETC_ANDERSEN(ir->etc)) 
+    {
+        int ngtc;
+        t_grpopts *opts;
+        real reft;
 
+        opts = &ir->opts;
+        ngtc = opts->ngtc;
+        
+        snew(sd->randomize_group,ngtc);
+        snew(sd->boltzfac,ngtc);
+        
+        /* for now, assume that all groups, if randomized, are randomized at the same rate, i.e. tau_t is the same. */
+        /* since constraint groups don't necessarily match up with temperature groups! This is checked in readir.c */
+
+        for (n=0;n<ngtc;n++) {
+            reft = max(0.0,opts->ref_t[n]);
+            if ((opts->tau_t[n] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            {
+                sd->randomize_group[n] = TRUE;
+                sd->boltzfac[n] = BOLTZ*opts->ref_t[n];
+            } else {
+                sd->randomize_group[n] = FALSE;
+            }
+        }
+    }
     return sd;
 }
 
@@ -508,13 +543,16 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
     
     snew(upd,1);
     
-    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE)
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
         upd->sd = init_stochd(fplog,ir);
     }
 
     upd->xp = NULL;
     upd->xp_nalloc = 0;
+    upd->randatom = NULL;
+    upd->randatom_list = NULL;
+    upd->randatom_list_init = FALSE; /* we have not yet cleared the data structure at this point */
 
     return upd;
 }
@@ -950,7 +988,7 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
     }
 }
 
-void init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir)
+extern void init_ekinstate(ekinstate_t *ekinstate,const t_inputrec *ir)
 {
     ekinstate->ekin_n = ir->opts.ngtc;
     snew(ekinstate->ekinh,ekinstate->ekin_n);
@@ -1122,7 +1160,7 @@ static void combine_forces(int nstlist,
          */
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-                  state->x,f_lr,f_lr,state->box,state->lambda,NULL,
+                  state->x,f_lr,f_lr,state->box,state->lambda[efptBONDED],NULL,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
     
@@ -1152,15 +1190,22 @@ void update_tcouple(FILE         *fplog,
 {
     gmx_bool   bTCouple=FALSE;
     real   dttc;
-    int    i,start,end,homenr;
+    int    i,start,end,homenr,offset;
     
-    /* if using vv, we do this elsewhere in the code */
+    /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec)))
     {
-        /* We should only couple after a step where energies were determined */
+        /* We should only couple after a step where energies were determined (for leapfrog versions)
+         or the step energies are determined, for velocity verlet versions */
+        
+        if (EI_VV(inputrec->eI)) {
+            offset = 0;
+        } else {
+            offset = 1;
+        }
         bTCouple = (inputrec->nsttcouple == 1 ||
-                    do_per_step(step+inputrec->nsttcouple-1,
+                    do_per_step(step+inputrec->nsttcouple-offset,
                                 inputrec->nsttcouple));
     }
     
@@ -1187,6 +1232,7 @@ void update_tcouple(FILE         *fplog,
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
+            /* MRS -- need to understand what is happening here!!! */
             rescale_velocities(ekind,md,md->start,md->start+md->homenr,state->v);
         }
     }
@@ -1214,9 +1260,8 @@ void update_pcouple(FILE         *fplog,
     real   dtpc=0;
     int    i;
     
-    /* if using vv, we do this elsewhere in the code */
-    if (inputrec->epc != epcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+    /* if using Trotter pressure, we do this elsewhere in the code, so we leave it false. */
+    if (inputrec->epc != epcNO && (!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))))
     {
         /* We should only couple after a step where energies were determined */
         bPCouple = (inputrec->nstpcouple == 1 ||
@@ -1295,7 +1340,7 @@ void update_constraints(FILE         *fplog,
                         gmx_bool         bCalcVir,
                         real         vetanew)
 {
-    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
+    gmx_bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
@@ -1343,7 +1388,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,state->lambda[efptBONDED],&(dvdlambda[efptBONDED]),
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
                       inputrec->epc==epcMTTK,state->veta,vetanew);
         } 
@@ -1352,7 +1397,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,state->lambda[efptBONDED],&(dvdlambda[efptBONDED]),
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
                       inputrec->epc==epcMTTK,state->veta,state->veta);
         }
@@ -1412,7 +1457,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,state->lambda[efptBONDED],&(dvdlambda[efptBONDED]),
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
@@ -1463,7 +1508,7 @@ void update_box(FILE         *fplog,
                 gmx_bool         bInitStep,
                 gmx_bool         bFirstHalf)
 {
-    gmx_bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g;
@@ -1539,7 +1584,7 @@ o               If we assume isotropic scaling, and box length scaling
         break;
     }
     
-    if ((!(IR_NPT_TROTTER(inputrec))) && scale_tot) 
+    if ((!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))) && scale_tot)
     {
         /* The transposes of the scaling matrices are stored,
          * therefore we need to reverse the order in the multiplication.
@@ -1576,7 +1621,7 @@ void update_coords(FILE         *fplog,
                    gmx_constr_t constr,
                    t_idef       *idef)
 {
-    gmx_bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    gmx_bool         bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
     real             *imass,*imassin;
     rvec             *force;
@@ -1614,11 +1659,10 @@ void update_coords(FILE         *fplog,
         update_orires_history(fcd,&state->hist);
     }
     
+    
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK)); 
 
-    bExtended = bNH || bPR;
-    
     if (bDoLR && inputrec->nstlist > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
     {
         /* Store the total force + nstlist-1 times the LR force
@@ -1697,10 +1741,8 @@ void update_coords(FILE         *fplog,
             do_update_vv_vel(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
-                             md->invmass,md->ptype,
-                             md->cFREEZE,md->cACC,
-                             state->v,force,
-                             bExtended,state->veta,alpha);  
+                             md->invmass,md->ptype,md->cFREEZE,md->cACC,
+                             state->v,force,(bNH || bPR),state->veta,alpha);  
             break;
         case etrtPOSITION:
             do_update_vv_pos(start,nrend,dt,
@@ -1708,7 +1750,7 @@ void update_coords(FILE         *fplog,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,md->cFREEZE,
                              state->x,xprime,state->v,force,
-                             bExtended,state->veta,alpha);
+                             (bNH || bPR) ,state->veta,alpha);
             break;
         }
         break;
@@ -1716,6 +1758,7 @@ void update_coords(FILE         *fplog,
         gmx_fatal(FARGS,"Don't know how to update coordinates");
         break;
     }
+
 }
 
 
@@ -1771,4 +1814,32 @@ void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
           trace(dekin),trace(ekin),vcm[XX],vcm[YY],vcm[ZZ]);
   fprintf(log,"mv = (%8.4f %8.4f %8.4f)\n",
           mv[XX],mv[YY],mv[ZZ]);
+}
+
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr) {
+
+    int i;
+    real rate = (ir->delta_t)/ir->opts.tau_t[0];
+    /* proceed with andersen if 1) it's fixed probability per
+       particle andersen or 2) it's massive andersen and it's tau_t/dt */
+    if ((ir->etc==etcANDERSEN) || do_per_step(step,(int)(1.0/rate)))
+    {
+        srenew(upd->randatom,state->nalloc);
+        srenew(upd->randatom_list,state->nalloc);
+        if (upd->randatom_list_init == FALSE) {
+            for (i=0;i<state->nalloc;i++) {
+                upd->randatom[i] = FALSE;
+                upd->randatom_list[i] = 0;                
+            }
+            upd->randatom_list_init == TRUE;
+        }
+        andersen_tcoupl(ir,md,state,upd->sd->gaussrand,rate,
+                        (ir->etc==etcANDERSEN)?idef:NULL,
+                        constr?get_nblocks(constr):0,
+                        constr?get_sblock(constr):NULL,
+                        upd->randatom,upd->randatom_list,
+                        upd->sd->randomize_group,upd->sd->boltzfac);
+        return TRUE;
+    }
+    return FALSE;
 }
