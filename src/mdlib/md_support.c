@@ -353,6 +353,231 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bTemp || bPres || bEner || bConstrain) 
     {
+        if (!bGStat) 
+        {
+            /* We will not sum ekinh_old,                                                            
+             * so signal that we still have to do it.                                                
+             */
+            *bSumEkinhOld = TRUE;
+
+        }
+        else
+        {
+            if (gs != NULL)
+            {
+                for(i=0; i<eglsNR; i++)
+                {
+                    gs_buf[i] = gs->sig[i];
+                }
+            }
+            if (PAR(cr)) 
+            {
+                wallcycle_start(wcycle,ewcMoveE);
+                GMX_MPE_LOG(ev_global_stat_start);
+                global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
+                            ir,ekind,constr,vcm,
+                            gs != NULL ? eglsNR : 0,gs_buf,
+                            top_global,state,
+                            *bSumEkinhOld,flags);
+                GMX_MPE_LOG(ev_global_stat_finish);
+                wallcycle_stop(wcycle,ewcMoveE);
+            }
+            if (gs != NULL)
+            {
+                if (MULTISIM(cr) && bInterSimGS)
+                {
+                    if (MASTER(cr))
+                    {
+                        /* Communicate the signals between the simulations */
+                        gmx_sum_sim(eglsNR,gs_buf,cr->ms);
+                    }
+                    /* Communicate the signals form the master to the others */
+                    gmx_bcast(eglsNR*sizeof(gs_buf[0]),gs_buf,cr);
+                }
+                for(i=0; i<eglsNR; i++)
+                {
+                    if (bInterSimGS || gs_simlocal[i])
+                    {
+                        /* Set the communicated signal only when it is non-zero,
+                         * since signals might not be processed at each MD step.
+                         */
+                        gsi = (gs_buf[i] >= 0 ?
+                               (int)(gs_buf[i] + 0.5) :
+                               (int)(gs_buf[i] - 0.5));
+                        if (gsi != 0)
+                        {
+                            gs->set[i] = gsi;
+                        }
+                        /* Turn off the local signal */
+                        gs->sig[i] = 0;
+                    }
+                }
+            }
+            *bSumEkinhOld = FALSE;
+        }
+    }
+    
+    if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
+    {
+        correct_ekin(debug,
+                     mdatoms->start,mdatoms->start+mdatoms->homenr,
+                     state->v,vcm->group_p[0],
+                     mdatoms->massT,mdatoms->tmass,ekind->ekin);
+    }
+    
+    if (bEner) {
+        /* Do center of mass motion removal */
+        if (bStopCM && !bRerunMD) /* is this correct?  Does it get called too often with this logic? */
+        {
+            check_cm_grp(fplog,vcm,ir,1);
+            do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
+                          state->x,state->v,vcm);
+            inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+        }
+
+        /* Calculate the amplitude of the cosine velocity profile */
+        ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
+    }
+
+    if (bTemp) 
+    {
+        /* Sum the kinetic energies of the groups & calc temp */
+        /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
+        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
+           Leap with AveVel is not supported; it's not clear that it will actually work.  
+           bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
+           If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
+           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
+           If FALSE, we go ahead and erase over it.
+        */ 
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
+                                       bEkinAveVel,bIterate,bScaleEkin);
+ 
+        enerd->term[F_EKIN] = trace(ekind->ekin);
+    }
+    
+    /* ##########  Long range energy information ###### */
+    
+    if (bEner || bPres || bConstrain) 
+    {
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
+                      corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
+    }
+    
+    if (bEner && bFirstIterate) 
+    {
+        enerd->term[F_DISPCORR] = enercorr;
+        enerd->term[F_EPOT] += enercorr;
+        enerd->term[F_DVDL_VDW] += dvdlcorr;
+        if (fr->efep > efepNO) {
+            enerd->dvdl_lin[efptVDW] += dvdlcorr;
+        }
+    }
+    
+    /* ########## Now pressure ############## */
+    if (bPres || bConstrain) 
+    {
+        
+        m_add(force_vir,shake_vir,total_vir);
+        
+        /* Calculate pressure and apply LR correction if PPPM is used.
+         * Use the box from last timestep since we already called update().
+         */
+        
+        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
+                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+        
+        /* Calculate long range corrections to pressure and energy */
+        /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
+           and computes enerd->term[F_DISPCORR].  Also modifies the 
+           total_vir and pres tesors */
+        
+        m_add(total_vir,corr_vir,total_vir);
+        m_add(pres,corr_pres,pres);
+        enerd->term[F_PDISPCORR] = prescorr;
+        enerd->term[F_PRES] += prescorr;
+        *pcurr = enerd->term[F_PRES];
+        /* calculate temperature using virial */
+        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
+    }    
+}
+
+#if 0 
+void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
+                     t_forcerec *fr, gmx_ekindata_t *ekind, 
+                     t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
+                     t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
+                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
+                     tensor pres, rvec mu_tot, gmx_constr_t constr, 
+                     globsig_t *gs,gmx_bool bInterSimGS,
+                     matrix box, gmx_mtop_t *top_global, real *pcurr, 
+                     int natoms, gmx_bool *bSumEkinhOld, int flags)
+{
+    int  i,gsi;
+    real gs_buf[eglsNR];
+    tensor corr_vir,corr_pres,shakeall_vir;
+    gmx_bool bEner,bPres,bTemp, bVV;
+    gmx_bool bRerunMD, bStopCM, bGStat, bIterate, 
+        bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
+    real ekin,temp,prescorr,enercorr,dvdlcorr;
+    
+    /* translate CGLO flags to gmx_booleans */
+    bRerunMD = flags & CGLO_RERUNMD;
+    bStopCM = flags & CGLO_STOPCM;
+    bGStat = flags & CGLO_GSTAT;
+
+    bReadEkin = (flags & CGLO_READEKIN);
+    bScaleEkin = (flags & CGLO_SCALEEKIN);
+    bEner = flags & CGLO_ENERGY;
+    bTemp = flags & CGLO_TEMPERATURE;
+    bPres  = (flags & CGLO_PRESSURE);
+    bConstrain = (flags & CGLO_CONSTRAINT);
+    bIterate = (flags & CGLO_ITERATE);
+    bFirstIterate = (flags & CGLO_FIRSTITERATE);
+
+    /* we calculate a full state kinetic energy either with full-step velocity verlet
+       or half step where we need the pressure */
+    
+    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
+    
+    /* in initalization, it sums the shake virial in vv, and to 
+       sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
+
+    /* ########## Kinetic energy  ############## */
+    
+    if (bTemp) 
+    {
+        /* Non-equilibrium MD: this is parallellized, but only does communication
+         * when there really is NEMD.
+         */
+        
+        if (PAR(cr) && (ekind->bNEMD)) 
+        {
+            accumulate_u(cr,&(ir->opts),ekind);
+        }
+        debug_gmx();
+        if (bReadEkin)
+        {
+            restore_ekinstate_from_state(cr,ekind,&state_global->ekinstate);
+        }
+        else 
+        {
+
+            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate);
+        }
+        
+        debug_gmx();
+        
+        /* Calculate center of mass velocity if necessary, also parallellized */
+        if (bStopCM && !bRerunMD && bEner) 
+        {
+            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
+                         state->x,state->v,vcm);
+        }
+    }
+
+    if (bTemp || bPres || bEner || bConstrain) 
+    {
         if (!bGStat)
         {
             /* We will not sum ekinh_old,                                                            
@@ -469,7 +694,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL] += dvdlcorr;
-        if (fr->efep != efepNO) {
+        if (fr->efep > efepNO) {
             enerd->dvdl_lin += dvdlcorr;
         }
     }
@@ -502,6 +727,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         
     }    
 }
+#endif
 
 void check_nst_param(FILE *fplog,t_commrec *cr,
                      const char *desc_nst,int nst,
@@ -686,7 +912,7 @@ void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                         "nstenergy",&ir->nstenergy);
         check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                         "nstlog",&ir->nstlog);
-        if (ir->efep != efepNO)
+        if (ir->efep > efepNO)
         {
             check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                             "nstdhdl",&ir->nstdhdl);

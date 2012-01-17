@@ -725,7 +725,7 @@ static void set_chargesum(FILE *log,t_forcerec *fr,const gmx_mtop_t *mtop)
         }
     }
     fr->qsum[0] = qsum;
-    if (fr->efep != efepNO)
+    if (fr->efep > efepNO)
     {
         qsum = 0;
         for(mb=0; mb<mtop->nmolblock; mb++)
@@ -1398,11 +1398,17 @@ void init_forcerec(FILE *fp,
     fr->fc_stepsize = ir->fc_stepsize;
     
     /* Free energy */
-    fr->efep          = ir->efep;
-    fr->sc_alpha      = ir->sc_alpha;
-    fr->sc_power      = ir->sc_power;
-    fr->sc_sigma6_def = pow(ir->sc_sigma,6);
-    fr->sc_sigma6_min = pow(ir->sc_sigma_min,6);
+    fr->efep       = ir->efep;
+    fr->sc_alphavdw = ir->fepvals->sc_alpha;
+    if (ir->fepvals->bScCoul) {
+        fr->sc_alphacoul = ir->fepvals->sc_alpha;
+    } else {
+        fr->sc_alphacoul = 0;
+    }
+    fr->sc_power   = ir->fepvals->sc_power;
+    fr->r_power   = ir->fepvals->r_power;
+    fr->sc_sigma6_def = pow(ir->fepvals->sc_sigma,6);
+    fr->sc_sigma6_min = pow(ir->fepvals->sc_sigma_min,6);
     env = getenv("GMX_SCSIGMA_MIN");
     if (env != NULL)
     {

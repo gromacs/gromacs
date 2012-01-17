@@ -322,7 +322,7 @@ gmx_setup_adress_kernels(FILE *fplog,gmx_bool bGenericKernelOnly) {
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
                   real egnb[],real egcoul[],real egpol[],rvec box_size,
-                  t_nrnb *nrnb,real lambda,real *dvdlambda,
+                  t_nrnb *nrnb,real *lambda, real *dvdl,
                   int nls,int eNL,int flags)
 {
     gmx_bool            bLR,bDoForces,bForeignLambda;
@@ -524,7 +524,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 				
 				if(nlist->free_energy)
 				{
-					if(nlist->ivdw==2)
+					if(nlist->ivdw==enbvdwBHAM)
 					{
 						gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
 					}
@@ -555,10 +555,13 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  egnb,
 											  nblists->tab.scale,
 											  tabledata,
-											  lambda,
-											  dvdlambda,
-											  fr->sc_alpha,
+											  lambda[efptCOUL],
+                                              lambda[efptVDW],
+                                              dvdl,
+                                              fr->sc_alphacoul,
+											  fr->sc_alphavdw,
 											  fr->sc_power,
+											  fr->r_power,
 											  fr->sc_sigma6_def,
                                               fr->sc_sigma6_min,
                                               bDoForces,
@@ -779,7 +782,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_iatom iatoms[],const t_iparams iparams[],
                 const rvec x[],rvec f[],rvec fshift[],
                 const t_pbc *pbc,const t_graph *g,
-                real lambda,real *dvdlambda,
+                real *lambda, real *dvdl,
                 const t_mdatoms *md,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
@@ -848,32 +851,32 @@ do_listed_vdw_q(int ftype,int nbonds,
 
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
-        icoul = 1;
+        icoul = enbcoulOOR;
     } 
     else if(fr->bcoultab)
     {
-        icoul = 3;
+        icoul = enbcoulTAB;
     }
     else if(fr->eeltype == eelRF_NEC)
     {
-        icoul = 2;
+        icoul = enbcoulRF;
     }
     else 
     {
-        icoul = 1;
+        icoul = enbcoulOOR;
     }
     
     if(fr->bvdwtab)
     {
-        ivdw = 3;
+        ivdw = enbvdwTAB;
     }
     else if(fr->bBHAM)
     {
-        ivdw = 2;
+        ivdw = enbvdwLJ;
     }
     else 
     {
-        ivdw = 1;
+        ivdw = enbvdwLJ;
     }
     
     
@@ -902,7 +905,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         switch (ftype) {
         case F_LJ14:
             bFreeEnergy =
-                (fr->efep != efepNO &&
+                (fr->efep > efepNO &&
                  ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
                   iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                   iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
@@ -982,7 +985,12 @@ do_listed_vdw_q(int ftype,int nbonds,
              * in the innerloops if we assign type combinations 0-0 and 0-1
              * to atom pair ai-aj in topologies A and B respectively.
              */
-            if(ivdw==2)
+
+            /* need to to a bit of a kludge here -- 
+               if the charges change, but the vdw do not, then even though bFreeEnergy is on, 
+               it won't work, because all the bonds are perturbed.
+            */
+            if(ivdw==enbvdwBHAM)
             {
                 gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
             }
@@ -1013,10 +1021,13 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       egnb,
                                       tabscale,
                                       tab,
-                                      lambda,
-                                      dvdlambda,
-                                      fr->sc_alpha,
+                                      lambda[efptCOUL],
+                                      lambda[efptVDW],
+                                      dvdl,
+                                      fr->sc_alphacoul,
+                                      fr->sc_alphavdw,
                                       fr->sc_power,
+                                      fr->r_power,
                                       fr->sc_sigma6_def,
                                       fr->sc_sigma6_min,
                                       TRUE,

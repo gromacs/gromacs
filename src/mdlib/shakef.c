@@ -384,7 +384,7 @@ gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
     blen /= 3;
     n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
                     iatoms,ir->shake_tol,x_s,prime,shaked->omega,
-                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,vetavar);
+                    ir->efep>efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,vetavar);
 
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);
@@ -407,7 +407,7 @@ gmx_bool bshakef(FILE *log,gmx_shakedata_t shaked,
   }
   /* only for position part? */
   if (econq == econqCoord) {
-      if (ir->efep != efepNO) {
+      if (ir->efep > efepNO) {
           dt_2 = 1/sqr(ir->delta_t);
           dvdl = 0;
           for(i=0; i<ncons; i++) {
