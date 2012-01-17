@@ -89,7 +89,7 @@ int tcouple_min_integration_steps(int etc)
         n = nstmin_harmonic;
         break;
     case etcANDERSEN:
-    case etcANDERSENINTERVAL:
+    case etcANDERSENMASSIVE:
         n = 1;
         break;
     default:
