@@ -406,6 +406,7 @@ int main(int argc,char *argv[])
   int  nstglobalcomm=-1;
   int  repl_ex_nst=0;
   int  repl_ex_seed=-1;
+  int  repl_ex_nex=0;
   int  nstepout=100;
   int  nthreads=0; /* set to determine # of threads automatically */
   int  resetstep=-1;
@@ -480,6 +481,8 @@ int main(int argc,char *argv[])
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
       "Attempt replica exchange every # steps" },
+    { "-nex",  FALSE, etINT, {&repl_ex_nex},
+      "Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange." },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
     { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
@@ -564,6 +567,9 @@ int main(int argc,char *argv[])
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
+
+  if (repl_ex_nex < 0)
+      gmx_fatal(FARGS,"Replica exchange number of exchanges needs to be positive");
 
   if (nmultisim > 1) {
 #ifndef GMX_THREAD_MPI
@@ -672,7 +678,7 @@ int main(int argc,char *argv[])
   rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
                 pforce, cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())

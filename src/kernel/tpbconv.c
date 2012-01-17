@@ -60,6 +60,64 @@
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
+#define MAXPTR 254
+
+/* count the number of elements in a string separated by whitespace.
+    str = the input string
+    maxptr = the maximum number of allowed elements
+    ptr = the output array of pointers to the first character of each element
+    returns: the number of elements. */
+static int tpb_str_nelem(const char *str,int maxptr,char *ptr[]) /* need separate tpb version for now */
+{
+    int  np=0;
+    char *copy0,*copy;
+
+    copy0=strdup(str);
+    copy=copy0;
+    ltrim(copy);
+    while (*copy != '\0')
+    {
+        if (np >= maxptr)
+        {
+            gmx_fatal(FARGS,"Too many groups on line: '%s' (max is %d)",
+                      str,maxptr);
+        }
+        if (ptr)
+        {
+            ptr[np]=copy;
+        }
+        np++;
+        while ((*copy != '\0') && !isspace(*copy))
+        {
+            copy++;
+        }
+        if (*copy != '\0')
+        {
+            *copy='\0';
+            copy++;
+        }
+        ltrim(copy);
+    }
+    if (ptr == NULL)
+    {
+        sfree(copy0);
+    }
+    return np;
+}
+
+static void tpb_parse_n_real(char *str,int *n,real **r) /* need separate tpb version for now */
+{
+  char *ptr[MAXPTR];
+  int  i;
+
+  *n = tpb_str_nelem(str,MAXPTR,ptr);
+
+  snew(*r,*n);
+  for(i=0; i<*n; i++) {
+    (*r)[i] = strtod(ptr[i],NULL);
+  }
+}
+
 static gmx_bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
   gmx_bool *b;
@@ -325,8 +383,9 @@ int main (int argc, char *argv[])
   int          i;
   gmx_large_int_t   nsteps_req,run_step,frame;
   double       run_t,state_t;
-  gmx_bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
-  gmx_bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
+  gmx_bool     bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
+  gmx_bool     bFepWeights,bWLdelta,bFepState;
+  gmx_bool     bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
@@ -341,6 +400,7 @@ int main (int argc, char *argv[])
   gmx_enxnm_t  *enm=NULL;
   t_enxframe   *fr_ener=NULL;
   char         buf[200],buf2[200];
+  int          nweights;
   output_env_t oenv;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
@@ -354,6 +414,9 @@ int main (int argc, char *argv[])
   /* Command line options */
   static int  nsteps_req_int = 0;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
+  static int init_fep_state = 0;
+  static char *init_fep_weights = "0";
+  static real init_wl_delta;
   static gmx_bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
   static t_pargs pa[] = {
     { "-extend",        FALSE, etREAL, {&extend_t}, 
@@ -369,7 +432,13 @@ int main (int argc, char *argv[])
     { "-vel",           FALSE, etBOOL, {&bVel},
       "Require velocities from trajectory" },
     { "-cont",          FALSE, etBOOL, {&bContinuation},
-      "For exact continuation, the constraints should not be applied before the first step" }
+      "For exact continuation, the constraints should not be applied before the first step" },
+    { "-init_fep_state",FALSE, etINT, {&init_fep_state},
+      "fep state to initialize from" },
+    { "-init_fep_weights",FALSE, etSTR, {&init_fep_weights},
+      "initial fep weights" },
+    { "-init_wl_delta", FALSE, etREAL, {&init_wl_delta},
+      "initial Wang-Landau delta" }
   };
   int nerror = 0;
   
@@ -381,11 +450,14 @@ int main (int argc, char *argv[])
 
   /* Convert int to gmx_large_int_t */
   nsteps_req = nsteps_req_int;
-  bNsteps = opt2parg_bSet("-nsteps",asize(pa),pa);
-  bExtend = opt2parg_bSet("-extend",asize(pa),pa);
-  bUntil  = opt2parg_bSet("-until",asize(pa),pa);
-  bTime   = opt2parg_bSet("-time",asize(pa),pa);
-  bTraj   = (opt2bSet("-f",NFILE,fnm) || bTime);
+  bNsteps   = opt2parg_bSet("-nsteps",asize(pa),pa);
+  bExtend   = opt2parg_bSet("-extend",asize(pa),pa);
+  bUntil    = opt2parg_bSet("-until",asize(pa),pa);
+  bFepState = opt2parg_bSet("-init_fep_state",asize(pa),pa);
+  bFepWeights  = opt2parg_bSet("-init_fep_weights",asize(pa),pa);
+  bWLdelta  = opt2parg_bSet("-init_wl_delta",asize(pa),pa);
+  bTime     = opt2parg_bSet("-time",asize(pa),pa);
+  bTraj     = (opt2bSet("-f",NFILE,fnm) || bTime);
 
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and stuff from %s\n",top_fn);
@@ -432,195 +504,239 @@ int main (int argc, char *argv[])
 
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
 
-        if (fn2ftp(frame_fn) == efCPT)
+    if (fn2ftp(frame_fn) == efCPT)
+    {
+        int sim_part;
+
+        fprintf(stderr,
+                "\nREADING STATE FROM CHECKPOINT %s...\n\n",
+                frame_fn);
+
+        read_checkpoint_state(frame_fn,&sim_part,
+                              &run_step,&run_t,&state);
+    }
+    else
+    {
+        fprintf(stderr,
+                "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
+                frame_fn);
+
+        fp = open_trn(frame_fn,"r");
+        if (bScanEner)
         {
-            int sim_part;
-
-            fprintf(stderr,
-                    "\nREADING STATE FROM CHECKPOINT %s...\n\n",
-                    frame_fn);
-
-            read_checkpoint_state(frame_fn,&sim_part,
-                                  &run_step,&run_t,&state);
+            fp_ener = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
+            do_enxnms(fp_ener,&nre,&enm);
+            snew(fr_ener,1);
+            fr_ener->t = -1e-12;
         }
-        else
+
+        /* Now scan until the last set of x and v (step == 0)
+         * or the ones at step step.
+         */
+        bFrame = TRUE;
+        frame  = 0;
+        while (bFrame)
         {
-            fprintf(stderr,
-                    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
-                    frame_fn);
-
-            fp = open_trn(frame_fn,"r");
-            if (bScanEner)
+            bFrame = fread_trnheader(fp,&head,&bOK);
+            if (bOK && frame == 0)
             {
-                fp_ener = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
-                do_enxnms(fp_ener,&nre,&enm);
-                snew(fr_ener,1);
-                fr_ener->t = -1e-12;
+                if (mtop.natoms != head.natoms)
+                    gmx_fatal(FARGS,"Number of atoms in Topology (%d) "
+                              "is not the same as in Trajectory (%d)\n",
+                              mtop.natoms,head.natoms);
+                snew(newx,head.natoms);
+                snew(newv,head.natoms);
             }
-
-            /* Now scan until the last set of x and v (step == 0)
-             * or the ones at step step.
-             */
-            bFrame = TRUE;
-            frame  = 0;
-            while (bFrame)
+            bFrame = bFrame && bOK;
+            if (bFrame)
             {
-                bFrame = fread_trnheader(fp,&head,&bOK);
-                if (bOK && frame == 0)
+                bOK = fread_htrn(fp,&head,newbox,newx,newv,NULL);
+            }
+            bFrame = bFrame && bOK;
+            bUse = FALSE;
+            if (bFrame &&
+                (head.x_size) && (head.v_size || !bVel))
+            {
+                bUse = TRUE;
+                if (bScanEner)
                 {
-                    if (mtop.natoms != head.natoms) 
-                        gmx_fatal(FARGS,"Number of atoms in Topology (%d) "
-                                  "is not the same as in Trajectory (%d)\n",
-                                  mtop.natoms,head.natoms);
-                    snew(newx,head.natoms);
-                    snew(newv,head.natoms);
+                    /* Read until the energy time is >= the trajectory time */
+                    while (fr_ener->t < head.t && do_enx(fp_ener,fr_ener));
+                    bUse = (fr_ener->t == head.t);
                 }
-                bFrame = bFrame && bOK;
-                if (bFrame)
+                if (bUse)
                 {
-                    bOK = fread_htrn(fp,&head,newbox,newx,newv,NULL);
-                }
-                bFrame = bFrame && bOK;
-                bUse = FALSE;
-                if (bFrame &&
-                    (head.x_size) && (head.v_size || !bVel))
-                {
-                    bUse = TRUE;
-                    if (bScanEner)
-                    {
-                        /* Read until the energy time is >= the trajectory time */
-                        while (fr_ener->t < head.t && do_enx(fp_ener,fr_ener));
-                        bUse = (fr_ener->t == head.t);
-                    }
-                    if (bUse)
-                    {
-                        tmpx    = newx;
-                        newx    = state.x;
-                        state.x = tmpx;
-                        tmpv    = newv;
-                        newv    = state.v;
-                        state.v = tmpv;
-                        run_t        = head.t;
-                        run_step     = head.step;
-                        state.lambda = head.lambda;
-                        copy_mat(newbox,state.box);
-                    }
-                }
-                if (bFrame || !bOK)
-                {
-                    sprintf(buf,"\r%s %s frame %s%s: step %s%s time %s",
-                            "%s","%s","%6",gmx_large_int_fmt,"%6",gmx_large_int_fmt," %8.3f");
-                    fprintf(stderr,buf,
-                            bUse ? "Read   " : "Skipped",ftp2ext(fn2ftp(frame_fn)),
-                            frame,head.step,head.t);
-                    frame++;
-                    if (bTime && (head.t >= start_t))
-                        bFrame = FALSE;
+                    tmpx    = newx;
+                    newx    = state.x;
+                    state.x = tmpx;
+                    tmpv    = newv;
+                    newv    = state.v;
+                    state.v = tmpv;
+                    run_t        = head.t;
+                    run_step     = head.step;
+                    state.fep_state = head.fep_state;
+                    state.lambda[efptFEP] = head.lambda;
+                    copy_mat(newbox,state.box);
                 }
             }
-            if (bScanEner)
+            if (bFrame || !bOK)
             {
-                close_enx(fp_ener);
-                free_enxframe(fr_ener);
-                free_enxnms(nre,enm);
-            }
-            close_trn(fp);
-            fprintf(stderr,"\n");
-
-            if (!bOK)
-            {
-                fprintf(stderr,"%s frame %s (step %s, time %g) is incomplete\n",
-                        ftp2ext(fn2ftp(frame_fn)),gmx_step_str(frame-1,buf2),
-                        gmx_step_str(head.step,buf),head.t);
-            }
-            fprintf(stderr,"\nUsing frame of step %s time %g\n",
-                    gmx_step_str(run_step,buf),run_t);
-
-            if (bNeedEner)
-            {
-                if (bReadEner)
-                {
-                    get_enx_state(ftp2fn(efEDR,NFILE,fnm),run_t,&mtop.groups,ir,&state);
-                }
-                else
-                {
-                    fprintf(stderr,"\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
-                            "         the continuation will only be exact when an energy file is supplied\n\n",
-                            ETCOUPLTYPE(etcNOSEHOOVER),
-                            EPCOUPLTYPE(epcPARRINELLORAHMAN));
-                }
+                sprintf(buf,"\r%s %s frame %s%s: step %s%s time %s",
+                        "%s","%s","%6",gmx_large_int_fmt,"%6",gmx_large_int_fmt," %8.3f");
+                fprintf(stderr,buf,
+                        bUse ? "Read   " : "Skipped",ftp2ext(fn2ftp(frame_fn)),
+                        frame,head.step,head.t);
+                frame++;
+                if (bTime && (head.t >= start_t))
+                    bFrame = FALSE;
             }
         }
+        if (bScanEner)
+        {
+            close_enx(fp_ener);
+            free_enxframe(fr_ener);
+            free_enxnms(nre,enm);
+        }
+        close_trn(fp);
+        fprintf(stderr,"\n");
+
+        if (!bOK)
+        {
+            fprintf(stderr,"%s frame %s (step %s, time %g) is incomplete\n",
+                    ftp2ext(fn2ftp(frame_fn)),gmx_step_str(frame-1,buf2),
+                    gmx_step_str(head.step,buf),head.t);
+        }
+        fprintf(stderr,"\nUsing frame of step %s time %g\n",
+                gmx_step_str(run_step,buf),run_t);
+
+        if (bNeedEner)
+        {
+            if (bReadEner)
+            {
+                get_enx_state(ftp2fn(efEDR,NFILE,fnm),run_t,&mtop.groups,ir,&state);
+            }
+            else
+            {
+                fprintf(stderr,"\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
+                        "         the continuation will only be exact when an energy file is supplied\n\n",
+                        ETCOUPLTYPE(etcNOSEHOOVER),
+                        EPCOUPLTYPE(epcPARRINELLORAHMAN));
+            }
+        }
+        if (bWLdelta)
+        {
+            ir->expandedvals->init_wl_delta = init_wl_delta;
+        }
+        if (bFepState)
+        {
+            ir->fepvals->init_fep_state = init_fep_state;
+        }
+        if (bFepWeights)
+        {
+            /* now read in the weights - error handling? */
+            /* MRS: Currently works, though gets error: passing argument 1 of ‘parse_n_double’ discards qualifiers from pointer target type */
+            tpb_parse_n_real(init_fep_weights,&nweights,&(ir->expandedvals->init_lambda_weights));
+
+            if (nweights == 0)
+            {
+                ir->expandedvals->bInit_weights = FALSE;
+                snew(ir->expandedvals->init_lambda_weights,ir->fepvals->n_lambda); /* initialize to zero */
+            }
+            else if (nweights != ir->fepvals->n_lambda)
+            {
+                gmx_fatal(FARGS,"Number of weights (%d) is not equal to number of lambda values (%d)",
+                          nweights,ir->fepvals->n_lambda);
+            }
+            else
+            {
+                ir->expandedvals->bInit_weights = TRUE;
+            }
+        }
+    }
   }
 
   if (bNsteps) {
     fprintf(stderr,"Setting nsteps to %s\n",gmx_step_str(nsteps_req,buf));
     ir->nsteps = nsteps_req;
   } else {
-    /* Determine total number of steps remaining */
-    if (bExtend) {
-      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_large_int_t)(extend_t/ir->delta_t + 0.5);
-      printf("Extending remaining runtime of by %g ps (now %s steps)\n",
-	     extend_t,gmx_step_str(ir->nsteps,buf));
-    }
-    else if (bUntil) {
-      printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
-	     gmx_step_str(ir->nsteps,buf),
-	     gmx_step_str(run_step,buf2),
-	     run_t,until_t);
-      ir->nsteps = (gmx_large_int_t)((until_t - run_t)/ir->delta_t + 0.5);
-      printf("Extending remaining runtime until %g ps (now %s steps)\n",
-	     until_t,gmx_step_str(ir->nsteps,buf));
-    }
-    else {
-      ir->nsteps -= run_step - ir->init_step; 
-      /* Print message */
-      printf("%s steps (%g ps) remaining from first run.\n",
-	     gmx_step_str(ir->nsteps,buf),ir->nsteps*ir->delta_t);
-	  
-    }
+      /* Determine total number of steps remaining */
+      if (bExtend)
+      {
+          ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (gmx_large_int_t)(extend_t/ir->delta_t + 0.5);
+          printf("Extending remaining runtime of by %g ps (now %s steps)\n",
+                 extend_t,gmx_step_str(ir->nsteps,buf));
+      }
+      else if (bUntil)
+      {
+          printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
+                 gmx_step_str(ir->nsteps,buf),
+                 gmx_step_str(run_step,buf2),
+                 run_t,until_t);
+          ir->nsteps = (gmx_large_int_t)((until_t - run_t)/ir->delta_t + 0.5);
+          printf("Extending remaining runtime until %g ps (now %s steps)\n",
+                 until_t,gmx_step_str(ir->nsteps,buf));
+      }
+      else
+      {
+          ir->nsteps -= run_step - ir->init_step;
+          /* Print message */
+          printf("%s steps (%g ps) remaining from first run.\n",
+                 gmx_step_str(ir->nsteps,buf),ir->nsteps*ir->delta_t);
+      }
   }
 
-  if (bNsteps || bZeroQ || (ir->nsteps > 0)) {
-    ir->init_step = run_step;
-    
-    if (ftp2bSet(efNDX,NFILE,fnm) || 
-	!(bNsteps || bExtend || bUntil || bTraj)) {
-      atoms = gmx_mtop_global_atoms(&mtop);
-      get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
-		&gnx,&index,&grpname);
-      if (!bZeroQ) {
-	bSel = (gnx != state.natoms);
-	for (i=0; ((i<gnx) && (!bSel)); i++)
-	  bSel = (i!=index[i]);
-      }
-      else
-	bSel = FALSE;
-      if (bSel) {
-	fprintf(stderr,"Will write subset %s of original tpx containing %d "
-		"atoms\n",grpname,gnx);
-	reduce_topology_x(gnx,index,&mtop,state.x,state.v);
-	state.natoms = gnx;
-      } 
-      else if (bZeroQ) {
-	zeroq(gnx,index,&mtop);
-	fprintf(stderr,"Zero-ing charges for group %s\n",grpname);
-      }
-      else
-	fprintf(stderr,"Will write full tpx file (no selection)\n");
-    }    
+  if (bNsteps || bZeroQ || (ir->nsteps > 0))
+  {
+      ir->init_step = run_step;
+
+    if (ftp2bSet(efNDX,NFILE,fnm) ||
+        !(bNsteps || bExtend || bUntil || bTraj))
+    {
+        atoms = gmx_mtop_global_atoms(&mtop);
+        get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+                  &gnx,&index,&grpname);
+        if (!bZeroQ)
+        {
+            bSel = (gnx != state.natoms);
+            for (i=0; ((i<gnx) && (!bSel)); i++)
+            {
+                bSel = (i!=index[i]);
+            }
+        }
+        else
+        {
+            bSel = FALSE;
+        }
+        if (bSel)
+        {
+            fprintf(stderr,"Will write subset %s of original tpx containing %d "
+                    "atoms\n",grpname,gnx);
+            reduce_topology_x(gnx,index,&mtop,state.x,state.v);
+            state.natoms = gnx;
+        }
+        else if (bZeroQ)
+        {
+            zeroq(gnx,index,&mtop);
+            fprintf(stderr,"Zero-ing charges for group %s\n",grpname);
+        }
+        else
+        {
+            fprintf(stderr,"Will write full tpx file (no selection)\n");
+        }
+    }
 
     state_t = ir->init_t + ir->init_step*ir->delta_t;
     sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n","%10",gmx_large_int_fmt,"%10",gmx_large_int_fmt);
     fprintf(stderr,buf,ir->init_step,ir->nsteps);
     fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
-	    state_t,ir->nsteps*ir->delta_t);
+            state_t,ir->nsteps*ir->delta_t);
     write_tpx_state(opt2fn("-o",NFILE,fnm),ir,&state,&mtop);
   }
   else
-    printf("You've simulated long enough. Not writing tpr file\n");
-	      
+  {
+      printf("You've simulated long enough. Not writing tpr file\n");
+  }
   thanx(stderr);
-  
+
   return 0;
 }

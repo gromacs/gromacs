@@ -37,6 +37,9 @@
 #include "vsite.h"
 #include "gmx_ga2la.h"
 
+/* for dd_init_local_state */
+#define NITEM_DD_INIT_LOCAL_STATE 5
+
 typedef struct {
     int  *index;  /* Index for each atom into il                  */ 
     int  *il;     /* ftype|type|a0|...|an|ftype|...               */
@@ -1573,7 +1576,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int i,j, buf[4];
+    int buf[NITEM_DD_INIT_LOCAL_STATE];
     
     if (DDMASTER(dd))
     {
@@ -1581,10 +1584,11 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[1] = state_global->ngtc;
         buf[2] = state_global->nnhpres;
         buf[3] = state_global->nhchainlength;
+        buf[4] = state_global->dfhist.nlambda;
     }
-    dd_bcast(dd,4*sizeof(int),buf);
-    
-    init_state(state_local,0,buf[1],buf[2],buf[3]);
+    dd_bcast(dd,NITEM_DD_INIT_LOCAL_STATE*sizeof(int),buf);
+
+    init_state(state_local,0,buf[1],buf[2],buf[3],buf[4]);
     state_local->flags = buf[0];
     
     /* With Langevin Dynamics we need to make proper storage space

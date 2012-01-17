@@ -88,7 +88,16 @@ difference is calculated dF = -kT ln &lt; e ^ -(EB-EA)/kT &gt;A ,
 where EA and EB are the energies from the first and second energy
 files, and the average is over the ensemble A. <b>NOTE</b> that
 the energies must both be calculated from the same trajectory.
+Generally, this estimate is not particularly accurate unless the
+state is very similar to the ideal gas state (i.e. the potential energies
+are very low), and more accurate free energy calculations can be performed
+using the free energy features.
 <P>
+<p><tt>-odh</tt>Regenerates the dhdl.xvg from the .edr file if the separate-dhdl-file
+is chosen as no in the .mdp file the .edr was generated from. This can allow more
+flexiblity in scripting as the additional dhdl.xvg file does not need to be handled
+until the analysis phase.  It can also save some space by avoiding the presence of a large ASCII file.
+<p>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
@@ -104,6 +113,7 @@ the energies must both be calculated from the same trajectory.
 <TR><TD ALIGN=RIGHT> <b><tt>-odr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> oridevr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-odt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> oridevt.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-oten</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  oriten.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-odh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-corr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> enecorr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-vis</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   visco.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ravg</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">runavgdf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>

@@ -61,9 +61,13 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
     case F_ANGLES:
     case F_G96ANGLES:
     case F_IDIHS:
-    case F_PIDIHS:
         bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                  ip->harmonic.krA != ip->harmonic.krB);
+        break;
+    case F_MORSE:
+        bPert = (ip->morse.b0A  != ip->morse.b0B ||
+                 ip->morse.cbA  != ip->morse.cbB ||
+                 ip->morse.betaA  != ip->morse.betaB);
         break;
     case F_RESTRBONDS:
         bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
@@ -72,6 +76,7 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
                  ip->restraint.kA    != ip->restraint.kB);
         break;
     case F_PDIHS:
+    case F_PIDIHS:
     case F_ANGRES:
     case F_ANGRESZ:
         bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
@@ -104,7 +109,12 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
             }
         }
         break;
-    case F_LJ14:
+    case F_DIHRES:
+        bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
+                 (ip->dihres.dphiA != ip->dihres.dphiB) ||
+                 (ip->dihres.kfacA != ip->dihres.kfacB));
+        break;
+   case F_LJ14:
         bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
                  ip->lj14.c12A != ip->lj14.c12B);
         break;

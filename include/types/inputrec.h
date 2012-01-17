@@ -122,6 +122,67 @@ typedef struct {
 } t_pullgrp; 
 
 typedef struct {
+  int  eSimTempScale;   /* simulated temperature scaling; linear or exponential */
+  real simtemp_low;     /* the low temperature for simulated tempering  */
+  real simtemp_high;    /* the high temperature for simulated tempering */
+  real *temperatures;   /* the range of temperatures used for simulated tempering */
+} t_simtemp;
+
+typedef struct {
+  int  nstdhdl;          /* The frequency for calculating dhdl           */
+  double init_lambda;    /* fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code)   */
+  int init_fep_state;    /* the initial number of the state                   */
+  double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
+  gmx_bool bPrintEnergy; /* Whether to print the energy in the dhdl           */
+  int  n_lambda;         /* The number of foreign lambda points               */
+  double **all_lambda;   /* The array of all lambda values                    */
+  real sc_alpha;         /* free energy soft-core parameter                   */
+  int  sc_power;         /* lambda power for soft-core interactions           */
+  real sc_r_power;          /* r power for soft-core interactions                */
+  real sc_sigma;         /* free energy soft-core sigma when c6 or c12=0      */
+  real sc_sigma_min;     /* free energy soft-core sigma for ?????             */
+  gmx_bool bScCoul;      /* use softcore for the coulomb portion as well (default FALSE) */
+  gmx_bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with
+                                     this term; if it is not specified as separate,
+                                     it is lumped with the FEP term */
+  int separate_dhdl_file;    /* whether to write a separate dhdl.xvg file
+                                note: NOT a gmx_bool, but an enum */
+  int  dhdl_derivatives;     /* whether to calculate+write dhdl derivatives
+                                note: NOT a gmx_bool, but an enum */
+  int dh_hist_size;         /* The maximum table size for the dH histogram */
+  double dh_hist_spacing;   /* The spacing for the dH histogram */
+} t_lambda;
+
+typedef struct {
+  int nstexpanded;           /* The frequency of expanded ensemble state changes */
+  int elamstats;             /* which type of move updating do we use for lambda monte carlo (or no for none) */
+  int elmcmove;              /* what move set will be we using for state space moves */
+  int elmceq;                /* the method we use to decide of we have equilibrated the weights */
+  int equil_n_at_lam;        /* the minumum number of samples at each lambda for deciding whether we have reached a minimum */
+  real equil_wl_delta;       /* WL delta at which we stop equilibrating weights */
+  real equil_ratio;          /* use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating */
+  int equil_steps;           /* after equil_steps steps we stop equilibrating the weights */
+  int equil_samples;         /* after equil_samples total samples (steps/nstfep), we stop equilibrating the weights */
+  int lmc_seed;               /* random number seed for lambda mc switches */
+  gmx_bool minvar;               /* whether to use minumum variance weighting */
+  int minvarmin;             /* the number of samples needed before kicking into minvar routine */
+  real minvar_const;         /* the offset for the variance in MinVar */
+  int c_range;               /* range of cvalues used for BAR */
+  gmx_bool bSymmetrizedTMatrix;  /* whether to print symmetrized matrices */
+  int  nstTij;                /* How frequently to print the transition matrices */
+  int  lmc_repeats;          /* number of repetitions in the MC lambda jumps */  /*MRS -- VERIFY THIS */
+  int  lmc_forced_nstart;    /* minimum number of samples for each state before free sampling */ /* MRS -- VERIFY THIS! */
+  int  gibbsdeltalam;        /* distance in lambda space for the gibbs interval */
+  real  wl_scale;            /* scaling factor for wang-landau */
+  real  wl_ratio;            /* ratio between largest and smallest number for freezing the weights */
+  real  init_wl_delta;       /* starting delta for wang-landau */
+  gmx_bool bWLoneovert;      /* use one over t convergece for wang-landau when the delta get sufficiently small */
+  gmx_bool bInit_weights;    /* did we initialize the weights? */
+  real mc_temp;              /* To override the main temperature, or define it if it's not defined */
+  real *init_lambda_weights; /* user-specified initial weights to start with  */
+} t_expanded;
+
+typedef struct {
   int        ngrp;        /* number of groups */
   int        eGeom;       /* pull geometry */
   ivec       dim;         /* used to select components for constraint */
@@ -238,6 +299,7 @@ typedef struct {
   gmx_bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
   int  nsttcouple;      /* interval in steps for temperature coupling   */
+  gmx_bool bPrintNHChains; /* whether to print nose-hoover chains        */
   int  epc;		/* pressure coupling                            */
   int  epct;		/* pressure coupling type			*/
   int  nstpcouple;      /* interval in steps for pressure coupling      */
@@ -247,7 +309,7 @@ typedef struct {
   int  refcoord_scaling;/* How to scale absolute reference coordinates  */
   rvec posres_com;      /* The COM of the posres atoms                  */
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
-  int  andersen_seed;   /* Random seed for Andersen thermostat.         */
+  int  andersen_seed;   /* Random seed for Andersen thermostat (obsolete) */
   real rlist;		/* short range pairlist cut-off (nm)		*/
   real rlistlong;	/* long range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */
@@ -275,22 +337,12 @@ typedef struct {
   real tabext;          /* Extension of the table beyond the cut-off,   *
 		 	 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
-  int  efep;   		/* free energy interpolation no/yes		*/
-  double init_lambda;	/* initial value for perturbation variable	*/
-  double delta_lambda;	/* change of lambda per time step (1/dt)	*/
-  int  n_flambda;       /* The number of foreign lambda points          */
-  double *flambda;      /* The foreign lambda values                    */
-  real sc_alpha;        /* free energy soft-core parameter              */
-  int  sc_power;        /* lambda power for soft-core interactions      */
-  real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
-  real sc_sigma_min;    /* minimum FE sc sigma (default: =sg_sigma)     */
-  int  nstdhdl;         /* The frequency for writing to dhdl.xvg        */
-  int  separate_dhdl_file; /* whether to write a separate dhdl.xvg file 
-                              note: NOT a gmx_bool, but an enum */
-  int  dhdl_derivatives;/* whether to calculate+write dhdl derivatives 
-                              note: NOT a gmx_bool, but an enum */
-  int  dh_hist_size;    /* The maximum size for the dH histogram        */
-  double dh_hist_spacing; /* The spacing for the dH histogram           */
+  int  efep;   		/* free energy calculations                     */ 
+  t_lambda *fepvals;    /* Data for the FEP state                       */
+  gmx_bool bSimTemp;    /* Whether to do simulated tempering            */
+  t_simtemp *simtempvals;/* Variables for simulated tempering            */
+  gmx_bool bExpanded;   /* Whether expanded ensembles are used          */
+  t_expanded *expandedvals; /* Expanded ensemble parameters              */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
@@ -300,7 +352,7 @@ typedef struct {
   real orires_fc;	    /* force constant for orientational restraints  */
   real orires_tau;	    /* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
-  real dihre_fc;        /* force constant for dihedral restraints	*/
+  real dihre_fc;        /* force constant for dihedral restraints (obsolete)	*/
   real em_stepsize;	    /* The stepsize for updating			*/
   real em_tol;		    /* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */
@@ -363,9 +415,11 @@ typedef struct {
 
 #define IR_EXCL_FORCES(ir) (EEL_FULL((ir).coulombtype) || (EEL_RF((ir).coulombtype) && (ir).coulombtype != eelRF_NEC) || (ir).implicit_solvent != eisNO)
 /* use pointer definitions of ir here, since that's what's usually used in the code */
-#define IR_NVT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((ir)->etc == etcNOSEHOOVER))
+#define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && (((ir)->epc == epcMTTK) && ((ir)->etc == etcNOSEHOOVER)))
 
-#define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((ir)->epc == epcMTTK))
+#define IR_NVT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((!((ir)->epc == epcMTTK)) && ((ir)->etc == etcNOSEHOOVER)))
+
+#define IR_NPH_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && (((ir)->epc == epcMTTK) && (!(((ir)->etc == etcNOSEHOOVER)))))
 
 #ifdef __cplusplus
 }

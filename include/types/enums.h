@@ -44,8 +44,10 @@ enum {
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, etcVRESCALE, etcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
 }; /* yes is an alias for berendsen */
+
+#define ETC_ANDERSEN(e) (((e) == etcANDERSENMASSIVE) || ((e) == etcANDERSEN))
 
 enum {
   epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
@@ -150,23 +152,76 @@ enum {
   eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR 
 };
 
+/* simulated tempering methods */
+enum {
+  esimtempGEOMETRIC, esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
+};
 /* FEP selection */
 enum {
-  efepNO, efepYES, efepNR
+  efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR
+};
+  /* if efepNO, there are no evaluations at other states.
+     if efepYES, treated equivalently to efepSTATIC.
+     if efepSTATIC, then lambdas do not change during the simulation.
+     if efepSLOWGROWTH, then the states change monotonically throughout the simulation.
+     if efepEXPANDED, then expanded ensemble simulations are occuring.
+  */
+
+/* FEP coupling types */
+enum {
+  efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptTEMPERATURE,efptNR
+};
+
+/* How the lambda weights are calculated:
+   elamstatsMETROPOLIS = using the metropolis criteria
+   elamstatsBARKER = using the Barker critera for transition weights - also called unoptimized Bennett
+   elamstatsMINVAR = using Barker + minimum variance for weights
+   elamstatsWL = Wang-Landu (using visitation counts)
+   elamstatsWWL = Weighted Wang-Landau (using optimized gibbs weighted visitation counts)
+*/
+enum {
+  elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsWWL, elamstatsNR
+};
+
+#define ELAMSTATS_EXPANDED(e) ((e) > elamstatsNO)
+
+#define EWL(e) ((e) == elamstatsWL || (e) == elamstatsWWL)
+
+/* How moves in lambda are calculated:
+   elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down
+   elmovemcBARKER - using the Barker criteria, and 50% up and down
+   elmovemcGIBBS - computing the transition using the marginalized probabilities of the lambdas
+   elmovemcMETGIBBS - computing the transition using the metropolized version of Gibbs (Monte Carlo Strategies in Scientific computing, Liu, p. 134)
+*/
+enum {
+  elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
+};
+
+/* how we decide whether weights have reached equilibrium
+   elmceqNO - never stop, weights keep going
+   elmceqYES - fix the weights from the beginning; no movement
+   elmceqWLDELTA - stop when the WL-delta falls below a certain level
+   elmceqNUMATLAM - stop when we have a certain number of samples at every step
+   elmceqSTEPS - stop when we've run a certain total number of steps
+   elmceqSAMPLES - stop when we've run a certain total number of samples
+   elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large
+*/
+enum {
+  elmceqNO,elmceqYES,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
 };
 
 /* separate_dhdl_file selection */
 enum
 {
-    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-    sepdhdlfileYES, sepdhdlfileNO, sepdhdlfileNR
+  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+  esepdhdlfileYES, esepdhdlfileNO, esepdhdlfileNR
 };
 
 /* dhdl_derivatives selection */
 enum
 {
-    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-    dhdlderivativesYES, dhdlderivativesNO, dhdlderivativesNR
+  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+  edhdlderivativesYES, edhdlderivativesNO, edhdlderivativesNR
 };
 
 /* Solvent model */
@@ -196,7 +251,7 @@ enum {
 
 /* Implicit solvent algorithms */
 enum { 
-	eisNO, eisGBSA, eisNR 
+  eisNO, eisGBSA, eisNR
 };
 
 /* Algorithms for calculating GB radii */
