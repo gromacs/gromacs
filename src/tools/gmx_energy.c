@@ -58,7 +58,7 @@
 #include "viewit.h"
 #include "mtop_util.h"
 #include "gmx_ana.h"
-
+#include "mdebin.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -293,8 +293,19 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
+static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
+{
+    gmx_mtop_t mtop;
+    int        natoms;
+    t_iatom    *iatom;
+    matrix     box;
+    
+    /* all we need is the ir to be able to write the label */
+    read_tpx(topnm,ir,box,&natoms,NULL,NULL,NULL,&mtop);
+}
+
 static void get_orires_parms(const char *topnm,
-			     int *nor,int *nex,int **label,real **obs)
+                               int *nor,int *nex,int **label,real **obs)
 {
   gmx_mtop_t mtop;
   gmx_localtop_t *top;
@@ -1363,9 +1374,8 @@ static void fec(const char *ene2fn, const char *runavgfn,
 }
 
 
-static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
-                    int *blocks, int *hists, int *samples, int *nlambdas,
-                    const output_env_t oenv)
+static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *filename, gmx_bool bDp, 
+                    int *blocks, int *hists, int *samples, int *nlambdas, const output_env_t oenv)
 {
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
@@ -1422,36 +1432,23 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
     {
         if (nblock_dh>0)
         {
-            sprintf(title,"%s, %s",dhdl,deltag);
-            sprintf(label_x,"%s (%s)","Time",unit_time);
-            sprintf(label_y,"(%s)",unit_energy);
+            /* we have standard, non-histogram data -- call open_dhdl to open the file */
+            *fp_dhdl=open_dhdl(filename,ir,oenv);
         }
         else
         {
             sprintf(title,"N(%s)",deltag);
             sprintf(label_x,"%s (%s)",deltag,unit_energy);
             sprintf(label_y,"Samples");
-        }
-        *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY, 
-                               oenv);
-        if (! changing_lambda)
-        {
+            *fp_dhdl=xvgropen_type(filename, title, label_x, label_y, exvggtXNY,oenv);
             sprintf(buf,"T = %g (K), %s = %g", temp, lambda, start_lambda);
+            xvgr_subtitle(*fp_dhdl,buf,oenv);
         }
-        else
-        {
-            sprintf(buf,"T = %g (K)", temp);
-        }
-        xvgr_subtitle(*fp_dhdl,buf,oenv);
-        first=TRUE;
     }
 
-
-
-    (*hists)+=nblock_hist;
+    (*hists)+=nblock_hist;  
     (*blocks)+=nblock_dh;
     (*nlambdas) = nblock_hist+nblock_dh;
-
 
     /* write the data */
     if (nblock_hist > 0)
@@ -1520,7 +1517,6 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                 }
             }
         }
-
         (*samples) += (int)(sum/nblock_hist);
     }
     else
@@ -1530,50 +1526,11 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
         char **setnames=NULL;
         int nnames=nblock_dh;
 
-        if (changing_lambda)
-        {
-            nnames++;
-        }
-        if (first)
-        {
-            snew(setnames, nnames);
-        }
-        j=0;
-
-        if ( changing_lambda && first)
-        {
-            /* lambda is a plotted value */
-            setnames[j]=gmx_strdup(lambda);
-            j++;
-        }
-
-
         for(i=0;i<fr->nblock;i++)
         {
             t_enxblock *blk=&(fr->block[i]);
             if (blk->id == enxDH)
             {
-                if (first)
-                {
-                    /* do the legends */
-                    int derivative;
-                    double foreign_lambda;
-
-                    derivative=blk->sub[0].ival[0];
-                    foreign_lambda=blk->sub[1].dval[0];
-
-                    if (derivative)
-                    {
-                        sprintf(buf, "%s %s %g",dhdl,lambda,start_lambda);
-                    }
-                    else
-                    {
-                        sprintf(buf, "%s %s %g",deltag,lambda, foreign_lambda);
-                    }
-                    setnames[j] = gmx_strdup(buf);
-                    j++;
-                }
-
                 if (len == 0)
                 {   
                     len=blk->sub[2].nr;
@@ -1588,29 +1545,18 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
             }
         }
 
+        /* we already printed the legend, just start in on printing the data */
 
-        if (first)
-        {
-            xvgr_legend(*fp_dhdl, nblock_dh, (const char**)setnames, oenv);
-            setnr += nblock_dh;
-            for(i=0;i<nblock_dh;i++)
-            {
-                sfree(setnames[i]);
-            }
-            sfree(setnames);
-        }
-
+        /* not used elsewhere in code */
+        /* 
         (*samples) += len;
+        */
         for(i=0;i<len;i++)
         {
             double time=start_time + delta_time*i;
 
-            fprintf(*fp_dhdl,"%.4f", time);
-            if (fabs(delta_lambda) > 1e-9)
-            {
-                double lambda_now=i*delta_lambda + start_lambda;
-                fprintf(*fp_dhdl,"  %.4f", lambda_now);
-            }
+            fprintf(*fp_dhdl,"%.4f ", time);
+
             for(j=0;j<fr->nblock;j++)
             {
                 t_enxblock *blk=&(fr->block[j]);
@@ -1625,7 +1571,20 @@ static void do_dhdl(t_enxframe *fr, FILE **fp_dhdl, const char *filename,
                     {
                         value=blk->sub[2].dval[i];
                     }
-                    fprintf(*fp_dhdl,"  %g", value);
+                    /* we need to decide which data type it is based on the count*/
+                    
+                    if (j==1 && ir->bExpanded) 
+                    {
+                        fprintf(*fp_dhdl,"%4d", (int)value);   /* if expanded ensembles and zero, this is a state value, it's an integer. We need a cleaner conditional than if j==1! */
+                    } else {
+                        if (bDp) {
+                            fprintf(*fp_dhdl," %#.12g", value);   /* print normal precision */
+                        } 
+                        else
+                        {
+                            fprintf(*fp_dhdl," %#.8g", value);   /* print normal precision */
+                        }
+                    }
                 }
             }
             fprintf(*fp_dhdl, "\n");
@@ -1860,7 +1819,7 @@ int gmx_energy(int argc,char *argv[])
   
   bVisco = opt2bSet("-vis",NFILE,fnm);
   
-  if (!bDisRe && !bDHDL) 
+  if ((!bDisRe) && (!bDHDL))
   {
       if (bVisco) {
           nset=asize(setnm);
@@ -2035,288 +1994,278 @@ int gmx_energy(int argc,char *argv[])
               fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
                       ir.dr_tau);
       }
+  } else if (bDHDL) {
+      get_dhdl_parms(ftp2fn(efTPX,NFILE,fnm),&ir);
   }
-
-
-  /* Initiate energies and set them to zero */
-  edat.nsteps  = 0;
-  edat.npoints = 0;
-  edat.nframes = 0;
-  edat.step    = NULL;
-  edat.steps   = NULL;
-  edat.points  = NULL;
-  snew(edat.s,nset);
   
-  /* Initiate counters */
-  teller       = 0;
-  teller_disre = 0;
-  bFoundStart  = FALSE;
-  start_step   = 0;
-  start_t      = 0;
-  do {
-    /* This loop searches for the first frame (when -b option is given), 
-     * or when this has been found it reads just one energy frame
-     */
-    do {
-      bCont = do_enx(fp,&(frame[NEXT]));
-      
-      if (bCont) {
-	timecheck = check_times(frame[NEXT].t);
-      }      
-    } while (bCont && (timecheck < 0));
-    
-    if ((timecheck == 0) && bCont) {
-      /* We read a valid frame, so we can use it */
-      fr = &(frame[NEXT]);
-      
-      if (fr->nre > 0) {
-	/* The frame contains energies, so update cur */
-	cur  = NEXT;
+   /* Initiate energies and set them to zero */
+   edat.nsteps  = 0;
+   edat.npoints = 0;
+   edat.nframes = 0;
+   edat.step    = NULL;
+   edat.steps   = NULL;
+   edat.points  = NULL;
+   snew(edat.s,nset);
 
-	        if (edat.nframes % 1000 == 0)
-            {
-                srenew(edat.step,edat.nframes+1000);
-                memset(&(edat.step[edat.nframes]),0,1000*sizeof(edat.step[0]));
-                srenew(edat.steps,edat.nframes+1000);
-                memset(&(edat.steps[edat.nframes]),0,1000*sizeof(edat.steps[0]));
-                srenew(edat.points,edat.nframes+1000);
-                memset(&(edat.points[edat.nframes]),0,1000*sizeof(edat.points[0]));
-                for(i=0; i<nset; i++)
-                {
-                    srenew(edat.s[i].ener,edat.nframes+1000);
-                    memset(&(edat.s[i].ener[edat.nframes]),0,
-                           1000*sizeof(edat.s[i].ener[0]));
+   /* Initiate counters */
+   teller       = 0;
+   teller_disre = 0;
+   bFoundStart  = FALSE;
+   start_step   = 0;
+   start_t      = 0;
+   do {
+     /* This loop searches for the first frame (when -b option is given), 
+      * or when this has been found it reads just one energy frame
+      */
+     do {
+         bCont = do_enx(fp,&(frame[NEXT]));
+         if (bCont) {
+             timecheck = check_times(frame[NEXT].t);
+         }      
+     } while (bCont && (timecheck < 0));
 
-                    srenew(edat.s[i].es  ,edat.nframes+1000);
-                    memset(&(edat.s[i].es[edat.nframes]),0,
-                           1000*sizeof(edat.s[i].es[0]));
-                }
-            }
+     if ((timecheck == 0) && bCont) {
+       /* We read a valid frame, so we can use it */
+       fr = &(frame[NEXT]);
 
-	        nfr = edat.nframes;
-            edat.step[nfr] = fr->step;
+       if (fr->nre > 0) {
+         /* The frame contains energies, so update cur */
+         cur  = NEXT;
 
-            if (!bFoundStart)
-            {
-                bFoundStart = TRUE;
-                /* Initiate the previous step data */
-                start_step = fr->step;
-                start_t    = fr->t;
-                /* Initiate the energy sums */
-                edat.steps[nfr]  = 1;
-                edat.points[nfr] = 1;
-                for(i=0; i<nset; i++)
-                {
-                    sss = set[i];
-                    edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                    edat.s[i].es[nfr].sum2 = 0;
-                }
-                edat.nsteps  = 1;
-                edat.npoints = 1;
-            }
-            else
-            {
-                edat.steps[nfr] = fr->nsteps;
-                {
-                    if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
-                    {
-                        if (fr->nsum <= 1)
-                        {
-                            edat.points[nfr] = 1;
-                            for(i=0; i<nset; i++)
-                            {
-                                sss = set[i];
-                                edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                                edat.s[i].es[nfr].sum2 = 0;
-                            }
-                            edat.npoints += 1;
-                        }
-                        else
-                        {
-                            edat.points[nfr] = fr->nsum;
-                            for(i=0; i<nset; i++)
-                            {
-                                sss = set[i];
-                                edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
-                                edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
-                            }
-                            edat.npoints += fr->nsum;
-                        }
-                    }
-                    else
-                    {
-                        /* The interval does not match fr->nsteps:
-                         * can not do exact averages.
-                         */
-                        edat.npoints = 0;
-                    }
-                    edat.nsteps = fr->step - start_step + 1;
-                }
-            }
-            for(i=0; i<nset; i++)
-            {
-                edat.s[i].ener[nfr] = fr->ener[set[i]].e;
-            }
-      }
-      /*
-       * Define distance restraint legends. Can only be done after
-       * the first frame has been read... (Then we know how many there are)
-       */
-      blk_disre=find_block_id_enxframe(fr, enxDISRE, NULL);
-      if (bDisRe && bDRAll && !leg && blk_disre) 
-      {
-          t_iatom   *fa;
-          t_iparams *ip;
+             if (edat.nframes % 1000 == 0)
+             {
+                 srenew(edat.step,edat.nframes+1000);
+                 memset(&(edat.step[edat.nframes]),0,1000*sizeof(edat.step[0]));
+                 srenew(edat.steps,edat.nframes+1000);
+                 memset(&(edat.steps[edat.nframes]),0,1000*sizeof(edat.steps[0]));
+                 srenew(edat.points,edat.nframes+1000);
+                 memset(&(edat.points[edat.nframes]),0,1000*sizeof(edat.points[0]));
 
-          fa = top->idef.il[F_DISRES].iatoms; 
-          ip = top->idef.iparams;
-          if (blk_disre->nsub != 2 || 
-              (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
-          {
-              gmx_incons("Number of disre sub-blocks not equal to 2");
-          }
+                 for(i=0; i<nset; i++)
+                 {
+                     srenew(edat.s[i].ener,edat.nframes+1000);
+                     memset(&(edat.s[i].ener[edat.nframes]),0,
+                            1000*sizeof(edat.s[i].ener[0]));
+                     srenew(edat.s[i].es  ,edat.nframes+1000);
+                     memset(&(edat.s[i].es[edat.nframes]),0,
+                            1000*sizeof(edat.s[i].es[0])); 
+                 }
+             }
 
-          ndisre=blk_disre->sub[0].nr ;
-          if (ndisre != top->idef.il[F_DISRES].nr/3)
-          {
-              gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-                        ndisre,top->idef.il[F_DISRES].nr/3);
-          }
-          snew(pairleg,ndisre);
-          for(i=0; i<ndisre; i++) 
-          {
-              snew(pairleg[i],30);
-              j=fa[3*i+1];
-              k=fa[3*i+2];
-              gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
-              gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
-              sprintf(pairleg[i],"%d %s %d %s (%d)",
-                      resnr_j,anm_j,resnr_k,anm_k,
-                      ip[fa[3*i]].disres.label);
-          }
-          set=select_it(ndisre,pairleg,&nset);
-          snew(leg,2*nset);
-          for(i=0; (i<nset); i++) 
-          {
-              snew(leg[2*i],32);
-              sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
-              snew(leg[2*i+1],32);
-              sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
-          }
-          xvgr_legend(fp_pairs,2*nset,(const char**)leg,oenv);    
-      }
+             nfr = edat.nframes;
+             edat.step[nfr] = fr->step;
 
-      /* 
-       * Store energies for analysis afterwards... 
-       */
-      if (!bDisRe && !bDHDL && (fr->nre > 0)) {
-	if (edat.nframes % 1000 == 0) {
-	  srenew(time,edat.nframes+1000);
-	}
-	time[edat.nframes] = fr->t;
-	edat.nframes++;
-      }
-      /* 
-       * Printing time, only when we do not want to skip frames
-       */
-      if (!skip || teller % skip == 0) {
-	if (bDisRe) {
-	  /*******************************************
-	   * D I S T A N C E   R E S T R A I N T S  
-	   *******************************************/
-	  if (ndisre > 0) 
-          {
-#ifndef GMX_DOUBLE
-            float *disre_rt =     blk_disre->sub[0].fval;
-            float *disre_rm3tav = blk_disre->sub[1].fval;
-#else
-            double *disre_rt =     blk_disre->sub[0].dval;
-            double *disre_rm3tav = blk_disre->sub[1].dval;
-#endif
+             if (!bFoundStart)
+             {
+                 bFoundStart = TRUE;
+                 /* Initiate the previous step data */
+                 start_step = fr->step;
+                 start_t    = fr->t;
+                 /* Initiate the energy sums */
+                 edat.steps[nfr]  = 1;
+                 edat.points[nfr] = 1;
+                 for(i=0; i<nset; i++)
+                 {
+                     sss = set[i];
+                     edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                     edat.s[i].es[nfr].sum2 = 0;
+                 }
+                 edat.nsteps  = 1;
+                 edat.npoints = 1;
+             }
+             else
+             {
+                 edat.steps[nfr] = fr->nsteps;
+                 {
+                     if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                     {
+                         if (fr->nsum <= 1)
+                         {
+                             edat.points[nfr] = 1;
+                             for(i=0; i<nset; i++)
+                             {
+                                 sss = set[i];
+                                 edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                                 edat.s[i].es[nfr].sum2 = 0;
+                             }
+                             edat.npoints += 1;
+                         }
+                         else
+                         {
+                             edat.points[nfr] = fr->nsum;
+                             for(i=0; i<nset; i++)
+                             {
+                                 sss = set[i];
+                                 edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
+                                 edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                             }
+                             edat.npoints += fr->nsum;
+                         }
+                     }
+                     else
+                     {
+                         /* The interval does not match fr->nsteps:
+                          * can not do exact averages.
+                          */
+                         edat.npoints = 0;
+                     }
+                     edat.nsteps = fr->step - start_step + 1;
+                 }
+             }
+             for(i=0; i<nset; i++)
+             {
+                 edat.s[i].ener[nfr] = fr->ener[set[i]].e;
+             }
+       }
+       /*
+        * Define distance restraint legends. Can only be done after
+        * the first frame has been read... (Then we know how many there are)
+        */
+       blk_disre=find_block_id_enxframe(fr, enxDISRE, NULL);
+       if (bDisRe && bDRAll && !leg && blk_disre) 
+       {
+           t_iatom   *fa;
+           t_iparams *ip;
 
-	    print_time(out,fr->t);
-	    if (violaver == NULL)
-	      snew(violaver,ndisre);
-	    
-	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(disre_rt, disre_rm3tav,
-			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
+           fa = top->idef.il[F_DISRES].iatoms; 
+           ip = top->idef.iparams;
+           if (blk_disre->nsub != 2 || 
+               (blk_disre->sub[0].nr != blk_disre->sub[1].nr) )
+           {
+               gmx_incons("Number of disre sub-blocks not equal to 2");
+           }
 
-	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
-	    if (bDRAll) {
-	      print_time(fp_pairs,fr->t);
-	      for(i=0; (i<nset); i++) {
-		sss=set[i];
-		fprintf(fp_pairs,"  %8.4f", mypow(disre_rm3tav[sss],minthird));
-		fprintf(fp_pairs,"  %8.4f", disre_rt[sss]);
-	      }
-	      fprintf(fp_pairs,"\n");
-	    }
-	    teller_disre++;
-	  }
-	}
-        else if (bDHDL)
-        {
-            do_dhdl(fr, &fp_dhdl, opt2fn("-odh",NFILE,fnm), 
-                    &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas,
-                    oenv);
-        }
-	/*******************************************
-	 * E N E R G I E S
-	 *******************************************/
-	else {
-	  if (fr->nre > 0) {
-            if (bPrAll)
-            {
-                /* We skip frames with single points (usually only the first frame),
-                 * since they would result in an average plot with outliers.
-                 */
-                if (fr->nsum > 1) {
-                    print_time(out,fr->t);
-                     print1(out,bDp,fr->ener[set[0]].e);
-                     print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
-                     print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
-                     fprintf(out,"\n");
-                }
-            }
-            else
-            {
-                print_time(out,fr->t);
-                if (bSum)
-                {
-                    sum = 0;
-                    for(i=0; i<nset; i++)
-                    {
-                        sum += fr->ener[set[i]].e;
-                    }
-                    print1(out,bDp,sum/nmol-ezero);
-                }
-                else
-                {
-                    for(i=0; (i<nset); i++)
-                    {
-                        if (bIsEner[i])
-                        {
-                            print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
-                        }
-                        else
-                        {
-                            print1(out,bDp,fr->ener[set[i]].e);
-                        }
-                    }
-                }
-                fprintf(out,"\n");
-            }
-	  }
-#if 0
-          /* we first count the blocks that have id 0: the orire blocks */
-          block_orire=0;
-          for(b=0;b<fr->nblock;b++)
-          {
-              if (fr->block[b].id == mde_block_type_orire)
-                  nblock_orire++;
-          }
-#endif
+           ndisre=blk_disre->sub[0].nr ;
+           if (ndisre != top->idef.il[F_DISRES].nr/3)
+           {
+               gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
+                         ndisre,top->idef.il[F_DISRES].nr/3);
+           }
+           snew(pairleg,ndisre);
+           for(i=0; i<ndisre; i++) 
+           {
+               snew(pairleg[i],30);
+               j=fa[3*i+1];
+               k=fa[3*i+2];
+               gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
+               gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
+               sprintf(pairleg[i],"%d %s %d %s (%d)",
+                       resnr_j,anm_j,resnr_k,anm_k,
+                       ip[fa[3*i]].disres.label);
+           }
+           set=select_it(ndisre,pairleg,&nset);
+           snew(leg,2*nset);
+           for(i=0; (i<nset); i++) 
+           {
+               snew(leg[2*i],32);
+               sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
+               snew(leg[2*i+1],32);
+               sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
+           }
+           xvgr_legend(fp_pairs,2*nset,(const char**)leg,oenv);    
+       }
+
+       /* 
+        * Store energies for analysis afterwards... 
+        */
+       if (!bDisRe && !bDHDL && (fr->nre > 0)) {
+           if (edat.nframes % 1000 == 0) {
+               srenew(time,edat.nframes+1000);
+           }
+           time[edat.nframes] = fr->t;
+           edat.nframes++;
+       }
+       /* 
+        * Printing time, only when we do not want to skip frames
+        */
+       if (!skip || teller % skip == 0) {
+     if (bDisRe) {
+       /*******************************************
+        * D I S T A N C E   R E S T R A I N T S  
+        *******************************************/
+       if (ndisre > 0) 
+           {
+ #ifndef GMX_DOUBLE
+             float *disre_rt =     blk_disre->sub[0].fval;
+             float *disre_rm3tav = blk_disre->sub[1].fval;
+ #else
+             double *disre_rt =     blk_disre->sub[0].dval;
+             double *disre_rm3tav = blk_disre->sub[1].dval;
+ #endif
+
+         print_time(out,fr->t);
+         if (violaver == NULL)
+           snew(violaver,ndisre);
+
+         /* Subtract bounds from distances, to calculate violations */
+         calc_violations(disre_rt, disre_rm3tav,
+                 nbounds,pair,bounds,violaver,&sumt,&sumaver);
+
+         fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
+         if (bDRAll) {
+           print_time(fp_pairs,fr->t);
+           for(i=0; (i<nset); i++) {
+         sss=set[i];
+         fprintf(fp_pairs,"  %8.4f", mypow(disre_rm3tav[sss],minthird));
+         fprintf(fp_pairs,"  %8.4f", disre_rt[sss]);
+           }
+           fprintf(fp_pairs,"\n");
+         }
+         teller_disre++;
+       }
+     }
+     else if (bDHDL)
+     {
+         do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh",NFILE,fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
+     }
+
+     /*******************************************
+      * E N E R G I E S
+      *******************************************/
+     else {
+         if (fr->nre > 0) {
+             if (bPrAll)
+             {
+                 /* We skip frames with single points (usually only the first frame),
+                  * since they would result in an average plot with outliers.
+                  */
+                 if (fr->nsum > 1) {
+                     print_time(out,fr->t);
+                      print1(out,bDp,fr->ener[set[0]].e);
+                      print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
+                      print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
+                      fprintf(out,"\n");
+                 }
+             }
+             else
+             {
+                 print_time(out,fr->t);
+                 if (bSum)
+                 {
+                     sum = 0;
+                     for(i=0; i<nset; i++)
+                     {
+                         sum += fr->ener[set[i]].e;
+                     }
+                     print1(out,bDp,sum/nmol-ezero);
+                 }
+                 else
+                 {
+                     for(i=0; (i<nset); i++)
+                     {
+                         if (bIsEner[i])
+                         {
+                             print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+                         }
+                         else
+                         {
+                             print1(out,bDp,fr->ener[set[i]].e);
+                         }
+                     }
+                 }
+                 fprintf(out,"\n");
+             }
+         }
           blk = find_block_id_enxframe(fr, enx_i, NULL);
 	  if (bORIRE && blk)
           {
@@ -2365,37 +2314,37 @@ int gmx_energy(int argc,char *argv[])
               }
               norfr++;
           }
-          blk = find_block_id_enxframe(fr, enxORT, NULL);
-          if (bOTEN && blk) 
-          {
+         blk = find_block_id_enxframe(fr, enxORT, NULL);
+         if (bOTEN && blk) 
+         {
 #ifndef GMX_DOUBLE
-              xdr_datatype dt=xdr_datatype_float;
+             xdr_datatype dt=xdr_datatype_float;
 #else
-              xdr_datatype dt=xdr_datatype_double;
+             xdr_datatype dt=xdr_datatype_double;
 #endif
-              real *vals;
- 
-              if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
-                  gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
+             real *vals;
+             
+             if ( (blk->nsub != 1) || (blk->sub[0].type!=dt) )
+                 gmx_fatal(FARGS,"Orientational restraints read in incorrectly");
 #ifndef GMX_DOUBLE
-              vals=blk->sub[0].fval;
+             vals=blk->sub[0].fval;
 #else
-              vals=blk->sub[0].dval;
+             vals=blk->sub[0].dval;
 #endif
-
-              if (blk->sub[0].nr != (size_t)(nex*12))
-                  gmx_fatal(FARGS,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",
-                            blk->sub[0].nr/12, nex);
-              fprintf(foten,"  %10f",fr->t);
-              for(i=0; i<nex; i++)
-                  for(j=0; j<(bOvec?12:3); j++)
-                      fprintf(foten," %g",vals[i*12+j]);
-              fprintf(foten,"\n");
-	  }
-	}
-      }
-    }
-  } while (bCont && (timecheck == 0));
+             
+             if (blk->sub[0].nr != (size_t)(nex*12))
+                 gmx_fatal(FARGS,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",
+                           blk->sub[0].nr/12, nex);
+             fprintf(foten,"  %10f",fr->t);
+             for(i=0; i<nex; i++)
+                 for(j=0; j<(bOvec?12:3); j++)
+                     fprintf(foten," %g",vals[i*12+j]);
+             fprintf(foten,"\n");
+         }
+     } 
+       }
+     }
+   } while (bCont && (timecheck == 0));
   
   fprintf(stderr,"\n");
   close_enx(fp);
