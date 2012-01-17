@@ -170,7 +170,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static t_nrnb      nrnb;
-  real        lam=0,dum=0;
+  real        lam[efptNR],dum[efptNR];
   rvec        box_size;
   int         i,m;
 
@@ -187,9 +187,8 @@ void calc_pot(FILE *logf,t_commrec *cr,
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
-  
   ns(logf,fr,x,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,lam,&dum,&enerd->grpp,TRUE,FALSE,FALSE,NULL);
+     &nrnb,&lam[0],&dum[0],&enerd->grpp,TRUE,FALSE,FALSE,NULL);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -218,7 +217,8 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
   real     lam;
-  gmx_bool     bSA;
+  int      fep_state;
+  gmx_bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
   t_state  *state;
   rvec     mutot;
@@ -247,7 +247,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   }
 
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&fep_state,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,NULL,NULL,
 	  force_vir,shake_vir,mutot,&bSA,NULL,NULL,0);
 
