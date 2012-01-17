@@ -500,14 +500,6 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
       warning_note(wi,warn_buf);
     }
   }
-  if (opts->bDihre == FALSE) {
-    i = rm_interactions(F_DIHRES,nrmols,molinfo);
-    if (i > 0) {
-      set_warning_line(wi,"unknown",-1);
-      sprintf(warn_buf,"dihre = no, removed %d dihedral restraints",i);
-      warning_note(wi,warn_buf);
-    }
-  }
   
   /* Copy structures from msys to sys */
   molinfo2mtop(nrmols,molinfo,sys);
@@ -528,7 +520,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
     char title[STRLEN];
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,0,0,0);
+    init_state(state,state->natoms,0,0,0,0);
     read_stx_conf(confin,title,confat,state->x,state->v,NULL,state->box);
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir,state);
@@ -845,14 +837,24 @@ static void gen_posres(gmx_mtop_t *mtop,t_molinfo *mi,
 }
 
 static void set_wall_atomtype(gpp_atomtype_t at,t_gromppopts *opts,
-			      t_inputrec *ir)
+                              t_inputrec *ir,warninp_t wi)
 {
   int i;
+  char warn_buf[STRLEN];
 
   if (ir->nwall > 0)
-    fprintf(stderr,"Searching the wall atom type(s)\n");
+  {
+      fprintf(stderr,"Searching the wall atom type(s)\n");
+  }
   for(i=0; i<ir->nwall; i++)
-    ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
+  {
+      ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
+      if (ir->wall_atomtype[i] == NOTSET)
+      {
+          sprintf(warn_buf,"Specified wall atom type %s is not defined",opts->wall_atomtype[i]);
+          warning_error(wi,warn_buf);
+      }
+  }
 }
 
 static int nrdf_internal(t_atoms *atoms)
@@ -955,8 +957,9 @@ setup_cmap (int              grid_spacing,
 	
 	for(kk=0;kk<nc;kk++)
 	{
-		/* Compute an offset depending on which cmap we are using                                 
-		 * Offset will be the map number multiplied with the grid_spacing * grid_spacing * 2      
+		/* Compute an offset depending on which cmap we are using 
+		 * Offset will be the map number multiplied with the 
+                 * grid_spacing * grid_spacing * 2
 		 */
 		offset = kk * grid_spacing * grid_spacing * 2;
 		
@@ -1331,6 +1334,11 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
 
+  if (ir->expandedvals->lmc_seed == -1) {
+    ir->expandedvals->lmc_seed = make_seed();
+    fprintf(stderr,"Setting the lambda MC random seed to %d\n",ir->expandedvals->lmc_seed);
+  }
+
   bNeedVel = EI_STATE_VELOCITY(ir->eI);
   bGenVel  = (bNeedVel && opts->bGenVel);
 
@@ -1416,10 +1424,6 @@ int main (int argc, char *argv[])
             else
             {
                 fprintf(stderr," and %s\n",fnB);
-                if (ir->efep != efepNO && ir->n_flambda > 0)
-                {
-                    warning_error(wi,"Can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.");
-                }
             }
         }
         gen_posres(sys,mi,fn,fnB,
@@ -1449,7 +1453,7 @@ int main (int argc, char *argv[])
 		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->ffparams.cmap_grid);
 	}
 	
-  set_wall_atomtype(atype,opts,ir);
+    set_wall_atomtype(atype,opts,ir,wi);
   if (bRenum) {
     renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
     ntype = get_atomtype_ntypes(atype);
@@ -1523,7 +1527,7 @@ int main (int argc, char *argv[])
            wi);
   
   /* Init the temperature coupling state */
-  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);
+  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength); /* need to add nnhpres here? */
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");
@@ -1586,22 +1590,26 @@ int main (int argc, char *argv[])
   /*  reset_multinr(sys); */
   
   if (EEL_PME(ir->coulombtype)) {
-    float ratio = pme_load_estimate(sys,ir,state.box);
-    fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
-    /* With free energy we might need to do PME both for the A and B state
-     * charges. This will double the cost, but the optimal performance will
-     * then probably be at a slightly larger cut-off and grid spacing.
-     */
-    if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
-        (ir->efep != efepNO && ratio > 2.0/3.0)) {
-        warning_note(wi,
-                     "The optimal PME mesh load for parallel simulations is below 0.5\n"
-		   "and for highly parallel simulations between 0.25 and 0.33,\n"
-		   "for higher performance, increase the cut-off and the PME grid spacing");
-    }
+      float ratio = pme_load_estimate(sys,ir,state.box);
+      fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
+      /* With free energy we might need to do PME both for the A and B state
+       * charges. This will double the cost, but the optimal performance will
+       * then probably be at a slightly larger cut-off and grid spacing.
+       */
+      if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
+          (ir->efep != efepNO && ratio > 2.0/3.0)) {
+          warning_note(wi,
+                       "The optimal PME mesh load for parallel simulations is below 0.5\n"
+                       "and for highly parallel simulations between 0.25 and 0.33,\n"
+                       "for higher performance, increase the cut-off and the PME grid spacing.\n");
+          if (ir->efep != efepNO) {
+              warning_note(wi,
+                           "For free energy simulations, the optimal load limit increases from 0.5 to 0.667\n");
+          }
+      }
   }
-
-    {
+  
+  {
         char warn_buf[STRLEN];
         double cio = compute_io(ir,sys->natoms,&sys->groups,F_NRE,1);
         sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
@@ -1613,12 +1621,38 @@ int main (int argc, char *argv[])
         }
     }
 	
+  /* MRS: eventually figure out better logic for initializing the fep
+   values that makes declaring the lambda and declaring the state not
+   potentially conflict if not handled correctly. */
+  if (ir->efep != efepNO)
+  {
+      state.fep_state = ir->fepvals->init_fep_state;
+      for (i=0;i<efptNR;i++)
+      {
+          /* init_lambda trumps state definitions*/
+          if (ir->fepvals->init_lambda >= 0)
+          {
+              state.lambda[i] = ir->fepvals->init_lambda;
+          }
+          else
+          {
+              if (ir->fepvals->all_lambda[i] == NULL)
+              {
+                  gmx_fatal(FARGS,"Values of lambda not set for a free energy calculation!");
+              }
+              else
+              {
+                  state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
+              }
+          }
+      }
+  }
+
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
   done_warning(wi,FARGS);
 
-  state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
   thanx(stderr);
