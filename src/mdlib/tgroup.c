@@ -234,8 +234,7 @@ real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
                 }
             } 
             else 
-                
-            {
+              {
                 /* Calculate the full step Ekin as the average of the half steps */
                 for(j=0; (j<DIM); j++)
                 {
