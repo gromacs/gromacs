@@ -250,6 +250,7 @@ t_topology *read_top(const char *fn,int *ePBC);
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
 
+
 /*****************************************************
  *         Some command line parsing routines 
  *****************************************************/

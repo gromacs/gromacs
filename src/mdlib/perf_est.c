@@ -188,7 +188,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   cost_fft    = ffft*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
   cost_solve  = fsolve*ir->nkx*ir->nky*ir->nkz;
 
-  if (ir->efep != efepNO && bChargePerturbed) {
+  if (ir->efep > efepNO && bChargePerturbed) {
     /* All PME work, except the spline coefficient calculation, doubles */
     cost_spread *= 2;
     cost_fft    *= 2;

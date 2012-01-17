@@ -155,7 +155,7 @@ real do_ewald(FILE *log,       gmx_bool bVerbose,
       snew(et->tab_qxyz,natoms);
   }
 
-  bFreeEnergy = (ir->efep != efepNO);
+  bFreeEnergy = (ir->efep > efepNO);
 
   clear_mat(lrvir);
   
