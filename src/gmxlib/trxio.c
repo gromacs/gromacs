@@ -409,6 +409,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status,t_trxframe *fr)
     fr->bTime=TRUE;
     fr->time=sh.t;
     fr->bLambda = TRUE;
+    fr->bFepState = TRUE;
     fr->lambda = sh.lambda;
     fr->bBox = sh.box_size>0;
     if (fr->flags & (TRX_READ_X | TRX_NEED_X)) {
