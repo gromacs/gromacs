@@ -317,6 +317,6 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     {
         fr->vir_wall_z[i] = -0.5*xf_z[i];
     }
-    
+
     return dvdlambda;
 }

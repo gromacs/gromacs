@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -57,14 +57,10 @@ static void mde_delta_h_reset(t_mde_delta_h *dh)
 }
 
 /* initialize the delta_h list */
-static void mde_delta_h_init(t_mde_delta_h *dh, int nbins, 
-                             double dx, unsigned int  ndhmax, 
-                             gmx_bool derivative, double foreign_lambda)
+static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
+                             double dx, unsigned int  ndhmax)
 {
     int i;
-
-    dh->derivative=derivative;
-    dh->lambda=foreign_lambda;
 
     dh->ndhmax=ndhmax+2;
     for(i=0;i<2;i++)
@@ -73,6 +69,8 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     }
 
     snew(dh->dh, dh->ndhmax);
+    snew(dh->dhf,dh->ndhmax);
+
     if ( nbins <= 0 || dx<GMX_REAL_EPS*10 )
     {
         dh->nhist=0;
@@ -81,10 +79,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     {
         int i;
         /* pre-allocate the histogram */
-        if (derivative)
-            dh->nhist=2;
-        else
-            dh->nhist=1;
+        dh->nhist=2; /* energies and derivatives histogram */
         dh->dx=dx;
         dh->nbins=nbins;
         for(i=0;i<dh->nhist;i++)
@@ -108,7 +103,7 @@ static void mde_delta_h_add_dh(t_mde_delta_h *dh, double delta_h, double time)
 
 /* construct histogram with index hi */
 static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
-{ 
+{
     double min_dh = FLT_MAX;
     double max_dh = -FLT_MAX;
     unsigned int i;
@@ -117,7 +112,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     double dx=dh->dx;
     double f; /* energy mult. factor */
 
-    /* by applying a -1 scaling factor on the energies we get the same as 
+    /* by applying a -1 scaling factor on the energies we get the same as
        having a negative dx, but we don't need to fix the min/max values
        beyond inverting x0 */
     f=invert ? -1 : 1;
@@ -130,7 +125,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
         if (f*dh->dh[i] > max_dh)
             max_dh=f*dh->dh[i];
     }
-    
+
     /* reset the histogram */
     for(i=0;i<dh->nbins;i++)
     {
@@ -138,11 +133,12 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     }
     dh->maxbin[hi]=0;
 
-    /* The starting point of the histogram is the lowest value found: 
-       that value has the highest contribution to the free energy. 
+    /* The starting point of the histogram is the lowest value found:
+       that value has the highest contribution to the free energy.
 
-       Get this start value in number of histogram dxs from zero, 
+       Get this start value in number of histogram dxs from zero,
        as an integer.*/
+
     dh->x0[hi] = (gmx_large_int_t)floor(min_dh/dx);
 
     min_dh_hist=(dh->x0[hi])*dx;
@@ -153,9 +149,9 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     {
         unsigned int bin;
 
-        /* Determine the bin number. If it doesn't fit into the histogram, 
-           add it to the last bin. 
-           We check the max_dh_int range because converting to integers 
+        /* Determine the bin number. If it doesn't fit into the histogram,
+           add it to the last bin.
+           We check the max_dh_int range because converting to integers
            might lead to overflow with unpredictable results.*/
         if ( (f*dh->dh[i] >= min_dh_hist) && (f*dh->dh[i] <= max_dh_hist ) )
         {
@@ -163,10 +159,10 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
         }
         else
         {
-            bin = dh->nbins-1; 
+            bin = dh->nbins-1;
         }
         /* double-check here because of possible round-off errors*/
-        if (bin >= dh->nbins) 
+        if (bin >= dh->nbins)
         {
             bin = dh->nbins-1;
         }
@@ -178,7 +174,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
         dh->bin[hi][bin]++;
     }
 
-    /* make sure we include a bin with 0 if we didn't use the full 
+    /* make sure we include a bin with 0 if we didn't use the full
        histogram width. This can then be used as an indication that
        all the data was binned. */
     if (dh->maxbin[hi] < dh->nbins-1)
@@ -191,8 +187,10 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
     /* first check which type we should use: histogram or raw data */
     if (dh->nhist == 0)
     {
+        unsigned int i;
+
         /* We write raw data.
-           Raw data consists of 3 subblocks: a block with the 
+           Raw data consists of 3 subblocks: a block with the
            the foreign lambda, and the data itself */
         add_subblocks_enxblock(blk, 3);
 
@@ -212,12 +210,19 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 
         /* subblock 3 */
         /* check if there's actual data to be written. */
-        if (dh->ndh > 1)
+        /*if (dh->ndh > 1)*/
+        if (dh->ndh > 0)
         {
             blk->sub[2].nr=dh->ndh;
+/* For F@H for now. */
+#undef GMX_DOUBLE
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
-            blk->sub[2].fval=dh->dh;
+            for(i=0;i<dh->ndh;i++)
+            {
+                dh->dhf[i] = (float)dh->dh[i];
+            }
+            blk->sub[2].fval=dh->dhf;
 #else
             blk->sub[2].type=xdr_datatype_double;
             blk->sub[2].dval=dh->dh;
@@ -229,6 +234,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             blk->sub[2].nr=0;
 #ifndef GMX_DOUBLE
             blk->sub[2].type=xdr_datatype_float;
+            blk->sub[2].fval=NULL;
 #else
             blk->sub[2].type=xdr_datatype_double;
 #endif
@@ -249,7 +255,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             {
                 if (!prev_complete)
                 {
-                    /* the first histogram is always normal, and the 
+                    /* the first histogram is always normal, and the
                        second one is always reverse */
                     mde_delta_h_make_hist(dh, i, i==1);
                     nhist_written++;
@@ -264,8 +270,8 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
             dh->written=TRUE;
         }
 
-        /* A histogram consists of 2, 3 or 4 subblocks: 
-           the foreign lambda value + histogram spacing, the starting point, 
+        /* A histogram consists of 2, 3 or 4 subblocks:
+           the foreign lambda value + histogram spacing, the starting point,
            and the histogram data (0, 1 or 2 blocks). */
         add_subblocks_enxblock(blk, nhist_written+2);
         blk->id=enxDHHIST;
@@ -290,7 +296,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         /* subblock 3 + 4 : the histogram data */
         for(i=0;i<nhist_written;i++)
         {
-            blk->sub[i+2].nr=dh->maxbin[i]+1; /* it's +1 because size=index+1 
+            blk->sub[i+2].nr=dh->maxbin[i]+1; /* it's +1 because size=index+1
                                                  in C */
             blk->sub[i+2].type=xdr_datatype_int;
             blk->sub[i+2].ival=dh->bin[i];
@@ -301,76 +307,109 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 /* initialize the collection*/
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
 {
-    int i; 
+    int i;
+    double lambda;
     int ndhmax=ir->nstenergy/ir->nstcalcenergy;
 
-    dhc->temp=ir->opts.ref_t[0]; 
+    dhc->temperature=ir->opts.ref_t[0];  /* only store system temperature */
     dhc->start_time=0.;
-    dhc->start_lambda=ir->init_lambda; 
-   
-    dhc->delta_time=ir->delta_t*ir->nstdhdl;
-    dhc->delta_lambda=ir->delta_lambda*ir->nstdhdl;
-
+    dhc->delta_time=ir->delta_t*ir->fepvals->nstdhdl;
     dhc->start_time_set=FALSE;
 
-    if (ir->dhdl_derivatives == dhdlderivativesYES)
-    {
-        dhc->ndhdl=1;
-    }
-    else
-    {
-        dhc->ndhdl=0;
+    /* for continuous change of lambda values */
+    dhc->start_lambda=ir->fepvals->init_lambda;
+    dhc->delta_lambda=ir->fepvals->delta_lambda*ir->fepvals->nstdhdl;
+
+    /* total number of raw data points in the sample */
+    dhc->ndh = 0;
+
+    /* include one more for the specification of the state, by lambda or fep_state, store as double for now*/
+    if (ir->expandedvals->elamstats > elamstatsNO) {
+        dhc->ndh +=1;
     }
 
-    dhc->ndh=ir->n_flambda+dhc->ndhdl;
+    /* whether to print energies */
+    if (ir->fepvals->bPrintEnergy) {
+        dhc->ndh += 1;
+    }
+
+    /* add the dhdl's */
+    for (i=0;i<efptNR;i++)
+    {
+        if (ir->fepvals->separate_dvdl[i])
+        {
+            dhc->ndh+=1;
+        }
+    }
+
+    /* add the lambdas */
+    dhc->ndh += ir->fepvals->n_lambda;
+
+    if (ir->epc > epcNO) {
+        dhc->ndh += 1;  /* include pressure-volume work */
+    }
+
     snew(dhc->dh, dhc->ndh);
     for(i=0;i<dhc->ndh;i++)
     {
-        if (i<dhc->ndhdl)
-        {
-            mde_delta_h_init(dhc->dh + i, ir->dh_hist_size, 
-                             ir->dh_hist_spacing, ndhmax, 
-                             TRUE, dhc->start_lambda);
-        }
-        else
-        {
-            mde_delta_h_init(dhc->dh + i, ir->dh_hist_size, 
-                             ir->dh_hist_spacing, ndhmax, 
-                             FALSE, 
-                             ir->flambda[i-dhc->ndhdl] );
-        }
+        mde_delta_h_init(dhc->dh+i, ir->fepvals->dh_hist_size,
+                         ir->fepvals->dh_hist_spacing, ndhmax);
     }
 }
 
-/* add a bunch of samples */
-void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc, 
-                             double dhdl,
-                             double *U, double time,
-                             double native_lambda)
+/* add a bunch of samples - note fep_state is double to allow for better data storage */
+void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
+                             double fep_state,
+                             double energy,
+                             double pV,
+                             int bExpanded,
+                             int bPrintEnergy,
+                             int bPressure,
+                             int ndhdl,
+                             int nlambda,
+                             double *dhdl,
+                             double *foreign_dU,
+                             double time)
 {
-    int i;
+    int i,n;
 
     if (!dhc->start_time_set)
     {
         dhc->start_time_set=TRUE;
         dhc->start_time=time;
-        dhc->start_lambda=native_lambda;
     }
-    for(i=0;i<dhc->ndh;i++)
+
+    n = 0;
+    if (bExpanded)
     {
-        if (i<dhc->ndhdl)
-        {
-            mde_delta_h_add_dh(dhc->dh + i, dhdl, time);
-        }
-        else
-        {
-            mde_delta_h_add_dh(dhc->dh + i, U[i+1-dhc->ndhdl] - U[0], time);
-        }
+        mde_delta_h_add_dh(dhc->dh+n,fep_state,time);
+        n++;
+    }
+    if (bPrintEnergy)
+    {
+        mde_delta_h_add_dh(dhc->dh+n,energy,time);
+        n++;
+    }
+    for (i=0;i<ndhdl;i++)
+    {
+        mde_delta_h_add_dh(dhc->dh+n, dhdl[i], time);
+        n++;
+    }
+    for (i=0;i<nlambda;i++)
+    {
+        mde_delta_h_add_dh(dhc->dh+n, foreign_dU[i], time);
+        n++;
+    }
+    if (bPressure)
+    {
+        mde_delta_h_add_dh(dhc->dh+n, pV, time);
+        n++;
     }
 }
 
-/* write the data associated with all the du blocks, but not the blocks 
-   themselves. */
+/* write the data associated with all the du blocks, but not the blocks
+   themselves. Essentially, the metadata.  Or -- is this generated every time?*/
+
 void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
                                    t_enxframe *fr, int nblock)
 {
@@ -384,12 +423,11 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
 
     add_subblocks_enxblock(blk, 1);
 
-    dhc->subblock_d[0] = dhc->temp; /* temperature */
+    dhc->subblock_d[0] = dhc->temperature; /* temperature */
     dhc->subblock_d[1] = dhc->start_time; /* time of first sample */
     dhc->subblock_d[2] = dhc->delta_time; /* time difference between samples */
     dhc->subblock_d[3] = dhc->start_lambda; /* lambda at starttime */
     dhc->subblock_d[4] = dhc->delta_lambda; /* lambda diff. between samples */
-
     blk->id=enxDHCOLL;
     blk->sub[0].nr=5;
     blk->sub[0].type=xdr_datatype_double;
