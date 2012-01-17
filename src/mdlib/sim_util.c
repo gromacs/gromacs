@@ -902,7 +902,7 @@ void do_force(FILE *fplog,t_commrec *cr,
          */
         set_pbc(&pbc,inputrec->ePBC,box);
         dvdlambda[efptRESTRAINT] = 0; 
-        enerd->term[F_COM_PULL] =
+        enerd->term[F_COM_PULL] +=
             pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
                            cr,t,lambda[efptRESTRAINT],x,f,vir_force,&(dvdlambda[efptRESTRAINT]));
         if (bSepDVDL)

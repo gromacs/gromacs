@@ -498,6 +498,7 @@ static void bc_adress(const t_commrec *cr,t_adress *adress)
       snew_bc(cr, adress->group_explicit, adress->n_energy_grps);
       nblock_bc(cr, adress->n_energy_grps, adress->group_explicit);
   }
+}
 static void bc_fepvals(const t_commrec *cr,t_lambda *fep)
 {
     gmx_bool bAlloc=TRUE;

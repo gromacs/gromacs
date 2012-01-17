@@ -67,7 +67,7 @@
     maxptr = the maximum number of allowed elements
     ptr = the output array of pointers to the first character of each element 
     returns: the number of elements. */
-static int str_nelem(const char *str,int maxptr,char *ptr[])
+static int tpb_str_nelem(const char *str,int maxptr,char *ptr[]) /* need separate tpb version for now */
 {
   int  np=0;
   char *copy0,*copy;
@@ -96,12 +96,12 @@ static int str_nelem(const char *str,int maxptr,char *ptr[])
   return np;
 }
 
-static void parse_n_double(char *str,int *n,double **r)
+static void tpb_parse_n_double(char *str,int *n,double **r) /* need separate tpb version for now */
 {
   char *ptr[MAXPTR];
   int  i;
 
-  *n = str_nelem(str,MAXPTR,ptr);
+  *n = tpb_str_nelem(str,MAXPTR,ptr);
 
   snew(*r,*n);
   for(i=0; i<*n; i++) {
@@ -626,7 +626,7 @@ int main (int argc, char *argv[])
         {
             /* now read in the weights - error handling? */
             /* MRS: Currently works, though gets error: passing argument 1 of ‘parse_n_double’ discards qualifiers from pointer target type */
-            parse_n_double(init_fep_weights,&nweights,&(ir->expandedvals->init_lambda_weights));
+            tpb_parse_n_double(init_fep_weights,&nweights,&(ir->expandedvals->init_lambda_weights));
             
             if (nweights == 0)
             {
