@@ -167,7 +167,6 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 }
 #endif
 
-
 void settle_proj(FILE *fp,
                  gmx_settledata_t settled,int econq,
                  int nsettle, t_iatom iatoms[],rvec x[],
@@ -188,6 +187,8 @@ void settle_proj(FILE *fp,
     real   invvscale,vscale_nhc,veta;
     real   kfacOH,kfacHH;
 
+    /* just for testing */
+
     if (econq == econqForce)
     {
         p = &settled->mass1;
@@ -203,7 +204,7 @@ void settle_proj(FILE *fp,
     dHH    = p->dHH;
     invdOH = p->invdOH;
     invdHH = p->invdHH;
-    
+
     veta = vetavar->veta;     
     vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
 
@@ -216,7 +217,6 @@ void settle_proj(FILE *fp,
         ow1 = iatoms[i*2+1];
         hw2 = ow1 + 1;
         hw3 = ow1 + 2;
-
 
         for(m=0; m<DIM; m++)
         {
@@ -285,6 +285,7 @@ void settle_proj(FILE *fp,
             }
         }
     }
+
     /* conrect rmdder, which will be used to calcualate the virial; we need to use 
        the unscaled multipliers in the virial */
     msmul(rmdder,1.0/vetavar->vscale,rmdder);

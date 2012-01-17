@@ -204,7 +204,7 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   ivec       *nFreeze;
   int        i,m,natoms;
   rvec       box_size;
-  real       lambda=0,dvdlambda=0;
+  real       *lambda,*dvdl;
 
   natoms = atoms->nr;
     
@@ -285,6 +285,8 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   
   /* Init things dependent on parameters */  
   ir->rlistlong = ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
+  /* create free energy data to avoid NULLs */
+  snew(ir->fepvals,1);  
   printf("Neighborsearching with a cut-off of %g\n",rlong);
   init_forcerec(stdout,oenv,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,NULL,
                 TRUE,-1);
@@ -298,9 +300,11 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
   put_charge_groups_in_box(fp,0,cgs->nr,fr->ePBC,box,cgs,x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
+  snew(lambda,efptNR);
+  snew(dvdl,efptNR);
   init_neighbor_list(fp,fr,md->homenr);
   search_neighbours(fp,fr,x,box,top,
-		    &mtop->groups,cr,&nrnb,md,lambda,&dvdlambda,NULL,
+		    &mtop->groups,cr,&nrnb,md,lambda,dvdl,NULL,
 		    TRUE,FALSE,FALSE,NULL);
 
   if (debug)
