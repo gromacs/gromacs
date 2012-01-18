@@ -201,20 +201,20 @@ int gmx_enemat(int argc,char *argv[])
   /* Read groupnames from input file and construct selection of 
      energy groups from it*/
   
-  fprintf(stderr,"Will read groupnames from inputfile\n");
+  printf("Will read groupnames from inputfile\n");
   ngroups = get_lines(opt2fn("-groups",NFILE,fnm), &groups);
-  fprintf(stderr,"Read %d groups\n",ngroups);
+  printf("Read %d groups\n",ngroups);
   snew(set,sqr(ngroups)*egNR/2);
   n=0;
   prevk=0;
   for (i=0; (i<ngroups); i++) {
-    fprintf(stderr,"\rgroup %d",i);
+    printf("\rgroup %d",i);
     for (j=i; (j<ngroups); j++)
       for(m=0; (m<egNR); m++) 
 	if (egrp_use[m]) {
 	  sprintf(groupname,"%s:%s-%s",egrp_nm[m],groups[i],groups[j]);
 #ifdef DEBUG
-	  fprintf(stderr,"\r%-15s %5d",groupname,n);
+	  printf("\r%-15s %5d",groupname,n);
 #endif
 	  for(k=prevk; (k<prevk+nre); k++)
 	    if (strcmp(enm[k%nre].name,groupname) == 0) {
@@ -222,16 +222,16 @@ int gmx_enemat(int argc,char *argv[])
 	      break;
 	    }
 	  if (k==prevk+nre)
-	    fprintf(stderr,"WARNING! could not find group %s (%d,%d)"
+	    printf("WARNING! could not find group %s (%d,%d)"
 		    "in energy file\n",groupname,i,j);
 	  else
 	    prevk = k;
 	}
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   nset=n;
   snew(eneset,nset+1);
-  fprintf(stderr,"Will select half-matrix of energies with %d elements\n",n);
+  printf("Will select half-matrix of energies with %d elements\n",n);
 
   /* Start reading energy frames */  
   snew(fr,1);
@@ -246,7 +246,7 @@ int gmx_enemat(int argc,char *argv[])
 #define DONTSKIP(cnt) (skip) ? ((cnt % skip) == 0) : TRUE
       
       if (bCont) {
-	fprintf(stderr,"\rRead frame: %d, Time: %.3f",teller,fr->t);
+	printf("\rRead frame: %d, Time: %.3f",teller,fr->t);
 	
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
@@ -267,9 +267,9 @@ int gmx_enemat(int argc,char *argv[])
     }
   } while (bCont && (timecheck == 0));
   
-  fprintf(stderr,"\n");
+  printf("\n");
 
-  fprintf(stderr,"Will build energy half-matrix of %d groups, %d elements, "
+  printf("Will build energy half-matrix of %d groups, %d elements, "
 	  "over %d frames\n",ngroups,nset,nenergy);
   
   snew(emat,egNR+egSP);
@@ -311,9 +311,9 @@ int gmx_enemat(int argc,char *argv[])
     }
     if (bFree) {
       if (bRef) {
-	fprintf(stderr,"Will read reference energies from inputfile\n");
+	printf("Will read reference energies from inputfile\n");
 	neref = get_lines(opt2fn("-eref",NFILE,fnm), &ereflines);
-	fprintf(stderr,"Read %d reference energies\n",neref);
+	printf("Read %d reference energies\n",neref);
 	snew(eref, neref);
 	snew(erefres, neref);
 	for(i=0; (i<neref); i++) {
@@ -343,7 +343,7 @@ int gmx_enemat(int argc,char *argv[])
 	    edif[i] = efree[i]-eref[n];
 	  } else {
 	    edif[i] = efree[i];
-	    fprintf(stderr,"WARNING: group %s not found "
+	    printf("WARNING: group %s not found "
 		    "in reference energies.\n",groups[i]);
 	  }
 	} else 
@@ -366,15 +366,15 @@ int gmx_enemat(int argc,char *argv[])
 	  }
 	}
 	if (emax==emin)
-	  fprintf(stderr,"Matrix of %s energy is uniform at %f "
+	  printf("Matrix of %s energy is uniform at %f "
 		  "(will not produce output).\n",egrp_nm[m],emax);
 	else {
-	  fprintf(stderr,"Matrix of %s energy ranges from %f to %f\n",
+	  printf("Matrix of %s energy ranges from %f to %f\n",
 		  egrp_nm[m],emin,emax);
 	  if ((bCutmax) || (emax>cutmax)) emax=cutmax;
 	  if ((bCutmin) || (emin<cutmin)) emin=cutmin;
 	  if ((emax==cutmax) || (emin==cutmin))
-	    fprintf(stderr,"Energy range adjusted: %f to %f\n",emin,emax);
+	    printf("Energy range adjusted: %f to %f\n",emin,emax);
 	  
 	  sprintf(fn,"%s%s",egrp_nm[m],ftp2fn(efXPM,NFILE,fnm));
 	  sprintf(label,"%s Interaction Energies",egrp_nm[m]);
@@ -440,7 +440,7 @@ int gmx_enemat(int argc,char *argv[])
     }
     ffclose(out);
   } else {
-    fprintf(stderr,"While typing at your keyboard, suddenly...\n"
+    printf("While typing at your keyboard, suddenly...\n"
 	    "...nothing happens.\nWARNING: Not Implemented Yet\n");
 /*
     out=ftp2FILE(efMAT,NFILE,fnm,"w");

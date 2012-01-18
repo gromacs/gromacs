@@ -78,7 +78,7 @@ t_expansion *read_expansion_map(char *fn,int *nexpand)
     for(k=0; (k<nn-1); k++)
       exp[i].exp[k]=strdup(buf[k]);
   }
-  fprintf(stderr,"I found %d expansion mapping entries!\n",i);
+  printf("I found %d expansion mapping entries!\n",i);
   
   /* Clean up */
   for(i=0; (i<nexp); i++)
@@ -123,7 +123,7 @@ int find_atom(char *ai,char *ri,
       
   /* Not found?! */
   if (bVerbose)
-    fprintf(stderr,"Warning: atom %s not found in res %s%d (line %d)\n",
+    printf("Warning: atom %s not found in res %s%d (line %d)\n",
 	    ai,ri ? ri : "",resi+r0,linec);
   
   return -1;
@@ -204,7 +204,7 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,gmx_bool bXplor,
       if (!bXplor) {
 	bOK = (strcmp(*atoms->resname[resi],ri) == 0);
 	if (!bOK) {
-	  fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
+	  printf("Warning resname in disres file %s%d, in tpx file %s%d\n",
 		  ri,resi+r0,*atoms->resname[resi],resi+r0);
 	  nunres++;
 	}
@@ -212,7 +212,7 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,gmx_bool bXplor,
 	  /* Residue j */
 	  bOK = (strcmp(*atoms->resname[resj],rj) != 0);
 	  if (!bOK) {
-	    fprintf(stderr,"Warning resname in disres file %s%d, in tpx file %s%d\n",
+	    printf("Warning resname in disres file %s%d, in tpx file %s%d\n",
 		    rj,resj+r0,*atoms->resname[resj],resj+r0);
 	    nunres++;
 	  }
@@ -244,11 +244,11 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,gmx_bool bXplor,
     }
     linec++;
   }
-  fprintf(stderr,"Total number of NOES: %d\n",nindex);
-  fprintf(stderr,"Total number of restraints: %d\n",nc);
-  fprintf(stderr,"Total number of unresolved atoms: %d\n",nunres);
+  printf("Total number of NOES: %d\n",nindex);
+  printf("Total number of restraints: %d\n",nc);
+  printf("Total number of unresolved atoms: %d\n",nunres);
   if (nunres+nc != nindex) 
-    fprintf(stderr,"Holy Cow! some lines have disappeared.\n");
+    printf("Holy Cow! some lines have disappeared.\n");
 }
 
 int main (int argc,char *argv[])
@@ -290,12 +290,12 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
 
-  fprintf(stderr,"******************* WARNING *****************************\n");
-  fprintf(stderr,"*** Use at your own risk. When in doubt check the source.\n");
-  fprintf(stderr,"*** Hang on: check the source anyway.\n");
-  fprintf(stderr,"******************* WARNING *****************************\n");
+  printf("******************* WARNING *****************************\n");
+  printf("*** Use at your own risk. When in doubt check the source.\n");
+  printf("*** Hang on: check the source anyway.\n");
+  printf("******************* WARNING *****************************\n");
 		    
-  fprintf(stderr,"Will subtract %d from res numbers in %s\n",
+  printf("Will subtract %d from res numbers in %s\n",
 	  r0,ftp2fn(efDAT,NFILE,fnm));
     
   top=read_top(ftp2fn(efTPX,NFILE,fnm));

@@ -234,7 +234,7 @@ int get_tpr_version(const char *infile)
 				"instead of %d or %d",
 				gmx_fio_getname(fio),precision,sizeof(float),sizeof(double));
 	gmx_fio_setprecision(fio,bDouble);
-	fprintf(stderr,"Reading file %s, %s (%s precision)\n",
+	printf("Reading file %s, %s (%s precision)\n",
 			gmx_fio_getname(fio),buf,bDouble ? "double" : "single");
 
 	gmx_fio_do_int(fio,fver);
@@ -542,9 +542,9 @@ void init_resize(t_block *ins_at,rvec *r_ins,pos_ins_t *pos_ins,mem_t *mem_p,rve
     	if (!bALLOW_ASYMMETRY)
     		pos_ins->geom_cent[i][ZZ]=mem_p->zmed;
 
-    	fprintf(stderr,"Embedding piece %d with center of geometry: %f %f %f\n",i,pos_ins->geom_cent[i][XX],pos_ins->geom_cent[i][YY],pos_ins->geom_cent[i][ZZ]);
+    	printf("Embedding piece %d with center of geometry: %f %f %f\n",i,pos_ins->geom_cent[i][XX],pos_ins->geom_cent[i][YY],pos_ins->geom_cent[i][ZZ]);
     }
-    fprintf(stderr,"\n");
+    printf("\n");
 }
 
 void resize(t_block *ins_at, rvec *r_ins, rvec *r, pos_ins_t *pos_ins,rvec fac)
@@ -594,7 +594,7 @@ int gen_rm_list(rmm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mto
 						bRM=FALSE;
 				if(bRM)
 				{
-					/*fprintf(stderr,"%d wordt toegevoegd\n",mol_id);*/
+					/*printf("%d wordt toegevoegd\n",mol_id);*/
 					rm_p->mol[nrm]=mol_id;
 					rm_p->block[nrm]=block;
 					nrm++;
@@ -1152,7 +1152,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 /*    {
         double io = compute_io(ir,top_global->natoms,groups,mdebin->ebin->nener,1);
         if ((io > 2000) && MASTER(cr))
-            fprintf(stderr,
+            printf(
                     "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
                     io);
     }*/
@@ -1251,7 +1251,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
  /*   bTCR = ftp2bSet(efGCT,nfile,fnm);
     if (bTCR) {
         if (MASTER(cr)) {
-            fprintf(stderr,"Will do General Coupling Theory!\n");
+            printf("Will do General Coupling Theory!\n");
         }
         gnx = top_global->mols.nr;
         snew(grpindex,gnx);
@@ -1367,12 +1367,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         if (bRerunMD)
         {
-            fprintf(stderr,"starting md rerun '%s', reading coordinates from"
+            printf("starting md rerun '%s', reading coordinates from"
                     " input trajectory '%s'\n\n",
                     *(top_global->name),opt2fn("-rerun",nfile,fnm));
             if (bVerbose)
             {
-                fprintf(stderr,"Calculated time to finish depends on nsteps from "
+                printf("Calculated time to finish depends on nsteps from "
                         "run input file,\nwhich may not correspond to the time "
                         "needed to process input trajectory.\n\n");
             }
@@ -1380,7 +1380,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         else
         {
             char tbuf[20];
-            fprintf(stderr,"starting mdrun '%s'\n",
+            printf("starting mdrun '%s'\n",
                     *(top_global->name));
             if (ir->nsteps >= 0)
             {
@@ -1392,14 +1392,14 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             if (ir->init_step > 0)
             {
-                fprintf(stderr,"%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
+                printf("%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
                         gmx_step_str(ir->init_step+ir->nsteps,sbuf),tbuf,
                         gmx_step_str(ir->init_step,sbuf2),
                         ir->init_step*ir->delta_t);
             }
             else
             {
-                fprintf(stderr,"%s steps, %s ps.\n",
+                printf("%s steps, %s ps.\n",
                         gmx_step_str(ir->nsteps,sbuf),tbuf);
             }
         }
@@ -1552,7 +1552,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     }
                     if (bRerunWarnNoV)
                     {
-                        fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
+                        printf("\nWARNING: Some frames do not contain velocities.\n"
                                 "         Ekin, temperature and pressure are incorrect,\n"
                                 "         the virial will be incorrect when constraints are present.\n"
                                 "\n");
@@ -2067,7 +2067,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * because a checkpoint file will always be written
                  * at the last step.
                  */
-                fprintf(stderr,"\nWriting final coordinates.\n");
+                printf("\nWriting final coordinates.\n");
                 if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
                     DOMAINDECOMP(cr))
                 {
@@ -2139,11 +2139,11 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
                 fflush(fplog);
             }
-            fprintf(stderr,
+            printf(
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     gmx_get_signal_name(),
                     gs.sig[eglsSTOPCOND]==1 ? "NS " : "");
-            fflush(stderr);
+            fflush(stdout);
             handled_stop_condition=(int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
@@ -2156,7 +2156,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
             }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+            printf( "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
         }
 
         if (bResetCountersHalfMaxH && MASTER(cr) &&
@@ -2422,7 +2422,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     gmx_finalize();
                 }
-                fprintf(stderr,"\n");
+                printf("\n");
                 exit(0);
             }
         }*/
@@ -2497,7 +2497,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 #endif
             if (fabs(enerd->term[F_ETOT]) > etot_max)
             {
-                fprintf(stderr,"Energy too large (%g), giving up\n",
+                printf("Energy too large (%g), giving up\n",
                         enerd->term[F_ETOT]);
             }
         }*/
@@ -2555,9 +2555,9 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (shellfc)
             {
-                fprintf(stderr,"\n");
+                printf("\n");
             }
-            print_time(stderr,runtime,step,ir,cr);
+            print_time(stdout,runtime,step,ir,cr);
         }
 
 		/* Set new positions for the group to embed */
@@ -2772,7 +2772,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (bVerbose && SIMMASTER(cr))
     {
-        fprintf(stderr,"Getting Loaded...\n");
+        printf("Getting Loaded...\n");
     }
 
     if (Flags & MD_APPENDFILES)
@@ -2829,10 +2829,10 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 		atoms=gmx_mtop_global_atoms(mtop);
 		snew(mem_p,1);
-		fprintf(stderr,"\nSelect a group to embed in the membrane:\n");
+		printf("\nSelect a group to embed in the membrane:\n");
 		get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),1,&(ins_at->nr),&(ins_at->index),&ins);
 		ins_grp_id = search_string(ins,groups->ngrpname,(groups->grpname));
-		fprintf(stderr,"\nSelect a group to embed %s into (e.g. the membrane):\n",ins);
+		printf("\nSelect a group to embed %s into (e.g. the membrane):\n",ins);
 		get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),1,&(mem_p->mem_at.nr),&(mem_p->mem_at.index),&(mem_p->name));
 
 		pos_ins->pieces=pieces;
@@ -2841,7 +2841,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		snew(piecename,pieces);	
 		if (pieces>1)
 		{
-			fprintf(stderr,"\nSelect pieces to embed:\n");
+			printf("\nSelect pieces to embed:\n");
 			get_index(&atoms,ftp2fn_null(efNDX,nfile,fnm),pieces,pos_ins->nidx,pos_ins->subindex,piecename);
 		}
 		else
@@ -2856,35 +2856,35 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if(probe_rad<0.2199999)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d:\nA probe radius (-rad) smaller than 0.2 can result in overlap between waters "
+			printf("\nWarning %d:\nA probe radius (-rad) smaller than 0.2 can result in overlap between waters "
 					"and the group to embed, which will result in Lincs errors etc.\nIf you are sure, you can increase maxwarn.\n\n",warn);
 		}
 
 		if(xy_fac<0.09999999)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d:\nThe initial size of %s is probably too smal.\n"
+			printf("\nWarning %d:\nThe initial size of %s is probably too smal.\n"
 					"If you are sure, you can increase maxwarn.\n\n",warn,ins);
 		}
 
 		if(it_xy<1000)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d) is probably too small.\n"
+			printf("\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d) is probably too small.\n"
 					"Increase -nxy or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_xy);
 		}
 
 		if( (it_z<100) && ( z_fac<0.99999999 || z_fac>1.0000001) )
                 {
                         warn++;
-                        fprintf(stderr,"\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d) is probably too small.\n"
+                        printf("\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d) is probably too small.\n"
                                        "Increase -nz or, if you are sure, you can increase maxwarn.\n\n",warn,ins,it_z);
                 }
 
 		if(it_xy+it_z>inputrec->nsteps)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the number of steps in the tpr.\n"
+			printf("\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the number of steps in the tpr.\n"
 					"If you are sure, you can increase maxwarn.\n\n",warn);
 		}
 
@@ -2943,7 +2943,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if ( (prot_area>7.5) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX])<50) )
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
+			printf("\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
 					"This might cause pressure problems during the growth phase. Just try with\n"
 					"current setup (-maxwarn + 1), but if pressure problems occur, lower the\n"
 					"compressibility in the mdp-file or use no pressure coupling at all.\n\n",warn);
@@ -2998,7 +2998,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		if(lip_rm>max_lip_rm)
 		{
 			warn++;
-			fprintf(stderr,"\nWarning %d:\nTrying to remove a larger lipid area than the estimated protein area\n"
+			printf("\nWarning %d:\nTrying to remove a larger lipid area than the estimated protein area\n"
 					"Try making the -xyinit resize factor smaller. If you are sure about this increase maxwarn.\n\n",warn);
 		}
 
@@ -3008,7 +3008,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		rm_bonded_at = rm_bonded(ins_at,mtop);
 		if (rm_bonded_at != ins_at->nr)
 		{
-			fprintf(stderr,"Warning: The number of atoms for which the bonded interactions are removed is %d, "
+			printf("Warning: The number of atoms for which the bonded interactions are removed is %d, "
 					"while %d atoms are embedded. Make sure that the atoms to be embedded are not in the same"
 					"molecule type as atoms that are not to be embedded.\n",rm_bonded_at,ins_at->nr);
 		}
@@ -3118,7 +3118,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (bVerbose && SIMMASTER(cr))
     {
-        fprintf(stderr,"Loaded with Money\n\n");
+        printf("Loaded with Money\n\n");
     }
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
@@ -3805,7 +3805,7 @@ int gmx_membed(int argc,char *argv[])
 
 	/* Log file has to be closed in mdrunner if we are appending to it
    (fplog not set here) */
-	fprintf(stderr,"Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
+	printf("Please cite:\nWolf et al, J Comp Chem 31 (2010) 2169-2174.\n");
 
 	if (MASTER(cr) && !bAppendFiles)
 	{

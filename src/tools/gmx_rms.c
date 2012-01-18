@@ -293,7 +293,7 @@ int gmx_rms(int argc, char *argv[])
     bFreq2 = opt2parg_bSet("-skip2", asize(pa), pa);
     if (freq <= 0)
     {
-        fprintf(stderr, "The number of frames to skip is <= 0. "
+        printf( "The number of frames to skip is <= 0. "
             "Writing out all frames.\n\n");
         freq = 1;
     }
@@ -303,7 +303,7 @@ int gmx_rms(int argc, char *argv[])
     }
     else if (bFile2 && freq2 <= 0)
     {
-        fprintf(stderr,
+        printf(
                 "The number of frames to skip in second trajectory is <= 0.\n"
                     "  Writing out all frames.\n\n");
         freq2 = 1;
@@ -314,16 +314,13 @@ int gmx_rms(int argc, char *argv[])
     {
         prev = abs(prev);
         if (freq != 1)
-            fprintf(stderr, "WARNING: option -skip also applies to -prev\n");
+            printf( "WARNING: option -skip also applies to -prev\n");
     }
 
     if (bFile2 && !bMat && !bBond)
     {
-        fprintf(
-                stderr,
-                "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
-                    "         will not read from %s\n", opt2fn("-f2", NFILE,
-                                                               fnm));
+        printf("WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
+	       "         will not read from %s\n", opt2fn("-f2", NFILE,fnm));
         bFile2 = FALSE;
     }
 
@@ -332,7 +329,7 @@ int gmx_rms(int argc, char *argv[])
         bMat = TRUE;
         if (bFile2)
         {
-            fprintf(stderr,
+            printf(
                     "WARNING: second trajectory (-f2) useless when making delta matrix,\n"
                         "         will not read from %s\n", opt2fn("-f2",
                                                                    NFILE, fnm));
@@ -347,7 +344,7 @@ int gmx_rms(int argc, char *argv[])
 
     if (!bTop && bBond)
     {
-        fprintf(stderr,
+        printf(
                 "WARNING: Need a run input file for bond angle matrix,\n"
                     "         will not calculate bond angle matrix.\n");
         bBond = FALSE;
@@ -355,7 +352,7 @@ int gmx_rms(int argc, char *argv[])
 
     if (bReset)
     {
-        fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares"
+        printf( "Select group for %s fit\n", bFit ? "least squares"
             : "translational");
         get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
                   &ind_fit, &gn_fit);
@@ -379,7 +376,7 @@ int gmx_rms(int argc, char *argv[])
         }
         if (!bMass)
         {
-            fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
+            printf("All masses in the fit group are 0, using masses of 1\n");
             for(i=0; i<ifit; i++)
             {
                 w_rls[ind_fit[i]] = 1;
@@ -394,7 +391,7 @@ int gmx_rms(int argc, char *argv[])
     snew(ind_rms,nrms);
     snew(irms,nrms);
 
-    fprintf(stderr,"Select group%s for %s calculation\n",
+    printf("Select group%s for %s calculation\n",
             (nrms>1) ? "s" : "",whatname[ewhat]);
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
               nrms,irms,ind_rms,gn_rms);
@@ -425,7 +422,7 @@ int gmx_rms(int argc, char *argv[])
             bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
         }
         if (!bMass) {
-            fprintf(stderr,"All masses in group %d are 0, using masses of 1\n",j);
+            printf("All masses in group %d are 0, using masses of 1\n",j);
             for(i=0; i<irms[j]; i++)
                 w_rms[ind_rms[j][i]] = 1;
         }
@@ -451,7 +448,7 @@ int gmx_rms(int argc, char *argv[])
     /* read first frame */
     natoms_trx=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
     if (natoms_trx != top.atoms.nr) 
-        fprintf(stderr,
+        printf(
                 "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
                 top.atoms.nr,natoms_trx);
     natoms = min(top.atoms.nr,natoms_trx);
@@ -502,7 +499,7 @@ int gmx_rms(int argc, char *argv[])
                 iatom  = top.idef.il[k].iatoms;
                 ncons += top.idef.il[k].nr/3;
             }
-        fprintf(stderr,"Found %d bonds in topology\n",ncons);
+        printf("Found %d bonds in topology\n",ncons);
         snew(ind_bond1,ncons);
         snew(ind_bond2,ncons);
         ibond=0;
@@ -524,7 +521,7 @@ int gmx_rms(int argc, char *argv[])
                     }
                 }
             }
-        fprintf(stderr,"Using %d bonds for bond angle matrix\n",ibond);
+        printf("Using %d bonds for bond angle matrix\n",ibond);
         if (ibond==0)
             gmx_fatal(FARGS,"0 bonds found");
     }
@@ -605,7 +602,7 @@ int gmx_rms(int argc, char *argv[])
     if (bFile2) {
         snew(time2,maxframe2);
 
-        fprintf(stderr,"\nWill read second trajectory file\n");
+        printf("\nWill read second trajectory file\n");
         snew(mat_x2,NFRAME);
         natoms_trx2 =
 	  read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
@@ -659,14 +656,14 @@ int gmx_rms(int argc, char *argv[])
 
     if (bMat || bBond) {
         /* calculate RMS matrix */
-        fprintf(stderr,"\n");
+        printf("\n");
         if (bMat) {
-            fprintf(stderr,"Building %s matrix, %dx%d elements\n",
+            printf("Building %s matrix, %dx%d elements\n",
                     whatname[ewhat],tel_mat,tel_mat2);
             snew(rmsd_mat,tel_mat);
         }
         if (bBond) {
-            fprintf(stderr,"Building bond angle matrix, %dx%d elements\n",
+            printf("Building bond angle matrix, %dx%d elements\n",
                     tel_mat,tel_mat2);
             snew(bond_mat,tel_mat);
         }
@@ -705,7 +702,7 @@ int gmx_rms(int argc, char *argv[])
             snew(mat_x2_j,natoms);
         for(i=0; i<tel_mat; i++) {
             axis[i]=time[freq*i];
-            fprintf(stderr,"\r element %5d; time %5.2f  ",i,axis[i]);
+            printf("\r element %5d; time %5.2f  ",i,axis[i]);
             if (bMat) snew(rmsd_mat[i],tel_mat2);
             if (bBond) snew(bond_mat[i],tel_mat2); 
             for(j=0; j<tel_mat2; j++) {
@@ -776,14 +773,14 @@ int gmx_rms(int argc, char *argv[])
         }
 
         if (bMat) {
-            fprintf(stderr,"\n%s: Min %f, Max %f, Avg %f\n",
+            printf("\n%s: Min %f, Max %f, Avg %f\n",
                     whatname[ewhat],rmsd_min,rmsd_max,rmsd_avg);
             rlo.r = 1; rlo.g = 1; rlo.b = 1;
             rhi.r = 0; rhi.g = 0; rhi.b = 0;
             if (rmsd_user_max != -1) rmsd_max=rmsd_user_max;
             if (rmsd_user_min != -1) rmsd_min=rmsd_user_min;
             if ((rmsd_user_max !=  -1) || (rmsd_user_min != -1))
-                fprintf(stderr,"Min and Max value set to resp. %f and %f\n",
+                printf("Min and Max value set to resp. %f and %f\n",
                         rmsd_min,rmsd_max);
             sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
             write_xpm(opt2FILE("-m",NFILE,fnm,"w"),0,buf,whatlabel[ewhat],
@@ -819,7 +816,7 @@ int gmx_rms(int argc, char *argv[])
                         }
                     }
                 }
-                fprintf(stderr,"Maximum in delta matrix: %f\n",delta_max);
+                printf("Maximum in delta matrix: %f\n",delta_max);
                 snew(del_xaxis,delta_xsize);
                 snew(del_yaxis,del_lev+1);
                 for (i=0; i<delta_xsize; i++)
@@ -845,11 +842,11 @@ int gmx_rms(int argc, char *argv[])
             }
         }
         if (bBond) {
-            fprintf(stderr,"\nMin. angle: %f, Max. angle: %f\n",bond_min,bond_max);
+            printf("\nMin. angle: %f, Max. angle: %f\n",bond_min,bond_max);
             if (bond_user_max != -1) bond_max=bond_user_max;
             if (bond_user_min != -1) bond_min=bond_user_min;
             if ((bond_user_max !=  -1) || (bond_user_min != -1))
-                fprintf(stderr,"Bond angle Min and Max set to:\n"
+                printf("Bond angle Min and Max set to:\n"
                         "Min. angle: %f, Max. angle: %f\n",bond_min,bond_max);
             rlo.r = 1; rlo.g = 1; rlo.b = 1;
             rhi.r = 0; rhi.g = 0; rhi.b = 0;

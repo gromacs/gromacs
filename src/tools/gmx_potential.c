@@ -84,10 +84,10 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
   double sum;
   
   if (ndata <= 2) 
-    fprintf(stderr,"Warning: nr of slices very small. This will result"
+    printf("Warning: nr of slices very small. This will result"
 	    "in nonsense.\n");
 
-  fprintf(stderr,"Integrating from slice %d to slice %d\n",cb, ndata-ce);
+  printf("Integrating from slice %d to slice %d\n",cb, ndata-ce);
 
   for (slice = cb; slice < (ndata-ce); slice ++)
   {
@@ -145,7 +145,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */
 
-  fprintf(stderr,"\nDividing the box in %d slices\n",*nslices);
+  printf("\nDividing the box in %d slices\n",*nslices);
 
   snew(*slField, nr_grps);
   snew(*slCharge, nr_grps);
@@ -194,7 +194,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 	     the sphere
  	    if (slice > (*nslices)) 
 	    {
-	     fprintf(stderr,"Warning: slice = %d\n",slice);
+	     printf("Warning: slice = %d\n",slice);
 	    }
 	  */
 	  (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
@@ -227,10 +227,10 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 
   
   if (bSpherical)
-    fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential"
+    printf("\n\nRead %d frames from trajectory. Calculating potential"
 	    "in spherical coordinates\n", nr_frames);
   else
-    fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential\n",
+    printf("\n\nRead %d frames from trajectory. Calculating potential\n",
 	    nr_frames);
 
   for (n =0; n < nr_grps; n++)

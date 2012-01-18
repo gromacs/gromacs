@@ -430,13 +430,13 @@ static void write_pdb_bfac(const char *fname,const char *xname,
 
     if ((nfr_x == 0) || (nfr_v == 0))
     {
-        fprintf(stderr,"No frames found for %s, will not write %s\n",
+        printf("No frames found for %s, will not write %s\n",
                 title,fname);
     }
     else
     {
-        fprintf(stderr,"Used %d frames for %s\n",nfr_x,"coordinates");
-        fprintf(stderr,"Used %d frames for %s\n",nfr_v,title);
+        printf("Used %d frames for %s\n",nfr_x,"coordinates");
+        printf("Used %d frames for %s\n",nfr_v,title);
         onedim = -1;
         if (!bDim[DIM])
         {
@@ -561,7 +561,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
         if (in >= *nhisto)
         {
             nnn = in+100;
-            fprintf(stderr,"Extending histogram from %d to %d\n",*nhisto,nnn);
+            printf("Extending histogram from %d to %d\n",*nhisto,nnn);
             
             srenew(*histo,nnn);
             for(m=*nhisto; (m<nnn); m++)
@@ -709,7 +709,7 @@ int gmx_traj(int argc,char *argv[])
 
     if (bMol)
     {
-        fprintf(stderr,"Interpreting indexfile entries as molecules.\n"
+        printf("Interpreting indexfile entries as molecules.\n"
                 "Using center of mass.\n");
     }
   
@@ -894,7 +894,7 @@ int gmx_traj(int argc,char *argv[])
     }
     if ((flags == 0) && !bOB)
     {
-        fprintf(stderr,"Please select one or more output file options\n");
+        printf("Please select one or more output file options\n");
         exit(0);
     }
 
@@ -1065,7 +1065,7 @@ int gmx_traj(int argc,char *argv[])
         {
             if (ePBC != epbcNONE && !bNoJump)
             {
-                fprintf(stderr,"\nWARNING: More than one frame was used for option -cv or -cf\n"
+                printf("\nWARNING: More than one frame was used for option -cv or -cf\n"
                         "If atoms jump across the box you should use the -nojump or -ctime option\n\n");
             }
             for(i=0; i<isize[0]; i++)
@@ -1075,7 +1075,7 @@ int gmx_traj(int argc,char *argv[])
         }
         else if (nr_xfr == 0)
         {
-            fprintf(stderr,"\nWARNING: No coordinate frames found for option -cv or -cf\n\n");
+            printf("\nWARNING: No coordinate frames found for option -cv or -cf\n\n");
         }
     }
     if (bCV)

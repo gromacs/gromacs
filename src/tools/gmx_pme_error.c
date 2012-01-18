@@ -136,7 +136,7 @@ static void calc_q2all(
     gmx_molblock_t *molblock;
     
 #ifdef DEBUG
-        fprintf(stderr, "\nCharge density:\n");
+        printf( "\nCharge density:\n");
 #endif
     q2_all = 0.0;  /* total q squared */
     nrq_all = 0;   /* total number of charges in the system */
@@ -160,7 +160,7 @@ static void calc_q2all(
         q2_all  += q2_mol*molblock->nmol;
         nrq_all += nrq_mol*molblock->nmol;
 #ifdef DEBUG
-        fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n", 
+        printf( "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n", 
                 imol,molblock->natoms_mol,q2_mol,nrq_mol,molblock->nmol,q2_all,nrq_all);
 #endif
     }
@@ -511,7 +511,7 @@ static real estimate_reciprocal(
     
     if (MASTER(cr)){
                          
-        fprintf(stderr, "Calculating reciprocal error part 1 ...");
+        printf( "Calculating reciprocal error part 1 ...");
         
     }
 
@@ -604,12 +604,12 @@ static real estimate_reciprocal(
             }
         }
         if (MASTER(cr))
-            fprintf(stderr, "\rCalculating reciprocal error part 1 ... %3.0f%%", 100.0*(nx-startlocal+1)/(x_per_core));
+            printf( "\rCalculating reciprocal error part 1 ... %3.0f%%", 100.0*(nx-startlocal+1)/(x_per_core));
         
     }
 
     if (MASTER(cr))
-        fprintf(stderr, "\n");
+        printf( "\n");
     
     /* Use just a fraction of all charges to estimate the self energy error term? */
     bFraction =  (info->fracself > 0.0) && (info->fracself < 1.0);
@@ -719,14 +719,14 @@ static real estimate_reciprocal(
 
         e_rec3 += q[ci]*q[ci]*q[ci]*q[ci]*norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
         if (MASTER(cr)){
-            fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",
+            printf( "\rCalculating reciprocal error part 2 ... %3.0f%%",
                     100.0*(i+1)/stoplocal);
 
         }
     }
 
     if (MASTER(cr))
-        fprintf(stderr, "\n");
+        printf( "\n");
 
 #ifdef GMX_LIB_MPI
 #ifdef TAKETIME
@@ -741,7 +741,7 @@ static real estimate_reciprocal(
 #ifdef DEBUG
     if (PAR(cr))
     {
-        fprintf(stderr, "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n", 
+        printf( "Node %3d: nx=[%3d...%3d]  e_rec3=%e\n", 
                 cr->nodeid, startlocal, stoplocal, e_rec3);
     }
 #endif
@@ -945,8 +945,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         fprintf(fp_out, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
         fprintf(fp_out, "Self-energy error term was estimated using %d samples\n", nsamples);
         fflush(fp_out);
-        fprintf(stderr, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
-        fprintf(stderr, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
+        printf( "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
+        printf( "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
     }
 
     i=0;
@@ -954,7 +954,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     if (info->bTUNE)
     {
         if(MASTER(cr))
-            fprintf(stderr,"Starting tuning ...\n");
+            printf("Starting tuning ...\n");
         edir=info->e_dir[0];
         erec=info->e_rec[0];
         derr0=edir-erec;
@@ -997,9 +997,9 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             if (MASTER(cr))
             {
                 i++;
-                fprintf(stderr,"difference between real and rec. space error (step %d): %g\n",i,fabs(derr));
-                fprintf(stderr,"old beta: %f\n",beta0);
-                fprintf(stderr,"new beta: %f\n",beta);
+                printf("difference between real and rec. space error (step %d): %g\n",i,fabs(derr));
+                printf("old beta: %f\n",beta0);
+                printf("new beta: %f\n",beta);
             }
         }
 
@@ -1012,8 +1012,8 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             fprintf(fp_out, "=========  After tuning ========\n");
             fprintf(fp_out, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
             fprintf(fp_out, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
-            fprintf(stderr, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
-            fprintf(stderr, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
+            printf( "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
+            printf( "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
             fprintf(fp_out, "Ewald_rtol              : %g\n", info->ewald_rtol[0]);
             fprintf(fp_out, "Ewald parameter beta    : %g\n", info->ewald_beta[0]);
             fflush(fp_out);

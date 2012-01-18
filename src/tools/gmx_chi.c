@@ -252,7 +252,7 @@ static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
       }
     }
   }
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
@@ -322,7 +322,7 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
 	}
 	j++; 
       }
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 static void reset_one(real dih[],int nf,real phase)
@@ -381,7 +381,7 @@ static int reset_em_all(int nlist,t_dlist dlist[],int nf,
 		  }
 	  }
   }
-  fprintf(stderr,"j after resetting (nr. active dihedrals) = %d\n",j);
+  printf("j after resetting (nr. active dihedrals) = %d\n",j);
   return j ; 
 }
 
@@ -829,7 +829,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
       ffclose(fp);
     }
     else 
-      fprintf(stderr,"No chi1 & chi2 angle for %s\n",dlist[i].name);
+      printf("No chi1 & chi2 angle for %s\n",dlist[i].name);
   }
 }
 
@@ -1182,19 +1182,19 @@ int gmx_chi(int argc,char *argv[])
   bDo_jc=(opt2bSet("-jc",NFILE,fnm));
   bCorr=(opt2bSet("-corr",NFILE,fnm));
   if (bCorr) 
-    fprintf(stderr,"Will calculate autocorrelation\n");
+    printf("Will calculate autocorrelation\n");
   
   if (core_frac > 1.0 ) {
-    fprintf(stderr, "core_rotamer fraction > 1.0 ; will use 1.0\n"); 
+    printf( "core_rotamer fraction > 1.0 ; will use 1.0\n"); 
     core_frac=1.0 ; 
   }
   if (core_frac < 0.0 ) {
-    fprintf(stderr, "core_rotamer fraction < 0.0 ; will use 0.0\n"); 
+    printf( "core_rotamer fraction < 0.0 ; will use 0.0\n"); 
     core_frac=0.0 ; 
   }
 
   if (maxchi > MAXCHI) {
-    fprintf(stderr, 
+    printf( 
 	    "Will only calculate first %d Chi dihedrals in stead of %d.\n",
 	    MAXCHI, maxchi);
     maxchi=MAXCHI;
@@ -1211,7 +1211,7 @@ int gmx_chi(int argc,char *argv[])
   
   gmx_residuetype_init(&rt);
   dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,rt);
-  fprintf(stderr,"%d residues with dihedrals found\n", nlist);
+  printf("%d residues with dihedrals found\n", nlist);
   
   if (nlist == 0) 
     gmx_fatal(FARGS,"No dihedrals in your structure!\n");
@@ -1219,7 +1219,7 @@ int gmx_chi(int argc,char *argv[])
   /* Make a linear index for reading all. */
   index=make_chi_ind(nlist,dlist,&ndih);
   isize=4*ndih;
-  fprintf(stderr,"%d dihedrals found\n", ndih);
+  printf("%d dihedrals found\n", ndih);
 
   snew(dih,ndih);
 

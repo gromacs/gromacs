@@ -435,17 +435,17 @@ int gmx_confrms(int argc,char *argv[])
   conf2file = ftp2fn(efSTX,NFILE,fnm);
   
   /* reading reference structure from first structure file */
-  fprintf(stderr,"\nReading first structure file\n");
+  printf("\nReading first structure file\n");
   snew(top1,1);
   read_tps_conf(conf1file,title1,top1,&ePBC1,&x1,&v1,box1,TRUE);
   atoms1 = &(top1->atoms);
-  fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
+  printf("%s\nContaining %d atoms in %d residues\n",
 	  title1,atoms1->nr,atoms1->nres);
   
   if ( bRmpbc ) 
     rm_gropbc(atoms1,x1,box1);
 
-  fprintf(stderr,"Select group from first structure\n");
+  printf("Select group from first structure\n");
   get_index(atoms1,opt2fn_null("-n1",NFILE,fnm),
 	    1,&isize1,&index1,&groupnames1);
   printf("\n");
@@ -454,17 +454,17 @@ int gmx_confrms(int argc,char *argv[])
     gmx_fatal(FARGS,"Need >= 3 points to fit!\n");
   
   /* reading second structure file */
-  fprintf(stderr,"\nReading second structure file\n");
+  printf("\nReading second structure file\n");
   snew(top2,1);
   read_tps_conf(conf2file,title2,top2,&ePBC2,&x2,&v2,box2,TRUE);
   atoms2 = &(top2->atoms);
-  fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
+  printf("%s\nContaining %d atoms in %d residues\n",
 	  title2,atoms2->nr,atoms2->nres);
   
   if ( bRmpbc ) 
     rm_gropbc(atoms2,x2,box2);
   
-  fprintf(stderr,"Select group from second structure\n");
+  printf("Select group from second structure\n");
   get_index(atoms2,opt2fn_null("-n2",NFILE,fnm),
 	    1,&isize2,&index2,&groupnames2);
   
@@ -492,7 +492,7 @@ int gmx_confrms(int argc,char *argv[])
     name2=*atoms2->atomname[index2[i]];
     if (strcmp(name1,name2)) {
       if (warn < 20)
-	fprintf(stderr,
+	printf(
 		"Warning: atomnames at index %d don't match: %u %s, %u %s\n",
 		i+1,index1[i]+1,name1,index2[i]+1,name2);
       warn++;
@@ -503,7 +503,7 @@ int gmx_confrms(int argc,char *argv[])
     }
   }
   if (warn)
-    fprintf(stderr,"%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
+    printf("%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
   
   if (bFit) {  
     /* calculate and remove center of mass of structures */
@@ -621,7 +621,7 @@ int gmx_confrms(int argc,char *argv[])
     break;
   case efGRO:
     if (bBfac)
-      fprintf(stderr,"WARNING: cannot write B-factor values to gro file\n");
+      printf("WARNING: cannot write B-factor values to gro file\n");
     fp=ffopen(outfile,"w");
     if (!bOne)
       write_hconf_p(fp,title1,atoms1,3,x1,v1,box1);
@@ -630,10 +630,10 @@ int gmx_confrms(int argc,char *argv[])
     break;
   default:
     if (bBfac)
-      fprintf(stderr,"WARNING: cannot write B-factor values to %s file\n",
+      printf("WARNING: cannot write B-factor values to %s file\n",
 	      ftp2ext(fn2ftp(outfile)));
     if (!bOne)
-      fprintf(stderr,
+      printf(
 	      "WARNING: cannot write the reference structure to %s file\n",
 	      ftp2ext(fn2ftp(outfile))); 
     write_sto_conf(outfile,title2,atoms2,x2,v2,ePBC2,box2);

@@ -195,7 +195,7 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
     abstol = 0;
     
  	ido = info = 0;
-    fprintf(stderr,"Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
+    printf("Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
     
     iter = 1;
 	do {
@@ -211,10 +211,10 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
         if(ido==-1 || ido==1)
             gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
         
-        fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
+        printf("\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
 	} while(info==0 && (ido==-1 || ido==1));
 	
-    fprintf(stderr,"\n");
+    printf("\n");
 	if(info==1)
     {
 	    gmx_fatal(FARGS,
@@ -229,7 +229,7 @@ sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
 	
 	info = 0;
 	/* Extract eigenvalues and vectors from data */
-    fprintf(stderr,"Calculating eigenvalues and eigenvectors...\n");
+    printf("Calculating eigenvalues and eigenvectors...\n");
     
 #ifdef GMX_DOUBLE
     F77_FUNC(pdseupd,PDSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
@@ -310,7 +310,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     abstol = 0;
     
  	ido = info = 0;
-    fprintf(stderr,"Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
+    printf("Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
     
     iter = 1;
 	do {
@@ -326,10 +326,10 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
         if(ido==-1 || ido==1)
             gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
         
-        fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
+        printf("\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
 	} while(info==0 && (ido==-1 || ido==1));
 	
-    fprintf(stderr,"\n");
+    printf("\n");
 	if(info==1)
     {
 	    gmx_fatal(FARGS,
@@ -344,7 +344,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
 	
 	info = 0;
 	/* Extract eigenvalues and vectors from data */
-    fprintf(stderr,"Calculating eigenvalues and eigenvectors...\n");
+    printf("Calculating eigenvalues and eigenvectors...\n");
     
 #ifdef GMX_DOUBLE
     F77_FUNC(dseupd,DSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
