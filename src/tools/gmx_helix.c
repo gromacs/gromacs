@@ -262,7 +262,7 @@ int gmx_helix(int argc,char *argv[])
   snew(bbindex,natoms);
   snew(caindex,nres);
   
-  fprintf(stderr,"nall=%d\n",nall);
+  printf("nall=%d\n",nall);
     
   /* Open output files, default x-axis is time */
   for(i=0; (i<efhNR); i++) {
@@ -286,7 +286,7 @@ int gmx_helix(int argc,char *argv[])
   do_start_end(nres,bb,xref,&nbb,bbindex,&nca,caindex,bRange,rStart,rEnd);
   sfree(xref);
   if (bDBG) {
-    fprintf(stderr,"nca=%d, nbb=%d\n",nca,nbb);
+    printf("nca=%d, nbb=%d\n",nca,nbb);
     pr_bb(stdout,nres,bb);
   }
   
@@ -296,7 +296,7 @@ int gmx_helix(int argc,char *argv[])
   teller=0;
   do {
     if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rt=%.2f",t);
+      printf("\rt=%.2f",t);
     gmx_rmpbc(gpbc,natoms,box,x);
 
     
@@ -336,7 +336,7 @@ int gmx_helix(int argc,char *argv[])
 	dump_otrj(otrj,nall,allindex,x,xf[nSel].val,xav);
     }
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
+  printf("\n");
   
   gmx_rmpbc_done(gpbc);
 

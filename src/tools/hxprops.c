@@ -315,14 +315,14 @@ t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
   fprintf(stderr,"Please select a group containing the entire backbone\n");
   rd_index(fn,1,&gnx,index,&grpname);
   *nall=gnx;
-  fprintf(stderr,"Checking group %s\n",grpname);
+  printf("Checking group %s\n",grpname);
   r0=r1=atom[(*index)[0]].resind;
   for(i=1; (i<gnx); i++) {
     r0=min(r0,atom[(*index)[i]].resind);
     r1=max(r1,atom[(*index)[i]].resind);
   }    
   rnr=r1-r0+1;
-  fprintf(stderr,"There are %d residues\n",rnr);
+  printf("There are %d residues\n",rnr);
   snew(bb,rnr);
   for(i=0; (i<rnr); i++)
     bb[i].N=bb[i].H=bb[i].CA=bb[i].C=bb[i].O=-1,bb[i].resno=res0+i;
@@ -382,7 +382,7 @@ t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
     bb[i].Nnext=bb[i+1].N;
   }
   rnr=max(0,i1-i0+1);
-  fprintf(stderr,"There are %d complete backbone residues (from %d to %d)\n",
+  printf("There are %d complete backbone residues (from %d to %d)\n",
 	  rnr,bb[i0].resno,bb[i1].resno);
   if (rnr==0)
     gmx_fatal(FARGS,"rnr==0");
@@ -477,7 +477,7 @@ static void check_ahx(int nres,t_bb bb[],rvec x[],
     for(h1=h0; bb[h1+1].bHelix && (h1<nres-1); h1++)
       ;
     if (h1 > h0) {
-      /*fprintf(stderr,"Helix from %d to %d\n",h0,h1);*/
+      /*printf("Helix from %d to %d\n",h0,h1);*/
       if (h1-h0 > h1sav-h0sav) {
 	h0sav=h0;
 	h1sav=h1;
@@ -509,7 +509,7 @@ void do_start_end(int nres,t_bb bb[],rvec x[],int *nbb,atom_id bbindex[],
     /* Find start and end of longest helix fragment */
     check_ahx(nres,bb,x,&hstart,&hend);
   }
-  fprintf(stderr,"helix from: %d through %d\n",
+  printf("helix from: %d through %d\n",
 	  bb[hstart].resno,bb[hend].resno);
   
   for(j=0,i=hstart; (i<=hend); i++) {

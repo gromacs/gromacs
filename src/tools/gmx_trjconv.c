@@ -204,12 +204,12 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
 
     if (ncluster <= 0) 
     {
-        fprintf(stderr,"No molecules selected in the cluster\n");
+        printf("No molecules selected in the cluster\n");
         return;
     }
     else if (imol_center == -1) 
     {
-        fprintf(stderr,"No central molecules could be found\n");
+        printf("No central molecules could be found\n");
         return;
     }
     
@@ -462,7 +462,7 @@ void do_trunc(const char *fn, real t0)
     in   = open_trn(fn,"r");
     fp   = gmx_fio_getfp(in);
     if (fp == NULL) {
-        fprintf(stderr,"Sorry, can not trunc %s, truncation of this filetype is not supported\n",fn);
+        printf("Sorry, can not trunc %s, truncation of this filetype is not supported\n",fn);
         close_trn(in);
     } else {
         j    = 0;
@@ -478,7 +478,7 @@ void do_trunc(const char *fn, real t0)
             }
         }
         if (bStop) {
-            fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
+            printf("Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
                     fn,j,t,(long int)fpos);
             if(1 != scanf("%s",yesno))
@@ -486,7 +486,7 @@ void do_trunc(const char *fn, real t0)
                 gmx_fatal(FARGS,"Error reading user input");
             }
             if (strcmp(yesno,"YES") == 0) {
-                fprintf(stderr,"Once again, I'm gonna DO this...\n");
+                printf("Once again, I'm gonna DO this...\n");
                 close_trn(in);
                 if(0 != truncate(fn,fpos))
                 {
@@ -494,11 +494,11 @@ void do_trunc(const char *fn, real t0)
                 }
             }
             else {
-                fprintf(stderr,"Ok, I'll forget about it\n");
+                printf("Ok, I'll forget about it\n");
             }
         }
         else {
-            fprintf(stderr,"Already at end of file (t=%g)...\n",t);
+            printf("Already at end of file (t=%g)...\n",t);
             close_trn(in);
         }
     }
@@ -898,7 +898,7 @@ int gmx_trjconv(int argc,char *argv[])
 	  
         if (bSetUR) {
             if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
-                fprintf(stderr,
+                printf(
                         "WARNING: Option for unitcell representation (-ur %s)\n"
                         "         only has effect in combination with -pbc %s, %s or %s.\n"
                         "         Ingoring unitcell representation.\n\n",
@@ -925,7 +925,7 @@ int gmx_trjconv(int argc,char *argv[])
         /* Determine output type */ 
         out_file=opt2fn("-o",NFILE,fnm);
         ftp=fn2ftp(out_file);
-        fprintf(stderr,"Will write %s: %s\n",ftp2ext(ftp),ftp2desc(ftp));
+        printf("Will write %s: %s\n",ftp2ext(ftp),ftp2desc(ftp));
         bNeedPrec = (ftp==efXTC || ftp==efGRO);
         if (bVels) {
             /* check if velocities are possible in input and output files */
@@ -1011,7 +1011,7 @@ int gmx_trjconv(int argc,char *argv[])
         /* get frame number index */
         frindex=NULL;
         if (opt2bSet("-fr",NFILE,fnm)) {
-            printf("Select groups of frame number indices:\n");
+	    fprintf(stderr,"Select groups of frame number indices:\n");
             rd_index(opt2fn("-fr",NFILE,fnm),1,&nrfri,(atom_id **)&frindex,&frname);
             if (debug)
                 for(i=0; i<nrfri; i++)
@@ -1020,7 +1020,7 @@ int gmx_trjconv(int argc,char *argv[])
 
         /* get index groups etc. */
         if (bReset) {
-            printf("Select group for %s fit\n",
+	  fprintf(stderr,"Select group for %s fit\n",
                    bFit?"least squares":"translational");
             get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&ifit,&ind_fit,&gn_fit);
@@ -1029,22 +1029,22 @@ int gmx_trjconv(int argc,char *argv[])
                 if (ifit < 2) 
                     gmx_fatal(FARGS,"Need at least 2 atoms to fit!\n");
                 else if (ifit == 3)
-                    fprintf(stderr,"WARNING: fitting with only 2 atoms is not unique\n");
+                    printf("WARNING: fitting with only 2 atoms is not unique\n");
             }
         }
         else if (bCluster) {
-            printf("Select group for clustering\n");
+	  fprintf(stderr,"Select group for clustering\n");
             get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&ifit,&ind_fit,&gn_fit);
         }
 
         if (bIndex) {
             if (bCenter) {
-                printf("Select group for centering\n");
+	      fprintf(stderr,"Select group for centering\n");
                 get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
                           1,&ncent,&cindex,&grpnm);
             }
-            printf("Select group for output\n");
+            fprintf(stderr,"Select group for output\n");
             get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
                       1,&nout,&index,&grpnm);
         } else {
@@ -1081,9 +1081,9 @@ int gmx_trjconv(int argc,char *argv[])
 
         if (bDropUnder || bDropOver) {
             /* Read the .xvg file with the drop values */
-            fprintf(stderr,"\nReading drop file ...");
+            printf("\nReading drop file ...");
             ndrop = read_xvg(opt2fn("-drop",NFILE,fnm),&dropval,&ncol);
-            fprintf(stderr," %d time points\n",ndrop);
+            printf(" %d time points\n",ndrop);
             if (ndrop == 0 || ncol < 2)
                 gmx_fatal(FARGS,"Found no data points in %s",
                           opt2fn("-drop",NFILE,fnm));
@@ -1117,12 +1117,12 @@ int gmx_trjconv(int argc,char *argv[])
         /* open trx file for reading */
         bHaveFirstFrame = read_first_frame(oenv,&status,in_file,&fr,flags);
         if (fr.bPrec)
-            fprintf(stderr,"\nPrecision of %s is %g (nm)\n",in_file,1/fr.prec);
+            printf("\nPrecision of %s is %g (nm)\n",in_file,1/fr.prec);
         if (bNeedPrec) {
             if (bSetPrec || !fr.bPrec)
-                fprintf(stderr,"\nSetting output precision to %g (nm)\n",1/prec);
+                printf("\nSetting output precision to %g (nm)\n",1/prec);
             else
-                fprintf(stderr,"Using output precision of %g (nm)\n",1/prec);
+                printf("Using output precision of %g (nm)\n",1/prec);
         }
 
         if (bHaveFirstFrame) {
@@ -1138,7 +1138,7 @@ int gmx_trjconv(int argc,char *argv[])
             /* open output for writing */
             if ((bAppend) && (gmx_fexist(out_file))) {
                 strcpy(filemode,"a");
-                fprintf(stderr,"APPENDING to existing file %s\n",out_file);
+                printf("APPENDING to existing file %s\n",out_file);
             } else
                 strcpy(filemode,"w");
             switch (ftp) {
@@ -1318,7 +1318,7 @@ int gmx_trjconv(int argc,char *argv[])
                             fr.time += tshift;
 
                     if (bTDump)
-                        fprintf(stderr,"\nDumping frame at t= %g %s\n",
+                        printf("\nDumping frame at t= %g %s\n",
                                 output_env_conv_time(oenv,fr.time),output_env_get_time_unit(oenv));
 
                     /* check for writing at each delta_t */
@@ -1336,7 +1336,7 @@ int gmx_trjconv(int argc,char *argv[])
                     if (bDoIt || bTDump) {
                         /* print sometimes */
                         if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
-                            fprintf(stderr," ->  frame %6d time %8.3f      \r",
+                            printf(" ->  frame %6d time %8.3f      \r",
                                     outframe,output_env_conv_time(oenv,fr.time));
 
                         if (!bPFit) {
@@ -1371,7 +1371,7 @@ int gmx_trjconv(int argc,char *argv[])
                                 warn = put_atoms_in_compact_unitcell(ePBC,ecenter,fr.box,
                                                                      natoms,fr.x);
                                 if (warn && !bWarnCompact) {
-                                    fprintf(stderr,"\n%s\n",warn);
+                                    printf("\n%s\n",warn);
                                     bWarnCompact = TRUE;
                                 }
                                 break;
@@ -1528,7 +1528,7 @@ int gmx_trjconv(int argc,char *argv[])
                         if (bExec) {
                             char c[255];
                             sprintf(c,"%s  %d",exec_command,file_nr-1);
-                            /*fprintf(stderr,"Executing '%s'\n",c);*/
+                            /*printf("Executing '%s'\n",c);*/
 #ifdef GMX_NO_SYSTEM
                             printf("Warning-- No calls to system(3) supported on this platform.");
                             printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
@@ -1548,9 +1548,9 @@ int gmx_trjconv(int argc,char *argv[])
         }
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
-            fprintf(stderr,"\nWARNING no output, "
+            printf("\nWARNING no output, "
                     "last frame read at t=%g\n",fr.time);
-        fprintf(stderr,"\n");
+        printf("\n");
 
         close_trj(status);
 	if (bRmPBC)

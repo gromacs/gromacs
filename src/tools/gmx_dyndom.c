@@ -197,7 +197,7 @@ int gmx_dyndom(int argc,char *argv[])
   snew(xout,natoms);
   snew(vout,natoms);
   
-  printf("Select group to rotate:\n"); 
+  fprintf(stderr,"Select group to rotate:\n"); 
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   printf("Going to rotate %s containg %d atoms\n",grpname,isize);
 

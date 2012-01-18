@@ -110,7 +110,7 @@ static void insert_ion(int nsa,int *nwater,
     if (ei == -1)
       gmx_fatal(FARGS,"No more replaceable solvent!");
   }
-  fprintf(stderr,"Replacing solvent molecule %d (atom %d) with %s\n",
+  printf("Replacing solvent molecule %d (atom %d) with %s\n",
 	  ei,index[nsa*ei],ionname);
   
   /* Replace solvent molecule charges with ion charge */
@@ -407,7 +407,7 @@ int gmx_genion(int argc, char *argv[])
                     asize(desc),desc, asize(bugs),bugs,&oenv);
   bPDB = ftp2bSet(efPDB,NFILE,fnm);
   if (bRandom && bPDB) {
-    fprintf(stderr,"Not computing potential with random option!\n");
+    printf("Not computing potential with random option!\n");
     bPDB = FALSE;
   }
     
@@ -454,7 +454,7 @@ int gmx_genion(int argc, char *argv[])
 	       
   if ((p_num == 0) && (n_num == 0)) {
     if (!bPDB) {
-      fprintf(stderr,"No ions to add and no potential to calculate.\n");
+      printf("No ions to add and no potential to calculate.\n");
       exit(0);
     }
     nw  = 0;
@@ -462,7 +462,7 @@ int gmx_genion(int argc, char *argv[])
   } else {
     printf("Will try to add %d %s ions and %d %s ions.\n",
 	   p_num,p_name,n_num,n_name);
-    printf("Select a continuous group of solvent molecules\n");
+    fprintf(stderr,"Select a continuous group of solvent molecules\n");
     get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
     for(i=1; i<nwa; i++)
       if (index[i] != index[i-1]+1)
@@ -478,7 +478,7 @@ int gmx_genion(int argc, char *argv[])
       gmx_fatal(FARGS,"Your solvent group size (%d) is not a multiple of %d",
 		  nwa,nsa);
     nw = nwa/nsa;
-    fprintf(stderr,"Number of (%d-atomic) solvent molecules: %d\n",nsa,nw);
+    printf("Number of (%d-atomic) solvent molecules: %d\n",nsa,nw);
 	if (p_num+n_num > nw)
       gmx_fatal(FARGS,"Not enough solvent for adding ions");
   }
@@ -523,7 +523,7 @@ int gmx_genion(int argc, char *argv[])
       n_num--;
     }
   } while (p_num+n_num > 0);
-  fprintf(stderr,"\n");
+  printf("\n");
 
   if (nw)
     sort_ions(nsa,nw,repl,index,&atoms,x,p_name,n_name);

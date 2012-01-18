@@ -466,7 +466,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
     }
     nframes++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
+  printf("\n");
   
   if (bPBC && (NULL != top))
     gmx_rmpbc_done(gpbc);
@@ -746,7 +746,7 @@ int gmx_rdf(int argc,char *argv[])
       gmx_fatal(FARGS,"Can not have both -com and -surf");
     }
     if (bNormalize) {
-      fprintf(stderr,"Turning of normalization because of option -surf\n");
+      printf("Turning of normalization because of option -surf\n");
       bNormalize = FALSE;
     }
   }

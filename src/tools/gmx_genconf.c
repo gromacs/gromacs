@@ -66,7 +66,7 @@ static void rand_rot(int natoms,rvec x[],rvec v[],vec4 xrot[],vec4 vrot[],
     for(m=0; (m<DIM); m++) {
       xcm[m]+=x[i][m]/natoms;   /* get center of mass of one molecule  */
     }
-  fprintf(stderr,"center of geometry: %f, %f, %f\n",xcm[0],xcm[1],xcm[2]);
+  printf("center of geometry: %f, %f, %f\n",xcm[0],xcm[1],xcm[2]);
   
   translate(-xcm[XX],-xcm[YY],-xcm[ZZ],mt1);  /* move c.o.ma to origin */
   for(m=0; (m<DIM); m++) {

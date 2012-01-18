@@ -362,10 +362,10 @@ void read_eigenvalues(int vecs[],const char *eigfile, real values[],
 
   neig = read_xvg(eigfile,&eigval,&nrow);
 
-  fprintf(stderr,"Read %d eigenvalues\n",neig);
+  printf("Read %d eigenvalues\n",neig);
   for(i=bHesse ? 6 : 0 ; i<neig; i++) {
     if (eigval[1][i] < -0.001 && bHesse)
-      fprintf(stderr,
+      printf(
 	      "WARNING: The Hessian Matrix has negative eigenvalue %f, we set it to zero (no flooding in this direction)\n\n",eigval[1][i]);
 
     if (eigval[1][i] < 0)
@@ -453,7 +453,7 @@ void get_structure(t_atoms *atoms,const char *IndexFile,
 
 
   ntar=read_conffile(StructureFile,title,&xtar);
-  printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
+  fprintf(stderr,"Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
             ntar,StructureFile);
   get_index(atoms,IndexFile,1,&ngro,&igro,&grpname);
   if (ngro!=ntar)
@@ -737,7 +737,7 @@ int main(int argc,char *argv[])
     atoms=&top.atoms;
 
 
-    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+    fprintf(stderr,"\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
     get_index(atoms,indexfile,1,&i,&index,&grpname); /*if indexfile != NULL parameter 'atoms' is ignored */
     if (i!=natoms) {
         gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
@@ -751,13 +751,13 @@ int main(int argc,char *argv[])
         if (bFit1)
         {
             /* if g_covar used different coordinate groups to fit and to do the PCA */
-            printf("\nNote: the structure in %s should be the same\n"
+	  fprintf(stderr,"\nNote: the structure in %s should be the same\n"
                      "      as the one used for the fit in g_covar\n",ftp2fn(efTPS,NFILE,fnm));
-            printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+	  fprintf(stderr,"\nSelect the index group that was used for the least squares fit in g_covar\n");
         }
         else
         {
-            printf("\nNote: Apparently no fitting was done in g_covar.\n"
+	  fprintf(stderr,"\nNote: Apparently no fitting was done in g_covar.\n"
                      "      However, you need to select a reference group for fitting in mdrun\n");
         }
         get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
@@ -819,7 +819,7 @@ int main(int argc,char *argv[])
   {
       if (0 != listen[evFLOOD][0])
       {
-          fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
+          printf( "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
                           "      You may want to use -ori to define the flooding potential center.\n\n");
       }
       get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,natoms,index);

@@ -297,7 +297,7 @@ static PSTYPE periodicIndex(ivec r, t_gemPeriod *per, gmx_bool daSwap) {
 #endif
     {
         if (!per->p2i) {
-            fprintf(stderr, "p2i not initialized. This shouldn't happen!\n");
+            printf( "p2i not initialized. This shouldn't happen!\n");
             snew(per->p2i, 1);
         }
         else
@@ -1064,7 +1064,7 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
                 i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
                 /* next function */
                 if (func_type != top->idef.functype[interaction->iatoms[i]]) {
-                    fprintf(stderr,"Error in func_type %s",
+                    printf("Error in func_type %s",
                             interaction_function[func_type].longname);
                     continue;
                 }
@@ -1166,7 +1166,7 @@ static void control_pHist(t_hbdata *hb, int nframes)
                 for (k=hb->hbmap[i][j][0].n0; k<nframes; k++) {
                     p = getPshift(hb->per->pHist[i][j], k);
                     if (p>hb->per->nper)
-                        fprintf(stderr, "Weird stuff in pHist[%i][%i].p at frame %i: p=%i\n",
+                        printf( "Weird stuff in pHist[%i][%i].p at frame %i: p=%i\n",
                                 i,j,k,p);
                 }
 }
@@ -1682,7 +1682,7 @@ static void merge_hb(t_hbdata *hb,gmx_bool bTwo, gmx_bool bContact){
     snew(htmp,ntmp);
     snew(ptmp,ntmp);
     for(i=0; (i<hb->d.nrd); i++) {
-        fprintf(stderr,"\r%d/%d",i+1,hb->d.nrd);
+        printf("\r%d/%d",i+1,hb->d.nrd);
         id = hb->d.don[i];
         ii = hb->a.aptr[id];
         for(j=0; (j<hb->a.nra); j++) {
@@ -1715,7 +1715,7 @@ static void merge_hb(t_hbdata *hb,gmx_bool bTwo, gmx_bool bContact){
             }
         }
     }
-    fprintf(stderr,"\n");
+    printf("\n");
     printf("- Reduced number of hbonds from %d to %d\n",hb->nrhb,inrnew);
     printf("- Reduced number of distances from %d to %d\n",hb->nrdist,indnew);
     hb->nrhb   = inrnew;
@@ -1816,7 +1816,7 @@ static void do_hblife(const char *fn,t_hbdata *hb,gmx_bool bMerge,gmx_bool bCont
             }
         }
     }
-    fprintf(stderr,"\n");
+    printf("\n");
     if (bContact)
         fp = xvgropen(fn,"Uninterrupted contact lifetime",output_env_get_xvgr_tlabel(oenv),"()",oenv);
     else
@@ -1940,7 +1940,7 @@ static double my_f(const gsl_vector *v,void *params)
             chi2 += sqr(k*tl->ct[i]-kp*tl->nt[i]-tl->kt[i])/di;
       
         else
-            fprintf(stderr,"WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
+            printf("WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
                     "di = %g k = %g kp = %g\n",tl->sigma_ct[i],
                     tl->sigma_nt[i],tl->sigma_kt[i],di,k,kp);
     }
@@ -2028,13 +2028,13 @@ static real quality_of_fit(real chi2,int N)
 static real optimize_luzar_parameters(FILE *fp,t_luzar *tl,int maxiter,
                                       real tol)
 {
-    fprintf(stderr,"This program needs the GNU scientific library to work.\n");
+    printf("This program needs the GNU scientific library to work.\n");
   
     return -1;
 }
 static real quality_of_fit(real chi2,int N)
 {
-    fprintf(stderr,"This program needs the GNU scientific library to work.\n");
+    printf("This program needs the GNU scientific library to work.\n");
   
     return -1;
 }
@@ -2226,9 +2226,9 @@ static void parallel_print(int *data, int nThreads)
     /* This prints the donors on which each tread is currently working. */
     int i;
 
-    fprintf(stderr, "\r");
+    printf( "\r");
     for (i=0; i<nThreads; i++)
-        fprintf(stderr, "%-7i",data[i]);
+        printf( "%-7i",data[i]);
 }
 
 static void normalizeACF(real *ct, real *gt, int len)
@@ -2383,15 +2383,15 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         printf("ACF calculations parallelized with OpenMP using %i threads.\n"
                "Expect close to linear scaling over this donor-loop.\n", nThreads);
         fflush(stdout);
-        fprintf(stderr, "Donors: [thread no]\n");
+        printf( "Donors: [thread no]\n");
         {
             char tmpstr[7];
             for (i=0;i<nThreads;i++) {
                 snprintf(tmpstr, 7, "[%i]", i);
-                fprintf(stderr, "%-7s", tmpstr);
+                printf( "%-7s", tmpstr);
             }
         }
-        fprintf(stderr, "\n"); /*                                         | */
+        printf( "\n"); /*                                         | */
     }  /*                                                                 | */
 #endif /* HAVE_OPENMP ===================================================/  */
 
@@ -2433,7 +2433,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                     parallel_print(dondata, nThreads);
                 }
 #else
-                fprintf(stderr, "\r %i", i);
+                printf( "\r %i", i);
 #endif /* ===========================================/ */
 
                 for (j=0; j<hb->a.nra; j++) /* loop over acceptors */
@@ -2515,7 +2515,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
         snew(ct,2*n2);
         memset(ct,0,2*n2*sizeof(real));
 #ifndef HAVE_OPENMP
-        fprintf(stderr, "Donor:\n");
+        printf( "Donor:\n");
 #define __ACDATA ct
 #else
 #define __ACDATA p_ct
@@ -2527,7 +2527,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
     private(i, k, nh, hbh, pHist, h, g, n0, nf, np, j, m,		\
             pfound, poff, rHbExGem, p, ihb, mMax,               \
             thisThread, p_ct)                                   \
-    shared(hb, dondata, ct, nn, nThreads, n2, stderr, bNorm,    \
+    shared(hb, dondata, ct, nn, nThreads, n2, stdout, bNorm,    \
            nframes, bMerge, bContact)
         { /* ##########  THE START OF THE ENORMOUS PARALLELIZED BLOCK!  ########## */
             h = NULL;
@@ -2557,7 +2557,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                     parallel_print(dondata, nThreads);
                 }
 #else
-                fprintf(stderr, "\r %i", i);
+                printf( "\r %i", i);
 #endif
 	
                 for (k=0; k<hb->a.nra; k++) {
@@ -2613,7 +2613,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                                                     memset(rHbExGem[m], 0, (sizeof(real)) * (2*n2));
                                                 }
                                                 else
-                                                    fprintf(stderr, "rHbExGem not initialized! m = %i\n", m);
+                                                    printf( "rHbExGem not initialized! m = %i\n", m);
                                             }
                                             pfound[m] = p;
                                             poff[m] = -1;
@@ -2697,7 +2697,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
 
         normalizeACF(ct, NULL, nn);
 
-        fprintf(stderr, "\n\nACF successfully calculated.\n");
+        printf( "\n\nACF successfully calculated.\n");
 
         /* Use this part to fit to geminate recombination - JCP 129, 84505 (2008) */
       
@@ -2793,7 +2793,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                     for(nh=0; (nh<nhydro); nh++) {
                         int nrint = bContact ? hb->nrdist : hb->nrhb;
                         if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == nrint))
-                            fprintf(stderr,"\rACF %d/%d",nhbonds+1,nrint);
+                            printf("\rACF %d/%d",nhbonds+1,nrint);
                         nhbonds++;
                         for(j=0; (j<nframes); j++) {
                             /* Changed '<' into '<=' below, just like I did in
@@ -2838,7 +2838,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                 }
             }
         }
-        fprintf(stderr,"\n");
+        printf("\n");
         sfree(h);
         sfree(g);
         normalizeACF(ct, gt, nn);
@@ -3377,7 +3377,7 @@ int gmx_hbond(int argc,char *argv[])
   
     if (bSelected) {
         /* analyze selected hydrogen bonds */
-        printf("Select group with selected atoms:\n");
+        fprintf(stderr,"Select group with selected atoms:\n");
         get_index(&(top.atoms),opt2fn("-sel",NFILE,fnm),
                   1,&nsel,index,grpnames);
         if (nsel % 3)
@@ -3402,7 +3402,7 @@ int gmx_hbond(int argc,char *argv[])
     } 
     else {
         /* analyze all hydrogen bonds: get group(s) */
-        printf("Specify 2 groups to analyze:\n");
+        fprintf(stderr,"Specify 2 groups to analyze:\n");
         get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
                   2,isize,index,grpnames);
     
@@ -3433,7 +3433,7 @@ int gmx_hbond(int argc,char *argv[])
                    bContact ? "contacts" : "hydrogen bonds",
                    grpnames[0],isize[0],grpnames[1],isize[1]);
         else
-            fprintf(stderr,"Calculating %s in %s (%d atoms)\n",
+            printf("Calculating %s in %s (%d atoms)\n",
                     bContact?"contacts":"hydrogen bonds",grpnames[0],isize[0]);
     }
     sfree(datable);
@@ -3507,7 +3507,7 @@ int gmx_hbond(int argc,char *argv[])
         char *shgrpnm;
         /* get index group with atom for shell */
         do {
-            printf("Select atom for shell (1 atom):\n");
+            fprintf(stderr,"Select atom for shell (1 atom):\n");
             get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
                       1,&shisz,&shidx,&shgrpnm);
             if (shisz != 1)
@@ -3622,7 +3622,7 @@ int gmx_hbond(int argc,char *argv[])
            shatom, ngrid, grid, nframes, t,             \
            bParallel, bNN, index, bMerge, bContact,     \
            bTwo, bDA,ccut, abin, rbin, top,             \
-           bSelected, bDebug, stderr, nsel,             \
+           bSelected, bDebug, stdout, nsel,             \
            bGem, oenv, fnm, fpnhb, trrStatus, natoms,   \
            status, nabin, nrbin, adist, rdist, debug)
     {    /* Start of parallel region */
@@ -4099,10 +4099,10 @@ int gmx_hbond(int argc,char *argv[])
     }
 
     if (bGem) {
-        fprintf(stderr, "There were %i periodic shifts\n", hb->per->nper);
-        fprintf(stderr, "Freeing pHist for all donors...\n");
+        printf( "There were %i periodic shifts\n", hb->per->nper);
+        printf( "Freeing pHist for all donors...\n");
         for (i=0; i<hb->d.nrd; i++) {
-            fprintf(stderr, "\r%i",i);
+            printf( "\r%i",i);
             if (hb->per->pHist[i] != NULL) {
                 for (j=0; j<hb->a.nra; j++)
                     clearPshift(&(hb->per->pHist[i][j]));
@@ -4112,7 +4112,7 @@ int gmx_hbond(int argc,char *argv[])
         sfree(hb->per->pHist);
         sfree(hb->per->p2i);
         sfree(hb->per);
-        fprintf(stderr, "...done.\n");
+        printf( "...done.\n");
     }
 
 #ifdef HAVE_NN_LOOPS

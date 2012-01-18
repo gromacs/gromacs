@@ -152,8 +152,8 @@ int gmx_trjorder(int argc,char *argv[])
   sfree(x);
 
   /* get index groups */
-  printf("Select %sa group of molecules to be ordered:\n",
-	 bZ ? "" : "a group of reference atoms and "); 
+  fprintf(stderr,"Select %sa group of molecules to be ordered:\n",
+	  bZ ? "" : "a group of reference atoms and "); 
   snew(grpname,2);
   snew(index,2);
   snew(isize,2);
@@ -207,7 +207,7 @@ int gmx_trjorder(int argc,char *argv[])
   if (!bNShell || opt2bSet("-o",NFILE,fnm)) {
     bPDBout = (fn2ftp(opt2fn("-o",NFILE,fnm)) == efPDB);
     if (bPDBout && !top.atoms.pdbinfo) {
-      fprintf(stderr,"Creating pdbfino records\n");
+      printf("Creating pdbfino records\n");
       snew(top.atoms.pdbinfo,top.atoms.nr);
     }
     out = open_trx(opt2fn("-o",NFILE,fnm),"w");

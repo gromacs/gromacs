@@ -134,7 +134,7 @@ int gmx_nmens(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,bDMA);
   atoms=&top.atoms;
 
-  printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+  fprintf(stderr,"\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
   get_index(atoms,indexfile,1,&i,&index,&grpname);
   if (i!=natoms)
     gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
@@ -193,11 +193,11 @@ int gmx_nmens(int argc,char *argv[])
       }
   }
   
-  fprintf(stderr,"%d eigenvectors selected for output\n",noutvec);
+  printf("%d eigenvectors selected for output\n",noutvec);
 
   if (seed == -1)
     seed = make_seed();
-  fprintf(stderr,"Using seed %d and a temperature of %g K\n",seed,temp);
+  printf("Using seed %d and a temperature of %g K\n",seed,temp);
 
   snew(xout1,natoms);
   snew(xout2,atoms->nr);
@@ -233,9 +233,9 @@ int gmx_nmens(int argc,char *argv[])
         copy_rvec(xout1[i],xout2[index[i]]);
     t = s+1;
     write_trx(out,natoms,index,atoms,0,t,box,xout2,NULL,NULL);
-    fprintf(stderr,"\rGenerated %d structures",s+1);
+    printf("\rGenerated %d structures",s+1);
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trx(out);
   
   return 0;

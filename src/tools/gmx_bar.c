@@ -2126,9 +2126,9 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     if ( ! lambda_same(s->foreign_lambda, foreign_lambda) ||
          (  (derivative!=0) != (s->derivative!=0) ) )
     {
-        fprintf(stderr, "Got foreign lambda=%g, expected: %g\n", 
+        printf( "Got foreign lambda=%g, expected: %g\n", 
                 foreign_lambda, s->foreign_lambda);
-        fprintf(stderr, "Got derivative=%d, expected: %d\n", 
+        printf( "Got derivative=%d, expected: %d\n", 
                 derivative, s->derivative);
         gmx_fatal(FARGS, "Corrupted data in file %s around t=%g.", 
                   filename, start_time);
@@ -2456,7 +2456,7 @@ static void read_barsim_edr(char *fn, real *temp, lambda_t *lambda_head)
     }
 
 
-    fprintf(stderr, "\n");
+    printf( "\n");
     printf("%s: %.1f - %.1f; lambda = %.3f\n    foreign lambdas:", 
            fn, first_t, last_t, native_lambda);
     for(i=0;i<nsamples;i++)

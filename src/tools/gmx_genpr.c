@@ -147,7 +147,7 @@ int gmx_genpr(int argc,char *argv[])
     init_t_atoms(atoms,atoms->nr,TRUE);
     snew(x,atoms->nr);
     snew(v,atoms->nr);
-    fprintf(stderr,"\nReading structure file\n");
+    printf("\nReading structure file\n");
     read_stx_conf(xfn,title,atoms,x,v,NULL,box);
   }
   
@@ -165,8 +165,8 @@ int gmx_genpr(int argc,char *argv[])
     ffclose(out);
   }
   else if ((bDisre || bConstr) && x) {
-    printf("Select group to generate %s matrix from\n",
-	   bConstr ? "constraint" : "distance restraint");
+    fprintf(stderr,"Select group to generate %s matrix from\n",
+	    bConstr ? "constraint" : "distance restraint");
     get_index(atoms,nfn,1,&igrp,&ind_grp,&gn_grp);
     
     out=ftp2FILE(efITP,NFILE,fnm,"w");
@@ -205,7 +205,7 @@ int gmx_genpr(int argc,char *argv[])
     ffclose(out);
   }
   else {
-    printf("Select group to position restrain\n");
+    fprintf(stderr,"Select group to position restrain\n");
     get_index(atoms,nfn,1,&igrp,&ind_grp,&gn_grp);
     
     out=ftp2FILE(efITP,NFILE,fnm,"w");

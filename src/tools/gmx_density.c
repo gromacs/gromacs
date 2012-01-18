@@ -109,7 +109,7 @@ int get_electrons(t_electron **eltab, const char *fn)
   ffclose(in);
   
   /* sort the list */
-  fprintf(stderr,"Sorting list..\n");
+  printf("Sorting list..\n");
   qsort ((void*)*eltab, nr, sizeof(t_electron), 
 	 (int(*)(const void*, const void*))compare);
 
@@ -171,7 +171,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
   
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */
-  fprintf(stderr,"\nDividing the box in %d slices\n",*nslices);
+  printf("\nDividing the box in %d slices\n",*nslices);
 
   snew(*slDensity, nr_grps);
   for (i = 0; i < nr_grps; i++)
@@ -208,7 +208,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 		    (int(*)(const void*, const void*))compare);
 
 	  if (found == NULL)
-	    fprintf(stderr,"Couldn't find %s. Add it to the .dat file\n",
+	    printf("Couldn't find %s. Add it to the .dat file\n",
 		    *(top->atoms.atomname[index[n][i]]));
 	  else  
 	    (*slDensity)[n][slice] += (found->nr_el - 
@@ -227,7 +227,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
    over all frames. Now divide by nr_frames and volume of slice 
 */
 
-  fprintf(stderr,"\nRead %d frames from trajectory. Counting electrons\n",
+  printf("\nRead %d frames from trajectory. Counting electrons\n",
 	  nr_frames);
 
   for (n =0; n < nr_grps; n++) {
@@ -268,7 +268,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
   
   if (! *nslices) {
     *nslices = (int)(box[axis][axis] * 10); /* default value */
-    fprintf(stderr,"\nDividing the box in %d slices\n",*nslices);
+    printf("\nDividing the box in %d slices\n",*nslices);
   }
   
   snew(*slDensity, nr_grps);
@@ -311,7 +311,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
      frames. Now divide by nr_frames and volume of slice 
      */
   
-  fprintf(stderr,"\nRead %d frames from trajectory. Calculating density\n",
+  printf("\nRead %d frames from trajectory. Calculating density\n",
 	  nr_frames);
 
   for (n =0; n < nr_grps; n++) {
@@ -437,7 +437,7 @@ int gmx_density(int argc,char *argv[])
                     &oenv);
 
   if (bSymmetrize && !bCenter) {
-    fprintf(stderr,"Can not symmetrize without centering. Turning on -center\n");
+    printf("Can not symmetrize without centering. Turning on -center\n");
     bCenter = TRUE;
   }
   /* Calculate axis */
@@ -460,7 +460,7 @@ int gmx_density(int argc,char *argv[])
 
   if (dens_opt[0][0] == 'e') {
     nr_electrons =  get_electrons(&el_tab,ftp2fn(efDAT,NFILE,fnm));
-    fprintf(stderr,"Read %d atomtypes from datafile\n", nr_electrons);
+    printf("Read %d atomtypes from datafile\n", nr_electrons);
 
     calc_electron_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, 
 			  &nslices, top, ePBC, axis, ngrps, &slWidth, el_tab, 

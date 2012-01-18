@@ -74,7 +74,7 @@ static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
       break;
   }
   if (i == atoms->nr) {
-    fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",
+    printf("\rCan not find %s%d-%s in pdbfile\n",
 	    rresnm,ri->nr,atomnm);
     return 0.0;
   }

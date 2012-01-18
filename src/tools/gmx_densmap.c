@@ -195,8 +195,7 @@ int gmx_densmap(int argc,char *argv[])
     fprintf(stderr,"\nSelect an analysis group\n");
   } else {
     ngrps = 3;
-    fprintf(stderr,
-	    "\nSelect two groups to define the axis and an analysis group\n");
+    fprintf(stderr,"\nSelect two groups to define the axis and an analysis group\n");
   }
   snew(gnx,ngrps);
   snew(grpname,ngrps);

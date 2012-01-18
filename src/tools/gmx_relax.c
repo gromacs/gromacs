@@ -219,14 +219,14 @@ void fit_one(gmx_bool bVerbose,
     mrqmin(x-1,y-1,dy-1,nframes,a,ma,lista,mfit,covar,alpha,
 	   &chisq,myfunc,&alamda);
     if (bVerbose)
-      fprintf(stderr,"\rFitting %d chisq=%g, alamda=%g, tau=%g, S^2=%g\t\t\n",
+      printf("\rFitting %d chisq=%g, alamda=%g, tau=%g, S^2=%g\t\t\n",
 	      j,chisq,alamda,1.0/a[2],a[1]);
     j++;
     bCont = (((ochisq - chisq) > ftol*chisq) ||
 	     ((ochisq == chisq)));
   } while (bCont && (alamda != 0.0) && (j < 50));
   if (bVerbose)
-    fprintf(stderr,"\n");
+    printf("\n");
 
   /* Now get the covariance matrix out */
   alamda = 0;
@@ -263,7 +263,7 @@ void calc_tauc(gmx_bool bVerbose,int npair,t_pair pair[],real dt,
   for(i=0; (i<nframes); i++) 
     x[i]  = i*dt;
   
-  fprintf(stderr,"Fitting correlation function to Lipari&Szabo function\n");
+  printf("Fitting correlation function to Lipari&Szabo function\n");
   fac=1.0/((real)nframes);
   for(i=0; (i<npair); i++) {
     if (spec[i].bNOE) {
@@ -344,7 +344,7 @@ void plot_spectrum(char *noefn,int npair,t_pair pair[],t_sij *spec,real taum)
     fprintf(fp,"%5d  %10g\n",i,sij.re);
   }
   ffclose(fp);
-  fprintf(stderr,"Sijmin: %g, Sijmax: %g\n",Sijmin,Sijmax);
+  printf("Sijmin: %g, Sijmax: %g\n",Sijmin,Sijmax);
   out=ffopen("spec.out","w");
   pow6 = -1.0/6.0;
   pow3 = -1.0/3.0;
@@ -393,7 +393,7 @@ void spectrum(gmx_bool bVerbose,
 
   snew(spec,npair);
   
-  fprintf(stderr,"There is no kill like overkill! Going to malloc %d bytes\n",
+  printf("There is no kill like overkill! Going to malloc %d bytes\n",
 	  npair*maxframes*sizeof(corr[0][0]));
   snew(corr,npair);
   for(i=0; (i<npair); i++)
@@ -406,13 +406,13 @@ void spectrum(gmx_bool bVerbose,
 
   do {
     if (nframes >= maxframes) {
-      fprintf(stderr,"\nThere are more than the %d frames you told me!",
+      printf("\nThere are more than the %d frames you told me!",
 	      maxframes);
       break;
     }
     t1 = t;
     if (bVerbose)
-      fprintf(stderr,"\rframe: %d",nframes);
+      printf("\rframe: %d",nframes);
     gmx_rmpbc(gpbc,box,x,x);
     if (bFit)
       do_fit(natoms,w_rls,xp,x);  
@@ -438,7 +438,7 @@ void spectrum(gmx_bool bVerbose,
   } while (read_next_x(status,&t,natoms,x,box));
   close_trj(status);
   if (bVerbose)
-    fprintf(stderr,"\n");
+    printf("\n");
  
   gmx_rmpbc_done(gpbc);
 
@@ -454,7 +454,7 @@ void spectrum(gmx_bool bVerbose,
       j++;
     }
   }
-  fprintf(stderr,"There are %d NOEs in your simulation\n",j);
+  printf("There are %d NOEs in your simulation\n",j);
   if (nframes > 1)
     dt = (t1-t0)/(nframes-1);
   else
@@ -527,7 +527,7 @@ int gmx_relax(int argc,char *argv[])
     gmx_fatal(FARGS,"Please give me a sensible taum!\n");
   if (nlevels > 50) {
     nlevels = 50;
-    fprintf(stderr,"Warning: too many levels, setting to %d\n",nlevels);
+    printf("Warning: too many levels, setting to %d\n",nlevels);
   }
   		    
   top    = read_top(ftp2fn(efTPX,NFILE,fnm));
@@ -545,7 +545,7 @@ int gmx_relax(int argc,char *argv[])
     if (top->atoms.atom[i].m  < 2) {
       prot_ind[nprot++] = i;
     }
-  fprintf(stderr,"There %d protons in your topology\n",nprot);
+  printf("There %d protons in your topology\n",nprot);
   snew(pair,(nprot*(nprot-1)/2));
   for(i=k=0; (i<nprot); i++) {
     for(j=i+1; (j<nprot); j++,k++) {

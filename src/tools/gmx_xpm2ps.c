@@ -192,7 +192,7 @@ gmx_bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
 	  bColDiff=TRUE;
       }
       if (!bDiff && bColDiff)
-	fprintf(stderr,"Warning: two colormaps differ only in RGB value, using one colormap.\n");
+	printf("Warning: two colormaps differ only in RGB value, using one colormap.\n");
     }
   
   return bDiff;
@@ -632,12 +632,12 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
   }
   if (bTryAgain) {
     space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
-    fprintf(stderr,"Auto tick spacing failed for %c-axis, guessing %g\n",
+    printf("Auto tick spacing failed for %c-axis, guessing %g\n",
 	    axisnm,space);
   }
   *major = space;
   *minor = space / minor_fact[f-1];
-  fprintf(stderr,"Auto tick spacing for %c-axis: major %g, minor %g\n", 
+  printf("Auto tick spacing for %c-axis: major %g, minor %g\n", 
 	  axisnm, *major, *minor);
 }
 
@@ -865,7 +865,7 @@ void prune_mat(int nmat, t_matrix *mat,t_matrix *mat2, int skip)
   int i,x,y,xs,ys;
   
   for(i=0; i<nmat; i++) {
-    fprintf(stderr,"converting %dx%d matrix to %dx%d\n",
+    printf("converting %dx%d matrix to %dx%d\n",
 	    mat[i].nx, mat[i].ny, 
 	    (mat[i].nx+skip-1)/skip, (mat[i].ny+skip-1)/skip);
     /* walk through matrix */
@@ -968,7 +968,7 @@ void write_combined_matrix(int ecombine, const char *fn,
       rhi = *cmax;
     nlevels = max(mat1[k].nmap,mat2[k].nmap);
     if (rhi==rlo)
-      fprintf(stderr,
+      printf(
 	      "combination results in uniform matrix (%g), no output\n",rhi);
     /*
     else if (rlo>=0 || rhi<=0)
@@ -1012,7 +1012,7 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
     }
   }
   for(i=0; (i<nmat); i++) 
-    fprintf(stderr,"Matrix %d is %d x %d\n",i,mat[i].nx,mat[i].ny);
+    printf("Matrix %d is %d x %d\n",i,mat[i].nx,mat[i].ny);
 
   make_axis_labels(nmat, mat);
   
@@ -1223,7 +1223,7 @@ int gmx_xpm2ps(int argc,char *argv[])
       epsfile=ftp2fn(efEPS,NFILE,fnm);
   }
   if (ecombine!=ecHalves && epsfile) {
-    fprintf(stderr,
+    printf(
 	    "WARNING: can only write result of arithmetic combination "
 	    "of two matrices to .xpm file\n"
 	    "         file %s will not be written\n", epsfile);
@@ -1235,18 +1235,18 @@ int gmx_xpm2ps(int argc,char *argv[])
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
-  fprintf(stderr,"There %s %d matri%s in %s\n",(nmat>1)?"are":"is",nmat,(nmat>1)?"ces":"x",fn);
+  printf("There %s %d matri%s in %s\n",(nmat>1)?"are":"is",nmat,(nmat>1)?"ces":"x",fn);
   fn=opt2fn_null("-f2",NFILE,fnm);
   if (fn) {
     nmat2=read_xpm_matrix(fn,&mat2);
-    fprintf(stderr,"There %s %d matri%s in %s\n",(nmat2>1)?"are":"is",nmat2,(nmat2>1)?"ces":"x",fn);
+    printf("There %s %d matri%s in %s\n",(nmat2>1)?"are":"is",nmat2,(nmat2>1)?"ces":"x",fn);
     if (nmat != nmat2) {
-      fprintf(stderr,"Different number of matrices, using the smallest number.\n");
+      printf("Different number of matrices, using the smallest number.\n");
       nmat=nmat2=min(nmat,nmat2);
     }
   } else {
     if (ecombine!=ecHalves)
-      fprintf(stderr,
+      printf(
 	      "WARNING: arithmetic matrix combination selected (-combine), "
 	      "but no second matrix (-f2) supplied\n"
 	      "         no matrix combination will be performed\n");

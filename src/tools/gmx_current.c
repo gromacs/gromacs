@@ -81,7 +81,7 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
     index[nmol++] = mol;
   }
 
-  fprintf(stderr,"\nSplit group of %d atoms into %d molecules\n",nat,nmol);
+  printf("\nSplit group of %d atoms into %d molecules\n",nat,nmol);
 
   *n = nmol;
 }
@@ -522,7 +522,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 	prefactorav=E_CHARGE*E_CHARGE;
 	prefactorav/=volume_av*BOLTZMANN*temp*NANO*6.0;
 
-	fprintf(stderr,"Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n",prefactorav);
+	printf("Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n",prefactorav);
 
 	calc_mjdsp(fmjdsp,volume_av,temp,prefactorav,mjdsp,dsp2,time,nfr,xshfr);
 
@@ -593,37 +593,37 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 
   /* Calculation of the dielectric constant */
   
-  fprintf(stderr,"\n********************************************\n");
+  printf("\n********************************************\n");
 	dk_s=calceps(prefactor,md2,mj2,mjd,eps_rf,FALSE);
-	fprintf(stderr,"\nAbsolute values:\n epsilon=%f\n",dk_s);
-	fprintf(stderr," <M_D^2> , <M_J^2>, <(M_J*M_D)^2>:  (%f, %f, %f)\n\n",md2,mj2,mjd);
-	fprintf(stderr,"********************************************\n");
+	printf("\nAbsolute values:\n epsilon=%f\n",dk_s);
+	printf(" <M_D^2> , <M_J^2>, <(M_J*M_D)^2>:  (%f, %f, %f)\n\n",md2,mj2,mjd);
+	printf("********************************************\n");
 
 
 	dk_f=calceps(prefactor,md2-mdav2,mj2-mj,mjd-mjdav,eps_rf,FALSE);
-	fprintf(stderr,"\n\nFluctuations:\n epsilon=%f\n\n",dk_f);
-	fprintf(stderr,"\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n",md2-mdav2,mj2-mj,mjd-mjdav);
-	fprintf(stderr,"\n********************************************\n");
+	printf("\n\nFluctuations:\n epsilon=%f\n\n",dk_f);
+	printf("\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n",md2-mdav2,mj2-mj,mjd-mjdav);
+	printf("\n********************************************\n");
 	if (bINT){
 		dk_d=calceps(prefactor,md2-mdav2,mj2-mj,corint,eps_rf,TRUE);
-		fprintf(stderr,"\nStatic dielectric constant using integral and fluctuations: %f\n",dk_d);
-		fprintf(stderr,"\n < M_JM_D > via integral:  %.3f\n",-1.0*corint);
+		printf("\nStatic dielectric constant using integral and fluctuations: %f\n",dk_d);
+		printf("\n < M_JM_D > via integral:  %.3f\n",-1.0*corint);
 	}
 
-	fprintf(stderr,"\n***************************************************");
-	fprintf(stderr,"\n\nAverage volume V=%f nm^3 at T=%f K\n",volume_av,temp);
-	fprintf(stderr,"and corresponding refactor 1.0 / 3.0*V*k_B*T*EPSILON_0: %f \n",prefactor);
+	printf("\n***************************************************");
+	printf("\n\nAverage volume V=%f nm^3 at T=%f K\n",volume_av,temp);
+	printf("and corresponding refactor 1.0 / 3.0*V*k_B*T*EPSILON_0: %f \n",prefactor);
 
 
 
 	if(bACF){
-		fprintf(stderr,"Integral and integrated fit to the current acf yields at t=%f:\n",time[vfr[ii]]);
-		fprintf(stderr,"sigma=%8.3f (pure integral: %.3f)\n",sgk-malt*pow(time[vfr[ii]],sigma),sgk);
+		printf("Integral and integrated fit to the current acf yields at t=%f:\n",time[vfr[ii]]);
+		printf("sigma=%8.3f (pure integral: %.3f)\n",sgk-malt*pow(time[vfr[ii]],sigma),sgk);
 	}
 
 	if (ei>bi){
-			fprintf(stderr,"\nStart fit at %f ps (%f).\n",time[bi],bfit);
-			fprintf(stderr,"End fit at %f ps (%f).\n\n",time[ei],efit);
+			printf("\nStart fit at %f ps (%f).\n",time[bi],bfit);
+			printf("End fit at %f ps (%f).\n\n",time[ei],efit);
 
 			snew(xfit,ei-bi+1);
 			snew(yfit,ei-bi+1);
@@ -638,16 +638,16 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
 			sigma*=1e12;
 			dk_d=calceps(prefactor,md2,0.5*malt/prefactorav,corint,eps_rf,TRUE);
 
-			fprintf(stderr,"Einstein-Helfand fit to the MSD of the translational dipole moment yields:\n\n");
-			fprintf(stderr,"sigma=%.4f\n",sigma);
-			fprintf(stderr,"translational fraction of M^2: %.4f\n",0.5*malt/prefactorav);
-			fprintf(stderr,"Dielectric constant using EH: %.4f\n",dk_d);
+			printf("Einstein-Helfand fit to the MSD of the translational dipole moment yields:\n\n");
+			printf("sigma=%.4f\n",sigma);
+			printf("translational fraction of M^2: %.4f\n",0.5*malt/prefactorav);
+			printf("Dielectric constant using EH: %.4f\n",dk_d);
 
 			sfree(xfit);
 			sfree(yfit);
   }
   else{
-			fprintf(stderr,"Too less points for a fit.\n");
+			printf("Too less points for a fit.\n");
   }
   
   

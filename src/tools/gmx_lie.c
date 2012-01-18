@@ -186,7 +186,7 @@ int gmx_lie(int argc,char *argv[])
   } while (bCont);
   close_enx(fp);
   ffclose(out);
-  fprintf(stderr,"\n");
+  printf("\n");
   
   if (nframes > 0)
     printf("DGbind = %.3f (%.3f)\n",lieaver/nframes,

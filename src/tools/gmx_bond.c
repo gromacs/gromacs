@@ -292,8 +292,8 @@ int gmx_bond(int argc,char *argv[])
   
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
   if ( !even(gnx) )
-    fprintf(stderr,"WARNING: odd number of atoms (%d) in group!\n",gnx);
-  fprintf(stderr,"Will gather information on %d bonds\n",gnx/2);
+    printf("WARNING: odd number of atoms (%d) in group!\n",gnx);
+  printf("Will gather information on %d bonds\n",gnx/2);
   
   if (!bAver)
     fp = ftp2FILE(efLOG,NFILE,fnm,"w");

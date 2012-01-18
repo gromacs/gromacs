@@ -172,9 +172,9 @@ int gmx_spatial(int argc,char *argv[])
   sfree(xtop);
 
   atoms=&(top.atoms);
-  printf("Select group to generate SDF:\n");
+  fprintf(stderr,"Select group to generate SDF:\n");
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nidx,&index,&grpnm);
-  printf("Select group to output coords (e.g. solute):\n");
+  fprintf(stderr,"Select group to output coords (e.g. solute):\n");
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nidxp,&indexp,&grpnmp);
 
   /* The first time we read data is a little special */

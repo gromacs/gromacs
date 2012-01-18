@@ -234,7 +234,7 @@ void histogram(const char *distfile,real binwidth,int n, int nset, real **val,
   max += binwidth;
 
   nbin = (int)((max - min)/binwidth + 0.5) + 1;
-  fprintf(stderr,"Making distributions with %d bins\n",nbin);
+  printf("Making distributions with %d bins\n",nbin);
   snew(histo,nbin);
   fp = xvgropen(distfile,"Distribution","","",oenv);
   for(s=0; s<nset; s++) {
@@ -518,7 +518,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                     fitparm[0] = tau1_est;
                     fitparm[1] = 0.95;
                     fitparm[2] = (n-1)*dt;
-                    fprintf(stderr,"Will fix tau2 at the total time: %g\n",fitparm[2]);
+                    printf("Will fix tau2 at the total time: %g\n",fitparm[2]);
                     do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,oenv,bDebugMode(),
                              effnERREST,fitparm,4);
                     fitparm[3] = 1-fitparm[1];
@@ -533,7 +533,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                                 fitparm[1],fitparm[0],fitparm[2]);
                     }
                     /* Do a single exponential fit */
-                    fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+                    printf("Will use a single exponential fit for set %d\n",s+1);
                     fitparm[0] = tau1_est;
                     fitparm[1] = 1.0;
                     fitparm[2] = 0.0;
@@ -1214,7 +1214,7 @@ int gmx_analyze(int argc,char *argv[])
     for(s=0; s<nset; s++) {
       for(j=0; j<=nlast; j++) {
 	if (j % 100 == 0)
-	  fprintf(stderr,"\r%d",j);
+	  printf("\r%d",j);
 	tot=0;
 	for(i=0; i<n-j; i++)
 	  tot += sqr(val[s][i]-val[s][i+j]); 
@@ -1225,7 +1225,7 @@ int gmx_analyze(int argc,char *argv[])
 	fprintf(out,"&\n");
     }
     ffclose(out);
-    fprintf(stderr,"\r%d, time=%g\n",j-1,(j-1)*dt);
+    printf("\r%d, time=%g\n",j-1,(j-1)*dt);
   }
   if (ccfile)
     plot_coscont(ccfile,n,nset,val,oenv);

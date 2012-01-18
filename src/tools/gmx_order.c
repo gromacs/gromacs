@@ -259,7 +259,7 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   snew(sk_slice_tot,nslice);
   ng = 1;
   /* get index groups */
-  printf("Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
+  fprintf(stderr,"Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
   snew(grpname,ng);
   snew(index,ng);
   snew(isize,ng);
@@ -324,17 +324,17 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
 {
   int i;
 
-  fprintf(stderr,"Using following groups: \n");
+  printf("Using following groups: \n");
   for(i = 0; i < ngrps; i++)
-    fprintf(stderr,"Groupname: %s First atomname: %s First atomnr %u\n", 
+    printf("Groupname: %s First atomname: %s First atomnr %u\n", 
 	    groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 static void check_length(real length, int a, int b)
 {
   if (length > 0.3)
-    fprintf(stderr,"WARNING: distance between atoms %d and "
+    printf("WARNING: distance between atoms %d and "
 	    "%d > 0.3 nm (%f). Index file might be corrupt.\n", 
 	    a, b, length);
 }
@@ -387,14 +387,14 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   nr_tails = index[1] - index[0];
-  fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
+  printf("Number of elements in first group: %d\n",nr_tails);
   /* take first group as standard. Not rocksolid, but might catch error in index*/
 
   if (permolecule)
   {
 	  nslices=nr_tails;
 	  bSliced=FALSE;  /*force slices off */
-      fprintf(stderr,"Calculating order parameters for each of %d molecules\n",
+      printf("Calculating order parameters for each of %d molecules\n",
 	    nslices);
   }
   
@@ -414,7 +414,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
   }
 
   if (use_unitvector && bSliced)
-	fprintf(stderr,"Warning:  slicing and specified unit vectors are not currently compatible\n");
+	printf("Warning:  slicing and specified unit vectors are not currently compatible\n");
 
   snew(slCount, nslices);
   snew(*slOrder, nslices);
@@ -432,13 +432,13 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
   
   if (bSliced) {
     *slWidth = box[axis][axis]/nslices;
-    fprintf(stderr,"Box divided in %d slices. Initial width of slice: %f\n",
+    printf("Box divided in %d slices. Initial width of slice: %f\n",
 	    nslices, *slWidth);
   } 
 
 #if 0
   nr_tails = index[1] - index[0];
-  fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
+  printf("Number of elements in first group: %d\n",nr_tails);
   /* take first group as standard. Not rocksolid, but might catch error 
      in index*/
 #endif
@@ -497,7 +497,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 		unitv(direction,direction);
 		/*DEBUG*/
 		/*if (j==0)
-			fprintf(stderr,"X %f %f %f\tcom %f %f %f\tdirection %f %f %f\n",x1[a[index[i]+j]][0],x1[a[index[i]+j]][1],x1[a[index[i]+j]][2],com[0],com[1],com[2],
+			printf("X %f %f %f\tcom %f %f %f\tdirection %f %f %f\n",x1[a[index[i]+j]][0],x1[a[index[i]+j]][1],x1[a[index[i]+j]][2],com[0],com[1],com[2],
 				direction[0],direction[1],direction[2]);*/
 	  }
 
@@ -613,13 +613,13 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   /*********** done with status file **********/
   
-  fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
+  printf("\nRead trajectory. Printing parameters to file\n");
   gmx_rmpbc_done(gpbc);
 
   /* average over frames */
   for (i = 1; i < ngrps - 1; i++) {
     svmul(1.0/nr_frames, (*order)[i], (*order)[i]);
-    fprintf(stderr,"Atom %d Tensor: x=%g , y=%g, z=%g\n",i,(*order)[i][XX],
+    printf("Atom %d Tensor: x=%g , y=%g, z=%g\n",i,(*order)[i][XX],
 	    (*order)[i][YY], (*order)[i][ZZ]);
     if (bSliced || permolecule) {
       for (k = 0; k < nslices; k++)
@@ -631,7 +631,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
   }
 
   if (bUnsat)
-    fprintf(stderr,"Average angle between double bond and normal: %f\n", 
+    printf("Average angle between double bond and normal: %f\n", 
 	    180*sdbangle/(nr_frames * size*M_PI));
 
   sfree(x0);  /* free memory used by coordinate arrays */
@@ -678,7 +678,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
   else if (bSzonly) {
     sprintf(buf,"Orderparameters Sz per atom");
     ord = xvgropen(afile,buf,"Atom","S",oenv);
-    fprintf(stderr,"ngrps = %d, nslices = %d",ngrps, nslices);
+    printf("ngrps = %d, nslices = %d",ngrps, nslices);
 
     sprintf(buf, "Orderparameters per atom per slice");
     slOrd = xvgropen(bfile, buf, "Slice", "S",oenv);
@@ -868,13 +868,13 @@ int gmx_order(int argc,char *argv[])
   
   switch (axis) {
   case 0:
-    fprintf(stderr,"Taking x axis as normal to the membrane\n");
+    printf("Taking x axis as normal to the membrane\n");
     break;
   case 1:
-    fprintf(stderr,"Taking y axis as normal to the membrane\n");
+    printf("Taking y axis as normal to the membrane\n");
     break;
   case 2:
-    fprintf(stderr,"Taking z axis as normal to the membrane\n");
+    printf("Taking z axis as normal to the membrane\n");
     break;
   }
   
@@ -899,13 +899,13 @@ int gmx_order(int argc,char *argv[])
     
     if (nslices > 1) {
       bSliced = TRUE;
-      fprintf(stderr,"Dividing box in %d slices.\n\n", nslices);
+      printf("Dividing box in %d slices.\n\n", nslices);
     }
     
     if (bSzonly)
-      fprintf(stderr,"Only calculating Sz\n");
+      printf("Only calculating Sz\n");
     if (bUnsat)
-      fprintf(stderr,"Taking carbons as unsaturated!\n");
+      printf("Taking carbons as unsaturated!\n");
     
     top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
     
@@ -917,13 +917,13 @@ int gmx_order(int argc,char *argv[])
   if (permolecule)
   {
     nslices = index[1] - index[0];  /*I think this assumes contiguous lipids in topology*/
-	  fprintf(stderr,"Calculating Scd order parameters for each of %d molecules\n",nslices);
+	  printf("Calculating Scd order parameters for each of %d molecules\n",nslices);
   }
   
   if (distcalc)
   {
 	  radial=TRUE;
-	  fprintf(stderr,"Calculating radial distances\n");
+	  printf("Calculating radial distances\n");
 	  if (!permolecule)
 		gmx_fatal(FARGS,"Cannot yet output radial distances without permolecule\n");
   }
@@ -945,7 +945,7 @@ int gmx_order(int argc,char *argv[])
 	if (opt2bSet("-ob",NFILE,fnm))
 	{
 		if (!permolecule)
-			fprintf(stderr,
+			printf(
                                 "Won't write B-factors with averaged order parameters; use -permolecule\n");
 		else
 			write_bfactors(fnm,NFILE,index,a,nslices,ngrps,slOrder,top,distvals,oenv);

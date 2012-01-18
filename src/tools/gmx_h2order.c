@@ -117,7 +117,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
   snew(frame, *nslices);
 
   *slWidth = box[axis][axis]/(*nslices);
-  fprintf(stderr,"Box divided in %d slices. Initial width of slice: %f\n",
+  printf("Box divided in %d slices. Initial width of slice: %f\n",
 	  *nslices, *slWidth);
 
   teller = 0; 
@@ -180,8 +180,8 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 	slice = (x0[index[3*i]][axis] / (*slWidth)); 
 	if (slice < 0 || slice >= *nslices)
 	{
-	  fprintf(stderr,"Coordinate: %f ",x0[index[3*i]][axis]);
-	  fprintf(stderr,"HELP PANIC! slice = %d, OUT OF RANGE!\n",slice);
+	  printf("Coordinate: %f ",x0[index[3*i]][axis]);
+	  printf("HELP PANIC! slice = %d, OUT OF RANGE!\n",slice);
 	}
 	else
 	{
@@ -198,12 +198,12 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   /*********** done with status file **********/
  
-  fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
+  printf("\nRead trajectory. Printing parameters to file\n");
   gmx_rmpbc_done(gpbc);
 
   for (i = 0; i < *nslices; i++)  /* average over frames */
   {
-    fprintf(stderr,"%d waters in slice %d\n",count[i],i);
+    printf("%d waters in slice %d\n",count[i],i);
     if (count[i] > 0)   /* divide by number of molecules in each slice */
       {
 	sum[i] = sum[i] / count[i]; 
@@ -212,7 +212,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 	dip[i][ZZ] = dip[i][ZZ] / count[i];
       }
     else 
-      fprintf(stderr,"No water in slice %d\n",i);
+      printf("No water in slice %d\n",i);
   }
 
   *slOrder = sum;  /* copy a pointer, I hope */
@@ -230,7 +230,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 
   /*  factor = 1e-9*1.60217733e-19/3.336e-30 */
   factor = 1.60217733/3.336e-2; 
-  fprintf(stderr,"%d slices\n",nslices);
+  printf("%d slices\n",nslices);
   sprintf(buf,"Water orientation with respect to normal");
   ord = xvgropen(afile,buf,
                  "box (nm)","mu_x, mu_y, mu_z (D), cosine with normal",oenv);
