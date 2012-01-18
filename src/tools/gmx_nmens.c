@@ -193,11 +193,11 @@ int gmx_nmens(int argc,char *argv[])
       }
   }
   
-  fprintf(stderr,"%d eigenvectors selected for output\n",noutvec);
+  printf("%d eigenvectors selected for output\n",noutvec);
 
   if (seed == -1)
     seed = make_seed();
-  fprintf(stderr,"Using seed %d and a temperature of %g K\n",seed,temp);
+  printf("Using seed %d and a temperature of %g K\n",seed,temp);
 
   snew(xout1,natoms);
   snew(xout2,atoms->nr);
@@ -233,9 +233,9 @@ int gmx_nmens(int argc,char *argv[])
         copy_rvec(xout1[i],xout2[index[i]]);
     t = s+1;
     write_trx(out,natoms,index,atoms,0,t,box,xout2,NULL,NULL);
-    fprintf(stderr,"\rGenerated %d structures",s+1);
+    printf("\rGenerated %d structures",s+1);
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trx(out);
   
   return 0;

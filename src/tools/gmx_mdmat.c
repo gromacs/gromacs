@@ -210,15 +210,15 @@ int gmx_mdmat(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,
 		    asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
-  fprintf(stderr,"Will truncate at %f nm\n",truncate);
+  printf("Will truncate at %f nm\n",truncate);
   bCalcN = opt2bSet("-no",NFILE,fnm);
   bFrames= opt2bSet("-frames",NFILE,fnm);
   if ( bCalcN ) 
-    fprintf(stderr,"Will calculate number of different contacts\n");
+    printf("Will calculate number of different contacts\n");
     
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,FALSE);
   
-  fprintf(stderr,"Select group for analysis\n");
+  printf("Select group for analysis\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   
   natoms=isize;
@@ -252,7 +252,7 @@ int gmx_mdmat(int argc,char *argv[])
   rndx=res_ndx(&(useatoms));
   natm=res_natm(&(useatoms));
   nres=useatoms.nres;
-  fprintf(stderr,"There are %d residues with %d atoms\n",nres,natoms);
+  printf("There are %d residues with %d atoms\n",nres,natoms);
     
   snew(resnr,nres);
   snew(mdmat,nres);
@@ -298,13 +298,13 @@ int gmx_mdmat(int argc,char *argv[])
 		nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
     }
   } while (read_next_x(oenv,status,&t,trxnat,x,box));
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
   gmx_rmpbc_done(gpbc);
   if (bFrames)
     ffclose(out);
   
-  fprintf(stderr,"Processed %d frames\n",nframes);
+  printf("Processed %d frames\n",nframes);
     
   for (i=0; (i<nres); i++)
     for (j=0; (j<nres); j++)

@@ -59,7 +59,7 @@ void print_one(const output_env_t oenv,const char *base,const char *name,
   int  k;
   
   sprintf(buf,"%s%s.xvg",base,name);
-  fprintf(stderr,"\rPrinting %s  ",buf);
+  printf("\rPrinting %s  ",buf);
   sprintf(t2,"%s %s",title,name);
   fp=xvgropen(buf,t2,"Time (ps)",ylabel,oenv); 
   for(k=0; (k<nf); k++)
@@ -161,7 +161,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
   dt=(time[nframes-1]-time[0])/(nframes-1);
   
   /* Analysis of dihedral transitions */
-  fprintf(stderr,"Now calculating transitions...\n");
+  printf("Now calculating transitions...\n");
 
   if (bRb)
     calc_bin=calc_RBbin;
@@ -224,10 +224,10 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     for(k=0;k<NROT;k++) 
       rot_occ[k][i] /= nframes ; 
   } /* end i */ 
-  fprintf(stderr,"Total number of transitions: %10d\n",ntrans);
+  printf("Total number of transitions: %10d\n",ntrans);
   if (ntrans > 0) {
     ttime = (dt*nframes*nangles)/ntrans;
-    fprintf(stderr,"Time between transitions:    %10.3f ps\n",ttime);
+    printf("Time between transitions:    %10.3f ps\n",ttime);
   }
 
   /* new by grs - copy transitions from tr_h[] to dlist->ntr[] 
@@ -333,7 +333,7 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih,
     }
   }
   if (j<nangles) 
-    fprintf(stderr,"WARNING: not all dihedrals found in topology (only %d out of %d)!\n",
+    printf("WARNING: not all dihedrals found in topology (only %d out of %d)!\n",
 	    j,nangles);
   /* Check for remaining dihedrals */
   for(;(j < nangles); j++)
@@ -391,7 +391,7 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
   int  (*calc_bin)(real,int,real);  
   
   /* Analysis of dihedral transitions */
-  fprintf(stderr,"Now calculating Chi product trajectories...\n");
+  printf("Now calculating Chi product trajectories...\n");
 
   if (bRb)
     calc_bin=calc_RBbin;
@@ -467,7 +467,7 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
       if (bAll) {
 	sprintf(hisfile,"histo-chiprod%s.xvg",dlist[i].name);
 	sprintf(histitle,"cumulative rotamer distribution for %s",dlist[i].name);
-	fprintf(stderr,"  and %s  ",hisfile);
+	printf("  and %s  ",hisfile);
 	fp=xvgropen(hisfile,histitle,"number","",oenv);
 	fprintf(fp,"@ xaxis tick on\n");
 	fprintf(fp,"@ xaxis tick major 1\n");
@@ -502,7 +502,7 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 
   sfree(chi_prtrj); 
   ffclose(fpall); 
-  fprintf(stderr,"\n") ; 
+  printf("\n") ; 
 
 }
 
@@ -649,7 +649,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
   for(i=0; (i<npoints); i++)
     d+=dx*histo[i];
   if (d==0) {
-    fprintf(stderr,"Empty histogram!\n");
+    printf("Empty histogram!\n");
     return;
   }
   fac=1.0/d;
@@ -789,7 +789,7 @@ void read_ang_dih(const char *trj_fn,
       
       angstat[angind]++;
       if (angind==maxangstat)
-	fprintf(stderr,"angle %d fr %d = %g\n",i,cur,angle);
+	printf("angle %d fr %d = %g\n",i,cur,angle);
       
       total++;
     }

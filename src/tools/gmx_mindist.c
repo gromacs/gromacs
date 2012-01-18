@@ -581,7 +581,7 @@ int gmx_mindist(int argc,char *argv[])
   
   if (bPI) {
     ng = 1;
-    fprintf(stderr,"Choose a group for distance calculation\n");
+    printf("Choose a group for distance calculation\n");
   } 
   else if (!bMat)
     ng++;

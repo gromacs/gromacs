@@ -287,11 +287,11 @@ gmx_select(int argc, char *argv[])
     }
     if (fnMask && ngrps > 1)
     {
-        fprintf(stderr, "warning: the mask (-om) will only be written for the first group\n");
+        printf( "warning: the mask (-om) will only be written for the first group\n");
     }
     if (fnMask && !sel[0]->bDynamic)
     {
-        fprintf(stderr, "warning: will not write the mask (-om) for a static selection\n");
+        printf( "warning: will not write the mask (-om) for a static selection\n");
         fnMask = NULL;
     }
 

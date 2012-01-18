@@ -161,7 +161,7 @@ static gem_complex gem_cxdiv(gem_complex z1, gem_complex z2)
   num = z2.r*z2.r+z2.i*z2.i;
   if(num == 0.)
     {
-      fprintf(stderr, "ERROR in gem_cxdiv function\n");
+      printf( "ERROR in gem_cxdiv function\n");
     }
   value.r = (z1.r*z2.r+z1.i*z2.i)/num; value.i = (z1.i*z2.r-z1.r*z2.i)/num;
   return value;
@@ -234,7 +234,7 @@ static gem_complex gem_cxlog(gem_complex z)
   double mag2;
   mag2 = z.r*z.r+z.i*z.i;
   if(mag2 < 0.) {
-    fprintf(stderr, "ERROR in gem_cxlog func\n");
+    printf( "ERROR in gem_cxlog func\n");
   }
   value.r = log(sqrt(mag2));
   if(z.r == 0.) {
@@ -361,7 +361,7 @@ static double gem_erf(double x)
       }
       
       if(n >= 2000.)
-	fprintf(stderr, "In Erf calc - iteration exceeds %lg\n",n);
+	printf( "In Erf calc - iteration exceeds %lg\n",n);
       sum *= 2./sPI*exp2;
     }
   else
@@ -464,7 +464,7 @@ static gem_complex gem_cerf(gem_complex z)
     }
 
   if(n==2000.) {
-    fprintf(stderr, "iteration exceeds %lg\n",n);
+    printf( "iteration exceeds %lg\n",n);
   }
   
   sumr*=2./PI;
@@ -520,7 +520,7 @@ static gem_complex gem_comega(gem_complex z)
     temp=temp1;
   }
   if(n==2000.) {
-    fprintf(stderr, "iteration exceeds %lg\n",n);
+    printf( "iteration exceeds %lg\n",n);
   }
   sumr *= 2./PI;
   sumi *= 2./PI;
@@ -658,7 +658,7 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
   p->endFit       = endFit;
   p->logQuota     = (double)(log(p->len))/(p->nFitPoints-1);
 /*   if (p->nLin <= 0) { */
-/*     fprintf(stderr, "Number of data points in the linear regime is non-positive!\n"); */
+/*     printf( "Number of data points in the linear regime is non-positive!\n"); */
 /*     sfree(p); */
 /*     return NULL; */
 /*   } */
@@ -770,7 +770,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 #endif /* GSL_MAJOR_VERSION */
   fprintf(stdout, "Will fit ka and kd to the ACF according to the reversible geminate recombination model.\n");
 #else  /* HAVE_LIBGSL */
-  fprintf(stderr, "Sorry, can't do reversible geminate recombination without gsl. "
+  printf( "Sorry, can't do reversible geminate recombination without gsl. "
 	 "Recompile using --with-gsl.\n");
   return -1;
 #endif /* HAVE_LIBGSL */
@@ -792,12 +792,12 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 
   if (params->D <= 0)
     {
-      fprintf(stderr, "Fitting of D is not implemented yet. It must be provided on the command line.\n");
+      printf( "Fitting of D is not implemented yet. It must be provided on the command line.\n");
       return -1;
     }
   
 /*   if (nData<n) { */
-/*     fprintf(stderr, "Reduced data set larger than the complete data set!\n"); */
+/*     printf( "Reduced data set larger than the complete data set!\n"); */
 /*     n=nData; */
 /*   } */
   snew(dumpdata, nData);
@@ -826,7 +826,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 
       if (GD->logtime[i] >= nData)
 	{
-	  fprintf(stderr, "Ayay. It seems we're indexing out of bounds.\n");
+	  printf( "Ayay. It seems we're indexing out of bounds.\n");
 	  params->nFitPoints = i;
 	}      
     }
@@ -863,7 +863,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
     
     if (status)
       {
-	fprintf(stderr, "%s\n", gsl_strerror(status));
+	printf( "%s\n", gsl_strerror(status));
 	break;
       }
 
@@ -1096,12 +1096,12 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
 
   if (iter == 5000)
     {
-      fprintf(stderr, "The non-linear fitting did not converge in 5000 steps.\n"
+      printf( "The non-linear fitting did not converge in 5000 steps.\n"
 	     "Check the quality of the fit!\n");
     }
   else
     {
-      fprintf(stderr, "Non-linear fitting of ballistic term converged in %d steps.\n\n", (int)iter);
+      printf( "Non-linear fitting of ballistic term converged in %d steps.\n\n", (int)iter);
     }
   for (i=0; i<nexp; i++) {
     fprintf(stdout, "%c * exp(%c * t) + ", 'A'+(char)i*2, 'B'+(char)i*2);
@@ -1125,20 +1125,20 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
   for (i=0; i<nexp; i++)
     {
       if (A[i*2]<0 || A[i*2]>1) {
-	fprintf(stderr, "WARNING: ----------------------------------\n"
+	printf( "WARNING: ----------------------------------\n"
 	       " | A coefficient does not lie within [0,1].\n"
 	       " | This may or may not be a problem.\n"
 	       " | Double check the quality of the fit!\n");
       }
       if (A[i*2+1]>0) {
-	fprintf(stderr, "WARNING: ----------------------------------\n"
+	printf( "WARNING: ----------------------------------\n"
 	       " | One factor in the exponent is positive.\n"
 	       " | This could be a problem if the coefficient\n"
 	       " | is large. Double check the quality of the fit!\n");
       }
     }
   if (A[i*2]<0 || A[i*2]>1) {
-    fprintf(stderr, "WARNING: ----------------------------------\n"
+    printf( "WARNING: ----------------------------------\n"
 	   " | The constant term does not lie within [0,1].\n"
 	   " | This may or may not be a problem.\n"
 	   " | Double check the quality of the fit!\n");
@@ -1187,7 +1187,7 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
 
 #else
   /* We have no gsl. */
-  fprintf(stderr, "Sorry, can't take away ballistic component without gsl. "
+  printf( "Sorry, can't take away ballistic component without gsl. "
 	 "Recompile using --with-gsl.\n");
   return;
 #endif /* HAVE_LIBGSL */
@@ -1270,7 +1270,7 @@ extern void fixGemACF(double *ct, int len)
   if (abs(ct[0]-1.0) > 1e-6)
     {
       ct[0] = 1.0;
-      fprintf(stderr, "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
+      printf( "|ct[0]-1.0| = %1.6d. Setting ct[0] to 1.0.\n", abs(ct[0]-1.0));
     }
 
   for (i=0; i<len; i++)

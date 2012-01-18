@@ -74,7 +74,7 @@ static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
       break;
   }
   if (i == atoms->nr) {
-    fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",
+    printf("\rCan not find %s%d-%s in pdbfile\n",
 	    rresnm,ri->nr,atomnm);
     return 0.0;
   }
@@ -267,7 +267,7 @@ int gmx_rmsf(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xref,NULL,box,TRUE);
   snew(w_rls,top.atoms.nr);
 
-  fprintf(stderr,"Select group(s) for root mean square calculation\n");
+  printf("Select group(s) for root mean square calculation\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
 
   /* Set the weight */

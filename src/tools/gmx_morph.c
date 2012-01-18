@@ -159,7 +159,7 @@ int gmx_morph(int argc,char *argv[])
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),1,&isize,&index,&grpname);
     printf("You selected group %s, containing %d atoms\n",grpname,isize);
     rms1 = rmsdev_ind(isize,index,mass,x1,x2);  
-    fprintf(stderr,"RMSD between input conformations is %g nm\n",rms1);
+    printf("RMSD between input conformations is %g nm\n",rms1);
   }
   
   snew(dummy,nat1);

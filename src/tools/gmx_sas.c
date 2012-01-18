@@ -103,7 +103,7 @@ void do_conect(const char *fn,int n,rvec x[])
   rvec     dx;
   real     d2;
   
-  fprintf(stderr,"Building CONECT records\n");
+  printf("Building CONECT records\n");
   snew(c,n);
   for(i=0; (i<n); i++) 
     c[i].aa = c[i].ab = NO_ATID;
@@ -119,7 +119,7 @@ void do_conect(const char *fn,int n,rvec x[])
   fp = ffopen(fn,"a");
   for(i=0; (i<n); i++) {
     if ((c[i].aa == NO_ATID) || (c[i].ab == NO_ATID))
-      fprintf(stderr,"Warning dot %d has no conections\n",i+1);
+      printf("Warning dot %d has no conections\n",i+1);
     fprintf(fp,"CONECT%5d%5d%5d\n",i+1,c[i].aa+1,c[i].ab+1);
   }
   ffclose(fp);
@@ -261,12 +261,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   atoms = &(top.atoms);
   
   if (!bTop) {
-    fprintf(stderr,"No tpr file, will not compute Delta G of solvation\n");
+    printf("No tpr file, will not compute Delta G of solvation\n");
     bDGsol = FALSE;
   } else {
     bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
     if (!bDGsol) {
-      fprintf(stderr,"Warning: your tpr file is too old, will not compute "
+      printf("Warning: your tpr file is too old, will not compute "
 	      "Delta G of solvation\n");
     } else {
       printf("In case you use free energy of solvation predictions:\n");
@@ -281,18 +281,18 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   if ((ePBC != epbcXYZ) || (TRICLINIC(box))) {
-    fprintf(stderr,"\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
+    printf("\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
 	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
 	    "will certainly crash the analysis.\n\n");
   }
   snew(nx,2);
   snew(index,2);
   snew(grpname,2);
-  fprintf(stderr,"Select a group for calculation of surface and a group for output:\n");
+  printf("Select a group for calculation of surface and a group for output:\n");
   get_index(atoms,ftp2fn_null(efNDX,nfile,fnm),2,nx,index,grpname);
 
   if (bFindex) {
-    fprintf(stderr,"Select a group of hydrophobic atoms:\n");
+    printf("Select a group of hydrophobic atoms:\n");
     get_index(atoms,ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
   }
   snew(bOut,natoms);
@@ -323,7 +323,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     radius[i] += solsize;
   }
   if (ndefault > 0)
-    fprintf(stderr,"WARNING: could not find a Van der Waals radius for %d atoms\n",ndefault);
+    printf("WARNING: could not find a Van der Waals radius for %d atoms\n",ndefault);
   /* Determine which atom is counted as hydrophobic */
   if (bFindex) {
     npcheck = 0;
@@ -363,7 +363,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      atoms->atom[ii].q,radius[ii]-solsize,dgs_factor[i],
 	      BOOL(bPhobic[i]));
   }
-  fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
+  printf("%d out of %d atoms were classified as hydrophobic\n",
 	  nphobic,nx[1]);
   
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
@@ -391,7 +391,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       totmass += atoms->atom[ii].m;
     }
     if (ndefault)
-      fprintf(stderr,"WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
+      printf("WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
   }
   else
     vp = NULL;
@@ -483,7 +483,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   if (bPBC)  
     gmx_rmpbc_done(gpbc);
 
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
   ffclose(fp);
   if (vp)
@@ -499,7 +499,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       atom_area[i] /= nfr;
       atom_area2[i] /= nfr;
     }
-    fprintf(stderr,"Printing out areas per atom\n");
+    printf("Printing out areas per atom\n");
     fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue over the trajectory","Residue",
 		   "Area (nm\\S2\\N)",oenv);
     xvgr_legend(fp, asize(or_and_oa_legend),or_and_oa_legend,oenv);
@@ -636,14 +636,14 @@ int gmx_sas(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   if (solsize < 0) {
     solsize=1e-3;
-    fprintf(stderr,"Probe size too small, setting it to %g\n",solsize);
+    printf("Probe size too small, setting it to %g\n",solsize);
   }
   if (ndots < 20) {
     ndots = 20;
-    fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
+    printf("Ndots too small, setting it to %d\n",ndots);
   }
 
-  please_cite(stderr,"Eisenhaber95");
+  please_cite(stdout,"Eisenhaber95");
     
   sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex,
           oenv);

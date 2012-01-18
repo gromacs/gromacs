@@ -331,7 +331,7 @@ int gmx_dih(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   if (mult != -1)
-    fprintf(stderr,"Using %d for dihedral multiplicity rather than topology values\n",mult);
+    printf("Using %d for dihedral multiplicity rather than topology values\n",mult);
     
   snew(xr,1);
   init_rama(oenv,ftp2fn(efTRX,NFILE,fnm),
@@ -344,7 +344,7 @@ int gmx_dih(int argc,char *argv[])
     snew(dih[i],maxframes);
   snew(time,maxframes);
 
-  fprintf(stderr,"\n");
+  printf("\n");
   nframes = 0;
   while (new_data(xr)) {
     for(i=0; (i<xr->ndih); i++) {
@@ -365,7 +365,7 @@ int gmx_dih(int argc,char *argv[])
     }
   } 
 
-  fprintf(stderr,"\nCalculated all dihedrals, now analysing...\n");
+  printf("\nCalculated all dihedrals, now analysing...\n");
 
   out=ftp2FILE(efOUT,NFILE,fnm,"w");
 

@@ -81,7 +81,7 @@ static void index_atom2mol(int *n,atom_id *index,t_block *mols)
     index[nmol++] = mol;
   }
 
-  fprintf(stderr,"\nSplit group of %d atoms into %d molecules\n",nat,nmol);
+  printf("\nSplit group of %d atoms into %d molecules\n",nat,nmol);
 
   *n = nmol;
 }

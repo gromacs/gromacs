@@ -1250,7 +1250,7 @@ int main(int argc,char *argv[])
     init_t_atoms(atoms,atoms->nr,TRUE);
     snew(x,atoms->nr);
     snew(v,atoms->nr);
-    fprintf(stderr,"\nReading structure file\n");
+    printf("\nReading structure file\n");
     read_stx_conf(stxfile,title,atoms,x,v,&ePBC,box);
     natoms = atoms->nr;
     bNatoms=TRUE;

@@ -173,7 +173,7 @@ int gmx_polystat(int argc,char *argv[])
   ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),
 		      NULL,box,&natoms,NULL,NULL,NULL,top);
   
-  fprintf(stderr,"Select a group of polymer mainchain atoms:\n");
+  printf("Select a group of polymer mainchain atoms:\n");
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
             1,&isize,&index,&grpname);
 
@@ -195,8 +195,8 @@ int gmx_polystat(int argc,char *argv[])
     nat_min = min(nat_min,molind[mol+1]-molind[mol]);
     nat_max = max(nat_max,molind[mol+1]-molind[mol]);
   }
-  fprintf(stderr,"Group %s consists of %d molecules\n",grpname,nmol);
-  fprintf(stderr,"Group size per molecule, min: %d atoms, max %d atoms\n",
+  printf("Group %s consists of %d molecules\n",grpname,nmol);
+  printf("Group size per molecule, min: %d atoms, max %d atoms\n",
 	  nat_min,nat_max);
 
   sprintf(title,"Size of %d polymers",nmol);

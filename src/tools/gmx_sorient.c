@@ -327,14 +327,14 @@ int gmx_sorient(int argc,char *argv[])
   nav     = (real)ntot/(nrefgrp*nf);
   normfac = invbw/ntot;
   
-  fprintf(stderr,  "Average nr of molecules between %g and %g nm: %.1f\n",
+  printf(  "Average nr of molecules between %g and %g nm: %.1f\n",
 	  rmin,rmax,nav);
   if (ntot > 0) {
     sum1 /= ntot;
     sum2 /= ntot;
-    fprintf(stderr,"Average cos(theta1)     between %g and %g nm: %6.3f\n",
+    printf("Average cos(theta1)     between %g and %g nm: %6.3f\n",
 	    rmin,rmax,sum1);
-    fprintf(stderr,"Average 3cos2(theta2)-1 between %g and %g nm: %6.3f\n",
+    printf("Average 3cos2(theta2)-1 between %g and %g nm: %6.3f\n",
 	    rmin,rmax,sum2);
   }
   

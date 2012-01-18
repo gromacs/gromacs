@@ -81,7 +81,7 @@ static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
 		i,w,lambda,hwkT,dS);
     }
     else {
-      fprintf(stderr,"eigval[%d] = %g\n",i,eigval[i]);
+      printf("eigval[%d] = %g\n",i,eigval[i]);
       w = 0;
     }
   }
@@ -320,7 +320,7 @@ static void inprod_matrix(const char *matfile,int natoms,
       t_y[y] = eignr2[y]+1;
   }
   
-  fprintf(stderr,"Calculating inner-product matrix of %dx%d eigenvectors\n",
+  printf("Calculating inner-product matrix of %dx%d eigenvectors\n",
 	  nx,nvec2);
   
   snew(mat,nx);
@@ -333,7 +333,7 @@ static void inprod_matrix(const char *matfile,int natoms,
     else
       x = x1;
     t_x[x1] = eignr1[x]+1;
-    fprintf(stderr," %d",eignr1[x]+1);
+    printf(" %d",eignr1[x]+1);
     for(y1=0; y1<ny; y1++) {
       inp = 0;
       if (bSelect) {
@@ -349,7 +349,7 @@ static void inprod_matrix(const char *matfile,int natoms,
 	max = mat[x1][y1];
     }
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   rlo.r = 1; rlo.g = 1; rlo.b = 1;
   rhi.r = 0; rhi.g = 0; rhi.b = 0;
   nlevels = 41;
@@ -369,10 +369,10 @@ static void overlap(const char *outfile,int natoms,
   int i,v,vec,x;
   real overlap,inp;
 
-  fprintf(stderr,"Calculating overlap between eigenvectors of set 2 with eigenvectors\n");
+  printf("Calculating overlap between eigenvectors of set 2 with eigenvectors\n");
   for(i=0; i<noutvec; i++)
-    fprintf(stderr,"%d ",outvec[i]+1);
-  fprintf(stderr,"\n");
+    printf("%d ",outvec[i]+1);
+  printf("\n");
 
   out=xvgropen(outfile,"Subspace overlap",
 	       "Eigenvectors of trajectory 2","Overlap",oenv);
@@ -429,11 +429,11 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     snew(inprod,noutvec+1);
     
     if (filterfile) {
-      fprintf(stderr,"Writing a filtered trajectory to %s using eigenvectors\n",
+      printf("Writing a filtered trajectory to %s using eigenvectors\n",
 	      filterfile);
       for(i=0; i<noutvec; i++)
-	fprintf(stderr,"%d ",outvec[i]+1);
-      fprintf(stderr,"\n");
+	printf("%d ",outvec[i]+1);
+      printf("\n");
       out=open_trx(filterfile,"w");
     }
     snew_size=0;
@@ -554,7 +554,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
     
     b4D = bPDB && (noutvec >= 4);
     if (b4D) {
-      fprintf(stderr, "You have selected four or more eigenvectors:\n"
+      printf( "You have selected four or more eigenvectors:\n"
 	      "fourth eigenvector will be plotted "
 	      "in bfactor field of pdb file\n");
       sprintf(str,"4D proj. of traj. on eigenv. %d, %d, %d and %d",
@@ -616,8 +616,8 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
   
   if (extremefile) {
     if (extreme==0) {
-      fprintf(stderr,"%11s %17s %17s\n","eigenvector","Minimum","Maximum");
-      fprintf(stderr,
+      printf("%11s %17s %17s\n","eigenvector","Minimum","Maximum");
+      printf(
 	      "%11s %10s %10s %10s %10s\n","","value","time","value","time");
       snew(imin,noutvec_extr);
       snew(imax,noutvec_extr);
@@ -630,7 +630,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	}
 	min=inprod[v][imin[v]];
 	max=inprod[v][imax[v]];
-	fprintf(stderr,"%7d     %10.6f %10.1f %10.6f %10.1f\n",
+	printf("%7d     %10.6f %10.1f %10.6f %10.1f\n",
 		eignr[outvec[v]]+1,
 		min,inprod[noutvec][imin[v]],max,inprod[noutvec][imax[v]]); 
       }
@@ -650,7 +650,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	strcpy(str2,extremefile);
       else
 	sprintf(str2,str,eignr[outvec[v]]+1);
-      fprintf(stderr,"Writing %d frames along eigenvector %d to %s\n",
+      printf("Writing %d frames along eigenvector %d to %s\n",
 	      nextr,outvec[v]+1,str2);
       out=open_trx(str2,"w");
       for(frame=0; frame<nextr; frame++) {
@@ -668,7 +668,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
       close_trx(out);
     }
   }
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 static void components(const char *outfile,int natoms,
@@ -680,7 +680,7 @@ static void components(const char *outfile,int natoms,
   real *x,***y;
   char str[STRLEN],**ylabel;
 
-  fprintf(stderr,"Writing eigenvector components to %s\n",outfile);
+  printf("Writing eigenvector components to %s\n",outfile);
 
   snew(ylabel,noutvec);
   snew(y,noutvec);
@@ -705,7 +705,7 @@ static void components(const char *outfile,int natoms,
 		    "black: total, red: x, green: y, blue: z",
 		    "Atom number",(const char **)ylabel,
 		    natoms,x,NULL,y,1,FALSE,FALSE,oenv);
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 static void rmsf(const char *outfile,int natoms,real *sqrtm,
@@ -722,7 +722,7 @@ static void rmsf(const char *outfile,int natoms,real *sqrtm,
       if (eigval[i] < 0)
           eigval[i] = 0;
 
-  fprintf(stderr,"Writing rmsf to %s\n",outfile);
+  printf("Writing rmsf to %s\n",outfile);
 
   snew(ylabel,noutvec);
   snew(y,noutvec);
@@ -742,7 +742,7 @@ static void rmsf(const char *outfile,int natoms,real *sqrtm,
   write_xvgr_graphs(outfile,noutvec,1,"RMS fluctuation (nm) ",NULL,
                     "Atom number",(const char **)ylabel,
                     natoms,x,y,NULL,1,TRUE,FALSE,oenv);
-  fprintf(stderr,"\n");
+  printf("\n");
 }
 
 int gmx_anaeig(int argc,char *argv[])
@@ -946,7 +946,7 @@ int gmx_anaeig(int argc,char *argv[])
   if (EigFile != NULL) {
     int neig_tmp = read_xvg(EigFile,&xvgdata,&i);
     if (neig_tmp != neig1)
-      fprintf(stderr,"Warning: number of eigenvalues in xvg file (%d) does not mtch trr file (%d)\n",neig1,natoms);
+      printf("Warning: number of eigenvalues in xvg file (%d) does not mtch trr file (%d)\n",neig1,natoms);
     neig1 = neig_tmp;
     srenew(eigval1,neig1);
     for(j=0;j<neig1;j++) {
@@ -959,7 +959,7 @@ int gmx_anaeig(int argc,char *argv[])
     for(j=0;j<i;j++)
       sfree(xvgdata[j]);
     sfree(xvgdata);
-    fprintf(stderr,"Read %d eigenvalues from %s\n",neig1,EigFile);
+    printf("Read %d eigenvalues from %s\n",neig1,EigFile);
   }
     
   if (bEntropy) {
@@ -986,7 +986,7 @@ int gmx_anaeig(int argc,char *argv[])
     for(j=0;j<i;j++)
       sfree(xvgdata[j]);
     sfree(xvgdata);
-    fprintf(stderr,"Read %d eigenvalues from %s\n",neig2,Eig2File);      
+    printf("Read %d eigenvalues from %s\n",neig2,Eig2File);      
   }
   
   
@@ -1135,14 +1135,14 @@ int gmx_anaeig(int argc,char *argv[])
 	  noutvec++;
 	}
     }
-  fprintf(stderr,"%d eigenvectors selected for output",noutvec);
+  printf("%d eigenvectors selected for output",noutvec);
   if (noutvec <= 100) 
     {
-      fprintf(stderr,":");
+      printf(":");
       for(j=0; j<noutvec; j++)
-	fprintf(stderr," %d",eignr1[outvec[j]]+1);
+	printf(" %d",eignr1[outvec[j]]+1);
     }
-  fprintf(stderr,"\n");
+  printf("\n");
     
   if (CompFile)
     components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec,oenv);
@@ -1176,7 +1176,7 @@ int gmx_anaeig(int argc,char *argv[])
   if (!CompFile && !bProj && !OverlapFile && !InpMatFile && 
           !bCompare && !bEntropy)
   {
-    fprintf(stderr,"\nIf you want some output,"
+    printf("\nIf you want some output,"
 	    " set one (or two or ...) of the output file options\n");
   }
   

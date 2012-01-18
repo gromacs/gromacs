@@ -163,7 +163,7 @@ void wheel2(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   for(i=0; (i<nres); i++) {
     slen=max(slen,(int)strlen(resnm[i]));
   }
-  fprintf(stderr,"slen = %d\n",slen);
+  printf("slen = %d\n",slen);
   ring=(slen)*fontwidth;
   outer=inner+ring;
   box=(1+(nres / (2*angle)))*outer;
@@ -239,19 +239,19 @@ int gmx_wheel(int argc,char *argv[])
   for(i=1; (i<argc); i++) {
     if (strcmp(argv[i],"-r0") == 0) {
       r0=strtol(argv[++i],NULL,10);
-      fprintf(stderr,"First residue is %d\n",r0);
+      printf("First residue is %d\n",r0);
     }
     else if (strcmp(argv[i],"-rot0") == 0) {
       rot0=strtod(argv[++i],NULL);
-      fprintf(stderr,"Initial rotation is %g\n",rot0);
+      printf("Initial rotation is %g\n",rot0);
     }
     else if (strcmp(argv[i],"-T") == 0) {
       title=strdup(argv[++i]);
-      fprintf(stderr,"Title will be '%s'\n",title);
+      printf("Title will be '%s'\n",title);
     }
     else if (strcmp(argv[i],"-nn") == 0) {
       bNum=FALSE;
-      fprintf(stderr,"No residue numbers\n");
+      printf("No residue numbers\n");
     }
     else
       gmx_fatal(FARGS,"Incorrect usage of option %s",argv[i]);

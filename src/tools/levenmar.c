@@ -45,10 +45,10 @@
 
 static void nrerror(const char error_text[], gmx_bool bExit)
 {
-  fprintf(stderr,"Numerical Recipes run-time error...\n");
-  fprintf(stderr,"%s\n",error_text);
+  printf("Numerical Recipes run-time error...\n");
+  printf("%s\n",error_text);
   if (bExit) {
-    fprintf(stderr,"...now exiting to system...\n");
+    printf("...now exiting to system...\n");
     exit(1);
   }
 }
@@ -234,8 +234,8 @@ static void dump_mat(int n,real **a)
   
   for(i=1; (i<=n); i++) {
     for(j=1; (j<=n); j++)
-      fprintf(stderr,"  %10.3f",a[i][j]);
-    fprintf(stderr,"\n");
+      printf("  %10.3f",a[i][j]);
+    printf("\n");
   }
 }
 
@@ -273,7 +273,7 @@ gmx_bool gaussj(real **a, int n, real **b, int m)
     indxr[i]=irow;
     indxc[i]=icol;
     if (a[icol][icol] == 0.0) {
-      fprintf(stderr,"irow = %d, icol = %d\n",irow,icol);
+      printf("irow = %d, icol = %d\n",irow,icol);
       dump_mat(n,a);
       nrerror("GAUSSJ: Singular Matrix-2", FALSE);
       return FALSE;

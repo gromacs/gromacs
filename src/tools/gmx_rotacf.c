@@ -185,14 +185,14 @@ int gmx_rotacf(int argc,char *argv[])
     teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));  
   close_trj(status); 
-  fprintf(stderr,"\nDone with trajectory\n");
+  printf("\nDone with trajectory\n");
   
   gmx_rmpbc_done(gpbc);
 
 
   /* Autocorrelation function */
   if (teller < 2)
-    fprintf(stderr,"Not enough frames for correlation function\n");
+    printf("Not enough frames for correlation function\n");
   else {
     dt=(t1 - t0)/(teller-1);
     

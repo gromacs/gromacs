@@ -175,7 +175,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
   int         i,m;
 
   /* Calc the force */
-  fprintf(stderr,"Doing single force calculation...\n");
+  printf("Doing single force calculation...\n");
 
   if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
@@ -242,7 +242,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 
 
   if (inputrec->efep) {
-    fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
+    printf("WARNING: turning of free energy, will use lambda=0\n");
     inputrec->efep = 0;
   }
 
@@ -271,7 +271,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   /* Turn off twin range if appropriate */
   inputrec->rvdw  = inputrec->rcoulomb;
   inputrec->rlist = inputrec->rcoulomb;
-  fprintf(stderr,"Using a coulomb cut-off of %g nm\n",inputrec->rcoulomb); 
+  printf("Using a coulomb cut-off of %g nm\n",inputrec->rcoulomb); 
   
   /* Turn off free energy computation */
   inputrec->efep = 0;

@@ -217,7 +217,7 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
                     phi = 0;
                 }
                 if (debug || (cosa != cosa))  {
-                    fprintf(debug ? debug : stderr,
+                    fprintf(debug ? debug : stdout,
                             "mu[%d] = %5.2f %5.2f %5.2f |mi| = %5.2f, mu[%d] = %5.2f %5.2f %5.2f |mj| = %5.2f rr = %5.2f cosa = %5.2f\n",
                             gi,mu[gi][XX],mu[gi][YY],mu[gi][ZZ],norm(mu[gi]),
                             gj,mu[gj][XX],mu[gj][YY],mu[gj][ZZ],norm(mu[gj]),
@@ -359,7 +359,7 @@ gmx_bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
 
     bCont = do_enx(fmu,fr);
     if (fr->nre != nre) 
-        fprintf(stderr,"Something strange: expected %d entries in energy file at step %s\n(time %g) but found %d entries\n",
+        printf("Something strange: expected %d entries in energy file at step %s\n(time %g) but found %d entries\n",
                 nre,gmx_step_str(fr->step,buf),fr->t,fr->nre);
   
     if (bCont) {
@@ -776,12 +776,12 @@ static void do_dip(t_topology *top,int ePBC,real volume,
             bSlab = FALSE;
         if (nslices < 2)
             bSlab = FALSE;
-        fprintf(stderr,"axtitle = %s, nslices = %d, idim = %d\n",
+        printf("axtitle = %s, nslices = %d, idim = %d\n",
                 axtitle,nslices,idim);
         if (bSlab) 
         {
             snew(slab_dipoles,nslices);
-            fprintf(stderr,"Doing slab analysis\n");
+            printf("Doing slab analysis\n");
         }
     }
   
@@ -837,7 +837,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
                 if (timecheck < 0)
                     teller++;
                 if ((teller % 10) == 0)
-                    fprintf(stderr,"\r Skipping Frame %6d, time: %8.3f", teller, t);
+                    printf("\r Skipping Frame %6d, time: %8.3f", teller, t);
             }
             else 
             {

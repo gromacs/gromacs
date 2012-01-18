@@ -68,14 +68,14 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
   
-  fprintf(stderr,"Select the terms you want to scale from the following list\n");
-  fprintf(stderr,"End your selection with 0\n");
+  printf("Select the terms you want to scale from the following list\n");
+  printf("End your selection with 0\n");
 
   if ( bVerbose ) {
     for(k=0; (k<nre); ) {
       for(j=0; (j<4) && (k<nre); j++,k++) 
-	fprintf(stderr," %3d=%14s",k+1,nm[k].name);
-      fprintf(stderr,"\n");
+	printf(" %3d=%14s",k+1,nm[k].name);
+      printf("\n");
     }
   }
 
@@ -174,10 +174,10 @@ static int scan_ene_files(char **fnms, int nfiles,
       nremin  = min(nremin,fr->nre);
       *nremax = max(*nremax,fr->nre);
       if (nre != nresav) {
-	fprintf(stderr,
+	printf(
 		"Energy files don't match, different number of energies:\n"
 		" %s: %d\n %s: %d\n",fnms[f-1],nresav,fnms[f],fr->nre);
-	fprintf(stderr,
+	printf(
 		"\nContinue conversion using only the first %d terms (n/y)?\n"
 		"(you should be sure that the energy terms match)\n",nremin);
 	if(NULL==fgets(inputstring,STRLEN-1,stdin))
@@ -185,7 +185,7 @@ static int scan_ene_files(char **fnms, int nfiles,
 	      gmx_fatal(FARGS,"Error reading user input");
 	}
 	if (inputstring[0]!='y' && inputstring[0]!='Y') {
-	  fprintf(stderr,"Will not convert\n");
+	  printf("Will not convert\n");
 	  exit(0);
 	}
 	nresav = fr->nre;
@@ -194,7 +194,7 @@ static int scan_ene_files(char **fnms, int nfiles,
       readtime[f] = fr->t;
       close_enx(in);
     }
-    fprintf(stderr,"\n");
+    printf("\n");
     free_enxnms(nre,enm);
   }
 
@@ -214,9 +214,9 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
   
   if(bSetTime) {
     if(nfiles==1)
-      fprintf(stderr,"\n\nEnter the new start time:\n\n");
+      printf("\n\nEnter the new start time:\n\n");
     else
-      fprintf(stderr,"\n\nEnter the new start time for each file.\n"
+      printf("\n\nEnter the new start time for each file.\n"
 	      "There are two special options, both disables sorting:\n\n"
 	      "c (continue) - The start time is taken from the end\n"
 	      "of the previous file. Use it when your continuation run\n"
@@ -226,11 +226,11 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
 		"new run continues from the end of the previous one,\n"
 	      "since this takes possible overlap into account.\n\n");
     
-    fprintf(stderr,"          File             Current start       New start\n"
+    printf("          File             Current start       New start\n"
 	    "---------------------------------------------------------\n");
     
     for(i=0;i<nfiles;i++) {
-      fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
+      printf("%25s   %10.3f             ",fnms[i],readtime[i]);
       ok=FALSE;
       do {
 	if(NULL==fgets(inputstring,STRLEN-1,stdin))
@@ -255,7 +255,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
 	else {
 	  settime[i]=strtod(inputstring,&chptr);
 	  if(chptr==inputstring) {
-	    fprintf(stderr,"Try that again: ");
+	    printf("Try that again: ");
 	  }
 	  else {
 	    cont_type[i]=TIME_EXPLICIT;
@@ -276,26 +276,26 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
   if(bSort && (nfiles>1)) 
     sort_files(fnms,settime,nfiles);
   else
-    fprintf(stderr,"Sorting disabled.\n");
+    printf("Sorting disabled.\n");
   
   
   /* Write out the new order and start times */
-  fprintf(stderr,"\nSummary of files and start times used:\n\n"
+  printf("\nSummary of files and start times used:\n\n"
 	  "          File                Start time\n"
 	  "-----------------------------------------\n");
   for(i=0;i<nfiles;i++)
     switch(cont_type[i]) {
     case TIME_EXPLICIT:
-      fprintf(stderr,"%25s   %10.3f\n",fnms[i],settime[i]);
+      printf("%25s   %10.3f\n",fnms[i],settime[i]);
       break;
     case TIME_CONTINUE:
-      fprintf(stderr,"%25s        Continue from end of last file\n",fnms[i]);
+      printf("%25s        Continue from end of last file\n",fnms[i]);
       break;	      
     case TIME_LAST:
-      fprintf(stderr,"%25s        Change by same amount as last file\n",fnms[i]);
+      printf("%25s        Change by same amount as last file\n",fnms[i]);
       break;
     }
-  fprintf(stderr,"\n");
+  printf("\n");
   
   settime[nfiles]=FLT_MAX;
   cont_type[nfiles]=TIME_EXPLICIT;
@@ -447,7 +447,7 @@ static void update_ee_sum(int nre,
     nsum   += fr_nsum;
   } else {
     if (fr->nsum != 0) {
-      fprintf(stderr,"\nWARNING: missing energy sums at time %f\n",fr->t);
+      printf("\nWARNING: missing energy sums at time %f\n",fr->t);
     }
     nsteps = 0;
     nsum   = 0;
@@ -654,7 +654,7 @@ int gmx_eneconv(int argc,char *argv[])
 	last_t   = fro->t;
 	if(bNewOutput) {
 	  bNewOutput=FALSE;
-	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%s\n",
+	  printf("\nContinue writing frames from t=%g, step=%s\n",
 		  fro->t,gmx_step_str(fro->step,buf));
 	}
 
@@ -766,7 +766,7 @@ int gmx_eneconv(int argc,char *argv[])
 	
 	do_enx(out,fro);
 	if (noutfr % 1000 == 0)
-	  fprintf(stderr,"Writing frame time %g    ",fro->t);
+	  printf("Writing frame time %g    ",fro->t);
 	noutfr++;
       }
     }
@@ -789,21 +789,21 @@ int gmx_eneconv(int argc,char *argv[])
     
     if ((fro->t < end) && (f < nfile-1) &&
 	(fro->t < settime[f+1]-1.5*timestep)) 
-      fprintf(stderr,
+      printf(
 	      "\nWARNING: There might be a gap around t=%g\n",fro->t);
     
     /* move energies to lastee */
     close_enx(in);
     free_enxnms(this_nre,enm);
 
-    fprintf(stderr,"\n");
+    printf("\n");
   }
   if (noutfr == 0)
-    fprintf(stderr,"No frames written.\n");
+    printf("No frames written.\n");
   else {
-    fprintf(stderr,"Last frame written was at step %s, time %f\n",
+    printf("Last frame written was at step %s, time %f\n",
 	    gmx_step_str(fro->step,buf),fro->t);
-    fprintf(stderr,"Wrote %d frames\n",noutfr);
+    printf("Wrote %d frames\n",noutfr);
   }
 
   thanx(stderr);

@@ -209,7 +209,7 @@ int gmx_saltbr(int argc,char *argv[])
           
     teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
 
   if (bSep) {

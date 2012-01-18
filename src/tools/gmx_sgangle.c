@@ -63,18 +63,18 @@ static void print_types(atom_id index1[], int gnx1, char *group1,
 {
   int i,j;
 
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Group %s contains the following atoms: \n",group1);
+  printf("\n");
+  printf("Group %s contains the following atoms: \n",group1);
   for(i=0;i<gnx1;i++)
-    fprintf(stderr,"Atomname %d: %s\n",i,*(top->atoms.atomname[index1[i]]));
-  fprintf(stderr,"\n");
+    printf("Atomname %d: %s\n",i,*(top->atoms.atomname[index1[i]]));
+  printf("\n");
   
-  fprintf(stderr,"Group %s contains the following atoms: \n",group2);
+  printf("Group %s contains the following atoms: \n",group2);
   for(j=0;j<gnx2;j++)    
-    fprintf(stderr,"Atomname %d: %s\n",j,*(top->atoms.atomname[index2[j]]));
-  fprintf(stderr,"\n");
+    printf("Atomname %d: %s\n",j,*(top->atoms.atomname[index2[j]]));
+  printf("\n");
 
-  fprintf(stderr,"Careful: distance only makes sense in some situations.\n\n");
+  printf("Careful: distance only makes sense in some situations.\n\n");
 }
 
 static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
@@ -248,7 +248,7 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     
   gmx_rmpbc_done(gpbc);
 
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
   ffclose(sg_angle);
   if (dfile)
@@ -421,7 +421,7 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   gmx_rmpbc_done(gpbc);
   
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
   ffclose(sg_angle);
   if (dfile)

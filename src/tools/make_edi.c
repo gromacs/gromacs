@@ -362,10 +362,10 @@ void read_eigenvalues(int vecs[],const char *eigfile, real values[],
 
   neig = read_xvg(eigfile,&eigval,&nrow);
 
-  fprintf(stderr,"Read %d eigenvalues\n",neig);
+  printf("Read %d eigenvalues\n",neig);
   for(i=bHesse ? 6 : 0 ; i<neig; i++) {
     if (eigval[1][i] < -0.001 && bHesse)
-      fprintf(stderr,
+      printf(
 	      "WARNING: The Hessian Matrix has negative eigenvalue %f, we set it to zero (no flooding in this direction)\n\n",eigval[1][i]);
 
     if (eigval[1][i] < 0)
@@ -819,7 +819,7 @@ int main(int argc,char *argv[])
   {
       if (0 != listen[evFLOOD][0])
       {
-          fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
+          printf( "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
                           "      You may want to use -ori to define the flooding potential center.\n\n");
       }
       get_structure(atoms,indexfile,TargetFile,&edi_params.star,nfit,ifit,natoms,index);

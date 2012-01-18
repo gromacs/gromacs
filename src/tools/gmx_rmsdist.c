@@ -605,7 +605,7 @@ int gmx_rmsdist (int argc,char *argv[])
   /* check input */
   if (bNOE && scalemax < 0) {
     scalemax=0.6;
-    fprintf(stderr,"WARNING: using -noe without -max "
+    printf("WARNING: using -noe without -max "
 	    "makes no sense, setting -max to %g\n\n",scalemax);
   }
     
@@ -665,7 +665,7 @@ int gmx_rmsdist (int argc,char *argv[])
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);
   } while (read_next_x(oenv,status,&t,natom,x,box));
-  fprintf(stderr, "\n");
+  printf( "\n");
 
   ffclose(fp);
 
@@ -674,7 +674,7 @@ int gmx_rmsdist (int argc,char *argv[])
   close_trj(status);
 
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
-  fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
+  printf("rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   
   if (bNMR) 
   {

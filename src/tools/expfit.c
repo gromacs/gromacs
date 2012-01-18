@@ -356,7 +356,7 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   }
   if (fix) {
     if (bVerbose)
-      fprintf(stderr,"Will keep parameters fixed during fit procedure: %d\n",
+      printf("Will keep parameters fixed during fit procedure: %d\n",
 	      fix);
     for(i=0; i<ma; i++)
       if (fix & 1<<i)
@@ -373,7 +373,7 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 
   j = 0;      
   if (bVerbose)
-    fprintf(stderr,"%4s  %10s  %10s  %10s  %10s  %10s %10s\n",
+    printf("%4s  %10s  %10s  %10s  %10s  %10s %10s\n",
 	    "Step","chi^2","Lambda","A1","A2","A3","A4");
   do {
     ochisq = chisq;
@@ -385,22 +385,22 @@ static gmx_bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
       return FALSE;
      
     if (bVerbose) {
-      fprintf(stderr,"%4d  %10.5e  %10.5e  %10.5e",
+      printf("%4d  %10.5e  %10.5e  %10.5e",
 	      j,chisq,alamda,a[1]);
       if (mfit > 1)
-	fprintf(stderr,"  %10.5e",a[2]);
+	printf("  %10.5e",a[2]);
       if (mfit > 2)
-	fprintf(stderr,"  %10.5e",a[3]);
+	printf("  %10.5e",a[3]);
       if (mfit > 3)
-	 fprintf(stderr," %10.5e",a[4]);
-      fprintf(stderr,"\n");
+	 printf(" %10.5e",a[4]);
+      printf("\n");
     }
     j++;
     bCont = ((fabs(ochisq - chisq) > fabs(ftol*chisq)) ||
 	     ((ochisq == chisq)));
   } while (bCont && (alamda != 0.0) && (j < 50));
   if (bVerbose)
-    fprintf(stderr,"\n");
+    printf("\n");
     
   /* Now get the covariance matrix out */
   alamda = 0;
@@ -475,7 +475,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
   nfitpnts = j;
   integral = 0;
   if (nfitpnts < nparm) 
-    fprintf(stderr,"Not enough data points for fitting!\n");
+    printf("Not enough data points for fitting!\n");
   else {
     snew(parm,nparm);
     snew(dparm,nparm);
@@ -484,7 +484,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	parm[i]=fitparms[i];
     
     if (!lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix))
-      fprintf(stderr,"Fit failed!\n");
+      printf("Fit failed!\n");
     else if (nparm <= 3) {
       /* Compute the integral from begintimefit */
       if (nparm == 3) 
@@ -500,13 +500,13 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       
       /* Generate THE output */
       if (bVerbose) {
-	fprintf(stderr,"FIT: # points used in fit is: %d\n",nfitpnts);
-	fprintf(stderr,"FIT: %21s%21s%21s\n",
+	printf("FIT: # points used in fit is: %d\n",nfitpnts);
+	printf("FIT: %21s%21s%21s\n",
 		"parm0     ","parm1 (ps)   ","parm2 (ps)    ");
-	fprintf(stderr,"FIT: ------------------------------------------------------------\n");
-	fprintf(stderr,"FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
+	printf("FIT: ------------------------------------------------------------\n");
+	printf("FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
 		parm[0],dparm[0],parm[1],dparm[1],parm[2],dparm[2]);
-	fprintf(stderr,"FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
+	printf("FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
 		begintimefit,integral);
 	
 	sprintf(buf,"test%d.xvg",nfitpnts);
@@ -540,7 +540,7 @@ void do_expfit(int ndata,real c1[],real dt,real begintimefit,real endtimefit)
   real *x,*y,*Dy;
   real aa,bb,saa,sbb,A,tau,dA,dtau;
 
-  fprintf(stderr,"Will fit data from %g (ps) to %g (ps).\n",
+  printf("Will fit data from %g (ps) to %g (ps).\n",
 	  begintimefit,endtimefit);
 
   snew(x,ndata);   /* allocate the maximum necessary space */
@@ -553,23 +553,23 @@ void do_expfit(int ndata,real c1[],real dt,real begintimefit,real endtimefit)
       x[n]=dt*i;
       y[n]=c1[i];
       Dy[n]=0.5;
-      fprintf(stderr,"n= %d, i= %d, x= %g, y= %g\n",n,i,x[n],y[n]);
+      printf("n= %d, i= %d, x= %g, y= %g\n",n,i,x[n],y[n]);
       n++;
     }
   }
-  fprintf(stderr,"# of data points used in the fit is : %d\n\n",n);
+  printf("# of data points used in the fit is : %d\n\n",n);
   expfit(n,x,y,Dy,&aa,&saa,&bb,&sbb);
 
   A=exp(aa);
   dA=exp(aa)*saa;
   tau=-1.0/bb;
   dtau=sbb/sqr(bb);
-  fprintf(stderr,"Fitted to y=exp(a+bx):\n");
-  fprintf(stderr,"a = %10.5f\t b = %10.5f",aa,bb);
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Fitted to y=Aexp(-x/tau):\n");
-  fprintf(stderr,"A  = %10.5f\t tau  = %10.5f\n",A,tau);
-  fprintf(stderr,"dA = %10.5f\t dtau = %10.5f\n",dA,dtau);
+  printf("Fitted to y=exp(a+bx):\n");
+  printf("a = %10.5f\t b = %10.5f",aa,bb);
+  printf("\n");
+  printf("Fitted to y=Aexp(-x/tau):\n");
+  printf("A  = %10.5f\t tau  = %10.5f\n",A,tau);
+  printf("dA = %10.5f\t dtau = %10.5f\n",dA,dtau);
 }
 
 

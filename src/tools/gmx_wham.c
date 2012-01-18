@@ -1578,7 +1578,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         {
             file=open_pdo_pipe(fn[i],opt,&bPipeOpen);
             /*fgets(Buffer0,999,file);
-              fprintf(stderr,"First line '%s'\n",Buffer0); */
+              printf("First line '%s'\n",Buffer0); */
             done=100.0*(i+1)/nfiles;
             printf("\rOpening %s ... [%2.0f%%]",fn[i],done); fflush(stdout);
             if (opt->verbose)
@@ -1619,7 +1619,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         /* load data into window */
         read_pdo_data(file,header,i,window,opt,FALSE,NULL,NULL);
         if ((window+i)->Ntot[0] == 0.0)
-            fprintf(stderr,"\nWARNING, no data points read from file %s (check -b option)\n", fn[i]);
+            printf("\nWARNING, no data points read from file %s (check -b option)\n", fn[i]);
         if (bPipeOpen)
             pdo_close_file(file);
         else
@@ -1821,7 +1821,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         }
         else if (opt->nBootStrap && opt->tauBootStrap!=0.0)
         {
-            fprintf(stderr,"\n *** WARNING, Could not determine time step in %s\n",fn);
+            printf("\n *** WARNING, Could not determine time step in %s\n",fn);
         }
         
         /* Need to alocate memory and set up structure */
@@ -2040,7 +2040,7 @@ void read_tpr_pullxf_files(char **fnTprs,char **fnPull,int nfiles,
             gmx_fatal(FARGS,"Expected the %d'th file in input file to be a xvg (pullx/pullf) file\n",i);
         read_pull_xf(fnPull[i],fnTprs[i],header,window+i,opt,FALSE,NULL,NULL);
         if (window[i].Ntot[0] == 0.0)
-            fprintf(stderr,"\nWARNING, no data points read from file %s (check -b option)\n", fnPull[i]);
+            printf("\nWARNING, no data points read from file %s (check -b option)\n", fnPull[i]);
     }
 
     for (i=0;i<nfiles; i++)
@@ -2076,7 +2076,7 @@ void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window,int nwins,t_Umb
             window[i].g[ig]=1+2*iact[ig][i]/window[i].dt;  
       
             if (iact[ig][i] <= 0.0)
-                fprintf(stderr,"\nWARNING, IACT = %f (window %d, group %d)\n", iact[ig][i],i,ig);
+                printf("\nWARNING, IACT = %f (window %d, group %d)\n", iact[ig][i],i,ig);
         }
     }
 }
@@ -2396,11 +2396,11 @@ void  checkReactionCoordinateCovered(t_UmbrellaWindow *window,int nwins,
         bBoundary=( j<bins/20 || (bins-j)>bins/20 );
         /* check for bins with no data */
         if (count[j] == 0)
-            fprintf(stderr, "\nWARNING, no data point in bin %d (z=%g) !\n"
+            printf( "\nWARNING, no data point in bin %d (z=%g) !\n"
                     "You may not get a reasonable profile. Check your histograms!\n",j,z);
         /* and check for poor sampling */
         else if (relcount<0.005 && !bBoundary)
-            fprintf(stderr, "Warning, poor sampling bin %d (z=%g). Check your histograms!\n",j,z);
+            printf( "Warning, poor sampling bin %d (z=%g). Check your histograms!\n",j,z);
     }
     sfree(count);
 }

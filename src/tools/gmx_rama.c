@@ -107,7 +107,7 @@ int gmx_rama(int argc,char *argv[])
     plot_rama(out,xr);
     j++;
   } while (new_data(xr));
-  fprintf(stderr,"\n");
+  printf("\n");
   ffclose(out);
   
   do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);

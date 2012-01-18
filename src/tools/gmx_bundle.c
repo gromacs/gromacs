@@ -251,10 +251,10 @@ int gmx_bundle(int argc,char *argv[])
   else
     bun.nend = 2;
   
-  fprintf(stderr,"Select a group of top and a group of bottom ");
+  printf("Select a group of top and a group of bottom ");
   if (bKink)
-    fprintf(stderr,"and a group of kink ");
-  fprintf(stderr,"atoms\n");
+    printf("and a group of kink ");
+  printf("atoms\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),bun.nend,
 	    gnx,index,grpname);
 

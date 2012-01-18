@@ -93,7 +93,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
         else
         {
             readtime[i]=0;
-            fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+            printf("\nWARNING: Couldn't find a time in the frame.\n");
         }
 
         if(i==0) 
@@ -129,7 +129,7 @@ static void scan_trj_files(char **fnms, int nfiles, real *readtime,
 
         close_trj(status);
     }
-    fprintf(stderr,"\n");
+    printf("\n");
 
     sfree(fr.x);
 }
@@ -172,7 +172,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
 
     if (bSetTime)
     {
-        fprintf(stderr, "\n\nEnter the new start time (%s) for each file.\n"
+        printf( "\n\nEnter the new start time (%s) for each file.\n"
                 "There are two special options, both disable sorting:\n\n"
                 "c (continue) - The start time is taken from the end\n"
                 "of the previous file. Use it when your continuation run\n"
@@ -183,15 +183,13 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                 "since this takes possible overlap into account.\n\n",
                 output_env_get_time_unit(oenv));
 
-        fprintf(
-                stderr,
-                "          File             Current start (%s)  New start (%s)\n"
-                "---------------------------------------------------------\n",
-                output_env_get_time_unit(oenv), output_env_get_time_unit(oenv));
+        printf("          File             Current start (%s)  New start (%s)\n"
+	       "---------------------------------------------------------\n",
+	       output_env_get_time_unit(oenv), output_env_get_time_unit(oenv));
 
         for (i = 0; i < nfiles; i++)
         {
-            fprintf(stderr, "%25s   %10.3f %s          ", fnms[i],
+            printf( "%25s   %10.3f %s          ", fnms[i],
                     output_env_conv_time(oenv, readtime[i]), output_env_get_time_unit(oenv));
             ok = FALSE;
             do
@@ -224,7 +222,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                     output_env_get_time_invfactor(oenv);
                     if(chptr==inputstring)
                     {
-                        fprintf(stderr,"'%s' not recognized as a floating point number, 'c' or 'l'. "
+                        printf("'%s' not recognized as a floating point number, 'c' or 'l'. "
                                 "Try again: ",inputstring);
                     }
                     else {
@@ -249,38 +247,38 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
     }
     if(!bSort)
     {
-        fprintf(stderr,"Sorting disabled.\n");
+        printf("Sorting disabled.\n");
     }
     else
     {
         sort_files(fnms,settime,nfiles);
     }
     /* Write out the new order and start times */
-    fprintf(stderr,"\nSummary of files and start times used:\n\n"
+    printf("\nSummary of files and start times used:\n\n"
             "          File                Start time       Time step\n"
             "---------------------------------------------------------\n");
     for(i=0;i<nfiles;i++)
         switch(cont_type[i])
         {
         case TIME_EXPLICIT:
-            fprintf(stderr,"%25s   %10.3f %s   %10.3f %s",
+            printf("%25s   %10.3f %s   %10.3f %s",
                     fnms[i],
                     output_env_conv_time(oenv,settime[i]),output_env_get_time_unit(oenv),
                     output_env_conv_time(oenv,timestep[i]),output_env_get_time_unit(oenv));
             if ( i>0 &&
                 cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
-                fprintf(stderr," WARNING: same Start time as previous");
-            fprintf(stderr,"\n");
+                printf(" WARNING: same Start time as previous");
+            printf("\n");
             break;
         case TIME_CONTINUE:
-            fprintf(stderr,"%25s        Continue from last file\n",fnms[i]);
+            printf("%25s        Continue from last file\n",fnms[i]);
             break;
         case TIME_LAST:
-            fprintf(stderr,"%25s        Change by same amount as last file\n",
+            printf("%25s        Change by same amount as last file\n",
                     fnms[i]);
             break;
         }
-    fprintf(stderr,"\n");
+    printf("\n");
 
     settime[nfiles]=FLT_MAX;
     cont_type[nfiles]=TIME_EXPLICIT;
@@ -594,7 +592,7 @@ int gmx_trjcat(int argc, char *argv[])
             }
         }
         if (n_append == 0) {
-            fprintf(stderr,"Will append to %s rather than creating a new file\n",
+            printf("Will append to %s rather than creating a new file\n",
                     out_file);
         }
         else if (n_append != -1)
@@ -629,7 +627,7 @@ int gmx_trjcat(int argc, char *argv[])
             stfio=trx_get_fileio(status);
             if (!bKeepLast && !bOverwrite)
             {
-                fprintf(stderr, "\n\nWARNING: Appending without -overwrite implies -keeplast "
+                printf( "\n\nWARNING: Appending without -overwrite implies -keeplast "
                     "between the first two files. \n"
                     "If the trajectories have an overlap and have not been written binary \n"
                     "reproducible this will produce an incorrect trajectory!\n\n");
@@ -742,7 +740,7 @@ int gmx_trjcat(int argc, char *argv[])
                     if( ( i < nfile_in ) &&
                         ( frout.time < settime[i]-1.5*timestep ) ) 
                     {
-                        fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
+                        printf( "WARNING: Frames around t=%f %s have a different "
                                 "spacing than the rest,\n"
                                 "might be a gap or overlap that couldn't be corrected "
                                 "automatically.\n",output_env_conv_time(oenv,frout.time),
@@ -760,7 +758,7 @@ int gmx_trjcat(int argc, char *argv[])
             if(!fr.bTime) 
             {
                 fr.time=0;
-                fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+                printf("\nWARNING: Couldn't find a time in the frame.\n");
             }
 
             if(cont_type[i]==TIME_EXPLICIT)
@@ -825,7 +823,7 @@ int gmx_trjcat(int argc, char *argv[])
                         last_ok_t=frout.time;
                         if(bNewFile) 
                         {
-                            fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
+                            printf("\nContinue writing frames from %s t=%g %s, "
                                     "frame=%d      \n",
                                     fnms[i],output_env_conv_time(oenv,frout.time),output_env_get_time_unit(oenv),
                                     frame);
@@ -843,7 +841,7 @@ int gmx_trjcat(int argc, char *argv[])
                         }
                         if ( ((frame % 10) == 0) || (frame < 10) )
                         {
-                            fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
+                            printf(" ->  frame %6d time %8.3f %s     \r",
                                     frame_out,output_env_conv_time(oenv,frout.time),output_env_get_time_unit(oenv));
                         }
                     }
@@ -858,7 +856,7 @@ int gmx_trjcat(int argc, char *argv[])
         {
             close_trx(trxout);
         }
-        fprintf(stderr,"\nLast frame written was %d, time %f %s\n",
+        printf("\nLast frame written was %d, time %f %s\n",
                 frame,output_env_conv_time(oenv,last_ok_t),output_env_get_time_unit(oenv)); 
     }
     thanx(stderr);

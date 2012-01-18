@@ -147,7 +147,7 @@ int gmx_genpr(int argc,char *argv[])
     init_t_atoms(atoms,atoms->nr,TRUE);
     snew(x,atoms->nr);
     snew(v,atoms->nr);
-    fprintf(stderr,"\nReading structure file\n");
+    printf("\nReading structure file\n");
     read_stx_conf(xfn,title,atoms,x,v,NULL,box);
   }
   

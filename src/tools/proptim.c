@@ -83,7 +83,7 @@ void mkptrj(char *prop,int nSel,
   fprintf(out,"Projection of %s on EigenVectors\n",prop);
   for(j=0; (j<nframes); j++) {
     if ((j % 10) == 0)
-      fprintf(stderr,"\rFrame %d",j);
+      printf("\rFrame %d",j);
     for(i=0; (i<nev); i++) {
       calc_prj(natoms,xav,xxx,EV[i],evprj[i][j]);
       switch (nSel) {
@@ -112,7 +112,7 @@ void mkptrj(char *prop,int nSel,
     fprintf(out,"\n");
   }
   ffclose(out);
-  fprintf(stderr,"\n");
+  printf("\n");
   for(i=0; (i<nev); i++) {
     printf("ev %2d, average: %8.3f  rms: %8.3f\n",
 	   i+1,pav[i]/nframes,sqrt(pav2[i]/nframes-sqr(pav[i]/nframes)));
@@ -151,11 +151,11 @@ void proptrj(char *fngro,char *fndat,t_topology *top,t_pinp *p)
   snew(xav,natoms);
   snew(vav,natoms);
   read_conf(fngro,buf,&natoms,xav,vav,box);
-  fprintf(stderr,"Successfully read average positions (%s)\n",buf);
+  printf("Successfully read average positions (%s)\n",buf);
   
   EV=read_ev(fndat,natoms);
   
-  fprintf(stderr,"Successfully read eigenvectors\n");
+  printf("Successfully read eigenvectors\n");
 
   snew(index,nev);
   for(i=0; (i<nev); i++)

@@ -149,7 +149,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 		if(*xslices<*yslices) *xslices=1;
 		else *yslices=1; 
     }  
-	fprintf(stderr,
+	printf(
             "\nDividing the box in %5d x %5d x %5d slices with binw %f along axis %d\n",*xslices,*yslices,*zslices,bw,axis );
 	
 		
@@ -279,7 +279,7 @@ static void printdensavg(char *fldfn, real ****Densmap, int xslices, int yslices
         }
     }
     totdens/=(xslices*yslices*zslices*tdim);
-    fprintf(stderr,"Total density [kg/m^3]  %8f",totdens);
+    printf("Total density [kg/m^3]  %8f",totdens);
     ffclose(fldH);
 }
 
@@ -315,7 +315,7 @@ static void outputfield(const char *fldfn, real ****Densmap,
         }
     }
     totdens/=(xslices*yslices*zslices*tdim);
-    fprintf(stderr,"Total density [kg/m^3]  %8f",totdens);
+    printf("Total density [kg/m^3]  %8f",totdens);
     ffclose(fldH);
 }
 

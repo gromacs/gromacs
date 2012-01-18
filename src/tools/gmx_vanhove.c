@@ -162,7 +162,7 @@ int gmx_vanhove(int argc,char *argv[])
     otfile  = opt2fn_null("-ot",NFILE,fnm);
   
   if (!matfile && !otfile && !orfile) {
-    fprintf(stderr,
+    printf(
 	    "For output set one (or more) of the output file options\n");
     exit(0);
   }
@@ -204,7 +204,7 @@ int gmx_vanhove(int argc,char *argv[])
   sfree(x);
   close_trj(status);
   
-  fprintf(stderr,"Read %d frames\n",nfr);
+  printf("Read %d frames\n",nfr);
 
   dt = (time[nfr-1] - time[0])/(nfr - 1);
   /* Some ugly rounding to get nice nice times in the output */
@@ -256,7 +256,7 @@ int gmx_vanhove(int argc,char *argv[])
   msmul(avbox,1.0/nfr,avbox);
   for(f=0; f<nfr; f++) {
     if (f % 100 == 0)
-      fprintf(stderr,"\rProcessing frame %d",f);
+      printf("\rProcessing frame %d",f);
     /* Scale all the configuration to the average box */
     m_inv_ur0(sbox[f],corr);
     mmul_ur0(avbox,corr,corr);
@@ -319,7 +319,7 @@ int gmx_vanhove(int argc,char *argv[])
       }
     }
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   
   if (matfile) {
     matmax = 0;

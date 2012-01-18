@@ -75,11 +75,11 @@ void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
       *bFit = (head.lambda > -0.5);
       if (*bFit)
       {
-          fprintf(stderr,"Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ",*natoms,file);
+          printf("Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ",*natoms,file);
       }
       else 
       {
-          fprintf(stderr,"Eigenvectors in %s were determined without fitting\n",file);
+          printf("Eigenvectors in %s were determined without fitting\n",file);
           sfree(*xref);
           *xref=NULL;
       }
@@ -94,14 +94,14 @@ void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
   *bDMA = (head.lambda > 0.5);
   if ((head.t<=-0.01) || (head.t>=0.01))
   {
-      fprintf(stderr,"WARNING: %s does not start with t=0, which should be the "
+      printf("WARNING: %s does not start with t=0, which should be the "
               "average structure. This might not be a eigenvector file. "
               "Some things might go wrong.\n",
               file);
   }
   else
   {
-      fprintf(stderr,
+      printf(
               "Read %smass weighted average/minimum structure with %d atoms from %s\n",
               *bDMA ? "" : "non ",*natoms,file);
   }
@@ -134,7 +134,7 @@ void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
       (*nvec)++;
   }
   sfree(x);
-  fprintf(stderr,"Read %d eigenvectors (for %d atoms)\n\n",*nvec,*natoms);
+  printf("Read %d eigenvectors (for %d atoms)\n\n",*nvec,*natoms);
 }
 
 
@@ -152,10 +152,9 @@ void write_eigenvectors(const char *trnname,int natoms,real mat[],
     clear_mat(zerobox);
     snew(x,natoms);
     
-    fprintf (stderr,
-             "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
-             (WriteXref==eWXR_YES) ? "reference, " : "",
-             begin,end,trnname);
+    printf("\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
+	   (WriteXref==eWXR_YES) ? "reference, " : "",
+	   begin,end,trnname);
     
     trnout = open_tpx(trnname,"w");
     if (WriteXref == eWXR_YES)

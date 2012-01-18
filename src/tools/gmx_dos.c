@@ -95,7 +95,7 @@ static double bisector(double Delta,double tol,
     f1 = ff1;
     if (tol < tolmin) 
     {
-        fprintf(stderr,"Unrealistic tolerance %g for bisector. Setting it to %g\n",tol,tolmin);
+        printf("Unrealistic tolerance %g for bisector. Setting it to %g\n",tol,tolmin);
         tol = tolmin;
     }
     
@@ -127,7 +127,7 @@ static double calc_y(double f,double Delta,double toler)
     y1 = pow(f/Delta,1.5);
     y2 = bisector(f,toler,0,10000,YYY);
     if (fabs((y1-y2)/(y1+y2)) > 100*toler)
-        fprintf(stderr,"Inconsistency computing y: y1 = %f, y2 = %f, using y1.\n",
+        printf("Inconsistency computing y: y1 = %f, y2 = %f, using y1.\n",
                 y1,y2);
         
     return y1;
@@ -150,7 +150,7 @@ static real old_calc_fluidicity(real Delta,real tol)
        to get it. */
     if (tol < tolmin) 
     {
-        fprintf(stderr,"Unrealistic tolerance %g for calc_fluidity. Setting it to %g\n",tol,tolmin);
+        printf("Unrealistic tolerance %g for calc_fluidity. Setting it to %g\n",tol,tolmin);
         tol=1e-6;
     }
     
