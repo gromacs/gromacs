@@ -105,14 +105,14 @@ static int *select_it(int nre,char *nm[],int *nset)
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
   
-  fprintf(stderr,"Select the terms you want from the following list\n");
-  fprintf(stderr,"End your selection with 0\n");
+  printf("Select the terms you want from the following list\n");
+  printf("End your selection with 0\n");
 
   if ( bVerbose ) {
     for(k=0; (k<nre); ) {
       for(j=0; (j<4) && (k<nre); j++,k++) 
-	fprintf(stderr," %3d=%14s",k+1,nm[k]);
-      fprintf(stderr,"\n");
+	printf(" %3d=%14s",k+1,nm[k]);
+      printf("\n");
     }
   }
 
@@ -168,11 +168,11 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
  
-  fprintf(stderr,"\n");
-  fprintf(stderr,"Select the terms you want from the following list by\n");
-  fprintf(stderr,"selecting either (part of) the name or the number or a combination.\n");
-  fprintf(stderr,"End your selection with an empty line or a zero.\n");
-  fprintf(stderr,"-------------------------------------------------------------------\n");
+  printf("\n");
+  printf("Select the terms you want from the following list by\n");
+  printf("selecting either (part of) the name or the number or a combination.\n");
+  printf("End your selection with an empty line or a zero.\n");
+  printf("-------------------------------------------------------------------\n");
   
   snew(newnm,nre);
   j = 0;
@@ -185,7 +185,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
     if ( bVerbose ) {
       if (j == 0) {
 	if (k > 0) {
-	  fprintf(stderr,"\n");
+	  printf("\n");
 	}
 	bLong = FALSE;
 	for(kk=k; kk<k+4; kk++) {
@@ -194,16 +194,16 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 	  }
 	}
       } else {
-	fprintf(stderr," ");
+	printf(" ");
       }
       if (!bLong) {
-	fprintf(stderr,fm4,k+1,newnm[k]);
+	printf(fm4,k+1,newnm[k]);
 	j++;
 	if (j == 4) {
 	  j = 0;
 	}
       } else {
-	fprintf(stderr,fm2,k+1,newnm[k]);
+	printf(fm2,k+1,newnm[k]);
 	j++;
 	if (j == 2) {
 	  j = 0;
@@ -212,7 +212,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
     }
   }
   if ( bVerbose ) {
-    fprintf(stderr,"\n\n");
+    printf("\n\n");
   }
   
   snew(bE,nre);
@@ -240,7 +240,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 	    } else if ((1<=nind) && (nind<=nre)) {
 	      bE[nind-1] = TRUE;
 	    } else {
-	      fprintf(stderr,"number %d is out of range\n",nind);
+	      printf("number %d is out of range\n",nind);
 	    }
 	  }
 	  else {
@@ -263,7 +263,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
 		}
 	      }
 	      if (nmatch == 0) {
-		fprintf(stderr,"String '%s' does not match anything\n",ptr);
+		printf("String '%s' does not match anything\n",ptr);
 	      }
 	    }
 	  }
@@ -326,7 +326,7 @@ static void get_orires_parms(const char *topnm,
     if (ip[iatom[i]].orires.ex >= *nex)
       *nex = ip[iatom[i]].orires.ex+1;
   }
-  fprintf(stderr,"Found %d orientation restraints with %d experiments",
+  printf("Found %d orientation restraints with %d experiments",
 	  *nor,*nex);
 }
 
@@ -1317,7 +1317,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 	    srenew(eneset2[i],maxenergy);
 	}
 	if (fr->t != time[nenergy2])
-	  fprintf(stderr,"\nWARNING time mismatch %g!=%g at frame %s\n",
+	  printf("\nWARNING time mismatch %g!=%g at frame %s\n",
 		  fr->t, time[nenergy2], gmx_step_str(fr->step,buf));
 	for(i=0; i<nset; i++)
 	  eneset2[i][nenergy2] = fr->ener[set[i]].e;
@@ -1328,7 +1328,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
   
   /* check */
   if (edat->nframes != nenergy2) {
-    fprintf(stderr,"\nWARNING file length mismatch %d!=%d\n",
+    printf("\nWARNING file length mismatch %d!=%d\n",
 	    edat->nframes,nenergy2);
   }
   nenergy = min(edat->nframes,nenergy2);
@@ -1346,7 +1346,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
   beta = 1.0/(BOLTZ*reftemp);
   for(i=0; i<nset; i++) {
     if (gmx_strcasecmp(leg[i],enm[set[i]].name)!=0)
-      fprintf(stderr,"\nWARNING energy set name mismatch %s!=%s\n",
+      printf("\nWARNING energy set name mismatch %s!=%s\n",
 	      leg[i],enm[set[i]].name);
     for(j=0; j<nenergy; j++) {
       dE = eneset2[i][j] - edat->s[i].ener[j];
@@ -1946,8 +1946,8 @@ int gmx_energy(int argc,char *argv[])
           if (bODR)
               snew(odrms,nor);
           if (bORT || bODT) {
-              fprintf(stderr,"Select the orientation restraint labels you want (-1 is all)\n");
-              fprintf(stderr,"End your selection with 0\n");
+              printf("Select the orientation restraint labels you want (-1 is all)\n");
+              printf("End your selection with 0\n");
               j = -1;
               orsel = NULL;
               do {
@@ -1959,7 +1959,7 @@ int gmx_energy(int argc,char *argv[])
                   }
               } while (orsel[j] > 0);
               if (orsel[0] == -1) {
-                  fprintf(stderr,"Selecting all %d orientation restraints\n",nor);
+                  printf("Selecting all %d orientation restraints\n",nor);
                   norsel = nor;
                   srenew(orsel,nor);
                   for(i=0; i<nor; i++)
@@ -1975,7 +1975,7 @@ int gmx_energy(int argc,char *argv[])
                               break;
                           }
                       if (k == nor)
-                          fprintf(stderr,"Orientation restraint label %d not found\n",
+                          printf("Orientation restraint label %d not found\n",
                                   orsel[i]);
                   }
               }
@@ -2397,7 +2397,7 @@ int gmx_energy(int argc,char *argv[])
     }
   } while (bCont && (timecheck == 0));
   
-  fprintf(stderr,"\n");
+  printf("\n");
   close_enx(fp);
   if (out) 
       ffclose(out);

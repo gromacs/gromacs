@@ -77,7 +77,7 @@ void print_stat(rvec *x,int natoms,matrix box)
     }   
   }
   for(m=0;(m<DIM);m++)
-    fprintf(stderr,"DIM %d XMIN %8.3f XMAX %8.3f BOX %8.3f\n",
+    printf("DIM %d XMIN %8.3f XMAX %8.3f BOX %8.3f\n",
 	    m,xmin[m],xmax[m],box[m][m]);
 }
 #endif
@@ -101,7 +101,7 @@ static void mk_vdw(t_atoms *a,real rvdw[],gmx_atomprop_t aps,
   int i;
   
   /* initialise van der waals arrays of configuration */
-  fprintf(stderr,"Initialising van der waals distances...\n");
+  printf("Initialising van der waals distances...\n");
   for(i=0; (i < a->nr); i++)
     if (!gmx_atomprop_query(aps,epropVDW,
 			    *(a->resinfo[a->atom[i].resind].name), 
@@ -125,7 +125,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   rvec *newx, *newv=NULL;
   real *newr;
   
-  fprintf(stderr,"Sorting configuration\n");
+  printf("Sorting configuration\n");
 
   atoms = *atoms_solvt;
 
@@ -157,14 +157,14 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     }
   }
   
-  fprintf(stderr,"Found %d%s molecule type%s:\n",
+  printf("Found %d%s molecule type%s:\n",
 	  nrmoltypes,nrmoltypes==1?"":" different",nrmoltypes==1?"":"s");
   for(j=0; j<nrmoltypes; j++) {
     if (j==0)
       moltypes[j].res0 = 0;
     else
       moltypes[j].res0 = moltypes[j-1].res0+moltypes[j-1].nmol;
-    fprintf(stderr,"%7s (%4d atoms): %5d residues\n",
+    printf("%7s (%4d atoms): %5d residues\n",
 	    moltypes[j].name,moltypes[j].natoms,moltypes[j].nmol);
   }
   
@@ -316,10 +316,10 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   snew(title_insrt,STRLEN);
   
   /* read residue number, residue names, atomnames, coordinates etc. */
-  fprintf(stderr,"Reading molecule configuration \n");
+  printf("Reading molecule configuration \n");
   read_stx_conf(mol_insrt,title_insrt,&atoms_insrt,x_insrt,NULL,
 		&ePBC_insrt,box_insrt);
-  fprintf(stderr,"%s\nContaining %d atoms in %d residue\n",
+  printf("%s\nContaining %d atoms in %d residue\n",
 	  title_insrt,atoms_insrt.nr,atoms_insrt.nres);
   srenew(atoms_insrt.resinfo,atoms_insrt.nres);  
     
@@ -334,7 +334,7 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   
   trial=mol=0;
   while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt)) {
-    fprintf(stderr,"\rTry %d",trial++);
+    printf("\rTry %d",trial++);
     for (i=0;(i<atoms_insrt.nr);i++) {
       copy_rvec(x_insrt[i],x_n[i]);
     }
@@ -355,7 +355,7 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
     
     if (atoms->nr==(atoms_insrt.nr+onr)) {
       mol++;
-      fprintf(stderr," success (now %d atoms)!",atoms->nr);
+      printf(" success (now %d atoms)!",atoms->nr);
     }
   }
   srenew(atoms->resinfo,  atoms->nres);
@@ -364,9 +364,9 @@ static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
   srenew(*x,              atoms->nr);
   srenew(*r,              atoms->nr);
   
-  fprintf(stderr,"\n");
+  printf("\n");
   /* print number of molecules added */
-  fprintf(stderr,"Added %d molecules (out of %d requested) of %s\n",
+  printf("Added %d molecules (out of %d requested) of %s\n",
 	  mol,nmol_insrt,*atoms_insrt.resinfo[0].name); 
     
   return title_insrt;
@@ -404,14 +404,14 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   snew(atoms_solvt->atomname,atoms_solvt->nr);
   snew(atoms_solvt->atom,atoms_solvt->nr);
   atoms_solvt->pdbinfo = NULL;
-  fprintf(stderr,"Reading solvent configuration%s\n",
+  printf("Reading solvent configuration%s\n",
 	  v_solvt?" and velocities":"");
   read_stx_conf(filename,title_solvt,atoms_solvt,x_solvt,v_solvt,
 		&ePBC_solvt,box_solvt);
-  fprintf(stderr,"\"%s\"\n",title_solvt);
-  fprintf(stderr,"solvent configuration contains %d atoms in %d residues\n",
+  printf("\"%s\"\n",title_solvt);
+  printf("solvent configuration contains %d atoms in %d residues\n",
 	  atoms_solvt->nr,atoms_solvt->nres);
-  fprintf(stderr,"\n");
+  printf("\n");
   
   /* apply pbc for solvent configuration for whole molecules */
   rm_res_pbc(atoms_solvt,x_solvt,box_solvt);
@@ -427,7 +427,7 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
       n_box[i]++;
     nmol*=n_box[i];
   }
-  fprintf(stderr,"Will generate new solvent configuration of %dx%dx%d boxes\n",
+  printf("Will generate new solvent configuration of %dx%dx%d boxes\n",
 	  n_box[XX],n_box[YY],n_box[ZZ]);
   
   /* realloc atoms_solvt for the new solvent configuration */
@@ -462,7 +462,7 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   sfree(x_solvt);
   sfree(r_solvt);
 
-  fprintf(stderr,"Generated solvent containing %d atoms in %d residues\n",
+  printf("Generated solvent containing %d atoms in %d residues\n",
 	  *atoms_added,*residues_added);
 }
 
@@ -483,9 +483,9 @@ static char *read_prot(const char *confin,t_atoms *atoms,rvec **x,rvec **v,
   init_t_atoms(atoms,natoms,FALSE);
 
   /* read residue number, residue names, atomnames, coordinates etc. */
-  fprintf(stderr,"Reading solute configuration%s\n",v?" and velocities":"");
+  printf("Reading solute configuration%s\n",v?" and velocities":"");
   read_stx_conf(confin,title,atoms,*x,v?*v:NULL,ePBC,box);
-  fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
+  printf("%s\nContaining %d atoms in %d residues\n",
 	  title,atoms->nr,atoms->nres);
   
   /* initialise van der waals arrays of configuration 1 */
@@ -524,15 +524,15 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
   
   vol=det(box);
   
-  fprintf(stderr,"Volume                 :  %10g (nm^3)\n",vol);
-  fprintf(stderr,"Density                :  %10g (g/l)\n",
+  printf("Volume                 :  %10g (nm^3)\n",vol);
+  printf("Density                :  %10g (g/l)\n",
 	  (mtot*1e24)/(AVOGADRO*vol));
-  fprintf(stderr,"Number of SOL molecules:  %5d   \n\n",nsol);
+  printf("Number of SOL molecules:  %5d   \n\n",nsol);
   
   /* open topology file and append sol molecules */
   topinout  = ftp2fn(efTOP,NFILE,fnm);
   if ( ftp2bSet(efTOP,NFILE,fnm) ) {
-    fprintf(stderr,"Processing topology\n");
+    printf("Processing topology\n");
     fpin = ffopen(topinout,"r");
     fpout= ffopen(TEMP_FILENM,"w");
     line=0;
@@ -755,9 +755,9 @@ int gmx_genbox(int argc,char *argv[])
     title = read_prot(conf_prot,&atoms,&x,bReadV?&v:NULL,&r,&ePBC,box,
 		      aps,r_distance);
     if (bReadV && !v)
-      fprintf(stderr,"Note: no velocities found\n");
+      printf("Note: no velocities found\n");
     if (atoms.nr == 0) {
-      fprintf(stderr,"Note: no atoms in %s\n",conf_prot);
+      printf("Note: no atoms in %s\n",conf_prot);
       bProt = FALSE;
     }
   } 
@@ -799,16 +799,16 @@ int gmx_genbox(int argc,char *argv[])
 	     
   /* write new configuration 1 to file confout */
   confout = ftp2fn(efSTO,NFILE,fnm);
-  fprintf(stderr,"Writing generated configuration to %s\n",confout);
+  printf("Writing generated configuration to %s\n",confout);
   if (bProt) {
     write_sto_conf(confout,title,&atoms,x,v,ePBC,box);
-    /* print box sizes and box type to stderr */
-    fprintf(stderr,"%s\n",title);  
+    /* print box sizes and box type  */
+    printf("%s\n",title);  
   } else 
     write_sto_conf(confout,title_ins,&atoms,x,v,ePBC,box);
   
   /* print size of generated configuration */
-  fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",
+  printf("\nOutput configuration contains %d atoms in %d residues\n",
 	  atoms.nr,atoms.nres);
   update_top(&atoms,box,NFILE,fnm,aps);
 	  

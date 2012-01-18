@@ -144,7 +144,7 @@ int gmx_filter(int argc,char *argv[])
 
   clear_rvec(xcmtop);
   if (bFit) {
-    fprintf(stderr,"Select group for least squares fit\n");
+    printf("Select group for least squares fit\n");
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
     /* Set the weight */
     snew(w_rls,top.atoms.nr);

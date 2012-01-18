@@ -228,7 +228,7 @@ int gmx_covar(int argc,char *argv[])
     for (i=0; (i<natoms) && !bDiffMass1; i++)
       bDiffMass1 = index[i] != ifit[i];
     if (!bDiffMass1) {
-      fprintf(stderr,"\n"
+      printf("\n"
 	      "Note: the fit and analysis group are identical,\n"
 	      "      while the fit is mass weighted and the analysis is not.\n"
 	      "      Making the fit non mass weighted.\n\n");
@@ -253,11 +253,11 @@ int gmx_covar(int argc,char *argv[])
   }
   snew(mat,ndim*ndim);
 
-  fprintf(stderr,"Calculating the average structure ...\n");
+  printf("Calculating the average structure ...\n");
   nframes0 = 0;
   nat=read_first_x(oenv,&status,trxfile,&t,&xread,box);
   if (nat != atoms->nr)
-    fprintf(stderr,"\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,nat);
+    printf("\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,nat);
   do {
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
@@ -282,7 +282,7 @@ int gmx_covar(int argc,char *argv[])
 			 atoms,xread,NULL,epbcNONE,zerobox,natoms,index);
   sfree(xread);
 
-  fprintf(stderr,"Constructing covariance matrix (%dx%d) ...\n",(int)ndim,(int)ndim);
+  printf("Constructing covariance matrix (%dx%d) ...\n",(int)ndim,(int)ndim);
   nframes=0;
   nat=read_first_x(oenv,&status,trxfile,&t,&xread,box);
   tstart = t;
@@ -319,7 +319,7 @@ int gmx_covar(int argc,char *argv[])
   close_trj(status);
   gmx_rmpbc_done(gpbc);
 
-  fprintf(stderr,"Read %d frames\n",nframes);
+  printf("Read %d frames\n",nframes);
   
   if (bRef) {
     /* copy the reference structure to the ouput array x */
@@ -348,7 +348,7 @@ int gmx_covar(int argc,char *argv[])
   trace=0;
   for(i=0; i<ndim; i++)
     trace+=mat[i*ndim+i];
-  fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
+  printf("\nTrace of the covariance matrix: %g (%snm^2)\n",
 	  trace,bM ? "u " : "");
   
   if (asciifile) {
@@ -429,8 +429,8 @@ int gmx_covar(int argc,char *argv[])
 
   /* call diagonalization routine */
   
-  fprintf(stderr,"\nDiagonalizing ...\n");
-  fflush(stderr);
+  printf("\nDiagonalizing ...\n");
+  fflush(stdout);
 
   snew(eigval,ndim);
   snew(tmp,ndim*ndim);
@@ -443,12 +443,12 @@ int gmx_covar(int argc,char *argv[])
   sum=0;
   for(i=0; i<ndim; i++)
     sum+=eigval[i];
-  fprintf(stderr,"\nSum of the eigenvalues: %g (%snm^2)\n",
+  printf("\nSum of the eigenvalues: %g (%snm^2)\n",
 	  sum,bM ? "u " : "");
   if (fabs(trace-sum)>0.01*trace)
-    fprintf(stderr,"\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
+    printf("\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
   
-  fprintf(stderr,"\nWriting eigenvalues to %s\n",eigvalfile);
+  printf("\nWriting eigenvalues to %s\n",eigvalfile);
 
   sprintf(str,"(%snm\\S2\\N)",bM ? "u " : "");
   out=xvgropen(eigvalfile, 
@@ -529,7 +529,7 @@ int gmx_covar(int argc,char *argv[])
 
   ffclose(out);
 
-  fprintf(stderr,"Wrote the log to %s\n",logfile);
+  printf("Wrote the log to %s\n",logfile);
 
   thanx(stderr);
   

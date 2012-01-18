@@ -212,7 +212,7 @@ static void check_viol(FILE *log,t_commrec *cr,
   dr[clust_id].nframes++;
   
   if (bFirst) {
-    fprintf(stderr,"\nThere are %d restraints and %d pairs\n",
+    printf("\nThere are %d restraints and %d pairs\n",
 	    ndr,disres->nr/nat);
     bFirst = FALSE;
   }

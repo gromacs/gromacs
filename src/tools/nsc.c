@@ -77,26 +77,25 @@ int  __line__;           /* __FILE__  and __LINE__ */
 #define ERROR UPDATE_FL,error
 void error(const char *fmt, ...) {
   va_list args;
-  fprintf(stderr,
+  printf(
 	  "\n---> ERROR when executing line %i in file %s !\n",
 	  __line__,__file__);
   va_start(args,fmt);
-  vfprintf(stderr, fmt, args);
+  vprintf( fmt, args);
   va_end(args);
-  fprintf(stderr, "\n---> Execution stopped !\n\n");
+  printf( "\n---> Execution stopped !\n\n");
 }
 
 #define WARNING UPDATE_FL,warning2
 void warning2(const char *fmt, ...) {
   va_list args;
-  fprintf(stderr,
+  printf(
 	  "\n---> WARNING : line %i in file %s\n",
 	  __line__,__file__);
   va_start(args,fmt);
-  vfprintf(stderr, fmt, args);
+  vprintf( fmt, args);
   va_end(args);
-  fprintf(stderr, " ...!\n\n");
-  fflush(stderr);
+  printf( " ...!\n\n");
   fflush(stdout);
 }
 

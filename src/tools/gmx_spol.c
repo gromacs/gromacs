@@ -307,18 +307,18 @@ int gmx_spol(int argc,char *argv[])
   sfree(x);
   close_trj(status);
   
-  fprintf(stderr,"Average number of molecules within %g nm is %.1f\n",
+  printf("Average number of molecules within %g nm is %.1f\n",
 	  rmax,(real)ntot/(real)nf);
   if (ntot > 0) {
     sdip  /= ntot;
     sdip2 /= ntot;
     sinp  /= ntot;
     sdinp /= ntot;
-    fprintf(stderr,"Average dipole:                               %f (D), std.dev. %f\n",
+    printf("Average dipole:                               %f (D), std.dev. %f\n",
 	    sdip,sqrt(sdip2-sqr(sdip)));
-    fprintf(stderr,"Average radial component of the dipole:       %f (D)\n",
+    printf("Average radial component of the dipole:       %f (D)\n",
 	    sinp);
-    fprintf(stderr,"Average radial component of the polarization: %f (D)\n",
+    printf("Average radial component of the polarization: %f (D)\n",
 	    sdinp);
   }
 

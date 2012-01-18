@@ -166,8 +166,8 @@ nma_full_hessian(real *           hess,
     
     /* call diagonalization routine. */
     
-    fprintf(stderr,"\nDiagonalizing to find vectors %d through %d...\n",begin,end);
-    fflush(stderr);
+    printf("\nDiagonalizing to find vectors %d through %d...\n",begin,end);
+    fflush(stdout);
     
     eigensolver(hess,ndim,begin-1,end-1,eigenvalues,eigenvectors);
 
@@ -228,8 +228,8 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
             }
         }
     }
-    fprintf(stderr,"\nDiagonalizing to find eigenvectors 1 through %d...\n",neig);
-    fflush(stderr);
+    printf("\nDiagonalizing to find eigenvectors 1 through %d...\n",neig);
+    fflush(stdout);
         
     sparse_eigensolver(sparse_hessian,neig,eigenvalues,eigenvectors,10000000);
 
@@ -392,14 +392,14 @@ int gmx_nmeig(int argc,char *argv[])
   {
       if(begin!=1)
       {
-          fprintf(stderr,"Cannot use sparse Hessian with first eigenvector != 1.\n");
+          printf("Cannot use sparse Hessian with first eigenvector != 1.\n");
       }
       else if(end==ndim)
       {
-          fprintf(stderr,"Cannot use sparse Hessian to calculate all eigenvectors.\n");
+          printf("Cannot use sparse Hessian to calculate all eigenvectors.\n");
       }
       
-      fprintf(stderr,"Will try to allocate memory and convert to full matrix representation...\n");
+      printf("Will try to allocate memory and convert to full matrix representation...\n");
       
       snew(full_hessian,nrow*ncol);
       for(i=0;i<nrow*ncol;i++)
@@ -417,7 +417,7 @@ int gmx_nmeig(int argc,char *argv[])
       }
       gmx_sparsematrix_destroy(sparse_hessian);
       sparse_hessian = NULL;
-      fprintf(stderr,"Converted sparse to full matrix storage.\n");
+      printf("Converted sparse to full matrix storage.\n");
   }
   
   if (full_hessian != NULL)
@@ -442,13 +442,13 @@ int gmx_nmeig(int argc,char *argv[])
   }
   if (bSuck) 
   {
-      fprintf(stderr,"\nOne of the lowest 6 eigenvalues has a non-zero value.\n");
-      fprintf(stderr,"This could mean that the reference structure was not\n");
-      fprintf(stderr,"properly energy minimized.\n");
+      printf("\nOne of the lowest 6 eigenvalues has a non-zero value.\n");
+      printf("This could mean that the reference structure was not\n");
+      printf("properly energy minimized.\n");
   }
                       
   /* now write the output */
-  fprintf (stderr,"Writing eigenvalues...\n");
+  printf("Writing eigenvalues...\n");
   out=xvgropen(opt2fn("-ol",NFILE,fnm), 
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
                oenv);

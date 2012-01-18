@@ -85,7 +85,7 @@ static void set_margin(t_atoms *atoms, rvec *x, real *r)
       start=i+1;
     }
   }
-  fprintf(stderr,"box_margin = %g\n",box_margin);
+  printf("box_margin = %g\n",box_margin);
 }
 
 static gmx_bool outside_box_minus_margin2(rvec x,matrix box)
@@ -307,7 +307,7 @@ void do_nsgrid(FILE *fp,gmx_bool bVerbose,
     dump_nblist(debug,cr,fr,0);
 
   if (bVerbose)    
-    fprintf(stderr,"Successfully made neighbourlist\n");
+    printf("Successfully made neighbourlist\n");
 }
 
 gmx_bool bXor(gmx_bool b1,gmx_bool b2)
@@ -335,7 +335,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   natoms_prot  = atoms->nr;
   natoms_solvt = atoms_solvt->nr;
   if (natoms_solvt <= 0) {
-    fprintf(stderr,"WARNING: Nothing to add\n");
+    printf("WARNING: Nothing to add\n");
     return;
   }
   
@@ -343,7 +343,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
     gmx_fatal(FARGS,"Sorry, %s pbc is not yet supported",epbc_names[ePBC]);
 
   if (bVerbose)
-    fprintf(stderr,"Calculating Overlap...\n");
+    printf("Calculating Overlap...\n");
   
   /* Set margin around box edges to largest solvent dimension.
    * The maximum distance between atoms in a solvent molecule should
@@ -352,7 +352,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   r_prot     = *r;
   box_margin = 3*find_max_real(natoms_solvt,r_solvt);
   max_vdw    = max(3*find_max_real(natoms_prot,r_prot),box_margin);
-  fprintf(stderr,"box_margin = %g\n",box_margin);
+  printf("box_margin = %g\n",box_margin);
   
   snew(remove,natoms_solvt);
 
@@ -361,7 +361,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
     for(i=0; i<atoms_solvt->nr; i++)
       if ( outside_box_plus_margin(x_solvt[i],box) )
 	i=mark_res(i,remove,atoms_solvt->nr,atoms_solvt->atom,&nremove);
-    fprintf(stderr,"Removed %d atoms that were outside the box\n",nremove);
+    printf("Removed %d atoms that were outside the box\n",nremove);
   }
   
   /* Define grid stuff for genbox */
@@ -381,10 +381,10 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   
   /* check solvent with solute */
   nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
-  fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
+  printf("nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
   for(bSolSol=0; (bSolSol<=(bInsert ? 0 : 1)); bSolSol++) {
     ntest = nremove = 0;
-    fprintf(stderr,"Checking %s-Solvent overlap:",
+    printf("Checking %s-Solvent overlap:",
 	    bSolSol ? "Solvent" : "Protein");
     for(i=0; (i<nlist->nri && nremove<natoms_solvt); i++) {
       inr = nlist->iinr[i];
@@ -438,13 +438,13 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	      (void) mark_res(is1,remove,natoms_solvt,atoms_solvt->atom,
 			      &nremove);
 	    else
-	      fprintf(stderr,"Neither atom is solvent%d %d\n",is1,is2);
+	      printf("Neither atom is solvent%d %d\n",is1,is2);
 	  }
 	}
       }
     }
     if (!bInsert) {
-      fprintf(stderr," tested %d pairs, removed %d atoms.\n",ntest,nremove);
+      printf(" tested %d pairs, removed %d atoms.\n",ntest,nremove);
     }
   }
   if (debug) 
@@ -455,7 +455,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
   if (rshell > 0) {
     do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell,oenv);
     nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
-    fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
+    printf("nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
     nkeep = 0;
     snew(keep,natoms_solvt);
     for(i=0; i<nlist->nri; i++) {
@@ -480,7 +480,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	  mark_res(is2,keep,natoms_solvt,atoms_solvt->atom,&nkeep);
       }
     }
-    fprintf(stderr,"Keeping %d solvent atoms after proximity check\n",
+    printf("Keeping %d solvent atoms after proximity check\n",
 	    nkeep);
     for (i=0; i<natoms_solvt; i++)
       remove[i] = remove[i] || !keep[i];
@@ -562,7 +562,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
     srenew(atoms->resinfo,  atoms->nres+nresadd);
   
   if (bVerbose)
-    fprintf(stderr,"Added %d molecules\n",nresadd);
+    printf("Added %d molecules\n",nresadd);
   
   sfree(remove);
   done_atom(atoms_all);

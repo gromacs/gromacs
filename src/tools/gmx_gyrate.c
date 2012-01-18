@@ -75,7 +75,7 @@ real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
     for(m=0; (m<DIM); m++)
       d[m]=sqrt(d[m]/tm);
 #ifdef DEBUG
-    pr_rvecs(stderr,0,"trans",trans,DIM);
+    pr_rvecs(stdout,0,"trans",trans,DIM);
 #endif
     /* rotate_atoms(gnx,index,x,trans); */
   }

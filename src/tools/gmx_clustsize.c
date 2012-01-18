@@ -311,7 +311,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
   ffclose(fp);
 
-  fprintf(stderr,"Total number of atoms in clusters =  %d\n",nhisto);
+  printf("Total number of atoms in clusters =  %d\n",nhisto);
   
   /* Look for the smallest entry that is not zero 
    * This will make that zero is white, and not zero is coloured.
@@ -324,7 +324,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	cmid = cs_dist[i][j];
       cmax = max(cs_dist[i][j],cmax);
     }
-  fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
+  printf("cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   cmid = 1;
   fp = ffopen(xpm,"w");
   write_xpm3(fp,0,"Cluster size distribution","# clusters",timebuf,"Size",
@@ -340,7 +340,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	cmid = cs_dist[i][j];
       cmax = max(cs_dist[i][j],cmax);
     }
-  fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
+  printf("cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   fp = ffopen(xpmw,"w");
   write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,
              "Size", n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,

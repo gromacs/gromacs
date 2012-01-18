@@ -218,7 +218,7 @@ int gmx_g_angle(int argc,char *argv[])
   bTrans=opt2bSet("-ot",NFILE,fnm);
   bFrac=opt2bSet("-of",NFILE,fnm);
   if (bTrans && opt[0][0] != 'd') {
-    fprintf(stderr, "Option -ot should only accompany -type dihedral. Disabling -ot.\n");
+    printf( "Option -ot should only accompany -type dihedral. Disabling -ot.\n");
     bTrans = FALSE;
   }
   
@@ -226,7 +226,7 @@ int gmx_g_angle(int argc,char *argv[])
     bCorr=TRUE;
     
   if (bFrac && !bRb) {
-    fprintf(stderr,"Warning:"
+    printf("Warning:"
 	    " calculating fractions as defined in this program\n"
 	    "makes sense for Ryckaert Bellemans dihs. only. Ignoring -of\n\n"); 
     bFrac = FALSE;
@@ -287,7 +287,7 @@ int gmx_g_angle(int argc,char *argv[])
     ffclose(out);
     
     tfrac/=nframes;
-    fprintf(stderr,"Average trans fraction: %g\n",tfrac);
+    printf("Average trans fraction: %g\n",tfrac);
   }
   sfree(trans_frac);
   
@@ -298,7 +298,7 @@ int gmx_g_angle(int argc,char *argv[])
   if (bCorr) {
     /* Autocorrelation function */
     if (nframes < 2)
-      fprintf(stderr,"Not enough frames for correlation function\n");
+      printf("Not enough frames for correlation function\n");
     else {
       
       if (bChandler) {
@@ -355,7 +355,7 @@ int gmx_g_angle(int argc,char *argv[])
     sprintf(title,"Dihedral Distribution: %s",grpname);
     
     calc_distribution_props(maxangstat,angstat,-180.0,0,NULL,&S2);
-    fprintf(stderr,"Order parameter S^2 = %g\n",S2);
+    printf("Order parameter S^2 = %g\n",S2);
   }
   
   bPeriodic=(mult==4) && (first==0) && (last==maxangstat-1);

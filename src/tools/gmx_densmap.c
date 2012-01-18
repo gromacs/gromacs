@@ -192,10 +192,10 @@ int gmx_densmap(int argc,char *argv[])
 		  bRadial);
   if (!bRadial) {
     ngrps = 1;
-    fprintf(stderr,"\nSelect an analysis group\n");
+    printf("\nSelect an analysis group\n");
   } else {
     ngrps = 3;
-    fprintf(stderr,
+    printf(
 	    "\nSelect two groups to define the axis and an analysis group\n");
   }
   snew(gnx,ngrps);

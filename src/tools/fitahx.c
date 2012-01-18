@@ -95,7 +95,7 @@ real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
     mass[ai]=10.0;
 /*#define DEBUG*/
 #ifdef DEBUG
-    fprintf(stderr,"%5d  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",ai,
+    printf("%5d  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",ai,
 	    x[ai][XX],x[ai][YY],x[ai][ZZ],
 	    xref[ai][XX],xref[ai][YY],xref[ai][ZZ]);
 #endif

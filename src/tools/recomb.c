@@ -55,7 +55,7 @@ real *read_gammaf(char *fn,int nframes)
     gf[i]=y;
   }
   ffclose(in);
-  fprintf(stderr,"Successfully read gamma\n");
+  printf("Successfully read gamma\n");
   return gf;
 }
 
@@ -80,12 +80,12 @@ void recombine(char *base,char *gammaf,int nskip,
     sprintf(buf,"%s%d",base,n+1);
     out=ffopen(buf,"w");
     fprintf(out,format,n+1);
-    fprintf(stderr,format,n+1);
+    printf(format,n+1);
     evptr=ev[n];
     
     for(j=0; (j<nframes); j++) {
       if ((j % 50) == 0)
-	fprintf(stderr,"\r frame %d",j);
+	printf("\r frame %d",j);
       if ((nskip == 0) || ((j % nskip) == 0)) {
 	gt=1.0/gamma[j];
 	prj=evprj[n][j];
@@ -98,9 +98,9 @@ void recombine(char *base,char *gammaf,int nskip,
       }
     }
     ffclose(out);
-    fprintf(stderr,"\r");
+    printf("\r");
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   sfree(xxx);
   sfree(gamma);
 }

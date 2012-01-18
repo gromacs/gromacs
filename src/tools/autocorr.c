@@ -636,7 +636,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
     gmx_fatal(FARGS,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
-    fprintf(stderr,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
+    printf("Can't combine mode %lu with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
@@ -677,7 +677,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
   k = max(1,pow(10,(int)(log(nitem)/log(100))));
   for(i=0; i<nitem; i++) {
     if (bVerbose && ((i%k==0 || i==nitem-1)))
-      fprintf(stderr,"\rThingie %d",i+1);
+      printf("\rThingie %d",i+1);
     
     if (bFour)
       do_four_core(mode,nfour,nframes,nframes,c1[i],csum,ctmp);
@@ -685,7 +685,7 @@ void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
       do_ac_core(nframes,nout,ctmp,c1[i],nrestart,mode);
   }
   if (bVerbose)
-    fprintf(stderr,"\n");
+    printf("\n");
   sfree(ctmp);
   sfree(csum);
   

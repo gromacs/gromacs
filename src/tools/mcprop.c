@@ -128,7 +128,7 @@ void do_mc(FILE *fp,int nx,real x[],real step,real v0,real tol,
   snew(rx[cur], nx);
   snew(rx[next],nx);
   ffp[0]=fp;
-  ffp[1]=stderr;
+  ffp[1]=stdout;
 
   ftrj=ffopen("ftrj.out","w");
     
@@ -195,7 +195,7 @@ void do_mc(FILE *fp,int nx,real x[],real step,real v0,real tol,
   }
   if (bConv) {
     fprintf(fp,"Converged !\n");
-    fprintf(stderr,"Converged !\n");
+    printf("Converged !\n");
   }
   ffclose(ftrj);
 }

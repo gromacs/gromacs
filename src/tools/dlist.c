@@ -177,7 +177,7 @@ t_dlist *mk_dlist(FILE *log,
       fprintf(debug,"Could not find N atom but could find other atoms"
 	      " in residue %s%d\n",thisres,ires+r0);
   }
-  fprintf(stderr,"\n");
+  printf("\n");
   fprintf(log,"\n");
   fprintf(log,"There are %d residues with dihedrals\n",nl);
   j=0;
@@ -267,10 +267,10 @@ gmx_bool bPhi, gmx_bool bPsi,gmx_bool bChi,gmx_bool bOmega, int maxchi)
 
   if (printtype == edPrintST){
     pr_props=pr_ntr_s2 ; 
-    fprintf(stderr,"Now printing out transitions and OPs...\n");
+    printf("Now printing out transitions and OPs...\n");
   }else{
     pr_props=pr_one_ro ;     
-    fprintf(stderr,"Now printing out rotamer occupancies...\n");
+    printf("Now printing out rotamer occupancies...\n");
     fprintf(fp,"\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n");
   }
 

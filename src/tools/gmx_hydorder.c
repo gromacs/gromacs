@@ -66,17 +66,17 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
 {
     int i;
 
-    fprintf(stderr,"Using following groups: \n");
+    printf("Using following groups: \n");
     for(i = 0; i < ngrps; i++)
-        fprintf(stderr,"Groupname: %s First atomname: %s First atomnr %u\n", 
+        printf("Groupname: %s First atomname: %s First atomnr %u\n", 
                 groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
-    fprintf(stderr,"\n");
+    printf("\n");
 }
 
 static void check_length(real length, int a, int b)
 {
     if (length > 0.3)
-        fprintf(stderr,"WARNING: distance between atoms %d and "
+        printf("WARNING: distance between atoms %d and "
                 "%d > 0.3 nm (%f). Index file might be corrupt.\n", 
                 a, b, length);
 }
@@ -632,13 +632,13 @@ int gmx_hydorder(int argc,char *argv[])
   
     switch (axis) {
     case 0:
-        fprintf(stderr,"Taking x axis as normal to the membrane\n");
+        printf("Taking x axis as normal to the membrane\n");
         break;
     case 1:
-        fprintf(stderr,"Taking y axis as normal to the membrane\n");
+        printf("Taking y axis as normal to the membrane\n");
         break;
     case 2:
-        fprintf(stderr,"Taking z axis as normal to the membrane\n");
+        printf("Taking z axis as normal to the membrane\n");
         break;
     }
   

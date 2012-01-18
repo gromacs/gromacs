@@ -127,7 +127,7 @@ static int strip_dssp(char *dsspfile,int nres,
   
   if (bFirst) {
     if (0 != acc)
-        fprintf(stderr, "%d residues were classified as hydrophobic and %d as hydrophilic.\n", naccb, naccf);
+        printf( "%d residues were classified as hydrophobic and %d as hydrophilic.\n", naccb, naccf);
     
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
@@ -229,7 +229,7 @@ static void norm_acc(t_atoms *atoms, int nres,
     if ( n != -1)
       norm_av_area[i] = av_area[i] / surf[n];
     else 
-      fprintf(stderr,"Residue %s not found in surface database (%s)\n",
+      printf("Residue %s not found in surface database (%s)\n",
 	      *atoms->resinfo[i].name,surffn);
   }
 }
@@ -491,7 +491,7 @@ int main(int argc,char *argv[])
       nres++;
     }
   }
-  fprintf(stderr,"There are %d residues in your selected group\n",nres);
+  printf("There are %d residues in your selected group\n",nres);
 
   strcpy(pdbfile,"ddXXXXXX");
   gmx_tmpnam(pdbfile);
@@ -523,7 +523,7 @@ int main(int argc,char *argv[])
   sprintf(dssp,"%s %s %s %s > /dev/null %s",
 	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
   if (bVerbose)
-    fprintf(stderr,"dssp cmd='%s'\n",dssp);
+    printf("dssp cmd='%s'\n",dssp);
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
@@ -585,7 +585,7 @@ int main(int argc,char *argv[])
     remove(pdbfile);
     nframe++;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
+  printf("\n");
   close_trj(status);
   if (fTArea)
     ffclose(fTArea);

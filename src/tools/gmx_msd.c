@@ -573,10 +573,10 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 
   natoms = read_first_x(oenv,&status,fn,&curr->t0,&(x[cur]),box);
 #ifdef DEBUG
-  fprintf(stderr,"Read %d atoms for first frame\n",natoms);
+  printf("Read %d atoms for first frame\n",natoms);
 #endif
   if ((gnx_com!=NULL) && natoms < top->atoms.nr) {
-    fprintf(stderr,"WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n",natoms,top->atoms.nr);
+    printf("WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n",natoms,top->atoms.nr);
   }
 
   snew(x[prev],natoms);
@@ -702,7 +702,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
     
     curr->nframes++;
   } while (read_next_x(oenv,status,&t,natoms,x[cur],box));
-  fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
+  printf("\nUsed %d restart points spaced %g %s over %g %s\n\n", 
 	  curr->nrestart, 
 	  output_env_conv_time(oenv,dt), output_env_get_time_unit(oenv),
 	  output_env_conv_time(oenv,curr->time[curr->nframes-1]), 
@@ -738,7 +738,7 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
     index[nmol++] = mol;
   }
 
-  fprintf(stderr,"Split group of %d atoms into %d molecules\n",nat,nmol);
+  printf("Split group of %d atoms into %d molecules\n",nat,nmol);
   
   *n = nmol;
 }
@@ -766,7 +766,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
   snew(index,nrgrp);
   snew(grpname,nrgrp);
    
-  fprintf(stderr, "\nSelect a group to calculate mean squared displacement for:\n");
+  printf( "\nSelect a group to calculate mean squared displacement for:\n");
   get_index(&top->atoms,ndx_file,nrgrp,gnx,index,grpname);
 
   if (bRmCOMM)
@@ -775,7 +775,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
       snew(index_com,1);
       snew(grpname_com,1);
 
-      fprintf(stderr, "\nNow select a group for center of mass removal:\n");
+      printf( "\nNow select a group for center of mass removal:\n");
       get_index(&top->atoms, ndx_file, 1, gnx_com, index_com, grpname_com);
   }
   
@@ -803,7 +803,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 
   if (mol_file) {
     if (pdb_file && x == NULL) {
-      fprintf(stderr,"\nNo frame found need time tpdb = %g ps\n"
+      printf("\nNo frame found need time tpdb = %g ps\n"
 	      "Can not write %s\n\n",t_pdb,pdb_file);
     }
     i = top->atoms.nr;
@@ -987,7 +987,7 @@ int gmx_msd(int argc,char *argv[])
 
   if (mol_file) {
     bMW  = TRUE;
-    fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
+    printf("Calculating diffusion coefficients for molecules.\n");
   }
 
   if (normtype[0][0]!='n') {
