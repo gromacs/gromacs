@@ -55,6 +55,12 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #endif
 
+/* DEBUG_WCYCLE adds consistency checking for the counters.
+ * It checks if you stop a counter different from the last
+ * one that was opened and if you do nest too deep.
+ */
+/* #define DEBUG_WCYCLE */
+
 typedef struct
 {
     int          n;
@@ -70,6 +76,11 @@ typedef struct gmx_wallcycle
     gmx_bool         wc_barrier;
     wallcc_t     *wcc_all;
     int          wc_depth;
+#ifdef DEBUG_WCYCLE
+#define DEPTH_MAX 6
+    int          counterlist[DEPTH_MAX];
+    int          count_depth;
+#endif
     int          ewc_prev;
     gmx_cycles_t cycle_prev;
     gmx_large_int_t   reset_counters;
@@ -151,6 +162,10 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr,
     snew(wc->wcsc,ewcsNR);
 #endif
 
+#ifdef DEBUG_WCYCLE
+    wc->count_depth = 0;
+#endif
+
     return wc;
 }
 
@@ -190,6 +205,39 @@ static void wallcycle_all_stop(gmx_wallcycle_t wc,int ewc,gmx_cycles_t cycle)
     wc->wcc_all[wc->ewc_prev*ewcNR+ewc].c += cycle - wc->cycle_prev;
 }
 
+
+#ifdef DEBUG_WCYCLE
+static void debug_start_check(gmx_wallcycle_t wc, int ewc)
+{
+    /* fprintf(stderr,"wcycle_start depth %d, %s\n",wc->count_depth,wcn[ewc]); */
+
+    if (wc->count_depth < 0 || wc->count_depth >= DEPTH_MAX)
+    {
+        gmx_fatal(FARGS,"wallcycle counter depth out of range: %d",
+                  wc->count_depth);
+    }
+    wc->counterlist[wc->count_depth] = ewc;
+    wc->count_depth++;
+}
+
+static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
+{
+    wc->count_depth--;
+
+    /* fprintf(stderr,"wcycle_stop depth %d, %s\n",wc->count_depth,wcn[ewc]); */
+
+    if (wc->count_depth < 0)
+    {
+        gmx_fatal(FARGS,"wallcycle counter depth out of range when stopping %s: %d",wcn[ewc],wc->count_depth);
+    }
+    if (wc->counterlist[wc->count_depth] != ewc)
+    {
+        gmx_fatal(FARGS,"wallcycle mismatch at stop, start %s, stop %s",
+                  wcn[wc->counterlist[wc->count_depth]],wcn[ewc]);
+    }
+}
+#endif
+
 void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 {
     gmx_cycles_t cycle;
@@ -204,6 +252,10 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
     {
         MPI_Barrier(wc->mpi_comm_mygroup);
     }
+#endif
+
+#ifdef DEBUG_WCYCLE
+    debug_start_check(wc,ewc);
 #endif
 
     cycle = gmx_cycles_read();
@@ -248,6 +300,10 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
         MPI_Barrier(wc->mpi_comm_mygroup);
     }
 #endif
+
+#ifdef DEBUG_WCYCLE
+    debug_stop_check(wc,ewc);
+#endif
     
     cycle = gmx_cycles_read();
     last = cycle - wc->wcc[ewc].start;
@@ -282,8 +338,14 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
     {
         wc->wcc[i].n = 0;
         wc->wcc[i].c = 0;
-        wc->wcc[i].start = 0;
-        wc->wcc[i].last = 0;
+    }
+    if (wc->wcc_all)
+    {
+        for(i=0; i<ewcNR*ewcNR; i++)
+        {
+            wc->wcc_all[i].n = 0;
+            wc->wcc_all[i].c = 0;
+        }
     }
 }
 
