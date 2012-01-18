@@ -1,0 +1,8 @@
+Change-Id: I0b4dc1cab723286fe7e61dc651c69364e2946835
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Verified+1: Jenkins Buildbot
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Wed, 18 Jan 2012 09:30:23 +0100
+Reviewed-on: https://gerrit.gromacs.org/420
+Project: gromacs
+Branch: refs/heads/release-4-6
