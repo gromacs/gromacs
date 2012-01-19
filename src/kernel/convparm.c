@@ -159,6 +159,12 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     for(i=0; i<5; i++)
       newparam->qangle.c[i]=old[i+1];
     break;
+  case F_LINEAR_ANGLES:
+    newparam->linangle.klinA = old[0];
+    newparam->linangle.aA    = old[1];
+    newparam->linangle.klinB = old[2];
+    newparam->linangle.aB    = old[3];
+    break;
   case F_ANGLES:
   case F_BONDS:
   case F_HARMONIC:
@@ -182,6 +188,11 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_POLARIZATION:
     newparam->polarize.alpha = old[0];
+    break;
+  case F_ANHARM_POL:
+    newparam->anharm_polarize.alpha = old[0];
+    newparam->anharm_polarize.drcut = old[1];
+    newparam->anharm_polarize.khyp  = old[2];
     break;
   case F_WATER_POL:
     newparam->wpol.al_x   =old[0];

@@ -869,15 +869,15 @@ int gmx_editconf(int argc, char *argv[])
 
             vol = det(box);
             dens = (mass*AMU)/(vol*NANO*NANO*NANO);
-            fprintf(stderr,"Volume  of input %g (nm^3)\n",vol);
-            fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
-            fprintf(stderr,"Density of input %g (g/l)\n",dens);
+            fprintf(stdout,"Volume  of input %g (nm^3)\n",vol);
+            fprintf(stdout,"Mass    of input %g (a.m.u.)\n",mass);
+            fprintf(stdout,"Density of input %g (g/l)\n",dens);
             if (vol==0 || mass==0)
                 gmx_fatal(FARGS,"Cannot scale density with "
                           "zero mass (%g) or volume (%g)\n",mass,vol);
 
             scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
-            fprintf(stderr,"Scaling all box vectors by %g\n",scale[XX]);
+            fprintf(stdout,"Scaling all box vectors by %g\n",scale[XX]);
         }
         scale_conf(atoms.nr,x,box,scale);
     }
