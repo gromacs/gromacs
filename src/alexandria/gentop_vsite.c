@@ -416,9 +416,10 @@ void gentop_vsite_check(gentop_vsite_t gvt,int natom)
     }
 }
 
-void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
-                                  t_params plist[],t_symtab *symtab,
-                                  gpp_atomtype_t atype,t_excls **excls)
+void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
+                                   t_atoms *atoms,rvec **x,
+                                   t_params plist[],t_symtab *symtab,
+                                   gpp_atomtype_t atype,t_excls **excls)
 {
     int     i,j,k,l,natoms_old,nlin_at;
     int     a[MAXATOMLIST],aa[2];
@@ -429,15 +430,18 @@ void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
     for(i=0; (i<gvt->nlinear); i++) 
         nlin_at += gvt->lin[i].nline;
         
-    printf("Generating %d linear vsites and %d impropers\n",
-           nlin_at,gvt->nplanar);
+    printf("Generating %d linear %s and %d impropers\n",
+           nlin_at,(bGenVsites ? "vsites" : "angles"),
+           gvt->nplanar);
     if ((gvt->egvt == egvtLINEAR) || (gvt->egvt == egvtALL))
     {
-        /* Each triplet of atoms in a linear arrangement is described by
+        /* If we use vsites (discouraged) each triplet of atoms in a linear arrangement 
+         * is described by
          * two dummy masses connected by a constraint, that maintain the 
          * moment of inertia. The three atoms are then generated from these two 
          * positions using a virtual_site2 construction. We need to add 2 extra
          * particles for each linear group.
+         * In case we use the special linear angle terms, life gets a lot easier!
          */
         for(i=0; (i<gvt->nlinear); i++) 
         {
@@ -448,22 +452,36 @@ void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
             delete_params(plist,F_ANGLES,a);
             delete_params(plist,F_RBDIHS,a);
             delete_params(plist,F_PDIHS,a);
-            /* Complicated algorithm, watch out */
-            for(j=0; (j<gvt->lin[i].nline-1); j++)
-            {
-                aa[0] = a[j+0];
-                aa[1] = a[j+1];
-                delete_params(plist,F_BONDS,aa);
-            }
             
-            /* Compute details for the new masses and vsites, and update everything */
-            calc_vsite2parm(atoms,plist,x,&gvt->lin[i],symtab,atype);
-            srenew((*excls),atoms->nr);
-            for(j=atoms->nr-2; (j<=atoms->nr-1); j++)
+            if (bGenVsites)
             {
-                (*excls)[j].nr = 1;
-                snew((*excls)[j].e,1);
-                (*excls)[j].e[0] = j;
+                /* Complicated algorithm, watch out */
+                for(j=0; (j<gvt->lin[i].nline-1); j++)
+                {
+                    aa[0] = a[j+0];
+                    aa[1] = a[j+1];
+                    delete_params(plist,F_BONDS,aa);
+                }
+                
+                /* Compute details for the new masses and vsites, and update everything */
+                calc_vsite2parm(atoms,plist,x,&gvt->lin[i],symtab,atype);
+                srenew((*excls),atoms->nr);
+                for(j=atoms->nr-2; (j<=atoms->nr-1); j++)
+                {
+                    (*excls)[j].nr = 1;
+                    snew((*excls)[j].e,1);
+                    (*excls)[j].e[0] = j;
+                }
+            }
+            else
+            {
+                /* Linear angles */
+                memset(&pp,0,sizeof(pp));
+                for(j=0; (j<3); j++)
+                {
+                    pp.a[j] = a[j];
+                }
+                add_param_to_list(&(plist[F_LINEAR_ANGLES]),&pp);
             }
         }
     }
@@ -520,3 +538,4 @@ void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
         }
     }
 }
+

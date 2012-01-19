@@ -51,14 +51,10 @@ extern void gentop_vsite_add_linear(gentop_vsite_t gvt,int a1,int a2,int a3);
 
 extern void gentop_vsite_add_planar(gentop_vsite_t gvt,int a1,int a2,int a3,int a4,int nbonds[]);
 
-extern void gentop_vsite_generate_vsites(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
-                                         t_params plist[],
-                                         t_symtab *symtab,gpp_atomtype_t atype,
-                                         t_excls **excls);
-
-extern void gentop_vsite_generate_impropers(gentop_vsite_t gvt,t_atoms *atoms,rvec **x,
-                                            t_params plist[],
-                                            t_symtab *symtab,gpp_atomtype_t atype,
-                                            t_excls **excls);
+extern void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
+                                          t_atoms *atoms,rvec **x,
+                                          t_params plist[],
+                                          t_symtab *symtab,gpp_atomtype_t atype,
+                                          t_excls **excls);
 
 #endif

@@ -821,17 +821,14 @@ int main(int argc, char *argv[])
         generate_excls(&nnb,nexcl,excls);
         done_nnb(&nnb);
     
-        if (bGenVSites)
+        anr = atoms->nr;    
+        gentop_vsite_generate_special(gvt,bGenVsites,atoms,&x,plist,
+                                      &symtab,atype,&excls);
+        if (atoms->nr > anr) 
         {
-            anr = atoms->nr;    
-            gentop_vsite_generate_vsites(gvt,atoms,&x,plist,
-                                         &symtab,atype,&excls);
-            if (atoms->nr > anr) 
-            {
-                srenew(smnames,atoms->nr);
-                for(i=anr; (i<atoms->nr); i++) {
-                    smnames[i] = strdup("ML");
-                }
+            srenew(smnames,atoms->nr);
+            for(i=anr; (i<atoms->nr); i++) {
+                smnames[i] = strdup("ML");
             }
         }
     
@@ -863,12 +860,13 @@ int main(int argc, char *argv[])
     
         if (bVerbose) 
         {
-            printf("There are %4d proper dihedrals, %4d impropers, %4d angles\n"
-                   "          %4d pairs,     %4d bonds and  %4d atoms\n"
+            printf("There are %4d proper dihedrals, %4d impropers\n"
+                   "          %4d angles, %4d linear angles\n"
+                   "          %4d pairs, %4d bonds, %4d atoms\n"
                    "          %4d polarizations\n",
-                   plist[F_PDIHS].nr, 
-                   plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-                   plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
+                   plist[F_PDIHS].nr,  plist[F_IDIHS].nr, 
+                   plist[F_ANGLES].nr, plist[F_LINEAR_ANGLES].nr,
+                   plist[F_LJ14].nr,   plist[F_BONDS].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
         }
         printf("Total charge is %g, total mass is %g, dipole is %g D\n",
