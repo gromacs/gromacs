@@ -40,6 +40,9 @@
 #include <math.h>
 #include <limits.h>
 #include "maths.h"
+#ifdef HAVE__FINITE
+#include "float.h"
+#endif
 
 int gmx_nint(real a)
 {   
@@ -658,4 +661,20 @@ float fast_float_erfc(float x)
 		t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
 		t*(-0.82215223+t*0.17087277)))))))));
 	return ans;
+}
+
+gmx_bool gmx_isfinite(real x)
+{
+    gmx_bool returnval = TRUE;
+    /* If no suitable function was found, assume the value is
+     * finite. */
+
+#ifdef HAVE_ISFINITE
+    returnval = isfinite(x);
+#elif defined HAVE__ISFINITE
+    returnval = _isfinite(x);
+#elif defined HAVE__FINITE
+    returnval = _finite(x);
+#endif
+    return returnval;
 }
