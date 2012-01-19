@@ -517,6 +517,63 @@ real polarize(int nbonds,
   return vtot;
 }
 
+real anharm_polarize(int nbonds,
+                     const t_iatom forceatoms[],const t_iparams forceparams[],
+                     const rvec x[],rvec f[],rvec fshift[],
+                     const t_pbc *pbc,const t_graph *g,
+                     real lambda,real *dvdlambda,
+                     const t_mdatoms *md,t_fcdata *fcd,
+                     int *global_atom_index)
+{
+  int  i,m,ki,ai,aj,type;
+  real dr,dr2,fbond,vbond,fij,vtot,ksh,khyp,drcut,ddr,ddr3;
+  rvec dx;
+  ivec dt;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type  = forceatoms[i++];
+    ai    = forceatoms[i++];
+    aj    = forceatoms[i++];
+    ksh   = sqr(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].anharm_polarize.alpha; /* 7*/
+    khyp  = forceparams[type].anharm_polarize.khyp;
+    drcut = forceparams[type].anharm_polarize.drcut;
+    if (debug)
+      fprintf(debug,"POL: local ai = %d aj = %d ksh = %.3f\n",ai,aj,ksh);
+  
+    ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
+    dr2  = iprod(dx,dx);			/*   5		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
+
+    *dvdlambda += harmonic(ksh,ksh,0,0,dr,lambda,&vbond,&fbond);  /*  19  */
+
+    if (dr2 == 0.0)
+      continue;
+    
+    if (dr > drcut) {
+        ddr    = dr-drcut;
+        ddr3   = ddr*ddr*ddr;
+        vbond += khyp*ddr*ddr3;
+        fbond -= 4*khyp*ddr3;
+    }
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
+    vtot  += vbond;/* 1*/
+
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fshift[ki][m]+=fij;
+      fshift[CENTRAL][m]-=fij;
+    }
+  }					/* 72 TOTAL	*/
+  return vtot;
+}
+
 real water_pol(int nbonds,
 	       const t_iatom forceatoms[],const t_iparams forceparams[],
 	       const rvec x[],rvec f[],rvec fshift[],
@@ -801,6 +858,65 @@ real angles(int nbonds,
       rvec_inc(fshift[t2],f_k);
     }                                           /* 161 TOTAL	*/
   }
+  return vtot;
+}
+
+real linear_angles(int nbonds,
+                   const t_iatom forceatoms[],const t_iparams forceparams[],
+                   const rvec x[],rvec f[],rvec fshift[],
+                   const t_pbc *pbc,const t_graph *g,
+                   real lambda,real *dvdlambda,
+                   const t_mdatoms *md,t_fcdata *fcd,
+                   int *global_atom_index)
+{
+  int  i,m,ai,aj,ak,t1,t2,type;
+  rvec f_i,f_j,f_k;
+  real dr,dr2,va,vtot,a,b,klin;
+  ivec jt,dt_ij,dt_kj;
+  rvec r_ij,r_kj;
+    
+  t1=t2=CENTRAL;
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    
+    klin = forceparams[type].linangle.klin;
+    a    = forceparams[type].linangle.a;
+    b    = 1-a;
+    
+    t1 = pbc_rvec_sub(pbc,x[ai],x[aj],r_ij);
+    t2 = pbc_rvec_sub(pbc,x[ak],x[aj],r_kj);
+    
+    dr2 = 0;
+    for(m=0; (m<DIM); m++) 
+    {
+        dr   = - a * r_ij[m] - b * r_kj[m];
+        dr2 += dr*dr;
+        f_i[m] = a*klin*dr;
+        f_k[m] = b*klin*dr;
+        f_j[m] = -(f_i[m]+f_k[m]);
+        f[ai][m] += f_i[m];
+        f[aj][m] += f_j[m];
+        f[ak][m] += f_k[m];
+    }
+    va = 0.5*klin*dr2;
+    vtot += va;
+    
+    if (g) {
+        copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+        ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+        ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+        t1=IVEC2IS(dt_ij);
+        t2=IVEC2IS(dt_kj);
+    }
+    rvec_inc(fshift[t1],f_i);
+    rvec_inc(fshift[CENTRAL],f_j);
+    rvec_inc(fshift[t2],f_k);
+  }                                           /* 57 TOTAL	*/
   return vtot;
 }
 

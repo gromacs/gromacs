@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 75;
+static const int tpx_version = 76;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -161,6 +161,7 @@ static const t_ftupd ftupd[] = {
   { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
+  { 76, F_ANHARM_POL        }
 };
 #define NFTUPD asize(ftupd)
 
@@ -1031,6 +1032,10 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
       iparams->pdihs.cpB  = iparams->pdihs.cpA;
     }
     break;
+  case F_LINEAR_ANGLES:
+    gmx_fio_do_real(fio,iparams->linangle.klin);
+    gmx_fio_do_real(fio,iparams->linangle.a);
+    break;
   case F_FENEBONDS:
     gmx_fio_do_real(fio,iparams->fene.bm);
     gmx_fio_do_real(fio,iparams->fene.kb);
@@ -1093,6 +1098,11 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     break;
   case F_POLARIZATION:
     gmx_fio_do_real(fio,iparams->polarize.alpha);
+    break;
+  case F_ANHARM_POL:
+    gmx_fio_do_real(fio,iparams->anharm_polarize.alpha);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.drcut);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.khyp);
     break;
   case F_WATER_POL:
     if (file_version < 31) 

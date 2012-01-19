@@ -67,6 +67,7 @@ enum {
   F_RESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
+  F_LINEAR_ANGLES,
   F_CROSS_BOND_BONDS,
   F_CROSS_BOND_ANGLES,
   F_UREY_BRADLEY,
@@ -101,6 +102,7 @@ enum {
   F_POLARIZATION,
   F_WATER_POL,
   F_THOLE_POL,
+  F_ANHARM_POL,
   F_POSRES,
   F_DISRES,
   F_DISRESVIOL,
@@ -147,6 +149,7 @@ typedef union
    */
   struct {real a,b,c;	                                   } bham;
   struct {real rA,krA,rB,krB;           	           } harmonic;
+  struct {real klin,a;                                     } linangle;
   struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } restraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
@@ -156,6 +159,7 @@ typedef union
   struct {real theta,ktheta,r13,kUB;                       } u_b;
   struct {real theta,c[5];                                 } qangle; 
   struct {real alpha;                                      } polarize;
+  struct {real alpha,drcut,khyp;                           } anharm_polarize;
   struct {real al_x,al_y,al_z,rOH,rHH,rOD;                 } wpol;
   struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;

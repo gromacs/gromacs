@@ -770,6 +770,10 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->cross_ba.r1e,iparams->cross_ba.r2e,
 	    iparams->cross_ba.r3e,iparams->cross_ba.krt);
     break;
+  case F_LINEAR_ANGLES:
+    fprintf(fp,"khype=%15.8e, a=%15.8e\n",
+            iparams->linangle.klin,iparams->linangle.a);
+    break;
   case F_UREY_BRADLEY:
     fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
 	    iparams->u_b.theta,iparams->u_b.ktheta,iparams->u_b.r13,iparams->u_b.kUB);
@@ -822,6 +826,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_POLARIZATION:
     fprintf(fp,"alpha=%15.8e\n",iparams->polarize.alpha);
+    break;
+  case F_ANHARM_POL:
+    fprintf(fp,"alpha=%15.8e drcut=%15.8e khyp=%15.8e\n",
+            iparams->anharm_polarize.alpha,
+            iparams->anharm_polarize.drcut,
+            iparams->anharm_polarize.khyp);
     break;
   case F_THOLE_POL:
     fprintf(fp,"a=%15.8e, alpha1=%15.8e, alpha2=%15.8e, rfac=%15.8e\n",
