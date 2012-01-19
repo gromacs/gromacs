@@ -200,7 +200,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   int         i,j,nmol,type,mb,mt,a_offset,cg,mol,ftype,nra;
   real        qS,alpha;
   int         aS,aN=0; /* Shell and nucleus */
-  int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
+  int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
   t_iatom     *ia;
   gmx_mtop_atomloop_block_t aloopb;
@@ -304,6 +304,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 	  case F_HARMONIC:
 	  case F_CUBICBONDS:
 	  case F_POLARIZATION:
+	  case F_ANHARM_POL:
 	    if (atom[ia[1]].ptype == eptShell) {
 	      aS = ia[1];
 	      aN = ia[2];
@@ -361,6 +362,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 	      shell[nsi].k    += ffparams->iparams[type].cubic.kb;
 	      break;
 	    case F_POLARIZATION:
+	    case F_ANHARM_POL:
 	      if (qS != atom[aS].qB)
 		gmx_fatal(FARGS,"polarize can not be used with qA != qB");
 	      shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
