@@ -77,7 +77,11 @@ int gmx_dist(int argc,char *argv[])
     "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
     "of all atoms in group 2 that are closer than a certain distance",
     "to the center of mass of group 1 are plotted as a function of the time",
-    "that the contact was continuously present.[PAR]",
+    "that the contact was continuously present. The [TT]-intra[tt] switch enables",
+    "calculations of intramolecular distances avoiding distance calculation to its",
+    "periodic images. For a proper function, the molecule in the input trajectory",
+    "should be whole (e.g. by preprocessing with [TT]trjconv -pbc[tt]) or a matching",
+    "topology should be provided.[PAR]",
     "Other programs that calculate distances are [TT]g_mindist[tt]",
     "and [TT]g_bond[tt]."
   };
@@ -100,7 +104,7 @@ int gmx_dist(int argc,char *argv[])
   rvec    *com;
   real    *mass;
   FILE    *fp=NULL,*fplt=NULL;
-  gmx_bool    bCutoff,bPrintDist,bLifeTime;
+  gmx_bool    bCutoff,bPrintDist,bLifeTime,bIntra=FALSE;
   t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
@@ -111,7 +115,9 @@ int gmx_dist(int argc,char *argv[])
 
   static real cut=0;
   
-  static t_pargs pa[] = {
+  t_pargs pa[] = {
+    { "-intra",      FALSE, etBOOL, {&bIntra},
+      "Calculate distances without considering periodic boundaries, e.g. intramolecular." },
     { "-dist",      FALSE, etREAL, {&cut},
       "Print all atoms in group 2 closer than dist to the center of mass of group 1" }
   };
@@ -209,7 +215,7 @@ int gmx_dist(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%12.7f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	if (pbc)
+	if (pbc && (!bIntra))
 	  pbc_dx(pbc,com[2*g],com[2*g+1],dx);
 	else
 	  rvec_sub(com[2*g],com[2*g+1],dx);
@@ -221,7 +227,7 @@ int gmx_dist(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	if (pbc)
+	if (pbc && (!bIntra))
 	  pbc_dx(pbc,x[j],com[0],dx);
 	else
 	  rvec_sub(x[j],com[0],dx);
