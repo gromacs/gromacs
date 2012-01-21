@@ -1,34 +1,34 @@
 <?xml version="1.0"?>
 <ReferenceData>
-  <Compound Name="Selection1Parse" Subtype="SelectionParse">
+  <SelectionParse Name="Selection1Parse">
     <String Name="Input">atomnr 1 to 5 and atomnr 2 to 7</String>
     <String Name="Name">atomnr 1 to 5 and atomnr 2 to 7</String>
     <String Name="Text">atomnr 1 to 5 and atomnr 2 to 7</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection2Parse" Subtype="SelectionParse">
+  </SelectionParse>
+  <SelectionParse Name="Selection2Parse">
     <String Name="Input">atomnr 1 to 5 or not atomnr 3 to 8</String>
     <String Name="Name">atomnr 1 to 5 or not atomnr 3 to 8</String>
     <String Name="Text">atomnr 1 to 5 or not atomnr 3 to 8</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection3Parse" Subtype="SelectionParse">
+  </SelectionParse>
+  <SelectionParse Name="Selection3Parse">
     <String Name="Input">atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7</String>
     <String Name="Name">atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7</String>
     <String Name="Text">atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection1Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+  </SelectionParse>
+  <SelectionCompile Name="Selection1Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">4</Int>
       <Int>1</Int>
       <Int>2</Int>
       <Int>3</Int>
       <Int>4</Int>
-    </Compound>
-  </Compound>
-  <Compound Name="Selection2Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+    </Sequence>
+  </SelectionCompile>
+  <SelectionCompile Name="Selection2Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">7</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -37,14 +37,14 @@
       <Int>4</Int>
       <Int>8</Int>
       <Int>9</Int>
-    </Compound>
-  </Compound>
-  <Compound Name="Selection3Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+    </Sequence>
+  </SelectionCompile>
+  <SelectionCompile Name="Selection3Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">3</Int>
       <Int>2</Int>
       <Int>3</Int>
       <Int>4</Int>
-    </Compound>
-  </Compound>
+    </Sequence>
+  </SelectionCompile>
 </ReferenceData>

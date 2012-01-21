@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <ReferenceData>
-  <Compound Name="Selection1Parse" Subtype="SelectionParse">
+  <SelectionParse Name="Selection1Parse">
     <String Name="Input">same residue as atomnr 1 4 12</String>
     <String Name="Name">same residue as atomnr 1 4 12</String>
     <String Name="Text">same residue as atomnr 1 4 12</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection1Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+  </SelectionParse>
+  <SelectionCompile Name="Selection1Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">9</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -18,6 +18,6 @@
       <Int>9</Int>
       <Int>10</Int>
       <Int>11</Int>
-    </Compound>
-  </Compound>
+    </Sequence>
+  </SelectionCompile>
 </ReferenceData>

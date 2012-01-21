@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <ReferenceData>
-  <Compound Name="Selection1Parse" Subtype="SelectionParse">
+  <SelectionParse Name="Selection1Parse">
     <String Name="Input">mindistance from resnr 1 &lt; 2</String>
     <String Name="Name">mindistance from resnr 1 &lt; 2</String>
     <String Name="Text">mindistance from resnr 1 &lt; 2</String>
     <Bool Name="Dynamic">true</Bool>
-  </Compound>
-  <Compound Name="Selection1Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+  </SelectionParse>
+  <SelectionCompile Name="Selection1Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">15</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -24,10 +24,10 @@
       <Int>12</Int>
       <Int>13</Int>
       <Int>14</Int>
-    </Compound>
-  </Compound>
-  <Compound Name="Selection1Frame1" Subtype="SelectionFrame">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+    </Sequence>
+  </SelectionCompile>
+  <SelectionFrame Name="Selection1Frame1">
+    <Sequence Name="Atoms">
       <Int Name="Length">8</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -37,17 +37,49 @@
       <Int>5</Int>
       <Int>6</Int>
       <Int>7</Int>
-    </Compound>
-    <Compound Name="Positions" Subtype="SequenceVector">
+    </Sequence>
+    <Sequence Name="Positions">
       <Int Name="Length">8</Int>
-      <Vector>1.000000 1.000000 0.000000</Vector>
-      <Vector>1.000000 2.000000 0.000000</Vector>
-      <Vector>1.000000 3.000000 0.000000</Vector>
-      <Vector>1.000000 4.000000 0.000000</Vector>
-      <Vector>2.000000 1.000000 0.000000</Vector>
-      <Vector>2.000000 2.000000 0.000000</Vector>
-      <Vector>2.000000 3.000000 0.000000</Vector>
-      <Vector>2.000000 4.000000 0.000000</Vector>
-    </Compound>
-  </Compound>
+      <Vector>
+        <Real Name="X">1.000000</Real>
+        <Real Name="Y">1.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.000000</Real>
+        <Real Name="Y">2.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.000000</Real>
+        <Real Name="Y">3.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.000000</Real>
+        <Real Name="Y">4.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.000000</Real>
+        <Real Name="Y">1.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.000000</Real>
+        <Real Name="Y">2.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.000000</Real>
+        <Real Name="Y">3.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.000000</Real>
+        <Real Name="Y">4.000000</Real>
+        <Real Name="Z">0.000000</Real>
+      </Vector>
+    </Sequence>
+  </SelectionFrame>
 </ReferenceData>
