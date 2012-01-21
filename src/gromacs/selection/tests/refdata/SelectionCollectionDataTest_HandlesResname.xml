@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <ReferenceData>
-  <Compound Name="Selection1Parse" Subtype="SelectionParse">
+  <SelectionParse Name="Selection1Parse">
     <String Name="Input">resname RA</String>
     <String Name="Name">resname RA</String>
     <String Name="Text">resname RA</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection2Parse" Subtype="SelectionParse">
+  </SelectionParse>
+  <SelectionParse Name="Selection2Parse">
     <String Name="Input">resname RB RC</String>
     <String Name="Name">resname RB RC</String>
     <String Name="Text">resname RB RC</String>
     <Bool Name="Dynamic">false</Bool>
-  </Compound>
-  <Compound Name="Selection1Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+  </SelectionParse>
+  <SelectionCompile Name="Selection1Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">6</Int>
       <Int>0</Int>
       <Int>1</Int>
@@ -21,10 +21,10 @@
       <Int>6</Int>
       <Int>7</Int>
       <Int>8</Int>
-    </Compound>
-  </Compound>
-  <Compound Name="Selection2Compile" Subtype="SelectionCompile">
-    <Compound Name="Atoms" Subtype="SequenceInteger">
+    </Sequence>
+  </SelectionCompile>
+  <SelectionCompile Name="Selection2Compile">
+    <Sequence Name="Atoms">
       <Int Name="Length">6</Int>
       <Int>3</Int>
       <Int>4</Int>
@@ -32,6 +32,6 @@
       <Int>9</Int>
       <Int>10</Int>
       <Int>11</Int>
-    </Compound>
-  </Compound>
+    </Sequence>
+  </SelectionCompile>
 </ReferenceData>

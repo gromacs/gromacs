@@ -1,95 +1,95 @@
 <?xml version="1.0"?>
 <ReferenceData>
-  <Compound Name="InputData" Subtype="AnalysisData">
-    <Compound Name="Frame0" Subtype="DataFrame">
+  <AnalysisData Name="InputData">
+    <DataFrame Name="Frame0">
       <Real Name="X">1.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>2.000000</Real>
         <Real>1.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame1" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame1">
       <Real Name="X">1.500000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>1.000000</Real>
         <Real>1.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame2" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame2">
       <Real Name="X">2.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>3.000000</Real>
         <Real>2.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame3" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame3">
       <Real Name="X">2.500000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>4.000000</Real>
         <Real>2.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame4" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame4">
       <Real Name="X">3.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>2.000000</Real>
         <Real>1.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame5" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame5">
       <Real Name="X">3.500000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>0.000000</Real>
         <Real>3.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame6" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame6">
       <Real Name="X">4.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>1.000000</Real>
         <Real>3.000000</Real>
-      </Compound>
-    </Compound>
-  </Compound>
-  <Compound Name="ResampledHistogram" Subtype="AnalysisData">
-    <Compound Name="Frame0" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+  </AnalysisData>
+  <AnalysisData Name="ResampledHistogram">
+    <DataFrame Name="Frame0">
       <Real Name="X">1.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>2.000000</Real>
         <Real>1.000000</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame1" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame1">
       <Real Name="X">2.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>4.000000</Real>
         <Real>2.236068</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame2" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame2">
       <Real Name="X">3.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>6.000000</Real>
         <Real>2.236068</Real>
-      </Compound>
-    </Compound>
-    <Compound Name="Frame3" Subtype="DataFrame">
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame3">
       <Real Name="X">4.000000</Real>
-      <Compound Name="Y" Subtype="SequenceReal">
+      <Sequence Name="Y">
         <Int Name="Length">2</Int>
         <Real>1.000000</Real>
         <Real>4.242640</Real>
-      </Compound>
-    </Compound>
-  </Compound>
+      </Sequence>
+    </DataFrame>
+  </AnalysisData>
 </ReferenceData>
