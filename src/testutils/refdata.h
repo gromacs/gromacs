@@ -39,6 +39,7 @@
 #ifndef GMX_TESTUTILS_REFDATA_H
 #define GMX_TESTUTILS_REFDATA_H
 
+#include <iterator>
 #include <string>
 
 namespace gmx
@@ -293,24 +294,164 @@ class TestReferenceChecker
         void checkVector(const float value[3], const char *id);
         //! Check a vector of three double-precision floating point values.
         void checkVector(const double value[3], const char *id);
-        //! Check an arbitrary-length sequence of integer values.
-        void checkSequenceArray(size_t length, const int *values,
-                                const char *id);
-        //! Check an arbitrary-length sequence of floating-point values.
-        void checkSequenceArray(size_t length, const float *values,
-                                const char *id);
-        //! Check an arbitrary-length sequence of floating-point values.
-        void checkSequenceArray(size_t length, const double *values,
-                                const char *id);
-        //! Check an arbitrary-length sequence of integer vector values.
-        void checkSequenceArray(size_t length, const int values[][3],
-                                const char *id);
-        //! Check an arbitrary-length sequence of floating-point vector values.
-        void checkSequenceArray(size_t length, const float values[][3],
-                                const char *id);
-        //! Check an arbitrary-length sequence of floating-point vector values.
-        void checkSequenceArray(size_t length, const double values[][3],
-                                const char *id);
+
+        /*! \name Overloaded versions of simple checker methods
+         *
+         * These methods provide overloads under a single name for all the
+         * methods checkBoolean(), checkString(), checkReal() and checkVector().
+         * They are provided mainly to allow template implementations (such as
+         * checkSequence()).  Typically callers should use the individually
+         * named versions for greater clarity.
+         * \{
+         */
+        //! Check a single boolean value.
+        void checkValue(bool value, const char *id)
+        {
+            checkBoolean(value, id);
+        }
+        //! Check a single string value.
+        void checkValue(const char *value, const char *id)
+        {
+            checkString(value, id);
+        }
+        //! Check a single string value.
+        void checkValue(const std::string &value, const char *id)
+        {
+            checkString(value, id);
+        }
+        //! Check a single integer value.
+        void checkValue(int value, const char *id)
+        {
+            checkInteger(value, id);
+        }
+        //! Check a single single-precision floating point value.
+        void checkValue(float value, const char *id)
+        {
+            checkFloat(value, id);
+        }
+        //! Check a single double-precision floating point value.
+        void checkValue(double value, const char *id)
+        {
+            checkDouble(value, id);
+        }
+        //! Check a vector of three integer values.
+        void checkValue(const int value[3], const char *id)
+        {
+            checkVector(value, id);
+        }
+        //! Check a vector of three single-precision floating point values.
+        void checkValue(const float value[3], const char *id)
+        {
+            checkVector(value, id);
+        }
+        //! Check a vector of three double-precision floating point values.
+        void checkValue(const double value[3], const char *id)
+        {
+            checkVector(value, id);
+        }
+        /*!\}*/
+
+        /*! \brief
+         * Generic method to check a sequence of simple values.
+         *
+         * \tparam Iterator  Input iterator that allows multiple (two) passes.
+         *      Value type must be one of those accepted by checkValue(), or
+         *      implicitly convertible to one.
+         * \param[in] begin  Iterator to the start of the range to check.
+         * \param[in] end    Iterator to the end of the range to check.
+         * \param[in] id     Unique identifier for the sequence among its
+         *                   siblings.
+         */
+        template <class Iterator>
+        void checkSequence(Iterator begin, Iterator end, const char *id)
+        {
+            typename std::iterator_traits<Iterator>::difference_type length
+                = std::distance(begin, end);
+            TestReferenceChecker compound(checkSequenceCompound(id, length));
+            for (Iterator i = begin; i != end; ++i)
+            {
+                compound.checkValue(*i, NULL);
+            }
+        }
+        /*! \brief
+         * Generic method to check a sequence of custom values.
+         *
+         * \tparam Iterator    Input iterator that allows multiple (two) passes.
+         * \tparam ItemChecker Functor to check an individual value. Signature
+         *      void(TestReferenceChecker *, const T &), where T is the value
+         *      type of \p Iterator.
+         * \param[in] begin  Iterator to the start of the range to check.
+         * \param[in] end    Iterator to the end of the range to check.
+         * \param[in] id     Unique identifier for the sequence among its
+         *                   siblings.
+         * \param[in] checkItem  Functor to check an individual item.
+         *
+         * This method creates a compound checker \c compound within which all
+         * values of the sequence are checked.  Calls checkItem(&compound, *i)
+         * with that compound for each iterator \c i in the range [begin, end).
+         * \p checkItem should use check*() methods in the passed checker to
+         * check the each value.
+         *
+         * This method can be used to check a sequence made of compound types.
+         * Typically \p checkItem will create a compound within the passed
+         * checker to check different aspects of the passed in value.
+         */
+        template <class Iterator, class ItemChecker>
+        void checkSequence(Iterator begin, Iterator end, const char *id,
+                           ItemChecker checkItem)
+        {
+            typename std::iterator_traits<Iterator>::difference_type length
+                = std::distance(begin, end);
+            TestReferenceChecker compound(checkSequenceCompound(id, length));
+            for (Iterator i = begin; i != end; ++i)
+            {
+                checkItem(&compound, *i);
+            }
+        }
+        /*! \brief
+         * Check an array of values.
+         *
+         * \tparam T  Type of values to check. Should be one of those accepted
+         *      by checkValue(), or implicitly convertible to one.
+         *
+         * \param[in] length  Number of values to check.
+         * \param[in] values  Pointer to the first value to check.
+         * \param[in] id     Unique identifier for the sequence among its
+         *                   siblings.
+         *
+         * This is a convenience method that delegates all work to
+         * checkSequence().
+         */
+        template <typename T>
+        void checkSequenceArray(size_t length, const T *values, const char *id)
+        {
+            checkSequence(values, values + length, id);
+        }
+        /*! \brief
+         * Convenience method for checking that a sequence is empty.
+         *
+         * \param[in] id     Unique identifier for the sequence among its
+         *                   siblings.
+         *
+         * This method provides a convenient solution for a case where there is
+         * implicitly a sequence to be checked, but there is no pointer
+         * available to the values since the sequence is empty.
+         * Since this method does not require the type of the values, it can be
+         * used in such cases easily.
+         */
+        void checkEmptySequence(const char *id);
+        /*! \brief
+         * Initializes a compound for a sequence of items.
+         *
+         * \param[in] id     Unique identifier for the sequence among its
+         *                   siblings.
+         * \param[in] length Number of items that will be in the sequence.
+         * \returns   Checker to use for comparison within the sequence.
+         *
+         * This method can be used to check custom sequences where
+         * checkSequence() is not appropriate.
+         */
+        TestReferenceChecker checkSequenceCompound(const char *id, size_t length);
 
     private:
         class Impl;

@@ -91,18 +91,13 @@ class TestReferenceData::Impl
 class TestReferenceChecker::Impl
 {
     public:
-        static const xmlChar * const cCompoundNodeName;
         static const xmlChar * const cBooleanNodeName;
         static const xmlChar * const cStringNodeName;
         static const xmlChar * const cIntegerNodeName;
         static const xmlChar * const cRealNodeName;
-        static const xmlChar * const cVectorIntegerNodeName;
-        static const xmlChar * const cVectorRealNodeName;
         static const xmlChar * const cIdAttrName;
-        static const xmlChar * const cCompoundTypeAttrName;
-        static const char * const cSequenceIntegerType;
-        static const char * const cSequenceRealType;
-        static const char * const cSequenceVectorType;
+        static const char * const cVectorType;
+        static const char * const cSequenceType;
         static const char * const cSequenceLengthName;
 
         //! Creates a checker that does nothing.
