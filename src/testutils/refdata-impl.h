@@ -58,6 +58,8 @@ class TestReferenceData::Impl
 {
     public:
         static const xmlChar * const cXmlVersion;
+        static const xmlChar * const cXmlStyleSheetNodeName;
+        static const xmlChar * const cXmlStyleSheetContent;
         static const xmlChar * const cRootNodeName;
 
         explicit Impl(ReferenceDataMode mode);
