@@ -115,7 +115,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
         ax1=0,ax2=0, /* tangent directions */
         framenr=0, /* frame number in trajectory*/
         slicex, slicey, slicez; /*slice # of x y z position */
-	real ***Densslice; /* Density-slice in one frame*/
+	real ***Densslice=NULL; /* Density-slice in one frame*/
 	real dscale; /*physical scaling factor*/
 	real t,x,y,z; /* time and coordinates*/
 	rvec bbww;
@@ -682,7 +682,7 @@ int gmx_densorder(int argc,char *argv[])
     int eMeth;	
 
     char **graphfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
-    int nfxpm,nfraw, nfspect; /* # files for interface maps and spectra = # interfaces */
+    int nfxpm=-1,nfraw, nfspect; /* # files for interface maps and spectra = # interfaces */
  
     t_pargs pa[] = {
         { "-1d", FALSE, etBOOL, {&b1d},

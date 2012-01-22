@@ -40,8 +40,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
+#endif
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 #include "maths.h"
 #include "macros.h"
@@ -712,7 +715,7 @@ static int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             mymol->shell = init_shell_flexcon(debug,&mymol->mtop,0,mymol->x);
             mymol->fr = mk_forcerec();
             init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
-                          mymol->box,FALSE,NULL,NULL,NULL,NULL, TRUE,-1);
+                          mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
         }
         else 
             mymol->shell = NULL;

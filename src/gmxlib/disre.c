@@ -127,7 +127,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         }
     }
 
-    if (PAR(cr) && !bPartDecomp)
+    if (cr && PAR(cr) && !bPartDecomp)
     {
         /* Temporary check, will be removed when disre is implemented with DD */
         const char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
@@ -181,7 +181,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
     ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
-    if (cr->ms != NULL && ptr != NULL)
+    if (cr && cr->ms != NULL && ptr != NULL)
     {
 #ifdef GMX_MPI
         dd->nsystems = 0;
@@ -225,7 +225,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         if (fplog) {
             fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
         }
-        if (cr->ms)
+        if (cr && cr->ms)
         {
             check_multi_int(fplog,cr->ms,fcd->disres.nres,
                             "the number of distance restraints");

@@ -181,11 +181,19 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = { 
-  "no", "umbrella", "constraint", "constant_force", NULL
+  "no", "umbrella", "constraint", "constant-force", NULL
 };
 
 const char *epullg_names[epullgNR+1] = { 
-  "distance", "direction", "cylinder", "position", "direction_periodic", NULL
+  "distance", "direction", "cylinder", "position", "direction-periodic", NULL
+};
+
+const char *erotg_names[erotgNR+1] = { 
+  "iso", "iso-pf", "pm", "pm-pf", "rm", "rm-pf", "rm2", "rm2-pf", "flex", "flex-t", "flex2", "flex2-t", NULL
+};
+
+const char *erotg_fitnames[erotgFitNR+1] = { 
+  "rmsd", "norm", "potential", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {
@@ -207,5 +215,17 @@ const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
 
 const char *eMultentOpt_names[eMultentOptNR+1] = {
   "multiple_entries", "no", "use_last", NULL
+};
+
+const char *eAdresstype_names[eAdressNR+1] = {
+  "off","constant", "xsplit", "sphere", NULL 
+};
+
+const char *eAdressICtype_names[eAdressICNR+1] = {
+  "off", "thermoforce", NULL 
+};
+
+const char *eAdressSITEtype_names[eAdressSITENR+1] = {
+  "com","cog", "atom", "atomperatom", NULL
 };
 

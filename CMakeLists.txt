@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 project(Gromacs)
 include(Dart)
@@ -12,7 +12,7 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.5.4-dev")
+set(PROJECT_VERSION "4.6-dev")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -22,8 +22,8 @@ endif (CUSTOM_VERSION_STRING)
 set(SOVERSION 6)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
-SET(CPACK_PACKAGE_VERSION_MINOR "5")
-SET(CPACK_PACKAGE_VERSION_PATCH "4")
+SET(CPACK_PACKAGE_VERSION_MINOR "6")
+#SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -124,8 +124,8 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
-option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
-mark_as_advanced(GMX_DLOPEN)
+option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
+mark_as_advanced(GMX_LOAD_PLUGINS)
 
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
@@ -165,13 +165,18 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_LIBS_SUFFIX "_gpu")
   endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"") 
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 else(GMX_DEFAULT_SUFFIX)
   mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 endif(GMX_DEFAULT_SUFFIX)
+set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -187,43 +192,7 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
-include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
-if(GMX_MPI)
-	MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     OpenMPI version < 1.4.1
-                     MVAPICH2 version <= 1.4.1                               *")
-    if(GMX_THREADS)
-        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
-        set(GMX_THREADS OFF CACHE BOOL 
-            "Thread-based parallelization conflicts with MPI." FORCE)
-    endif(GMX_THREADS)
-    find_package(MPI)
-    if(MPI_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        
-        include_directories(${MPI_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        add_definitions( -DMPI ) #for FAHCORE
-        include(gmxTestMPI_IN_PLACE)
-        if (GMX_MPI_IN_PLACE)
-            gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
-        endif (GMX_MPI_IN_PLACE)
-    else(MPI_FOUND)
-        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-    endif(MPI_FOUND)
-    include(gmxTestCatamount)
-    gmx_test_catamount(GMX_CRAY_XT3)
-    if(GMX_CRAY_XT3)
-        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
-        set(GMX_NO_SYSTEM 1)
-        set(GMX_NO_NICE 1)
-    endif(GMX_CRAY_XT3)
-    set(GMX_LIB_MPI 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
-endif(GMX_MPI)
-
+include(gmxManageMPI)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
@@ -465,21 +434,27 @@ endif(CYGWIN)
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
         # We need at least git v1.5.1 be able to parse git's date output. If not 
-        # fund or the version is too small, we can't generate version information.
-        find_package(Git 1.5.1)
-        # this should at some point become VERSION_LESS
-        if(NOT Git_FOUND OR Git_VERSION STRLESS "1.5.1")
-            message("No compatible git version found, won't be able to generate proper development version information.")
-            set(USE_VERSION_H OFF)
+        # found or the version is too small, we can't generate version information.
+        find_package(Git)
+
+	# Find out the git version
+	if(GIT_FOUND AND NOT GIT_VERSION)
+	  execute_process(COMMAND ${GIT_EXECUTABLE} "--version"
+            OUTPUT_VARIABLE _exec_out
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+	  string(REGEX REPLACE "git version (.*)" "\\1" GIT_VERSION ${_exec_out})
+	  set(GIT_VERSION ${GIT_VERSION} CACHE STRING "Git version")
+	  mark_as_advanced(GIT_VERSION)
+	endif()
+
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.1")
+          message("No compatible git version found, won't be able to generate proper development version information.")
+          set(USE_VERSION_H OFF)
         endif()
     endif()
 else()
     set(USE_VERSION_H OFF)
 endif()
-
-if (GMX_DLOPEN)
-    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS})
-endif (GMX_DLOPEN)
 
 ########################################################################
 # Generate development version info for cache
@@ -508,7 +483,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(gmxTestSignal)
-gmx_test_retsigtype(RETSIGTYPE)
 gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
@@ -526,16 +500,10 @@ gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86|x64|x86_64|AMD64|amd64)" OR CYGWIN)
 
     set(GMX_ACCELERATION "SSE" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
     
-    if (GMX_64_BIT)
-      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
-    else (GMX_64_BIT)
-      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
-    endif (GMX_64_BIT)
-
     # Determine the assembler/compiler to use
   else()
     set(GMX_ACCELERATION "none" CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran" FORCE)
@@ -554,6 +522,12 @@ string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
 if(${GMX_ACCELERATION} STREQUAL "NONE")
   # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
+    
+    if (GMX_64_BIT)
+      set(GMX_X86_64_ASM ON CACHE BOOL "Add SSE assembly files for x86_64" FORCE)
+    else (GMX_64_BIT)
+      set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
+    endif (GMX_64_BIT)
 
     if(CMAKE_GENERATOR MATCHES "Visual Studio")
       option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
@@ -613,9 +587,6 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
     set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-    set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use MASSV for BLAS on BlueGene" FORCE)
-    set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use MASSV for LAPACK on BlueGene" FORCE)
-    list(APPEND GMX_EXTRA_LIBRARIES massv)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on Power6" FORCE)
@@ -646,13 +617,24 @@ if(GMX_FORTRAN OR GMX_POWER6)
     if(prefix)
       set(prefix "${prefix} ##")
     endif(prefix)
+    if(suffix)
+      set(suffix "## ${suffix}")
+      if(extrasuffix)
+	set(extrasuffix "${suffix}${extrasuffix}")
+      endif(extrasuffix)
+    else(suffix)
+      if(extrasuffix)
+	# Don't know if this is needed, but it can't hurt
+	set(extrasuffix "## ${extrasuffix}")
+      endif(extrasuffix)
+    endif(suffix)
 
     if(isupper)
-        set(F77_FUNCDEF   "${prefix} NAME ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} NAME ## ${suffix}${extrasuffix}")
+        set(F77_FUNCDEF   "${prefix} NAME ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} NAME ${extrasuffix}")
     else(isupper)
-        set(F77_FUNCDEF   "${prefix} name ## ${suffix}")
-        set(F77_FUNCDEF_  "${prefix} name ## ${suffix}${extrasuffix}")
+        set(F77_FUNCDEF   "${prefix} name ${suffix}")
+        set(F77_FUNCDEF_  "${prefix} name ${extrasuffix}")
     endif(isupper)
 else(GMX_FORTRAN OR GMX_POWER6)
         set(F77_FUNCDEF   "name ## _")
@@ -748,23 +730,95 @@ if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
   set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
 else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
+  set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external BLAS instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   if(GMX_EXTERNAL_BLAS)
     #FindBLAS needs Fortran
     enable_language(Fortran)
-    find_package(BLAS REQUIRED)
-    list(APPEND	GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+    if (GMX_BLAS_USER)
+        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_BLAS_USER})
+    else(GMX_BLAS_USER)
+        find_package(BLAS REQUIRED)
+        list(APPEND GMX_EXTRA_LIBRARIES ${BLAS_LIBRARIES})
+    endif(GMX_BLAS_USER)
   endif(GMX_EXTERNAL_BLAS)
   if(GMX_EXTERNAL_LAPACK)
     #FindLAPACK needs Fortran
     enable_language(Fortran)
-    find_package(LAPACK REQUIRED)
-    list(APPEND	GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+	if (GMX_LAPACK_USER)
+        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_LAPACK_USER})
+	else(GMX_LAPACK_USER)
+        find_package(LAPACK REQUIRED)
+        list(APPEND GMX_EXTRA_LIBRARIES ${LAPACK_LIBRARIES})
+    endif(GMX_LAPACK_USER)
   endif(GMX_EXTERNAL_LAPACK)
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
+
+set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+set(GMX_VMD_PLUGIN_PATH)
+mark_as_advanced(GMX_VMD_PLUGIN_PATH)
+
+if(GMX_LOAD_PLUGINS)
+  if(CYGWIN OR NOT WIN32)
+    # Native Windows does not have, nor need dlopen
+    # Note that WIN32 is set with Cygwin, but Cygwin needs dlopen to use plug-ins
+    include(gmxTestdlopen)
+    gmx_test_dlopen(HAVE_DLOPEN)
+  endif()
+
+  find_package(VMD)
+
+  # Test for unsuitable versions of VMD
+
+  if(VMD_FOUND AND NOT GMX_VMD_PLUGIN_PATH)
+    message(STATUS "Checking for suitable VMD version")
+    exec_program(${VMD_EXECUTABLE}
+      ARGS --help
+      OUTPUT_VARIABLE VMD_HELP
+      RETURN_VALUE VMD_EXEC_RETURN)
+
+    if(VMD_EXEC_RETURN EQUAL 0)
+      # This is the accepted idiom for subexpression matching, unfortunately
+      string(REGEX REPLACE ".*VMD for .*, version ([0-9]+\\.[0-9]*\\.?[0-9]*).*" "\\1" VMD_VERSION ${VMD_HELP})
+      string(REGEX REPLACE ".*VMD for (.*), version .*" "\\1" VMD_ARCH ${VMD_HELP})
+
+      if(VMD_VERSION VERSION_LESS "1.8")
+        MESSAGE(WARNING "Found VMD version ${VMD_VERSION}, but GROMACS needs at least 1.8")
+        unset(VMD_EXECUTABLE)
+        set(VMD_FOUND FALSE)
+      else()
+        message(STATUS "VMD version ${VMD_VERSION} is suitable")
+        if(DEFINED ENV{VMDDIR})
+          # This permits GROMACS to avoid hard-coding a fall-back
+          # path that it can tell right now would be useless.
+          set(GMX_VMD_PLUGIN_PATH "$ENV{VMDDIR}/plugins/${VMD_ARCH}/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
+        else()
+          set(GMX_VMD_PLUGIN_PATH "/usr/local/lib/vmd/plugins/*/molfile" CACHE PATH "Path to VMD plugins for molfile I/O")
+        endif()
+      endif()
+
+      # clean up
+      unset(VMD_HELP)
+      unset(VMD_VERSION)
+      unset(VMD_ARCH)
+    endif()
+  endif()
+
+  # so, should we use plug-ins?
+  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+    if (NOT VMD_QUIETLY)
+      MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+    endif(NOT VMD_QUIETLY)
+    set(GMX_USE_PLUGINS ON)
+    list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
+    set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+  else()
+    set(PKG_DL_LIBS)
+  endif()
+endif(GMX_LOAD_PLUGINS)
+set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
@@ -794,8 +848,8 @@ endif (NOT DEFINED GROMACS_C_FLAGS_SET)
 ########################################################################
 # Specify install locations and which subdirectories to process        #
 ########################################################################
-if ( DEFINED LIB )
-    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${LIB}")
+if ( DEFINED GMXLIB )
+    set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${GMXLIB}")
 else()
     set(LIB_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/lib)
 endif()
@@ -844,7 +898,6 @@ include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
 	enable_testing()
-	add_test(TestBuildAll make)
 	add_subdirectory(tests)
 ENDIF()
 

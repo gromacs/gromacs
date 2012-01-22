@@ -481,7 +481,8 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                 {
                     pp.a[j] = a[j];
                 }
-                add_param_to_list(&(plist[F_LINEAR_ANGLES]),&pp);
+                gmx_fatal(FARGS,"Want to add LINEAR ANGLES here");
+                /*add_param_to_list(&(plist[F_LINEAR_ANGLES]),&pp);*/
             }
         }
     }

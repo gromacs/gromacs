@@ -152,8 +152,11 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
-/* Compile with dlopen */
-#cmakedefine GMX_DLOPEN
+/* Compile with plugin support */
+#cmakedefine GMX_USE_PLUGINS
+
+/* Fallback path for VMD plug-ins */
+#define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
@@ -169,6 +172,12 @@
 
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
+
+/* Define for Linux pthread_setaffinity */
+#cmakedefine HAVE_PTHREAD_SETAFFINITY
+
+/* Define for Windows NUMA-aware allocator functions*/
+#cmakedefine TMPI_WINDOWS_NUMA_API
 
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
@@ -364,9 +373,6 @@
    set, little-endian if not. Do NOT assume this is the same as the byte
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
 #cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
-
-/* Define as the return type of signal handlers (int or void). */
-#cmakedefine RETSIGTYPE @RETSIGTYPE@
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1

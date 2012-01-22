@@ -183,8 +183,10 @@ static void read_h_db_file(const char *hfn,int *nahptr,t_hackblock **ah)
   /* Sort the list (necessary to be able to use bsearch */
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);
 
+  /*
   if (debug)
     dump_h_db(hfn,nah,aah);
+  */
   
   *nahptr = nah;
   *ah     = aah;

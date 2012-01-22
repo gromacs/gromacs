@@ -822,7 +822,7 @@ int main(int argc, char *argv[])
         done_nnb(&nnb);
     
         anr = atoms->nr;    
-        gentop_vsite_generate_special(gvt,bGenVsites,atoms,&x,plist,
+        gentop_vsite_generate_special(gvt,bGenVSites,atoms,&x,plist,
                                       &symtab,atype,&excls);
         if (atoms->nr > anr) 
         {
@@ -865,7 +865,7 @@ int main(int argc, char *argv[])
                    "          %4d pairs, %4d bonds, %4d atoms\n"
                    "          %4d polarizations\n",
                    plist[F_PDIHS].nr,  plist[F_IDIHS].nr, 
-                   plist[F_ANGLES].nr, plist[F_LINEAR_ANGLES].nr,
+                   plist[F_ANGLES].nr, 666 /*plist[F_LINEAR_ANGLES].nr*/,
                    plist[F_LJ14].nr,   plist[F_BONDS].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
         }

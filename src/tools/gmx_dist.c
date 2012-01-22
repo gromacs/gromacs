@@ -77,7 +77,7 @@ int gmx_dist(int argc,char *argv[])
     "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
     "of all atoms in group 2 that are closer than a certain distance",
     "to the center of mass of group 1 are plotted as a function of the time",
-    "that the contact was continously present.[PAR]",
+    "that the contact was continuously present.[PAR]",
     "Other programs that calculate distances are [TT]g_mindist[tt]",
     "and [TT]g_bond[tt]."
   };
@@ -182,13 +182,13 @@ int gmx_dist(int argc,char *argv[])
   else
     pbc = NULL;
     
-  gpbc = gmx_rmpbc_init(&top->idef,ePBC,natoms,box);
+  gpbc = gmx_rmpbc_init(&top->idef,ePBC,max,box);
   do {
     /* initialisation for correct distance calculations */
     if (pbc) {
       set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      gmx_rmpbc(gpbc,natoms,box,x);
+      gmx_rmpbc(gpbc,max,box,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {

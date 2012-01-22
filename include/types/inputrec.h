@@ -145,6 +145,64 @@ typedef struct {
   FILE       *out_f;      /* output file for pull data */
 } t_pull;
 
+
+/* Abstract types for enforced rotation only defined in pull_rotation.c       */
+typedef struct gmx_enfrot *gmx_enfrot_t;
+typedef struct gmx_enfrotgrp *gmx_enfrotgrp_t;
+
+typedef struct {
+  int        eType;          /* Rotation type for this group                  */
+  int        bMassW;         /* Use mass-weighed positions?                   */
+  int        nat;            /* Number of atoms in the group                  */
+  atom_id    *ind;           /* The global atoms numbers                      */
+  rvec       *x_ref;         /* The reference positions                       */
+  rvec       vec;            /* The normalized rotation vector                */
+  real       rate;           /* Rate of rotation (degree/ps)                  */
+  real       k;              /* Force constant (kJ/(mol nm^2)                 */
+  rvec       pivot;          /* Pivot point of rotation axis (nm)             */
+  int        eFittype;       /* Type of fit to determine actual group angle   */
+  int        PotAngle_nstep; /* Number of angles around the reference angle
+                                for which the rotation potential is also
+                                evaluated (for fit type 'potential' only)     */
+  real       PotAngle_step;  /* Distance between two angles in degrees (for
+                                fit type 'potential' only)                    */
+  real       slab_dist;      /* Slab distance (nm)                            */
+  real       min_gaussian;   /* Minimum value the gaussian must have so that 
+                                the force is actually evaluated               */
+  real       eps;            /* Additive constant for radial motion2 and
+                                flexible2 potentials (nm^2)                   */
+  gmx_enfrotgrp_t enfrotgrp; /* Stores non-inputrec rotation data per group   */
+} t_rotgrp;
+
+typedef struct {
+  int        ngrp;           /* Number of rotation groups                     */
+  int        nstrout;        /* Output frequency for main rotation outfile    */
+  int        nstsout;        /* Output frequency for per-slab data            */
+  t_rotgrp   *grp;           /* Groups to rotate                              */
+  gmx_enfrot_t enfrot;       /* Stores non-inputrec enforced rotation data    */
+} t_rot;
+
+
+typedef struct {
+  int  type;     /* type of AdResS simulation                    */
+  gmx_bool bnew_wf;  /* enable new AdResS weighting function         */
+  gmx_bool bchempot_dx;  /*true:interaction table format input is F=-dmu/dx   false: dmu_dwp  */
+  gmx_bool btf_full_box; /* true: appy therm force everywhere in the box according to table false: only in hybrid region */
+  real const_wf; /* value of weighting function for eAdressConst */
+  real ex_width; /* center of the explicit zone                  */
+  real hy_width; /* width of the hybrid zone                     */
+  int  icor;     /* type of interface correction                 */
+  int  site;     /* AdResS CG site location                      */
+  rvec refs;     /* Coordinates for AdResS reference             */
+  real ex_forcecap; /* in the hybrid zone, cap forces large then this to adress_ex_forcecap */
+  gmx_bool do_hybridpairs; /* If true pair interaction forces are also scaled in an adress way*/
+
+  int * tf_table_index; /* contains mapping of energy group index -> i-th adress tf table*/
+  int n_tf_grps;
+  int *group_explicit;
+  int   n_energy_grps;
+} t_adress;
+
 typedef struct {
   int  eI;              /* Integration method 				*/
   gmx_large_int_t nsteps;	/* number of steps to be taken			*/
@@ -267,6 +325,8 @@ typedef struct {
   real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */
   int  ePull;           /* Type of pulling: no, umbrella or constraint  */
   t_pull *pull;         /* The data for center of mass pulling          */
+  gmx_bool bRot;        /* Calculate enforced rotation potential(s)?    */
+  t_rot *rot;           /* The data for enforced rotation potentials    */
   real cos_accel;       /* Acceleration for viscosity calculation       */
   tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */
@@ -284,6 +344,9 @@ typedef struct {
   int  QMconstraints;   /* constraints on QM bonds                      */
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
+                        /* parameter needed for AdResS simulation       */
+  gmx_bool bAdress;     /* Is AdResS enabled ? */
+  t_adress *adress;     /* The data for adress simulations */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

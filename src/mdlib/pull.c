@@ -322,11 +322,11 @@ static void get_pullgrps_dr(const t_pull *pull,const t_pbc *pbc,int g,double t,
     for(m=0; m<DIM; m++)
     {
         dr[m] *= pull->dim[m];
-        dr2 += dr[m];
+        dr2 += dr[m]*dr[m];
     }
     if (max_dist2 >= 0 && dr2 > 0.98*0.98*max_dist2)
     {
-        gmx_fatal(FARGS,"Distance of pull group %d (%f nm) is larger than 0.49 times the box size (%f)",g,sqrt(dr2),max_dist2);
+        gmx_fatal(FARGS,"Distance of pull group %d (%f nm) is larger than 0.49 times the box size (%f)",g,sqrt(dr2),sqrt(max_dist2));
     }
 
     if (pull->eGeom == epullgDIRPBC)
@@ -456,7 +456,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     dvec  ref,vec;
     double d0,inpr;
     double lambda, rm, mass, invdt=0;
-    gmx_bool bConverged = FALSE;
+    gmx_bool bConverged_all,bConverged=FALSE;
     int niter=0,g,ii,j,m,max_iter=100;
     double q,a,b,c;  /* for solving the quadratic equation, 
                         see Num. Recipes in C ed 2 p. 184 */
@@ -524,8 +524,11 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         }
     }
     
-    while (!bConverged && niter < max_iter)
+    bConverged_all = FALSE;
+    while (!bConverged_all && niter < max_iter)
     {
+        bConverged_all = TRUE;
+
         /* loop over all constraints */
         for(g=1; g<1+pull->ngrp; g++)
         {
@@ -711,16 +714,17 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 break;
             }
             
-            /* DEBUG */
-            if (debug)
+            if (!bConverged)
             {
-                if (!bConverged)
+                if (debug)
                 {
                     fprintf(debug,"NOT CONVERGED YET: Group %d:"
                             "d_ref = %f %f %f, current d = %f\n",
                             g,ref[0],ref[1],ref[2],dnorm(unc_ij));
                 }
-            } /* END DEBUG */
+
+                bConverged_all = FALSE;
+            }
         }
         
         niter++;

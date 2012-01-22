@@ -79,8 +79,6 @@ typedef struct
     int nsatm;
     t_simat sat[3];
 } t_simlist;
-static const char *pdbtp[epdbNR] =
-    { "ATOM  ", "HETATM" };
 
 real calc_mass(t_atoms *atoms, gmx_bool bGetMass, gmx_atomprop_t aps)
 {

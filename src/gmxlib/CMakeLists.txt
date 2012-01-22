@@ -6,8 +6,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 if(USE_VERSION_H)
     add_custom_target(gmx_version ALL
             COMMAND ${CMAKE_COMMAND} 
-                -D Git_EXECUTABLE="${Git_EXECUTABLE}"
-                -D Git_VERSION="${Git_VERSION}"
+                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
+                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
                 -D VERSION_C_CMAKEIN="${CMAKE_SOURCE_DIR}/src/gmxlib/version.c.cmakein"
@@ -22,7 +22,12 @@ endif()
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.c 
      selection/*.c trajana/*.c
-     statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
+     statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c
+     nonbonded/nb_kernel_adress_c/*.c)
+
+if(NOT GMX_USE_PLUGINS)
+  list(REMOVE_ITEM GMXLIB_SOURCES vmdio.c vmddlopen.c)
+endif()
 
 # This source file is generated
 file(GLOB VERSION_SOURCE version.c)
@@ -101,11 +106,9 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
-# Selection has test_ instead of _test.  Removing here for special case, perhaps make general?
-if(GMX_FAHCORE)
-    file(GLOB SELECTION_TEST selection/test*)
-    list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
-endif(GMX_FAHCORE)
+# Selection has test_ instead of _test.
+file(GLOB SELECTION_TEST selection/test*)
+list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
 if(NOT GMX_OPENMM) 

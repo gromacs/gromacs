@@ -177,7 +177,7 @@ VMDPLUGIN_EXTERN int VMDPLUGIN_init(void);
   const char *author; \
   int majorv; \
   int minorv; \
-  int is_reentrant; 
+  int is_reentrant
 
 /** 
   * Typedef for generic plugin header, individual plugins can
@@ -186,7 +186,7 @@ VMDPLUGIN_EXTERN int VMDPLUGIN_init(void);
   * using the vmdplugin_HEAD macro.
   */
 typedef struct {
-  vmdplugin_HEAD
+  vmdplugin_HEAD;
 } vmdplugin_t;
 
 /**

@@ -41,6 +41,7 @@
 #include "force.h"
 #include "pme.h"
 #include "pull.h"
+#include "pull_rotation.h"
 #include "gmx_wallcycle.h"
 #include "mdrun.h"
 #include "nsgrid.h"
@@ -1481,7 +1482,7 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state_local->flags & (1<<est))
+        if (EST_DISTR(est) && (state_local->flags & (1<<est)))
         {
             switch (est) {
             case estX:
@@ -1563,7 +1564,7 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
     
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state->flags & (1<<est))
+        if (EST_DISTR(est) && (state->flags & (1<<est)))
         {
             switch(est) {
             case estX:
@@ -1756,7 +1757,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     }
     for(i=0; i<estNR; i++)
     {
-        if (EST_DISTR(i) && state_local->flags & (1<<i))
+        if (EST_DISTR(i) && (state_local->flags & (1<<i)))
         {
             switch (i) {
             case estX:
@@ -4132,7 +4133,7 @@ static void rotate_state_atom(t_state *state,int a)
 
     for(est=0; est<estNR; est++)
     {
-        if (EST_DISTR(est) && state->flags & (1<<est)) {
+        if (EST_DISTR(est) && (state->flags & (1<<est))) {
             switch (est) {
             case estX:
                 /* Rotate the complete state; for a rectangular box only */
@@ -5201,11 +5202,12 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                                    int dim_ind,ivec loc)
 {
-    MPI_Group g_row;
+    MPI_Group g_row = MPI_GROUP_EMPTY;
     MPI_Comm  c_row;
     int  dim,i,*rank;
     ivec loc_c;
     gmx_domdec_root_t *root;
+    gmx_bool bPartOfGroup = FALSE;
     
     dim = dd->dim[dim_ind];
     copy_ivec(loc,loc_c);
@@ -5214,18 +5216,19 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     {
         loc_c[dim] = i;
         rank[i] = dd_index(dd->nc,loc_c);
+        if (rank[i] == dd->rank)
+        {
+            /* This process is part of the group */
+            bPartOfGroup = TRUE;
+        }
     }
-    /* Here we create a new group, that does not necessarily
-     * include our process. But MPI_Comm_create needs to be
-     * called by all the processes in the original communicator.
-     * Calling MPI_Group_free afterwards gives errors, so I assume
-     * also the group is needed by all processes. (B. Hess)
-     */
-    MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
-    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
-    if (c_row != MPI_COMM_NULL)
+    if (bPartOfGroup)
     {
-        /* This process is part of the group */
+        MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
+    }
+    MPI_Comm_create(dd->mpi_comm_all,g_row,&c_row);
+    if (bPartOfGroup)
+    {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
         if (dd->comm->eDLB != edlbNO)
         {
@@ -6078,11 +6081,11 @@ static int check_dlb_support(FILE *fplog,t_commrec *cr,
 			case edlbNO: 
 				break;
 			case edlbAUTO:
-				dd_warning(cr,fplog,"NOTE: reproducability requested, will not use dynamic load balancing\n");
+				dd_warning(cr,fplog,"NOTE: reproducibility requested, will not use dynamic load balancing\n");
 				eDLB = edlbNO;
 				break;
 			case edlbYES:
-				dd_warning(cr,fplog,"WARNING: reproducability requested with dynamic load balancing, the simulation will NOT be binary reproducable\n");
+				dd_warning(cr,fplog,"WARNING: reproducibility requested with dynamic load balancing, the simulation will NOT be binary reproducible\n");
 				break;
 			default:
 				gmx_fatal(FARGS,"Death horror: undefined case (%d) for load balancing choice",eDLB);
@@ -6459,7 +6462,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     if (cr->npmenodes > dd->nnodes)
     {
         gmx_fatal_collective(FARGS,cr,NULL,
-                             "The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
+                             "The number of separate PME nodes (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
     }
     if (cr->npmenodes > 0)
     {
@@ -7991,7 +7994,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     /* Reorder the state */
     for(i=0; i<estNR; i++)
     {
-        if (EST_DISTR(i) && state->flags & (1<<i))
+        if (EST_DISTR(i) && (state->flags & (1<<i)))
         {
             switch (i)
             {
@@ -8255,7 +8258,8 @@ void dd_partition_system(FILE            *fplog,
         /* Print load every nstlog, first and last step to the log file */
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
                     comm->n_load_collect == 0 ||
-                    (step + ir->nstlist > ir->init_step + ir->nsteps));
+                    (ir->nsteps >= 0 &&
+                     (step + ir->nstlist > ir->init_step + ir->nsteps)));
 
         /* Avoid extra communication due to verbose screen output
          * when nstglobalcomm is set.
@@ -8599,6 +8603,13 @@ void dd_partition_system(FILE            *fplog,
         /* Update the local pull groups */
         dd_make_local_pull_groups(dd,ir->pull,mdatoms);
     }
+    
+    if (ir->bRot)
+    {
+        /* Update the local rotation groups */
+        dd_make_local_rotation_groups(dd,ir->rot);
+    }
+
 
     add_dd_statistics(dd);
     

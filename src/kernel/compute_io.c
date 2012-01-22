@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -40,31 +41,44 @@
 #include <stdlib.h>
 #include "typedefs.h"
 
+static int div_nsteps(int nsteps,int nst)
+{
+    if (nst > 0)
+    {
+        return (1 + nsteps + nst - 1)/nst;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
 		  int nrener,int nrepl)
 {
   int nsteps = ir->nsteps;
   int i,nxtcatoms=0;
-  int nstx=0,nstv=0,nstf=0,nste=0,nstlog=0,nstxtc=0,nfep=0;
+  int nstx,nstv,nstf,nste,nstlog,nstxtc,nfep=0;
   double cio;
   
-  if (ir->nstxout > 0)
-    nstx = 1 + nsteps / ir->nstxout;
-  if (ir->nstvout > 0)
-    nstv = 1 + nsteps / ir->nstvout;
-  if (ir->nstfout > 0)
-    nstf = (1 + nsteps) / ir->nstfout;
-  if (ir->nstxtcout > 0) {
-    for(i=0; i<natoms; i++) {
-      if (groups->grpnr[egcXTC] == NULL || groups->grpnr[egcXTC][i] == 0)
-	nxtcatoms++;
+    nstx   = div_nsteps(nsteps,ir->nstxout);
+    nstv   = div_nsteps(nsteps,ir->nstvout);
+    nstf   = div_nsteps(nsteps,ir->nstfout);
+    nstxtc = div_nsteps(nsteps,ir->nstxtcout);
+    if (ir->nstxtcout > 0)
+    {
+        for(i=0; i<natoms; i++)
+        {
+            if (groups->grpnr[egcXTC] == NULL || groups->grpnr[egcXTC][i] == 0)
+            {
+                nxtcatoms++;
+            }
+        }
     }
-    nstxtc = (1 + nsteps) / ir->nstxtcout;
-  }
-  if (ir->nstlog > 0)
-    nstlog = 1 + nsteps / ir->nstlog;
-  if (ir->nstenergy > 0)
-    nste = 3 + nsteps / ir->nstenergy;
+    nstlog = div_nsteps(nsteps,ir->nstlog);
+    /* We add 2 for the header */
+    nste   = div_nsteps(2+nsteps,ir->nstenergy);
+
   cio  = 80*natoms;
   cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
   cio += nstxtc*(14*4 + nxtcatoms*5.0); /* roughly 5 bytes per atom */
@@ -82,7 +96,7 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
       {
           int nchars = 8 + ndh*10; /* time data ~8 chars/line,
                                         dH data ~10 chars/line */
-          cio += ((1 + nsteps)/ir->nstdhdl)*nchars; 
+          cio += div_nsteps(nsteps,ir->nstdhdl)*nchars;
       }
       else
       {
@@ -90,24 +104,21 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
           if (ir->dh_hist_size <= 0) 
           {
               /* as data blocks: 1 real per dH point */
-              cio += ((1 + nsteps)/ir->nstdhdl)*ndh*sizeof(real); 
+              cio += div_nsteps(nsteps,ir->nstenergy)*ndh*sizeof(real); 
           }
           else
           {
               /* as histograms: dh_hist_size ints per histogram */
-              cio += ((1 + nsteps)/ir->nstenergy)*
+              cio += div_nsteps(nsteps,ir->nstenergy)*
                         sizeof(int)*ir->dh_hist_size*ndh;
           }
       }
   }
-  if (ir->pull != NULL) {
-    if (ir->pull->nstxout > 0) {
-      cio += (1 + nsteps)/ir->pull->nstxout*20; /* roughly 20 chars per line */
+    if (ir->pull != NULL)
+    {
+        cio += div_nsteps(nsteps,ir->pull->nstxout)*20; /* roughly 20 chars per line */
+        cio += div_nsteps(nsteps,ir->pull->nstfout)*20; /* roughly 20 chars per line */
     }
-    if (ir->pull->nstfout > 0) {
-      cio += (1 + nsteps)/ir->pull->nstfout*20; /* roughly 20 chars per line */
-    }
-  }
 
   return cio*nrepl/(1024*1024);
 }

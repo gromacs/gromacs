@@ -122,3 +122,8 @@ files.
 /*#define TMPI_PROFILE*/
 
 
+/* whether to turn on thread affinity (required for NUMA optimizations) 
+   if the number of threads to spawn is equal to the number of processors. */
+#define TMPI_THREAD_AFFINITY
+
+
