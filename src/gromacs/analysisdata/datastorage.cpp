@@ -39,8 +39,6 @@
 
 #include <limits>
 
-#include "smalloc.h"
-
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/paralleloptions.h"
@@ -76,40 +74,42 @@ AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFact
 
 AnalysisDataStorageFrame::AnalysisDataStorageFrame(AnalysisDataStorage *storage,
                                                    int columnCount, int index)
-    : storage_(storage), header_(index, 0.0, 0.0), columnCount_(columnCount),
-      y_(NULL), dy_(NULL), present_(NULL)
+    : storage_(storage), header_(index, 0.0, 0.0), values_(columnCount)
 {
-    snew(y_, columnCount);
-    snew(dy_, columnCount);
-    snew(present_, columnCount);
 }
 
 
 AnalysisDataStorageFrame::~AnalysisDataStorageFrame()
 {
-    sfree(y_);
-    sfree(dy_);
-    sfree(present_);
 }
 
 
 AnalysisDataPointSetRef
 AnalysisDataStorageFrame::currentPoints() const
 {
-    // TODO: Deduce first column and column count for multipoint data.
-    // Requires additional information to be stored.
-    return AnalysisDataPointSetRef(header_, 0, columnCount_, y_, dy_, present_);
+    std::vector<AnalysisDataValue>::const_iterator begin = values_.begin();
+    std::vector<AnalysisDataValue>::const_iterator end = values_.end();
+    while (begin != end && !begin->isSet())
+    {
+        ++begin;
+    }
+    while (end != begin && !(end-1)->isSet())
+    {
+        --end;
+    }
+    int firstColumn = (begin != end) ? begin - values_.begin() : 0;
+    return AnalysisDataPointSetRef(header_, firstColumn,
+                AnalysisDataValuesRef(begin, end));
 }
 
 
 void
 AnalysisDataStorageFrame::clearValues()
 {
-    for (int i = 0; i < columnCount(); ++i)
+    std::vector<AnalysisDataValue>::iterator i;
+    for (i = values_.begin(); i != values_.end(); ++i)
     {
-        y_[i] = 0.0;
-        dy_[i] = 0.0;
-        present_[i] = false;
+        i->clear();
     }
 }
 
@@ -333,8 +333,7 @@ AnalysisDataStorage::tryGetDataFrame(int index) const
         return AnalysisDataFrameRef();
     }
     const AnalysisDataStorageFrame *frame = storedFrame.frame;
-    return AnalysisDataFrameRef(frame->header(), frame->columnCount(),
-                                frame->y_, frame->dy_, frame->present_);
+    return AnalysisDataFrameRef(frame->header(), frame->values_);
 }
 
 

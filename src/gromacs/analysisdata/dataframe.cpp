@@ -64,35 +64,29 @@ AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
  */
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        int index, real x, real dx, int firstColumn, int columnCount,
-        const real *y, const real *dy, const bool *present)
-    : header_(index, x, dx), firstColumn_(firstColumn), columnCount_(columnCount),
-      y_(y), dy_(dy), present_(present)
+        const AnalysisDataFrameHeader &header, int firstColumn,
+        const AnalysisDataValuesRef &values)
+    : header_(header), firstColumn_(firstColumn), values_(values)
 {
+    GMX_ASSERT(header_.isValid(),
+               "Invalid point set reference should not be constructed");
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
-    GMX_ASSERT(columnCount >= 0, "Invalid column count");
-    GMX_ASSERT(columnCount == 0 || y_ != NULL,
-               "Values must be provided if there are columns");
 }
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader &header, int firstColumn, int columnCount,
-        const real *y, const real *dy, const bool *present)
-    : header_(header), firstColumn_(firstColumn), columnCount_(columnCount),
-      y_(y), dy_(dy), present_(present)
+        const AnalysisDataFrameHeader &header,
+        const std::vector<AnalysisDataValue> &values)
+    : header_(header), firstColumn_(0), values_(values.begin(), values.end())
 {
-    GMX_ASSERT(firstColumn >= 0, "Invalid first column");
-    GMX_ASSERT(columnCount >= 0, "Invalid column count");
-    GMX_ASSERT(columnCount == 0 || y_ != NULL,
-               "Values must be provided if there are columns");
+    GMX_ASSERT(header_.isValid(),
+               "Invalid point set reference should not be constructed");
 }
 
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         const AnalysisDataPointSetRef &points, int firstColumn, int columnCount)
-    : header_(points.header()), firstColumn_(0), columnCount_(columnCount),
-      y_(points.y_), dy_(points.dy_), present_(points.present_)
+    : header_(points.header()), firstColumn_(0)
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
     GMX_ASSERT(columnCount >= 0, "Invalid column count");
@@ -100,47 +94,39 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         || points.firstColumn() >= firstColumn + columnCount
         || columnCount == 0)
     {
-        columnCount_ = 0;
         return;
     }
+    AnalysisDataValuesRef::const_iterator begin = points.values().begin();
     int newFirstColumn = firstColumn - points.firstColumn();
     if (newFirstColumn > 0)
     {
-        // Offset pointers if the first column is not the first in points.
-        y_ += newFirstColumn;
-        if (dy_ != NULL)
-        {
-            dy_ += newFirstColumn;
-        }
-        if (present_ != NULL)
-        {
-            present_ += newFirstColumn;
-        }
+        // Offset pointer if the first column is not the first in points.
+        begin += newFirstColumn;
         newFirstColumn = 0;
     }
     else
     {
         // Take into account if first column is before the first in points.
-        columnCount_ -= -newFirstColumn;
+        columnCount -= -newFirstColumn;
     }
     // Decrease column count if there are not enough columns in points.
-    if (newFirstColumn + columnCount_ > points.columnCount())
+    AnalysisDataValuesRef::const_iterator end = begin + columnCount;
+    if (newFirstColumn + columnCount > points.columnCount())
     {
-        columnCount_ = points.columnCount() - newFirstColumn;
+        end = points.values().end();
     }
+    values_ = AnalysisDataValuesRef(begin, end);
 }
 
 
 bool AnalysisDataPointSetRef::allPresent() const
 {
-    if (present_ != NULL)
+    AnalysisDataValuesRef::const_iterator i;
+    for (i = values_.begin(); i != values_.end(); ++i)
     {
-        for (int i = 0; i < columnCount(); ++i)
+        if (!i->isPresent())
         {
-            if (!present_[i])
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
@@ -152,31 +138,49 @@ bool AnalysisDataPointSetRef::allPresent() const
  */
 
 AnalysisDataFrameRef::AnalysisDataFrameRef()
-    : points_(AnalysisDataFrameHeader(), 0, 0, NULL, NULL, NULL)
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        int index, real x, real dx, int columnCount,
-        const real *y, const real *dy, const bool *present)
-    : points_(index, x, dx, 0, columnCount, y, dy, present)
+        const AnalysisDataFrameHeader &header,
+        const AnalysisDataValuesRef &values)
+    : header_(header), values_(values)
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader &header, int columnCount,
-        const real *y, const real *dy, const bool *present)
-    : points_(header, 0, columnCount, y, dy, present)
+        const AnalysisDataFrameHeader &header,
+        const std::vector<AnalysisDataValue> &values)
+    : header_(header), values_(values.begin(), values.end())
 {
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
-    : points_(frame.points(), firstColumn, columnCount)
+    : header_(frame.header()), values_(columnCount, &frame.values_[firstColumn])
 {
+    GMX_ASSERT(firstColumn >= 0, "Invalid first column");
+    GMX_ASSERT(columnCount >= 0, "Invalid column count");
+    GMX_ASSERT(firstColumn + columnCount <= frame.columnCount(),
+               "Invalid last column");
+}
+
+
+bool AnalysisDataFrameRef::allPresent() const
+{
+    GMX_ASSERT(isValid(), "Invalid data frame accessed");
+    AnalysisDataValuesRef::const_iterator i;
+    for (i = values_.begin(); i != values_.end(); ++i)
+    {
+        if (!i->isPresent())
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace gmx

@@ -39,13 +39,12 @@
 #ifndef GMX_ANALYSISDATA_ARRAYDATA_H
 #define GMX_ANALYSISDATA_ARRAYDATA_H
 
-#include <cstddef>
-
 #include <vector>
 
 #include "../fatalerror/gmxassert.h"
 
 #include "abstractdata.h"
+#include "dataframe.h"
 
 namespace gmx
 {
@@ -57,6 +56,9 @@ namespace gmx
  * in-memory array through the AbstractAnalysisData interface.  Subclasses
  * should initialize the in-memory array through the provided protected member
  * functions.
+ *
+ * \todo
+ * Add methods to take full advantage of AnalysisDataValue features.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -91,7 +93,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return _value[row * columnCount() + col];
+            return _value[row * columnCount() + col].value();
         }
 
     protected:
@@ -125,7 +127,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return _value[row * columnCount() + col];
+            return _value[row * columnCount() + col].value();
         }
         /*! \brief
          * Sets the value of an element in the array.
@@ -159,7 +161,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         virtual bool requestStorageInternal(int nframes);
 
         int                  _nrows;
-        std::vector<real>    _value;
+        std::vector<AnalysisDataValue> _value;
         real                 _xstart;
         real                 _xstep;
         bool                 _bReady;
