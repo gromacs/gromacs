@@ -126,14 +126,16 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     Selection          *sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
     real                r;
+    SelectionPosition   p1 = sel1->position(0);
+    SelectionPosition   p2 = sel2->position(0);
 
     if (pbc != NULL)
     {
-        pbc_dx(pbc, sel1->x(0), sel2->x(0), dx);
+        pbc_dx(pbc, p1.x(), p2.x(), dx);
     }
     else
     {
-        rvec_sub(sel1->x(0), sel2->x(0), dx);
+        rvec_sub(p1.x(), p2.x(), dx);
     }
     r = norm(dx);
     dh->startFrame(frnr, fr.time);

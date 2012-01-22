@@ -338,7 +338,6 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
     {
         Selection *sel = *isel;
         sel->restoreOriginalPositions();
-        sel->refreshMassesAndCharges();
         sel->computeAverageCoveredFraction(nframes);
     }
 }

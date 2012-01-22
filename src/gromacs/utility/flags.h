@@ -94,6 +94,16 @@ class FlagsTemplate
             _flags |= other._flags;
             return *this;
         }
+        //! Combined flags from two flags objects.
+        FlagsTemplate<T> operator &(const FlagsTemplate<T> &other) const
+        {
+            return FlagsTemplate<T>(_flags & other._flags);
+        }
+        //! Returns an object with all flags flipped.
+        FlagsTemplate<T> operator ~() const
+        {
+            return FlagsTemplate<T>(~_flags);
+        }
 
     private:
         //! Creates a flags object with the given flags.

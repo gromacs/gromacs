@@ -517,13 +517,14 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             idh->finishPointSet();
             for (int i = 0; i < sel[g]->posCount(); ++i)
             {
+                SelectionPosition p = sel[g]->position(i);
                 if (sel[g]->type() == INDEX_RES && !_bResInd)
                 {
-                    idh->setPoint(1, _top->atoms.resinfo[sel[g]->mapId(i)].nr);
+                    idh->setPoint(1, _top->atoms.resinfo[p.mappedId()].nr);
                 }
                 else
                 {
-                    idh->setPoint(1, sel[g]->mapId(i) + 1);
+                    idh->setPoint(1, p.mappedId() + 1);
                 }
                 idh->finishPointSet();
             }

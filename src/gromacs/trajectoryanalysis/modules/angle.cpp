@@ -371,14 +371,14 @@ copy_pos(const std::vector<Selection *> &sel, bool bSplit, int natoms,
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg + k]->x(first), x[k]);
+            copy_rvec(sel[firstg + k]->position(first).x(), x[k]);
         }
     }
     else
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg]->x(first + k), x[k]);
+            copy_rvec(sel[firstg]->position(first + k).x(), x[k]);
         }
     }
 }
@@ -443,7 +443,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             clear_rvec(c2);
             break;
         case 's':
-            copy_rvec(_sel2[0]->x(0), c2);
+            copy_rvec(_sel2[0]->position(0).x(), c2);
             break;
     }
 
