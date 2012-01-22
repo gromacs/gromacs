@@ -39,7 +39,6 @@
 #include <config.h>
 #endif
 
-#include <smalloc.h>
 #include <statutil.h>
 #include <string2.h>
 #include <xvgr.h>
@@ -55,7 +54,6 @@ namespace gmx
 
 Selection::Selection(t_selelem *elem, const char *selstr)
     : name_(elem->name), selectionText_(selstr),
-      mass_(NULL), charge_(NULL), originalMass_(NULL), originalCharge_(NULL),
       rootElement_(elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
       bDynamic_(false), bDynamicCoveredFraction_(false)
@@ -107,16 +105,6 @@ Selection::Selection(t_selelem *elem, const char *selstr)
 Selection::~Selection()
 {
     gmx_ana_pos_deinit(&rawPositions_);
-    if (mass_ != originalMass_)
-    {
-        sfree(mass_);
-    }
-    if (charge_ != originalCharge_)
-    {
-        sfree(charge_);
-    }
-    sfree(originalMass_);
-    sfree(originalCharge_);
 }
 
 
@@ -217,42 +205,28 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 void
 Selection::initializeMassesAndCharges(const t_topology *top)
 {
-    snew(originalMass_,   posCount());
-    snew(originalCharge_, posCount());
+    posInfo_.reserve(posCount());
     for (int b = 0; b < posCount(); ++b)
     {
-        originalCharge_[b] = 0;
-        if (top)
+        real mass   = 1.0;
+        real charge = 0.0;
+        if (top != NULL)
         {
-            originalMass_[b] = 0;
+            mass = 0.0;
             for (int i = rawPositions_.m.mapb.index[b];
                      i < rawPositions_.m.mapb.index[b+1];
                      ++i)
             {
                 int index = rawPositions_.g->index[i];
-                originalMass_[b]   += top->atoms.atom[index].m;
-                originalCharge_[b] += top->atoms.atom[index].q;
+                mass   += top->atoms.atom[index].m;
+                charge += top->atoms.atom[index].q;
             }
         }
-        else
-        {
-            originalMass_[b] = 1;
-        }
+        posInfo_.push_back(PositionInfo(mass, charge));
     }
     if (isDynamic() && !hasFlag(efDynamicMask))
     {
-        snew(mass_,   posCount());
-        snew(charge_, posCount());
-        for (int b = 0; b < posCount(); ++b)
-        {
-            mass_[b]   = originalMass_[b];
-            charge_[b] = originalCharge_[b];
-        }
-    }
-    else
-    {
-        mass_   = originalMass_;
-        charge_ = originalCharge_;
+        originalPosInfo_ = posInfo_;
     }
 }
 
@@ -260,13 +234,13 @@ Selection::initializeMassesAndCharges(const t_topology *top)
 void
 Selection::refreshMassesAndCharges()
 {
-    if (mass_ != originalMass_)
+    if (!originalPosInfo_.empty())
     {
+        posInfo_.clear();
         for (int i = 0; i < posCount(); ++i)
         {
             int refid  = rawPositions_.m.refid[i];
-            mass_[i]   = originalMass_[refid];
-            charge_[i] = originalCharge_[refid];
+            posInfo_.push_back(originalPosInfo_[refid]);
         }
     }
 }
@@ -304,6 +278,7 @@ Selection::restoreOriginalPositions()
         p.g->name = NULL;
         gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efDynamicMask));
         p.nr = p.m.nr;
+        refreshMassesAndCharges();
     }
 }
 
