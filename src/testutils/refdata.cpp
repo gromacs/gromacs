@@ -200,11 +200,34 @@ TestReferenceData::Impl::~Impl()
  * TestReferenceChecker::Impl
  */
 
-TestReferenceChecker::Impl::Impl(xmlNodePtr rootNode, bool bWrite)
-    : _currNode(rootNode),
-      _nextSearchNode(rootNode != NULL ? rootNode->xmlChildrenNode : NULL),
+TestReferenceChecker::Impl::Impl(bool bWrite)
+    : _currNode(NULL), _nextSearchNode(NULL), _bWrite(bWrite)
+{
+}
+
+
+TestReferenceChecker::Impl::Impl(const std::string &path, xmlNodePtr rootNode,
+                                 bool bWrite)
+    : _path(path + "/"), _currNode(rootNode),
+      _nextSearchNode(rootNode->xmlChildrenNode),
       _bWrite(bWrite)
 {
+}
+
+
+std::string
+TestReferenceChecker::Impl::traceString(const char *id) const
+{
+    const char *printId = (id != NULL ? id : "(unnamed)");
+    return "Checking '" + _path + printId + "'";
+}
+
+
+std::string
+TestReferenceChecker::Impl::appendPath(const char *id) const
+{
+    const char *printId = (id != NULL ? id : "(unnamed)");
+    return _path + printId;
 }
 
 
@@ -353,9 +376,13 @@ TestReferenceChecker TestReferenceData::rootChecker()
                       << _impl->_fullFilename;
     }
     _impl->_bInUse = true;
-    xmlNodePtr rootNode =
-        _impl->_refDoc != NULL ? xmlDocGetRootElement(_impl->_refDoc) : NULL;
-    return TestReferenceChecker(new TestReferenceChecker::Impl(rootNode, isWriteMode()));
+    if (_impl->_refDoc == NULL)
+    {
+        return TestReferenceChecker(new TestReferenceChecker::Impl(isWriteMode()));
+    }
+    xmlNodePtr rootNode = xmlDocGetRootElement(_impl->_refDoc);
+    return TestReferenceChecker(
+            new TestReferenceChecker::Impl("", rootNode, isWriteMode()));
 }
 
 
@@ -399,16 +426,17 @@ bool TestReferenceChecker::isWriteMode() const
 
 TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const char *id)
 {
+    SCOPED_TRACE(_impl->traceString(id));
     if (_impl->shouldIgnore())
     {
-        return TestReferenceChecker(new Impl(NULL, isWriteMode()));
+        return TestReferenceChecker(new Impl(isWriteMode()));
     }
     xmlNodePtr newNode = _impl->findOrCreateNode(Impl::cCompoundNodeName, id);
     if (newNode == NULL)
     {
         GMX_RELEASE_ASSERT(!isWriteMode(), "Node creation failed without exception");
         ADD_FAILURE() << "Reference data item not found";
-        return TestReferenceChecker(new Impl(NULL, isWriteMode()));
+        return TestReferenceChecker(new Impl(isWriteMode()));
     }
     if (isWriteMode())
     {
@@ -418,7 +446,8 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
             GMX_THROW(TestException("XML property creation failed"));
         }
     }
-    return TestReferenceChecker(new Impl(newNode, isWriteMode()));
+    return TestReferenceChecker(
+            new Impl(_impl->appendPath(id), newNode, isWriteMode()));
 }
 
 
@@ -428,6 +457,7 @@ void TestReferenceChecker::checkBoolean(bool value, const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     const char *strValue = value ? "true" : "false";
     std::string refStrValue =
@@ -445,6 +475,7 @@ void TestReferenceChecker::checkString(const char *value, const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     std::string refStrValue =
         _impl->processItem(Impl::cStringNodeName, id, value, &bFound);
@@ -467,6 +498,7 @@ void TestReferenceChecker::checkInteger(int value, const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     char strValue[20];
     snprintf(strValue, 20, "%d", value);
@@ -485,6 +517,7 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     char strValue[20];
     snprintf(strValue, 20, "%f", value);
@@ -524,6 +557,7 @@ void TestReferenceChecker::checkVector(const int value[3], const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%d %d %d", value[0], value[1], value[2]);
@@ -542,6 +576,7 @@ void TestReferenceChecker::checkVector(const float value[3], const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%f %f %f", value[0], value[1], value[2]);
@@ -568,6 +603,7 @@ void TestReferenceChecker::checkVector(const double value[3], const char *id)
     {
         return;
     }
+    SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
     char strValue[50];
     snprintf(strValue, 50, "%f %f %f", value[0], value[1], value[2]);

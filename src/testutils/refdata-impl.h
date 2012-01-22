@@ -105,7 +105,15 @@ class TestReferenceChecker::Impl
         static const char * const cSequenceVectorType;
         static const char * const cSequenceLengthName;
 
-        Impl(xmlNodePtr rootNode, bool bWrite);
+        //! Creates a checker that does nothing.
+        explicit Impl(bool bWrite);
+        //! Creates a checker with a given root node.
+        Impl(const std::string &path, xmlNodePtr rootNode, bool bWrite);
+
+        //! Returns a string for SCOPED_TRACE() for checking element \p id.
+        std::string traceString(const char *id) const;
+        //! Returns the path of this checker with \p id appended.
+        std::string appendPath(const char *id) const;
 
         xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
         std::string processItem(const xmlChar *name, const char *id,
@@ -114,6 +122,14 @@ class TestReferenceChecker::Impl
                                 const std::string &value, bool *bFound);
         bool shouldIgnore() const;
 
+        /*! \brief
+         * Human-readable path to the root node of this checker.
+         *
+         * For the root checker, this will be "/", and for each compound, the
+         * id of the compound is added.  Used for reporting comparison
+         * mismatches.
+         */
+        std::string             _path;
         /*! \brief
          * Current node under which reference data is searched.
          *
