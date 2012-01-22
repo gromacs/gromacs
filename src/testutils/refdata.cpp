@@ -139,6 +139,9 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
         _refDoc = xmlNewDoc(cXmlVersion);
         xmlNodePtr rootNode = xmlNewDocNode(_refDoc, NULL, cRootNodeName, NULL);
         xmlDocSetRootElement(_refDoc, rootNode);
+        xmlNodePtr xslNode = xmlNewDocPI(_refDoc, (const xmlChar *)"xml-stylesheet",
+                    (const xmlChar *)"type=\"text/xsl\" href=\"referencedata.xsl\"");
+        xmlAddPrevSibling(rootNode, xslNode);
     }
     else
     {
