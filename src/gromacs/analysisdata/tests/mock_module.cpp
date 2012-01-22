@@ -59,6 +59,29 @@ namespace test
  * MockAnalysisModule::Impl
  */
 
+namespace
+{
+
+/*! \brief
+ * Helper callback function for TestReferenceData::checkCompound().
+ */
+void checkReferenceDataPoint(TestReferenceChecker *checker,
+                             const AnalysisDataValue &value)
+{
+    TestReferenceChecker compound(checker->checkCompound("DataValue", NULL));
+    compound.checkReal(value.value(), "Value");
+    if (value.hasError())
+    {
+        compound.checkReal(value.error(), "Error");
+    }
+    if (!value.isPresent())
+    {
+        compound.checkBoolean(value.isPresent(), "Present");
+    }
+}
+
+}
+
 MockAnalysisModule::Impl::Impl(int flags)
     : flags_(flags), frameIndex_(0)
 {
@@ -83,14 +106,8 @@ MockAnalysisModule::Impl::checkReferencePoints(const AnalysisDataPointSetRef &po
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
     {
-        // TODO: Add interface to points to make this easier.
-        std::vector<real> tmp;
-        tmp.reserve(points.columnCount());
-        for (int i = 0; i < points.columnCount(); ++i)
-        {
-            tmp.push_back(points.y(i));
-        }
-        frameChecker_->checkSequenceArray(tmp.size(), &tmp[0], "Y");
+        frameChecker_->checkSequence(points.values().begin(), points.values().end(), "Y",
+                                     &checkReferenceDataPoint);
     }
 }
 

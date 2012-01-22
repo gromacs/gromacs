@@ -62,7 +62,7 @@ namespace gmx
 AnalysisDataDisplacementModule::Impl::Impl()
     : nmax(0), tmax(0.0), ndim(3),
       bFirst(true), t0(0.0), dt(0.0), t(0.0),
-      max_store(-1), nstored(0), oldval(NULL), currd(NULL),
+      max_store(-1), nstored(0), oldval(NULL),
       histm(NULL)
 {
 }
@@ -70,7 +70,6 @@ AnalysisDataDisplacementModule::Impl::Impl()
 AnalysisDataDisplacementModule::Impl::~Impl()
 {
     sfree(oldval);
-    sfree(currd);
 }
 
 /********************************************************************
@@ -139,7 +138,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
     _impl->ci = -_impl->nmax;
 
     int ncol = _impl->nmax / _impl->ndim + 1;
-    snew(_impl->currd, ncol);
+    _impl->currValues_.reserve(ncol);
     setColumnCount(ncol);
 }
 
@@ -240,7 +239,8 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
         {
             i += _impl->max_store;
         }
-        _impl->currd[0] = step * _impl->dt;
+        _impl->currValues_.clear();
+        _impl->currValues_.push_back(AnalysisDataValue(step * _impl->dt));
         int k = 1;
         for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
         {
@@ -251,10 +251,9 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
                 dist2 += sqr(_impl->oldval[_impl->ci + j + d]
                              - _impl->oldval[i + j + d]);
             }
-            _impl->currd[k] = dist2;
+            _impl->currValues_.push_back(AnalysisDataValue(dist2));
         }
-        notifyPointsAdd(AnalysisDataPointSetRef(
-                header, 0, k, _impl->currd, NULL, NULL));
+        notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }
 
     notifyFrameFinish(header);

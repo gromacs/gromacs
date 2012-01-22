@@ -39,6 +39,10 @@
 #ifndef GMX_ANALYSISDATA_MODULES_DISPLACEMENT_IMPL_H
 #define GMX_ANALYSISDATA_MODULES_DISPLACEMENT_IMPL_H
 
+#include <vector>
+
+#include "../dataframe.h"
+
 #include "displacement.h"
 
 namespace gmx
@@ -82,7 +86,7 @@ class AnalysisDataDisplacementModule::Impl
         //! Old values.
         real                   *oldval;
         //! The most recently calculated displacements.
-        real                   *currd;
+        std::vector<AnalysisDataValue> currValues_;
 
         //! Histogram module for calculating MSD histograms, or NULL if not set.
         AnalysisDataBinAverageModule *histm;
