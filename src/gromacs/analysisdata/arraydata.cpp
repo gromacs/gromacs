@@ -59,8 +59,15 @@ AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
 AnalysisDataFrameRef
 AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
 {
-    return AnalysisDataFrameRef(index, xvalue(index), 0.0, columnCount(),
-                                &_value[index * columnCount()], NULL, NULL);
+    if (!isAllocated())
+    {
+        return AnalysisDataFrameRef();
+    }
+    std::vector<AnalysisDataValue>::const_iterator begin
+        = _value.begin() + index * columnCount();
+    return AnalysisDataFrameRef(
+                AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+                AnalysisDataValuesRef(begin, begin + columnCount()));
 }
 
 
@@ -97,6 +104,11 @@ AbstractAnalysisArrayData::allocateValues()
     GMX_RELEASE_ASSERT(rowCount() > 0 && columnCount() > 0,
                        "Row and column counts must be set before allocating values");
     _value.resize(rowCount() * columnCount());
+    std::vector<AnalysisDataValue>::iterator i;
+    for (i = _value.begin(); i != _value.end(); ++i)
+    {
+        i->setValue(0.0);
+    }
 }
 
 
@@ -119,14 +131,15 @@ AbstractAnalysisArrayData::valuesReady()
     }
     _bReady = true;
 
+    std::vector<AnalysisDataValue>::const_iterator valueIter = _value.begin();
     notifyDataStart();
-    for (int i = 0; i < rowCount(); ++i)
+    for (int i = 0; i < rowCount(); ++i, valueIter += columnCount())
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         notifyFrameStart(header);
-        notifyPointsAdd(AnalysisDataPointSetRef(header, 0, columnCount(),
-                                                &_value[i * columnCount()],
-                                                NULL, NULL));
+        notifyPointsAdd(AnalysisDataPointSetRef(header, 0,
+                            AnalysisDataValuesRef(valueIter,
+                                                  valueIter + columnCount())));
         notifyFrameFinish(header);
     }
     notifyDataFinish();

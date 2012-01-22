@@ -39,14 +39,135 @@
 #ifndef GMX_ANALYSISDATA_DATAFRAME_H
 #define GMX_ANALYSISDATA_DATAFRAME_H
 
-#include <cstddef>
+#include <vector>
 
 #include "../legacyheaders/types/simple.h"
 
 #include "../fatalerror/gmxassert.h"
+#include "../utility/arrayref.h"
+#include "../utility/flags.h"
 
 namespace gmx
 {
+
+/*! \brief
+ * Value type for representing a single value in analysis data objects.
+ *
+ * Default copy constructor and assignment operator are used and work as
+ * intended.
+ *
+ * Methods in this class do not throw.
+ *
+ * \inpublicapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataValue
+{
+    public:
+        /*! \brief
+         * Constructs an unset value.
+         */
+        AnalysisDataValue() : value_(0.0), error_(0.0) {}
+        /*! \brief
+         * Constructs a value object with the given value.
+         *
+         * The constructed object is marked as set and present.
+         */
+        explicit AnalysisDataValue(real value)
+            : value_(value), error_(0.0)
+        {
+            flags_.set(efSet);
+            flags_.set(efPresent);
+        }
+
+        /*! \brief
+         * Direct access to the value.
+         *
+         * Assigning a value to this does not mark the value as set; setValue()
+         * must be used for this.
+         */
+        real &value() { return value_; }
+        /*! \brief
+         * Direct access to the error estimate.
+         *
+         * Assigning a value to this does not mark the error estimate as set;
+         * setValue() must be used for this.
+         */
+        real &error() { return error_; }
+        //! Returns the value for this value.
+        real value() const { return value_; }
+        //! Returns the error estimate for this value, or zero if not set.
+        real error() const { return error_; }
+        /*! \brief
+         * Returns whether this value has been set.
+         *
+         * If this method returns false, the return value of value() and
+         * error() are undefined.
+         */
+        bool isSet() const { return flags_.test(efSet); }
+        /*! \brief
+         * Returns whether the error estimate for this value has been set.
+         *
+         * If this method returns false, but isSet() returns true, error()
+         * returns zero.
+         */
+        bool hasError() const { return flags_.test(efErrorSet); }
+        /*! \brief
+         * Returns whether this value has been marked as present.
+         *
+         * If this method returns false, it is up to the source data to define
+         * whether isSet() may return true.
+         */
+        bool isPresent() const { return flags_.test(efPresent); }
+
+        //! Clears and unsets this value.
+        void clear()
+        {
+            *this = AnalysisDataValue();
+        }
+        //! Sets this value.
+        void setValue(real value, bool bPresent = true)
+        {
+            value_ = value;
+            flags_.set(efSet);
+            flags_.set(efPresent, bPresent);
+        }
+        //! Sets this value and its error estimate.
+        void setValue(real value, real error, bool bPresent = true)
+        {
+            value_ = value;
+            error_ = error;
+            flags_.set(efSet);
+            flags_.set(efErrorSet);
+            flags_.set(efPresent, bPresent);
+        }
+        //! Set only error estimate for this value.
+        void setError(real error)
+        {
+            error_ = error;
+            flags_.set(efErrorSet);
+        }
+
+    private:
+        //! Possible flags for \a flags_.
+        enum Flag
+        {
+            efSet       = 1<<0, //!< Value has been set.
+            efErrorSet  = 1<<1, //!< Error estimate has been set.
+            efPresent   = 1<<2  //!< Value is set as present.
+        };
+
+        //! Value for this value.
+        real                    value_;
+        //! Error estimate for this value, zero if not set.
+        real                    error_;
+        //! Status flags for thise value.
+        FlagsTemplate<Flag>     flags_;
+};
+
+//! Shorthand for reference to an array of data values.
+typedef ConstArrayRef<AnalysisDataValue> AnalysisDataValuesRef;
+
 
 /*! \brief
  * Value type for storing frame-level information for analysis data.
@@ -144,10 +265,7 @@ class AnalysisDataFrameHeader
  * usage.
  *
  * The design of the interfaces is such that all objects of this type should be
- * valid, i.e., header().isValid() should always return true.  This is
- * currently not strictly enforced in the constructors because of an
- * implementation detail of AnalysisDataFrameRef, but this is subject to
- * change.
+ * valid, i.e., header().isValid() should always return true.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -158,49 +276,27 @@ class AnalysisDataPointSetRef
         /*! \brief
          * Constructs a point set reference from given values.
          *
-         * \param[in] index       Index of the frame. Must be >= 0.
-         * \param[in] x           x coordinate for the frame.
-         * \param[in] dx          Error estimate for x.
+         * \param[in] header      Header for the frame.
          * \param[in] firstColumn Zero-based index of the first column.
          *     Must be >= 0.
-         * \param[in] columnCount Number of columns to include.
-         * \param[in] y           Array of values for each column.
-         *     Must not be NULL if columnCount > 0.
-         * \param[in] dy          Array of error estimates for corresponding y.
-         *     Can be NULL, in which case errors cannot be accessed.
-         * \param[in] present     Array of flags giving presence of each point.
-         *     Can be NULL, in which case all values are treated as present.
+         * \param[in] values      Values for each column.
          *
-         * Arrays \p y, \p dy and \p dy should all have \p columnCount
-         * elements.  The first elements in these arrays should correspond to
-         * \p firstColumn.
+         * The first element in \p values should correspond to \p firstColumn.
          */
-        AnalysisDataPointSetRef(int index, real x, real dx,
-                                int firstColumn, int columnCount,
-                                const real *y, const real *dy,
-                                const bool *present);
+        AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
+                                int firstColumn,
+                                const AnalysisDataValuesRef &values);
         /*! \brief
          * Constructs a point set reference from given values.
          *
          * \param[in] header      Header for the frame.
-         * \param[in] firstColumn Zero-based index of the first column.
-         *     Must be >= 0.
-         * \param[in] columnCount Number of columns to include.
-         * \param[in] y           Array of values for each column.
-         *     Must not be NULL if columnCount > 0.
-         * \param[in] dy          Array of error estimates for corresponding y.
-         *     Can be NULL, in which case errors cannot be accessed.
-         * \param[in] present     Array of flags giving presence of each point.
-         *     Can be NULL, in which case all values are treated as present.
+         * \param[in] values      Values for each column.
          *
-         * Arrays \p y, \p dy and \p dy should all have \p columnCount
-         * elements.  The first elements in these arrays should correspond to
-         * \p firstColumn.
+         * The first element in \p values should correspond to the first
+         * column.
          */
         AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
-                                int firstColumn, int columnCount,
-                                const real *y, const real *dy,
-                                const bool *present);
+                                const std::vector<AnalysisDataValue> &values);
         /*! \brief
          * Constructs a point set reference to a subset of columns.
          *
@@ -252,12 +348,21 @@ class AnalysisDataPointSetRef
         //! Returns the number of columns included in this set.
         int columnCount() const
         {
-            return columnCount_;
+            return values().size();
         }
         //! Returns zero-based index of the last column included in this set (inclusive).
         int lastColumn() const
         {
-            return firstColumn_ + columnCount_ - 1;
+            return firstColumn_ + columnCount() - 1;
+        }
+        /*! \brief
+         * Returns reference container for all values.
+         *
+         * First value in the returned container corresponds to firstColumn().
+         */
+        const AnalysisDataValuesRef &values() const
+        {
+            return values_;
         }
         /*! \brief
          * Returns data value for a column in this set.
@@ -267,8 +372,8 @@ class AnalysisDataPointSetRef
          */
         real y(int i) const
         {
-            GMX_ASSERT(i >= 0 && i < columnCount_, "Out of range data access");
-            return y_[i];
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values()[i].value();
         }
         /*! \brief
          * Returns error estimate for a column in this set if applicable.
@@ -276,14 +381,13 @@ class AnalysisDataPointSetRef
          * \param[in] i  Zero-based column index relative to firstColumn().
          *     Should be >= 0 and < columnCount().
          *
-         * Currently, this method either asserts or returns zero if the source
-         * data does not specify errors.
+         * Currently, this method returns zero if the source data does not
+         * specify errors.
          */
         real dy(int i) const
         {
-            GMX_ASSERT(dy_ != NULL, "Errors not present, but accessed");
-            GMX_ASSERT(i >= 0 && i < columnCount_, "Out of range data access");
-            return dy_[i];
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values()[i].error();
         }
         /*! \brief
          * Returns whether a column is present in this set.
@@ -296,8 +400,8 @@ class AnalysisDataPointSetRef
          */
         bool present(int i) const
         {
-            GMX_ASSERT(i >= 0 && i < columnCount_, "Out of range data access");
-            return present_ == NULL || present_[i];
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values()[i].isPresent();
         }
         /*! \brief
          * Returns true if all points in this point set are present.
@@ -309,10 +413,7 @@ class AnalysisDataPointSetRef
     private:
         AnalysisDataFrameHeader header_;
         int                     firstColumn_;
-        int                     columnCount_;
-        const real             *y_;
-        const real             *dy_;
-        const bool             *present_;
+        AnalysisDataValuesRef   values_;
 };
 
 
@@ -346,43 +447,19 @@ class AnalysisDataFrameRef
         /*! \brief
          * Constructs a frame reference from given values.
          *
-         * \param[in] index       Index of the frame. Must be >= 0.
-         * \param[in] x           x coordinate for the frame.
-         * \param[in] dx          Error estimate for x.
-         * \param[in] columnCount Number of columns to include. Must be >= 0.
-         * \param[in] y           Array of values for each column.
-         *     Must not be NULL if columnCount > 0.
-         * \param[in] dy          Array of error estimates for corresponding y.
-         *     Can be NULL, in which case errors cannot be accessed.
-         * \param[in] present     Array of flags giving presence of each point.
-         *     Can be NULL, in which case all values are treated as present.
-         *
-         * Arrays \p y, \p dy and \p dy should all have \p columnCount
-         * elements.
+         * \param[in] header      Header for the frame.
+         * \param[in] values      Values for each column.
          */
-        AnalysisDataFrameRef(int index, real x, real dx,
-                             int columnCount,
-                             const real *y, const real *dy,
-                             const bool *present);
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
+                             const AnalysisDataValuesRef &values);
         /*! \brief
          * Constructs a frame reference from given values.
          *
          * \param[in] header      Header for the frame.
-         * \param[in] columnCount Number of columns to include.
-         * \param[in] y           Array of values for each column.
-         *     Must not be NULL if columnCount > 0.
-         * \param[in] dy          Array of error estimates for corresponding y.
-         *     Can be NULL, in which case errors cannot be accessed.
-         * \param[in] present     Array of flags giving presence of each point.
-         *     Can be NULL, in which case all values are treated as present.
-         *
-         * Arrays \p y, \p dy and \p dy should all have \p columnCount
-         * elements.
+         * \param[in] values      Values for each column.
          */
         AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
-                             int columnCount,
-                             const real *y, const real *dy,
-                             const bool *present);
+                             const std::vector<AnalysisDataValue> &values);
         /*! \brief
          * Constructs a frame reference to a subset of columns.
          *
@@ -411,7 +488,7 @@ class AnalysisDataFrameRef
         //! Returns the header for this frame.
         const AnalysisDataFrameHeader &header() const
         {
-            return points_.header();
+            return header_;
         }
         //! \copydoc AnalysisDataFrameHeader::index()
         int frameIndex() const
@@ -433,10 +510,10 @@ class AnalysisDataFrameRef
          *
          * Should not be called for invalid frames.
          */
-        const AnalysisDataPointSetRef &points() const
+        AnalysisDataPointSetRef points() const
         {
             GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return points_;
+            return AnalysisDataPointSetRef(header_, 0, values_);
         }
         /*! \brief
          * Returns number of columns in this frame.
@@ -445,7 +522,14 @@ class AnalysisDataFrameRef
          */
         int columnCount() const
         {
-            return points().columnCount();
+            return values_.size();
+        }
+        /*! \brief
+         * Returns reference container for all column values.
+         */
+        const AnalysisDataValuesRef &values() const
+        {
+            return values_;
         }
         /*! \brief
          * Convenience method for accessing a column value.
@@ -455,7 +539,8 @@ class AnalysisDataFrameRef
         real y(int i) const
         {
             GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return points().y(i);
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values_[i].value();
         }
         /*! \brief
          * Convenience method for accessing error for a column value.
@@ -465,7 +550,8 @@ class AnalysisDataFrameRef
         real dy(int i) const
         {
             GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return points().dy(i);
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values_[i].error();
         }
         /*! \brief
          * Convenience method for accessing present status for a column.
@@ -475,19 +561,17 @@ class AnalysisDataFrameRef
         bool present(int i) const
         {
             GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return points().present(i);
+            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
+            return values_[i].isPresent();
         }
         /*! \brief
          * Returns true if all points in this frame are present.
          */
-        bool allPresent() const
-        {
-            GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return points().allPresent();
-        }
+        bool allPresent() const;
 
     private:
-        AnalysisDataPointSetRef points_;
+        AnalysisDataFrameHeader header_;
+        AnalysisDataValuesRef   values_;
 };
 
 } // namespace gmx

@@ -5,56 +5,84 @@
       <Real Name="X">1.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>2.000000</Real>
-        <Real>1.000000</Real>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame1">
       <Real Name="X">1.500000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>1.000000</Real>
-        <Real>1.000000</Real>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame2">
       <Real Name="X">2.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>3.000000</Real>
-        <Real>2.000000</Real>
+        <DataValue>
+          <Real Name="Value">3.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame3">
       <Real Name="X">2.500000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>4.000000</Real>
-        <Real>2.000000</Real>
+        <DataValue>
+          <Real Name="Value">4.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame4">
       <Real Name="X">3.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>2.000000</Real>
-        <Real>1.000000</Real>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame5">
       <Real Name="X">3.500000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>0.000000</Real>
-        <Real>3.000000</Real>
+        <DataValue>
+          <Real Name="Value">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">3.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame6">
       <Real Name="X">4.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>1.000000</Real>
-        <Real>3.000000</Real>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">3.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
   </AnalysisData>
@@ -63,32 +91,48 @@
       <Real Name="X">1.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>2.000000</Real>
-        <Real>1.000000</Real>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame1">
       <Real Name="X">2.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>4.000000</Real>
-        <Real>2.236068</Real>
+        <DataValue>
+          <Real Name="Value">4.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2.236068</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame2">
       <Real Name="X">3.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>6.000000</Real>
-        <Real>2.236068</Real>
+        <DataValue>
+          <Real Name="Value">6.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2.236068</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
     <DataFrame Name="Frame3">
       <Real Name="X">4.000000</Real>
       <Sequence Name="Y">
         <Int Name="Length">2</Int>
-        <Real>1.000000</Real>
-        <Real>4.242640</Real>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">4.242640</Real>
+        </DataValue>
       </Sequence>
     </DataFrame>
   </AnalysisData>

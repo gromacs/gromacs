@@ -39,6 +39,8 @@
 #ifndef GMX_ANALYSISDATA_DATASTORAGE_H
 #define GMX_ANALYSISDATA_DATASTORAGE_H
 
+#include <vector>
+
 #include "../legacyheaders/types/simple.h"
 
 #include "../fatalerror/gmxassert.h"
@@ -78,7 +80,7 @@ class AnalysisDataStorageFrame
         //! Returns error in x coordinate for the frame if applicable.
         real dx() const { return header().dx(); }
         //! Returns number of columns for the frame.
-        int columnCount() const { return columnCount_; }
+        int columnCount() const { return values_.size(); }
 
         /*! \brief
          * Returns point set reference to currently set values.
@@ -91,22 +93,37 @@ class AnalysisDataStorageFrame
          *
          * \param[in] column  Zero-based column index.
          * \param[in] value   Value to set for the column.
-         * \param[in] error   Error estimate to set for the column.
-         * \param[in] present Present flag to set for the column.
+         * \param[in] bPresent Present flag to set for the column.
          *
          * If called multiple times for a column (within one point set for
          * multipoint data), old values are overwritten.
          *
          * Does not throw.
          */
-        void setValue(int column, real value, real error = 0.0,
-                      bool present = true)
+        void setValue(int column, real value, bool bPresent = true)
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            y_[column] = value;
-            dy_[column] = error;
-            present_[column] = present;
+            values_[column].setValue(value, bPresent);
+        }
+        /*! \brief
+         * Sets value for a column.
+         *
+         * \param[in] column  Zero-based column index.
+         * \param[in] value   Value to set for the column.
+         * \param[in] error   Error estimate to set for the column.
+         * \param[in] bPresent Present flag to set for the column.
+         *
+         * If called multiple times for a column (within one point set for
+         * multipoint data), old values are overwritten.
+         *
+         * Does not throw.
+         */
+        void setValue(int column, real value, real error, bool bPresent = true)
+        {
+            GMX_ASSERT(column >= 0 && column < columnCount(),
+                       "Invalid column index");
+            values_[column].setValue(value, error, bPresent);
         }
         /*! \brief
          * Access value for a column.
@@ -123,7 +140,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return y_[column];
+            return values_[column].value();
         }
         /*! \brief
          * Access value for a column.
@@ -139,7 +156,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return y_[column];
+            return values_[column].value();
         }
         /*! \brief
          * Mark point set as finished for multipoint data.
@@ -175,14 +192,8 @@ class AnalysisDataStorageFrame
         AnalysisDataStorage    *storage_;
         //! Header for the frame.
         AnalysisDataFrameHeader header_;
-        //! Number of columns in the frame.
-        int                     columnCount_;
-        //! Array of column values for the frame.
-        real                   *y_;
-        //! Array of column error values for the frame.
-        real                   *dy_;
-        //! Array of flags that tell whether a value is present.
-        bool                   *present_;
+        //! Values for the frame.
+        std::vector<AnalysisDataValue> values_;
 
         /*! \brief
          * Needed for full write access to the data and for access to
