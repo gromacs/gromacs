@@ -88,6 +88,10 @@ void addGlobalReferenceDataEnvironment()
 
 const xmlChar * const TestReferenceData::Impl::cXmlVersion =
     (const xmlChar *)"1.0";
+const xmlChar * const TestReferenceData::Impl::cXmlStyleSheetNodeName =
+    (const xmlChar *)"xml-stylesheet";
+const xmlChar * const TestReferenceData::Impl::cXmlStyleSheetContent =
+    (const xmlChar *)"type=\"text/xsl\" href=\"referencedata.xsl\"";
 const xmlChar * const TestReferenceData::Impl::cRootNodeName =
     (const xmlChar *)"ReferenceData";
 const xmlChar * const TestReferenceChecker::Impl::cBooleanNodeName =
@@ -139,6 +143,9 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode)
         _refDoc = xmlNewDoc(cXmlVersion);
         xmlNodePtr rootNode = xmlNewDocNode(_refDoc, NULL, cRootNodeName, NULL);
         xmlDocSetRootElement(_refDoc, rootNode);
+        xmlNodePtr xslNode = xmlNewDocPI(_refDoc, cXmlStyleSheetNodeName,
+                                         cXmlStyleSheetContent);
+        xmlAddPrevSibling(rootNode, xslNode);
     }
     else
     {
