@@ -193,7 +193,8 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         real  frave = 0.0;
         for (int i = 0; i < nr; ++i)
         {
-            frave += nb->minimumDistance(sel->x(i));
+            SelectionPosition p = sel->position(i);
+            frave += nb->minimumDistance(p.x());
         }
         frave /= nr;
         dh->setPoint(g, frave);
