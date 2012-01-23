@@ -56,6 +56,7 @@ wall-density, wall-ewald-zfac)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E-x, E-xt, E-y, E-yt, E-z, E-zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
 <li><A HREF="#gbsa"><b>Implicit solvent</b></A> (implicit-solvent, gb-algorithm, nstgbradii, rgbradii, gb-epsilon-solvent, gb-saltconc, gb-obc-alpha, gb-obc-beta, gb-obc-gamma, gb-dielectric-offset, sa-algorithm, sa-surface-tension)   
+<li><A HREF="#adress"><b>AdResS settings</b></A> (adress, adress_type, adress_const_wf, adress_ex_width, adress_hy_width, adress_ex_forcecap, adress_interface_correction, adress_site, adress_reference_coords, adress_tf_grp_names, adress_cg_grp_names)
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1-grps, user2-grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
 <li><A HREF="#idx"><b>Index</b></A>
 </ul>
@@ -1665,6 +1666,57 @@ no non-polar calculations are done.
 </dd>
 </dl>   
 
+<dl>
+<A NAME="adress"><br>
+<dt><b>adress: (no)</b></dt>
+<dd>Decide whether the AdResS feature is turned on.</dd>
+<dt><b>adress-type: (Off)</b></dt>
+<dd><dl compact>
+<dt><b>Off</b></dt>
+<dd>Do an AdResS simulation with weight equal 1, which is equivalent to an explicit (normal) MD simulation. The difference to disabled AdResS is that the AdResS variables are still read-in and hence are defined.</dd>
+<dt><b>Constant</b></dt>
+<dd>Do an AdResS simulation with a constant weight, <b>adress-const-wf</b> defines the value of the weight</dd>
+<dt><b>XSplit</b></dt>
+<dd>Do an AdResS simulation with simulation box split in x-direction, so basically the weight is only a function of the x coordinate and all distances are measured using the x coordinate only.</dd>
+<dt><b>Sphere</b></dt>
+<dd>Do an AdResS simulation with spherical explicit zone.</dd>
+</dl></dd>
+<dt><b>adress-const-wf: (1)</b></dt>
+<dd>Provides the weight for a constant weight simulation (<b>adress-type</b>=Constant)</dd>
+<dt><b>adress-ex-width: (0)</b></dt>
+<dd>Width of the explicit zone,  measured from <b>adress-reference-coords</b>.</dd>
+<dt><b>adress-hy-width: (0)</b></dt>
+<dd>Width of the hybrid zone.</dd>
+<dt><b>adress-reference-coords: (0,0,0)</b></dt>
+<dd>Position of the center of the explicit zone. Periodic boundary conditions apply for measuring the distance from it.</dd>
+<dt><b>adress-cg-grp-names</b></dt>
+<dd>The names of the coarse-grained energy groups. All other energy groups are considered explicit and their interactions will be automatically excluded with the coarse-grained groups.</dd>
+<dt><b>adress-site: (COM)</b>The mapping point from which the weight is calculated.</dt>
+<dd><dl compact>
+<dt><b>COM</b></dt>
+<dd>The weight is calculated from the center of mass of each charge group.</dd>
+<dt><b>COG</b></dt>
+<dd>The weight is calculated from the center of geometry of each charge group.</dd>
+<dt><b>Atom</b></dt>
+<dd>The weight is calculated from the position of 1st atom of each charge group.</dd>
+<dt><b>AtomPerAtom</b></dt>
+<dd>The weight is calculated from the position of each individual atom.</dd>
+</dl></dd>
+<dt><b>adress-interface-correction: (Off)</b></dt>
+<dd><dl compact>
+<dt><b>Off</b></dt>
+<dd>Do not a apply any interface correction.</dd>
+<dt><b>thermoforce</b></dt>
+<dd>Apply thermodynamic force interface correction. The table can be specified using the <tt>-tabletf<tt> option of <tt>mdrun</tt>. The table should contain the potential and force (acting on molecules) as function of the distance from <b>adress-reference-coords</b>.</dd>
+</dl></dd>
+<dt><b>adress-tf-grp-names</b></dt>
+<dd>The names of the energy groups to which the <b>thermoforce</b> is applied if enabled in <b>adress-interface-correction</b>. If no group is given the default table is applied.</dd>
+<dt><b>adress-ex-forcecap: (0)</b></dt>
+<dd>Cap the force in the hybrid region, useful for big molecules. 0 disables force capping.</dd>
+
+</dl>
+
+<dl>
 <A NAME="user"><br>
 <hr>
 <h3>User defined thingies</h3>
