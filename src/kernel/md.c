@@ -1583,30 +1583,38 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
-            if (ir->nstlist == -1 && bFirstIterate)
+            /* With Leap-Frog we can skip compute_globals at
+             * non-communication steps, but we need to calculate
+             * the kinetic energy one step before communication.
+             */
+            if (bGStat || do_per_step(step+1,nstglobalcomm) ||
+                EI_VV(ir->eI))
             {
-                gs.sig[eglsNABNSB] = nlh.nabnsb;
-            }
-            compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                            wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,
-                            bFirstIterate ? &gs : NULL, 
-                            (step_rel % gs.nstms == 0) && 
+                if (ir->nstlist == -1 && bFirstIterate)
+                {
+                    gs.sig[eglsNABNSB] = nlh.nabnsb;
+                }
+                compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                constr,
+                                bFirstIterate ? &gs : NULL, 
+                                (step_rel % gs.nstms == 0) && 
                                 (multisim_nsteps<0 || (step_rel<multisim_nsteps)),
-                            lastbox,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                            cglo_flags 
-                            | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
-                            | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
-                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
-                            | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
-                            | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
-                            | CGLO_CONSTRAINT 
-                );
-            if (ir->nstlist == -1 && bFirstIterate)
-            {
-                nlh.nabnsb = gs.set[eglsNABNSB];
-                gs.set[eglsNABNSB] = 0;
+                                lastbox,
+                                top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                cglo_flags 
+                                | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
+                                | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
+                                | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
+                                | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
+                                | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                                | CGLO_CONSTRAINT 
+                    );
+                if (ir->nstlist == -1 && bFirstIterate)
+                {
+                    nlh.nabnsb = gs.set[eglsNABNSB];
+                    gs.set[eglsNABNSB] = 0;
+                }
             }
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
