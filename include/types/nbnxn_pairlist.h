@@ -38,13 +38,13 @@
 extern "C" {
 #endif
 
-/* A buffer data structure of 128 bits
+/* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
  * to avoid cache invalidation of the real contents
  * of the struct by writes to neighboring memory.
  */
 typedef struct {
-    int dummy[4];
+    int dummy[16];
 } gmx_cache_protect_t;
 
 #define NSUBCELL_Z 2
