@@ -843,7 +843,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
         end_t   = md->start + ((thread+1)*md->homenr)/nthread;
 
         ekin_sum    = ekind->ekin_work[thread];
-        dekindl_sum = &ekind->dekindl_work[thread];
+        dekindl_sum = &ekind->ekin_work[thread][opts->ngtc][0][0];
 
         for(gt=0; gt<opts->ngtc; gt++)
         {
@@ -901,7 +901,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
             }
         }
 
-        ekind->dekindl += ekind->dekindl_work[thread];
+        ekind->dekindl += ekind->ekin_work[thread][opts->ngtc][0][0];
     }
 
     inc_nrnb(nrnb,eNR_EKIN,md->homenr);

@@ -123,14 +123,18 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
   
     nthread = gmx_omp_get_update_nthreads();
 
+    snew(ekind->ekin_work_alloc,nthread);
     snew(ekind->ekin_work,nthread);
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
     {
-        snew(ekind->ekin_work[thread],ekind->ngtc);
+        /* Allocate 2 elements extra on both sides,
+         * so in single precision we have 2*3*3*4=72 bytes buffer
+         * on both sides to avoid cache pollution.
+         */
+        snew(ekind->ekin_work_alloc[thread],ekind->ngtc+4);
+        ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + 2;
     }
-    
-    snew(ekind->dekindl_work,nthread);
 
   ekind->ngacc = opts->ngacc;
   snew(ekind->grpstat,opts->ngacc);
