@@ -479,7 +479,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->errors    = NULL;
     state->bGroups   = bGroups;
     state->grps      = grps;
-    state->nexpsel   = (maxnr > 0 ? sc->sel.size() + maxnr : -1);
+    state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
     state->bInteractive = bInteractive;
     state->nalloc_input = 0;
