@@ -109,6 +109,9 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
  * The force can then be interpolated linearly.
  */
 
+real ewald_spline3_table_scale(real ewaldcoeff,real rc);
+/* Return the scaling for the Ewald quadratic spline tables. */
+
 t_forcetable make_tables(FILE *fp,const output_env_t oenv,
                                 const t_forcerec *fr, gmx_bool bVerbose,
                                 const char *fn, real rtab,int flags);

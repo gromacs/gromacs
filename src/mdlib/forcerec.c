@@ -1593,7 +1593,8 @@ static void init_ewald_f_table(interaction_const_t *ic,
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
          */
-        ic->tabq_scale = 1/0.0005;
+        ic->tabq_scale = ewald_spline3_table_scale(ic->ewaldcoeff,
+                                                   ic->rcoulomb);
         ic->tabq_size  = (int)(ic->rcoulomb*ic->tabq_scale) + 2;
 #ifndef GMX_DOUBLE
         ic->tabq_format = tableformatFDV0;
@@ -1602,15 +1603,20 @@ static void init_ewald_f_table(interaction_const_t *ic,
 #endif
         break;
     case nbk8x8x8CUDA:
-        /* This case is handled in the nbnxn CUDA module */
-        ic->tabq_format = tableformatNONE;
-        break;
     case nbk8x8x8PlainC:
         /* Table size identical to the CUDA implementation */
         ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
         ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
-        ic->tabq_format = tableformatF;
+        if (verlet_kernel_type == nbk8x8x8CUDA)
+        {
+            /* This case is handled in the nbnxn CUDA module */
+            ic->tabq_format = tableformatNONE;
+        }
+        else
+        {
+            ic->tabq_format = tableformatF;
+        }
         break;
     default:
         gmx_incons("Unimplemented nbnxn kernel type");
@@ -1650,6 +1656,12 @@ void init_interaction_const_tables(FILE *fp,
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
         init_ewald_f_table(ic,verlet_kernel_type);
+
+        if (fp != NULL)
+        {
+            fprintf(fp,"Initialized non-bonded Ewald correction tables, spacing: %.2e size: %d\n\n",
+                    1/ic->tabq_scale,ic->tabq_size);
+        }
     }
 }
 
@@ -1967,20 +1979,34 @@ void init_forcerec(FILE *fp,
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
     
     fr->reppow     = mtop->ffparams.reppow;
-    fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
-                      !gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS));
-    fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
-                      fr->eeltype == eelRF_ZERO);
-    
-    if (getenv("GMX_FORCE_TABLES"))
+
+    if (ir->cutoff_scheme == ecutsGROUP)
     {
-        fr->bvdwtab  = TRUE;
-        fr->bcoultab = TRUE;
+        fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
+                          !gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS));
+        fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
+                          fr->eeltype == eelRF_ZERO);
+
+        if (getenv("GMX_FORCE_TABLES"))
+        {
+            fr->bvdwtab  = TRUE;
+            fr->bcoultab = TRUE;
+        }
+
+        if (fp)
+        {
+            fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
+            fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
+        }
     }
-    
-    if (fp) {
-        fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
-        fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
+    else
+    {
+        if (!gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS))
+        {
+            gmx_fatal(FARGS,"Cut-off scheme %S only supports LJ repulsion power 12",ecutscheme_names[ir->cutoff_scheme]);
+        }
+        fr->bvdwtab  = FALSE;
+        fr->bcoultab = FALSE;
     }
     
     /* Tables are used for direct ewald sum */

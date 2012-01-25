@@ -148,13 +148,15 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
         gmx_fatal(FARGS,"Can not make a spline table with less than 2 points");
     }
 
-    /* We need some margin to be able to divide by r in the kernel
-     * and also to do the integration arithmetics without going out of range.
-     * Furthemore, we divide by dx below.
+    /* We need some margin to be able to divide table values by r
+     * in the kernel and also to do the integration arithmetics
+     * without going out of range. Furthemore, we divide by dx below.
      */
     tab_max = GMX_REAL_MAX*0.0001;
 
-    /* This function produces a table with maximum force error V'''*dx*dx/12.
+    /* This function produces a table with:
+     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
+     * maximum force error:  V'''/(6*4)*dx^2
      * The rms force error is the max error times 1/sqrt(5)=0.45.
      */
 
@@ -289,6 +291,27 @@ void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
         }
         tabf[(ntab-1)*stride+1] = -tabf[i*stride];
     }
+}
+
+/* The scale (1/spacing) for third order spline interpolation
+ * of the Ewald mesh contribution which needs to be subtracted
+ * from the non-bonded interactions.
+ */
+real ewald_spline3_table_scale(real ewaldcoeff,real rc)
+{
+    double erf_x_d3=1.0522; /* max of (erf(x)/x)''' */
+    double ftol,etol;
+    double sc_f,sc_e;
+
+    /* Force tolerance: single precision accuracy */
+    ftol = GMX_FLOAT_EPS;
+    sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
+
+    /* Energy tolerance: 10x more accurate than the cut-off jump */
+    etol = 0.1*erfc(ewaldcoeff*rc);
+    sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
+
+    return max(sc_f,sc_e);
 }
 
 /* Calculate the potential and force for an r value
