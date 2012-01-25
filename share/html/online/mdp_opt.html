@@ -1666,8 +1666,11 @@ no non-polar calculations are done.
 </dd>
 </dl>   
 
-<dl>
 <A NAME="adress"><br>
+<hr>
+<h3>Adaptive Resolution Simulation</h3>
+
+<dl>
 <dt><b>adress: (no)</b></dt>
 <dd>Decide whether the AdResS feature is turned on.</dd>
 <dt><b>adress-type: (Off)</b></dt>
@@ -1707,16 +1710,14 @@ no non-polar calculations are done.
 <dt><b>Off</b></dt>
 <dd>Do not a apply any interface correction.</dd>
 <dt><b>thermoforce</b></dt>
-<dd>Apply thermodynamic force interface correction. The table can be specified using the <tt>-tabletf<tt> option of <tt>mdrun</tt>. The table should contain the potential and force (acting on molecules) as function of the distance from <b>adress-reference-coords</b>.</dd>
+<dd>Apply thermodynamic force interface correction. The table can be specified using the <tt>-tabletf</tt> option of <tt>mdrun</tt>. The table should contain the potential and force (acting on molecules) as function of the distance from <b>adress-reference-coords</b>.</dd>
 </dl></dd>
 <dt><b>adress-tf-grp-names</b></dt>
 <dd>The names of the energy groups to which the <b>thermoforce</b> is applied if enabled in <b>adress-interface-correction</b>. If no group is given the default table is applied.</dd>
 <dt><b>adress-ex-forcecap: (0)</b></dt>
 <dd>Cap the force in the hybrid region, useful for big molecules. 0 disables force capping.</dd>
-
 </dl>
 
-<dl>
 <A NAME="user"><br>
 <hr>
 <h3>User defined thingies</h3>

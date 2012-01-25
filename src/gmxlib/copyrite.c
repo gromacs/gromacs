@@ -527,7 +527,7 @@ void please_cite(FILE *fp,const char *key)
       "S. Fritsch, C. Junghans and K. Kremer",
       "Adaptive molecular simulation study on structure formation of toluene around C60 using Gromacs",
       "J. Chem. Theo. Comp.",
-      0, 2012, "???" },
+      0, 2012, "doi:10.1021/ct200706f" },
     { "Junghans10",
       "C. Junghans and S. Poblete",
       "A reference implementation of the adaptive resolution scheme in ESPResSo",
