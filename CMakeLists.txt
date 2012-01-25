@@ -166,13 +166,18 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_LIBS_SUFFIX "_gpu")
   endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"") 
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 else(GMX_DEFAULT_SUFFIX)
   mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")    
-  message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
 endif(GMX_DEFAULT_SUFFIX)
+set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -188,74 +193,7 @@ endif(GMX_POWERPC_INVSQRT)
 ########################################################################
 #Process MPI settings
 ########################################################################
-include(CheckCSourceCompiles) # for gmxTestMPI_IN_PLACE
-if(GMX_MPI)
-    if(GMX_THREADS)
-        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
-        set(GMX_THREADS OFF CACHE BOOL 
-            "Thread-based parallelization conflicts with MPI." FORCE)
-    endif(GMX_THREADS)
-
-    # Work-around for Cray MPI
-    TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}
-      "${CMAKE_SOURCE_DIR}/cmake/TestMPI.c"
-      COMPILE_DEFINITIONS )
-    if(NOT MPI_FOUND)
-      # search for normal MPI installations
-      find_package(MPI)
-    endif(NOT MPI_FOUND)
-
-    if(MPI_FOUND)
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
-	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        
-        include_directories(${MPI_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
-        if(GMX_FAHCORE)
-            add_definitions( -DMPI ) #for FAHCORE
-        endif(GMX_FAHCORE)
-        include(gmxTestMPI_IN_PLACE)
-        if (GMX_MPI_IN_PLACE)
-            gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
-        endif (GMX_MPI_IN_PLACE)
-
-	# test for unsuitable versions of OpenMPI
-	exec_program(${MPIEXEC}
-	  ARGS --version
-	  OUTPUT_VARIABLE MPI_TYPE
-	  RETURN_VALUE MPI_EXEC_RETURN)
-	if(MPI_EXEC_RETURN EQUAL 0)
-	  if(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    string(REGEX MATCH "[0-9]+\\.[0-9]*\\.?[0-9]*" MPI_VERSION ${MPI_TYPE})
-	    if(MPI_VERSION VERSION_LESS "1.4.1")
-	      MESSAGE(WARNING "
-            There are known problems with OpenMPI version < 1.4.1.
-            Please consider updating your OpenMPI.")
-	    endif(MPI_VERSION VERSION_LESS "1.4.1")
-	    unset(MPI_VERSION)
-	  else(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	    # This is not OpenMPI, so give the old generic warning message
-	    MESSAGE(WARNING "
-            There are known problems with some MPI implementations:
-                     MVAPICH2 version <= 1.4.1
-            Please consider updating your MPI if applicable.")
-	  endif(MPI_TYPE MATCHES "Open MPI|OpenRTE")
-	  unset(MPI_TYPE)
-	endif(MPI_EXEC_RETURN EQUAL 0)
-    else(MPI_FOUND)
-        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-    endif(MPI_FOUND)
-    include(gmxTestCatamount)
-    gmx_test_catamount(GMX_CRAY_XT3)
-    if(GMX_CRAY_XT3)
-        set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_CRAY_XT3")
-        set(GMX_NO_SYSTEM 1)
-        set(GMX_NO_NICE 1)
-    endif(GMX_CRAY_XT3)
-    set(GMX_LIB_MPI 1)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
-endif(GMX_MPI)
-
+include(gmxManageMPI)
 
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
@@ -343,8 +281,6 @@ check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
-check_function_exists(isfinite          HAVE_ISFINITE)
-check_function_exists(_isfinite         HAVE__ISFINITE)
 check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
@@ -579,6 +515,11 @@ gmx_test_inline(RESTRICT_KEYWORD)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
+
+include(gmxTestIsfinite)
+gmx_test_isfinite(HAVE_ISFINITE)
+gmx_test__isfinite(HAVE__ISFINITE)
+gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -847,14 +788,18 @@ set(GMX_VMD_PLUGIN_PATH)
 mark_as_advanced(GMX_VMD_PLUGIN_PATH)
 
 if(GMX_LOAD_PLUGINS)
-  include(gmxTestdlopen)
-  gmx_test_dlopen(HAVE_DLOPEN)
+  if(CYGWIN OR NOT WIN32)
+    # Native Windows does not have, nor need dlopen
+    # Note that WIN32 is set with Cygwin, but Cygwin needs dlopen to use plug-ins
+    include(gmxTestdlopen)
+    gmx_test_dlopen(HAVE_DLOPEN)
+  endif()
 
   find_package(VMD)
 
   # Test for unsuitable versions of VMD
 
-  if(VMD_FOUND)
+  if(VMD_FOUND AND NOT GMX_VMD_PLUGIN_PATH)
     message(STATUS "Checking for suitable VMD version")
     exec_program(${VMD_EXECUTABLE}
       ARGS --help
@@ -889,8 +834,10 @@ if(GMX_LOAD_PLUGINS)
   endif()
 
   # so, should we use plug-ins?
-  if(((WIN32 AND NOT CYGWIN) OR HAVE_DLOPEN) AND BUILD_SHARED_LIBS)
-    MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+  if((WIN32 AND NOT CYGWIN) OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+    if (NOT VMD_QUIETLY)
+      MESSAGE(STATUS "Found the ability to use plug-ins when building shared libaries, so will compile to use plug-ins (e.g. to read VMD-supported file formats).")
+    endif(NOT VMD_QUIETLY)
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
     set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
@@ -898,6 +845,7 @@ if(GMX_LOAD_PLUGINS)
     set(PKG_DL_LIBS)
   endif()
 endif(GMX_LOAD_PLUGINS)
+set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)

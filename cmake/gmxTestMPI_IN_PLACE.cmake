@@ -5,6 +5,7 @@
 #  VARIABLE will be set to true if MPI_IN_PLACE exists
 #
 
+include(CheckCSourceCompiles)
 MACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
     MESSAGE(STATUS "Checking for MPI_IN_PLACE")
 
