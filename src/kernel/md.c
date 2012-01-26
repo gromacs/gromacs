@@ -88,6 +88,7 @@
 #include "sighandler.h"
 #include "string2.h"
 #include "pme_switch.h"
+#include "bondf.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -368,6 +369,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (shellfc) {
             make_local_shells(cr,mdatoms,shellfc);
         }
+
+        init_bonded_thread_force_reduction(fr,&top->idef);
 
         if (ir->pull && PAR(cr)) {
             dd_make_local_pull_groups(NULL,ir->pull,mdatoms);

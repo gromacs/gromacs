@@ -145,14 +145,15 @@ typedef struct {
 typedef struct ewald_tab *ewald_tab_t; 
 
 typedef struct {
-  rvec *f;
-  int  f_nalloc;
-  rvec *fshift;
-  real ener[F_NRE];
-  gmx_grppairener_t grpp;
-  real Vcorr;
-  real dvdl;
-  tensor vir;
+    rvec *f;
+    int  f_nalloc;
+    unsigned red_mask; /* Mask for marking which parts of f are filled */
+    rvec *fshift;
+    real ener[F_NRE];
+    gmx_grppairener_t grpp;
+    real Vcorr;
+    real dvdl;
+    tensor vir;
 } f_thread_t;
 
 typedef struct {
@@ -403,6 +404,8 @@ typedef struct {
 
   /* Thread local force and energy data */ 
   int  nthreads;
+  int  red_ashift;
+  int  red_nblock;
   f_thread_t *f_t;
 
   /* Exclusion load distribution over the threads */

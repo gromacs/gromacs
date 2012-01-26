@@ -50,6 +50,7 @@
 #include "gmx_ga2la.h"
 #include "gmx_sort.h"
 #include "nbnxn_search.h"
+#include "bondf.h"
 #include "gmx_omp_nthreads.h"
 
 #ifdef GMX_LIB_MPI
@@ -9123,6 +9124,8 @@ void dd_partition_system(FILE            *fplog,
     {
         make_local_gb(cr,fr->born,ir->gb_algorithm);
     }
+
+    init_bonded_thread_force_reduction(fr,&top_local->idef);
 
     if (!(cr->duty & DUTY_PME))
     {
