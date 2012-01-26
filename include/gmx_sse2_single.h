@@ -708,6 +708,22 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
     return z;
 }
 
+
+/* Macros for SSE vector operations */
+
+#define GMX_MM_IPROD_PS(ax,ay,az,bx,by,bz)                 \
+    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax,bx),_mm_mul_ps(ay,by)),_mm_mul_ps(az,bz))
+
+#define GMX_MM_NORM2_PS(ax,ay,az) GMX_MM_IPROD_PS(ax,ay,az,ax,ay,az)
+
+#define GMX_MM_CPROD_PS(ax,ay,az,bx,by,bz,cx,cy,cz)        \
+{                                                          \
+    cx = _mm_sub_ps(_mm_mul_ps(ay,bz),_mm_mul_ps(az,by));  \
+    cy = _mm_sub_ps(_mm_mul_ps(az,bx),_mm_mul_ps(ax,bz));  \
+    cz = _mm_sub_ps(_mm_mul_ps(ax,by),_mm_mul_ps(ay,bx));  \
+}
+
+
 /* Load a single value from 1-4 places, merge into xmm register */
 
 #define GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1) \

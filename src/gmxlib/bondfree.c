@@ -57,6 +57,11 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
+#if ( !defined(GMX_DOUBLE) && ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) ) )
+#include "gmx_sse2_single.h"
+#define SSE_PROPER_DIHEDRALS
+#endif
+
 /* Find a better place for this? */
 const int cmap_coeff_matrix[] = {
 1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4 ,
@@ -1010,6 +1015,146 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 }
 
 
+#ifdef SSE_PROPER_DIHEDRALS
+
+#define load_rvec4(r0,r1,r2,r3,rx_SSE,ry_SSE,rz_SSE)          \
+{                                                             \
+    __m128 tmp;                                               \
+    rx_SSE = _mm_load_ps(r0);                                 \
+    ry_SSE = _mm_load_ps(r1);                                 \
+    rz_SSE = _mm_load_ps(r2);                                 \
+    tmp    = _mm_load_ps(r3);                                 \
+    _MM_TRANSPOSE4_PS(rx_SSE,ry_SSE,rz_SSE,tmp);              \
+}
+
+#define store_rvec4(rx_SSE,ry_SSE,rz_SSE,r0,r1,r2,r3)         \
+{                                                             \
+    __m128 tmp=_mm_setzero_ps();                              \
+    _MM_TRANSPOSE4_PS(rx_SSE,ry_SSE,rz_SSE,tmp);              \
+    _mm_store_ps(r0,rx_SSE);                                  \
+    _mm_store_ps(r1,ry_SSE);                                  \
+    _mm_store_ps(r2,rz_SSE);                                  \
+    _mm_store_ps(r3,tmp   );                                  \
+}
+
+/* An rvec in a structure which can be allocated 16-byte aligned */
+typedef struct {
+    rvec  v;
+    float f;
+} rvec_sse_t;
+
+/* As dih_angle above, but calculates 4 dihedral angles at once using SSE,
+ * also calculates the pre-factor required for the dihedral force update.
+ * Note that bv and buf should be 16-byte aligned.
+ */
+static void
+dih_angle_sse(const rvec *x,
+              int ai[4],int aj[4],int ak[4],int al[4],
+              const t_pbc *pbc,
+              int t1[4],int t2[4],int t3[4],
+              rvec_sse_t *bv,
+              real *buf)
+{
+    int s;
+    __m128 rijx_SSE,rijy_SSE,rijz_SSE;
+    __m128 rkjx_SSE,rkjy_SSE,rkjz_SSE;
+    __m128 rklx_SSE,rkly_SSE,rklz_SSE;
+    __m128 mx_SSE,my_SSE,mz_SSE;
+    __m128 nx_SSE,ny_SSE,nz_SSE;
+    __m128 cx_SSE,cy_SSE,cz_SSE;
+    __m128 cn_SSE;
+    __m128 s_SSE;
+    __m128 phi_SSE;
+    __m128 ipr_SSE;
+    int signs;
+    __m128 iprm_SSE,iprn_SSE;
+    __m128 nrkj2_SSE,nrkj_1_SSE,nrkj_2_SSE,nrkj_SSE;
+    __m128 nrkj_m2_SSE,nrkj_n2_SSE;
+    __m128 p_SSE,q_SSE;
+    __m128 fmin_SSE=_mm_set1_ps(GMX_FLOAT_MIN);
+
+    for(s=0; s<4; s++)
+    {
+        t1[s] = pbc_rvec_sub(pbc,x[ai[s]],x[aj[s]],bv[0+s].v);
+        t2[s] = pbc_rvec_sub(pbc,x[ak[s]],x[aj[s]],bv[4+s].v);
+        t3[s] = pbc_rvec_sub(pbc,x[ak[s]],x[al[s]],bv[8+s].v);
+    }
+
+    load_rvec4(bv[0].v,bv[1].v,bv[2].v,bv[3].v,rijx_SSE,rijy_SSE,rijz_SSE);
+    load_rvec4(bv[4].v,bv[5].v,bv[6].v,bv[7].v,rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    load_rvec4(bv[8].v,bv[9].v,bv[10].v,bv[11].v,rklx_SSE,rkly_SSE,rklz_SSE);
+
+    GMX_MM_CPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                    rkjx_SSE,rkjy_SSE,rkjz_SSE,
+                    mx_SSE,my_SSE,mz_SSE);
+
+    GMX_MM_CPROD_PS(rkjx_SSE,rkjy_SSE,rkjz_SSE,
+                    rklx_SSE,rkly_SSE,rklz_SSE,
+                    nx_SSE,ny_SSE,nz_SSE);
+
+    GMX_MM_CPROD_PS(mx_SSE,my_SSE,mz_SSE,
+                    nx_SSE,ny_SSE,nz_SSE,
+                    cx_SSE,cy_SSE,cz_SSE);
+
+    cn_SSE = gmx_mm_sqrt_ps(GMX_MM_NORM2_PS(cx_SSE,cy_SSE,cz_SSE));
+    
+    s_SSE = GMX_MM_IPROD_PS(mx_SSE,my_SSE,mz_SSE,nx_SSE,ny_SSE,nz_SSE);
+
+    phi_SSE = gmx_mm_atan2_ps(cn_SSE,s_SSE);
+    _mm_store_ps(buf+16,phi_SSE);
+
+    ipr_SSE = GMX_MM_IPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                              nx_SSE,ny_SSE,nz_SSE);
+
+    signs = _mm_movemask_ps(ipr_SSE);
+    
+    for(s=0; s<4; s++)
+    {
+        if (signs & (1<<s))
+        {
+            buf[16+s] = -buf[16+s];
+        }
+    }
+
+    iprm_SSE    = GMX_MM_NORM2_PS(mx_SSE,my_SSE,mz_SSE);
+    iprn_SSE    = GMX_MM_NORM2_PS(nx_SSE,ny_SSE,nz_SSE);
+
+    /* store_rvec4 messes with the input, don't use it after this! */
+    store_rvec4(mx_SSE,my_SSE,mz_SSE,bv[0].v,bv[1].v,bv[2].v,bv[3].v);
+    store_rvec4(nx_SSE,ny_SSE,nz_SSE,bv[4].v,bv[5].v,bv[6].v,bv[7].v);
+
+    nrkj2_SSE   = GMX_MM_NORM2_PS(rkjx_SSE,rkjy_SSE,rkjz_SSE);
+
+    /* Avoid division by zero. When zero, the result is multiplied by 0
+     * anyhow, so the 3 max below do not affect the final result.
+     */
+    nrkj2_SSE   = _mm_max_ps(nrkj2_SSE,fmin_SSE);
+    nrkj_1_SSE  = gmx_mm_invsqrt_ps(nrkj2_SSE);
+    nrkj_2_SSE  = _mm_mul_ps(nrkj_1_SSE,nrkj_1_SSE);
+    nrkj_SSE    = _mm_mul_ps(nrkj2_SSE,nrkj_1_SSE);
+
+    iprm_SSE    = _mm_max_ps(iprm_SSE,fmin_SSE);
+    iprn_SSE    = _mm_max_ps(iprn_SSE,fmin_SSE);
+    nrkj_m2_SSE = _mm_mul_ps(nrkj_SSE,gmx_mm_inv_ps(iprm_SSE));
+    nrkj_n2_SSE = _mm_mul_ps(nrkj_SSE,gmx_mm_inv_ps(iprn_SSE));
+
+    _mm_store_ps(buf+0,nrkj_m2_SSE);
+    _mm_store_ps(buf+4,nrkj_n2_SSE);
+
+    p_SSE       = GMX_MM_IPROD_PS(rijx_SSE,rijy_SSE,rijz_SSE,
+                                  rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    p_SSE       = _mm_mul_ps(p_SSE,nrkj_2_SSE);
+
+    q_SSE       = GMX_MM_IPROD_PS(rklx_SSE,rkly_SSE,rklz_SSE,
+                                  rkjx_SSE,rkjy_SSE,rkjz_SSE);
+    q_SSE       = _mm_mul_ps(q_SSE,nrkj_2_SSE);
+
+    _mm_store_ps(buf+8 ,p_SSE);
+    _mm_store_ps(buf+12,q_SSE);
+}
+
+#endif /* SSE_PROPER_DIHEDRALS */
+
 
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
@@ -1072,10 +1217,11 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   /* 112 TOTAL 	*/
 }
 
-
-void do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
-                         rvec r_ij,rvec r_kj,rvec r_kl,
-                         rvec m,rvec n,rvec f[])
+/* As do_dih_fup above, but without shift forces */
+static void
+do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
+                    rvec r_ij,rvec r_kj,rvec r_kl,
+                    rvec m,rvec n,rvec f[])
 {
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
@@ -1111,6 +1257,33 @@ void do_dih_fup_noshiftf(int i,int j,int k,int l,real ddphi,
   }
 }
 
+/* As do_dih_fup_noshiftf above, but with pre-calculated pre-factors */
+static void
+do_dih_fup_noshiftf_prec(int i,int j,int k,int l,real ddphi,
+                         real nrkj_m2,real nrkj_n2,
+                         real p,real q,
+                         rvec m,rvec n,rvec f[])
+{
+    rvec f_i,f_j,f_k,f_l;
+    rvec uvec,vvec,svec,dx_jl;
+    real a,b,toler;
+    ivec jt,dt_ij,dt_kj,dt_lj;  
+  
+    a = -ddphi*nrkj_m2;
+    svmul(a,m,f_i);
+    b =  ddphi*nrkj_n2;
+    svmul(b,n,f_l);
+    svmul(p,f_i,uvec);
+    svmul(q,f_l,vvec);
+    rvec_sub(uvec,vvec,svec);
+    rvec_sub(f_i,svec,f_j);
+    rvec_add(f_l,svec,f_k);
+    rvec_inc(f[i],f_i);
+    rvec_dec(f[j],f_j);
+    rvec_dec(f[k],f_k);
+    rvec_inc(f[l],f_l);
+}
+
 
 real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 	     real phi,real lambda,real *V,real *F)
@@ -1137,21 +1310,34 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
   /* That was 40 flops */
 }
 
-void dopdihs_noener(real cpA,real cpB,real phiA,real phiB,int mult,
-                    real phi,real lambda,real *F)
+static void
+dopdihs_noener(real cpA,real cpB,real phiA,real phiB,int mult,
+               real phi,real lambda,real *F)
 {
   real mdphi,sdphi,ddphi;
   real L1   = 1.0 - lambda;
   real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
   real cp   = L1*cpA + lambda*cpB;
   
-  mdphi =  mult*phi - ph0;
+  mdphi = mult*phi - ph0;
   sdphi = sin(mdphi);
   ddphi = -cp*mult*sdphi;
   
   *F = ddphi;
   
   /* That was 20 flops */
+}
+
+static void
+dopdihs_mdphi(real cpA,real cpB,real phiA,real phiB,int mult,
+              real phi,real lambda,real *cp,real *mdphi)
+{
+    real L1   = 1.0 - lambda;
+    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+
+    *cp    = L1*cpA + lambda*cpB;
+
+    *mdphi = mult*phi - ph0;
 }
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
@@ -1227,14 +1413,15 @@ real pdihs(int nbonds,
 }
 
 
-/* Same as pdihs above, but without calculating energies and shift forces */
-void pdihs_noener(int nbonds,
-                  const t_iatom forceatoms[],const t_iparams forceparams[],
-                  const rvec x[],rvec f[],
-                  const t_pbc *pbc,const t_graph *g,
-                  real lambda,
-                  const t_mdatoms *md,t_fcdata *fcd,
-                  int *global_atom_index)
+/* As pdihs above, but without calculating energies and shift forces */
+static void
+pdihs_noener(int nbonds,
+             const t_iatom forceatoms[],const t_iparams forceparams[],
+             const rvec x[],rvec f[],
+             const t_pbc *pbc,const t_graph *g,
+             real lambda,
+             const t_mdatoms *md,t_fcdata *fcd,
+             int *global_atom_index)
 {
     int  i,type,ai,aj,ak,al;
     int  t1,t2,t3;
@@ -1278,6 +1465,101 @@ void pdihs_noener(int nbonds,
         do_dih_fup_noshiftf(ai,aj,ak,al,ddphi_tot,r_ij,r_kj,r_kl,m,n,f);
     }
 }
+
+
+#ifdef SSE_PROPER_DIHEDRALS
+
+/* As pdihs_noner above, but using SSE to calculate 4 dihedrals at once */
+static void
+pdihs_noener_sse(int nbonds,
+                 const t_iatom forceatoms[],const t_iparams forceparams[],
+                 const rvec x[],rvec f[],
+                 const t_pbc *pbc,const t_graph *g,
+                 real lambda,
+                 const t_mdatoms *md,t_fcdata *fcd,
+                 int *global_atom_index)
+{
+    int  i,i4,s;
+    int  type,ai[4],aj[4],ak[4],al[4];
+    int  t1[4],t2[4],t3[4];
+    int  mult[4];
+    real cp[4],mdphi[4];
+    real ddphi;
+    rvec_sse_t rs_array[13],*rs;
+    real buf_array[24],*buf;
+    __m128 mdphi_SSE,sin_SSE,cos_SSE;
+
+    /* Ensure 16-byte alignment */
+    rs  = (rvec_sse_t *)(((size_t)(rs_array +3)) & (~((size_t)15)));
+    buf =      (float *)(((size_t)(buf_array+3)) & (~((size_t)15)));
+
+    for(i=0; (i<nbonds); i+=20)
+    {
+        /* Collect atoms quadruplets for 4 dihedrals */
+        i4 = i;
+        for(s=0; s<4; s++)
+        {
+            ai[s] = forceatoms[i4+1];
+            aj[s] = forceatoms[i4+2];
+            ak[s] = forceatoms[i4+3];
+            al[s] = forceatoms[i4+4];
+            /* At the end fill the arrays with identical entries */
+            if (i4 + 5 < nbonds)
+            {
+                i4 += 5;
+            }
+        }
+
+        /* Caclulate 4 dihedral angles at once */
+        dih_angle_sse(x,ai,aj,ak,al,pbc,t1,t2,t3,rs,buf);
+
+        i4 = i;
+        for(s=0; s<4; s++)
+        {
+            if (i4 < nbonds)
+            {
+                /* Calculate the coefficient and angle deviation */
+                type = forceatoms[i4];
+                dopdihs_mdphi(forceparams[type].pdihs.cpA,
+                              forceparams[type].pdihs.cpB,
+                              forceparams[type].pdihs.phiA,
+                              forceparams[type].pdihs.phiB,
+                              forceparams[type].pdihs.mult,
+                              buf[16+s],lambda,&cp[s],&buf[16+s]);
+                mult[s] = forceparams[type].pdihs.mult;
+            }
+            else
+            {
+                buf[16+s] = 0;
+            }
+            i4 += 5;
+        }
+
+        /* Calculate 4 sines at once */
+        mdphi_SSE = _mm_load_ps(buf+16);
+        gmx_mm_sincos_ps(mdphi_SSE,&sin_SSE,&cos_SSE);
+        _mm_store_ps(buf+16,sin_SSE);
+
+        i4 = i;
+        s = 0;
+        do
+        {
+            ddphi = -cp[s]*mult[s]*buf[16+s];
+
+            do_dih_fup_noshiftf_prec(ai[s],aj[s],ak[s],al[s],ddphi,
+                                     buf[ 0+s],buf[ 4+s],
+                                     buf[ 8+s],buf[12+s],
+                                     rs[0+s].v,rs[4+s].v,
+                                     f);
+            s++;
+            i4 += 5;
+        }
+        while (s < 4 && i4 < nbonds);
+    }
+}
+
+#endif /* SSE_PROPER_DIHEDRALS */
+
 
 real idihs(int nbonds,
 	   const t_iatom forceatoms[],const t_iparams forceparams[],
@@ -2866,11 +3148,16 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                                      !bCalcEnerVir && fr->efep==efepNO)
                             {
                                 /* No energies, shift forces, dvdl */
-                                pdihs_noener(nbn,idef->il[ftype].iatoms+nb0,
-                                             idef->iparams,
-                                             (const rvec*)x,ft,
-                                             pbc_null,g,lambda,md,fcd,
-                                             global_atom_index);
+#ifndef SSE_PROPER_DIHEDRALS
+                                pdihs_noener
+#else
+                                pdihs_noener_sse
+#endif
+                                    (nbn,idef->il[ftype].iatoms+nb0,
+                                     idef->iparams,
+                                     (const rvec*)x,ft,
+                                     pbc_null,g,lambda,md,fcd,
+                                     global_atom_index);
                                 v    = 0;
                                 dvdl = 0;
                             }
