@@ -259,6 +259,9 @@ static real ener_drift(const att_t *att,int natt,
             s2j = kT_fac/att[j].mass;
             tj = att[j].type;
 
+            /* Note that attractive and repsulsive errors for single
+             * pairs will partially cancel.
+             */
             d =
                 d_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
                 d_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
@@ -277,9 +280,9 @@ static real ener_drift(const att_t *att,int natt,
             /* Exact contribution of a mass to the energy drift
              * for a potential with derivative -d and second derivative dd
              * at the cut-off. The only catch is that for potentials that
-             * change sign near the cut-off there could be unlucky compensation
-             * of positive and negative energy drift. Such potentials are
-             * extremely rare.
+             * change sign near the cut-off there could be an unlucky
+             * compensation of positive and negative energy drift.
+             * Such potentials are extremely rare though.
              */
             drift =
                 d*((rb*rb + s2)*c_erfc - rb*s*c_exp) +
@@ -335,15 +338,17 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
-    real resolution;
+    double resolution;
+    char *env;
 
     real nb_cell_rel_pairs_not_in_list_at_cutoff;
 
     att_t *att;
     int  natt,i;
-    real kT_fac,mass_min,vol_fac;
-    real elfac,eps_rf,krf;
+    double reppow;
     real d_ljd,d_ljr,d_el,dd_el;
+    real elfac,eps_rf,krf;
+    real kT_fac,mass_min,vol_fac;
     real beta,beta_r;
     int  ib0,ib1,ib;
     real rb,rl;
@@ -351,6 +356,12 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     /* Resolution of the buffer size */
     resolution = 0.01;
+
+    env = getenv("GMX_VERLET_BUFFER_RES");
+    if (env != NULL)
+    {
+        sscanf(env,"%lf",&resolution);
+    }
 
     /* In an atom wise pair-list there would be no pairs in the list
      * beyond the pair-list cut-off.
@@ -367,6 +378,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
      * cancellation of errors which could occur by missing both
      * attractive and repulsive interactions.
      *
+     * The only major assumption is homogeneous particle distribution.
+     * For an inhomogeneous system, such as a liquid-vapor system,
+     * the buffer will be underestimated. The actual energy drift
+     * will be higher by the factor: local/homogeneous particle density.
+     *
      * The results of this estimate have been checked againt simulations.
      * In most cases the real drift differs by less than a factor 2.
      */
@@ -379,12 +395,13 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         fprintf(debug,"energy drift atom types: %d\n",natt);
     }
 
+    reppow = mtop->ffparams.reppow;
     d_ljd = 0;
     d_ljr = 0;
     if (ir->vdwtype == evdwCUT)
     {
         d_ljd = 6*pow(ir->rvdw,-7.0);
-        d_ljr = -12*pow(ir->rvdw,-13.0);
+        d_ljr = reppow*pow(ir->rvdw,-(reppow+1));
     }
     else
     {
@@ -433,6 +450,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         gmx_fatal(FARGS,"Energy drift calculation is only implemented for Reaction-Field and Ewald electrostatics");
     }
 
+    /* Determine the variance of the atomic displacement
+     * over nstlist-1 steps: kT_fac
+     * For inertial dynamics (not Brownian dynamics) the mass factor
+     * is not included in kT_fac, it is added later.
+     */
     if (ir->eI == eiBD)
     {
         /* Get the displacement distribution from the random component only.
@@ -490,7 +512,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     /* Search using bisection */
     ib0 = -1;
-    /* The drift should be neglible at 5 times the max sigma */
+    /* The drift will be neglible at 5 times the max sigma */
     ib1 = (int)(5*2*sqrt(kT_fac/mass_min)/resolution) + 1;
     while (ib1 - ib0 > 1)
     {
