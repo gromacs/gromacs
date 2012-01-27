@@ -222,9 +222,9 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
         rc_max = max(ir->rvdw,ir->rcoulomb);
 
-        if (opts->nsbuf_drift <= 0)
+        if (opts->verletbuf_drift <= 0)
         {
-            if (opts->nsbuf_drift == 0)
+            if (opts->verletbuf_drift == 0)
             {
                 warning_error(wi,"Can not have an energy drift of exactly 0");
             }
@@ -236,26 +236,26 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             
             if (ir->rlist == rc_max)
             {
-                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no neighborlist buffer");
+                warning_note(wi,"rlist is equal to rvdw and/or rcoulomb: there is no Verlet buffer");
             }
         }
         else
         {
             if (ir->rlist > rc_max)
             {
-                warning_note(wi,"You have set rlist larger than the interaction cut-off, but you also have nsbuffer_drift > 0. Will set rlist using nsbuffer_drift.");
+                warning_note(wi,"You have set rlist larger than the interaction cut-off, but you also have verlet-buffer-drift > 0. Will set rlist using verlet-buffer-drift.");
             }
 
             if (EI_DYNAMICS(ir->eI))
             {
                 if (EI_MD(ir->eI) && ir->etc == etcNO)
                 {
-                   warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift. Set rlist and use nsbuffer_drift=-1."); 
+                   warning_error(wi,"Temperature coupling is required for calculating rlist using the energy drift. Set rlist and use verlet-buffer-drift=-1."); 
                 }
 
                 if (inputrec2nboundeddim(ir) < 3)
                 {
-                    warning_error(wi,"The box volume is required for calculating rlist from the energy drift and there are unbounded dimensions. Set rlist and use nsbuffer_drift=-1.");
+                    warning_error(wi,"The box volume is required for calculating rlist from the energy drift and there are unbounded dimensions. Set rlist and use verlet-buffer-drift=-1.");
                 }
                 /* Set rlist temporarily so we can continue processing */
                 ir->rlist = rc_max;
@@ -996,7 +996,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names);
   CTYPE ("Allowed energy drift due to the verlet buffer in kJ/mol/ps per atom,");
   CTYPE ("a value of -1 means: use rlist");
-  RTYPE("nsbuffer-drift",     opts->nsbuf_drift,    0.001);
+  RTYPE("verlet-buffer-drift", opts->verletbuf_drift,    0.001);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
   CTYPE ("long-range cut-off for switched potentials");

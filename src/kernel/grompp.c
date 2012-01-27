@@ -80,7 +80,7 @@
 #include "gpp_tomorse.h"
 #include "mtop_util.h"
 #include "genborn.h"
-#include "calc_nsbuf.h"
+#include "calc_verletbuf.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -1150,7 +1150,7 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec *ir,
                               matrix box,
-                              real nsbuf_drift,
+                              real verletbuf_drift,
                               warninp_t wi)
 {
     real ref_T;
@@ -1163,7 +1163,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     {
         if (ir->opts.ref_t[i] < 0)
         {
-            warning(wi,"There are groups which are not temperature coupled, can not take those into account in the energy drift calculation for the ns buffer size");
+            warning(wi,"There are groups which are not temperature coupled, can not take those into account in the energy drift calculation for the Verlet buffer size");
         }
         else
         {
@@ -1171,7 +1171,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    printf("Determining neighborlist buffer for an energy drift of %g kJ/mol/ps at %g K\n",nsbuf_drift,ref_T);
+    printf("Determining Verlet buffer for an energy drift of %g kJ/mol/ps at %g K\n",verletbuf_drift,ref_T);
 
     for(i=0; i<ir->opts.ngtc; i++)
     {
@@ -1183,9 +1183,9 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
         }
     }
 
-    /* Set the ns buffer size in ir */
-    calc_ns_buffer_size(mtop,det(box),ir,nsbuf_drift,
-                        &n_nonlin_vsite,&ir->rlist);
+    /* Set the pair-list buffer size in ir */
+    calc_verlet_buffer_size(mtop,det(box),ir,verletbuf_drift,
+                            &n_nonlin_vsite,&ir->rlist);
 
     if (n_nonlin_vsite > 0)
     {
@@ -1199,7 +1199,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
             
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box))
     {
-        gmx_fatal(FARGS,"The neighbor list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase nsbuffer_drift.",ir->rlistlong,sqrt(max_cutoff2(ir->ePBC,box)));
+        gmx_fatal(FARGS,"The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-drift.",ir->rlistlong,sqrt(max_cutoff2(ir->ePBC,box)));
     }
 }
 
@@ -1582,13 +1582,13 @@ int main (int argc, char *argv[])
            bGenVel ? state.v : NULL,
            wi);
   
-    if (ir->cutoff_scheme == ecutsVERLET && opts->nsbuf_drift > 0)
+    if (ir->cutoff_scheme == ecutsVERLET && opts->verletbuf_drift > 0)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI==eiMD) && ir->etc!=etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys,ir,state.box,opts->nsbuf_drift,wi);
+            set_verlet_buffer(sys,ir,state.box,opts->verletbuf_drift,wi);
         }
     }
 

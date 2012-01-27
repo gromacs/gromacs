@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "coulomb.h"
-#include "calc_nsbuf.h"
+#include "calc_verletbuf.h"
 
 typedef struct
 {
@@ -104,9 +104,9 @@ static void add_at(att_t **att_p,int *natt_p,
     }
 }
 
-static void get_ns_buffer_atomtypes(const gmx_mtop_t *mtop,
-                                    att_t **att_p,int *natt_p,
-                                    int *n_nonlin_vsite)
+static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
+                                        att_t **att_p,int *natt_p,
+                                        int *n_nonlin_vsite)
 {
     att_t *att;
     int natt;
@@ -330,10 +330,10 @@ static real ener_drift(const att_t *att,int natt,
     return drift_tot;
 }
 
-void calc_ns_buffer_size(const gmx_mtop_t *mtop,real boxvol,
-                         const t_inputrec *ir,real drift_target,
-                         int *n_nonlin_vsite,
-                         real *rlist)
+void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
+                             const t_inputrec *ir,real drift_target,
+                             int *n_nonlin_vsite,
+                             real *rlist)
 {
     real resolution;
 
@@ -352,20 +352,27 @@ void calc_ns_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     /* Resolution of the buffer size */
     resolution = 0.01;
 
-    /* In an atom wise neighborlist there would be no pairs in the list
-     * beyond the neighbor-list cut-off.
-     * However, we use a neighborlist of groups vs groups of atoms.
-     * For groups of 4 atoms, the parallelizm of SSE instructions,
-     * only 10% of the atoms pairs are not in the list just after the cut-off.
-     * As this percentage inceases slowly compared to the decrease of the
+    /* In an atom wise pair-list there would be no pairs in the list
+     * beyond the pair-list cut-off.
+     * However, we use a pair-list of groups vs groups of atoms.
+     * For groups of 4 atoms, the parallelism of SSE instructions, only
+     * 10% of the atoms pairs are not in the list just beyond the cut-off.
+     * As this percentage increases slowly compared to the decrease of the
      * Gaussian displacement distribution over this range, we can simply
      * reduce the drift by this fraction.
      * For larger groups, e.g. of 8 atoms, this fraction will be lower,
-     * but then buffer size will be on the conservative (large) side.
+     * so then buffer size will be on the conservative (large) side.
+     *
+     * Note that the formulas used here do not take into account
+     * cancellation of errors which could occur by missing both
+     * attractive and repulsive interactions.
+     *
+     * The results of this estimate have been checked againt simulations.
+     * In most cases the real drift differs by less than a factor 2.
      */
     nb_cell_rel_pairs_not_in_list_at_cutoff = 0.1;
 
-    get_ns_buffer_atomtypes(mtop,&att,&natt,n_nonlin_vsite);
+    get_verlet_buffer_atomtypes(mtop,&att,&natt,n_nonlin_vsite);
 
     if (debug)
     {
@@ -493,7 +500,7 @@ void calc_ns_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         vol_fac = 4*M_PI*rl*rl/boxvol;
         
         /* Calculate the average energy drift at the last step
-         * of the nstlist steps at which the neighbor list is used.
+         * of the nstlist steps at which the pair-list is used.
          */
         drift = ener_drift(att,natt,&mtop->ffparams,
                            kT_fac,
