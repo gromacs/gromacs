@@ -968,21 +968,16 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
     if (bUseGPU)
     {
-        /* launch copy-back of non-local or if not running in parallel the local F */
+        /* launch D2H copy-back F */
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
                                       flags, eatNonlocal);
-            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
-        else
-        {
-            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintLocal].nbat,
-                                      flags, eatLocal);
-            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
-        }
+        nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintLocal].nbat,
+                                  flags, eatLocal);
+        wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 #endif /* GMX_GPU */ 
 
@@ -1186,19 +1181,6 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
                                             nbv->grp[eintNonlocal].nbat,f);
             wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
-
-#ifdef GMX_GPU
-            if (bUseGPU)
-            {
-                wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-                /* When runing in parallel we can only launch local copy-back after the 
-                   non-local is done! (CUDA can't synchronize streams with async operations
-                   wrt the CPU).*/
-                nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
-                                          flags, eatLocal);
-                wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
-            }
-#endif
         }
     }
 
@@ -1250,8 +1232,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-            nbnxn_cuda_clear_f(nbv->gpu_nb);
-            nbnxn_cuda_clear_e_fshift(nbv->gpu_nb);
+            nbnxn_cuda_clear_outputs(nbv->gpu_nb, flags);
 #endif
         }
         else

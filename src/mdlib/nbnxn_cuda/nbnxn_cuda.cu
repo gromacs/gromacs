@@ -208,7 +208,7 @@ void nbnxn_cuda_launch_kernel(cu_nonbonded_t cu_nb,
     gmx_bool calc_fshift = flags & GMX_FORCE_VIRIAL;
     gmx_bool do_time     = cu_nb->do_time;
 
-    /* turn energy calculation always on/off (debugging/testing code) */
+    /* turn energy calculation always on/off (for debugging/testing only) */
     calc_ener = (calc_ener || always_ener) && !never_ener; 
 
     static gmx_bool doKernel2 = (getenv("GMX_NB_K2") != NULL);        
@@ -232,6 +232,22 @@ void nbnxn_cuda_launch_kernel(cu_nonbonded_t cu_nb,
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, nblist->nsci*NSUBCELL,
                 NSUBCELL, nblist->na_c);
+    }
+
+    /* When we get here all misc operations issues in the local stream are done,
+       so we record that in the local stream and wait for it in the nonlocal one. */
+    if (cu_nb->dd_run)
+    {
+        if (iloc == eintLocal)
+        {
+            stat = cudaEventRecord(cu_nb->misc_ops_done, stream);
+            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_done failed");
+        }
+        else
+        {
+            stat = cudaStreamWaitEvent(stream, cu_nb->misc_ops_done, 0);
+            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_done failed");
+        }
     }
 
     /* beginning of timed HtoD section */
@@ -332,25 +348,43 @@ void nbnxn_cuda_launch_cpyback(cu_nonbonded_t cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* TODO: maybe move this to cu_clear_nb_f_out() 
-             -> it's just that nbnxn_atomdata_t is not available there */
-
     if (!cu_nb->use_stream_sync)
     {
+        /* XXX: could move this to cu_clear_nb_f_out() 
+             -> it's just that nbnxn_atomdata_t is not available there */
+
         /* Set the 4th unsused component of the last element in the GPU force array
            (separately for l/nl parts) to a specific bit-pattern that we can check 
            for while waiting for the transfer to be done. */
         signal_field = adat->f + adat_last;
-        stat = cudaMemsetAsync(&signal_field->w, 0xAA, sizeof(signal_field->z));
+        stat = cudaMemsetAsync(&signal_field->w, 0xAA, sizeof(signal_field->z), stream);
         CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
 
-        /* Clear the bits in the force array (on the CPU) that we are going to poll on. */
+        /* Clear the bits in the force array (on the CPU) that we are going to poll. */
         nbatom->out[0].f[adat_last*4 + 3] = 0;
+    }
+
+    /* With DD the local D2H transfer can only start after the non-local 
+       has been launched. */
+    if (iloc == eintLocal && cu_nb->dd_run)
+    {
+        stat = cudaStreamWaitEvent(stream, cu_nb->nonlocal_done, 0);
+        CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
     }
 
     /* DtoH f */
     cu_copy_D2H_async(nbatom->out[0].f + adat_begin * 4, adat->f + adat_begin, 
                       adat_len * sizeof(*adat->f), stream);
+
+    /* After the non-local D2H is launched the nonlocal_done event can be
+       recorded which signals that the local D2H can proceed. This event is not
+       placed after the non-local kernel because we first need the non-local
+       data back first. */
+    if (iloc == eintNonlocal)
+    {
+        stat = cudaEventRecord(cu_nb->nonlocal_done, stream);
+        CU_RET_ERR(stat, "cudaEventRecord on nonlocal_done failed");
+    }
 
     /* only transfer energies in the local stream */
     if (LOCAL_I(iloc))
@@ -420,7 +454,7 @@ void nbnxn_cuda_wait_gpu(cu_nonbonded_t cu_nb,
     gmx_bool    calc_ener   = flags & GMX_FORCE_VIRIAL;
     gmx_bool    calc_fshift = flags & GMX_FORCE_VIRIAL;
 
-    /* turn energy calculation always on/off (debugging/testing code) */
+    /* turn energy calculation always on/off (for debugging/testing only) */
     calc_ener = (calc_ener || always_ener) && !never_ener; 
 
     /* calculate the atom data index range based on locality */

@@ -13,7 +13,7 @@ void nbnxn_cuda_init(FILE * /*fplog*/,
                      cu_nonbonded_t * /*p_cu_nb*/,
                      gmx_bool /*bDomDec*/);
 
-/*! Initilizes force-field (FIXME) related data. */
+/*! Initilizes simulation constant data. */
 void nbnxn_cuda_init_const(FILE * /*fplog*/,
                            cu_nonbonded_t /*p_cu_nb*/,
                            const interaction_const_t * /*ic*/,
@@ -28,8 +28,7 @@ void nbnxn_cuda_init_pairlist(cu_nonbonded_t /*cu_nb*/,
 void nbnxn_cuda_init_atomdata(cu_nonbonded_t /*cu_nb*/,
                               const nbnxn_atomdata_t * /*atomdata*/);
 
-/*! Re-genrates the GPU Ewald force table and resets rlist - used during 
- *  cut-off auto-tuning. */
+/*! Re-generates the GPU Ewald force table and resets rlist - used with PME auto-tuning. */
 void reset_gpu_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
                               const interaction_const_t * /*ic*/);
 
@@ -37,25 +36,21 @@ void reset_gpu_rlist_ewaldtab(cu_nonbonded_t /*cu_nb*/,
 void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t /*cu_nb*/,
                                 const nbnxn_atomdata_t * /*nbatom*/);
 
-/*! Clears nonbonded force output array on the GPU. */
-void nbnxn_cuda_clear_f(cu_nonbonded_t /*cu_nb*/);
-
-/*! Clears nonbonded shift force output array and energy outputs on the GPU. */
-void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t /*cu_nb*/);
+/*! Clears GPU outputs: nonbonded force, shift force and energy. */
+void nbnxn_cuda_clear_outputs(cu_nonbonded_t /*cu_nb*/, int /*flags*/);
 
 /*! Frees all GPU resources used for the nonbonded calculations. */
 void nbnxn_cuda_free(FILE * /*fplog*/, cu_nonbonded_t /*cu_nb*/,
                      gmx_bool /*bDomDec*/);
 
 /*! Returns the nonbonded GPU timings structure or NULL if GPU is not used 
- *  or timing is turned off. 
- */
+   or timing is turned off. */
 cu_timings_t * nbnxn_cuda_get_timings(cu_nonbonded_t /*cu_nb*/);
 
 /*! Resets nonbonded GPU timings. */
 void nbnxn_cuda_reset_timings(cu_nonbonded_t /*cu_nb*/);
 
-/*! Calculates the minimum size of prozimity lists to improve SM load balance 
+/*! Calculates the minimum size of proximity lists to improve SM load balance 
     when executing the non-bonded kernels. */
 int nbnxn_cuda_min_ci_balanced(cu_nonbonded_t /*cu_nb*/);
 

@@ -12,7 +12,7 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
 
-#define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread busy-wait! */
+#define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread block */
 /* couldomb talble size chosen such that it fits along the NB params in the texture cache */
 #define EWALD_COULOMB_FORCE_TABLE_SIZE (1536)
 
@@ -22,6 +22,8 @@
 #define TIME_GPU_TRANSFERS 1
 
 #define NUM_NB_KERNELS 12
+
+static void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t /*cu_nb*/);
 
 /*! v1 nonbonded kernel names with name mangling. */
 static const char * const nb_k1_names[NUM_NB_KERNELS] = 
@@ -111,7 +113,7 @@ static void init_atomdata(cu_atomdata_t *ad, int ntypes)
     ad->ntypes  = ntypes;
     stat = cudaMalloc((void**)&ad->shift_vec, SHIFTS*sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec"); 
-    ad->shift_vec_copied = FALSE;
+    ad->shift_vec_uploaded = FALSE;
 
     stat = cudaMalloc((void**)&ad->f_shift, SHIFTS*sizeof(*ad->f_shift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->f_shift");
@@ -218,7 +220,6 @@ static void init_nblist(cu_nblist_t *nbl)
 static void init_timers(cu_timers_t *t, gmx_bool bDomDec)
 {
     cudaError_t stat;
-    /* XXX */ 
     int eventflags = ( USE_CUDA_EVENT_BLOCKING_SYNC ? cudaEventBlockingSync: cudaEventDefault );
 
     stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
@@ -291,6 +292,8 @@ void nbnxn_cuda_init(FILE *fplog,
         snew(nb->nblist[eintNonlocal], 1);
     }
 
+    nb->dd_run = bDomDec;
+
     /* CUDA event timers don't work with multiple streams so 
        we have to disable timing with DD */
     nb->do_time = (!bDomDec && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
@@ -303,6 +306,8 @@ void nbnxn_cuda_init(FILE *fplog,
     pmalloc((void**)&nb->tmpdata.f_shift, SHIFTS * sizeof(*nb->tmpdata.f_shift));
 
     init_nblist(nb->nblist[eintLocal]);
+
+    /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
     CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
     if (bDomDec)
@@ -312,8 +317,11 @@ void nbnxn_cuda_init(FILE *fplog,
         CU_RET_ERR(stat, "cudaStreamCreate on stream[eintNonlocal] failed");
     }
 
-    init_timers(nb->timers, bDomDec);
-    init_timings(nb->timings);
+    /* init events for sychronization (timing disabled for performance reasons!) */
+    stat = cudaEventCreateWithFlags(&nb->nonlocal_done, cudaEventDisableTiming);
+    CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
+    stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
+    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
 
     /* init device info */
     /* FIXME this should not be done here! */
@@ -331,6 +339,12 @@ void nbnxn_cuda_init(FILE *fplog,
     {
         nb->use_stream_sync = FALSE;
         nb->do_time         = FALSE;
+    }
+
+    if (nb->do_time)
+    {
+        init_timers(nb->timers, bDomDec);
+        init_timings(nb->timings);
     }
 
     *p_cu_nb = nb;
@@ -429,64 +443,74 @@ void nbnxn_cuda_init_pairlist(cu_nonbonded_t cu_nb,
 void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t cu_nb,
                                 const nbnxn_atomdata_t *nbatom)
 {
-    cu_atomdata_t   *adat = cu_nb->atomdata;
+    cu_atomdata_t *adat = cu_nb->atomdata;
+    cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
-    if (nbatom->dynamic_box || !adat->shift_vec_copied)
+    if (nbatom->dynamic_box || !adat->shift_vec_uploaded)
     {
         cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec, 
-                          SHIFTS * sizeof(*adat->shift_vec), 0);
-        adat->shift_vec_copied = TRUE;
+                          SHIFTS * sizeof(*adat->shift_vec), ls);
+        adat->shift_vec_uploaded = TRUE;
     }
 }
 
-
-/*! Clears nonbonded force output array on the GPU - muldule internal 
-    implementation that takes the number of atoms to clear the output for. */
+/*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */
 static void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb, int natoms_clear)
 {
-    cudaError_t stat;
+    cudaError_t   stat;
     cu_atomdata_t *adat = cu_nb->atomdata;
+    cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
-    stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), 0);
+    stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
 }
 
-void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb)
+/*! Clears nonbonded shift force output array and energy outputs on the GPU. */
+static void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t cu_nb)
 {
-    nbnxn_cuda_clear_f(cu_nb, cu_nb->atomdata->natoms);
+    cudaError_t   stat;
+    cu_atomdata_t *adat = cu_nb->atomdata;
+    cudaStream_t  ls    = cu_nb->stream[eintLocal];
+
+    stat = cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), ls);
+    CU_RET_ERR(stat, "cudaMemsetAsync on f_shift falied");
+    stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), ls);
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
+    stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), ls);
+    CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
 }
 
-void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t cu_nb)
+void nbnxn_cuda_clear_outputs(cu_nonbonded_t cu_nb, int flags)
 {
-    cudaError_t stat;    
-    cu_atomdata_t *adat = cu_nb->atomdata;
-
-    stat = cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), 0);
-    CU_RET_ERR(stat, "cudaMemsetAsync on f_shift falied");
-    stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), 0);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
-    stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), 0);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
+    nbnxn_cuda_clear_f(cu_nb, cu_nb->atomdata->natoms);
+    /* clear shift force array and energies if the outputs were 
+       used in the current step */
+    if (flags & GMX_FORCE_VIRIAL)
+    {
+        nbnxn_cuda_clear_e_fshift(cu_nb);
+    }
 }
 
 /* TODO: add gmx over_alloc call */
 void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
                               const nbnxn_atomdata_t *nbat)
 {
-    cudaError_t stat;
-    int         nalloc, natoms;
-    gmx_bool    realloced = FALSE;
-    gmx_bool    do_time     = cu_nb->do_time;
-    cu_timers_t *timers     = cu_nb->timers;
+    cudaError_t   stat;
+    int           nalloc, natoms;
+    gmx_bool      realloced;
+    gmx_bool      do_time   = cu_nb->do_time;
+    cu_timers_t   *timers   = cu_nb->timers;
     cu_atomdata_t *d_atomd  = cu_nb->atomdata;
+    cudaStream_t  ls        = cu_nb->stream[eintLocal];
 
     natoms = nbat->natoms;
+    realloced = FALSE;
 
     if (do_time)
     {
         /* time async copy */
-        stat = cudaEventRecord(timers->start_atdat, 0);
+        stat = cudaEventRecord(timers->start_atdat, ls);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
@@ -526,11 +550,11 @@ void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
     }
 
     cu_copy_H2D_async(d_atomd->atom_types, nbat->type,
-                      natoms*sizeof(*d_atomd->atom_types), 0);
+                      natoms*sizeof(*d_atomd->atom_types), ls);
 
     if (do_time)
     {
-        stat = cudaEventRecord(timers->stop_atdat, 0);
+        stat = cudaEventRecord(timers->stop_atdat, ls);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 }
@@ -557,37 +581,45 @@ void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
         cu_free_buffered(nb_params->coulomb_tab, &nb_params->coulomb_tab_size);
     }
 
-    stat = cudaEventDestroy(timers->start_atdat);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
-    stat = cudaEventDestroy(timers->stop_atdat);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_atdat");
+    stat = cudaEventDestroy(cu_nb->nonlocal_done);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
+    stat = cudaEventDestroy(cu_nb->misc_ops_done);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_done");
 
-    /* The non-local counters/stream (second in the array) are needed only with DD. */
-    for (int i = 0; i <= bDomDec ? 1 : 0; i++)
+    if (cu_nb->do_time)
     {
+        stat = cudaEventDestroy(timers->start_atdat);
+        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_atdat");
+        stat = cudaEventDestroy(timers->stop_atdat);
+        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_atdat");
 
-        stat = cudaEventDestroy(timers->start_nb_k[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
-        stat = cudaEventDestroy(timers->stop_nb_k[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
+        /* The non-local counters/stream (second in the array) are needed only with DD. */
+        for (int i = 0; i <= bDomDec ? 1 : 0; i++)
+        {
 
-        stat = cudaEventDestroy(timers->start_nbl_h2d[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nbl_h2d");
-        stat = cudaEventDestroy(timers->stop_nbl_h2d[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nbl_h2d");
+            stat = cudaEventDestroy(timers->start_nb_k[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
+            stat = cudaEventDestroy(timers->stop_nb_k[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
 
-        stat = cudaStreamDestroy(cu_nb->stream[i]);
-        CU_RET_ERR(stat, "cudaStreamDestroy failed on stream");
+            stat = cudaEventDestroy(timers->start_nbl_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nbl_h2d");
+            stat = cudaEventDestroy(timers->stop_nbl_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nbl_h2d");
 
-        stat = cudaEventDestroy(timers->start_nb_h2d[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_h2d");
-        stat = cudaEventDestroy(timers->stop_nb_h2d[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_h2d");
+            stat = cudaStreamDestroy(cu_nb->stream[i]);
+            CU_RET_ERR(stat, "cudaStreamDestroy failed on stream");
 
-        stat = cudaEventDestroy(timers->start_nb_d2h[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_d2h");
-        stat = cudaEventDestroy(timers->stop_nb_d2h[i]);
-        CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_d2h");
+            stat = cudaEventDestroy(timers->start_nb_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_h2d");
+            stat = cudaEventDestroy(timers->stop_nb_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_h2d");
+
+            stat = cudaEventDestroy(timers->start_nb_d2h[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_d2h");
+            stat = cudaEventDestroy(timers->stop_nb_d2h[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_d2h");
+        }
     }
 
     cu_unbind_texture("tex_nbfp");

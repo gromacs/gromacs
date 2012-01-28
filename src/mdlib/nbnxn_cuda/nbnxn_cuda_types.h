@@ -49,7 +49,7 @@ struct cu_atomdata
     int     *atom_types;        /* atom type indices, size natoms   */
  
     float3  *shift_vec;         /* shifts */
-    gmx_bool shift_vec_copied;  /* has the shift vector already been transfered? */
+    gmx_bool shift_vec_uploaded;/* has the shift vector already been transfered? */
 };
 
 /*! Nonbonded paramters */
@@ -101,29 +101,31 @@ struct cu_nblist
  */
 struct cu_timers
 {
-    cudaEvent_t start_atdat, stop_atdat;            /* events for atom data transfer (every NS step)    */
-
-    cudaEvent_t start_nb_h2d[2], stop_nb_h2d[2];    /* events for H2D transfer (every step)             */
-    cudaEvent_t start_nb_d2h[2], stop_nb_d2h[2];    /* events for D2H transfer (every step)             */
-    cudaEvent_t start_nbl_h2d[2], stop_nbl_h2d[2];  /* events for pair-list H2D strnasfer (every nstlist step) */
-
-    cudaEvent_t  start_nb_k[2], stop_nb_k[2];       /* events for non-bonded kernels                        */
+    cudaEvent_t start_atdat, stop_atdat;            /* atom data transfer (every PS step)    */
+    cudaEvent_t start_nb_h2d[2], stop_nb_h2d[2];    /* x/q H2D transfer (every step)         */
+    cudaEvent_t start_nb_d2h[2], stop_nb_d2h[2];    /* f D2H transfer (every step)           */
+    cudaEvent_t start_nbl_h2d[2], stop_nbl_h2d[2];  /* pair-list H2D transfer (every PS step)*/
+    cudaEvent_t start_nb_k[2], stop_nb_k[2];        /* non-bonded kernels (every step)       */
 };
 
 /* Main data structure for CUDA nonbonded force calculations. */
 struct cu_nonbonded 
 {
     cu_dev_info_t   *dev_info;
-    gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instread 
+    gmx_bool        dd_run;          /* true if running with domain-decomposition */
+    gmx_bool        use_stream_sync; /* if true use memory polling-based waiting instead 
                                         of cudaStreamSynchronize */
     cu_atomdata_t   *atomdata;
     cu_nb_params_t  *nb_params; 
-    cu_nblist_t     *nblist[2]; /* nbl data structures, local and non-local (only with DD) */
+    cu_nblist_t     *nblist[2];     /* nbl data structures, local and non-local (only with DD) */
     nb_tmp_data     tmpdata;
     
-    cudaStream_t    stream[2];  /* local and non-local GPU streams */
+    cudaStream_t    stream[2];      /* local and non-local GPU streams */
 
-    gmx_bool        do_time;    /* true if CUDA event-based timing is enabled, off with DD */
+    /* events used for synchronization */
+    cudaEvent_t    nonlocal_done, misc_ops_done;
+
+    gmx_bool        do_time;        /* true if CUDA event-based timing is enabled, off with DD */
     cu_timers_t     *timers;
     cu_timings_t    *timings;
 };
