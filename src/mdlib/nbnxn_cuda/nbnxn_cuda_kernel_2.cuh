@@ -158,8 +158,10 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
             imask_prune = imask;
 #endif
 
-            /* #pragma unroll 4 
-               -- nvcc doesn't like my code, it refuses to unroll it */
+            /* nvcc >v4.1 doesn't like this loop, it refuses to unroll it */
+#if CUDA_VERSION >= 4010
+            #pragma unroll 4
+#endif
             for (jm = 0; jm < 4; jm++)
             {
                 imask_j = (imask >> (jm * 8)) & 255U;
