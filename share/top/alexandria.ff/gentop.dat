@@ -21,7 +21,7 @@
     <atype elem="Cl" description="Chlorine" gt_name="Clc" gt_type="Cl" miller_equiv="Cl" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="F" description="Fluorine" gt_name="F" gt_type="F" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="H" description="Hydrogen bound to Carbon" gt_name="HA" gt_type="HA" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="HP" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="Other Hydrogen" gt_name="HP" gt_type="HP" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
     <atype elem="I" description="Iodine" gt_name="Ia" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="I" description="Iodine" gt_name="Ib" gt_type="I" miller_equiv="I" geometry="tetrahedral" numbonds="5" neighbors="" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="N" description="Nitrogen in sp1" gt_name="N1a" gt_type="NDI" miller_equiv="NDI" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
@@ -39,6 +39,7 @@
     <!-- atype elem="N" description="Tetahedral Nitrogen" gt_name="N3q" gt_type="NTE" miller_equiv="NTE" geometry="planar" numbonds="3" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/-->
     <atype elem="N" description="Tetahedral Nitrogen" gt_name="N3b" gt_type="NTE" miller_equiv="NTE" geometry="tetrahedral" numbonds="4" neighbors="" charge="0" polarizability="0.994503" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Oxygen with double bond" gt_name="O2" gt_type="OTR4" miller_equiv="OTR4" geometry="tetrahedral" numbonds="1" neighbors="" charge="0" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Oxygen in Water" gt_name="OW" gt_type="OW" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="H H" charge="0" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
     <atype elem="O" description="Oxygen with O-H" gt_name="OTH" gt_type="OTH" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="H" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Oxygen" gt_name="O3a" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="2" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Oxygen" gt_name="O3b" gt_type="OTE" miller_equiv="OTE" geometry="tetrahedral" numbonds="3" neighbors="" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
@@ -304,13 +305,14 @@
     <eemprop model="AXg" name="CL" jaa="10.5557" chi="4.40485" zeta="0 90.1 61.5 55.6" charge="17 -2 -8 0" row="0 1 2 3"/>
     <eemprop model="AXg" name="F" jaa="23.6575" chi="6" zeta="0 110.1 28.2" charge="9 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="HA" jaa="19.5586" chi="2.2" zeta="0 11.9" charge="1 0" row="0 1"/>
-    <eemprop model="AXg" name="HP" jaa="20.9395" chi="2.2" zeta="0 11.4" charge="1 0" row="0 1"/>
+    <eemprop model="AXg" name="HP" jaa="20.9395" chi="2.2" zeta="100 10" charge="1 0" row="0 1"/>
     <eemprop model="AXg" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 40 10" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 30.8 49.9" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NTR2" jaa="24.9083" chi="7.49112" zeta="0 38.6 10.8" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OPI2" jaa="28.4907" chi="11.3236" zeta="0 40.9 15.8" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OTE" jaa="28.4907" chi="11.3236" zeta="0 40.8 15.7" charge="8 -2 0" row="0 1 2"/>
+    <eemprop model="AXg" name="OW" jaa="28.4907" chi="11.3236" zeta="100 10" charge="6 0" row="0 1"/>
     <eemprop model="AXg" name="OTH" jaa="28.4907" chi="11.3236" zeta="0 55.3 35.0" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="OTR4" jaa="21.1173" chi="10.7594" zeta="0 39.7 13.9" charge="8 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="PTE" jaa="10.1539" chi="3.98949" zeta="0 40.9 28.9 8.6" charge="15 -2 -8 0" row="0 1 2 3"/>
