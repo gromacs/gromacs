@@ -1388,7 +1388,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
     }
 }
 
-static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
+static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 {
     int gpu_device_id;
     char *env;
@@ -1469,13 +1469,13 @@ static gmx_bool init_gpu_nb(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     return (ngpu > 0);
 }
 
-/* Selects the non-bonded (Verlet) kernel to be used. */
-static void pick_nb_kernel(FILE *fp,
-                           const t_commrec *cr,
-                           gmx_bool tryGPU, gmx_bool *useGPU,
-                           gmx_bool forceGPU,
-                           int *kernel_type,
-                           int *na_c)
+/* Selects the nbnxn (Verlet) kernel to be used. */
+static void pick_nbnxn_kernel(FILE *fp,
+                              const t_commrec *cr,
+                              gmx_bool tryGPU, gmx_bool *useGPU,
+                              gmx_bool forceGPU,
+                              int *kernel_type,
+                              int *na_c)
 {
     char *env;
     gmx_bool emulateGPU=FALSE;
@@ -1542,7 +1542,7 @@ static void pick_nb_kernel(FILE *fp,
     else if (tryGPU)
     {
         /* Try to use a GPU */
-        *useGPU = init_gpu_nb(fp,cr,forceGPU);
+        *useGPU = init_cu_nbv(fp,cr,forceGPU);
 
         if (*useGPU)
         {
@@ -1691,7 +1691,7 @@ void init_interaction_const(FILE *fp,
     if (fr->nbv != NULL && fr->nbv->useGPU)
     {
 #ifdef GMX_GPU
-        nbnxn_cuda_init_const(fp, fr->nbv->gpu_nb, ic, fr->nbv);
+        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
 #endif
     }
 
@@ -1729,21 +1729,21 @@ static void init_nb_verlet(FILE *fp,
 
         if (i == 0)
         {
-            pick_nb_kernel(fp, cr,
-                           (nbpu_opt != NULL &&
-                            (strncmp(nbpu_opt,"gpu",3) == 0 ||
-                             strcmp(nbpu_opt,"auto") == 0)),
-                           &nbv->useGPU,
-                           strncmp(nbpu_opt,"gpu",3) == 0,
-                           &nbv->grp[i].kernel_type, na_c);
+            pick_nbnxn_kernel(fp, cr,
+                              (nbpu_opt != NULL &&
+                               (strncmp(nbpu_opt,"gpu",3) == 0 ||
+                                strcmp(nbpu_opt,"auto") == 0)),
+                              &nbv->useGPU,
+                              strncmp(nbpu_opt,"gpu",3) == 0,
+                              &nbv->grp[i].kernel_type, na_c);
         }
         else
         {
             if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nb_kernel(fp, cr, FALSE, NULL, FALSE,
-                               &nbv->grp[i].kernel_type, na_c);
+                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
+                                  &nbv->grp[i].kernel_type, na_c);
             }
             else
             {
@@ -1756,7 +1756,7 @@ static void init_nb_verlet(FILE *fp,
     if (nbv->useGPU)
     {
 #ifdef GMX_GPU
-        nbnxn_cuda_init(fp, &(nbv->gpu_nb), DOMAINDECOMP(cr));
+        nbnxn_cuda_init(fp, &(nbv->cu_nbv), DOMAINDECOMP(cr));
         env = getenv("GMX_NB_MIN_CI");
         if (env)
         {
@@ -1769,7 +1769,7 @@ static void init_nb_verlet(FILE *fp,
         }
         else
         {
-            nbv->min_ci_balanced = nbnxn_cuda_min_ci_balanced(nbv->gpu_nb);
+            nbv->min_ci_balanced = nbnxn_cuda_min_ci_balanced(nbv->cu_nbv);
             if (debug)
             {
                 fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",

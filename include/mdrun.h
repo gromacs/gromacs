@@ -229,7 +229,7 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
                         gmx_large_int_t *step_rel,t_inputrec *ir,
                         gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                         gmx_runtime_t *runtime,
-			cu_nonbonded_t gpu_nb);
+			nbnxn_cuda_ptr_t cu_nbv);
 
 
 
@@ -322,7 +322,7 @@ void finish_run(FILE *log,t_commrec *cr,const char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       gmx_runtime_t *runtime,
-                       cu_timings_t *gputimes,
+                       wallclock_gpu_t *gputimes,
                        int omp_nth_pp,
 		       gmx_bool bWriteStat);
 

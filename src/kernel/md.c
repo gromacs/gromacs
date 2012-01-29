@@ -1876,7 +1876,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,
-                               fr->nbv != NULL && fr->nbv->useGPU ? fr->nbv->gpu_nb : NULL);
+                               fr->nbv != NULL && fr->nbv->useGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle,-1);
             /* Correct max_hours for the elapsed time */
             max_hours -= run_time/(60.0*60.0);

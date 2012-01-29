@@ -1,15 +1,50 @@
-#ifndef _NB_KERNEL_UTILS_CUH_
-#define _NB_KERNEL_UTILS_CUH_
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ *
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ *
+ * And Hey:
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ */
+
+#ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
+#define NBNXN_CUDA_KERNEL_UTILS_CUH
 
 #define CLUSTER_SIZE_POW2_EXPONENT (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
 #define CLUSTER_SIZE_2          (CLUSTER_SIZE * CLUSTER_SIZE)
 #define STRIDE_DIM              (CLUSTER_SIZE_2)
 #define STRIDE_SI               (3*STRIDE_DIM)
 
-/*! texture ref for nonbonded parameters; bound to cu_nb_params_t.nbfp*/
+/*! texture ref for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
 texture<float, 1, cudaReadModeElementType> tex_nbfp;
 
-/*! texture ref for Ewald coulomb force table; bound to cu_nb_params_t.coulomb_tab */
+/*! texture ref for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
 texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture. 
@@ -31,7 +66,7 @@ float interpolate_coulomb_force_r(float r, float scale)
  *  arbitrary array sizes. 
  */
 static inline __device__ 
-void reduce_force_j_generic(float *fbuf, float4 *fout, 
+void reduce_force_j_generic(float *f_buf, float4 *fout,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxi == 0)
@@ -39,9 +74,9 @@ void reduce_force_j_generic(float *fbuf, float4 *fout,
         float4 f = make_float4(0.0f);
         for (int j = tidxj * CLUSTER_SIZE; j < (tidxj + 1) * CLUSTER_SIZE; j++)
         {
-            f.x += fbuf[                 j];
-            f.y += fbuf[    STRIDE_DIM + j];
-            f.z += fbuf[2 * STRIDE_DIM + j];
+            f.x += f_buf[                 j];
+            f.y += f_buf[    STRIDE_DIM + j];
+            f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
         atomicAdd(&fout[aidx].x, f.x);
@@ -54,8 +89,8 @@ void reduce_force_j_generic(float *fbuf, float4 *fout,
  *  arbitrary array sizes. 
  */
 static inline __device__ 
-void reduce_force_i_generic(float *fbuf, float4 *fout, 
-                            float3 *fbuf_shift, gmx_bool calc_fshift, 
+void reduce_force_i_generic(float *f_buf, float4 *fout,
+                            float3 *fshift_buf, gmx_bool calc_fshift,
                             int tidxi, int tidxj, int aidx)
 {
     if (tidxj == 0)
@@ -63,9 +98,9 @@ void reduce_force_i_generic(float *fbuf, float4 *fout,
         float4 f = make_float4(0.0f);
         for (int j = tidxi; j < CLUSTER_SIZE_2; j += CLUSTER_SIZE)
         {
-            f.x += fbuf[                 j];
-            f.y += fbuf[    STRIDE_DIM + j];
-            f.z += fbuf[2 * STRIDE_DIM + j];
+            f.x += f_buf[                 j];
+            f.y += f_buf[    STRIDE_DIM + j];
+            f.z += f_buf[2 * STRIDE_DIM + j];
         }
 
         atomicAdd(&fout[aidx].x, f.x);
@@ -74,9 +109,9 @@ void reduce_force_i_generic(float *fbuf, float4 *fout,
 
         if (calc_fshift)
         {
-            fbuf_shift->x += f.x;
-            fbuf_shift->y += f.y;
-            fbuf_shift->z += f.z;
+            fshift_buf->x += f.x;
+            fshift_buf->y += f.y;
+            fshift_buf->z += f.z;
         }
     }
 }
@@ -85,8 +120,8 @@ void reduce_force_i_generic(float *fbuf, float4 *fout,
  *  array sizes. 
  */
 static inline __device__ 
-void reduce_force_i_pow2(volatile float *fbuf, float4 *fout, 
-                         float3 *fbuf_shift, gmx_bool calc_fshift, 
+void reduce_force_i_pow2(volatile float *f_buf, float4 *fout,
+                         float3 *fshift_buf, gmx_bool calc_fshift,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j; 
@@ -101,9 +136,9 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
         if (tidxj < i)
         {
 
-            fbuf[                 tidxj * CLUSTER_SIZE + tidxi] += fbuf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
-            fbuf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += fbuf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
-            fbuf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += fbuf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+            f_buf[                 tidxj * CLUSTER_SIZE + tidxi] += f_buf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
+            f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+            f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] += f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
         }
         i >>= 1;
     }
@@ -111,9 +146,9 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
     /* i == 1, last reduction step, writing to global mem */
     if (tidxj == 0)
     {
-        f.x = fbuf[                 tidxj * CLUSTER_SIZE + tidxi] + fbuf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
-        f.y = fbuf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + fbuf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi]; 
-        f.z = fbuf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + fbuf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+        f.x = f_buf[                 tidxj * CLUSTER_SIZE + tidxi] + f_buf[                 (tidxj + i) * CLUSTER_SIZE + tidxi];
+        f.y = f_buf[    STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[    STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
+        f.z = f_buf[2 * STRIDE_DIM + tidxj * CLUSTER_SIZE + tidxi] + f_buf[2 * STRIDE_DIM + (tidxj + i) * CLUSTER_SIZE + tidxi];
 
         atomicAdd(&fout[aidx].x, f.x);
         atomicAdd(&fout[aidx].y, f.y);
@@ -121,9 +156,9 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
 
         if (calc_fshift)
         {
-            fbuf_shift->x += f.x;
-            fbuf_shift->y += f.y;
-            fbuf_shift->z += f.z;
+            fshift_buf->x += f.x;
+            fshift_buf->y += f.y;
+            fshift_buf->z += f.z;
         }
     }
 }
@@ -132,17 +167,17 @@ void reduce_force_i_pow2(volatile float *fbuf, float4 *fout,
  *  on whether the size of the array to be reduced is power of two or not.
  */
 static inline __device__ 
-void reduce_force_i(float *fbuf, float4 *f,
-                    float3 *fbuf_shift, gmx_bool calc_fshift, 
+void reduce_force_i(float *f_buf, float4 *f,
+                    float3 *fshift_buf, gmx_bool calc_fshift,
                     int tidxi, int tidxj, int ai)
 {
     if ((CLUSTER_SIZE & (CLUSTER_SIZE - 1)))
     {
-        reduce_force_i_generic(fbuf, f, fbuf_shift, calc_fshift, tidxi, tidxj, ai);
+        reduce_force_i_generic(f_buf, f, fshift_buf, calc_fshift, tidxi, tidxj, ai);
     }
     else
     {
-        reduce_force_i_pow2(fbuf, f, fbuf_shift, calc_fshift, tidxi, tidxj, ai);
+        reduce_force_i_pow2(f_buf, f, fshift_buf, calc_fshift, tidxi, tidxj, ai);
     }
 }
 
@@ -184,8 +219,8 @@ void reduce_energy_pow2(volatile float *buf,
 /*********************************************************************************/
 /* Old stuff  */
 #if 0
-/* This function wa used to calculate the Ewald coulomb force, but it's not 
- * used as it's much slower than tabulate f interpolation with texture mem.
+/* This function was used to calculate the Ewald coulomb force, but it's not 
+ * used as it's much slower than tabulated f interpolation with texture mem.
  */
 inline __device__ float 
 coulomb(float q1,
@@ -205,4 +240,4 @@ coulomb(float q1,
 }
 #endif 
 
-#endif /*_NB_KERNEL_UTILS_CUH_*/ 
+#endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

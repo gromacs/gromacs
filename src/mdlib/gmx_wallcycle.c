@@ -548,7 +548,7 @@ static void print_gputimes(FILE *fplog, const char *name,
 }
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, cu_timings_t *gpu_t)
+                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t)
 {
     double *cycles;
     double c2t,tot,tot_gpu,tot_cpu_overlap,gpu_cpu_ratio,sum,tot_k;
@@ -656,9 +656,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     /* print GPU timing summary */
     if (gpu_t)
     {
-        tot_gpu = gpu_t->nbl_h2d_time + 
-                  gpu_t->nb_h2d_time + 
-                  gpu_t->nb_d2h_time;
+        tot_gpu = gpu_t->pl_h2d_t + gpu_t->nb_h2d_t + gpu_t->nb_d2h_t;
 
         /* add up the kernel timings */
         tot_k = 0.0;
@@ -666,7 +664,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for(j = 0; j < 2; j++)
             {
-                tot_k += gpu_t->k_time[i][j].t;
+                tot_k += gpu_t->ktime[i][j].t;
             }
         }
         tot_gpu += tot_k;
@@ -682,10 +680,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog," Computing:                         Count      Seconds    ms/step       %c\n",'%');
         fprintf(fplog, "%s\n", hline);
         // " %-19s %4d %10s %12.3f %10.1f   %5.1f\n"
-        print_gputimes(fplog, "Neighbor list H2D",
-                gpu_t->nbl_h2d_count, gpu_t->nbl_h2d_time, tot_gpu);
+        print_gputimes(fplog, "Pair list H2D",
+                gpu_t->pl_h2d_c, gpu_t->pl_h2d_t, tot_gpu);
          print_gputimes(fplog, "X / q H2D", 
-                gpu_t->nb_count, gpu_t->nb_h2d_time, tot_gpu);
+                gpu_t->nb_c, gpu_t->nb_h2d_t, tot_gpu);
 
         char *k_log_str[2][2] = {
                 {"Nonbonded F kernel", "Nonbonded F+ene k."}, 
@@ -694,22 +692,22 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for(j = 0; j < 2; j++)
             {
-                if (gpu_t->k_time[i][j].c)
+                if (gpu_t->ktime[i][j].c)
                 {
                     print_gputimes(fplog, k_log_str[i][j],
-                            gpu_t->k_time[i][j].c, gpu_t->k_time[i][j].t, tot_gpu);
+                            gpu_t->ktime[i][j].c, gpu_t->ktime[i][j].t, tot_gpu);
                 }
             }
         }        
 
-        print_gputimes(fplog, "F D2H",  gpu_t->nb_count, gpu_t->nb_d2h_time, tot_gpu);
+        print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
-        print_gputimes(fplog, "Total ", gpu_t->nb_count, tot_gpu, tot_gpu);
+        print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
 
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
         fprintf(fplog, "\n Force evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
-                tot_gpu/gpu_t->nb_count, tot_cpu_overlap/wc->wcc[ewcFORCE].n, 
+                tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
                 gpu_cpu_ratio);
         fprintf(fplog, " For optimal performance this ratio should be 1!\n");
         /* print note if the imbalance is dangerously high */

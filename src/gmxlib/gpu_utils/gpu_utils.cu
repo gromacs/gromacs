@@ -566,9 +566,8 @@ int do_timed_memtest(int dev_id, int time_constr)
     return res;
 }
 
-/* TODO: - add multiple device support 
-         - fix multinode logging
-
+/* TODO: 
+        - fix multinode logging
  */
 int init_gpu(FILE *fplog, int dev_id)
 {
@@ -597,8 +596,8 @@ int init_gpu(FILE *fplog, int dev_id)
     
 }
 
-/* TODO: - add multiple device support 
-         - fix multinode logging
+/* TODO: 
+        - fix multinode logging
 */
 int uninit_gpu(FILE *fplog, int dev_id)
 {

@@ -624,7 +624,7 @@ static void do_nb_verlet(t_forcerec *fr,
 
         case nbk8x8x8CUDA:
 #ifdef GMX_GPU
-            nbnxn_cuda_launch_kernel(fr->nbv->gpu_nb, nbvg->nbat, flags, ilocality);
+            nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
 #endif
             break;
 
@@ -832,12 +832,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_init_atomdata(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+            nbnxn_cuda_init_atomdata(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        nbnxn_cuda_upload_shiftvec(nbv->gpu_nb, nbv->grp[eintLocal].nbat);
+        nbnxn_cuda_upload_shiftvec(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 #endif
@@ -859,7 +859,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (bUseGPU)
         {
             /* initialize GPU local neighbor list */
-            nbnxn_cuda_init_pairlist(nbv->gpu_nb,
+            nbnxn_cuda_init_pairlist(nbv->cu_nbv,
                                      nbv->grp[eintLocal].nbl_lists.nbl[0],
                                      eintLocal);
         }
@@ -919,7 +919,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8CUDA)
             {
                 /* initialize GPU non-local neighbor list */
-                nbnxn_cuda_init_pairlist(nbv->gpu_nb,
+                nbnxn_cuda_init_pairlist(nbv->cu_nbv,
                                          nbv->grp[eintNonlocal].nbl_lists.nbl[0],
                                          eintNonlocal);
             }
@@ -961,10 +961,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
-            nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintNonlocal].nbat,
+            nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintNonlocal].nbat,
                                       flags, eatNonlocal);
         }
-        nbnxn_cuda_launch_cpyback(nbv->gpu_nb, nbv->grp[eintLocal].nbat,
+        nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintLocal].nbat,
                                   flags, eatLocal);
         wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
@@ -1152,7 +1152,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             {
 #ifdef GMX_GPU
                 wallcycle_start(wcycle,ewcWAIT_GPU_NB_NL);
-                nbnxn_cuda_wait_gpu(nbv->gpu_nb,
+                nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                     nbv->grp[eintNonlocal].nbat,
                                     flags, eatNonlocal,
                                     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
@@ -1213,7 +1213,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         {
 #ifdef GMX_GPU
             wallcycle_start(wcycle,ewcWAIT_GPU_NB_L);
-            nbnxn_cuda_wait_gpu(nbv->gpu_nb,
+            nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                 nbv->grp[eintLocal].nbat,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
@@ -1221,7 +1221,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
-            nbnxn_cuda_clear_outputs(nbv->gpu_nb, flags);
+            nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
 #endif
         }
         else
@@ -2246,7 +2246,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
-                cu_timings_t *gputimes,
+                wallclock_gpu_t *gputimes,
                 int omp_nth_pp,
                 gmx_bool bWriteStat)
 {

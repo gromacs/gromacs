@@ -1,3 +1,38 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ *
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ *
+ * And Hey:
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -13,7 +48,8 @@
 #include "pmalloc_cuda.h"
 
 #define USE_CUDA_EVENT_BLOCKING_SYNC FALSE  /* makes the CPU thread block */
-/* couldomb talble size chosen such that it fits along the NB params in the texture cache */
+/* coulomb force talble size chosen such that it fits along the non-bonded 
+   parameters in the texture cache */
 #define EWALD_COULOMB_FORCE_TABLE_SIZE (1536)
 
 #define MY_PI               (3.1415926535897932384626433832795)
@@ -23,42 +59,41 @@
 
 #define NUM_NB_KERNELS 12
 
-static void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t /*cu_nb*/);
+static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t /*cu_nb*/);
 
-/*! v1 nonbonded kernel names with name mangling. */
+/*! v1 nonbonded kernel names with names with mangling. */
 static const char * const nb_k1_names[NUM_NB_KERNELS] = 
 {
-    "_Z12k_nbnxn_rf_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z15k_nbnxn_ewald_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z16k_nbnxn_cutoff_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z17k_nbnxn_rf_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z18k_nbnxn_rf_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z20k_nbnxn_ewald_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z21k_nbnxn_ewald_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z21k_nbnxn_cutoff_ener_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z22k_nbnxn_cutoff_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z23k_nbnxn_rf_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z26k_nbnxn_ewald_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z27k_nbnxn_cutoff_ener_prune_111cu_atomdata12cu_nb_params9cu_nblisti"
+    "_Z12k_nbnxn_rf_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z15k_nbnxn_ewald_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z16k_nbnxn_cutoff_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z17k_nbnxn_rf_ener_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z18k_nbnxn_rf_prune_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_ewald_ener_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_ewald_prune_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_cutoff_ener_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z22k_nbnxn_cutoff_prune_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_rf_ener_prune_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z26k_nbnxn_ewald_ener_prune_111cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z27k_nbnxn_cutoff_ener_prune_111cu_atomdata10cu_nbparam8cu_plisti"
 };
 
-/*! v2 nonbonded kernel names with name mangling. */
+/*! v2 nonbonded kernel names with names with mangling. */
 static const char * const nb_k2_names[NUM_NB_KERNELS] = 
 {
-    "_Z12k_nbnxn_rf_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z15k_nbnxn_ewald_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z16k_nbnxn_cutoff_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z17k_nbnxn_rf_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z18k_nbnxn_rf_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z20k_nbnxn_ewald_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z21k_nbnxn_ewald_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z21k_nbnxn_cutoff_ener_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z22k_nbnxn_cutoff_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z23k_nbnxn_rf_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z26k_nbnxn_ewald_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti",
-    "_Z27k_nbnxn_cutoff_ener_prune_211cu_atomdata12cu_nb_params9cu_nblisti"
+    "_Z12k_nbnxn_rf_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z15k_nbnxn_ewald_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z16k_nbnxn_cutoff_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z17k_nbnxn_rf_ener_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z18k_nbnxn_rf_prune_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z20k_nbnxn_ewald_ener_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_ewald_prune_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z21k_nbnxn_cutoff_ener_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z22k_nbnxn_cutoff_prune_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z23k_nbnxn_rf_ener_prune_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z26k_nbnxn_ewald_ener_prune_211cu_atomdata10cu_nbparam8cu_plisti",
+    "_Z27k_nbnxn_cutoff_ener_prune_211cu_atomdata10cu_nbparam8cu_plisti"
 };
-
 
 /*! Dummy kernel used for sanity check. */
 __device__ __global__ void k_empty_test(){}
@@ -67,7 +102,7 @@ __device__ __global__ void k_empty_test(){}
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
+static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
 {
     float       *ftmp, *coul_tab;
     int         tabsize;
@@ -84,7 +119,7 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
                                 1/tabscale, nbp->ewald_beta);
 
     /* If the table pointer == NULL the table is generated the first time =>
-       the array pointer will be saved to nb_params and the texture is bound.
+       the array pointer will be saved to nbparam and the texture is bound.
      */
     coul_tab = nbp->coulomb_tab;
     if (coul_tab == NULL)
@@ -105,8 +140,9 @@ static void init_ewald_coulomb_force_table(cu_nb_params_t *nbp)
 }
 
 
-/*! Initilizes the atomdata structure. */
-static void init_atomdata(cu_atomdata_t *ad, int ntypes)
+/*! Initilizes the atomdata structure first time, it only gets filled at 
+    pair-search. */
+static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
 {
     cudaError_t stat;
 
@@ -115,8 +151,8 @@ static void init_atomdata(cu_atomdata_t *ad, int ntypes)
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec"); 
     ad->shift_vec_uploaded = FALSE;
 
-    stat = cudaMalloc((void**)&ad->f_shift, SHIFTS*sizeof(*ad->f_shift));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->f_shift");
+    stat = cudaMalloc((void**)&ad->fshift, SHIFTS*sizeof(*ad->fshift));
+    CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
 
     stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_lj");
@@ -124,7 +160,7 @@ static void init_atomdata(cu_atomdata_t *ad, int ntypes)
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
 
     /* initilize to NULL poiters to data that is not allocated here and will
-       need reallocation in cu_init_atomdata */
+       need reallocation in nbnxn_cuda_init_atomdata */
     ad->xq = NULL;
     ad->f  = NULL;
 
@@ -134,7 +170,7 @@ static void init_atomdata(cu_atomdata_t *ad, int ntypes)
 }
 
 /*! Initilizes the nonbonded parameter data structure. */
-static void init_nb_params(cu_nb_params_t *nbp,
+static void init_nbparam(cu_nbparam_t *nbp,
                            const interaction_const_t *ic,
                            const nonbonded_verlet_t *nbv)
 {  
@@ -184,36 +220,36 @@ static void init_nb_params(cu_nb_params_t *nbp,
     cu_bind_texture("tex_nbfp", nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
 }
 
-void reset_gpu_rlist_ewaldtab(cu_nonbonded_t cu_nb,
+void reset_gpu_rlist_ewaldtab(nbnxn_cuda_ptr_t cu_nb,
                               const interaction_const_t *ic)
 {
-    cu_nb_params_t * nbp = cu_nb->nb_params;
+    cu_nbparam_t *nbp = cu_nb->nbparam;
 
     nbp->rlist_sq       = ic->rlist * ic->rlist;
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
     nbp->ewald_beta     = ic->ewaldcoeff;
 
-    init_ewald_coulomb_force_table(cu_nb->nb_params);
+    init_ewald_coulomb_force_table(cu_nb->nbparam);
 }
 
-/*! Initilizes the neighborlist data structure. */
-static void init_nblist(cu_nblist_t *nbl)
+/*! Initilizes the pair list data structure. */
+static void init_plist(cu_plist_t *pl)
 {
     /* initilize to NULL poiters to data that is not allocated here and will
-       need reallocation in cu_init_atomdata */
-    nbl->sci     = NULL;
-    nbl->cj4     = NULL;
-    nbl->excl    = NULL;    
+       need reallocation in nbnxn_cuda_init_pairlist */
+    pl->sci     = NULL;
+    pl->cj4     = NULL;
+    pl->excl    = NULL;
     
     /* size -1 indicates that the repective array hasn't been initialized yet */
-    nbl->na_c        = -1;
-    nbl->nsci        = -1;
-    nbl->sci_nalloc  = -1;
-    nbl->ncj4        = -1;
-    nbl->cj4_nalloc  = -1;
-    nbl->nexcl       = -1;
-    nbl->excl_nalloc = -1;
-    nbl->prune_nbl   = FALSE;
+    pl->na_c        = -1;
+    pl->nsci        = -1;
+    pl->sci_nalloc  = -1;
+    pl->ncj4        = -1;
+    pl->cj4_nalloc  = -1;
+    pl->nexcl       = -1;
+    pl->excl_nalloc = -1;
+    pl->do_prune    = FALSE;
 }
 
 /*! Initilizes the timer data structure. */
@@ -236,10 +272,10 @@ static void init_timers(cu_timers_t *t, gmx_bool bDomDec)
         CU_RET_ERR(stat, "cudaEventCreate on stop_nb_k failed");
 
 
-        stat = cudaEventCreateWithFlags(&(t->start_nbl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on start_nbl_h2d failed");
-        stat = cudaEventCreateWithFlags(&(t->stop_nbl_h2d[i]), eventflags);
-        CU_RET_ERR(stat, "cudaEventCreate on stop_nbl_h2d failed");
+        stat = cudaEventCreateWithFlags(&(t->start_pl_h2d[i]), eventflags);
+        CU_RET_ERR(stat, "cudaEventCreate on start_pl_h2d failed");
+        stat = cudaEventCreateWithFlags(&(t->stop_pl_h2d[i]), eventflags);
+        CU_RET_ERR(stat, "cudaEventCreate on stop_pl_h2d failed");
 
         stat = cudaEventCreateWithFlags(&(t->start_nb_h2d[i]), eventflags);
         CU_RET_ERR(stat, "cudaEventCreate on start_nb_h2d failed");
@@ -254,42 +290,42 @@ static void init_timers(cu_timers_t *t, gmx_bool bDomDec)
 }
 
 /*! Initilizes the timings data structure. */
-static void init_timings(cu_timings_t *t)
+static void init_timings(wallclock_gpu_t *t)
 {
     int i, j;
 
-    t->nb_h2d_time = 0.0;
-    t->nb_d2h_time = 0.0;
-    t->nb_count    = 0;
-    t->nbl_h2d_time = 0.0;
-    t->nbl_h2d_count = 0;
+    t->nb_h2d_t = 0.0;
+    t->nb_d2h_t = 0.0;
+    t->nb_c    = 0;
+    t->pl_h2d_t = 0.0;
+    t->pl_h2d_c = 0;
     for (i = 0; i < 2; i++)
     {
         for(j = 0; j < 2; j++)
         {
-            t->k_time[i][j].t = 0.0;
-            t->k_time[i][j].c = 0;
+            t->ktime[i][j].t = 0.0;
+            t->ktime[i][j].c = 0;
         }
     }
 }
 
 void nbnxn_cuda_init(FILE *fplog,
-                     cu_nonbonded_t *p_cu_nb,
+                     nbnxn_cuda_ptr_t *p_cu_nb,
                      gmx_bool bDomDec)
 {
     cudaError_t stat;
-    cu_nonbonded_t  nb;
+    nbnxn_cuda_ptr_t  nb;
 
     if (p_cu_nb == NULL) return;
 
-    snew(nb, 1); 
+    snew(nb, 1);
     snew(nb->dev_info, 1);
-    snew(nb->atomdata, 1); 
-    snew(nb->nb_params, 1); 
-    snew(nb->nblist[eintLocal], 1);
+    snew(nb->atdat, 1);
+    snew(nb->nbparam, 1);
+    snew(nb->plist[eintLocal], 1);
     if (bDomDec)
     {
-        snew(nb->nblist[eintNonlocal], 1);
+        snew(nb->plist[eintNonlocal], 1);
     }
 
     nb->dd_run = bDomDec;
@@ -297,22 +333,22 @@ void nbnxn_cuda_init(FILE *fplog,
     /* CUDA event timers don't work with multiple streams so 
        we have to disable timing with DD */
     nb->do_time = (!bDomDec && (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
-    snew(nb->timers, 1); 
-    snew(nb->timings, 1); 
+    snew(nb->timers, 1);
+    snew(nb->timings, 1);
 
-    /* init tmpdata */
-    pmalloc((void**)&nb->tmpdata.e_lj, sizeof(*nb->tmpdata.e_lj));
-    pmalloc((void**)&nb->tmpdata.e_el, sizeof(*nb->tmpdata.e_el));
-    pmalloc((void**)&nb->tmpdata.f_shift, SHIFTS * sizeof(*nb->tmpdata.f_shift));
+    /* init nbst */
+    pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
+    pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
+    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
-    init_nblist(nb->nblist[eintLocal]);
+    init_plist(nb->plist[eintLocal]);
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[eintLocal]);
     CU_RET_ERR(stat, "cudaStreamCreate on stream[eintLocal] failed");
     if (bDomDec)
     {
-        init_nblist(nb->nblist[eintNonlocal]);
+        init_plist(nb->plist[eintNonlocal]);
         stat = cudaStreamCreate(&nb->stream[eintNonlocal]);
         CU_RET_ERR(stat, "cudaStreamCreate on stream[eintNonlocal] failed");
     }
@@ -373,77 +409,76 @@ void nbnxn_cuda_init(FILE *fplog,
     CU_LAUNCH_ERR_SYNC("dummy test kernel");
 }
 
-void nbnxn_cuda_init_const(FILE *fplogi,
-                           cu_nonbonded_t cu_nb,
+void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
                            const interaction_const_t *ic,
                            const nonbonded_verlet_t *nbv)
 {
-    init_atomdata(cu_nb->atomdata, nbv->grp[0].nbat->ntype);
-    init_nb_params(cu_nb->nb_params, ic, nbv);
+    init_atomdata_first(cu_nb->atdat, nbv->grp[0].nbat->ntype);
+    init_nbparam(cu_nb->nbparam, ic, nbv);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(cu_nb);
 }
 
-void nbnxn_cuda_init_pairlist(cu_nonbonded_t cu_nb,
-                              const nbnxn_pairlist_t *h_nblist,
+void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
+                              const nbnxn_pairlist_t *h_plist,
                               int iloc)
 {
     char         sbuf[STRLEN];
     cudaError_t  stat;
     gmx_bool     do_time    = cu_nb->do_time;
     cudaStream_t stream     = cu_nb->stream[iloc];
-    cu_nblist_t  *d_nblist  = cu_nb->nblist[iloc];
+    cu_plist_t  *d_plist    = cu_nb->plist[iloc];
 
-    if (d_nblist->na_c < 0)
+    if (d_plist->na_c < 0)
     {
-        d_nblist->na_c = h_nblist->na_c;
+        d_plist->na_c = h_plist->na_c;
     }
     else
     {
-        if (d_nblist->na_c != h_nblist->na_c)
+        if (d_plist->na_c != h_plist->na_c)
         {
-            sprintf(sbuf, "In cu_init_nblist: the #atoms per cell has changed (from %d to %d)",
-                    d_nblist->na_c, h_nblist->na_c);
+            sprintf(sbuf, "In cu_init_plist: the #atoms per cell has changed (from %d to %d)",
+                    d_plist->na_c, h_plist->na_c);
             gmx_incons(sbuf);
         }
     }
 
     if (do_time)
     {
-        stat = cudaEventRecord(cu_nb->timers->start_nbl_h2d[iloc], stream);
+        stat = cudaEventRecord(cu_nb->timers->start_pl_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    cu_realloc_buffered((void **)&d_nblist->sci, h_nblist->sci, sizeof(*d_nblist->sci),
-                         &d_nblist->nsci, &d_nblist->sci_nalloc,
-                         h_nblist->nsci,
+    cu_realloc_buffered((void **)&d_plist->sci, h_plist->sci, sizeof(*d_plist->sci),
+                         &d_plist->nsci, &d_plist->sci_nalloc,
+                         h_plist->nsci,
                          stream, TRUE);
 
-    cu_realloc_buffered((void **)&d_nblist->cj4, h_nblist->cj4, sizeof(*d_nblist->cj4),
-                         &d_nblist->ncj4, &d_nblist->cj4_nalloc,
-                         h_nblist->ncj4,
+    cu_realloc_buffered((void **)&d_plist->cj4, h_plist->cj4, sizeof(*d_plist->cj4),
+                         &d_plist->ncj4, &d_plist->cj4_nalloc,
+                         h_plist->ncj4,
                          stream, TRUE);
 
-    cu_realloc_buffered((void **)&d_nblist->excl, h_nblist->excl, sizeof(*d_nblist->excl),
-                         &d_nblist->nexcl, &d_nblist->excl_nalloc,
-                         h_nblist->nexcl, 
+    cu_realloc_buffered((void **)&d_plist->excl, h_plist->excl, sizeof(*d_plist->excl),
+                         &d_plist->nexcl, &d_plist->excl_nalloc,
+                         h_plist->nexcl,
                          stream, TRUE);
 
     if (do_time)
     {
-        stat = cudaEventRecord(cu_nb->timers->stop_nbl_h2d[iloc], stream);
+        stat = cudaEventRecord(cu_nb->timers->stop_pl_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    /* need to prune the neighbor list during the next step */
-    d_nblist->prune_nbl = TRUE;
+    /* need to prune the pair list during the next step */
+    d_plist->do_prune = TRUE;
 }
 
-void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t cu_nb,
+void nbnxn_cuda_upload_shiftvec(nbnxn_cuda_ptr_t cu_nb,
                                 const nbnxn_atomdata_t *nbatom)
 {
-    cu_atomdata_t *adat = cu_nb->atomdata;
+    cu_atomdata_t *adat = cu_nb->atdat;
     cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
     /* only if we have a dynamic box */
@@ -456,10 +491,10 @@ void nbnxn_cuda_upload_shiftvec(cu_nonbonded_t cu_nb,
 }
 
 /*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */
-static void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb, int natoms_clear)
+static void nbnxn_cuda_clear_f(nbnxn_cuda_ptr_t cu_nb, int natoms_clear)
 {
     cudaError_t   stat;
-    cu_atomdata_t *adat = cu_nb->atomdata;
+    cu_atomdata_t *adat = cu_nb->atdat;
     cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
     stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
@@ -467,23 +502,23 @@ static void nbnxn_cuda_clear_f(cu_nonbonded_t cu_nb, int natoms_clear)
 }
 
 /*! Clears nonbonded shift force output array and energy outputs on the GPU. */
-static void nbnxn_cuda_clear_e_fshift(cu_nonbonded_t cu_nb)
+static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t   stat;
-    cu_atomdata_t *adat = cu_nb->atomdata;
+    cu_atomdata_t *adat = cu_nb->atdat;
     cudaStream_t  ls    = cu_nb->stream[eintLocal];
 
-    stat = cudaMemsetAsync(adat->f_shift, 0, SHIFTS * sizeof(*adat->f_shift), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on f_shift falied");
+    stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
+    CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
     stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
     stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), ls);
     CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
 }
 
-void nbnxn_cuda_clear_outputs(cu_nonbonded_t cu_nb, int flags)
+void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb, int flags)
 {
-    nbnxn_cuda_clear_f(cu_nb, cu_nb->atomdata->natoms);
+    nbnxn_cuda_clear_f(cu_nb, cu_nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were 
        used in the current step */
     if (flags & GMX_FORCE_VIRIAL)
@@ -493,7 +528,7 @@ void nbnxn_cuda_clear_outputs(cu_nonbonded_t cu_nb, int flags)
 }
 
 /* TODO: add gmx over_alloc call */
-void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
+void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
                               const nbnxn_atomdata_t *nbat)
 {
     cudaError_t   stat;
@@ -501,7 +536,7 @@ void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
     gmx_bool      realloced;
     gmx_bool      do_time   = cu_nb->do_time;
     cu_timers_t   *timers   = cu_nb->timers;
-    cu_atomdata_t *d_atomd  = cu_nb->atomdata;
+    cu_atomdata_t *d_atdat  = cu_nb->atdat;
     cudaStream_t  ls        = cu_nb->stream[eintLocal];
 
     natoms = nbat->natoms;
@@ -515,33 +550,33 @@ void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
-       available and only allocate if we haven't initilzed yet, i.e d_atomd->natoms == -1 */
-    if (natoms > d_atomd->nalloc)
+       available and only allocate if we haven't initilzed yet, i.e d_atdat->natoms == -1 */
+    if (natoms > d_atdat->nalloc)
     {
         nalloc = natoms * 1.2 + 100;
     
         /* free up first if the arrays have already been initialized */
-        if (d_atomd->nalloc != -1)
+        if (d_atdat->nalloc != -1)
         {
-            cu_free_buffered(d_atomd->f, &d_atomd->natoms, &d_atomd->nalloc);
-            cu_free_buffered(d_atomd->xq);
-            cu_free_buffered(d_atomd->atom_types);
+            cu_free_buffered(d_atdat->f, &d_atdat->natoms, &d_atdat->nalloc);
+            cu_free_buffered(d_atdat->xq);
+            cu_free_buffered(d_atdat->atom_types);
         }
         
-        stat = cudaMalloc((void **)&d_atomd->f, nalloc*sizeof(*d_atomd->f));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->f");                   
-        stat = cudaMalloc((void **)&d_atomd->xq, nalloc*sizeof(*d_atomd->xq));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->xq");     
+        stat = cudaMalloc((void **)&d_atdat->f, nalloc*sizeof(*d_atdat->f));
+        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
+        stat = cudaMalloc((void **)&d_atdat->xq, nalloc*sizeof(*d_atdat->xq));
+        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
 
-        stat = cudaMalloc((void **)&d_atomd->atom_types, nalloc*sizeof(*d_atomd->atom_types));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atomd->atom_types"); 
+        stat = cudaMalloc((void **)&d_atdat->atom_types, nalloc*sizeof(*d_atdat->atom_types));
+        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
 
-        d_atomd->nalloc = nalloc;
+        d_atdat->nalloc = nalloc;
         realloced = TRUE;
     }
 
-    d_atomd->natoms = natoms;
-    d_atomd->natoms_local = nbat->natoms_local;
+    d_atdat->natoms = natoms;
+    d_atdat->natoms_local = nbat->natoms_local;
 
     /* need to clear GPU f output if realloc happened */
     if (realloced)
@@ -549,8 +584,8 @@ void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
         nbnxn_cuda_clear_f(cu_nb, nalloc);
     }
 
-    cu_copy_H2D_async(d_atomd->atom_types, nbat->type,
-                      natoms*sizeof(*d_atomd->atom_types), ls);
+    cu_copy_H2D_async(d_atdat->atom_types, nbat->type,
+                      natoms*sizeof(*d_atdat->atom_types), ls);
 
     if (do_time)
     {
@@ -559,26 +594,26 @@ void nbnxn_cuda_init_atomdata(cu_nonbonded_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
+void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
 {
     cudaError_t     stat;
-    cu_atomdata_t   *atomdata;
-    cu_nb_params_t  *nb_params;
-    cu_nblist_t     *nblist, *nblist_nl;
+    cu_atomdata_t   *atdat;
+    cu_nbparam_t    *nbparam;
+    cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
-    atomdata    = cu_nb->atomdata;
-    nb_params   = cu_nb->nb_params;
-    nblist      = cu_nb->nblist[eintLocal];
-    nblist_nl   = cu_nb->nblist[eintNonlocal];
+    atdat       = cu_nb->atdat;
+    nbparam     = cu_nb->nbparam;
+    plist       = cu_nb->plist[eintLocal];
+    plist_nl    = cu_nb->plist[eintNonlocal];
     timers      = cu_nb->timers;
 
     if (cu_nb == NULL) return;
 
-    if (nb_params->eeltype == cu_eelEWALD)
+    if (nbparam->eeltype == cu_eelEWALD)
     {
         cu_unbind_texture("tex_coulomb_tab");
-        cu_free_buffered(nb_params->coulomb_tab, &nb_params->coulomb_tab_size);
+        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
     }
 
     stat = cudaEventDestroy(cu_nb->nonlocal_done);
@@ -596,16 +631,15 @@ void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
         /* The non-local counters/stream (second in the array) are needed only with DD. */
         for (int i = 0; i <= bDomDec ? 1 : 0; i++)
         {
-
             stat = cudaEventDestroy(timers->start_nb_k[i]);
             CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nb_k");
             stat = cudaEventDestroy(timers->stop_nb_k[i]);
             CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nb_k");
 
-            stat = cudaEventDestroy(timers->start_nbl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_nbl_h2d");
-            stat = cudaEventDestroy(timers->stop_nbl_h2d[i]);
-            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_nbl_h2d");
+            stat = cudaEventDestroy(timers->start_pl_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->start_pl_h2d");
+            stat = cudaEventDestroy(timers->stop_pl_h2d[i]);
+            CU_RET_ERR(stat, "cudaEventDestroy failed on timers->stop_pl_h2d");
 
             stat = cudaStreamDestroy(cu_nb->stream[i]);
             CU_RET_ERR(stat, "cudaStreamDestroy failed on stream");
@@ -623,30 +657,30 @@ void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
     }
 
     cu_unbind_texture("tex_nbfp");
-    cu_free_buffered(nb_params->nbfp);
+    cu_free_buffered(nbparam->nbfp);
 
-    stat = cudaFree(atomdata->shift_vec);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->shift_vec");
-    stat = cudaFree(atomdata->f_shift);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->f_shift");
+    stat = cudaFree(atdat->shift_vec);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->shift_vec");
+    stat = cudaFree(atdat->fshift);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->fshift");
 
-    stat = cudaFree(atomdata->e_lj);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->e_lj");
-    stat = cudaFree(atomdata->e_el);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on atomdata->e_el");
+    stat = cudaFree(atdat->e_lj);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->e_lj");
+    stat = cudaFree(atdat->e_el);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on atdat->e_el");
 
-    cu_free_buffered(atomdata->f, &atomdata->natoms, &atomdata->nalloc);
-    cu_free_buffered(atomdata->xq);
-    cu_free_buffered(atomdata->atom_types, &atomdata->ntypes);
+    cu_free_buffered(atdat->f, &atdat->natoms, &atdat->nalloc);
+    cu_free_buffered(atdat->xq);
+    cu_free_buffered(atdat->atom_types, &atdat->ntypes);
 
-    cu_free_buffered(nblist->sci, &nblist->nsci, &nblist->sci_nalloc);
-    cu_free_buffered(nblist->cj4, &nblist->ncj4, &nblist->cj4_nalloc);
-    cu_free_buffered(nblist->excl, &nblist->nexcl, &nblist->excl_nalloc);
+    cu_free_buffered(plist->sci, &plist->nsci, &plist->sci_nalloc);
+    cu_free_buffered(plist->cj4, &plist->ncj4, &plist->cj4_nalloc);
+    cu_free_buffered(plist->excl, &plist->nexcl, &plist->excl_nalloc);
     if (bDomDec)
     {
-        cu_free_buffered(nblist_nl->sci, &nblist_nl->nsci, &nblist_nl->sci_nalloc);
-        cu_free_buffered(nblist_nl->cj4, &nblist_nl->ncj4, &nblist_nl->cj4_nalloc);
-        cu_free_buffered(nblist_nl->excl, &nblist_nl->nexcl, &nblist->excl_nalloc);
+        cu_free_buffered(plist_nl->sci, &plist_nl->nsci, &plist_nl->sci_nalloc);
+        cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
+        cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
     }
 
     stat = cudaThreadExit();
@@ -658,7 +692,7 @@ void nbnxn_cuda_free(FILE *fplog, cu_nonbonded_t cu_nb, gmx_bool bDomDec)
     }
 }
 
-void cu_synchstream_atomdata(cu_nonbonded_t cu_nb, int iloc)
+void cu_synchstream_atdat(nbnxn_cuda_ptr_t cu_nb, int iloc)
 {
     cudaError_t stat;
     cudaStream_t stream = cu_nb->stream[iloc];
@@ -667,12 +701,12 @@ void cu_synchstream_atomdata(cu_nonbonded_t cu_nb, int iloc)
     CU_RET_ERR(stat, "cudaStreamWaitEvent failed");
 }
 
-cu_timings_t * nbnxn_cuda_get_timings(cu_nonbonded_t cu_nb)
+wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 {
     return (cu_nb != NULL && cu_nb->do_time) ? cu_nb->timings : NULL;
 }
 
-void nbnxn_cuda_reset_timings(cu_nonbonded_t cu_nb)
+void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
 {
     if (cu_nb->do_time)
     {
@@ -680,7 +714,7 @@ void nbnxn_cuda_reset_timings(cu_nonbonded_t cu_nb)
     }
 }
 
-int nbnxn_cuda_min_ci_balanced(cu_nonbonded_t cu_nb)
+int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 {
     return cu_nb != NULL ? 
         GPU_MIN_CI_BALANCED_FACTOR*cu_nb->dev_info->dev_prop.multiProcessorCount : 0;
@@ -692,7 +726,7 @@ int nbnxn_cuda_min_ci_balanced(cu_nonbonded_t cu_nb)
 /* Upload asynchronously to the GPU the coordinate+charge array.
  * XXX not used  
  */
-void cu_move_xq(cu_nonbonded_t cu_nb, const nbnxn_atomdata_t *nbat, int aloc)
+void cu_move_xq(nbnxn_cuda_ptr_t cu_nb, const nbnxn_atomdata_t *nbat, int aloc)
 {
     int iloc = -1; 
 
@@ -711,7 +745,7 @@ void cu_move_xq(cu_nonbonded_t cu_nb, const nbnxn_atomdata_t *nbat, int aloc)
         gmx_incons("Invalid atom locality passed (valid here is only local or nonlocal)");
     }
 
-    cu_atomdata_t   *d_nbat = cu_nb->atomdata;
+    cu_atomdata_t   *d_nbat = cu_nb->atdat;
     cudaStream_t    stream  = cu_nb->stream[iloc];
 
     cu_copy_H2D_async(d_nbat->xq, nbat->x,
@@ -721,9 +755,9 @@ void cu_move_xq(cu_nonbonded_t cu_nb, const nbnxn_atomdata_t *nbat, int aloc)
 /*! Waits until the atom data gets copied to the GPU and times the transfer.
  *  XXX not used  
  */
-void cu_wait_atomdata(cu_nonbonded_t cu_nb)
+void cu_wait_atdat(nbnxn_cuda_ptr_t cu_nb)
 {
     float t;
-    cu_wait_event(cu_nb->timers->stop_atdat, cu_nb->timers->start_atdat, &t);
-    cu_nb->timings->nbl_h2d_time += t;
+    cu_wait_event_time(cu_nb->timers->stop_atdat, cu_nb->timers->start_atdat, &t);
+    cu_nb->timings->pl_h2d_t += t;
 }

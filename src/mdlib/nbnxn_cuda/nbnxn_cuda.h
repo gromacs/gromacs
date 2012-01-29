@@ -1,5 +1,40 @@
-#ifndef GPU_NB_H
-#define GPU_NB_H
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ *
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ *
+ * And Hey:
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ */
+
+#ifndef NBNXN_CUDA_H
+#define NBNXN_CUDA_H
 
 #include "types/nbnxn_cuda_types_ext.h"
 
@@ -15,15 +50,15 @@ extern "C" {
  *  The local and non-local interation calculations are launched in two 
  *  separate streams.
  */
-void nbnxn_cuda_launch_kernel(cu_nonbonded_t /*cu_nb*/,
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t /*cu_nb*/,
                               const nbnxn_atomdata_t * /*nbdata*/,
                               int /*flags*/,
                               int /*iloc*/);
 
 /*! Launch asynchronously the dowload of nonbonded forces from the GPU 
- *  (also energies/shift forces if required). 
+ *  (and energies/shift forces if required). 
  */
-void nbnxn_cuda_launch_cpyback(cu_nonbonded_t /*cu_nb*/,
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t /*cu_nb*/,
                                const nbnxn_atomdata_t * /*nbatom*/,
                                int /*flags*/,
                                int /*aloc*/);
@@ -31,13 +66,14 @@ void nbnxn_cuda_launch_cpyback(cu_nonbonded_t /*cu_nb*/,
 /*! Wait for the asynchrounously launched nonbonded calculations and data 
  *  transfers to finish. 
  */
-void nbnxn_cuda_wait_gpu(cu_nonbonded_t /*cu_nb*/,
+void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t /*cu_nb*/,
                          const nbnxn_atomdata_t * /*nbatom*/,
                          int /*flags*/, int /*aloc*/,
-                         float * /*e_lj*/, float * /*e_el*/, rvec * /*fshift*/);
+                         float * /*e_lj*/, float * /*e_el*/,
+                         rvec * /*fshift*/);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* NBNXN_CUDA_H */

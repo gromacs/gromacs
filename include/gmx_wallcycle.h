@@ -81,7 +81,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-			    gmx_wallcycle_t wc, cu_timings_t *gpu_t);
+			    gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);

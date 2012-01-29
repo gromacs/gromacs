@@ -527,7 +527,7 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
                         gmx_large_int_t *step_rel,t_inputrec *ir,
                         gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                         gmx_runtime_t *runtime,
-                        cu_nonbonded_t gpu_nb)
+                        nbnxn_cuda_ptr_t cu_nbv)
 {
     char buf[STRLEN],sbuf[STEPSTRSIZE];
 
@@ -537,9 +537,9 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
     md_print_warning(cr,fplog,buf);
 
 #ifdef GMX_GPU
-    if (gpu_nb)
+    if (cu_nbv)
     {
-        nbnxn_cuda_reset_timings(gpu_nb);
+        nbnxn_cuda_reset_timings(cu_nbv);
     }
 #endif 
 

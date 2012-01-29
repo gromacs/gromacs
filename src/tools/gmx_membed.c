@@ -2652,7 +2652,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,fr->nbv->gpu_nb);
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime,fr->nbv->cu_nbv);
             wcycle_set_reset_counters(wcycle,-1);
             bResetCountersHalfMaxH = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
@@ -3470,7 +3470,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->nbv->useGPU ? nbnxn_cuda_get_timings(fr->nbv->gpu_nb) :
+               fr->nbv->useGPU ? nbnxn_cuda_get_timings(fr->nbv->cu_nbv) :
 #endif
                NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr),
@@ -3495,7 +3495,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
         /* free GPU memory and uninitialize GPU */
-        nbnxn_cuda_free(fplog, fr->nbv->gpu_nb, DOMAINDECOMP(cr));
+        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv, DOMAINDECOMP(cr));
 
         if (uninit_gpu(fplog, gpu_device_id) != 0)
         {
