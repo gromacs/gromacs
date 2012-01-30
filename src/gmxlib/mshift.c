@@ -544,12 +544,12 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     else if (bTriclinic)
       mk_1shift_tric(npbcdim,box,hbox,x[ai],x[aj],g->ishift[ai],is_aj);
     else
-      mk_1shift(npbcdim,hbox,x[g0+ai],x[aj],g->ishift[ai],is_aj);
+      mk_1shift(npbcdim,hbox,x[ai],x[aj],g->ishift[ai],is_aj);
     
     if (egc[aj-g0] == egcolWhite) {
       if (aj - g0 < *AtomI)
 	*AtomI = aj - g0;
-      egc[aj] = egcolGrey;
+      egc[aj-g0] = egcolGrey;
       
       copy_ivec(is_aj,g->ishift[aj]);
 
