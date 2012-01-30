@@ -200,6 +200,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         real rc_max;
 
         /* Normal Verlet type neighbor-list, currently only limited feature support */
+        if (inputrec2nboundeddim(ir) < 3)
+        {
+            warning_error(wi,"With Verlet lists only full pbc or pbc=xy with walls is supported");
+        }
         if (ir->rcoulomb != ir->rvdw)
         {
             warning_error(wi,"With Verlet lists rcoulomb!=rvdw is not supported");
