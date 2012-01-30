@@ -478,7 +478,7 @@ int main(int argc,char *argv[])
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
       "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
     { "-nsteps",  FALSE, etINT, {&nsteps},
-      "HIDDENRun this amount of steps (overrides mdp option)" },
+      "Run this amount of steps (overrides mdp option)" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 

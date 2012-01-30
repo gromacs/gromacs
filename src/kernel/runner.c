@@ -572,7 +572,28 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* override nsteps if defined on the command line */
     if (nsteps_cmdline >= -1)
     {
+        char stmp[STRLEN];
+
         inputrec->nsteps = nsteps_cmdline;
+        if (EI_DYNAMICS(inputrec->eI))
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %f ps",
+                    nsteps_cmdline, nsteps_cmdline*inputrec->delta_t);
+        }
+        else
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
+                    nsteps_cmdline);
+        }
+
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "\n%s\n\n", stmp);
+        }
+        if (fplog)
+        {
+            fprintf(fplog, "\n%s\n", stmp);
+        }
     }
 
     if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
