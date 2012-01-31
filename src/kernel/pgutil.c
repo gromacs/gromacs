@@ -42,24 +42,38 @@
 #include "string.h"
 #include "gmx_fatal.h"
 
+#define BUFSIZE 1024
 static void atom_not_found(int fatal_errno,const char *file,int line,
 			   const char *atomname,int resind,
 			   const char *bondtype,gmx_bool bDontQuit)
 {
-  if (strcmp(bondtype,"check") != 0) {
-    if (bDontQuit) {
-      gmx_warning("WARNING: Atom %s is used in an interaction of type %s in the\n"
-		  "topology database, but an atom of that name was not found in\n"
-		  "residue number %d.\n",
-		  atomname,bondtype,resind+1);
-    } else {
-      gmx_fatal(fatal_errno,file,line,
-		"Atom %s is used in an interaction of type %s in the topology\n"
-		"database, but an atom of that name was not found in residue\n"
-		"number %d.\n",
-		atomname,bondtype,resind+1);
+    char message_buffer[BUFSIZE];
+    if (strcmp(bondtype,"check") != 0)
+    {
+        if (0 != strcmp(bondtype, "atom"))
+        {
+            snprintf(message_buffer, 1024,
+                     "Atom %s is used in an interaction of type %s in the topology\n"
+                     "database, but an atom of that name was not found in residue\n"
+                     "number %d.\n",
+                     atomname,bondtype,resind+1);
+        }
+        else
+        {
+            snprintf(message_buffer, 1024,
+                     "Atom %s is used in the topology database, but an atom of that\n"
+                     "name was not found in residue number %d.\n",
+                     atomname,resind+1);
+        }
+        if (bDontQuit)
+        {
+            gmx_warning("WARNING: %s", message_buffer);
+        }
+        else
+        {
+            gmx_fatal(fatal_errno,file,line,message_buffer);
+        }
     }
-  }
 }
 	
 atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
