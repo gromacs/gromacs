@@ -51,9 +51,9 @@ MACRO(gmx_c_flags)
     # icc
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -std=gnu99" 
-                            GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-std=gnu99" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops" GMXC_CFLAGS_RELEASE)
+            GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_X86 "-mtune=core2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_IA64 "-mtune=itanium2" GMXC_CFLAGS_RELEASE)
         else()
@@ -64,10 +64,9 @@ MACRO(gmx_c_flags)
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            GMX_TEST_CXXFLAG(CXXFLAGS_OPT 
-                             "-ip -funroll-all-loops -std=gnu99" 
-                             GMXC_CXXFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-std=gnu99" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops" GMXC_CXXFLAGS_RELEASE)
+            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "-mtune=core2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_IA64 "-mtune=itanium2" 
                               GMXC_CXXFLAGS_RELEASE)
