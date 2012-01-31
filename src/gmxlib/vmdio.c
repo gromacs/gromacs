@@ -242,13 +242,9 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 #else
     WIN32_FIND_DATA ffd;
     HANDLE hFind = INVALID_HANDLE_VALUE;
-    char defpathenv[GMX_PATH_MAX];
-#ifdef _MSC_VER
     char progfolder[GMX_PATH_MAX];
+    char defpathenv[GMX_PATH_MAX];
     SHGetFolderPath(NULL,CSIDL_PROGRAM_FILES,NULL,SHGFP_TYPE_CURRENT,progfolder);
-#else /*e.g. icc requires extra shell32.dll for SHGetFolderPath to work*/
-    char progfolder[GMX_PATH_MAX] = "C:\\Program Files";
-#endif
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
 
