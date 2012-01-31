@@ -160,10 +160,10 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
       newparam->qangle.c[i]=old[i+1];
     break;
   case F_LINEAR_ANGLES:
-    newparam->linangle.klinA = old[0];
-    newparam->linangle.aA    = old[1];
-    newparam->linangle.klinB = old[2];
-    newparam->linangle.aB    = old[3];
+    newparam->linangle.aA    = old[0];
+    newparam->linangle.klinA = old[1];
+    newparam->linangle.aB    = old[2];
+    newparam->linangle.klinB = old[3];
     break;
   case F_ANGLES:
   case F_BONDS:
