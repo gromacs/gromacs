@@ -545,7 +545,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
 	atoms->resinfo[atoms->nres-1].nr = resnr;
 	/* calculate shift of the solvent molecule using the first atom */
 	copy_rvec(x_solvt[i],dx);
-	put_atoms_in_box(box,1,&dx);
+	put_atoms_in_box(ePBC,box,1,&dx);
 	rvec_dec(dx,x_solvt[i]);
       }
       atoms->atom[atoms->nr] = atoms_solvt->atom[i];

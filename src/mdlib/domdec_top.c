@@ -1627,7 +1627,9 @@ void dd_make_local_top(FILE *fplog,
                        gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                        int npbcdim,matrix box,
                        rvec cellsize_min,ivec npulse,
-                       t_forcerec *fr,gmx_vsite_t *vsite,
+                       t_forcerec *fr,
+                       rvec *cgcm_or_x,
+                       gmx_vsite_t *vsite,
                        gmx_mtop_t *mtop,gmx_localtop_t *ltop)
 {
     gmx_bool bUniqueExcl,bRCheckMB,bRCheck2B,bRCheckExcl;
@@ -1714,7 +1716,7 @@ void dd_make_local_top(FILE *fplog,
         make_local_bondeds_excls(dd,zones,mtop,fr->cginfo,
                                  bRCheckMB,rcheck,bRCheck2B,rc,
                                  dd->la2lc,
-                                 pbc_null,fr->cg_cm,
+                                 pbc_null,cgcm_or_x,
                                  &ltop->idef,vsite,
                                  &ltop->excls,&nexcl);
     
@@ -1722,12 +1724,6 @@ void dd_make_local_top(FILE *fplog,
      * we can only do this when we have the charge arrays.
      */
     ltop->idef.ilsort = ilsortUNKNOWN;
-    
-    /*
-    nexcl = make_local_exclusions(dd,zones,mtop,bRCheckExcl,
-                                  rc,dd->la2lc,pbc_null,fr->cg_cm,
-                                  fr,&ltop->excls);
-    */
     
     if (dd->reverse_top->bExclRequired)
     {

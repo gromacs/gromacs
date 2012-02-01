@@ -188,9 +188,8 @@ extern "C" {
    * The index consists of NCUCEDGE pairs of vertex indices.
    * The index does not change, so it needs to be retrieved only once.
    */
-  void put_atom_in_box(matrix box,rvec x);
 
-  void put_atoms_in_box(matrix box,int natoms,rvec x[]);
+  void put_atoms_in_box(int ePBC, matrix box,int natoms,rvec x[]);
   /* These routines puts ONE or ALL atoms in the box, not caring 
    * about charge groups!
    * Also works for triclinic cells.

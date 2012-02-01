@@ -225,11 +225,13 @@ void dd_make_reverse_top(FILE *fplog,
 void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 void dd_make_local_top(FILE *fplog,
-                              gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
-                              int npbcdim,matrix box,
-                              rvec cellsize_min,ivec npulse,
-                              t_forcerec *fr,gmx_vsite_t *vsite,
-                              gmx_mtop_t *top,gmx_localtop_t *ltop);
+                       gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
+                       int npbcdim,matrix box,
+                       rvec cellsize_min,ivec npulse,
+                       t_forcerec *fr,
+                       rvec *cgcm_or_x,
+                       gmx_vsite_t *vsite,
+                       gmx_mtop_t *top,gmx_localtop_t *ltop);
 
 void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
                               gmx_localtop_t *ltop);

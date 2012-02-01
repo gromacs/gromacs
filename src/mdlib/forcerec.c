@@ -2088,7 +2088,8 @@ void init_forcerec(FILE *fp,
           fr->bMask[i] = TRUE;
           }*/
     
-    if (ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr)) {
+    if (fr->cutoff_scheme == ecutsGROUP &&
+        ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr)) {
         /* Count the total number of charge groups */
         fr->cg_nalloc = ncg_mtop(mtop);
         srenew(fr->cg_cm,fr->cg_nalloc);

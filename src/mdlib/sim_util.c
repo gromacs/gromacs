@@ -734,29 +734,16 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             calc_shifts(box,fr->shift_vec);
 
         if (bCalcCGCM) { 
-            put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
-                    &(top->cgs),x,fr->cg_cm);
-            inc_nrnb(nrnb,eNR_CGCM,homenr);
-            inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
+            put_atoms_in_box(fr->ePBC,box,homenr,x);
+            inc_nrnb(nrnb,eNR_SHIFTX,homenr);
         } 
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
             unshift_self(graph,box,x);
         }
     } 
-    else if (bCalcCGCM) {
-        calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
-        inc_nrnb(nrnb,eNR_CGCM,homenr);
-    }
 
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
                                   fr->shift_vec,nbv->grp[0].nbat);
-    if (bCalcCGCM) {
-        if (PAR(cr)) {
-            move_cgcm(fplog,cr,fr->cg_cm);
-        }
-        if (gmx_debug_at)
-            pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
-    }
 
 #ifdef GMX_MPI
     if (!(cr->duty & DUTY_PME)) {

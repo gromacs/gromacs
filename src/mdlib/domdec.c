@@ -1560,17 +1560,6 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
 }
 
-static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
-{
-    if (debug)
-    {
-        fprintf(debug,"Reallocating forcerec: currently %d, required %d, allocating %d\n",fr->cg_nalloc,nalloc,over_alloc_dd(nalloc));
-    }
-    fr->cg_nalloc = over_alloc_dd(nalloc);
-    srenew(fr->cg_cm,fr->cg_nalloc);
-    srenew(fr->cginfo,fr->cg_nalloc);
-}
-
 static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
 {
     int est;
@@ -1616,6 +1605,31 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
     if (f != NULL)
     {
         srenew(*f,state->nalloc);
+    }
+}
+
+static void dd_check_alloc_ncg(t_forcerec *fr,t_state *state,rvec **f,
+                               int nalloc)
+{
+    if (nalloc > fr->cg_nalloc)
+    {
+        if (debug)
+        {
+            fprintf(debug,"Reallocating forcerec: currently %d, required %d, allocating %d\n",fr->cg_nalloc,nalloc,over_alloc_dd(nalloc));
+        }
+        fr->cg_nalloc = over_alloc_dd(nalloc);
+        srenew(fr->cginfo,fr->cg_nalloc);
+        if (fr->cutoff_scheme == ecutsGROUP)
+        {
+            srenew(fr->cg_cm,fr->cg_nalloc);
+        }
+    }
+    if (fr->cutoff_scheme == ecutsVERLET && nalloc > state->nalloc)
+    {
+        /* We don't use charge groups, we use x in state to set up
+         * the atom communication.
+         */
+        dd_realloc_state(state,f,nalloc);
     }
 }
 
@@ -4422,7 +4436,10 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     }
     
     comm  = dd->comm;
-    cg_cm = fr->cg_cm;
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        cg_cm = fr->cg_cm;
+    }
     
     for(i=0; i<estNR; i++)
     {
@@ -4515,7 +4532,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                      cgindex,
                      ( thread   *dd->ncg_home)/nthread,
                      ((thread+1)*dd->ncg_home)/nthread,
-                     cg_cm,
+                     fr->cutoff_scheme==ecutsGROUP ? cg_cm : state->x,
                      move);
     }
 
@@ -4579,12 +4596,29 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
         }
     }
     
-    /* Recalculating cg_cm might be cheaper than communicating,
-     * but that could give rise to rounding issues.
-     */
-    home_pos_cg =
-        compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
-                                nvec,cg_cm,comm,bCompact);
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        /* Recalculating cg_cm might be cheaper than communicating,
+         * but that could give rise to rounding issues.
+         */
+        home_pos_cg =
+            compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
+                                    nvec,cg_cm,comm,bCompact);
+    }
+    else
+    {
+        /* Without charge groups we send the moved atom coordinates
+         * over twice. This is so the code below can be used without
+         * many conditionals for both for with and without charge groups.
+         */
+        home_pos_cg =
+            compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
+                                    nvec,state->x,comm,FALSE);
+        if (bCompact)
+        {
+            home_pos_cg -= *ncg_moved;
+        }
+    }
     
     vec = 0;
     home_pos_at =
@@ -4793,12 +4827,14 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
                 dd->index_gl[home_pos_cg] = comm->buf_int[cg*DD_CGIBS];
                 dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
                 /* Copy the state from the buffer */
-                if (home_pos_cg >= fr->cg_nalloc)
+                dd_check_alloc_ncg(fr,state,f,home_pos_cg+1);
+                if (fr->cutoff_scheme == ecutsGROUP)
                 {
-                    dd_realloc_fr_cg(fr,home_pos_cg+1);
                     cg_cm = fr->cg_cm;
+                    copy_rvec(comm->vbuf.v[buf_pos],cg_cm[home_pos_cg]);
                 }
-                copy_rvec(comm->vbuf.v[buf_pos++],cg_cm[home_pos_cg]);
+                buf_pos++;
+
                 /* Set the cginfo */
                 fr->cginfo[home_pos_cg] = ddcginfo(cginfo_mb,
                                                    dd->index_gl[home_pos_cg]);
@@ -7307,7 +7343,8 @@ static gmx_bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
 }
 
 static void setup_dd_communication(gmx_domdec_t *dd,
-                                   matrix box,gmx_ddbox_t *ddbox,t_forcerec *fr)
+                                   matrix box,gmx_ddbox_t *ddbox,
+                                   t_forcerec *fr,t_state *state,rvec **f)
 {
     int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot;
     int nzone,nzone_send,zone,zonei,cg0,cg1;
@@ -7335,7 +7372,14 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     }
     
     comm  = dd->comm;
-    cg_cm = fr->cg_cm;
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        cg_cm = fr->cg_cm;
+    }
+    else
+    {
+        cg_cm = state->x;
+    }
 
     for(dim_ind=0; dim_ind<dd->ndim; dim_ind++)
     {
@@ -7851,10 +7895,14 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                             recv_i,        ind->nrecv[nzone]);
 
             /* Make space for cg_cm */
-            if (pos_cg + ind->nrecv[nzone] > fr->cg_nalloc)
+            dd_check_alloc_ncg(fr,state,f,pos_cg + ind->nrecv[nzone]);
+            if (fr->cutoff_scheme == ecutsGROUP)
             {
-                dd_realloc_fr_cg(fr,pos_cg + ind->nrecv[nzone]);
                 cg_cm = fr->cg_cm;
+            }
+            else
+            {
+                cg_cm = state->x;
             }
             /* Communicate cg_cm */
             if (cd->bInPlace)
@@ -8372,7 +8420,7 @@ static int dd_sort_order(gmx_domdec_t *dd,t_forcerec *fr,int ncg_home_old)
     return ncg_new;
 }
 
-static int dd_sort_order_nsbox(gmx_domdec_t *dd,t_forcerec *fr)
+static int dd_sort_order_nbnxn(gmx_domdec_t *dd,t_forcerec *fr)
 {
     gmx_cgsort_t *sort;
     int  ncg_new,i,*a,na;
@@ -8420,7 +8468,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     }
     else
     {
-        ncg_new = dd_sort_order_nsbox(dd,fr);
+        ncg_new = dd_sort_order_nbnxn(dd,fr);
     }
 
     /* We alloc with the old size, since cgindex is still old */
@@ -8477,8 +8525,11 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             }
         }
     }
-    /* Reorder cgcm */
-    order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        /* Reorder cgcm */
+        order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);
+    }
     
     if (dd->ncg_home+1 > sort->ibuf_nalloc)
     {
@@ -8794,12 +8845,14 @@ void dd_partition_system(FILE            *fplog,
         
         dd_make_local_cgs(dd,&top_local->cgs);
         
-        if (dd->ncg_home > fr->cg_nalloc)
+        /* Ensure that we have space for the new distribution */
+        dd_check_alloc_ncg(fr,state_local,f,dd->ncg_home);
+
+        if (fr->cutoff_scheme == ecutsGROUP)
         {
-            dd_realloc_fr_cg(fr,dd->ncg_home);
+            calc_cgcm(fplog,0,dd->ncg_home,
+                      &top_local->cgs,state_local->x,fr->cg_cm);
         }
-        calc_cgcm(fplog,0,dd->ncg_home,
-                  &top_local->cgs,state_local->x,fr->cg_cm);
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
         
@@ -8990,7 +9043,7 @@ void dd_partition_system(FILE            *fplog,
     wallcycle_sub_start(wcycle,ewcsDD_SETUPCOMM);
     
     /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(dd,state_local->box,&ddbox,fr);
+    setup_dd_communication(dd,state_local->box,&ddbox,fr,state_local,f);
     
     /* Set the indices */
     make_dd_indices(dd,cgs_gl->index,cg0);
@@ -9020,7 +9073,9 @@ void dd_partition_system(FILE            *fplog,
     }
     dd_make_local_top(fplog,dd,&comm->zones,dd->npbcdim,state_local->box,
                       comm->cellsize_min,np,
-                      fr,vsite,top_global,top_local);
+                      fr,
+                      fr->cutoff_scheme==ecutsGROUP ? fr->cg_cm : state_local->x,
+                      vsite,top_global,top_local);
     
     /* Set up the special atom communication */
     n = comm->nat[ddnatZONE];
@@ -9058,17 +9113,6 @@ void dd_partition_system(FILE            *fplog,
     if (state_local->natoms > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,state_local->natoms);
-    }
-
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        /* Since we don`t use charge groups, cg_cm is equal to x.
-         * We copy the non-local cg_cm to x, so we can skip dd_move_x.
-         */
-        for(i=dd->ncg_home; i<dd->ncg_tot; i++)
-        {
-            copy_rvec(fr->cg_cm[i],state_local->x[i]);
-        }
     }
 
     if (fr->bF_NoVirSum)
