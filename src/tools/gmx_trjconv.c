@@ -1201,7 +1201,7 @@ int gmx_trjconv(int argc,char *argv[])
                 if (bSubTraj) {
                     /*if (frame >= clust->clust->nra)
 	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");*/
-                    if (frame >= clust->maxframe)
+                    if (frame > clust->maxframe)
                         my_clust = -1;
                     else
                         my_clust = clust->inv_clust[frame];
