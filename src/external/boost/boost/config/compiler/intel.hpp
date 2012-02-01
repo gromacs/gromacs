@@ -27,7 +27,7 @@
 #endif
 
 // Flags determined by comparing output of 'icpc -dM -E' with and without '-std=c++0x'
-#if (!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && __STDC_HOSTED__) || defined(__GXX_EXPERIMENTAL_CPP0X__)
+#if (!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && (__STDC_HOSTED__ && (BOOST_INTEL_CXX_VERSION <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__)
 #  define BOOST_INTEL_STDCXX0X
 #endif
 #if defined(_MSC_VER) && (_MSC_VER >= 1600)
@@ -121,6 +121,7 @@
 // in type_traits code among other things, getting this correct
 // for the Intel compiler is actually remarkably fragile and tricky:
 //
+#ifdef __cplusplus
 #if defined(BOOST_NO_INTRINSIC_WCHAR_T)
 #include <cwchar>
 template< typename T > struct assert_no_intrinsic_wchar_t;
@@ -134,8 +135,9 @@ template<> struct assert_intrinsic_wchar_t<wchar_t> {};
 // if you see an error here then define BOOST_NO_INTRINSIC_WCHAR_T on the command line:
 template<> struct assert_intrinsic_wchar_t<unsigned short> {};
 #endif
+#endif
 
-#if _MSC_VER+0 >= 1000
+#if defined(_MSC_VER) && (_MSC_VER+0 >= 1000)
 #  if _MSC_VER >= 1200
 #     define BOOST_HAS_MS_INT64
 #  endif
@@ -177,8 +179,9 @@ template<> struct assert_intrinsic_wchar_t<unsigned short> {};
 // intel-vc9-win-11.1 may leave a non-POD array uninitialized, in some 
 // cases when it should be value-initialized.
 // (Niels Dekker, LKEB, May 2010)
+// Apparently Intel 12.1 (compiler version number 9999 !!) has the same issue (compiler regression).
 #if defined(__INTEL_COMPILER)
-#  if __INTEL_COMPILER <= 1110
+#  if (__INTEL_COMPILER <= 1110) || (__INTEL_COMPILER == 9999)
 #    define BOOST_NO_COMPLETE_VALUE_INITIALIZATION
 #  endif
 #endif
@@ -208,8 +211,8 @@ template<> struct assert_intrinsic_wchar_t<unsigned short> {};
 #endif
 
 #if defined(BOOST_INTEL_STDCXX0X) && (BOOST_INTEL_CXX_VERSION >= 1200)
-#  undef  BOOST_NO_RVALUE_REFERENCES
-#  undef  BOOST_NO_SCOPED_ENUMS
+//#  undef  BOOST_NO_RVALUE_REFERENCES // Enabling this breaks Filesystem and Exception libraries
+//#  undef  BOOST_NO_SCOPED_ENUMS  // doesn't really work!!
 #  undef  BOOST_NO_DELETED_FUNCTIONS
 #  undef  BOOST_NO_DEFAULTED_FUNCTIONS
 #  undef  BOOST_NO_LAMBDAS
@@ -218,9 +221,16 @@ template<> struct assert_intrinsic_wchar_t<unsigned short> {};
 #  undef  BOOST_NO_AUTO_MULTIDECLARATIONS
 #endif
 
+#if (BOOST_INTEL_CXX_VERSION < 1200)
+//
+// fenv.h appears not to work with Intel prior to 12.0:
+//
+#  define BOOST_NO_FENV_H
+#endif
+
 //
 // last known and checked version:
-#if (BOOST_INTEL_CXX_VERSION > 1110)
+#if (BOOST_INTEL_CXX_VERSION > 1200)
 #  if defined(BOOST_ASSERT_CONFIG)
 #     error "Unknown compiler version - please run the configure tests and report the results"
 #  elif defined(_MSC_VER)
