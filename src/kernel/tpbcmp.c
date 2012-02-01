@@ -809,7 +809,7 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
     
     for (i=0; i<2; i++) {
       if (b[i] && !b[1-i])
-	fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[i],fn[1-i]);
+	fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[1-i],fn[i]);
       close_trj(status[i]);
     }
   }
