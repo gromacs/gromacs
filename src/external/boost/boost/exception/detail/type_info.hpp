@@ -16,7 +16,7 @@
 #include <boost/current_function.hpp>
 #include <boost/config.hpp>
 #ifndef BOOST_NO_TYPEID
-//GMX_REMOVED #include <boost/units/detail/utility.hpp> -- doesn't support not having set BOOST_NO_TYPEID
+#error GMX_REMOVED: #include <boost/units/detail/utility.hpp>
 #endif
 #include <string>
 
@@ -53,11 +53,11 @@ boost
         struct
         type_info_
             {
-            detail::sp_typeinfo const & type_;
+            detail::sp_typeinfo const * type_;
 
             explicit
             type_info_( detail::sp_typeinfo const & type ):
-                type_(type)
+                type_(&type)
                 {
                 }
 
@@ -65,7 +65,7 @@ boost
             bool
             operator<( type_info_ const & a, type_info_ const & b )
                 {
-                return 0!=(a.type_.before(b.type_));
+                return 0!=(a.type_->before(*b.type_));
                 }
             };
         }
