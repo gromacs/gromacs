@@ -275,6 +275,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->etc = ir->etc;
     md->bNHC_trotter = IR_NVT_TROTTER(ir);
     md->bMTTK = IR_NPT_TROTTER(ir);
+    md->bMu = NEED_MUTOT(*ir);
 
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -313,7 +314,10 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ipc = get_ebin_space(md->ebin,md->bTricl ? 6 : 3,
                                  boxvel_nm,unit_vel);
     }
-    md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
+    if (md->bMu)
+    {
+        md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
+    }
     if (ir->cos_accel != 0)
     {
         md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm,unit_vel);
@@ -745,7 +749,10 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         tmp6[5] = state->boxv[ZZ][YY];
         add_ebin(md->ebin,md->ipc,md->bTricl ? 6 : 3,tmp6,bSum);
     }
-    add_ebin(md->ebin,md->imu,3,mu_tot,bSum);
+    if (md->bMu)
+    {
+        add_ebin(md->ebin,md->imu,3,mu_tot,bSum);
+    }
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
@@ -1114,9 +1121,12 @@ void print_ebin(ener_file_t fp_ene,gmx_bool bEne,gmx_bool bDR,gmx_bool bOR,
             fprintf(log,"   Pressure (%s)\n",unit_pres_bar);
             pr_ebin(log,md->ebin,md->ipres,9,3,mode,FALSE);  
             fprintf(log,"\n");
-            fprintf(log,"   Total Dipole (%s)\n",unit_dipole_D);
-            pr_ebin(log,md->ebin,md->imu,3,3,mode,FALSE);    
-            fprintf(log,"\n");
+            if (md->bMu)
+            {
+                fprintf(log,"   Total Dipole (%s)\n",unit_dipole_D);
+                pr_ebin(log,md->ebin,md->imu,3,3,mode,FALSE);
+                fprintf(log,"\n");
+            }
 
             if (md->nE > 1)
             {

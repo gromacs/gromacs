@@ -669,19 +669,18 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     int     cg0,cg1,i,j;
     int     start,homenr;
     int     nb_kernel_type;
-    double mu[2*DIM]; 
+    double  mu[2*DIM];
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF,bUseGPU,bUseOrEmulGPU;
     gmx_bool   bDiffKernels=FALSE;
-    matrix boxs;
-    rvec   vzero,box_diag;
-    real   e,v,dvdl;
+    matrix  boxs;
+    rvec    vzero,box_diag;
+    real    e,v,dvdl;
     float  cycles_pme,cycles_force;
     nonbonded_verlet_t *nbv;
 
     nbv = fr->nbv;
     nb_kernel_type = fr->nbv->grp[0].kernel_type;
-
 
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
@@ -718,12 +717,15 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         update_forcerec(fplog,fr,box);
 
-        /* Calculate total (local) dipole moment in a temporary common array. 
-         * This makes it possible to sum them over nodes faster.
-         */
-        calc_mu(start,homenr,
-                x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
-                mu,mu+DIM);
+        if (NEED_MUTOT(*inputrec))
+        {
+            /* Calculate total (local) dipole moment in a temporary common array.
+             * This makes it possible to sum them over nodes faster.
+             */
+            calc_mu(start,homenr,
+                    x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
+                    mu,mu+DIM);
+        }
     }
 
     if (fr->ePBC != epbcNONE) { 
@@ -968,9 +970,9 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 #endif /* GMX_GPU */ 
 
-    if (bStateChanged)
+    if (bStateChanged && NEED_MUTOT(*inputrec))
     {
-        if (PAR(cr) && NEED_MUTOT(*inputrec))
+        if (PAR(cr))
         {
             gmx_sumd(2*DIM,mu,cr);
         } 
@@ -1373,12 +1375,15 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     {
         update_forcerec(fplog,fr,box);
 
-        /* Calculate total (local) dipole moment in a temporary common array. 
-         * This makes it possible to sum them over nodes faster.
-         */
-        calc_mu(start,homenr,
-                x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
-                mu,mu+DIM);
+        if (NEED_MUTOT(*inputrec))
+        {
+            /* Calculate total (local) dipole moment in a temporary common array.
+             * This makes it possible to sum them over nodes faster.
+             */
+            calc_mu(start,homenr,
+                    x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
+                    mu,mu+DIM);
+        }
     }
 
     if (fr->ePBC != epbcNONE) { 
@@ -1449,34 +1454,37 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         {
             move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
         }
-        /* When we don't need the total dipole we sum it in global_stat */
-        if (bStateChanged && NEED_MUTOT(*inputrec))
-        {
-            gmx_sumd(2*DIM,mu,cr);
-        }
         wallcycle_stop(wcycle,ewcMOVEX);
     }
 
-    if (bStateChanged)
+    if (NEED_MUTOT(*inputrec))
     {
-        for(i=0; i<2; i++)
+
+        if (bStateChanged)
         {
-            for(j=0;j<DIM;j++)
+            if (PAR(cr))
             {
-                fr->mu_tot[i][j] = mu[i*DIM + j];
+                gmx_sumd(2*DIM,mu,cr);
+            }
+            for(i=0; i<2; i++)
+            {
+                for(j=0;j<DIM;j++)
+                {
+                    fr->mu_tot[i][j] = mu[i*DIM + j];
+                }
             }
         }
-    }
-    if (fr->efep == efepNO)
-    {
-        copy_rvec(fr->mu_tot[0],mu_tot);
-    }
-    else
-    {
-        for(j=0; j<DIM; j++)
+        if (fr->efep == efepNO)
         {
-            mu_tot[j] =
-                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+            copy_rvec(fr->mu_tot[0],mu_tot);
+        }
+        else
+        {
+            for(j=0; j<DIM; j++)
+            {
+                mu_tot[j] =
+                    (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+            }
         }
     }
 
