@@ -6,6 +6,9 @@
  *  This function should only be caled once during the execution. */
 void init_module_nthreads(t_commrec *cr);
 
+/*! Returns the default number of threads. */
+int gmx_omp_get_default_nthreads();
+
 /*! Returns the number of threads for domain decomposition. */
 int gmx_omp_get_domdec_nthreads();
 
@@ -30,4 +33,4 @@ int gmx_omp_get_lincs_nthreads();
 /*! Returns the number of threads for SETTLE. */
 int gmx_omp_get_settle_nthreads();
 
-#endif // _GMX_OMP_NTHREADS_
+#endif /* _GMX_OMP_NTHREADS_ */
