@@ -23,3 +23,67 @@
    ...
    obj:*/mdrun*
 }
+
+
+#MacOS rules
+{
+   dyld_register_image_state_change_handler
+   Memcheck:Leak
+   fun:malloc
+   fun:malloc
+   ...
+   fun:dyld_register_image_state_change_handler
+}
+
+{
+   __emutls_get_address
+   Memcheck:Leak
+   ...
+   fun:__emutls_get_address
+}
+
+{
+   libSystem_initializer
+   Memcheck:Leak
+   ...
+   fun:libSystem_initializer
+}
+
+{
+   atexit
+   Memcheck:Leak
+   fun:malloc
+   fun:atexit_register
+}
+
+{
+   unw_set_reg
+   Memcheck:Leak
+   ...
+   fun:unw_set_reg
+   fun:__gxx_personality_v0
+}
+
+{
+   printf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:__vfprintf
+}
+
+{
+   strtof
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:strtof_l
+}
+
+{
+   scanf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:__svfscanf_l
+}
