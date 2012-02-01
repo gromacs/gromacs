@@ -1,0 +1,8 @@
+Code-Review+2: Christoph Junghans <junghans@votca.org>
+Code-Review+1: David van der Spoel <davidvanderspoel@gmail.com>
+Verified+1: Jenkins Buildbot
+Submitted-by: Christoph Junghans <junghans@votca.org>
+Submitted-at: Wed, 01 Feb 2012 05:52:29 +0100
+Reviewed-on: https://gerrit.gromacs.org/447
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
