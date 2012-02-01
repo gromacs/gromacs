@@ -42,7 +42,6 @@
 #include <config.h>
 #endif
 
-
 #include <string2.h>
 
 #include "parsetree.h"
@@ -57,6 +56,13 @@ process_param_list(t_selexpr_param *params);
 
 static void
 yyerror(yyscan_t, char const *s);
+
+// Work around compiler warnings that result from bison not correctly
+// dealing with stdlib.h with ICC on Windows.
+#if (defined __INTEL_COMPILER && defined _WIN32)
+#define YYMALLOC malloc
+#define YYFREE free
+#endif
 %}
 
 %union{

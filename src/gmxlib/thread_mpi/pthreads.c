@@ -87,13 +87,9 @@ static pthread_mutex_t cond_init=PTHREAD_MUTEX_INITIALIZER;
 /* mutex for initializing barriers */
 static pthread_mutex_t barrier_init=PTHREAD_MUTEX_INITIALIZER; 
 
-
-/* lock & variable for setting main thread affinity */
-static tMPI_Spinlock_t main_thread_aff_lock=TMPI_SPINLOCK_INITIALIZER;
-static tMPI_Atomic_t main_thread_aff_set={ 0 };
-static tMPI_Atomic_t aff_thread_number;
-
-
+/* mutex for initializing barriers */
+static pthread_mutex_t aff_init=PTHREAD_MUTEX_INITIALIZER; 
+static int aff_thread_number=0;
 
 
 /* TODO: this needs to go away!  (there's another one in winthreads.c)
@@ -152,7 +148,8 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
     if(ret!=0)
     {
         /* Cannot use tMPI_error() since messages use threads for locking */
-        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread, rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread:%s, rc=%d",
+                         strerror(errno), ret);
         /* Use system memory allocation routines */
         return -1;
     }
@@ -180,25 +177,15 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
 {
     int ret;
 
+#ifdef TMPI_SET_AFFINITY
     /* set the calling thread's affinity mask */
-    if (tMPI_Atomic_get(&main_thread_aff_set) == 0)
+    pthread_mutex_lock( &(aff_init) );
+    if (aff_thread_number==0)
     {
-#ifdef HAVE_PTHREAD_SETAFFINITY
-        cpu_set_t set;
-#endif
-        /* this can be a spinlock because the chances of collision are low. */
-        tMPI_Spinlock_lock( &main_thread_aff_lock );
-        tMPI_Atomic_set( &aff_thread_number, 0);
-#ifdef HAVE_PTHREAD_SETAFFINITY
-        CPU_ZERO(&set);
-        CPU_SET(0, &set);
-        pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
-        /*fprintf(stderr, "Setting affinity.\n");*/
-#endif
-        tMPI_Atomic_set( &main_thread_aff_set, 1);
-        tMPI_Spinlock_unlock( &main_thread_aff_lock );
+        tMPI_Set_affinity(aff_thread_number++);
     }
-
+    pthread_mutex_unlock( &(aff_init) );
+#endif
 
     if(thread==NULL)
     {
@@ -212,20 +199,22 @@ int tMPI_Thread_create_aff(tMPI_Thread_t *thread,
     if(ret!=0)
     {
         /* Cannot use tMPI_error() since messages use threads for locking */
-        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread, rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,"Failed to create POSIX thread:%s, rc=%d",
+                         strerror(errno), ret);
         /* Use system memory allocation routines */
         return -1;
     }
     else
     {
-#ifdef HAVE_PTHREAD_SETAFFINITY
-        int n;
-        cpu_set_t set;
+#ifdef TMPI_SET_AFFINITY
+        /* now set the affinity of the new thread */
+        int ret;
 
-        n=tMPI_Atomic_add_return(&aff_thread_number, 1);
-        CPU_ZERO(&set);
-        CPU_SET(n, &set);
-        return pthread_setaffinity_np((*thread)->th, sizeof(set), &set);
+        pthread_mutex_lock( &(aff_init) );
+        ret=tMPI_Set_affinity(aff_thread_number++);
+        pthread_mutex_unlock( &(aff_init) );
+        /* failure is non-fatal, so we won't check the result */
+        return 0;
 #else
         return 0;
 #endif

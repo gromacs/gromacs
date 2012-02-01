@@ -305,7 +305,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     snew(total,mat->nmap);
     snew(leg,mat->nmap+1);
     leg[0]="Structure";
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         leg[s+1]=strdup(map[s].desc);
     }
@@ -334,14 +334,14 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     xvgr_legend(fp,mat->nmap+1,leg,oenv);
     
     total_count = 0;
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         total[s]=0;
     }
     for(f=0; f<mat->nx; f++)
     {
         ss_count=0;
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             count[s]=0;
         }
@@ -350,7 +350,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             count[mat->matrix[f][r]]++;
             total[mat->matrix[f][r]]++;
         }
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             if (strchr(ss_string,map[s].code.c1))
             {
@@ -359,7 +359,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             }
         }
         fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             fprintf(fp," %5d",count[s]);
         }
@@ -367,7 +367,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     /* now print column totals */
     fprintf(fp, "%-8s %5d", "# Totals", total_count);
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5d",total[s]);
     }
@@ -375,7 +375,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 
     /* now print percentages */
     fprintf(fp, "%-8s %5.2f", "# SS %", total_count / (real) (mat->nx * mat->ny));
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5.2f",total[s] / (real) (mat->nx * mat->ny));
     }
