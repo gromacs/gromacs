@@ -1382,6 +1382,7 @@ void init_forcerec(FILE *fp,
       copy_rvec(ir->adress->refs,fr->adress_refs);
     } else {
       fr->adress_type = eAdressOff;
+      fr->adress_do_hybridpairs = FALSE;
     }
     
     /* Copy the user determined parameters */
