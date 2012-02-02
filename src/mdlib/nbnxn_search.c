@@ -85,7 +85,7 @@
 #define SSE_WIDTH        4
 #define SSE_WIDTH_2LOG   2
 
-/* Neighbor search box upper and lower bound in x,y,z.
+/* Neighbor search box upper and lower corner in x,y,z.
  * Store this in 4 iso 3 reals for SSE.
  */
 #define NNBSBB_C         SSE_WIDTH
@@ -154,11 +154,16 @@
 
 
 #ifdef NBNXN_SEARCH_SSE
+/* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #define NBNXN_BBXXXX
-
+/* Size of bounding box corners quadruplet */
 #define NNBSBB_XXXX      (NNBSBB_D*DIM*SSE_WIDTH)
 #endif
 
+/* We shift the i-particles backward for PBC.
+ * This leads to more conditionals than shifting forward.
+ * We do this to get more balanced pair lists.
+ */
 #define NBNXN_SHIFT_BACKWARD
 
 
@@ -523,6 +528,9 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
             na_c = grid->na_c;
             if (sse_kernel)
             {
+                /* To minimize the zero interactions, we should make
+                 * the largest of the i/j cell cubic.
+                 */
                 na_c = max(na_c,CJ_SIZE);
             }
             /* Approximately cubic cells */
@@ -582,7 +590,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 #ifdef NBNXN_BBXXXX
         if (NSUBCELL % SSE_WIDTH != 0)
         {
-            gmx_incons("NSUBCELL is not a multiple of SIMD_WITH");
+            gmx_incons("NSUBCELL is not a multiple of SSE_WIDTH");
         }
         bb_nalloc = grid->nc_nalloc*NSUBCELL/SSE_WIDTH*NNBSBB_XXXX;
 #else  
@@ -735,6 +743,7 @@ static void sort_atoms(int dim,gmx_bool Backwards,
 #define R2F_U(x) (x)
 #endif
 
+/* Coordinate order x,y,z, bb order xyz0 */
 static void calc_bounding_box(int na,int stride,const real *x,float *bb)
 {
     int  i,j;
@@ -767,7 +776,7 @@ static void calc_bounding_box(int na,int stride,const real *x,float *bb)
     bb[6] = R2F_U(zh);
 }
 
-/* Coordinate order xxxx, bb order xyz */
+/* Packed coordinates, bb order xyz0 */
 static void calc_bounding_box_x_xxxx(int na,const real *x,float *bb)
 {
     int  j;
@@ -797,7 +806,7 @@ static void calc_bounding_box_x_xxxx(int na,const real *x,float *bb)
     bb[6] = R2F_U(zh);
 }
 
-/* Coordinate order xxxx, bb order xyz */
+/* Packed coordinates, bb order xyz0 */
 static void calc_bounding_box_x_xxxx_halves(int na,const real *x,
                                             float *bb,float *bbj)
 {
@@ -822,7 +831,7 @@ static void calc_bounding_box_x_xxxx_halves(int na,const real *x,
                                         _mm_load_ps(bbj+NNBSBB_B+NNBSBB_C)));
 }
 
-/* Coordinate order xyz, bb order xxxx */
+/* Coordinate order xyz, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
 {
     int  i,j;
@@ -857,6 +866,7 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
 
 #ifdef NBNXN_SEARCH_SSE_SINGLE
 
+/* Coordinate order xyz?, bb order xyz0 */
 static void calc_bounding_box_sse(int na,const real *x,float *bb)
 {
     __m128 bb_0_SSE,bb_1_SSE;
@@ -878,6 +888,7 @@ static void calc_bounding_box_sse(int na,const real *x,float *bb)
     _mm_store_ps(bb+4,bb_1_SSE);
 }
 
+/* Coordinate order xyz?, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx_sse(int na,const real *x,
                                        float *bb_work,
                                        real *bb)
@@ -896,14 +907,17 @@ static void calc_bounding_box_xxxx_sse(int na,const real *x,
 
 #ifdef NBNXN_SEARCH_SSE
 
-static void combine_bounding_boxes(nbnxn_grid_t *grid)
+/* Combines pairs of consecutive bounding boxes */
+static void combine_bounding_box_pairs(nbnxn_grid_t *grid)
 {
     int    i,j,sc2,nc2,c2;
     __m128 min_SSE,max_SSE;
 
     for(i=0; i<grid->ncx*grid->ncy; i++)
     {
+        /* Starting bb in a column is expected to be 2-aligned */
         sc2 = grid->cxy_ind[i]>>1;
+        /* For odd numbers skip the last bb here */
         nc2 = (grid->cxy_na[i]+3)>>(2+1);
         for(c2=sc2; c2<sc2+nc2; c2++)
         {
@@ -916,6 +930,7 @@ static void combine_bounding_boxes(nbnxn_grid_t *grid)
         }
         if (((grid->cxy_na[i]+3)>>2) & 1)
         {
+            /* Copy the last bb for odd bb count in this column */
             for(j=0; j<4; j++)
             {
                 grid->bbj[(c2*2+0)*4+j] = grid->bb[(c2*4+0)*4+j];
@@ -928,6 +943,7 @@ static void combine_bounding_boxes(nbnxn_grid_t *grid)
 #endif
 
 
+/* Prints the average bb size, used for debug output */
 static void print_bbsizes_simple(FILE *fp,
                                  const nbnxn_search_t nbs,
                                  const nbnxn_grid_t *grid)
@@ -955,6 +971,7 @@ static void print_bbsizes_simple(FILE *fp,
             ba[ZZ]*grid->nc/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
 }
 
+/* Prints the average bb size, used for debug output */
 static void print_bbsizes_supersub(FILE *fp,
                                    const nbnxn_search_t nbs,
                                    const nbnxn_grid_t *grid)
@@ -1077,7 +1094,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
 {
     int i,j,c;
 
-/* We might need to place filler particles to fill ub the cell to na_round.
+/* We might need to place filler particles to fill up the cell to na_round.
  * The coefficients (LJ and q) for such particles are zero.
  * But we might still get NaN as 0*NaN when distances are too small.
  * We hope that -107 nm is far away enough from to zero
@@ -1160,14 +1177,17 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
     }
 }
 
+/* Potentially sorts atoms on LJ coefficients !=0 and ==0.
+ * Also sets interaction flags.
+ */
 void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                 int a0,int a1,const int *atinfo,
                 int *order,
                 int *flags)
 {
-    int subc,s,a,ni,nj,a_lj_max,i,j;
-    int sorti[NBL_NA_SC_MAX/NSUBCELL];
-    int sortj[NBL_NA_SC_MAX/NSUBCELL];
+    int subc,s,a,n1,n2,a_lj_max,i,j;
+    int sort1[NBL_NA_SC_MAX/NSUBCELL];
+    int sort2[NBL_NA_SC_MAX/NSUBCELL];
     gmx_bool haveQ;
 
     *flags = 0;
@@ -1175,9 +1195,9 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
     subc = 0;
     for(s=a0; s<a1; s+=na_c)
     {
-        /* Sort this (sub-)cell on atoms with LH first, without last */
-        ni = 0;
-        nj = 0;
+        /* Make lists for this (sub-)cell on atoms with and without LJ */
+        n1 = 0;
+        n2 = 0;
         haveQ = FALSE;
         a_lj_max = -1;
         for(a=s; a<min(s+na_c,a1); a++)
@@ -1186,33 +1206,35 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
 
             if (GET_CGINFO_HAS_LJ(atinfo[order[a]]))
             {
-                sorti[ni++] = order[a];
+                sort1[n1++] = order[a];
                 a_lj_max = a;
             }
             else
             {
-                sortj[nj++] = order[a];
+                sort2[n2++] = order[a];
             }
         }
 
-        if (ni > 0)
+        /* If we don't have atom with LJ, there's nothing to sort */
+        if (n1 > 0)
         {
             *flags |= NBL_CI_DO_LJ(subc);
 
-            if (2*ni <= na_c)
+            if (2*n1 <= na_c)
             {
-                /* Only sort when strictly necessary, so we avoid summation
-                 * order precision loss as much as possible.
+                /* Only sort when strictly necessary. Ordering particles
+                 * Ordering particles can lead to less accurate summation
+                 * due to rounding, both for LJ and Coulomb interactions.
                  */
                 if (2*(a_lj_max - s) >= na_c)
                 {
-                    for(i=0; i<ni; i++)
+                    for(i=0; i<n1; i++)
                     {
-                        order[a0+i] = sorti[i];
+                        order[a0+i] = sort1[i];
                     }
-                    for(j=0; j<nj; j++)
+                    for(j=0; j<n2; j++)
                     {
-                        order[a0+ni+j] = sortj[j];
+                        order[a0+n1+j] = sort2[j];
                     }
                 }
 
@@ -1227,6 +1249,9 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
     }
 }
 
+/* Fill a pair search cell with atoms.
+ * Potentially sorts atoms and sets the interaction flags.
+ */
 void fill_cell(const nbnxn_search_t nbs,
                nbnxn_grid_t *grid,
                nbnxn_atomdata_t *nbat,
@@ -1328,6 +1353,7 @@ void fill_cell(const nbnxn_search_t nbs,
     }
 }
 
+/* Spatially sort the atoms within one grid column */
 static void sort_columns_simple(const nbnxn_search_t nbs,
                                 int dd_zone,
                                 nbnxn_grid_t *grid,
@@ -1402,6 +1428,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
     }
 }
 
+/* Spatially sort the atoms within one grid column */
 static void sort_columns_supersub(const nbnxn_search_t nbs,
                                   int dd_zone,
                                   nbnxn_grid_t *grid,
@@ -1517,6 +1544,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     }
 }
 
+/* Determine in which grid column atoms should go */
 static void calc_column_indices(nbnxn_grid_t *grid,
                                 int a0,int a1,
                                 rvec *x,const int *move,
@@ -1580,6 +1608,7 @@ static void calc_column_indices(nbnxn_grid_t *grid,
     }
 }
 
+/* Determine in which grid cells the atoms should go */
 static void calc_cell_indices(const nbnxn_search_t nbs,
                               int dd_zone,
                               nbnxn_grid_t *grid,
@@ -1738,6 +1767,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 }
 
+/* Reallocation wrapper function for nbnxn data structures */
 static void nb_realloc_void(void **ptr,
                             int nbytes_copy,int nbytes_new,
                             gmx_nbat_alloc_t *ma,
@@ -1791,6 +1821,7 @@ static void nb_realloc_real(real **ptr,int n,
     ma((void **)ptr,n*sizeof(**ptr));
 }
 
+/* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 static void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
 {
     int t;
@@ -1831,6 +1862,10 @@ static void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat,int n)
     nbat->nalloc = n;
 }
 
+/* Sets up a grid and puts the atoms on the grid.
+ * This function only operates on one domain of the domain decompostion.
+ * Note that without domain decomposition there is only one domain.
+ */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        int ePBC,matrix box,
                        int dd_zone,
@@ -1941,6 +1976,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
     nbs_cycle_stop(&nbs->cc[enbsCCgrid]);
 }
 
+/* Calls nbnxn_put_on_grid for all non-local domains */
 void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                                 const gmx_domdec_zones_t *zones,
                                 const int *atinfo,
@@ -1972,6 +2008,7 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
     }
 }
 
+/* Add simple grid type information to the local super/sub grid */
 void nbnxn_grid_simple(nbnxn_search_t nbs,
                        nbnxn_atomdata_t *nbat)
 {
@@ -2085,6 +2122,9 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs)
     }
 }
 
+/* Determines the cell range along one dimension that
+ * the bounding box b0 - b1 sees.
+ */
 static void get_cell_range(real b0,real b1,
                            int nc,real c0,real s,real invs,
                            real d2,real r2,int *cf,int *cl)
@@ -2103,7 +2143,9 @@ static void get_cell_range(real b0,real b1,
     }
 }
 
-static float box_dist2(float bx0,float bx1,float by0,float by1,float bz0,float bz1,
+/* Reference code calculating the distance^2 between two bounding boxes */
+static float box_dist2(float bx0,float bx1,float by0,
+                       float by1,float bz0,float bz1,
                        const float *bb)
 {
     float d2;
@@ -2132,6 +2174,7 @@ static float box_dist2(float bx0,float bx1,float by0,float by1,float bz0,float b
     return d2;
 }
 
+/* Plain C code calculating the distance^2 between two bounding boxes */
 static float subc_bb_dist2(int na_c,
                           int si,const float *bb_i_ci,
                           int csj,const float *bb_j_all)
@@ -2168,6 +2211,7 @@ static float subc_bb_dist2(int na_c,
 
 #ifdef NBNXN_SEARCH_SSE
 
+/* SSE code for bb distance for bb format xyz0 */
 static float subc_bb_dist2_sse(int na_c,
                               int si,const float *bb_i_ci,
                               int csj,const float *bb_j_all)
@@ -2181,10 +2225,13 @@ static float subc_bb_dist2_sse(int na_c,
     __m128 dm_SSE;
     __m128 dm0_SSE;
     __m128 d2_SSE;
-
+#ifndef GMX_SSE4_1
     float d2_array[7],*d2_align;
 
     d2_align = (float *)(((size_t)(d2_array+3)) & (~((size_t)15)));
+#else
+    float d2;
+#endif
 
     bb_i = bb_i_ci  +  si*NNBSBB_B;
     bb_j = bb_j_all + csj*NNBSBB_B;
@@ -2200,13 +2247,23 @@ static float subc_bb_dist2_sse(int na_c,
 
     dm_SSE    = _mm_max_ps(dl_SSE,dh_SSE);
     dm0_SSE   = _mm_max_ps(dm_SSE,_mm_setzero_ps());
+#ifndef GMX_SSE4_1
     d2_SSE    = _mm_mul_ps(dm0_SSE,dm0_SSE);
 
     _mm_store_ps(d2_align,d2_SSE);
 
     return d2_align[0] + d2_align[1] + d2_align[2];
+#else
+    /* SSE4.1 dot product of components 0,1,2 */
+    d2_SSE    = _mm_dp_ps(dm0_SSE,dm0_SSE,0x71);
+
+    _mm_store_ss(&d2,d2_SSE);
+
+    return d2;
+#endif
 }
 
+/* SSE code for nsi bb distances for bb format xxxxyyyyzzzz */
 static void subc_bb_dist2_sse_xxxx(const float *bb_j,
                                    int nsi,const float *bb_i,
                                    float *d2)
@@ -2277,48 +2334,11 @@ static void subc_bb_dist2_sse_xxxx(const float *bb_j,
     }
 }
 
-#ifdef GMX_SSE4_1
-static float subc_bb_dist2_sse4_1(int na_c,
-                                 int si,const float *bb_i_ci,
-                                 int csj,const float *bb_j_all)
-{
-    const float *bb_i,*bb_j;
+#endif /* NBNXN_SEARCH_SSE */
 
-    __m128 bb_i_SSE0,bb_i_SSE1;
-    __m128 bb_j_SSE0,bb_j_SSE1;
-    __m128 dl_SSE;
-    __m128 dh_SSE;
-    __m128 dm_SSE;
-    __m128 dm0_SSE;
-    __m128 d2_SSE;
-
-    float d2;
-
-    bb_i = bb_i_ci  +  si*NNBSBB_B;
-    bb_j = bb_j_all + csj*NNBSBB_B;
-
-    bb_i_SSE0 = _mm_load_ps(bb_i);
-    bb_i_SSE1 = _mm_load_ps(bb_i+NNBSBB_C);
-    bb_j_SSE0 = _mm_load_ps(bb_j);
-    bb_j_SSE1 = _mm_load_ps(bb_j+NNBSBB_C);
-    
-    
-    dl_SSE    = _mm_sub_ps(bb_i_SSE0,bb_j_SSE1);
-    dh_SSE    = _mm_sub_ps(bb_j_SSE0,bb_i_SSE1);
-
-    dm_SSE    = _mm_max_ps(dl_SSE,dh_SSE);
-    dm0_SSE   = _mm_max_ps(dm_SSE,_mm_setzero_ps());
-    /* Dot product of components 0,1,2 */
-    d2_SSE    = _mm_dp_ps(dm0_SSE,dm0_SSE,0x71);
-
-    _mm_store_ss(&d2,d2_SSE);
-
-    return d2;
-}
-#endif
-
-#endif
-
+/* Plain C function which determines if any atom pair between two cells
+ * is within distance sqrt(rl2).
+ */
 static gmx_bool subc_in_range_x(int na_c,
                                 int si,const real *x_i,
                                 int csj,int stride,const real *x_j,
@@ -2348,6 +2368,9 @@ static gmx_bool subc_in_range_x(int na_c,
     return FALSE;
 }
 
+/* SSE function which determines if any atom pair between two cells,
+ * both with 8 atoms, is within distance sqrt(rl2).
+ */
 static gmx_bool subc_in_range_sse8(int na_c,
                                    int si,const real *x_i,
                                    int csj,int stride,const real *x_j,
@@ -2449,16 +2472,19 @@ static gmx_bool subc_in_range_sse8(int na_c,
 #endif
 }
 
+/* Returns the j sub-cell for index cj_ind */
 static int nbl_cj(const nbnxn_pairlist_t *nbl,int cj_ind)
 {
     return nbl->cj4[cj_ind>>2].cj[cj_ind & 3];
 }
 
+/* Returns the i-interaction mask of the j sub-cell for index cj_ind */
 static unsigned nbl_imask0(const nbnxn_pairlist_t *nbl,int cj_ind)
 {
     return nbl->cj4[cj_ind>>2].imei[0].imask;
 }
 
+/* Ensures there is enough space for extra extra exclusion masks */
 static void check_excl_space(nbnxn_pairlist_t *nbl,int extra)
 {
     if (nbl->nexcl+extra > nbl->excl_nalloc)
@@ -2471,6 +2497,7 @@ static void check_excl_space(nbnxn_pairlist_t *nbl,int extra)
     }
 }
 
+/* Ensures there is enough space for ncell extra j-cells in the list */
 static void check_subcell_list_space_simple(nbnxn_pairlist_t *nbl,
                                             int ncell)
 {
@@ -2488,6 +2515,7 @@ static void check_subcell_list_space_simple(nbnxn_pairlist_t *nbl,
     }
 }
 
+/* Ensures there is enough space for ncell extra j-subcells in the list */
 static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
                                               int nsupercell)
 {
@@ -2527,16 +2555,21 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
     }
 }
 
+/* Default nbnxn allocation routine, allocates 32 byte aligned,
+ * which works for plain C and aligned SSE and AVX loads/stores.
+ */
 static void nblist_alloc_aligned(void **ptr,size_t nbytes)
 {
     *ptr = save_calloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,32,0);
 }
 
+/* Free function for memory allocated with nblist_alloc_aligned */
 static void nblist_free_aligned(void *ptr)
 {
     sfree_aligned(ptr);
 }
 
+/* Set all excl masks for one GPU warp no exclusions */
 static void set_no_excls(nbnxn_excl_t *excl)
 {
     int t;
@@ -2544,10 +2577,11 @@ static void set_no_excls(nbnxn_excl_t *excl)
     for(t=0; t<WARP_SIZE; t++)
     {
         /* Turn all interaction bits on */
-        excl->pair[t] = 0xffffffffU;
+        excl->pair[t] = NBNXN_INT_MASK_ALL;
     }
 }
 
+/* Initializes a single nbnxn_pairlist_t data structure */
 static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
                                 gmx_bool simple,
                                 gmx_nbat_alloc_t *alloc,
@@ -2608,6 +2642,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew_aligned(nbl->work->d2,NSUBCELL,16);
 }
 
+/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined,
                              gmx_nbat_alloc_t *alloc,
@@ -2642,6 +2677,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     }
 }
 
+/* Print statistics of a pair list, used for debug output */
 static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
                                            const nbnxn_search_t nbs,real rl)
 {
@@ -2692,6 +2728,7 @@ static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
     }
 }
 
+/* Print statistics of a pair lists, used for debug output */
 static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nbl,
                                              const nbnxn_search_t nbs,real rl)
 {
@@ -2743,6 +2780,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
     }
 }
 
+/* Print the full pair list, used for debug output */
 static void print_supersub_nsp(const char *fn,
                                const nbnxn_pairlist_t *nbl,
                                int iloc)
@@ -2773,6 +2811,7 @@ static void print_supersub_nsp(const char *fn,
     fclose(fp);
 }
 
+/* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp */
 static void low_get_nbl_exclusions(nbnxn_pairlist_t *nbl,int cj4,
                                    int warp,nbnxn_excl_t **excl)
 {
@@ -2791,6 +2830,9 @@ static void low_get_nbl_exclusions(nbnxn_pairlist_t *nbl,int cj4,
     }
 }
 
+/* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp,
+ * allocates extra memory, if necessary.
+ */
 static void get_nbl_exclusions_1(nbnxn_pairlist_t *nbl,int cj4,
                                  int warp,nbnxn_excl_t **excl)
 {
@@ -2802,6 +2844,9 @@ static void get_nbl_exclusions_1(nbnxn_pairlist_t *nbl,int cj4,
     low_get_nbl_exclusions(nbl,cj4,warp,excl);
 }
 
+/* Returns pointers to the exclusion mask for cj4-unit cj4 for both warps,
+ * allocates extra memory, if necessary.
+ */
 static void get_nbl_exclusions_2(nbnxn_pairlist_t *nbl,int cj4,
                                  nbnxn_excl_t **excl_w0,
                                  nbnxn_excl_t **excl_w1)
@@ -2813,6 +2858,7 @@ static void get_nbl_exclusions_2(nbnxn_pairlist_t *nbl,int cj4,
     low_get_nbl_exclusions(nbl,cj4,1,excl_w1);
 }
 
+/* Sets the self exclusions i=j and pair exclusions i>j */
 static void set_self_and_newton_excls(nbnxn_pairlist_t *nbl,
                                       int cj4_ind,int sj_offset,
                                       int si)
@@ -2824,36 +2870,25 @@ static void set_self_and_newton_excls(nbnxn_pairlist_t *nbl,
 
     get_nbl_exclusions_2(nbl,cj4_ind,&excl[0],&excl[1]);
     
-    if (nbl->TwoWay)
+    /* Only minor < major bits set */
+    for(ej=0; ej<nbl->na_c; ej++)
     {
-        /* Only minor != major bits set */
-        for(ej=0; ej<nbl->na_c; ej++)
+        w = (ej>>2);
+        for(ei=ej; ei<nbl->na_c; ei++)
         {
-            w = (ej>>2);
-            excl[w]->pair[(ej&(4-1))*nbl->na_c+ej] &=
+            excl[w]->pair[(ej&(4-1))*nbl->na_c+ei] &=
                 ~(1U << (sj_offset*NSUBCELL+si));
-        }
-    }
-    else
-    {
-        /* Only minor < major bits set */
-        for(ej=0; ej<nbl->na_c; ej++)
-        {
-            w = (ej>>2);
-            for(ei=ej; ei<nbl->na_c; ei++)
-            {
-                excl[w]->pair[(ej&(4-1))*nbl->na_c+ei] &=
-                    ~(1U << (sj_offset*NSUBCELL+si));
-            }
         }
     }
 }
 
+/* Returns a diagonal or off-diagonal interaction mask for plain C lists */
 static unsigned int get_imask(gmx_bool rdiag,int ci,int cj)
 {
     return (rdiag && ci == cj ? REF_INT_MASK_DIAG : NBNXN_INT_MASK_ALL);
 }
 
+/* Returns a diagonal or off-diagonal interaction mask for SSE/AVX lists */
 static unsigned int get_imask_sse(gmx_bool rdiag,int ci,int cj)
 {
 #if CJ_SIZE == 4
@@ -2871,6 +2906,9 @@ static unsigned int get_imask_sse(gmx_bool rdiag,int ci,int cj)
 #endif
 }
 
+/* Plain C code for making a pair list of cell ci vs cell cjf-cjl.
+ * Checks bouding box distances and possibly atom pair distances.
+ */
 static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                                      nbnxn_pairlist_t *nbl,
                                      int ci,int cjf,int cjl,
@@ -2982,6 +3020,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     }
 }
 
+/* SSE code for making a pair list of cell ci vs cell cjf-cjl
+ * for coordinates in packed format.
+ * Checks bouding box distances and possibly atom pair distances.
+ */
 static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
                                           nbnxn_pairlist_t *nbl,
                                           int ci,int cjf,int cjl,
@@ -3030,11 +3072,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-#ifdef GMX_SSE4_1
-        d2 = subc_bb_dist2_sse4_1(4,0,bb_ci,cjf,gridj->bbj);
-#else
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjf,gridj->bbj);
-#endif
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -3097,11 +3135,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-#ifdef GMX_SSE4_1
-        d2 = subc_bb_dist2_sse4_1(4,0,bb_ci,cjl,gridj->bbj);
-#else
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjl,gridj->bbj);
-#endif
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -3174,6 +3208,9 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
 #endif
 }
 
+/* Plain C or SSE code for making a pair list of super-cell sci vs scj.
+ * Checks bouding box distances and possibly atom pair distances.
+ */
 static void make_cluster_list(const nbnxn_search_t nbs,
                               const nbnxn_grid_t *gridi,
                               const nbnxn_grid_t *gridj,
@@ -3219,7 +3256,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
         cj4->cj[cj_offset] = cj_gl;
         imask              = 0;
 
-        if (!nbl->TwoWay && sci_equals_scj)
+        if (sci_equals_scj)
         {
             ci1 = cjo + 1;
         }
@@ -3314,6 +3351,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
     }
 }
 
+/* Set the exclusion masks for simple list i-entry nbl_ci */
 static void set_ci_excls(const nbnxn_search_t nbs,
                          nbnxn_pairlist_t *nbl,
                          gmx_bool diagRemoved,
@@ -3441,6 +3479,7 @@ static void set_ci_excls(const nbnxn_search_t nbs,
     }
 }
 
+/* Set the exclusion masks for i-super-cell nbl_sci */
 static void set_sci_excls(const nbnxn_search_t nbs,
                           nbnxn_pairlist_t *nbl,
                           gmx_bool diagRemoved,
@@ -3577,6 +3616,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
     }
 }
 
+/* Reallocate the simple ci list for at least n entries */
 static void nb_realloc_ci(nbnxn_pairlist_t *nbl,int n)
 {
     nbl->ci_nalloc = over_alloc_small(n);
@@ -3586,6 +3626,7 @@ static void nb_realloc_ci(nbnxn_pairlist_t *nbl,int n)
                     nbl->alloc,nbl->free);
 }
 
+/* Reallocate the super-cell sci list for at least n entries */
 static void nb_realloc_sci(nbnxn_pairlist_t *nbl,int n)
 {
     nbl->sci_nalloc = over_alloc_small(n);
@@ -3595,6 +3636,7 @@ static void nb_realloc_sci(nbnxn_pairlist_t *nbl,int n)
                     nbl->alloc,nbl->free);
 }
 
+/* Make a new ci entry at index nbl->nci */
 static void new_ci_entry(nbnxn_pairlist_t *nbl,int ci,int shift,int flags,
                          nbnxn_list_work_t *work)
 {
@@ -3610,6 +3652,7 @@ static void new_ci_entry(nbnxn_pairlist_t *nbl,int ci,int shift,int flags,
     nbl->ci[nbl->nci].cj_ind_end    = nbl->ncj;
 }
 
+/* Make a new sci entry at index nbl->nsci */
 static void new_sci_entry(nbnxn_pairlist_t *nbl,int sci,int shift,int flags,
                           nbnxn_list_work_t *work)
 {
@@ -3623,6 +3666,9 @@ static void new_sci_entry(nbnxn_pairlist_t *nbl,int sci,int shift,int flags,
     nbl->sci[nbl->nsci].cj4_ind_end   = nbl->ncj4;
 }
 
+/* Sort the simple j-list cj on exclusions.
+ * Entries with exclusions will all be sorted to the beginning of the list.
+ */
 static void sort_cj_excl(nbnxn_cj_t *cj,int ncj,
                          nbnxn_list_work_t *work)
 {
@@ -3661,6 +3707,7 @@ static void sort_cj_excl(nbnxn_cj_t *cj,int ncj,
     }
 }
 
+/* Close this simple list i entry */
 static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
 {
     int jlen;
@@ -3677,9 +3724,15 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
     }
 }
 
-static void split_ci_entry(nbnxn_pairlist_t *nbl,
-                           int nsp_max_av,gmx_bool progBal,int nc_bal,
-                           int thread,int nthread)
+/* Split sci entry for load balancing on the GPU.
+ * As we only now the current count on our own thread,
+ * we will need to estimate the current total amount of i-entries.
+ * As the lists get concatenated later, this estimate depends
+ * both on nthread and our own thread index thread.
+ */
+static void split_sci_entry(nbnxn_pairlist_t *nbl,
+                            int nsp_max_av,gmx_bool progBal,int nc_bal,
+                            int thread,int nthread)
 {
     int nsci_est;
     int nsp_max;
@@ -3767,6 +3820,7 @@ static void split_ci_entry(nbnxn_pairlist_t *nbl,
     }
 }
 
+/* Clost this super/sub list i entry */
 static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
                                     int nsp_max_av,
                                     gmx_bool progBal,int nc_bal,
@@ -3791,11 +3845,12 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
 
         if (nsp_max_av > 0)
         {
-            split_ci_entry(nbl,nsp_max_av,progBal,nc_bal,thread,nthread);
+            split_sci_entry(nbl,nsp_max_av,progBal,nc_bal,thread,nthread);
         }
     }
 }
 
+/* Syncs the working array before adding another grid pair to the list */
 static void sync_work(nbnxn_pairlist_t *nbl)
 {
     if (!nbl->simple)
@@ -3805,6 +3860,7 @@ static void sync_work(nbnxn_pairlist_t *nbl)
     }
 }
 
+/* Clears an nbnxn_pairlist_t data structure */
 static void clear_nblist(nbnxn_pairlist_t *nbl)
 {
     nbl->nci          = 0;
@@ -3815,6 +3871,7 @@ static void clear_nblist(nbnxn_pairlist_t *nbl)
     nbl->nexcl        = 1;
 }
 
+/* Sets a simple list i-cell bounding box, including PBC shift */
 static void set_icell_bb_simple(const float *bb,int ci,
                                 real shx,real shy,real shz,
                                 float *bb_ci)
@@ -3830,6 +3887,7 @@ static void set_icell_bb_simple(const float *bb,int ci,
     bb_ci[6] = bb[ia+6] + shz;
 }
 
+/* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 static void set_icell_bb_supersub(const float *bb,int ci,
                                   real shx,real shy,real shz,
                                   float *bb_ci)
@@ -3864,6 +3922,7 @@ static void set_icell_bb_supersub(const float *bb,int ci,
 #endif
 }
 
+/* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
 static void icell_set_x_simple(int ci,
                                real shx,real shy,real shz,
                                int na_c,
@@ -3882,6 +3941,7 @@ static void icell_set_x_simple(int ci,
     }
 }
 
+/* Copies PBC shifted i-cell packed atom coordinates to working array */
 static void icell_set_x_simple_xxxx(int ci,
                                     real shx,real shy,real shz,
                                     int na_c,
@@ -3910,6 +3970,7 @@ static void icell_set_x_simple_xxxx(int ci,
 #endif
 }
 
+/* Copies PBC shifted super-cell atom coordinates x,y,z to working array */
 static void icell_set_x_supersub(int ci,
                                  real shx,real shy,real shz,
                                  int na_c,
@@ -3930,6 +3991,7 @@ static void icell_set_x_supersub(int ci,
     }
 }
 
+/* Copies PBC shifted super-cell packed atom coordinates to working array */
 static void icell_set_x_supersub_sse8(int ci,
                                       real shx,real shy,real shz,
                                       int na_c,
@@ -3957,6 +4019,7 @@ static void icell_set_x_supersub_sse8(int ci,
     }
 }
 
+/* Estimates the interaction volume^2 for non-local interactions */
 static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
 {
     int  z,d;
@@ -4004,6 +4067,7 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
     return vol2_est_tot;
 }
 
+/* Estimates the average size of a full j-list for super/sub setup */
 static int get_nsubpair_max(const nbnxn_search_t nbs,
                             int iloc,
                             real rlist,
@@ -4093,6 +4157,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
     return nsubpair_max;
 }
 
+/* Debug list print function */
 static void print_nblist_ci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j;
@@ -4112,6 +4177,7 @@ static void print_nblist_ci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
     }
 }
 
+/* Debug list print function */
 static void print_nblist_sci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j4,j;
@@ -4134,6 +4200,7 @@ static void print_nblist_sci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
     }
 }
 
+/* Combine pair lists *nbl generated on multiple threads nblc */
 static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
                             nbnxn_pairlist_t *nblc)
 {
@@ -4223,6 +4290,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
     }
 }
 
+/* Returns the next ci to be processes by our thread */
 static gmx_bool next_ci(const nbnxn_grid_t *grid,
                         int conv,
                         int nth,int ci_block,
@@ -4257,6 +4325,9 @@ static gmx_bool next_ci(const nbnxn_grid_t *grid,
     return TRUE;
 }
 
+/* Returns the distance^2 for which we put cell pairs in the list
+ * without checking atom pair distances. This is usually < rlist^2.
+ */
 static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
                                         const nbnxn_grid_t *gridj,
                                         real rlist,
@@ -4295,6 +4366,7 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
 #endif
 }
 
+/* Generates the part of pair-list nbl assigned to our thread */
 static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      const nbnxn_grid_t *gridi,
                                      const nbnxn_grid_t *gridj,
@@ -4340,9 +4412,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     nbl->na_sc = gridj->na_sc;
     nbl->na_c  = gridj->na_c;
-
-    /* Currently this code only makes two-way lists */
-    nbl->TwoWay = FALSE;
 
     nbl->rlist  = rlist;
 
@@ -4591,9 +4660,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     }
 
 #ifndef NBNXN_SHIFT_BACKWARD
-                    if (!nbl->TwoWay && cxf < ci_x)
+                    if (cxf < ci_x)
 #else
-                    if (!nbl->TwoWay && shift == CENTRAL && gridi == gridj &&
+                    if (shift == CENTRAL && gridi == gridj &&
                         cxf < ci_x)
 #endif
                     {
@@ -4630,10 +4699,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         }
 
 #ifndef NBNXN_SHIFT_BACKWARD
-                        if (!nbl->TwoWay && gridi == gridj &&
+                        if (gridi == gridj &&
                             cx == 0 && cyf < ci_y)
 #else
-                        if (!nbl->TwoWay && gridi == gridj &&
+                        if (gridi == gridj &&
                             cx == 0 && shift == CENTRAL && cyf < ci_y)
 #endif
                         {
@@ -4652,7 +4721,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             c0 = gridj->cxy_ind[cx*gridj->ncy+cy];
                             c1 = gridj->cxy_ind[cx*gridj->ncy+cy+1];
 #ifdef NBNXN_SHIFT_BACKWARD
-                            if (!nbl->TwoWay && gridi == gridj &&
+                            if (gridi == gridj &&
                                 shift == CENTRAL && c0 < ci)
                             {
                                 c0 = ci;
@@ -4788,7 +4857,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     {
                         set_ci_excls(nbs,
                                      nbl,
-                                     !nbl->TwoWay && shift == CENTRAL && gridi == gridj,
+                                     shift == CENTRAL && gridi == gridj,
                                      gridj->na_c_2log,
                                      nbat->XFormat==nbatXXXX ? CJ_2LOG : gridj->na_c_2log,
                                      &(nbl->ci[nbl->nci]),
@@ -4798,7 +4867,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     {
                         set_sci_excls(nbs,
                                      nbl,
-                                     !nbl->TwoWay && shift == CENTRAL && gridi == gridj,
+                                     shift == CENTRAL && gridi == gridj,
                                      gridj->na_c_2log,
                                      &(nbl->sci[nbl->nsci]),
                                      excl);
@@ -4840,6 +4909,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 }
 
+/* Make a local or non-local pair-list, depending on iloc */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          const nbnxn_atomdata_t *nbat,
                          const t_blocka *excl,
@@ -5003,6 +5073,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     }
 }
 
+/* Initializes an nbnxn_atomdata_output_t data structure */
 static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
                                        gmx_bool simple,
                                        int nenergrp,int stride,
@@ -5025,6 +5096,9 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     }
 }
 
+/* Determines the combination rule (or none) to be used, stores it,
+ * and sets the LJ parameters required with the rule.
+ */
 static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
 {
     int  nt,i,j;
@@ -5084,15 +5158,16 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
     }
 }
 
+/* Initializes an nbnxn_atomdata_t data structure */
 void nbnxn_atomdata_init(FILE *fp,
-                          nbnxn_atomdata_t *nbat,
-                          gmx_bool simple,
-                          gmx_bool XFormatXXXX,
-                          int ntype,const real *nbfp,
-                          int n_energygroups,
-                          int nout,
-                          gmx_nbat_alloc_t *alloc,
-                          gmx_nbat_free_t  *free)
+                         nbnxn_atomdata_t *nbat,
+                         gmx_bool simple,
+                         gmx_bool XFormatXXXX,
+                         int ntype,const real *nbfp,
+                         int n_energygroups,
+                         int nout,
+                         gmx_nbat_alloc_t *alloc,
+                         gmx_nbat_free_t  *free)
 {
     int  i,j;
     real c6,c12,tol;
@@ -5309,10 +5384,11 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
     }
 }
 
+/* Sets the atom type and LJ data in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
-                                          int ngrid,
-                                          const nbnxn_search_t nbs,
-                                          const int *type)
+                                         int ngrid,
+                                         const nbnxn_search_t nbs,
+                                         const int *type)
 {
     int g,i,ncz,ash;
     const nbnxn_grid_t *grid;
@@ -5340,10 +5416,11 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
     }
 }
 
+/* Sets the charges in nbnxn_atomdata_t *nbat */
 static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
-                                        int ngrid,
-                                        const nbnxn_search_t nbs,
-                                        const real *charge)
+                                       int ngrid,
+                                       const nbnxn_search_t nbs,
+                                       const real *charge)
 {
     int  g,cxy,ncz,ash,na,na_round,i,j;
     real *q;
@@ -5394,6 +5471,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *nbat,
     }
 }
 
+/* Copies the energy group indices to a reordered and packed array */
 static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
                                   int na_c,int bit_shift,
                                   const int *in,int *innb)
@@ -5423,10 +5501,11 @@ static void copy_egp_to_nbat_egps(const int *a,int na,int na_round,
     }
 }
 
+/* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t *nbat,
-                                             int ngrid,
-                                             const nbnxn_search_t nbs,
-                                             const int *atinfo)
+                                            int ngrid,
+                                            const nbnxn_search_t nbs,
+                                            const int *atinfo)
 {
     int g,i,ncz,ash;
     const nbnxn_grid_t *grid;
@@ -5448,11 +5527,12 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t *nbat,
     }
 }
 
+/* Sets all required atom parameter data in nbnxn_atomdata_t */
 void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
-                         int aloc,
-                         const nbnxn_search_t nbs,
-                         const t_mdatoms *mdatoms,
-                         const int *atinfo)
+                        int aloc,
+                        const nbnxn_search_t nbs,
+                        const t_mdatoms *mdatoms,
+                        const int *atinfo)
 {
     int ngrid;
 
@@ -5475,6 +5555,7 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,
     }
 }
 
+/* Copies the shift vector array to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
                                    rvec *shift_vec,
                                    nbnxn_atomdata_t *nbat)
@@ -5488,6 +5569,7 @@ void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box,
     }
 }
 
+/* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                       int aloc,
                                       gmx_bool FillLocal,
@@ -5550,12 +5632,14 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     }
 }
 
-static void nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
-                                                 const nbnxn_atomdata_t *nbat,
-                                                 nbnxn_atomdata_output_t *out,
-                                                 int nfa,
-                                                 int a0,int a1,
-                                                 rvec *f)
+/* Add part of the force array(s) from nbnxn_atomdata_t to f */
+static void
+nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
+                                    const nbnxn_atomdata_t *nbat,
+                                    nbnxn_atomdata_output_t *out,
+                                    int nfa,
+                                    int a0,int a1,
+                                    rvec *f)
 {
     int  a,i,fa;
     const int  *cell;
@@ -5628,6 +5712,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
     }
 }
 
+/* Add the force array(s) from nbnxn_atomdata_t to f */
 void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
                                     int aloc,
                                     const nbnxn_atomdata_t *nbat,
@@ -5669,8 +5754,9 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }
 
+/* Adds the shift forces from nbnxn_atomdata_t to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
-                                               rvec *fshift)
+                                              rvec *fshift)
 {
     const nbnxn_atomdata_output_t *out;
     int  th;

@@ -118,7 +118,6 @@ typedef struct {
 
     int      na_c;         /* The number of atoms per cluser           */
     int      na_sc;        /* The number of atoms per super cluster    */
-    gmx_bool TwoWay;       /* Each pair once or twice in the list?     */
     real     rlist;        /* The radius for constructing the list     */
     int      nci;          /* The number of i clusters in the list     */
     nbnxn_ci_t *ci;        /* The i-cluster list                       */
