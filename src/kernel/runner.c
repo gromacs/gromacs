@@ -396,11 +396,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
        cr doesn't reflect the final parallel state right now */
     snew(inputrec,1);
     snew(mtop,1);
-
-    if (bVerbose && SIMMASTER(cr))
-    {
-        fprintf(stderr,"Getting Loaded...\n");
-    }
     
     if (Flags & MD_APPENDFILES) 
     {
@@ -624,11 +619,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         /* Open input and output files, allocate space for ED data structure */
         ed = ed_open(nfile,fnm,Flags,cr);
-    }
-
-    if (bVerbose && SIMMASTER(cr))
-    {
-        fprintf(stderr,"Loaded with Money\n\n");
     }
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
