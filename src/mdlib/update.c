@@ -550,7 +550,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
   {
       kT = BOLTZ*ref_t[n];
       /* The mass is encounted for later, since this differs per atom */
-      sig[n].V  = sqrt(2*kT*(1 - sdc[n].em));
+      sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
   }
   
   for(n=start; n<start+homenr; n++) 

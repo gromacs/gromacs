@@ -152,11 +152,10 @@ a Berendsen thermostat with the same <b>tau-t</b>.</dd>
 <dt><b>sd1</b></dt>
 <dd> An efficient leap-frog stochastic dynamics integrator.
 This integrator is equivalent to <b>sd</b>, except that it requires
-only one Gaussian random number and one constraint step.
-This integrator is less accurate.
-For water the relative error in the temperature with this integrator
-is 0.5 <b>delta-t</b>/<b>tau-t</b>, but for other systems it can be higher.
-Use with care and check the temperature.</dd>
+only one Gaussian random number and one constraint step and is therefore
+significantly faster. Without constraints the accuracy is the same as <b>sd</b>.
+With constraints the accuracy is significantly reduced, so then <b>sd</b>
+will often be preferred.</dd>
 <dt><b>bd</b></dt>
 <dd>An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
