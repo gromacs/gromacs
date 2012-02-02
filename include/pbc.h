@@ -189,6 +189,13 @@ extern "C" {
    * The index does not change, so it needs to be retrieved only once.
    */
 
+  void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[]);
+  /* This wrapper function around put_atoms_in_box() with the ugly manual
+   * workload splitting is needed toavoid silently introducing multithreading
+   * in tools.
+   * */
+
+
   void put_atoms_in_box(int ePBC, matrix box,int natoms,rvec x[]);
   /* These routines puts ONE or ALL atoms in the box, not caring 
    * about charge groups!

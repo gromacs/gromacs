@@ -48,6 +48,7 @@
 #include "txtdump.h"
 #include "gmx_fatal.h"
 #include "names.h"
+#include "gmx_omp_nthreads.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,
@@ -1188,6 +1189,22 @@ int *compact_unitcell_edges()
     }
 
     return edge;
+}
+
+void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[])
+{
+    int t, nth;
+    nth = gmx_omp_get_default_nthreads();
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for(t=0; t<nth; t++)
+    {
+        int offset, len;
+
+        offset = (natoms*t    )/nth;
+        len    = (natoms*(t + 1))/nth - offset;        
+        put_atoms_in_box(ePBC, box, len, x + offset);
+    }
 }
 
 void put_atoms_in_box(int ePBC,matrix box,int natoms,rvec x[])

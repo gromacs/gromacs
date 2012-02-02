@@ -736,7 +736,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             calc_shifts(box,fr->shift_vec);
 
         if (bCalcCGCM) { 
-            put_atoms_in_box(fr->ePBC,box,homenr,x);
+            put_atoms_in_box_omp(fr->ePBC,box,homenr,x);
             inc_nrnb(nrnb,eNR_SHIFTX,homenr);
         } 
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
