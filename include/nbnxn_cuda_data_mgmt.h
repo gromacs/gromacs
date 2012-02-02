@@ -53,12 +53,12 @@ void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t /*p_cu_nb*/,
                            const interaction_const_t * /*ic*/,
                            const nonbonded_verlet_t * /*nbv*/);
 
-/*! Initilizes pair-list data for GPU, called at every neighbor search step. */
+/*! Initilizes pair-list data for GPU, called at every pair search step. */
 void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t /*cu_nb*/,
                               const nbnxn_pairlist_t * /*h_nblist*/,
                               int /*iloc*/);
 
-/*! Initilizes atom-data on the GPU, called at every neighbor search step. */
+/*! Initilizes atom-data on the GPU, called at every pair search step. */
 void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t /*cu_nb*/,
                               const nbnxn_atomdata_t * /*atomdata*/);
 

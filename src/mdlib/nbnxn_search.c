@@ -85,12 +85,12 @@
 #define SSE_WIDTH        4
 #define SSE_WIDTH_2LOG   2
 
-/* Neighbor search box upper and lower corner in x,y,z.
+/* Pair search box upper and lower corner in x,y,z.
  * Store this in 4 iso 3 reals for SSE.
  */
 #define NNBSBB_C         SSE_WIDTH
 #define NNBSBB_B         (2*NNBSBB_C)
-/* Neighbor search box upper and lower bound in z only. */
+/* Pair search box upper and lower bound in z only. */
 #define NNBSBB_D         2
 
 #if (!defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX) || (defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
@@ -182,7 +182,7 @@ typedef struct nbnxn_x_ci_sse {
 } nbnxn_x_ci_sse_t;
 #endif
 
-/* Working data for the actual i-supercell during neighbor searching */
+/* Working data for the actual i-supercell during pair search */
 typedef struct nbnxn_list_work {
     gmx_cache_protect_t cp0;
 
@@ -2642,7 +2642,6 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew_aligned(nbl->work->d2,NSUBCELL,16);
 }
 
-/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined,
                              gmx_nbat_alloc_t *alloc,
@@ -3291,7 +3290,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
                 (d2 < rl2 && nbs->subc_dc(na_c,ci,x_ci,cj_gl,stride,x,rl2)))
 #else
             /* Check if the distance between the two bounding boxes
-             * in within the neighborlist cut-off.
+             * in within the pair-list cut-off.
              */
             if (d2 < rl2)
 #endif
@@ -3422,7 +3421,7 @@ static void set_ci_excls(const nbnxn_search_t nbs,
                 ge = cell[aj];
 
                 /* Without shifts we only calculate interactions j>i
-                 * for one-way neighbor lists.
+                 * for one-way pair-lists.
                  */
                 if (diagRemoved && ge <= ci*nbl->na_sc + i)
                 {
@@ -3552,7 +3551,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
                 ge = cell[aj];
 
                 /* Without shifts we only calculate interactions j>i
-                 * for one-way neighbor lists.
+                 * for one-way pair-lists.
                  */
                 if (diagRemoved && ge <= sci*nbl->na_sc + i)
                 {
@@ -4405,7 +4404,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     if (gridj->simple != nbl->simple)
     {
-        gmx_incons("Grid incompatible with neighbor list");
+        gmx_incons("Grid incompatible with pair-list");
     }
 
     sync_work(nbl);
@@ -4976,7 +4975,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         nsubpair_max = 0;
     }
 
-    /* Clear all the neighbor lists */
+    /* Clear all pair-lists */
     for(th=0; th<nnbl; th++)
     {
         clear_nblist(nbl[th]);

@@ -78,7 +78,7 @@ typedef struct {
 #define NBL_CI_HALF_LJ(subc)  (1<<(8+2*(subc)))
 #define NBL_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
-/* Simple neighbor list i-unit */
+/* Simple pair-list i-unit */
 typedef struct {
     int ci;             /* i-cluster             */
     int shift;          /* Shift vector index plus possible flags */
@@ -86,7 +86,7 @@ typedef struct {
     int cj_ind_end;     /* End index into cj     */
 } nbnxn_ci_t;
 
-/* Grouped neighbor list i-unit */
+/* Grouped pair-list i-unit */
 typedef struct {
     int sci;            /* i-super-cluster       */
     int shift;          /* Shift vector index plus possible flags */

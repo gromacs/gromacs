@@ -1562,7 +1562,7 @@ gmx_bool is_nbl_type_simple(int nb_kernel_type)
 {
     if (nb_kernel_type == nbkNotSet)
     {
-        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style neighbor list.");
+        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style pair-list.");
     }
 
     switch (nb_kernel_type)

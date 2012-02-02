@@ -773,7 +773,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 #endif /* GMX_MPI */
 
-    /* do gridding for neighbor search */
+    /* do gridding for pair search */
     if (bNS)
     {
         if (graph && bStateChanged)
@@ -842,7 +842,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 #endif
         
-    /* do local neighbor search */
+    /* do local pair search */
     if (bNS)
     {
         wallcycle_start_nocount(wcycle,ewcNS);
@@ -858,7 +858,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
         if (bUseGPU)
         {
-            /* initialize GPU local neighbor list */
+            /* initialize local pair-list on the GPU */
             nbnxn_cuda_init_pairlist(nbv->cu_nbv,
                                      nbv->grp[eintLocal].nbl_lists.nbl[0],
                                      eintLocal);
@@ -882,7 +882,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #endif
 
     /* Communicate coordinates and sum dipole if necessary + 
-       do non-local neighbor search */
+       do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
         bDiffKernels = (nbv->grp[eintNonlocal].kernel_type !=
@@ -918,7 +918,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #ifdef GMX_GPU
             if (nbv->grp[eintNonlocal].kernel_type == nbk8x8x8CUDA)
             {
-                /* initialize GPU non-local neighbor list */
+                /* initialize non-local pair-list on the GPU */
                 nbnxn_cuda_init_pairlist(nbv->cu_nbv,
                                          nbv->grp[eintNonlocal].nbl_lists.nbl[0],
                                          eintNonlocal);

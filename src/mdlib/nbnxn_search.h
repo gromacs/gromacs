@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-/* Allocates and initializes a neighbor searching data structure */
+/* Allocates and initializes a pair search data structure */
 void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
@@ -50,7 +50,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        int natoms_cluster,
                        int nthread_max);
 
-/* Put the atoms on the neighborsearching grid.
+/* Put the atoms on the pair search grid.
  * Only atoms a0 to a1 in x are put on the grid.
  * The atom_density is used to determine the grid size.
  * When atom_density=-1, the density is determined from a1-a0 and the corners.
@@ -95,13 +95,13 @@ void nbnxn_get_atomorder(nbnxn_search_t nbs,int **a,int *n);
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
-/* FIXME */
+/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined,
                              gmx_nbat_alloc_t *alloc,
                              gmx_nbat_free_t  *free);
 
-/* Make a neighborlist with radius rlist, store it in nbl.
+/* Make a apir-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required
  * number or roughly equally sized ci blocks in nbl.
  * When set >0 ci lists will be chopped up when the estimate
