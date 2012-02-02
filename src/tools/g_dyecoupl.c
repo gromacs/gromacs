@@ -6,12 +6,11 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -33,22 +32,19 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _pgutil_h
-#define _pgutil_h
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#include "typedefs.h"
+#include <gmx_ana.h>
 
-extern atom_id search_atom(const char *type,int start,
-			   int natoms,t_atom at[],
-			   char ** const * anm,
-			   const char *bondtype,gmx_bool bAllowMissing);
-/* Search an atom in array of pointers to strings, starting from start
- * if type starts with '-' then searches backwards from start.
- * bondtype is only used for printing the error/warning string,
- * when bondtype="check" no error/warning is issued.
- * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
- */
 
-extern void set_at(t_atom *at,real m,real q,int type,int resind);
+/* This is just a wrapper binary.
+*/
+int
+main(int argc, char *argv[])
+{
+  gmx_dyecoupl(argc,argv);
+  return 0;
+}
 
-#endif	/* _pgutil_h */
