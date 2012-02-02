@@ -1475,7 +1475,8 @@ void update_constraints(FILE         *fplog,
         }
         else 
         {
-            copy_rvecn(upd->xp,state->x,start,nrend);
+            copy_rvecn_omp(upd->xp,state->x,start,nrend,
+                           gmx_omp_get_update_nthreads());
         }
         
         dump_it_all(fplog,"After unshift",
