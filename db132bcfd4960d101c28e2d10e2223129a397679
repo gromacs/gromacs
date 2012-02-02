@@ -1,0 +1,9 @@
+Change-Id: Idb132bcfd4960d101c28e2d10e2223129a397679
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+1: Christoph Junghans <junghans@votca.org>
+Verified+1: Jenkins Buildbot
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Thu, 02 Feb 2012 17:10:18 +0100
+Reviewed-on: https://gerrit.gromacs.org/455
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
