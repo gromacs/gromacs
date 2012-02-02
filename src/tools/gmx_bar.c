@@ -2135,9 +2135,9 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
     }
 
     /* make room for the data */
-    if (s->ndu_alloc < (s->ndu + blk->sub[2].nr) )
+    if (s->ndu_alloc < (size_t)(s->ndu + blk->sub[2].nr) )
     {
-        s->ndu_alloc += (s->ndu_alloc < blk->sub[2].nr) ?  
+        s->ndu_alloc += (s->ndu_alloc < (size_t)blk->sub[2].nr) ?  
                             blk->sub[2].nr*2 : s->ndu_alloc;
         srenew(s->du_alloc, s->ndu_alloc);
         s->du=s->du_alloc;

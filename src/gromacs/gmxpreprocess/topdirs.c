@@ -94,6 +94,8 @@ int ifunc_index(directive d,int type)
       return F_QUARTIC_ANGLES;
     case 8:
       return F_TABANGLES;
+    case 9:
+      return F_LINEAR_ANGLES;
     default:
       gmx_fatal(FARGS,"Invalid angle type %d",type);
       break;
@@ -193,7 +195,15 @@ int ifunc_index(directive d,int type)
     }
     break;
   case d_polarization:
-    return F_POLARIZATION;
+    switch (type) {
+    case 1:
+      return F_POLARIZATION;
+    case 2:
+      return F_ANHARM_POL;
+    default:
+      gmx_fatal(FARGS,"Invalid polarization type %d",type);
+    }
+    break;
   case d_thole_polarization:
     return F_THOLE_POL;
   case d_water_polarization:

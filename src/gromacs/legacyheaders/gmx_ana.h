@@ -100,6 +100,9 @@ int
 gmx_dos(int argc,char *argv[]);
 
 int 
+gmx_dyecoupl(int argc,char *argv[]);
+
+int 
 gmx_dyndom(int argc,char *argv[]);
 
 int 
@@ -278,6 +281,9 @@ gmx_pme_error(int argc,char *argv[]);
 
 int
 gmx_options(int argc,char *argv[]);
+
+int
+gmx_sans(int argc,char *argv[]);
 
 #ifdef __cplusplus
 }

@@ -30,25 +30,25 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#ifndef _pgutil_h
-#define _pgutil_h
+#include <gmx_ana.h>
 
-#include "typedefs.h"
 
-extern atom_id search_atom(const char *type,int start,
-			   int natoms,t_atom at[],
-			   char ** const * anm,
-			   const char *bondtype,gmx_bool bAllowMissing);
-/* Search an atom in array of pointers to strings, starting from start
- * if type starts with '-' then searches backwards from start.
- * bondtype is only used for printing the error/warning string,
- * when bondtype="check" no error/warning is issued.
- * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
- */
+/* This is just a wrapper binary.
+* The code that used to be in gmx_sans.c is now in gmx_rdf.c,
+* where the old main function is called gmx_sans().
+*/
+int
+main(int argc, char *argv[])
+{
+  gmx_sans(argc,argv);
+  return 0;
+}
 
-extern void set_at(t_atom *at,real m,real q,int type,int resind);
 
-#endif	/* _pgutil_h */
+  
