@@ -1,10 +1,11 @@
 # Manage the MPI setup, assuming that CMAKE_C_COMPILER is an MPI
 # (wrapper) compiler.
 if(GMX_MPI)
-  if(GMX_THREADS)
-    set(GMX_THREADS OFF CACHE BOOL
-      "Thread-based parallelization conflicts with MPI." FORCE)
-  endif(GMX_THREADS)
+  if(GMX_THREAD_MPI)
+    message(STATUS "MPI is not compatible with thread-MPI. Disabling thread-MPI.")
+    set(GMX_THREAD_MPI OFF CACHE BOOL
+        "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" FORCE)
+  endif(GMX_THREAD_MPI)
 
   # Test the CMAKE_C_COMPILER for being an MPI (wrapper) compiler
   TRY_COMPILE(MPI_FOUND ${CMAKE_BINARY_DIR}

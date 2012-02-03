@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include <thread_mpi.h>
 #endif
 
@@ -622,7 +622,7 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Precision:        single\n");
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     fprintf(fp, "Parallellization: thread_mpi\n");
 #elif defined(GMX_MPI)
     fprintf(fp, "Parallellization: MPI\n");
