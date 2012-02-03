@@ -1638,7 +1638,7 @@ static void pmegrids_init(pmegrids_t *grids,
 {
     ivec n,n_base,g0,g1;
     int t,x,y,z,d,i,tfac;
-    int max_comm_lines;
+    int max_comm_lines=-1;
 
     n[XX] = nx - (pme_order - 1);
     n[YY] = ny - (pme_order - 1);
