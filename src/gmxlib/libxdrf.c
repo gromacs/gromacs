@@ -44,7 +44,7 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
-#include "futil.h"
+#include "history.h"
 #include "gmx_fatal.h"
 
 
@@ -440,6 +440,8 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	xdridptr[xdrid] = xdrs;
 	xdrstdio_create(xdrs, xdrfiles[xdrid], lmode);
     }
+
+    histopenfile(xdrfiles[xdrid],filename, newtype);
     return xdrid;
 }
 /*_________________________________________________________________________
@@ -477,6 +479,7 @@ int xdrclose(XDR *xdrs) {
 	if (xdridptr[xdrid] == xdrs) {
 	    
 	    xdr_destroy(xdrs);
+            histclosefile(&xdrfiles[xdrid]);
 	    rc = fclose(xdrfiles[xdrid]);
 	    xdridptr[xdrid] = NULL;
 	    return !rc; /* xdr routines return 0 when ok */

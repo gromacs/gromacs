@@ -196,7 +196,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
             ok = FALSE;
             do
             {
-                if (NULL == fgets(inputstring, STRLEN - 1, stdin))
+                if (NULL == gmx_fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS,"Error reading user input" );
                 }

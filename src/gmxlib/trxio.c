@@ -54,6 +54,7 @@
 #include "checkpoint.h"
 #include "wgms.h"
 #include "vmdio.h"
+#include "futil.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -442,6 +443,8 @@ static void choose_ff(FILE *fp)
   int rc;
   eFileFormat eFF;
   t_trxstatus *stat;
+  char buf[STRLEN];
+  char *bufe;
 
   printf("\n\n");
   printf("   Select File Format\n");
@@ -459,9 +462,9 @@ static void choose_ff(FILE *fp)
     fflush(stdout);
     do
     {
-      rc = scanf("%d",&i);
+      rc = gmx_fgeti(&i,stdin);
     }
-    while (rc!=1);
+    while (rc!=0);
     i--;
   } while ((i < 0) || (i >= effNR));
   printf("\n");
@@ -485,14 +488,14 @@ static void choose_ff(FILE *fp)
     printf("GROMOS! OH DEAR...\n\n");
     printf("Number of atoms ? ");
     fflush(stdout);
-    if (1 != scanf("%d",&stat->NATOMS))
+    if (0 != gmx_fgeti(&stat->NATOMS,stdin))
     {
 	gmx_fatal(FARGS,"Error reading natoms in file");
     }
 
     printf("Time between timeframes ? ");
     fflush(stdout);
-    if( 1 != scanf("%lf",&stat->DT))
+    if( 0 != gmx_fgetd(&stat->DT,stdin))
     {
 	gmx_fatal(FARGS,"Error reading dt from file");
     }
@@ -500,9 +503,15 @@ static void choose_ff(FILE *fp)
     if (stat->eFF == effG87) {
       printf("Box X Y Z ? ");
       fflush(stdout);
-      if(3 != scanf("%lf%lf%lf",&stat->BOX[XX],&stat->BOX[YY],&stat->BOX[ZZ]))
-      { 
-	  gmx_fatal(FARGS,"Error reading box in file");
+
+      gmx_fgets(buf,STRLEN,stdin);
+      for (i=0;i<3;i++)
+      {
+          stat->BOX[i] = strtod(buf,&bufe);
+          if(buf==bufe)
+          {     
+              gmx_fatal(FARGS,"Error reading box in file");
+          }
       }
     }
     do {

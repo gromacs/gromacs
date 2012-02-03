@@ -53,6 +53,7 @@
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 #include <direct.h>
 #include <io.h>
+#include <sys/locking.h>
 #endif
 
 #include "sysstuff.h"
@@ -62,6 +63,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+#include "history.h"
 
 
 #ifdef GMX_THREAD_MPI
@@ -152,15 +154,16 @@ int ffclose(FILE *fp)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            ret = fclose(fp);
+            history_fclose(&fp);
+        ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
             ret = pclose(fp);
+
         pstack=pstack->prev;
         sfree(ps);
     }
@@ -176,7 +179,8 @@ int ffclose(FILE *fp)
         }
         else {
             if (fp != NULL)
-                ret = fclose(fp);
+                history_fclose(&fp);
+            ret = fclose(fp);
         }
     }
 #ifdef GMX_THREAD_MPI
@@ -491,6 +495,7 @@ FILE *ffopen(const char *file,const char *mode)
                 gmx_file(file);
         }
     }
+    history_fopen(ff,file,mode);
     return ff;
 #endif
 }
@@ -1001,6 +1006,67 @@ int gmx_truncatefile(char *path, gmx_off_t length)
 #else
     return truncate(path,length);
 #endif
+}
+    
+char *gmx_fgets(char *s, int size, FILE *stream)
+{
+    char* ret;
+    ret = fgets(s,size,stream);
+    if (stream==stdin)
+    {
+        history_addinput(s);
+    }
+    return ret;
+}
+
+int gmx_fgeti(int *i, FILE *stream)
+{
+    char buf[STRLEN];
+    char *bufe;
+    gmx_fgets(buf,STRLEN,stdin);
+    *i = (int)strtol(buf,&bufe,10);
+    return bufe==buf;
+}
+
+int gmx_fgetd(double *d, FILE *stream)
+{
+    char buf[STRLEN];
+    char *bufe;
+    gmx_fgets(buf,STRLEN,stdin);
+    *d = strtod(buf,&bufe);
+    return bufe==buf;
+}
+
+int gmx_fgetc(FILE *stream)
+{
+    int ret;
+    char buf[2];
+    ret = fgetc(stream);
+    if (stream==stdin)
+    {
+        buf[0]=ret;
+        buf[1]=0;
+        history_addinput(buf);
+    }
+    return ret;
+}
+
+
+int gmx_lock(FILE* file)
+{
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    struct flock fl;  /* don't initialize here: the struct order is OS 
+                         dependent! */
+    fl.l_type=F_WRLCK;
+    fl.l_whence=SEEK_SET;
+    fl.l_start=0;
+    fl.l_len=0;
+    fl.l_pid=0;
+    return fcntl(fileno(file), F_SETLK, &fl);
+#else
+    return _locking(fileno(file), _LK_NBLCK, LONG_MAX);
+#endif
+
 }
 
 

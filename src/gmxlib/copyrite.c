@@ -54,6 +54,7 @@
 #include "copyrite.h"
 #include "strdb.h"
 #include "futil.h"
+#include "history.h"
 
 static void pr_two(FILE *out,int c,int i)
 {
@@ -279,6 +280,8 @@ void thanx(FILE *fp)
     fprintf(fp,"\ngcq#%d: %s\n\n",cqnum,cq);
   else
     fprintf(fp,"\n%s\n\n",cq);
+  
+  history_write();
 }
 
 typedef struct {

@@ -45,6 +45,7 @@
 #include "smalloc.h"
 #include "specbond.h"
 #include "pdb2top.h"
+#include "futil.h"
 #include "vec.h"
 
 gmx_bool yesno(void)
@@ -52,7 +53,7 @@ gmx_bool yesno(void)
   char c;
 
   do {
-    c=toupper(fgetc(stdin));
+    c=toupper(gmx_fgetc(stdin));
   } while ((c != 'Y') && (c != 'N'));
   
   return (c == 'Y');

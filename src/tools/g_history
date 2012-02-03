@@ -1,0 +1,232 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#TODO: 
+#in gmx:
+#
+#here:
+#wrapper for external tools (limit to directories in current folder and folders given on command line, use strace -eopen)
+#
+#BUGS:
+
+from optparse import OptionParser
+from glob import glob
+import os,hashlib,struct
+#OptParse -f file, -h history files/directories
+
+parser = OptionParser(version="GROMACS 4.5")
+parser.add_option("-f", "--file", dest="filename", 
+                     help="print history for FILE", metavar="FILE")
+parser.add_option("-d", "--hist", dest="history", 
+                     help="additional folder/files to search for history,\
+           multiple seperated by :", metavar="PATH")
+parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
+                     help="be verbose printing results")
+parser.set_description("g_history prints the history stored by GROMACS tools.")
+
+
+(options, pargs) = parser.parse_args()
+
+out_files={}  #key: md5 of output file, value: index of cmd in cmds
+in_files={}   #key: md5 of input file, value: absolute filename
+out_fnms=[]   #each list element: "list: first element absolute filename, second element index of cmd in cmds"
+cmds=[]       #each list element: "dict with key: option,  value: list of values"
+
+#appends to d[key] the value val
+#d: dict
+#returns: None
+def addToDict(d, key, val):
+    if d.has_key(key):
+        d[key]+=[val]
+    else:
+        d[key]=[val]
+
+#read in history file f and add all cmds to cmds and output files to out_files
+#returns: None
+def read_history(f):
+    global cmds, out_fnms
+    args = {}
+    for l in file(f):  #loop of lines of one command
+        l=l.strip()
+        opt = l[:3]    #format: e.g. CMD: mdrun, opt=CMD, val=mdrun
+        val = l[5:]
+        if l=="":      #new line=>new command starts
+            if args!={}: cmds+=[args]
+            args={}
+        else:
+            addToDict(args,opt,val)
+        if opt=="OUT" or opt=="IN ":
+            (fn,md5)=val.split(" ")
+            if not os.path.isabs(fn):
+                fn=os.path.join(args['PWD'][0],fn)
+            if opt=="OUT":
+                addToDict(out_files,md5,len(cmds))
+                out_fnms+=[[fn,len(cmds)]]
+            if opt=="IN ":
+                addToDict(in_files,md5,fn)
+    if args!={}: cmds+=[args]            
+
+#search for history files in standard location and in opt
+#returns: list of history files
+def search_history(opt):
+    def_file=".gmx_history"
+    paths = [def_file,os.path.join("~",def_file)]
+    if opt!=None: paths+=opt.split(":")
+    ret = []
+    for i in paths:
+        i = os.path.expanduser(i)
+        idef = os.path.join(i,def_file)
+        if os.path.isfile(i):
+            ret+=[i]
+        elif os.path.isfile(idef):
+            ret+=[idef]
+    return ret
+
+#compute md5 for file f, for large files take beginning+end+size
+#returns: md5sum
+def md5sum(f):
+    CPT_CHK_LEN=1048576
+    size=os.path.getsize(f)
+    if size>CPT_CHK_LEN:
+        fp=file(f)
+        c=fp.read(CPT_CHK_LEN/2)
+        fp.seek(-CPT_CHK_LEN/2,2)
+        c+=fp.read(CPT_CHK_LEN/2)
+        c+=struct.pack("=q",size)
+    else:
+        c = file(f).read()
+    return hashlib.md5(c).hexdigest()  
+    
+#find all commands used to generate file with md5sum md5
+#returns: list of cmds, list of input files without command
+def find_cmds_lowlevel(md5):
+    #sort by:
+    #all files exist
+    #orig file exist
+    #lastest command
+    #probably better than sorting: having an input hash and then when priting missing/existing input files looking there and thus getting all locations which were used by any similar command
+    cmd_list=[]
+    input_list=[]
+    if out_files.has_key(md5):
+        for cmdidx in out_files[md5]: 
+            cmd_list=[]
+            input_list=[]
+            args = cmds[cmdidx]      
+            for f in args["IN "]:
+                (fn,n_md5)=f.split(" ")
+                if n_md5==md5:  break #ignore commands with input=output
+                (cmd,input)=find_cmds_lowlevel(n_md5)
+                if cmd!=[]:
+                    cmd_list+=cmd
+                    input_list+=input
+                else:
+                    input_list+=[f]
+            else:
+                cmd_list+=[cmdidx]
+                break #current: no sorting: just last read
+    return cmd_list,input_list
+    
+#find all commands used to generate file with md5sum md5 and removes duplicates
+#returns: list of cmds, list of input files without command
+def find_cmds(md5):
+    (d_cmd,input) = find_cmds_lowlevel(md5)
+    all_outputs=[]
+    cmd=[]
+    for l in d_cmd:
+        md5s=[]
+        all_found=True
+        for o in cmds[l]['OUT']:
+            (fn,md5)=o.split(" ")
+            md5s+=[md5]
+            if not md5 in all_outputs: all_found=False
+        if all_found: continue   #all found => duplicate => don't add
+        cmd+=[l]
+        all_outputs+=md5s
+    return (cmd,input)
+
+def find_input(md5):
+    for i in in_files[md5]:
+        found_files=[]
+        if os.path.isfile(i): found_files+=[i]
+        (head,tail)=os.path.split(i)
+        found_files+=glob(os.path.join(head,"#"+tail+".*#"))
+        for f in found_files:
+           if md5sum(f)==md5:
+               return f
+
+def print_cmd(args):
+    if args.has_key('INP'):
+        print "echo -e",
+        for l in args['INP']:
+            print l,"\\\\n",
+        print "|",
+    print args['CMD'][0]
+    
+
+def print_history(md5):
+    cmd,input=find_cmds(md5)
+    if len(cmd)>=1:
+        print "Required input (files without known history):"
+        for l in set(input):
+            (fn,md5)=l.split(" ")
+            print os.path.basename(fn),#md5,
+            infile = find_input(md5)
+            if infile:
+                print "   (found content: %s)"%(infile,)
+            else:
+                print "   (file not found)"
+        print "Commands:"
+        for l in cmd:
+            args=cmds[l]
+            print_cmd(args)
+            if options.verbose:
+                for i in args['IN ']:
+                    print "#IN:",i
+                for o in args['OUT']:
+                    print "#OUT:",o                
+    else:
+        print "No history found for %s."%(options.filename,)
+  
+
+hist_files = search_history(options.history)
+for hist_file in hist_files:
+    read_history(hist_file)
+
+if options.filename!=None:
+    if os.path.isfile(options.filename):
+      md5 = md5sum(options.filename)
+      print "md5sum of %s is %s."%(options.filename, md5)
+      print_history(md5)
+    else:
+      print "File %s not found. Cannot compute checksum."%(options.filename,)
+      abspath = os.path.abspath(options.filename)
+      nfound=0
+      for l in out_fnms:
+          if l[0]==abspath:
+              arg = cmds[l[1]]
+              for o in arg['OUT']:
+                  fn,md5=o.split(" ")
+                  if os.path.basename(fn)==os.path.basename(abspath):
+                      nfound+=1
+                      print "Found output: %s %s"%(abspath,md5)
+                      print "Generated by:",
+                      print_cmd(arg)
+                      print "By:",arg['BY '][0]
+                      print "Print full history?"
+                      inp = raw_input()
+                      if inp=='y' or inp=='Y':
+                          print_history(md5)
+                      break
+              else:
+                  print "BUG: found in out_fnms but not in cmds"
+      if nfound==0:
+          print "No file found matching: %s."%(abspath,)
+else:
+    print "No action specified"
+    parser.print_help()
+	
+
+#print cmds[-1]
+#print out_files
+
+#print options.filename

@@ -301,7 +301,7 @@ choose_ff(const char *ffsel,
 
         do
         {
-            pret = fgets(buf,STRLEN,stdin);
+            pret = gmx_fgets(buf,STRLEN,stdin);
             
             if (pret != NULL)
             {

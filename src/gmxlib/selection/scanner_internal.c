@@ -58,6 +58,7 @@
 #include "selcollection.h"
 #include "selelem.h"
 #include "symrec.h"
+#include "history.h"
 
 #include "parser.h"
 #include "scanner.h"
@@ -94,6 +95,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
     while (fgets(ptr, max_len, stdin))
     {
         int len = strlen(ptr);
+        history_addinput(ptr);
 
         totlen += len;
         if (len >= 2 && ptr[len - 1] == '\n' && ptr[len - 2] == '\\')

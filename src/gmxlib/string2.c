@@ -62,6 +62,7 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "macros.h"
+#include "futil.h"
 #include "string2.h"
 #include "futil.h"
 
@@ -91,7 +92,7 @@ char *fgets2(char *line, int n, FILE *stream)
  */
 {
   char *c;
-  if (fgets(line,n,stream) == NULL) {
+  if (gmx_fgets(line,n,stream) == NULL) {
     return NULL;
   }
   if ((c=strchr(line,'\n')) != NULL) {

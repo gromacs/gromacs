@@ -57,6 +57,7 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "gmxcpp.h"
+#include "history.h"
 
 typedef struct {
   char *name;
@@ -297,6 +298,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   cpp->ifdefs  = NULL;
   cpp->child   = NULL;
   cpp->parent  = NULL;
+  history_fopen(cpp->fp,cpp->fn,"r");
   if (cpp->fp == NULL) {
     if (NULL != debug) {
       fprintf(debug,"GMXCPP: opening file %s\n",cpp->fn);
@@ -583,6 +585,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
     return eCPP_FILE_NOT_OPEN;
   if (debug)
     fprintf(debug,"GMXCPP: closing file %s\n",handle->fn);
+  history_fclose(&handle->fp);
   fclose(handle->fp);
   if (NULL != handle->cwd) {
     if (NULL != debug)

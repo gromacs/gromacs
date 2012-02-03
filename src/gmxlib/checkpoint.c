@@ -1467,10 +1467,6 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     t_fileio *chksum_file;
     FILE* fplog = *pfplog;
     unsigned char digest[16];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-    struct flock fl;  /* don't initialize here: the struct order is OS 
-                         dependent! */
-#endif
 
     const char *int_warn=
               "WARNING: The checkpoint file was generated with integrator %s,\n"
@@ -1480,14 +1476,6 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
-    fl.l_type=F_WRLCK;
-    fl.l_whence=SEEK_SET;
-    fl.l_start=0;
-    fl.l_len=0;
-    fl.l_pid=0;
-#endif
-
     if (PARTDECOMP(cr))
     {
         gmx_fatal(FARGS,
@@ -1745,12 +1733,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    ==-1)
-#else
-                if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
-#endif
+                if (gmx_lock(gmx_fio_getfp(chksum_file))==-1)
                 {
                     if (errno!=EACCES && errno!=EAGAIN)
                     {
