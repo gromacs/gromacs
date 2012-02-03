@@ -123,7 +123,7 @@
 #cmakedefine GMX_MPI
 
 /* Use threads for parallelization */
-#cmakedefine GMX_THREADS
+#cmakedefine GMX_THREAD_MPI
 
 /* Use old threading (domain decomp force calc) code */
 #cmakedefine GMX_THREAD_SHM_FDECOMP 
