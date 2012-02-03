@@ -1346,7 +1346,12 @@ int search_string(char *s,int ng,char *gn[])
     }
   }
     
-  gmx_fatal(FARGS,"Group %s not found in index file.\nGroup names must match either [moleculetype] names\nor custom index group names,in which case you\nmust supply an index file to the '-n' option of grompp.",s);
+  gmx_fatal(FARGS,
+            "Group %s referenced in the .mdp file was not found in the index file.\n"
+            "Group names must match either [moleculetype] names or custom index group\n"
+            "names, in which case you must supply an index file to the '-n' option\n"
+            "of grompp.",
+            s);
   
   return -1;
 }
