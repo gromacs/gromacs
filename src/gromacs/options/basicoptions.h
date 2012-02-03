@@ -80,10 +80,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 {
     public:
         //! Initializes an option with the given name.
-        explicit BooleanOption(const char *name) : MyBase(name)
-        {
-            setFlag(efBoolean);
-        }
+        explicit BooleanOption(const char *name) : MyBase(name) {}
 
     private:
         //! Creates a BooleanOptionStorage object.
@@ -282,9 +279,9 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
     public:
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
-            : MyBase(name), _filetype(eftUnknown)
+            : MyBase(name), filetype_(eftUnknown),
+              bRead_(false), bWrite_(false), bLibrary_(false)
         {
-            setFlag(efFile);
         }
 
         /*! \brief
@@ -293,30 +290,33 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          * This attribute must be provided.
          */
         MyClass &filetype(OptionFileType type)
-        { _filetype = type; return me(); }
+        { filetype_ = type; return me(); }
         //! Tells that the file provided by this option is used read-only.
         MyClass &readOnly()
-        { setFlag(efFileRead); clearFlag(efFileWrite); return me(); }
+        { bRead_ = true; bWrite_ = false; return me(); }
         //! Tells that the file provided by this option is used write-only.
         MyClass &writeOnly()
-        { setFlag(efFileWrite); clearFlag(efFileRead); return me(); }
+        { bRead_ = false; bWrite_ = true; return me(); }
         /*! \brief
          * Tells that the file provided by this option is used for reading and
          * writing.
          */
-        MyClass &readwrite()
-        { setFlag(efFileRead); setFlag(efFileWrite); return me(); }
+        MyClass &readWrite()
+        { bRead_ = bWrite_ = true; return me(); }
         /*! \brief
          * Tells that the file will be looked up in library directories in
          * addition to working directory.
          */
-        MyClass &libraryFile() { setFlag(efFileLibrary); return me(); }
+        MyClass &libraryFile() { bLibrary_ = true; return me(); }
 
     private:
         //! Creates a FileNameOptionStorage object.
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
-        OptionFileType          _filetype;
+        OptionFileType          filetype_;
+        bool                    bRead_;
+        bool                    bWrite_;
+        bool                    bLibrary_;
 
         /*! \brief
          * Needed to initialize FileNameOptionStorage from this class without

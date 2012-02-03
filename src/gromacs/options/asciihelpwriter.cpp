@@ -90,13 +90,8 @@ void AsciiFileParameterWriter::visitSubSection(const Options &section)
     iterator.acceptOptions(this);
 }
 
-void AsciiFileParameterWriter::visitOption(const OptionInfo &option)
+void AsciiFileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
 {
-    if (!option.isFile())
-    {
-        return;
-    }
-
     if (_bFirst)
     {
         fprintf(_fp, "%6s %12s  %-12s %s\n",
@@ -173,7 +168,8 @@ void AsciiParameterWriter::visitSubSection(const Options &section)
 
 void AsciiParameterWriter::visitOption(const OptionInfo &option)
 {
-    if (option.isFile() || (!_bShowHidden && option.isHidden()))
+    if (option.isType<FileNameOptionInfo>()
+        || (!_bShowHidden && option.isHidden()))
     {
         return;
     }
@@ -188,7 +184,7 @@ void AsciiParameterWriter::visitOption(const OptionInfo &option)
 
     std::string optionLine("-");
     optionLine.reserve(30 + option.description().size());
-    if (option.isBoolean())
+    if (option.isType<BooleanOptionInfo>())
     {
         optionLine.append("[no]");
     }

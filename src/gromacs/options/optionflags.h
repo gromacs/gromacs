@@ -71,14 +71,6 @@ enum OptionFlag
     //! %Option is hidden from standard help.
     efHidden              = 1<<4,
     /*! \brief
-     * %Option provides a boolean value.
-     *
-     * This is used to optionally support an alternative syntax where an
-     * option provided with no value sets the value to true and an
-     * option prefixed with "no" clears the value.
-     */
-    efBoolean             = 1<<5,
-    /*! \brief
      * %Option value is a vector, but a single value is also accepted.
      *
      * If only a single value is provided, the storage object should fill the
@@ -100,10 +92,6 @@ enum OptionFlag
      * OptionStorageTemplate::processSet().
      */
     efDontCheckMinimumCount     = 1<<16,
-    efFile                = 1<<12,
-    efFileRead            = 1<<13,
-    efFileWrite           = 1<<14,
-    efFileLibrary         = 1<<15,
     //efDynamic             = 1<<16,
     //efRanges              = 1<<17,
     //efEnum                = 1<<18,

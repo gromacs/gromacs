@@ -47,6 +47,7 @@ namespace gmx
 {
 
 class AbstractOption;
+class OptionInfo;
 class Options;
 
 /*! \libinternal \brief
@@ -83,16 +84,25 @@ class AbstractOptionStorage
 
         //! Returns true if the option has been set.
         bool isSet() const { return hasFlag(efSet); }
-        //! Returns true if the option is a boolean option.
-        bool isBoolean() const { return hasFlag(efBoolean); }
-        //! Returns true if the option is a file option.
-        bool isFile() const { return hasFlag(efFile); }
+        /*! \brief
+         * Returns true if the option is a boolean option.
+         *
+         * This is used to optionally support an alternative syntax where an
+         * option provided with no value sets the value to true and an
+         * option prefixed with "no" clears the value.
+         */
+        bool isBoolean() const;
         //! Returns true if the option is a hidden option.
         bool isHidden() const { return hasFlag(efHidden); }
         //! Returns the name of the option.
         const std::string &name() const { return _name; }
         //! Returns the description of the option.
         const std::string &description() const { return _descr; }
+
+        /*! \brief
+         * Returns an option info object corresponding to this option.
+         */
+        virtual OptionInfo &optionInfo() = 0;
         /*! \brief
          * Returns a short string describing the type of the option.
          *

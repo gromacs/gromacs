@@ -40,6 +40,8 @@
 
 #include "asciihelpwriter.h"
 
+#include "basicoptioninfo.h"
+#include "optionsvisitor.h"
 #include "../utility/flags.h"
 
 namespace gmx
@@ -96,7 +98,7 @@ class AsciiDescriptionWriter : public OptionsVisitor
  *
  * \ingroup module_options
  */
-class AsciiFileParameterWriter : public OptionsVisitor
+class AsciiFileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
 {
     public:
         //! Creates a helper object for writing file parameters.
@@ -109,7 +111,7 @@ class AsciiFileParameterWriter : public OptionsVisitor
         bool didOutput() const { return !_bFirst; }
 
         virtual void visitSubSection(const Options &section);
-        virtual void visitOption(const OptionInfo &option);
+        virtual void visitOptionType(const FileNameOptionInfo &option);
 
     private:
         FILE                   *_fp;

@@ -10,6 +10,7 @@ set(SELECTION_PUBLIC_HEADERS
     selection.h
     selectionenums.h
     selectionoption.h
+    selectionoptioninfo.h
     selparam.h
     selmethod.h
     selvalue.h)

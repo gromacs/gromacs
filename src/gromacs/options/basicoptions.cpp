@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/format.h"
@@ -95,6 +96,15 @@ void BooleanOptionStorage::convertValue(const std::string &value)
 }
 
 /********************************************************************
+ * BooleanOptionInfo
+ */
+
+BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+/********************************************************************
  * BooleanOption
  */
 
@@ -135,6 +145,15 @@ void IntegerOptionStorage::processSetValues(ValueList *values)
 }
 
 /********************************************************************
+ * IntegerOptionInfo
+ */
+
+IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+/********************************************************************
  * IntegerOption
  */
 
@@ -149,7 +168,7 @@ AbstractOptionStorage *IntegerOption::createDefaultStorage(Options *options) con
  */
 
 DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings, Options *options)
-    : MyBase(settings, options), _bTime(settings._bTime)
+    : MyBase(settings, options), _info(this), _bTime(settings._bTime)
 {
     if (_bTime)
     {
@@ -208,6 +227,15 @@ void DoubleOptionStorage::processAll()
 }
 
 /********************************************************************
+ * DoubleOptionInfo
+ */
+
+DoubleOptionInfo::DoubleOptionInfo(DoubleOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+/********************************************************************
  * DoubleOption
  */
 
@@ -222,7 +250,7 @@ AbstractOptionStorage *DoubleOption::createDefaultStorage(Options *options) cons
  */
 
 StringOptionStorage::StringOptionStorage(const StringOption &settings, Options *options)
-    : MyBase(settings, options), _enumIndexStore(NULL)
+    : MyBase(settings, options), _info(this), _enumIndexStore(NULL)
 {
     if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
     {
@@ -330,6 +358,15 @@ void StringOptionStorage::refreshValues()
 }
 
 /********************************************************************
+ * StringOptionInfo
+ */
+
+StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+/********************************************************************
  * StringOption
  */
 
@@ -363,9 +400,11 @@ std::string StringOption::createDescription() const
  */
 
 FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings, Options *options)
-    : MyBase(settings, options), _filetype(settings._filetype)
+    : MyBase(settings, options), info_(this), filetype_(settings.filetype_),
+      bRead_(settings.bRead_), bWrite_(settings.bWrite_),
+      bLibrary_(settings.bLibrary_)
 {
-    if (_filetype == eftPlot)
+    if (filetype_ == eftPlot)
     {
         options->globalProperties().request(eogpPlotFormat);
     }
@@ -380,6 +419,40 @@ void FileNameOptionStorage::convertValue(const std::string &value)
 {
     // TODO: Proper implementation.
     addValue(value);
+}
+
+/********************************************************************
+ * FileNameOptionInfo
+ */
+
+FileNameOptionInfo::FileNameOptionInfo(FileNameOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+const FileNameOptionStorage &FileNameOptionInfo::option() const
+{
+    return static_cast<const FileNameOptionStorage &>(OptionInfo::option());
+}
+
+bool FileNameOptionInfo::isInputFile() const
+{
+    return option().isInputFile();
+}
+
+bool FileNameOptionInfo::isOutputFile() const
+{
+    return option().isOutputFile();
+}
+
+bool FileNameOptionInfo::isInputOutputFile() const
+{
+    return option().isInputOutputFile();
+}
+
+bool FileNameOptionInfo::isLibraryFile() const
+{
+    return option().isLibraryFile();
 }
 
 /********************************************************************

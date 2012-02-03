@@ -40,6 +40,7 @@
 
 #include "../options/optionstoragetemplate.h"
 #include "selectionenums.h"
+#include "selectionoptioninfo.h"
 
 namespace gmx
 {
@@ -65,6 +66,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         SelectionOptionStorage(const SelectionOption &settings, Options *options);
         virtual ~SelectionOptionStorage();
 
+        virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatValue(int i) const;
 
@@ -114,6 +116,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
+        SelectionOptionInfo     _info;
         SelectionFlags          _selectionFlags;
         //! Pointer to the adjuster (there can be only one, can be NULL).
         SelectionOptionAdjuster *_adjuster;

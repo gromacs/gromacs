@@ -39,64 +39,16 @@
 #ifndef GMX_OPTIONS_OPTIONSVISITOR_H
 #define GMX_OPTIONS_OPTIONSVISITOR_H
 
+#include <cstddef>
+
 #include <string>
+
+#include "optioninfo.h"
 
 namespace gmx
 {
 
-class AbstractOptionStorage;
 class Options;
-
-/*! \libinternal \brief
- * Wrapper class for accessing option information.
- *
- * This class isolates the details of the internal option implementation
- * from option visitors.
- *
- * \see OptionsVisitor
- *
- * \inlibraryapi
- * \ingroup module_options
- */
-class OptionInfo
-{
-    public:
-        /*! \brief
-         * Wraps a given option object.
-         */
-        OptionInfo(const AbstractOptionStorage &option);
-
-        //! Returns true if the option is a boolean option.
-        bool isBoolean() const;
-        //! Returns true if the option is a file name option.
-        bool isFile() const;
-        //! Returns true if the option is a hidden option.
-        bool isHidden() const;
-        //! Returns the name of the option.
-        const std::string &name() const;
-        //! Returns the description of the option.
-        const std::string &description() const;
-        //! Returns the type of the option as a string.
-        const char *type() const;
-        //! Returns the number of values given for the option.
-        int valueCount() const;
-        //! Returns the i'th value of the option as a string.
-        std::string formatValue(int i) const;
-        //! Returns all the values of the option as a single string.
-        std::string formatValues() const;
-
-    private:
-        //! The wrapped option.
-        const AbstractOptionStorage &_option;
-
-        // Disallow copy and assign.
-        OptionInfo(const OptionInfo &);
-        void operator =(const OptionInfo &);
-
-        // This is a workaround for a buggy gcc 4.2, which seems to 
-        // require access to all constructors: 
-        friend class OptionsIterator;
-};
 
 /*! \libinternal \brief
  * Pure interface for visiting options in a Options object.
@@ -122,6 +74,38 @@ class OptionsVisitor
 };
 
 /*! \libinternal \brief
+ * Abstract base class for visiting options of a particular type.
+ *
+ * \see OptionsIterator
+ * \see OptionsVisitor
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+template <class InfoType>
+class OptionsTypeVisitor : public OptionsVisitor
+{
+    public:
+        virtual ~OptionsTypeVisitor() {}
+
+        virtual void visitSubSection(const Options &section) = 0;
+        /*! \brief
+         * Called for each option of type \p InfoType.
+         */
+        virtual void visitOptionType(const InfoType &option) = 0;
+
+    private:
+        virtual void visitOption(const OptionInfo &option)
+        {
+            const InfoType *subtype = option.toType<InfoType>();
+            if (subtype != NULL)
+            {
+                visitOptionType(*subtype);
+            }
+        }
+};
+
+/*! \libinternal \brief
  * Decorator class for visiting options in a Options object.
  *
  * This class provides an interface for looping through subsections and
@@ -130,7 +114,7 @@ class OptionsVisitor
  * Typical use (loop over all options, iteratively descending into
  * subsections):
  * \code
-class Visitor : public gmx::options::OptionsVisitor
+class Visitor : public gmx::OptionsVisitor
 {
     public:
         void visitSubSection(const Options &section)
@@ -176,6 +160,100 @@ class OptionsIterator
         // Disallow copy and assign.
         OptionsIterator(const OptionsIterator &);
         void operator =(const OptionsIterator &);
+};
+
+/*! \libinternal \brief
+ * Pure interface for visiting options in a Options object, allowing
+ * modifications.
+ *
+ * \see OptionsModifyingIterator
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+class OptionsModifyingVisitor
+{
+    public:
+        virtual ~OptionsModifyingVisitor() {}
+
+        /*! \brief
+         * Called for each subsection in Options.
+         */
+        virtual void visitSubSection(Options *section) = 0;
+        /*! \brief
+         * Called for each option in Options.
+         */
+        virtual void visitOption(OptionInfo *option) = 0;
+};
+
+/*! \libinternal \brief
+ * Abstract base class for visiting options of a particular type, allowing
+ * modifications.
+ *
+ * \see OptionsModifyingIterator
+ * \see OptionsModifyingVisitor
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+template <class InfoType>
+class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
+{
+    public:
+        virtual ~OptionsModifyingTypeVisitor() {}
+
+        virtual void visitSubSection(Options *section) = 0;
+        /*! \brief
+         * Called for each option of type \p InfoType.
+         */
+        virtual void visitOptionType(InfoType *option) = 0;
+
+    private:
+        virtual void visitOption(OptionInfo *option)
+        {
+            InfoType *subtype = option->toType<InfoType>();
+            if (subtype != NULL)
+            {
+                visitOptionType(subtype);
+            }
+        }
+};
+
+/*! \libinternal \brief
+ * Decorator class for visiting options in a Options object, allowing changes.
+ *
+ * This class works exactly like OptionsIterator, except that it uses
+ * OptionsModifyingVisitor interface, which allows modifying the options.
+ *
+ * \see OptionsIterator
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+class OptionsModifyingIterator
+{
+    public:
+        /*! \brief
+         * Creates an object for visiting options in a Options object.
+         */
+        OptionsModifyingIterator(Options *options);
+
+        /*! \brief
+         * Visits each subsection in the wrapped Options object.
+         */
+        void acceptSubSections(OptionsModifyingVisitor *visitor) const;
+        /*! \brief
+         * Visits each option in the wrapped Options object.
+         */
+        void acceptOptions(OptionsModifyingVisitor *visitor) const;
+
+    private:
+        //! The wrapped Options object.
+        Options                &_options;
+
+        // Disallow copy and assign.
+        OptionsModifyingIterator(const OptionsModifyingIterator &);
+        void operator =(const OptionsModifyingIterator &);
 };
 
 } // namespace gmx

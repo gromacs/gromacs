@@ -47,6 +47,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoptioninfo.h"
 
 #include "selectioncollection-impl.h"
 #include "selectionoptionstorage.h"
@@ -62,7 +63,8 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
                                                Options *options)
     : MyBase(settings, options,
              OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
-      _selectionFlags(settings._selectionFlags), _adjuster(NULL)
+      _info(this), _selectionFlags(settings._selectionFlags),
+      _adjuster(NULL)
 {
     options->globalProperties().request(eogpSelectionCollection);
     if (settings._adjuster != NULL)
@@ -194,6 +196,16 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
         }
         (*i)->setFlags(_selectionFlags);
     }
+}
+
+
+/********************************************************************
+ * SelectionOptionInfo
+ */
+
+SelectionOptionInfo::SelectionOptionInfo(SelectionOptionStorage *option)
+    : OptionInfo(option)
+{
 }
 
 

@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "basicoptions.h"
+#include "basicoptioninfo.h"
 #include "optionfiletype.h"
 #include "optionstoragetemplate.h"
 
@@ -70,15 +72,18 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
          * \param[in] options    Options object.
          */
         BooleanOptionStorage(const BooleanOption &settings, Options *options)
-            : MyBase(settings, options)
+            : MyBase(settings, options), info_(this)
         {
         }
 
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "bool"; }
         virtual std::string formatValue(int i) const;
 
     private:
         virtual void convertValue(const std::string &value);
+
+        BooleanOptionInfo       info_;
 };
 
 /*! \internal \brief
@@ -89,10 +94,11 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
         IntegerOptionStorage(const IntegerOption &settings, Options *options)
-            : MyBase(settings, options)
+            : MyBase(settings, options), info_(this)
         {
         }
 
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const
         { return hasFlag(efVector) ? "vector" : "int"; }
         virtual std::string formatValue(int i) const;
@@ -100,6 +106,8 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
     private:
         virtual void convertValue(const std::string &value);
         virtual void processSetValues(ValueList *values);
+
+        IntegerOptionInfo       info_;
 };
 
 /*! \internal \brief
@@ -111,6 +119,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
         DoubleOptionStorage(const DoubleOption &settings, Options *options);
 
+        virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const;
         virtual std::string formatValue(int i) const;
 
@@ -119,6 +128,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
+        DoubleOptionInfo        _info;
         bool                    _bTime;
 };
 
@@ -131,6 +141,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
         StringOptionStorage(const StringOption &settings, Options *options);
 
+        virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
         virtual std::string formatValue(int i) const;
 
@@ -138,6 +149,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
 
+        StringOptionInfo        _info;
         ValueList               _allowed;
         int                    *_enumIndexStore;
 };
@@ -151,13 +163,23 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         //! \copydoc StringOptionStorage::StringOptionStorage()
         FileNameOptionStorage(const FileNameOption &settings, Options *options);
 
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "file"; }
         virtual std::string formatValue(int i) const;
+
+        bool isInputFile() const { return bRead_ && !bWrite_; }
+        bool isOutputFile() const { return !bRead_ && bWrite_; }
+        bool isInputOutputFile() const { return bRead_ && bWrite_; }
+        bool isLibraryFile() const { return bLibrary_; }
 
     private:
         virtual void convertValue(const std::string &value);
 
-        OptionFileType          _filetype;
+        FileNameOptionInfo      info_;
+        OptionFileType          filetype_;
+        bool                    bRead_;
+        bool                    bWrite_;
+        bool                    bLibrary_;
 };
 
 /*!\}*/
