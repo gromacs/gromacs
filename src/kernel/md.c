@@ -91,7 +91,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -298,13 +298,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     if (DEFORM(*ir))
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
 #endif
         set_deform_reference_box(upd,
                                  deform_init_init_step_tpx,
                                  deform_init_box_tpx);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
 #endif
     }
@@ -1310,7 +1310,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Check whether everything is still allright */    
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             && MASTER(cr)
 #endif
             )

@@ -47,7 +47,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -118,7 +118,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_
     snew(wc->wcc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL)
     {
-/*#ifndef GMX_THREADS*/
+/*#ifndef GMX_THREAD_MPI*/
         if (fplog) 
         {
             fprintf(fplog,"\nWill time all the code during the run\n\n");

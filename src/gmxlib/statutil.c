@@ -57,7 +57,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -80,7 +80,7 @@
 static const char *program_name=NULL;
 static char *cmd_line=NULL;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* For now, some things here are simply not re-entrant, so
    we have to actively lock them. */
 static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -99,11 +99,11 @@ static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 const char *ShortProgram(void)
 {
     const char *pr,*ret;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     pr=ret=program_name; 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
@@ -117,11 +117,11 @@ const char *ShortProgram(void)
 const char *Program(void)
 {
     const char *ret;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     ret=program_name; 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
@@ -130,11 +130,11 @@ const char *Program(void)
 const char *command_line(void)
 {
     const char *ret;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     ret=cmd_line; 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
@@ -142,7 +142,7 @@ const char *command_line(void)
 
 void set_program_name(const char *argvzero)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     /* When you run a dynamically linked program before installing
@@ -158,7 +158,7 @@ void set_program_name(const char *argvzero)
     }
     if (program_name == NULL)
         program_name="GROMACS";
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
 }
@@ -169,7 +169,7 @@ void set_command_line(int argc, char *argv[])
     int i;
     size_t cmdlength;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     if (cmd_line==NULL)
@@ -188,7 +188,7 @@ void set_command_line(int argc, char *argv[])
             strcat(cmd_line," ");
         }
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
 
@@ -737,14 +737,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
     if (nicelevel != 0 && !bExit)
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         static gmx_bool nice_set=FALSE; /* only set it once */
         tMPI_Thread_mutex_lock(&init_mutex);
         if (!nice_set)
         {
 #endif
             i=nice(nicelevel); /* assign ret value to avoid warnings */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             nice_set=TRUE;
         }
         tMPI_Thread_mutex_unlock(&init_mutex);
