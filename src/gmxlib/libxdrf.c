@@ -86,7 +86,7 @@ static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* we need this because of the global variables above for FORTRAN binding. 
    The I/O operations are going to be slow. */
 static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -94,13 +94,13 @@ static tMPI_Thread_mutex_t xdr_fortran_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
 static void xdr_fortran_lock(void)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&xdr_fortran_mutex);
 #endif
 }
 static void xdr_fortran_unlock(void)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&xdr_fortran_mutex);
 #endif
 }
@@ -376,7 +376,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     char newtype[5];
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
     {
         tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );
@@ -461,7 +461,7 @@ int xdrclose(XDR *xdrs) {
     int xdrid;
     int rc = 0;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     if (!tMPI_Thread_mutex_trylock( &xdr_fortran_mutex ))  
     {
         tMPI_Thread_mutex_unlock( &xdr_fortran_mutex );

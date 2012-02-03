@@ -55,7 +55,7 @@
 #include "gmxfio.h"
 #include "md5.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 

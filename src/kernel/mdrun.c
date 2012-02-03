@@ -49,7 +49,7 @@
 #include "mdrun.h"
 #include "xmdrun.h"
 #include "checkpoint.h"
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -430,7 +430,7 @@ int main(int argc,char *argv[])
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start (0 is guess)" },
 #endif
@@ -546,7 +546,7 @@ int main(int argc,char *argv[])
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
 
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
   nthreads=1;
 #endif
 
@@ -566,7 +566,7 @@ int main(int argc,char *argv[])
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   if (nmultisim > 1) {
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
     gmx_bool bParFn = (multidir == NULL);
     init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
