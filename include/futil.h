@@ -196,13 +196,13 @@ int gmx_fsync(FILE *fp);
 #define getcwd _getcwd
 #endif
 
-extern char *gmx_fgets(char *s, int size, FILE *stream);
+char *gmx_fgets(char *s, int size, FILE *stream);
 
-extern int gmx_fgetc(FILE *stream);
+int gmx_fgetc(FILE *stream);
 
-extern int gmx_fgeti(int *i, FILE *stream);
+int gmx_fgeti(int *i, FILE *stream);
 
-extern int gmx_fgetd(double *d, FILE *stream);
+int gmx_fgetd(double *d, FILE *stream);
 
 
 /* Lock file. Uses fcntl on Unix and _locking on Windows. */ 
