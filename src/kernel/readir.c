@@ -2398,18 +2398,15 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 	    eel_names[eelGRF]);
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
   }
-    
-  if (ir->eI == eiSD1) {
-    gdt_max = 0;
-    for(i=0; (i<ir->opts.ngtc); i++)
-      gdt_max = max(gdt_max,ir->delta_t/ir->opts.tau_t[i]);
-    if (0.5*gdt_max > 0.0015) {
-      sprintf(warn_buf,"The relative error with integrator %s is 0.5*delta-t/tau-t = %g, you might want to switch to integrator %s\n",
-	      ei_names[ir->eI],0.5*gdt_max,ei_names[eiSD2]);
-      warning_note(wi,warn_buf);
-    }
-  }
 
+    if (ir->eI == eiSD1 &&
+        (gmx_mtop_ftype_count(sys,F_CONSTR) > 0 ||
+         gmx_mtop_ftype_count(sys,F_SETTLE) > 0))
+    {
+        sprintf(warn_buf,"With constraints integrator %s is less accurate, consider using %s instead",ei_names[ir->eI],ei_names[eiSD2]);
+        warning_note(wi,warn_buf);
+    }
+    
   bAcc = FALSE;
   for(i=0; (i<sys->groups.grps[egcACC].nr); i++) {
     for(m=0; (m<DIM); m++) {
