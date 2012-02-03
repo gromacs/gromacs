@@ -388,6 +388,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
         stat = cudaMemsetAsync(&signal_field->w, 0xAA, sizeof(signal_field->z), stream);
         CU_RET_ERR(stat, "cudaMemsetAsync of the signal_field failed");
 
+        /* For safety reasons set a few (5%) forces to NaN. This way even if the
+           polling "hack" fails with some future NVIDIA driver we'll get a crash. */
+        for (int i = adat_begin; i < 4*adat_last + 2; i += (adat_last - adat_begin)/20)
+        {
+            nbatom->out[0].f[i] = NAN;
+        }
+
         /* Clear the bits in the force array (on the CPU) that we are going to poll. */
         nbatom->out[0].f[adat_last*4 + 3] = 0;
     }
