@@ -38,7 +38,7 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"
 #endif 
 
@@ -65,7 +65,7 @@ static void log_action(int bMal,const char *what,const char *file,int line,
   if (!bMal)
     bytes=-bytes;
   
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_lock(&gmx_logfile_mtx);
 #endif
 
@@ -96,7 +96,7 @@ static void log_action(int bMal,const char *what,const char *file,int line,
 	   what ? what  : NN,bytes/1024.0,
 	   file ? fname : NN,line,nelem,size);
   }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
 #endif
 }

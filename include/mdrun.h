@@ -139,7 +139,7 @@ typedef struct {
  */
 extern gmx_large_int_t     deform_init_init_step_tpx;
 extern matrix              deform_init_box_tpx;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
 /* The minimum number of atoms per thread. With fewer atoms than this,
