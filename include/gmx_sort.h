@@ -56,7 +56,7 @@ gmx_qsort(void *           base,
           int            (*compar)(const void *, const void *));
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* Some implementations of qsort are not threadsafe.
  * For instance qsort in glibc contains a bug which makes it non-threadsafe:
  * http://sources.redhat.com/bugzilla/show_bug.cgi?id=11655
