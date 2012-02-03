@@ -209,6 +209,8 @@ class Options
         friend class OptionsAssigner;
         //! Needed to be able to extend the interface of this object.
         friend class OptionsIterator;
+        //! Needed to be able to extend the interface of this object.
+        friend class OptionsModifyingIterator;
 
         // Disallow copy and assign.
         Options(const Options &);

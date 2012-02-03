@@ -49,6 +49,10 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"
+#include "testutils/testexceptions.h"
+
+namespace
+{
 
 class MockOption;
 
@@ -97,6 +101,11 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             MyBase::commitValues();
         }
 
+        // These are not used.
+        virtual gmx::OptionInfo &optionInfo()
+        {
+            GMX_THROW(gmx::test::TestException("Not implemented"));
+        }
         virtual const char *typeString() const { return "mock"; }
         virtual std::string formatValue(int /*i*/) const { return ""; }
 
@@ -146,9 +155,6 @@ MockOptionStorage::MockOptionStorage(const MockOption &settings, gmx::Options *o
     ON_CALL(*this, convertValue(_))
         .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
 }
-
-namespace
-{
 
 /*
  * Tests that finish() can set a required option even if the user has not

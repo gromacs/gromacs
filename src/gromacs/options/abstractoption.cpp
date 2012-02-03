@@ -42,6 +42,8 @@
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
 
+#include "basicoptionstorage.h"
+
 namespace gmx
 {
 
@@ -79,6 +81,11 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
 
 AbstractOptionStorage::~AbstractOptionStorage()
 {
+}
+
+bool AbstractOptionStorage::isBoolean() const
+{
+    return dynamic_cast<const BooleanOptionStorage *>(this) != NULL;
 }
 
 void AbstractOptionStorage::startSource()

@@ -38,6 +38,7 @@
 #include "gromacs/options/optionsvisitor.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/optioninfo.h"
 #include "gromacs/options/options.h"
 
 #include "options-impl.h"
@@ -49,19 +50,18 @@ namespace gmx
  * OptionInfo
  */
 
-OptionInfo::OptionInfo(const AbstractOptionStorage &option)
-    : _option(option)
+OptionInfo::OptionInfo(AbstractOptionStorage *option)
+    : _option(*option)
 {
 }
 
-bool OptionInfo::isBoolean() const
+OptionInfo::~OptionInfo()
 {
-    return _option.isBoolean();
 }
 
-bool OptionInfo::isFile() const
+bool OptionInfo::isSet() const
 {
-    return _option.isFile();
+    return _option.isSet();
 }
 
 bool OptionInfo::isHidden() const
@@ -136,7 +136,41 @@ void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
     Options::Impl::OptionList::const_iterator i;
     for (i = optionList.begin(); i != optionList.end(); ++i)
     {
-        visitor->visitOption(OptionInfo(*(*i)));
+        // This is not strictly const-correct, since optionInfo() is
+        // not const (while the input options is), but this makes things much
+        // simpler.
+        visitor->visitOption((*i)->optionInfo());
+    }
+}
+
+/********************************************************************
+ * OptionsModifyingIterator
+ */
+
+OptionsModifyingIterator::OptionsModifyingIterator(Options *options)
+    : _options(*options)
+{
+}
+
+void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visitor) const
+{
+    const Options::Impl::SubSectionList &subSectionList =
+        _options._impl->_subSections;
+    Options::Impl::SubSectionList::const_iterator i;
+    for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
+    {
+        visitor->visitSubSection(*i);
+    }
+}
+
+void OptionsModifyingIterator::acceptOptions(OptionsModifyingVisitor *visitor) const
+{
+    const Options::Impl::OptionList &optionList =
+        _options._impl->_options;
+    Options::Impl::OptionList::const_iterator i;
+    for (i = optionList.begin(); i != optionList.end(); ++i)
+    {
+        visitor->visitOption(&(*i)->optionInfo());
     }
 }
 
