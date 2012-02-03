@@ -38,7 +38,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #else
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "../tmpi.h"
 #else
 typedef void* MPI_Comm;

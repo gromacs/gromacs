@@ -64,7 +64,7 @@
 #include "statutil.h"
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -85,7 +85,7 @@ typedef struct t_pstack {
 static t_pstack *pstack=NULL;
 static gmx_bool     bUnbuffered=FALSE;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -100,7 +100,7 @@ void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
 
@@ -108,7 +108,7 @@ void push_ps(FILE *fp)
     ps->fp   = fp;
     ps->prev = pstack;
     pstack   = ps;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
@@ -149,7 +149,7 @@ int ffclose(FILE *fp)
 #else
     t_pstack *ps,*tmp;
     int ret=0;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
 
@@ -179,7 +179,7 @@ int ffclose(FILE *fp)
                 ret = fclose(fp);
         }
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
     return ret;
@@ -194,7 +194,7 @@ int ffclose(FILE *fp)
 void frewind(FILE *fp)
 {
     t_pstack *ps;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
 
@@ -202,7 +202,7 @@ void frewind(FILE *fp)
     while (ps != NULL) {
         if (ps->fp == fp) {
             fprintf(stderr,"Cannot rewind compressed file!\n");
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
             return;
@@ -210,7 +210,7 @@ void frewind(FILE *fp)
         ps=ps->prev;
     }
     rewind(fp);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
@@ -245,21 +245,21 @@ gmx_off_t gmx_ftell(FILE *stream)
 gmx_bool is_pipe(FILE *fp)
 {
     t_pstack *ps;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
 
     ps=pstack;
     while (ps != NULL) {
         if (ps->fp == fp) {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
             return TRUE;
         }
         ps=ps->prev;
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
     return FALSE;

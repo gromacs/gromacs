@@ -64,7 +64,7 @@
 #include "gmxfio.h"
 #include "string2.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -92,7 +92,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
    of the simulation, once by each thread with the same value. We assume
    that writing to an int is atomic.*/
 static gmx_bool parallel_env_val;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -107,11 +107,11 @@ tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 gmx_bool gmx_parallel_env_initialized(void)
 {
     gmx_bool ret;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
     ret=parallel_env_val;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&parallel_env_mutex);
 #endif
     return ret;
@@ -119,7 +119,7 @@ gmx_bool gmx_parallel_env_initialized(void)
 
 static void set_parallel_env(gmx_bool val)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
     if (!parallel_env_val)
@@ -127,7 +127,7 @@ static void set_parallel_env(gmx_bool val)
         /* we only allow it to be set, not unset */
         parallel_env_val=val;
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&parallel_env_mutex);
 #endif
 }
@@ -269,7 +269,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
   
     /* Communicate the filename for logfile */
     if (cr->nnodes > 1 && !bMasterOnly
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         /* With thread MPI the non-master log files are opened later
          * when the files names are already known on all nodes.
          */
@@ -445,7 +445,7 @@ void init_multisystem(t_commrec *cr,int nsim, char **multidirs,
     MPI_Comm_create(MPI_COMM_WORLD,ms->mpi_group_masters,
                     &ms->mpi_comm_masters);
 
-#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+#if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(ms->mpb, 1);
     ms->mpb->ibuf=NULL;
@@ -564,13 +564,13 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     cr->duty = (DUTY_PP | DUTY_PME);
 
     /* Communicate arguments if parallel */
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
     if (PAR(cr))
         comm_args(cr,argc,argv_ptr);
-#endif /* GMX_THREADS */
+#endif /* GMX_THREAD_MPI */
 
 #ifdef GMX_MPI
-#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+#if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
   /* initialize the MPI_IN_PLACE replacement buffers */
   snew(cr->mpb, 1);
   cr->mpb->ibuf=NULL;
@@ -589,7 +589,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
 t_commrec *init_par_threads(const t_commrec *cro)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     int initialized;
     t_commrec *cr;
 

@@ -48,7 +48,7 @@
 #include "xdrf.h"
 #include "macros.h"
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
 
@@ -203,7 +203,7 @@ static const t_deffile
 
 static char *default_file_name = NULL;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t filenm_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -214,11 +214,11 @@ const char *z_ext[NZEXT] =
 void set_default_file_name(const char *name)
 {
     int i;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&filenm_mutex);
 #endif
     default_file_name = strdup(name);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&filenm_mutex);
 #endif
 
@@ -296,7 +296,7 @@ const char *ftp2defnm(int ftp)
 {
     const char *buf = NULL;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&filenm_mutex);
 #endif
 
@@ -311,7 +311,7 @@ const char *ftp2defnm(int ftp)
             buf = deffile[ftp].defnm;
         }
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&filenm_mutex);
 #endif
 
