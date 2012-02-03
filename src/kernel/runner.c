@@ -82,7 +82,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -112,12 +112,12 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 tMPI_Thread_mutex_t deform_init_box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 struct mdrunner_arglist
 {
     FILE *fplog;
@@ -400,7 +400,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
 
         /* NOW the threads will be started: */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
 
         if (nthreads_mpi > 1)
@@ -448,7 +448,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifndef GMX_MPI
                   "but mdrun was compiled without threads or MPI enabled"
 #else
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
                   "but the number of threads (option -nt) is 1"
 #else
                   "but mdrun was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec" 
@@ -521,12 +521,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
          * This should be thread safe, since they are only written once
          * and with identical values.
          */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
 #endif
         deform_init_init_step_tpx = inputrec->init_step;
         copy_mat(box,deform_init_box_tpx);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
 #endif
     }
@@ -555,7 +555,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     }
 
     if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         /* With thread MPI only the master node/thread exists in mdrun.c,
          * therefore non-master nodes need to open the "seppot" log file here.
          */
@@ -952,7 +952,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     rc=(int)gmx_get_stop_condition();
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to 
        wait for that. */
