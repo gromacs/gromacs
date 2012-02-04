@@ -570,12 +570,12 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
     endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    if(CMAKE_GENERATOR MATCHES "Visual Studio" or CMAKE_GENERATOR MATCHES NMake )
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
     endif()
-	mark_as_advanced(GMX_ASM_USEASM-NASM)
+	mark_as_advanced(GMX_ASM_USEASM_NASM)
 
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
