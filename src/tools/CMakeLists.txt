@@ -18,7 +18,7 @@ add_library(gmxana
             gmx_nmens.c     gmx_order.c     gmx_principal.c 
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
             gmx_rdf.c       gmx_rms.c       gmx_rmsf.c      
-            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c              
+            gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c       gmx_sans.c
             gmx_rmsdist.c   gmx_rotmat.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
@@ -30,7 +30,7 @@ add_library(gmxana
             addconf.c       calcpot.c       edittop.c       gmx_bar.c
             gmx_pme_error.c gmx_options.c   gmx_dos.c
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
-            binsearch.c
+            binsearch.c     gmx_dyecoupl.c
             )
 
 
@@ -54,7 +54,7 @@ set(GMX_TOOLS_PROGRAMS
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
     g_pme_error g_rmsdist g_rotmat g_options
-    g_dos    g_hydorder  g_densorder
+    g_dos    g_hydorder  g_densorder g_dyecoupl g_sans
     )
 
 set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION

@@ -30,6 +30,10 @@ MACRO(gmx_c_flags)
 
     # gcc
     if(CMAKE_COMPILER_IS_GNUCC)
+        #flags are added in reverse order and -Wno* need to appear after -Wall
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+        endif()
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS)
@@ -39,6 +43,9 @@ MACRO(gmx_c_flags)
     endif()
     # g++
     if(CMAKE_COMPILER_IS_GNUCXX)
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused" GMXC_CXXFLAGS)
       # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" 
@@ -51,28 +58,33 @@ MACRO(gmx_c_flags)
     # icc
     if (CMAKE_C_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -std=gnu99" 
-                            GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-std=gnu99" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops" GMXC_CFLAGS_RELEASE)
+            GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_X86 "-mtune=core2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_IA64 "-mtune=itanium2" GMXC_CFLAGS_RELEASE)
+            if(NOT GMX_OPENMP)
+                GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+            endif()
         else()
-            GMX_TEST_CFLAG(CFLAGS_SSE2 "/arch:SSE2" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_SSE2 "/arch:SSE2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_X86 "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            GMX_TEST_CXXFLAG(CXXFLAGS_OPT 
-                             "-ip -funroll-all-loops -std=gnu99" 
-                             GMXC_CXXFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-std=gnu99" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops" GMXC_CXXFLAGS_RELEASE)
+            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "-mtune=core2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_IA64 "-mtune=itanium2" 
                               GMXC_CXXFLAGS_RELEASE)
+            if(NOT GMX_OPENMP)
+                GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+            endif()
         else()
-            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "/arch:SSE2" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "/arch:SSE2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()

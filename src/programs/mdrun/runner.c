@@ -36,7 +36,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
+#ifdef __linux
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
 
@@ -89,6 +93,10 @@
 
 #ifdef GMX_OPENMM
 #include "md_openmm.h"
+#endif
+
+#ifdef GMX_OPENMP
+#include <omp.h>
 #endif
 
 
@@ -249,10 +257,12 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 }
 
 
-/* get the number of threads based on how many there were requested, 
-   which algorithms we're using, and how many particles there are. */
-static int get_nthreads(int nthreads_requested, t_inputrec *inputrec,
-                        gmx_mtop_t *mtop)
+/* Get the number of threads to use for thread-MPI based on how many
+ * were requested, which algorithms we're using,
+ * and how many particles there are.
+ */
+static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
+                            gmx_mtop_t *mtop)
 {
     int nthreads,nthreads_new;
     int min_atoms_per_thread;
@@ -366,7 +376,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
-    int         nthreads=1;
+    int         nthreads_mpi=1;
+    int         nthreads_pme=1;
     gmx_membed_t *membed=NULL;
 
     /* CAUTION: threads may be started later on in this function, so
@@ -392,12 +403,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREADS
-        nthreads = get_nthreads(nthreads_requested, inputrec, mtop);
+        nthreads_mpi = get_nthreads_mpi(nthreads_requested, inputrec, mtop);
 
-        if (nthreads > 1)
+        if (nthreads_mpi > 1)
         {
             /* now start the threads. */
-            cr=mdrunner_start_threads(nthreads, fplog, cr_old, nfile, fnm, 
+            cr=mdrunner_start_threads(nthreads_mpi, fplog, cr_old, nfile, fnm,
                                       oenv, bVerbose, bCompact, nstglobalcomm, 
                                       ddxyz, dd_node_order, rdd, rconstr, 
                                       dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
@@ -634,7 +645,31 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    wcycle = wallcycle_init(fplog,resetstep,cr);
+    /* get number of OpenMP/PME threads
+     * env variable should be read only on one node to make sure it is identical everywhere */
+#ifdef GMX_OPENMP
+    if (EEL_PME(inputrec->coulombtype))
+    {
+        if (MASTER(cr))
+        {
+            char *ptr;
+            if ((ptr=getenv("GMX_PME_NTHREADS")) != NULL)
+            {
+                sscanf(ptr,"%d",&nthreads_pme);
+            }
+            if (fplog != NULL && nthreads_pme > 1)
+            {
+                fprintf(fplog,"Using %d threads for PME\n",nthreads_pme);
+            }
+        }
+        if (PAR(cr))
+        {
+            gmx_bcast_sim(sizeof(nthreads_pme),&nthreads_pme,cr);
+        }
+    }
+#endif
+
+    wcycle = wallcycle_init(fplog,resetstep,cr,nthreads_pme);
     if (PAR(cr))
     {
         /* Master synchronizes its value of reset_counters with all nodes 
@@ -771,11 +806,46 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             /* The PME only nodes need to know nChargePerturbed */
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
+
+
+        /* Set CPU affinity. Can be important for performance.
+           On some systems (e.g. Cray) CPU Affinity is set by default.
+           But default assigning doesn't work (well) with only some ranks
+           having threads. This causes very low performance.
+           External tools have cumbersome syntax for setting affinity
+           in the case that only some ranks have threads.
+           Thus it is important that GROMACS sets the affinity internally at
+           if only PME is using threads.
+        */
+
+#ifdef GMX_OPENMP
+#ifdef __linux
+#ifdef GMX_LIB_MPI
+        {
+            int core;
+            MPI_Comm comm_intra; /* intra communicator (but different to nc.comm_intra includes PME nodes) */
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
+            int local_omp_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1; /* threads on this node */
+            MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            core-=local_omp_nthreads; /* make exclusive scan */
+#pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
+            {
+                cpu_set_t mask;
+                CPU_ZERO(&mask);
+                core+=omp_get_thread_num();
+                CPU_SET(core,&mask);
+                sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+            }
+        }
+#endif /*GMX_MPI*/
+#endif /*__linux*/
+#endif /*GMX_OPENMP*/
+
         if (cr->duty & DUTY_PME)
         {
             status = gmx_pme_init(pmedata,cr,npme_major,npme_minor,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
-                                  (Flags & MD_REPRODUCIBLE));
+                                  (Flags & MD_REPRODUCIBLE),nthreads_pme);
             if (status != 0) 
             {
                 gmx_fatal(FARGS,"Error %d initializing PME",status);
