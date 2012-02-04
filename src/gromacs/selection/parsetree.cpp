@@ -588,22 +588,19 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
     if (sel->u.expr.method->pupdate)
     {
         /* Need to translate exceptions to error codes because the parser still
-         * uses return codes for error handling. */
+         * uses return codes for error handling.
+         * Temporary solution for Redmine issue #880, exceptions should only
+         * occur here for internal errors... */
         try
         {
             /* By default, use whole residues/molecules. */
             gmx_ana_poscalc_create_enum(&sel->u.expr.pc, pcc, rpost,
                                         POS_COMPLWHOLE);
         }
-        catch (gmx::GromacsException &ex)
+        catch (const gmx::GromacsException &ex)
         {
             _gmx_selparser_error(scanner, ex.what());
             return ex.errorCode();
-        }
-        catch (...)
-        {
-            _gmx_selparser_error(scanner, "Unknown error!");
-            return gmx::eeUnknownError;
         }
     }
     else

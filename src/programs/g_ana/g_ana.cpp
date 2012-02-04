@@ -67,7 +67,7 @@ main(int argc, char *argv[])
         gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
         return runner.run(argc, argv);
     }
-    catch (std::exception &ex)
+    catch (const std::exception &ex)
     {
         fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
         return 1;

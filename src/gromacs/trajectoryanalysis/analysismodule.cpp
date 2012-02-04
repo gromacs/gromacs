@@ -65,13 +65,6 @@ TrajectoryAnalysisModuleData::Impl::Impl(
 
 TrajectoryAnalysisModuleData::Impl::~Impl()
 {
-    try
-    {
-        finishHandles();
-    }
-    catch (...)
-    {
-    }
 }
 
 

@@ -140,7 +140,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         {
             parser.parse(argc, argv);
         }
-        catch (UserInputError &ex)
+        catch (const UserInputError &ex)
         {
             printHelp(*options, *common);
             throw;
