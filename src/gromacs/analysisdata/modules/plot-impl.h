@@ -61,7 +61,7 @@ class AbstractPlotModule::Impl
         bool                    bPlain;
         bool                    bOmitX;
         output_env_t            oenv;
-        SelectionCollection    *sel;
+        const SelectionCollection *sel;
         std::string             title;
         std::string             subtitle;
         std::string             xlabel;

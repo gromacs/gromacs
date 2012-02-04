@@ -56,6 +56,8 @@ class SelectionOptionTest : public ::testing::Test
     public:
         SelectionOptionTest();
 
+        void setCollection();
+
         gmx::SelectionCollection _sc;
         gmx::Options             _options;
 };
@@ -65,7 +67,11 @@ SelectionOptionTest::SelectionOptionTest()
 {
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
-    _options.globalProperties().setSelectionCollection(&_sc);
+}
+
+void SelectionOptionTest::setCollection()
+{
+    setSelectionCollectionForOptions(&_options, &_sc);
 }
 
 
@@ -74,6 +80,7 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -94,6 +101,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(&sel).onlyStatic()));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -110,6 +118,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelections)
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -129,6 +138,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(sel).valueCount(2)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -148,6 +158,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
                             .getAdjuster(&info)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -169,6 +180,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(&sel)
                             .getAdjuster(&info)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -189,6 +201,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
                             .getAdjuster(&info)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -210,6 +223,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").storeVector(&sel).multiValue()
                             .getAdjuster(&info)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -228,6 +242,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(&sel).required()));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -245,6 +260,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(sel).required()
                             .valueCount(2)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -259,6 +275,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     gmx::Selection *sel = NULL;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());
@@ -279,6 +296,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").storeVector(&sel).valueCount(3)
                             .getAdjuster(&info)));
+    setCollection();
 
     gmx::OptionsAssigner assigner(&_options);
     EXPECT_NO_THROW(assigner.start());

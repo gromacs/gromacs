@@ -43,8 +43,8 @@
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
-#include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
+#include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
@@ -63,9 +63,8 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
                                                Options *options)
     : MyBase(settings, options,
              OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
-      _info(this), _selectionFlags(settings._selectionFlags)
+      _info(this), _sc(NULL), _selectionFlags(settings._selectionFlags)
 {
-    options->globalProperties().request(eogpSelectionCollection);
     if (settings._infoPtr != NULL)
     {
         *settings._infoPtr = &_info;
@@ -113,13 +112,11 @@ void SelectionOptionStorage::addSelections(
 
 void SelectionOptionStorage::convertValue(const std::string &value)
 {
-    SelectionCollection *sc =
-        hostOptions().globalProperties().selectionCollection();
-    GMX_RELEASE_ASSERT(sc != NULL, "Selection collection is not set");
+    GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
     std::vector<Selection *> selections;
     // TODO: Implement reading from a file.
-    sc->parseFromString(value, &selections);
+    _sc->parseFromString(value, &selections);
     addSelections(selections, false);
 }
 
@@ -135,11 +132,9 @@ void SelectionOptionStorage::processAll()
 {
     if ((hasFlag(efRequired) || hasFlag(efSet)) && valueCount() == 0)
     {
-        SelectionCollection *sc =
-            hostOptions().globalProperties().selectionCollection();
-        GMX_RELEASE_ASSERT(sc != NULL, "Selection collection is not set");
+        GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
-        sc->_impl->requestSelections(name(), description(), this);
+        _sc->_impl->requestSelections(name(), description(), this);
         setFlag(efSet);
     }
 }
@@ -210,6 +205,11 @@ const SelectionOptionStorage &SelectionOptionInfo::option() const
     return static_cast<const SelectionOptionStorage &>(OptionInfo::option());
 }
 
+void SelectionOptionInfo::setSelectionCollection(SelectionCollection *selections)
+{
+    option().setSelectionCollection(selections);
+}
+
 void SelectionOptionInfo::setValueCount(int count)
 {
     option().setAllowedValueCount(count);
@@ -253,6 +253,52 @@ void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
 AbstractOptionStorage *SelectionOption::createDefaultStorage(Options *options) const
 {
     return new SelectionOptionStorage(*this, options);
+}
+
+
+/********************************************************************
+ * Global functions
+ */
+
+namespace
+{
+
+/*! \internal \brief
+ * Visitor that sets the selection collection for each selection option.
+ *
+ * \ingroup module_selection
+ */
+class SelectionCollectionSetter : public OptionsModifyingTypeVisitor<SelectionOptionInfo>
+{
+    public:
+        //! Construct a visitor that sets given selection collection.
+        explicit SelectionCollectionSetter(SelectionCollection *selections)
+            : selections_(selections)
+        {
+        }
+
+        void visitSubSection(Options *section)
+        {
+            OptionsModifyingIterator iterator(section);
+            iterator.acceptSubSections(this);
+            iterator.acceptOptions(this);
+        }
+
+        void visitOptionType(SelectionOptionInfo *option)
+        {
+            option->setSelectionCollection(selections_);
+        }
+
+    private:
+        SelectionCollection    *selections_;
+};
+
+} // namespace
+
+void setSelectionCollectionForOptions(Options *options,
+                                      SelectionCollection *selections)
+{
+    SelectionCollectionSetter(selections).visitSubSection(options);
 }
 
 } // namespace gmx

@@ -44,6 +44,8 @@
 namespace gmx
 {
 
+class Options;
+class SelectionCollection;
 class SelectionOptionStorage;
 
 /*! \brief
@@ -97,6 +99,17 @@ class SelectionOptionInfo : public OptionInfo
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
 
         /*! \brief
+         * Set selection collection into which this option adds selections.
+         *
+         * This must be called before the values are added.
+         *
+         * Typically it is called through setSelectionCollectionForOptions(),
+         * which recursively sets the collection for all selection options in
+         * an Options object.
+         */
+        void setSelectionCollection(SelectionCollection *selections);
+
+        /*! \brief
          * Sets the number of selections allowed for the option.
          *
          * \param[in] count  Number of allowed selections.
@@ -120,6 +133,20 @@ class SelectionOptionInfo : public OptionInfo
         SelectionOptionStorage &option();
         const SelectionOptionStorage &option() const;
 };
+
+/*! \libinternal \brief
+ * Set selection collection for all selection options.
+ *
+ * Recursively sets the selection collection to \p selections for all selection
+ * options in \p options.
+ * Must be called before value assignment starts for \p options.
+ *
+ * Does not throw.
+ *
+ * \inlibraryapi
+ */
+void setSelectionCollectionForOptions(Options *options,
+                                      SelectionCollection *selections);
 
 } // namespace gmx
 

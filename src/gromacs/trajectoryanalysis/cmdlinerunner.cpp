@@ -53,6 +53,7 @@
 #include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
@@ -131,8 +132,8 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     options->addSubSection(selectionOptions);
     options->addSubSection(moduleOptions);
 
-    options->globalProperties().setSelectionCollection(selections);
     commonOptions->addDefaultOptions();
+    setSelectionCollectionForOptions(options, selections);
 
     {
         CommandLineParser  parser(options);
