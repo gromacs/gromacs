@@ -70,7 +70,7 @@ namespace gmx
 AbstractPlotModule::Impl::Impl(const Options &options)
     : fp(NULL), bPlain(false), bOmitX(false),
       oenv(options.globalProperties().output_env()),
-      sel(options.globalProperties().selectionCollection())
+      sel(NULL)
 {
     strcpy(xfmt, "%11.3f");
     strcpy(yfmt, " %8.3f");

@@ -45,7 +45,6 @@ namespace gmx
 {
 
 class Options;
-class SelectionCollection;
 
 /*! \libinternal \brief
  * ID numbers for global properties.
@@ -54,7 +53,6 @@ enum OptionGlobalPropertyId
 {
     eogpTimeScaleFactor,
     eogpPlotFormat,
-    eogpSelectionCollection,
 };
 
 /*! \libinternal \brief
@@ -67,13 +65,10 @@ enum OptionGlobalPropertyId
  * know the scaling factor to get the time in internal units.
  *
  * \todo
- * The current implementation introduces a "weak" cyclic dependency between the
- * selection and options modules in that the SelectionCollection class has to
- * be forward-declared here. Also, there are things in this class that would be
+ * There are things in this class that would be
  * better placed in the analysisdata module (for selecting plot formats).
  * It should be considered whether this should be implemented in some other way
- * (a generic implementation is possible, but is a lot more complex, and
- * requires some RTTI, either in this class or somewhere else).
+ * (see Redmine issue #839).
  *
  * \inlibraryapi
  * \ingroup module_options
@@ -89,19 +84,8 @@ class OptionsGlobalProperties
             _usedProperties |= (1<<id);
         }
 
-        //! Set the selection collection for selection option output.
-        void setSelectionCollection(SelectionCollection *sc)
-        {
-            _selectionCollection = sc;
-        }
-
         //! Returns the scaling factor to get times in ps.
         double timeScaleFactor() const;
-        //! Returns the selection collection.
-        SelectionCollection *selectionCollection() const
-        {
-            return _selectionCollection;
-        }
         /*! \brief
          * Returns an output environment structure for interfacing with old
          * code.
@@ -147,7 +131,6 @@ class OptionsGlobalProperties
         unsigned long           _usedProperties;
         int                     _timeUnit;
         int                     _plotFormat;
-        SelectionCollection    *_selectionCollection;
         output_env_t            _oenv;
 
         friend class Options;
