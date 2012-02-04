@@ -338,7 +338,7 @@ TEST(OptionsAssignerBooleanTest, HandlesBooleanWithPrefixAndValue)
         EXPECT_NO_THROW(assigner.finish());
         EXPECT_TRUE(value);
     }
-    catch (gmx::InvalidInputError &)
+    catch (const gmx::InvalidInputError &)
     {
     }
 }

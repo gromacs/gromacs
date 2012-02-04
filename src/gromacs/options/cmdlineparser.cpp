@@ -90,7 +90,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 {
                     _impl->_assigner.finishOption();
                 }
-                catch (UserInputError &ex)
+                catch (const UserInputError &ex)
                 {
                     errors.append(ex.what());
                 }
@@ -103,7 +103,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 const char *name = &argv[i][1];
                 _impl->_assigner.startOption(name);
             }
-            catch (UserInputError &ex)
+            catch (const UserInputError &ex)
             {
                 bDiscard = true;
                 errors.append(ex.what());
@@ -116,7 +116,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
             {
                 _impl->_assigner.appendValue(argv[i]);
             }
-            catch (UserInputError &ex)
+            catch (const UserInputError &ex)
             {
                 errors.append(ex.what());
             }
@@ -129,7 +129,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
         {
             _impl->_assigner.finishOption();
         }
-        catch (UserInputError &ex)
+        catch (const UserInputError &ex)
         {
             errors.append(ex.what());
         }

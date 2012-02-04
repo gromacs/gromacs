@@ -167,7 +167,7 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
     {
         setMaxValueCount(count);
     }
-    catch (UserInputError &ex)
+    catch (const UserInputError &ex)
     {
         errors.append(ex.what());
     }

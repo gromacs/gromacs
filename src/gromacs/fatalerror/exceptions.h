@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
         // The actual code for the program
         return 0;
     }
-    catch (std::exception &ex)
+    catch (const std::exception &ex)
     {
         fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
         return 1;

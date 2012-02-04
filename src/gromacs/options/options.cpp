@@ -217,7 +217,7 @@ void Options::finish()
         {
             option->finish();
         }
-        catch (UserInputError &ex)
+        catch (const UserInputError &ex)
         {
             MessageStringContext context(&errors, "In option " + option->name());
             errors.append(ex.what());
@@ -231,7 +231,7 @@ void Options::finish()
         {
             section->finish();
         }
-        catch (UserInputError &ex)
+        catch (const UserInputError &ex)
         {
             errors.append(ex.what());
         }
