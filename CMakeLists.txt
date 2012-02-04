@@ -70,16 +70,24 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
-# Fix stupid flags on MSVC
+# Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+IF( (CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES "NMake") AND MSVC )
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
     SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+ENDIF()
+
+IF(CMAKE_GENERATOR MATCHES "NMake" AND CMAKE_C_COMPILER_ID MATCHES "Intel")
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
+    SET(SHARED_LIBS_DEFAULT OFF)	
+ENDIF()
 
 set(GMX_EXTRA_LIBRARIES)
 
@@ -570,12 +578,12 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
     endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    if(CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES NMake )
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
     endif()
-	mark_as_advanced(GMX_ASM_USEASM-NASM)
+	mark_as_advanced(GMX_ASM_USEASM_NASM)
 
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
