@@ -1,6 +1,6 @@
 # Find the nasm assembler
 
-SET(ASM_DIALECT "-NASM")
+SET(ASM_DIALECT "_NASM")
 
 SET(CMAKE_ASM${ASM_DIALECT}_COMPILER_INIT nasm)
 
