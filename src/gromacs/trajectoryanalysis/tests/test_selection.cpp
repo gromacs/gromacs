@@ -53,16 +53,17 @@ class SelectionTester : public TrajectoryAnalysisModule
 {
     public:
         SelectionTester();
-        ~SelectionTester();
+        virtual ~SelectionTester();
 
-        Options *initOptions(TrajectoryAnalysisSettings *settings);
-        void initAnalysis(const TopologyInformation &top);
+        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation &top);
 
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata);
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                                  TrajectoryAnalysisModuleData *pdata);
 
-        void finishAnalysis(int nframes);
-        void writeOutput();
+        virtual void finishAnalysis(int nframes);
+        virtual void writeOutput();
 
     private:
         void printSelections();
@@ -113,7 +114,8 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
 }
 
 void
-SelectionTester::initAnalysis(const TopologyInformation &/*top*/)
+SelectionTester::initAnalysis(const TrajectoryAnalysisSettings &/*settings*/,
+                              const TopologyInformation &/*top*/)
 {
     printSelections();
 }

@@ -363,7 +363,8 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
 
 
 void
-Select::initAnalysis(const TopologyInformation &top)
+Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                     const TopologyInformation &top)
 {
     if (!_fnIndex.empty() && _bDump && _sel.size() > 1U)
     {

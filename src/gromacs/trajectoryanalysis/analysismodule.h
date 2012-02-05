@@ -190,7 +190,8 @@ class TrajectoryAnalysisModule
          * the largest possible selection, i.e., the selections passed to
          * analyzeFrame() are always a subset of the selections provided here.
          */
-        virtual void initAnalysis(const TopologyInformation &top) = 0;
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation &top) = 0;
         /*! \brief
          * Performs additional initialization after reading the first frame.
          *

@@ -320,7 +320,8 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
 
 
 void
-Angle::initAnalysis(const TopologyInformation &top)
+Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                    const TopologyInformation &top)
 {
     checkSelections(_sel1, _sel2);
 

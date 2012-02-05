@@ -92,7 +92,8 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
 
 
 void
-Distance::initAnalysis(const TopologyInformation & /*top*/)
+Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                       const TopologyInformation & /*top*/)
 {
     if (_sel[0]->posCount() != 1)
     {

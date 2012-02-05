@@ -64,7 +64,8 @@ class Angle : public TrajectoryAnalysisModule
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TopologyInformation &top);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);

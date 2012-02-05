@@ -226,7 +226,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     selections.compile();
 
     const TopologyInformation &topology = common.topologyInformation();
-    module->initAnalysis(topology);
+    module->initAnalysis(settings, topology);
 
     // Load first frame.
     common.initFirstFrame();

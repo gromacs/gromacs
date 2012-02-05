@@ -45,7 +45,8 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         AnalysisTemplate();
 
         virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TopologyInformation &top);
+        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                                  const TopologyInformation &top);
 
         virtual TrajectoryAnalysisModuleData *startFrames(
                     AnalysisDataParallelOptions opt,
@@ -147,7 +148,8 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 
 
 void
-AnalysisTemplate::initAnalysis(const TopologyInformation & /*top*/)
+AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
+                               const TopologyInformation & /*top*/)
 {
     _data.setColumns(_sel.size());
     registerAnalysisDataset(&_data, "avedist");
