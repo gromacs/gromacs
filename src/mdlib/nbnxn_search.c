@@ -1955,9 +1955,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         srenew(nbs->cell,nbs->cell_nalloc);
     }
 
-    if (nc_max*grid->na_sc > nbs->a_nalloc)
+    /* To avoid conditionals we store the moved particles at the end of a,
+     * make sure we have enough space.
+     */
+    if (nc_max*grid->na_sc + nmoved > nbs->a_nalloc)
     {
-        nbs->a_nalloc = over_alloc_large(nc_max*grid->na_sc);
+        nbs->a_nalloc = over_alloc_large(nc_max*grid->na_sc + nmoved);
         srenew(nbs->a,nbs->a_nalloc);
     }
 
