@@ -44,7 +44,7 @@
 #include "gmx_fatal.h"
 #include "calcgrid.h"
 
-/* The grid sizes below are based on timing of a 3D cubic grid in fftw 
+/* The grid sizes below are based on timing of a 3D cubic grid in fftw
  * compiled with SSE using 4 threads in fft5d.c.
  * A grid size is removed when a larger grid is faster.
  */
@@ -120,7 +120,7 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
         if (n[d] <= 0)
         {
             nmin = (int)(box_size[d]/gr_sp + 0.999);
-            
+
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
             {

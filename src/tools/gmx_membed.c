@@ -36,8 +36,14 @@
 #include <config.h>
 #endif
 
+#ifdef __linux
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
 #include <signal.h>
 #include <stdlib.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -3245,6 +3251,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
+                      opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
                       NULL,FALSE,pforce);
@@ -3252,7 +3259,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-          "nofile","nofile","nofile",FALSE,pforce);
+          "nofile","nofile","nofile","nofile",FALSE,pforce);
           */
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
@@ -3346,17 +3353,17 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
 
-        //set CPU affinity
+        /*set CPU affinity*/
 #ifdef GMX_OPENMP
 #ifdef __linux
 #ifdef GMX_LIB_MPI
         {
             int core;
-            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
-            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads_pme : 1; //threads on this node
+            MPI_Comm comm_intra; /*intra communicator (but different to nc.comm_intra includes PME nodes)*/
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
+            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; /*threads on this node*/
             MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-            core-=local_omp_nthreads; //make exclusive scan
+            core-=local_omp_nthreads; /*make exclusive scan*/
     #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
             {
                 cpu_set_t mask;
@@ -3366,9 +3373,9 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
             }
         }
-#endif //GMX_MPI
-#endif //__linux
-#endif //GMX_OPENMP
+#endif /*GMX_MPI*/
+#endif /*__linux*/
+#endif /*GMX_OPENMP*/
 
         if (cr->duty & DUTY_PME)
         {

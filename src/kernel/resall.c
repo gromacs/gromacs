@@ -82,7 +82,7 @@ gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab)
                     trim(buf);
                 }
             }
-            while (NULL!=buf && strlen(buf)==0);
+            while (!feof(in) && NULL!=buf && strlen(buf)==0);
             
             if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2))
             {
@@ -547,8 +547,8 @@ char *search_rtp(const char *key,int nrtp,t_restp rtp[])
             /* Allow a mismatch of at most a sign character (with warning) */
             n = neq_str_sign(key,rtp[i].resname);
             if (n >= best &&
-                n+1 >= strlen(key) &&
-                n+1 >= strlen(rtp[i].resname))
+                n+1 >= (int)strlen(key) &&
+                n+1 >= (int)strlen(rtp[i].resname))
             {
                 if (n == best)
                 {

@@ -55,8 +55,6 @@
 #include "tpxio.h"
 #include "viewit.h"
 
-/* defined in gmx_wheel.c*/
-extern gmx_bool *bPhobics(int ,char *);
 
 static int strip_dssp(char *dsspfile,int nres,
 		       gmx_bool bPhobres[],real t,
@@ -169,6 +167,26 @@ static int strip_dssp(char *dsspfile,int nres,
    * of redidues plus chain separator lines).
    * This is the number of y elements needed for the area xpm file */
   return nr;
+}
+
+static gmx_bool *bPhobics(t_atoms *atoms)
+{
+    int       i,nb;
+    char      **cb;
+    gmx_bool  *bb;
+
+
+    nb = get_strings("phbres.dat",&cb);
+    snew(bb,atoms->nres);
+
+    for (i=0; (i<atoms->nres); i++)
+    {
+        if ( -1 != search_str(nb,cb,*atoms->resinfo[i].name) )
+        {
+            bb[i]=TRUE;
+        }
+    }
+    return bb;
 }
 
 static void check_oo(t_atoms *atoms)
@@ -287,7 +305,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     snew(total,mat->nmap);
     snew(leg,mat->nmap+1);
     leg[0]="Structure";
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         leg[s+1]=strdup(map[s].desc);
     }
@@ -316,14 +334,14 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     xvgr_legend(fp,mat->nmap+1,leg,oenv);
     
     total_count = 0;
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         total[s]=0;
     }
     for(f=0; f<mat->nx; f++)
     {
         ss_count=0;
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             count[s]=0;
         }
@@ -332,7 +350,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             count[mat->matrix[f][r]]++;
             total[mat->matrix[f][r]]++;
         }
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             if (strchr(ss_string,map[s].code.c1))
             {
@@ -341,7 +359,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
             }
         }
         fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
-        for(s=0; s<mat->nmap; s++)
+        for(s=0; s<(size_t)mat->nmap; s++)
         {
             fprintf(fp," %5d",count[s]);
         }
@@ -349,7 +367,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     /* now print column totals */
     fprintf(fp, "%-8s %5d", "# Totals", total_count);
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5d",total[s]);
     }
@@ -357,7 +375,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 
     /* now print percentages */
     fprintf(fp, "%-8s %5.2f", "# SS %", total_count / (real) (mat->nx * mat->ny));
-    for(s=0; s<mat->nmap; s++)
+    for(s=0; s<(size_t)mat->nmap; s++)
     {
         fprintf(fp," %5.2f",total[s] / (real) (mat->nx * mat->ny));
     }
@@ -462,7 +480,7 @@ int main(int argc,char *argv[])
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  bPhbres=bPhobics((int)atoms->nres,(char *)atoms->resinfo);
+  bPhbres = bPhobics(atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
   nres=0;

@@ -48,7 +48,7 @@ enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
        ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
        ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE,
        ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcCOPY_XF_TO_NBAT,
-       ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE,
+       ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
        ewcTEST, ewcNR };
 
 enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM, ewcsDD_MAKETOP,

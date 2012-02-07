@@ -60,10 +60,6 @@
 #include <omp.h>
 #endif
 
-#ifndef isfinite
-#define isfinite(x) (!isinf(x) && !isnan(x))
-#endif
-
 /* The first few sections of this file contain functions that were adopted,
  * and to some extent modified, by Erik Marklund (erikm[aT]xray.bmc.uu.se,
  * http://folding.bmc.uu.se) from code written by Omer Markovitch (email, url).
@@ -891,7 +887,7 @@ extern real fitGemRecomb(double *ct, double *time, double **ctFit,
 	for(i=0; i<GD->nData; i++)
 	  {
 	    dumpdata[i] = (real)(GD->ctTheory[i]);
-	    if (!isfinite(dumpdata[i]))
+	    if (!gmx_isfinite(dumpdata[i]))
 	      {
 		gmx_fatal(FARGS, "Non-finite value in acf.");
 	      }
@@ -1274,7 +1270,13 @@ extern void fixGemACF(double *ct, int len)
   for (i=0; i<len; i++)
     {
       
-      if (!(isinf(ct[i]) || isnan(ct[i]))/* isfinite(ct[i]) */)
+#ifdef HAS_ISFINITE
+      if (isfinite(ct[i]))
+#elif defined(HAS__ISFINITE)
+      if (_isfinite(ct[i]))
+#else
+      if(1)
+#endif
 	{
 	  if (!bBad)
 	    {

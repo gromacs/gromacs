@@ -523,11 +523,31 @@ void please_cite(FILE *fp,const char *key)
       "Driving Forces for Adsorption of Amphiphilic Peptides to Air-Water Interface",
       "J. Phys. Chem. B",
       0, 2010, "???" },
+    { "Fritsch12",
+      "S. Fritsch, C. Junghans and K. Kremer",
+      "Adaptive molecular simulation study on structure formation of toluene around C60 using Gromacs",
+      "J. Chem. Theo. Comp.",
+      0, 2012, "doi:10.1021/ct200706f" },
+    { "Junghans10",
+      "C. Junghans and S. Poblete",
+      "A reference implementation of the adaptive resolution scheme in ESPResSo",
+      "Comp. Phys. Comm.",
+      181, 2010, "1449" },
     { "Wang2010",
       "H. Wang, F. Dommert, C.Holm",
       "Optimizing working parameters of the smooth particle mesh Ewald algorithm in terms of accuracy and efficiency",
       "J. Chem. Phys. B",
-      133, 2010, "034117"
+      133, 2010, "034117" },
+    { "Kutzner2011",
+      "C. Kutzner and J. Czub and H. Grubmuller",
+      "Keep it Flexible: Driving Macromolecular Rotary Motions in Atomistic Simulations with GROMACS",
+      "J. Chem. Theory Comput.",
+      7, 2011, "1381-1393" },
+    { "Hoefling2011",
+      "M. Hoefling, N. Lima, D. Haenni, C.A.M. Seidel, B. Schuler, H. Grubmuller",
+      "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
+      "PLoS ONE",
+      6, 2011, "e19791"
     }
   };
 #define NSTR (int)asize(citedb)

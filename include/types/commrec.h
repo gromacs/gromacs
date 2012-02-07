@@ -126,6 +126,9 @@ typedef struct {
   int *ibuf; /* for ints */
   int ibuf_alloc;
 
+  gmx_large_int_t *libuf;
+  int libuf_alloc;
+
   float *fbuf; /* for floats */
   int fbuf_alloc;
 

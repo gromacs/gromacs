@@ -62,8 +62,10 @@ int gmx_node_num(void);
 int gmx_node_rank(void);
 /* return the rank of the node */
 
-int gmx_host_num(void);
-/* returns the number within the hostname */
+int gmx_hostname_num(void);
+/* If the first part of the hostname (up to the first dot) ends with a number, returns this number.
+   If the first part of the hostname does not ends in a number (0-9 characters), returns 0.
+*/
 
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */

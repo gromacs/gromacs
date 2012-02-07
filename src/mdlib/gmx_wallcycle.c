@@ -102,7 +102,8 @@ static const char *wcn[ewcNR] =
   "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
   "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve",
   "Wait + Comm. X/F", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "Nb X/F buffer ops",
-  "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
+  "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
+  "Enforced rotation", "Add rot. forces", "Test" };
 
 static const char *wcsn[ewcsNR] =
 { "DD redist.", "DD NS grid + sort", "DD setup comm.", "DD make top",

@@ -59,8 +59,8 @@ gmx_parallel_3dfft_t;
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            ivec                      ndata,
-						   real **                   real_data,
-						   t_complex **              complex_data,
+                           real **                   real_data,
+                           t_complex **              complex_data,
                            MPI_Comm                  comm[2],
                            int *                     slab2index_major,
                            int *                     slab2index_minor,
@@ -75,9 +75,9 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
  */
 int
 gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
-							   ivec                      local_ndata,
-							   ivec                      local_offset,
-							   ivec                      local_size);
+                               ivec                      local_ndata,
+                               ivec                      local_offset,
+                               ivec                      local_size);
 
 
 /*! \brief Get reciprocal space grid index limits
@@ -85,18 +85,18 @@ gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
 int
 gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
                                   ivec                      complex_order,
-								  ivec                      local_ndata,
-								  ivec                      local_offset,
-								  ivec                      local_size);
+                                  ivec                      local_ndata,
+                                  ivec                      local_offset,
+                                  ivec                      local_size);
 
 
 int
 gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
-						   enum gmx_fft_direction  dir,
-						   void *                  in_data,
-						   void *                  out_data,
+                           enum gmx_fft_direction  dir,
+                           void *                  in_data,
+                           void *                  out_data,
                            int                     thread,
-						   gmx_wallcycle_t         wcycle);
+                           gmx_wallcycle_t         wcycle);
 
 
 /*! \brief Release all data in parallel fft setup

@@ -84,12 +84,6 @@ static const char *boxvel_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static gmx_bool bTricl,bDynBox;
-static int  f_nre=0,epc,etc,nCrmsd;
-
-
-
-
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
@@ -143,6 +137,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     gmx_bool     bBHAM,bNoseHoover,b14;
 
     snew(md,1);
+
+    md->bVir=TRUE;
+    md->bPress=TRUE;
+    md->bSurft=TRUE;
+    md->bMu=TRUE;
 
     if (EI_DYNAMICS(ir->eI))
     {
@@ -235,7 +234,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else if (i == F_CONNBONDS)
             md->bEner[i] = FALSE;
         else if (i == F_COM_PULL)
-            md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
+            md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F || ir->bRot);
         else if (i == F_ECONSERVED)
             md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
                             (ir->epc == epcNO || ir->epc==epcMTTK));
@@ -250,6 +249,19 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bEner[F_TEMP] = TRUE;
 #endif
 
+    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
+    if (ir->bAdress && !debug) {
+        for (i = 0; i < F_NRE; i++) {
+            md->bEner[i] = FALSE;
+            if(i == F_EKIN){ md->bEner[i] = TRUE;}
+            if(i == F_TEMP){ md->bEner[i] = TRUE;}
+        }
+        md->bVir=FALSE;
+        md->bPress=FALSE;
+        md->bSurft=FALSE;
+        md->bMu=FALSE;
+    }
+
     md->f_nre=0;
     for(i=0; i<F_NRE; i++)
     {
@@ -263,13 +275,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     md->epc = ir->epc;
-    for (i=0;i<DIM;i++) 
-    {
-        for (j=0;j<DIM;j++) 
-        {
-            md->ref_p[i][j] = ir->ref_p[i][j];
-        }
-    }
+    md->bDiagPres = !TRICLINIC(ir->ref_p);
+    md->ref_p = (ir->ref_p[XX][XX]+ir->ref_p[YY][YY]+ir->ref_p[ZZ][ZZ])/DIM;
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
@@ -297,17 +304,23 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                                    unit_length);
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
-        md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
-        md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
+        if (md->bDiagPres)
+        {
+            md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
+            md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
+        }
     }
     if (md->bConstrVir)
     {
         md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm,unit_energy);
         md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm,unit_energy);
     }
-    md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm,unit_energy);
-    md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
-    md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
+    if (md->bVir)
+        md->ivir   = get_ebin_space(md->ebin,asize(vir_nm),vir_nm,unit_energy);
+    if (md->bPress)
+        md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
+    if (md->bSurft)
+        md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
                                 unit_surft_bar);
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
@@ -368,8 +381,20 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     n=groups->grps[egcENER].nr;
-    md->nEg=n;
-    md->nE=(n*(n+1))/2;
+    /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
+    if (!ir->bAdress){
+        /*standard simulation*/
+        md->nEg=n;
+        md->nE=(n*(n+1))/2;
+    }
+    else if (!debug) {
+        /*AdResS simulation*/
+       md->nU=0;
+       md->nEg=0;
+       md->nE=0;
+       md->nEc=0;
+       md->isvir=FALSE;
+    }
     snew(md->igrp,md->nE);
     if (md->nE > 1)
     {
@@ -705,40 +730,34 @@ void upd_mdebin(t_mdebin *md, gmx_bool write_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
 
-        /* This is pV (in kJ/mol).  The pressure is the reference pressure,
-           not the instantaneous pressure */  
-        pv = 0;
-        for (i=0;i<DIM;i++) 
-        {
-            for (j=0;j<DIM;j++) 
-            {
-                if (i>j) 
-                {
-                    pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
-                } 
-                else 
-                {
-                    pv += box[j][i]*md->ref_p[j][i]/PRESFAC;
-                }
-            }
-        }
-
         add_ebin(md->ebin,md->ib   ,nboxs,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
-        add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
-        enthalpy = pv + enerd->term[F_ETOT];
-        add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
+
+        if (md->bDiagPres)
+        {
+            /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+               not the instantaneous pressure */  
+            pv = vol*md->ref_p/PRESFAC;
+
+            add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
+            enthalpy = pv + enerd->term[F_ETOT];
+            add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
+        }
     }
     if (md->bConstrVir)
     {
         add_ebin(md->ebin,md->isvir,9,svir[0],bSum);
         add_ebin(md->ebin,md->ifvir,9,fvir[0],bSum);
     }
-    add_ebin(md->ebin,md->ivir,9,vir[0],bSum);
-    add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
-    tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
-    add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
+    if (md->bVir)
+        add_ebin(md->ebin,md->ivir,9,vir[0],bSum);
+    if (md->bPress)
+        add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
+    if (md->bSurft){
+        tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
+        add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
+    }
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];

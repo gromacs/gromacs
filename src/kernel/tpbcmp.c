@@ -627,6 +627,16 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_rvec(fp,"inputrec->deform(a)",-1,ir1->deform[XX],ir2->deform[XX],ftol,abstol);
   cmp_rvec(fp,"inputrec->deform(b)",-1,ir1->deform[YY],ir2->deform[YY],ftol,abstol);
   cmp_rvec(fp,"inputrec->deform(c)",-1,ir1->deform[ZZ],ir2->deform[ZZ],ftol,abstol);
+
+  cmp_int(fp,"ir->adress->type" ,-1,ir1->adress->type,ir2->adress->type);
+  cmp_real(fp,"ir->adress->const_wf" ,-1,ir1->adress->const_wf,ir2->adress->const_wf,ftol,abstol);
+  cmp_real(fp,"ir->adress->ex_width" ,-1,ir1->adress->ex_width,ir2->adress->ex_width,ftol,abstol);
+  cmp_real(fp,"ir->adress->hy_width" ,-1,ir1->adress->hy_width,ir2->adress->hy_width,ftol,abstol);
+  cmp_int(fp,"ir->adress->icor" ,-1,ir1->adress->icor,ir2->adress->icor);
+  cmp_int(fp,"ir->adress->site" ,-1,ir1->adress->site,ir2->adress->site);
+  cmp_rvec(fp,"ir->adress->refs" ,-1,ir1->adress->refs,ir2->adress->refs,ftol,abstol);
+  cmp_real(fp,"ir->adress->ex_forcecap", -1,ir1->adress->ex_forcecap,ir2->adress->ex_forcecap,ftol,abstol);
+
   cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
   cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);
   cmp_int(fp,"inputrec->userint3",-1,ir1->userint3,ir2->userint3);
@@ -811,7 +821,7 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
     
     for (i=0; i<2; i++) {
       if (b[i] && !b[1-i])
-	fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[i],fn[1-i]);
+	fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[1-i],fn[i]);
       close_trj(status[i]);
     }
   }

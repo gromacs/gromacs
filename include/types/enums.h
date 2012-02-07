@@ -229,6 +229,21 @@ enum {
 
 #define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
 
+/* Enforced rotation groups */
+enum {
+  erotgISO  , erotgISOPF ,
+  erotgPM   , erotgPMPF  ,
+  erotgRM   , erotgRMPF  ,
+  erotgRM2  , erotgRM2PF ,
+  erotgFLEX , erotgFLEXT ,
+  erotgFLEX2, erotgFLEX2T,
+  erotgNR
+};
+
+enum {
+    erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
+};
+
 /* QMMM */
 enum {
   eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 
@@ -249,6 +264,18 @@ enum {
 
 enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
+};
+
+enum {
+  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
+};
+
+enum {
+  eAdressICOff, eAdressICThermoForce, eAdressICNR
+};
+
+enum {
+  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 
 #ifdef __cplusplus

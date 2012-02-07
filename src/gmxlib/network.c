@@ -255,13 +255,13 @@ int gmx_node_rank(void)
 }
 
 
-int gmx_host_num() 
+int gmx_hostname_num()
 {
 #ifndef GMX_MPI
   return 0;
 #else
   int  resultlen,hostnum,i,j;
-  char mpi_hostname[MPI_MAX_PROCESSOR_NAME],num[MPI_MAX_PROCESSOR_NAME];
+  char mpi_hostname[MPI_MAX_PROCESSOR_NAME],hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
   MPI_Get_processor_name(mpi_hostname,&resultlen);
   /* This procedure can only differentiate nodes with host names
@@ -272,21 +272,21 @@ int gmx_host_num()
   /* Only parse the host name up to the first dot */
   while(i < resultlen && mpi_hostname[i] != '.') {
     if (isdigit(mpi_hostname[i])) {
-      num[j++] = mpi_hostname[i];
+      hostnum_str[j++] = mpi_hostname[i];
     }
     i++;
   }
-  num[j] = '\0';
+  hostnum_str[j] = '\0';
   if (j == 0) {
     hostnum = 0;
   } else {
     /* Use only the last 9 decimals, so we don't overflow an int */
-    hostnum = strtol(num + max(0,j-9), NULL, 10); 
+    hostnum = strtol(hostnum_str + max(0,j-9), NULL, 10);
   }
-  
+
   if (debug) {
     fprintf(debug,"In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
-	    mpi_hostname,hostnum);
+        mpi_hostname,hostnum);
   }
   return hostnum;
 #endif
@@ -316,12 +316,13 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
     MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
 
-    hostnum = gmx_host_num();
+    hostnum = gmx_hostname_num();
 
     if (debug)
     {
         fprintf(debug,"In gmx_setup_nodecomm: splitting communicator of size %d\n",n);
     }
+
 
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
@@ -620,25 +621,25 @@ void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr)
 #else
     int i;
 
-    if (nr > cr->mpb->ibuf_alloc) {
-        cr->mpb->ibuf_alloc = nr;
-        srenew(cr->mpb->ibuf,cr->mpb->ibuf_alloc);
+    if (nr > cr->mpb->libuf_alloc) {
+        cr->mpb->libuf_alloc = nr;
+        srenew(cr->mpb->libuf,cr->mpb->libuf_alloc);
     }
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+        MPI_Allreduce(r,cr->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                       cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(cr->mpb->ibuf,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+            MPI_Allreduce(cr->mpb->libuf,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                           cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,GMX_MPI_LARGE_INT,0,cr->nc.comm_intra);
     } else {
-        MPI_Allreduce(r,cr->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+        MPI_Allreduce(r,cr->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                       cr->mpi_comm_mygroup);
         for(i=0; i<nr; i++)
-            r[i] = cr->mpb->ibuf[i];
+            r[i] = cr->mpb->libuf[i];
     }
 #endif
 #endif
@@ -740,14 +741,14 @@ void gmx_sumli_sim(int nr,gmx_large_int_t r[], const gmx_multisim_t *ms)
     /* this is thread-unsafe, but it will do for now: */
     int i;
 
-    if (nr > ms->mpb->ibuf_alloc) {
-        ms->mpb->ibuf_alloc = nr;
-        srenew(ms->mpb->ibuf,ms->mpb->ibuf_alloc);
+    if (nr > ms->mpb->libuf_alloc) {
+        ms->mpb->libuf_alloc = nr;
+        srenew(ms->mpb->libuf,ms->mpb->libuf_alloc);
     }
-    MPI_Allreduce(r,ms->mpb->ibuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
+    MPI_Allreduce(r,ms->mpb->libuf,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                   ms->mpi_comm_masters);
     for(i=0; i<nr; i++)
-        r[i] = ms->mpb->ibuf[i];
+        r[i] = ms->mpb->libuf[i];
 #endif
 #endif
 }

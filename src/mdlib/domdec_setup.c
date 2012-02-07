@@ -37,6 +37,11 @@ static int factorize(int n,int **fac,int **mfac)
 {
     int d,ndiv;
 
+    if (n <= 0)
+    {
+        gmx_fatal(FARGS, "Can only factorize positive integers.");
+    }
+
     /* Decompose n in factors */
     snew(*fac,n/2);
     snew(*mfac,n/2);
@@ -656,34 +661,53 @@ real dd_choose_grid(FILE *fplog,
                     real cellsize_limit,real cutoff_dd,
                     gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody)
 {
-    int  npme,nkx,nky;
-    int  ldiv;
+    int  nnodes_div,ldiv;
     real limit;
     
     if (MASTER(cr))
     {
+        nnodes_div = cr->nnodes;
+        if (EEL_PME(ir->coulombtype))
+        {
+            if (cr->npmenodes > 0)
+            {
+                if (cr->nnodes <= 2)
+                {
+                    gmx_fatal(FARGS,
+                              "Can not have separate PME nodes with 2 or less nodes");
+                }
+                if (cr->npmenodes >= cr->nnodes)
+                {
+                    gmx_fatal(FARGS,
+                              "Can not have %d separate PME nodes with just %d total nodes",
+                              cr->npmenodes, cr->nnodes);
+                }
+
+                /* If the user purposely selected the number of PME nodes,
+                 * only check for large primes in the PP node count.
+                 */
+                nnodes_div -= cr->npmenodes;
+            }
+        }
+        else
+        {
+            cr->npmenodes = 0;
+        }
+
         if (cr->nnodes > 12)
         {
-            ldiv = largest_divisor(cr->nnodes);
+            ldiv = largest_divisor(nnodes_div);
             /* Check if the largest divisor is more than nnodes^2/3 */
-            if (ldiv*ldiv*ldiv > cr->nnodes*cr->nnodes)
+            if (ldiv*ldiv*ldiv > nnodes_div*nnodes_div)
             {
                 gmx_fatal(FARGS,"The number of nodes you selected (%d) contains a large prime factor %d. In most cases this will lead to bad performance. Choose a number with smaller prime factors or set the decomposition (option -dd) manually.",
-                          cr->nnodes,ldiv);
+                          nnodes_div,ldiv);
             }
         }
 
         if (EEL_PME(ir->coulombtype))
         {
-            if (cr->npmenodes >= 0)
-            {
-                if (cr->nnodes <= 2 && cr->npmenodes > 0)
-                {
-                    gmx_fatal(FARGS,
-                              "Can not have separate PME nodes with 2 or less nodes");
-                }
-            }
-            else
+            if (cr->npmenodes < 0)
             {
                 if (cr->nnodes <= 10)
                 {
@@ -697,13 +721,6 @@ real dd_choose_grid(FILE *fplog,
             if (fplog)
             {
                 fprintf(fplog,"Using %d separate PME nodes\n",cr->npmenodes);
-            }
-        }
-        else
-        {
-            if (cr->npmenodes < 0)
-            {
-                cr->npmenodes = 0;
             }
         }
         

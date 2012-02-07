@@ -60,6 +60,10 @@ extern "C" {
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif
+
+#ifndef M_1_PI
+#define M_1_PI      0.31830988618379067154
+#endif
     
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
 /* for n=1, w0 = 1 */
@@ -100,6 +104,8 @@ real    sign(real x,real y);
 real    cuberoot (real a);
 real    gmx_erf(real x);
 real    gmx_erfc(real x);
+
+gmx_bool gmx_isfinite(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *

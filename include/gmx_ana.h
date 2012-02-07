@@ -79,6 +79,9 @@ int
 gmx_densmap(int argc,char *argv[]);
 
 int 
+gmx_densorder(int argc,char *argv[]);
+
+int 
 gmx_dielectric(int argc,char *argv[]);
 
 int 
@@ -95,6 +98,9 @@ gmx_dist(int argc,char *argv[]);
 
 int 
 gmx_dos(int argc,char *argv[]);
+
+int 
+gmx_dyecoupl(int argc,char *argv[]);
 
 int 
 gmx_dyndom(int argc,char *argv[]);
@@ -143,6 +149,9 @@ gmx_helix(int argc,char *argv[]);
 
 int
 gmx_helixorient(int argc,char *argv[]);
+
+int
+gmx_hydorder(int argc,char *argv[]);
 
 int 
 gmx_kinetics(int argc,char *argv[]);
@@ -272,6 +281,9 @@ gmx_pme_error(int argc,char *argv[]);
 
 int
 gmx_options(int argc,char *argv[]);
+
+int
+gmx_sans(int argc,char *argv[]);
 
 #ifdef __cplusplus
 }

@@ -76,6 +76,7 @@ int ifunc_index(directive d,int type)
       gmx_fatal(FARGS,"Invalid bond type %d",type);
       break;
     }
+    break;
   case d_angles:
   case d_angletypes:
     switch (type) {
@@ -93,11 +94,14 @@ int ifunc_index(directive d,int type)
       return F_QUARTIC_ANGLES;
     case 8:
       return F_TABANGLES;
+    case 9:
+      return F_LINEAR_ANGLES;
     default:
       gmx_fatal(FARGS,"Invalid angle type %d",type);
       break;
     }
-    case d_pairs:
+    break;
+  case d_pairs:
   case d_pairtypes:
     if (type == 1 || (d == d_pairtypes && type == 2))
       return F_LJ14;
@@ -105,6 +109,7 @@ int ifunc_index(directive d,int type)
       return F_LJC14_Q;
     else
       gmx_fatal(FARGS,"Invalid pairs type %d",type);
+    break;
   case d_pairs_nb:
     return F_LJC_PAIRS_NB;
   case d_dihedrals:
@@ -152,6 +157,7 @@ int ifunc_index(directive d,int type)
     default:
       gmx_fatal(FARGS,"Invalid vsites3 type %d",type);
     }
+    break;
   case d_vsites4:
       switch (type) {
           case 1:
@@ -161,6 +167,7 @@ int ifunc_index(directive d,int type)
           default:
               gmx_fatal(FARGS,"Invalid vsites4 type %d",type);
       }
+      break;
   case d_vsitesn:
     return F_VSITEN; 
   case d_constraints:
@@ -173,6 +180,7 @@ int ifunc_index(directive d,int type)
     default:
       gmx_fatal(FARGS,"Invalid constraints type %d",type);
     }
+    break;
   case d_settles:
     return F_SETTLE;
   case d_position_restraints:
@@ -181,11 +189,21 @@ int ifunc_index(directive d,int type)
       return F_POSRES;
     case 2:
       gmx_fatal(FARGS,"Water polarization should now be listed under [ water_polarization ]\n");
+      break;
     default:
       gmx_fatal(FARGS,"Invalid position restraint type %d",type);
     }
+    break;
   case d_polarization:
-    return F_POLARIZATION;
+    switch (type) {
+    case 1:
+      return F_POLARIZATION;
+    case 2:
+      return F_ANHARM_POL;
+    default:
+      gmx_fatal(FARGS,"Invalid polarization type %d",type);
+    }
+    break;
   case d_thole_polarization:
     return F_THOLE_POL;
   case d_water_polarization:

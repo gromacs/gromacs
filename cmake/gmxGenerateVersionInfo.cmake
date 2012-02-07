@@ -7,8 +7,8 @@
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined: 
-# Git_EXECUTABLE        - path to git binary
-# Git_VERSION           - git version (if not defined it's assumed that >=1.5.3)
+# GIT_EXECUTABLE        - path to git binary
+# GIT_VERSION           - git version (if not defined it's assumed that >=1.5.3)
 # PROJECT_VERSION       - hard-coded version string, should have the following structure: 
 #                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix 
 #                       is optional but should start with -dev
@@ -48,9 +48,9 @@ endif()
 # if git executable xists and it's compatible version
 # build the development version string 
 # this should at some point become VERSION_LESS
-if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
+if(EXISTS ${GIT_EXECUTABLE} AND NOT ${GIT_VERSION} STRLESS "1.5.1")
     # refresh git index 
-    execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
+    execute_process(COMMAND ${GIT_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
         OUTPUT_QUIET
@@ -59,7 +59,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
     ) 
 
    # get the full hash of the current HEAD 
-    execute_process(COMMAND ${Git_EXECUTABLE} rev-parse HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE GMX_GIT_HEAD_HASH
         ERROR_VARIABLE EXEC_ERR
@@ -69,7 +69,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
     string(SUBSTRING ${GMX_GIT_HEAD_HASH} 0 5 HEAD_HASH_SHORT) 
 
     # if there are local uncommitted changes, the build gets labeled "dirty"
-    execute_process(COMMAND ${Git_EXECUTABLE} diff-index --name-only HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} diff-index --name-only HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE SRC_LOCAL_CHANGES
         ERROR_VARIABLE EXEC_ERR
@@ -83,8 +83,8 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
     # if git is older then 1.5.3 we need to extract the RFC2822 style date 
     # and massage it, otherwise the ISO 8601 format is more trusworthy
     # this should at some point become VERSION_LESS
-    if (NOT Git_VERSION STREQUAL "" AND Git_VERSION STRLESS "1.5.3")
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%cD" HEAD
+    if (NOT GIT_VERSION STREQUAL "" AND GIT_VERSION STRLESS "1.5.3")
+        execute_process(COMMAND ${GIT_EXECUTABLE} rev-list -n1 "--pretty=format:%cD" HEAD
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE HEAD_DATE
             ERROR_VARIABLE EXEC_ERR
@@ -111,7 +111,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
         string(REGEX REPLACE "DEC" "12" HEAD_DATE ${HEAD_DATE})
     else()
         # get the date of the HEAD commit
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
+        execute_process(COMMAND ${GIT_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE HEAD_DATE
             ERROR_VARIABLE EXEC_ERR
@@ -126,7 +126,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
     set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}") 
     
     # find the name of the remote which is located on the official gromacs git server
-    execute_process(COMMAND ${Git_EXECUTABLE} config --get-regexp 
+    execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp 
                     "remote\\..*\\.url" "git\\.gromacs\\.org[:|/]gromacs"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE GMX_REMOTE
@@ -143,7 +143,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
         # find the first ancestor in the list provided by rev-list (not 
         # necessarily the last though) which is in GMX_REMOTE, extract the 
         # hash and the number of commits HEAD is ahead with 
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list --max-count=100 HEAD
+        execute_process(COMMAND ${GIT_EXECUTABLE} rev-list --max-count=100 HEAD
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE ANCESTOR_LIST
         )
@@ -152,7 +152,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
         set(AHEAD 0)
         set(GMX_GIT_REMOTE_HASH "")
         foreach(OBJ ${ANCESTOR_LIST})
-            execute_process(COMMAND ${Git_EXECUTABLE} name-rev --refs=refs/remotes/${GMX_REMOTE}/* ${OBJ}
+            execute_process(COMMAND ${GIT_EXECUTABLE} name-rev --refs=refs/remotes/${GMX_REMOTE}/* ${OBJ}
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 OUTPUT_VARIABLE HASH_AND_REVNAME
                 OUTPUT_STRIP_TRAILING_WHITESPACE

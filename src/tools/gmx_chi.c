@@ -1040,7 +1040,9 @@ int gmx_chi(int argc,char *argv[])
     "The total number of rotamer transitions per timestep", 
     "(argument [TT]-ot[tt]), the number of transitions per rotamer", 
     "(argument [TT]-rt[tt]), and the ^3J couplings (argument [TT]-jc[tt]), ", 
-    "can also be written to [TT].xvg[tt] files.[PAR]", 
+    "can also be written to [TT].xvg[tt] files. Note that the analysis",
+    "of rotamer transitions assumes that the supplied trajectory frames",
+    "are equally spaced in time.[PAR]",
 
     "If [TT]-chi_prod[tt] is set (and [TT]-maxchi[tt] > 0), cumulative rotamers, e.g.", 
     "1+9([GRK]chi[grk]1-1)+3([GRK]chi[grk]2-1)+([GRK]chi[grk]3-1) (if the residue has three 3-fold ", 
@@ -1133,7 +1135,7 @@ int gmx_chi(int argc,char *argv[])
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;
-  int        i,j,**chi_lookup,*xity; 
+  int        i,j,**chi_lookup,*multiplicity; 
   
   t_filenm  fnm[] = {
     { efSTX, "-s",  NULL,     ffREAD  },
@@ -1252,8 +1254,8 @@ int gmx_chi(int argc,char *argv[])
    *
    * added multiplicity */ 
 
-  snew(xity,ndih) ;
-  mk_multiplicity_lookup(xity, maxchi, dih, nlist, dlist,ndih); 
+  snew(multiplicity,ndih) ;
+  mk_multiplicity_lookup(multiplicity, maxchi, dih, nlist, dlist,ndih); 
  
   strcpy(grpname, "All residues, "); 
   if(bPhi) 
@@ -1270,8 +1272,8 @@ int gmx_chi(int argc,char *argv[])
 
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
-		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
-		    *time,  dt, FALSE, core_frac,oenv) ; 
+		    dih, nlist, dlist, nf, nactdih, grpname, multiplicity, 
+		    time, FALSE, core_frac,oenv);
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
@@ -1303,7 +1305,7 @@ int gmx_chi(int argc,char *argv[])
     mk_chi_lookup(chi_lookup, maxchi, dih, nlist, dlist); 
     
     get_chi_product_traj(dih,nf,nactdih,nlist,
-			 maxchi,dlist,time,chi_lookup,xity,
+			 maxchi,dlist,time,chi_lookup,multiplicity,
 			 FALSE,bNormHisto, core_frac,bAll,
 			 opt2fn("-cp",NFILE,fnm),oenv); 
 

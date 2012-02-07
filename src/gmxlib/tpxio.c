@@ -64,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 75;
+static const int tpx_version = 77;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -126,6 +126,7 @@ static const t_ftupd ftupd[] = {
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
   { 70, F_RESTRBONDS        },
+  { 76, F_LINEAR_ANGLES     },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -161,6 +162,7 @@ static const t_ftupd ftupd[] = {
   { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
+  { 76, F_ANHARM_POL        }
 };
 #define NFTUPD asize(ftupd)
 
@@ -249,6 +251,47 @@ static void do_pull(t_fileio *fio, t_pull *pull,gmx_bool bRead, int file_version
     do_pullgrp(fio,&pull->grp[g],bRead,file_version);
 }
 
+
+static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg,gmx_bool bRead, int file_version)
+{
+  gmx_bool bDum=TRUE;
+  int  i;
+
+  gmx_fio_do_int(fio,rotg->eType);
+  gmx_fio_do_int(fio,rotg->bMassW);
+  gmx_fio_do_int(fio,rotg->nat);
+  if (bRead)
+    snew(rotg->ind,rotg->nat);
+  gmx_fio_ndo_int(fio,rotg->ind,rotg->nat);
+  if (bRead)
+      snew(rotg->x_ref,rotg->nat);
+  gmx_fio_ndo_rvec(fio,rotg->x_ref,rotg->nat);
+  gmx_fio_do_rvec(fio,rotg->vec);
+  gmx_fio_do_rvec(fio,rotg->pivot);
+  gmx_fio_do_real(fio,rotg->rate);
+  gmx_fio_do_real(fio,rotg->k);
+  gmx_fio_do_real(fio,rotg->slab_dist);
+  gmx_fio_do_real(fio,rotg->min_gaussian);
+  gmx_fio_do_real(fio,rotg->eps);
+  gmx_fio_do_int(fio,rotg->eFittype);
+  gmx_fio_do_int(fio,rotg->PotAngle_nstep);
+  gmx_fio_do_real(fio,rotg->PotAngle_step);
+}
+
+static void do_rot(t_fileio *fio, t_rot *rot,gmx_bool bRead, int file_version)
+{
+  int g;
+
+  gmx_fio_do_int(fio,rot->ngrp);
+  gmx_fio_do_int(fio,rot->nstrout);
+  gmx_fio_do_int(fio,rot->nstsout);
+  if (bRead)
+    snew(rot->grp,rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    do_rotgrp(fio, &rot->grp[g],bRead,file_version);
+}
+
+
 static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead, 
                         int file_version, real *fudgeQQ)
 {
@@ -323,7 +366,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
-    if (file_version >= 74)
+    if (file_version >= 77)
     {
         gmx_fio_do_int(fio,ir->cutoff_scheme);
     }
@@ -473,7 +516,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
 
 	 
-    if (file_version >= 74)
+    if (file_version >= 77)
     {
         gmx_fio_do_real(fio,ir->fourier_spacing); 
     }
@@ -761,6 +804,36 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     gmx_fio_do_real(fio,ir->userreal3); 
     gmx_fio_do_real(fio,ir->userreal4); 
     
+    /* AdResS stuff */
+    if (file_version >= 75) {
+      gmx_fio_do_gmx_bool(fio,ir->bAdress);
+      if(ir->bAdress){
+          if (bRead) snew(ir->adress, 1);
+          gmx_fio_do_int(fio,ir->adress->type);
+          gmx_fio_do_real(fio,ir->adress->const_wf);
+          gmx_fio_do_real(fio,ir->adress->ex_width);
+          gmx_fio_do_real(fio,ir->adress->hy_width);
+          gmx_fio_do_int(fio,ir->adress->icor);
+          gmx_fio_do_int(fio,ir->adress->site);
+          gmx_fio_do_rvec(fio,ir->adress->refs);
+          gmx_fio_do_int(fio,ir->adress->n_tf_grps);
+          gmx_fio_do_real(fio, ir->adress->ex_forcecap);
+          gmx_fio_do_int(fio, ir->adress->n_energy_grps);
+          gmx_fio_do_int(fio,ir->adress->do_hybridpairs);
+
+          if (bRead)snew(ir->adress->tf_table_index,ir->adress->n_tf_grps);
+          if (ir->adress->n_tf_grps > 0) {
+            bDum=gmx_fio_ndo_int(fio,ir->adress->tf_table_index,ir->adress->n_tf_grps);
+          }
+          if (bRead)snew(ir->adress->group_explicit,ir->adress->n_energy_grps);
+          if (ir->adress->n_energy_grps > 0) {
+            bDum=gmx_fio_ndo_int(fio, ir->adress->group_explicit,ir->adress->n_energy_grps);
+          }
+      }
+    } else {
+      ir->bAdress = FALSE;
+    }
+
     /* pull stuff */
     if (file_version >= 48) {
       gmx_fio_do_int(fio,ir->ePull);
@@ -771,6 +844,18 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
       }
     } else {
       ir->ePull = epullNO;
+    }
+    
+    /* Enforced rotation */
+    if (file_version >= 74) {
+        gmx_fio_do_int(fio,ir->bRot);
+        if (ir->bRot == TRUE) {
+            if (bRead)
+                snew(ir->rot,1);
+            do_rot(fio, ir->rot,bRead,file_version);
+        }
+    } else {
+        ir->bRot = FALSE;
     }
     
     /* grpopts stuff */
@@ -964,6 +1049,12 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
       iparams->pdihs.cpB  = iparams->pdihs.cpA;
     }
     break;
+  case F_LINEAR_ANGLES:
+    gmx_fio_do_real(fio,iparams->linangle.klinA);
+    gmx_fio_do_real(fio,iparams->linangle.aA);
+    gmx_fio_do_real(fio,iparams->linangle.klinB);
+    gmx_fio_do_real(fio,iparams->linangle.aB);
+    break;
   case F_FENEBONDS:
     gmx_fio_do_real(fio,iparams->fene.bm);
     gmx_fio_do_real(fio,iparams->fene.kb);
@@ -1026,6 +1117,11 @@ void do_iparams(t_fileio *fio, t_functype ftype,t_iparams *iparams,
     break;
   case F_POLARIZATION:
     gmx_fio_do_real(fio,iparams->polarize.alpha);
+    break;
+  case F_ANHARM_POL:
+    gmx_fio_do_real(fio,iparams->anharm_polarize.alpha);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.drcut);
+    gmx_fio_do_real(fio,iparams->anharm_polarize.khyp);
     break;
   case F_WATER_POL:
     if (file_version < 31) 
@@ -1305,7 +1401,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead,
       ilist[j].iatoms = NULL;
     } else {
       do_ilist(fio, &ilist[j],bRead,file_version,j);
-      if (file_version < 75 && j == F_SETTLE && ilist[j].nr > 0)
+      if (file_version < 77 && j == F_SETTLE && ilist[j].nr > 0)
       {
           add_settle_atoms(&ilist[j]);
       }

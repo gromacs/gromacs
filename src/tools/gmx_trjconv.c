@@ -603,8 +603,8 @@ int gmx_trjconv(int argc,char *argv[])
         "[TT]rect[tt] is the ordinary brick shape.",
         "[TT]tric[tt] is the triclinic unit cell.", 
         "[TT]compact[tt] puts all atoms at the closest distance from the center",
-        "of the box. This can be useful for visualizing e.g. truncated",
-        "octahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
+        "of the box. This can be useful for visualizing e.g. truncated octahedra",
+        "or rhombic dodecahedra. The center for options [TT]tric[tt] and [TT]compact[tt]",
         "is [TT]tric[tt] (see below), unless the option [TT]-boxcenter[tt]",
         "is set differently.[PAR]",
 
@@ -957,6 +957,11 @@ int gmx_trjconv(int argc,char *argv[])
                           " trajectories.\ntry splitting the index file in %d parts.\n"
                           "FOPEN_MAX = %d",
                           clust->clust->nr,1+clust->clust->nr/FOPEN_MAX,FOPEN_MAX);
+	    gmx_warning("The -sub option could require as many open output files as there are\n"
+			"index groups in the file (%d). If you get I/O errors opening new files,\n"
+			"try reducing the number of index groups in the file, and perhaps\n"
+			"using trjconv -sub several times on different chunks of your index file.\n",
+			clust->clust->nr);
 
             snew(clust_status,clust->clust->nr);
             snew(clust_status_id,clust->clust->nr);
@@ -1196,7 +1201,7 @@ int gmx_trjconv(int argc,char *argv[])
                 if (bSubTraj) {
                     /*if (frame >= clust->clust->nra)
 	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");*/
-                    if (frame >= clust->maxframe)
+                    if (frame > clust->maxframe)
                         my_clust = -1;
                     else
                         my_clust = clust->inv_clust[frame];
@@ -1455,6 +1460,7 @@ int gmx_trjconv(int argc,char *argv[])
                                         (clust->clust->index[my_clust+1]-
                                             clust->clust->index[my_clust])) {
                                         close_trx(clust_status[my_clust]);
+					clust_status[my_clust] = NULL;
                                         clust_status_id[my_clust] = -2;
                                         ntrxopen--;
                                         if (ntrxopen < 0)

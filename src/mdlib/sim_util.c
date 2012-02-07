@@ -80,7 +80,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "copyrite.h"
-
+#include "pull_rotation.h"
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
@@ -98,6 +98,7 @@
 #include "tmpi.h"
 #endif
 
+#include "adress.h"
 #include "qmmm.h"
 
 #ifdef GMX_GPU
@@ -453,7 +454,7 @@ static void pull_potential_wrapper(FILE *fplog,
      */
     set_pbc(&pbc,ir->ePBC,box);
     dvdl = 0; 
-    enerd->term[F_COM_PULL] =
+    enerd->term[F_COM_PULL] +=
         pull_potential(ir->ePull,ir->pull,mdatoms,&pbc,
                        cr,t,lambda,x,f,vir_force,&dvdl);
     if (bSepDVDL)
@@ -1010,7 +1011,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             dd_force_flop_start(cr->dd,nrnb);
         }
     }
-	
+    
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
@@ -1330,9 +1331,11 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     double mu[2*DIM]; 
     gmx_bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     gmx_bool   bDoLongRange,bDoForces,bSepLRF;
+    gmx_bool   bDoAdressWF;
     matrix boxs;
     rvec   vzero,box_diag;
     real   e,v,dvdl;
+    t_pbc  pbc;
     float  cycles_pme,cycles_force;
 
     start  = mdatoms->start;
@@ -1370,6 +1373,8 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
+    /* should probably move this to the forcerec since it doesn't change */
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff));
 
     if (bStateChanged)
     {
@@ -1457,6 +1462,32 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         wallcycle_stop(wcycle,ewcMOVEX);
     }
 
+    /* update adress weight beforehand */
+    if(bStateChanged && bDoAdressWF)
+    {
+        /* need pbc for adress weight calculation with pbc_dx */
+        set_pbc(&pbc,inputrec->ePBC,box);
+        if(fr->adress_site == eAdressSITEcog)
+        {
+            update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
+                                      inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
+        else if (fr->adress_site == eAdressSITEcom)
+        {
+            update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                      inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
+        else if (fr->adress_site == eAdressSITEatomatom){
+            update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                                inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
+        else
+        {
+            update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                       inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
+    }
+
     if (NEED_MUTOT(*inputrec))
     {
 
@@ -1514,9 +1545,9 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         */
         dvdl = 0; 
         ns(fplog,fr,x,box,
-        groups,&(inputrec->opts),top,mdatoms,
-        cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
-        bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
+           groups,&(inputrec->opts),top,mdatoms,
+           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+           bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
             fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
@@ -1525,7 +1556,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcNS);
     }
-
+    
     if (inputrec->implicit_solvent && bNS) 
     {
         make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
@@ -1539,6 +1570,16 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
             wallcycle_start(wcycle,ewcPPDURINGPME);
             dd_force_flop_start(cr->dd,nrnb);
         }
+    }
+    
+    if (inputrec->bRot)
+    {
+        /* Enforced rotation has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing */
+        wallcycle_start(wcycle,ewcROT);
+        do_rotation(cr,inputrec,box,x,t,step,wcycle,bNS);
+        wallcycle_stop(wcycle,ewcROT);
     }
 
     /* Start the force cycle counter.
@@ -1650,6 +1691,13 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
                       inputrec->ex,inputrec->et,t);
         }
 
+        if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
+        {
+            /* Compute thermodynamic force in hybrid AdResS region */
+            adress_thermo_force(start,homenr,&(top->cgs),x,fr->f_novirsum,fr,mdatoms,
+                                inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
+
         /* Communicate the forces */
         if (PAR(cr))
         {
@@ -1720,6 +1768,14 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     {
         pull_potential_wrapper(fplog,bSepDVDL,cr,inputrec,box,x,
                                f,vir_force,mdatoms,enerd,lambda,t);
+    }
+
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+    {
+        wallcycle_start(wcycle,ewcROTadd);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr,step,t);
+        wallcycle_stop(wcycle,ewcROTadd);
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
@@ -2420,6 +2476,11 @@ void init_md(FILE *fplog,
                               mtop,ir, (*outf)->fp_dhdl);
     }
     
+    if (ir->bAdress)
+    {
+      please_cite(fplog,"Fritsch12");
+      please_cite(fplog,"Junghans10");
+    }
     /* Initiate variables */  
     clear_mat(force_vir);
     clear_mat(shake_vir);

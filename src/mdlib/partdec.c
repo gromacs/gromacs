@@ -552,9 +552,8 @@ init_partdec_constraint(t_commrec *cr,
         }
         pdc->nconstraints = cnt;
         
-        /* This should really be calculated, but 1000 is a _lot_ for overlapping constraints... */
-        snew(pdc->sendbuf,1000);
-        snew(pdc->recvbuf,1000);
+        snew(pdc->sendbuf,max(6*(pd->index[cr->nodeid+1]-pd->constraints->right_range_send),6*(pdc->left_range_send-pd->index[cr->nodeid])));
+        snew(pdc->recvbuf,max(6*(pd->index[cr->nodeid]-pdc->left_range_receive),6*(pdc->right_range_receive-pd->index[cr->nodeid+1])));
         
 }
 

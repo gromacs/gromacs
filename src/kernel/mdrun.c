@@ -362,6 +362,7 @@ int main(int argc,char *argv[])
     { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
+    { efXVG, "-tabletf", "tabletf",    ffOPTRD },
     { efXVG, "-tablep", "tablep",   ffOPTRD },
     { efXVG, "-tableb", "table",    ffOPTRD },
     { efTRX, "-rerun",  "rerun",    ffOPTRD },
@@ -376,6 +377,10 @@ int main(int argc,char *argv[])
     { efXVG, "-runav",  "runaver",  ffOPTWR },
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
+    { efXVG, "-ro",     "rotation", ffOPTWR },
+    { efLOG, "-ra",     "rotangles",ffOPTWR },
+    { efLOG, "-rs",     "rotslabs", ffOPTWR },
+    { efLOG, "-rt",     "rottorque",ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR },
     { efRND, "-multidir",NULL,      ffOPTRDMULT}
@@ -604,6 +609,11 @@ int main(int argc,char *argv[])
       else
       {
           sim_part = sim_part_fn + 1;
+      }
+
+      if (MULTISIM(cr) && MASTER(cr))
+      {
+          check_multi_int(stdout,cr->ms,sim_part,"simulation part");
       }
   } 
   else

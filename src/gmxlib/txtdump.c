@@ -373,13 +373,13 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
   fprintf(out,"\n");
   
   pr_indent(out,indent);
-  fprintf(out,"ref_t%s",bMDPformat ? " = " : ":");
+  fprintf(out,"ref-t%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->ref_t[i]);
   fprintf(out,"\n");
 
   pr_indent(out,indent);
-  fprintf(out,"tau_t%s",bMDPformat ? " = " : ":");
+  fprintf(out,"tau-t%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->tau_t[i]);
   fprintf(out,"\n");  
@@ -390,7 +390,7 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
     fprintf(out,"  %10s",EANNEAL(opts->annealing[i]));
   fprintf(out,"\n");  
  
-  fprintf(out,"ann_npoints%s",bMDPformat ? " = " : ":");
+  fprintf(out,"ann-npoints%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10d",opts->anneal_npoints[i]);
   fprintf(out,"\n");  
@@ -425,7 +425,7 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
 
   for(i=0; (i<opts->ngener); i++) {
     pr_indent(out,indent);
-    fprintf(out,"energygrp_flags[%3d]:",i);
+    fprintf(out,"energygrp-flags[%3d]:",i);
     for(m=0; (m<opts->ngener); m++)
       fprintf(out," %d",opts->egp_flags[opts->ngener*i+m]);
     fprintf(out,"\n");
@@ -480,7 +480,7 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
 static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
 {
   pr_indent(fp,indent);
-  fprintf(fp,"pull_group %d:\n",g);
+  fprintf(fp,"pull-group %d:\n",g);
   indent += 2;
   pr_ivec_block(fp,indent,"atom",pg->ind,pg->nat,TRUE);
   pr_rvec(fp,indent,"weight",pg->weight,pg->nweight,TRUE);
@@ -496,16 +496,48 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
 {
   int g;
 
-  PS("pull_geometry",EPULLGEOM(pull->eGeom));
-  pr_ivec(fp,indent,"pull_dim",pull->dim,DIM,TRUE);
-  PR("pull_r1",pull->cyl_r1);
-  PR("pull_r0",pull->cyl_r0);
-  PR("pull_constr_tol",pull->constr_tol);
-  PI("pull_nstxout",pull->nstxout);
-  PI("pull_nstfout",pull->nstfout);
-  PI("pull_ngrp",pull->ngrp);
+  PS("pull-geometry",EPULLGEOM(pull->eGeom));
+  pr_ivec(fp,indent,"pull-dim",pull->dim,DIM,TRUE);
+  PR("pull-r1",pull->cyl_r1);
+  PR("pull-r0",pull->cyl_r0);
+  PR("pull-constr-tol",pull->constr_tol);
+  PI("pull-nstxout",pull->nstxout);
+  PI("pull-nstfout",pull->nstfout);
+  PI("pull-ngrp",pull->ngrp);
   for(g=0; g<pull->ngrp+1; g++)
     pr_pullgrp(fp,indent,g,&pull->grp[g]);
+}
+
+static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"rotation_group %d:\n",g);
+  indent += 2;
+  PS("type",EROTGEOM(rotg->eType));
+  PS("massw",BOOL(rotg->bMassW));
+  pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
+  pr_rvecs(fp,indent,"x_ref",rotg->x_ref,rotg->nat);
+  pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
+  pr_rvec(fp,indent,"pivot",rotg->pivot,DIM,TRUE);
+  PR("rate",rotg->rate);
+  PR("k",rotg->k);
+  PR("slab_dist",rotg->slab_dist);
+  PR("min_gaussian",rotg->min_gaussian);
+  PR("epsilon",rotg->eps);
+  PS("fit_method",EROTFIT(rotg->eFittype));
+  PI("potfitangle_nstep",rotg->PotAngle_nstep);
+  PR("potfitangle_step",rotg->PotAngle_step);
+}
+
+static void pr_rot(FILE *fp,int indent,t_rot *rot)
+{
+  int g;
+
+  PI("rot_nstrout",rot->nstrout);
+  PI("rot_nstsout",rot->nstsout);
+  PI("rot_ngrp",rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    pr_rotgrp(fp,indent,g,&rot->grp[g]);
 }
 
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
@@ -525,7 +557,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
     PI("nstcomm",ir->nstcomm);
-    PS("comm_mode",ECOM(ir->comm_mode));
+    PS("comm-mode",ECOM(ir->comm_mode));
     PI("nstlog",ir->nstlog);
     PI("nstxout",ir->nstxout);
     PI("nstvout",ir->nstvout);
@@ -533,19 +565,19 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nstcalcenergy",ir->nstcalcenergy);
     PI("nstenergy",ir->nstenergy);
     PI("nstxtcout",ir->nstxtcout);
-    PR("init_t",ir->init_t);
-    PR("delta_t",ir->delta_t);
+    PR("init-t",ir->init_t);
+    PR("delta-t",ir->delta_t);
     
     PR("xtcprec",ir->xtcprec);
     PR("fourierspacing",ir->fourier_spacing);
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);
-    PI("pme_order",ir->pme_order);
-    PR("ewald_rtol",ir->ewald_rtol);
-    PR("ewald_geometry",ir->ewald_geometry);
-    PR("epsilon_surface",ir->epsilon_surface);
-    PS("optimize_fft",BOOL(ir->bOptFFT));
+    PI("pme-order",ir->pme_order);
+    PR("ewald-rtol",ir->ewald_rtol);
+    PR("ewald-geometry",ir->ewald_geometry);
+    PR("epsilon-surface",ir->epsilon_surface);
+    PS("optimize-fft",BOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
     PS("bPeriodicMols",BOOL(ir->bPeriodicMols));
     PS("bContinuation",BOOL(ir->bContinuation));
@@ -555,120 +587,138 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));
     PI("nstpcouple",ir->nstpcouple);
-    PR("tau_p",ir->tau_p);
-    pr_matrix(fp,indent,"ref_p",ir->ref_p,bMDPformat);
+    PR("tau-p",ir->tau_p);
+    pr_matrix(fp,indent,"ref-p",ir->ref_p,bMDPformat);
     pr_matrix(fp,indent,"compress",ir->compress,bMDPformat);
-    PS("refcoord_scaling",EREFSCALINGTYPE(ir->refcoord_scaling));
+    PS("refcoord-scaling",EREFSCALINGTYPE(ir->refcoord_scaling));
     if (bMDPformat)
-      fprintf(fp,"posres_com  = %g %g %g\n",ir->posres_com[XX],
+      fprintf(fp,"posres-com  = %g %g %g\n",ir->posres_com[XX],
 	      ir->posres_com[YY],ir->posres_com[ZZ]);
     else
-      pr_rvec(fp,indent,"posres_com",ir->posres_com,DIM,TRUE);
+      pr_rvec(fp,indent,"posres-com",ir->posres_com,DIM,TRUE);
     if (bMDPformat)
-      fprintf(fp,"posres_comB = %g %g %g\n",ir->posres_comB[XX],
+      fprintf(fp,"posres-comB = %g %g %g\n",ir->posres_comB[XX],
 	      ir->posres_comB[YY],ir->posres_comB[ZZ]);
     else
-      pr_rvec(fp,indent,"posres_comB",ir->posres_comB,DIM,TRUE);
-    PI("andersen_seed",ir->andersen_seed);
+      pr_rvec(fp,indent,"posres-comB",ir->posres_comB,DIM,TRUE);
+    PI("andersen-seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
     PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);
     PS("coulombtype",EELTYPE(ir->coulombtype));
-    PR("rcoulomb_switch",ir->rcoulomb_switch);
+    PR("rcoulomb-switch",ir->rcoulomb_switch);
     PR("rcoulomb",ir->rcoulomb);
     PS("vdwtype",EVDWTYPE(ir->vdwtype));
-    PR("rvdw_switch",ir->rvdw_switch);
+    PR("rvdw-switch",ir->rvdw_switch);
     PR("rvdw",ir->rvdw);
     if (ir->epsilon_r != 0)
-      PR("epsilon_r",ir->epsilon_r);
+      PR("epsilon-r",ir->epsilon_r);
     else
-      PS("epsilon_r",infbuf);
+      PS("epsilon-r",infbuf);
     if (ir->epsilon_rf != 0)
-      PR("epsilon_rf",ir->epsilon_rf);
+      PR("epsilon-rf",ir->epsilon_rf);
     else
-      PS("epsilon_rf",infbuf);
+      PS("epsilon-rf",infbuf);
     PR("tabext",ir->tabext);
-    PS("implicit_solvent",EIMPLICITSOL(ir->implicit_solvent));
-    PS("gb_algorithm",EGBALGORITHM(ir->gb_algorithm));
-    PR("gb_epsilon_solvent",ir->gb_epsilon_solvent);
+    PS("implicit-solvent",EIMPLICITSOL(ir->implicit_solvent));
+    PS("gb-algorithm",EGBALGORITHM(ir->gb_algorithm));
+    PR("gb-epsilon-solvent",ir->gb_epsilon_solvent);
     PI("nstgbradii",ir->nstgbradii);
     PR("rgbradii",ir->rgbradii);
-    PR("gb_saltconc",ir->gb_saltconc);
-    PR("gb_obc_alpha",ir->gb_obc_alpha);
-    PR("gb_obc_beta",ir->gb_obc_beta);
-    PR("gb_obc_gamma",ir->gb_obc_gamma);
-    PR("gb_dielectric_offset",ir->gb_dielectric_offset);
-    PS("sa_algorithm",ESAALGORITHM(ir->gb_algorithm));
-    PR("sa_surface_tension",ir->sa_surface_tension);
+    PR("gb-saltconc",ir->gb_saltconc);
+    PR("gb-obc-alpha",ir->gb_obc_alpha);
+    PR("gb-obc-beta",ir->gb_obc_beta);
+    PR("gb-obc-gamma",ir->gb_obc_gamma);
+    PR("gb-dielectric-offset",ir->gb_dielectric_offset);
+    PS("sa-algorithm",ESAALGORITHM(ir->gb_algorithm));
+    PR("sa-surface-tension",ir->sa_surface_tension);
 	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
-    PS("free_energy",EFEPTYPE(ir->efep));
-    PR("init_lambda",ir->init_lambda);
-    PR("delta_lambda",ir->delta_lambda);
+    PS("free-energy",EFEPTYPE(ir->efep));
+    PR("init-lambda",ir->init_lambda);
+    PR("delta-lambda",ir->delta_lambda);
     if (!bMDPformat)
     {
-        PI("n_foreign_lambda",ir->n_flambda);
+        PI("n-foreign-lambda",ir->n_flambda);
     }
     if (ir->n_flambda > 0)
     {
         pr_indent(fp,indent);
-        fprintf(fp,"foreign_lambda%s",bMDPformat ? " = " : ":");
+        fprintf(fp,"foreign-lambda%s",bMDPformat ? " = " : ":");
         for(i=0; i<ir->n_flambda; i++)
         {
             fprintf(fp,"  %10g",ir->flambda[i]);
         }
         fprintf(fp,"\n");
     }
-    PR("sc_alpha",ir->sc_alpha);
-    PI("sc_power",ir->sc_power);
-    PR("sc_sigma",ir->sc_sigma);
-    PR("sc_sigma_min",ir->sc_sigma_min);
+    PR("sc-alpha",ir->sc_alpha);
+    PI("sc-power",ir->sc_power);
+    PR("sc-sigma",ir->sc_sigma);
+    PR("sc-sigma-min",ir->sc_sigma_min);
     PI("nstdhdl", ir->nstdhdl);
-    PS("separate_dhdl_file", SEPDHDLFILETYPE(ir->separate_dhdl_file));
-    PS("dhdl_derivatives", DHDLDERIVATIVESTYPE(ir->dhdl_derivatives));
-    PI("dh_hist_size", ir->dh_hist_size);
-    PD("dh_hist_spacing", ir->dh_hist_spacing);
+    PS("separate-dhdl-file", SEPDHDLFILETYPE(ir->separate_dhdl_file));
+    PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(ir->dhdl_derivatives));
+    PI("dh-hist-size", ir->dh_hist_size);
+    PD("dh-hist-spacing", ir->dh_hist_spacing);
 
     PI("nwall",ir->nwall);
-    PS("wall_type",EWALLTYPE(ir->wall_type));
-    PI("wall_atomtype[0]",ir->wall_atomtype[0]);
-    PI("wall_atomtype[1]",ir->wall_atomtype[1]);
-    PR("wall_density[0]",ir->wall_density[0]);
-    PR("wall_density[1]",ir->wall_density[1]);
-    PR("wall_ewald_zfac",ir->wall_ewald_zfac);
+    PS("wall-type",EWALLTYPE(ir->wall_type));
+    PI("wall-atomtype[0]",ir->wall_atomtype[0]);
+    PI("wall-atomtype[1]",ir->wall_atomtype[1]);
+    PR("wall-density[0]",ir->wall_density[0]);
+    PR("wall-density[1]",ir->wall_density[1]);
+    PR("wall-ewald-zfac",ir->wall_ewald_zfac);
 
     PS("pull",EPULLTYPE(ir->ePull));
     if (ir->ePull != epullNO)
       pr_pull(fp,indent,ir->pull);
+    
+    PS("rotation",BOOL(ir->bRot));
+    if (ir->bRot)
+      pr_rot(fp,indent,ir->rot);
 
     PS("disre",EDISRETYPE(ir->eDisre));
-    PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
-    PS("disre_mixed",BOOL(ir->bDisreMixed));
-    PR("dr_fc",ir->dr_fc);
-    PR("dr_tau",ir->dr_tau);
+    PS("disre-weighting",EDISREWEIGHTING(ir->eDisreWeighting));
+    PS("disre-mixed",BOOL(ir->bDisreMixed));
+    PR("dr-fc",ir->dr_fc);
+    PR("dr-tau",ir->dr_tau);
     PR("nstdisreout",ir->nstdisreout);
-    PR("orires_fc",ir->orires_fc);
-    PR("orires_tau",ir->orires_tau);
+    PR("orires-fc",ir->orires_fc);
+    PR("orires-tau",ir->orires_tau);
     PR("nstorireout",ir->nstorireout);
 
     PR("dihre-fc",ir->dihre_fc);
     
-    PR("em_stepsize",ir->em_stepsize);
-    PR("em_tol",ir->em_tol);
+    PR("em-stepsize",ir->em_stepsize);
+    PR("em-tol",ir->em_tol);
     PI("niter",ir->niter);
-    PR("fc_stepsize",ir->fc_stepsize);
+    PR("fc-stepsize",ir->fc_stepsize);
     PI("nstcgsteep",ir->nstcgsteep);
     PI("nbfgscorr",ir->nbfgscorr);
 
     PS("ConstAlg",ECONSTRTYPE(ir->eConstrAlg));
-    PR("shake_tol",ir->shake_tol);
-    PI("lincs_order",ir->nProjOrder);
-    PR("lincs_warnangle",ir->LincsWarnAngle);
-    PI("lincs_iter",ir->nLincsIter);
-    PR("bd_fric",ir->bd_fric);
-    PI("ld_seed",ir->ld_seed);
-    PR("cos_accel",ir->cos_accel);
+    PR("shake-tol",ir->shake_tol);
+    PI("lincs-order",ir->nProjOrder);
+    PR("lincs-warnangle",ir->LincsWarnAngle);
+    PI("lincs-iter",ir->nLincsIter);
+    PR("bd-fric",ir->bd_fric);
+    PI("ld-seed",ir->ld_seed);
+    PR("cos-accel",ir->cos_accel);
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
+
+    PS("adress",BOOL(ir->bAdress));
+    if (ir->bAdress){
+        PS("adress_type",EADRESSTYPE(ir->adress->type));
+        PR("adress_const_wf",ir->adress->const_wf);
+        PR("adress_ex_width",ir->adress->ex_width);
+        PR("adress_hy_width",ir->adress->hy_width);
+        PS("adress_interface_correction",EADRESSICTYPE(ir->adress->icor));
+        PS("adress_site",EADRESSSITETYPE(ir->adress->site));
+        PR("adress_ex_force_cap",ir->adress->ex_forcecap);
+        PS("adress_do_hybridpairs", BOOL(ir->adress->do_hybridpairs));
+
+        pr_rvec(fp,indent,"adress_reference_coords",ir->adress->refs,DIM,TRUE);
+    }
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);
@@ -688,7 +738,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("QMconstraints",ir->QMconstraints);
     PI("QMMMscheme",ir->QMMMscheme);
     PR("scalefactor",ir->scalefactor);
-    pr_qm_opts(fp,indent,"qm_opts",&(ir->opts));
+    pr_qm_opts(fp,indent,"qm-opts",&(ir->opts));
   }
 }
 #undef PS
@@ -721,6 +771,11 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"r1e=%15.8e, r1e=%15.8e, r3e=%15.8e, krt=%15.8e\n",
 	    iparams->cross_ba.r1e,iparams->cross_ba.r2e,
 	    iparams->cross_ba.r3e,iparams->cross_ba.krt);
+    break;
+  case F_LINEAR_ANGLES:
+    fprintf(fp,"klinA=%15.8e, aA=%15.8e, klinB=%15.8e, aB=%15.8e\n",
+            iparams->linangle.klinA,iparams->linangle.aA,
+            iparams->linangle.klinB,iparams->linangle.aB);
     break;
   case F_UREY_BRADLEY:
     fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
@@ -774,6 +829,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_POLARIZATION:
     fprintf(fp,"alpha=%15.8e\n",iparams->polarize.alpha);
+    break;
+  case F_ANHARM_POL:
+    fprintf(fp,"alpha=%15.8e drcut=%15.8e khyp=%15.8e\n",
+            iparams->anharm_polarize.alpha,
+            iparams->anharm_polarize.drcut,
+            iparams->anharm_polarize.khyp);
     break;
   case F_THOLE_POL:
     fprintf(fp,"a=%15.8e, alpha1=%15.8e, alpha2=%15.8e, rfac=%15.8e\n",

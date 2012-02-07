@@ -547,7 +547,17 @@ static void push_bondtype(t_params *       bt,
         memcpy(bt->param[bt->nr].c,  b->c,sizeof(b->c));
         memcpy(bt->param[bt->nr].a,  b->a,sizeof(b->a));
         memcpy(bt->param[bt->nr+1].c,b->c,sizeof(b->c));
-        
+
+        /* The definitions of linear angles depend on the order of atoms,
+         * that means that for atoms i-j-k, with certain parameter a, the
+         * corresponding k-j-i angle will have parameter 1-a.
+         */        
+        if (ftype == F_LINEAR_ANGLES) 
+        {
+            bt->param[bt->nr+1].c[0] = 1-bt->param[bt->nr+1].c[0];
+            bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
+        }
+                
         for (j=0; (j < nral); j++) 
 		{
             bt->param[bt->nr+1].a[j] = b->a[nral-1-j];

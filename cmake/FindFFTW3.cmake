@@ -11,7 +11,7 @@ if (FFTW3_INCLUDE_DIR AND FFTW3_LIBRARIES)
 endif (FFTW3_INCLUDE_DIR AND FFTW3_LIBRARIES)
 
 find_path (FFTW3_INCLUDE_DIR fftw3.h
-		CACHE STRING "Path to headers for double precision FFTW3")
+                CACHE STRING "Path to headers for double precision FFTW3")
 
 find_library (FFTW3_LIBRARIES 
                 NAMES fftw3

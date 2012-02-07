@@ -77,6 +77,7 @@
 #include "tpxio.h"
 #include "txtdump.h"
 #include "gmx_omp_nthreads.h"
+#include "pull_rotation.h"
 
 #include "md_openmm.h"
 
@@ -269,7 +270,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
 
 
 /* Get the number of threads to use for thread-MPI based on how many
- * there were requested, which algorithms we're using,
+ * were requested, which algorithms we're using,
  * and how many particles there are.
  */
 static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
@@ -388,9 +389,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed=NULL;
     t_commrec   *cr_old=cr; 
-    int         nthreads_mpi;
-    int         nthreads_pp;
-    int         nthreads_pme;
+    int         nthreads_mpi=1;
+    int         nthreads_pme=1;
+    int         nthreads_pp=1;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -717,6 +718,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
+                      opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
                       nbpu_opt,
@@ -724,7 +726,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-          "nofile","nofile","nofile",FALSE,pforce);
+          "nofile","nofile","nofile","nofile",FALSE,pforce);
           */        
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 
@@ -803,7 +805,16 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         snew(pmedata,1);
     }
 
-    //set CPU affinity
+        /* Set CPU affinity. Can be important for performance.
+           On some systems (e.g. Cray) CPU Affinity is set by default.
+           But default assigning doesn't work (well) with only some ranks
+           having threads. This causes very low performance.
+           External tools have cumbersome syntax for setting affinity
+           in the case that only some ranks have threads.
+           Thus it is important that GROMACS sets the affinity internally at
+           if only PME is using threads.
+        */
+
 #ifdef GMX_OPENMP
 #ifdef __linux
     if (getenv("GMX_NO_THREAD_PINNING") == NULL)
@@ -821,7 +832,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifdef GMX_LIB_MPI
         {
             MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_host_num(),gmx_node_rank(),&comm_intra);
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
 
             MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
             core -= local_nthreads; //make exclusive scan
@@ -892,6 +903,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
+        
+        if (inputrec->bRot)
+        {
+           /* Initialize enforced rotation code */
+           init_rot(fplog,inputrec,nfile,fnm,cr,state->x,state->box,mtop,oenv,
+                    bVerbose,Flags);
+        }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
 
@@ -923,6 +941,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         {
             finish_pull(fplog,inputrec->pull);
         }
+        
+        if (inputrec->bRot)
+        {
+            finish_rot(fplog,inputrec->rot);
+        }
+
     } 
     else 
     {
