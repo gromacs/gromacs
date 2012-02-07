@@ -51,7 +51,7 @@ files.
 
 /* for now we just do sched_yield(). It's in POSIX. */
 /* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
+#define TMPI_YIELD_WAIT_DATA int dummy
 /* the initialization  associated with waiting. */
 #define TMPI_YIELD_WAIT_DATA_INIT(data)
 
