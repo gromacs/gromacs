@@ -390,7 +390,7 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
   {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
-	    nodetime/omp_nth_pp, realtime, 100.0*nodetime/realtime/omp_nth_pp);
+	    nodetime, realtime, 100.0*nodetime/realtime);
     if (nodetime > 60) 
     {
       fprintf(out,"%12s %10s","","");
