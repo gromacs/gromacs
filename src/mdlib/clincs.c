@@ -1301,7 +1301,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             int nth,th;
 
             /* do_lincs can run on any number of threads */
-            nth = gmx_omp_get_lincs_nthreads();
+            nth = gmx_omp_nthreads_get(emntLincs);
             if (debug)
             {
                 fprintf(debug,"LINCS: using %d threads\n",nth);

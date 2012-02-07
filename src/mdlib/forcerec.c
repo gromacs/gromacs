@@ -1395,7 +1395,7 @@ static void init_forcerec_f_threads(t_forcerec *fr,int grpp_nener)
 {
     int t,i;
 
-    fr->nthreads = gmx_omp_get_bonded_nthreads();
+    fr->nthreads = gmx_omp_nthreads_get(emntBonded);
 
     snew(fr->f_t,fr->nthreads);
     /* Thread 0 uses the global force and energy arrays */

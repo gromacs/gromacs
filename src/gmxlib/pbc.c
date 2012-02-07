@@ -1194,7 +1194,7 @@ int *compact_unitcell_edges()
 void put_atoms_in_box_omp(int ePBC,matrix box,int natoms,rvec x[])
 {
     int t, nth;
-    nth = gmx_omp_get_default_nthreads();
+    nth = gmx_omp_nthreads_get(emntDefault);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for(t=0; t<nth; t++)

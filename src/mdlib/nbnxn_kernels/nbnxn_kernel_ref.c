@@ -39,6 +39,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "force.h"
+#include "gmx_omp_nthreads.h"
 #include "nbnxn_kernel_ref.h"
 
 /* Analytical reaction-field kernels */
@@ -156,7 +157,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         coult = coultTAB;
     }
 
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
     for(nb=0; nb<nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;

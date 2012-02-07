@@ -36,36 +36,22 @@
 #ifndef GMX_OMP_NTHREADS
 #define GMX_OMP_NTHREADS
 
+/*! Enum values corresponding to multithreaded algorithmic modules. */
+typedef enum module_nth
+{
+    /* Default is meant to be used in OMP regions outside the named
+     * algorithmic modules listed below. */
+    emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
+    emntBonded, emntPME,  emntUpdate, emntLincs, emntSettle,
+    emntNR
+} module_nth_t;
+
 /*! Initializes the per-module thread count. It is compatible with tMPI, 
  *  thread-safety is ensured (for the features available with tMPI). 
- *  This function should only be caled once during the execution. */
-void init_module_nthreads(t_commrec *cr);
+ *  This function should caled only once during the initialization of mdrun. */
+void gmx_omp_nthreads_init(t_commrec *cr);
 
-/*! Returns the default number of threads. */
-int gmx_omp_get_default_nthreads();
-
-/*! Returns the number of threads for domain decomposition. */
-int gmx_omp_get_domdec_nthreads();
-
-/*! Returns the number of threads for pair search. */
-int gmx_omp_get_pairsearch_nthreads();
-
-/*! Returns the number of threads for non-bonded force calculations. */
-int gmx_omp_get_nonbonded_nthreads();
-
-/*! Returns the number of threads for bonded force calculations. */
-int gmx_omp_get_bonded_nthreads();
-
-/*! Returns the number of threads for PME. */
-int gmx_omp_get_pme_nthreads();
-
-/*! Returns the number of threads for update. */
-int gmx_omp_get_update_nthreads();
-
-/*! Returns the number of threads for LINCS. */
-int gmx_omp_get_lincs_nthreads();
-
-/*! Returns the number of threads for SETTLE. */
-int gmx_omp_get_settle_nthreads();
+/*! Returns the number of threads to be used in the given module m. */
+int gmx_omp_nthreads_get(int mod);
 
 #endif /* GMX_OMP_NTHREADS */

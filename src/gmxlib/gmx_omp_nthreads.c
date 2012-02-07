@@ -41,109 +41,190 @@
 #endif
 
 #include "typedefs.h"
+#include "macros.h"
+#include "gmx_omp_nthreads.h"
 
 #ifdef GMX_OPENMP
 #include <omp.h>
 #endif
 
-/*! Structure which holds the number of threads for each OpenMP multi-threaded
- *  algorithmic part/module of mdrun. */
+/*! Structure with the number of threads for each OpenMP multi-threaded
+ *  algorithmic module in mdrun. */
 typedef struct 
 {
-    int domdec;
-    int pairsearch;
-    int nonbonded;
-    int bonded;
-    int pme;
-    int update;
-    int lincs;
-    int settle;
-    int gmxdefault; /* it is meant to be used in omp regions outside the
-                       algorithmic parts listed below */
-    gmx_bool initialized;
+    int nth_pp;             /*! Global number of threads per MPI process/tMPI thread. */
+    int nth[emntNR];        /*! Number of threads for each module, indexed with module_nth_t */
+    gmx_bool initialized;   /*! TRUE if initialized. */
 } omp_module_nthreads_t;
+
+/*! Names of environment variables to set the per module number of threads.
+ *
+ *  Indexed with the values of module_nth_t.
+ * */
+static const char *modth_env_var[emntNR] =
+{ 
+    "GMX_DEFAULT_NUM_THREADS should never be set",
+    "GMX_DOMDEC_NUM_THREADS", "GMX_PAIRSEARCH_NUM_THREADS",
+    "GMX_NONBONDED_NUM_THREADS", "GMX_BONDED_NUM_THREADS",
+    "GMX_PME_NUM_THREADS", "GMX_UPDATE_NUM_THREADS",
+    "GMX_LINCS_NUM_THREADS", "GMX_SETTLE_NUM_THREADS"
+};
+
 
 /*! Number of threads for each algorithmic module.
  *
- * All fields are initialized to 0 which should result in erros if 
- * the init call is omitted */
-static omp_module_nthreads_t mod_nth = {0, 0, 0, 0, 0, 0, 0, 0, FALSE};
+ *  File-scope global variable that gets set once in \init_module_nthreads
+ *  and queried via gmx_omp_nthreads_get.
+ *
+ *  All fields are initialized to 0 which should result in erros if
+ *  the init call is omitted
+ * */
+static omp_module_nthreads_t modth = { 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
-/*! Enum values corresponding to multithreaded algorithmic modules. */
-enum 
-{ 
-    emodGMXDefault, emodDomdec, emodPairsearch, emodNonbonded,
-    emodBonded, emodPME,  emodUpdate, emodLincs, emodSettle,
-    emodNR 
-};
 
-/*! Names of environment variables through which the number of threads of 
- *  the corresponding multithreaded algorithmic modules can be set from the 
- *  command line. */
-static const char *mod_nth_env_var[emodNR] = 
-{ 
-    "GMX_OMP_DEFAULT_NTHREADS should never be set",  /* as it has to be = OMP_NUM_THREADS */
-    "GMX_OMP_DOMDEC_NTHREADS", "GMX_OMP_PAIRSEARCH_NTHREADS", "GMX_OMP_NONBONDED_NTHREADS",
-    "GMX_OMP_BONDED_NTHREADS", "GMX_OMP_PME_NTHREADS",
-    "GMX_OMP_UPDATE_NTHREADS", "GMX_OMP_LINCS_NTHREADS", "GMX_OMP_SETTLE_NTHREADS"
-};
-
-/*! Determine the number of threads for the given module. The \module variable 
- *  takes values form the above enum and maps these to the corrreponding value 
- *  in mod_nth_env_var. */
-static int pick_module_nthreads(int module)
+/*! Determine the number of threads for module \mod.
+ *
+ *  \mod takes values form the above enum and maps these to the corresponding
+ *  value in modth_env_var. */
+static int pick_module_nthreads(int mod)
 {
     char *env;
-    int  nth, omp_maxth;
+    int  nth;
     char sbuf[STRLEN];
    
-    /* set max nthreads to 1 if not using OpenMP */
-#ifdef GMX_OPENMP
-    omp_maxth = omp_get_max_threads();
-#else
-    omp_maxth = 1;
-#endif
+    /* the default should never be set through a GMX_OMP_ environment variable,
+     * as it's always equal with nth_pp */
+    if (mod == emntDefault)
+    {
+        return modth.nth[emntDefault];
+    }
 
-    /* the default should never be set through a GMX_OMP_ environment variable */
-    if (module != emodGMXDefault && (env = getenv(mod_nth_env_var[module])) != NULL)
+    if ((env = getenv(modth_env_var[mod])) != NULL)
     {
 #ifndef GMX_OPENMP
-        sprintf(sbuf, "mdrun compiled without OpenMP, but %s is set!\n");
+        sprintf(sbuf, "%s is set, but mdrun is compiled without OpenMP!\n");
         gmx_warning(sbuf);
 #endif
         sscanf(env, "%d", &nth);
+
+        fprintf(stderr, "\n%s=%d set, using this value instead of the default %d\n",
+                modth_env_var[mod], nth, modth.nth_pp);
     }
     else 
     {
-        nth = omp_maxth;
+        nth = modth.nth_pp;
     }
 
     return nth;
 }
 
-void init_module_nthreads(t_commrec *cr)
+void gmx_omp_nthreads_init(t_commrec *cr)
 {
-    /* return if struct has already been initialized */
-    if (mod_nth.initialized)
+    int  nth, omp_maxth, gmx_maxth, nppn;
+    char *env;
+
+    /* just return if it has already been initialized */
+    if (modth.initialized)
     {
         return;
     }
 
+    /* Set the number of threads to:
+     * - 1 if not compiled with OpenMP on
+     * - OMP_NUM_THREADS if the env. var is set (overrides everything!);
+     * - take the max number of available or permitted (through the
+     *   GMX_MAX_THREADS env var) threads and distribute them on the
+     *   processes/tMPI threads.
+     * */
+#ifndef GMX_OPENMP
+    nth = 1;
+#else
+    /* TODO OMP_NUM_THREADS and GMX_MAX_THREADS should be read only on the
+     * master node and bcasted to the rest of the nodes */
+    if (getenv("OMP_NUM_THREADS") != NULL)
+    {
+        nth = omp_get_max_threads();
+    }
+    else
+    {
+        /* max available threads per node */
+        omp_maxth = omp_get_max_threads();
+        /* max permitted threads per node set through env var */
+        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
+        {
+            sscanf(env, "%d",&gmx_maxth);
+            nth = min(gmx_maxth, omp_maxth);
+
+            if (nth != gmx_maxth && MASTER(cr))
+            {
+                fprintf(stderr, "\nOverriding GMX_MAX_THREADS=%d, "
+                        "the maximum number of available threads is %d\n\n",
+                         gmx_maxth, nth);
+            }
+        }
+        else
+        {
+            nth = omp_maxth;
+        }
+
+        /* get the number of processes per node */
+#ifdef GMX_THREADS
+        nppn = cr->nnodes;
+#else
+#ifdef GMX_MPI
+        /* FIXME: this doesn't work with separate PME nodes */
+        MPI_Comm c_intra;
+        MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num() , gmx_node_rank(), &c_intra);
+        MPI_Comm_size(c_intra, &nppn);
+        MPI_Comm_free(&c_intra);
+#else
+        /* neither MPI nor tMPI */
+        nppn = 1;
+#endif /* GMX_MPI */
+#endif /* GMX_THREADS */
+
+        /* divide the threads within the MPI processes/tMPI threads */
+        nth /= nppn;
+
+        /* set the number of threads globally*/
+        omp_set_num_threads(nth);
+    }
+#endif
+
+    /* now we have the dafult, set it */
+    modth.nth_pp = modth.nth[emntDefault] = nth;
+
+    if (PAR(cr))
+    {
+        if (MASTER(cr))
+        {
+#ifdef GMX_THREADS
+            fprintf(stderr, "Using %d OpenMP threads per tMPI thread\n", modth.nth_pp);
+#else
+            fprintf(stderr, "Using %d OpenMP threads per MPI process\n", modth.nth_pp);
+#endif /* GMX_THREADS */
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Using %d OpenMP threads\n", modth.nth_pp);
+    }
+
+    /* now set the per-module values */
 #ifdef GMX_THREADS
     /* This is required for tMPI thread-safety. It is not thread-safe with
      * multiple simulations, but that's anyway not supported by tMPI. */
     if (SIMMASTER(cr))
 #endif        
     {
-        mod_nth.gmxdefault  = pick_module_nthreads(emodGMXDefault);
-        mod_nth.domdec      = pick_module_nthreads(emodDomdec);
-        mod_nth.pairsearch  = pick_module_nthreads(emodPairsearch);
-        mod_nth.nonbonded   = pick_module_nthreads(emodNonbonded);
-        mod_nth.bonded      = pick_module_nthreads(emodBonded);
-        mod_nth.pme         = pick_module_nthreads(emodPME);
-        mod_nth.update      = pick_module_nthreads(emodUpdate);
-        mod_nth.lincs       = pick_module_nthreads(emodLincs);
-        mod_nth.settle      = pick_module_nthreads(emodSettle);
+        modth.nth[emntDomdec]     = pick_module_nthreads(emntDomdec);
+        modth.nth[emntPairsearch] = pick_module_nthreads(emntPairsearch);
+        modth.nth[emntNonbonded]  = pick_module_nthreads(emntNonbonded);
+        modth.nth[emntBonded]     = pick_module_nthreads(emntBonded);
+        modth.nth[emntPME]        = pick_module_nthreads(emntPME);
+        modth.nth[emntUpdate]     = pick_module_nthreads(emntUpdate);
+        modth.nth[emntLincs]      = pick_module_nthreads(emntLincs);
+        modth.nth[emntSettle]     = pick_module_nthreads(emntSettle);
     }
 #ifdef GMX_THREADS
     if (PAR(cr))
@@ -152,50 +233,18 @@ void init_module_nthreads(t_commrec *cr)
     }
 #endif
 
-    mod_nth.initialized = TRUE;
+    modth.initialized = TRUE;
 }
 
-int gmx_omp_get_default_nthreads()
+int gmx_omp_nthreads_get(int mod)
 {
-    return mod_nth.gmxdefault;
-}
-
-int gmx_omp_get_domdec_nthreads()
-{
-    return mod_nth.domdec;
-}
-
-int gmx_omp_get_pairsearch_nthreads()
-{
-    return mod_nth.pairsearch;
-}
-
-int gmx_omp_get_nonbonded_nthreads()
-{
-    return mod_nth.nonbonded;
-}
-
-int gmx_omp_get_bonded_nthreads()
-{
-    return mod_nth.bonded;
-}
-
-int gmx_omp_get_pme_nthreads()
-{
-    return mod_nth.pme;
-}
-
-int gmx_omp_get_update_nthreads()
-{
-    return mod_nth.update;
-}
-
-int gmx_omp_get_lincs_nthreads()
-{
-    return mod_nth.lincs;
-}
-
-int gmx_omp_get_settle_nthreads()
-{
-    return mod_nth.settle;
+    if (mod < 0 || mod >= emntNR)
+    {
+        /* invalid module queried */
+        return -1;
+    }
+    else
+    {
+        return modth.nth[mod];
+    }
 }

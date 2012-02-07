@@ -121,7 +121,7 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
       ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
-    nthread = gmx_omp_get_update_nthreads();
+    nthread = gmx_omp_nthreads_get(emntUpdate);
 
     snew(ekind->ekin_work_alloc,nthread);
     snew(ekind->ekin_work,nthread);

@@ -59,7 +59,7 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
 
     mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_get_default_nthreads())
+                         num_threads(gmx_omp_nthreads_get(emntDefault))
     for(i=start; i<end; i++)
     {
         mu_x += q[i]*x[i][XX];
@@ -79,7 +79,7 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     {
         mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_get_default_nthreads())
+                         num_threads(gmx_omp_nthreads_get(emntDefault))
         for(i=start; i<end; i++)
         {
              mu_x += qB[i]*x[i][XX];

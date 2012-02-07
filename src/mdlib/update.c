@@ -826,7 +826,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   }
   ekind->dekindl_old = ekind->dekindl;
   
-  nthread = gmx_omp_get_update_nthreads();
+  nthread = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
@@ -1476,7 +1476,7 @@ void update_constraints(FILE         *fplog,
         else 
         {
             copy_rvecn_omp(upd->xp,state->x,start,nrend,
-                           gmx_omp_get_update_nthreads());
+                           gmx_omp_nthreads_get(emntUpdate));
         }
         
         dump_it_all(fplog,"After unshift",
@@ -1687,7 +1687,7 @@ void update_coords(FILE         *fplog,
     }
     else
     {
-        nth = gmx_omp_get_update_nthreads();
+        nth = gmx_omp_nthreads_get(emntUpdate);
     }
 
 # pragma omp parallel for num_threads(nth) schedule(static)

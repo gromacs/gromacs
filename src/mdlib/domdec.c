@@ -4520,7 +4520,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     
     cgindex = dd->cgindex;
 
-    nthread = gmx_omp_get_domdec_nthreads();
+    nthread = gmx_omp_nthreads_get(emntDomdec);
 
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.

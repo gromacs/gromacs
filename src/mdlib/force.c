@@ -121,7 +121,7 @@ static void reduce_thread_forces(int n,rvec *f,
     int t,i;
 
     /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(gmx_omp_get_bonded_nthreads()) private(t) schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntBonded)) private(t) schedule(static)
     for(i=0; i<n; i++)
     {
         for(t=1; t<nthreads; t++)
@@ -444,7 +444,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     gmx_fatal(FARGS,"TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
                 }
 
-                nthreads = gmx_omp_get_bonded_nthreads();
+                nthreads = gmx_omp_nthreads_get(emntBonded);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for(t=0; t<nthreads; t++)
                 {

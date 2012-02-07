@@ -657,7 +657,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,gmx_bool bFE,
         rt->mbi[mb].type       = mtop->molblock[mb].type;
     }
 
-    rt->nthread = gmx_omp_get_domdec_nthreads();
+    rt->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(rt->idef_thread,rt->nthread);
     if (vsite_pbc_molt != NULL)
     {

@@ -1623,7 +1623,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     int  nthread,thread;
     int  *cxy_na,cxy_na_i;
 
-    nthread = gmx_omp_get_pairsearch_nthreads();
+    nthread = gmx_omp_nthreads_get(emntPairsearch);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
@@ -2039,7 +2039,7 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#pragma omp parallel for num_threads(gmx_omp_get_pairsearch_nthreads()) schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
     for(sc=0; sc<grid->nc; sc++)
     {
         int c,tx,na;
@@ -2655,7 +2655,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     nbl_list->simple    = simple;
     nbl_list->combined  = combined;
 
-    nbl_list->nnbl = gmx_omp_get_nonbonded_nthreads();
+    nbl_list->nnbl = gmx_omp_nthreads_get(emntNonbonded);
 
     snew(nbl_list->nbl,nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
@@ -4269,7 +4269,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
             nblc->nsci++;
         }
 
-#pragma omp parallel num_threads(gmx_omp_get_pairsearch_nthreads())
+#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntPairsearch))
         {
 #pragma omp for schedule(static) nowait
             for(j4=0; j4<nbli->ncj4; j4++)
@@ -5606,7 +5606,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     {
         grid = &nbs->grid[g];
 
-#pragma omp parallel for num_threads(gmx_omp_get_pairsearch_nthreads()) schedule(static)
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
         for(cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
         {
             int na,ash,na_fill;
@@ -5741,7 +5741,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
         break;
     }
 
-    nth = gmx_omp_get_nonbonded_nthreads();
+    nth = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for num_threads(nth) schedule(static)
     for(th=0; th<nth; th++)
     {

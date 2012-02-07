@@ -285,13 +285,13 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
     /* determine # of hardware threads. */
     if (nthreads_requested < 1)
     {
-        if ((env = getenv("GMX_MAX_THREADS")) != NULL)
+        if ((env = getenv("GMX_MAX_MPI_THREADS")) != NULL)
         {
             nthreads = 0;
             sscanf(env,"%d",&nthreads);
             if (nthreads < 1)
             {
-                gmx_fatal(FARGS,"GMX_MAX_THREADS (%d) should be larger than 0",
+                gmx_fatal(FARGS,"GMX_MAX_MPI_THREADS (%d) should be larger than 0",
                           nthreads);
             }
         }
@@ -565,33 +565,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
     }
 
-    /* override nsteps if defined on the command line */
-    if (nsteps_cmdline >= -1)
-    {
-        char stmp[STRLEN];
-
-        inputrec->nsteps = nsteps_cmdline;
-        if (EI_DYNAMICS(inputrec->eI))
-        {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %f ps",
-                    nsteps_cmdline, nsteps_cmdline*inputrec->delta_t);
-        }
-        else
-        {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
-                    nsteps_cmdline);
-        }
-
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "\n%s\n\n", stmp);
-        }
-        if (fplog)
-        {
-            fprintf(fplog, "\n%s\n", stmp);
-        }
-    }
-
     if (((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
 #ifdef GMX_THREADS
         /* With thread MPI only the master node/thread exists in mdrun.c,
@@ -666,7 +639,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    init_module_nthreads(cr);
+    gmx_omp_nthreads_init(cr);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 
@@ -675,8 +648,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     /* nthreads_pp is only used for pinning threads.
      * This is a temporary solution.
      */
-    nthreads_pp  = gmx_omp_get_nonbonded_nthreads();
-    nthreads_pme = gmx_omp_get_pme_nthreads();
+    nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
+    nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
     wcycle = wallcycle_init(fplog,resetstep,cr,nthreads_pp,nthreads_pme);
 
@@ -687,6 +660,33 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         reset_counters = wcycle_get_reset_counters(wcycle);
         gmx_bcast_sim(sizeof(reset_counters),&reset_counters,cr);
         wcycle_set_reset_counters(wcycle, reset_counters);
+    }
+
+    /* override nsteps if defined on the command line */
+    if (nsteps_cmdline >= -1)
+    {
+        char stmp[STRLEN];
+
+        inputrec->nsteps = nsteps_cmdline;
+        if (EI_DYNAMICS(inputrec->eI))
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %.3f ps",
+                    nsteps_cmdline, nsteps_cmdline*inputrec->delta_t);
+        }
+        else
+        {
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
+                    nsteps_cmdline);
+        }
+
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "\n%s\n\n", stmp);
+        }
+        if (fplog)
+        {
+            fprintf(fplog, "\n%s\n", stmp);
+        }
     }
 
 
@@ -823,7 +823,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            local_nthreads = gmx_omp_get_nonbonded_nthreads();
+            local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
         }
         else
         {

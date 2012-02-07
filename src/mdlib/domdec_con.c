@@ -1341,7 +1341,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
         dc->ga2la[a] = -1;
     }
 
-    dc->nthread = gmx_omp_get_domdec_nthreads();
+    dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(dc->ils,dc->nthread);
 
     dd->constraint_comm = specat_comm_init(dc->nthread);
