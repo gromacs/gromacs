@@ -532,7 +532,7 @@ void reset_all_counters(FILE *fplog,t_commrec *cr,
     char buf[STRLEN],sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
-    sprintf(buf,"Step %s: resetting all time and cycle counters\n",
+    sprintf(buf,"step %s: resetting all time and cycle counters\n",
             gmx_step_str(step,sbuf));
     md_print_warning(cr,fplog,buf);
 

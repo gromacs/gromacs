@@ -566,9 +566,6 @@ int do_timed_memtest(int dev_id, int time_constr)
     return res;
 }
 
-/* TODO: 
-        - fix multinode logging
- */
 int init_gpu(FILE *fplog, int dev_id)
 {
     cudaDeviceProp  dev_prop;
@@ -577,8 +574,7 @@ int init_gpu(FILE *fplog, int dev_id)
     {
         if (fplog)
         {
-            fprintf(fplog, "Failed to initilized initilized CUDA device #%d.\n",
-                    dev_id);
+            fprintf(fplog, "Failed to initilize CUDA device #%d.\n", dev_id);
         }
 
         return -1;
@@ -587,8 +583,7 @@ int init_gpu(FILE *fplog, int dev_id)
     {
         if (fplog)
         {
-            fprintf(fplog, "Succesfully initilized CUDA device #%d, %s.\n",
-                    dev_id, dev_prop.name);
+            fprintf(fplog, "Using CUDA device #%d, %s.\n", dev_id, dev_prop.name);
         }
 
         return 0;
@@ -596,9 +591,6 @@ int init_gpu(FILE *fplog, int dev_id)
     
 }
 
-/* TODO: 
-        - fix multinode logging
-*/
 int uninit_gpu(FILE *fplog, int dev_id)
 {
     cudaError_t err;
@@ -613,9 +605,9 @@ int uninit_gpu(FILE *fplog, int dev_id)
         }
         return -1;
     }
-    if (fplog)
+    if (debug)
     {
-        fprintf(fplog, "Succesfully cleaned up CUDA runtime.\n");
+        fprintf(debug, "Succesfully cleaned up CUDA runtime.\n");
     }
     return 0;
 }
