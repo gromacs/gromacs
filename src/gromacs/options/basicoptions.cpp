@@ -168,28 +168,18 @@ AbstractOptionStorage *IntegerOption::createDefaultStorage(Options *options) con
  */
 
 DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings, Options *options)
-    : MyBase(settings, options), _info(this), _bTime(settings._bTime)
+    : MyBase(settings, options), info_(this), bTime_(settings._bTime), factor_(1.0)
 {
-    if (_bTime)
-    {
-        options->globalProperties().request(eogpTimeScaleFactor);
-    }
 }
 
 const char *DoubleOptionStorage::typeString() const
 {
-    return hasFlag(efVector) ? "vector" : (_bTime ? "time" : "double");
+    return hasFlag(efVector) ? "vector" : (isTime() ? "time" : "double");
 }
 
 std::string DoubleOptionStorage::formatValue(int i) const
 {
-    double value = values()[i];
-    if (_bTime)
-    {
-        double factor = hostOptions().globalProperties().timeScaleFactor();
-        value /= factor;
-    }
-    return formatString("%g", value);
+    return formatString("%g", values()[i] / factor_);
 }
 
 void DoubleOptionStorage::convertValue(const std::string &value)
@@ -201,7 +191,7 @@ void DoubleOptionStorage::convertValue(const std::string &value)
     {
         GMX_THROW(InvalidInputError("Invalid value: " + value));
     }
-    addValue(dval);
+    addValue(dval * factor_);
 }
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
@@ -214,16 +204,22 @@ void DoubleOptionStorage::processSetValues(ValueList *values)
 
 void DoubleOptionStorage::processAll()
 {
-    if (_bTime)
+}
+
+void DoubleOptionStorage::setScaleFactor(double factor)
+{
+    GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
+    if (!hasFlag(efHasDefaultValue))
     {
-        double factor = hostOptions().globalProperties().timeScaleFactor();
+        double scale = factor / factor_;
         ValueList::iterator i;
         for (i = values().begin(); i != values().end(); ++i)
         {
-            (*i) *= factor;
+            (*i) *= scale;
         }
         refreshValues();
     }
+    factor_ = factor;
 }
 
 /********************************************************************
@@ -233,6 +229,26 @@ void DoubleOptionStorage::processAll()
 DoubleOptionInfo::DoubleOptionInfo(DoubleOptionStorage *option)
     : OptionInfo(option)
 {
+}
+
+DoubleOptionStorage &DoubleOptionInfo::option()
+{
+    return static_cast<DoubleOptionStorage &>(OptionInfo::option());
+}
+
+const DoubleOptionStorage &DoubleOptionInfo::option() const
+{
+    return static_cast<const DoubleOptionStorage &>(OptionInfo::option());
+}
+
+bool DoubleOptionInfo::isTime() const
+{
+    return option().isTime();
+}
+
+void DoubleOptionInfo::setScaleFactor(double factor)
+{
+    option().setScaleFactor(factor);
 }
 
 /********************************************************************

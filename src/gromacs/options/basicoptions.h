@@ -150,15 +150,16 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
         //! \copydoc IntegerOption::vector()
         MyClass &vector() { setVector(); return me(); }
         /*! \brief
-         * Sets the option to obey time conversion rules.
+         * Marks this option as providing a time value whose unit can be changed.
          *
-         * For options with this flag, the user can specify a global time unit
-         * using a global option that is added by Options::addDefaultOptions().
-         * For the program, the value is always converted to ps.
-         *
-         * When this flag is specified, the option value is available only
-         * after Options::finish() has been called instead of immediately after
-         * assignment.
+         * By itself, this option does nothing.  It marks the option as a time
+         * value such that TimeUnitManager::scaleTimeOptions() can process it.
+         * In typical cases, Gromacs scales the time options just before
+         * Options::finish() has been called, so the option value is only
+         * available after all option values have been processed.
+         * All values in the program are in ps (including any default value);
+         * user-provided values are scaled according to the time unit set in
+         * TimeUnitManager.
          */
         MyClass &timeValue() { _bTime = true; return me(); }
 

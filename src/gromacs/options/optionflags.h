@@ -57,13 +57,15 @@ enum OptionFlag
 {
     //! %Option has been set.
     efSet                 = 1<<0,
+    //! The current value of the option is a programmatic default value.
+    efHasDefaultValue     = 1<<1,
     /*! \brief
-     * The current value of the option is a default value.
+     * Next assignment to the option clears old values.
      *
-     * This flag is also set when a new option source starts, such that values
+     * This flag is set when a new option source starts, such that values
      * from the new source will overwrite old ones.
      */
-    efHasDefaultValue     = 1<<1,
+    efClearOnNextSet      = 1<<5,
     //! %Option is required to be set.
     efRequired            = 1<<2,
     //! %Option can be specified multiple times.

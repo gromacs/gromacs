@@ -277,11 +277,11 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
     }
     if (!hasFlag(efNoDefaultValue))
     {
+        setFlag(efHasDefaultValue);
         if (settings._defaultValue != NULL)
         {
             _values->clear();
             addValue(*settings._defaultValue);
-            setFlag(efHasDefaultValue);
             // TODO: This is a bit hairy, as it indirectly calls a virtual function.
             commitValues();
         }
@@ -294,13 +294,17 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
             {
                 _values->push_back(_store[i]);
             }
-            setFlag(efHasDefaultValue);
         }
         if (settings._defaultValueIfSet != NULL)
         {
+            if (hasFlag(efMulti))
+            {
+                GMX_THROW(APIError("defaultValueIfSet() is not supported with allowMultiple()"));
+            }
             _defaultValueIfSet.reset(new T(*settings._defaultValueIfSet));
         }
     }
+    setFlag(efClearOnNextSet);
     valueGuard.release();
 }
 
@@ -329,6 +333,11 @@ void OptionStorageTemplate<T>::processSet()
     if (_setValues.empty() && _defaultValueIfSet.get() != NULL)
     {
         addValue(*_defaultValueIfSet);
+        setFlag(efHasDefaultValue);
+    }
+    else
+    {
+        clearFlag(efHasDefaultValue);
     }
     if (!hasFlag(efDontCheckMinimumCount)
         && _setValues.size() < static_cast<size_t>(minValueCount()))
@@ -355,10 +364,10 @@ void OptionStorageTemplate<T>::addValue(const T &value)
 template <typename T>
 void OptionStorageTemplate<T>::commitValues()
 {
-    if (hasFlag(efHasDefaultValue))
+    if (hasFlag(efClearOnNextSet))
     {
         _values->swap(_setValues);
-        clearFlag(efHasDefaultValue);
+        clearFlag(efClearOnNextSet);
     }
     else
     {
