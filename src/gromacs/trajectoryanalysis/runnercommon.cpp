@@ -197,6 +197,9 @@ TrajectoryAnalysisRunnerCommon::initOptions()
     options.addOption(DoubleOption("dt").store(&_impl->_deltaTime).timeValue()
                           .description("Only use frame if t MOD dt == first time (%t)"));
 
+    // Add time unit option.
+    settings._impl->timeUnitManager.addTimeUnitOption(&options, "tu");
+
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
@@ -210,6 +213,13 @@ TrajectoryAnalysisRunnerCommon::initOptions()
     }
 
     return &_impl->_options;
+}
+
+
+void
+TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
+{
+    _impl->_settings._impl->timeUnitManager.scaleTimeOptions(options);
 }
 
 

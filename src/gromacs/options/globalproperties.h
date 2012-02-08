@@ -51,7 +51,6 @@ class Options;
  */
 enum OptionGlobalPropertyId
 {
-    eogpTimeScaleFactor,
     eogpPlotFormat,
 };
 
@@ -84,8 +83,6 @@ class OptionsGlobalProperties
             _usedProperties |= (1<<id);
         }
 
-        //! Returns the scaling factor to get times in ps.
-        double timeScaleFactor() const;
         /*! \brief
          * Returns an output environment structure for interfacing with old
          * code.
@@ -129,7 +126,6 @@ class OptionsGlobalProperties
         void finish();
 
         unsigned long           _usedProperties;
-        int                     _timeUnit;
         int                     _plotFormat;
         output_env_t            _oenv;
 

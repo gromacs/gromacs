@@ -119,17 +119,21 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
         DoubleOptionStorage(const DoubleOption &settings, Options *options);
 
-        virtual OptionInfo &optionInfo() { return _info; }
+        virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const;
         virtual std::string formatValue(int i) const;
+
+        bool isTime() const { return bTime_; }
+        void setScaleFactor(double factor);
 
     private:
         virtual void convertValue(const std::string &value);
         virtual void processSetValues(ValueList *values);
         virtual void processAll();
 
-        DoubleOptionInfo        _info;
-        bool                    _bTime;
+        DoubleOptionInfo        info_;
+        bool                    bTime_;
+        double                  factor_;
 };
 
 /*! \internal \brief
