@@ -788,16 +788,25 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     
   }
 
-  if (ir->bAdress && !EI_SD(ir->eI)){
-       warning_error(wi,"AdresS simulation supports only stochastic dynamics");
-  }
-  if (ir->bAdress && ir->epc != epcNO){
-       warning_error(wi,"AdresS simulation does not support pressure coupling");
-  }
-   if (ir->bAdress && (EEL_PME(ir->coulombtype))){
-       warning_error(wi,"AdresS simulation does not support long-range electrostatics");
-   }
-
+    if (ir->bAdress)
+    {
+        if (ir->cutoff_scheme != ecutsGROUP)
+        {
+            warning_error(wi,"AdresS simulation supports only cutoff-scheme=group");
+        }
+        if (!EI_SD(ir->eI))
+        {
+            warning_error(wi,"AdresS simulation supports only stochastic dynamics");
+        }
+        if (ir->epc != epcNO)
+        {
+            warning_error(wi,"AdresS simulation does not support pressure coupling");
+        }
+        if (EEL_PME(ir->coulombtype))
+        {
+            warning_error(wi,"AdresS simulation does not support long-range electrostatics");
+        }
+    }
 }
 
 int str_nelem(const char *str,int maxptr,char *ptr[])
@@ -999,7 +1008,7 @@ void get_ir(const char *mdparin,const char *mdparout,
 
   /* Neighbor searching */  
   CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
-  CTYPE ("cut-off scheme (old: using charge groups or Verlet: particle based cut-off's)");
+  CTYPE ("cut-off scheme (group: using charge groups, Verlet: particle based cut-off's)");
   EETYPE("cutoff-scheme",     ir->cutoff_scheme,    ecutscheme_names);
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
