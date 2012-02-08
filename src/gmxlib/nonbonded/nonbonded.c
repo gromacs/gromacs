@@ -330,9 +330,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	real *          fshift;
 	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
 	t_nblists       *nblists;
-	gmx_bool            bWater;
-	nb_kernel_t *   kernelptr;
-        nb_adress_kernel_t * adresskernelptr;
+	gmx_bool        bWater;
 	FILE *          fp;
 	int             fac=0;
 	int             nthreads = 1;
@@ -340,6 +338,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	gmx_gbdata_t    gbdata;
+
+        nb_kernel_t         *kernelptr=NULL;
+        nb_adress_kernel_t  *adresskernelptr=NULL;
     
         gmx_bool        bCG; /* for AdresS */
         int             k;/* for AdresS */
@@ -349,7 +350,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
 
     bCG = FALSE;  /* for AdresS */
-    adresskernelptr = NULL;
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.epsilon_r = fr->epsilon_r;
@@ -616,8 +616,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                          skipped*/
                         if (mdatoms->pureex && bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
                         if (mdatoms->purecg && !bCG && nb_kernel_list[nrnb_ind] != NULL) continue;
-                        kernelptr = NULL;
-                        adresskernelptr = NULL;
                     }
 
                     if (fr->adress_type == eAdressOff ||
