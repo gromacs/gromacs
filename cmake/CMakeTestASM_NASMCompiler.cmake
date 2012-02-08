@@ -4,6 +4,6 @@
 # fatal error is set and cmake stops processing commands and will not generate
 # any makefiles or projects.
 
-SET(ASM_DIALECT "-NASM")
+SET(ASM_DIALECT "_NASM")
 INCLUDE(CMakeTestASMCompiler)
 SET(ASM_DIALECT)

@@ -17,8 +17,8 @@ install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
 if(NOT GMX_OPENMM) 
-if(GMX_ASM_USEASM-NASM)
-  enable_language(ASM-NASM)
+if(GMX_ASM_USEASM_NASM)
+  enable_language(ASM_NASM)
   # if NASM is used, we need a special build command for windows...
   FOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
     GET_FILENAME_COMPONENT(FILE_BASE ${SRC} NAME_WE)
@@ -26,12 +26,12 @@ if(GMX_ASM_USEASM-NASM)
 
     ADD_CUSTOM_COMMAND(OUTPUT ${OBJ}
                        MAIN_DEPENDENCY ${SRC}
-                       COMMAND ${CMAKE_ASM-NASM_COMPILER} -f ${CMAKE_ASM-NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
+                       COMMAND ${CMAKE_ASM_NASM_COMPILER} -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
 
     SET(ALL_ASM_OBJS ${ALL_ASM_OBJS} ${OBJ})
   ENDFOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
   set(GMX_SSEKERNEL_ASM_SRC ${ALL_ASM_OBJS})
-else(GMX_ASM_USEASM-NASM)
+else(GMX_ASM_USEASM_NASM)
   enable_language(ASM-ATT)
   SET(CMAKE_ASM-ATT_COMPILER ${CMAKE_C_COMPILER})
   if(GMX_IA32_ASM)
@@ -39,7 +39,7 @@ else(GMX_ASM_USEASM-NASM)
   else()
     set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m64")
   endif()
-endif(GMX_ASM_USEASM-NASM)
+endif(GMX_ASM_USEASM_NASM)
 endif(NOT GMX_OPENMM)
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${GMX_SSEKERNEL_ASM_SRC} ${MDLIB_SOURCES})
