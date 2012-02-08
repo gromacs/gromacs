@@ -93,6 +93,7 @@
 #include "string2.h"
 #include "sighandler.h"
 #include "gmx_ana.h"
+#include "gmx_omp_nthreads.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -3352,30 +3353,52 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
         }
 
+        /* Set CPU affinity. Can be important for performance.
+           On some systems (e.g. Cray) CPU Affinity is set by default.
+           But default assigning doesn't work (well) with only some ranks
+           having threads. This causes very low performance.
+           External tools have cumbersome syntax for setting affinity
+           in the case that only some ranks have threads.
+           Thus it is important that GROMACS sets the affinity internally at
+           if only PME is using threads.
+        */
 
-        /*set CPU affinity*/
 #ifdef GMX_OPENMP
 #ifdef __linux
+    if (getenv("GMX_NO_THREAD_PINNING") == NULL)
+    {
+        int core, local_nthreads;
+
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            local_nthreads = gmx_omp_nthreads_get(emntNonbonded);
+        }
+        else
+        {
+            local_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads_pme : 1; //threads on this node
+        }
 #ifdef GMX_LIB_MPI
         {
-            int core;
-            MPI_Comm comm_intra; /*intra communicator (but different to nc.comm_intra includes PME nodes)*/
+            MPI_Comm comm_intra; //intra communicator (but different to nc.comm_intra includes PME nodes)
             MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
-            int local_omp_nthreads = (cr->duty & DUTY_PME) ? omp_nthreads : 1; /*threads on this node*/
-            MPI_Scan(&local_omp_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-            core-=local_omp_nthreads; /*make exclusive scan*/
-    #pragma omp parallel firstprivate(core) num_threads(local_omp_nthreads)
-            {
-                cpu_set_t mask;
-                CPU_ZERO(&mask);
-                core+=omp_get_thread_num();
-                CPU_SET(core,&mask);
-                sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
-            }
+
+            MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
+            core -= local_nthreads; //make exclusive scan
         }
-#endif /*GMX_MPI*/
-#endif /*__linux*/
-#endif /*GMX_OPENMP*/
+#else
+        core = cr->nodeid*local_nthreads;
+#endif
+#pragma omp parallel firstprivate(core) num_threads(local_nthreads)
+        {
+            cpu_set_t mask;
+            CPU_ZERO(&mask);
+            core+=omp_get_thread_num();
+            CPU_SET(core,&mask);
+            sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+        }
+    }
+#endif //__linux
+#endif //GMX_OPENMP
 
         if (cr->duty & DUTY_PME)
         {
