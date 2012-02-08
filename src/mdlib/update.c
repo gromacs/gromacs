@@ -119,8 +119,11 @@ void store_rvec(rvec *from, rvec *to, int n) {
 }
 
 static void do_update_md(int start,int nrend,double dt,
-                         t_grp_tcstat *tcstat,t_grp_acc *gstat,double nh_vxi[],
-                         rvec accel[],ivec nFreeze[],real invmass[],
+                         t_grp_tcstat *tcstat,
+                         double nh_vxi[],
+                         gmx_bool bNEMD,t_grp_acc *gstat,rvec accel[],
+                         ivec nFreeze[],
+                         real invmass[],
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],
@@ -181,9 +184,11 @@ static void do_update_md(int start,int nrend,double dt,
           }
       }
   } 
-  else 
+  else if (cFREEZE != NULL ||
+           nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
+           bNEMD)
   {
-      /* Classic version of update, used with berendsen coupling */
+      /* Update with Berendsen/v-rescale coupling and freeze or NEMD */
       for(n=start; n<nrend; n++) 
       {
           w_dt = invmass[n]*dt;
@@ -223,6 +228,26 @@ static void do_update_md(int start,int nrend,double dt,
           }
       }
   }
+    else
+    {
+        /* Plain update with Berendsen/v-rescale coupling */
+        for(n=start; n<nrend; n++) 
+        {
+            w_dt = invmass[n]*dt;
+            if (cTC) 
+            {
+                gt = cTC[n];
+            }
+            lg = tcstat[gt].lambda;
+          
+            for(d=0; d<DIM; d++) 
+            {
+                vn           = lg*v[n][d] + f[n][d]*w_dt;
+                v[n][d]      = vn;
+                xprime[n][d] = x[n][d] + vn*dt;
+            } 
+        }  
+    }
 }
 
 static void do_update_vv_vel(int start,int nrend,double dt,
@@ -322,7 +347,9 @@ static void do_update_vv_pos(int start,int nrend,double dt,
 }/* do_update_vv_pos */
 
 static void do_update_visc(int start,int nrend,double dt,
-                           t_grp_tcstat *tcstat,real invmass[],double nh_vxi[],
+                           t_grp_tcstat *tcstat,
+                           double nh_vxi[],
+                           real invmass[],
                            unsigned short ptype[],unsigned short cTC[],
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
@@ -1703,8 +1730,10 @@ void update_coords(FILE         *fplog,
             if (ekind->cosacc.cos_accel == 0)
             {
                 do_update_md(start_th,end_th,dt,
-                             ekind->tcstat,ekind->grpstat,state->nosehoover_vxi,
-                             inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
+                             ekind->tcstat,state->nosehoover_vxi,
+                             ekind->bNEMD,ekind->grpstat,inputrec->opts.acc,
+                             inputrec->opts.nFreeze,
+                             md->invmass,md->ptype,
                              md->cFREEZE,md->cACC,md->cTC,
                              state->x,xprime,state->v,force,M,
                              bNH,bPR);
@@ -1712,10 +1741,14 @@ void update_coords(FILE         *fplog,
             else 
             {
                 do_update_visc(start_th,end_th,dt,
-                               ekind->tcstat,md->invmass,state->nosehoover_vxi,
-                               md->ptype,md->cTC,state->x,xprime,state->v,force,M,
-                           state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bNH,bPR);
-        }
+                               ekind->tcstat,state->nosehoover_vxi,
+                               md->invmass,md->ptype,
+                               md->cTC,state->x,xprime,state->v,force,M,
+                               state->box,
+                               ekind->cosacc.cos_accel,
+                               ekind->cosacc.vcos,
+                               bNH,bPR);
+            }
             break;
         case (eiSD1):
             do_update_sd1(upd->sd,start,homenr,dt,
