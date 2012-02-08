@@ -40,6 +40,8 @@
 
 #include "analysissettings.h"
 
+#include "../options/timeunitmanager.h"
+
 namespace gmx
 {
 
@@ -54,6 +56,7 @@ class TrajectoryAnalysisSettings::Impl
         //! Initializes the default values for the settings object.
         Impl() : flags(0), frflags(0), bRmPBC(true), bPBC(true) {}
 
+        TimeUnitManager      timeUnitManager;
         unsigned long        flags;
         int                  frflags;
 

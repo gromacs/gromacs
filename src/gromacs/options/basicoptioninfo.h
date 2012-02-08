@@ -85,6 +85,23 @@ class DoubleOptionInfo : public OptionInfo
 {
     public:
         explicit DoubleOptionInfo(DoubleOptionStorage *option);
+
+        //! Whether the option provides a time value.
+        bool isTime() const;
+
+        /*! \brief
+         * Sets a scale factor for user-provided values.
+         *
+         * Any user-provided value is scaled by the provided factor.
+         * Programmatically set default values are not scaled.
+         * If called multiple times, later calls override the previously set
+         * value.  In other words, the scaling is not cumulative.
+         */
+        void setScaleFactor(double factor);
+
+    private:
+        DoubleOptionStorage &option();
+        const DoubleOptionStorage &option() const;
 };
 
 /*! \brief

@@ -121,8 +121,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
-    int rc;
-
     Options *moduleOptions = _module->initOptions(settings);
     GMX_RELEASE_ASSERT(moduleOptions != NULL, "Module returned NULL options");
     Options *commonOptions = common->initOptions();
@@ -147,6 +145,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
             throw;
         }
         printHelp(*options, *common);
+        common->scaleTimeOptions(options);
         options->finish();
     }
 

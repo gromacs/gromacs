@@ -75,6 +75,7 @@ class TrajectoryAnalysisRunnerCommon
         ~TrajectoryAnalysisRunnerCommon();
 
         Options *initOptions();
+        void scaleTimeOptions(Options *options);
         bool initOptionsDone();
         void initIndexGroups(SelectionCollection *selections);
         void doneIndexGroups(SelectionCollection *selections);

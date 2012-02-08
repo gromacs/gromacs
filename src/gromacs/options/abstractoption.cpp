@@ -90,7 +90,7 @@ bool AbstractOptionStorage::isBoolean() const
 
 void AbstractOptionStorage::startSource()
 {
-    setFlag(efHasDefaultValue);
+    setFlag(efClearOnNextSet);
 }
 
 void AbstractOptionStorage::startSet()
@@ -99,7 +99,7 @@ void AbstractOptionStorage::startSet()
     // The last condition takes care of the situation where multiple
     // sources are used, and a later source should be able to reassign
     // the value even though the option is already set.
-    if (isSet() && !hasFlag(efMulti) && !hasFlag(efHasDefaultValue))
+    if (isSet() && !hasFlag(efMulti) && !hasFlag(efClearOnNextSet))
     {
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }

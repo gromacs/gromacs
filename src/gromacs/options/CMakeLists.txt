@@ -8,7 +8,8 @@ set(OPTIONS_PUBLIC_HEADERS
     optionfiletype.h
     optionflags.h
     optioninfo.h
-    options.h)
+    options.h
+    timeunitmanager.h)
 install(FILES ${OPTIONS_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/options
         COMPONENT development)

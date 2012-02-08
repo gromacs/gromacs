@@ -42,26 +42,19 @@
 #include <smalloc.h>
 #include <statutil.h>
 
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
 namespace gmx
 {
 
-static const char *const timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
-};
 static const char *const plotFormats[] = {
     "none", "xmgrace", "xmgr", NULL
-};
-static const double timeScaleFactors[] = {
-    1e-3,    1,  1e3,  1e6,  1e9, 1e12
 };
 
 
 OptionsGlobalProperties::OptionsGlobalProperties()
-    : _usedProperties(0), _timeUnit(1), _plotFormat(1),
+    : _usedProperties(0), _plotFormat(1),
       _oenv(NULL)
 {
     // TODO: If/when this is refactored, exception safety should be considered
@@ -79,24 +72,8 @@ OptionsGlobalProperties::~OptionsGlobalProperties()
 }
 
 
-double OptionsGlobalProperties::timeScaleFactor() const
-{
-    GMX_RELEASE_ASSERT(_timeUnit >= 0
-        && (size_t)_timeUnit < sizeof(timeScaleFactors)/sizeof(timeScaleFactors[0]),
-        "Time unit index has become out of range");
-    return timeScaleFactors[_timeUnit];
-}
-
-
 void OptionsGlobalProperties::addDefaultOptions(Options *options)
 {
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        options->addOption(StringOption("tu").enumValue(timeUnits)
-                               .defaultValue("ps")
-                               .storeEnumIndex(&_timeUnit)
-                               .description("Unit for time values"));
-    }
     if (isPropertyUsed(eogpPlotFormat))
     {
         options->addOption(StringOption("xvg").enumValue(plotFormats)
@@ -109,10 +86,6 @@ void OptionsGlobalProperties::addDefaultOptions(Options *options)
 
 void OptionsGlobalProperties::finish()
 {
-    if (isPropertyUsed(eogpTimeScaleFactor))
-    {
-        _oenv->time_unit = static_cast<time_unit_t>(_timeUnit + 1);
-    }
     if (isPropertyUsed(eogpPlotFormat))
     {
         if (_plotFormat == 0)
