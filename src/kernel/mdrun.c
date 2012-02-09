@@ -418,7 +418,11 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
+#ifdef GMX_APPEND_IS_DEFAULT
   gmx_bool bAppendFiles=TRUE;
+#else
+  gmx_bool bAppendFiles=FALSE;
+#endif
   gmx_bool bKeepAndNumCPT=FALSE;
   gmx_bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;

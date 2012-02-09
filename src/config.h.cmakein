@@ -158,6 +158,9 @@
 /* Fallback path for VMD plug-ins */
 #define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
+/* When set, the mdrun default is to append to files*/
+#cmakedefine GMX_APPEND_IS_DEFAULT
+
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
 

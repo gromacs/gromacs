@@ -1879,6 +1879,10 @@ static void create_command_line_snippets(
         add_to_string(cmd_args_bench, strbuf);
     }
     
+    /* Add '-append no' to benchmark options so that benchmark files do not get renamed */
+    sprintf(strbuf, "-append yes ");
+    add_to_string(cmd_args_bench, strbuf);
+
     /********************/
     /* 2. Process files */
     /********************/
@@ -2203,7 +2207,13 @@ int gmx_tune_pme(int argc,char *argv[])
     char *deffnm=NULL;
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
+
+#ifdef GMX_APPEND_IS_DEFAULT
     gmx_bool bAppendFiles=TRUE;
+#else
+    gmx_bool bAppendFiles=FALSE;
+#endif
+
     gmx_bool bKeepAndNumCPT=FALSE;
     gmx_bool bResetCountersHalfWay=FALSE;
     output_env_t oenv=NULL;
