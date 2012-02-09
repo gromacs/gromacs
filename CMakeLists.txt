@@ -134,7 +134,8 @@ option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
-
+option(GMX_APPEND_IS_DEFAULT "mdrun by default appends to files. This might be undesired on clusters with certain backup programs running." ON)
+mark_as_advanced(GMX_APPEND_IS_DEFAULT)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
