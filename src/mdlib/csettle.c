@@ -57,7 +57,7 @@ typedef struct
     real   ra;
     real   rb;
     real   rc;
-    real   rc2;
+    real   irc2;
     /* For projection */
     real   imO;
     real   imH;
@@ -121,7 +121,7 @@ static void settleparam_init(settleparam_t *p,
     p->rc     = dHH/2.0;
     p->ra     = 2.0*p->wh*sqrt(dOH*dOH - p->rc*p->rc)/p->wohh;
     p->rb     = sqrt(dOH*dOH - p->rc*p->rc) - p->ra;
-    p->rc2    = dHH;
+    p->irc2   = 1.0/dHH;
 
     p->wo    /= p->wohh;
     p->wh    /= p->wohh;
@@ -133,8 +133,8 @@ static void settleparam_init(settleparam_t *p,
     {
         fprintf(debug,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
                 p->wo,p->wh,p->wohh,p->rc,p->ra);
-        fprintf(debug,"rb = %g, rc2 = %g, dHH = %g, dOH = %g\n",
-                p->rb,p->rc2,p->dHH,p->dOH);
+        fprintf(debug,"rb = %g, irc2 = %g, dHH = %g, dOH = %g\n",
+                p->rb,p->irc2,p->dHH,p->dOH);
     }
 }
 
@@ -299,9 +299,14 @@ void settle_proj(FILE *fp,
             }
         }
     }
-    /* conrect rmdder, which will be used to calcualate the virial; we need to use 
-       the unscaled multipliers in the virial */
-    msmul(rmdder,1.0/vetavar->vscale,rmdder);
+
+    if (CalcVirAtomEnd > 0)
+    {
+        /* Correct rmdder, which will be used to calcualate the virial;
+         * we need to use the unscaled multipliers in the virial.
+         */
+        msmul(rmdder,1.0/vetavar->vscale,rmdder);
+    }
 }
 
 
@@ -329,7 +334,7 @@ void csettle(gmx_settledata_t settled,
     /* These three weights need have double precision. Using single precision
      * can result in huge velocity and pressure deviations. */
     double wo,wh,wohh;
-    real   ra,rb,rc,rc2,dOH,dHH;
+    real   ra,rb,rc,irc2,dOH,dHH;
     
     /* Local variables */
     real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
@@ -366,13 +371,13 @@ void csettle(gmx_settledata_t settled,
     rc   = p->rc;
     ra   = p->ra;
     rb   = p->rb;
-    rc2  = p->rc2;
+    irc2 = p->irc2;
     dOH  = p->dOH;
     dHH  = p->dHH;
     
     mOs  = mO / vetavar->rvscale;
     mHs  = mH / vetavar->rvscale;
-    invdts = invdt/(vetavar->rscale);
+    invdts = invdt / vetavar->rscale;
     
 #ifdef PRAGMAS
 #pragma ivdep
@@ -490,13 +495,14 @@ void csettle(gmx_settledata_t settled,
     zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
     /* 65 flops */
         
-    sinphi = za1d / ra;
+    sinphi = za1d * gmx_invsqrt(ra*ra);
     tmp    = 1.0 - sinphi * sinphi;
     if (tmp <= 0) {
       bOK = FALSE;
     } else {
-      cosphi = tmp*gmx_invsqrt(tmp);
-      sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
+      tmp2   = gmx_invsqrt(tmp);
+      cosphi = tmp*tmp2;
+      sinpsi = (zb1d - zc1d) * irc2 * tmp2;
       tmp2   = 1.0 - sinpsi * sinpsi;
       if (tmp2 <= 0) {
         bOK = FALSE;
@@ -521,11 +527,11 @@ void csettle(gmx_settledata_t settled,
       gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
       al2be2 = alpa * alpa + beta * beta;
       tmp2   = (al2be2 - gama * gama);
-      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) / al2be2;
+      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) * gmx_invsqrt(al2be2*al2be2);
       /* 47 flops */
       
       /*  --- Step4  A3' --- */
-      tmp2  = 1.0 - sinthe *sinthe;
+      tmp2  = 1.0 - sinthe * sinthe;
       costhe = tmp2*gmx_invsqrt(tmp2);
       xa3d = -ya2d * sinthe;
       ya3d = ya2d * costhe;
@@ -577,7 +583,7 @@ void csettle(gmx_settledata_t settled,
       dcz = zc3 - zc1;
       /* 9 flops, counted with the virial */
 
-      if (v) {
+      if (v != NULL) {
           v[ow1]     += dax*invdts;
           v[ow1 + 1] += day*invdts;
           v[ow1 + 2] += daz*invdts;
