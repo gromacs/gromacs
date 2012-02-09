@@ -791,79 +791,88 @@ real bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
 }
 
 real angles(int nbonds,
-	    const t_iatom forceatoms[],const t_iparams forceparams[],
-	    const rvec x[],rvec f[],rvec fshift[],
-	    const t_pbc *pbc,const t_graph *g,
-	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+            const t_iatom forceatoms[],const t_iparams forceparams[],
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real lambda,real *dvdlambda,
+            const t_mdatoms *md,t_fcdata *fcd,
+            int *global_atom_index)
 {
-  int  i,ai,aj,ak,t1,t2,type;
-  rvec r_ij,r_kj;
-  real cos_theta,cos_theta2,theta,dVdt,va,vtot;
-  ivec jt,dt_ij,dt_kj;
+    int  i,ai,aj,ak,t1,t2,type;
+    rvec r_ij,r_kj;
+    real cos_theta,cos_theta2,theta,dVdt,va,vtot;
+    ivec jt,dt_ij,dt_kj;
+
+    vtot = 0.0;
+    for(i=0; i<nbonds; )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        ak   = forceatoms[i++];
+
+        theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
+                            r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-  vtot = 0.0;
-  for(i=0; (i<nbonds); ) {
-    type = forceatoms[i++];
-    ai   = forceatoms[i++];
-    aj   = forceatoms[i++];
-    ak   = forceatoms[i++];
-    
-    theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
-			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
-  
-    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
-			   forceparams[type].harmonic.krB,
-			   forceparams[type].harmonic.rA*DEG2RAD,
-			   forceparams[type].harmonic.rB*DEG2RAD,
-			   theta,lambda,&va,&dVdt);  /*  21  */
-    vtot += va;
-    
-    cos_theta2 = sqr(cos_theta);
-    if (cos_theta2 < 1) {
-      int  m;
-      real st,sth;
-      real cik,cii,ckk;
-      real nrkj2,nrij2;
-      rvec f_i,f_j,f_k;
-      
-      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
-      sth = st*cos_theta;			/*   1		*/
+        *dvdlambda += harmonic(forceparams[type].harmonic.krA,
+                               forceparams[type].harmonic.krB,
+                               forceparams[type].harmonic.rA*DEG2RAD,
+                               forceparams[type].harmonic.rB*DEG2RAD,
+                               theta,lambda,&va,&dVdt);  /*  21  */
+        vtot += va;
+
+        cos_theta2 = sqr(cos_theta);
+        if (cos_theta2 < 1)
+        {
+            int  m;
+            real st,sth;
+            real cik,cii,ckk;
+            real nrkj2,nrij2;
+            real nrkj_1,nrij_1;
+            rvec f_i,f_j,f_k;
+
+            st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
+            sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
-      if (debug)
-	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-		theta*RAD2DEG,va,dVdt);
+            if (debug)
+                fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+                        theta*RAD2DEG,va,dVdt);
 #endif
-      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
-      nrij2=iprod(r_ij,r_ij);
+            nrij2 = iprod(r_ij,r_ij);			/*   5		*/
+            nrkj2 = iprod(r_kj,r_kj);			/*   5		*/
+
+            nrij_1 = gmx_invsqrt(nrij2);		/*  10		*/
+            nrkj_1 = gmx_invsqrt(nrkj2);		/*  10		*/
+
+            cik = st*nrij_1*nrkj_1;			/*   2		*/
+            cii = sth*nrij_1*nrij_1;			/*   2		*/
+            ckk = sth*nrkj_1*nrkj_1;			/*   2		*/
       
-      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
-      cii=sth/nrij2;				/*  10		*/
-      ckk=sth/nrkj2;				/*  10		*/
-      
-      for (m=0; (m<DIM); m++) {			/*  39		*/
-	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
-	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
-	f_j[m]=-f_i[m]-f_k[m];
-	f[ai][m]+=f_i[m];
-	f[aj][m]+=f_j[m];
-	f[ak][m]+=f_k[m];
-      }
-      if (g) {
-	copy_ivec(SHIFT_IVEC(g,aj),jt);
-      
-	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-	t1=IVEC2IS(dt_ij);
-	t2=IVEC2IS(dt_kj);
-      }
-      rvec_inc(fshift[t1],f_i);
-      rvec_inc(fshift[CENTRAL],f_j);
-      rvec_inc(fshift[t2],f_k);
-    }                                           /* 161 TOTAL	*/
-  }
-  return vtot;
+            for (m=0; m<DIM; m++)
+            {			/*  39		*/
+                f_i[m]    = -(cik*r_kj[m] - cii*r_ij[m]);
+                f_k[m]    = -(cik*r_ij[m] - ckk*r_kj[m]);
+                f_j[m]    = -f_i[m] - f_k[m];
+                f[ai][m] += f_i[m];
+                f[aj][m] += f_j[m];
+                f[ak][m] += f_k[m];
+            }
+            if (g != NULL)
+            {
+                copy_ivec(SHIFT_IVEC(g,aj),jt);
+
+                ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+                ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+                t1 = IVEC2IS(dt_ij);
+                t2 = IVEC2IS(dt_kj);
+            }
+            rvec_inc(fshift[t1],f_i);
+            rvec_inc(fshift[CENTRAL],f_j);
+            rvec_inc(fshift[t2],f_k);
+        }                                           /* 161 TOTAL	*/
+    }
+
+    return vtot;
 }
 
 real linear_angles(int nbonds,
