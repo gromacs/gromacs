@@ -50,7 +50,6 @@
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -123,6 +122,10 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
         sfree(fr->v);
         sfree(fr->f);
         sfree(fr);
+    }
+    if (_oenv != NULL)
+    {
+        output_env_done(_oenv);
     }
 }
 
@@ -200,6 +203,9 @@ TrajectoryAnalysisRunnerCommon::initOptions()
     // Add time unit option.
     settings._impl->timeUnitManager.addTimeUnitOption(&options, "tu");
 
+    // Add plot options.
+    settings._impl->plotSettings.addOptions(&options);
+
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
@@ -230,6 +236,9 @@ TrajectoryAnalysisRunnerCommon::initOptionsDone()
     {
         return false;
     }
+
+    _impl->_settings._impl->plotSettings.setTimeUnit(
+            _impl->_settings._impl->timeUnitManager.timeUnit());
 
     if (_impl->_trjfile.empty() && _impl->_topfile.empty())
     {
@@ -332,7 +341,10 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     {
         return;
     }
-    _impl->_oenv = _impl->_options.globalProperties().output_env();
+    snew(_impl->_oenv, 1);
+    output_env_init_default(_impl->_oenv);
+    _impl->_oenv->time_unit
+        = static_cast<time_unit_t>(_impl->_settings.timeUnit() + 1);
 
     int frflags = _impl->_settings.frflags();
     frflags |= TRX_NEED_X;

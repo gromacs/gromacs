@@ -69,6 +69,20 @@ TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 }
 
 
+const TimeUnitManager &
+TrajectoryAnalysisSettings::timeUnitManager() const
+{
+    return _impl->timeUnitManager;
+}
+
+
+const AnalysisDataPlotSettings &
+TrajectoryAnalysisSettings::plotSettings() const
+{
+    return _impl->plotSettings;
+}
+
+
 unsigned long
 TrajectoryAnalysisSettings::flags() const
 {
