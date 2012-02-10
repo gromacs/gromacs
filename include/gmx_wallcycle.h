@@ -47,13 +47,14 @@ enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
        ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
        ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
        ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE,
-       ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcCOPY_XF_TO_NBAT,
+       ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
        ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
        ewcTEST, ewcNR };
 
 enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM, ewcsDD_MAKETOP,
        ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
        ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+       ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
        ewcsNR };
 
 gmx_bool wallcycle_have_counter(void);

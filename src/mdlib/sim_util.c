@@ -867,10 +867,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 #endif    
         wallcycle_stop(wcycle, ewcNS);
     }
-    wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+    wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
     nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,FALSE,x,
                                      nbv->grp[eintLocal].nbat);
-    wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+    wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+    wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 
 #ifdef GMX_GPU
     if (bUseGPU)
@@ -891,10 +893,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         if (bDiffKernels)
         {
-            wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatAll,TRUE,x,
                                              nbv->grp[eintNonlocal].nbat);
-            wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+            wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
         if (bNS)
@@ -939,10 +943,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             }
             wallcycle_stop(wcycle,ewcMOVEX);
         }
-        wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
                                          nbv->grp[eintNonlocal].nbat);
-        wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 
 #ifdef GMX_GPU
         if (bUseGPU && !bDiffKernels)
@@ -1123,9 +1129,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->grp[aloc].nbat,f);
-        wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
@@ -1167,10 +1175,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE);
                 wallcycle_stop(wcycle,ewcFORCE);
             }            
-            wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+            wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
                                             nbv->grp[eintNonlocal].nbat,f);
-            wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+            wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
@@ -1231,10 +1241,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr));
             wallcycle_stop(wcycle,ewcFORCE);
         }
-        wallcycle_start(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatLocal,
                                         nbv->grp[eintLocal].nbat,f);
-        wallcycle_stop(wcycle, ewcCOPY_XF_TO_NBAT);
+        wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
     
     if (DOMAINDECOMP(cr))

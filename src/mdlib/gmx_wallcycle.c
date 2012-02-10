@@ -101,13 +101,14 @@ static const char *wcn[ewcNR] =
   "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
   "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
   "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve",
-  "Wait + Comm. X/F", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops",
+  "Wait + Comm. X/F", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
   "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
   "Enforced rotation", "Add rot. forces", "Test" };
 
 static const char *wcsn[ewcsNR] =
 { "DD redist.", "DD NS grid + sort", "DD setup comm.", "DD make top",
-  "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc."
+  "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
+  "NB X buffer ops.", "NB F buffer ops."
 };
 
 gmx_bool wallcycle_have_counter(void)
@@ -348,6 +349,13 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
             wc->wcc_all[i].c = 0;
         }
     }
+#ifdef GMX_CYCLE_SUB
+    for (i=0; i<ewcsNR; i++)
+    {
+        wc->wcsc[i].n = 0;
+        wc->wcsc[i].c = 0;
+    }
+#endif
 }
 
 static gmx_bool pme_subdivision(int ewc)
