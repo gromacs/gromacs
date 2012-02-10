@@ -54,6 +54,16 @@
 #include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
 
+typedef struct {
+    int b0;           /* first constraint for this thread */
+    int b1;           /* b1-1 is the last constraint for this thread */
+    int nind;         /* number of indices */
+    int *ind;         /* constraint index for updating atom data */
+    int nind_r;       /* number of indices */
+    int *ind_r;       /* constraint index for updating atom data */
+    int ind_nalloc;   /* allocation size of ind and ind_r */
+} lincs_thread_t;
+
 typedef struct gmx_lincsdata {
     int  ncg;         /* the global number of constraints */
     int  ncg_flex;    /* the global number of flexible constraints */
@@ -79,6 +89,10 @@ typedef struct gmx_lincsdata {
     real *blmf;       /* matrix of mass factors for constraint connections */
     real *blmf1;      /* as blmf, but with all masses 1 */
     real *bllen;      /* the reference bond length */
+    int  nth;         /* The number of threads doing LINCS */
+    lincs_thread_t *th; /* LINCS thread division */
+    unsigned *atf;    /* atom flags for thread parallelization */
+    int  atf_nalloc;  /* allocation size of atf */
     /* arrays for temporary storage in the LINCS algorithm */
     rvec *tmpv;
     real *tmpncc;
@@ -86,7 +100,7 @@ typedef struct gmx_lincsdata {
     real *tmp2;
     real *tmp3;
     real *tmp4;
-    real *lambda;  /* the Lagrange multipliers */
+    real *mlambda;  /* the Lagrange multipliers * -1 */
     /* storage for the constraint RMS relative deviation output */
     real rmsd_data[3];
 } t_gmx_lincsdata;
@@ -108,6 +122,10 @@ real lincs_rmsd(struct gmx_lincsdata *lincsd,gmx_bool bSD2)
     }
 }
 
+/* Do a set of nrec LINCS matrix multiplications.
+ * This function will return with up to date thread-local
+ * constraint data, without an OpenMP barrier.
+ */
 static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
                                 int b0,int b1,
                                 const real *blcc,
@@ -186,7 +204,104 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
                 rhs2 = swap;
             }
         } /* flops count is missing here */
+
+        /* We need a barrier here as the calling routine will continue
+         * to operate on the thread-local constraints without barrier.
+         */
 #pragma omp barrier
+    }
+}
+
+static void lincs_update_atoms_noind(int ncons,const int *bla,
+                                     real prefac,
+                                     const real *fac,rvec *r,
+                                     const real *invmass,
+                                     rvec *x)
+{
+    int  b,i,j;
+    real mvb,im1,im2,tmp0,tmp1,tmp2;
+
+    for(b=0; b<ncons; b++)
+    {
+        i = bla[2*b];
+        j = bla[2*b+1];
+        mvb = prefac*fac[b];
+        im1 = invmass[i];
+        im2 = invmass[j];
+        tmp0 = r[b][0]*mvb;
+        tmp1 = r[b][1]*mvb;
+        tmp2 = r[b][2]*mvb;
+        x[i][0] -= tmp0*im1;
+        x[i][1] -= tmp1*im1;
+        x[i][2] -= tmp2*im1;
+        x[j][0] += tmp0*im2;
+        x[j][1] += tmp1*im2;
+        x[j][2] += tmp2*im2;
+    } /* 16 ncons flops */
+}
+
+static void lincs_update_atoms_ind(int ncons,const int *ind,const int *bla,
+                                   real prefac,
+                                   const real *fac,rvec *r,
+                                   const real *invmass,
+                                   rvec *x)
+{
+    int  bi,b,i,j;
+    real mvb,im1,im2,tmp0,tmp1,tmp2;
+
+    for(bi=0; bi<ncons; bi++)
+    {
+        b = ind[bi];
+        i = bla[2*b];
+        j = bla[2*b+1];
+        mvb = prefac*fac[b];
+        im1 = invmass[i];
+        im2 = invmass[j];
+        tmp0 = r[b][0]*mvb;
+        tmp1 = r[b][1]*mvb;
+        tmp2 = r[b][2]*mvb;
+        x[i][0] -= tmp0*im1;
+        x[i][1] -= tmp1*im1;
+        x[i][2] -= tmp2*im1;
+        x[j][0] += tmp0*im2;
+        x[j][1] += tmp1*im2;
+        x[j][2] += tmp2*im2;
+    } /* 16 ncons flops */
+}
+
+static void lincs_update_atoms(struct gmx_lincsdata *li,int th,
+                               real prefac,
+                               const real *fac,rvec *r,
+                               const real *invmass,
+                               rvec *x)
+{
+    if (li->nth == 1)
+    {
+        /* Single thread, we simply update for all constraints */
+        lincs_update_atoms_noind(li->nc,li->bla,prefac,fac,r,invmass,x);
+    }
+    else
+    {
+        /* Update the atom vector components for our thread local
+         * constraints that only access our local atom range.
+         * This can be done without a barrier.
+         */
+        lincs_update_atoms_ind(li->th[th].nind,li->th[th].ind,
+                               li->bla,prefac,fac,r,invmass,x);
+
+        if (li->th[li->nth].nind > 0)
+        {
+            /* Update the constraints that operate on atoms
+             * in multiple thread atom blocks on the master thread.
+             */
+#pragma omp barrier
+#pragma omp master
+            {    
+                lincs_update_atoms_ind(li->th[li->nth].nind,
+                                       li->th[li->nth].ind,
+                                       li->bla,prefac,fac,r,invmass,x);
+            }
+        }
     }
 }
 
@@ -348,7 +463,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 }
 
 static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
-                     struct gmx_lincsdata *lincsd,int b0,int b1,
+                     struct gmx_lincsdata *lincsd,int th,
                      real *invmass,
 					 t_commrec *cr,
                      gmx_bool bCalcLambda,
@@ -356,14 +471,17 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
                      real invdt,rvec *v,
                      gmx_bool bCalcVir,tensor rmdr)
 {
-    int     b,i,j,k,n,iter;
+    int     b0,b1,b,i,j,k,n,iter;
     real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac;
     rvec    dx;
     int     ncons,*bla,*blnr,*blbnb;
     rvec    *r;
-    real    *blc,*blmf,*bllen,*blcc,*rhs1,*rhs2,*sol,*blc_sol,*lambda;
+    real    *blc,*blmf,*bllen,*blcc,*rhs1,*rhs2,*sol,*blc_sol,*mlambda;
     int     *nlocat;
-    
+
+    b0 = lincsd->th[th].b0;
+    b1 = lincsd->th[th].b1;
+
     ncons  = lincsd->nc;
     bla    = lincsd->bla;
     r      = lincsd->tmpv;
@@ -377,7 +495,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     rhs2   = lincsd->tmp2;
     sol    = lincsd->tmp3;
     blc_sol= lincsd->tmp4;
-    lambda = lincsd->lambda;
+    mlambda= lincsd->mlambda;
     
     if (DOMAINDECOMP(cr) && cr->dd->constraints)
     {
@@ -460,31 +578,11 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 
     for(b=b0; b<b1; b++)
     {
-        lambda[b] = -blc[b]*sol[b]; 
+        mlambda[b] = blc[b]*sol[b]; 
     }
 
-#pragma omp barrier
-#pragma omp master
-    {    
-        for(b=0; b<ncons; b++)
-        {
-            i = bla[2*b];
-            j = bla[2*b+1];
-            mvb = -lambda[b];
-            im1 = invmass[i];
-            im2 = invmass[j];
-            tmp0 = r[b][0]*mvb;
-            tmp1 = r[b][1]*mvb;
-            tmp2 = r[b][2]*mvb;
-            xp[i][0] -= tmp0*im1;
-            xp[i][1] -= tmp1*im1;
-            xp[i][2] -= tmp2*im1;
-            xp[j][0] += tmp0*im2;
-            xp[j][1] += tmp1*im2;
-            xp[j][2] += tmp2*im2;
-        } /* 16 ncons flops */
-    }
-
+    /* Update the coordinates */
+    lincs_update_atoms(lincsd,th,1.0,mlambda,r,invmass,xp);
 
     /*     
      ********  Correction for centripetal effects  ********  
@@ -549,52 +647,20 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
         for(b=b0; b<b1; b++)
         {
             mvb = blc[b]*sol[b];
-            blc_sol[b] =  mvb;
-            lambda[b] += -mvb;
+            blc_sol[b]  = mvb;
+            mlambda[b] += mvb;
         }
 
-#pragma omp barrier
-#pragma omp single
-        {        
-            for(b=0; b<ncons; b++)
-            {
-                i = bla[2*b];
-                j = bla[2*b+1];
-                mvb = blc_sol[b];
-                im1 = invmass[i];
-                im2 = invmass[j];
-                tmp0 = r[b][0]*mvb;
-                tmp1 = r[b][1]*mvb;
-                tmp2 = r[b][2]*mvb;
-                xp[i][0] -= tmp0*im1;
-                xp[i][1] -= tmp1*im1;
-                xp[i][2] -= tmp2*im1;
-                xp[j][0] += tmp0*im2;
-                xp[j][1] += tmp1*im2;
-                xp[j][2] += tmp2*im2;
-            } /* 17 ncons flops */
-        }
-    } /* nit*ncons*(37+9*nrec) flops */
+        /* Update the coordinates */
+        lincs_update_atoms(lincsd,th,1.0,blc_sol,r,invmass,xp);
+    }
+    /* nit*ncons*(37+9*nrec) flops */
 
-    if (v)
+    if (v != NULL)
     {
-#pragma omp single
-        {        
-            /* Correct the velocities */
-            for(b=0; b<ncons; b++)
-            {
-                i = bla[2*b];
-                j = bla[2*b+1];
-                im1 = invmass[i]*lambda[b]*invdt;
-                im2 = invmass[j]*lambda[b]*invdt;
-                v[i][0] += im1*r[b][0];
-                v[i][1] += im1*r[b][1];
-                v[i][2] += im1*r[b][2];
-                v[j][0] -= im2*r[b][0];
-                v[j][1] -= im2*r[b][1];
-                v[j][2] -= im2*r[b][2];
-            } /* 16 ncons flops */
-        }
+        /* Update the velocities */
+        lincs_update_atoms(lincsd,th,invdt,mlambda,r,invmass,v);
+        /* 16 ncons flops */
     }
     
     if (nlocat && bCalcLambda)
@@ -602,7 +668,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
         /* Only account for local atoms */
         for(b=b0; b<b1; b++)
         {
-            lambda[b] *= 0.5*nlocat[b];
+            mlambda[b] *= 0.5*nlocat[b];
         }
 #pragma omp barrier
     }
@@ -614,7 +680,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
             /* Constraint virial */
             for(b=0; b<ncons; b++)
             {
-                tmp0 = bllen[b]*lambda[b];
+                tmp0 = -bllen[b]*mlambda[b];
                 for(i=0; i<DIM; i++)
                 {
                     tmp1 = tmp0*r[b][i];
@@ -827,7 +893,26 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
     
     li->nIter  = nIter;
     li->nOrder = nProjOrder;
-    
+
+    /* LINCS can run on any number of threads.
+     * Currently the number is fixed for the whole simulation,
+     * but it could be set in set_lincs().
+     */
+    li->nth = gmx_omp_nthreads_get(emntLincs);
+    if (li->nth == 1)
+    {
+        snew(li->th,1);
+    }
+    else
+    {
+        /* Allocate an extra elements for "thread-overlap" constraints */
+        snew(li->th,li->nth+1);
+    }
+    if (debug)
+    {
+        fprintf(debug,"LINCS: using %d threads\n",li->nth);
+    }
+
     if (bPLINCS || li->ncg_triangle > 0)
     {
         please_cite(fplog,"Hess2008a");
@@ -858,6 +943,138 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
     return li;
 }
 
+/* Sets up the work division over the threads */
+static void lincs_thread_setup(struct gmx_lincsdata *li,int natoms)
+{
+    lincs_thread_t *li_m;
+    int th;
+    unsigned *atf;
+    int a;
+
+    if (natoms > li->atf_nalloc)
+    {
+        li->atf_nalloc = over_alloc_large(natoms);
+        srenew(li->atf,li->atf_nalloc);
+    }
+
+    atf = li->atf;
+    /* Clear the atom flags */
+    for(a=0; a<natoms; a++)
+    {
+        atf[a] = 0;
+    }
+
+    for(th=0; th<li->nth; th++)
+    {
+        lincs_thread_t *li_th;
+        int b;
+
+        li_th = &li->th[th];
+        
+        /* The constraints are divided equally over the threads */
+        li_th->b0 = (li->nc* th   )/li->nth;
+        li_th->b1 = (li->nc*(th+1))/li->nth;
+
+        if (th < sizeof(*atf)*8)
+        {
+            /* For each atom set a flag for constraints from each */
+            for(b=li_th->b0; b<li_th->b1; b++)
+            {
+                atf[li->bla[b*2]  ] |= (1U<<th);
+                atf[li->bla[b*2+1]] |= (1U<<th);
+            }
+        }
+    }
+
+#pragma omp parallel for num_threads(li->nth) schedule(static)
+    for(th=0; th<li->nth; th++)
+    {
+        lincs_thread_t *li_th;
+        unsigned mask;
+        int b;
+
+        li_th = &li->th[th];
+        
+        if (li_th->b1 - li_th->b0 > li_th->ind_nalloc)
+        {
+            li_th->ind_nalloc = over_alloc_large(li_th->b1-li_th->b0);
+            srenew(li_th->ind,li_th->ind_nalloc);
+            srenew(li_th->ind_r,li_th->ind_nalloc);
+        }
+
+        if (th < sizeof(*atf)*8)
+        {
+            mask = (1U<<th) - 1U;
+
+            li_th->nind   = 0;
+            li_th->nind_r = 0;
+            for(b=li_th->b0; b<li_th->b1; b++)
+            {
+                /* We let the constraint with the lowest thread index
+                 * operate on atoms with constraints from multiple threads.
+                 */
+                if (((atf[li->bla[b*2]]   & mask) == 0) &&
+                    ((atf[li->bla[b*2+1]] & mask) == 0))
+                {
+                    /* Add the constraint to the local atom update index */
+                    li_th->ind[li_th->nind++] = b;
+                }
+                else
+                {
+                    /* Add the constraint to the rest block */
+                    li_th->ind_r[li_th->nind_r++] = b;
+                }
+            }
+        }
+        else
+        {
+            /* We are out of bits, assign all constraints to rest */
+            for(b=li_th->b0; b<li_th->b1; b++)
+            {
+                li_th->ind_r[li_th->nind_r++] = b;
+            }
+        }
+    }
+
+    /* We need to copy all constraints which have not be assigned
+     * to a thread to a separate list which will be handled by one thread.
+     */
+    li_m = &li->th[li->nth];
+
+    li_m->nind = 0;
+    for(th=0; th<li->nth; th++)
+    {
+        lincs_thread_t *li_th;
+        int b;
+
+        li_th   = &li->th[th];
+
+        if (li_m->nind + li_th->nind_r > li_m->ind_nalloc)
+        {
+            li_m->ind_nalloc = over_alloc_large(li_m->nind+li_th->nind_r);
+            srenew(li_m->ind,li_m->ind_nalloc);
+        }
+
+        for(b=0; b<li_th->nind_r; b++)
+        {
+            li_m->ind[li_m->nind++] = li_th->ind_r[b];
+        }
+
+        if (debug)
+        {
+            fprintf(debug,"LINCS thread %d: %d constraints\n",
+                    th,li_th->nind);
+        }
+    }
+
+    if (debug)
+    {
+        fprintf(debug,"LINCS thread r: %d constraints\n",
+                li_m->nind);
+    }
+}
+
+
 void set_lincs(t_idef *idef,t_mdatoms *md,
                gmx_bool bDynamics,t_commrec *cr,
                struct gmx_lincsdata *li)
@@ -872,6 +1089,11 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
 
     li->nc = 0;
     li->ncc = 0;
+    for(i=0; i<li->nth; i++)
+    {
+        li->th[0].b0 = 0;
+        li->th[0].b1 = 0;
+    }
 		
     /* This is the local topology, so there are only F_CONSTR constraints */
     if (idef->il[F_CONSTR].nr == 0)
@@ -927,7 +1149,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
         srenew(li->tmp2,li->nc_alloc);
         srenew(li->tmp3,li->nc_alloc);
         srenew(li->tmp4,li->nc_alloc);
-        srenew(li->lambda,li->nc_alloc);
+        srenew(li->mlambda,li->nc_alloc);
         if (li->ncg_triangle > 0)
         {
             /* This is allocating too much, but it is difficult to improve */
@@ -1030,6 +1252,16 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     {
         fprintf(debug,"Number of constraints is %d, couplings %d\n",
                 li->nc,li->ncc);
+    }
+
+    if (li->nth == 1)
+    {
+        li->th[0].b0 = 0;
+        li->th[0].b1 = li->nc;
+    }
+    else
+    {
+        lincs_thread_setup(li,md->nr);
     }
 
     set_lincs_matrix(li,md->invmass,md->lambda);
@@ -1296,37 +1528,20 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
         }
 
-#ifdef GMX_OPENMP
+        /* The (only) OpenMP parallel region of constrain_lincs */
         {
-            int nth,th;
+            int th;
 
-            /* do_lincs can run on any number of threads */
-            nth = gmx_omp_nthreads_get(emntLincs);
-            if (debug)
+#pragma omp parallel for num_threads(lincsd->nth) schedule(static)
+            for(th=0; th<lincsd->nth; th++)
             {
-                fprintf(debug,"LINCS: using %d threads\n",nth);
-            }
-#pragma omp parallel for num_threads(nth) schedule(static)
-            for(th=0; th<nth; th++)
-            {
-                int b0,b1;
-
-                b0 = (lincsd->nc* th   )/nth;
-                b1 = (lincsd->nc*(th+1))/nth;
-                do_lincs(x,xprime,box,pbc_null,lincsd,b0,b1,
+                do_lincs(x,xprime,box,pbc_null,lincsd,th,
                          md->invmass,cr,
                          bCalcVir || (ir->efep != efepNO),
                          ir->LincsWarnAngle,&warn,
                          invdt,v,bCalcVir,rmdr);
             }
         }
-#else
-        do_lincs(x,xprime,box,pbc_null,lincsd,0,lincsd->nc,
-                 md->invmass,cr,
-                 bCalcVir || (ir->efep != efepNO),
-                 ir->LincsWarnAngle,&warn,
-                 invdt,v,bCalcVir,rmdr);
-#endif
         
         if (ir->efep != efepNO)
         {
@@ -1335,7 +1550,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             dt_2 = 1.0/(ir->delta_t*ir->delta_t);
             for(i=0; (i<lincsd->nc); i++)
             {
-                dvdl += lincsd->lambda[i]*dt_2*lincsd->ddist[i];
+                dvdl -= lincsd->mlambda[i]*dt_2*lincsd->ddist[i];
             }
             *dvdlambda += dvdl;
 		}
