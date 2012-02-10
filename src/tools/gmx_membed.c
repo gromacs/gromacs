@@ -55,7 +55,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -1106,13 +1106,13 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 /*    if (DEFORM(*ir))
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
 #endif
         set_deform_reference_box(upd,
                                  deform_init_init_step_tpx,
                                  deform_init_box_tpx);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
 #endif
     }*/
@@ -2074,7 +2074,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 	    && MASTER(cr)
 #endif
 	    )
@@ -2739,7 +2739,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
 
         /* NOW the threads will be started: */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #endif
     }
     /* END OF CAUTION: cr is now reliable */
@@ -3605,7 +3605,7 @@ int gmx_membed(int argc,char *argv[])
 	dd_node_order = nenum(ddno_opt);
 	cr->npmenodes = npme;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 	/* now determine the number of threads automatically. The threads are
    only started at mdrunner_threads, though. */
 	if (nthreads<1)
@@ -3632,7 +3632,7 @@ int gmx_membed(int argc,char *argv[])
         parse_common_args(&argc,argv,0, NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL, &oenv);
 	if (nmultisim > 1) {
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
                 gmx_bool bParFn = (multidir == NULL);
 		init_multisystem(cr,nmultisim,multidir,NFILE,fnm,TRUE);
 #else

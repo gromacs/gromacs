@@ -60,9 +60,9 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly
-#if(GMX_THREADS)
+#if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
-#endif(GMX_THREADS)
+#endif(GMX_THREAD_MPI)
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,

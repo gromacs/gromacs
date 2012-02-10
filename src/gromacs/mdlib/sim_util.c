@@ -89,7 +89,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -139,7 +139,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
     double dt;
     char buf[48];
     
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
     if (!PAR(cr))
 #endif
     {
@@ -176,7 +176,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                     ir->delta_t/1000*24*60*60/runtime->time_per_step);
         }
     }
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
     if (PAR(cr))
     {
         fprintf(out,"\n");

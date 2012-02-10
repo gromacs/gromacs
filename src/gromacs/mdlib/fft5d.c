@@ -50,7 +50,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -81,17 +81,17 @@ FILE* debug=0;
 
 
 #ifdef GMX_FFT_FFTW3 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
 #define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex)
 #define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex)
-#else /* GMX_THREADS */
+#else /* GMX_THREAD_MPI */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
-#endif /* GMX_THREADS */
+#endif /* GMX_THREAD_MPI */
 #endif /* GMX_FFT_FFTW3 */
 
 static double fft5d_fmax(double a, double b){
