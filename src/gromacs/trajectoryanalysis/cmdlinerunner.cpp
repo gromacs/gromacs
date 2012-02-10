@@ -50,7 +50,6 @@
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/asciihelpwriter.h"
 #include "gromacs/options/cmdlineparser.h"
-#include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
@@ -130,7 +129,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     options->addSubSection(selectionOptions);
     options->addSubSection(moduleOptions);
 
-    commonOptions->addDefaultOptions();
     setSelectionCollectionForOptions(options, selections);
 
     {

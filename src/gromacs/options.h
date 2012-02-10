@@ -65,13 +65,6 @@
  * the option should provide as the template argument.  After this is done, it
  * is possible to add options of this new type using Options::addOption().
  *
- * There is limited support for options that need to share information across
- * instances, e.g., to store values in a shared external data structure or to
- * provide a global option to set a common setting for all such options,
- * provided by the OptionsGlobalProperties class.  This mechanism is not
- * generic, meaning that it is required to change the options module to add
- * data to this structure.
- *
  * To implement new parsers, one can use OptionsAssigner, which provides an
  * interface to set values in an Options object.
  *

@@ -41,9 +41,12 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../options/timeunitmanager.h"
+
 namespace gmx
 {
 
+class AnalysisDataPlotSettings;
 class Options;
 class TrajectoryAnalysisRunnerCommon;
 
@@ -112,6 +115,13 @@ class TrajectoryAnalysisSettings
         //! Initializes default settings.
         TrajectoryAnalysisSettings();
         ~TrajectoryAnalysisSettings();
+
+        //! Returns the time unit manager with time unit timeUnit().
+        const TimeUnitManager &timeUnitManager() const;
+        //! Returns the time unit the user has requested.
+        TimeUnit timeUnit() { return timeUnitManager().timeUnit(); }
+        //! Returns common settings for analysis data plot modules.
+        const AnalysisDataPlotSettings &plotSettings() const;
 
         //! Returns the currently set flags.
         unsigned long flags() const;

@@ -45,7 +45,6 @@
 #include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
-#include "gromacs/options/globalproperties.h"
 
 #include "options-impl.h"
 
@@ -79,7 +78,7 @@ static std::string composeString(const char *const *sarray)
 
 Options::Impl::Impl(const char *name, const char *title)
     : _name(name != NULL ? name : ""), _title(title != NULL ? title : ""),
-      _parent(NULL), _globalProperties(new OptionsGlobalProperties)
+      _parent(NULL)
 {
 }
 
@@ -178,10 +177,6 @@ void Options::addSubSection(Options *section)
                        "Duplicate subsection name");
     _impl->_subSections.push_back(section);
     section->_impl->_parent = this;
-
-    globalProperties()._usedProperties |=
-        section->_impl->_globalProperties->_usedProperties;
-    section->_impl->_globalProperties.reset();
 }
 
 void Options::addOption(const AbstractOption &settings)
@@ -193,11 +188,6 @@ void Options::addOption(const AbstractOption &settings)
     }
     _impl->_options.push_back(option.get());
     option.release();
-}
-
-void Options::addDefaultOptions()
-{
-    globalProperties().addDefaultOptions(this);
 }
 
 bool Options::isSet(const char *name) const
@@ -236,29 +226,11 @@ void Options::finish()
             errors.append(ex.what());
         }
     }
-    if (_impl->_parent == NULL)
-    {
-        GMX_RELEASE_ASSERT(_impl->_globalProperties.get() != NULL,
-                           "Global properties should exist for the top-level options");
-        _impl->_globalProperties->finish();
-    }
     if (!errors.isEmpty())
     {
         // TODO: This exception type may not always be appropriate.
         GMX_THROW(InvalidInputError(errors.toString()));
     }
-}
-
-OptionsGlobalProperties &Options::globalProperties()
-{
-    Options *section = this;
-    while (section->_impl->_parent != NULL)
-    {
-        section = section->_impl->_parent;
-    }
-    GMX_RELEASE_ASSERT(section->_impl->_globalProperties.get() != NULL,
-                       "Global properties should exist for the top-level options");
-    return *section->_impl->_globalProperties;
 }
 
 } // namespace gmx
