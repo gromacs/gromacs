@@ -52,6 +52,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/format.h"
 
 namespace gmx
@@ -356,11 +357,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     registerAnalysisDataset(&_data, "angle");
 
-    AnalysisDataPlotModule *plotm = new AnalysisDataPlotModule(_options);
+    AnalysisDataPlotModule *plotm
+        = new AnalysisDataPlotModule(settings.plotSettings());
     plotm->setFileName(_fnAngle);
     plotm->setTitle("Angle");
-    plotm->setXTimeLabel();
-    plotm->setYLabel("Angle [degrees]");
+    plotm->setXAxisIsTime();
+    plotm->setYLabel("Angle (degrees)");
     _data.addModule(plotm);
 }
 

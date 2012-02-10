@@ -48,7 +48,6 @@ namespace gmx
 {
 
 class AbstractOptionStorage;
-class OptionsGlobalProperties;
 
 /*! \internal \brief
  * Private implementation class for Options.
@@ -119,15 +118,6 @@ class Options::Impl
         OptionList              _options;
         //! Options object that contains this object as a subsection, or NULL.
         Options                *_parent;
-        /*! \brief
-         * Object that contains global properties, or NULL if \a _parent != NULL.
-         *
-         * This object is always owned by the Options object.
-         * For subsections, the global properties are kept in the parent, and
-         * this pointer is NULL.
-         */
-        // Could be scoped_ptr
-        std::auto_ptr<OptionsGlobalProperties>  _globalProperties;
 };
 
 } // namespace gmx

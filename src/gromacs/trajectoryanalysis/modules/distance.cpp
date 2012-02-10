@@ -52,6 +52,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 
 namespace gmx
 {
@@ -109,11 +110,11 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _avem = new AnalysisDataAverageModule();
     _data.addModule(_avem);
 
-    _plotm = new AnalysisDataPlotModule(_options);
+    _plotm = new AnalysisDataPlotModule(settings.plotSettings());
     _plotm->setFileName(_fnDist);
     _plotm->setTitle("Distance");
-    _plotm->setXLabel("Time [ps]");
-    _plotm->setYLabel("Distance [nm]");
+    _plotm->setXAxisIsTime();
+    _plotm->setYLabel("Distance (nm)");
     _data.addModule(_plotm);
 }
 
