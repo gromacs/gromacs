@@ -1449,8 +1449,9 @@ static gmx_bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[]
         }
     }
     
-    if (grps->nr == 1)
+    if (grps->nr == 1 && (ntot == 0 || ntot == natoms))
     {
+        /* All atoms are part of one (or no) group, no index required */
         groups->ngrpnr[gtype] = 0;
         groups->grpnr[gtype]  = NULL;
     }
