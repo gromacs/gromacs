@@ -678,3 +678,33 @@ gmx_bool gmx_isfinite(real x)
 #endif
     return returnval;
 }
+
+gmx_bool
+check_int_multiply_for_overflow(gmx_large_int_t a,
+                                gmx_large_int_t b,
+                                gmx_large_int_t *result)
+{
+    gmx_large_int_t sign = 1;
+    if((0 == a) || (0 == b))
+    {
+        *result = 0;
+        return TRUE;
+    }
+    if(a < 0)
+    {
+        a = -a;
+        sign = -sign;
+    }
+    if(b < 0)
+    {
+        b = -b;
+        sign = -sign;
+    }
+    if(GMX_LARGE_INT_MAX / b < a)
+    {
+        *result = (sign > 0) ? GMX_LARGE_INT_MAX : GMX_LARGE_INT_MIN;
+        return FALSE;
+    }
+    *result = sign * a * b;
+    return TRUE;
+}
