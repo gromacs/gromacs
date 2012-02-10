@@ -387,10 +387,11 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!_fnSize.empty())
     {
-        AnalysisDataPlotModule *plot = new AnalysisDataPlotModule(_options);
+        AnalysisDataPlotModule *plot
+            = new AnalysisDataPlotModule(settings.plotSettings());
         plot->setFileName(_fnSize);
         plot->setTitle("Selection size");
-        plot->setXLabel("Time [ps]");
+        plot->setXAxisIsTime();
         plot->setYLabel("Number");
         _sdata.addModule(plot);
     }
@@ -399,10 +400,11 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_cdata, "cfrac");
     if (!_fnFrac.empty())
     {
-        AnalysisDataPlotModule *plot = new AnalysisDataPlotModule(_options);
+        AnalysisDataPlotModule *plot
+            = new AnalysisDataPlotModule(settings.plotSettings());
         plot->setFileName(_fnFrac);
         plot->setTitle("Covered fraction");
-        plot->setXLabel("Time [ps]");
+        plot->setXAxisIsTime();
         plot->setYLabel("Fraction");
         plot->setYFormat(6, 4);
         _cdata.addModule(plot);
@@ -413,7 +415,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_idata, "index");
     if (!_fnIndex.empty())
     {
-        AnalysisDataPlotModule *plot = new AnalysisDataPlotModule(_options);
+        AnalysisDataPlotModule *plot
+            = new AnalysisDataPlotModule(settings.plotSettings());
         plot->setFileName(_fnIndex);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
@@ -452,12 +455,13 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         else
         {
-            AnalysisDataPlotModule *plot = new AnalysisDataPlotModule(_options);
+            AnalysisDataPlotModule *plot
+                = new AnalysisDataPlotModule(settings.plotSettings());
             plot->setFileName(_fnMask);
             plot->setPlainOutput(_bDump);
             plot->setOmitX(_bDump);
             plot->setTitle("Selection mask");
-            plot->setXLabel("Time [ps]");
+            plot->setXAxisIsTime();
             plot->setYLabel("Occupancy");
             plot->setYFormat(1, 0);
             _mdata.addModule(plot);

@@ -48,29 +48,60 @@
 #include <cstring>
 
 #include <gmxfio.h>
+#include <smalloc.h>
 #include <statutil.h>
 #include <vec.h>
 #include <xvgr.h>
 
-#include "gromacs/options/globalproperties.h"
+#include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/options/timeunitmanager.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/format.h"
 
 #include "plot-impl.h"
+
+static const char *const g_plotFormats[] = {
+    "none", "xmgrace", "xmgr", NULL
+};
 
 namespace gmx
 {
 
 /********************************************************************
+ * AnalysisDataPlotSettings
+ */
+
+AnalysisDataPlotSettings::AnalysisDataPlotSettings()
+    : selections_(NULL), timeUnit_(eTimeUnit_ps), plotFormat_(1)
+{
+}
+
+void
+AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *selections)
+{
+    selections_ = selections;
+}
+
+
+void
+AnalysisDataPlotSettings::addOptions(Options *options)
+{
+    options->addOption(StringOption("xvg").enumValue(g_plotFormats)
+                           .defaultValue("xmgrace")
+                           .storeEnumIndex(&plotFormat_)
+                           .description("Plot formatting"));
+}
+
+
+/********************************************************************
  * AbstractPlotModule::Impl
  */
 
-AbstractPlotModule::Impl::Impl(const Options &options)
-    : fp(NULL), bPlain(false), bOmitX(false),
-      oenv(options.globalProperties().output_env()),
-      sel(NULL)
+AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
+    : settings(settings), fp(NULL), bPlain(false), bOmitX(false), xscale(1.0)
 {
     strcpy(xfmt, "%11.3f");
     strcpy(yfmt, " %8.3f");
@@ -104,8 +135,8 @@ AbstractPlotModule::Impl::closeFile()
  * AbstractPlotModule
  */
 
-AbstractPlotModule::AbstractPlotModule(const Options &options)
-    : _impl(new Impl(options))
+AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
+    : _impl(new Impl(settings))
 {
 }
 
@@ -159,9 +190,11 @@ AbstractPlotModule::setXLabel(const char *label)
 
 
 void
-AbstractPlotModule::setXTimeLabel()
+AbstractPlotModule::setXAxisIsTime()
 {
-    _impl->xlabel = output_env_get_xvgr_tlabel(_impl->oenv);
+    TimeUnitManager manager(_impl->settings.timeUnit());
+    _impl->xlabel = formatString("Time (%s)", manager.timeUnitAsString());
+    _impl->xscale = manager.inverseTimeScaleFactor();
 }
 
 
@@ -230,30 +263,40 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
         }
         else
         {
+            // TODO: oenv is leaked if code below throws.
+            output_env_t oenv;
+            snew(oenv, 1);
+            output_env_init_default(oenv);
+            oenv->time_unit = static_cast<time_unit_t>(_impl->settings.timeUnit() + 1);
+            oenv->xvg_format =
+                (_impl->settings.plotFormat() > 0
+                    ? static_cast<xvg_format_t>(_impl->settings.plotFormat())
+                    : exvgNONE);
             _impl->fp = xvgropen(_impl->fnm.c_str(), _impl->title.c_str(),
                                  _impl->xlabel.c_str(), _impl->ylabel.c_str(),
-                                 _impl->oenv);
-            if (_impl->sel != NULL)
+                                 oenv);
+            const SelectionCollection *selections
+                = _impl->settings.selectionCollection();
+            if (selections != NULL)
             {
-                _impl->sel->printXvgrInfo(_impl->fp, _impl->oenv);
+                selections->printXvgrInfo(_impl->fp, oenv);
             }
             if (!_impl->subtitle.empty())
             {
-                xvgr_subtitle(_impl->fp, _impl->subtitle.c_str(), _impl->oenv);
+                xvgr_subtitle(_impl->fp, _impl->subtitle.c_str(), oenv);
             }
-            if (output_env_get_print_xvgr_codes(_impl->oenv)
+            if (output_env_get_print_xvgr_codes(oenv)
                 && !_impl->leg.empty())
             {
-                const char **leg;
-
-                leg = new const char *[_impl->leg.size()];
+                std::vector<const char *> leg;
+                leg.reserve(_impl->leg.size());
                 for (size_t i = 0; i < _impl->leg.size(); ++i)
                 {
-                    leg[i] = _impl->leg[i].c_str();
+                    leg.push_back(_impl->leg[i].c_str());
                 }
-                xvgr_legend(_impl->fp, _impl->leg.size(), leg, _impl->oenv);
-                delete [] leg;
+                xvgr_legend(_impl->fp, leg.size(), &leg[0], oenv);
             }
+            output_env_done(oenv);
         }
     }
 }
@@ -268,7 +311,7 @@ AbstractPlotModule::frameStarted(real x, real dx)
     }
     if (!_impl->bOmitX)
     {
-        std::fprintf(_impl->fp, _impl->xfmt, x);
+        std::fprintf(_impl->fp, _impl->xfmt, x * _impl->xscale);
     }
 }
 
@@ -310,8 +353,9 @@ AbstractPlotModule::writeValue(real value) const
  * DataPlotModule
  */
 
-AnalysisDataPlotModule::AnalysisDataPlotModule(const Options &options)
-    : AbstractPlotModule(options)
+AnalysisDataPlotModule::AnalysisDataPlotModule(
+        const AnalysisDataPlotSettings &settings)
+    : AbstractPlotModule(settings)
 {
 }
 
@@ -336,8 +380,9 @@ AnalysisDataPlotModule::pointsAdded(real x, real dx, int firstcol, int n,
  * DataVectorPlotModule
  */
 
-AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(const Options &options)
-    : AbstractPlotModule(options)
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
+        const AnalysisDataPlotSettings &settings)
+    : AbstractPlotModule(settings)
 {
     for (int i = 0; i < DIM; ++i)
     {

@@ -48,7 +48,6 @@ namespace gmx
 {
 
 class AbstractOption;
-class OptionsGlobalProperties;
 class OptionsAssigner;
 class OptionsIterator;
 
@@ -151,17 +150,6 @@ class Options
          * See \link Options class documentation \endlink for example usage.
          */
         void addOption(const AbstractOption &settings);
-        /*! \brief
-         * Adds default options to this collection.
-         *
-         * Adds default options for altering global properties such as the time
-         * unit into this collection.
-         *
-         * It is possible to call this method on a subsection of a collection.
-         * Even in that case, the generated options set the properties for the
-         * parent collection.
-         */
-        void addDefaultOptions();
 
         //! Returns true if option \p name is set.
         bool isSet(const char *name) const;
@@ -180,23 +168,6 @@ class Options
          * information on all errors detected during the call.
          */
         void finish();
-
-        /*! \brief
-         * Returns the global property object for this collection.
-         *
-         * The caller should not store pointers or references to the object;
-         * it can change if this object is added as a subsection into
-         * another collection.
-         *
-         * The global property object is shared by all Options objects that
-         * are part of the same section/subsection hierarchy.
-         *
-         * \see OptionsGlobalProperties
-         */
-        OptionsGlobalProperties &globalProperties();
-        //! \copydoc globalProperties()
-        const OptionsGlobalProperties &globalProperties() const
-        { return const_cast<Options *>(this)->globalProperties(); }
 
     private:
         class Impl;

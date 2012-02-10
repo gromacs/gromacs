@@ -40,6 +40,7 @@
 
 #include "analysissettings.h"
 
+#include "../analysisdata/modules/plot.h"
 #include "../options/timeunitmanager.h"
 
 namespace gmx
@@ -57,6 +58,7 @@ class TrajectoryAnalysisSettings::Impl
         Impl() : flags(0), frflags(0), bRmPBC(true), bPBC(true) {}
 
         TimeUnitManager      timeUnitManager;
+        AnalysisDataPlotSettings plotSettings;
         unsigned long        flags;
         int                  frflags;
 

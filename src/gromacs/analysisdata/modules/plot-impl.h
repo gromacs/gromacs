@@ -50,18 +50,17 @@ class Options;
 class AbstractPlotModule::Impl
 {
     public:
-        explicit Impl(const Options &options);
+        explicit Impl(const AnalysisDataPlotSettings &settings);
         ~Impl();
 
         void closeFile();
 
+        AnalysisDataPlotSettings settings;
         std::string             fnm;
         FILE                   *fp;
 
         bool                    bPlain;
         bool                    bOmitX;
-        output_env_t            oenv;
-        const SelectionCollection *sel;
         std::string             title;
         std::string             subtitle;
         std::string             xlabel;
@@ -69,6 +68,7 @@ class AbstractPlotModule::Impl
         std::vector<std::string>  leg;
         char                    xfmt[15];
         char                    yfmt[15];
+        real                    xscale;
 };
 
 } // namespace gmx

@@ -159,10 +159,11 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (!_fnDist.empty())
     {
-        AnalysisDataPlotModule *plotm = new AnalysisDataPlotModule(_options);
+        AnalysisDataPlotModule *plotm
+            = new AnalysisDataPlotModule(settings.plotSettings());
         plotm->setFileName(_fnDist);
         plotm->setTitle("Average distance");
-        plotm->setXLabel("Time (ps)");
+        plotm->setXAxisIsTime();
         plotm->setYLabel("Distance (nm)");
         _data.addModule(plotm);
     }

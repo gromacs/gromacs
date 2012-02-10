@@ -42,11 +42,72 @@
 #include <string>
 
 #include "../datamodule.h"
+#include "../../options/timeunitmanager.h"
 
 namespace gmx
 {
 
 class Options;
+class SelectionCollection;
+
+/*! \brief
+ * Common settings for data plots.
+ *
+ * \inpublicapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataPlotSettings
+{
+    public:
+        //! Constructs default analysis plot settings.
+        AnalysisDataPlotSettings();
+
+        //! Returns the selection collection set with setSelectionCollection().
+        const SelectionCollection *selectionCollection() const
+        {
+            return selections_;
+        }
+        //! Returns the time unit set with setTimeUnit().
+        TimeUnit timeUnit() const { return timeUnit_; }
+        /*! \brief
+         * Returns the plot format.
+         *
+         * \todo Use a proper enum.
+         */
+        int plotFormat() const { return plotFormat_; }
+
+        /*! \brief
+         * Set selection collection to print as comments into the output.
+         *
+         * Formatted selection text from all selections in \p selections is
+         * printed as comments in the output file.
+         * If this method is not called, no selection information is written
+         * to the output.
+         */
+        void setSelectionCollection(const SelectionCollection *selections);
+        /*! \brief
+         * Sets the time unit for the plot.
+         *
+         * The value is used only if AbstractPlotModule::setXAxisIsTime() is
+         * called, in which case it is used to print the appropriate axis label
+         * and to scale the values.
+         * If not called, the default time unit is ps.
+         */
+        void setTimeUnit(TimeUnit timeUnit) { timeUnit_ = timeUnit; }
+
+
+        /*! \brief
+         * Adds common options for setting plot options.
+         *
+         * \param[in,out] options Options object to which options are added.
+         */
+        void addOptions(Options *options);
+
+    private:
+        const SelectionCollection *selections_;
+        TimeUnit                timeUnit_;
+        int                     plotFormat_;
+};
 
 /*! \brief
  * Abstract data module for writing data into a file.
@@ -106,9 +167,12 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          */
         void setXLabel(const char *label);
         /*! \brief
-         * Set X axis label for time.
+         * Treat X axis as time.
+         *
+         * Sets the label for the axis accordingly and also scales output to
+         * take into account the correct time unit.
          */
-        void setXTimeLabel();
+        void setXAxisIsTime();
         /*! \brief
          * Set Y axis label.
          */
@@ -148,7 +212,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 
     protected:
         /*! \cond libapi */
-        explicit AbstractPlotModule(const Options &options);
+        explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
 
         bool isFileOpen() const;
         void writeValue(real value) const;
@@ -176,7 +240,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 class AnalysisDataPlotModule : public AbstractPlotModule
 {
     public:
-        explicit AnalysisDataPlotModule(const Options &options);
+        explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
         virtual void pointsAdded(real x, real dx, int firstcol, int n,
                                  const real *y, const real *dy,
@@ -197,7 +261,7 @@ class AnalysisDataPlotModule : public AbstractPlotModule
 class AnalysisDataVectorPlotModule : public AbstractPlotModule
 {
     public:
-        explicit AnalysisDataVectorPlotModule(const Options &options);
+        explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
 
         /*! \brief
          * Set whether to write X component.

@@ -45,7 +45,6 @@
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptioninfo.h"
-#include "gromacs/options/globalproperties.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/format.h"
 
@@ -368,7 +367,9 @@ void StringOptionStorage::refreshValues()
         {
             ValueList::const_iterator match =
                 std::find(_allowed.begin(), _allowed.end(), values()[i]);
-            _enumIndexStore[i] = (match - _allowed.begin());
+            GMX_ASSERT(match != _allowed.end(),
+                       "Enum value not found (internal error)");
+            _enumIndexStore[i] = static_cast<int>(match - _allowed.begin());
         }
     }
 }
@@ -420,10 +421,6 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings, Opt
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
-    if (filetype_ == eftPlot)
-    {
-        options->globalProperties().request(eogpPlotFormat);
-    }
 }
 
 std::string FileNameOptionStorage::formatValue(int i) const
