@@ -978,12 +978,27 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
                inputrec,nrnb,wcycle,&runtime,
 #ifdef GMX_GPU
-               fr->nbv != NULL && fr->nbv->useGPU ? 
+               fr != NULL && fr->nbv != NULL && fr->nbv->useGPU ?
                  nbnxn_cuda_get_timings(fr->nbv->cu_nbv) :
 #endif
                NULL,
                nthreads_pp, 
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+
+#ifdef GMX_GPU
+    if (cr->duty & DUTY_PP && fr->nbv != NULL && fr->nbv->useGPU)
+    {
+        int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
+
+        /* free GPU memory and uninitialize GPU */
+        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv, DOMAINDECOMP(cr));
+
+        if (uninit_gpu(fplog, gpu_device_id) != 0)
+        {
+            gmx_warning("Failed to uninitialize GPU.");
+        }
+    }
+#endif
 
     /* Does what it says */  
     print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);
@@ -1005,22 +1020,6 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         tMPI_Finalize();
     }
 #endif
-
-#ifdef GMX_GPU
-    if (fr->nbv != NULL && fr->nbv->useGPU)
-    {
-        int gpu_device_id = cr->nodeid; /* FIXME get dev_id */
-        /* free GPU memory and uninitialize GPU */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv, DOMAINDECOMP(cr));
-
-        if (uninit_gpu(fplog, gpu_device_id) != 0)
-        {
-            gmx_warning("Failed to uninitialize GPU.");
-        }
-    }
-#endif
-
-
 
     return rc;
 }
