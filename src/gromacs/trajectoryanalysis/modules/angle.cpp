@@ -51,6 +51,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
+#include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/utility/format.h"
 
 namespace gmx
@@ -61,7 +62,7 @@ namespace analysismodules
 
 Angle::Angle()
     : _options("angle", "Angle calculation"),
-      _sel1Adj(NULL), _sel2Adj(NULL),
+      _sel1info(NULL), _sel2info(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
       _bDumpDist(false), _vt0(NULL)
 {
@@ -146,10 +147,10 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         .description("Write also distances with -od"));
 
     _options.addOption(SelectionOption("group1").multiValue().required()
-        .dynamicOnlyWhole().storeVector(&_sel1).getAdjuster(&_sel1Adj)
+        .dynamicOnlyWhole().storeVector(&_sel1).getAdjuster(&_sel1info)
         .description("First analysis/vector selection"));
     _options.addOption(SelectionOption("group2").multiValue()
-        .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2Adj)
+        .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2info)
         .description("Second analysis/vector selection"));
 
     return &_options;
@@ -197,7 +198,7 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
 
     if (_bAll)
     {
-        _sel1Adj->setOnlyStatic(true);
+        _sel1info->setOnlyStatic(true);
     }
 
     // Set up the number of positions per angle.
@@ -228,11 +229,11 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
 
     if (!_bMulti)
     {
-        _sel1Adj->setValueCount(_bSplit1 ? _natoms1 : 1);
+        _sel1info->setValueCount(_bSplit1 ? _natoms1 : 1);
     }
     if (_natoms2 > 0)
     {
-        _sel2Adj->setValueCount(_bSplit2 ? _natoms2 : 1);
+        _sel2info->setValueCount(_bSplit2 ? _natoms2 : 1);
     }
 }
 
