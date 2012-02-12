@@ -46,7 +46,7 @@ namespace gmx
 {
 
 class Selection;
-class SelectionOptionAdjuster;
+class SelectionOptionInfo;
 class SelectionOptionStorage;
 
 /*! \brief
@@ -60,7 +60,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
     public:
         //! Initializes an option with the given name.
         explicit SelectionOption(const char *name)
-            : MyBase(name), _adjuster(NULL)
+            : MyBase(name), _infoPtr(NULL)
         { }
 
         /*! \brief
@@ -101,12 +101,13 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         { _selectionFlags.set(efDynamicOnlyWhole); return me(); }
 
         /*! \brief
-         * Get an adjuster that can be used to alter the option after creation.
+         * Get an info object that can be used to alter the option after
+         * creation.
          *
-         * \see SelectionOptionAdjuster
+         * \see SelectionOptionInfo
          */
-        MyClass &getAdjuster(SelectionOptionAdjuster **adjusterp)
-        { _adjuster = adjusterp; return me(); }
+        MyClass &getAdjuster(SelectionOptionInfo **infoPtr)
+        { _infoPtr = infoPtr; return me(); }
 
     private:
         // Disable default value because it is impossible to provide a
@@ -117,102 +118,13 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
 
         SelectionFlags          _selectionFlags;
-        SelectionOptionAdjuster **_adjuster;
+        SelectionOptionInfo   **_infoPtr;
 
         /*! \brief
          * Needed to initialize SelectionOptionStorage from this class without
          * otherwise unnecessary accessors.
          */
         friend class SelectionOptionStorage;
-};
-
-
-/*! \brief
- * Allows changes to a selection option after creation.
- *
- * This class provides the necessary interface for changing, e.g., the number
- * of allowed selections for a selection option after the option has been
- * created with Options::addOption().  This is needed if the number or other
- * flags are only known after other options have been parsed.  The main
- * advantage of this class over custom checks is that if used before
- * interactive selection prompt, the interactive prompt is updated accordingly.
- *
- * When using this class, the option should be initially created with the most
- * permissive flags, and this class should be used to place restrictions where
- * appropriate.  Otherwise, values that are provided before adjustments will
- * need to follow the more strict checks.  In most cases in trajectory analysis
- * (which is the main use case for selection options), the adjustments should
- * be done in TrajectoryAnalysisModule::initOptionsDone() for them to take
- * place before interactive selection prompts.
- *
- * An instance of this class for a selection option can be obtained with
- * SelectionOption::getAdjuster() when the option is created.
- *
- * Example use:
- * \code
-std::vector<Selection *> sel;
-Options options("example", "Example options");
-SelectionOptionAdjuster *adjuster;
-options.addOption(SelectionOption("sel").storeVector(&sel)
-                      .multiValue().getAdjuster(&adjuster));
-// < ... assign values to options ...>
-if ( condition )
-{
-    OptionAdjusterErrorContext context(adjuster, errors);
-    // Put limitations on the selections based on the condition,
-    // which can depend on other option values.
-    int rc = adjuster->setValueCount(2);
-    if (rc == 0)
-    {
-        rc = adjuster->setOnlyStatic(true);
-    }
-    if (rc != 0)
-    {
-        return rc;
-    }
-}
- * \endcode
- *
- * \inpublicapi
- * \ingroup module_selection
- */
-class SelectionOptionAdjuster
-{
-    public:
-        /*! \brief
-         * Creates a new adjuster.
-         *
-         * Should only be called internally by the options module.
-         */
-        SelectionOptionAdjuster(SelectionOptionStorage *storage);
-
-        /*! \brief
-         * Sets the number of selections allowed for the option.
-         *
-         * \param[in] count  Number of allowed selections.
-         */
-        void setValueCount(int count);
-
-        //! \copydoc SelectionOption::evaluateVelocities()
-        void setEvaluateVelocities(bool bEnabled);
-        //! \copydoc SelectionOption::evaluateForces()
-        void setEvaluateForces(bool bEnabled);
-        //! \copydoc SelectionOption::onlyAtoms()
-        void setOnlyAtoms(bool bEnabled);
-        //! \copydoc SelectionOption::onlyStatic()
-        void setOnlyStatic(bool bEnabled);
-        //! \copydoc SelectionOption::dynamicMask()
-        void setDynamicMask(bool bEnabled);
-        //! \copydoc SelectionOption::dynamicOnlyWhole()
-        void setDynamicOnlyWhole(bool bEnabled);
-
-    private:
-        //! Returns the storage object associated with this adjuster.
-        SelectionOptionStorage &storage() { return _storage; }
-        //! Returns the storage object associated with this adjuster.
-        const SelectionOptionStorage &storage() const { return _storage; }
-
-        SelectionOptionStorage &_storage;
 };
 
 } // namespace gmx

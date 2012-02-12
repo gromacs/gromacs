@@ -49,7 +49,7 @@ namespace gmx
 {
 
 class Selection;
-class SelectionOptionAdjuster;
+class SelectionOptionInfo;
 
 namespace analysismodules
 {
@@ -81,8 +81,8 @@ class Angle : public TrajectoryAnalysisModule
 
         std::vector<Selection *> _sel1;
         std::vector<Selection *> _sel2;
-        SelectionOptionAdjuster *_sel1Adj;
-        SelectionOptionAdjuster *_sel2Adj;
+        SelectionOptionInfo    *_sel1info;
+        SelectionOptionInfo    *_sel2info;
         std::string             _fnAngle;
         std::string             _fnDump;
 
