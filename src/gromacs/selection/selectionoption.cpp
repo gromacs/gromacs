@@ -63,21 +63,13 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
                                                Options *options)
     : MyBase(settings, options,
              OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
-      _info(this), _selectionFlags(settings._selectionFlags),
-      _adjuster(NULL)
+      _info(this), _selectionFlags(settings._selectionFlags)
 {
     options->globalProperties().request(eogpSelectionCollection);
-    if (settings._adjuster != NULL)
+    if (settings._infoPtr != NULL)
     {
-        _adjuster = new SelectionOptionAdjuster(this);
-        *settings._adjuster = _adjuster;
+        *settings._infoPtr = &_info;
     }
-}
-
-
-SelectionOptionStorage::~SelectionOptionStorage()
-{
-    delete _adjuster;
 }
 
 
@@ -208,49 +200,49 @@ SelectionOptionInfo::SelectionOptionInfo(SelectionOptionStorage *option)
 {
 }
 
-
-/********************************************************************
- * SelectionOptionAdjuster
- */
-
-SelectionOptionAdjuster::SelectionOptionAdjuster(SelectionOptionStorage *storage)
-    : _storage(*storage)
+SelectionOptionStorage &SelectionOptionInfo::option()
 {
+    return static_cast<SelectionOptionStorage &>(OptionInfo::option());
 }
 
-void SelectionOptionAdjuster::setValueCount(int count)
+const SelectionOptionStorage &SelectionOptionInfo::option() const
 {
-    return storage().setAllowedValueCount(count);
+    return static_cast<const SelectionOptionStorage &>(OptionInfo::option());
 }
 
-void SelectionOptionAdjuster::setEvaluateVelocities(bool bEnabled)
+void SelectionOptionInfo::setValueCount(int count)
 {
-    return storage().setSelectionFlag(efEvaluateVelocities, bEnabled);
+    return option().setAllowedValueCount(count);
 }
 
-void SelectionOptionAdjuster::setEvaluateForces(bool bEnabled)
+void SelectionOptionInfo::setEvaluateVelocities(bool bEnabled)
 {
-    return storage().setSelectionFlag(efEvaluateForces, bEnabled);
+    return option().setSelectionFlag(efEvaluateVelocities, bEnabled);
 }
 
-void SelectionOptionAdjuster::setOnlyAtoms(bool bEnabled)
+void SelectionOptionInfo::setEvaluateForces(bool bEnabled)
 {
-    return storage().setSelectionFlag(efOnlyAtoms, bEnabled);
+    return option().setSelectionFlag(efEvaluateForces, bEnabled);
 }
 
-void SelectionOptionAdjuster::setOnlyStatic(bool bEnabled)
+void SelectionOptionInfo::setOnlyAtoms(bool bEnabled)
 {
-    return storage().setSelectionFlag(efOnlyStatic, bEnabled);
+    return option().setSelectionFlag(efOnlyAtoms, bEnabled);
 }
 
-void SelectionOptionAdjuster::setDynamicMask(bool bEnabled)
+void SelectionOptionInfo::setOnlyStatic(bool bEnabled)
 {
-    return storage().setSelectionFlag(efDynamicMask, bEnabled);
+    return option().setSelectionFlag(efOnlyStatic, bEnabled);
 }
 
-void SelectionOptionAdjuster::setDynamicOnlyWhole(bool bEnabled)
+void SelectionOptionInfo::setDynamicMask(bool bEnabled)
 {
-    return storage().setSelectionFlag(efDynamicOnlyWhole, bEnabled);
+    return option().setSelectionFlag(efDynamicMask, bEnabled);
+}
+
+void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
+{
+    return option().setSelectionFlag(efDynamicOnlyWhole, bEnabled);
 }
 
 

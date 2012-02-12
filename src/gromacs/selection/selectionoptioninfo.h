@@ -47,7 +47,45 @@ namespace gmx
 class SelectionOptionStorage;
 
 /*! \brief
- * Wrapper class for accessing selection option information.
+ * Wrapper class for accessing and modifying selection option information.
+ *
+ * Allows changes to a selection option after creation.
+ *
+ * This class provides the necessary interface for changing, e.g., the number
+ * of allowed selections for a selection option after the option has been
+ * created with Options::addOption().  This is needed if the number or other
+ * flags are only known after other options have been parsed.  The main
+ * advantage of this class over custom checks is that if used before
+ * interactive selection prompt, the interactive prompt is updated accordingly.
+ *
+ * When using this class, the option should be initially created with the most
+ * permissive flags, and this class should be used to place restrictions where
+ * appropriate.  Otherwise, values that are provided before adjustments will
+ * need to follow the more strict checks.  In most cases in trajectory analysis
+ * (which is the main use case for selection options), the adjustments should
+ * be done in TrajectoryAnalysisModule::initOptionsDone() for them to take
+ * place before interactive selection prompts.
+ *
+ * An instance of this class for a selection option can be obtained with
+ * SelectionOption::getAdjuster() when the option is created.
+ *
+ * Example use:
+ * \code
+std::vector<Selection *> sel;
+Options options("example", "Example options");
+SelectionOptionInfo *info;
+options.addOption(SelectionOption("sel").storeVector(&sel)
+                      .multiValue().getAdjuster(&info));
+// < ... assign values to options ...>
+if ( condition )
+{
+    // Put limitations on the selections based on the condition,
+    // which can depend on other option values.
+    // Throws if input given so far violates the limitations.
+    info->setValueCount(2);
+    info->setOnlyStatic(true);
+}
+ * \endcode
  *
  * \inpublicapi
  * \ingroup module_selection
@@ -55,7 +93,32 @@ class SelectionOptionStorage;
 class SelectionOptionInfo : public OptionInfo
 {
     public:
+        //! Creates option info object for given storage object.
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
+
+        /*! \brief
+         * Sets the number of selections allowed for the option.
+         *
+         * \param[in] count  Number of allowed selections.
+         */
+        void setValueCount(int count);
+
+        //! \copydoc SelectionOption::evaluateVelocities()
+        void setEvaluateVelocities(bool bEnabled);
+        //! \copydoc SelectionOption::evaluateForces()
+        void setEvaluateForces(bool bEnabled);
+        //! \copydoc SelectionOption::onlyAtoms()
+        void setOnlyAtoms(bool bEnabled);
+        //! \copydoc SelectionOption::onlyStatic()
+        void setOnlyStatic(bool bEnabled);
+        //! \copydoc SelectionOption::dynamicMask()
+        void setDynamicMask(bool bEnabled);
+        //! \copydoc SelectionOption::dynamicOnlyWhole()
+        void setDynamicOnlyWhole(bool bEnabled);
+
+    private:
+        SelectionOptionStorage &option();
+        const SelectionOptionStorage &option() const;
 };
 
 } // namespace gmx

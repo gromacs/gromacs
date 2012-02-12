@@ -47,7 +47,6 @@ namespace gmx
 
 class Selection;
 class SelectionOption;
-class SelectionOptionAdjuster;
 
 /*! \internal \brief
  * Converts, validates, and stores selection values.
@@ -64,7 +63,6 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * \param[in] options    Options object.
          */
         SelectionOptionStorage(const SelectionOption &settings, Options *options);
-        virtual ~SelectionOptionStorage();
 
         virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return "sel"; }
@@ -118,8 +116,6 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
 
         SelectionOptionInfo     _info;
         SelectionFlags          _selectionFlags;
-        //! Pointer to the adjuster (there can be only one, can be NULL).
-        SelectionOptionAdjuster *_adjuster;
 };
 
 } // namespace gmx
