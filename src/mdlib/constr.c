@@ -366,7 +366,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 
     if (nsettle > 0)
     {
-        nth = gmx_omp_nthreads_get(emntSettle);
+        nth = gmx_omp_nthreads_get(emntSETTLE);
     }
     else
     {

@@ -255,7 +255,7 @@ static t_commrec *mdrunner_start_threads(int nthreads,
     mda->deviceOptions=deviceOptions;
     mda->Flags=Flags;
 
-    fprintf(stderr, "Starting %d threads\n",nthreads);
+    fprintf(stderr, "Starting %d tMPI threads\n",nthreads);
     fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
@@ -639,13 +639,14 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    gmx_omp_nthreads_init(cr);
+    gmx_omp_nthreads_init(fplog, cr, (cr->duty & DUTY_PP) == 0,
+                          inputrec->cutoff_scheme == ecutsVERLET);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is 
        identical everywhere;
      */
-    /* nthreads_pp is only used for pinning threads.
+    /* TODO nthreads_pp is only used for pinning threads.
      * This is a temporary solution.
      */
     nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
@@ -679,13 +680,13 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                     nsteps_cmdline);
         }
 
-        if (MASTER(cr))
+        if (SIMMASTER(cr))
         {
             fprintf(stderr, "\n%s\n\n", stmp);
         }
         if (fplog)
         {
-            fprintf(fplog, "\n%s\n", stmp);
+            fprintf(fplog, "\n%s\n\n", stmp);
         }
     }
 

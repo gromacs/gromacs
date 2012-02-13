@@ -898,7 +898,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
      * Currently the number is fixed for the whole simulation,
      * but it could be set in set_lincs().
      */
-    li->nth = gmx_omp_nthreads_get(emntLincs);
+    li->nth = gmx_omp_nthreads_get(emntLINCS);
     if (li->nth == 1)
     {
         snew(li->th,1);

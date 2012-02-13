@@ -42,8 +42,9 @@
  */
 
 #ifndef GMX_OMPENMP
-static inline int omp_get_max_threads() { return 1; }
-static inline int omp_get_thread_num()  { return 0; }
+static inline int  omp_get_max_threads() { return 1; }
+static inline int  omp_get_thread_num()  { return 0; }
+static inline void omp_set_num_threads() { return; }
 #endif /* GMX_OMPENMP */
 
 #endif /* NO_OMP_H */
