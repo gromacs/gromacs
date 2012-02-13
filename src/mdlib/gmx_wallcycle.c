@@ -566,13 +566,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     char   buf[STRLEN];
     const char *hline = "----------------------------------------------------------------------------";
     
-    nth_pp  = wc->nthreads_pp;
-    nth_pme = wc->nthreads_pme;
-
     if (wc == NULL)
     {
         return;
     }
+
+    nth_pp  = wc->nthreads_pp;
+    nth_pme = wc->nthreads_pme;
 
     cycles = wc->cycles_sum;
 
