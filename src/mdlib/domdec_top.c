@@ -1117,7 +1117,26 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
             ftype  = rtil[j++];
             iatoms = rtil + j;
             nral = NRAL(ftype);
-            if (interaction_function[ftype].flags & IF_VSITE)
+            if (ftype == F_SETTLE)
+            {
+                /* Settles are only in the reverse top when they
+                 * operate within a charge group. So we can assign
+                 * them without checks. We do this only for performance
+                 * reasons; it could be handled by the code below.
+                 */
+                if (iz == 0)
+                {
+                    /* Home zone: add this settle to the local topology */
+                    tiatoms[0] = iatoms[0];
+                    tiatoms[1] = i;
+                    tiatoms[2] = i + iatoms[2] - iatoms[1];
+                    tiatoms[3] = i + iatoms[3] - iatoms[1];
+                    add_ifunc(nral,tiatoms,&idef->il[ftype]);
+                    nbonded_local++;
+                }
+                j += 1 + nral;
+            }
+            else if (interaction_function[ftype].flags & IF_VSITE)
             {
                 /* The vsite construction goes where the vsite itself is */
                 if (iz == 0)
