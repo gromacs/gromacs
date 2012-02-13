@@ -9080,6 +9080,10 @@ void dd_partition_system(FILE            *fplog,
                       fr,
                       fr->cutoff_scheme==ecutsGROUP ? fr->cg_cm : state_local->x,
                       vsite,top_global,top_local);
+
+    wallcycle_sub_stop(wcycle,ewcsDD_MAKETOP);
+
+    wallcycle_sub_start(wcycle,ewcsDD_MAKECONSTR);
     
     /* Set up the special atom communication */
     n = comm->nat[ddnatZONE];
@@ -9108,7 +9112,7 @@ void dd_partition_system(FILE            *fplog,
         comm->nat[i] = n;
     }
 
-    wallcycle_sub_stop(wcycle,ewcsDD_MAKETOP);
+    wallcycle_sub_stop(wcycle,ewcsDD_MAKECONSTR);
     
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.

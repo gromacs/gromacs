@@ -106,7 +106,8 @@ static const char *wcn[ewcNR] =
   "Enforced rotation", "Add rot. forces", "Test" };
 
 static const char *wcsn[ewcsNR] =
-{ "DD redist.", "DD NS grid + sort", "DD setup comm.", "DD make top",
+{ "DD redist.", "DD NS grid + sort", "DD setup comm.",
+  "DD make top.", "DD make constr.",
   "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
   "NB X buffer ops.", "NB F buffer ops."
 };
