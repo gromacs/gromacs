@@ -511,7 +511,10 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
             {
                 int start_th,end_th;
 
-                clear_mat(constr->rmdr_th[th]);
+                if (th > 0)
+                {
+                    clear_mat(constr->rmdr_th[th]);
+                }
                 
                 start_th = (nsettle*(th-th_ss  ))/(nth-th_ss);
                 end_th   = (nsettle*(th-th_ss+1))/(nth-th_ss);
