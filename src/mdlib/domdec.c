@@ -188,6 +188,17 @@ typedef struct
     real p1_1;    /* The top value of the first cell in this zone           */
 } gmx_ddzone_t;
 
+typedef struct
+{
+    gmx_domdec_ind_t ind;
+    int *ibuf;
+    int ibuf_nalloc;
+    vec_rvec_t vbuf;
+    int nsend;
+    int nat;
+    int nsend_zone;
+} dd_comm_setup_work_t;
+
 typedef struct gmx_domdec_comm
 {
     /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
@@ -297,9 +308,13 @@ typedef struct gmx_domdec_comm
     int  *buf_int;
     int  nalloc_int;
 
-     /* Communication buffer for general use */
+    /* Communication buffer for general use */
     vec_rvec_t vbuf;
-    
+
+    /* Temporary storage for thread parallel communication setup */
+    int nth;
+    dd_comm_setup_work_t *dth;
+
     /* Communication buffers only used with multiple grid pulses */
     int  *buf_int2;
     int  nalloc_int2;
@@ -7120,6 +7135,16 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
     comm = dd->comm;
 
+    /* Initialize the thread data.
+     * This can not be done in init_domain_decomposition,
+     * as the numbers of threads is determined later.
+     */
+    comm->nth = gmx_omp_nthreads_get(emntDomdec);
+    if (comm->nth > 1)
+    {
+        snew(comm->dth,comm->nth);
+    }
+
     if (EEL_PME(ir->coulombtype))
     {
         init_ddpme(dd,&comm->ddpme[0],0);
@@ -7345,11 +7370,385 @@ static gmx_bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
     return bMiss;
 }
 
+typedef struct {
+    real c[DIM][4]; /* the corners for the non-bonded communication */
+    real cr0;       /* corner for rounding */
+    real cr1[4];    /* corners for rounding */
+    real bc[DIM];   /* corners for bounded communication */
+    real bcr1;      /* corner for rounding for bonded communication */
+} dd_corners_t;
+
+/* Determine the corners of the domain(s) we are communicating with */
+static void
+set_dd_corners(const gmx_domdec_t *dd,
+               int dim0, int dim1, int dim2,
+               gmx_bool bDistMB,
+               dd_corners_t *c)
+{
+    const gmx_domdec_comm_t *comm;
+    const gmx_domdec_zones_t *zones;
+    int i,j;
+
+    comm = dd->comm;
+
+    zones = &comm->zones;
+
+    /* Keep the compiler happy */
+    c->cr0  = 0;
+    c->bcr1 = 0;
+
+    /* The first dimension is equal for all cells */
+    c->c[0][0] = comm->cell_x0[dim0];
+    if (bDistMB)
+    {
+        c->bc[0] = c->c[0][0];
+    }
+    if (dd->ndim >= 2)
+    {
+        dim1 = dd->dim[1];
+        /* This cell row is only seen from the first row */
+        c->c[1][0] = comm->cell_x0[dim1];
+        /* All rows can see this row */
+        c->c[1][1] = comm->cell_x0[dim1];
+        if (dd->bGridJump)
+        {
+            c->c[1][1] = max(comm->cell_x0[dim1],comm->zone_d1[1].mch0);
+            if (bDistMB)
+            {
+                /* For the multi-body distance we need the maximum */
+                c->bc[1] = max(comm->cell_x0[dim1],comm->zone_d1[1].p1_0);
+            }
+        }
+        /* Set the upper-right corner for rounding */
+        c->cr0 = comm->cell_x1[dim0];
+        
+        if (dd->ndim >= 3)
+        {
+            dim2 = dd->dim[2];
+            for(j=0; j<4; j++)
+            {
+                c->c[2][j] = comm->cell_x0[dim2];
+            }
+            if (dd->bGridJump)
+            {
+                /* Use the maximum of the i-cells that see a j-cell */
+                for(i=0; i<zones->nizone; i++)
+                {
+                    for(j=zones->izone[i].j0; j<zones->izone[i].j1; j++)
+                    {
+                        if (j >= 4)
+                        {
+                            c->c[2][j-4] =
+                                max(c->c[2][j-4],
+                                    comm->zone_d2[zones->shift[i][dim0]][zones->shift[i][dim1]].mch0);
+                        }
+                    }
+                }
+                if (bDistMB)
+                {
+                    /* For the multi-body distance we need the maximum */
+                    c->bc[2] = comm->cell_x0[dim2];
+                    for(i=0; i<2; i++)
+                    {
+                        for(j=0; j<2; j++)
+                        {
+                            c->bc[2] = max(c->bc[2],comm->zone_d2[i][j].p1_0);
+                        }
+                    }
+                }
+            }
+            
+            /* Set the upper-right corner for rounding */
+            /* Cell (0,0,0) and cell (1,0,0) can see cell 4 (0,1,1)
+             * Only cell (0,0,0) can see cell 7 (1,1,1)
+             */
+            c->cr1[0] = comm->cell_x1[dim1];
+            c->cr1[3] = comm->cell_x1[dim1];
+            if (dd->bGridJump)
+            {
+                c->cr1[0] = max(comm->cell_x1[dim1],comm->zone_d1[1].mch1);
+                if (bDistMB)
+                {
+                    /* For the multi-body distance we need the maximum */
+                    c->bcr1 = max(comm->cell_x1[dim1],comm->zone_d1[1].p1_1);
+                }
+            }
+        }
+    }
+}
+
+/* Determine which cg's we need to send in this pulse from this zone */
+static void
+get_zone_pulse_cgs(gmx_domdec_t *dd,
+                   int zonei, int zone,
+                   int cg0, int cg1,
+                   const int *index_gl,
+                   const int *cgindex,
+                   int dim, int dim_ind,
+                   int dim0, int dim1, int dim2,
+                   real r_comm2, real r_bcomm2,
+                   matrix box,
+                   ivec tric_dist,
+                   rvec *normal,
+                   real skew_fac2_d, real skew_fac_01,
+                   rvec *v_d, rvec *v_0, rvec *v_1,
+                   const dd_corners_t *c,
+                   rvec sf2_round,
+                   gmx_bool bDistBonded,
+                   gmx_bool bBondComm,
+                   gmx_bool bDist2B,
+                   gmx_bool bDistMB,
+                   rvec *cg_cm,
+                   int *cginfo,
+                   gmx_domdec_ind_t *ind,
+                   int **ibuf, int *ibuf_nalloc,
+                   vec_rvec_t *vbuf,
+                   int *nsend_ptr,
+                   int *nat_ptr,
+                   int *nsend_z_ptr)
+{
+    gmx_domdec_comm_t *comm;
+    gmx_bool bScrew;
+    gmx_bool bDistMB_pulse;
+    int  cg,i;
+    real r2,rb2,r,tric_sh;
+    rvec rn,rb;
+    int  dimd;
+    int  nsend_z,nsend,nat;
+
+    comm = dd->comm;
+
+    bScrew = (dd->bScrewPBC && dim == XX);
+
+    bDistMB_pulse = (bDistMB && bDistBonded);
+
+    nsend_z = 0;
+    nsend   = *nsend_ptr;
+    nat     = *nat_ptr;
+
+    for(cg=cg0; cg<cg1; cg++)
+    {
+        r2  = 0;
+        rb2 = 0;
+        if (tric_dist[dim_ind] == 0)
+        {
+            /* Rectangular direction, easy */
+            r = cg_cm[cg][dim] - c->c[dim_ind][zone];
+            if (r > 0)
+            {
+                r2 += r*r;
+            }
+            if (bDistMB_pulse)
+            {
+                r = cg_cm[cg][dim] - c->bc[dim_ind];
+                if (r > 0)
+                {
+                    rb2 += r*r;
+                }
+            }
+            /* Rounding gives at most a 16% reduction
+             * in communicated atoms
+             */
+            if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
+            {
+                r = cg_cm[cg][dim0] - c->cr0;
+                /* This is the first dimension, so always r >= 0 */
+                r2 += r*r;
+                if (bDistMB_pulse)
+                {
+                    rb2 += r*r;
+                }
+            }
+            if (dim_ind == 2 && (zonei == 2 || zonei == 3))
+            {
+                r = cg_cm[cg][dim1] - c->cr1[zone];
+                if (r > 0)
+                {
+                    r2 += r*r;
+                }
+                if (bDistMB_pulse)
+                {
+                    r = cg_cm[cg][dim1] - c->bcr1;
+                    if (r > 0)
+                    {
+                        rb2 += r*r;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Triclinic direction, more complicated */
+            clear_rvec(rn);
+            clear_rvec(rb);
+            /* Rounding, conservative as the skew_fac multiplication
+             * will slightly underestimate the distance.
+             */
+            if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
+            {
+                rn[dim0] = cg_cm[cg][dim0] - c->cr0;
+                for(i=dim0+1; i<DIM; i++)
+                {
+                    rn[dim0] -= cg_cm[cg][i]*v_0[i][dim0];
+                }
+                r2 = rn[dim0]*rn[dim0]*sf2_round[dim0];
+                if (bDistMB_pulse)
+                {
+                    rb[dim0] = rn[dim0];
+                    rb2 = r2;
+                }
+                /* Take care that the cell planes along dim0 might not
+                 * be orthogonal to those along dim1 and dim2.
+                 */
+                for(i=1; i<=dim_ind; i++)
+                {
+                    dimd = dd->dim[i];
+                    if (normal[dim0][dimd] > 0)
+                    {
+                        rn[dimd] -= rn[dim0]*normal[dim0][dimd];
+                        if (bDistMB_pulse)
+                        {
+                            rb[dimd] -= rb[dim0]*normal[dim0][dimd];
+                        }
+                    }
+                }
+            }
+            if (dim_ind == 2 && (zonei == 2 || zonei == 3))
+            {
+                rn[dim1] += cg_cm[cg][dim1] - c->cr1[zone];
+                tric_sh = 0;
+                for(i=dim1+1; i<DIM; i++)
+                {
+                    tric_sh -= cg_cm[cg][i]*v_1[i][dim1];
+                }
+                rn[dim1] += tric_sh;
+                if (rn[dim1] > 0)
+                {
+                    r2 += rn[dim1]*rn[dim1]*sf2_round[dim1];
+                    /* Take care of coupling of the distances
+                     * to the planes along dim0 and dim1 through dim2.
+                     */
+                    r2 -= rn[dim0]*rn[dim1]*skew_fac_01;
+                    /* Take care that the cell planes along dim1
+                     * might not be orthogonal to that along dim2.
+                     */
+                    if (normal[dim1][dim2] > 0)
+                    {
+                        rn[dim2] -= rn[dim1]*normal[dim1][dim2];
+                    }
+                }
+                if (bDistMB_pulse)
+                {
+                    rb[dim1] +=
+                        cg_cm[cg][dim1] - c->bcr1 + tric_sh;
+                    if (rb[dim1] > 0)
+                    {
+                        rb2 += rb[dim1]*rb[dim1]*sf2_round[dim1];
+                        /* Take care of coupling of the distances
+                         * to the planes along dim0 and dim1 through dim2.
+                         */
+                        rb2 -= rb[dim0]*rb[dim1]*skew_fac_01;
+                        /* Take care that the cell planes along dim1
+                         * might not be orthogonal to that along dim2.
+                         */
+                        if (normal[dim1][dim2] > 0)
+                        {
+                            rb[dim2] -= rb[dim1]*normal[dim1][dim2];
+                        }
+                    }
+                }
+            }
+            /* The distance along the communication direction */
+            rn[dim] += cg_cm[cg][dim] - c->c[dim_ind][zone];
+            tric_sh = 0;
+            for(i=dim+1; i<DIM; i++)
+            {
+                tric_sh -= cg_cm[cg][i]*v_d[i][dim];
+            }
+            rn[dim] += tric_sh;
+            if (rn[dim] > 0)
+            {
+                r2 += rn[dim]*rn[dim]*skew_fac2_d;
+                /* Take care of coupling of the distances
+                 * to the planes along dim0 and dim1 through dim2.
+                 */
+                if (dim_ind == 1 && zonei == 1)
+                {
+                    r2 -= rn[dim0]*rn[dim]*skew_fac_01;
+                }
+            }
+            if (bDistMB_pulse)
+            {
+                clear_rvec(rb);
+                rb[dim] += cg_cm[cg][dim] - c->bc[dim_ind] + tric_sh;
+                if (rb[dim] > 0)
+                {
+                    rb2 += rb[dim]*rb[dim]*skew_fac2_d;
+                    /* Take care of coupling of the distances
+                     * to the planes along dim0 and dim1 through dim2.
+                     */
+                    if (dim_ind == 1 && zonei == 1)
+                    {
+                        rb2 -= rb[dim0]*rb[dim]*skew_fac_01;
+                    }
+                }
+            }
+        }
+        
+        if (r2 < r_comm2 ||
+            (bDistBonded &&
+             ((bDistMB && rb2 < r_bcomm2) ||
+              (bDist2B && r2  < r_bcomm2)) &&
+             (!bBondComm ||
+              (GET_CGINFO_BOND_INTER(cginfo[cg]) &&
+               missing_link(comm->cglink,index_gl[cg],
+                            comm->bLocalCG)))))
+        {
+            /* Make an index to the local charge groups */
+            if (nsend+1 > ind->nalloc)
+            {
+                ind->nalloc = over_alloc_large(nsend+1);
+                srenew(ind->index,ind->nalloc);
+            }
+            if (nsend+1 > *ibuf_nalloc)
+            {
+                *ibuf_nalloc = over_alloc_large(nsend+1);
+                srenew(*ibuf,*ibuf_nalloc);
+            }
+            ind->index[nsend] = cg;
+            (*ibuf)[nsend] = index_gl[cg];
+            nsend_z++;
+            vec_rvec_check_alloc(vbuf,nsend+1);
+            
+            if (dd->ci[dim] == 0)
+            {
+                /* Correct cg_cm for pbc */
+                rvec_add(cg_cm[cg],box[dim],vbuf->v[nsend]);
+                if (bScrew)
+                {
+                    vbuf->v[nsend][YY] = box[YY][YY] - vbuf->v[nsend][YY];
+                    vbuf->v[nsend][ZZ] = box[ZZ][ZZ] - vbuf->v[nsend][ZZ];
+                }
+            }
+            else
+            {
+                copy_rvec(cg_cm[cg],vbuf->v[nsend]);
+            }
+            nsend++;
+            nat += cgindex[cg+1] - cgindex[cg];
+        }
+    }
+
+    *nsend_ptr   = nsend;
+    *nat_ptr     = nat;
+    *nsend_z_ptr = nsend_z;
+}
+
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box,gmx_ddbox_t *ddbox,
                                    t_forcerec *fr,t_state *state,rvec **f)
 {
-    int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot;
+    int dim_ind,dim,dim0,dim1,dim2,dimd,p,nat_tot;
     int nzone,nzone_send,zone,zonei,cg0,cg1;
     int c,i,j,cg,cg_gl,nrcg;
     int *zone_cg_range,pos_cg,*index_gl,*cgindex,*recv_i;
@@ -7358,16 +7757,15 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
     cginfo_mb_t *cginfo_mb;
-    gmx_bool bBondComm,bDist2B,bDistMB,bDistMB_pulse,bDistBonded,bScrew;
-    real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r_0,r_1,r2,rb2,r2inc,inv_ncg,tric_sh;
-    rvec rb,rn;
-    real corner[DIM][4],corner_round_0=0,corner_round_1[4];
-    real bcorner[DIM],bcorner_round_1=0;
+    gmx_bool bBondComm,bDist2B,bDistMB,bDistBonded;
+    real r_mb,r_comm2,r_scomm2,r_bcomm2,r_0,r_1,r2inc,inv_ncg;
+    dd_corners_t corners;
     ivec tric_dist;
     rvec *cg_cm,*normal,*v_d,*v_0=NULL,*v_1=NULL,*recv_vr;
     real skew_fac2_d,skew_fac_01;
     rvec sf2_round;
     int  nsend,nat;
+    int  th;
     
     if (debug)
     {
@@ -7418,87 +7816,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     zones = &comm->zones;
     
     dim0 = dd->dim[0];
-    /* The first dimension is equal for all cells */
-    corner[0][0] = comm->cell_x0[dim0];
-    if (bDistMB)
-    {
-        bcorner[0] = corner[0][0];
-    }
-    if (dd->ndim >= 2)
-    {
-        dim1 = dd->dim[1];
-        /* This cell row is only seen from the first row */
-        corner[1][0] = comm->cell_x0[dim1];
-        /* All rows can see this row */
-        corner[1][1] = comm->cell_x0[dim1];
-        if (dd->bGridJump)
-        {
-            corner[1][1] = max(comm->cell_x0[dim1],comm->zone_d1[1].mch0);
-            if (bDistMB)
-            {
-                /* For the multi-body distance we need the maximum */
-                bcorner[1] = max(comm->cell_x0[dim1],comm->zone_d1[1].p1_0);
-            }
-        }
-        /* Set the upper-right corner for rounding */
-        corner_round_0 = comm->cell_x1[dim0];
-        
-        if (dd->ndim >= 3)
-        {
-            dim2 = dd->dim[2];
-            for(j=0; j<4; j++)
-            {
-                corner[2][j] = comm->cell_x0[dim2];
-            }
-            if (dd->bGridJump)
-            {
-                /* Use the maximum of the i-cells that see a j-cell */
-                for(i=0; i<zones->nizone; i++)
-                {
-                    for(j=zones->izone[i].j0; j<zones->izone[i].j1; j++)
-                    {
-                        if (j >= 4)
-                        {
-                            corner[2][j-4] =
-                                max(corner[2][j-4],
-                                    comm->zone_d2[zones->shift[i][dim0]][zones->shift[i][dim1]].mch0);
-                        }
-                    }
-                }
-                if (bDistMB)
-                {
-                    /* For the multi-body distance we need the maximum */
-                    bcorner[2] = comm->cell_x0[dim2];
-                    for(i=0; i<2; i++)
-                    {
-                        for(j=0; j<2; j++)
-                        {
-                            bcorner[2] = max(bcorner[2],
-                                             comm->zone_d2[i][j].p1_0);
-                        }
-                    }
-                }
-            }
-            
-            /* Set the upper-right corner for rounding */
-            /* Cell (0,0,0) and cell (1,0,0) can see cell 4 (0,1,1)
-             * Only cell (0,0,0) can see cell 7 (1,1,1)
-             */
-            corner_round_1[0] = comm->cell_x1[dim1];
-            corner_round_1[3] = comm->cell_x1[dim1];
-            if (dd->bGridJump)
-            {
-                corner_round_1[0] = max(comm->cell_x1[dim1],
-                                        comm->zone_d1[1].mch1);
-                if (bDistMB)
-                {
-                    /* For the multi-body distance we need the maximum */
-                    bcorner_round_1 = max(comm->cell_x1[dim1],
-                                          comm->zone_d1[1].p1_1);
-                }
-            }
-        }
-    }
+    dim1 = (dd->ndim >= 2 ? dd->dim[1] : -1);
+    dim2 = (dd->ndim >= 3 ? dd->dim[2] : -1);
+
+    set_dd_corners(dd,dim0,dim1,dim2,bDistMB,&corners);
     
     /* Triclinic stuff */
     normal = ddbox->normal;
@@ -7552,8 +7873,6 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             nzone_send = nzone;
         }
 
-        bScrew = (dd->bScrewPBC && dim == XX);
-        
         v_d = ddbox->v[dim];
         skew_fac2_d = sqr(ddbox->skew_fac[dim]);
 
@@ -7563,8 +7882,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             /* Only atoms communicated in the first pulse are used
              * for multi-body bonded interactions or for bBondComm.
              */
-            bDistBonded   = ((bDistMB || bDist2B) && p == 0);
-            bDistMB_pulse = (bDistMB && bDistBonded);
+            bDistBonded = ((bDistMB || bDist2B) && p == 0);
 
             ind = &cd->ind[p];
             nsend = 0;
@@ -7617,220 +7935,108 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                     cg1 = zone_cg_range[nzone+zone+1];
                     cg0 = cg1 - cd->ind[p-1].nrecv[zone];
                 }
-                ind->nsend[zone] = 0;
-                for(cg=cg0; cg<cg1; cg++)
+
+#pragma omp parallel for num_threads(comm->nth) schedule(static)
+                for(th=0; th<comm->nth; th++)
                 {
-                    r2  = 0;
-                    rb2 = 0;
-                    if (tric_dist[dim_ind] == 0)
+                    gmx_domdec_ind_t *ind_p;
+                    int **ibuf_p,*ibuf_nalloc_p;
+                    vec_rvec_t *vbuf_p;
+                    int *nsend_p,*nat_p;
+                    int *nsend_zone_p;
+                    int cg0_th,cg1_th;
+
+                    if (th == 0)
                     {
-                        /* Rectangular direction, easy */
-                        r = cg_cm[cg][dim] - corner[dim_ind][zone];
-                        if (r > 0)
-                        {
-                            r2 += r*r;
-                        }
-                        if (bDistMB_pulse)
-                        {
-                            r = cg_cm[cg][dim] - bcorner[dim_ind];
-                            if (r > 0)
-                            {
-                                rb2 += r*r;
-                            }
-                        }
-                        /* Rounding gives at most a 16% reduction
-                         * in communicated atoms
-                         */
-                        if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
-                        {
-                            r = cg_cm[cg][dim0] - corner_round_0;
-                            /* This is the first dimension, so always r >= 0 */
-                            r2 += r*r;
-                            if (bDistMB_pulse)
-                            {
-                                rb2 += r*r;
-                            }
-                        }
-                        if (dim_ind == 2 && (zonei == 2 || zonei == 3))
-                        {
-                            r = cg_cm[cg][dim1] - corner_round_1[zone];
-                            if (r > 0)
-                            {
-                                r2 += r*r;
-                            }
-                            if (bDistMB_pulse)
-                            {
-                                r = cg_cm[cg][dim1] - bcorner_round_1;
-                                if (r > 0)
-                                {
-                                    rb2 += r*r;
-                                }
-                            }
-                        }
+                        /* Thread 0 writes in the comm buffers */
+                        ind_p         = ind;
+                        ibuf_p        = &comm->buf_int;
+                        ibuf_nalloc_p = &comm->nalloc_int;
+                        vbuf_p        = &comm->vbuf;
+                        nsend_p       = &nsend;
+                        nat_p         = &nat;
+                        nsend_zone_p  = &ind->nsend[zone];
                     }
                     else
                     {
-                        /* Triclinic direction, more complicated */
-                        clear_rvec(rn);
-                        clear_rvec(rb);
-                        /* Rounding, conservative as the skew_fac multiplication
-                         * will slightly underestimate the distance.
-                         */
-                        if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
-                        {
-                            rn[dim0] = cg_cm[cg][dim0] - corner_round_0;
-                            for(i=dim0+1; i<DIM; i++)
-                            {
-                                rn[dim0] -= cg_cm[cg][i]*v_0[i][dim0];
-                            }
-                            r2 = rn[dim0]*rn[dim0]*sf2_round[dim0];
-                            if (bDistMB_pulse)
-                            {
-                                rb[dim0] = rn[dim0];
-                                rb2 = r2;
-                            }
-                            /* Take care that the cell planes along dim0 might not
-                             * be orthogonal to those along dim1 and dim2.
-                             */
-                            for(i=1; i<=dim_ind; i++)
-                            {
-                                dimd = dd->dim[i];
-                                if (normal[dim0][dimd] > 0)
-                                {
-                                    rn[dimd] -= rn[dim0]*normal[dim0][dimd];
-                                    if (bDistMB_pulse)
-                                    {
-                                        rb[dimd] -= rb[dim0]*normal[dim0][dimd];
-                                    }
-                                }
-                            }
-                        }
-                        if (dim_ind == 2 && (zonei == 2 || zonei == 3))
-                        {
-                            rn[dim1] += cg_cm[cg][dim1] - corner_round_1[zone];
-                            tric_sh = 0;
-                            for(i=dim1+1; i<DIM; i++)
-                            {
-                                tric_sh -= cg_cm[cg][i]*v_1[i][dim1];
-                            }
-                            rn[dim1] += tric_sh;
-                            if (rn[dim1] > 0)
-                            {
-                                r2 += rn[dim1]*rn[dim1]*sf2_round[dim1];
-                                /* Take care of coupling of the distances
-                                 * to the planes along dim0 and dim1 through dim2.
-                                 */
-                                r2 -= rn[dim0]*rn[dim1]*skew_fac_01;
-                                /* Take care that the cell planes along dim1
-                                 * might not be orthogonal to that along dim2.
-                                 */
-                                if (normal[dim1][dim2] > 0)
-                                {
-                                    rn[dim2] -= rn[dim1]*normal[dim1][dim2];
-                                }
-                            }
-                            if (bDistMB_pulse)
-                            {
-                                rb[dim1] +=
-                                    cg_cm[cg][dim1] - bcorner_round_1 + tric_sh;
-                                if (rb[dim1] > 0)
-                                {
-                                    rb2 += rb[dim1]*rb[dim1]*sf2_round[dim1];
-                                    /* Take care of coupling of the distances
-                                     * to the planes along dim0 and dim1 through dim2.
-                                     */
-                                    rb2 -= rb[dim0]*rb[dim1]*skew_fac_01;
-                                    /* Take care that the cell planes along dim1
-                                     * might not be orthogonal to that along dim2.
-                                     */
-                                    if (normal[dim1][dim2] > 0)
-                                    {
-                                        rb[dim2] -= rb[dim1]*normal[dim1][dim2];
-                                    }
-                                }
-                            }
-                        }
-                        /* The distance along the communication direction */
-                        rn[dim] += cg_cm[cg][dim] - corner[dim_ind][zone];
-                        tric_sh = 0;
-                        for(i=dim+1; i<DIM; i++)
-                        {
-                            tric_sh -= cg_cm[cg][i]*v_d[i][dim];
-                        }
-                        rn[dim] += tric_sh;
-                        if (rn[dim] > 0)
-                        {
-                            r2 += rn[dim]*rn[dim]*skew_fac2_d;
-                            /* Take care of coupling of the distances
-                             * to the planes along dim0 and dim1 through dim2.
-                             */
-                            if (dim_ind == 1 && zonei == 1)
-                            {
-                                r2 -= rn[dim0]*rn[dim]*skew_fac_01;
-                            }
-                        }
-                        if (bDistMB_pulse)
-                        {
-                            clear_rvec(rb);
-                            rb[dim] += cg_cm[cg][dim] - bcorner[dim_ind] + tric_sh;
-                            if (rb[dim] > 0)
-                            {
-                                rb2 += rb[dim]*rb[dim]*skew_fac2_d;
-                                /* Take care of coupling of the distances
-                                 * to the planes along dim0 and dim1 through dim2.
-                                 */
-                                if (dim_ind == 1 && zonei == 1)
-                                {
-                                    rb2 -= rb[dim0]*rb[dim]*skew_fac_01;
-                                }
-                            }
-                        }
+                        /* Other threads write into temp buffers */
+                        ind_p         = &comm->dth[th].ind;
+                        ibuf_p        = &comm->dth[th].ibuf;
+                        ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
+                        vbuf_p        = &comm->dth[th].vbuf;
+                        nsend_p       = &comm->dth[th].nsend;
+                        nat_p         = &comm->dth[th].nat;
+                        nsend_zone_p  = &comm->dth[th].nsend_zone;
+
+                        comm->dth[th].nsend      = 0;
+                        comm->dth[th].nat        = 0;
+                        comm->dth[th].nsend_zone = 0;
+                    }
+
+                    if (comm->nth == 1)
+                    {
+                        cg0_th = cg0;
+                        cg1_th = cg1;
+                    }
+                    else
+                    {
+                        cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
+                        cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
                     }
                     
-                    if (r2 < r_comm2 ||
-                        (bDistBonded &&
-                         ((bDistMB && rb2 < r_bcomm2) ||
-                          (bDist2B && r2  < r_bcomm2)) &&
-                         (!bBondComm ||
-                          (GET_CGINFO_BOND_INTER(fr->cginfo[cg]) &&
-                           missing_link(comm->cglink,index_gl[cg],
-                                        comm->bLocalCG)))))
-                    {
-                        /* Make an index to the local charge groups */
-                        if (nsend+1 > ind->nalloc)
-                        {
-                            ind->nalloc = over_alloc_large(nsend+1);
-                            srenew(ind->index,ind->nalloc);
-                        }
-                        if (nsend+1 > comm->nalloc_int)
-                        {
-                            comm->nalloc_int = over_alloc_large(nsend+1);
-                            srenew(comm->buf_int,comm->nalloc_int);
-                        }
-                        ind->index[nsend] = cg;
-                        comm->buf_int[nsend] = index_gl[cg];
-                        ind->nsend[zone]++;
-                        vec_rvec_check_alloc(&comm->vbuf,nsend+1);
+                    /* Get the cg's for this pulse in this zone */
+                    get_zone_pulse_cgs(dd,zonei,zone,cg0_th,cg1_th,
+                                       index_gl,cgindex,
+                                       dim,dim_ind,dim0,dim1,dim2,
+                                       r_comm2,r_bcomm2,
+                                       box,tric_dist,
+                                       normal,skew_fac2_d,skew_fac_01,
+                                       v_d,v_0,v_1,&corners,sf2_round,
+                                       bDistBonded,bBondComm,
+                                       bDist2B,bDistMB,
+                                       cg_cm,fr->cginfo,
+                                       ind_p,
+                                       ibuf_p,ibuf_nalloc_p,
+                                       vbuf_p,
+                                       nsend_p,nat_p,
+                                       nsend_zone_p);
+                }
 
-                        if (dd->ci[dim] == 0)
-                        {
-                            /* Correct cg_cm for pbc */
-                            rvec_add(cg_cm[cg],box[dim],comm->vbuf.v[nsend]);
-                            if (bScrew)
-                            {
-                                comm->vbuf.v[nsend][YY] =
-                                    box[YY][YY]-comm->vbuf.v[nsend][YY];
-                                comm->vbuf.v[nsend][ZZ] =
-                                    box[ZZ][ZZ]-comm->vbuf.v[nsend][ZZ];
-                            }
-                        }
-                        else
-                        {
-                            copy_rvec(cg_cm[cg],comm->vbuf.v[nsend]);
-                        }
-                        nsend++;
-                        nat += cgindex[cg+1] - cgindex[cg];
+                /* Append data of threads>=1 to the communication buffers */
+                for(th=1; th<comm->nth; th++)
+                {
+                    dd_comm_setup_work_t *dth;
+                    int i,ns1;
+
+                    dth = &comm->dth[th];
+
+                    ns1 = nsend + dth->nsend_zone;
+                    if (ns1 > ind->nalloc)
+                    {
+                        ind->nalloc = over_alloc_dd(ns1);
+                        srenew(ind->index,ind->nalloc);
                     }
+                    if (ns1 > comm->nalloc_int)
+                    {
+                        comm->nalloc_int = over_alloc_dd(ns1);
+                        srenew(comm->buf_int,comm->nalloc_int);
+                    }
+                    if (ns1 > comm->vbuf.nalloc)
+                    {
+                        comm->vbuf.nalloc = over_alloc_dd(ns1);
+                        srenew(comm->vbuf.v,comm->vbuf.nalloc);
+                    }
+
+                    for(i=0; i<dth->nsend_zone; i++)
+                    {
+                        ind->index[nsend] = dth->ind.index[i];
+                        comm->buf_int[nsend] = dth->ibuf[i];
+                        copy_rvec(dth->vbuf.v[i],
+                                  comm->vbuf.v[nsend]);
+                        nsend++;
+                    }
+                    nat              += dth->nat;
+                    ind->nsend[zone] += dth->nsend_zone;
                 }
             }
             /* Clear the counts in case we do not have pbc */
