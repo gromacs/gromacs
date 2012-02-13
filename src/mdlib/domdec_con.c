@@ -1047,19 +1047,28 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
 
     dc->ncon      = 0;
     ilc_local->nr = 0;
-    ils_local->nr = 0;
     if (dd->constraint_comm)
     {
+        at2con_mt = atom2constraints_moltype(constr);
         ireq = &dd->constraint_comm->ireq[0];
         ireq->n = 0;
     }
     else
     {
+        at2con_mt = NULL;
         ireq = NULL;
     }
 
-    at2con_mt    = atom2constraints_moltype(constr);
-    at2settle_mt = atom2settle_moltype(constr);
+    if (dd->bInterCGsettles)
+    {
+        at2settle_mt = atom2settle_moltype(constr);
+        ils_local->nr = 0;
+    }
+    else
+    {
+        /* Settle works inside charge groups, we assigned them already */
+        at2settle_mt = NULL;
+    }
 
     if (at2settle_mt == NULL)
     {
