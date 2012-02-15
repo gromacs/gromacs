@@ -121,7 +121,7 @@ set(GMX_ACCELERATION "auto"
     CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
+    CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -406,9 +406,6 @@ if(GMX_THREAD_MPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
     string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
-    if(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-        message(FATAL_ERROR "FFTW2 can't be used with thread-MPI. Try fftw3 or mkl.")
-    endif()
 endif(GMX_THREAD_MPI)
 
 if(GMX_OPENMM)
@@ -688,30 +685,6 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
 
-elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-#    MESSAGE(STATUS "Using external FFT library - fftw2")
-    if(GMX_DOUBLE)
-        find_package(FFTW2 REQUIRED)
-    else(GMX_DOUBLE)
-        find_package(FFTW2F REQUIRED)
-    endif(GMX_DOUBLE)
-
-    if(NOT FFTW2_FOUND)
-      	   MESSAGE(FATAL_ERROR "Cannot find fftw2 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW2_FOUND)
-    include_directories(${FFTW2_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${FFTW2_LIBRARIES})
-    set(PKG_FFT_LIBS ${FFTW2_LIBRARIES})
-
-    if("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_DFFTW 1)
-    elseif("${FFTW2_LIBRARIES}" MATCHES "sfftw")
-        set(FFTW2_NAME_SFFTW 1)
-    else("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_FFTW 1) 
-    endif("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-
-    set(GMX_FFT_FFTW2 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
@@ -729,7 +702,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
+    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
 # MKL has BLAS/LAPACK routines

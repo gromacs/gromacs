@@ -47,15 +47,6 @@
 /* As F77_FUNC, but for C identifiers containing underscores. */
 #define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
 
-/* Use the d prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_DFFTW
-
-/* Dont use any prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_FFTW
-
-/* Use the s prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_SFFTW
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
@@ -84,9 +75,6 @@
 
 /* Use Built-in FFTPACK FFT library */
 #cmakedefine GMX_FFT_FFTPACK
-
-/* Use FFTW2 FFT library */
-#cmakedefine GMX_FFT_FFTW2
 
 /* Use FFTW3 FFT library */
 #cmakedefine GMX_FFT_FFTW3
