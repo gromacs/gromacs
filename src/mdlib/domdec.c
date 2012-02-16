@@ -4439,7 +4439,7 @@ static void dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     ivec dev;
     real inv_ncg,pos_d;
     matrix tcm;
-    rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
+    rvec *cg_cm=NULL,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
     atom_id *cgindex;
     cginfo_mb_t *cginfo_mb;
     gmx_domdec_comm_t *comm;
@@ -9088,10 +9088,13 @@ void dd_partition_system(FILE            *fplog,
         /* Build the new indices */
         rebuild_cgindex(dd,cgs_gl->index,state_local);
         make_dd_indices(dd,cgs_gl->index,0);
-        
-        /* Redetermine the cg COMs */
-        calc_cgcm(fplog,0,dd->ncg_home,
-                  &top_local->cgs,state_local->x,fr->cg_cm);
+
+        if (fr->cutoff_scheme == ecutsGROUP)
+        {
+            /* Redetermine the cg COMs */
+            calc_cgcm(fplog,0,dd->ncg_home,
+                      &top_local->cgs,state_local->x,fr->cg_cm);
+        }
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
