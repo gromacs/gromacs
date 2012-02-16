@@ -2,7 +2,7 @@ Steps to produce minimal version of BOOST:
 1) Download Boost (current minimal version is derived from 1.48.0)
 2) Extract
 3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
-4) run bcp with required files (currently exception/all.hpp)
+4) run bcp with required files (currently exception/all.hpp, scoped_ptr.hpp)
 5) delete source files which are not required. Currently:
         libs/exception/src/clone_current_exception_non_intrusive.cpp
  	libs/smart_ptr/src/sp_collector.cpp
