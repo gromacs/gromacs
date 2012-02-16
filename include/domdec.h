@@ -100,6 +100,9 @@ void dd_init_bondeds(FILE *fplog,
                             t_inputrec *ir,gmx_bool bBCheck,cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
+gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd,int ePBC);
+/* Returns if we need to do pbc for calculating bonded interactions */
+
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                               t_inputrec *ir,t_forcerec *fr,
                               gmx_ddbox_t *ddbox);

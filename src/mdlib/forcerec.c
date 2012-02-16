@@ -2015,12 +2015,43 @@ void init_forcerec(FILE *fp,
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
-    
-    
+
     /* Neighbour searching stuff */
-    fr->bGrid      = (ir->ns_type == ensGRID);
-    fr->ePBC       = ir->ePBC;
-    fr->bMolPBC    = ir->bPeriodicMols;
+    fr->cutoff_scheme = ir->cutoff_scheme;
+    fr->bGrid         = (ir->ns_type == ensGRID);
+    fr->ePBC          = ir->ePBC;
+
+    /* Determine if we will do PBC for distances in bonded interactions */
+    if (fr->ePBC == epbcNONE)
+    {
+        fr->bMolPBC = FALSE;
+    }
+    else
+    {
+        if (!DOMAINDECOMP(cr))
+        {
+            if (fr->cutoff_scheme == ecutsGROUP)
+            {
+                fr->bMolPBC = ir->bPeriodicMols;
+            }
+            else
+            {
+                fr->bMolPBC = TRUE;
+                if (getenv("GMX_USE_GRAPH") != NULL)
+                {
+                    fr->bMolPBC = FALSE;
+                    if (fp)
+                    {
+                        fprintf(fp,"\nGMX_MOLPBC is set, using the graph for bonded interactions\n\n");
+                    }
+                }
+            }
+        }
+        else
+        {
+            fr->bMolPBC = dd_bonded_molpbc(cr->dd,fr->ePBC);
+        }
+    }
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com,fr->posres_com);
     copy_rvec(ir->posres_comB,fr->posres_comB);
@@ -2403,8 +2434,6 @@ void init_forcerec(FILE *fp,
     
     fr->bQMMM      = ir->bQMMM;   
     fr->qr         = mk_QMMMrec();
-
-    fr->cutoff_scheme = ir->cutoff_scheme;
     
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt,

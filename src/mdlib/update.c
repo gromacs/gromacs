@@ -1166,7 +1166,9 @@ static void deform(gmx_update_t upd,
 static void combine_forces(int nstlist,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
-                           t_commrec *cr,gmx_large_int_t step,t_state *state,
+                           t_commrec *cr,
+                           gmx_large_int_t step,
+                           t_state *state,gmx_bool bMolPBC,
                            int start,int nrend,
                            rvec f[],rvec f_lr[],
                            t_nrnb *nrnb)
@@ -1187,7 +1189,7 @@ static void combine_forces(int nstlist,
          */
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-                  state->x,f_lr,f_lr,state->box,state->lambda,NULL,
+                  state->x,f_lr,f_lr,bMolPBC,state->box,state->lambda,NULL,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
     
@@ -1345,6 +1347,7 @@ void update_constraints(FILE         *fplog,
                         gmx_ekindata_t *ekind,
                         t_mdatoms    *md,
                         t_state      *state,
+                        gmx_bool     bMolPBC,
                         t_graph      *graph,  
                         rvec         force[],        /* forces on home particles */
                         t_idef       *idef,
@@ -1408,7 +1411,8 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
-                      state->box,state->lambda,dvdlambda,
+                      bMolPBC,state->box,
+                      state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
                       inputrec->epc==epcMTTK,state->veta,vetanew);
         } 
@@ -1417,7 +1421,8 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      bMolPBC,state->box,
+                      state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
                       inputrec->epc==epcMTTK,state->veta,state->veta);
         }
@@ -1477,7 +1482,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      bMolPBC,state->box,state->lambda,dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
@@ -1625,6 +1630,7 @@ void update_coords(FILE         *fplog,
                    t_inputrec   *inputrec,      /* input record and box stuff	*/
                    t_mdatoms    *md,
                    t_state      *state,
+                   gmx_bool     bMolPBC,
                    rvec         *f,        /* forces on home particles */
                    gmx_bool         bDoLR,
                    rvec         *f_lr,
@@ -1691,7 +1697,8 @@ void update_coords(FILE         *fplog,
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
+        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,
+                       step,state,bMolPBC,
                        start,nrend,f,f_lr,nrnb);
         force = f_lr;
     }

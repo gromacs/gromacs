@@ -362,7 +362,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             set_vsite_top(vsite,top,mdatoms,cr);
         }
 
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
+        if (ir->ePBC != epbcNONE && !fr->bMolPBC) {
             graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
         }
 
@@ -1078,7 +1078,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 trotter_update(ir,step,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq,ettTSEQ1);            
             }
 
-            update_coords(fplog,step,ir,mdatoms,state,
+            update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef);
@@ -1124,7 +1124,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why is rerun_fr.bV here?  Unclear. */
                     dvdl = 0;
                     
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,
+                                       state,fr->bMolPBC,graph,f,
                                        &top->idef,shake_vir,NULL,
                                        cr,nrnb,wcycle,upd,constr,
                                        bInitStep,TRUE,bCalcEnerPres,vetanew);
@@ -1492,7 +1493,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bVV)
                 {
                     /* velocity half-step update */
-                    update_coords(fplog,step,ir,mdatoms,state,f,
+                    update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
                                   fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,FALSE,etrtVELOCITY2,
                                   cr,nrnb,constr,&top->idef);
@@ -1508,11 +1509,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     copy_rvecn(state->x,cbuf,0,state->natoms);
                 }
                 
-                update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
+                              fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 wallcycle_stop(wcycle,ewcUPDATE);
 
-                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,
+                                   fr->bMolPBC,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
                                    bInitStep,FALSE,bCalcEnerPres,state->veta);  
@@ -1532,7 +1535,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* now we know the scaling, we can compute the positions again again */
                     copy_rvecn(cbuf,state->x,0,state->natoms);
 
-                    update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                    update_coords(fplog,step,ir,mdatoms,state,fr->bMolPBC,f,
+                                  fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     wallcycle_stop(wcycle,ewcUPDATE);
 
@@ -1541,7 +1545,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure. 
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,
+                                       state,fr->bMolPBC,graph,f,
                                        &top->idef,tmp_vir,force_vir,
                                        cr,nrnb,wcycle,upd,NULL,
                                        bInitStep,FALSE,bCalcEnerPres,

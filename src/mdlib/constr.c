@@ -295,15 +295,17 @@ static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 }
 
 gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
-               struct gmx_constr *constr,
-               t_idef *idef,t_inputrec *ir,gmx_ekindata_t *ekind,
-               t_commrec *cr,
-               gmx_large_int_t step,int delta_step,
-               t_mdatoms *md,
-               rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-               real lambda,real *dvdlambda,
-               rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,gmx_bool bPscal,real veta, real vetanew)
+                   struct gmx_constr *constr,
+                   t_idef *idef,t_inputrec *ir,gmx_ekindata_t *ekind,
+                   t_commrec *cr,
+                   gmx_large_int_t step,int delta_step,
+                   t_mdatoms *md,
+                   rvec *x,rvec *xprime,rvec *min_proj,
+                   gmx_bool bMolPBC,matrix box,
+                   real lambda,real *dvdlambda,
+                   rvec *v,tensor *vir,
+                   t_nrnb *nrnb,int econq,gmx_bool bPscal,
+                   real veta, real vetanew)
 {
     gmx_bool    bOK,bDump;
     int     start,homenr,nrend;
@@ -314,7 +316,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     real    invdt,vir_fac,t;
     t_ilist *settle;
     int     nsettle;
-    t_pbc   pbc;
+    t_pbc   pbc,*pbc_null;
     char    buf[22];
     t_vetavars vetavar;
     int     nth,th;
@@ -379,6 +381,25 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     settle_error = -1;
 
+    /* We do not need full pbc when constraints do not cross charge groups,
+     * i.e. when dd->constraint_comm==NULL.
+     * Note that PBC for constraints is different from PBC for bondeds.
+     * For constraints there is both forward and backward communication.
+     */
+    if (ir->ePBC != epbcNONE &&
+        (cr->dd || bMolPBC) && !(cr->dd && cr->dd->constraint_comm==NULL))
+    {
+        /* With pbc=screw the screw has been changed to a shift
+         * by the constraint coordinate communication routine,
+         * so that here we can use normal pbc.
+         */
+        pbc_null = set_pbc_dd(&pbc,ir->ePBC,cr->dd,FALSE,box);
+    }
+    else
+    {
+        pbc_null = NULL;
+    }
+
     /* Communicate the coordinates required for the non-local constraints
      * for LINCS and/or SETTLE.
      */
@@ -394,7 +415,8 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     if (constr->lincsd != NULL)
     {
         bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
-                              x,xprime,min_proj,box,lambda,dvdlambda,
+                              x,xprime,min_proj,
+                              box,pbc_null,lambda,dvdlambda,
                               invdt,v,vir!=NULL,rmdr,
                               econq,nrnb,
                               constr->maxwarn,&constr->warncount_lincs);
@@ -415,14 +437,14 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         case (econqCoord):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
-                          idef,ir,box,x,xprime,nrnb,
+                          idef,ir,x,xprime,nrnb,
                           constr->lagr,lambda,dvdlambda,
                           invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
-                          idef,ir,box,x,min_proj,nrnb,
+                          idef,ir,x,min_proj,nrnb,
                           constr->lagr,lambda,dvdlambda,
                           invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,&vetavar);
             break;
@@ -444,17 +466,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     
     if (nsettle > 0)
     {
-        t_pbc pbc,*pbc_null;
         int CalcVirAtomEnd;
-
-        if (ir->ePBC != epbcNONE && constr->bInterCGsettles)
-        {
-            pbc_null = set_pbc_dd(&pbc,ir->ePBC,cr->dd,FALSE,box);
-        }
-        else
-        {
-            pbc_null = NULL;
-        }
 
         if (vir == NULL)
         {

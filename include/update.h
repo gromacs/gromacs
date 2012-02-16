@@ -93,6 +93,7 @@ void update_coords(FILE         *fplog,
 			  t_inputrec   *inputrec,  /* input record and box stuff	*/
 			  t_mdatoms    *md,
 			  t_state      *state,
+		          gmx_bool     bMolPBC,
 			  rvec         *f,    /* forces on home particles */
 			  gmx_bool         bDoLR,
 			  rvec         *f_lr,
@@ -117,6 +118,7 @@ void update_constraints(FILE         *fplog,
 			       gmx_ekindata_t *ekind,
 			       t_mdatoms    *md,
 			       t_state      *state,
+	        	       gmx_bool     bMolPBC,
 			       t_graph      *graph,	
 			       rvec         force[],    /* forces on home particles */
 			       t_idef       *idef,

@@ -7125,6 +7125,18 @@ static void set_cell_limits_dlb(gmx_domdec_t *dd,
     }
 }
 
+gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd,int ePBC)
+{
+    /* If each molecule is a single charge group
+     * or we use domain decomposition for each periodic dimension,
+     * we do not need to take pbc into account for the bonded interactions.
+     */
+    return (ePBC != epbcNONE && dd->comm->bInterCGBondeds &&
+            !(dd->nc[XX]>1 &&
+              dd->nc[YY]>1 &&
+              (dd->nc[ZZ]>1 || ePBC==epbcXY)));
+}
+
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                        t_inputrec *ir,t_forcerec *fr,
                        gmx_ddbox_t *ddbox)
@@ -7161,20 +7173,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
             gmx_fatal_collective(FARGS,NULL,dd,
                                  "Can not have separate PME nodes without PME electrostatics");
         }
-    }
-    
-    /* If each molecule is a single charge group
-     * or we use domain decomposition for each periodic dimension,
-     * we do not need to take pbc into account for the bonded interactions.
-     */
-    if (fr->ePBC == epbcNONE || !comm->bInterCGBondeds ||
-        (dd->nc[XX]>1 && dd->nc[YY]>1 && (dd->nc[ZZ]>1 || fr->ePBC==epbcXY)))
-    {
-        fr->bMolPBC = FALSE;
-    }
-    else
-    {
-        fr->bMolPBC = TRUE;
     }
         
     if (debug)

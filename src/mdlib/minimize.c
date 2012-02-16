@@ -342,7 +342,7 @@ void init_em(FILE *fplog,const char *title,
         }
         *f_global = *f;
         
-        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols)
+        if (ir->ePBC != epbcNONE && !fr->bMolPBC)
         {
             *graph = mk_graph(fplog,&((*top)->idef),0,top_global->natoms,FALSE,FALSE);
         }
@@ -390,7 +390,7 @@ void init_em(FILE *fplog,const char *title,
             dvdlambda=0;
             constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
                       ir,NULL,cr,-1,0,mdatoms,
-                      ems->s.x,ems->s.x,NULL,ems->s.box,
+                      ems->s.x,ems->s.x,NULL,fr->bMolPBC,ems->s.box,
                       ems->s.lambda,&dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
         }
@@ -487,10 +487,11 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 }
 
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
-		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
-		       gmx_constr_t constr,gmx_localtop_t *top,
-		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       gmx_large_int_t count)
+                       gmx_bool bMolPBC,
+                       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
+                       gmx_constr_t constr,gmx_localtop_t *top,
+                       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                       gmx_large_int_t count)
 
 {
   t_state *s1,*s2;
@@ -560,7 +561,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     dvdlambda = 0;
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
               ir,NULL,cr,count,0,md,
-              s1->x,s2->x,NULL,s2->box,s2->lambda,
+              s1->x,s2->x,NULL,bMolPBC,s2->box,s2->lambda,
               &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
     wallcycle_stop(wcycle,ewcCONSTR);
   }
@@ -731,7 +732,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
     dvdl = 0;
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
               inputrec,NULL,cr,count,0,mdatoms,
-              ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
+              ems->s.x,ems->f,ems->f,fr->bMolPBC,ems->s.box,ems->s.lambda,&dvdl,
               NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
@@ -1085,8 +1086,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
     }
 
     /* Take a trial step (new coords in s_c) */
-    do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c,
-	       constr,top,nrnb,wcycle,-1);
+    do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,s_min,c,s_min->s.cg_p,s_c,
+               constr,top,nrnb,wcycle,-1);
     
     neval++;
     /* Calculate energy for the trial step */
@@ -1172,8 +1173,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
 	}
 
 	/* Take a trial step to this new point - new coords in s_b */
-	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b,
-		   constr,top,nrnb,wcycle,-1);
+	do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,s_min,b,s_min->s.cg_p,s_b,
+               constr,top,nrnb,wcycle,-1);
 	
 	neval++;
 	/* Calculate energy for the trial step */
@@ -2099,8 +2100,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
     
     /* set new coordinates, except for first step */
     if (count > 0) {
-      do_em_step(cr,inputrec,mdatoms,s_min,stepsize,s_min->f,s_try,
-		 constr,top,nrnb,wcycle,count);
+        do_em_step(cr,inputrec,mdatoms,fr->bMolPBC,
+                   s_min,stepsize,s_min->f,s_try,
+                   constr,top,nrnb,wcycle,count);
     }
     
     evaluate_energy(fplog,bVerbose,cr,

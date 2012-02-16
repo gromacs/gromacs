@@ -679,7 +679,8 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 		      t_commrec *cr,int dd_ac1,
 		      gmx_large_int_t step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
-		      rvec *f,rvec *acc_dir,matrix box,
+		      rvec *f,rvec *acc_dir,
+		      gmx_bool bMolPBC,matrix box,
 		      real lambda,real *dvdlambda,t_nrnb *nrnb)
 {
   rvec   *xnold,*xnew;
@@ -721,10 +722,10 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
     }
   }
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-	    x,xnold-start,NULL,box,
+	    x,xnold-start,NULL,bMolPBC,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-	    x,xnew-start,NULL,box,
+	    x,xnew-start,NULL,bMolPBC,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
 
   /* Set xnew to minus the acceleration */
@@ -738,7 +739,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 
   /* Project the acceleration on the old bond directions */
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-	    x_old,xnew-start,acc_dir,box,
+	    x_old,xnew-start,acc_dir,bMolPBC,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
@@ -878,7 +879,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
     init_adir(fplog,shfc,
 	      constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 	      shfc->x_old-start,state->x,state->x,force[Min],
-	      shfc->acc_dir-start,state->box,state->lambda,&dum,nrnb);
+	      shfc->acc_dir-start,
+	      fr->bMolPBC,state->box,state->lambda,&dum,nrnb);
 
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(shfc->acc_dir[i-start]);
@@ -933,7 +935,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
       init_adir(fplog,shfc,
 		constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
-		state->box,state->lambda,&dum,nrnb);
+		fr->bMolPBC,state->box,state->lambda,&dum,nrnb);
       
       directional_sd(fplog,pos[Min],pos[Try],acc_dir-start,start,end,
 		     fr->fc_stepsize);
@@ -967,7 +969,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
       init_adir(fplog,shfc,
 		constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
-		state->box,state->lambda,&dum,nrnb);
+		fr->bMolPBC,state->box,state->lambda,&dum,nrnb);
 
       for(i=start; i<end; i++)
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);

@@ -69,7 +69,6 @@ gmx_bool bshakef(FILE *log,		/* Log file			*/
                     int sblock[],       /* The shake blocks             */
                     t_idef *idef,	/* The interaction def		*/
                     t_inputrec *ir,	/* Input record		        */
-                    matrix box,		/* The box			*/
                     rvec x_s[],		/* Coords before update		*/
                     rvec prime[],		/* Output coords		*/
                     t_nrnb *nrnb,       /* Performance measure          */
@@ -97,26 +96,26 @@ gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
 /* Initializes and returns a structure with SETTLE parameters */
 
 void csettle(gmx_settledata_t settled,
-                    int nsettle,	/* Number of settles  	        */
-                    t_iatom iatoms[],	/* The settle iatom list        */
+             int nsettle,	/* Number of settles  	        */
+             t_iatom iatoms[],	/* The settle iatom list        */
              const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
-                    real b4[],		/* Old coordinates		*/
-                    real after[],	/* New coords, to be settled	*/
-                    real invdt,         /* 1/delta_t                    */
-                    real *v,            /* Also constrain v if v!=NULL  */
-                    int CalcVirAtomEnd, /* Calculate r x m delta_r      */
-                    tensor rmdr,        /* sum r x m delta_r            */
-                    int *xerror,
-                    t_vetavars *vetavar     /* variables for pressure control */   
+             real b4[],		/* Old coordinates		*/
+             real after[],	/* New coords, to be settled	*/
+             real invdt,         /* 1/delta_t                    */
+             real *v,            /* Also constrain v if v!=NULL  */
+             int CalcVirAtomEnd, /* Calculate r x m delta_r      */
+             tensor rmdr,        /* sum r x m delta_r            */
+             int *xerror,
+             t_vetavars *vetavar     /* variables for pressure control */   
     );
 
 void settle_proj(FILE *fp,
-                        gmx_settledata_t settled,int econq,
-                        int nsettle, t_iatom iatoms[],
+                 gmx_settledata_t settled,int econq,
+                 int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
-                        rvec *der,rvec *derp,
-                        int CalcVirAtomEnd,tensor rmdder, t_vetavars *vetavar);
+                 rvec *der,rvec *derp,
+                 int CalcVirAtomEnd,tensor rmdder, t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
@@ -131,17 +130,18 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                     real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar);
 
 gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
-                      gmx_constr_t constr,
-                      t_idef *idef,
-                      t_inputrec *ir,
-                      gmx_ekindata_t *ekind,
-                      t_commrec *cr,
-                      gmx_large_int_t step,int delta_step,
-                      t_mdatoms *md,
-                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-                      real lambda,real *dvdlambda,
-                      rvec *v,tensor *vir,
-                      t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew);
+                   gmx_constr_t constr,
+                   t_idef *idef,
+                   t_inputrec *ir,
+                   gmx_ekindata_t *ekind,
+                   t_commrec *cr,
+                   gmx_large_int_t step,int delta_step,
+                   t_mdatoms *md,
+                   rvec *x,rvec *xprime,rvec *min_proj,
+                   gmx_bool bMolPBC,matrix box,
+                   real lambda,real *dvdlambda,
+                   rvec *v,tensor *vir,
+                   t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -152,6 +152,8 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
  *
  * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
  * but only the components of the flexible constraints are stored.
+ *
+ * When bMolPBC=TRUE, assume that molecules might be broken: correct PBC.
  *
  * delta_step is used for determining the constraint reference lengths
  * when lenA != lenB or will the pull code with a pulling rate.
@@ -245,12 +247,14 @@ real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
  * required for LINCS.
  */
 
-gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
+gmx_bool
+constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
 			    t_inputrec *ir,
 			    gmx_large_int_t step,
 			    gmx_lincsdata_t lincsd,t_mdatoms *md,
-			    t_commrec *cr,
-			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+                t_commrec *cr,
+			    rvec *x,rvec *xprime,rvec *min_proj,
+                matrix box,t_pbc *pbc,
 			    real lambda,real *dvdlambda,
 			    real invdt,rvec *v,
 			    gmx_bool bCalcVir,tensor rmdr,

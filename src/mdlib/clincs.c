@@ -1423,22 +1423,22 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 }
 
 gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
-                     t_inputrec *ir,
-                     gmx_large_int_t step,
-                     struct gmx_lincsdata *lincsd,t_mdatoms *md,
-                     t_commrec *cr, 
-                     rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-                     real lambda,real *dvdlambda,
-                     real invdt,rvec *v,
-                     gmx_bool bCalcVir,tensor rmdr,
-                     int econq,
-                     t_nrnb *nrnb,
-                     int maxwarn,int *warncount)
+                         t_inputrec *ir,
+                         gmx_large_int_t step,
+                         struct gmx_lincsdata *lincsd,t_mdatoms *md,
+                         t_commrec *cr, 
+                         rvec *x,rvec *xprime,rvec *min_proj,
+                         matrix box,t_pbc *pbc,
+                         real lambda,real *dvdlambda,
+                         real invdt,rvec *v,
+                         gmx_bool bCalcVir,tensor rmdr,
+                         int econq,
+                         t_nrnb *nrnb,
+                         int maxwarn,int *warncount)
 {
     char  buf[STRLEN],buf2[22],buf3[STRLEN];
     int   i,warn=0,p_imax,error;
     real  ncons_loc,p_ssd,p_max;
-    t_pbc pbc,*pbc_null;
     rvec  dx;
     gmx_bool  bOK;
     
@@ -1463,23 +1463,6 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         return bOK;
     }
     
-    /* We do not need full pbc when constraints do not cross charge groups,
-     * i.e. when dd->constraint_comm==NULL
-     */
-    if (ir->ePBC != epbcNONE &&
-        (cr->dd || ir->bPeriodicMols) && !(cr->dd && cr->dd->constraint_comm==NULL))
-    {
-        /* With pbc=screw the screw has been changed to a shift
-         * by the constraint coordinate communication routine,
-         * so that here we can use normal pbc.
-         */
-        pbc_null = set_pbc_dd(&pbc,ir->ePBC,cr->dd,FALSE,box);
-    }
-    else
-    {
-        pbc_null = NULL;
-    }
-	
     if (econq == econqCoord)
     {
         if (ir->efep != efepNO)
@@ -1498,12 +1481,12 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         if (lincsd->ncg_flex)
         {
             /* Set the flexible constraint lengths to the old lengths */
-            if (pbc_null)
+            if (pbc != NULL)
             {
                 for(i=0; i<lincsd->nc; i++)
                 {
                     if (lincsd->bllen[i] == 0) {
-                        pbc_dx_aiuc(pbc_null,x[lincsd->bla[2*i]],x[lincsd->bla[2*i+1]],dx);
+                        pbc_dx_aiuc(pbc,x[lincsd->bla[2*i]],x[lincsd->bla[2*i+1]],dx);
                         lincsd->bllen[i] = norm(dx);
                     }
                 }
@@ -1524,7 +1507,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         
         if (bLog && fplog)
         {
-            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
         }
 
@@ -1535,7 +1518,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
 #pragma omp parallel for num_threads(lincsd->nth) schedule(static)
             for(th=0; th<lincsd->nth; th++)
             {
-                do_lincs(x,xprime,box,pbc_null,lincsd,th,
+                do_lincs(x,xprime,box,pbc,lincsd,th,
                          md->invmass,cr,
                          bCalcVir || (ir->efep != efepNO),
                          ir->LincsWarnAngle,&warn,
@@ -1565,7 +1548,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         }
         if (bLog || bEner)
         {
-            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
             /* Check if we are doing the second part of SD */
             if (ir->eI == eiSD2 && v == NULL)
@@ -1598,7 +1581,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         {
             if (maxwarn >= 0)
             {
-                cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+                cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc,
                         &ncons_loc,&p_ssd,&p_max,&p_imax);
                 if (MULTISIM(cr))
                 {
@@ -1621,7 +1604,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                     fprintf(fplog,"%s",buf);
                 }
                 fprintf(stderr,"%s",buf);
-                lincs_warning(fplog,cr->dd,x,xprime,pbc_null,
+                lincs_warning(fplog,cr->dd,x,xprime,pbc,
                               lincsd->nc,lincsd->bla,lincsd->bllen,
                               ir->LincsWarnAngle,maxwarn,warncount);
             }
@@ -1636,7 +1619,7 @@ gmx_bool constrain_lincs(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     } 
     else
     {
-        do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdlambda,
+        do_lincsp(x,xprime,min_proj,pbc,lincsd,md->invmass,econq,dvdlambda,
                   bCalcVir,rmdr);
     }
   
