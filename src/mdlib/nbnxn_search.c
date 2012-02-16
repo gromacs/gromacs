@@ -5720,7 +5720,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
                                     const nbnxn_atomdata_t *nbat,
                                     rvec *f)
 {
-    int a0,na;
+    int a0=0,na=0;
     int nth,th;
 
     nbs_cycle_start(&nbs->cc[enbsCCreducef]);

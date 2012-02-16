@@ -317,7 +317,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     t_pbc   pbc;
     char    buf[22];
     t_vetavars vetavar;
-    int     nth,th,th_ss;
+    int     nth,th;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
@@ -516,8 +516,8 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                     clear_mat(constr->rmdr_th[th]);
                 }
                 
-                start_th = (nsettle*(th-th_ss  ))/(nth-th_ss);
-                end_th   = (nsettle*(th-th_ss+1))/(nth-th_ss);
+                start_th = (nsettle* th   )/nth;
+                end_th   = (nsettle*(th+1))/nth;
 
                 if (start_th >= 0 && end_th - start_th > 0)
                 {
