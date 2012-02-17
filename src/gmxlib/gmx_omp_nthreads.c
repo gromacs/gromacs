@@ -197,7 +197,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
      * detection is done on the master only. It is not thread-safe with
      * multiple simulations, but that's anyway not supported by tMPI. */
@@ -275,7 +275,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             }
 
             /* get the number of processes per node */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             nppn = cr->nnodes;
 #else
 #ifdef GMX_MPI
@@ -289,7 +289,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             /* neither MPI nor tMPI */
             nppn = 1;
 #endif /* GMX_MPI */
-#endif /* GMX_THREADS */
+#endif /* GMX_THREAD_MPI */
 
             /* divide the threads within the MPI processes/tMPI threads */
             nth /= nppn;
@@ -321,13 +321,13 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         pick_module_nthreads(fplog, emntSETTLE, SIMMASTER(cr), bFullOmpSupport, bSepPME);
 
         /* set the number of threads globally */
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
         if (bThisNodePMEOnly)
         {
             omp_set_num_threads(modth.gnth_pme);
         }
         else
-#endif /* GMX_THREADS */
+#endif /* GMX_THREAD_MPI */
         {
             if (bFullOmpSupport)
             {
@@ -341,7 +341,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
         modth.initialized = TRUE;
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     /* Non-master threads have to wait for the detection to be done. */
     if (PAR(cr))
     {
@@ -367,7 +367,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         }
         if (PAR(cr)) /* tMPI or MPI*/
         {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
             strcat(sbuf, " per tMPI thread");
 #else
             strcat(sbuf, " per MPI process");

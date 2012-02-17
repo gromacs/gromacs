@@ -51,7 +51,7 @@ endif()
 
 if(GMX_IA32_ASM)
   file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_ia32_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
+  if(GMX_ASM_USEASM_NASM)
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*intel_syntax*.s)    
   else()
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_ia32_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_ia32_${SSETYPE}/*asm.s)
@@ -60,7 +60,7 @@ endif(GMX_IA32_ASM)
 
 if(GMX_X86_64_ASM)
   file(GLOB GMX_SSEKERNEL_C_SRC   nonbonded/nb_kernel_x86_64_${SSETYPE}/*.c)
-  if(GMX_ASM_USEASM-NASM)
+  if(GMX_ASM_USEASM_NASM)
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*intel_syntax*.s)
   else()
     file(GLOB GMX_SSEKERNEL_ASM_SRC nonbonded/nb_kernel_x86_64_${SSETYPE}/*${SSETYPE}.s nonbonded/nb_kernel_x86_64_${SSETYPE}/*asm.s)
@@ -97,9 +97,9 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly
-#if(GMX_THREADS)
+#if(GMX_THREAD_MPI)
 #    add_subdirectory(thread_mpi)
-#endif(GMX_THREADS)
+#endif(GMX_THREAD_MPI)
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
@@ -112,8 +112,8 @@ list(REMOVE_ITEM GMXLIB_SOURCES ${SELECTION_TEST})
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
 if(NOT GMX_OPENMM) 
-if(GMX_ASM_USEASM-NASM)
-  enable_language(ASM-NASM)
+if(GMX_ASM_USEASM_NASM)
+  enable_language(ASM_NASM)
 
   # if NASM is used, we need a special build command for windows...
   FOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
@@ -122,13 +122,13 @@ if(GMX_ASM_USEASM-NASM)
 
     ADD_CUSTOM_COMMAND(OUTPUT ${OBJ}
                        MAIN_DEPENDENCY ${SRC}
-                       COMMAND ${CMAKE_ASM-NASM_COMPILER} -f ${CMAKE_ASM-NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
+                       COMMAND ${CMAKE_ASM_NASM_COMPILER} -f ${CMAKE_ASM_NASM_OBJECT_FORMAT} -o ${OBJ} ${SRC})
 
     SET(ALL_ASM_OBJS ${ALL_ASM_OBJS} ${OBJ})
   ENDFOREACH(SRC ${GMX_SSEKERNEL_ASM_SRC})
   set(GMX_SSEKERNEL_ASM_SRC ${ALL_ASM_OBJS})
 
-else(GMX_ASM_USEASM-NASM)
+else(GMX_ASM_USEASM_NASM)
 
   enable_language(ASM-ATT)
   SET(CMAKE_ASM-ATT_COMPILER ${CMAKE_C_COMPILER})
@@ -138,7 +138,7 @@ else(GMX_ASM_USEASM-NASM)
     set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m64")
   endif()
 
-endif(GMX_ASM_USEASM-NASM)
+endif(GMX_ASM_USEASM_NASM)
 endif(NOT GMX_OPENMM)
 
 # gpu utils + cuda tools module

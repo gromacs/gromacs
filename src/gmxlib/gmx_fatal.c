@@ -56,7 +56,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -64,7 +64,7 @@ static gmx_bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
 static FILE *log_file = NULL;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
@@ -74,12 +74,12 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 gmx_bool bDebugMode(void)
 {
     gmx_bool ret;
-/*#ifdef GMX_THREADS*/
+/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     ret=bDebug;
-/*#ifdef GMX_THREADS*/
+/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -100,7 +100,7 @@ void _where(const char *file,int line)
   char *temp; 
   
   if ( bFirst ) {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&where_mutex);
     if (bFirst) /* we repeat the check in the locked section because things
                    might have changed */
@@ -109,7 +109,7 @@ void _where(const char *file,int line)
         if ((temp=getenv("WHERE")) != NULL)
             nskip = strtol(temp, NULL, 10); 
         bFirst = FALSE;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     }
     tMPI_Thread_mutex_unlock(&where_mutex);
 #endif
@@ -192,7 +192,7 @@ static int fatal_errno = 0;
 
 static void quit_gmx(const char *msg)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (fatal_errno == 0) 
@@ -215,7 +215,7 @@ static void quit_gmx(const char *msg)
         perror(msg);
     }
 
-#ifndef GMX_THREADS 
+#ifndef GMX_THREAD_MPI
     if (gmx_parallel_env_initialized())
     {
         int  nnodes;
@@ -243,7 +243,7 @@ static void quit_gmx(const char *msg)
     }
 
     exit(fatal_errno);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -253,7 +253,7 @@ static void quit_gmx(const char *msg)
  */
 static void quit_gmx_noquit(const char *msg)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (!fatal_errno) 
@@ -284,14 +284,14 @@ static void quit_gmx_noquit(const char *msg)
         }
     }
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
 
 void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file == NULL)
@@ -299,14 +299,14 @@ void _set_fatal_tmp_file(const char *fn, const char *file, int line)
   else
     fprintf(stderr,"BUGWARNING: fatal_tmp_file already set at %s:%d",
 	    file,line);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (strcmp(fn,fatal_tmp_file) == 0) {
@@ -315,14 +315,14 @@ void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
   } else
     fprintf(stderr,"BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
 	    fn,file,line);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 static void clean_fatal_tmp_file()
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file) {
@@ -331,7 +331,7 @@ static void clean_fatal_tmp_file()
     sfree(fatal_tmp_file);
     fatal_tmp_file = NULL;
   }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
@@ -427,13 +427,13 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
   
   va_end(ap);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
 
   fatal_errno = f_errno;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
@@ -481,13 +481,13 @@ void gmx_fatal_collective(int f_errno,const char *file,int line,
         
         va_end(ap);
         
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
         
         fatal_errno = f_errno;
         
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 
@@ -553,7 +553,7 @@ gmx_bool gmx_debug_at=FALSE;
 
 void init_debug (const int dbglevel,const char *dbgfile)
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     if (!bDebug) /* another thread hasn't already run this*/
@@ -564,7 +564,7 @@ void init_debug (const int dbglevel,const char *dbgfile)
         if (dbglevel >= 2)
             gmx_debug_at = TRUE;
     }
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -599,7 +599,7 @@ void doexceptions(void)
   
   int onoff,en_mask,abort_action,i;
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
   onoff   = _DEBUG;
@@ -610,7 +610,7 @@ void doexceptions(void)
   
   for(i=0; (i<asize(hs)); i++)
     signal(hs[i],handle_signals);
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }
@@ -622,11 +622,11 @@ static void (*gmx_error_handler)(const char *msg) = quit_gmx;
 
 void set_gmx_error_handler(void (*func)(const char *msg))
 {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     gmx_error_handler = func;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
 }

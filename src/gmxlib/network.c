@@ -50,7 +50,7 @@
 #include <mpi.h>
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
 #include "tmpi.h"
 #endif
 
@@ -311,7 +311,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     nc = &cr->nc;
 
     nc->bUse = FALSE;
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_MPI
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
     MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
@@ -391,7 +391,7 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #ifndef GMX_MPI
   gmx_call("gmx_abort");
 #else
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_MPI
   fprintf(stderr,"Halting program %s\n",ShortProgram());
   thanx(stderr);
   exit(1);
@@ -436,7 +436,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #ifndef GMX_MPI
     gmx_call("gmx_sumd");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     if (cr->nc.bUse) {
         if (cr->nc.rank_intra == 0)
         {
@@ -491,7 +491,7 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #ifndef GMX_MPI
     gmx_call("gmx_sumf");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     if (cr->nc.bUse) {
         /* Use two step summing.  */
         if (cr->nc.rank_intra == 0)
@@ -545,7 +545,7 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #ifndef GMX_MPI
     gmx_call("gmx_sumi");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     if (cr->nc.bUse) {
         /* Use two step summing */
         if (cr->nc.rank_intra == 0) 
@@ -595,7 +595,7 @@ void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr)
 #ifndef GMX_MPI
     gmx_call("gmx_sumli");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     if (cr->nc.bUse) {
         /* Use two step summing */
         if (cr->nc.rank_intra == 0) 
@@ -650,7 +650,7 @@ void gmx_sumli(int nr,gmx_large_int_t r[],const t_commrec *cr)
 #ifdef GMX_MPI
 void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -671,7 +671,7 @@ void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 #ifdef GMX_MPI
 void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 {
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
 #else
     /* this function is only used in code that is not performance critical,
@@ -712,7 +712,7 @@ void gmx_sumi_sim(int nr,int r[], const gmx_multisim_t *ms)
 #ifndef GMX_MPI
     gmx_call("gmx_sumi_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
@@ -734,7 +734,7 @@ void gmx_sumli_sim(int nr,gmx_large_int_t r[], const gmx_multisim_t *ms)
 #ifndef GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
-#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
+#if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREAD_MPI)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,GMX_MPI_LARGE_INT,MPI_SUM,
                   ms->mpi_comm_masters);
 #else

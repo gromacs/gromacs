@@ -582,5 +582,5 @@ _gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
         _gmx_sel_yy_delete_buffer(state->buffer, scanner);
     }
     state->bBuffer = TRUE;
-    state->buffer  = _gmx_sel_yy_scan_string(str, scanner);
+    state->buffer  = _gmx_sel_yy_scan_string((yyconst char*) str, scanner);
 }
