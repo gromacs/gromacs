@@ -680,6 +680,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     float  cycles_pme,cycles_force;
     nonbonded_verlet_t *nbv;
 
+    cycles_force = 0;
     nbv = fr->nbv;
     nb_kernel_type = fr->nbv->grp[0].kernel_type;
 
@@ -948,7 +949,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatNonlocal,FALSE,x,
                                          nbv->grp[eintNonlocal].nbat);
         wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
 
 #ifdef GMX_GPU
         if (bUseGPU && !bDiffKernels)
@@ -956,7 +957,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE);
-            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
+            cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
 #endif
     }
@@ -973,7 +974,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
         nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintLocal].nbat,
                                   flags, eatLocal);
-        wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
+        cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 #endif /* GMX_GPU */ 
 
@@ -1129,11 +1130,13 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
          * This can be split into a local a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
+        cycles_force += wallcycle_stop(wcycle,ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatAll,nbv->grp[aloc].nbat,f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_start_nocount(wcycle,ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
@@ -1144,7 +1147,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
     }
     
-    cycles_force = wallcycle_stop(wcycle,ewcFORCE);
+    cycles_force += wallcycle_stop(wcycle,ewcFORCE);
     GMX_BARRIER(cr->mpi_comm_mygroup);
     
     if (ed)
@@ -1173,14 +1176,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             {
                 wallcycle_start_nocount(wcycle,ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE);
-                wallcycle_stop(wcycle,ewcFORCE);
+                cycles_force += wallcycle_stop(wcycle,ewcFORCE);
             }            
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs,eatNonlocal,
                                             nbv->grp[eintNonlocal].nbat,f);
             wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
@@ -1229,7 +1232,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            cycles_force += wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
+            wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
             nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
