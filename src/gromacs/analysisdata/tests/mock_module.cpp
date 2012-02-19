@@ -337,7 +337,6 @@ MockAnalysisModule::MockAnalysisModule(int flags)
 
 MockAnalysisModule::~MockAnalysisModule()
 {
-    delete impl_;
 }
 
 
@@ -464,13 +463,13 @@ MockAnalysisModule::setupReferenceCheck(const TestReferenceChecker &checker,
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
         .After(dataStart)
-        .WillRepeatedly(Invoke(impl_, &Impl::startReferenceFrame));
+        .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
         .After(dataStart)
-        .WillRepeatedly(Invoke(impl_, &Impl::checkReferencePoints));
+        .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
         .After(dataStart)
-        .WillRepeatedly(Invoke(impl_, &Impl::finishReferenceFrame));
+        .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())
         .After(frameStart, pointsAdd, frameFinish);
 }

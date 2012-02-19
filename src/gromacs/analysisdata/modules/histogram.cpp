@@ -480,7 +480,6 @@ AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
 
 AnalysisDataSimpleHistogramModule::~AnalysisDataSimpleHistogramModule()
 {
-    delete impl_;
 }
 
 
@@ -593,7 +592,6 @@ AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
 
 AnalysisDataWeightedHistogramModule::~AnalysisDataWeightedHistogramModule()
 {
-    delete impl_;
 }
 
 

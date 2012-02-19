@@ -100,11 +100,9 @@ class AnalysisData : public AbstractAnalysisData
 
         class Impl;
 
-        Impl                *impl_;
+        PrivateImplPointer<Impl> impl_;
 
         friend class AnalysisDataHandle;
-
-        // Copy and assign disallowed by base class.
 };
 
 
@@ -153,13 +151,9 @@ class AnalysisDataHandle
 
         class Impl;
 
-        Impl                   *impl_;
+        PrivateImplPointer<Impl> impl_;
 
         friend class AnalysisData;
-
-        // Disallow copy and assign.
-        AnalysisDataHandle(const AnalysisDataHandle &);
-        void operator =(const AnalysisDataHandle &);
 };
 
 } // namespace gmx

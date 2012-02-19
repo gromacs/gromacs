@@ -44,6 +44,7 @@
 #include "../legacyheaders/types/simple.h"
 
 #include "../fatalerror/gmxassert.h"
+#include "../utility/common.h"
 
 #include "dataframe.h"
 
@@ -201,9 +202,7 @@ class AnalysisDataStorageFrame
          */
         friend class AnalysisDataStorage;
 
-        // Disallow copy and assign.
-        AnalysisDataStorageFrame(const AnalysisDataStorageFrame &);
-        void operator =(const AnalysisDataStorageFrame &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrame);
 };
 
 /*! \libinternal \brief
@@ -387,16 +386,12 @@ class AnalysisDataStorage
     private:
         class Impl;
 
-        Impl                   *impl_;
+        PrivateImplPointer<Impl> impl_;
 
         /*! \brief
          * Needed because the frame object needs to trigger notifications.
          */
         friend void AnalysisDataStorageFrame::finishPointSet();
-
-        // Disallow copy and assign.
-        AnalysisDataStorage(const AnalysisDataStorage &);
-        void operator =(const AnalysisDataStorage &);
 };
 
 } // namespace gmx

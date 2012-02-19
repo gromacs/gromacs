@@ -84,16 +84,16 @@ class AbstractAnalysisData::Impl
 
         //! List of modules added to the data.
         ModuleList              _modules;
-        //! Whether notifyDataStart() has been called.
-        bool                    _bDataStart;
-        //! Whether new data is being added.
-        bool                    _bInData;
-        //! Whether data for a frame is being added.
-        bool                    _bInFrame;
         //! true if all modules support missing data.
         bool                    _bAllowMissing;
-        //! Header data for the current frame.
-        AnalysisDataFrameHeader _currHeader;
+        //! Whether notifyDataStart() has been called.
+        mutable bool            _bDataStart;
+        //! Whether new data is being added.
+        mutable bool            _bInData;
+        //! Whether data for a frame is being added.
+        mutable bool            _bInFrame;
+        //! Index of the currently active frame.
+        mutable int             _currIndex;
         /*! \brief
          * Total number of frames in the data.
          *

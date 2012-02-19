@@ -61,7 +61,6 @@ MessageStringCollector::MessageStringCollector()
 
 MessageStringCollector::~MessageStringCollector()
 {
-    delete impl_;
 }
 
 void MessageStringCollector::startContext(const char *name)

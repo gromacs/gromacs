@@ -229,7 +229,6 @@ AsciiHelpWriter::AsciiHelpWriter(const Options &options)
 
 AsciiHelpWriter::~AsciiHelpWriter()
 {
-    delete _impl;
 }
 
 AsciiHelpWriter &AsciiHelpWriter::setShowHidden(bool bSet)

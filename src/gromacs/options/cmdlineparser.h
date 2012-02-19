@@ -39,6 +39,8 @@
 #ifndef GMX_OPTIONS_CMDLINEPARSER_H
 #define GMX_OPTIONS_CMDLINEPARSER_H
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -83,11 +85,7 @@ class CommandLineParser
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        CommandLineParser(const CommandLineParser &);
-        void operator =(const CommandLineParser &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

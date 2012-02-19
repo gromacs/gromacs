@@ -85,7 +85,6 @@ AnalysisDataDisplacementModule::AnalysisDataDisplacementModule()
 
 AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
 {
-    delete _impl;
 }
 
 

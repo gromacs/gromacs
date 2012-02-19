@@ -45,6 +45,8 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -129,11 +131,7 @@ class TrajectoryAnalysisModuleData
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        TrajectoryAnalysisModuleData(const TrajectoryAnalysisModuleData &);
-        void operator =(const TrajectoryAnalysisModuleData &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 
@@ -344,16 +342,12 @@ class TrajectoryAnalysisModule
     private:
         class Impl;
 
-        Impl                   *_impl;
+        PrivateImplPointer<Impl> _impl;
 
         /*! \brief
          * Needed to access the registered analysis data sets.
          */
         friend class TrajectoryAnalysisModuleData;
-
-        // Disallow copy and assign.
-        TrajectoryAnalysisModule(const TrajectoryAnalysisModule &);
-        void operator =(const TrajectoryAnalysisModule &);
 };
 
 } // namespace gmx

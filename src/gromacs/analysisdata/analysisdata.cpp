@@ -82,7 +82,6 @@ AnalysisData::AnalysisData()
 
 AnalysisData::~AnalysisData()
 {
-    delete impl_;
 }
 
 
@@ -175,7 +174,6 @@ AnalysisDataHandle::AnalysisDataHandle(AnalysisData *data)
 
 AnalysisDataHandle::~AnalysisDataHandle()
 {
-    delete impl_;
 }
 
 

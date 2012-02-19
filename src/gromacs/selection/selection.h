@@ -46,6 +46,7 @@
 
 #include "../fatalerror/gmxassert.h"
 #include "../utility/arrayref.h"
+#include "../utility/common.h"
 
 #include "position.h"
 #include "indexutil.h"
@@ -259,9 +260,7 @@ class Selection
          */
         friend class SelectionPosition;
 
-        // Disallow copy and assign.
-        Selection(const Selection &);
-        void operator =(const Selection &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(Selection);
 };
 
 /*! \brief

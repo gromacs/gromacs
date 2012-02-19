@@ -43,6 +43,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -200,11 +202,7 @@ class OptionsAssigner
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        OptionsAssigner(const OptionsAssigner &);
-        void operator =(const OptionsAssigner &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

@@ -41,6 +41,8 @@
 
 #include <cstdio>
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -82,11 +84,7 @@ class AsciiHelpWriter
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        AsciiHelpWriter(const AsciiHelpWriter &);
-        void operator =(const AsciiHelpWriter &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

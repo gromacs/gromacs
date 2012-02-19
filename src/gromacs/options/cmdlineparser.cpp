@@ -68,7 +68,6 @@ CommandLineParser::CommandLineParser(Options *options)
 
 CommandLineParser::~CommandLineParser()
 {
-    delete _impl;
 }
 
 void CommandLineParser::parse(int *argc, char *argv[])

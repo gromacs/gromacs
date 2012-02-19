@@ -189,7 +189,6 @@ TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
 
 TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 {
-    delete _impl;
 }
 
 

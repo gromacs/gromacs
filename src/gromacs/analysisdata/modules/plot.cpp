@@ -146,7 +146,6 @@ AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
 
 AbstractPlotModule::~AbstractPlotModule()
 {
-    delete _impl;
 }
 
 

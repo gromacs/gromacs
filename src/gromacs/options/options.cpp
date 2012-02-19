@@ -144,7 +144,6 @@ Options::Options(const char *name, const char *title)
 
 Options::~Options()
 {
-    delete _impl;
 }
 
 const std::string &Options::name() const

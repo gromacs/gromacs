@@ -43,6 +43,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 #include "optioninfo.h"
 
 namespace gmx
@@ -157,9 +159,7 @@ class OptionsIterator
         //! The wrapped Options object.
         const Options          &_options;
 
-        // Disallow copy and assign.
-        OptionsIterator(const OptionsIterator &);
-        void operator =(const OptionsIterator &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsIterator);
 };
 
 /*! \libinternal \brief
@@ -251,9 +251,7 @@ class OptionsModifyingIterator
         //! The wrapped Options object.
         Options                &_options;
 
-        // Disallow copy and assign.
-        OptionsModifyingIterator(const OptionsModifyingIterator &);
-        void operator =(const OptionsModifyingIterator &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsModifyingIterator);
 };
 
 } // namespace gmx

@@ -43,6 +43,7 @@
 
 #include "../datamodule.h"
 #include "../../options/timeunitmanager.h"
+#include "../../utility/common.h"
 
 namespace gmx
 {
@@ -219,11 +220,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        AbstractPlotModule(const AbstractPlotModule &);
-        void operator =(const AbstractPlotModule &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 
