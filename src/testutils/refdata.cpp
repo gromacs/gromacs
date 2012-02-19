@@ -358,7 +358,6 @@ TestReferenceData::TestReferenceData(ReferenceDataMode mode)
 
 TestReferenceData::~TestReferenceData()
 {
-    delete _impl;
 }
 
 
@@ -405,16 +404,13 @@ TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
 TestReferenceChecker &
 TestReferenceChecker::operator =(const TestReferenceChecker &other)
 {
-    Impl *newImpl = new Impl(*other._impl);
-    std::swap(_impl, newImpl);
-    delete newImpl;
+    _impl.reset(new Impl(*other._impl));
     return *this;
 }
 
 
 TestReferenceChecker::~TestReferenceChecker()
 {
-    delete _impl;
 }
 
 

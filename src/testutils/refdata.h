@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include "gromacs/utility/common.h"
+
 namespace gmx
 {
 namespace test
@@ -210,11 +212,7 @@ class TestReferenceData
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        TestReferenceData(const TestReferenceData &);
-        void operator =(const TestReferenceData &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 /*! \libinternal \brief
@@ -324,7 +322,7 @@ class TestReferenceChecker
          */
         explicit TestReferenceChecker(Impl *impl);
 
-        Impl                   *_impl;
+        PrivateImplPointer<Impl> _impl;
 
         /*! \brief
          * Needed to expose the constructor only to TestReferenceData.
