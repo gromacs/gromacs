@@ -1538,7 +1538,12 @@ int main (int argc, char *argv[])
 
   /* make exclusions between QM atoms */
   if (ir->bQMMM) {
-    generate_qmexcl(sys,ir);
+    if (ir->QMMMscheme==eQMMMschemenormal && ir->ns_type == ensSIMPLE ){
+      gmx_fatal(FARGS,"electrostatic embedding only works with grid neighboursearching, use ns-type=grid instead\n");
+    }
+    else {
+     generate_qmexcl(sys,ir,wi);
+    }
   }
 
   if (ftp2bSet(efTRN,NFILE,fnm)) {

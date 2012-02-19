@@ -1030,8 +1030,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt,unsigned char *grpnr,
    * for that we also need to do this an ugly work-about just in case
    * the QM group contains the entire system...  
    */
-  fprintf(stderr,"excluding classical QM-QM interactions...\n");
-
   jmax = ir->opts.ngQM;
 
   /* we first search for all the QM atoms and put them in an array 
@@ -1236,13 +1234,13 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt,unsigned char *grpnr,
   free(blink);
 } /* generate_qmexcl */ 
 
-void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
+void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir,warninp_t    wi)
 {
   /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
    */
 
   unsigned char *grpnr;
-  int mb,mol,nat_mol,i;
+  int mb,mol,nat_mol,i,nr_mol_with_qm_atoms=0;
   gmx_molblock_t *molb;
   gmx_bool bQMMM;
 
@@ -1254,55 +1252,75 @@ void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
     for(mol=0; mol<molb->nmol; mol++) {
       bQMMM = FALSE;
       for(i=0; i<nat_mol; i++) {
-	if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM) {
-	  bQMMM = TRUE;
-	}
+        if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM) {
+          bQMMM = TRUE;
+        }
       }
       if (bQMMM) {
-	if (molb->nmol > 1) {
-	  /* We need to split this molblock */
-	  if (mol > 0) {
-	    /* Split the molblock at this molecule */
-	    sys->nmolblock++;
-	    srenew(sys->molblock,sys->nmolblock);
-	    for(i=mb; i<sys->nmolblock-1; i++) {
-	      sys->molblock[i+1] = sys->molblock[i];
-	    }
-	    sys->molblock[mb  ].nmol  = mol;
-	    sys->molblock[mb+1].nmol -= mol;
-	    mb++;
-	    molb = &sys->molblock[mb];
-	  }
-	  if (molb->nmol > 1) {
-	    /* Split the molblock after this molecule */
-	    sys->nmolblock++;
-	    srenew(sys->molblock,sys->nmolblock);
-	    for(i=mb; i<sys->nmolblock-1; i++) {
-	      sys->molblock[i+1] = sys->molblock[i];
-	    }
-	    sys->molblock[mb  ].nmol  = 1;
-	    sys->molblock[mb+1].nmol -= 1;
-	  }
-
-	  /* Add a moltype for the QMMM molecule */
-	  sys->nmoltype++;
-	  srenew(sys->moltype,sys->nmoltype);
-	  /* Copy the moltype struct */
-	  sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
-	  /* Copy the exclusions to a new array, since this is the only
-	   * thing that needs to be modified for QMMM.
-	   */
-	  copy_blocka(&sys->moltype[molb->type     ].excls,
-		      &sys->moltype[sys->nmoltype-1].excls);
-	  /* Set the molecule type for the QMMM molblock */
-	  molb->type = sys->nmoltype - 1;
-	}
-	
-	generate_qmexcl_moltype(&sys->moltype[molb->type],grpnr,ir);
+        nr_mol_with_qm_atoms++;
+        if (molb->nmol > 1) {
+	    /* We need to split this molblock */
+	      if (mol > 0) {
+	      /* Split the molblock at this molecule */
+	        sys->nmolblock++;
+            srenew(sys->molblock,sys->nmolblock);
+            for(i=sys->nmolblock-2; i >= mb;i--) {
+              sys->molblock[i+1] = sys->molblock[i];
+            }
+            sys->molblock[mb  ].nmol  = mol;
+            sys->molblock[mb+1].nmol -= mol;
+            mb++;
+            molb = &sys->molblock[mb];
+          }
+          if (molb->nmol > 1) {
+          /* Split the molblock after this molecule */
+            sys->nmolblock++;
+            srenew(sys->molblock,sys->nmolblock);
+            molb = &sys->molblock[mb];
+            for(i=sys->nmolblock-2; i >= mb;i--) {
+              sys->molblock[i+1] = sys->molblock[i];
+            }
+            sys->molblock[mb  ].nmol  = 1;
+            sys->molblock[mb+1].nmol -= 1;
+          }
+          
+          /* Add a moltype for the QMMM molecule */
+          sys->nmoltype++;
+          srenew(sys->moltype,sys->nmoltype);
+          /* Copy the moltype struct */
+          sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
+          /* Copy the exclusions to a new array, since this is the only
+           * thing that needs to be modified for QMMM.
+           */
+          copy_blocka(&sys->moltype[molb->type     ].excls,
+                      &sys->moltype[sys->nmoltype-1].excls);
+          /* Set the molecule type for the QMMM molblock */
+          molb->type = sys->nmoltype - 1;
+        }
+         generate_qmexcl_moltype(&sys->moltype[molb->type],grpnr,ir);
       }
-      if (grpnr) {
-	grpnr += nat_mol;
+      if (grpnr) {        
+        grpnr += nat_mol;
       }
     }
   }
+  if(nr_mol_with_qm_atoms>1){
+      /* generate a warning is there are QM atoms in different
+       * topologies. In this case it is not possible at this stage to
+       * mutualy exclude the non-bonded interactions via the
+       * exclusions (AFAIK). Instead, the user is advised to use the
+       * energy group exclusions in the mdp file
+       */
+      warning_note(wi,
+                   "\nThe QM subsystem is divided over multiple topologies. "
+                   "The mutual non-bonded interactions cannot be excluded. "
+                   "There are two ways to achieve this:\n\n"
+                   "1) merge the topologies, such that the atoms of the QM "
+                   "subsystem are all present in one single topology file. "
+                   "In this case this warning will dissappear\n\n"
+                   "2) exclude the non-bonded interactions explicitly via the "
+                   "energygrp-excl option in the mdp file. if this is the case "
+                   "this warning may be ignored"
+                   "\n\n");
+  }   
 }
