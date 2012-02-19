@@ -54,8 +54,8 @@ namespace gmx
  */
 
 AbstractAnalysisData::Impl::Impl()
-    : _bDataStart(false), _bInData(false), _bInFrame(false),
-      _bAllowMissing(true), _nframes(0)
+    : _bAllowMissing(true), _bDataStart(false), _bInData(false), _bInFrame(false),
+      _currIndex(-1), _nframes(0)
 {
 }
 
@@ -108,7 +108,6 @@ AbstractAnalysisData::AbstractAnalysisData()
 
 AbstractAnalysisData::~AbstractAnalysisData()
 {
-    delete _impl;
 }
 
 
@@ -270,7 +269,7 @@ AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) co
     GMX_ASSERT(header.index() == _impl->_nframes,
                "Out of order frames");
     _impl->_bInFrame = true;
-    _impl->_currHeader = header;
+    _impl->_currIndex = header.index();
 
     Impl::ModuleList::const_iterator i;
     for (i = _impl->_modules.begin(); i != _impl->_modules.end(); ++i)
@@ -286,7 +285,7 @@ AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) con
     GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
     GMX_ASSERT(_impl->_bInFrame, "notifyFrameStart() not called");
     GMX_ASSERT(points.lastColumn() < columnCount(), "Invalid columns");
-    GMX_ASSERT(points.frameIndex() == _impl->_currHeader.index(),
+    GMX_ASSERT(points.frameIndex() == _impl->_currIndex,
                "Points do not correspond to current frame");
     if (!_impl->_bAllowMissing && !points.allPresent())
     {
@@ -302,13 +301,14 @@ AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) con
 
 
 void
-AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header) const
+AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header)
 {
     GMX_ASSERT(_impl->_bInData, "notifyDataStart() not called");
     GMX_ASSERT(_impl->_bInFrame, "notifyFrameStart() not called");
-    GMX_ASSERT(header.index() == _impl->_currHeader.index(),
+    GMX_ASSERT(header.index() == _impl->_currIndex,
                "Header does not correspond to current frame");
     _impl->_bInFrame = false;
+    _impl->_currIndex = -1;
 
     // Increment the counter before notifications to allow frame access from
     // modules.

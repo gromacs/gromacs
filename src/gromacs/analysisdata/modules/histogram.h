@@ -361,7 +361,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        internal::BasicHistogramImpl   *impl_;
+        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
 
         // Copy and assign disallowed by base.
 };
@@ -412,7 +412,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        internal::BasicHistogramImpl   *impl_;
+        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
 
         // Copy and assign disallowed by base.
 };

@@ -262,7 +262,6 @@ SelectionCollection::SelectionCollection(gmx_ana_poscalc_coll_t *pcc)
 
 SelectionCollection::~SelectionCollection()
 {
-    delete _impl;
 }
 
 
@@ -637,19 +636,17 @@ SelectionCollection::printTree(FILE *fp, bool bValues) const
 void
 SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
 {
-    int  i;
-
     if (output_env_get_xvg_format(oenv) != exvgNONE)
     {
-        gmx_ana_selcollection_t *sc = &_impl->_sc;
+        const gmx_ana_selcollection_t &sc = _impl->_sc;
         std::fprintf(out, "# Selections:\n");
-        for (i = 0; i < sc->nvars; ++i)
+        for (int i = 0; i < sc.nvars; ++i)
         {
-            std::fprintf(out, "#   %s\n", sc->varstrs[i]);
+            std::fprintf(out, "#   %s\n", sc.varstrs[i]);
         }
-        for (i = 0; i < (int)sc->sel.size(); ++i)
+        for (size_t i = 0; i < sc.sel.size(); ++i)
         {
-            std::fprintf(out, "#   %s\n", sc->sel[i]->selectionText());
+            std::fprintf(out, "#   %s\n", sc.sel[i]->selectionText());
         }
         std::fprintf(out, "#\n");
     }

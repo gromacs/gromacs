@@ -43,6 +43,7 @@
 #include <gmock/gmock.h>
 
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/utility/common.h"
 
 namespace gmx
 {
@@ -80,7 +81,7 @@ class MockAnalysisModule : public AnalysisDataModuleInterface
     private:
         class Impl;
 
-        Impl                   *impl_;
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

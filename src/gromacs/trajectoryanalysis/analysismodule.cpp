@@ -95,7 +95,6 @@ TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
 
 TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
 {
-    delete _impl;
 }
 
 
@@ -166,7 +165,6 @@ TrajectoryAnalysisModule::TrajectoryAnalysisModule()
 
 TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 {
-    delete _impl;
 }
 
 
@@ -211,7 +209,11 @@ AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromIndex(int index) cons
     {
         return NULL;
     }
-    return _impl->_datasets[_impl->_datasetNames[index]];
+    Impl::DatasetContainer::const_iterator item
+        = _impl->_datasets.find(_impl->_datasetNames[index]);
+    GMX_RELEASE_ASSERT(item != _impl->_datasets.end(),
+                       "Inconsistent data set names");
+    return item->second;
 }
 
 
@@ -229,7 +231,8 @@ AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromName(const char *name
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char *name)
 {
-    // TODO: Check for duplicates
+    GMX_RELEASE_ASSERT(datasetFromName(name) == NULL,
+                       "Duplicate data set name registered");
     _impl->_datasets[name] = data;
     _impl->_datasetNames.push_back(name);
 }

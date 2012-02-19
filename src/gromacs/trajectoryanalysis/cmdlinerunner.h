@@ -39,6 +39,8 @@
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -84,11 +86,7 @@ class TrajectoryAnalysisCommandLineRunner
     private:
         class Impl;
 
-        Impl                *_impl;
-
-        // Disallow copy and assign.
-        TrajectoryAnalysisCommandLineRunner(const TrajectoryAnalysisCommandLineRunner &);
-        void operator =(const TrajectoryAnalysisCommandLineRunner &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

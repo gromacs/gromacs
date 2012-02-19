@@ -65,7 +65,6 @@ TrajectoryAnalysisSettings::TrajectoryAnalysisSettings()
 
 TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 {
-    delete _impl;
 }
 
 

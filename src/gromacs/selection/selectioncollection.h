@@ -42,7 +42,9 @@
 #include <string>
 #include <vector>
 
-#include <typedefs.h>
+#include "../legacyheaders/typedefs.h"
+
+#include "../utility/common.h"
 
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_poscalc_coll_t;
@@ -304,7 +306,7 @@ class SelectionCollection
     private:
         class Impl;
 
-        Impl                   *_impl;
+        PrivateImplPointer<Impl> _impl;
 
         /*! \brief
          * Needed for the compiler to freely modify the collection.
@@ -318,10 +320,6 @@ class SelectionCollection
          * Needed for handling delayed selection parsing requests.
          */
         friend class SelectionOptionStorage;
-
-        // Disallow copy and assign.
-        SelectionCollection(const SelectionCollection &);
-        void operator =(const SelectionCollection &);
 };
 
 } // namespace gmx

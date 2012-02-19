@@ -158,7 +158,6 @@ OptionsAssigner::OptionsAssigner(Options *options)
 
 OptionsAssigner::~OptionsAssigner()
 {
-    delete _impl;
 }
 
 void OptionsAssigner::setAcceptBooleanNoPrefix(bool enabled)

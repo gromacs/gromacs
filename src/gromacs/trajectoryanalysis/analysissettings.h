@@ -42,6 +42,7 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../options/timeunitmanager.h"
+#include "../utility/common.h"
 
 namespace gmx
 {
@@ -216,11 +217,7 @@ class TrajectoryAnalysisSettings
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        // Disallow copy and assign.
-        TrajectoryAnalysisSettings(const TrajectoryAnalysisSettings &);
-        void operator =(const TrajectoryAnalysisSettings &);
+        PrivateImplPointer<Impl> _impl;
 
         friend class TrajectoryAnalysisRunnerCommon;
 };
@@ -272,9 +269,7 @@ class TopologyInformation
         //! The ePBC field loaded from the topology file.
         int                  _ePBC;
 
-        // Disallow copy and assign.
-        TopologyInformation(const TopologyInformation &);
-        void operator =(const TopologyInformation &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
 
         friend class TrajectoryAnalysisRunnerCommon;
 };

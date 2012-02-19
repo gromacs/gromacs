@@ -43,6 +43,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -128,9 +130,7 @@ class OptionInfo
         //! The wrapped option.
         AbstractOptionStorage  &_option;
 
-        // Disallow copy and assign.
-        OptionInfo(const OptionInfo &);
-        void operator =(const OptionInfo &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };
 
 } // namespace gmx

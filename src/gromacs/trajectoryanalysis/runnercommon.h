@@ -38,7 +38,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
-#include <typedefs.h>
+#include "../utility/common.h"
 
 namespace gmx
 {
@@ -96,11 +96,7 @@ class TrajectoryAnalysisRunnerCommon
     private:
         class Impl;
 
-        Impl                *_impl;
-
-        // Disallow copy and assign.
-        TrajectoryAnalysisRunnerCommon(const TrajectoryAnalysisRunnerCommon &);
-        void operator =(const TrajectoryAnalysisRunnerCommon &);
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

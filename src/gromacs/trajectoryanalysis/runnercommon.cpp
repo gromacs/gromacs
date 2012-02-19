@@ -158,7 +158,6 @@ TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
 
 TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 {
-    delete _impl;
 }
 
 

@@ -293,7 +293,6 @@ AnalysisDataStorage::AnalysisDataStorage()
 
 AnalysisDataStorage::~AnalysisDataStorage()
 {
-    delete impl_;
 }
 
 

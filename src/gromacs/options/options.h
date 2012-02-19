@@ -44,6 +44,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -172,9 +174,7 @@ class Options
     private:
         class Impl;
 
-        Impl                   *_impl;
-
-        friend class Impl;
+        PrivateImplPointer<Impl> _impl;
 
         //! Needed to be able to extend the interface of this object.
         friend class OptionsAssigner;
@@ -182,10 +182,6 @@ class Options
         friend class OptionsIterator;
         //! Needed to be able to extend the interface of this object.
         friend class OptionsModifyingIterator;
-
-        // Disallow copy and assign.
-        Options(const Options &);
-        void operator =(const Options &);
 };
 
 } // namespace gmx

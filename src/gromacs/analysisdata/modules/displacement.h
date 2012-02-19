@@ -93,7 +93,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 
         class Impl;
 
-        Impl                   *_impl;
+        PrivateImplPointer<Impl> _impl;
 };
 
 } // namespace gmx

@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -111,7 +113,7 @@ class MessageStringCollector
     private:
         class Impl;
 
-        Impl                   *impl_;
+        PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -154,7 +156,7 @@ class MessageStringContext
          * Adds a context for the given object.
          */
         MessageStringContext(MessageStringCollector *collector,
-                       const std::string &name)
+                             const std::string &name)
             : collector_(*collector)
         {
             collector_.startContext(name);
@@ -171,9 +173,7 @@ class MessageStringContext
         //! The wrapped object.
         MessageStringCollector &collector_;
 
-        // Disallow copy and assign.
-        MessageStringContext(const MessageStringContext &);
-        void operator =(const MessageStringContext &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(MessageStringContext);
 };
 
 } // namespace gmx

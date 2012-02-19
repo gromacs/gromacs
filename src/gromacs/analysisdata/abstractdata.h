@@ -41,6 +41,8 @@
 
 #include "../legacyheaders/types/simple.h"
 
+#include "../utility/common.h"
+
 namespace gmx
 {
 
@@ -329,7 +331,7 @@ class AbstractAnalysisData
          * Should be called once for each call of notifyFrameStart(), after any
          * notifyPointsAdd() calls for the frame.
          */
-        void notifyFrameFinish(const AnalysisDataFrameHeader &header) const;
+        void notifyFrameFinish(const AnalysisDataFrameHeader &header);
         /*! \brief
          * Notifies attached modules of the end of data.
          *
@@ -341,7 +343,7 @@ class AbstractAnalysisData
     private:
         class Impl;
 
-        Impl                   *_impl;
+        PrivateImplPointer<Impl> _impl;
         int                     _ncol;
         bool                    _bMultiPoint;
 
@@ -349,10 +351,6 @@ class AbstractAnalysisData
          * Needed to provide access to notification methods.
          */
         friend class AnalysisDataStorage;
-
-        // Disallow copy and assign.
-        AbstractAnalysisData(const AbstractAnalysisData &);
-        void operator =(const AbstractAnalysisData &);
 };
 
 } // namespace gmx

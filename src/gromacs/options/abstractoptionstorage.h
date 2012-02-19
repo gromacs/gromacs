@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include "../utility/common.h"
+
 #include "optionflags.h"
 
 namespace gmx
@@ -298,9 +300,7 @@ class AbstractOptionStorage
         //! Parent Options object.
         Options                *_options;
 
-        // Disallow copy and assign.
-        AbstractOptionStorage(const AbstractOptionStorage &);
-        void operator =(const AbstractOptionStorage &);
+        GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };
 
 } // namespace gmx
