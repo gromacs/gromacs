@@ -2,7 +2,7 @@ file(GLOB UTILITY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 set(UTILITY_PUBLIC_HEADERS
-    arrayref.h flags.h format.h)
+    arrayref.h common flags.h format.h)
 install(FILES ${UTILITY_PUBLIC_HEADERS}
         DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
         COMPONENT development)
