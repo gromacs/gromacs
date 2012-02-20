@@ -870,6 +870,10 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("Force tolerance and initial step-size");
   RTYPE ("emtol",       ir->em_tol,     10.0);
   RTYPE ("emstep",      ir->em_stepsize,0.01);
+  CTYPE ("Relaxation parameter for SCF updates");
+  RTYPE ("emomega",     ir->em_omega,   0.00);
+  CTYPE ("Order of the ASPC predictor for shells");
+  ITYPE ("aspc-k",      ir->aspc_k,     0);
   CTYPE ("Max number of iterations in relax-shells");
   ITYPE ("niter",       ir->niter,      20);
   CTYPE ("Step size (ps^2) for minimization of flexible constraints");
