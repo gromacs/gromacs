@@ -90,6 +90,12 @@ typedef struct gmx_shellfc {
   rvec    *adir_xnold;     /* Work space for init_adir                 */
   rvec    *adir_xnew;      /* Work space for init_adir                 */
   int     adir_nalloc;     /* Work space for init_adir                 */
+  gmx_bool    bAutoOmega;
+  real    scf_omega;
+  int     aspc_k;
+  int     aspc_pass;
+  rvec    **aspc_hist;
+  real    *aspc_coeff;
 } t_gmx_shellfc;
 
 	
@@ -191,7 +197,7 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 
 gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 				 gmx_mtop_t *mtop,int nflexcon,
-				 rvec *x)
+				 rvec *x, t_inputrec *ir)
 {
   struct gmx_shellfc *shfc;
   t_shell     *shell;
@@ -407,27 +413,46 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
   shfc->shell_gl       = shell;
   shfc->shell_index_gl = shell_index;
 
-  shfc->bPredict   = (getenv("GMX_NOPREDICT") == NULL);
-  shfc->bForceInit = FALSE;
-  if (!shfc->bPredict) {
-    if (fplog)
-      fprintf(fplog,"\nWill never predict shell positions\n");
-  } else {
-    shfc->bForceInit = (getenv("GMX_FORCEINIT") != NULL);
-    if (shfc->bForceInit && fplog)
-      fprintf(fplog,"\nWill always initiate shell positions\n");
-  }
-
-  if (shfc->bPredict) {
-    if (x) {
-      predict_shells(fplog,x,NULL,0,shfc->nshell_gl,shfc->shell_gl,
-		     NULL,mtop,TRUE);
+  shfc->aspc_k = ir->aspc_k;
+  if (shfc->aspc_k > 0) {
+    for(i=0; (i<ns); i++) {
+      if (shell[i].nnucl > 1)
+        gmx_fatal(FARGS,"Only one nucleus per shell supported with ASPC");
     }
 
-    if (shfc->bInterCG) {
+    shfc->aspc_pass = -1;
+    snew(shfc->aspc_coeff, shfc->aspc_k + 2);
+
+    shfc->aspc_coeff[0] = 1;
+
+    snew(shfc->aspc_hist, shfc->aspc_k + 2);
+
+    for (i=0; i<shfc->aspc_k+2; i++)
+      snew(shfc->aspc_hist[i], ns);
+  } else {
+
+    shfc->bPredict   = (getenv("GMX_NOPREDICT") == NULL);
+    shfc->bForceInit = FALSE;
+    if (!shfc->bPredict) {
       if (fplog)
-	fprintf(fplog,"\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
-      shfc->bPredict = FALSE;
+        fprintf(fplog,"\nWill never predict shell positions\n");
+    } else {
+      shfc->bForceInit = (getenv("GMX_FORCEINIT") != NULL);
+      if (shfc->bForceInit && fplog)
+        fprintf(fplog,"\nWill always initiate shell positions\n");
+    }
+
+    if (shfc->bPredict) {
+      if (x) {
+        predict_shells(fplog,x,NULL,0,shfc->nshell_gl,shfc->shell_gl,
+		       NULL,mtop,TRUE);
+      }
+
+      if (shfc->bInterCG) {
+        if (fplog)
+	  fprintf(fplog,"\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
+        shfc->bPredict = FALSE;
+      }
     }
   }
 
@@ -743,6 +768,87 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
+static void scf_iter(struct gmx_shellfc *shfc,rvec xcur[],rvec xnew[],rvec f[],
+                         int ns,t_shell s[])
+{
+  int  i,shell;
+  rvec dx;
+  real o = shfc->scf_omega;
+
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+
+    do_1pos(xnew[shell], xcur[shell], f[shell], o * s[i].k_1);
+
+    if (gmx_debug_at) {
+      fprintf(debug,"shell[%d] = %d\n",i,shell);
+      pr_rvec(debug,0,"fshell",f[shell],DIM,TRUE);
+      pr_rvec(debug,0,"xold",xcur[shell],DIM,TRUE);
+      pr_rvec(debug,0,"xnew",xnew[shell],DIM,TRUE);
+    }
+  }
+}
+
+static void aspc_predict(FILE *log, struct gmx_shellfc *shfc, rvec x[], int ns, t_shell s[])
+{
+  int i, ik, shell, nuc;
+  real o;
+  rvec pred, tmp;
+
+  for (i=0; i<ns; i++) {
+    shell = s[i].shell;
+    nuc = s[i].nucl1;
+
+    clear_rvec(pred);
+
+    for (ik=0; ik<shfc->aspc_pass+2; ik++) {
+      svmul(shfc->aspc_coeff[ik], shfc->aspc_hist[ik][i], tmp);
+      rvec_inc(pred, tmp);
+    }
+
+    for (ik=shfc->aspc_k; ik>=0; ik--)
+      copy_rvec(shfc->aspc_hist[ik][i], shfc->aspc_hist[ik+1][i]);
+
+    rvec_add(pred, x[nuc], x[shell]);
+  }
+
+  if (shfc->aspc_pass < shfc->aspc_k) {
+    shfc->aspc_pass++;
+
+    /* omega guaranteeing stability for next step(s) */
+    o = (shfc->aspc_pass+2)/(real)(2*shfc->aspc_pass+3);
+
+    if (shfc->bAutoOmega)
+      shfc->scf_omega = o;
+
+    fprintf(log, "Initializing ASPC for k=%d\n", shfc->aspc_pass);
+    fprintf(log, "scf_omega=%f (stability guaranteed for scf_omega<=%f)\n\n", shfc->scf_omega, o);
+
+    o = (real)(4*shfc->aspc_pass+6)/(real)(shfc->aspc_pass+3);
+
+    for (i=0; i<shfc->aspc_pass+2; i++) {
+      shfc->aspc_coeff[i] = o * (i+1);
+      o *= (real)(i-shfc->aspc_pass-1)/(real)(shfc->aspc_pass+i+4);
+
+      if (debug) {
+        fprintf(debug, "ASPC_B[%d]=%f\n", i+1, shfc->aspc_coeff[i]);
+      }
+    }
+  }
+}
+
+static void aspc_save_corrected(struct gmx_shellfc *shfc, rvec x[], int ns, t_shell s[])
+{
+  int i, shell, nuc;
+
+  for (i=0; i<ns; i++) {
+    shell = s[i].shell;
+    nuc = s[i].nucl1;
+
+    rvec_sub(x[shell], x[nuc], shfc->aspc_hist[0][i]);
+  }
+}
+
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
 			gmx_large_int_t mdstep,t_inputrec *inputrec,
 			gmx_bool bDoNS,int force_flags,
@@ -774,7 +880,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
   real   sf_dir,invdt;
   real   ftol,xiH,xiS,dum=0;
   char   sbuf[22];
-  gmx_bool   bCont,bInit;
+  gmx_bool   bCont,bInit,bASPC;
   int    nat,dd_ac0,dd_ac1=0,i;
   int    start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
   int    nflexcon,g,number_steps,d,Min=0,count=0;
@@ -787,6 +893,14 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
   nshell       = shfc->nshell;
   shell        = shfc->shell;
   nflexcon     = shfc->nflexcon;
+  bASPC     = (shfc->aspc_k > 0);
+
+  if (bASPC) {
+    shfc->bAutoOmega = (inputrec->em_omega == 0.00);
+    if (!shfc->bAutoOmega) {
+        shfc->scf_omega = inputrec->em_omega;
+    }
+  }
 
   idef = &top->idef;
 
@@ -806,6 +920,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
     for(i=0; (i<2); i++) {
       srenew(shfc->x[i],shfc->x_nalloc);
       srenew(shfc->f[i],shfc->x_nalloc);
+    }
+    if (bASPC) {
+      aspc_save_corrected(shfc, state->x, nshell, shell);
     }
   }
   for(i=0; (i<2); i++) {
@@ -854,10 +971,14 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
   }
 
   /* Do a prediction of the shell positions */
-  if (shfc->bPredict && !bCont) {
+  if (bASPC) {
+    aspc_predict(fplog,shfc,state->x,nshell,shell);
+  }
+  else if (shfc->bPredict && !bCont) {
     predict_shells(fplog,state->x,state->v,inputrec->delta_t,nshell,shell,
 		   md->massT,NULL,bInit);
   }
+
 
   /* do_force expected the charge groups to be in the box */
   if (graph)
@@ -923,6 +1044,11 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
    * low enough even without minimization.
    */
   *bConverged = (df[Min] < ftol);
+
+  if ((bASPC) && *bConverged) {
+    scf_iter(shfc,pos[Min],pos[Min],force[Min],nshell,shell);
+    count = 1;
+  }
   
   for(count=1; (!(*bConverged) && (count < number_steps)); count++) {
     if (vsite)
@@ -939,9 +1065,13 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
       directional_sd(fplog,pos[Min],pos[Try],acc_dir-start,start,end,
 		     fr->fc_stepsize);
     }
-    
-    /* New positions, Steepest descent */
-    shell_pos_sd(fplog,pos[Min],pos[Try],force[Min],nshell,shell,count); 
+
+    if (bASPC) {
+      scf_iter(shfc,pos[Min],pos[Try],force[Min],nshell,shell);
+    } else {
+      /* New positions, Steepest descent */
+      shell_pos_sd(fplog,pos[Min],pos[Try],force[Min],nshell,shell,count);
+    }
 
     /* do_force expected the charge groups to be in the box */
     if (graph)
@@ -994,8 +1124,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
       print_epot(stdout,mdstep,count,Epot[Try],df[Try],nflexcon,sf_dir);
       
     *bConverged = (df[Try] < ftol);
-    
-    if ((df[Try] < df[Min])) {
+
+    if ((bASPC) || (df[Try] < df[Min])) {
       if (debug)
 	fprintf(debug,"Swapping Min and Try\n");
       if (nflexcon) {
@@ -1025,6 +1155,10 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,gmx_bool bVerbose,
   /* Copy back the coordinates and the forces */
   memcpy(state->x,pos[Min],nat*sizeof(state->x[0]));
   memcpy(f,force[Min],nat*sizeof(f[0]));
+
+  if (bASPC) {
+    aspc_save_corrected(shfc, pos[Min], nshell, shell);
+  }
 
   return count; 
 }
