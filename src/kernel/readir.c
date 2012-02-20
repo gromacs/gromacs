@@ -926,7 +926,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
   CTYPE ("Relative dielectric constant for the medium and the reaction field");
   RTYPE ("epsilon-r",   ir->epsilon_r,  1.0);
-  RTYPE ("epsilon-rf",  ir->epsilon_rf, 1.0);
+  RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
   CTYPE ("Method for doing Van der Waals");
   EETYPE("vdw-type",	ir->vdwtype,    evdw_names);
   CTYPE ("cut-off lengths");
