@@ -38,6 +38,7 @@
 
 
 #include "typedefs.h"
+#include "types/force_flags.h"
 #include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
@@ -96,21 +97,6 @@ t_forcerec *mk_forcerec(void);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
-
-void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
-				 int ntab,int tableformat,
-                                 real dr,real beta);
-/* Fill table tab of size ntab with spacing dr with the ewald long-range
- * (mesh) force and optionally energy.
- * With tableformatF tabv can be NULL.
- * With tableformatFDV0 the size of the tabf array should be ntab*4, tabv=NULL.
- * This function interpolates the Ewald mesh potential contribution
- * with coefficient beta using a quadratic spline.
- * The force can then be interpolated linearly.
- */
-
-real ewald_spline3_table_scale(real ewaldcoeff,real rc);
-/* Return the scaling for the Ewald quadratic spline tables. */
 
 t_forcetable make_tables(FILE *fp,const output_env_t oenv,
                                 const t_forcerec *fr, gmx_bool bVerbose,
@@ -220,33 +206,6 @@ void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Compute the average C6 and C12 params for LJ corrections */
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const gmx_mtop_t *mtop);
-
-/* The state has changed */
-#define GMX_FORCE_STATECHANGED (1<<0)
-/* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX   (1<<1)
-/* Do neighbor searching */
-#define GMX_FORCE_NS           (1<<2)
-/* Calculate bonded energies/forces */
-#define GMX_FORCE_DOLR         (1<<3)
-/* Calculate long-range energies/forces */
-#define GMX_FORCE_BONDED       (1<<4)
-/* Store long-range forces in a separate array */
-#define GMX_FORCE_SEPLRF       (1<<5)
-/* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1<<6)
-/* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1<<7)
-/* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1<<8)
-/* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1<<9)
-/* Normally one want all energy terms and forces */
-#define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
-
-/* Calculate energies */
-#define GMX_FORCE_ENERGY       GMX_FORCE_VIRIAL
-
 
 extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,

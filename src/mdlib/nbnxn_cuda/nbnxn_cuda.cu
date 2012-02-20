@@ -34,12 +34,14 @@
  */
 
 #include "stdlib.h"
+#include "unistd.h"
 
 #include "smalloc.h"
-#include "force.h"
 #include "types/simple.h" 
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
+#include "types/ishift.h"
+#include "types/force_flags.h"
 
 #include "nbnxn_cuda_types.h"
 #include "cudautils.cuh"

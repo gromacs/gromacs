@@ -38,9 +38,13 @@
 
 #include "gmx_fatal.h"
 #include "smalloc.h"
-#include "force.h"
+#include "tables.h"
 #include "types/nb_verlet.h"
 #include "types/interaction_const.h"
+#include "types/ishift.h"
+#include "types/enums.h"
+#include "types/force_flags.h"
+
 
 #include "nbnxn_cuda_types.h"
 #include "cudautils.cuh"

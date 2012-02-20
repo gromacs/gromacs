@@ -36,7 +36,8 @@
 #ifndef NBNXN_CUDA_DATA_MGMT_H
 #define NBNXN_CUDA_DATA_MGMT_H
 
-#include "typedefs.h" 
+#include "types/simple.h"
+#include "types/interaction_const.h"
 #include "types/nbnxn_cuda_types_ext.h"
 
 #ifdef __cplusplus

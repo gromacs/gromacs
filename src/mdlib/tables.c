@@ -51,6 +51,7 @@
 #include "physics.h"
 #include "force.h"
 #include "gmxfio.h"
+#include "tables.h"
 
 /* All the possible (implemented) table functions */
 enum { 

@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
+#include "gmx_fatal_collective.h"
 #include "vec.h"
 #include "domdec.h"
 #include "domdec_network.h"
