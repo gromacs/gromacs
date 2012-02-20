@@ -438,25 +438,17 @@ if(GMX_GPU)
     if ("${CUDA_NVCC_FLAGS}" STREQUAL "")
         set(CUDA_NVCC_FLAGS "-arch=sm_20;-use_fast_math;" CACHE STRING "Compiler flags for nvcc." FORCE)
     endif()
-    find_package(CUDA 3.1 REQUIRED)
+    find_package(CUDA 3.2 REQUIRED)
     add_definitions(-DGMX_GPU)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
     endif()
     # we need this linker flag for gcc 4.5+, but we'll add it for all gcc as 
-    # it doesn't hurt and the compiler version is not available
+    # the compiler version is not available and it doesn't hurt anyway
     if(CMAKE_COMPILER_IS_GNUCC)
         set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
     endif()
     set(GROMACS_CXX_FLAGS "-fPIC ${GROMACS_CXX_FLAGS}")
-    # with MPI need to manually set the compiler to the MPI compiler-wrapper
-    if (GMX_MPI AND NOT GMX_THREAD_MPI)
-        # don't set it if it's already set
-        if (NOT "${CUDA_NVCC_FLAGS}" MATCHES ".*-ccbin.*")
-            set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-ccbin=${CMAKE_CXX_COMPILER}" CACHE STRING "Compiler flags for nvcc." FORCE)
-        endif()
-        set(GMX_NVCC_COMPILER_SET TRUE CACHE INTERNAL "Host code compiler for nvcc set.")
-    endif()
 endif()
 
 if(GMX_OPENMP)
