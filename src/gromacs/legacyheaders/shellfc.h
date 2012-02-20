@@ -44,7 +44,7 @@ extern "C" {
  */
 gmx_shellfc_t init_shell_flexcon(FILE *log,
 					gmx_mtop_t *mtop,int nflexcon,
-					rvec *x);
+					rvec *x, t_inputrec *ir);
 
 /* Get the local shell with domain decomposition */
 void make_local_shells(t_commrec *cr,t_mdatoms *md,

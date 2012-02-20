@@ -294,7 +294,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  top_global,n_flexible_constraints(constr),
                                  (ir->bContinuation || 
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
-                                 NULL : state_global->x);
+                                 NULL : state_global->x, ir);
 
     if (DEFORM(*ir))
     {
