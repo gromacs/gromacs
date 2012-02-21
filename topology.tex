@@ -1061,9 +1061,17 @@ which might not be identical to the equilibrium value for a single bond/angle if
 
 \subsection{Special bonds}
 \label{subsec:specbond}
-The mechanism used by {\tt pdb2gmx} to generate inter-residue bonds relies principally on head-to-tail linking
-of backbone atoms in different residues to build a macromolecule. In some cases, {\eg} disulfides, a heme group, branched polymers, etc., it is 
-necessary to create inter-residue bonds that do not lie on the backbone.  The file {\tt specbond.dat} takes care of this function.
+The primary mechanism used by {\tt \normindex{pdb2gmx}} to generate
+inter-residue bonds relies on head-to-tail linking of backbone atoms
+in different residues to build a macromolecule. In some cases ({\eg}
+\normindex{disulfide bonds}, a \normindex{heme group},
+\normindex{branched polymers}), it is necessary to create
+inter-residue bonds that do not lie on the backbone. The file {\tt
+  \normindex{specbond.dat}} takes care of this function. It is
+necessary that the residues belong to the same {\tt [~moleculetype~]}.
+The {\tt -merge} and {\tt -chainsep} functions of {\tt pdb2gmx} can be
+useful when managing special inter-residue bonds between different
+chains.
 
 The first line of {\tt specbond.dat} indicates the number of entries that are in the file. If you
 add a new entry, be sure to increment this number. The remaining lines in the file provide the
