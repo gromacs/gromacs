@@ -1349,12 +1349,18 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
     }
 }
 
-void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **aname[], int nres)
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
 {
 	int     residx,i,ii,j,k;
 	atom_id ai,aj,ak,al,am;
 	const char *ptr;
-	
+    int natoms = atoms->nr;
+    t_atom *atom = atoms->atom;
+    char ***aname = atoms->atomname;
+    t_resinfo *resinfo = atoms->resinfo;
+    int nres = atoms->nres;
+    int ai_chainnum, aj_chainnum, ak_chainnum, al_chainnum, am_chainnum;
+
 	if (debug)
 		ptr = "cmap";
 	else
@@ -1380,8 +1386,22 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 			am=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[4],i,natoms,atom,aname,
 						   ptr,TRUE);
 			
-			/* The first and last residues no not have cmap torsions */
-			if(ai!=NO_ATID && aj!=NO_ATID && ak!=NO_ATID && al!=NO_ATID && am!=NO_ATID)
+            ai_chainnum = resinfo[atom[ai].resind].chainnum;
+            aj_chainnum = resinfo[atom[aj].resind].chainnum;
+            ak_chainnum = resinfo[atom[ak].resind].chainnum;
+            al_chainnum = resinfo[atom[al].resind].chainnum;
+            am_chainnum = resinfo[atom[am].resind].chainnum;
+            /* The first and last residues do not have cmap torsions,
+             * and neither do residues across chain breaks. */
+            if(ai!=NO_ATID &&
+               aj!=NO_ATID &&
+               ak!=NO_ATID &&
+               al!=NO_ATID &&
+               am!=NO_ATID &&
+               ai_chainnum == aj_chainnum &&
+               ai_chainnum == ak_chainnum &&
+               ai_chainnum == al_chainnum &&
+               ai_chainnum == am_chainnum)
 			{
 				add_cmap_param(psb,ai,aj,ak,al,am,restp[residx].rb[ebtsCMAP].b[j].s);
 			}
@@ -1491,7 +1511,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make CMAP */
     if (TRUE == bCmap)
     {
-		gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
+		gen_cmap(&(plist[F_CMAP]), restp, atoms);
         if (plist[F_CMAP].nr > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
