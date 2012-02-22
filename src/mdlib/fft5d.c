@@ -403,13 +403,31 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     if (!(flags&FFT5D_NOMALLOC)) { 
         lin = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);   
         lout = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize); 
-        lout2 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
-        lout3 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
+        if (nthreads > 1)
+        {
+            /* We need extra transpose buffers to avoid OpenMP barriers */
+            lout2 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
+            lout3 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
+        }
+        else
+        {
+            /* We can reuse the buffers to avoid cache misses */
+            lout2 = lin;
+            lout3 = lout;
+        }
     } else {
         lin = *rlin;
         lout = *rlout;
-        lout2 = *rlout2;
-        lout3 = *rlout3;
+        if (nthreads > 1)
+        {
+            lout2 = *rlout2;
+            lout3 = *rlout3;
+        }
+        else
+        {
+            lout2 = lin;
+            lout3 = lout;
+        }
     }
 
     plan = (fft5d_plan)calloc(1,sizeof(struct fft5d_plan_t));
@@ -925,7 +943,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
         }
 #endif
 
-        if (bParallelDim) {
+        if (bParallelDim || plan->nthreads == 1) {
             fftout = lout;
         }
         else
@@ -1112,6 +1130,14 @@ llToAll
 
 void fft5d_destroy(fft5d_plan plan) {
     int s,t;
+
+    /* Note that we expect plan->lin and plan->lout to be freed elsewhere */
+    if (plan->nthreads > 1)
+    {
+        free(plan->lout2);
+        free(plan->lout3);
+    }
+
     for (s=0;s<3;s++)
     {
         if (plan->p1d[s])
