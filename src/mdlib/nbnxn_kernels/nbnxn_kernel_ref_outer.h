@@ -182,7 +182,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
         nbln = &nbl->ci[n];
 
-        ish              = (nbln->shift & NBL_CI_SHIFT);
+        ish              = (nbln->shift & NBNXN_CI_SHIFT);
         ish3             = ish*3;
         cjind0           = nbln->cj_ind_start;      
         cjind1           = nbln->cj_ind_end;    
@@ -190,8 +190,8 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
-        half_LJ = (nbln->shift & NBL_CI_HALF_LJ(0));
-        do_coul = (nbln->shift & NBL_CI_DO_COUL(0));
+        half_LJ = (nbln->shift & NBNXN_CI_HALF_LJ(0));
+        do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS

@@ -82,6 +82,7 @@
                     real vcoul;
 #endif
 #endif
+                    real fscal;
                     real fx,fy,fz;
 
 #ifdef CHECK_EXCLS
@@ -117,6 +118,7 @@
                     {
                         continue;
                     }
+                    /* 9 flops for r^2 + cut-off check */
 #ifdef EXCL_FORCES
                     /* Avoid overflow of rinvsix */
                     if (rsq < 1e-12)
@@ -130,6 +132,7 @@
 #endif
 
                     rinv = gmx_invsqrt(rsq);
+                    /* 5 flops for invsqrt */
 
                     rinvsq  = rinv*rinv;
 
@@ -141,6 +144,7 @@
 
                         Vvdw6   = nbfp[type_i_off+type[aj]*2  ]*rinvsix;
                         Vvdw12  = nbfp[type_i_off+type[aj]*2+1]*rinvsix*rinvsix;
+                        /* 6 flops for r^-2 + LJ force */
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] +=
@@ -156,6 +160,7 @@
 
 #ifdef  CALC_COUL_RF
                     fcoul  = qq*(interact*rinv*rinvsq - k_rf2);
+                    /* 4 flops for RF force */
 #ifdef CALC_ENERGIES
                     vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
 #endif
@@ -169,6 +174,7 @@
                     fexcl  = (1 - frac)*tab_coul_F[ri] + frac*tab_coul_F[ri+1];
 #endif
                     fcoul  = interact*rinvsq - fexcl;
+                    /* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
 #ifndef GMX_DOUBLE
                     vcoul  = qq*(interact*rinv
@@ -197,23 +203,21 @@
                     if (i < UNROLLI/2)
 #endif
                     {
-                        fx = ((Vvdw12 - Vvdw6)*rinvsq + fcoul)*dx;
-                        fy = ((Vvdw12 - Vvdw6)*rinvsq + fcoul)*dy;
-                        fz = ((Vvdw12 - Vvdw6)*rinvsq + fcoul)*dz;
+                        fscal = (Vvdw12 - Vvdw6)*rinvsq + fcoul;
+                        /* 3 flops for scalar LJ+Coulomb force */
                     }
 #ifdef HALF_LJ
                     else
                     {
-                        fx = fcoul*dx;
-                        fy = fcoul*dy;
-                        fz = fcoul*dz;
+                        fscal = fcoul;
                     }
 #endif
 #else
-                    fx = (Vvdw12 - Vvdw6)*rinvsq*dx;
-                    fy = (Vvdw12 - Vvdw6)*rinvsq*dy;
-                    fz = (Vvdw12 - Vvdw6)*rinvsq*dz;
+                    fscal = (Vvdw12 - Vvdw6)*rinvsq;
 #endif
+                    fx = fscal*dx;
+                    fy = fscal*dy;
+                    fz = fscal*dz;
 
                     /* Increment i-atom force */
                     fi[i*3+0] += fx;
@@ -223,6 +227,7 @@
                     f[aj*3+0] -= fx;
                     f[aj*3+1] -= fy;
                     f[aj*3+2] -= fz;
+                    /* 9 flops for force addition */
                 }
             }
         }

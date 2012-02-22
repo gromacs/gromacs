@@ -189,6 +189,12 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "All-vs-All, Coul + LJ",          38 },
     { "All-vs-All, GB + LJ",            61 },
     { "Outer nonbonded loop",           10 },
+    { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
+    { "LJ + Coulomb RF",                36 }, /* nbnxn kernel LJ+RF, no force */
+    { "LJ + Coulomb tabulated",         39 }, /* nbnxn kernel LJ+tab, no f. */
+    { "LJ",                             31 }, /* nbnxn kernel LJ, no force */
+    { "Coulomb RF",                     28 }, /* nbnxn kernel RF, no force */
+    { "Coulomb tabulated",              31 }, /* nbnxn kernel tab, no force */
     { "1,4 nonbonded interactions",     90 },
     { "Born radii (Still)",             47 },
     { "Born radii (HCT/OBC)",          183 },

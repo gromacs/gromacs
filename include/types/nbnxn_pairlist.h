@@ -99,10 +99,10 @@ typedef struct {
     unsigned excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
-#define NBL_CI_SHIFT          127
-#define NBL_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
-#define NBL_CI_HALF_LJ(subc)  (1<<(8+2*(subc)))
-#define NBL_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
+#define NBNXN_CI_SHIFT          127
+#define NBNXN_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
+#define NBNXN_CI_HALF_LJ(subc)  (1<<(8+2*(subc)))
+#define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
 /* Simple pair-list i-unit */
 typedef struct {
@@ -148,19 +148,19 @@ typedef struct {
     int      na_cj;        /* The number of atoms per j-cluster        */
     int      na_sc;        /* The number of atoms per super cluster    */
     real     rlist;        /* The radius for constructing the list     */
-    int      nci;          /* The number of i clusters in the list     */
-    nbnxn_ci_t *ci;        /* The i-cluster list                       */
+    int      nci;          /* The number of i-clusters in the list     */
+    nbnxn_ci_t *ci;        /* The i-cluster list, size nci             */
     int      ci_nalloc;    /* The allocation size of ci                */
-    int      nsci;         /* The number of i super clusters in the list */
+    int      nsci;         /* The number of i-super-clusters in the list */
     nbnxn_sci_t *sci;      /* The i-super-cluster list                 */
     int      sci_nalloc;   /* The allocation size of sci               */
 
-    int      ncj;          /* The number of j-clusters                 */
-    nbnxn_cj_t *cj;        /* The j-cluster list                       */
+    int      ncj;          /* The number of j-clusters in the list     */
+    nbnxn_cj_t *cj;        /* The j-cluster list, size ncj             */
     int      cj_nalloc;    /* The allocation size of cj                */
 
     int      ncj4;         /* The total number of 4*j clusters         */
-    nbnxn_cj4_t *cj4;      /* The 4*j cluster list (size ncj4)         */
+    nbnxn_cj4_t *cj4;      /* The 4*j cluster list, size ncj4          */
     int      cj4_nalloc;   /* The allocation size of cj4               */
     int      nexcl;        /* The count for excl                       */
     nbnxn_excl_t *excl;    /* Atom interaction bits (non-exclusions)   */
@@ -178,7 +178,9 @@ typedef struct {
     gmx_bool     combined;  /* TRUE if lists get combined into one (the 1st) */
     gmx_bool     simple;    /* TRUE if the list of of type "simple" 
                                (na_sc=na_s, no super-clusters used) */
-
+    int          natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
+    int          natpair_lj;  /* Total number of atom pairs for LJ kernel   */
+    int          natpair_q;   /* Total number of atom pairs for Q kernel    */
 } nbnxn_pairlist_set_t;
 
     enum { nbatXYZ, nbatXYZQ, nbatXXXX };

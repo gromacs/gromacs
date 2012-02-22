@@ -51,6 +51,7 @@
 #include "gmx_cyclecounter.h"
 #include "gmxfio.h"
 #include "gmx_omp_nthreads.h"
+#include "nrnb.h"
 
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 #define NBNXN_SEARCH_SSE
@@ -167,7 +168,7 @@
 /* This define is a lazy way to avoid interdependence of the grid
  * and searching data structures.
  */
-#define NBL_NA_SC_MAX (NSUBCELL*16)
+#define NBNXN_NA_SC_MAX (NSUBCELL*16)
 
 #ifdef NBNXN_SEARCH_SSE
 typedef struct nbnxn_x_ci_sse {
@@ -195,6 +196,9 @@ typedef struct nbnxn_list_work {
 
     nbnxn_cj_t *cj;
     int  cj_nalloc;
+
+    int ncj_noq;       /* Nr. of cluster pairs without Coul for flop count  */
+    int ncj_hlj;       /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
     gmx_cache_protect_t cp1;
 } nbnxn_list_work_t;
@@ -276,6 +280,8 @@ typedef struct {
 
     int  *sort_work;
     int  sort_work_nalloc;
+
+    int  ndistc;
 
     nbnxn_cycle_t cc[enbsCCnr];
 
@@ -438,11 +444,11 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     {
         nbs->na_c = natoms_cluster;
 
-        if (nbs->na_c*NSUBCELL > NBL_NA_SC_MAX)
+        if (nbs->na_c*NSUBCELL > NBNXN_NA_SC_MAX)
         {
             gmx_fatal(FARGS,
                       "na_c (%d) is larger than the maximum allowed value (%d)",
-                      nbs->na_c,NBL_NA_SC_MAX/NSUBCELL);
+                      nbs->na_c,NBNXN_NA_SC_MAX/NSUBCELL);
         }
         nbs->na_c_2log = get_2log(nbs->na_c);
     }
@@ -1212,8 +1218,8 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                 int *flags)
 {
     int subc,s,a,n1,n2,a_lj_max,i,j;
-    int sort1[NBL_NA_SC_MAX/NSUBCELL];
-    int sort2[NBL_NA_SC_MAX/NSUBCELL];
+    int sort1[NBNXN_NA_SC_MAX/NSUBCELL];
+    int sort2[NBNXN_NA_SC_MAX/NSUBCELL];
     gmx_bool haveQ;
 
     *flags = 0;
@@ -1244,7 +1250,7 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
         /* If we don't have atom with LJ, there's nothing to sort */
         if (n1 > 0)
         {
-            *flags |= NBL_CI_DO_LJ(subc);
+            *flags |= NBNXN_CI_DO_LJ(subc);
 
             if (2*n1 <= na_c)
             {
@@ -1264,12 +1270,12 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                     }
                 }
 
-                *flags |= NBL_CI_HALF_LJ(subc);
+                *flags |= NBNXN_CI_HALF_LJ(subc);
             }
         }
         if (haveQ)
         {
-            *flags |= NBL_CI_DO_COUL(subc);
+            *flags |= NBNXN_CI_DO_COUL(subc);
         }
         subc++;
     }
@@ -2101,7 +2107,7 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
                 bbcz[tx*NNBSBB_D+1] = bb[tx*NNBSBB_B+NNBSBB_C+ZZ];
 
                 /* No interaction optimization yet here */
-                grid->flags_simple[tx] = NBL_CI_DO_LJ(0) | NBL_CI_DO_COUL(0);
+                grid->flags_simple[tx] = NBNXN_CI_DO_LJ(0) | NBNXN_CI_DO_COUL(0);
             }
             else
             {
@@ -2446,6 +2452,9 @@ static gmx_bool subc_in_range_sse8(int na_c,
     iy_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*4);
     iz_SSE1 = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*4);
 
+    /* We loop from the outer to the inner particles to maximize
+     * the chance that we find a pair in range quickly and return.
+     */
     j0 = csj*na_c;
     j1 = j0 + na_c - 1;
     while (j0 < j1)
@@ -2591,13 +2600,13 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.
  */
-static void nblist_alloc_aligned(void **ptr,size_t nbytes)
+static void nbnxn_alloc_aligned(void **ptr,size_t nbytes)
 {
     *ptr = save_calloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,32,0);
 }
 
-/* Free function for memory allocated with nblist_alloc_aligned */
-static void nblist_free_aligned(void *ptr)
+/* Free function for memory allocated with nbnxn_alloc_aligned */
+static void nbnxn_free_aligned(void *ptr)
 {
     sfree_aligned(ptr);
 }
@@ -2622,7 +2631,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 {
     if (alloc == NULL)
     {
-        nbl->alloc = nblist_alloc_aligned;
+        nbl->alloc = nbnxn_alloc_aligned;
     }
     else
     {
@@ -2630,7 +2639,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     }
     if (free == NULL)
     {
-        nbl->free = nblist_free_aligned;
+        nbl->free = nbnxn_free_aligned;
     }
     else
     {
@@ -2669,7 +2678,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 #else
     snew_aligned(nbl->work->bb_ci,NSUBCELL*NNBSBB_B,16);
 #endif
-    snew_aligned(nbl->work->x_ci,NBL_NA_SC_MAX*DIM,16);
+    snew_aligned(nbl->work->x_ci,NBNXN_NA_SC_MAX*DIM,16);
 #ifdef NBNXN_SEARCH_SSE
     snew_aligned(nbl->work->x_ci_sse,1,32);
 #endif
@@ -2739,7 +2748,7 @@ static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
     npexcl = 0;
     for(i=0; i<nbl->nci; i++)
     {
-        cs[nbl->ci[i].shift & NBL_CI_SHIFT] +=
+        cs[nbl->ci[i].shift & NBNXN_CI_SHIFT] +=
             nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start;
 
         j = nbl->ci[i].cj_ind_start;
@@ -2949,7 +2958,8 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                                      int ci,int cjf,int cjl,
                                      gmx_bool remove_sub_diag,
                                      const real *x_j,
-                                     real rl2,float rbb2)
+                                     real rl2,float rbb2,
+                                     int *ndistc)
 {
     const nbnxn_list_work_t *work;
 
@@ -2969,6 +2979,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     while (!InRange && cjf <= cjl)
     {
         d2 = subc_bb_dist2(4,0,bb_ci,cjf,gridj->bb);
+        *ndistc += 2;
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -2994,6 +3005,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                          sqr(x_ci[i*DIM+2] - x_j[(cjf_gl*4+j)*DIM+2]) < rl2);
                 }
             }
+            *ndistc += 4*4;
         }
         if (!InRange)
         {
@@ -3009,6 +3021,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
     while (!InRange && cjl > cjf)
     {
         d2 = subc_bb_dist2(4,0,bb_ci,cjl,gridj->bb);
+        *ndistc += 2;
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -3034,6 +3047,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                          sqr(x_ci[i*DIM+2] - x_j[(cjl_gl*4+j)*DIM+2]) < rl2);
                 }
             }
+            *ndistc += 4*4;
         }
         if (!InRange)
         {
@@ -3064,7 +3078,8 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
                                           int ci,int cjf,int cjl,
                                           gmx_bool remove_sub_diag,
                                           const real *x_j,
-                                          real rl2,float rbb2)
+                                          real rl2,float rbb2,
+                                          int *ndistc)
 {
 #ifdef NBNXN_SEARCH_SSE
     const nbnxn_x_ci_sse_t *work;
@@ -3108,6 +3123,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     while (!InRange && cjf <= cjl)
     {
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjf,gridj->bbj);
+        *ndistc += 2;
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -3156,6 +3172,8 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
+
+            *ndistc += 4*CJ_SIZE;
         }
         if (!InRange)
         {
@@ -3171,6 +3189,7 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
     while (!InRange && cjl > cjf)
     {
         d2 = subc_bb_dist2_sse(4,0,bb_ci,cjl,gridj->bbj);
+        *ndistc += 2;
         
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
@@ -3218,6 +3237,8 @@ static void make_cluster_list_simple_xxxx(const nbnxn_grid_t *gridj,
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
             
             InRange            = gmx_movemask_pr(wco_any_SSE);
+
+            *ndistc += 4*CJ_SIZE;
         }
         if (!InRange)
         {
@@ -3253,7 +3274,8 @@ static void make_cluster_list(const nbnxn_search_t nbs,
                               int sci,int scj,
                               gmx_bool sci_equals_scj,
                               int stride,const real *x,
-                              real rl2,float rbb2)
+                              real rl2,float rbb2,
+                              int *ndistc)
 {
     int  na_c;
     int  npair;
@@ -3265,8 +3287,8 @@ static void make_cluster_list(const nbnxn_search_t nbs,
     const real *x_ci;
     float *d2l,d2;
     int  w;
-#define GMX_PRUNE_NBL_CPU_ONE
-#ifdef GMX_PRUNE_NBL_CPU_ONE
+#define PRUNE_LIST_CPU_ONE
+#ifdef PRUNE_LIST_CPU_ONE
     int  ci_last=-1;
 #endif
 
@@ -3304,6 +3326,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
         /* Determine all ci1 bb distances in one call with SSE */
         subc_bb_dist2_sse_xxxx(gridj->bb+(cj>>SSE_WIDTH_2LOG)*NNBSBB_XXXX+(cj & (SSE_WIDTH-1)),
                                ci1,bb_ci,d2l);
+        *ndistc += na_c*2;
 #endif
 
         npair = 0;
@@ -3312,16 +3335,17 @@ static void make_cluster_list(const nbnxn_search_t nbs,
 #ifndef NBNXN_BBXXXX
             /* Determine the bb distance between ci and cj */
             d2l[ci] = subc_bb_dist2(na_c,ci,bb_ci,cj,gridj->bb);
+            *ndistc += 2;
 #endif
             d2 = d2l[ci];
 
-/* #define GMX_PRUNE_NBL_CPU */
-#ifdef GMX_PRUNE_NBL_CPU
+#ifdef PRUNE_LIST_CPU_ALL
             /* Check if the distance is within the distance where
              * we use only the bounding box distance rbb,
              * or within the cut-off and there is at least one atom pair
-             * within the cut-off.
+             * within the cut-off. This check is very costly.
              */
+            *ndistc += na_c*na_c;
             if (d2 < rbb2 ||
                 (d2 < rl2 && nbs->subc_dc(na_c,ci,x_ci,cj_gl,stride,x,rl2)))
 #else
@@ -3334,7 +3358,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
                 /* Flag this i-subcell to be taken into account */
                 imask |= (1U << (cj_offset*NSUBCELL+ci));
 
-#ifdef GMX_PRUNE_NBL_CPU_ONE
+#ifdef PRUNE_LIST_CPU_ONE
                 ci_last = ci;
 #endif
 
@@ -3342,7 +3366,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
             }
         }
 
-#ifdef GMX_PRUNE_NBL_CPU_ONE
+#ifdef PRUNE_LIST_CPU_ONE
         /* If we only found 1 pair, check if any atoms are actually
          * within the cut-off, so we could get rid of it.
          */
@@ -3768,6 +3792,15 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
     {
         sort_cj_excl(nbl->cj+nbl->ci[nbl->nci].cj_ind_start,jlen,nbl->work);
 
+        if (nbl->ci[nbl->nci].shift & NBNXN_CI_HALF_LJ(0))
+        {
+            nbl->work->ncj_hlj += jlen;
+        }
+        else if (!(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_COUL(0)))
+        {
+            nbl->work->ncj_noq += jlen;
+        }
+
         nbl->nci++;
     }
 }
@@ -3909,14 +3942,17 @@ static void sync_work(nbnxn_pairlist_t *nbl)
 }
 
 /* Clears an nbnxn_pairlist_t data structure */
-static void clear_nblist(nbnxn_pairlist_t *nbl)
+static void clear_pairlist(nbnxn_pairlist_t *nbl)
 {
-    nbl->nci          = 0;
-    nbl->nsci         = 0;
-    nbl->ncj          = 0;
-    nbl->ncj4         = 0;
-    nbl->nci_tot      = 0;
-    nbl->nexcl        = 1;
+    nbl->nci           = 0;
+    nbl->nsci          = 0;
+    nbl->ncj           = 0;
+    nbl->ncj4          = 0;
+    nbl->nci_tot       = 0;
+    nbl->nexcl         = 1;
+
+    nbl->work->ncj_noq = 0;
+    nbl->work->ncj_hlj = 0;
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
@@ -4447,7 +4483,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int  cxf,cxl,cyf,cyf_x,cyl;
     int  cx,cy;
     int  c0,c1,cs,cf,cl;
-    int  ncpc;
+    int  ndistc;
+    int  ncpcheck;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
 
@@ -4564,7 +4601,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 gridi->nc,gridi->nc/(double)(gridi->ncx*gridi->ncy),ci_block);
     }
 
-    ncpc = 0;
+    ndistc = 0;
+    ncpcheck = 0;
 
     ci_b = -1;
     ci   = th*ci_block - 1;
@@ -4879,7 +4917,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                           nbl,ci,cf,cl,
                                                                           (gridi == gridj && shift == CENTRAL),
                                                                           nbat->x,
-                                                                          rl2,rbb2);
+                                                                          rl2,rbb2,
+                                                                          &ndistc);
                                         }
                                         else
 #endif
@@ -4890,7 +4929,8 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                      nbl,ci,cf,cl,
                                                                      (gridi == gridj && shift == CENTRAL),
                                                                      nbat->x,
-                                                                     rl2,rbb2);
+                                                                     rl2,rbb2,
+                                                                     &ndistc);
                                         }
                                     }
                                     else
@@ -4903,10 +4943,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                               nbl,ci,cj,
                                                               (gridi == gridj && shift == CENTRAL && ci == cj),
                                                               nbat->xstride,nbat->x,
-                                                              rl2,rbb2);
+                                                              rl2,rbb2,
+                                                              &ndistc);
                                         }
                                     }
-                                    ncpc += cl - cf + 1;
+                                    ncpcheck += cl - cf + 1;
                                 }
                             }
                         }  
@@ -4954,11 +4995,15 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         }
     }
 
+    work->ndistc = ndistc;
+
     nbs_cycle_stop(&work->cc[enbsCCsearch]);
 
     if (debug)
     {
-        fprintf(debug,"ncpc %s %d\n",gridi==gridj ? "local" : "non-local",ncpc);
+        fprintf(debug,"number of distance checks %d\n",ndistc);
+        fprintf(debug,"ncpcheck %s %d\n",gridi==gridj ? "local" : "non-local",
+                ncpcheck);
 
         if (nbl->simple)
         {
@@ -4979,7 +5024,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          real rlist,
                          int min_ci_balanced,
                          nbnxn_pairlist_set_t *nbl_list,
-                         int iloc)
+                         int iloc,
+                         t_nrnb *nrnb)
 {
     const nbnxn_grid_t *gridi,*gridj;
     int nzi,zi,zj0,zj1,zj;
@@ -4988,6 +5034,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     int nnbl;
     nbnxn_pairlist_t **nbl;
     gmx_bool CombineNBLists;
+    int np_tot,np_noq,np_hlj,nap;
 
     nnbl            = nbl_list->nnbl;
     nbl             = nbl_list->nbl;
@@ -5042,7 +5089,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     /* Clear all pair-lists */
     for(th=0; th<nnbl; th++)
     {
-        clear_nblist(nbl[th]);
+        clear_pairlist(nbl[th]);
     }
 
     for(zi=0; zi<nzi; zi++)
@@ -5074,7 +5121,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             {
                 if (CombineNBLists && th > 0)
                 {
-                    clear_nblist(nbl[th]);
+                    clear_pairlist(nbl[th]);
                 }
 
                 /* Divide the i super cell equally over the nblists */
@@ -5089,6 +5136,30 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             }
             nbs_cycle_stop(&nbs->cc[enbsCCsearch]);
 
+            np_tot = 0;
+            np_noq = 0;
+            np_hlj = 0;
+            for(th=0; th<nnbl; th++)
+            {
+                inc_nrnb(nrnb,eNR_NBNXN_DIST2,nbs->work[th].ndistc);
+
+                if (nbl_list->simple)
+                {
+                    np_tot += nbl[th]->ncj;
+                    np_noq += nbl[th]->work->ncj_noq;
+                    np_hlj += nbl[th]->work->ncj_hlj;
+                }
+                else
+                {
+                    /* This count ignores potential subsequent pair pruning */
+                    np_tot += nbl[th]->nci_tot;
+                }
+            }
+            nap = nbl[0]->na_ci*nbl[0]->na_cj;
+            nbl_list->natpair_ljq = (np_tot - np_noq)*nap - np_hlj*nap/2;
+            nbl_list->natpair_lj  = np_noq*nap;
+            nbl_list->natpair_q   = np_hlj*nap/2;
+
             if (CombineNBLists && nnbl > 1)
             {
                 nbs_cycle_start(&nbs->cc[enbsCCcombine]);
@@ -5097,6 +5168,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
                 nbs_cycle_stop(&nbs->cc[enbsCCcombine]);
             }
+
         }
     }
 
@@ -5241,7 +5313,7 @@ void nbnxn_atomdata_init(FILE *fp,
 
     if (alloc == NULL)
     {
-        nbat->alloc = nblist_alloc_aligned;
+        nbat->alloc = nbnxn_alloc_aligned;
     }
     else
     {
@@ -5249,7 +5321,7 @@ void nbnxn_atomdata_init(FILE *fp,
     }
     if (free == NULL)
     {
-        nbat->free = nblist_free_aligned;
+        nbat->free = nbnxn_free_aligned;
     }
     else
     {

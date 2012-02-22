@@ -113,7 +113,8 @@ void nbnxn_make_pairlist(nbnxn_search_t nbs,
                          real rlist,
                          int min_ci_balanced,
                          nbnxn_pairlist_set_t *nbl_list,
-                         int iloc);
+                         int iloc,
+			 t_nrnb *nrnb);
 
 /* Initialize the non-bonded atom data structure.
  * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.

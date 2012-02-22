@@ -576,7 +576,8 @@ static void do_nb_verlet(t_forcerec *fr,
                          interaction_const_t *ic,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
-                         gmx_bool clearF) /* FIXME this argument is very uncool */
+                         gmx_bool clearF, /* FIXME this argument is very uncool */
+                         t_nrnb *nrnb)
 {
     int     nnbl, kernel_type;
     char    *env;
@@ -647,6 +648,16 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
+
+    inc_nrnb(nrnb,
+             (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
+             eNR_NBNXN_LJ_RF : eNR_NBNXN_LJ_TAB,
+             nbvg->nbl_lists.natpair_ljq);
+    inc_nrnb(nrnb,eNR_NBNXN_LJ,nbvg->nbl_lists.natpair_lj);
+    inc_nrnb(nrnb,
+             (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
+             eNR_NBNXN_RF : eNR_NBNXN_TAB,
+             nbvg->nbl_lists.natpair_q);
 }
 
 void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
@@ -854,7 +865,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                             ic->rlist,
                             nbv->min_ci_balanced,
                             &nbv->grp[eintLocal].nbl_lists,
-                            eintLocal);
+                            eintLocal,
+                            nrnb);
 
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
 #ifdef GMX_GPU
@@ -880,7 +892,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     { 
         wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE, nrnb);
         wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 #endif
@@ -918,7 +930,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                                 ic->rlist,
                                 nbv->min_ci_balanced,
                                 &nbv->grp[eintNonlocal].nbl_lists,
-                                eintNonlocal);
+                                eintNonlocal,
+                                nrnb);
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);
 #ifdef GMX_GPU
@@ -956,7 +969,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         { 
             wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE);
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE, nrnb);
             cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
 #endif
@@ -1104,7 +1117,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE, nrnb);
     }
         
 
@@ -1114,7 +1127,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, bDiffKernels);
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, bDiffKernels,
+                         nrnb);
         }
 
         if (!bUseOrEmulGPU)
@@ -1175,7 +1189,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             else
             {
                 wallcycle_start_nocount(wcycle,ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE);
+                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE, nrnb);
                 cycles_force += wallcycle_stop(wcycle,ewcFORCE);
             }            
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1241,7 +1255,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         else
         {            
             wallcycle_start_nocount(wcycle,ewcFORCE);
-            do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr));
+            do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr),
+                         nrnb);
             wallcycle_stop(wcycle,ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
