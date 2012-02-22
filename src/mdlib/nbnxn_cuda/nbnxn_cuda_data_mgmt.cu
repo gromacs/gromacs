@@ -436,14 +436,14 @@ void nbnxn_cuda_init_pairlist(nbnxn_cuda_ptr_t cu_nb,
 
     if (d_plist->na_c < 0)
     {
-        d_plist->na_c = h_plist->na_c;
+        d_plist->na_c = h_plist->na_ci;
     }
     else
     {
-        if (d_plist->na_c != h_plist->na_c)
+        if (d_plist->na_c != h_plist->na_ci)
         {
             sprintf(sbuf, "In cu_init_plist: the #atoms per cell has changed (from %d to %d)",
-                    d_plist->na_c, h_plist->na_c);
+                    d_plist->na_c, h_plist->na_ci);
             gmx_incons(sbuf);
         }
     }

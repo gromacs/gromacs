@@ -36,8 +36,6 @@
 #ifndef NBNXN_CUDA_TYPES_EXT_H
 #define NBNXN_CUDA_TYPES_EXT_H
 
-#define GPU_NS_CLUSTER_SIZE    8
-
 /* This is a heuristically determined parameter for the Fermi architecture for 
  * the minimum size of ci lists by multiplying this constant with the # of 
  * multiprocessors on the current device. 

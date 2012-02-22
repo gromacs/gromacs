@@ -43,8 +43,6 @@
 
 #include "typedefs.h"
 
-/* For AVX kernels the define below should also be set in nbnxn_search.c */
-/* #define GMX_NBNXN_KERNEL_AVX */
 
 #ifndef GMX_NBNXN_KERNEL_AVX
 #define GMX_SSE_HERE
@@ -55,32 +53,27 @@
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
-#define UNROLLI    4
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_SSE_CLUSTER_J_SIZE
+
+#define STRIDE     NBNXN_SSE_STRIDE
 
 #ifndef GMX_AVX_HERE
 #ifndef GMX_DOUBLE
 /* SSE single precision 4x4 kernel */
-#define UNROLLJ    4
-#define STRIDE     4
 #define SUM_SIMD(x) SUM_SIMD4(x)
 #define TAB_FDV0
 #else
 /* SSE double precision 4x2 kernel */
-#define UNROLLJ    2
-#define STRIDE     4
 #define SUM_SIMD(x) (x[0]+x[1])
 #endif
 #else
 #ifndef GMX_DOUBLE
 /* AVX single precision 4x8 kernel */
-#define UNROLLJ    8
-#define STRIDE     8
 #define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
 #define TAB_FDV0
 #else
 /* AVX double precision 4x4 kernel */
-#define UNROLLJ    4
-#define STRIDE     4
 #define SUM_SIMD(x) SUM_SIMD4(x)
 #endif
 #endif

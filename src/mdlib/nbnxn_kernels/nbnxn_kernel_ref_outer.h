@@ -38,8 +38,8 @@
 #include "typedefs.h"
 
 
-#define UNROLLI    4
-#define UNROLLJ    4
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
 
 
 /* All functionality defines are set here, except for:

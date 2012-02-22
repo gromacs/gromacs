@@ -70,11 +70,6 @@
 #endif
 
 
-/* For AVX kernels the define below should also be set in
- * nbnxn_kernels/nbnxn_kernel_sse_outer.h
- */
-/* #define GMX_NBNXN_KERNEL_AVX */
-
 #ifndef GMX_NBNXN_KERNEL_AVX
 #define GMX_SSE_HERE
 #else
@@ -93,28 +88,28 @@
 /* Pair search box upper and lower bound in z only. */
 #define NNBSBB_D         2
 
-#if (!defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX) || (defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
+#ifdef NBNXN_SEARCH_SSE
+
+#define CJ_SIZE          NBNXN_SSE_CLUSTER_J_SIZE
+
+#define STRIDE_S         NBNXN_SSE_STRIDE
+
+#if CJ_SIZE == 4
 /* SSE single or AVX double: 4x4 */
-#define CJ_SIZE          4
 #define CJ_2LOG          2
 #define CI_TO_CJ(ci)     (ci)
-#define STRIDE_S         4
 #define STRIDE_S_2LOG    2
 #endif
-#if (defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX)
+#if CJ_SIZE == 2
 /* SSE double: 4x2 */
-#define CJ_SIZE          2
 #define CJ_2LOG          1
 #define CI_TO_CJ(ci)     ((ci)<<1)
-#define STRIDE_S         4
 #define STRIDE_S_2LOG    2
 #endif
-#if (!defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
+#if CJ_SIZE == 8
 /* AVX single: 4x8 */
-#define CJ_SIZE          8
 #define CJ_2LOG          3
 #define CI_TO_CJ(ci)     ((ci)>>1)
-#define STRIDE_S         8
 #define STRIDE_S_2LOG    3
 #endif
 
@@ -131,6 +126,8 @@
 #define X_IND_CJ(cj)  ((cj)*DIM*STRIDE_S)
 #endif
 #define X_IND_A(a)  (DIM*STRIDE_S*((a) >> STRIDE_S_2LOG) + ((a) & (STRIDE_S-1)))
+
+#endif /* NBNXN_SEARCH_SSE */
 
 /* Interaction masks for reference and SIMD interactions.
  * Bit i*CJ_SIZE + j tells if atom i and j interact.
@@ -513,10 +510,25 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
                             real atom_density,
                             gmx_bool sse_kernel)
 {
+    int  cj_size=-1;
     rvec size;
     int  na_c;
     real adens,tlen,tlen_x,tlen_y,nc_max;
     int  t;
+
+    if (grid->simple)
+    {
+        if (!sse_kernel)
+        {
+            cj_size = 4;
+        }
+#ifdef NBNXN_SEARCH_SSE
+        else
+        {
+            cj_size = CJ_SIZE;
+        }
+#endif
+    }
 
     rvec_sub(corner1,corner0,size);
 
@@ -531,7 +543,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
                 /* To minimize the zero interactions, we should make
                  * the largest of the i/j cell cubic.
                  */
-                na_c = max(na_c,CJ_SIZE);
+                na_c = max(na_c,cj_size);
             }
             /* Approximately cubic cells */
             tlen   = pow(na_c/atom_density,1.0/3.0);
@@ -575,11 +587,15 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
     }
 
     /* Worst case scenario of 1 atom in each last cell */
-#if CJ_SIZE <= 4
-    nc_max = n/grid->na_sc + grid->ncx*grid->ncy;
-#else
-    nc_max = n/grid->na_sc + grid->ncx*grid->ncy*2;
-#endif
+    if (!grid->simple || cj_size <= 4)
+    {
+        nc_max = n/grid->na_sc + grid->ncx*grid->ncy;
+    }
+    else
+    {
+        nc_max = n/grid->na_sc + grid->ncx*grid->ncy*cj_size/4;
+    }
+
     if (nc_max > grid->nc_nalloc)
     {
         int bb_nalloc;
@@ -601,17 +617,19 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
          * floating exceptions in SSE with the unused bb elements.
          */
         snew_aligned(grid->bb,bb_nalloc,16);
-#if CJ_SIZE == 4
-        grid->bbj = grid->bb;
-#endif
-#if CJ_SIZE == 2
-        sfree_aligned(grid->bbj);
-        snew_aligned(grid->bbj,bb_nalloc*2,16);
-#endif
-#if CJ_SIZE == 8
-        sfree_aligned(grid->bbj);
-        snew_aligned(grid->bbj,bb_nalloc/2,32);
-#endif
+
+        if (grid->simple)
+        {
+            if (cj_size == 4)
+            {
+                grid->bbj = grid->bb;
+            }
+            else
+            {
+                sfree_aligned(grid->bbj);
+                snew_aligned(grid->bbj,bb_nalloc*4/cj_size,16);
+            }
+        }
 
         srenew(grid->flags,grid->nc_nalloc);
     }
@@ -776,6 +794,8 @@ static void calc_bounding_box(int na,int stride,const real *x,float *bb)
     bb[6] = R2F_U(zh);
 }
 
+#ifdef NBNXN_SEARCH_SSE
+
 /* Packed coordinates, bb order xyz0 */
 static void calc_bounding_box_x_xxxx(int na,const real *x,float *bb)
 {
@@ -863,6 +883,8 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
     bb[16] = R2F_U(yh);
     bb[20] = R2F_U(zh);
 }
+
+#endif /* NBNXN_SEARCH_SSE */
 
 #ifdef NBNXN_SEARCH_SSE_SINGLE
 
@@ -1068,6 +1090,7 @@ static void clear_nbat_real(int na,int nbatXFormat,real *xnb,int a0)
             }
         }
         break;
+#ifdef NBNXN_SEARCH_SSE
     case nbatXXXX:
         j = X_IND_A(a0);
         c = a0 & (STRIDE_S-1);
@@ -1085,6 +1108,7 @@ static void clear_nbat_real(int na,int nbatXFormat,real *xnb,int a0)
             }
         }
         break;
+#endif
     }
 }
 
@@ -1141,6 +1165,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
             j++;
         }
         break;
+#ifdef NBNXN_SEARCH_SSE
     case nbatXXXX:
         j = X_IND_A(a0);
         c = a0 & (STRIDE_S-1);
@@ -1172,6 +1197,7 @@ static void copy_rvec_to_nbat_real(const int *a,int na,int na_round,
             }
         }
         break;
+#endif
     default:
         gmx_incons("Unsupported stride");
     }
@@ -1285,6 +1311,7 @@ void fill_cell(const nbnxn_search_t nbs,
 
     if (nbat->XFormat == nbatXXXX)
     {
+#ifdef NBNXN_SEARCH_SSE
         /* Store the bounding boxes as xyz.xyz. */
         offset = ((a0 - grid->cell0*grid->na_sc)>>grid->na_c_2log)*NNBSBB_B;
         bb_ptr = grid->bb + offset;
@@ -1294,6 +1321,7 @@ void fill_cell(const nbnxn_search_t nbs,
 #else
         calc_bounding_box_x_xxxx_halves(na,nbat->x+X_IND_A(a0),bb_ptr,
                                         grid->bbj+offset*2);
+#endif
 #endif
     }
 #ifdef NBNXN_BBXXXX
@@ -2056,12 +2084,14 @@ void nbnxn_grid_simple(nbnxn_search_t nbs,
 
             if (na > 0)
             {
+#ifdef NBNXN_SEARCH_SSE
                 if (nbat->XFormat == nbatXXXX)
                 {
                     calc_bounding_box_x_xxxx(na,nbat->x+tx*SSE_WIDTH*nbat->xstride,
                                              bb+tx*NNBSBB_B);
                 }
                 else
+#endif
                 {
                     calc_bounding_box(na,nbat->xstride,
                                       nbat->x+tx*SSE_WIDTH*nbat->xstride,
@@ -2609,7 +2639,8 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     nbl->simple      = simple;
     nbl->na_sc       = 0;
-    nbl->na_c        = 0;
+    nbl->na_ci       = 0;
+    nbl->na_cj       = 0;
     nbl->nci         = 0;
     nbl->ci          = NULL;
     nbl->ci_nalloc   = 0;
@@ -2744,7 +2775,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
     fprintf(fp,"nbl nsci %d ncj4 %d nsi %d excl4 %d\n",
             nbl->nsci,nbl->ncj4,nbl->nci_tot,nbl->nexcl);
     fprintf(fp,"nbl na_c %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
-            nbl->na_c,rl,nbl->nci_tot,nbl->nci_tot/(double)grid->nsubc_tot,
+            nbl->na_ci,rl,nbl->nci_tot,nbl->nci_tot/(double)grid->nsubc_tot,
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c,
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/det(nbs->box)));
 
@@ -2861,9 +2892,9 @@ static void get_nbl_exclusions_2(nbnxn_pairlist_t *nbl,int cj4,
 }
 
 /* Sets the self exclusions i=j and pair exclusions i>j */
-static void set_self_and_newton_excls(nbnxn_pairlist_t *nbl,
-                                      int cj4_ind,int sj_offset,
-                                      int si)
+static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
+                                               int cj4_ind,int sj_offset,
+                                               int si)
 {
     nbnxn_excl_t *excl[2];
     int  ei,ej,w;
@@ -2873,12 +2904,12 @@ static void set_self_and_newton_excls(nbnxn_pairlist_t *nbl,
     get_nbl_exclusions_2(nbl,cj4_ind,&excl[0],&excl[1]);
     
     /* Only minor < major bits set */
-    for(ej=0; ej<nbl->na_c; ej++)
+    for(ej=0; ej<nbl->na_ci; ej++)
     {
         w = (ej>>2);
-        for(ei=ej; ei<nbl->na_c; ei++)
+        for(ei=ej; ei<nbl->na_ci; ei++)
         {
-            excl[w]->pair[(ej&(4-1))*nbl->na_c+ei] &=
+            excl[w]->pair[(ej&(4-1))*nbl->na_ci+ei] &=
                 ~(1U << (sj_offset*NSUBCELL+si));
         }
     }
@@ -2890,6 +2921,7 @@ static unsigned int get_imask(gmx_bool rdiag,int ci,int cj)
     return (rdiag && ci == cj ? REF_INT_MASK_DIAG : NBNXN_INT_MASK_ALL);
 }
 
+#ifdef NBNXN_SEARCH_SSE
 /* Returns a diagonal or off-diagonal interaction mask for SSE/AVX lists */
 static unsigned int get_imask_sse(gmx_bool rdiag,int ci,int cj)
 {
@@ -2907,6 +2939,7 @@ static unsigned int get_imask_sse(gmx_bool rdiag,int ci,int cj)
              NBNXN_INT_MASK_ALL));
 #endif
 }
+#endif
 
 /* Plain C code for making a pair list of cell ci vs cell cjf-cjl.
  * Checks bouding box distances and possibly atom pair distances.
@@ -3333,7 +3366,7 @@ static void make_cluster_list(const nbnxn_search_t nbs,
              */
             if (sci_equals_scj)
             {
-                set_self_and_newton_excls(nbl,cj4_ind,cj_offset,cjo);
+                set_self_and_newton_excls_supersub(nbl,cj4_ind,cj_offset,cjo);
             }
 
             /* Copy the cluster interaction mask to the list */
@@ -3396,11 +3429,24 @@ static void set_ci_excls(const nbnxn_search_t nbs,
      * calculate j-cell indices for excluded atoms.
      */
     ndirect = 0;
-    while (cj_ind_first + ndirect <= cj_ind_last &&
-           nbl->cj[cj_ind_first+ndirect].cj == CI_TO_CJ(ci) + ndirect)
+    if (na_ci_2log == na_cj_2log)
     {
-        ndirect++;
+        while (cj_ind_first + ndirect <= cj_ind_last &&
+               nbl->cj[cj_ind_first+ndirect].cj == ci + ndirect)
+        {
+            ndirect++;
+        }
     }
+#ifdef NBNXN_SEARCH_SSE
+    else
+    {
+        while (cj_ind_first + ndirect <= cj_ind_last &&
+               nbl->cj[cj_ind_first+ndirect].cj == CI_TO_CJ(ci) + ndirect)
+        {
+            ndirect++;
+        }
+    }
+#endif
 
     /* Loop over the atoms in the i super-cell */
     for(i=0; i<nbl->na_sc; i++)
@@ -3505,7 +3551,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
 
     cell = nbs->cell;
 
-    na_c = nbl->na_c;
+    na_c = nbl->na_ci;
 
     if (nbl_sci->cj4_ind_end == nbl_sci->cj4_ind_start)
     {
@@ -3608,7 +3654,7 @@ static void set_sci_excls(const nbnxn_search_t nbs,
                             
                             get_nbl_exclusions_1(nbl,found>>2,w,&nbl_excl);
                             
-                            nbl_excl->pair[(inner_e & 3)*nbl->na_c+inner_i] &=
+                            nbl_excl->pair[(inner_e & 3)*nbl->na_ci+inner_i] &=
                                 ~(1U << ((found & 3)*NSUBCELL + si));
                         }
                     }
@@ -4413,7 +4459,17 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     sync_work(nbl);
 
     nbl->na_sc = gridj->na_sc;
-    nbl->na_c  = gridj->na_c;
+    nbl->na_ci = gridj->na_c;
+#ifdef NBNXN_SEARCH_SSE
+    if (nbat->XFormat == nbatXXXX)
+    {
+        nbl->na_cj = CJ_SIZE;
+    }
+    else
+#endif
+    {
+        nbl->na_cj = nbl->na_ci;
+    }
 
     nbl->rlist  = rlist;
 
@@ -4814,6 +4870,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 {
                                     if (nbl->simple)
                                     {
+#ifdef NBNXN_SEARCH_SSE
                                         if (nbat->XFormat == nbatXXXX)
                                         {
                                             check_subcell_list_space_simple(nbl,CI_TO_CJ(cl-cf)+2);
@@ -4825,6 +4882,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                                                           rl2,rbb2);
                                         }
                                         else
+#endif
                                         {
                                             check_subcell_list_space_simple(nbl,cl-cf+1);
 
@@ -4861,7 +4919,10 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      nbl,
                                      shift == CENTRAL && gridi == gridj,
                                      gridj->na_c_2log,
-                                     nbat->XFormat==nbatXXXX ? CJ_2LOG : gridj->na_c_2log,
+#ifdef NBNXN_SEARCH_SSE
+                                     nbat->XFormat==nbatXXXX ? CJ_2LOG :
+#endif
+                                     gridj->na_c_2log,
                                      &(nbl->ci[nbl->nci]),
                                      excl);
                     }
@@ -5086,6 +5147,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     out->nV = nenergrp*nenergrp;
     ma((void **)&out->Vvdw,out->nV*sizeof(*out->Vvdw));
     ma((void **)&out->Vc  ,out->nV*sizeof(*out->Vc  ));
+#ifdef NBNXN_SEARCH_SSE
     if (simple)
     {
         out->nVS = nenergrp*nenergrp*stride*(CJ_SIZE>>1)*CJ_SIZE;
@@ -5093,6 +5155,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
         ma((void **)&out->VSc  ,out->nVS*sizeof(*out->VSc  ));
     }
     else
+#endif
     {
         out->nVS = 0;
     }
@@ -5366,6 +5429,7 @@ void nbnxn_atomdata_init(FILE *fp,
     }
 }
 
+#ifdef NBNXN_SEARCH_SSE
 static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
                                     const int *type,int na,
                                     real *ljparam_at)
@@ -5385,6 +5449,7 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
         }
     }
 }
+#endif
 
 /* Sets the atom type and LJ data in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
@@ -5408,12 +5473,15 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *nbat,
             copy_int_to_nbat_int(nbs->a+ash,grid->cxy_na[i],ncz*grid->na_sc,
                                  type,nbat->ntype-1,nbat->type+ash);
 
-            if (nbat->comb_rule != ljcrNONE)
+#ifdef NBNXN_SEARCH_SSE
+            /* This should be switched by kernel type */
+            if (nbat->XFormat == nbatXXXX && nbat->comb_rule != ljcrNONE)
             {
                 copy_lj_to_nbat_lj_comb(nbat->nbfp_comb,
                                         nbat->type+ash,ncz*grid->na_sc,
                                         nbat->lj_comb+ash*2);
             }
+#endif
         }
     }
 }
@@ -5682,6 +5750,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             }
         }
         break;
+#ifdef NBNXN_SEARCH_SSE
     case nbatXXXX:
         if (nfa == 1)
         {
@@ -5711,6 +5780,7 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
             }
         }
         break;
+#endif
     }
 }
 

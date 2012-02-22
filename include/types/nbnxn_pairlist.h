@@ -40,6 +40,32 @@
 extern "C" {
 #endif
 
+/* Define GMX_NBNXN_KERNEL_AVX for nbnxn AVX kernels */
+
+/* With CPU kernels the i-cluster size is always 4 atoms.
+ * Without SSE the j-cluster size is also 4.
+ */
+#define NBNXN_CPU_CLUSTER_I_SIZE  4
+
+#if (!defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX) || (defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
+/* SSE single or AVX double: 4x4 */
+#define NBNXN_SSE_CLUSTER_J_SIZE  4
+#define NBNXN_SSE_STRIDE          4
+#endif
+#if (defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX)
+/* SSE double: 4x2 */
+#define NBNXN_SSE_CLUSTER_J_SIZE  2
+#define NBNXN_SSE_STRIDE          4
+#endif
+#if (!defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
+/* AVX single: 4x8 */
+#define NBNXN_SSE_CLUSTER_J_SIZE  8
+#define NBNXN_SSE_STRIDE          8
+#endif
+
+/* With GPU kernels the cluster size is 8 atoms */
+#define NBNXN_GPU_CLUSTER_SIZE    8
+
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
  * to avoid cache invalidation of the real contents
@@ -118,7 +144,8 @@ typedef struct {
     gmx_bool simple;       /* Simple list has na_sc=na_s and uses cj   *
                             * Complex list uses cj4                    */
 
-    int      na_c;         /* The number of atoms per cluser           */
+    int      na_ci;        /* The number of atoms per i-cluster        */
+    int      na_cj;        /* The number of atoms per j-cluster        */
     int      na_sc;        /* The number of atoms per super cluster    */
     real     rlist;        /* The radius for constructing the list     */
     int      nci;          /* The number of i clusters in the list     */

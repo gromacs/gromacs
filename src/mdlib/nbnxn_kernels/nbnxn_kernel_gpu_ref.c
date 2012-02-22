@@ -45,6 +45,8 @@
 #include "force.h"
 #include "nbnxn_kernel_gpu_ref.h"
 
+#define NA_C  NBNXN_GPU_CLUSTER_SIZE
+
 void
 nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      const nbnxn_atomdata_t     *nbat,
@@ -98,6 +100,11 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     int           npair_tot,npair;
     int           nhwu,nhwu_pruned;
+
+    if (nbl->na_ci != NA_C)
+    {
+        gmx_fatal(FARGS,"The neighborlist cluster size in the GPU reference kernel is %d, expected it to be %d",nbl->na_ci,NA_C);
+    }
 
     if (clearF)
     {
@@ -153,9 +160,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             for(im=0; im<NSUBCELL; im++)
             {
                 ci = sci*NSUBCELL + im;
-                for (ic=0; ic<nbl->na_c; ic++)
+                for (ic=0; ic<NA_C; ic++)
                 {
-                    ia     = ci*nbl->na_c + ic;
+                    ia     = ci*NA_C + ic;
                     iq     = x[ia*nbat->xstride+3];
                     vctot += iq*iq;
                 }
@@ -190,9 +197,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                         ci               = sci*NSUBCELL + im;
 
                         npair = 0;
-                        for(ic=0; ic<nbl->na_c; ic++)
+                        for(ic=0; ic<NA_C; ic++)
                         {
-                            ia               = ci*nbl->na_c + ic;
+                            ia               = ci*NA_C + ic;
                     
                             is               = ia*nbat->xstride;
                             ix               = shX + x[is+0];
@@ -205,9 +212,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fiy              = 0;
                             fiz              = 0;
                     
-                            for(jc=0; jc<nbl->na_c; jc++)
+                            for(jc=0; jc<NA_C; jc++)
                             {
-                                ja               = cj*nbl->na_c + jc;
+                                ja               = cj*NA_C + jc;
 
                                 if (nbln->shift == CENTRAL &&
                                     ci == cj && ja <= ia)
@@ -215,7 +222,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                     continue;
                                 }
                         
-                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*nbl->na_c+ic] >> (jm*NSUBCELL+im)) & 1); 
+                                int_bit = ((excl[jc>>2]->pair[(jc & 3)*NA_C+ic] >> (jm*NSUBCELL+im)) & 1); 
 
                                 js               = ja*nbat->xstride;
                                 jx               = x[js+0];      
@@ -305,7 +312,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             /* Count in half work-units.
                              * In CUDA one work-unit is 2 warps.
                              */
-                            if ((ic+1) % (nbl->na_c/2) == 0)
+                            if ((ic+1) % (NA_C/2) == 0)
                             {
                                 npair_tot += npair;
 
@@ -334,15 +341,15 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     if (debug)
     {
         fprintf(debug,"number of half %dx%d atom pairs: %d pruned: %d fraction %4.2f\n",
-                nbl->na_c,nbl->na_c,
+                nbl->na_ci,nbl->na_ci,
                 nhwu,nhwu_pruned,nhwu_pruned/(double)nhwu);
         fprintf(debug,"generic kernel pair interactions:            %d\n",
-                nhwu*nbl->na_c/2*nbl->na_c);
+                nhwu*nbl->na_ci/2*nbl->na_ci);
         fprintf(debug,"generic kernel post-prune pair interactions: %d\n",
-                nhwu_pruned*nbl->na_c/2*nbl->na_c);
+                nhwu_pruned*nbl->na_ci/2*nbl->na_ci);
         fprintf(debug,"generic kernel non-zero pair interactions:   %d\n",
                 npair_tot);
         fprintf(debug,"ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot/(double)(nhwu_pruned*nbl->na_c/2*nbl->na_c));
+                npair_tot/(double)(nhwu_pruned*nbl->na_ci/2*nbl->na_ci));
     }
 }

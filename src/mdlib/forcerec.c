@@ -1560,7 +1560,7 @@ static void pick_nbnxn_kernel(FILE *fp,
 
         if (*na_c == 0 || env == NULL)
         {
-            *na_c = GPU_NS_CLUSTER_SIZE;
+            *na_c = NBNXN_GPU_CLUSTER_SIZE;
         }
         if (fp != NULL)
         {
@@ -1576,7 +1576,7 @@ static void pick_nbnxn_kernel(FILE *fp,
         {
             *kernel_type = nbk8x8x8CUDA;
 
-            *na_c = GPU_NS_CLUSTER_SIZE;
+            *na_c = NBNXN_GPU_CLUSTER_SIZE;
         }
     }
 

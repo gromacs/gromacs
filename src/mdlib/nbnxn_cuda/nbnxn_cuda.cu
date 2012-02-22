@@ -49,7 +49,7 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "pmalloc_cuda.h"
 
-#define CLUSTER_SIZE            (GPU_NS_CLUSTER_SIZE)
+#define CLUSTER_SIZE            (NBNXN_GPU_CLUSTER_SIZE)
 
 #include "vectype_ops.cuh"
 #include "nbnxn_cuda_kernel_utils.cuh"
