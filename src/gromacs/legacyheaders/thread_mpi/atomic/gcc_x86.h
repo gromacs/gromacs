@@ -55,20 +55,24 @@ files.
 #endif
 #endif
 
-/* we put all of these on their own cache line by specifying an alignment: */
+/* we put all of these on their own cache line by padding the data structure
+   to the size of a cache line on x86 (64 bytes): */
 typedef struct tMPI_Atomic
 {
-    int value __attribute__ ((aligned(64))); 
+    int value; 
+    char padding[64-sizeof(int)];
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* value __attribute__ ((aligned(64)));   
+    void* value; 
+    char padding[64-sizeof(void*)];
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    unsigned int lock __attribute__ ((aligned(64)));
+    unsigned int lock; 
+    char padding[64-sizeof(unsigned int)];
 } tMPI_Spinlock_t;
 
 

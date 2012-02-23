@@ -632,8 +632,6 @@ void gmx_print_version_info(FILE *fp)
 
 #ifdef GMX_FFT_FFTPACK
     fprintf(fp, "FFT Library:      fftpack\n");
-#elif defined(GMX_FFT_FFTW2)
-    fprintf(fp, "FFT Library:      fftw2\n");
 #elif defined(GMX_FFT_FFTW3)
     fprintf(fp, "FFT Library:      fftw3\n");
 #elif defined(GMX_FFT_MKL)

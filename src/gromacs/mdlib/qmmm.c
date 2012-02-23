@@ -182,7 +182,7 @@ real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
     else
     {
         /* do an ab-initio calculation */
-        if (qm->bSH)
+        if (qm->bSH && qm->QMmethod==eQMmethodCASSCF)
         {
 #ifdef GMX_QMMM_GAUSSIAN            
             QMener = call_gaussian_SH(cr,fr,qm,mm,f,fshift);
@@ -467,7 +467,8 @@ void init_QMMMrec(t_commrec *cr,
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,12)); 
-  fprintf(stderr,"there we go!\n");
+  /* issue a fatal if the user wants to run with more than one node */
+  if ( PAR(cr)) gmx_fatal(FARGS,"QM/MM does not work in parallel, use a single node instead\n");
 
   /* Make a local copy of the QMMMrec */
   qr = fr->qr;
