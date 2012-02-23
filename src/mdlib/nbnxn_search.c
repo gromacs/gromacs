@@ -1772,7 +1772,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 #if CJ_SIZE == 8
     if (grid->simple && nbat->XFormat == nbatXXXX)
     {
-        combine_bounding_boxes(grid);
+        combine_bounding_box_pairs(grid);
     }
 #endif
 
