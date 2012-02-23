@@ -2339,34 +2339,50 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 int omp_nth_pp,
                 gmx_bool bWriteStat)
 {
-  int    i,j;
-  t_nrnb *nrnb_tot=NULL;
-  real   delta_t;
-  double nbfs,mflop;
+    int    i,j;
+    t_nrnb *nrnb_tot=NULL;
+    real   delta_t;
+    double nbfs,mflop;
 
-  wallcycle_sum(cr,wcycle);
+    wallcycle_sum(cr,wcycle);
 
-  if (cr->nnodes > 1) {
-    if (SIMMASTER(cr))
-      snew(nrnb_tot,1);
+    if (cr->nnodes > 1)
+    {
+        snew(nrnb_tot,1);
 #ifdef GMX_MPI
-    MPI_Reduce(nrnb->n,nrnb_tot->n,eNRNB,MPI_DOUBLE,MPI_SUM,
-               MASTERRANK(cr),cr->mpi_comm_mysim);
+        MPI_Allreduce(nrnb->n,nrnb_tot->n,eNRNB,MPI_DOUBLE,MPI_SUM,
+                      cr->mpi_comm_mysim);
 #endif  
-  } else {
-    nrnb_tot = nrnb;
-  }
-    
-  if (SIMMASTER(cr)) {
-    print_flop(fplog,nrnb_tot,&nbfs,&mflop);
-    if (cr->nnodes > 1) {
-      sfree(nrnb_tot);
     }
-  }
+    else
+    {
+        nrnb_tot = nrnb;
+    }
 
-  if ((cr->duty & DUTY_PP) && DOMAINDECOMP(cr)) {
-    print_dd_statistics(cr,inputrec,fplog);
-  }
+#if defined(GMX_MPI) && !defined(GMX_THREAD_MPI)
+    if (cr->nnodes > 1)
+    {
+        /* reduce nodetime over all MPI processes in the current simulation */
+        double sum;
+        MPI_Allreduce(&runtime->proctime,&sum,1,MPI_DOUBLE,MPI_SUM,
+                      cr->mpi_comm_mysim);
+        runtime->proctime = sum;
+    }
+#endif
+
+    if (SIMMASTER(cr))
+    {
+        print_flop(fplog,nrnb_tot,&nbfs,&mflop);
+    }
+    if (cr->nnodes > 1)
+    {
+        sfree(nrnb_tot);
+    }
+
+    if ((cr->duty & DUTY_PP) && DOMAINDECOMP(cr))
+    {
+        print_dd_statistics(cr,inputrec,fplog);
+    }
 
 #ifdef GMX_MPI
     if (PARTDECOMP(cr))
@@ -2395,46 +2411,35 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
     }
 #endif  
 
-  if (SIMMASTER(cr)) {
-    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
-                    wcycle,gputimes);
+    if (SIMMASTER(cr))
+    {
+        wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
+                        wcycle,gputimes);
 
-    if (EI_DYNAMICS(inputrec->eI)) {
-      delta_t = inputrec->delta_t;
-    } else {
-      delta_t = 0;
-    }
-    
-    if (fplog) {
-        print_perf(fplog,runtime->proctime,runtime->realtime,
-                   cr->nnodes-cr->npmenodes,
-                   runtime->nsteps_done,delta_t,nbfs,mflop,
-                   omp_nth_pp);
-    }
-    if (bWriteStat) {
-        print_perf(stderr,runtime->proctime,runtime->realtime,
-                   cr->nnodes-cr->npmenodes,
-                   runtime->nsteps_done,delta_t,nbfs,mflop,
-                   omp_nth_pp);
-    }
+        if (EI_DYNAMICS(inputrec->eI))
+        {
+            delta_t = inputrec->delta_t;
+        }
+        else
+        {
+            delta_t = 0;
+        }
 
-    /*
-    runtime=inputrec->nsteps*inputrec->delta_t;
-    if (bWriteStat) {
-      if (cr->nnodes == 1)
-	fprintf(stderr,"\n\n");
-      print_perf(stderr,nodetime,realtime,runtime,&ntot,
-		 cr->nnodes-cr->npmenodes,FALSE);
+        if (fplog)
+        {
+            print_perf(fplog,runtime->proctime,runtime->realtime,
+                       cr->nnodes-cr->npmenodes,
+                       runtime->nsteps_done,delta_t,nbfs,mflop,
+                       omp_nth_pp);
+        }
+        if (bWriteStat)
+        {
+            print_perf(stderr,runtime->proctime,runtime->realtime,
+                       cr->nnodes-cr->npmenodes,
+                       runtime->nsteps_done,delta_t,nbfs,mflop,
+                       omp_nth_pp);
+        }
     }
-    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
-    print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes,
-	       TRUE);
-    if (PARTDECOMP(cr))
-      pr_load(fplog,cr,nrnb_all);
-    if (cr->nnodes > 1)
-      sfree(nrnb_all);
-    */
-  }
 }
 
 void init_md(FILE *fplog,
