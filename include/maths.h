@@ -169,6 +169,14 @@ gmx_log2(real x)
     return log( x ) * iclog2;
 }
 
+/*! /brief Multiply two large ints
+ *
+ *  Returns true when overflow did not occur.
+ */
+gmx_bool
+check_int_multiply_for_overflow(gmx_large_int_t a,
+                                gmx_large_int_t b,
+                                gmx_large_int_t *result);
 
 #ifdef __cplusplus
 }

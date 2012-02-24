@@ -63,6 +63,15 @@
 #include "vec.h"
 #include "mtop_util.h"
 
+#define TPX_TAG_RELEASE  "release"
+
+/* This is the tag string which is stored in the tpx file.
+ * Change this if you want to change the tpx format in a feature branch.
+ * This ensures that there will not be different tpx formats around which
+ * can not be distinguished.
+ */
+static const char *tpx_tag = TPX_TAG_RELEASE;
+
 /* This number should be increased whenever the file format changes! */
 static const int tpx_version = 77;
 
@@ -305,7 +314,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     if (file_version != tpx_version)
     {
         /* Give a warning about features that are not accessible */
-        fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+        fprintf(stderr,"Note: file tpx version %d, software tpx version %d\n",
                 file_version,tpx_version);
     }
 
@@ -2084,7 +2093,8 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
                          gmx_bool TopOnlyOK, int *file_version, 
                          int *file_generation)
 {
-  char  buf[STRLEN];
+    char  buf[STRLEN];
+    char  file_tag[STRLEN];
   gmx_bool  bDouble;
   int   precision;
   int   fver,fgen;
@@ -2119,21 +2129,59 @@ static void do_tpxheader(t_fileio *fio,gmx_bool bRead,t_tpxheader *tpx,
     gmx_fio_setprecision(fio,bDouble);
     gmx_fio_do_int(fio,precision);
     fver = tpx_version;
+    sprintf(file_tag,"%s",tpx_tag);
     fgen = tpx_generation;
   }
   
-  /* Check versions! */
-  gmx_fio_do_int(fio,fver);
+    /* Check versions! */
+    gmx_fio_do_int(fio,fver);
   
-  if(fver>=26)
-    gmx_fio_do_int(fio,fgen);
-  else
-    fgen=0;
+    if (fver >= 77)
+    {
+        gmx_fio_do_string(fio,file_tag);
+    }
+    if (bRead)
+    {
+        if (fver < 77)
+        {
+            /* Versions before 77 don't have the tag, set it to release */
+            sprintf(file_tag,"%s",TPX_TAG_RELEASE);
+        }
+
+        if (strcmp(file_tag,tpx_tag) != 0)
+        {
+            fprintf(stderr,"Note: file tpx tag '%s', software tpx tag '%s'\n",
+                    file_tag,tpx_tag);
+
+            /* We only support reading tpx files with the same tag as the code
+             * or tpx files with the release tag and with lower version number.
+             */
+            if (!(strcmp(file_tag,TPX_TAG_RELEASE) == 0 && fver < tpx_version))
+            {
+                gmx_fatal(FARGS,"tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
+                          gmx_fio_getname(fio),fver,file_tag,
+                          tpx_version,tpx_tag);
+            }
+        }
+    }
+
+    if (fver >= 26)
+    {
+        gmx_fio_do_int(fio,fgen);
+    }
+    else
+    {
+        fgen=0;
+    }
  
-  if(file_version!=NULL)
-    *file_version = fver;
-  if(file_generation!=NULL)
-    *file_generation = fgen;
+    if (file_version != NULL)
+    {
+        *file_version = fver;
+    }
+    if (file_generation != NULL)
+    {
+        *file_generation = fgen;
+    }
    
   
   if ((fver <= tpx_incompatible_version) ||
