@@ -70,10 +70,10 @@
  * This ensures that there will not be different tpx formats around which
  * can not be distinguished.
  */
-static const char *tpx_tag = TPX_TAG_RELEASE;
+static const char *tpx_tag = "nbnxn-pre-release";
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 77;
+static const int tpx_version = 78;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -375,7 +375,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
       }
     }
-    if (file_version >= 77)
+    if (file_version >= 78)
     {
         gmx_fio_do_int(fio,ir->cutoff_scheme);
     }
@@ -525,7 +525,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
 	}
 
 	 
-    if (file_version >= 77)
+    if (file_version >= 78)
     {
         gmx_fio_do_real(fio,ir->fourier_spacing); 
     }
@@ -1410,7 +1410,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead,
       ilist[j].iatoms = NULL;
     } else {
       do_ilist(fio, &ilist[j],bRead,file_version,j);
-      if (file_version < 77 && j == F_SETTLE && ilist[j].nr > 0)
+      if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
       {
           add_settle_atoms(&ilist[j]);
       }
