@@ -335,6 +335,15 @@ it would seem it is impossible to have a non-zero $C^{12}$ combined
 with a zero $C^6$ parameter. However, providing a negative $\sigma$
 will do exactly that.
 
+There is only one set of \normindex{combination rule}s
+for Buckingham potentials:
+\beq
+\begin{array}{rcl}
+A_{ij}   &=& \left(A_{ii} \, A_{jj}\right)^{1/2}    \\
+B_{ij}   &=& 2 / \left(\frac{1}{B_{ii}} + \frac{1}{B_{jj}}\right)        \\
+C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
+\end{array}
+\eeq
 
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
@@ -1432,21 +1441,7 @@ Here follows the explanatory text.
 {\bf {\tt [~defaults~]} :}
 \begin{itemize}
 \item {\tt nbfunc} is the non-bonded function type. Use 1 (Lennard-Jones) or 2 (Buckingham)
-\item {\tt comb-rule} is the \normindex{combination rule}: 
-\begin{enumerate}
-\item For Lennard-Jones: supply $C^{(6)}$ and $C^{(N)}$,
-$C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ ($M$ = 6,$N$).
-Default value for $N$ = 12, but it can be
-overridden using the last parameter on this line.
-For Buckingham potentials the combination rule is such that you give the
-$A$, $B$ and $C$ parameters. $A_{ij} = \sqrt{A_i\, A_j}$ and similar for 
-$C_{ij}$, $B_{ij} = 2/(1/B_i + 1/B_j)$.
-\item supply $\sigma$ and $\epsilon$,
-$\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$ and 
-$\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
-\item supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$,
-$\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
-\end{enumerate}
+\item {\tt comb-rule} is the number of the \normindex{combination rule} (see \ssecref{nbpar}).
 \item {\tt gen-pairs} is for pair generation. The default is `no', {\ie} 
 get 1-4 parameters from the pairtypes list. When parameters
 are not present in the list, stop with a fatal error.
