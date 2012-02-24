@@ -37,9 +37,6 @@
  */
 #include "gromacs/analysisdata/analysisdata.h"
 
-#include <algorithm>
-#include <memory>
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/paralleloptions.h"
@@ -62,11 +59,6 @@ AnalysisData::Impl::Impl()
 
 AnalysisData::Impl::~Impl()
 {
-    HandleList::const_iterator i;
-    for (i = handles_.begin(); i != handles_.end(); ++i)
-    {
-        delete *i;
-    }
 }
 
 
@@ -113,9 +105,9 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
         GMX_THROW(NotImplementedError("Parallelism not supported for multipoint data"));
     }
 
-    std::auto_ptr<AnalysisDataHandle> handle(new AnalysisDataHandle(this));
-    impl_->handles_.push_back(handle.get());
-    return handle.release();
+    Impl::HandlePointer handle(new AnalysisDataHandle(this));
+    impl_->handles_.push_back(handle);
+    return handle.get();
 }
 
 
@@ -124,12 +116,17 @@ AnalysisData::finishData(AnalysisDataHandle *handle)
 {
     Impl::HandleList::iterator i;
 
-    i = std::find(impl_->handles_.begin(), impl_->handles_.end(), handle);
+    for (i = impl_->handles_.begin(); i != impl_->handles_.end(); ++i)
+    {
+        if (i->get() == handle)
+        {
+            break;
+        }
+    }
     GMX_RELEASE_ASSERT(i != impl_->handles_.end(),
                        "finishData() called for an unknown handle");
 
     impl_->handles_.erase(i);
-    delete handle;
 
     if (impl_->handles_.empty())
     {

@@ -40,6 +40,8 @@
 
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "analysisdata.h"
 #include "datastorage.h"
 
@@ -54,8 +56,11 @@ namespace gmx
 class AnalysisData::Impl
 {
     public:
+        //! Shorthand for a smart pointer to a data handle.
+        // Could be unique_ptr
+        typedef boost::shared_ptr<AnalysisDataHandle> HandlePointer;
         //! Shorthand for a list of data handles.
-        typedef std::vector<AnalysisDataHandle *> HandleList;
+        typedef std::vector<HandlePointer> HandleList;
 
         Impl();
         ~Impl();

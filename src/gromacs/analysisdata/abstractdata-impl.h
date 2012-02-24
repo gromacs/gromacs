@@ -40,7 +40,9 @@
 
 #include <vector>
 
-#include "types/simple.h"
+#include <boost/shared_ptr.hpp>
+
+#include "../legacyheaders/types/simple.h"
 
 #include "abstractdata.h"
 #include "dataframe.h"
@@ -56,8 +58,11 @@ namespace gmx
 class AbstractAnalysisData::Impl
 {
     public:
+        //! Shorthand for a smart pointer to a module.
+        // Could be unique_ptr
+        typedef boost::shared_ptr<AnalysisDataModuleInterface> ModulePointer;
         //! Shorthand for list of modules added to the data.
-        typedef std::vector<AnalysisDataModuleInterface *> ModuleList;
+        typedef std::vector<ModulePointer> ModuleList;
 
         Impl();
         ~Impl();
