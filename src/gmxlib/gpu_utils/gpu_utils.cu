@@ -583,6 +583,7 @@ int init_gpu(FILE *fplog, int dev_id)
     {
         if (fplog)
         {
+            /* TODO: this print is only relevant in the single-node case... */
             fprintf(fplog, "Using CUDA device #%d, %s.\n", dev_id, dev_prop.name);
         }
 
