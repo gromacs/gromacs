@@ -78,7 +78,7 @@ class AnalysisData::Impl
     public:
         //! Shorthand for a smart pointer to a data handle.
         // Could be unique_ptr
-        typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type HandlePointer;
+        typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
                 HandlePointer;
         //! Shorthand for a list of data handles.
         typedef std::vector<HandlePointer> HandleList;

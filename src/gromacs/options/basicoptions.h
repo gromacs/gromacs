@@ -84,7 +84,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
 };
 
 /*! \brief
@@ -123,7 +123,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -165,7 +165,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
 
         bool _bTime;
 
@@ -252,7 +252,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
         virtual std::string createDescription() const;
 
         const char *const      *_enumValues;
@@ -312,7 +312,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
 
     private:
         //! Creates a FileNameOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
 
         OptionFileType          filetype_;
         bool                    bRead_;

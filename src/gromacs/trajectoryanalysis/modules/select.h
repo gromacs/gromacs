@@ -60,13 +60,13 @@ class Select : public TrajectoryAnalysisModule
         Select();
         virtual ~Select();
 
-        static TrajectoryAnalysisModule *create();
+        static TrajectoryAnalysisModulePointer create();
 
         virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                     const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
