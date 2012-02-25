@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 #include "../datamodule.h"
 #include "../../options/timeunitmanager.h"
 #include "../../utility/common.h"
@@ -136,6 +138,10 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         virtual ~AbstractPlotModule();
 
         /*! \brief
+         * Set common settings for the plotting.
+         */
+        void setSettings(const AnalysisDataPlotSettings &settings);
+        /*! \brief
          * Set the output file name.
          *
          * If no file name is set (or if \p fnm is NULL), no output occurs.
@@ -211,6 +217,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 
     protected:
         /*! \cond libapi */
+        AbstractPlotModule();
         explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
 
         bool isFileOpen() const;
@@ -235,6 +242,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 class AnalysisDataPlotModule : public AbstractPlotModule
 {
     public:
+        AnalysisDataPlotModule();
         explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -254,6 +262,7 @@ class AnalysisDataPlotModule : public AbstractPlotModule
 class AnalysisDataVectorPlotModule : public AbstractPlotModule
 {
     public:
+        AnalysisDataVectorPlotModule();
         explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
 
         /*! \brief
@@ -284,6 +293,13 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 
         // Copy and assign disallowed by base.
 };
+
+//! Smart pointer to manage an AnalysisDataPlotModule object.
+typedef boost::shared_ptr<AnalysisDataPlotModule>
+        AnalysisDataPlotModulePointer;
+//! Smart pointer to manage an AnalysisDataVectorPlotModule object.
+typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
+        AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx
 
