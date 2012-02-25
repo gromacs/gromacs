@@ -47,7 +47,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                     const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
@@ -59,13 +59,13 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     private:
         class ModuleData;
 
-        Options                      _options;
-        std::string                  _fnDist;
-        double                       _cutoff;
-        Selection                   *_refsel;
-        std::vector<Selection *>     _sel;
-        AnalysisData                 _data;
-        AnalysisDataAverageModule   *_avem;
+        Options                          _options;
+        std::string                      _fnDist;
+        double                           _cutoff;
+        Selection                       *_refsel;
+        std::vector<Selection *>         _sel;
+        AnalysisData                     _data;
+        AnalysisDataAverageModulePointer _avem;
 };
 
 /*! \brief
@@ -104,7 +104,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 
 AnalysisTemplate::AnalysisTemplate()
     : _options("template", "Template options"), _cutoff(0.0),
-      _refsel(NULL), _avem(NULL)
+      _refsel(NULL), _avem(new AnalysisDataAverageModule())
 {
 }
 
@@ -159,13 +159,12 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _data.setColumns(_sel.size());
     registerAnalysisDataset(&_data, "avedist");
 
-    _avem = new AnalysisDataAverageModule();
     _data.addModule(_avem);
 
     if (!_fnDist.empty())
     {
-        AnalysisDataPlotModule *plotm
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(_fnDist);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
@@ -175,11 +174,12 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
-    return new ModuleData(this, opt, selections, _cutoff, _refsel->posCount());
+    return TrajectoryAnalysisModuleDataPointer(
+            new ModuleData(this, opt, selections, _cutoff, _refsel->posCount()));
 }
 
 
