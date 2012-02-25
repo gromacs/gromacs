@@ -39,9 +39,10 @@
 #ifndef GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 #define GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 
-#include "../analysisdata.h"
+#include "../abstractdata.h"
 #include "../arraydata.h"
 #include "../datamodule.h"
+#include "../../utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -230,6 +231,11 @@ class BasicHistogramImpl;
 
 } // namespace internal
 
+class AbstractAverageHistogram;
+
+//! Smart pointer to manage an AbstractAverageHistogram object.
+typedef gmx_unique_ptr<AbstractAverageHistogram>::type
+        AverageHistogramPointer;
 
 /*! \brief
  * Base class for representing histograms averaged over frames.
@@ -257,7 +263,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
          *
          * The caller is responsible of deleting the returned object.
          */
-        AbstractAverageHistogram *resampleDoubleBinWidth(bool bIntegerBins) const;
+        AverageHistogramPointer resampleDoubleBinWidth(bool bIntegerBins) const;
         /*! \brief
          * Creates a deep copy of the histogram.
          *
@@ -267,7 +273,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
          *
          * The caller is responsible of deleting the returned object.
          */
-        AbstractAverageHistogram *clone() const;
+        AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
         //! Scales the value of each bin by an uniform scaling factor.
@@ -344,7 +350,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
          *
          * \see AbstractAverageHistogram
          */
-        AbstractAverageHistogram *averager();
+        AbstractAverageHistogram &averager();
 
         //! Returns bin properties for the histogram.
         const AnalysisHistogramSettings &settings() const;
@@ -395,7 +401,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         void init(const AnalysisHistogramSettings &settings);
 
         //! \copydoc AnalysisDataSimpleHistogramModule::averager()
-        AbstractAverageHistogram *averager();
+        AbstractAverageHistogram &averager();
 
         //! \copydoc AnalysisDataSimpleHistogramModule::settings()
         const AnalysisHistogramSettings &settings() const;
@@ -463,6 +469,17 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
 
         // Copy and assign disallowed by base.
 };
+
+// Could be unique_ptrs if AnalysisDataModulePointer is.
+//! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
+typedef boost::shared_ptr<AnalysisDataSimpleHistogramModule>
+        AnalysisDataSimpleHistogramModulePointer;
+//! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
+typedef boost::shared_ptr<AnalysisDataWeightedHistogramModule>
+        AnalysisDataWeightedHistogramModulePointer;
+//! Smart pointer to manage an AnalysisDataBinAverageModule object.
+typedef boost::shared_ptr<AnalysisDataBinAverageModule>
+        AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx
 
