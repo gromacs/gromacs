@@ -88,6 +88,11 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         // Copy and assign disallowed by base.
 };
 
+//! Smart pointer to manage an AnalysisDataAverageModule object.
+// Could be unique_ptr if AnalysisDataModulePointer is.
+typedef boost::shared_ptr<AnalysisDataAverageModule>
+        AnalysisDataAverageModulePointer;
+
 } // namespace gmx
 
 #endif

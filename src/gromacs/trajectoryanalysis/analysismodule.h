@@ -46,6 +46,7 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../utility/common.h"
+#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -134,6 +135,10 @@ class TrajectoryAnalysisModuleData
         PrivateImplPointer<Impl> _impl;
 };
 
+//! Smart pointer to manage a TrajectoryAnalysisModuleData object.
+// Could be unique_ptr.
+typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
+        TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
  * Base class for trajectory analysis methods.
@@ -226,7 +231,7 @@ class TrajectoryAnalysisModule
          *
          * \see TrajectoryAnalysisModuleData
          */
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                 const AnalysisDataParallelOptions &opt,
                 const SelectionCollection &selections);
         /*! \brief
@@ -349,6 +354,11 @@ class TrajectoryAnalysisModule
          */
         friend class TrajectoryAnalysisModuleData;
 };
+
+//! Smart pointer to manage a TrajectoryAnalysisModule.
+// Could be unique_ptr.
+typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
+        TrajectoryAnalysisModulePointer;
 
 } // namespace gmx
 
