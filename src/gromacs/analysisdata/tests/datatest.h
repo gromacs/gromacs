@@ -222,7 +222,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * Adds a single frame from AnalysisDataTestInput into an AnalysisData.
          */
         static void presentDataFrame(const AnalysisDataTestInput &input, int row,
-                                     AnalysisDataHandle *handle);
+                                     AnalysisDataHandle handle);
         /*! \brief
          * Initializes an array data object from AnalysisDataTestInput.
          *
