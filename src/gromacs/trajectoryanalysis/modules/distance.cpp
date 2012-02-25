@@ -45,8 +45,6 @@
 #include <vec.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -72,7 +70,7 @@ Distance::~Distance()
 }
 
 
-Options *
+Options &
 Distance::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -88,7 +86,7 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
                            .store(&_fnDist).defaultValue("dist"));
     _options.addOption(SelectionOption("select").required().valueCount(2)
                            .store(_sel));
-    return &_options;
+    return _options;
 }
 
 
@@ -107,15 +105,14 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _data.setColumns(4);
     registerAnalysisDataset(&_data, "distance");
 
-    _avem = new AnalysisDataAverageModule();
-    _data.addModule(_avem);
+    _data.addModule(keepOwnership(&_avem));
 
-    _plotm = new AnalysisDataPlotModule(settings.plotSettings());
-    _plotm->setFileName(_fnDist);
-    _plotm->setTitle("Distance");
-    _plotm->setXAxisIsTime();
-    _plotm->setYLabel("Distance (nm)");
-    _data.addModule(_plotm);
+    _plotm.setSettings(settings.plotSettings());
+    _plotm.setFileName(_fnDist);
+    _plotm.setTitle("Distance");
+    _plotm.setXAxisIsTime();
+    _plotm.setYLabel("Distance (nm)");
+    _data.addModule(keepOwnership(&_plotm));
 }
 
 
@@ -123,7 +120,7 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("distance");
+    AnalysisDataHandle  dh = pdata->dataHandle(_data);
     Selection          *sel1 = pdata->parallelSelection(_sel[0]);
     Selection          *sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
@@ -140,10 +137,10 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         rvec_sub(p1.x(), p2.x(), dx);
     }
     r = norm(dx);
-    dh->startFrame(frnr, fr.time);
-    dh->setPoint(0, r);
-    dh->setPoints(1, 3, dx);
-    dh->finishFrame();
+    dh.startFrame(frnr, fr.time);
+    dh.setPoint(0, r);
+    dh.setPoints(1, 3, dx);
+    dh.finishFrame();
 }
 
 
@@ -156,15 +153,15 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    fprintf(stderr, "Average distance: %f\n", _avem->average(0));
-    fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
+    fprintf(stderr, "Average distance: %f\n", _avem.average(0));
+    fprintf(stderr, "Std. deviation:   %f\n", _avem.stddev(0));
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Distance::create()
 {
-    return new Distance();
+    return TrajectoryAnalysisModulePointer(new Distance());
 }
 
 } // namespace analysismodules

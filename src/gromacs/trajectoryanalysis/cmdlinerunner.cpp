@@ -39,8 +39,6 @@
 #include <config.h>
 #endif
 
-#include <memory>
-
 #include <copyrite.h>
 #include <pbc.h>
 #include <rmpbc.h>
@@ -121,14 +119,13 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
-    Options *moduleOptions = _module->initOptions(settings);
-    GMX_RELEASE_ASSERT(moduleOptions != NULL, "Module returned NULL options");
-    Options *commonOptions = common->initOptions();
-    Options *selectionOptions = selections->initOptions();
+    Options &moduleOptions = _module->initOptions(settings);
+    Options &commonOptions = common->initOptions();
+    Options &selectionOptions = selections->initOptions();
 
-    options->addSubSection(commonOptions);
-    options->addSubSection(selectionOptions);
-    options->addSubSection(moduleOptions);
+    options->addSubSection(&commonOptions);
+    options->addSubSection(&selectionOptions);
+    options->addSubSection(&moduleOptions);
 
     setSelectionCollectionForOptions(options, selections);
 
@@ -235,8 +232,8 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     int nframes = 0;
     AnalysisDataParallelOptions dataOptions;
-    std::auto_ptr<TrajectoryAnalysisModuleData>
-        pdata(module->startFrames(dataOptions, selections));
+    TrajectoryAnalysisModuleDataPointer pdata(
+            module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();

@@ -43,11 +43,11 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                     const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
@@ -65,7 +65,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         Selection                   *_refsel;
         std::vector<Selection *>     _sel;
         AnalysisData                 _data;
-        AnalysisDataAverageModule   *_avem;
+        AnalysisDataAverageModule    _avem;
 };
 
 /*! \brief
@@ -94,12 +94,12 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 
 AnalysisTemplate::AnalysisTemplate()
     : _options("template", "Template options"), _cutoff(0.0),
-      _refsel(NULL), _avem(NULL)
+      _refsel(NULL)
 {
 }
 
 
-Options *
+Options &
 AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -138,7 +138,7 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
-    return &_options;
+    return _options;
 }
 
 
@@ -149,13 +149,12 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _data.setColumns(_sel.size());
     registerAnalysisDataset(&_data, "avedist");
 
-    _avem = new AnalysisDataAverageModule();
-    _data.addModule(_avem);
+    _data.addModule(keepOwnership(&_avem));
 
     if (!_fnDist.empty())
     {
-        AnalysisDataPlotModule *plotm
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(_fnDist);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
@@ -165,11 +164,12 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
-    return new ModuleData(this, opt, selections, _cutoff, _refsel->posCount());
+    return TrajectoryAnalysisModuleDataPointer(
+            new ModuleData(this, opt, selections, _cutoff, _refsel->posCount()));
 }
 
 
@@ -177,11 +177,11 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("avedist");
+    AnalysisDataHandle  dh = pdata->dataHandle(_data);
     NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
 
     nb.init(pbc, _refsel->positions());
-    dh->startFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
         Selection *sel = pdata->parallelSelection(_sel[g]);
@@ -193,9 +193,9 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
-        dh->setPoint(g, frave);
+        dh.setPoint(g, frave);
     }
-    dh->finishFrame();
+    dh.finishFrame();
 }
 
 
@@ -212,7 +212,7 @@ AnalysisTemplate::writeOutput()
     for (size_t g = 0; g < _sel.size(); ++g)
     {
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                _sel[g]->name(), _avem->average(g));
+                _sel[g]->name(), _avem.average(g));
     }
 }
 

@@ -37,8 +37,6 @@
  */
 #include "datatest.h"
 
-#include <memory>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -151,34 +149,34 @@ void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput &input,
                                              AnalysisData *data)
 {
     gmx::AnalysisDataParallelOptions options;
-    gmx::AnalysisDataHandle *handle = data->startData(options);
+    gmx::AnalysisDataHandle handle = data->startData(options);
     for (int row = 0; row < input.frameCount(); ++row)
     {
         presentDataFrame(input, row, handle);
         EXPECT_EQ(row + 1, data->frameCount());
     }
-    handle->finishData();
+    handle.finishData();
 }
 
 
 void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &input,
-                                               int row, AnalysisDataHandle *handle)
+                                               int row, AnalysisDataHandle handle)
 {
     const AnalysisDataTestInputFrame &frame = input.frame(row);
-    handle->startFrame(row, frame.x(), frame.dx());
+    handle.startFrame(row, frame.x(), frame.dx());
     for (int i = 0; i < frame.pointSetCount(); ++i)
     {
         const AnalysisDataTestInputPointSet &points = frame.points(i);
         for (int j = 0; j < points.size(); ++j)
         {
-            handle->setPoint(j, points.y(j), points.dy(j), points.present(j));
+            handle.setPoint(j, points.y(j), points.dy(j), points.present(j));
         }
         if (input.isMultipoint())
         {
-            handle->finishPointSet();
+            handle.finishPointSet();
         }
     }
-    handle->finishFrame();
+    handle.finishFrame();
 }
 
 
@@ -186,9 +184,9 @@ void
 AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
                                                 AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticCheck(data, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 
@@ -197,9 +195,9 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
                                                       int firstcol, int n,
                                                       AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
-    source->addColumnModule(firstcol, n, module.release());
+    source->addColumnModule(firstcol, n, module);
 }
 
 
@@ -208,9 +206,9 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
                                                        int storageCount,
                                                        AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 
@@ -218,9 +216,9 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &checker,
                                                    AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupReferenceCheck(checker, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 

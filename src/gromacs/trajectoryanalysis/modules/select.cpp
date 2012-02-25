@@ -277,7 +277,7 @@ Select::~Select()
 }
 
 
-Options *
+Options &
 Select::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -354,7 +354,7 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
         .enumValue(cResNumberEnum).defaultEnumIndex(0)
         .description("Residue number output type"));
 
-    return &_options;
+    return _options;
 }
 
 
@@ -383,8 +383,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!_fnSize.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnSize);
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
@@ -396,8 +396,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_cdata, "cfrac");
     if (!_fnFrac.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnFrac);
         plot->setTitle("Covered fraction");
         plot->setXAxisIsTime();
@@ -411,8 +411,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_idata, "index");
     if (!_fnIndex.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnIndex);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
@@ -428,7 +428,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!_fnNdx.empty())
     {
-        IndexFileWriterModule *writer = new IndexFileWriterModule();
+        boost::shared_ptr<IndexFileWriterModule> writer(new IndexFileWriterModule());
         writer->setFileName(_fnNdx);
         for (size_t g = 0; g < _sel.size(); ++g)
         {
@@ -451,8 +451,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         else
         {
-            AnalysisDataPlotModule *plot
-                = new AnalysisDataPlotModule(settings.plotSettings());
+            AnalysisDataPlotModulePointer plot(
+                new AnalysisDataPlotModule(settings.plotSettings()));
             plot->setFileName(_fnMask);
             plot->setPlainOutput(_bDump);
             plot->setOmitX(_bDump);
@@ -468,7 +468,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 Select::startFrames(const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections)
 {
@@ -476,7 +476,7 @@ Select::startFrames(const AnalysisDataParallelOptions &opt,
     snew(pdata->_mmap, 1);
     gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0])->indexGroup(),
                           _top, _sel[0]->type());
-    return pdata;
+    return TrajectoryAnalysisModuleDataPointer(pdata);
 }
 
 
@@ -485,68 +485,56 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
     ModuleData *d = static_cast<ModuleData *>(pdata);
-    AnalysisDataHandle *sdh = pdata->dataHandle("size");
-    AnalysisDataHandle *cdh = pdata->dataHandle("cfrac");
-    AnalysisDataHandle *idh = pdata->dataHandle("index");
-    AnalysisDataHandle *mdh = pdata->dataHandle("mask");
+    AnalysisDataHandle sdh = pdata->dataHandle(_sdata);
+    AnalysisDataHandle cdh = pdata->dataHandle(_cdata);
+    AnalysisDataHandle idh = pdata->dataHandle(_idata);
+    AnalysisDataHandle mdh = pdata->dataHandle(_mdata);
     std::vector<Selection *> sel(pdata->parallelSelections(_sel));
 
-    if (sdh != NULL)
+    sdh.startFrame(frnr, fr.time);
+    for (size_t g = 0; g < sel.size(); ++g)
     {
-        sdh->startFrame(frnr, fr.time);
-        for (size_t g = 0; g < sel.size(); ++g)
-        {
-            real normfac = _bFracNorm ? 1.0 / sel[g]->coveredFraction() : 1.0;
-            normfac /= _totsize[g];
-            sdh->setPoint(g, sel[g]->posCount() * normfac);
-        }
-        sdh->finishFrame();
+        real normfac = _bFracNorm ? 1.0 / sel[g]->coveredFraction() : 1.0;
+        normfac /= _totsize[g];
+        sdh.setPoint(g, sel[g]->posCount() * normfac);
     }
+    sdh.finishFrame();
 
-    if (cdh != NULL)
+    cdh.startFrame(frnr, fr.time);
+    for (size_t g = 0; g < sel.size(); ++g)
     {
-        cdh->startFrame(frnr, fr.time);
-        for (size_t g = 0; g < sel.size(); ++g)
-        {
-            cdh->setPoint(g, sel[g]->coveredFraction());
-        }
-        cdh->finishFrame();
+        cdh.setPoint(g, sel[g]->coveredFraction());
     }
+    cdh.finishFrame();
 
-    if (idh != NULL)
+    idh.startFrame(frnr, fr.time);
+    for (size_t g = 0; g < sel.size(); ++g)
     {
-        idh->startFrame(frnr, fr.time);
-        for (size_t g = 0; g < sel.size(); ++g)
+        idh.setPoint(0, sel[g]->posCount());
+        idh.finishPointSet();
+        for (int i = 0; i < sel[g]->posCount(); ++i)
         {
-            idh->setPoint(0, sel[g]->posCount());
-            idh->finishPointSet();
-            for (int i = 0; i < sel[g]->posCount(); ++i)
+            SelectionPosition p = sel[g]->position(i);
+            if (sel[g]->type() == INDEX_RES && !_bResInd)
             {
-                SelectionPosition p = sel[g]->position(i);
-                if (sel[g]->type() == INDEX_RES && !_bResInd)
-                {
-                    idh->setPoint(1, _top->atoms.resinfo[p.mappedId()].nr);
-                }
-                else
-                {
-                    idh->setPoint(1, p.mappedId() + 1);
-                }
-                idh->finishPointSet();
+                idh.setPoint(1, _top->atoms.resinfo[p.mappedId()].nr);
             }
+            else
+            {
+                idh.setPoint(1, p.mappedId() + 1);
+            }
+            idh.finishPointSet();
         }
-        idh->finishFrame();
     }
+    idh.finishFrame();
 
-    if (mdh != NULL)
+    gmx_ana_indexmap_update(d->_mmap, sel[0]->indexGroup(), true);
+    mdh.startFrame(frnr, fr.time);
+    for (int b = 0; b < d->_mmap->nr; ++b)
     {
-        gmx_ana_indexmap_update(d->_mmap, sel[0]->indexGroup(), true);
-        mdh->startFrame(frnr, fr.time);
-        for (int b = 0; b < d->_mmap->nr; ++b)
-        {
-            mdh->setPoint(b, d->_mmap->refid[b] == -1 ? 0 : 1);
-        }
-        mdh->finishFrame();
+        mdh.setPoint(b, d->_mmap->refid[b] == -1 ? 0 : 1);
     }
+    mdh.finishFrame();
 }
 
 
@@ -562,10 +550,10 @@ Select::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Select::create()
 {
-    return new Select();
+    return TrajectoryAnalysisModulePointer(new Select());
 }
 
 } // namespace analysismodules

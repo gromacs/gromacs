@@ -76,7 +76,7 @@ Angle::~Angle()
 }
 
 
-Options *
+Options &
 Angle::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -154,7 +154,7 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2info)
         .description("Second analysis/vector selection"));
 
-    return &_options;
+    return _options;
 }
 
 
@@ -357,8 +357,8 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     registerAnalysisDataset(&_data, "angle");
 
-    AnalysisDataPlotModule *plotm
-        = new AnalysisDataPlotModule(settings.plotSettings());
+    AnalysisDataPlotModulePointer plotm(
+        new AnalysisDataPlotModule(settings.plotSettings()));
     plotm->setFileName(_fnAngle);
     plotm->setTitle("Angle");
     plotm->setXAxisIsTime();
@@ -431,7 +431,7 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("angle");
+    AnalysisDataHandle       dh = pdata->dataHandle(_data);
     std::vector<Selection *> sel1 = pdata->parallelSelections(_sel1);
     std::vector<Selection *> sel2 = pdata->parallelSelections(_sel2);
 
@@ -451,7 +451,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             break;
     }
 
-    dh->startFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
 
     int incr1 = _bSplit1 ? 1 : _natoms1;
     int incr2 = _bSplit2 ? 1 : _natoms2;
@@ -563,7 +563,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             if (_bAll)
             {
-                dh->setPoint(n + 1, angle);
+                dh.setPoint(n + 1, angle);
             }
             ave += angle;
             ++n;
@@ -572,9 +572,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             ave /= n;
         }
-        dh->setPoint(g, ave);
+        dh.setPoint(g, ave);
     }
-    dh->finishFrame();
+    dh.finishFrame();
 }
 
 
@@ -590,10 +590,10 @@ Angle::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Angle::create()
 {
-    return new Angle();
+    return TrajectoryAnalysisModulePointer(new Angle());
 }
 
 } // namespace modules
