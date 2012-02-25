@@ -37,8 +37,6 @@
  */
 #include "datatest.h"
 
-#include <memory>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -186,9 +184,9 @@ void
 AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
                                                 AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticCheck(data, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 
@@ -197,9 +195,9 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
                                                       int firstcol, int n,
                                                       AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
-    source->addColumnModule(firstcol, n, module.release());
+    source->addColumnModule(firstcol, n, module);
 }
 
 
@@ -208,9 +206,9 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
                                                        int storageCount,
                                                        AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 
@@ -218,9 +216,9 @@ void
 AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker &checker,
                                                    AbstractAnalysisData *source)
 {
-    std::auto_ptr<MockAnalysisModule> module(new MockAnalysisModule(0));
+    MockAnalysisModulePointer module(new MockAnalysisModule(0));
     module->setupReferenceCheck(checker, source);
-    source->addModule(module.release());
+    source->addModule(module);
 }
 
 

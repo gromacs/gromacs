@@ -357,8 +357,8 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     registerAnalysisDataset(&_data, "angle");
 
-    AnalysisDataPlotModule *plotm
-        = new AnalysisDataPlotModule(settings.plotSettings());
+    AnalysisDataPlotModulePointer plotm(
+        new AnalysisDataPlotModule(settings.plotSettings()));
     plotm->setFileName(_fnAngle);
     plotm->setTitle("Angle");
     plotm->setXAxisIsTime();
@@ -590,10 +590,10 @@ Angle::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Angle::create()
 {
-    return new Angle();
+    return TrajectoryAnalysisModulePointer(new Angle());
 }
 
 } // namespace modules
