@@ -182,11 +182,12 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
                                       const SelectionCollection &selections)
 {
-    return new TrajectoryAnalysisModuleDataBasic(this, opt, selections);
+    return TrajectoryAnalysisModuleDataPointer(
+            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
