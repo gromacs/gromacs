@@ -39,8 +39,6 @@
 #include <config.h>
 #endif
 
-#include <memory>
-
 #include <copyrite.h>
 #include <pbc.h>
 #include <rmpbc.h>
@@ -234,8 +232,8 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     int nframes = 0;
     AnalysisDataParallelOptions dataOptions;
-    std::auto_ptr<TrajectoryAnalysisModuleData>
-        pdata(module->startFrames(dataOptions, selections));
+    TrajectoryAnalysisModuleDataPointer pdata(
+            module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();

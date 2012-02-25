@@ -138,6 +138,12 @@ AbstractPlotModule::Impl::closeFile()
  * AbstractPlotModule
  */
 
+AbstractPlotModule::AbstractPlotModule()
+    : _impl(new Impl(AnalysisDataPlotSettings()))
+{
+}
+
+
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
     : _impl(new Impl(settings))
 {
@@ -146,6 +152,13 @@ AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
 
 AbstractPlotModule::~AbstractPlotModule()
 {
+}
+
+
+void
+AbstractPlotModule::setSettings(const AnalysisDataPlotSettings &settings)
+{
+    _impl->settings = settings;
 }
 
 
@@ -354,6 +367,10 @@ AbstractPlotModule::writeValue(real value) const
  * DataPlotModule
  */
 
+AnalysisDataPlotModule::AnalysisDataPlotModule()
+{
+}
+
 AnalysisDataPlotModule::AnalysisDataPlotModule(
         const AnalysisDataPlotSettings &settings)
     : AbstractPlotModule(settings)
@@ -378,6 +395,16 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 /********************************************************************
  * DataVectorPlotModule
  */
+
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
+{
+    for (int i = 0; i < DIM; ++i)
+    {
+        _bWrite[i] = true;
+    }
+    _bWrite[DIM] = false;
+}
+
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
         const AnalysisDataPlotSettings &settings)

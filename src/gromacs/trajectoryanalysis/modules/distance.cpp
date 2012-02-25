@@ -45,8 +45,6 @@
 #include <vec.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -61,7 +59,7 @@ namespace analysismodules
 {
 
 Distance::Distance()
-    : _options("distance", "Distance calculation")
+    : _options("distance", "Distance calculation"), _avem(new AnalysisDataAverageModule())
 {
     _sel[0] = _sel[1] = NULL;
 }
@@ -107,10 +105,9 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _data.setColumns(4);
     registerAnalysisDataset(&_data, "distance");
 
-    _avem = new AnalysisDataAverageModule();
     _data.addModule(_avem);
-
-    _plotm = new AnalysisDataPlotModule(settings.plotSettings());
+    AnalysisDataPlotModulePointer _plotm(new AnalysisDataPlotModule());
+    _plotm->setSettings(settings.plotSettings());
     _plotm->setFileName(_fnDist);
     _plotm->setTitle("Distance");
     _plotm->setXAxisIsTime();
@@ -161,10 +158,10 @@ Distance::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Distance::create()
 {
-    return new Distance();
+    return TrajectoryAnalysisModulePointer(new Distance());
 }
 
 } // namespace analysismodules
