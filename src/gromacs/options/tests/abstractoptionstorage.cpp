@@ -133,14 +133,14 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         { _storagePtr = storagePtr; return me(); }
 
     private:
-        virtual gmx::AbstractOptionStorage *createDefaultStorage(gmx::Options *options) const
+        virtual gmx::AbstractOptionStoragePointer createDefaultStorage(gmx::Options *options) const
         {
             MockOptionStorage *storage = new MockOptionStorage(*this, options);
             if (_storagePtr != NULL)
             {
                 *_storagePtr = storage;
             }
-            return storage;
+            return gmx::AbstractOptionStoragePointer(storage);
         }
 
         MockOptionStorage     **_storagePtr;

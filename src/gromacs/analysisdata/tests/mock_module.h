@@ -40,6 +40,7 @@
 #ifndef GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
 #define GMX_ANALYSISDATA_TESTS_MOCK_MODULE_H
 
+#include <boost/shared_ptr.hpp>
 #include <gmock/gmock.h>
 
 #include "gromacs/analysisdata/datamodule.h"
@@ -83,6 +84,8 @@ class MockAnalysisModule : public AnalysisDataModuleInterface
 
         PrivateImplPointer<Impl> impl_;
 };
+
+typedef boost::shared_ptr<MockAnalysisModule> MockAnalysisModulePointer;
 
 } // namespace test
 } // namespace gmx

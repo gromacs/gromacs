@@ -39,6 +39,8 @@
 #ifndef GMX_ANALYSISDATA_ABSTRACTDATA_H
 #define GMX_ANALYSISDATA_ABSTRACTDATA_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "../legacyheaders/types/simple.h"
 
 #include "../utility/common.h"
@@ -51,6 +53,37 @@ class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
 class AnalysisDataStorage;
+
+//! Smart pointer for managing a generic analysis data module.
+// Could be unique_ptr if keepOwnership() is implemented differently.
+typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer;
+
+/*! \brief
+ * Helper to add analysis data modules without passing ownership.
+ *
+ * \param[in] module  Analysis data module to pass in.
+ *
+ * This method is intended to be used with AbstractAnalysisData::addModule()
+ * if it is not desirable to pass the ownership of the object to the
+ * AbstractAnalysisData object, e.g., because the module is a member variable
+ * in the calling class.  If this method is used, the caller is responsible for
+ * that \p module is not destructed before the data object to which it is added
+ * as a module.
+ *
+ * Example use:
+ * \code
+// <declaration of the module as a member variable in a class>
+ExampleDataModule module;
+AnalysisData      data;
+
+// <initialization of the module>
+module.setOptionValue(3);
+data.addModule(keepOwnership(&module));
+ * \endcode
+ *
+ * \inpublicapi
+ */
+AnalysisDataModulePointer keepOwnership(AnalysisDataModuleInterface *module);
 
 /*! \brief
  * Abstract base class for all objects that provide data.
@@ -196,15 +229,11 @@ class AbstractAnalysisData
          * immediately processes all existing data.  APIError is thrown
          * if all data is not available through getDataFrame().
          *
-         * When this function is entered, the data object takes ownership of the
-         * module, and automatically destructs it when the data object itself
-         * is destroyed.
-         *
-         * \todo
-         * Provide additional semantics that does not acquire ownership of the
-         * data object.
+         * By default, the data object takes ownership of the module, and
+         * automatically destructs it when the data object itself is destroyed.
+         * See keepOwnership() for a way to keep the ownership with the caller.
          */
-        void addModule(AnalysisDataModuleInterface *module);
+        void addModule(AnalysisDataModulePointer module);
         /*! \brief
          * Adds a module that processes only a subset of the columns.
          *
@@ -214,7 +243,7 @@ class AbstractAnalysisData
          *
          * \see addModule()
          */
-        void addColumnModule(int col, int span, AnalysisDataModuleInterface *module);
+        void addColumnModule(int col, int span, AnalysisDataModulePointer module);
         /*! \brief
          * Applies a module to process data that is ready.
          *
