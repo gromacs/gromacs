@@ -383,8 +383,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!_fnSize.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnSize);
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
@@ -396,8 +396,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_cdata, "cfrac");
     if (!_fnFrac.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnFrac);
         plot->setTitle("Covered fraction");
         plot->setXAxisIsTime();
@@ -411,8 +411,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     registerAnalysisDataset(&_idata, "index");
     if (!_fnIndex.empty())
     {
-        AnalysisDataPlotModule *plot
-            = new AnalysisDataPlotModule(settings.plotSettings());
+        AnalysisDataPlotModulePointer plot(
+            new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(_fnIndex);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
@@ -428,7 +428,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!_fnNdx.empty())
     {
-        IndexFileWriterModule *writer = new IndexFileWriterModule();
+        boost::shared_ptr<IndexFileWriterModule> writer(new IndexFileWriterModule());
         writer->setFileName(_fnNdx);
         for (size_t g = 0; g < _sel.size(); ++g)
         {
@@ -451,8 +451,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         else
         {
-            AnalysisDataPlotModule *plot
-                = new AnalysisDataPlotModule(settings.plotSettings());
+            AnalysisDataPlotModulePointer plot(
+                new AnalysisDataPlotModule(settings.plotSettings()));
             plot->setFileName(_fnMask);
             plot->setPlainOutput(_bDump);
             plot->setOmitX(_bDump);
@@ -468,7 +468,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 Select::startFrames(const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections)
 {
@@ -476,7 +476,7 @@ Select::startFrames(const AnalysisDataParallelOptions &opt,
     snew(pdata->_mmap, 1);
     gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0])->indexGroup(),
                           _top, _sel[0]->type());
-    return pdata;
+    return TrajectoryAnalysisModuleDataPointer(pdata);
 }
 
 
@@ -550,10 +550,10 @@ Select::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Select::create()
 {
-    return new Select();
+    return TrajectoryAnalysisModulePointer(new Select());
 }
 
 } // namespace analysismodules
