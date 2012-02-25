@@ -60,7 +60,7 @@ class Angle : public TrajectoryAnalysisModule
         Angle();
         virtual ~Angle();
 
-        static TrajectoryAnalysisModule *create();
+        static TrajectoryAnalysisModulePointer create();
 
         virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);

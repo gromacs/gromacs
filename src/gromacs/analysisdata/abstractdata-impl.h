@@ -58,10 +58,8 @@ namespace gmx
 class AbstractAnalysisData::Impl
 {
     public:
-        //! Shorthand for a smart pointer to a module.
-        typedef gmx_unique_ptr<AnalysisDataModuleInterface>::type ModulePointer;
         //! Shorthand for list of modules added to the data.
-        typedef std::vector<ModulePointer> ModuleList;
+        typedef std::vector<AnalysisDataModulePointer> ModuleList;
 
         Impl();
         ~Impl();

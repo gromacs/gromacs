@@ -107,9 +107,9 @@ BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
  * BooleanOption
  */
 
-AbstractOptionStorage *BooleanOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer BooleanOption::createDefaultStorage(Options *options) const
 {
-    return new BooleanOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this, options));
 }
 
 
@@ -156,9 +156,9 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStorage *IntegerOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer IntegerOption::createDefaultStorage(Options *options) const
 {
-    return new IntegerOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this, options));
 }
 
 
@@ -254,9 +254,9 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStorage *DoubleOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer DoubleOption::createDefaultStorage(Options *options) const
 {
-    return new DoubleOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this, options));
 }
 
 
@@ -387,9 +387,9 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
  * StringOption
  */
 
-AbstractOptionStorage *StringOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer StringOption::createDefaultStorage(Options *options) const
 {
-    return new StringOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new StringOptionStorage(*this, options));
 }
 
 std::string StringOption::createDescription() const
@@ -472,9 +472,9 @@ bool FileNameOptionInfo::isLibraryFile() const
  * FileNameOption
  */
 
-AbstractOptionStorage *FileNameOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer FileNameOption::createDefaultStorage(Options *options) const
 {
-    return new FileNameOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new FileNameOptionStorage(*this, options));
 }
 
 } // namespace gmx
