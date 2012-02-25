@@ -55,7 +55,8 @@ class AnalysisDataHandle;
 class TrajectoryAnalysisModuleData::Impl
 {
     public:
-        typedef std::map<std::string, AnalysisDataHandle *> HandleContainer;
+        typedef std::map<const AnalysisData *, AnalysisDataHandle>
+                HandleContainer;
 
         Impl(TrajectoryAnalysisModule *module,
              const AnalysisDataParallelOptions &opt,

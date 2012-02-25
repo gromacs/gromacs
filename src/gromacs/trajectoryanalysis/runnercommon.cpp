@@ -161,7 +161,7 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 }
 
 
-Options *
+Options &
 TrajectoryAnalysisRunnerCommon::initOptions()
 {
     TrajectoryAnalysisSettings &settings = _impl->_settings;
@@ -217,7 +217,7 @@ TrajectoryAnalysisRunnerCommon::initOptions()
                               .description("Use periodic boundary conditions for distance calculation"));
     }
 
-    return &_impl->_options;
+    return _impl->_options;
 }
 
 

@@ -261,7 +261,7 @@ SelectionCollection::~SelectionCollection()
 }
 
 
-Options *
+Options &
 SelectionCollection::initOptions()
 {
     static const char * const debug_levels[]
@@ -298,7 +298,7 @@ SelectionCollection::initOptions()
                           .description("Print out selection trees for debugging"));
     sfree(postypes);
 
-    return &_impl->_options;
+    return _impl->_options;
 }
 
 
