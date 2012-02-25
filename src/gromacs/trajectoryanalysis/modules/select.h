@@ -62,7 +62,7 @@ class Select : public TrajectoryAnalysisModule
 
         static TrajectoryAnalysisModule *create();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
