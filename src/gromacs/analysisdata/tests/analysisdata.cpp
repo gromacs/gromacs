@@ -174,16 +174,16 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
-    gmx::AnalysisDataHandle *handle1 = NULL;
-    gmx::AnalysisDataHandle *handle2 = NULL;
+    gmx::AnalysisDataHandle handle1;
+    gmx::AnalysisDataHandle handle2;
     gmx::AnalysisDataParallelOptions options(2);
     ASSERT_NO_THROW(handle1 = data.startData(options));
     ASSERT_NO_THROW(handle2 = data.startData(options));
     ASSERT_NO_THROW(presentDataFrame(input, 1, handle1));
     ASSERT_NO_THROW(presentDataFrame(input, 0, handle2));
     ASSERT_NO_THROW(presentDataFrame(input, 2, handle1));
-    ASSERT_NO_THROW(handle1->finishData());
-    ASSERT_NO_THROW(handle2->finishData());
+    ASSERT_NO_THROW(handle1.finishData());
+    ASSERT_NO_THROW(handle2.finishData());
 }
 
 /*
