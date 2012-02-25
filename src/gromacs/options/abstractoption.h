@@ -53,6 +53,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "optionflags.h"
 
 namespace gmx
@@ -61,6 +63,11 @@ namespace gmx
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
 class Options;
+
+//! Smart pointer for managing an AbstractOptionStorage object.
+// Could be unique_ptr
+typedef boost::shared_ptr<AbstractOptionStorage>
+        AbstractOptionStoragePointer;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -107,7 +114,7 @@ class AbstractOption
          *
          * Should only be called by Options::addOption().
          */
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const = 0;
+        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const = 0;
 
         /*! \brief
          * Creates the description string for the option.

@@ -45,8 +45,6 @@
 #include <vec.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -107,15 +105,14 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     _data.setColumns(4);
     registerAnalysisDataset(&_data, "distance");
 
-    _avem = new AnalysisDataAverageModule();
-    _data.addModule(_avem);
+    _data.addModule(keepOwnership(&_avem));
 
-    _plotm = new AnalysisDataPlotModule(settings.plotSettings());
-    _plotm->setFileName(_fnDist);
-    _plotm->setTitle("Distance");
-    _plotm->setXAxisIsTime();
-    _plotm->setYLabel("Distance (nm)");
-    _data.addModule(_plotm);
+    _plotm.setSettings(settings.plotSettings());
+    _plotm.setFileName(_fnDist);
+    _plotm.setTitle("Distance");
+    _plotm.setXAxisIsTime();
+    _plotm.setYLabel("Distance (nm)");
+    _data.addModule(keepOwnership(&_plotm));
 }
 
 
@@ -156,15 +153,15 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    fprintf(stderr, "Average distance: %f\n", _avem->average(0));
-    fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
+    fprintf(stderr, "Average distance: %f\n", _avem.average(0));
+    fprintf(stderr, "Std. deviation:   %f\n", _avem.stddev(0));
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Distance::create()
 {
-    return new Distance();
+    return TrajectoryAnalysisModulePointer(new Distance());
 }
 
 } // namespace analysismodules

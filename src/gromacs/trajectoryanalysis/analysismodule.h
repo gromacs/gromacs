@@ -43,6 +43,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "../legacyheaders/typedefs.h"
 
 #include "../utility/common.h"
@@ -134,6 +136,10 @@ class TrajectoryAnalysisModuleData
         PrivateImplPointer<Impl> _impl;
 };
 
+//! Smart pointer to manage a TrajectoryAnalysisModuleData object.
+// Could be unique_ptr.
+typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
+        TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
  * Base class for trajectory analysis methods.
@@ -226,7 +232,7 @@ class TrajectoryAnalysisModule
          *
          * \see TrajectoryAnalysisModuleData
          */
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                 const AnalysisDataParallelOptions &opt,
                 const SelectionCollection &selections);
         /*! \brief
@@ -349,6 +355,11 @@ class TrajectoryAnalysisModule
          */
         friend class TrajectoryAnalysisModuleData;
 };
+
+//! Smart pointer to manage a TrajectoryAnalysisModule.
+// Could be unique_ptr.
+typedef boost::shared_ptr<TrajectoryAnalysisModule>
+        TrajectoryAnalysisModulePointer;
 
 } // namespace gmx
 

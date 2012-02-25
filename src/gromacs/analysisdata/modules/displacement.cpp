@@ -96,10 +96,11 @@ AnalysisDataDisplacementModule::setMaxTime(real tmax)
 
 
 void
-AnalysisDataDisplacementModule::setMSDHistogram(AnalysisDataBinAverageModule *histm)
+AnalysisDataDisplacementModule::setMSDHistogram(
+        AnalysisDataBinAverageModulePointer histm)
 {
-    GMX_RELEASE_ASSERT(!_impl->histm, "Can only set MSD histogram once");
-    _impl->histm = histm;
+    GMX_RELEASE_ASSERT(_impl->histm == NULL, "Can only set MSD histogram once");
+    _impl->histm = histm.get();
     addModule(histm);
 }
 

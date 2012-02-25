@@ -41,8 +41,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
+#include "abstractoption.h"
 #include "options.h"
 
 namespace gmx
@@ -61,13 +60,10 @@ class AbstractOptionStorage;
 class Options::Impl
 {
     public:
-        //! Shorthand for a smart pointer to an option storage object.
-        // Could be unique_ptr
-        typedef boost::shared_ptr<AbstractOptionStorage> OptionPointer;
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
-        typedef std::vector<OptionPointer> OptionList;
+        typedef std::vector<AbstractOptionStoragePointer> OptionList;
 
         //! Sets the name and title.
         Impl(const char *name, const char *title);
