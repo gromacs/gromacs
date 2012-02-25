@@ -58,7 +58,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
       _minValueCount(settings._minValueCount),
       _maxValueCount(settings._maxValueCount),
       _inSet(false),
-      _options(options)
+      _options(*options)
 {
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.

@@ -74,7 +74,7 @@ AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFact
 
 AnalysisDataStorageFrame::AnalysisDataStorageFrame(AnalysisDataStorage *storage,
                                                    int columnCount, int index)
-    : storage_(storage), header_(index, 0.0, 0.0), values_(columnCount)
+    : storage_(*storage), header_(index, 0.0, 0.0), values_(columnCount)
 {
 }
 
@@ -117,7 +117,7 @@ AnalysisDataStorageFrame::clearValues()
 void
 AnalysisDataStorageFrame::finishPointSet()
 {
-    storage_->impl_->notifyPointSet(currentPoints());
+    storage_.impl_->notifyPointSet(currentPoints());
     clearValues();
 }
 
