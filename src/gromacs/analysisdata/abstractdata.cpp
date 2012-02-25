@@ -37,14 +37,26 @@
  */
 #include "gromacs/analysisdata/abstractdata.h"
 
-#include <memory>
-
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 
 #include "abstractdata-impl.h"
 #include "dataframe.h"
 #include "dataproxy.h"
+
+namespace
+{
+
+/*! \internal \brief
+ * Deleter for boost::shared_ptr that does nothing.
+ */
+class EmptyDeleter
+{
+    public:
+        void operator()(void *) {}
+};
+
+} // namespace
 
 namespace gmx
 {
@@ -149,9 +161,8 @@ AbstractAnalysisData::requestStorage(int nframes)
 
 
 void
-AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
+AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    Impl::ModulePointer module_ptr(module);
     if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
         || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
         || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
@@ -163,21 +174,20 @@ AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
     {
         GMX_RELEASE_ASSERT(!_impl->_bInFrame,
                            "Cannot add data modules in mid-frame");
-        _impl->presentData(this, module);
+        _impl->presentData(this, module.get());
     }
     if (!(module->flags() & AnalysisDataModuleInterface::efAllowMissing))
     {
         _impl->_bAllowMissing = false;
     }
-    _impl->_modules.push_back(move(module_ptr));
+    _impl->_modules.push_back(move(module));
 }
 
 
 void
 AbstractAnalysisData::addColumnModule(int col, int span,
-                                      AnalysisDataModuleInterface *module)
+                                      AnalysisDataModulePointer module)
 {
-    std::auto_ptr<AnalysisDataModuleInterface> module_ptr(module);
     GMX_RELEASE_ASSERT(col >= 0 && span >= 1 && col + span <= _ncol,
                        "Invalid columns specified for a column module");
     if (_impl->_bDataStart)
@@ -185,9 +195,10 @@ AbstractAnalysisData::addColumnModule(int col, int span,
         GMX_THROW(NotImplementedError("Cannot add column modules after data"));
     }
 
-    std::auto_ptr<AnalysisDataProxy> proxy(new AnalysisDataProxy(col, span, this));
-    proxy->addModule(module_ptr.release());
-    addModule(proxy.release());
+    boost::shared_ptr<AnalysisDataProxy> proxy(
+            new AnalysisDataProxy(col, span, this));
+    proxy->addModule(module);
+    addModule(proxy);
 }
 
 

@@ -41,8 +41,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
-#include <memory>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -54,6 +52,7 @@
 #include "mock_module.h"
 
 using gmx::test::MockAnalysisModule;
+using gmx::test::MockAnalysisModulePointer;
 
 namespace
 {
@@ -94,11 +93,12 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     gmx::AnalysisData data;
     data.setColumns(2);
 
-    std::auto_ptr<MockAnalysisModule> mod(new MockAnalysisModule(0));
-    EXPECT_THROW(data.addModule(mod.release()), gmx::APIError);
+    MockAnalysisModulePointer mod1(new MockAnalysisModule(0));
+    EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
-    mod.reset(new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
-    EXPECT_NO_THROW(data.addModule(mod.release()));
+    MockAnalysisModulePointer mod2(
+            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+    EXPECT_NO_THROW(data.addModule(mod2));
 }
 
 /*
@@ -110,11 +110,12 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
     gmx::AnalysisData data;
     data.setColumns(1, true);
 
-    std::auto_ptr<MockAnalysisModule> mod(new MockAnalysisModule(0));
-    EXPECT_THROW(data.addModule(mod.release()), gmx::APIError);
+    MockAnalysisModulePointer mod1(new MockAnalysisModule(0));
+    EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
-    mod.reset(new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
-    EXPECT_NO_THROW(data.addModule(mod.release()));
+    MockAnalysisModulePointer mod2(
+            new MockAnalysisModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+    EXPECT_NO_THROW(data.addModule(mod2));
 }
 
 

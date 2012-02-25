@@ -42,8 +42,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
-#include <memory>
-
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
@@ -161,18 +159,18 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataSimpleHistogramModule *module =
+    gmx::AnalysisDataSimpleHistogramModulePointer module(
         new gmx::AnalysisDataSimpleHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4));
+                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module.get()));
     ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage",
-                                              module->averager()));
+                                              &module->averager()));
     ASSERT_NO_THROW(presentAllData(input, &data));
-    ASSERT_NO_THROW(module->averager()->done());
+    ASSERT_NO_THROW(module->averager().done());
 }
 
 
@@ -181,18 +179,18 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataSimpleHistogramModule *module =
-        new gmx::AnalysisDataSimpleHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll());
+    gmx::AnalysisDataSimpleHistogramModulePointer module(
+            new gmx::AnalysisDataSimpleHistogramModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module.get()));
     ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage",
-                                              module->averager()));
+                                              &module->averager()));
     ASSERT_NO_THROW(presentAllData(input, &data));
-    ASSERT_NO_THROW(module->averager()->done());
+    ASSERT_NO_THROW(module->averager().done());
 }
 
 
@@ -215,18 +213,18 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataWeightedHistogramModule *module =
+    gmx::AnalysisDataWeightedHistogramModulePointer module(
         new gmx::AnalysisDataWeightedHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4));
+                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module.get()));
     ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage",
-                                              module->averager()));
+                                              &module->averager()));
     ASSERT_NO_THROW(presentAllData(input, &data));
-    ASSERT_NO_THROW(module->averager()->done());
+    ASSERT_NO_THROW(module->averager().done());
 }
 
 
@@ -235,18 +233,18 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectlyWithAll)
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataWeightedHistogramModule *module =
-        new gmx::AnalysisDataWeightedHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll());
+    gmx::AnalysisDataWeightedHistogramModulePointer module(
+            new gmx::AnalysisDataWeightedHistogramModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Histogram", module.get()));
     ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage",
-                                              module->averager()));
+                                              &module->averager()));
     ASSERT_NO_THROW(presentAllData(input, &data));
-    ASSERT_NO_THROW(module->averager()->done());
+    ASSERT_NO_THROW(module->averager().done());
 }
 
 
@@ -261,14 +259,14 @@ TEST_F(BinAverageModuleTest, ComputesCorrectly)
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataBinAverageModule *module =
+    gmx::AnalysisDataBinAverageModulePointer module(
         new gmx::AnalysisDataBinAverageModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4));
+                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage", module.get()));
     ASSERT_NO_THROW(presentAllData(input, &data));
 }
 
@@ -278,14 +276,14 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
     data.setColumns(input.columnCount(), true);
-    gmx::AnalysisDataBinAverageModule *module =
-        new gmx::AnalysisDataBinAverageModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll());
+    gmx::AnalysisDataBinAverageModulePointer module(
+            new gmx::AnalysisDataBinAverageModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("HistogramAverage", module.get()));
     ASSERT_NO_THROW(presentAllData(input, &data));
 }
 
@@ -342,11 +340,11 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
     setupArrayData(input, &data);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    std::auto_ptr<gmx::AbstractAverageHistogram> copy(data.clone());
+    gmx::AverageHistogramPointer copy(data.clone());
     ASSERT_NO_THROW(addStaticCheckerModule(input, copy.get()));
     ASSERT_NO_THROW(copy->done());
     ASSERT_NO_THROW(data.done());
-    std::auto_ptr<gmx::AbstractAverageHistogram> copy2(data.clone());
+    gmx::AverageHistogramPointer copy2(data.clone());
     ASSERT_NO_THROW(addStaticCheckerModule(input, copy2.get()));
     ASSERT_NO_THROW(copy2->done());
 }
@@ -361,8 +359,7 @@ TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    std::auto_ptr<gmx::AbstractAverageHistogram> resampled(
-            data.resampleDoubleBinWidth(false));
+    gmx::AverageHistogramPointer resampled(data.resampleDoubleBinWidth(false));
     ASSERT_NO_THROW(addReferenceCheckerModule("ResampledHistogram", resampled.get()));
     ASSERT_NO_THROW(data.done());
     ASSERT_NO_THROW(resampled->done());
@@ -378,8 +375,7 @@ TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidthWithIntegerBins)
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    std::auto_ptr<gmx::AbstractAverageHistogram> resampled(
-            data.resampleDoubleBinWidth(true));
+    gmx::AverageHistogramPointer resampled(data.resampleDoubleBinWidth(true));
     ASSERT_NO_THROW(addReferenceCheckerModule("ResampledHistogram", resampled.get()));
     ASSERT_NO_THROW(data.done());
     ASSERT_NO_THROW(resampled->done());
