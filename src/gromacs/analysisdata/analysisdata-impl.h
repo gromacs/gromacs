@@ -48,6 +48,26 @@
 namespace gmx
 {
 
+namespace internal
+{
+/*! \internal \brief
+ * Private implementation class for AnalysisDataHandle.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataHandleImpl
+{
+    public:
+        //! Creates a handle associated with the given data object.
+        explicit AnalysisDataHandleImpl(AnalysisData *data);
+
+        //! The data object that this handle belongs to.
+        AnalysisData             &data_;
+        //! Current storage frame object, or NULL if no current frame.
+        AnalysisDataStorageFrame *currentFrame_;
+};
+} // namespace internal
+
 /*! \internal \brief
  * Private implementation class for AnalysisData.
  *
@@ -58,7 +78,8 @@ class AnalysisData::Impl
     public:
         //! Shorthand for a smart pointer to a data handle.
         // Could be unique_ptr
-        typedef boost::shared_ptr<AnalysisDataHandle> HandlePointer;
+        typedef boost::shared_ptr<internal::AnalysisDataHandleImpl>
+                HandlePointer;
         //! Shorthand for a list of data handles.
         typedef std::vector<HandlePointer> HandleList;
 
@@ -68,23 +89,6 @@ class AnalysisData::Impl
         AnalysisDataStorage     storage_;
         //! List of handles for this data object.
         HandleList              handles_;
-};
-
-/*! \internal \brief
- * Private implementation class for AnalysisDataHandle.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisDataHandle::Impl
-{
-    public:
-        //! Creates a handle associated with the given data object.
-        explicit Impl(AnalysisData *data);
-
-        //! The data object that this handle belongs to.
-        AnalysisData             &data_;
-        //! Current storage frame object, or NULL if no current frame.
-        AnalysisDataStorageFrame *currentFrame_;
 };
 
 } // namespace gmx
