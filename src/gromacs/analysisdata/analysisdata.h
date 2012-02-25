@@ -83,16 +83,22 @@ class AnalysisData : public AbstractAnalysisData
          * \param[in]  opt     Options for setting how this handle will be
          *     used.
          * \returns The created handle.
+         *
+         * The caller should retain the returned handle (or a copy of it), and
+         * pass it to finishData() after successfully adding all data.
+         * The caller should discard the returned handle if an error occurs;
+         * memory allocated for the handle will be freed when the AnalysisData
+         * object is destroyed.
          */
-        AnalysisDataHandle *startData(const AnalysisDataParallelOptions &opt);
+        AnalysisDataHandle startData(const AnalysisDataParallelOptions &opt);
         /*! \brief
          * Destroy a handle after all data has been added.
          *
          * \param[in]  handle  Handle to destroy.
          *
-         * The pointer \p handle is invalid after the call.
+         * The \p handle (and any copies) are invalid after the call.
          */
-        void finishData(AnalysisDataHandle *handle);
+        void finishData(AnalysisDataHandle handle);
 
     private:
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
@@ -105,9 +111,16 @@ class AnalysisData : public AbstractAnalysisData
         friend class AnalysisDataHandle;
 };
 
+namespace internal
+{
+class AnalysisDataHandleImpl;
+} // namespace internal
 
 /*! \brief
  * Handle for inserting data into AnalysisData.
+ *
+ * This class works like a pointer type: copying and assignment is lightweight,
+ * and all copies work interchangeably, accessing the same internal handle.
  *
  * Several handles can exist concurrently.
  *
@@ -118,12 +131,15 @@ class AnalysisDataHandle
 {
     public:
         /*! \brief
-         * Frees memory allocated for the internal implementation.
+         * Constructs an invalid data handle.
          *
-         * Should not be called directly, but through finishData() or
-         * AnalysisData::finishData().
+         * This constructor is provided for convenience in cases where it is
+         * easiest to declare an AnalysisDataHandle without immediately
+         * assigning a value to it.  Any attempt to call methods without first
+         * assigning a value from AnalysisData::startData() to the handle
+         * causes an assert.
          */
-        ~AnalysisDataHandle();
+        AnalysisDataHandle();
 
         //! Start data for a new frame.
         void startFrame(int index, real x, real dx = 0.0);
@@ -147,11 +163,16 @@ class AnalysisDataHandle
          * The constructor is private because data handles should only be
          * constructed through AnalysisData::startData().
          */
-        explicit AnalysisDataHandle(AnalysisData *data);
+        explicit AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl);
 
-        class Impl;
-
-        PrivateImplPointer<Impl> impl_;
+        /*! \brief
+         * Pointer to the internal implementation class.
+         *
+         * The memory for this object is managed by the AnalysisData object,
+         * and AnalysisDataHandle simply provides a public interface for
+         * accessing the implementation.
+         */
+        internal::AnalysisDataHandleImpl *impl_;
 
         friend class AnalysisData;
 };
