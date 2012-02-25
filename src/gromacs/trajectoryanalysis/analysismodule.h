@@ -89,12 +89,12 @@ class TrajectoryAnalysisModuleData
         virtual void finish() = 0;
 
         /*! \brief
-         * Returns a data handle for a dataset with a given name.
+         * Returns a data handle for a given dataset.
          *
-         * Allowed names are those that have been registered with
+         * Allowed data sets are those that have been registered with
          * TrajectoryAnalysisModule::registerAnalysisDataset().
          */
-        AnalysisDataHandle *dataHandle(const char *name);
+        AnalysisDataHandle dataHandle(const AnalysisData &data);
         /*! \brief
          * Returns a selection that corresponds to the given selection.
          */
@@ -169,7 +169,7 @@ class TrajectoryAnalysisModule
          * If settings depend on the option values provided by the user, see
          * initOptionsDone().
          */
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings) = 0;
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
          *
@@ -311,7 +311,7 @@ class TrajectoryAnalysisModule
          * provide any means to alter the data, so the module does not need to
          * care about external modifications.
          */
-        AbstractAnalysisData *datasetFromIndex(int index) const;
+        AbstractAnalysisData &datasetFromIndex(int index) const;
         /*! \brief
          * Returns a pointer to the data set with name \p name
          *
@@ -324,7 +324,7 @@ class TrajectoryAnalysisModule
          * provide any means to alter the data, so the module does not need to
          * care about external modifications.
          */
-        AbstractAnalysisData *datasetFromName(const char *name) const;
+        AbstractAnalysisData &datasetFromName(const char *name) const;
 
     protected:
         //! Initializes the dataset registration mechanism.
