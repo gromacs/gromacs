@@ -137,15 +137,28 @@ AbstractPlotModule::Impl::closeFile()
 /********************************************************************
  * AbstractPlotModule
  */
+/*! \cond libapi */
+AbstractPlotModule::AbstractPlotModule()
+    : _impl(new Impl(AnalysisDataPlotSettings()))
+{
+}
+
 
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
     : _impl(new Impl(settings))
 {
 }
-
+//! \endcond
 
 AbstractPlotModule::~AbstractPlotModule()
 {
+}
+
+
+void
+AbstractPlotModule::setSettings(const AnalysisDataPlotSettings &settings)
+{
+    _impl->settings = settings;
 }
 
 
@@ -334,7 +347,7 @@ AbstractPlotModule::dataFinished()
     _impl->closeFile();
 }
 
-
+/*! \cond libapi */
 bool
 AbstractPlotModule::isFileOpen() const
 {
@@ -348,11 +361,15 @@ AbstractPlotModule::writeValue(real value) const
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     std::fprintf(_impl->fp, _impl->yfmt, value);
 }
-
+//! \endcond
 
 /********************************************************************
  * DataPlotModule
  */
+
+AnalysisDataPlotModule::AnalysisDataPlotModule()
+{
+}
 
 AnalysisDataPlotModule::AnalysisDataPlotModule(
         const AnalysisDataPlotSettings &settings)
@@ -378,6 +395,16 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 /********************************************************************
  * DataVectorPlotModule
  */
+
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
+{
+    for (int i = 0; i < DIM; ++i)
+    {
+        _bWrite[i] = true;
+    }
+    _bWrite[DIM] = false;
+}
+
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
         const AnalysisDataPlotSettings &settings)

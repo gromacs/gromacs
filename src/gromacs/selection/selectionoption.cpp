@@ -250,9 +250,9 @@ void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStorage *SelectionOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer SelectionOption::createDefaultStorage(Options *options) const
 {
-    return new SelectionOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new SelectionOptionStorage(*this, options));
 }
 
 

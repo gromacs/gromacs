@@ -39,6 +39,8 @@
 #ifndef GMX_ANALYSISDATA_ABSTRACTDATA_H
 #define GMX_ANALYSISDATA_ABSTRACTDATA_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "../legacyheaders/types/simple.h"
 
 #include "../utility/common.h"
@@ -51,6 +53,9 @@ class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
 class AnalysisDataStorage;
+
+//! Smart pointer for managing a generic analysis data module.
+typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer;
 
 /*! \brief
  * Abstract base class for all objects that provide data.
@@ -196,15 +201,11 @@ class AbstractAnalysisData
          * immediately processes all existing data.  APIError is thrown
          * if all data is not available through getDataFrame().
          *
-         * When this function is entered, the data object takes ownership of the
-         * module, and automatically destructs it when the data object itself
-         * is destroyed.
-         *
-         * \todo
-         * Provide additional semantics that does not acquire ownership of the
-         * data object.
+         * By default, the data object takes ownership of the module, and
+         * automatically destructs it when the data object itself is destroyed.
+         * See keepOwnership() for a way to keep the ownership with the caller.
          */
-        void addModule(AnalysisDataModuleInterface *module);
+        void addModule(AnalysisDataModulePointer module);
         /*! \brief
          * Adds a module that processes only a subset of the columns.
          *
@@ -214,7 +215,7 @@ class AbstractAnalysisData
          *
          * \see addModule()
          */
-        void addColumnModule(int col, int span, AnalysisDataModuleInterface *module);
+        void addColumnModule(int col, int span, AnalysisDataModulePointer module);
         /*! \brief
          * Applies a module to process data that is ready.
          *
