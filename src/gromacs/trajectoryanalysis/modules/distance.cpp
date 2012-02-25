@@ -72,7 +72,7 @@ Distance::~Distance()
 }
 
 
-Options *
+Options &
 Distance::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -88,7 +88,7 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
                            .store(&_fnDist).defaultValue("dist"));
     _options.addOption(SelectionOption("select").required().valueCount(2)
                            .store(_sel));
-    return &_options;
+    return _options;
 }
 
 
@@ -123,7 +123,7 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("distance");
+    AnalysisDataHandle  dh = pdata->dataHandle(_data);
     Selection          *sel1 = pdata->parallelSelection(_sel[0]);
     Selection          *sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
@@ -140,10 +140,10 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         rvec_sub(p1.x(), p2.x(), dx);
     }
     r = norm(dx);
-    dh->startFrame(frnr, fr.time);
-    dh->setPoint(0, r);
-    dh->setPoints(1, 3, dx);
-    dh->finishFrame();
+    dh.startFrame(frnr, fr.time);
+    dh.setPoint(0, r);
+    dh.setPoints(1, 3, dx);
+    dh.finishFrame();
 }
 
 

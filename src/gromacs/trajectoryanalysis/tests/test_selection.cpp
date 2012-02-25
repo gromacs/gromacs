@@ -55,7 +55,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -94,7 +94,7 @@ SelectionTester::printSelections()
     fprintf(stderr, "\n");
 }
 
-Options *
+Options &
 SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
@@ -110,7 +110,7 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
     _options.addOption(IntegerOption("pmax").store(&_nmaxind)
                            .description("Maximum number of indices to print in lists (-1 = print all)"));
 
-    return &_options;
+    return _options;
 }
 
 void
