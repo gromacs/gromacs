@@ -102,10 +102,8 @@ class SelectionCollection
 
         /*! \brief
          * Initializes options for setting global properties on the collection.
-         *
-         * The return value should not be deleted by the caller.
          */
-        Options *initOptions();
+        Options &initOptions();
 
         /*! \brief
          * Sets the default reference position handling for a selection
