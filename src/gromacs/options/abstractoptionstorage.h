@@ -232,9 +232,9 @@ class AbstractOptionStorage
         void setMaxValueCount(int count);
 
         //! Returns the Options object that houses the option.
-        Options &hostOptions() { return *_options; }
+        Options &hostOptions() { return _options; }
         //! \copydoc hostOptions()
-        const Options &hostOptions() const { return *_options; }
+        const Options &hostOptions() const { return _options; }
 
         /*! \brief
          * Removes all values from temporary storage for a set.
@@ -298,7 +298,7 @@ class AbstractOptionStorage
         //! Whether we are currently assigning values to a set.
         bool                    _inSet;
         //! Parent Options object.
-        Options                *_options;
+        Options                &_options;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

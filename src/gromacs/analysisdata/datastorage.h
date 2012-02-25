@@ -195,7 +195,7 @@ class AnalysisDataStorageFrame
         void clearValues();
 
         //! Storage object that contains this frame.
-        AnalysisDataStorage    *storage_;
+        AnalysisDataStorage    &storage_;
         //! Header for the frame.
         AnalysisDataFrameHeader header_;
         //! Values for the frame.
