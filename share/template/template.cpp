@@ -43,7 +43,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -109,7 +109,7 @@ AnalysisTemplate::AnalysisTemplate()
 }
 
 
-Options *
+Options &
 AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -148,7 +148,7 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
-    return &_options;
+    return _options;
 }
 
 
@@ -187,11 +187,11 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("avedist");
+    AnalysisDataHandle  dh = pdata->dataHandle(_data);
     NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
 
     nb.init(pbc, _refsel->positions());
-    dh->startFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
         Selection *sel = pdata->parallelSelection(_sel[g]);
@@ -203,9 +203,9 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
-        dh->setPoint(g, frave);
+        dh.setPoint(g, frave);
     }
-    dh->finishFrame();
+    dh.finishFrame();
 }
 
 
