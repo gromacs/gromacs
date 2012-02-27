@@ -438,14 +438,14 @@ static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
   *ems2 = tmp;
 }
 
-static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
+static void copy_em_coords(em_state_t *ems,t_state *state)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<state->natoms); i++)
-    copy_rvec(ems->s.x[i],state->x[i]);
-  if (f != NULL)
-    copy_rvec(ems->f[i],f[i]);
+    for(i=0; (i<state->natoms); i++)
+    {
+        copy_rvec(ems->s.x[i],state->x[i]);
+    }
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
@@ -460,8 +460,8 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 
     if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
     {
+        copy_em_coords(state,state_global);
         f_global = state->f;
-        copy_em_coords_back(state,state_global,bF ? f_global : NULL);
     }
     
     mdof_flags = 0;
