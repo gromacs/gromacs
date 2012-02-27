@@ -238,13 +238,13 @@ void settle_proj(FILE *fp,
         if (pbc == NULL)
         {
             rvec_sub(x[ow1],x[hw2],roh2);
-            rvec_sub(x[ow1],x[hw2],roh3);
+            rvec_sub(x[ow1],x[hw3],roh3);
             rvec_sub(x[hw2],x[hw3],rhh);
         }
         else
         {
             pbc_dx_aiuc(pbc,x[ow1],x[hw2],roh2);
-            pbc_dx_aiuc(pbc,x[ow1],x[hw2],roh3);
+            pbc_dx_aiuc(pbc,x[ow1],x[hw3],roh3);
             pbc_dx_aiuc(pbc,x[hw2],x[hw3],rhh);
         }
         svmul(invdOH,roh2,roh2);
