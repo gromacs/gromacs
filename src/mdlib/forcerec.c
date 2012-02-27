@@ -1850,7 +1850,7 @@ static void init_nb_verlet(FILE *fp,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       is_nbl_type_simple(nbv->grp[0].kernel_type),
                       *na_c,
-                      fr->nthreads);
+                      gmx_omp_nthreads_get(emntNonbonded));
 
     for(i=0; i<nbv->nloc; i++)
     {
@@ -1883,7 +1883,7 @@ static void init_nb_verlet(FILE *fp,
                                  nbv->grp[i].kernel_type == nbk4xNSSE,
                                  fr->ntype,fr->nbfp,
                                  ir->opts.ngener,
-                                 is_nbl_type_simple(nbv->grp[i].kernel_type) ? fr->nthreads : 1,
+                                is_nbl_type_simple(nbv->grp[i].kernel_type) ? gmx_omp_nthreads_get(emntNonbonded) : 1,
                                  nb_alloc, nb_free);
         }
         else
