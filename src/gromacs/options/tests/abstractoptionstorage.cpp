@@ -71,9 +71,8 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
          */
-        MockOptionStorage(const MockOption &settings, gmx::Options *options);
+        MockOptionStorage(const MockOption &settings);
 
         /*! \brief
          * Calls addValue("dummy") in the base class.
@@ -133,9 +132,9 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         { _storagePtr = storagePtr; return me(); }
 
     private:
-        virtual gmx::AbstractOptionStoragePointer createDefaultStorage(gmx::Options *options) const
+        virtual gmx::AbstractOptionStoragePointer createStorage() const
         {
-            MockOptionStorage *storage = new MockOptionStorage(*this, options);
+            MockOptionStorage *storage = new MockOptionStorage(*this);
             if (_storagePtr != NULL)
             {
                 *_storagePtr = storage;
@@ -146,8 +145,8 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         MockOptionStorage     **_storagePtr;
 };
 
-MockOptionStorage::MockOptionStorage(const MockOption &settings, gmx::Options *options)
-    : MyBase(settings, options)
+MockOptionStorage::MockOptionStorage(const MockOption &settings)
+    : MyBase(settings)
 {
     using ::testing::_;
     using ::testing::Invoke;

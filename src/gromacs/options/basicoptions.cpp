@@ -107,9 +107,9 @@ BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
  * BooleanOption
  */
 
-AbstractOptionStoragePointer BooleanOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer BooleanOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
 }
 
 
@@ -156,9 +156,9 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStoragePointer IntegerOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer IntegerOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
 }
 
 
@@ -166,8 +166,8 @@ AbstractOptionStoragePointer IntegerOption::createDefaultStorage(Options *option
  * DoubleOptionStorage
  */
 
-DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings, Options *options)
-    : MyBase(settings, options), info_(this), bTime_(settings._bTime), factor_(1.0)
+DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
+    : MyBase(settings), info_(this), bTime_(settings._bTime), factor_(1.0)
 {
 }
 
@@ -254,9 +254,9 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStoragePointer DoubleOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer DoubleOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
 }
 
 
@@ -264,8 +264,8 @@ AbstractOptionStoragePointer DoubleOption::createDefaultStorage(Options *options
  * StringOptionStorage
  */
 
-StringOptionStorage::StringOptionStorage(const StringOption &settings, Options *options)
-    : MyBase(settings, options), _info(this), _enumIndexStore(NULL)
+StringOptionStorage::StringOptionStorage(const StringOption &settings)
+    : MyBase(settings), _info(this), _enumIndexStore(NULL)
 {
     if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
     {
@@ -387,9 +387,9 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
  * StringOption
  */
 
-AbstractOptionStoragePointer StringOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer StringOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new StringOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new StringOptionStorage(*this));
 }
 
 std::string StringOption::createDescription() const
@@ -416,8 +416,8 @@ std::string StringOption::createDescription() const
  * FileNameOptionStorage
  */
 
-FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings, Options *options)
-    : MyBase(settings, options), info_(this), filetype_(settings.filetype_),
+FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
+    : MyBase(settings), info_(this), filetype_(settings.filetype_),
       bRead_(settings.bRead_), bWrite_(settings.bWrite_),
       bLibrary_(settings.bLibrary_)
 {
@@ -472,9 +472,9 @@ bool FileNameOptionInfo::isLibraryFile() const
  * FileNameOption
  */
 
-AbstractOptionStoragePointer FileNameOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer FileNameOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new FileNameOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new FileNameOptionStorage(*this));
 }
 
 } // namespace gmx

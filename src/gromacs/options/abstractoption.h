@@ -79,7 +79,7 @@ typedef boost::shared_ptr<AbstractOptionStorage>
  * them.  All error checking and memory management should be postponed to the
  * point when the actual option is created.
  *
- * Subclasses should override createDefaultStorage() to create the correct type
+ * Subclasses should override createStorage() to create the correct type
  * of storage object.
  *
  * \ingroup module_options
@@ -101,12 +101,11 @@ class AbstractOption
         /*! \brief
          * Creates a default storage object for the option.
          *
-         * \param[in]  options  Option collection object.
          * \returns The created storage object.
          * \throws  APIError if invalid option settings have been provided.
          *
-         * This method is called by when creating an option object
-         * The \p options object is used to implement global properties.
+         * This method is called by Options::addOption() when initializing an
+         * option from the settings.
          *
          * Derived classes should implement the method to create an actual
          * storage object and populate it with correct values.
@@ -114,7 +113,7 @@ class AbstractOption
          *
          * Should only be called by Options::addOption().
          */
-        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const = 0;
+        virtual AbstractOptionStoragePointer createStorage() const = 0;
 
         /*! \brief
          * Creates the description string for the option.
@@ -181,7 +180,7 @@ class AbstractOption
          */
         friend class AbstractOptionStorage;
         /*! \brief
-         * Needed to be able to call createDefaultStorage().
+         * Needed to be able to call createStorage().
          */
         friend class Options;
 };
