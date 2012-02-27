@@ -75,6 +75,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "bondf.h"
 
 typedef struct {
   t_state s;
@@ -341,6 +342,10 @@ void init_em(FILE *fplog,const char *title,
             *top = gmx_mtop_generate_local_top(top_global,ir);
         }
         *f_global = *f;
+
+        forcerec_set_excl_load(fr,*top,cr);
+
+        init_bonded_thread_force_reduction(fr,&(*top)->idef);      
         
         if (ir->ePBC != epbcNONE && !fr->bMolPBC)
         {
