@@ -115,7 +115,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStoragePointer createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
 
         SelectionFlags          _selectionFlags;
         SelectionOptionInfo   **_infoPtr;
