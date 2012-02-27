@@ -61,9 +61,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
          */
-        SelectionOptionStorage(const SelectionOption &settings, Options *options);
+        SelectionOptionStorage(const SelectionOption &settings);
 
         virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return "sel"; }

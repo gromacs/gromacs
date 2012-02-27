@@ -101,14 +101,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Initializes the storage from option settings.
          *
          * \param[in] settings  Option settings.
-         * \param[in] options   Option collection that will contain the
-         *     option.
          * \param[in] staticFlags Option flags that are always set and specify
          *      generic behavior of the option.
          * \throws  APIError if invalid settings have been provided.
          */
         template <class U>
-        OptionStorageTemplate(const OptionTemplate<T, U> &settings, Options *options,
+        OptionStorageTemplate(const OptionTemplate<T, U> &settings,
                               OptionFlags staticFlags = OptionFlags());
 
 
@@ -249,9 +247,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
 template <typename T>
 template <class U>
 OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                                                Options *options,
                                                 OptionFlags staticFlags)
-    : AbstractOptionStorage(settings, options, staticFlags),
+    : AbstractOptionStorage(settings, staticFlags),
       _values(settings._storeVector),
       _store(settings._store),
       _countptr(settings._countptr)
