@@ -76,6 +76,8 @@
 #include "gmxfio.h"
 #include "pme.h"
 #include "bondf.h"
+#include "gmx_omp_nthreads.h"
+
 
 typedef struct {
   t_state s;
@@ -499,121 +501,109 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
                        gmx_large_int_t count)
 
 {
-  t_state *s1,*s2;
-  int  start,end,gf,i,m;
-  rvec *x1,*x2;
-  real dvdlambda;
+    t_state *s1,*s2;
+    int  start,end;
+    rvec *x1,*x2;
+    real dvdlambda;
 
-  s1 = &ems1->s;
-  s2 = &ems2->s;
+    s1 = &ems1->s;
+    s2 = &ems2->s;
 
-  if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
-    gmx_incons("state mismatch in do_em_step");
+    if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
+    {
+        gmx_incons("state mismatch in do_em_step");
+    }
 
-  s2->flags = s1->flags;
+    s2->flags = s1->flags;
 
-  if (s2->nalloc != s1->nalloc) {
-    s2->nalloc = s1->nalloc;
-    srenew(s2->x,s1->nalloc);
-    srenew(ems2->f,  s1->nalloc);
-    if (s2->flags & (1<<estCGP))
-      srenew(s2->cg_p,  s1->nalloc);
-  }
+    if (s2->nalloc != s1->nalloc)
+    {
+        s2->nalloc = s1->nalloc;
+        srenew(s2->x,s1->nalloc);
+        srenew(ems2->f,  s1->nalloc);
+        if (s2->flags & (1<<estCGP))
+        {
+            srenew(s2->cg_p,  s1->nalloc);
+        }
+    }
   
-  s2->natoms = s1->natoms;
-  s2->lambda = s1->lambda;
-  copy_mat(s1->box,s2->box);
+    s2->natoms = s1->natoms;
+    s2->lambda = s1->lambda;
+    copy_mat(s1->box,s2->box);
 
-  start = md->start;
-  end   = md->start + md->homenr;
+    start = md->start;
+    end   = md->start + md->homenr;
 
-  x1 = s1->x;
-  x2 = s2->x;
-  gf = 0;
-  for(i=start; i<end; i++) {
-    if (md->cFREEZE)
-      gf = md->cFREEZE[i];
-    for(m=0; m<DIM; m++) {
-      if (ir->opts.nFreeze[gf][m])
-	x2[i][m] = x1[i][m];
-      else
-	x2[i][m] = x1[i][m] + a*f[i][m];
+    x1 = s1->x;
+    x2 = s2->x;
+
+#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntUpdate))
+    {
+        int gf,i,m;
+
+        gf = 0;
+#pragma omp for schedule(static) nowait
+        for(i=start; i<end; i++)
+        {
+            if (md->cFREEZE)
+            {
+                gf = md->cFREEZE[i];
+            }
+            for(m=0; m<DIM; m++)
+            {
+                if (ir->opts.nFreeze[gf][m])
+                {
+                    x2[i][m] = x1[i][m];
+                }
+                else
+                {
+                    x2[i][m] = x1[i][m] + a*f[i][m];
+                }
+            }
+        }
+
+        if (s2->flags & (1<<estCGP))
+        {
+            /* Copy the CG p vector */
+            x1 = s1->cg_p;
+            x2 = s2->cg_p;
+#pragma omp for schedule(static) nowait
+            for(i=start; i<end; i++)
+            {
+                copy_rvec(x1[i],x2[i]);
+            }
+        }
+        
+        if (DOMAINDECOMP(cr))
+        {
+            s2->ddp_count = s1->ddp_count;
+            if (s2->cg_gl_nalloc < s1->cg_gl_nalloc)
+            {
+#pragma omp barrier
+                s2->cg_gl_nalloc = s1->cg_gl_nalloc;
+                srenew(s2->cg_gl,s2->cg_gl_nalloc);
+#pragma omp barrier
+            }
+            s2->ncg_gl = s1->ncg_gl;
+#pragma omp for schedule(static) nowait
+            for(i=0; i<s2->ncg_gl; i++)
+            {
+                s2->cg_gl[i] = s1->cg_gl[i];
+            }
+            s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
+        }
     }
-  }
-
-  if (s2->flags & (1<<estCGP)) {
-    /* Copy the CG p vector */
-    x1 = s1->cg_p;
-    x2 = s2->cg_p;
-    for(i=start; i<end; i++)
-      copy_rvec(x1[i],x2[i]);
-  }
-
-  if (DOMAINDECOMP(cr)) {
-    s2->ddp_count = s1->ddp_count;
-    if (s2->cg_gl_nalloc < s1->cg_gl_nalloc) {
-      s2->cg_gl_nalloc = s1->cg_gl_nalloc;
-      srenew(s2->cg_gl,s2->cg_gl_nalloc);
+    
+    if (constr)
+    {
+        wallcycle_start(wcycle,ewcCONSTR);
+        dvdlambda = 0;
+        constrain(NULL,TRUE,TRUE,constr,&top->idef,	
+                  ir,NULL,cr,count,0,md,
+                  s1->x,s2->x,NULL,bMolPBC,s2->box,s2->lambda,
+                  &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+        wallcycle_stop(wcycle,ewcCONSTR);
     }
-    s2->ncg_gl = s1->ncg_gl;
-    for(i=0; i<s2->ncg_gl; i++)
-      s2->cg_gl[i] = s1->cg_gl[i];
-    s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
-  }
-
-  if (constr) {
-    wallcycle_start(wcycle,ewcCONSTR);
-    dvdlambda = 0;
-    constrain(NULL,TRUE,TRUE,constr,&top->idef,	
-              ir,NULL,cr,count,0,md,
-              s1->x,s2->x,NULL,bMolPBC,s2->box,s2->lambda,
-              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
-    wallcycle_stop(wcycle,ewcCONSTR);
-  }
-}
-
-static void do_x_step(t_commrec *cr,int n,rvec *x1,real a,rvec *f,rvec *x2)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      x2[i][m] = x1[i][m] + a*f[i][m];
-    }
-  }
-}
-
-static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      f[i][m] = (x1[i][m] - x2[i][m])*a;
-    }
-  }
 }
 
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
