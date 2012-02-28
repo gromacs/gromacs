@@ -75,6 +75,21 @@ typedef struct gmx_sq_t {
     double  qstep; /* q increment */
 } gmx_sq_t;
 
+typedef struct gmx_sqt_t {
+    int     tn; /* number of frames */
+    double   q; /* q for this s(q=const(t)) */
+    double  *s; /* scattering */
+} gmx_sqt_t;
+
+typedef struct gmx_nse_t {
+    gmx_sans_t *sans; /* scattering params */
+    gmx_gr_t   **gr;  /* array of gr */
+    gmx_sq_t   **sq; /* array of sq */
+    gmx_sqt_t  **sqt; /* s(q(t))  array */
+    double     *t; /* md time */
+    int        nrframes;
+} gmx_nse_t;
+
 void normalize_probability(int n, double *a);
 
 extern gmx_nstructurefactors *gmx_nstructurefactors_init(const char *datfn);
@@ -82,8 +97,8 @@ extern gmx_nstructurefactors *gmx_nstructurefactors_init(const char *datfn);
 extern gmx_sans_t *gmx_sans_init(t_topology *top, gmx_nstructurefactors *gnsf);
 
 extern gmx_gr_t *calc_pr  ( gmx_sans_t *gsans,
-                            rvec *x, atom_id *index,
-                            int isize,
+                            rvec *x, rvec *xf, matrix box,
+                            atom_id *index, int isize,
                             double binwidth,
                             gmx_bool bMC,
                             gmx_large_int_t nmc,
