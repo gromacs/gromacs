@@ -83,7 +83,7 @@ typedef struct {
   real *d2_replica;
 } t_remd_data;
 
-static char *itoa(int i)
+static char *gmx_itoa(int i)
 {
   static char ptr[12];
   

@@ -1021,6 +1021,7 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
   p = nexp*2+1;              /* Number of parameters. */
 
 #ifdef HAVE_LIBGSL
+  {
   const gsl_multifit_fdfsolver_type *T
     = gsl_multifit_fdfsolver_lmsder;
 
@@ -1178,7 +1179,7 @@ extern void takeAwayBallistic(double *ct, double *t, int len, real tMax, int nex
   gsl_multifit_fdfsolver_free(s);
   gsl_matrix_free(covar);
   fflush(stdout);
-
+}
 #else
   /* We have no gsl. */
   fprintf(stderr, "Sorry, can't take away ballistic component without gsl. "
