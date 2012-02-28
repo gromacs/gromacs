@@ -53,6 +53,8 @@
 
 #include "refdata-impl.h"
 
+#include "string2.h"
+
 namespace
 {
 
@@ -512,7 +514,7 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
     if (bFound)
     {
         char *endptr = NULL;
-        double refValue = std::strtof(refStrValue.c_str(), &endptr);
+        double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
         EXPECT_NEAR(refValue, value, 0.0001);
     }
