@@ -57,7 +57,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-
+#include "gmx_fft.h"
 
 static void index_atom2mol(int *n,atom_id *index,t_block *mols)
 {
@@ -106,7 +106,52 @@ static void precalc(t_topology top,real normm[]){
 
 }
 
+static void calc_spectrum(int n,real c[],real dt,const char *fn,
+			  output_env_t oenv,gmx_bool bRecip)
+{
+  FILE *fp;
+  gmx_fft_t fft;
+  int  i,status;
+  real *data;
+  real nu,omega,recip_fac;
 
+  snew(data,n*2);
+  for(i=0; (i<n); i++)
+    data[i] = c[i];
+
+  if ((status = gmx_fft_init_1d_real(&fft,n,GMX_FFT_FLAG_NONE)) != 0)
+    gmx_fatal(FARGS,"Invalid fft return status %d",status);
+
+  if ((status = gmx_fft_1d_real(fft, GMX_FFT_REAL_TO_COMPLEX,data,data)) != 0)
+    gmx_fatal(FARGS,"Invalid fft return status %d",status);
+
+  fp = xvgropen(fn,"Vibrational Power Spectrum",
+		bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)" :
+		"\\f{12}n\\f{4} (ps\\S-1\\N)",
+		"a.u.",oenv);
+  /* This is difficult.
+   * The length of the ACF is dt (as passed to this routine).
+   * We pass the vacf with N time steps from 0 to dt.
+   * That means that after FFT we have lowest frequency = 1/dt
+   * then 1/(2 dt) etc. (this is the X-axis of the data after FFT).
+   * To convert to 1/cm we need to have to realize that
+   * E = hbar w = h nu = h c/lambda. We want to have reciprokal cm
+   * on the x-axis, that is 1/lambda, so we then have
+   * 1/lambda = nu/c. Since nu has units of 1/ps and c has gromacs units
+   * of nm/ps, we need to multiply by 1e7.
+   * The timestep between saving the trajectory is
+   * 1e7 is to convert nanometer to cm
+   */
+  recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
+  for(i=0; (i<n); i+=2) {
+    nu = i/(2*dt);
+    omega = nu*recip_fac;
+    fprintf(fp,"%10g  %10g\n",omega,sqr(data[i])+sqr(data[i+1]));
+  }
+  xvgrclose(fp);
+  gmx_fft_destroy(fft);
+  sfree(data);
+}
 
 int gmx_velacc(int argc,char *argv[])
 {
@@ -123,10 +168,12 @@ int gmx_velacc(int argc,char *argv[])
     "much shorter than the time scale of the autocorrelation."
   };
   
-  static gmx_bool bM=FALSE,bMol=FALSE;
+  static gmx_bool bM=FALSE,bMol=FALSE,bRecip=TRUE;
   t_pargs pa[] = {
     { "-m", FALSE, etBOOL, {&bM},
       "Calculate the momentum autocorrelation function" },
+    { "-recip", FALSE, etBOOL, {&bRecip},
+      "Use cm^-1 on X-axis instead of 1/ps for spectra." },
     { "-mol", FALSE, etBOOL, {&bMol},
       "Calculate the velocity acf of molecules" }
   };
@@ -140,7 +187,7 @@ int gmx_velacc(int argc,char *argv[])
   atom_id    *index;
   char       *grpname;
   char       title[256];
-  real       t0,t1,m;
+  real       t0,t1,dt,m;
   t_trxstatus *status;
   int        teller,n_alloc,i,j,tel3,k,l;
   rvec       mv_mol;
@@ -154,7 +201,8 @@ int gmx_velacc(int argc,char *argv[])
     { efTRN, "-f",    NULL,   ffREAD  },
     { efTPS, NULL,    NULL,   ffOPTRD }, 
     { efNDX, NULL,    NULL,   ffOPTRD },
-    { efXVG, "-o",    "vac",  ffWRITE }
+    { efXVG, "-o",    "vac",  ffWRITE },
+    { efXVG, "-os",   "spectrum", ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -236,16 +284,22 @@ int gmx_velacc(int argc,char *argv[])
     teller ++;
   } while (read_next_frame(oenv,status,&fr));
   
-	close_trj(status);
-
-  do_autocorr(ftp2fn(efXVG,NFILE,fnm), oenv,
+  close_trj(status);
+  dt = (t1-t0)/(teller-1);
+  do_autocorr(opt2fn("-o",NFILE,fnm), oenv,
 	      bM ? 
 	      "Momentum Autocorrelation Function" :
 	      "Velocity Autocorrelation Function",
-	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);
+	      teller,gnx,c1,dt,eacVector,TRUE);
+
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
   
-  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
-  
+  if (opt2bSet("-os",NFILE,fnm)) {
+    calc_spectrum(teller/2,(real *) (c1[0]),(t1-t0)/2,opt2fn("-os",NFILE,fnm),
+		  oenv,bRecip);
+    do_view(oenv,opt2fn("-os",NFILE,fnm),"-nxy");
+  }
+
   thanx(stderr);
   
   return 0;
