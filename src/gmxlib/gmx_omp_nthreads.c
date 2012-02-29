@@ -55,7 +55,7 @@
 
 /*! Structure with the number of threads for each OpenMP multi-threaded
  *  algorithmic module in mdrun. */
-typedef struct 
+typedef struct
 {
     int gnth;               /*! Global num. of threads per PP or PP+PME process/tMPI thread. */
     int gnth_pme;           /*! Global num. of threads per PME only process/tMPI thread. */
@@ -115,7 +115,7 @@ static int pick_module_nthreads(FILE *fplog, int m,
     char *env;
     int  nth;
     char sbuf[STRLEN];
-   
+
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
     if (m == emntDefault)
@@ -169,9 +169,9 @@ static int pick_module_nthreads(FILE *fplog, int m,
             }
         }
     }
-    else 
+    else
     {
-        /* pick the global PME node nthreads if we are setting the number 
+        /* pick the global PME node nthreads if we are setting the number
          * of threads in separate PME nodes  */
         nth = (bSepPME && m == emntPME) ? modth.gnth_pme : modth.gnth;
     }
@@ -186,7 +186,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     int  nth, nth_pmeonly, omp_maxth, gmx_maxth, nppn;
     char *env;
     char sbuf[STRLEN];
-    gmx_bool bSepPME, bOMP;
+    gmx_bool bSepPME, bOMP, bMaxThreadsSet;
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;
@@ -196,6 +196,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+
+    bMaxThreadsSet = FALSE; /* true if GMX_MAX_THREADS is set */
 
 #ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
@@ -248,6 +250,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             /* max permitted threads per node set through env var */
             if ((env = getenv("GMX_MAX_THREADS")) != NULL)
             {
+                bMaxThreadsSet = TRUE;
+
                 sscanf(env, "%d",&gmx_maxth);
                 nth = min(gmx_maxth, omp_maxth);
 
@@ -293,6 +297,29 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 
             /* divide the threads within the MPI processes/tMPI threads */
             nth /= nppn;
+
+            /* can't have <1 thread per proc. -- something went wrong  */
+            if (nth < 1)
+            {
+#ifdef GMX_MPI
+#ifdef GMX_THREAD_MPI
+                sprintf(sbuf, "thred-MPI threads");
+#else
+                sprintf(sbuf, "MPI processes per node");
+#endif
+#endif
+                if (bMaxThreadsSet)
+                {
+                    gmx_fatal(FARGS, "You started %d %s which exceeds the maximum total "
+                              "number of threads set by GMX_MAX_THREADS=%s",
+                              nppn, sbuf, env);
+                }
+                else
+                {
+                    gmx_incons("Whoops, auto-distribution of resources went wrong, "
+                               "we've eneded up with <1 threads per node!");
+                }
+            }
         }
 
         /* now we have the global values, set them:
