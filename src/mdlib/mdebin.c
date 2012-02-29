@@ -197,7 +197,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         else if (i == F_BHAM_LR)
             md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
         else if (i == F_RF_EXCL)
-            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
+            md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC && ir->cutoff_scheme == ecutsGROUP);
         else if (i == F_COUL_RECIP)
             md->bEner[i] = EEL_FULL(ir->coulombtype);
         else if (i == F_LJ14)
