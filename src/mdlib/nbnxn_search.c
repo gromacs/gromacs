@@ -464,7 +464,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     nbs->a_nalloc    = 0;
 
     /* nbs->subc_dc is only used with super/sub setup */
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_SSE_SINGLE
     nbs->subc_dc = subc_in_range_sse8;
 #else
     if (getenv("GMX_NBNXN_BB") != NULL)
@@ -1750,8 +1750,8 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     }
 
     /* Sort the super-cell columns along z into the sub-cells. */
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for(thread=0; thread<nthread; thread++)
+#pragma omp parallel for num_threads(nbs->nthread_max) schedule(static)
+    for(thread=0; thread<nbs->nthread_max; thread++)
     {
         if (grid->simple)
         {
