@@ -442,14 +442,13 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
 }
 
 static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype, 
-		     t_restp restp[])
+                     t_restp restp[], gmx_residuetype_t rt)
 {
   int     i,j,prevresind,resind,i0,prevcg,cg,curcg;
   char    *name;
   gmx_bool    bProt, bNterm;
   double  qt;
   int     nmissat;
-  gmx_residuetype_t rt;
     
   nmissat = 0;
 
@@ -463,7 +462,6 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
   curcg=0;
   cg=-1;
   j=NOTSET;
-  gmx_residuetype_init(&rt);
   
   for(i=0; (i<at->nr); i++) {
     prevresind=resind;
@@ -514,8 +512,6 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
   }
   nmissat += missing_atoms(&restp[resind],resind,at,i0,i);
 
-  gmx_residuetype_destroy(rt);
-			   
   return nmissat;
 }
 
@@ -1349,12 +1345,20 @@ void match_atomnames_with_rtp(t_restp restp[],t_hackblock hb[],
     }
 }
 
-void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **aname[], int nres)
+#define NUM_CMAP_ATOMS 5
+static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuetype_t rt)
 {
-	int     residx,i,ii,j,k;
-	atom_id ai,aj,ak,al,am;
-	const char *ptr;
-	
+    int residx,i,j,k;
+    const char *ptr;
+    int natoms = atoms->nr;
+    t_atom *atom = atoms->atom;
+    char ***aname = atoms->atomname;
+    t_resinfo *resinfo = atoms->resinfo;
+    int nres = atoms->nres;
+    gmx_bool bAddCMAP;
+    atom_id cmap_atomid[NUM_CMAP_ATOMS];
+    int cmap_chainnum=-1, this_residue_index;
+
 	if (debug)
 		ptr = "cmap";
 	else
@@ -1369,21 +1373,41 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 		/* Add CMAP terms from the list of CMAP interactions */
 		for(j=0;j<restp[residx].rb[ebtsCMAP].nb; j++)
 		{
-			ai=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[0],i,natoms,atom,aname,
-						   ptr,TRUE);
-			aj=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[1],i,natoms,atom,aname,
-						   ptr,TRUE);
-			ak=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[2],i,natoms,atom,aname,
-						   ptr,TRUE);
-			al=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[3],i,natoms,atom,aname,
-						   ptr,TRUE);
-			am=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[4],i,natoms,atom,aname,
-						   ptr,TRUE);
-			
-			/* The first and last residues no not have cmap torsions */
-			if(ai!=NO_ATID && aj!=NO_ATID && ak!=NO_ATID && al!=NO_ATID && am!=NO_ATID)
-			{
-				add_cmap_param(psb,ai,aj,ak,al,am,restp[residx].rb[ebtsCMAP].b[j].s);
+            bAddCMAP = TRUE;
+            /* Loop over atoms in a candidate CMAP interaction and
+             * check that they exist, are from the same chain and are
+             * from residues labelled as protein. */
+            for(k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
+            {
+                cmap_atomid[k] = search_atom(restp[residx].rb[ebtsCMAP].b[j].a[k],
+                                             i,natoms,atom,aname,ptr,TRUE);
+                bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
+                if (!bAddCMAP)
+                {
+                    /* This break is necessary, because cmap_atomid[k]
+                     * == NO_ATID cannot be safely used as an index
+                     * into the atom array. */
+                    break;
+                }
+                this_residue_index = atom[cmap_atomid[k]].resind;
+                if (0 == k)
+                {
+                    cmap_chainnum = resinfo[this_residue_index].chainnum;
+                }
+                else
+                {
+                    /* Does the residue for this atom have the same
+                     * chain number as the residues for previous
+                     * atoms? */
+                    bAddCMAP = bAddCMAP &&
+                        cmap_chainnum == resinfo[this_residue_index].chainnum;
+                }
+                bAddCMAP = bAddCMAP && gmx_residuetype_is_protein(rt,*(resinfo[this_residue_index].name));
+            }
+
+            if(bAddCMAP)
+            {
+                add_cmap_param(psb,cmap_atomid[0],cmap_atomid[1],cmap_atomid[2],cmap_atomid[3],cmap_atomid[4],restp[residx].rb[ebtsCMAP].b[j].s);
 			}
 		}
 		
@@ -1436,8 +1460,10 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   int      *vsite_type;
   int      i,nmissat;
   int      bts[ebtsNR];
+  gmx_residuetype_t rt;
   
   init_plist(plist);
+  gmx_residuetype_init(&rt);
 
   if (debug) {
     print_resall(debug, atoms->nres, restp, atype);
@@ -1454,7 +1480,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds,
 	     bAllowMissing);
   
-  nmissat = name2type(atoms, &cgnr, atype, restp);
+  nmissat = name2type(atoms, &cgnr, atype, restp, rt);
   if (nmissat) {
     if (bAllowMissing)
       fprintf(stderr,"There were %d missing atoms in molecule %s\n",
@@ -1491,7 +1517,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make CMAP */
     if (TRUE == bCmap)
     {
-		gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
+        gen_cmap(&(plist[F_CMAP]), restp, atoms, rt);
         if (plist[F_CMAP].nr > 0)
         {
             fprintf(stderr, "There are %4d cmap torsion pairs\n",
@@ -1552,6 +1578,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   /* cleaning up */
   free_t_hackblock(atoms->nres, &hb);
   free_t_restp(atoms->nres, &restp);
+  gmx_residuetype_destroy(rt);
     
   /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
   sfree(cgnr);
