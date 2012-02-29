@@ -69,7 +69,8 @@
                     real dx,dy,dz;
                     real rsq,rinv;
                     real rinvsq,rinvsix;
-                    real Vvdw6=0,Vvdw12=0;
+                    real c6,c12;
+                    real FrLJ6=0,FrLJ12=0,VLJ=0;
 #ifdef CALC_COULOMB
                     real qq;
                     real fcoul;
@@ -142,15 +143,18 @@
                     {
                         rinvsix = interact*rinvsq*rinvsq*rinvsq;
 
-                        Vvdw6   = nbfp[type_i_off+type[aj]*2  ]*rinvsix;
-                        Vvdw12  = nbfp[type_i_off+type[aj]*2+1]*rinvsix*rinvsix;
+                        c6      = nbfp[type_i_off+type[aj]*2  ];
+                        c12     = nbfp[type_i_off+type[aj]*2+1];
+                        FrLJ6   = c6*rinvsix;
+                        FrLJ12  = c12*rinvsix*rinvsix;
                         /* 6 flops for r^-2 + LJ force */
 #ifdef CALC_ENERGIES
+                        VLJ     = (FrLJ12 - c12*sh_invrc6*sh_invrc6)/12 -
+                                  (FrLJ6 - c6*sh_invrc6)/6;
 #ifdef ENERGY_GROUPS
-                        Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] +=
-                            Vvdw12/12 - Vvdw6/6;
+                        Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
 #else
-                        Vvdw_ci += Vvdw12/12 - Vvdw6/6;
+                        Vvdw_ci += VLJ;
 #endif
 #endif
                     }
@@ -177,13 +181,14 @@
                     /* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
 #ifndef GMX_DOUBLE
-                    vcoul  = qq*(interact*rinv
+                    vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                                  -(tab_coul_FDV0[ri*4+2]
                                    -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
 #else
                     vcoul  = qq*(interact*rinv
                                  -(tab_coul_V[ri]
-                                   -halfsp*frac*(tab_coul_F[ri] + fexcl)));
+                                   -halfsp*frac*(tab_coul_F[ri] + fexcl))
+                                 - ic->sh_ewald);
 #endif
 #endif
                     fcoul *= qq*rinv;
@@ -203,7 +208,7 @@
                     if (i < UNROLLI/2)
 #endif
                     {
-                        fscal = (Vvdw12 - Vvdw6)*rinvsq + fcoul;
+                        fscal = (FrLJ12 - FrLJ6)*rinvsq + fcoul;
                         /* 3 flops for scalar LJ+Coulomb force */
                     }
 #ifdef HALF_LJ
@@ -213,7 +218,7 @@
                     }
 #endif
 #else
-                    fscal = (Vvdw12 - Vvdw6)*rinvsq;
+                    fscal = (FrLJ12 - FrLJ6)*rinvsq;
 #endif
                     fx = fscal*dx;
                     fy = fscal*dy;

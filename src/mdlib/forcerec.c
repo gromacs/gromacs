@@ -1730,21 +1730,79 @@ void init_interaction_const(FILE *fp,
                             const t_forcerec *fr)
 {
     interaction_const_t *ic;
+    gmx_bool shLJ,shCoul;
+
+    shLJ   = (getenv("GMX_NO_SHIFT_LJ") == NULL);
+    shCoul = (getenv("GMX_NO_SHIFT_COUL") == NULL);
 
     snew(ic, 1);
 
-    ic->rvdw        = fr->rvdw;
-    ic->rcoulomb    = fr->rcoulomb;
     ic->rlist       = fr->rlist;
-    ic->ewaldcoeff  = fr->ewaldcoeff;
+
+    /* Lennard-Jones */
+    ic->rvdw        = fr->rvdw;
+    if (shLJ)
+    {
+        ic->sh_invrc6 = pow(ic->rvdw,-6.0);
+    }
+    else
+    {
+        ic->sh_invrc6 = 0;
+    }
+
+    /* Electrostatics */
+    ic->eeltype     = fr->eeltype;
+    ic->rcoulomb    = fr->rcoulomb;
     ic->epsilon_r   = fr->epsilon_r;
-    ic->epsilon_rf  = fr->epsilon_rf;
     ic->epsfac      = fr->epsfac;
 
-    ic->k_rf        = fr->k_rf;
-    ic->c_rf        = fr->c_rf;
+    /* Ewald */
+    ic->ewaldcoeff  = fr->ewaldcoeff;
+    if (shCoul)
+    {
+        ic->sh_ewald = erfc(ic->ewaldcoeff*ic->rcoulomb);
+    }
+    else
+    {
+        ic->sh_ewald = 0;
+    }
 
-    ic->eeltype     = fr->eeltype;
+    /* Reaction-field */
+    if (EEL_RF(ic->eeltype))
+    {
+        ic->epsilon_rf = fr->epsilon_rf;
+        ic->k_rf       = fr->k_rf;
+        ic->c_rf       = fr->c_rf;
+    }
+    else
+    {
+        /* For plain cut-off we might use the reaction-field kernels */
+        ic->epsilon_rf = ic->epsilon_r;
+        ic->k_rf       = 0;
+        if (shCoul)
+        {
+            ic->c_rf   = 1/ic->rcoulomb;
+        }
+        else
+        {
+            ic->c_rf   = 0;
+        }
+    }
+
+    if (fp != NULL)
+    {
+        fprintf(fp,"Potential shift: LJ r^-12: %.3f r^-6 %.3f",
+                sqr(ic->sh_invrc6),ic->sh_invrc6);
+        if (ic->eeltype == eelCUT)
+        {
+            fprintf(fp,", Coulomb %.3f",-ic->c_rf);
+        }
+        else if (EEL_PME(ic->eeltype))
+        {
+            fprintf(fp,", Ewald %.3e",ic->sh_ewald);
+        }
+        fprintf(fp,"\n");
+    }
 
     *interaction_const = ic;
 

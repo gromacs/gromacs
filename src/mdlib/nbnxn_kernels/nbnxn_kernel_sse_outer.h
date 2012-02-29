@@ -282,6 +282,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     int        ti3_array[2*UNROLLJ-1],*ti3;
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_SSE;
+    gmx_mm_pr  sh_ewald_SSE;
 #endif
 #endif
 
@@ -318,6 +319,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     gmx_mm_pr  rc2_SSE;
 
 #ifdef CALC_ENERGIES
+    gmx_mm_pr  sh_invrc6_SSE,sh_invrc12_SSE;
+
     real       tmpsum_array[15],*tmpsum;
 #endif
 #ifdef CALC_SHIFTFORCES
@@ -352,6 +355,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     invtsp_SSE  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
     mhalfsp_SSE = gmx_set1_pr(-0.5/ic->tabq_scale);
+
+    sh_ewald_SSE = gmx_set1_pr(ic->sh_ewald);
 #endif
 
 #ifdef TAB_FDV0
@@ -368,12 +373,15 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
-#ifdef CALC_ENERGIES
-    sixthSSE    = gmx_set1_pr(0.16666667);
-    twelvethSSE = gmx_set1_pr(0.08333333);
-#endif
-
     rc2_SSE   = gmx_set1_pr(ic->rvdw*ic->rvdw);
+
+#ifdef CALC_ENERGIES
+    sixthSSE    = gmx_set1_pr(1.0/6.0);
+    twelvethSSE = gmx_set1_pr(1.0/12.0);
+
+    sh_invrc6_SSE  = gmx_set1_pr(ic->sh_invrc6);
+    sh_invrc12_SSE = gmx_set1_pr(ic->sh_invrc6*ic->sh_invrc6);
+#endif
 
     mrc_3_SSE = gmx_set1_pr(-2*ic->k_rf);
 

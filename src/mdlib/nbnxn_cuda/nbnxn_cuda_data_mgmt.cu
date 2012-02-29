@@ -184,14 +184,14 @@ static void init_nbparam(cu_nbparam_t *nbp,
     ntypes  = nbv->grp[0].nbat->ntype;
     
     nbp->ewald_beta = ic->ewaldcoeff;
+    nbp->sh_ewald   = ic->sh_ewald;
     nbp->epsfac     = ic->epsfac;
     nbp->two_k_rf   = 2.0 * ic->k_rf;
     nbp->c_rf       = ic->c_rf;
     nbp->rvdw_sq    = ic->rvdw * ic->rvdw;
     nbp->rcoulomb_sq= ic->rcoulomb * ic->rcoulomb;
     nbp->rlist_sq   = ic->rlist * ic->rlist;
-    nbp->lj_shift   = (getenv("GMX_LJ_SHIFT") == NULL) ?
-             0.0 : -1/(nbp->rvdw_sq * nbp->rvdw_sq * nbp->rvdw_sq);
+    nbp->sh_invrc6  = ic->sh_invrc6;
 
     if (ic->eeltype == eelCUT)
     {

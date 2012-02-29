@@ -112,6 +112,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     int        egp_mask;
     int        egp_sh_i[UNROLLI];
 #endif
+    real       sh_invrc6;
 #endif
     
 #ifdef CALC_COUL_RF
@@ -136,6 +137,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 
 #ifdef COUNT_PAIRS
     int npair=0;
+#endif
+
+#ifdef CALC_ENERGIES
+    sh_invrc6 = ic->sh_invrc6;
 #endif
 
 #ifdef CALC_COUL_RF

@@ -119,6 +119,10 @@
             gmx_mm_pr  ctabv_SSE1;
             gmx_mm_pr  ctabv_SSE2;
             gmx_mm_pr  ctabv_SSE3;
+            gmx_mm_pr  vc_excl_SSE0;
+            gmx_mm_pr  vc_excl_SSE1;
+            gmx_mm_pr  vc_excl_SSE2;
+            gmx_mm_pr  vc_excl_SSE3;
 #endif
 #endif
 #ifdef CALC_ENERGIES
@@ -135,6 +139,20 @@
 
 #ifdef LJ_COMB_LB
             gmx_mm_pr  hsig_j_SSE,seps_j_SSE;
+            gmx_mm_pr  sig_SSE0,eps_SSE0;
+            gmx_mm_pr  sig_SSE1,eps_SSE1;
+#ifndef HALF_LJ
+            gmx_mm_pr  sig_SSE2,eps_SSE2;
+            gmx_mm_pr  sig_SSE3,eps_SSE3;
+#endif
+#ifdef CALC_ENERGIES
+            gmx_mm_pr  sig6_SSE0;
+            gmx_mm_pr  sig6_SSE1;
+#ifndef HALF_LJ
+            gmx_mm_pr  sig6_SSE2;
+            gmx_mm_pr  sig6_SSE3;
+#endif
+#endif
 #endif
 
 #ifdef LJ_COMB_GEOM
@@ -170,16 +188,18 @@
 #endif
 #endif
 
-            gmx_mm_pr  Vvdw6_SSE0,Vvdw12_SSE0;
-            gmx_mm_pr  Vvdw6_SSE1,Vvdw12_SSE1;
+            gmx_mm_pr  FrLJ6_SSE0,FrLJ12_SSE0;
+            gmx_mm_pr  FrLJ6_SSE1,FrLJ12_SSE1;
 #ifndef HALF_LJ
-            gmx_mm_pr  Vvdw6_SSE2,Vvdw12_SSE2;
-            gmx_mm_pr  Vvdw6_SSE3,Vvdw12_SSE3;
+            gmx_mm_pr  FrLJ6_SSE2,FrLJ12_SSE2;
+            gmx_mm_pr  FrLJ6_SSE3,FrLJ12_SSE3;
 #endif
 #ifdef CALC_ENERGIES
-            gmx_mm_pr  Vvdw_SSE0,Vvdw_SSE1;
+            gmx_mm_pr  VLJ6_SSE0,VLJ12_SSE0,VLJ_SSE0;
+            gmx_mm_pr  VLJ6_SSE1,VLJ12_SSE1,VLJ_SSE1;
 #ifndef HALF_LJ
-            gmx_mm_pr  Vvdw_SSE2,Vvdw_SSE3;
+            gmx_mm_pr  VLJ6_SSE2,VLJ12_SSE2,VLJ_SSE2;
+            gmx_mm_pr  VLJ6_SSE3,VLJ12_SSE3,VLJ_SSE3;
 #endif
 #endif
 
@@ -350,6 +370,17 @@
 #ifdef LJ_COMB_LB
             hsig_j_SSE         = gmx_load_pr(ljc+aj2+0);
             seps_j_SSE         = gmx_load_pr(ljc+aj2+STRIDE);
+
+            sig_SSE0           = gmx_add_pr(hsig_i_SSE0,hsig_j_SSE);
+            sig_SSE1           = gmx_add_pr(hsig_i_SSE1,hsig_j_SSE);
+            eps_SSE0           = gmx_mul_pr(seps_i_SSE0,seps_j_SSE);
+            eps_SSE1           = gmx_mul_pr(seps_i_SSE1,seps_j_SSE);
+#ifndef HALF_LJ
+            sig_SSE2           = gmx_add_pr(hsig_i_SSE2,hsig_j_SSE);
+            sig_SSE3           = gmx_add_pr(hsig_i_SSE3,hsig_j_SSE);
+            eps_SSE2           = gmx_mul_pr(seps_i_SSE2,seps_j_SSE);
+            eps_SSE3           = gmx_mul_pr(seps_i_SSE3,seps_j_SSE);
+#endif
 #else
 #ifdef LJ_COMB_GEOM
             c6s_j_SSE          = gmx_load_pr(ljc+aj2+0);
@@ -491,21 +522,35 @@
             frcoul_SSE3        = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,gmx_mul_pr(fexcl_SSE3,r_SSE3)));
 
 #ifdef CALC_ENERGIES
-            vcoul_SSE0 = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,gmx_add_pr(ctabv_SSE0,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE0),gmx_add_pr(ctab0_SSE0,fexcl_SSE0)))));
-            vcoul_SSE1 = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,gmx_add_pr(ctabv_SSE1,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE1),gmx_add_pr(ctab0_SSE1,fexcl_SSE1)))));
-            vcoul_SSE2 = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,gmx_add_pr(ctabv_SSE2,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE2),gmx_add_pr(ctab0_SSE2,fexcl_SSE2)))));
-            vcoul_SSE3 = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,gmx_add_pr(ctabv_SSE3,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE3),gmx_add_pr(ctab0_SSE3,fexcl_SSE3)))));
+            vc_excl_SSE0       = gmx_add_pr(ctabv_SSE0,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE0),gmx_add_pr(ctab0_SSE0,fexcl_SSE0)));
+            vc_excl_SSE1       = gmx_add_pr(ctabv_SSE1,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE1),gmx_add_pr(ctab0_SSE1,fexcl_SSE1)));
+            vc_excl_SSE2       = gmx_add_pr(ctabv_SSE2,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE2),gmx_add_pr(ctab0_SSE2,fexcl_SSE2)));
+            vc_excl_SSE3       = gmx_add_pr(ctabv_SSE3,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE3),gmx_add_pr(ctab0_SSE3,fexcl_SSE3)));
+
+#ifndef NO_SHIFT_EWALD
+            /* Add Ewald potential shift to vc_excl for convenience */
+            vc_excl_SSE0       = gmx_add_pr(vc_excl_SSE0,gmx_and_pr(sh_ewald_SSE,wco_SSE0));
+            vc_excl_SSE1       = gmx_add_pr(vc_excl_SSE1,gmx_and_pr(sh_ewald_SSE,wco_SSE1));
+            vc_excl_SSE2       = gmx_add_pr(vc_excl_SSE2,gmx_and_pr(sh_ewald_SSE,wco_SSE2));
+            vc_excl_SSE3       = gmx_add_pr(vc_excl_SSE3,gmx_and_pr(sh_ewald_SSE,wco_SSE3));
+#endif
+            
+            vcoul_SSE0         = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,vc_excl_SSE0));
+            vcoul_SSE1         = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,vc_excl_SSE1));
+            vcoul_SSE2         = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,vc_excl_SSE2));
+            vcoul_SSE3         = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,vc_excl_SSE3));
+
 #endif
 #endif
 #endif /* CALC_COULOMB */
 
             /* Lennard-Jones interaction */
 #ifdef LJ_COMB_LB
-            sir_SSE0           = gmx_mul_pr(gmx_add_pr(hsig_i_SSE0,hsig_j_SSE),rinv_SSE0);
-            sir_SSE1           = gmx_mul_pr(gmx_add_pr(hsig_i_SSE1,hsig_j_SSE),rinv_SSE1);
+            sir_SSE0           = gmx_mul_pr(sig_SSE0,rinv_SSE0);
+            sir_SSE1           = gmx_mul_pr(sig_SSE1,rinv_SSE1);
 #ifndef HALF_LJ
-            sir_SSE2           = gmx_mul_pr(gmx_add_pr(hsig_i_SSE2,hsig_j_SSE),rinv_SSE2);
-            sir_SSE3           = gmx_mul_pr(gmx_add_pr(hsig_i_SSE3,hsig_j_SSE),rinv_SSE3);
+            sir_SSE2           = gmx_mul_pr(sig_SSE2,rinv_SSE2);
+            sir_SSE3           = gmx_mul_pr(sig_SSE3,rinv_SSE3);
 #endif
             sir2_SSE0          = gmx_mul_pr(sir_SSE0,sir_SSE0);
             sir2_SSE1          = gmx_mul_pr(sir_SSE1,sir_SSE1);
@@ -527,19 +572,46 @@
             sir6_SSE3          = gmx_and_pr(sir6_SSE3,int_SSE3);
 #endif
 #endif
-            Vvdw6_SSE0         = gmx_mul_pr(gmx_mul_pr(seps_i_SSE0,seps_j_SSE),sir6_SSE0);
-            Vvdw6_SSE1         = gmx_mul_pr(gmx_mul_pr(seps_i_SSE1,seps_j_SSE),sir6_SSE1);
+            FrLJ6_SSE0         = gmx_mul_pr(eps_SSE0,sir6_SSE0);
+            FrLJ6_SSE1         = gmx_mul_pr(eps_SSE1,sir6_SSE1);
 #ifndef HALF_LJ
-            Vvdw6_SSE2         = gmx_mul_pr(gmx_mul_pr(seps_i_SSE2,seps_j_SSE),sir6_SSE2);
-            Vvdw6_SSE3         = gmx_mul_pr(gmx_mul_pr(seps_i_SSE3,seps_j_SSE),sir6_SSE3);
+            FrLJ6_SSE2         = gmx_mul_pr(eps_SSE2,sir6_SSE2);
+            FrLJ6_SSE3         = gmx_mul_pr(eps_SSE3,sir6_SSE3);
 #endif
-            Vvdw12_SSE0        = gmx_mul_pr(Vvdw6_SSE0,sir6_SSE0);
-            Vvdw12_SSE1        = gmx_mul_pr(Vvdw6_SSE1,sir6_SSE1);
+            FrLJ12_SSE0        = gmx_mul_pr(FrLJ6_SSE0,sir6_SSE0);
+            FrLJ12_SSE1        = gmx_mul_pr(FrLJ6_SSE1,sir6_SSE1);
 #ifndef HALF_LJ
-            Vvdw12_SSE2        = gmx_mul_pr(Vvdw6_SSE2,sir6_SSE2);
-            Vvdw12_SSE3        = gmx_mul_pr(Vvdw6_SSE3,sir6_SSE3);
+            FrLJ12_SSE2        = gmx_mul_pr(FrLJ6_SSE2,sir6_SSE2);
+            FrLJ12_SSE3        = gmx_mul_pr(FrLJ6_SSE3,sir6_SSE3);
 #endif
-#else /* LJ_COMB_LB */
+#if defined CALC_ENERGIES && !defined NO_LJ_SHIFT
+            /* We need C6 and C12 to calculate the LJ potential shift */
+            sig6_SSE0          = gmx_mul_pr(sig_SSE0,sig_SSE0);
+            sig6_SSE1          = gmx_mul_pr(sig_SSE1,sig_SSE1);
+#ifndef HALF_LJ
+            sig6_SSE2          = gmx_mul_pr(sig_SSE2,sig_SSE2);
+            sig6_SSE3          = gmx_mul_pr(sig_SSE3,sig_SSE3);
+#endif
+            sig6_SSE0          = gmx_mul_pr(sig6_SSE0,gmx_mul_pr(sig6_SSE0,sig6_SSE0));
+            sig6_SSE1          = gmx_mul_pr(sig6_SSE1,gmx_mul_pr(sig6_SSE1,sig6_SSE1));
+#ifndef HALF_LJ
+            sig6_SSE2          = gmx_mul_pr(sig6_SSE2,gmx_mul_pr(sig6_SSE2,sig6_SSE2));
+            sig6_SSE3          = gmx_mul_pr(sig6_SSE3,gmx_mul_pr(sig6_SSE3,sig6_SSE3));
+#endif
+            c6_SSE0            = gmx_mul_pr(eps_SSE0,sig6_SSE0);
+            c6_SSE1            = gmx_mul_pr(eps_SSE1,sig6_SSE1);
+#ifndef HALF_LJ
+            c6_SSE2            = gmx_mul_pr(eps_SSE2,sig6_SSE2);
+            c6_SSE3            = gmx_mul_pr(eps_SSE3,sig6_SSE3);
+#endif
+            c12_SSE0           = gmx_mul_pr(c6_SSE0,sig6_SSE0);
+            c12_SSE1           = gmx_mul_pr(c6_SSE1,sig6_SSE1);
+#ifndef HALF_LJ
+            c12_SSE2           = gmx_mul_pr(c6_SSE2,sig6_SSE2);
+            c12_SSE3           = gmx_mul_pr(c6_SSE3,sig6_SSE3);
+#endif
+#endif
+#else /* ifdef LJ_COMB_LB */
             rinvsix_SSE0       = gmx_mul_pr(rinvsq_SSE0,gmx_mul_pr(rinvsq_SSE0,rinvsq_SSE0));
             rinvsix_SSE1       = gmx_mul_pr(rinvsq_SSE1,gmx_mul_pr(rinvsq_SSE1,rinvsq_SSE1));
 #ifdef EXCL_FORCES
@@ -554,17 +626,17 @@
             rinvsix_SSE3       = gmx_and_pr(rinvsix_SSE3,int_SSE3);
 #endif
 #endif
-            Vvdw6_SSE0         = gmx_mul_pr(c6_SSE0,rinvsix_SSE0);
-            Vvdw6_SSE1         = gmx_mul_pr(c6_SSE1,rinvsix_SSE1);
+            FrLJ6_SSE0         = gmx_mul_pr(c6_SSE0,rinvsix_SSE0);
+            FrLJ6_SSE1         = gmx_mul_pr(c6_SSE1,rinvsix_SSE1);
 #ifndef HALF_LJ
-            Vvdw6_SSE2         = gmx_mul_pr(c6_SSE2,rinvsix_SSE2);
-            Vvdw6_SSE3         = gmx_mul_pr(c6_SSE3,rinvsix_SSE3);
+            FrLJ6_SSE2         = gmx_mul_pr(c6_SSE2,rinvsix_SSE2);
+            FrLJ6_SSE3         = gmx_mul_pr(c6_SSE3,rinvsix_SSE3);
 #endif
-            Vvdw12_SSE0        = gmx_mul_pr(c12_SSE0,gmx_mul_pr(rinvsix_SSE0,rinvsix_SSE0));
-            Vvdw12_SSE1        = gmx_mul_pr(c12_SSE1,gmx_mul_pr(rinvsix_SSE1,rinvsix_SSE1));
+            FrLJ12_SSE0        = gmx_mul_pr(c12_SSE0,gmx_mul_pr(rinvsix_SSE0,rinvsix_SSE0));
+            FrLJ12_SSE1        = gmx_mul_pr(c12_SSE1,gmx_mul_pr(rinvsix_SSE1,rinvsix_SSE1));
 #ifndef HALF_LJ
-            Vvdw12_SSE2        = gmx_mul_pr(c12_SSE2,gmx_mul_pr(rinvsix_SSE2,rinvsix_SSE2));
-            Vvdw12_SSE3        = gmx_mul_pr(c12_SSE3,gmx_mul_pr(rinvsix_SSE3,rinvsix_SSE3));
+            FrLJ12_SSE2        = gmx_mul_pr(c12_SSE2,gmx_mul_pr(rinvsix_SSE2,rinvsix_SSE2));
+            FrLJ12_SSE3        = gmx_mul_pr(c12_SSE3,gmx_mul_pr(rinvsix_SSE3,rinvsix_SSE3));
 #endif
 #endif /* LJ_COMB_LB */
             
@@ -593,11 +665,50 @@
             add_ener_grp(vcoul_SSE3,vctp[3],egp_jj);
 #endif
 #endif
-            Vvdw_SSE0          = gmx_sub_pr(gmx_mul_pr(twelvethSSE,Vvdw12_SSE0),gmx_mul_pr(sixthSSE,Vvdw6_SSE0));
-            Vvdw_SSE1          = gmx_sub_pr(gmx_mul_pr(twelvethSSE,Vvdw12_SSE1),gmx_mul_pr(sixthSSE,Vvdw6_SSE1));
+
+            /* Calculate the LJ energies */
+#ifdef NO_LJ_SHIFT
+            VLJ6_SSE0          = gmx_mul_pr(sixthSSE,FrLJ6_SSE0);
+            VLJ6_SSE1          = gmx_mul_pr(sixthSSE,FrLJ6_SSE1);
 #ifndef HALF_LJ
-            Vvdw_SSE2          = gmx_sub_pr(gmx_mul_pr(twelvethSSE,Vvdw12_SSE2),gmx_mul_pr(sixthSSE,Vvdw6_SSE2));
-            Vvdw_SSE3          = gmx_sub_pr(gmx_mul_pr(twelvethSSE,Vvdw12_SSE3),gmx_mul_pr(sixthSSE,Vvdw6_SSE3));
+            VLJ6_SSE2          = gmx_mul_pr(sixthSSE,FrLJ6_SSE2);
+            VLJ6_SSE3          = gmx_mul_pr(sixthSSE,FrLJ6_SSE3);
+#endif
+            VLJ12_SSE0         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE0);
+            VLJ12_SSE1         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE1);
+#ifndef HALF_LJ
+            VLJ12_SSE2         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE2);
+            VLJ12_SSE3         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE3);
+#endif
+#else /* ifdef NO_LJ_SHIFT */
+            VLJ6_SSE0          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE0,gmx_mul_pr(c6_SSE0,sh_invrc6_SSE)));
+            VLJ6_SSE1          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE1,gmx_mul_pr(c6_SSE1,sh_invrc6_SSE)));
+#ifndef HALF_LJ
+            VLJ6_SSE2          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE2,gmx_mul_pr(c6_SSE2,sh_invrc6_SSE)));
+            VLJ6_SSE3          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE3,gmx_mul_pr(c6_SSE3,sh_invrc6_SSE)));
+#endif
+            VLJ12_SSE0         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE0,gmx_mul_pr(c12_SSE0,sh_invrc12_SSE)));
+            VLJ12_SSE1         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE1,gmx_mul_pr(c12_SSE1,sh_invrc12_SSE)));
+#ifndef HALF_LJ
+            VLJ12_SSE2         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE2,gmx_mul_pr(c12_SSE2,sh_invrc12_SSE)));
+            VLJ12_SSE3         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE3,gmx_mul_pr(c12_SSE3,sh_invrc12_SSE)));
+#endif
+#endif /* ifdef NO_LJ_SHIFT */
+
+            VLJ_SSE0           = gmx_sub_pr(VLJ12_SSE0,VLJ6_SSE0);
+            VLJ_SSE1           = gmx_sub_pr(VLJ12_SSE1,VLJ6_SSE1);
+#ifndef HALF_LJ
+            VLJ_SSE2           = gmx_sub_pr(VLJ12_SSE2,VLJ6_SSE2);
+            VLJ_SSE3           = gmx_sub_pr(VLJ12_SSE3,VLJ6_SSE3);
+#endif
+#ifndef NO_LJ_SHIFT
+            /* The potential shift should be removed non-interacting pairs */
+            VLJ_SSE0           = gmx_and_pr(VLJ_SSE0,wco_SSE0);
+            VLJ_SSE1           = gmx_and_pr(VLJ_SSE1,wco_SSE1);
+#ifndef HALF_LJ
+            VLJ_SSE2           = gmx_and_pr(VLJ_SSE2,wco_SSE2);
+            VLJ_SSE3           = gmx_and_pr(VLJ_SSE3,wco_SSE3);
+#endif
 #endif
 #ifndef ENERGY_GROUPS
             VvdwtotSSE         = gmx_add_pr(VvdwtotSSE,
@@ -606,18 +717,18 @@
 #else
                                                 gmx_add_pr(
 #endif
-                                                           Vvdw_SSE0,Vvdw_SSE1
+                                                           VLJ_SSE0,VLJ_SSE1
 #ifndef HALF_LJ
                                                            ,
-                                                           Vvdw_SSE2,Vvdw_SSE3
+                                                           VLJ_SSE2,VLJ_SSE3
 #endif
                                                            ));
 #else
-            add_ener_grp(Vvdw_SSE0,vvdwtp[0],egp_jj);
-            add_ener_grp(Vvdw_SSE1,vvdwtp[1],egp_jj);
+            add_ener_grp(VLJ_SSE0,vvdwtp[0],egp_jj);
+            add_ener_grp(VLJ_SSE1,vvdwtp[1],egp_jj);
 #ifndef HALF_LJ
-            add_ener_grp(Vvdw_SSE2,vvdwtp[2],egp_jj);
-            add_ener_grp(Vvdw_SSE3,vvdwtp[3],egp_jj);
+            add_ener_grp(VLJ_SSE2,vvdwtp[2],egp_jj);
+            add_ener_grp(VLJ_SSE3,vvdwtp[3],egp_jj);
 #endif
 #endif
 #endif
@@ -628,14 +739,14 @@
 #else
                                                      (
 #endif
-                                                      gmx_sub_pr(Vvdw12_SSE0,Vvdw6_SSE0)));
+                                                      gmx_sub_pr(FrLJ12_SSE0,FrLJ6_SSE0)));
             fscal_SSE1         = gmx_mul_pr(rinvsq_SSE1,
 #ifdef CALC_COULOMB
                                            gmx_add_pr(frcoul_SSE1,
 #else
                                                      (
 #endif
-                                                      gmx_sub_pr(Vvdw12_SSE1,Vvdw6_SSE1)));
+                                                      gmx_sub_pr(FrLJ12_SSE1,FrLJ6_SSE1)));
 #ifndef HALF_LJ
             fscal_SSE2         = gmx_mul_pr(rinvsq_SSE2,
 #ifdef CALC_COULOMB
@@ -643,14 +754,14 @@
 #else
                                                      (
 #endif
-                                                      gmx_sub_pr(Vvdw12_SSE2,Vvdw6_SSE2)));
+                                                      gmx_sub_pr(FrLJ12_SSE2,FrLJ6_SSE2)));
             fscal_SSE3         = gmx_mul_pr(rinvsq_SSE3,
 #ifdef CALC_COULOMB
                                            gmx_add_pr(frcoul_SSE3,
 #else
                                                      (
 #endif
-                                                      gmx_sub_pr(Vvdw12_SSE3,Vvdw6_SSE3)));
+                                                      gmx_sub_pr(FrLJ12_SSE3,FrLJ6_SSE3)));
 #else
             /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
             fscal_SSE2         = gmx_mul_pr(rinvsq_SSE2,frcoul_SSE2);

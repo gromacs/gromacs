@@ -269,7 +269,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
                                     if (bEner)
                                     {
-                                        vcoul = qq*(int_bit - erf(iconst->ewaldcoeff*r))*rinv;
+                                        vcoul = qq*((int_bit - erf(iconst->ewaldcoeff*r))*rinv - int_bit*iconst->sh_ewald);
                                     }
                                 }
 
@@ -288,7 +288,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 {
                                     vctot   += vcoul;
 
-                                    Vvdwtot += Vvdw_rep/12 - Vvdw_disp/6;
+                                    Vvdwtot +=
+                                        (Vvdw_rep - int_bit*c12*iconst->sh_invrc6*iconst->sh_invrc6)/12 -
+                                        (Vvdw_disp - int_bit*c6*iconst->sh_invrc6)/6;
                                 }
                                 
                                 tx        = fscal*dx;

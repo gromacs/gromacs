@@ -2126,8 +2126,15 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 		"WARNING: using dispersion correction with user tables\n");
       rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
       rc9  = rc3*rc3*rc3;
+      /* Contribution beyond the cut-off */
       eners[0] += -4.0*M_PI/(3.0*rc3);
       eners[1] +=  4.0*M_PI/(9.0*rc9);
+      if (fr->cutoff_scheme == ecutsVERLET && fr->ic->sh_invrc6 != 0) {
+          /* Contribution within the cut-off */
+          eners[0] += -4.0*M_PI/(3.0*rc3);
+          eners[1] +=  4.0*M_PI/(3.0*rc9);
+      }
+      /* Contribution beyond the cut-off */
       virs[0]  +=  8.0*M_PI/rc3;
       virs[1]  += -16.0*M_PI/(3.0*rc9);
     } else {

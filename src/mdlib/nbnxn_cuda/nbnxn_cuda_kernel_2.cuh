@@ -87,15 +87,16 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
 #endif
 
 #ifdef CALC_ENERGIES
-    float lj_shift  = nbparam.lj_shift;
+    float lj_shift    = nbparam.sh_invrc6;
 #ifdef EL_EWALD
-    float beta      = nbparam.ewald_beta;
+    float beta        = nbparam.ewald_beta;
+    float ewald_shift = nbparam.sh_ewald;
 #endif
 #ifdef EL_RF
-    float c_rf      = nbparam.c_rf;
+    float c_rf        = nbparam.c_rf;
 #endif
-    float *e_lj     = atdat.e_lj;
-    float *e_el     = atdat.e_el;
+    float *e_lj       = atdat.e_lj;
+    float *e_el       = atdat.e_el;
 #endif
 
     /* thread/block/warp id-s */
@@ -285,7 +286,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
                             F_invr      = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
-                            E_lj        += (inv_r6 + lj_shift) * (0.08333333f * c12 * (inv_r6 + lj_shift) - 0.16666667f * c6);
+                            E_lj        += c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f;
 #endif
 
 #ifdef EL_CUTOFF
@@ -307,7 +308,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
 #endif
 #ifdef EL_EWALD
                             /* 1.0f - erff is faster than erfcf */
-                            E_el        += qi * qj_f * inv_r * (int_bit - erff(r2 * inv_r * beta));
+                            E_el        += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #endif
 #endif
                             f_ij    = rv * F_invr;

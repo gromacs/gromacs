@@ -96,10 +96,11 @@ struct cu_nbparam
     float   epsfac;         /* charge multiplication factor                 */
     float   c_rf, two_k_rf; /* Reaction-Field constants                     */
     float   ewald_beta;     /* Ewald/PME parameter                          */
+    float   sh_ewald;       /* Ewald/PME  correction term                   */
     float   rvdw_sq;        /* VdW cut-off                                  */
     float   rcoulomb_sq;    /* Coulomb cut-off                              */
     float   rlist_sq;       /* pair-list cut-off                            */
-    float   lj_shift;       /* LJ potential correction term                 */
+    float   sh_invrc6;      /* LJ potential correction term                 */
 
     float   *nbfp;          /* nonbonded parameter table with C6/C12 pairs  */
 

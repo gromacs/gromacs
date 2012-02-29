@@ -45,6 +45,10 @@ enum { tableformatNONE, tableformatF, tableformatFDV0 };
 typedef struct {
     /* VdW */
     real rvdw;
+    real sh_invrc6; /* For shifting the LJ potential */
+
+    /* type of electrostatics (defined in enums.h) */
+    int  eeltype;
 
     /* Coulomb */
     real rcoulomb;
@@ -54,15 +58,16 @@ typedef struct {
 
     /* PME/Ewald */
     real ewaldcoeff;
+    real sh_ewald;   /* For shifting the Ewald potential */
   
     /* Dielectric constant resp. multiplication factor for charges */
-    real epsilon_r,epsilon_rf,epsfac;  
+    real epsilon_r;
+    real epsfac;
   
-    /* Constants for reaction fields */
-    real k_rf,c_rf;
-
-    /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
+    /* Constants for reaction-field or plain cut-off */
+    real epsilon_rf;
+    real k_rf;
+    real c_rf;
 
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real tabq_scale;
