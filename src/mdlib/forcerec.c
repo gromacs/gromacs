@@ -1795,7 +1795,7 @@ void init_interaction_const(FILE *fp,
                 sqr(ic->sh_invrc6),ic->sh_invrc6);
         if (ic->eeltype == eelCUT)
         {
-            fprintf(fp,", Coulomb %.3f",-ic->c_rf);
+            fprintf(fp,", Coulomb %.3f",ic->c_rf);
         }
         else if (EEL_PME(ic->eeltype))
         {

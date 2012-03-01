@@ -91,8 +91,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
 #ifdef EL_EWALD
     float beta        = nbparam.ewald_beta;
     float ewald_shift = nbparam.sh_ewald;
-#endif
-#ifdef EL_RF
+#else
     float c_rf        = nbparam.c_rf;
 #endif
     float *e_lj       = atdat.e_lj;
@@ -301,7 +300,7 @@ __global__ void FUNCTION_NAME(k_nbnxn, 2)
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
-                            E_el        += qi * qj_f * inv_r;
+                            E_el        += qi * qj_f * (inv_r - c_rf);
 #endif
 #ifdef EL_RF
                             E_el        += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
