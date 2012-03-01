@@ -579,7 +579,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_bool clearF, /* FIXME this argument is very uncool */
                          t_nrnb *nrnb)
 {
-    int     nnbl, kernel_type;
+    int     nnbl, kernel_type, sh_e;
     char    *env;
     nonbonded_verlet_group_t  *nbvg;
 
@@ -649,14 +649,16 @@ static void do_nb_verlet(t_forcerec *fr,
 
     }
 
+    /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
+    sh_e = ((flags & GMX_FORCE_ENERGY) ? 1 : 0);
     inc_nrnb(nrnb,
-             (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
-             eNR_NBNXN_LJ_RF : eNR_NBNXN_LJ_TAB,
+             ((EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
+              eNR_NBNXN_LJ_RF : eNR_NBNXN_LJ_TAB) + sh_e,
              nbvg->nbl_lists.natpair_ljq);
-    inc_nrnb(nrnb,eNR_NBNXN_LJ,nbvg->nbl_lists.natpair_lj);
+    inc_nrnb(nrnb,eNR_NBNXN_LJ+sh_e,nbvg->nbl_lists.natpair_lj);
     inc_nrnb(nrnb,
-             (EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
-             eNR_NBNXN_RF : eNR_NBNXN_TAB,
+             ((EEL_RF(ic->eeltype) || ic->eeltype == eelCUT) ?
+              eNR_NBNXN_RF : eNR_NBNXN_TAB)+sh_e,
              nbvg->nbl_lists.natpair_q);
 }
 

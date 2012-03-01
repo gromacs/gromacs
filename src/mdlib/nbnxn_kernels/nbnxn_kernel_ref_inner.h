@@ -151,10 +151,12 @@
 #ifdef CALC_ENERGIES
                         VLJ     = (FrLJ12 - c12*sh_invrc6*sh_invrc6)/12 -
                                   (FrLJ6 - c6*sh_invrc6)/6;
+                        /* 7 flops for LJ energy */
 #ifdef ENERGY_GROUPS
                         Vvdw[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += VLJ;
 #else
                         Vvdw_ci += VLJ;
+                        /* 1 flop for LJ energy addition */
 #endif
 #endif
                     }
@@ -167,6 +169,7 @@
                     /* 4 flops for RF force */
 #ifdef CALC_ENERGIES
                     vcoul  = qq*(interact*rinv + k_rf*rsq - c_rf);
+                    /* 4 flops for RF energy */
 #endif
 #else
                     rs     = rsq*rinv*ic->tabq_scale;
@@ -184,6 +187,7 @@
                     vcoul  = qq*(interact*(rinv - ic->sh_ewald)
                                  -(tab_coul_FDV0[ri*4+2]
                                    -halfsp*frac*(tab_coul_FDV0[ri*4] + fexcl)));
+                    /* 7 flops for float 1/r-table energy */
 #else
                     vcoul  = qq*(interact*rinv
                                  -(tab_coul_V[ri]
@@ -199,6 +203,7 @@
                     Vc[egp_sh_i[i]+((egp_cj>>(nbat->neg_2log*j)) & egp_mask)] += vcoul;
 #else
                     Vc_ci += vcoul;
+                    /* 1 flop for Coulomb energy addition */
 #endif
 #endif
 #endif
