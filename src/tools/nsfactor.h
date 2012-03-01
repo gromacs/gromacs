@@ -72,15 +72,32 @@ typedef struct gmx_static_structurefator_t {
     double  qstep; /* q increment */
 } gmx_static_structurefator_t;
 
+typedef struct gmx_dynamic_structurefator_t {
+    int     tn; /*  number of frames */
+    double   q; /*  q for this s(q=const(t)) */
+    double  *s; /*  scattering */
+} gmx_dynamic_structurefator_t;
+
+typedef struct gmx_nse_t {
+    gmx_sans_t                            *sans; /*  scattering params */
+    gmx_radial_distribution_histogram_t   **gr;  /*  array of gr */
+    gmx_static_structurefator_t           **sq; /*  array of sq */
+    gmx_dynamic_structurefator_t          **sqt; /*  s(q(t))  array */
+    double     *t; /*  md time */
+    int        nrframes;
+} gmx_nse_t;
+
 void normalize_probability(int n, double *a);
+
+void check_binwidth(real binwidth);
 
 gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
 gmx_sans_t *gmx_sans_init(t_topology *top, gmx_nentron_atomic_structurefactors_t *gnsf);
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  ( gmx_sans_t *gsans,
-                            rvec *x, atom_id *index,
-                            int isize,
+                            rvec *x, rvec *xf, matrix box,
+                            atom_id *index, int isize,
                             double binwidth,
                             gmx_bool bMC,
                             gmx_large_int_t nmc,

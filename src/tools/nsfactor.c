@@ -53,6 +53,12 @@ void normalize_probability(int n,double *a){
     for (i=0;i<n;i++) a[i]/=norm;
 }
 
+void check_binwidth(real binwidth) {
+    real smallest_bin=0.1;
+    if (binwidth<smallest_bin)
+        gmx_fatal(FARGS,"Binwidth shouldnt be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
+}
+
 gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn) {
     /* read nsfactor.dat */
     FILE    *fp;
@@ -131,9 +137,10 @@ gmx_sans_t *gmx_sans_init (t_topology *top, gmx_nentron_atomic_structurefactors_
     return (gmx_sans_t *) gsans;
 }
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_sans_t *gsans, rvec *x, atom_id *index, int isize, double binwidth, gmx_bool bMC, gmx_large_int_t nmc, unsigned int seed) {
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_sans_t *gsans, rvec *x, rvec *xf, matrix box, atom_id *index, int isize, double binwidth, gmx_bool bMC, gmx_large_int_t nmc, unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
-    rvec        xmin, xmax;
+    rvec        dist;
+    rvec        v1,v2,v3;
     double      rmax;
     int         i,j,d;
     int         mc;
@@ -144,18 +151,24 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
     /* set some fields */
     pr->binwidth=binwidth;
 
-    /* Lets try to find min and max distance */
-    for(d=0;d<3;d++) {
-        xmax[d]=x[index[0]][d];
-        xmin[d]=x[index[0]][d];
-    }
+    /*
+     * create max dist rvec
+     * dist = v1 + v2 + v3
+     */
+    v1[XX] = box[XX][XX];
+    v1[YY] = box[XX][YY];
+    v1[ZZ] = box[XX][ZZ];
+    v2[XX] = box[YY][XX];
+    v2[YY] = box[YY][YY];
+    v2[ZZ] = box[YY][ZZ];
+    v3[XX] = box[ZZ][XX];
+    v3[YY] = box[ZZ][YY];
+    v3[ZZ] = box[ZZ][ZZ];
 
-    for(i=1;i<isize;i++)
-        for(d=0;d<3;d++)
-            if (xmax[d]<x[index[i]][d]) xmax[d]=x[index[i]][d]; else
-                if (xmin[d]>x[index[i]][d]) xmin[d]=x[index[i]][d];
+    rvec_add(v1,v2,dist);
+    rvec_add(v3,dist,dist);
 
-    rmax=sqrt(distance2(xmax,xmin));
+    rmax=norm(dist);
 
     pr->grn=(int)floor(rmax/pr->binwidth)+1;
     rmax=pr->grn*pr->binwidth;
@@ -169,15 +182,14 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
             for(mc=0;mc<524288;mc++) {
                 i=(int)floor(gmx_rng_uniform_real(rng)*isize);
                 j=(int)floor(gmx_rng_uniform_real(rng)*isize);
-                if(i!=j)
-                    pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[(int)floor(sqrt(distance2(x[index[i]],xf[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
             }
             gmx_rng_destroy(rng);
         }
     } else {
         for(i=0;i<isize;i++)
-            for(j=0;j<i;j++)
-                pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+            for(j=0;j<isize;j++)
+                pr->gr[(int)floor(sqrt(distance2(x[index[i]],xf[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
     }
 
     /* normalize */

@@ -548,7 +548,12 @@ void please_cite(FILE *fp,const char *key)
       "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
       "PLoS ONE",
       6, 2011, "e19791"
-    }
+    },
+    { "Garmay2012",
+      "Garmay Yu, Shvetsov A, Karelov D, Lebedev D, Radulescu A, Petukhov M, Isaev-Ivanov V",
+      "Correlated motion of protein subdomains and large-scale conformational flexibility of RecA protein filament",
+      "Journal of Physics: Conference Series",
+      340, 2012, "012094" }
   };
 #define NSTR (int)asize(citedb)
   
