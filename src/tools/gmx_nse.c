@@ -38,6 +38,7 @@
 #endif
 
 #include <ctype.h>
+#include <string.h>
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -55,16 +56,24 @@
 #include "gmx_ana.h"
 #include "nsfactor.h"
 
+#ifndef PATH_MAX
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#ifdef MAX_PATH
+#define PATH_MAX MAX_PATH
+#else
+#define PATH_MAX 260
+#endif
+#endif
+#endif
 
-int gmx_sans(int argc,char *argv[])
+int gmx_nse(int argc,char *argv[])
 {
     const char *desc[] = {
-        "This is simple tool to compute SANS spectra using Debye formula",
+        "This is simple tool to compute NSE spectra using Debye formula",
         "It currently uses topology file (since it need to assigne element for each atom)",
+        "and trajecory file",
         "[PAR]",
-        "[TT]-pr[TT] Computes normalized g(r) function",
-        "[PAR]",
-        "[TT]-sq[TT] Computes SANS intensity curve for needed q diapason",
+        "[TT]-sqt[TT] Computes NSE intensity curve for each q value",
         "[PAR]",
         "[TT]-startq[TT] Starting q value in nm",
         "[PAR]",
@@ -72,12 +81,11 @@ int gmx_sans(int argc,char *argv[])
         "[PAR]",
         "[TT]-qstep[TT] Stepping in q space",
         "[PAR]",
-        "Note: When using Debye direct method computational cost increases as",
-        "1/2 * N * (N - 1) where N is atom number in group of interest"
+        "Note: This tools produces large number of sqt files (one file per needed q value)!"
     };
     static gmx_bool bPBC=TRUE;
     static real binwidth=0.2,grid=0.05; /* bins shouldnt be smaller then bond (~0.1nm) length */
-    static real start_q=0.0, end_q=2.0, q_step=0.01;
+    static real start_q=0.01, end_q=2.0, q_step=0.01;
     static gmx_large_int_t  nmc=1048576;
     static unsigned int  seed=0;
 
@@ -85,13 +93,13 @@ int gmx_sans(int argc,char *argv[])
     static const char *emethod[]={ NULL, "debye", "fft", NULL };
 
     gmx_nentron_atomic_structurefactors_t    *gnsf;
-    gmx_sans_t              *gsans;
+    gmx_nse_t              *gnse;
 
 #define NPA asize(pa)
 
     t_pargs pa[] = {
         { "-bin", FALSE, etREAL, {&binwidth},
-          "[HIDDEN]Binwidth (nm)" },
+          "Binwidth (nm)" },
         { "-mode", FALSE, etENUM, {emode},
           "Mode for sans spectra calculation" },
         { "-nmc", FALSE, etINT, {&nmc},
@@ -112,10 +120,11 @@ int gmx_sans(int argc,char *argv[])
           "Random seed for Monte-Carlo"},
     };
   FILE      *fp;
-  const char *fnTPX,*fnNDX,*fnDAT=NULL;
+  const char *fnTPX,*fnTRX,*fnNDX,*fnDAT=NULL;
   t_trxstatus *status;
   t_topology *top=NULL;
   t_atom    *atom=NULL;
+  t_atoms   *atoms=NULL;
   gmx_rmpbc_t  gpbc=NULL;
   gmx_bool  bTPX;
   gmx_bool  bFFT=FALSE, bDEBYE=FALSE;
@@ -123,29 +132,31 @@ int gmx_sans(int argc,char *argv[])
   int        ePBC=-1;
   matrix     box;
   char       title[STRLEN];
-  rvec       *x;
+  rvec       *x,*xf;
   int       natoms;
+  int       nframes;
+  int       nralloc=1;
   real       t;
   char       **grpname=NULL;
   atom_id    *index=NULL;
   int        isize;
   int         i,j;
-  gmx_radial_distribution_histogram_t  *pr=NULL;
-  gmx_static_structurefator_t  *sq=NULL;
+  char        *sqtf_base=NULL, *sqtf=NULL, *hdr=NULL;
+  const char  *sqtf_ext=NULL;
   output_env_t oenv;
 
 #define NFILE asize(fnm)
 
   t_filenm   fnm[] = {
       { efTPX,  "-s",         NULL,   ffREAD },
+      { efTRX,  "-f",         NULL,   ffREAD },
       { efNDX,  NULL,         NULL,   ffOPTRD },
       { efDAT,  "-d",   "nsfactor",   ffOPTRD },
-      { efXVG, "-sq",         "sq",   ffWRITE },
-      { efXVG, "-pr",         "pr",   ffWRITE }
+      { efXVG, "-sqt",       "sqt",   ffWRITE }
   };
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
   /* Now try to parse opts for modes */
@@ -178,38 +189,40 @@ int gmx_sans(int argc,char *argv[])
   /* Try to read files */
   fnDAT = ftp2fn(efDAT,NFILE,fnm);
   fnTPX = ftp2fn(efTPX,NFILE,fnm);
+  fnTRX = ftp2fn(efTRX,NFILE,fnm);
 
   gnsf = gmx_neutronstructurefactors_init(fnDAT);
   fprintf(stderr,"Read %d atom names from %s with neutron scattering parameters\n\n",gnsf->nratoms,fnDAT);
 
   snew(top,1);
+  snew(gnse,1);
   snew(grpname,1);
   snew(index,1);
 
   bTPX=read_tps_conf(fnTPX,title,top,&ePBC,&x,NULL,box,TRUE);
 
+  atoms=&(top->atoms);
+
   printf("\nPlease select group for SANS spectra calculation:\n");
   get_index(&(top->atoms),ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,grpname);
 
-  gsans = gmx_sans_init(top,gnsf);
+  gnse->sans = gmx_sans_init(top,gnsf);
 
   /* Prepare reference frame */
   if (bPBC) {
       gpbc = gmx_rmpbc_init(&top->idef,ePBC,top->atoms.nr,box);
-      gmx_rmpbc(gpbc,top->atoms.nr,box,x);
   }
 
-  natoms=top->atoms.nr;
   if (bDEBYE) {
       if (bMC) {
-	  fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
+          fprintf(stderr,"Using Monte Carlo Debye method to calculate spectrum\n");
           if (nmc>(gmx_large_int_t)floor(0.5*isize*(isize-1))) {
               fprintf(stderr,"Number of mc iteration larger then number of pairs in index group. Switching to direct method!\n");
               bMC=FALSE;
               bDIRECT=TRUE;
           }
       } else if (bDIRECT) {
-	  fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
+          fprintf(stderr,"Using direct Debye method to calculate spectrum\n");
       } else {
           gmx_fatal(FARGS,"Unknown method!\n");
       }
@@ -219,26 +232,73 @@ int gmx_sans(int argc,char *argv[])
       gmx_fatal(FARGS,"Whats this!?\n");
   }
 
-  /*  realy calc p(r) */
-  pr = calc_radial_distribution_histogram(gsans,x,x,box,index,isize,binwidth,bMC,nmc,seed);
+  natoms=read_first_x(oenv,&status,fnTRX,&t,&xf,box);
+  if (natoms != atoms->nr)
+      fprintf(stderr,"\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,atoms->nr);
+  /* copy xf to x in case we dont want to use frame t=0 */
+  x = xf;
+  /* realy do calc */
+  nframes=0;
+  snew(gnse->gr,nralloc);
+  snew(gnse->sq,nralloc);
+  snew(gnse->t,nralloc);
+  gnse->gr[0] = calc_radial_distribution_histogram(gnse->sans,x,xf,box,index,isize,binwidth,bMC,nmc,seed);
+  gnse->sq[0] = convert_histogram_to_intensity_curve(gnse->gr[nframes],start_q,end_q,q_step);
+  gnse->t[0]=t;
+  do {
+      nframes++;
+      if (bPBC) {
+          gmx_rmpbc(gpbc,atoms->nr,box,xf);
+      }
+      gnse->nrframes = nframes;
+      if(nralloc<(nframes+1)) {
+          nralloc++;
+          srenew(gnse->gr,nralloc);
+          srenew(gnse->sq,nralloc);
+          srenew(gnse->t,nralloc);
+      }
+      gnse->gr[nframes] = calc_radial_distribution_histogram(gnse->sans,x,xf,box,index,isize,binwidth,bMC,nmc,seed);
+      gnse->sq[nframes] = convert_histogram_to_intensity_curve(gnse->gr[nframes],start_q,end_q,q_step);
+  } while (read_next_x(oenv,status,&t,natoms,xf,box));
+  close_trj(status);
 
-  /* prepare pr.xvg */
-  fp = xvgropen(opt2fn_null("-pr",NFILE,fnm),"G(r)","Distance (nm)","Probability",oenv);
-  for(i=0;i<pr->grn;i++)
-      fprintf(fp,"%10.6lf%10.6lf\n",pr->r[i],pr->gr[i]);
-  fclose(fp);
-
-  /* prepare sq.xvg */
-  sq = convert_histogram_to_intensity_curve(pr,start_q,end_q,q_step);
-  fp = xvgropen(opt2fn_null("-sq",NFILE,fnm),"I(q)","q (nm^-1)","s(q)/s(0)",oenv);
-  for(i=0;i<sq->qn;i++) {
-      fprintf(fp,"%10.6lf%10.6lf\n",sq->q[i],sq->s[i]);
+  for(i=1;i<gnse->nrframes;i++) {
+      gnse->t[i]= gnse->t[0] + i * (t - gnse->t[0])/(gnse->nrframes - 1);
   }
-  fclose(fp);
 
-  sfree(pr);
+  snew(gnse->sqt,gnse->sq[0]->qn);
+
+  /* now we will gather s(q(t)) from s(q) spectrums */
+  for(i=0;i<gnse->sq[0]->qn;i++) {
+      snew(gnse->sqt[i],1);
+      gnse->sqt[i]->q = gnse->sq[0]->q[i];
+      snew(gnse->sqt[i]->s,gnse->nrframes);
+      for(j=0;j<gnse->nrframes;j++) {
+          gnse->sqt[i]->s[j] = gnse->sq[j]->s[i];
+      }
+  }
+
+  /* prepare filenames for sqt output */
+  sqtf_ext = strrchr(opt2fn_null("-sqt",NFILE,fnm),'.');
+  if (sqtf_ext == NULL)
+      gmx_fatal(FARGS,"Output file name '%s' does not contain a '.'",opt2fn_null("-sqt",NFILE,fnm));
+  sqtf_base = strdup(opt2fn_null("-sqt",NFILE,fnm));
+  sqtf_base[sqtf_ext - opt2fn_null("-sqt",NFILE,fnm)] = '\0';
+
+  /* actualy print data */
+  for(i=0;i<gnse->sq[0]->qn;i++) {
+      srenew(sqtf,PATH_MAX);
+      srenew(hdr,20);
+      sprintf(sqtf,"%s_q_%2.2lf%s",sqtf_base,gnse->sqt[i]->q,sqtf_ext);
+      sprintf(hdr,"s(q(t)) , q = %2.2lf",gnse->sqt[i]->q);
+      fp = xvgropen(sqtf,hdr,"S","q, nm^-1",oenv);
+      for(j=0;j<gnse->nrframes;j++) {
+          fprintf(fp,"%f\t%f\n",gnse->t[j],gnse->sqt[i]->s[j]);
+      }
+      fclose(fp);
+  }
 
   thanx(stderr);
-  
+
   return 0;
 }

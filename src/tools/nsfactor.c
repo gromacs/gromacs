@@ -131,9 +131,9 @@ gmx_sans_t *gmx_sans_init (t_topology *top, gmx_nentron_atomic_structurefactors_
     return (gmx_sans_t *) gsans;
 }
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_sans_t *gsans, rvec *x, atom_id *index, int isize, double binwidth, gmx_bool bMC, gmx_large_int_t nmc, unsigned int seed) {
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_sans_t *gsans, rvec *x, rvec *xf, matrix box, atom_id *index, int isize, double binwidth, gmx_bool bMC, gmx_large_int_t nmc, unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
-    rvec        xmin, xmax;
+    rvec        dist;
     double      rmax;
     int         i,j,d;
     int         mc;
@@ -144,18 +144,12 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
     /* set some fields */
     pr->binwidth=binwidth;
 
-    /* Lets try to find min and max distance */
-    for(d=0;d<3;d++) {
-        xmax[d]=x[index[0]][d];
-        xmin[d]=x[index[0]][d];
+    /*  fill dist rvec */
+    for(i=0;i<3;i++) {
+       dist[i] = box[i][i];
     }
 
-    for(i=1;i<isize;i++)
-        for(d=0;d<3;d++)
-            if (xmax[d]<x[index[i]][d]) xmax[d]=x[index[i]][d]; else
-                if (xmin[d]>x[index[i]][d]) xmin[d]=x[index[i]][d];
-
-    rmax=sqrt(distance2(xmax,xmin));
+    rmax=norm(dist);
 
     pr->grn=(int)floor(rmax/pr->binwidth)+1;
     rmax=pr->grn*pr->binwidth;
@@ -169,15 +163,14 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
             for(mc=0;mc<524288;mc++) {
                 i=(int)floor(gmx_rng_uniform_real(rng)*isize);
                 j=(int)floor(gmx_rng_uniform_real(rng)*isize);
-                if(i!=j)
-                    pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[(int)floor(sqrt(distance2(x[index[i]],xf[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
             }
             gmx_rng_destroy(rng);
         }
     } else {
         for(i=0;i<isize;i++)
-            for(j=0;j<i;j++)
-                pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+            for(j=0;j<isize;j++)
+                pr->gr[(int)floor(sqrt(distance2(x[index[i]],xf[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
     }
 
     /* normalize */
