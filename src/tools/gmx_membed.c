@@ -985,7 +985,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     double     run_time;
     double     t,t0,lam0;
-    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
+    gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcVir,bCalcEner;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
@@ -1758,18 +1758,21 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
+        bNstEner  = do_per_step(step,ir->nstcalcenergy);
+        bCalcEner = bNstEner;
+        bCalcVir  = bCalcEner ||
+            (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
 
         /* Do we need global communication ? */
-        bGStat = (bCalcEnerPres || bStopCM ||
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
         if (do_ene || do_log)
         {
-            bCalcEnerPres = TRUE;
+            bCalcVir  = TRUE;
+            bCalcEner = TRUE;
             bGStat    = TRUE;
         }
 
@@ -1784,7 +1787,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |
-                       (bCalcEnerPres ? GMX_FORCE_VIRIAL : 0) |
+                       (bCalcVir ? GMX_FORCE_VIRIAL : 0) |
+                       (bCalcEner ? GMX_FORCE_ENERGY : 0) |
                        (bDoDHDL ? GMX_FORCE_DHDL : 0)
             );
 
@@ -1916,8 +1920,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 				       state,fr->bMolPBC,graph,f,
                                        &top->idef,shake_vir,NULL,
                                        cr,nrnb,wcycle,upd,constr,
-                                       bInitStep,TRUE,bCalcEnerPres,vetanew);
-
+                                       bInitStep,TRUE,bCalcVir,vetanew);
+                    
                     if (!bOK && !bFFscan)
                     {
                         gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
@@ -2117,19 +2121,23 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * otherwise only at energy output steps (set below).
          */
 
-        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
-        bCalcEnerPres = bNstEner;
+        bNstEner  = do_per_step(step,ir->nstcalcenergy);
+        bCalcEner = bNstEner;
+        bCalcVir  = bCalcEner ||
+            (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
 
         /* Do we need global communication ? */
-        bGStat = (bGStatEveryStep || bStopCM || bNS ||
+        bGStat = (bCalcVir || bCalcEner || bStopCM ||
+                  do_per_step(step,nstglobalcomm) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
         if (do_ene || do_log)
         {
-            bCalcEnerPres = TRUE;
-            bGStat        = TRUE;
+            bCalcVir  = TRUE;
+	    bCalcEner = TRUE;
+            bGStat    = TRUE;
         }
 
         /* Determine the wallclock run time up till now */
@@ -2320,7 +2328,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 				   state,fr->bMolPBC,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcEnerPres,state->veta);
+                                   bInitStep,FALSE,bCalcVir,state->veta);
 
                 if (ir->eI==eiVVAK)
                 {
@@ -2352,7 +2360,8 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 				       state,fr->bMolPBC,graph,f,
                                        &top->idef,tmp_vir,force_vir,
                                        cr,nrnb,wcycle,upd,NULL,
-                                       bInitStep,FALSE,bCalcEnerPres,state->veta);
+                                       bInitStep,FALSE,bCalcVir,
+                                       state->veta);  
                 }
                 if (!bOK && !bFFscan)
                 {

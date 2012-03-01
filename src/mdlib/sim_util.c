@@ -780,8 +780,8 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
 
         gmx_pme_send_x(cr,bBS ? boxs : box,x,
-                mdatoms->nChargePerturbed,lambda,
-                ( flags & GMX_FORCE_VIRIAL),step);
+                       mdatoms->nChargePerturbed,lambda,
+                       (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),step);
 
         GMX_MPE_LOG(ev_send_coordinates_finish);
         wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -1471,8 +1471,8 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         }
 
         gmx_pme_send_x(cr,bBS ? boxs : box,x,
-                mdatoms->nChargePerturbed,lambda,
-                ( flags & GMX_FORCE_VIRIAL),step);
+                       mdatoms->nChargePerturbed,lambda,
+                       (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY)),step);
 
         GMX_MPE_LOG(ev_send_coordinates_finish);
         wallcycle_stop(wcycle,ewcPP_PMESENDX);
