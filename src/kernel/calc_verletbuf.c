@@ -50,11 +50,11 @@
 
 typedef struct
 {
-    real     mass;
-    int      type;
-    real     q;
-    gmx_bool con;
-    int      n;
+    real     mass; /* mass */
+    int      type; /* type (used for LJ parameters) */
+    real     q;    /* charge */
+    gmx_bool con;  /* constrained? if yes, use #DOF=2 iso 3 */
+    int      n;    /* total #atoms of this type in the system */
 } att_t;
 
 static void add_at(att_t **att_p,int *natt_p,
@@ -95,12 +95,6 @@ static void add_at(att_t **att_p,int *natt_p,
         (*att_p)[i].q    = q;
         (*att_p)[i].con  = con;
         (*att_p)[i].n    = nmol;
-
-        if (gmx_debug_at)
-        {
-            fprintf(debug,"m %5.2f t %d q %6.3f con %d nmol %d\n",
-                    mass,type,q,con,nmol);
-        }
     }
 }
 
@@ -128,6 +122,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
 
+        /* Check for constraints, as they affect the kinetic energy */
         snew(con_m,atoms->nr);
         snew(vsite_m,atoms->nr);
 
@@ -156,6 +151,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
             con_m[a3] += atoms->atom[a1].m + atoms->atom[a2].m;
         }
 
+        /* Check for virtual sites, determine mass from constructing atoms */
         for(ft=0; ft<F_NRE; ft++)
         {
             if (IS_VSITE(ft))
@@ -222,6 +218,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         for(a=0; a<atoms->nr; a++)
         {
             at = &atoms->atom[a];
+            /* We consider an atom constrained, #DOF=2, when it is
+             * connected with constraints to one or more atoms with
+             * total mass larger than 1.5 that of the atom itself.
+             */
             add_at(&att,&natt,
                    at->m,at->type,at->q,con_m[a] > 1.5*at->m,nmol);
         }
@@ -230,25 +230,35 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         sfree(con_m);
     }
 
+    if (gmx_debug_at)
+    {
+        for(a=0; a<natt; a++)
+        {
+            fprintf(debug,"type %d: m %5.2f t %d q %6.3f con %d n %d\n",
+                    a,att[a].mass,att[a].type,att[a].q,att[a].con,att[a].n);
+        }
+    }
+
     *att_p  = att;
     *natt_p = natt;
 }
 
 static real ener_drift(const att_t *att,int natt,
                        const gmx_ffparams_t *ffp,
-                       real kT_fac,real vol_fac,
-                       real d_ljd,real d_ljr,real d_el,real dd_el,
+                       real kT_fac,real line_dens_nat,
+                       real md_ljd,real md_ljr,real md_el,real dd_el,
                        real rb)
 {
-    double drift_tot,drift;
+    double drift_tot,pot;
     int  i,j;
     real s2i,s2j,s2,sfi,sfj,s;
     int  ti,tj;
-    real d,dd;
+    real md,dd;
     double c_exp,c_erfc;
 
     drift_tot = 0;
 
+    /* Loop over the different atom type pairs */
     for(i=0; i<natt; i++)
     {
         s2i = kT_fac/att[i].mass;
@@ -259,13 +269,13 @@ static real ener_drift(const att_t *att,int natt,
             s2j = kT_fac/att[j].mass;
             tj = att[j].type;
 
-            /* Note that attractive and repsulsive errors for single
+            /* Note that attractive and repulsive errors for single
              * pairs will partially cancel.
              */
-            d =
-                d_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
-                d_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
-                d_el*att[i].q*att[j].q;
+            md =
+                md_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
+                md_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
+                md_el*att[i].q*att[j].q;
 
             dd = dd_el*att[i].q*att[j].q;
 
@@ -277,22 +287,26 @@ static real ener_drift(const att_t *att,int natt,
             c_exp  = exp(-rb*rb/(2*s2))/sqrt(2*M_PI);
             c_erfc = 0.5*erfc(rb/(sqrt(2*s2)));
 
-            /* Exact contribution of a mass to the energy drift
-             * for a potential with derivative -d and second derivative dd
-             * at the cut-off. The only catch is that for potentials that
-             * change sign near the cut-off there could be an unlucky
-             * compensation of positive and negative energy drift.
+            /* Exact contribution of an atom pair with Gaussian displacement
+             * with sigma s to the energy drift for a potential with
+             * derivative -md and second derivative dd at the cut-off.
+             * The only catch is that for potentials that change sign
+             * near the cut-off there could be an unlucky compensation
+             * of positive and negative energy drift.
              * Such potentials are extremely rare though.
+             *
+             * Note that pot has unit energy*length, as the linear
+             * atom density (line_dens_nat*natoms) still needs to be put in.
              */
-            drift =
-                d*((rb*rb + s2)*c_erfc - rb*s*c_exp) +
-                0.5*dd*(s*(rb*rb + 2*s2)*c_exp - rb*(rb*rb + 3*s2)*c_erfc);
+            pot =
+                md*((rb*rb + s2)*c_erfc - rb*s*c_exp) +
+                dd/6*(s*(rb*rb + 2*s2)*c_exp - rb*(rb*rb + 3*s2)*c_erfc);
 
             if (gmx_debug_at)
             {
-                fprintf(debug,"n %d %d d s %.3f %.3f con %d %d %.3e dd %.3e drift %.3e\n",
-                        att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),att[i].con,att[j].con,
-                        d,dd,drift);
+                fprintf(debug,"n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot %8.1e\n",
+                        att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),att[i].con,
+                        md,dd,pot);
             }
 
             /* Check if with constraints the distribution with 2 DOFs
@@ -306,29 +320,29 @@ static real ener_drift(const att_t *att,int natt,
 
             if (att[i].con && rb*sfi*c_exp > c_erfc*sqrt(s2i))
             {
-                drift /= rb*sfi*c_exp/(c_erfc*sqrt(s2i));
+                pot /= rb*sfi*c_exp/(c_erfc*sqrt(s2i));
             }
             if (att[j].con && rb*sfj*c_exp > c_erfc*sqrt(s2j))
             {
-                drift /= rb*sfj*c_exp/(c_erfc*sqrt(s2j));
+                pot /= rb*sfj*c_exp/(c_erfc*sqrt(s2j));
             }
 
-            /* Add the density factor, without volume */
+            /* Multiply by the number of atom pairs */
             if (j == i)
             {
-                drift *= (double)att[i].n*(att[i].n - 1)/2;
+                pot *= (double)att[i].n*(att[i].n - 1)/2;
             }
             else
             {
-                drift *= (double)att[i].n*att[j].n;
+                pot *= (double)att[i].n*att[j].n;
             }
 
-            drift_tot += fabs(drift);
+            drift_tot += fabs(pot);
         }
     }
 
-    /* The volume term of the density */
-    drift_tot *= vol_fac;
+    /* Multiply by the line atom density/natoms */
+    drift_tot *= line_dens_nat;
 
     return drift_tot;
 }
@@ -346,10 +360,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     att_t *att;
     int  natt,i;
     double reppow;
-    real d_ljd,d_ljr,d_el,dd_el;
-    real elfac,eps_rf,krf;
-    real kT_fac,mass_min,vol_fac;
-    real beta,beta_r;
+    real md_ljd,md_ljr,md_el,dd_el;
+    real elfac;
+    real kT_fac,mass_min,line_dens_nat;
     int  ib0,ib1,ib;
     real rb,rl;
     real drift;
@@ -396,12 +409,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     }
 
     reppow = mtop->ffparams.reppow;
-    d_ljd = 0;
-    d_ljr = 0;
+    md_ljd = 0;
+    md_ljr = 0;
     if (ir->vdwtype == evdwCUT)
     {
-        d_ljd = 6*pow(ir->rvdw,-7.0);
-        d_ljr = reppow*pow(ir->rvdw,-(reppow+1));
+        /* -dV/dr of -r^-6 and r^-repporw */
+        md_ljd = -6*pow(ir->rvdw,-7.0);
+        md_ljr = reppow*pow(ir->rvdw,-(reppow+1));
+        /* The contribution of the second derivative is negligible */
     }
     else
     {
@@ -410,40 +425,47 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     elfac = ONE_4PI_EPS0/ir->epsilon_r;
 
-    d_el  = 0;
+    /* Determine md=-dV/dr and dd=d^2V/dr^2 */
+    md_el = 0;
     dd_el = 0;
     if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
+        real eps_rf,k_rf;
+
         if (ir->coulombtype == eelCUT)
         {
             eps_rf = 1;
-            krf = 0;
+            k_rf = 0;
         }
         else
         {
-            eps_rf = ir->epsilon_rf;
+            eps_rf = ir->epsilon_rf/ir->epsilon_r;
             if (eps_rf != 0)
             {
-                krf = pow(ir->rcoulomb,-3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
+                k_rf = pow(ir->rcoulomb,-3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
             }
             else
             {
                 /* epsilon_rf = infinity */
-                krf = 0.5*pow(ir->rcoulomb,-3.0);
+                k_rf = 0.5*pow(ir->rcoulomb,-3.0);
             }
         }
 
         if (eps_rf > 0)
         {
-            d_el = elfac*(pow(ir->rcoulomb,-2.0) - 2*krf*ir->rcoulomb);
+            md_el = elfac*(pow(ir->rcoulomb,-2.0) - 2*k_rf*ir->rcoulomb);
         }
-        dd_el = elfac*2*krf;
+        dd_el = elfac*(2*pow(ir->rcoulomb,-3.0) + 2*k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
-        beta = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
-        beta_r = beta*ir->rcoulomb;
-        d_el = elfac*(2*beta*exp(-beta_r*beta_r)/(sqrt(M_PI)*ir->rcoulomb) + erfc(beta_r)/(ir->rcoulomb*ir->rcoulomb));
+        real b,rc,br;
+
+        b  = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
+        rc = ir->rcoulomb;
+        br = b*rc;
+        md_el = elfac*(2*b*exp(-br*br)/(sqrt(M_PI)*rc) + erfc(br)/(rc*rc));
+        dd_el = elfac/(rc*rc)*(4*b*(1 + br*br)*exp(-br*br)/sqrt(M_PI) + 2*erfc(br)/rc);
     }
     else
     {
@@ -504,8 +526,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
     if (debug)
     {
-        fprintf(debug,"d_ljd %e d_ljr %e\n",d_ljd,d_ljr);
-        fprintf(debug,"d_el %e dd_el %e\n",d_el,dd_el);
+        fprintf(debug,"md_ljd %e md_ljr %e\n",md_ljd,md_ljr);
+        fprintf(debug,"md_el %e dd_el %e\n",md_el,dd_el);
         fprintf(debug,"sqrt(kT_fac) %f\n",sqrt(kT_fac));
         fprintf(debug,"mass_min %f\n",mass_min);
     }
@@ -519,15 +541,15 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
         rl = max(ir->rvdw,ir->rcoulomb) + rb;
-        vol_fac = 4*M_PI*rl*rl/boxvol;
+        line_dens_nat = 4*M_PI*rl*rl/boxvol;
         
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
         drift = ener_drift(att,natt,&mtop->ffparams,
                            kT_fac,
-                           vol_fac,
-                           d_ljd,d_ljr,d_el,dd_el,rb);
+                           line_dens_nat,
+                           md_ljd,md_ljr,md_el,dd_el,rb);
 
         /* Convert the drift to drift per unit time per atom */
         drift /= ir->nstlist*ir->delta_t*mtop->natoms;
@@ -539,7 +561,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
             fprintf(debug,"ib %d %d %d rb %g drift %f\n",ib0,ib,ib1,rb,drift);
         }
 
-        if (drift > drift_target)
+        if (fabs(drift) > drift_target)
         {
             ib0 = ib;
         }
