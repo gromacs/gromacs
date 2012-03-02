@@ -1484,6 +1484,8 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     }
 #ifdef GMX_GPU
     GPU_OK = (init_gpu(fp, gpu_device_id) == 0);
+#else
+    GPU_OK = FALSE;
 #endif
     if (PAR(cr))
     {
