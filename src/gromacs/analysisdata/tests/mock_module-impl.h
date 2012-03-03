@@ -40,7 +40,7 @@
 
 #include "mock_module.h"
 
-#include <memory>
+#include <boost/scoped_ptr.hpp>
 
 namespace gmx
 {
@@ -61,9 +61,8 @@ class MockAnalysisModule::Impl
         void checkReferencePoints(const AnalysisDataPointSetRef &points);
         void finishReferenceFrame(const AnalysisDataFrameHeader &header);
 
-        // Could be scoped_ptrs
-        std::auto_ptr<TestReferenceChecker>  rootChecker_;
-        std::auto_ptr<TestReferenceChecker>  frameChecker_;
+        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
+        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
         int                     flags_;
         int                     frameIndex_;
 };

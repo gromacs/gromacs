@@ -41,6 +41,8 @@
 #include <limits>
 #include <vector>
 
+#include "gromacs/utility/uniqueptr.h"
+
 #include "datastorage.h"
 
 namespace gmx
@@ -58,6 +60,9 @@ class AnalysisDataStorageFrame;
 class AnalysisDataStorage::Impl
 {
     public:
+        //! Smart pointer type for managing a stored frame.
+        typedef gmx_unique_ptr<AnalysisDataStorageFrame>::type FramePointer;
+
         /*! \brief
          * Stored information about a single stored frame.
          */
@@ -71,24 +76,24 @@ class AnalysisDataStorage::Impl
                 eNotified  //!< Appropriate notifications have been sent.
             };
 
-            StoredFrame() : frame(NULL), status(eMissing) {}
             explicit StoredFrame(AnalysisDataStorageFrame *frame)
                 : frame(frame), status(eMissing)
             {
             }
-
+            //! Return whether the frame has been started by calling startFrame()
             bool isStarted() const { return status >= eStarted; }
+            //! Return whether the frame has been finished by calling finishFrame()
             bool isFinished() const { return status >= eFinished; }
+            //! Return whether notifications have been sent
             bool isNotified() const { return status >= eNotified; }
             bool isAvailable() const { return status >= eFinished; }
 
             /*! \brief
              * Actual frame data.
              *
-             * Always allocated.  Memory is managed by the parent Impl object
-             * to make the StoredFrame type STL-container-friendly.
+             * Never NULL.
              */
-            AnalysisDataStorageFrame *frame;
+            FramePointer              frame;
             //! In what state the frame currently is.
             Status                    status;
         };
