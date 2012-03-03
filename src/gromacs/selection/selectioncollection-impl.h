@@ -44,7 +44,9 @@
 #include <string>
 #include <vector>
 
-#include <typedefs.h>
+#include "../legacyheaders/typedefs.h"
+
+#include "gromacs/utility/uniqueptr.h"
 
 #include "../options/options.h"
 #include "../utility/flags.h"
@@ -54,6 +56,11 @@
 namespace gmx
 {
 class Selection;
+
+//! Smart pointer for managing a selection.
+typedef gmx_unique_ptr<Selection>::type SelectionPointer;
+//! Shorthand for storing a list of selections internally.
+typedef std::vector<SelectionPointer> SelectionList;
 }
 
 /*! \internal \brief
@@ -66,7 +73,7 @@ struct gmx_ana_selcollection_t
     /** Root of the selection element tree. */
     struct t_selelem           *root;
     /** Array of compiled selections. */
-    std::vector<gmx::Selection *>  sel;
+    gmx::SelectionList             sel;
     /** Number of variables defined. */
     int                            nvars;
     /** Selection strings for variables. */
@@ -113,8 +120,6 @@ class SelectionCollection::Impl
             SelectionOptionStorage     *storage;
         };
 
-        //! Shorthand for a list of selections stored internally.
-        typedef std::vector<Selection *> SelectionList;
         //! Shorthand for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
 

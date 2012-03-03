@@ -39,9 +39,9 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
-#include <memory>
 #include <string>
 #include <vector>
+#include <boost/scoped_ptr.hpp>
 
 #include "../fatalerror/exceptions.h"
 #include "../fatalerror/gmxassert.h"
@@ -238,8 +238,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         ValueList              *_values;
         T                      *_store;
         int                    *_countptr;
-        // Could be scoped_ptr
-        std::auto_ptr<T>        _defaultValueIfSet;
+        boost::scoped_ptr<ValueList> _ownedValues;
+        boost::scoped_ptr<T>    _defaultValueIfSet;
 
         // Copy and assign disallowed by base.
 };
@@ -255,14 +255,13 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
       _store(settings._store),
       _countptr(settings._countptr)
 {
-    std::auto_ptr<std::vector<T> > valueGuard;
-    if (!_values)
+    if (_values == NULL)
     {
         // The flag should be set for proper error checking.
         GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
                            "Internal inconsistency");
-        valueGuard.reset(new std::vector<T>);
-        _values = valueGuard.get();
+        _ownedValues.reset(new std::vector<T>);
+        _values = _ownedValues.get();
     }
     if (hasFlag(efNoDefaultValue)
         && (settings._defaultValue != NULL
@@ -285,7 +284,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
             // TODO: This is a bit hairy, as it indirectly calls a virtual function.
             commitValues();
         }
-        else if (!hasFlag(efExternalValueVector) && _store != NULL)
+        else if (_ownedValues.get() == NULL && _store != NULL)
         {
             _values->clear();
             int count = (settings.isVector() ?
@@ -305,17 +304,12 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         }
     }
     setFlag(efClearOnNextSet);
-    valueGuard.release();
 }
 
 
 template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
-    if (!hasFlag(efExternalValueVector))
-    {
-        delete _values;
-    }
 }
 
 
