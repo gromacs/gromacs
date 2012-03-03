@@ -314,13 +314,12 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
         sel = sel->next;
     }
     /* Update selection information */
-    std::vector<Selection *>::iterator isel;
+    SelectionList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        Selection *sel = *isel;
-
-        sel->refreshMassesAndCharges();
-        sel->updateCoveredFractionForFrame();
+        Selection &sel = **isel;
+        sel.refreshMassesAndCharges();
+        sel.updateCoveredFractionForFrame();
     }
 }
 
@@ -333,12 +332,12 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
 
-    std::vector<Selection *>::iterator isel;
+    SelectionList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        Selection *sel = *isel;
-        sel->restoreOriginalPositions();
-        sel->computeAverageCoveredFraction(nframes);
+        Selection &sel = **isel;
+        sel.restoreOriginalPositions();
+        sel.computeAverageCoveredFraction(nframes);
     }
 }
 
