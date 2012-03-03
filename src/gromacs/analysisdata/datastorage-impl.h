@@ -41,6 +41,8 @@
 #include <limits>
 #include <vector>
 
+#include "gromacs/utility/uniqueptr.h"
+
 #include "datastorage.h"
 
 namespace gmx
@@ -58,11 +60,15 @@ class AnalysisDataStorageFrame;
 class AnalysisDataStorage::Impl
 {
     public:
+        //! Smart pointer type for managing a stored frame.
+        typedef gmx_unique_ptr<AnalysisDataStorageFrame>::type FramePointer;
+
         /*! \brief
          * Stored information about a single stored frame.
          */
         struct StoredFrame
         {
+            //! Indicates what operations have been performed on a frame.
             enum Status
             {
                 eMissing,  //!< Frame has not yet been started.
@@ -71,24 +77,26 @@ class AnalysisDataStorage::Impl
                 eNotified  //!< Appropriate notifications have been sent.
             };
 
-            StoredFrame() : frame(NULL), status(eMissing) {}
+            //! Constructs an object that manages a given frame object.
             explicit StoredFrame(AnalysisDataStorageFrame *frame)
                 : frame(frame), status(eMissing)
             {
             }
-
+            //! Whether the frame has been started with startFrame().
             bool isStarted() const { return status >= eStarted; }
+            //! Whether the frame has been finished with finishFrame().
             bool isFinished() const { return status >= eFinished; }
+            //! Whether all notifications have been sent.
             bool isNotified() const { return status >= eNotified; }
+            //! Whether the frame is ready to be available outside the storage.
             bool isAvailable() const { return status >= eFinished; }
 
             /*! \brief
              * Actual frame data.
              *
-             * Always allocated.  Memory is managed by the parent Impl object
-             * to make the StoredFrame type STL-container-friendly.
+             * Never NULL.
              */
-            AnalysisDataStorageFrame *frame;
+            FramePointer              frame;
             //! In what state the frame currently is.
             Status                    status;
         };

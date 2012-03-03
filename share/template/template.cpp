@@ -28,7 +28,6 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -75,17 +74,23 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
+        /*! \brief
+         * Initializes frame-local data.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         * \param[in] cutoff     Cutoff distance for the search
+         *   (<=0 stands for no cutoff).
+         * \param[in] posCount   Maximum number of reference particles.
+         */
         ModuleData(TrajectoryAnalysisModule *module,
                    const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections)
+                   const SelectionCollection &selections,
+                   double cutoff, int posCount)
             : TrajectoryAnalysisModuleData(module, opt, selections),
-              _nb(NULL)
+              _nb(cutoff, posCount)
         {
-        }
-
-        virtual ~ModuleData()
-        {
-            delete _nb;
         }
 
         virtual void finish()
@@ -93,7 +98,8 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
             finishDataHandles();
         }
 
-        NeighborhoodSearch          *_nb;
+        //! Neighborhood search data for distance calculation.
+        NeighborhoodSearch      _nb;
 };
 
 
@@ -119,7 +125,7 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
         "To get started with implementing your own analysis program,",
         "follow the instructions in the README file provided.",
         "This template implements a simple analysis programs that calculates",
-        "average distances from the a reference group to one or more",
+        "average distances from a reference group to one or more",
         "analysis groups.",
         NULL
     };
@@ -174,9 +180,7 @@ TrajectoryAnalysisModuleData *
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
-    std::auto_ptr<ModuleData> pdata(new ModuleData(this, opt, selections));
-    pdata->_nb = new NeighborhoodSearch(_cutoff, _refsel->posCount());
-    return pdata.release();
+    return new ModuleData(this, opt, selections, _cutoff, _refsel->posCount());
 }
 
 
@@ -185,9 +189,9 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle *dh = pdata->dataHandle("avedist");
-    NeighborhoodSearch *nb = static_cast<ModuleData *>(pdata)->_nb;
+    NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
 
-    nb->init(pbc, _refsel->positions());
+    nb.init(pbc, _refsel->positions());
     dh->startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
@@ -197,7 +201,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel->position(i);
-            frave += nb->minimumDistance(p.x());
+            frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
         dh->setPoint(g, frave);

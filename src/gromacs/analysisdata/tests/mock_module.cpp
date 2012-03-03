@@ -80,7 +80,7 @@ void checkReferenceDataPoint(TestReferenceChecker *checker,
     }
 }
 
-}
+} // namespace
 
 MockAnalysisModule::Impl::Impl(int flags)
     : flags_(flags), frameIndex_(0)
@@ -91,6 +91,8 @@ MockAnalysisModule::Impl::Impl(int flags)
 void
 MockAnalysisModule::Impl::startReferenceFrame(const AnalysisDataFrameHeader &header)
 {
+    GMX_RELEASE_ASSERT(rootChecker_.get() != NULL,
+                       "Root checker not set, but reference data used");
     EXPECT_TRUE(frameChecker_.get() == NULL);
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_.reset(new TestReferenceChecker(
