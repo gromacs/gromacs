@@ -208,7 +208,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	       * cluster cj and if so, put them in ci
 	       */
 	      for(k=0; (k<nindex); k++) {
-		if ((clust_index[k] == cj)) {
+		if (clust_index[k] == cj) {
 		  if (clust_size[cj] <= 0)
 		    gmx_fatal(FARGS,"negative cluster size %d for element %d",
 				clust_size[cj],cj);

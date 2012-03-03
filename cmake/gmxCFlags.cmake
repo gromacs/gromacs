@@ -112,6 +112,19 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CXXFLAGS_WARN "/wd4273" GMXC_CXXFLAGS)
     endif()
 
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+    endif()
+
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused" GMXC_CXXFLAGS)
+    endif()
 
     # now actually set the flags:
     # C
