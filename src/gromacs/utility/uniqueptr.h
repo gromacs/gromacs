@@ -10,7 +10,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -28,46 +28,49 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Declares private implementation class for gmx::test::MockAnalysisModule.
+ * Declares functions for OS-independent path handling.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_analysisdata
+ * \author Roland Schulz <roland@utk.edu>
+ * \author John Eblen <jeblen@acm.org>
+ * \inlibraryapi
  */
-#ifndef GMX_ANALYSISDATA_TESTS_MOCK_MODULE_IMPL_H
-#define GMX_ANALYSISDATA_TESTS_MOCK_MODULE_IMPL_H
 
-#include "mock_module.h"
+#ifndef GMX_UTILITY_UNIQUEPTR_H
+#define GMX_UTILITY_UNIQUEPTR_H
 
-#include <boost/scoped_ptr.hpp>
+#ifdef HAVE_CXX11 // C++11 Compiler
+#include <memory>
+#include <algorithm>
+#else      // C++03 Compiler
+#include <boost/shared_ptr.hpp>
+#endif
 
 namespace gmx
 {
-namespace test
-{
 
-/*! \internal \brief
- * Private implementation class for gmx::test::MockAnalysisModule.
- *
- * \ingroup module_analysisdata
- */
-class MockAnalysisModule::Impl
-{
-    public:
-        explicit Impl(int flags);
-
-        void startReferenceFrame(const AnalysisDataFrameHeader &header);
-        void checkReferencePoints(const AnalysisDataPointSetRef &points);
-        void finishReferenceFrame(const AnalysisDataFrameHeader &header);
-
-        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
-        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
-        int                     flags_;
-        int                     frameIndex_;
+#ifdef HAVE_CXX11 // C++11 Compiler
+using std::move;
+template<typename T>
+struct gmx_unique_ptr {
+        typedef std::unique_ptr<T> type;
 };
+#else // C++03 Compiler
+template<typename T>
+const boost::shared_ptr<T> &move(const boost::shared_ptr<T> &ptr) {
+        return ptr;
+}
+template<typename T>
+boost::shared_ptr<T> &move(boost::shared_ptr<T> &ptr) {
+                return ptr;
+}
+template<typename T>
+struct gmx_unique_ptr {
+        typedef boost::shared_ptr<T> type;
+};
+#endif
 
-} // namespace test
-} // namespace gmx
+}
 
 #endif
