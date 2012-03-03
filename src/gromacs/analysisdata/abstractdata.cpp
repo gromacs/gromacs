@@ -61,11 +61,6 @@ AbstractAnalysisData::Impl::Impl()
 
 AbstractAnalysisData::Impl::~Impl()
 {
-    ModuleList::const_iterator i;
-    for (i = _modules.begin(); i != _modules.end(); ++i)
-    {
-        delete *i;
-    }
 }
 
 
@@ -156,7 +151,7 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
 {
-    std::auto_ptr<AnalysisDataModuleInterface> module_ptr(module);
+    Impl::ModulePointer module_ptr(module);
     if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
         || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
         || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
@@ -174,8 +169,7 @@ AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
     {
         _impl->_bAllowMissing = false;
     }
-    _impl->_modules.push_back(module);
-    module_ptr.release();
+    _impl->_modules.push_back(move(module_ptr));
 }
 
 

@@ -117,11 +117,7 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
 SelectionCollection::Impl::~Impl()
 {
     _gmx_selelem_free_chain(_sc.root);
-    SelectionList::const_iterator isel;
-    for (isel = _sc.sel.begin(); isel != _sc.sel.end(); ++isel)
-    {
-        delete *isel;
-    }
+    _sc.sel.clear();
     for (int i = 0; i < _sc.nvars; ++i)
     {
         sfree(_sc.varstrs[i]);
@@ -177,7 +173,7 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
         SelectionList::const_iterator i;
         for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
         {
-            output->push_back(*i);
+            output->push_back(i->get());
         }
     }
 
