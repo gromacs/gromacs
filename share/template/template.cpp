@@ -28,7 +28,6 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -77,15 +76,11 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
     public:
         ModuleData(TrajectoryAnalysisModule *module,
                    const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections)
+                   const SelectionCollection &selections,
+                   double cutoff, int posCount)
             : TrajectoryAnalysisModuleData(module, opt, selections),
-              _nb(NULL)
+              _nb(cutoff, posCount)
         {
-        }
-
-        virtual ~ModuleData()
-        {
-            delete _nb;
         }
 
         virtual void finish()
@@ -93,7 +88,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
             finishDataHandles();
         }
 
-        NeighborhoodSearch          *_nb;
+        NeighborhoodSearch      _nb;
 };
 
 
@@ -174,9 +169,7 @@ TrajectoryAnalysisModuleData *
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
-    std::auto_ptr<ModuleData> pdata(new ModuleData(this, opt, selections));
-    pdata->_nb = new NeighborhoodSearch(_cutoff, _refsel->posCount());
-    return pdata.release();
+    return new ModuleData(this, opt, selections, _cutoff, _refsel->posCount());
 }
 
 
@@ -185,9 +178,9 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle *dh = pdata->dataHandle("avedist");
-    NeighborhoodSearch *nb = static_cast<ModuleData *>(pdata)->_nb;
+    NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
 
-    nb->init(pbc, _refsel->positions());
+    nb.init(pbc, _refsel->positions());
     dh->startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
@@ -197,7 +190,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel->position(i);
-            frave += nb->minimumDistance(p.x());
+            frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
         dh->setPoint(g, frave);
