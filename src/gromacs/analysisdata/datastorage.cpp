@@ -135,11 +135,6 @@ AnalysisDataStorage::Impl::Impl()
 
 AnalysisDataStorage::Impl::~Impl()
 {
-    FrameList::const_iterator i;
-    for (i = frames_.begin(); i != frames_.end(); ++i)
-    {
-        delete i->frame;
-    }
 }
 
 
@@ -331,7 +326,7 @@ AnalysisDataStorage::tryGetDataFrame(int index) const
     {
         return AnalysisDataFrameRef();
     }
-    const AnalysisDataStorageFrame *frame = storedFrame.frame;
+    const Impl::FramePointer &frame = storedFrame.frame;
     return AnalysisDataFrameRef(frame->header(), frame->values_);
 }
 

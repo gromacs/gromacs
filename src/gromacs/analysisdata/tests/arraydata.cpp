@@ -40,8 +40,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
  */
-#include <memory>
-
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/arraydata.h"

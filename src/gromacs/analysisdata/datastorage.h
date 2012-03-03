@@ -72,6 +72,12 @@ class AnalysisDataStorage;
 class AnalysisDataStorageFrame
 {
     public:
+        /*! \brief Frees the frame object.
+         *
+         * Should not be called outside AnalysisDataStorage.
+         */
+        ~AnalysisDataStorageFrame();
+
         //! Returns header for the frame.
         const AnalysisDataFrameHeader &header() const { return header_; }
         //! Returns zero-based index of the frame.
@@ -184,7 +190,6 @@ class AnalysisDataStorageFrame
          */
         AnalysisDataStorageFrame(AnalysisDataStorage *storage, int columnCount,
                                  int index);
-        ~AnalysisDataStorageFrame();
 
         //! Clear all column values from the frame.
         void clearValues();
