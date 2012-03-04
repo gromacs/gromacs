@@ -695,7 +695,6 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
 {
     t_selexpr_value    *value;
     t_selelem          *child;
-    t_selelem          *expr;
 
     if (nval != 1 || !values->bExpr)
     {

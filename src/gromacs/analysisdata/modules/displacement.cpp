@@ -217,7 +217,6 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
     }
 
     int step, i;
-    int rc;
 
     if (_impl->nstored == 2)
     {

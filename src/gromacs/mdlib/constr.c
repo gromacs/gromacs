@@ -224,7 +224,7 @@ static void write_constr_pdb(const char *fn,const char *title,
     {
         sprintf(fname,"%s.pdb",fn);
     }
-    sprintf(format,"%s\n",pdbformat);
+    sprintf(format,"%s\n",get_pdbformat());
     
     out = gmx_fio_fopen(fname,"w");
     

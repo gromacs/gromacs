@@ -48,8 +48,8 @@ extern "C" {
 typedef struct gmx_conect_t *gmx_conect;
 
 /* THE pdb format (for ATOM/HETATOM lines) */
-static const char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f";
-static const char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d%c   %8.3f%8.3f%8.3f";
+const char* get_pdbformat(void);
+const char* get_pdbformat4(void);
 
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file 

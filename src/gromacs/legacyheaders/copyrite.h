@@ -50,30 +50,6 @@ const char *GromacsVersion(void);
 void 
 gmx_print_version_info(FILE *fp);
   
-  
-static const char *
-CopyrightText[] = {
-  "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-  "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
-  "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
-  "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
-  "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
-  "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
-  "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-  "Copyright (c) 2001-2010, The GROMACS development team at",
-  "Uppsala University & The Royal Institute of Technology, Sweden.",
-  "check out http://www.gromacs.org for more information.\n"
-};
-
-static const char *
-GPLText[] = {
-  "This program is free software; you can redistribute it and/or",
-  "modify it under the terms of the GNU General Public License",
-  "as published by the Free Software Foundation; either version 2",
-  "of the License, or (at your option) any later version."
-};
-
-
 void
 pr_difftime(FILE *out,double dt);
 
