@@ -370,7 +370,7 @@ void dump_as_pdb(char *pdb,t_ana_struct *anal)
     t = 1000*anal->t[i];
     fprintf(kp,"MODEL  %d  time %g fs\n",i+1,t);
     for(j=0; (j<anal->nparticle); j++) {
-      fprintf(kp,pdbformat,"ATOM",i+1,(j < anal->nion[i]) ? "O" : "N",
+      fprintf(kp,get_pdbformat(),"ATOM",i+1,(j < anal->nion[i]) ? "O" : "N",
 	      "PLS",' ',1,
 	      anal->x[i][j][XX]/100,
 	      anal->x[i][j][YY]/100,

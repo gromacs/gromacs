@@ -588,7 +588,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	b[i]  =inprod[3][i];
     }
     if ( ( b4D || bSplit ) && bPDB ) {
-      strcpy(pdbform,pdbformat);
+      strcpy(pdbform,get_pdbformat());
       strcat(pdbform,"%8.4f%8.4f\n");
       
       out=ffopen(threedplotfile,"w");
