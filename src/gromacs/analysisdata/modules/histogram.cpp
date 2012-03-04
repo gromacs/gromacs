@@ -229,7 +229,6 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
         nbins = rowCount() / 2;
     }
 
-    real minx = xstart();
     AverageHistogramPointer dest(
         new internal::StaticAverageHistogram(
             histogramFromBins(xstart(), nbins, 2*xstep())

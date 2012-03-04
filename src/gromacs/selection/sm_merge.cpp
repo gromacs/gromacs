@@ -184,7 +184,6 @@ static void
 init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i;
 
     if (d->stride < 0)
     {

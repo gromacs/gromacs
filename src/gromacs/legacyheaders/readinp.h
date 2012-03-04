@@ -116,9 +116,7 @@ enum {
 };
 
 /* names to print in help info */
-static const char *argtp[etNR] = {
-  "int", "step", "real", "time", "string", "bool", "vector", "enum" 
-};
+const char **get_arg_desc();
 
 typedef struct {
   const char *option;

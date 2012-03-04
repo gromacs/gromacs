@@ -219,11 +219,11 @@ void CopyRight(FILE *out,const char *szProgram)
   /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the 
    * name of a file. Otherwise, we won't be able to find the library dir.
    */
-#define NCR (int)asize(CopyrightText)
+#define NCR (int)asize(get_CopyrightText())
 #ifdef GMX_FAHCORE
 #define NGPL 0 /*FAH has an exception permission from GPL to allow digital signatures in Gromacs*/
 #else
-#define NGPL (int)asize(GPLText)
+#define NGPL (int)asize(get_GPLText())
 #endif
 
   char buf[256],tmpstr[1024];
@@ -252,9 +252,9 @@ void CopyRight(FILE *out,const char *szProgram)
   fprintf(out,"\n"); */
 
   for(i=0; (i<NCR); i++) 
-    sp_print(out,CopyrightText[i]);
+    sp_print(out,get_CopyrightText()[i]);
   for(i=0; (i<NGPL); i++)
-    sp_print(out,GPLText[i]);
+    sp_print(out,get_GPLText()[i]);
 
   fprintf(out,"\n");
 
@@ -639,4 +639,31 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "FFT Library:      unknown\n");
 #endif
+
+}
+
+const char** get_CopyrightText() {
+    static const char * CopyrightText[] = {
+            "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
+            "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
+            "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
+            "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
+            "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
+            "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
+            "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
+            "Copyright (c) 2001-2010, The GROMACS development team at",
+            "Uppsala University & The Royal Institute of Technology, Sweden.",
+            "check out http://www.gromacs.org for more information.\n"
+    };
+    return CopyrightText;
+}
+
+const char** get_GPLText() {
+    static const char * GPLText[] = {
+            "This program is free software; you can redistribute it and/or",
+            "modify it under the terms of the GNU General Public License",
+            "as published by the Free Software Foundation; either version 2",
+            "of the License, or (at your option) any later version."
+    };
+    return GPLText;
 }

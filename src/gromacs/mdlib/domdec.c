@@ -1871,7 +1871,7 @@ static void write_dd_grid_pdb(const char *fn,gmx_large_int_t step,
             }
         }
         sprintf(fname,"%s_%s.pdb",fn,gmx_step_str(step,buf));
-        sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
+        sprintf(format,"%s%s\n",get_pdbformat(),"%6.2f%6.2f");
         out = gmx_fio_fopen(fname,"w");
         gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
         a = 1;
@@ -1935,8 +1935,8 @@ void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
     
     sprintf(fname,"%s_%s_n%d.pdb",fn,gmx_step_str(step,buf),cr->sim_nodeid);
     
-    sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
-    sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
+    sprintf(format,"%s%s\n",get_pdbformat(),"%6.2f%6.2f");
+    sprintf(format4,"%s%s\n",get_pdbformat4(),"%6.2f%6.2f");
     
     out = gmx_fio_fopen(fname,"w");
     
