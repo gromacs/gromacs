@@ -547,6 +547,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
             angle *= RAD2DEG;
+            /* TODO: add support for _bDumpDist. dh.setPoint needs to be added
             real dist = 0.0;
             if (_bDumpDist)
             {
@@ -561,6 +562,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     dist = sqrt(distance2(c1, c2));
                 }
             }
+            */
             if (_bAll)
             {
                 dh.setPoint(n + 1, angle);

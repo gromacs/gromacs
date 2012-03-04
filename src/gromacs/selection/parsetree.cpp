@@ -555,8 +555,6 @@ void
 _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
                         yyscan_t scanner)
 {
-    int      i;
-
     _gmx_selelem_set_vtype(sel, method->type);
     sel->name   = method->name;
     snew(sel->u.expr.method, 1);
@@ -662,7 +660,6 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
     const char        *name;
-    int                rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     gmx::MessageStringContext  context(errors, "In comparison initialization");
@@ -858,7 +855,6 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selelem         *root;
     t_selelem         *mod;
     t_selexpr_param   *vparam;
-    int                i;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -1077,7 +1073,6 @@ _gmx_sel_init_variable_ref(t_selelem *sel)
 t_selelem *
 _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
     int                      rc;
 

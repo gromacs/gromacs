@@ -431,14 +431,14 @@ static void write_texman(FILE *out,const char *program,
       if (strlen(check_tex(pa_val(&(pa[i]),tmp,255))) <= 8)
 	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
 		"\\parbox[t]{0.68\\linewidth}{%s}\\\\\n",
-		check_tex(pa[i].option),argtp[pa[i].type],
+		check_tex(pa[i].option),get_arg_desc()[pa[i].type],
 		check_tex(pa_val(&(pa[i]),tmp,255)),
 		check_tex(pa[i].desc));
       else
       	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\>\\\\\n"
 		"\\> \\'\\> \\'\\> {\\tt %s} \\' "
 		"\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
-		check_tex(pa[i].option),argtp[pa[i].type],
+		check_tex(pa[i].option),get_arg_desc()[pa[i].type],
 		check_tex(pa_val(&(pa[i]),tmp,255)),
 		check_tex(pa[i].desc));
     }
@@ -487,7 +487,7 @@ static void write_nroffman(FILE *out,
 	fprintf(out,".BI \"\\-[no]%s\" \"\"\n",check_nroff(pa[i].option+1));
       else
 	fprintf(out,".BI \"%s\" \" %s \"\n",check_nroff(pa[i].option),
-		check_nroff(argtp[pa[i].type]));
+		check_nroff(get_arg_desc()[pa[i].type]));
   }
   
   /* description */
@@ -520,7 +520,7 @@ static void write_nroffman(FILE *out,
       else
 	fprintf(out,".BI \"%s\"  \" %s\" \" %s\" \n %s\n\n",
 		check_nroff(pa[i].option),
-                check_nroff(argtp[pa[i].type]),
+                check_nroff(get_arg_desc()[pa[i].type]),
 		check_nroff(pa_val(&(pa[i]),tmp,255)),
                 check_nroff(pa[i].desc));
     }
@@ -766,7 +766,7 @@ static void write_htmlman(FILE *out,
 	      "<TD> %s </TD>"
 	      "</TD>\n",
 	      (pa[i].type == etBOOL)?"-[no]":"-",pa[i].option+1,
-	      argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),NSR(pa[i].desc));
+	      get_arg_desc()[pa[i].type],pa_val(&(pa[i]),tmp,255),NSR(pa[i].desc));
     fprintf(out,"</TABLE>\n");
   }
   if (nbug > 0) {
@@ -855,9 +855,9 @@ static void write_xmlman(FILE *out,
 	      "\t<default-value>%s</default-value>\n"
 	      "\t<description>%s</description>\n"
 	      "</option>\n",
-	      argtp[pa[i].type], is_hidden(&pa[i]),
+	      get_arg_desc()[pa[i].type], is_hidden(&pa[i]),
 	      pa[i].option+1,	               /* +1 - with no trailing '-' */
-	      pa_val(&(pa[i]),buf,255),pa[i].desc); /*argtp[pa[i].type],*/
+	      pa_val(&(pa[i]),buf,255),pa[i].desc); /*get_argtp()[pa[i].type],*/
     fprintf(out,"</options>\n");
   }
 
@@ -1109,3 +1109,9 @@ void write_man(FILE *out,const char *mantp,
   finish_linkdata(links);
 }
 
+const char **get_arg_desc() {
+   static const char *argtp[etNR] = {
+     "int", "step", "real", "time", "string", "bool", "vector", "enum"
+   };
+   return argtp;
+}

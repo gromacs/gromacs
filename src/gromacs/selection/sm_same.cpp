@@ -495,7 +495,7 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
-    int                    i, j;
+    int                    j;
 
     out->u.g->isize = 0;
     j = 0;

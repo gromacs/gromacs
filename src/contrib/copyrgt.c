@@ -75,7 +75,7 @@ static char *head2[]= {
 };
 
 #define NH1 asize(head1)
-#define NCR asize(CopyrightText)
+#define NCR asize(get_CopyrightText())
 #define NH2 asize(head2)
 #define MAXS 10240
 
@@ -92,7 +92,7 @@ void head(FILE *out, char *fn_, gmx_bool bH,
     fprintf(out,"%s %s\n",ccont,head1[i]);
   fprintf(out,"%s                        %s\n",ccont,GromacsVersion());
   for(i=0; (i<NCR); i++)
-    fprintf(out,"%s %s\n",ccont,CopyrightText[i]);
+    fprintf(out,"%s %s\n",ccont,get_CopyrightText[i]);
   for(i=0; (i<NH2); i++)
     fprintf(out,"%s %s\n",ccont,head2[i]);
   bromacs(buf,STRLEN-1);

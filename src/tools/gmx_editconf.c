@@ -379,7 +379,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
 
         for (i = 0; i < nat; i++)
         {
-            fprintf(out, pdbformat, "ATOM", a0 + i, "C", "BOX", 'K' + i
+            fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
                 / NCUCVERT, r0 + i, 10 * vert[i][XX], 10 * vert[i][YY], 10
                 * vert[i][ZZ]);
             fprintf(out, "\n");
@@ -400,7 +400,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
             for (y = 0; y <= 1; y++)
                 for (x = 0; x <= 1; x++)
                 {
-                    fprintf(out, pdbformat, "ATOM", a0 + i, "C", "BOX", 'K' + i
+                    fprintf(out, get_pdbformat(), "ATOM", a0 + i, "C", "BOX", 'K' + i
                         / 8, r0 + i, x * 10 * box[XX][XX],
                             y * 10 * box[YY][YY], z * 10 * box[ZZ][ZZ]);
                     fprintf(out, "\n");

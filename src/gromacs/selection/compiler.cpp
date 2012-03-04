@@ -2019,7 +2019,6 @@ evaluate_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
 static void
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    t_selelem       *child, *next;
     bool             bDoMinMax;
 
     if (sel->type != SEL_ROOT && g)
