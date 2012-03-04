@@ -922,6 +922,18 @@ if (DOXYGEN_FOUND)
                    ${CMAKE_BINARY_DIR}/Doxyfile-lib)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
                    ${CMAKE_BINARY_DIR}/Doxyfile-user)
+    add_custom_target(doc
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating full documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-user
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-user
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating user documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-lib
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-lib
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating libary documentation with Doxygen" VERBATIM)
 endif (DOXYGEN_FOUND)
 
 
