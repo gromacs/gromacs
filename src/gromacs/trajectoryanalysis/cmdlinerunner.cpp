@@ -200,7 +200,6 @@ int
 TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = _impl->_module;
-    int                       rc;
 
     CopyRight(stderr, argv[0]);
 

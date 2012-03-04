@@ -118,7 +118,6 @@ OptionsAssigner::Impl::findOption(const char *name)
             }
             if (searchList.empty() && root != &_options)
             {
-                Options *oldRoot = root;
                 root = root->_impl->_parent;
                 ++upcount;
                 searchList.push_back(root);
