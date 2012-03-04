@@ -797,7 +797,7 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
 {
     gmx_ana_index_t  gp, gb, g;
     int              isize, bnr;
-    int              i, j, bi, bj, bo;
+    int              i, bi, bj, bo;
 
     base->flags |= pc->flags & (POS_VELOCITIES | POS_FORCES);
     gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
@@ -1023,7 +1023,6 @@ gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc
 {
     e_poscalc_t  type;
     int          cflags;
-    int          rc;
 
     cflags = flags;
     *pcp = NULL;
@@ -1276,7 +1275,7 @@ void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                        gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
-    int  i, j, bi, bj;
+    int  i, bi, bj;
     
     if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
     {

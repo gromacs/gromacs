@@ -56,7 +56,7 @@
 int
 gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 {
-    int                 m, j, ai;
+    int                 m, ai;
 
     clear_rvec(xout);
     for (m = 0; m < nrefat; ++m)

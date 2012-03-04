@@ -975,7 +975,7 @@ static void order_params(FILE *log,
     x0*=10.0;/* nm -> angstrom */
     y0*=10.0;/* nm -> angstrom */
     z0*=10.0;/* nm -> angstrom */
-    sprintf(buf,"%s%%6.f%%6.2f\n",pdbformat);
+    sprintf(buf,"%s%%6.f%%6.2f\n",get_pdbformat());
     for (i=0; (i<10); i++) {
       fprintf(fp,buf,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', 
 	      atoms->nres+1, ' ',x0, y0, z0+(1.2*i), 0.0, -0.1*i);
