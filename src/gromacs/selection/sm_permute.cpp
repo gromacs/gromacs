@@ -190,7 +190,7 @@ static void
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
-    int                   i, j, b, k;
+    int                   i, j, b;
 
     gmx_ana_pos_copy(out->u.p, &d->p, true);
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
@@ -237,7 +237,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
-    int                   i, j, b, k;
+    int                   i, j, b;
     int                   refid;
 
     if (d->p.nr % d->n != 0)

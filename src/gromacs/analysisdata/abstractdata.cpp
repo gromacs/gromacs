@@ -69,7 +69,6 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
     module->dataStarted(data);
     bool bCheckMissing = _bAllowMissing
         && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
-    int ncol = data->columnCount();
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);

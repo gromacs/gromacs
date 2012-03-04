@@ -396,7 +396,6 @@ static gmx_sel_symrec_t *
 add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
 {
     gmx_sel_symrec_t *sym, *psym;
-    int               len;
 
     /* Check if there is a conflicting symbol */
     psym = NULL;
