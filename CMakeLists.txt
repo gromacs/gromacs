@@ -922,6 +922,10 @@ if (DOXYGEN_FOUND)
                    ${CMAKE_BINARY_DIR}/Doxyfile-lib)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
                    ${CMAKE_BINARY_DIR}/Doxyfile-user)
+    add_custom_target(doc
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating API documentation with Doxygen" VERBATIM)
 endif (DOXYGEN_FOUND)
 
 
