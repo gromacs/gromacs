@@ -300,7 +300,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (MASTER(cr))
     {
         char tbuf[20];
-        fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
         fprintf(stderr,"starting mdrun '%s'\n",
                 *(top_global->name));
         if (ir->nsteps >= 0)
