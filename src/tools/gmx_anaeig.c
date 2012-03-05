@@ -963,6 +963,9 @@ int gmx_anaeig(int argc,char *argv[])
   }
     
   if (bEntropy) {
+    if (bDMA1) {
+      gmx_fatal(FARGS,"Can not calculate entropies from mass-weighted eigenvalues, redo the analysis without mass-weighting");
+    }
     calc_entropy_qh(stdout,neig1,eigval1,temp,nskip);
     calc_entropy_schlitter(stdout,neig1,nskip,eigval1,temp);
   }
