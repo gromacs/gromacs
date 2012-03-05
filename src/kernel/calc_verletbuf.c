@@ -285,7 +285,7 @@ static real ener_drift(const att_t *att,int natt,
             s   = sqrt(s2);
 
             c_exp  = exp(-rb*rb/(2*s2))/sqrt(2*M_PI);
-            c_erfc = 0.5*erfc(rb/(sqrt(2*s2)));
+            c_erfc = 0.5*gmx_erfc(rb/(sqrt(2*s2)));
 
             /* Exact contribution of an atom pair with Gaussian displacement
              * with sigma s to the energy drift for a potential with
@@ -464,8 +464,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
         b  = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
         rc = ir->rcoulomb;
         br = b*rc;
-        md_el = elfac*(2*b*exp(-br*br)/(sqrt(M_PI)*rc) + erfc(br)/(rc*rc));
-        dd_el = elfac/(rc*rc)*(4*b*(1 + br*br)*exp(-br*br)/sqrt(M_PI) + 2*erfc(br)/rc);
+        md_el = elfac*(2*b*exp(-br*br)/(sqrt(M_PI)*rc) + gmx_erfc(br)/(rc*rc));
+        dd_el = elfac/(rc*rc)*(4*b*(1 + br*br)*exp(-br*br)/sqrt(M_PI) + 2*gmx_erfc(br)/rc);
     }
     else
     {

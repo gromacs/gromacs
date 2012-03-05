@@ -41,6 +41,7 @@
 #include <string.h>
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "maths.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -1762,7 +1763,7 @@ void init_interaction_const(FILE *fp,
     ic->ewaldcoeff  = fr->ewaldcoeff;
     if (shCoul)
     {
-        ic->sh_ewald = erfc(ic->ewaldcoeff*ic->rcoulomb);
+        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff*ic->rcoulomb);
     }
     else
     {

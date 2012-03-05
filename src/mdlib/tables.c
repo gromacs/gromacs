@@ -129,7 +129,7 @@ typedef struct {
 
 static double v_ewald_lr(double beta,double r)
 {
-    return erf(beta*r)/r;
+    return gmx_erf(beta*r)/r;
 }
 
 void table_spline3_fill_ewald_lr(real *tabf,real *tabv,
@@ -309,7 +309,7 @@ real ewald_spline3_table_scale(real ewaldcoeff,real rc)
     sc_f = sqrt(erf_x_d3/(6*4*ftol*ewaldcoeff))*ewaldcoeff;
 
     /* Energy tolerance: 10x more accurate than the cut-off jump */
-    etol = 0.1*erfc(ewaldcoeff*rc);
+    etol = 0.1*gmx_erfc(ewaldcoeff*rc);
     sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
 
     return max(sc_f,sc_e);

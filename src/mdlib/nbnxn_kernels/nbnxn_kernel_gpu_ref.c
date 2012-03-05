@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include "types/simple.h"
+#include "maths.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "force.h"
@@ -269,7 +270,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
                                     if (bEner)
                                     {
-                                        vcoul = qq*((int_bit - erf(iconst->ewaldcoeff*r))*rinv - int_bit*iconst->sh_ewald);
+                                        vcoul = qq*((int_bit - gmx_erf(iconst->ewaldcoeff*r))*rinv - int_bit*iconst->sh_ewald);
                                     }
                                 }
 
