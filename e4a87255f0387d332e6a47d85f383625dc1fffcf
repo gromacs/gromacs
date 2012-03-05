@@ -1,0 +1,8 @@
+Code-Review+1: Christoph Junghans <junghans@votca.org>
+Code-Review+2: Szilárd Páll <pszilard@cbr.su.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Szilárd Páll <pszilard@cbr.su.se>
+Submitted-at: Mon, 05 Mar 2012 21:20:10 +0100
+Reviewed-on: https://gerrit.gromacs.org/535
+Project: gromacs
+Branch: refs/heads/release-4-5-patches
