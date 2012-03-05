@@ -745,7 +745,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
 
     gmx_fio_do_real(fio,ir->em_stepsize); 
-    gmx_fio_do_real(fio,ir->em_tol); 
+    gmx_fio_do_real(fio,ir->em_tol);
+    if (file_version >= 77) {
+      gmx_fio_do_real(fio,ir->em_omega);
+      gmx_fio_do_int(fio,ir->aspc_k);
+    }
     if (file_version >= 22) 
       gmx_fio_do_gmx_bool(fio,ir->bShakeSOR);
     else if (bRead)

@@ -689,6 +689,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     
     PR("em-stepsize",ir->em_stepsize);
     PR("em-tol",ir->em_tol);
+    PR("em_omega",ir->em_omega);
+    PI("aspc_k",ir->aspc_k);
     PI("niter",ir->niter);
     PR("fc-stepsize",ir->fc_stepsize);
     PI("nstcgsteep",ir->nstcgsteep);

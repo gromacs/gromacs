@@ -303,6 +303,9 @@ typedef struct {
   real dihre_fc;        /* force constant for dihedral restraints	*/
   real em_stepsize;	    /* The stepsize for updating			*/
   real em_tol;		    /* The tolerance				*/
+  real em_omega;        /* Relaxation parameter for SCF updates         */
+  int  aspc_k;          /* The "order" of the ASPC predictor for shells
+                           aspc_k = 0 select the old linear prediction + SD */
   int  niter;           /* Number of iterations for convergence of      */
                         /* steepest descent in relax_shells             */
   real fc_stepsize;     /* Stepsize for directional minimization        */
