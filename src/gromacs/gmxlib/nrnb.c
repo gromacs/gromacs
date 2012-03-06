@@ -228,6 +228,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Orient. Restr.",                200 },
     { "Dihedral Restr.",               200 },
     { "Pos. Restr.",                   50  },
+    { "Flat-bottom posres",            50  },
     { "Angle Restr.",                  191 },
     { "Angle Restr. Z",                164 },
     { "Morse Potent.",                 58  },
@@ -258,7 +259,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 4fd",              110 }, 
     { "Virtual Site 4fdn",             254 }, 
     { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 } 
+    { "Mixed Generalized Born stuff",   10 },
 };
 
 
@@ -426,7 +427,7 @@ const char *nrnb_str(int enr)
 static const int    force_index[]={ 
   eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER, 
   eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
-  eNR_NS,     eNR_NBKERNEL_OUTER
+  eNR_FBPOSRES, eNR_NS,    eNR_NBKERNEL_OUTER
 };
 #define NFORCE_INDEX asize(force_index)
 
@@ -479,7 +480,7 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
       /* Cost due to forces */
       for(j=0; (j<eNR_NBKERNEL_NR); j++)
 	ftot[i]+=nrnb[i].n[j]*cost_nrnb(j);
-      for(j=0; (j<NFORCE_INDEX); j++) 
+      for(j=0; (j<NFORCE_INDEX); j++)
 	ftot[i]+=nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
       /* Due to shake */
       for(j=0; (j<NCONSTR_INDEX); j++) {
