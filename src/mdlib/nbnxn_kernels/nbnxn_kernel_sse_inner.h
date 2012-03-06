@@ -223,27 +223,33 @@
 
 #ifdef CHECK_EXCLS
 #ifndef GMX_AVX_HERE
-            /* Load integer interaction mask */
-            __m128i mask_int = _mm_set1_epi32(l_cj[cjind].excl);
+            {
+                /* Load integer interaction mask */
+                __m128i mask_int = _mm_set1_epi32(l_cj[cjind].excl);
 
-            /* The is no unequal sse instruction, so we need a not here */
-            int_SSE0         = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE));
-            int_SSE1         = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE));
-            int_SSE2         = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE));
-            int_SSE3         = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE));
+                /* The is no unequal sse instruction, so we need a not here */
+                int_SSE0     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE));
+                int_SSE1     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE));
+                int_SSE2     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE));
+                int_SSE3     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE));
+            }
 #else
-            /* Load integer interaction mask */
-            gmx_mm_pr mask_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl));
-            int_SSE0         = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask0),zero_SSE);
-            int_SSE1         = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask1),zero_SSE);
+            {
+                /* Load integer interaction mask */
+                gmx_mm_pr mask_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl));
 #ifndef GMX_DOUBLE
-            gmx_mm_pr masks_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl>>(2*UNROLLJ)));
-            int_SSE2         = gmx_cmpneq_pr(gmx_and_pr(masks_pr,mask0),zero_SSE);
-            int_SSE3         = gmx_cmpneq_pr(gmx_and_pr(masks_pr,mask1),zero_SSE);
-#else
-            int_SSE2         = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask2),zero_SSE);
-            int_SSE3         = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask3),zero_SSE);
+                gmx_mm_pr masksh_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl>>(2*UNROLLJ)));
 #endif
+                int_SSE0     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask0),zero_SSE);
+                int_SSE1     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask1),zero_SSE);
+#ifndef GMX_DOUBLE
+                int_SSE2     = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask0),zero_SSE);
+                int_SSE3     = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask1),zero_SSE);
+#else
+                int_SSE2     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask2),zero_SSE);
+                int_SSE3     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask3),zero_SSE);
+#endif
+            }
 #endif
 #endif
             /* load j atom coordinates */
@@ -713,16 +719,11 @@
 #ifndef ENERGY_GROUPS
             VvdwtotSSE         = gmx_add_pr(VvdwtotSSE,
 #ifndef HALF_LJ
-                                            gmx_sum4_pr(
+                                            gmx_sum4_pr(VLJ_SSE0,VLJ_SSE1,VLJ_SSE2,VLJ_SSE3)
 #else
-                                                gmx_add_pr(
+                                            gmx_add_pr(VLJ_SSE0,VLJ_SSE1)
 #endif
-                                                           VLJ_SSE0,VLJ_SSE1
-#ifndef HALF_LJ
-                                                           ,
-                                                           VLJ_SSE2,VLJ_SSE3
-#endif
-                                                           ));
+                                           );
 #else
             add_ener_grp(VLJ_SSE0,vvdwtp[0],egp_jj);
             add_ener_grp(VLJ_SSE1,vvdwtp[1],egp_jj);
