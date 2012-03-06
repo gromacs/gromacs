@@ -188,8 +188,7 @@ int ifunc_index(directive d,int type)
     case 1:
       return F_POSRES;
     case 2:
-      gmx_fatal(FARGS,"Water polarization should now be listed under [ water_polarization ]\n");
-      break;
+      return F_FBPOSRES;
     default:
       gmx_fatal(FARGS,"Invalid position restraint type %d",type);
     }
