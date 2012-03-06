@@ -709,7 +709,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-  gmx_bool   bFirst = TRUE;
+    gmx_bool   bFirst = TRUE, *hadAtom;
   rvec   *x,*v,*xp;
   dvec   sum;
   double totmass;
@@ -719,7 +719,7 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
   char   warn_buf[STRLEN],title[STRLEN];
   int    a,i,ai,j,k,mb,nat_molb;
   gmx_molblock_t *molb;
-  t_params *pr;
+  t_params *pr,*prfb;
   t_atom *atom;
 
   get_stx_coordnum(fn,&natoms);
@@ -747,82 +747,100 @@ static void read_posres(gmx_mtop_t *mtop,t_molinfo *molinfo,gmx_bool bTopB,
   clear_dvec(sum);
   totmass = 0;
   a = 0;
+  snew(hadAtom,natoms);
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molb = &mtop->molblock[mb];
     nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
-    pr = &(molinfo[molb->type].plist[F_POSRES]);
-    if (pr->nr > 0) {
+    pr   = &(molinfo[molb->type].plist[F_POSRES]); 
+    prfb = &(molinfo[molb->type].plist[F_FBPOSRES]);
+    if ( pr->nr > 0 || prfb->nr > 0 ) {
       atom = mtop->moltype[molb->type].atoms.atom;
       for(i=0; (i<pr->nr); i++) {
-	ai=pr->param[i].AI;
-	if (ai >= natoms) {
-	  gmx_fatal(FARGS,"Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
-		    ai+1,*molinfo[molb->type].name,fn,natoms);
-	}
-	if (rc_scaling == erscCOM) {
-	  /* Determine the center of mass of the posres reference coordinates */
-	  for(j=0; j<npbcdim; j++) {
-	    sum[j] += atom[ai].m*x[a+ai][j];
-	  }
-	  totmass  += atom[ai].m;
-	}
+          ai=pr->param[i].AI;
+          if (ai >= natoms) {
+              gmx_fatal(FARGS,"Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
+                        ai+1,*molinfo[molb->type].name,fn,natoms);
+          }
+          hadAtom[ai]=TRUE;
+          if (rc_scaling == erscCOM) {
+              /* Determine the center of mass of the posres reference coordinates */
+              for(j=0; j<npbcdim; j++) {
+                  sum[j] += atom[ai].m*x[a+ai][j];
+              }
+              totmass  += atom[ai].m;
+          }
+      }
+      /* Same for flat-bottom posres, but do not count an atom twice for COM */
+      for(i=0; (i<prfb->nr); i++) {
+          ai=prfb->param[i].AI;
+          if (ai >= natoms) {
+              gmx_fatal(FARGS,"Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
+                        ai+1,*molinfo[molb->type].name,fn,natoms);
+          }
+          if (rc_scaling == erscCOM && hadAtom[ai] == FALSE) {
+              /* Determine the center of mass of the posres reference coordinates */
+              for(j=0; j<npbcdim; j++) {
+                  sum[j] += atom[ai].m*x[a+ai][j];
+              }
+              totmass  += atom[ai].m;
+          }
       }
       if (!bTopB) {
-	molb->nposres_xA = nat_molb;
-	snew(molb->posres_xA,molb->nposres_xA);
-	for(i=0; i<nat_molb; i++) {
-	  copy_rvec(x[a+i],molb->posres_xA[i]);
-	}
+          molb->nposres_xA = nat_molb;
+          snew(molb->posres_xA,molb->nposres_xA);
+          for(i=0; i<nat_molb; i++) {
+              copy_rvec(x[a+i],molb->posres_xA[i]);
+          }
       } else {
-	molb->nposres_xB = nat_molb;
-	snew(molb->posres_xB,molb->nposres_xB);
-	for(i=0; i<nat_molb; i++) {
-	  copy_rvec(x[a+i],molb->posres_xB[i]);
-	}
+          molb->nposres_xB = nat_molb;
+          snew(molb->posres_xB,molb->nposres_xB);
+          for(i=0; i<nat_molb; i++) {
+              copy_rvec(x[a+i],molb->posres_xB[i]);
+          }
       }
     }
     a += nat_molb;
   }
   if (rc_scaling == erscCOM) {
-    if (totmass == 0)
-      gmx_fatal(FARGS,"The total mass of the position restraint atoms is 0");
-    for(j=0; j<npbcdim; j++)
-      com[j] = sum[j]/totmass;
-    fprintf(stderr,"The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f\n",com[XX],com[YY],com[ZZ]);
+      if (totmass == 0)
+          gmx_fatal(FARGS,"The total mass of the position restraint atoms is 0");
+      for(j=0; j<npbcdim; j++)
+          com[j] = sum[j]/totmass;
+      fprintf(stderr,"The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f\n",com[XX],com[YY],com[ZZ]);
   }
 
   if (rc_scaling != erscNO) {
-    for(mb=0; mb<mtop->nmolblock; mb++) {
-      molb = &mtop->molblock[mb];
-      nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
-      if (molb->nposres_xA > 0 || molb->nposres_xB > 0) {
-	xp = (!bTopB ? molb->posres_xA : molb->posres_xB);
-	for(i=0; i<nat_molb; i++) {
-	  for(j=0; j<npbcdim; j++) {
-	    if (rc_scaling == erscALL) {
-	      /* Convert from Cartesian to crystal coordinates */
-	      xp[i][j] *= invbox[j][j];
-	      for(k=j+1; k<npbcdim; k++) {
-		xp[i][j] += invbox[k][j]*xp[i][k];
-	      }
-	    } else if (rc_scaling == erscCOM) {
-	      /* Subtract the center of mass */
-	      xp[i][j] -= com[j];
-	    }
-	  }
-	}
+      for(mb=0; mb<mtop->nmolblock; mb++) {
+          molb = &mtop->molblock[mb];
+          nat_molb = molb->nmol*mtop->moltype[molb->type].atoms.nr;
+          if (molb->nposres_xA > 0 || molb->nposres_xB > 0) {
+              xp = (!bTopB ? molb->posres_xA : molb->posres_xB);
+              for(i=0; i<nat_molb; i++) {
+                  for(j=0; j<npbcdim; j++) {
+                      if (rc_scaling == erscALL) {
+                          /* Convert from Cartesian to crystal coordinates */
+                          xp[i][j] *= invbox[j][j];
+                          for(k=j+1; k<npbcdim; k++) {
+                              xp[i][j] += invbox[k][j]*xp[i][k];
+                          }
+                      } else if (rc_scaling == erscCOM) {
+                          /* Subtract the center of mass */
+                          xp[i][j] -= com[j];
+                      }
+                  }
+              }
+          }
       }
-    }
 
-    if (rc_scaling == erscCOM) {
-      /* Convert the COM from Cartesian to crystal coordinates */
-      for(j=0; j<npbcdim; j++) {
-	com[j] *= invbox[j][j];
-	for(k=j+1; k<npbcdim; k++) {
-	  com[j] += invbox[k][j]*com[k];
-	}
+      if (rc_scaling == erscCOM) {
+          /* Convert the COM from Cartesian to crystal coordinates */
+          for(j=0; j<npbcdim; j++) {
+              com[j] *= invbox[j][j];
+              for(k=j+1; k<npbcdim; k++) {
+                  com[j] += invbox[k][j]*com[k];
+              }
+          }
       }
-    }
   }
   
   free_t_atoms(&dumat,TRUE);
@@ -1404,7 +1422,7 @@ int main (int argc, char *argv[])
   else
     strcpy(fnB,fn);
 
-    if (nint_ftype(sys,mi,F_POSRES) > 0)
+    if (nint_ftype(sys,mi,F_POSRES) > 0 || nint_ftype(sys,mi,F_FBPOSRES) > 0)
     {
         if (bVerbose)
         {
