@@ -485,20 +485,25 @@ the periodic boundary conditions, this requires a slower PBC algorithm
 and molecules are not made whole in the output</dd>
 </dl></dd>
 
-<dt><b>verlet-buffer-drift: (0.001) [kJ/mol/ps]</b></dt>
-<dd>With <b>cutoff-scheme</b>=<b>Verlet</b> sets the target energy drift per 
-particle caused by the Verlet buffer and it also indirectly sets <b>rlist</b>. 
+<dt><b>verlet-buffer-drift: (0.005) [kJ/mol/ps]</b></dt>
+<dd>With <b>cutoff-scheme</b>=<b>Verlet</b> this sets the target energy drift
+per particle caused by the Verlet buffer, which indirectly sets <b>rlist</b>. 
 As both <b>nstlist</b> and the Verlet buffer size are fixed 
 (for performance reasons), particle pairs not in the pair-list can occasionally 
-get within the cut-off distance during <b>nstlist</b> nsteps. This 
-generates energy drift which, when the temperature is known, can be 
+get within the cut-off distance during <b>nstlist</b>-1 nsteps. This 
+generates energy drift. In a constant-temperature ensemble the drift can be 
 estimated for a given cut-off and <b>rlist</b>. The estimate assumes a 
-homogeneous particle distribution hence the drift might by slightly 
-underestimated for multi-phase systems. However, the default 0.001 kJ/mol/ps 
-per particle is a quite conservative value. Without dynamics 
-(energy minimization etc.) the buffer is 5% of the cut-off. 
-With dynamics without temperature coupling or to override 
-the buffer size, <b>verlet-buffer-drift</b>=-1 needs to be set.</dd>
+homogeneous particle distribution, hence the drift might by slightly 
+underestimated for multi-phase systems. For longer pair-list life-time
+(<b>nstlist</b>-1)*dt the drift is overestimated, because the interactions
+between particles are ignored. Combined with cancellation of errors
+the actual energy drift is usually one to two orders of magnitude smaller.
+Note that the generated buffer size takes into account that
+the GROMACS pair-list setup leads a reduction of the drift of
+a factor 10 compared to a simple particle-pair based list.
+Without dynamics (energy minimization etc.) the buffer is 5% of the cut-off.
+Use <b>verlet-buffer-drift</b>=-1 for dynamics without temperature coupling
+or to override  the buffer size.</dd>
 
 <dt><b>rlist: (1) [nm]</b></dt>
 <dd>Cut-off distance for the short-range neighbor list.

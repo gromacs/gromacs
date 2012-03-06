@@ -1021,7 +1021,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
   CTYPE ("Allowed energy drift due to the verlet buffer in kJ/mol/ps per atom,");
   CTYPE ("a value of -1 means: use rlist");
-  RTYPE("verlet-buffer-drift", opts->verletbuf_drift,    0.001);
+  RTYPE("verlet-buffer-drift", opts->verletbuf_drift,    0.005);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
   CTYPE ("long-range cut-off for switched potentials");
