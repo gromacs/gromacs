@@ -2516,11 +2516,6 @@ void init_forcerec(FILE *fp,
             fprintf(debug,"No fcdata or table file name passed, can not read table, can not do bonded interactions\n");
     }
     
-    if (ir->eDispCorr != edispcNO)
-    {
-        calc_enervirdiff(fp,ir->eDispCorr,fr);
-    }
-
     /* QM/MM initialization if requested
      */
     if (ir->bQMMM)
@@ -2591,6 +2586,11 @@ void init_forcerec(FILE *fp,
            TODO should be moved out during modularizzation.
          */
         init_interaction_const(fp, &fr->ic, fr);
+    }
+
+    if (ir->eDispCorr != edispcNO)
+    {
+        calc_enervirdiff(fp,ir->eDispCorr,fr);
     }
 }
 
