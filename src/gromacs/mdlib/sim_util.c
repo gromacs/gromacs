@@ -769,6 +769,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                    fr->rc_scaling,fr->ePBC,fr->posres_com);
         enerd->term[F_FBPOSRES] += v;
         inc_nrnb(nrnb,eNR_FBPOSRES,top->idef.il[F_FBPOSRES].nr/2);
+    }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
