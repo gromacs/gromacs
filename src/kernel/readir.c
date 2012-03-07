@@ -225,6 +225,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
              warning_error(wi,"With Verlet lists nstlist should be larger than 0");
         }
 
+        if (ir->nstlist < 10)
+        {
+            warning_note(wi,"With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme nstlist has no effect on the accuracy of your simulation.");
+        }
+
         rc_max = max(ir->rvdw,ir->rcoulomb);
 
         if (opts->verletbuf_drift <= 0)
