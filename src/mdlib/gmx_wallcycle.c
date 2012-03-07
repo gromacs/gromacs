@@ -741,6 +741,34 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
     }
 
+    if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 &&
+        (cycles[ewcDOMDEC] > tot*0.1 ||
+         cycles[ewcNS] > tot*0.1))
+    {
+        if (wc->wcc[ewcDOMDEC].n == 0)
+        {
+            sprintf(buf,
+                    "NOTE: %d %% of the run time was spent in pair search,\n"
+                    "      you might want to increase nstlist (this has no effect on accuracy)\n",
+                    (int)(100*cycles[ewcNS]/tot+0.5));
+        }
+        else
+        {
+            sprintf(buf,
+                    "NOTE: %d %% of the run time was spent in domain decomposition,\n"
+                    "      %d %% of the run time was spent in pair search,\n"
+                    "      you might want to increase nstlist (this has no effect on accuracy)\n",
+                    (int)(100*cycles[ewcDOMDEC]/tot+0.5),
+                    (int)(100*cycles[ewcNS]/tot+0.5));
+        }
+        if (fplog)
+        {
+            fprintf(fplog,"\n%s\n",buf);
+        }
+        /* Only the sim master calls this function, so always print to stderr */
+        fprintf(stderr,"\n%s\n",buf);
+    }
+
     if (cycles[ewcMoveE] > tot*0.05)
     {
         sprintf(buf,
