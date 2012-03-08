@@ -49,6 +49,7 @@
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/format.h"
 #include "testutils/testexceptions.h"
 
 #include "refdata-impl.h"
@@ -505,14 +506,13 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
     }
     SCOPED_TRACE(_impl->traceString(id));
     bool bFound = false;
-    char strValue[20];
-    snprintf(strValue, 20, "%f", value);
+    std::string strValue = formatString("%f", value);
     std::string refStrValue =
         _impl->processItem(Impl::cRealNodeName, id, strValue, &bFound);
     if (bFound)
     {
         char *endptr = NULL;
-        double refValue = std::strtof(refStrValue.c_str(), &endptr);
+        double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
         EXPECT_NEAR(refValue, value, 0.0001);
     }
