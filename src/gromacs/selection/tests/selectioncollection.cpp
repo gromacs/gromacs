@@ -614,7 +614,7 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
     runTest("simple.gro", selections);
 }
 
-
+#ifdef USE_REGEX
 TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
 {
     static const char * const selections[] = {
@@ -623,7 +623,7 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
     };
     runTest("simple.gro", selections);
 }
-
+#endif
 
 TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
 {

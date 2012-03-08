@@ -42,6 +42,7 @@
 
 #include <gmock/gmock.h>
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/utility/common.h"
 
