@@ -74,7 +74,7 @@ TEST(ReferenceDataTest, HandlesVectorData)
     using gmx::test::TestReferenceData;
     using gmx::test::TestReferenceChecker;
     int veci[3] = { -1, 3, 5 };
-    float vecf[3] = { -2.3, 1.43, 2.5 };
+    float vecf[3] = { -2.3f, 1.43f, 2.5f };
     double vecd[3] = { -2.3, 1.43, 2.5 };
 
     {
