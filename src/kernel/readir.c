@@ -966,7 +966,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
   CTYPE ("number of steps for center of mass motion removal");
-  ITYPE ("nstcomm",	ir->nstcomm,	10);
+  ITYPE ("nstcomm",	ir->nstcomm,	100);
   CTYPE ("group(s) for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
@@ -1000,8 +1000,8 @@ void get_ir(const char *mdparin,const char *mdparout,
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
-  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
-  ITYPE ("nstenergy",   ir->nstenergy,  100);
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	100);
+  ITYPE ("nstenergy",   ir->nstenergy,  1000);
   CTYPE ("Output frequency and precision for .xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc-precision",ir->xtcprec,   1000.0);

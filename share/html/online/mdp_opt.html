@@ -258,7 +258,7 @@ set <tt>init-step</tt> to the step number of the restart frame.
 <dt><b>No</b></dt>
 <dd>No restriction on the center of mass motion
 </dl></dd>
-<dt><b>nstcomm: (10) [steps]</b></dt>
+<dt><b>nstcomm: (100) [steps]</b></dt>
 <dd>frequency for center of mass motion removal</dd>
 <dt><b>comm-grps:</b></dt>
 <dd>group(s) for center of mass motion removal, default is the whole system</dd>
@@ -348,7 +348,7 @@ the last velocities are always written</dd>
 <dt><b>nstlog: (100) [steps]</b></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
-<dt><b>nstcalcenergy: (-1)</b></dt>
+<dt><b>nstcalcenergy: (100)</b></dt>
 <dd>frequency for calculating the energies, 0 is never.
 This option is only relevant with dynamics.
 With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
@@ -356,12 +356,8 @@ or a multiple of <b>nstlist</b>.
 This option affects the performance in parallel simulations,
 because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
-The default value of -1 sets <b>nstcalcenergy</b> equal to <b>nstlist</b>,
-unless <b>nstlist</b> &le;0, then a value of 10 is used.
-If <b>nstenergy</b> is smaller than the automatically generated value,
-the lowest common denominator of <b>nstenergy</b> and <b>nstlist</b> is used.
 </dd>
-<dt><b>nstenergy: (100) [steps]</b></dt>
+<dt><b>nstenergy: (1000) [steps]</b></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
 should be a multiple of <b>nstcalcenergy</b>.
