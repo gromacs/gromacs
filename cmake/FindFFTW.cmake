@@ -37,12 +37,17 @@ else()
   message(FATAL_ERROR "We do not support finding ${FFTW_FIND_COMPONENTS}, go and implement it ;-)")
 endif()
 
-pkg_check_modules(PC_FFTW "${FFTW_PKG}")
-find_path(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_HEADER}" HINTS ${PC_FFTW_INCLUDE_DIRS})
+if(NOT __pkg_config_checked_PC_FFTW)
+  pkg_check_modules(PC_FFTW "${FFTW_PKG}")
+endif(NOT __pkg_config_checked_PC_FFTW)
 
+find_path(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_HEADER}" HINTS ${PC_FFTW_INCLUDE_DIRS})
 find_library(FFTW_LIBRARY_${FFTW_PKG} NAMES "${FFTW_PKG}" HINTS ${PC_FFTW_LIBRARY_DIRS} )
 
-#do that so that the user can use FFTW_LIBRARY, FFTW_INCLUDE_DIR to provide custom stuff
+#make _${FFTW_PKG} variables INTERNAL to avoid confusion
+set(FFTW_LIBRARY_${FFTW_PKG} ${FFTW_LIBRARY_${FFTW_PKG}} CACHE INTERNAL "Path to library ${FFTW_PKG}")
+set(FFTW_INCLUDE_DIR_${FFTW_PKG} ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_HEADER}")
+
 set(FFTW_LIBRARY ${FFTW_LIBRARY_${FFTW_PKG}} CACHE STRING "Path to library ${FFTW_PKG}")
 set(FFTW_INCLUDE_DIR ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE STRING "Path to ${FFTW_HEADER}")
 
