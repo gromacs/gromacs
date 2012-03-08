@@ -602,6 +602,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     else
       pr_rvec(fp,indent,"posres-comB",ir->posres_comB,DIM,TRUE);
     PI("andersen-seed",ir->andersen_seed);
+    PR("verlet-buffer-drift",ir->verletbuf_drift);
     PR("rlist",ir->rlist);
     PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);

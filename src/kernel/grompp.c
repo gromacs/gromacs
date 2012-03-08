@@ -1590,13 +1590,13 @@ int main (int argc, char *argv[])
            bGenVel ? state.v : NULL,
            wi);
   
-    if (ir->cutoff_scheme == ecutsVERLET && opts->verletbuf_drift > 0)
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_drift > 0)
     {
         if (EI_DYNAMICS(ir->eI) &&
             !(EI_MD(ir->eI==eiMD) && ir->etc!=etcNO) &&
             inputrec2nboundeddim(ir) == 3)
         {
-            set_verlet_buffer(sys,ir,state.box,opts->verletbuf_drift,wi);
+            set_verlet_buffer(sys,ir,state.box,ir->verletbuf_drift,wi);
         }
     }
 

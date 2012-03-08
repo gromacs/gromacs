@@ -3274,7 +3274,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
-                      NULL,FALSE,pforce);
+                      NULL,-1,FALSE,pforce);
         init_interaction_const(fplog, &ic, fr); 
 
         /* version for PCA_NOT_READ_NODE (see md.c) */

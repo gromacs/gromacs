@@ -114,7 +114,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
     att  = NULL;
     natt = 0;
 
-    *n_nonlin_vsite = 0;
+    if (n_nonlin_vsite != NULL)
+    {
+        *n_nonlin_vsite = 0;
+    }
 
     for(mb=0; mb<mtop->nmolblock; mb++)
     {
@@ -208,7 +211,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
                         {
                             vsite_m[a1] = min(vsite_m[a1],cam[j]);
                         }
-                        *n_nonlin_vsite += nmol;
+                        if (n_nonlin_vsite != NULL)
+                        {
+                            *n_nonlin_vsite += nmol;
+                        }
                         break;
                     }
                 }

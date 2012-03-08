@@ -1533,14 +1533,12 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 }
 
 /* Selects the nbnxn (Verlet) kernel to be used. */
-static void pick_nbnxn_kernel(FILE *fp,
-                              const t_commrec *cr,
-                              gmx_bool tryGPU, gmx_bool *useGPU,
-                              gmx_bool forceGPU,
-                              int *kernel_type,
-                              int *na_c)
+void pick_nbnxn_kernel(FILE *fp,
+                       const t_commrec *cr,
+                       gmx_bool tryGPU, gmx_bool *useGPU,
+                       gmx_bool forceGPU,
+                       int *kernel_type)
 {
-    char *env;
     gmx_bool emulateGPU=FALSE;
 
     if (tryGPU)
@@ -1579,7 +1577,7 @@ static void pick_nbnxn_kernel(FILE *fp,
         /* Run GPU emulation mode if GMX_EMULATE_GPU is defined and also if nobonded 
            calculations are turned off via GMX_NO_NONBONDED. This is the simple way 
        to also turn off GPU/CUDA initializations. */
-        emulateGPU = (((env = getenv("GMX_EMULATE_GPU")) != NULL) ||
+        emulateGPU = ((getenv("GMX_EMULATE_GPU") != NULL) ||
                       (getenv("GMX_NO_NONBONDED") != NULL));
 
        *useGPU = FALSE;
@@ -1588,18 +1586,9 @@ static void pick_nbnxn_kernel(FILE *fp,
     {
         *kernel_type = nbk8x8x8PlainC;
 
-        if (env != NULL)
-        {
-            sscanf(env,"%d",na_c);
-        }
-
-        if (*na_c == 0 || env == NULL)
-        {
-            *na_c = NBNXN_GPU_CLUSTER_SIZE;
-        }
         if (fp != NULL)
         {
-            fprintf(fp, "Emulating GPU, using %d atoms per sub-cell\n", *na_c);
+            fprintf(fp, "Emulating GPU\n");
         }
     }    
     else if (tryGPU)
@@ -1610,14 +1599,12 @@ static void pick_nbnxn_kernel(FILE *fp,
         if (*useGPU)
         {
             *kernel_type = nbk8x8x8CUDA;
-
-            *na_c = NBNXN_GPU_CLUSTER_SIZE;
         }
     }
 
     if (fp != NULL)
     {
-        fprintf(fp,"Using %s non-bonded kernels\n\n",nbk_name[*kernel_type]);
+        fprintf(fp,"\nUsing %s non-bonded kernels\n\n",nbk_name[*kernel_type]);
     }
 }
 
@@ -1824,11 +1811,11 @@ void init_interaction_const(FILE *fp,
 
 static void init_nb_verlet(FILE *fp, 
                            nonbonded_verlet_t **nb_verlet,
-                           int *na_c,
                            const t_inputrec *ir,
                            const t_forcerec *fr,
                            const t_commrec *cr,
-                           const char *nbpu_opt)
+                           const char *nbpu_opt,
+                           int nbnxn_kernel_preset)
 {
     nonbonded_verlet_t *nbv;
     int  i;
@@ -1850,13 +1837,22 @@ static void init_nb_verlet(FILE *fp,
 
         if (i == 0)
         {
-            pick_nbnxn_kernel(fp, cr,
-                              (nbpu_opt != NULL &&
-                               (strncmp(nbpu_opt,"gpu",3) == 0 ||
-                                strcmp(nbpu_opt,"auto") == 0)),
-                              &nbv->useGPU,
-                              strncmp(nbpu_opt,"gpu",3) == 0,
-                              &nbv->grp[i].kernel_type, na_c);
+            if (nbnxn_kernel_preset < 0)
+            {
+                pick_nbnxn_kernel(fp, cr,
+                                  (nbpu_opt != NULL &&
+                                   (strncmp(nbpu_opt,"gpu",3) == 0 ||
+                                    strcmp(nbpu_opt,"auto") == 0)),
+                                  &nbv->useGPU,
+                                  (nbpu_opt != NULL &&
+                                   strncmp(nbpu_opt,"gpu",3) == 0),
+                                  &nbv->grp[i].kernel_type);
+            }
+            else
+            {
+                nbv->useGPU = (nbnxn_kernel_preset == nbk8x8x8CUDA);
+                nbv->grp[i].kernel_type = nbnxn_kernel_preset;
+            }
         }
         else
         {
@@ -1864,7 +1860,7 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
-                                  &nbv->grp[i].kernel_type, na_c);
+                                  &nbv->grp[i].kernel_type);
             }
             else
             {
@@ -1910,7 +1906,7 @@ static void init_nb_verlet(FILE *fp,
                       DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
                       is_nbl_type_simple(nbv->grp[0].kernel_type),
-                      *na_c,
+                      NBNXN_GPU_CLUSTER_SIZE,
                       gmx_omp_nthreads_get(emntNonbonded));
 
     for(i=0; i<nbv->nloc; i++)
@@ -1968,6 +1964,7 @@ void init_forcerec(FILE *fp,
                    const char *tabpfn,
                    const char *tabbfn,
                    const char *nbpu_opt,
+                   int        nbnxn_kernel_preset,
                    gmx_bool   bNoSolvOpt,
                    real       print_force)
 {
@@ -1981,7 +1978,6 @@ void init_forcerec(FILE *fp,
     gmx_bool    bTab,bSep14tab,bNormalnblists;
     t_nblists *nbl;
     int     *nm_ind,egp_flags;
-    int     na_c;
     
     fr->bDomDec = DOMAINDECOMP(cr);
 
@@ -2580,7 +2576,7 @@ void init_forcerec(FILE *fp,
             gmx_fatal(FARGS,"With Verlet lists rcoulomb and rvdw should be identical");
         }
 
-        init_nb_verlet(fp, &fr->nbv, &na_c, ir, fr, cr, nbpu_opt);
+        init_nb_verlet(fp, &fr->nbv, ir, fr, cr, nbpu_opt, nbnxn_kernel_preset);
 
         /* initilize interaction constants; 
            TODO should be moved out during modularizzation.

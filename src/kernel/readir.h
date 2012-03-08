@@ -58,7 +58,6 @@ typedef struct {
   int nshake;
   char *include;
   char *define;
-  real verletbuf_drift;
   gmx_bool bGenVel;
   gmx_bool bGenPairs;
   real tempi;

@@ -250,6 +250,7 @@ typedef struct {
   rvec posres_com;      /* The COM of the posres atoms                  */
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
   int  andersen_seed;   /* Random seed for Andersen thermostat.         */
+  real verletbuf_drift; /* Max. drift (kJ/mol/ps/atom) for list buffer  */
   real rlist;		/* short range pairlist cut-off (nm)		*/
   real rlistlong;	/* long range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */

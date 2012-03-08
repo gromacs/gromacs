@@ -138,6 +138,18 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * and fp (if !=NULL) on the master node.
  */
 
+/* Selects the nbnxn (Verlet) kernel to be used.
+ * tryGPU: should we try to use a GPU/emulation?
+ * useGPU: return if a are using a real GPU
+ * forceGPU: force the use of a GPU
+ * kernel_type: return the selected kernel type
+ */
+void pick_nbnxn_kernel(FILE *fp,
+                       const t_commrec *cr,
+                       gmx_bool tryGPU, gmx_bool *useGPU,
+                       gmx_bool forceGPU,
+                       int *kernel_type);
+
 gmx_bool is_nbl_type_simple(int nb_kernel_type);
 /* Return TRUE if the Verlet-style neighborlist has simple type.
  */
@@ -169,6 +181,7 @@ void init_forcerec(FILE       *fplog,
 			  const char *tabpfn,
 			  const char *tabbfn,
 		          const char *nbpu_opt,
+		   int nbnxn_kernel_preset,
 			  gmx_bool   bNoSolvOpt,
 			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 

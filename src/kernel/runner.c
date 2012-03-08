@@ -78,6 +78,7 @@
 #include "txtdump.h"
 #include "gmx_omp_nthreads.h"
 #include "pull_rotation.h"
+#include "calc_verletbuf.h"
 
 #include "md_openmm.h"
 
@@ -103,7 +104,8 @@
 #ifdef GMX_GPU
 #include "gpu_utils.h"
 #include "nbnxn_cuda_data_mgmt.h"
-#endif
+#endif /* GMX_GPU */
+
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -312,7 +314,7 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
     }
 
     /* Check if an algorithm does not support parallel simulation.  */
-    if (nthreads != 1 && 
+    if (nthreads != 1 &&
         ( inputrec->eI == eiLBFGS ||
           inputrec->coulombtype == eelEWALD ) )
     {
@@ -349,8 +351,117 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
     }
     return nthreads;
 }
-#endif
+#endif /* GMX_THREAD_MPI */
 
+
+#define NSTLIST_ENVVAR            "GMX_NSTLIST"
+#define NSTLIST_GPU_ENOUGH        20
+#define NSTLIST_GPU_OPTIMAL_GUESS 20
+
+/* Try to increase nstlist when running on a GPU */
+static void increase_nstlist(FILE *fp,t_commrec *cr,
+                             t_inputrec *ir,gmx_mtop_t *mtop,matrix box)
+{
+    int  nstlist_orig;
+    real rlist_new;
+    char *env;
+    t_state state_tmp;
+    gmx_bool bBox,bDD;
+    const char *nstl_fmt="\nFor optimal performace with a GPU nstlist (now %d) should be larger\nThe optimum depends on your CPU and GPU resources\nYou might want to try nstlist values using the env.var. GMX_NSTLIST\n";
+    const char *vbd_err="Can not increase nstlist for GPU run because verlet-buffer-drift is not set or used";
+    const char *box_err="Can not increase nstlist for GPU run because the box is too small";
+    const char *dd_err ="Can not increase nstlist for GPU run because of domain decomposition limitations";
+    char buf[STRLEN];
+
+    if (getenv(NSTLIST_ENVVAR) == NULL)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr,nstl_fmt,ir->nstlist);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp,nstl_fmt,ir->nstlist);
+        }
+    }
+
+    if (ir->verletbuf_drift == 0)
+    {
+        gmx_fatal(FARGS,"You are using an old tpr file with a GPU, please generate a new tpr file with an up to date version of grompp");
+    }
+
+    if (ir->verletbuf_drift < 0)
+    {
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"%s\n",vbd_err);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp,"%s\n",vbd_err);
+        }
+
+        return;
+    }
+
+    nstlist_orig = ir->nstlist;
+    ir->nstlist  = NSTLIST_GPU_OPTIMAL_GUESS;
+    if ((env = getenv(NSTLIST_ENVVAR)) != NULL)
+    {
+        sscanf(env,"%d",&ir->nstlist);
+        sprintf(buf,"Getting nstlist from env.var. GMX_NSTLIST=%s",env);
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"%s\n",buf);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp,"%s\n",buf);
+        }
+    }
+
+    /* Set the pair-list buffer size in ir */
+    calc_verlet_buffer_size(mtop,det(box),ir,ir->verletbuf_drift,
+                            NULL,&rlist_new);
+
+    bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC,box));
+    bDD  = TRUE;
+    if (bBox && DOMAINDECOMP(cr))
+    {
+        if (inputrec2nboundeddim(ir) < DIM)
+        {
+            gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
+        }
+        copy_mat(box,state_tmp.box);
+        bDD = change_dd_cutoff(cr,&state_tmp,ir,rlist_new);
+    }
+
+    if (!bBox || !bDD)
+    {
+        gmx_warning(!bBox ? box_err : dd_err);
+        if (fp != NULL)
+        {
+            fprintf(fp,"\n%s\n",bBox ? box_err : dd_err);
+        }
+        ir->nstlist = nstlist_orig;
+    }
+    else
+    {
+        sprintf(buf,"Changing nstlist from %d to %d, rlist from %g to %g",
+                nstlist_orig,ir->nstlist,
+                ir->rlist,rlist_new);
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"%s\n\n",buf);
+        }
+        if (fp != NULL)
+        {
+            fprintf(fp,"%s\n\n",buf);
+        }
+        ir->rlist     = rlist_new;
+        ir->rlistlong = rlist_new;
+    }
+}
 
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
@@ -373,6 +484,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     t_nrnb     *nrnb;
     gmx_mtop_t *mtop=NULL;
     t_mdatoms  *mdatoms=NULL;
+    int        nbnxn_kernel=-1;
     t_forcerec *fr=NULL;
     t_fcdata   *fcd=NULL;
     real       ewaldcoeff=0;
@@ -709,6 +821,28 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             }
         }
 
+        if (inputrec->cutoff_scheme == ecutsVERLET)
+        {
+            gmx_bool useGPU;
+
+            /* With GPU we should check nstlist for performance */
+            pick_nbnxn_kernel(fplog, cr,
+                              (strncmp(nbpu_opt,"gpu",3) == 0 ||
+                               strcmp(nbpu_opt,"auto") == 0),
+                              &useGPU,
+                              strncmp(nbpu_opt,"gpu",3) == 0,
+                              &nbnxn_kernel);
+            if ((EI_DYNAMICS(inputrec->eI) &&
+                 (nbnxn_kernel == nbk8x8x8CUDA ||
+                  nbnxn_kernel == nbk8x8x8PlainC) &&
+                 inputrec->nstlist < NSTLIST_GPU_ENOUGH) ||
+                getenv(NSTLIST_ENVVAR) != NULL)
+            {
+                /* Choose a better nstlist */
+                increase_nstlist(fplog,cr,inputrec,mtop,box);
+            }
+        }
+
         /* Dihedral Restraints */
         if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
         {
@@ -722,7 +856,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                       opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),
-                      nbpu_opt,
+                      nbpu_opt,nbnxn_kernel,
                       FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */

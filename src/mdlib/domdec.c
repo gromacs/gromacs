@@ -7240,7 +7240,7 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
         np = 1 + (int)(cutoff_req*inv_cell_size);
 
         if (dim < ddbox.npbcdim && dd->comm->eDLB != edlbNO &&
-            np > dd->comm->cd[d].np_dlb)
+           dd->comm->cd[d].np_dlb > 0 && np > dd->comm->cd[d].np_dlb)
         {
             return FALSE;
         }
