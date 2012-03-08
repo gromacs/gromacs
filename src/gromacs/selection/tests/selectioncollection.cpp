@@ -35,6 +35,10 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -614,8 +618,12 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
     runTest("simple.gro", selections);
 }
 
-
-TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
+#ifdef HAVE_REGEX_H
+TEST_F(
+#else
+DISABLED_TEST_F(
+#endif
+       SelectionCollectionDataTest, HandlesRegexMatching)
 {
     static const char * const selections[] = {
         "resname \"R[BD]\"",
