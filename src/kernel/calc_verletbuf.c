@@ -249,17 +249,39 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
     *natt_p = natt;
 }
 
+static void approx_2dof(real s2,real x,
+                        real *shift,real *scale)
+{
+    /* A particle with 1 DOF constrained has 2 DOFs instead of 3.
+     * This code is also used for particles with multiple constraints,
+     * in which case we overestimate the displacement.
+     * The 2DOF distribution is sqrt(pi/2)*erfc(r/(sqrt(2)*s))/(2*s).
+     * We approximate this with scale*Gaussian(s,r+shift),
+     * by matching the distribution value and derivative at x.
+     * This is a tight overestimate for all r>=0 at any s and x.
+     */
+    real ex,er;
+
+    ex = exp(-x*x/(2*s2));
+    er = gmx_erfc(x/sqrt(2*s2));
+
+    *shift = -x + sqrt(2*s2/M_PI)*ex/er;
+    *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
+}
+
+
 static real ener_drift(const att_t *att,int natt,
                        const gmx_ffparams_t *ffp,
                        real kT_fac,real line_dens_nat,
                        real md_ljd,real md_ljr,real md_el,real dd_el,
-                       real rb)
+                       real r_buffer)
 {
     double drift_tot,pot;
-    int  i,j;
-    real s2i,s2j,s2,sfi,sfj,s;
-    int  ti,tj;
-    real md,dd;
+    int    i,j;
+    real   s2i,s2j,s2,s;
+    int    ti,tj;
+    real   md,dd;
+    real   sc_fac,rsh;
     double c_exp,c_erfc;
 
     drift_tot = 0;
@@ -275,23 +297,37 @@ static real ener_drift(const att_t *att,int natt,
             s2j = kT_fac/att[j].mass;
             tj = att[j].type;
 
-            /* Note that attractive and repulsive errors for single
+            /* Note that attractive and repulsive potentials for individual
              * pairs will partially cancel.
              */
+            /* -dV/dr at the cut-off for LJ + Coulomb */
             md =
                 md_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
                 md_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
                 md_el*att[i].q*att[j].q;
 
+            /* d2V/dr2 at the cut-off for Coulomb, we neglect LJ */
             dd = dd_el*att[i].q*att[j].q;
 
             s2  = s2i + s2j;
-            sfi = s2i/s2;
-            sfj = s2j/s2;
-            s   = sqrt(s2);
 
-            c_exp  = exp(-rb*rb/(2*s2))/sqrt(2*M_PI);
-            c_erfc = 0.5*gmx_erfc(rb/(sqrt(2*s2)));
+            rsh    = r_buffer;
+            sc_fac = 1.0;
+            /* For constraints: adapt r and scaling for the Gaussian */
+            if (att[i].con)
+            {
+                real sh,sc;
+                approx_2dof(s2i,r_buffer*s2i/s2,&sh,&sc);
+                rsh    += sh;
+                sc_fac *= sc;
+            }
+            if (att[j].con)
+            {
+                real sh,sc;
+                approx_2dof(s2j,r_buffer*s2j/s2,&sh,&sc);
+                rsh    += sh;
+                sc_fac *= sc;
+            }
 
             /* Exact contribution of an atom pair with Gaussian displacement
              * with sigma s to the energy drift for a potential with
@@ -304,33 +340,19 @@ static real ener_drift(const att_t *att,int natt,
              * Note that pot has unit energy*length, as the linear
              * atom density (line_dens_nat*natoms) still needs to be put in.
              */
-            pot =
-                md*((rb*rb + s2)*c_erfc - rb*s*c_exp) +
-                dd/6*(s*(rb*rb + 2*s2)*c_exp - rb*(rb*rb + 3*s2)*c_erfc);
+            c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
+            c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
+            s      = sqrt(s2);
+
+            pot = sc_fac*
+                (md*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp) +
+                 dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc));
 
             if (gmx_debug_at)
             {
                 fprintf(debug,"n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot %8.1e\n",
                         att[i].n,att[j].n,sqrt(s2i),sqrt(s2j),att[i].con,
                         md,dd,pot);
-            }
-
-            /* Check if with constraints the distribution with 2 DOFs
-             * is smaller than that with 3 DOFs at the buffer distance.
-             * If so, approximate the 2 DOFs distribution with a Gaussian
-             * with equal sigma and equal value at the buffer distance.
-             * This is a tight overestimation.
-             */
-            /* Scale c_erfc to obtain the exact 2 DOFs distribution */
-            c_erfc *= sqrt(0.5*M_PI);
-
-            if (att[i].con && rb*sfi*c_exp > c_erfc*sqrt(s2i))
-            {
-                pot /= rb*sfi*c_exp/(c_erfc*sqrt(s2i));
-            }
-            if (att[j].con && rb*sfj*c_exp > c_erfc*sqrt(s2j))
-            {
-                pot /= rb*sfj*c_exp/(c_erfc*sqrt(s2j));
             }
 
             /* Multiply by the number of atom pairs */
