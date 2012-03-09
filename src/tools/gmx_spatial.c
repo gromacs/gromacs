@@ -120,7 +120,7 @@ int gmx_spatial(int argc,char *argv[])
     /*    { "-cut",      bCUTDOWN, etBOOL, {&bCUTDOWN},*/
     /*      "Display a total cube that is of minimal size" }, */
     { "-bin",      FALSE, etREAL, {&rBINWIDTH},
-      "Width of the bins in nm" },
+      "Width of the bins (nm)" },
     { "-nab",      FALSE, etINT, {&iNAB},
       "Number of additional bins to ensure proper memory allocation" }
   };

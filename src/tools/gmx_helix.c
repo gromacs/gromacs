@@ -130,7 +130,7 @@ int gmx_helix(int argc,char *argv[])
     "Then the following properties are computed:[PAR]",
     "[BB]1.[bb] Helix radius (file [TT]radius.xvg[tt]). This is merely the",
     "RMS deviation in two dimensions for all C[GRK]alpha[grk] atoms.",
-    "it is calced as sqrt((SUM i(x^2(i)+y^2(i)))/N), where N is the number",
+    "it is calculated as [SQRT]([SUM][sum][SUB]i[sub] (x^2(i)+y^2(i)))/N[sqrt] where N is the number",
     "of backbone atoms. For an ideal helix the radius is 0.23 nm[BR]",
     "[BB]2.[bb] Twist (file [TT]twist.xvg[tt]). The average helical angle per",
     "residue is calculated. For an [GRK]alpha[grk]-helix it is 100 degrees,",

@@ -1273,7 +1273,7 @@ int gmx_dipoles(int argc,char *argv[])
         "center of mass of the molecule.[PAR]",
         "The file [TT]Mtot.xvg[tt] contains the total dipole moment of a frame, the",
         "components as well as the norm of the vector.",
-        "The file [TT]aver.xvg[tt] contains < |Mu|^2 > and |< Mu >|^2 during the",
+        "The file [TT]aver.xvg[tt] contains < |[GRK]mu[grk]|^2 > and |< [GRK]mu[grk] >|^2 during the",
         "simulation.",
         "The file [TT]dipdist.xvg[tt] contains the distribution of dipole moments during",
         "the simulation",
@@ -1298,7 +1298,7 @@ int gmx_dipoles(int argc,char *argv[])
         "dipoles using a first order Legendre polynomial of the angle of the",
         "dipole vector and itself a time t later. For this calculation 1001",
         "frames will be used. Further, the dielectric constant will be calculated",
-        "using an [GRK]epsilon[grk]RF of infinity (default), temperature of 300 K (default) and",
+        "using an [TT]-epsilonRF[tt] of infinity (default), temperature of 300 K (default) and",
         "an average dipole moment of the molecule of 2.273 (SPC). For the",
         "distribution function a maximum of 5.0 will be used."
     };
@@ -1317,7 +1317,7 @@ int gmx_dipoles(int argc,char *argv[])
         { "-mumax",    FALSE, etREAL, {&mu_max},
           "max dipole in Debye (for histogram)" },
         { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
-          "epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
+          "[GRK]epsilon[grk] of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
         { "-skip",     FALSE, etINT, {&skip},
           "Skip steps in the output (but not in the computations)" },
         { "-temp",     FALSE, etREAL, {&temp},

@@ -89,7 +89,7 @@ int gmx_nmtraj(int argc,char *argv[])
     {
         { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
         { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
-        { "-temp",      FALSE, etREAL, {&temp},      "Temperature in Kelvin" },
+        { "-temp",      FALSE, etREAL, {&temp},      "Temperature (K)" },
         { "-amplitude", FALSE, etREAL, {&refamplitude}, "Amplitude for modes with eigenvalue<=0" },
         { "-nframes",   FALSE, etINT,  {&nframes},   "Number of frames to generate" }
     };

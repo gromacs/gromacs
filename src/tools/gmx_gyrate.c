@@ -172,7 +172,7 @@ int gmx_gyrate(int argc,char *argv[])
     { "-moi", FALSE, etBOOL, {&bMOI},
       "Calculate the moments of inertia (defined by the principal axes)." },
     { "-nz", FALSE, etINT, {&nz},
-      "Calculate the 2D radii of gyration of # slices along the z-axis" },
+      "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
   };
   FILE       *out;
   t_trxstatus *status;

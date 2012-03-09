@@ -263,7 +263,7 @@ int gmx_h2order(int argc,char *argv[])
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
       "Calculate order parameter as function of boxlength, dividing the box"
-      " in #nr slices."}
+      " in this number of slices."}
   };
   const char *bugs[] = {
     "The program assigns whole water molecules to a slice, based on the first "
