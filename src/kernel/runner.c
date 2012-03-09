@@ -354,17 +354,19 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 #endif /* GMX_THREAD_MPI */
 
 
-#define NSTLIST_ENVVAR            "GMX_NSTLIST"
-#define NSTLIST_GPU_ENOUGH        20
-#define NSTLIST_GPU_OPTIMAL_GUESS 20
+#define NSTLIST_ENVVAR      "GMX_NSTLIST"
+#define NSTLIST_GPU_ENOUGH  20
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
                              t_inputrec *ir,gmx_mtop_t *mtop,matrix box)
 {
-    int  nstlist_orig;
-    real rlist_new;
+#define NNSTL 4
+    int  nstl[NNSTL]={ 20, 25, 40, 50 };
     char *env;
+    int  nstlist_orig,nstlist_prev;
+    real rlist_max,rlist_new,rlist_prev;
+    int  i;
     t_state state_tmp;
     gmx_bool bBox,bDD;
     const char *nstl_fmt="\nFor optimal performace with a GPU nstlist (now %d) should be larger\nThe optimum depends on your CPU and GPU resources\nYou might want to try nstlist values using the env.var. GMX_NSTLIST\n";
@@ -373,7 +375,8 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     const char *dd_err ="Can not increase nstlist for GPU run because of domain decomposition limitations";
     char buf[STRLEN];
 
-    if (getenv(NSTLIST_ENVVAR) == NULL)
+    env = getenv(NSTLIST_ENVVAR);
+    if (env == NULL)
     {
         if (MASTER(cr))
         {
@@ -405,10 +408,8 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     }
 
     nstlist_orig = ir->nstlist;
-    ir->nstlist  = NSTLIST_GPU_OPTIMAL_GUESS;
-    if ((env = getenv(NSTLIST_ENVVAR)) != NULL)
+    if (env != NULL)
     {
-        sscanf(env,"%d",&ir->nstlist);
         sprintf(buf,"Getting nstlist from env.var. GMX_NSTLIST=%s",env);
         if (MASTER(cr))
         {
@@ -418,23 +419,60 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
         {
             fprintf(fp,"%s\n",buf);
         }
+        sscanf(env,"%d",&ir->nstlist);
     }
 
-    /* Set the pair-list buffer size in ir */
-    calc_verlet_buffer_size(mtop,det(box),ir,ir->verletbuf_drift,
-                            NULL,&rlist_new);
+    /* Allow rlist to make the list double the size of the cut-off sphere */
+    rlist_max = max(ir->rvdw,ir->rcoulomb)*pow(2.0,1.0/3.0);
 
-    bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC,box));
-    bDD  = TRUE;
-    if (bBox && DOMAINDECOMP(cr))
+    i = 0;
+    nstlist_prev = nstlist_orig;
+    rlist_prev   = ir->rlist;
+    do
     {
-        if (inputrec2nboundeddim(ir) < DIM)
+        if (env == NULL)
         {
-            gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
+            ir->nstlist = nstl[i];
         }
-        copy_mat(box,state_tmp.box);
-        bDD = change_dd_cutoff(cr,&state_tmp,ir,rlist_new);
+
+        /* Set the pair-list buffer size in ir */
+        calc_verlet_buffer_size(mtop,det(box),ir,ir->verletbuf_drift,
+                                NULL,&rlist_new);
+
+        /* Does rlist fit in the box? */
+        bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC,box));
+        bDD  = TRUE;
+        if (bBox && DOMAINDECOMP(cr))
+        {
+            /* Check if rlist fits in the domain decomposition */
+            if (inputrec2nboundeddim(ir) < DIM)
+            {
+                gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
+            }
+            copy_mat(box,state_tmp.box);
+            bDD = change_dd_cutoff(cr,&state_tmp,ir,rlist_new);
+        }
+
+        if (env == NULL)
+        {
+            if (!(bBox && bDD && rlist_new <= rlist_max) && i > 0)
+            {
+                /* Stick with the previous nstlist */
+                ir->nstlist = nstlist_prev;
+                rlist_new   = rlist_prev;
+                bBox = TRUE;
+                bDD  = TRUE;
+            }
+            else
+            {
+                nstlist_prev = ir->nstlist;
+                rlist_prev   = rlist_new;
+            }
+        }
+
+        i++;
     }
+    while ((env == NULL) && (i < NNSTL && rlist_new <= rlist_max));
 
     if (!bBox || !bDD)
     {
