@@ -489,6 +489,7 @@ mark_as_advanced(GMX_USE_GTEST)
 mark_as_advanced(GMX_USE_GMOCK)
 if (BUILD_TESTING)
     add_subdirectory(src/external/gmock-1.6.0)
+    add_custom_target(tests)
 endif (BUILD_TESTING)
 set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
