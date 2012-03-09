@@ -654,7 +654,7 @@ int main(int argc,char *argv[])
     { "-rmsd",   FALSE, etBOOL, {&bRMSD},
       "Print RMSD for x, v and f" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+      "Relative tolerance for comparing real values defined as [MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
     { "-abstol",    FALSE, etREAL, {&abstol},
       "Absolute tolerance, useful when sums are close to zero." },
     { "-ab",     FALSE, etBOOL, {&bCompAB},

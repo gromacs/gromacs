@@ -932,7 +932,7 @@ int gmx_analyze(int argc,char *argv[])
     "A set is divided in a number of blocks and averages are calculated for",
     "each block. The error for the total average is calculated from",
     "the variance between averages of the m blocks B[SUB]i[sub] as follows:",
-    "error^2 = [SUM][sum] (B[SUB]i[sub] - <B>)^2 / (m*(m-1)).",
+    "error^2 = [SUM][sum] (B[SUB]i[sub] - [CHEVRON]B[chevron])^2 / (m*(m-1)).",
     "These errors are plotted as a function of the block size.",
     "Also an analytical block average curve is plotted, assuming",
     "that the autocorrelation is a sum of two exponentials.",

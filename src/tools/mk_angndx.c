@@ -218,7 +218,7 @@ int main(int argc,char *argv[])
     { "-hyd", FALSE, etBOOL, {&bH},
       "Include angles with atoms with mass < 1.5" },
     { "-hq", FALSE, etREAL, {&hq},
-      "Ignore angles with atoms with mass < 1.5 and |q| < hq" }
+      "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
   };
  
   output_env_t oenv;
