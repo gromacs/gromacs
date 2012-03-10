@@ -52,13 +52,30 @@ for PROG in $PROGRAMS; do
     fi
 done
 
+INSTALLED_OPTIONS_PROGRAM_NAME=$(find "$GMXBIN" -name "*${OPTIONS_PROGRAM_NAME}*")
+if [[ ! ${INSTALLED_OPTIONS_PROGRAM_NAME} ]]; then
+    echo "Error: Can't find the executable '${OPTIONS_PROGRAM_NAME}' in GMXBIN directory $GMXBIN"
+    echo "I need it to create a LaTeX file."
+    exit 1
+else
+    ${INSTALLED_OPTIONS_PROGRAM_NAME} -hidden -man tex 2> /dev/null
+fi
+
+# The text emitted by the above -man tex line goes in the very first
+# section of the manual appendix compiled from tool output. That
+# section should not be called "g_options_d" (or any such), because it
+# documents the standard and hidden options for all tools.
+sed -i -e "s/${OPTIONS_PROGRAM_NAME}/Standard options for GROMACS tools/g" ${OPTIONS_PROGRAM_NAME}.tex
+
+mv ${OPTIONS_PROGRAM_NAME}.tex ${MANDIR}/
+
 cat > ${PROGMAN}.tex << EOD
 \chapter{Manual Pages}
 \label{app:progman}
 
 {\small
 %${OPTIONS_PROGRAM_NAME}.tex is created by the GROMACS installed binary ${OPTIONS_PROGRAM_NAME}
-\input{${OPTIONS_PROGRAM_NAME}.tex}
+\input{${MANDIR}/${OPTIONS_PROGRAM_NAME}.tex}
 }
 {\small
 \input{${MANDIR}/all}
