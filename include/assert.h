@@ -54,7 +54,7 @@ extern "C" {
     fflush(stderr); \
     if (toupper(getc(stdin))=='Y') \
       (void) abort(); else exit(-1); \
-  } else 
+  }
 
 #ifdef __cplusplus
 }
