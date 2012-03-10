@@ -1687,6 +1687,7 @@ Constraints can be imposed in {\gromacs} using LINCS (default) or
 the traditional SHAKE method.
 
 \subsection{\normindex{SHAKE}}
+\label{subsec:SHAKE}
 The SHAKE~\cite{Ryckaert77} algorithm changes a set of unconstrained
 coordinates $\ve{r}^{'}$ to a set of coordinates $\ve{r}''$ that
 fulfill a  list of distance constraints, using a set $\ve{r}$
@@ -1725,6 +1726,7 @@ Lagrange multipliers (and hence the displacements) requires the
 solution of a set of coupled equations of the second degree. These are
 solved iteratively by SHAKE.
 % \ifthenelse{\equal{\gmxlite}{1}}{}{
+\label{subsec:SETTLE}
 For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
 \normindex{SETTLE}
