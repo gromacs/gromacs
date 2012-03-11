@@ -45,6 +45,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifndef CLANG_ANALYZER_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define CLANG_ANALYZER_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define CLANG_ANALYZER_NORETURN
+#endif
+#endif
   
 void 
 _where(const char *file,int line);
@@ -62,7 +70,7 @@ _unset_fatal_tmp_file(const char *fn, const char *file, int line);
 /* unsets filename to be removed */
 
 void 
-gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
+gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) CLANG_ANALYZER_NORETURN;
 #define FARGS 0,__FILE__,__LINE__
 /*
  * Routine gmx_fatal prints 
@@ -84,7 +92,7 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
 void
 gmx_fatal_collective(int f_errno,const char *file,int line,
 		     t_commrec *cr,gmx_domdec_t *dd,
-		     const char *fmt,...);
+		     const char *fmt,...) CLANG_ANALYZER_NORETURN;
 /* As gmx_fatal, but only the master process prints the error message.
  * This should only be called one of the following two situations:
  * 1) On all nodes in cr->mpi_comm_mysim, with cr!=NULL,dd==NULL.
@@ -149,7 +157,7 @@ void doexceptions(void);
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  void _gmx_error(const char *key,const char *msg,const char *file,int line);
+  void _gmx_error(const char *key,const char *msg,const char *file,int line) CLANG_ANALYZER_NORETURN;
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)
