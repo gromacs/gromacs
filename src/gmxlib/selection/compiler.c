@@ -1127,6 +1127,9 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
 static void
 init_item_evaloutput(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1439,6 +1442,7 @@ init_item_minmax_groups(t_selelem *sel)
                  && ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                      || (sel->cdata->flags & SEL_CDATA_FULLEVAL)))
         {
+            assert(sel->child);
             sel->cdata->gmin = sel->child->cdata->gmin;
             sel->cdata->gmax = sel->child->cdata->gmax;
         }
@@ -2028,6 +2032,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
+            assert(g);
             rc = _gmx_sel_evaluate_method_params(data, sel, g);
             if (rc != 0)
             {
@@ -2134,6 +2139,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else if (sel->u.cgrp.isize == 0)
             {
+                assert(g);
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 rc = sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
@@ -2363,6 +2369,9 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 static void
 postprocess_item_subexpressions(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
