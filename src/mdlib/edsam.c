@@ -46,7 +46,7 @@
 #include "mvdata.h"
 #include "txtdump.h"
 #include "vec.h"
-#include "time.h"
+#include <time.h>
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"

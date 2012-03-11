@@ -41,7 +41,7 @@
 #include <ctype.h>
 #include "main.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "futil.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -519,7 +519,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 void chk_ndx(const char *fn)
 {
   t_blocka *grps;
-  char **grpname=NULL;
+  char **grpname;
   int  i,j;
   
   grps = init_index(fn,&grpname);

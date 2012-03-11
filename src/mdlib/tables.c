@@ -980,7 +980,6 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	gmx_bool        bReadTab,bGenTab;
 	real        x0,y0,yp;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
-	void *      p_tmp;
 	double      r,r2,Vtab,Ftab,expterm;
 	
 	t_forcetable table;
@@ -1025,12 +1024,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
-           to align it. */
-	p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
-	
-	/* align it - size_t has the same same as a pointer */
-	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
+	snew_aligned(table.tab,4*nx,16);
 	
 	init_table(out,nx,nx0,table.scale,&(td[0]),!bReadTab);
 	
@@ -1133,7 +1127,6 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	t_tabledata *td;
 	real        x0,y0,yp,rtab;
 	int         i,nx,nx0;
-	void *      p_tmp;
         real        rx, ry, rz, box_r;
 	
 	t_forcetable table;
@@ -1191,12 +1184,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
-           to align it. */
-       p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
-	
-	/* align it - size_t has the same same as a pointer */
-	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));
+    snew_aligned(table.tab,4*nx,16);
 	
 	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
 	

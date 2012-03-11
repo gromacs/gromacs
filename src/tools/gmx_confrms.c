@@ -39,7 +39,7 @@
 #include "filenm.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
 #include "copyrite.h"
