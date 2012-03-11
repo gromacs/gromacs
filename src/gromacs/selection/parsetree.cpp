@@ -471,6 +471,7 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
      * children have been updated. */
     if (sel->type == SEL_ROOT)
     {
+        GMX_ASSERT(sel->child, "Root elements should always have a child");
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
     /* Mark that the flags are set */

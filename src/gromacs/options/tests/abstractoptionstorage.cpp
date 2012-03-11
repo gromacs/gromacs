@@ -164,11 +164,11 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock).required()
                             .storeVector(&values)));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -237,11 +237,11 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock=NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).multiValue()));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -279,11 +279,11 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock=NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).valueCount(2)));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;

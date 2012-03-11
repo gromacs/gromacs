@@ -1014,12 +1014,11 @@ void
 _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
-    t_selelem  *left, *right;
     int         n, i, i1, i2;
     real        lval, rval=0., val=0.;
 
-    left  = sel->child;
-    right = left->next;
+    t_selelem  *const left  = sel->child;
+    t_selelem  *const right = left->next;
 
     SelelemTemporaryValueAssigner assigner;
     MempoolSelelemReserver reserver;
@@ -1039,10 +1038,14 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
 
     n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
+
+    bool bArithNeg = (sel->u.arith.type == ARITH_NEG);
+    GMX_ASSERT(right || bArithNeg,
+               "Right operand cannot be null except for negations");
     for (i = i1 = i2 = 0; i < n; ++i)
     {
         lval = left->v.u.r[i1];
-        if (sel->u.arith.type != ARITH_NEG)
+        if (!bArithNeg)
         {
             rval = right->v.u.r[i2];
         }
@@ -1060,7 +1063,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i1;
         }
-        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        if (!bArithNeg && !(right->flags & SEL_SINGLEVAL))
         {
             ++i2;
         }
