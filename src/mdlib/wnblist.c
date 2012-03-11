@@ -201,6 +201,7 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,gmx_bool bSymm)
 	    set_mat(fp,mat,iatom,4,j,4,bSymm,shift);
 	    njtot+=16;
 	    break;
+	  default:
 	    gmx_incons("non-existing solvent type");
 	  }
 	}

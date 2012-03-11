@@ -40,7 +40,7 @@
 #include <Xstuff.h>
 #include <x11.h>
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "smalloc.h"
 #include "string2.h"
 

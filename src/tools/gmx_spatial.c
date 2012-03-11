@@ -45,7 +45,7 @@
 #include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "math.h"
+#include <math.h>
 #include "index.h"
 #include "pbc.h"
 #include "rmpbc.h"

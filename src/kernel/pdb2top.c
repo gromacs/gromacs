@@ -553,6 +553,7 @@ void print_top_comment(FILE *out,
   else
   {
       strncpy(ffdir_parent,ffdir,STRLEN-1);
+      ffdir_parent[STRLEN-1]='\0'; /*make sure it is 0-terminated even for long string*/
       p=strrchr(ffdir_parent,'/');
 
       *p='\0';

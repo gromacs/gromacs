@@ -43,7 +43,7 @@
 #include "network.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "ctype.h"
+#include <ctype.h>
 #include "macros.h"
 
 #ifdef GMX_LIB_MPI

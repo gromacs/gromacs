@@ -749,8 +749,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                 {
                     c=line+6;
                     /* skip HEADER or TITLE and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"      ");
                     if (d) 
@@ -772,8 +772,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                         c=line;
                     }
                     /* skip 'MOLECULE:' and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"   ");
                     if (d) 

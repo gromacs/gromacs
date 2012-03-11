@@ -320,7 +320,7 @@ void list_ene(const char *fn)
     int        ndr;
     ener_file_t in;
     gmx_bool       bCont;
-    gmx_enxnm_t *enm=NULL;
+    gmx_enxnm_t *enm;
     t_enxframe *fr;
     int        i,j,nre,b;
     real       rav,minthird;
