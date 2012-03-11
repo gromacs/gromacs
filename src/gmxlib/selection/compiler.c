@@ -266,6 +266,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
+#include <assert.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -1139,6 +1140,7 @@ init_item_evaloutput(t_selelem *sel)
         }
     }
 
+    assert(!(sel->child == NULL && sel->type == SEL_SUBEXPR))
     if (sel->type == SEL_SUBEXPR && sel->refcount == 2)
     {
         sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
@@ -2391,10 +2393,8 @@ postprocess_item_subexpressions(t_selelem *sel)
         sel->u.cgrp.name = name;
 
         sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
-        if (sel->cdata)
-        {
-            sel->cdata->evaluate = sel->evaluate;
-        }
+        sel->cdata->evaluate = sel->evaluate;
+
         _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);

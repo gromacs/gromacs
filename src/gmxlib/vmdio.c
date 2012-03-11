@@ -92,6 +92,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include "types/simple.h"
 #include "vec.h"
 #include "gmxfio.h"
+#include "assert.h"
 
 
 typedef int (*initfunc)(void);
@@ -392,6 +393,7 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
     {
         fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
+        assert(metadata);
         fr->vmdplugin.bV = metadata->has_velocities; 
         if (fr->vmdplugin.bV)
         {
