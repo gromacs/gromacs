@@ -518,7 +518,6 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
                             t_inputrec *ir, gmx_localtop_t *top,
                             t_forcerec *fr, t_state *state)
 {
-    char    warn_buf[STRLEN];
     int     i, j, natoms;
     double  c6, c12;
     double  sigma_ij=0, sigma_ji=0, sigma_ii=0, sigma_jj=0, sigma_comb;
@@ -783,7 +782,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (pluginDir != NULL && *pluginDir != '\0')
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(pluginDir);
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = pluginDir;
@@ -812,7 +811,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(Platform::getDefaultPluginsDirectory());
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = Platform::getDefaultPluginsDirectory();

@@ -126,7 +126,7 @@ std::string IntegerOptionStorage::formatValue(int i) const
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr = NULL;
+    char *endptr;
     long int ival = std::strtol(ptr, &endptr, 10);
     if (*endptr != '\0')
     {
@@ -184,7 +184,7 @@ std::string DoubleOptionStorage::formatValue(int i) const
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr = NULL;
+    char *endptr;
     double dval = std::strtod(ptr, &endptr);
     if (*endptr != '\0')
     {

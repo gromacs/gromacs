@@ -510,7 +510,7 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
         _impl->processItem(Impl::cRealNodeName, id, strValue, &bFound);
     if (bFound)
     {
-        char *endptr = NULL;
+        char *endptr;
         double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
         EXPECT_NEAR(refValue, value, 0.0001);
