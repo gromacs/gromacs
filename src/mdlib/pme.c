@@ -4232,15 +4232,23 @@ int gmx_pme_do(gmx_pme_t pme,
     }
     where();
 
-    if (!pme->bFEP) {
-        *energy = energy_AB[0];
-        m_add(vir,vir_AB[0],vir);
-    } else {
-        *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += energy_AB[1] - energy_AB[0];
-        for(i=0; i<DIM; i++)
-            for(j=0; j<DIM; j++)
-                vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+    if (flags & GMX_PME_CALC_ENER_VIR)
+    {
+        if (!pme->bFEP) {
+            *energy = energy_AB[0];
+            m_add(vir,vir_AB[0],vir);
+        } else {
+            *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+            *dvdlambda += energy_AB[1] - energy_AB[0];
+            for(i=0; i<DIM; i++)
+            {
+                for(j=0; j<DIM; j++)
+                {
+                    vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + 
+                        lambda*vir_AB[1][i][j];
+                }
+            }
+        }
     }
 
     if (debug)
