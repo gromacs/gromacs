@@ -152,7 +152,7 @@ int gmx_genpr(int argc,char *argv[])
   }
   
   if (bFreeze) {
-    if (atoms && atoms->pdbinfo) 
+    if (!atoms || !atoms->pdbinfo)
       gmx_fatal(FARGS,"No B-factors in input file %s, use a pdb file next time.",
 		xfn);
     
