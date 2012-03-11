@@ -46,6 +46,7 @@
 #include <typedefs.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 
@@ -209,10 +210,12 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
     memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
     if (dest->v)
     {
+        GMX_ASSERT(src->v, "src velocities should be non-null if dest velocities are allocated");
         memcpy(dest->v, src->v, dest->nr*sizeof(*dest->v));
     }
     if (dest->f)
     {
+        GMX_ASSERT(src->f, "src forces should be non-null if dest forces are allocated");
         memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
