@@ -307,7 +307,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       line2string(&line);
       sscanf(line,"%d %d %d %d",&(mm->nx),&(mm->ny),&(mm->nmap),&nch);
       if (nch > 2)
-	gmx_fatal(FARGS,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
+      {
+          gmx_fatal(FARGS,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
+      }
+      if (mm->nx <= 0 || mm->ny <= 0 )
+      {
+          gmx_fatal(FARGS,"Dimensions have to be larger than 0\n");
+      }
       llmax = max(STRLEN,mm->nx+10);
       bGetOnWithIt=TRUE;
     }

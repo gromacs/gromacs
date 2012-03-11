@@ -521,8 +521,13 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	fclose(fp);
       }
     }
-    for(i=0;(i<nparm);i++)
-      fitparms[i] = parm[i];
+    if (fitparms)
+    {
+        for(i=0;(i<nparm);i++)
+        {
+            fitparms[i] = parm[i];
+        }
+    }
     sfree(parm);
     sfree(dparm);
   }

@@ -130,10 +130,13 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
         
     /* Fill the cmdline string */
     snew(oenv->cmd_line,cmdlength+argc+1);
-    for (i=0; i<argc; i++) 
+    if (argv)
     {
-        strcat(oenv->cmd_line,argv[i]);
-        strcat(oenv->cmd_line," ");
+        for (i=0; i<argc; i++)
+        {
+            strcat(oenv->cmd_line,argv[i]);
+            strcat(oenv->cmd_line," ");
+        }
     }
 }
 

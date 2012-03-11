@@ -129,7 +129,7 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
   }
 }
 
-static void g_error(int line,const char *file)
+static void g_error(int line,const char *file) CLANG_ANALYZER_NORETURN
 {
   gmx_fatal(FARGS,"Tring to print non existant graph (file %s, line %d)",
 	      file,line);
