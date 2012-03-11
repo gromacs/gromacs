@@ -3928,7 +3928,7 @@ int gmx_pme_do(gmx_pme_t pme,
     real    *ptr;
     rvec    *x_d,*f_d;
     real    *charge=NULL,*q_d;
-    real    energy_AB[2];
+    real    energy_AB[2] = {0, 0};
     matrix  vir_AB[2];
     gmx_bool bClearF;
     gmx_parallel_3dfft_t pfft_setup;
