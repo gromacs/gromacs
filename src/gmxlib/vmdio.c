@@ -73,6 +73,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 /* 
  * Plugin header files; get plugin source from www.ks.uiuc.edu/Research/vmd"
@@ -393,6 +394,7 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     if (fr->vmdplugin.api->abiversion > 10 && fr->vmdplugin.api->read_timestep_metadata)
     {
         fr->vmdplugin.api->read_timestep_metadata(fr->vmdplugin.handle, metadata);
+        assert(metadata);
         fr->vmdplugin.bV = metadata->has_velocities; 
         if (fr->vmdplugin.bV)
         {

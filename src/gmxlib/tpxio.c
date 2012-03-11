@@ -2515,7 +2515,7 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
 {
   t_tpxheader  header;
   int          natoms,i,version,generation;
-  gmx_bool         bTop,bXNULL;
+  gmx_bool         bTop,bXNULL=FALSE;
   gmx_mtop_t   *mtop;
   t_topology   *topconv;
   gmx_atomprop_t aps;
@@ -2539,14 +2539,19 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
   else {
     get_stx_coordnum(infile,&natoms);
     init_t_atoms(&top->atoms,natoms,FALSE);
-    bXNULL = (x == NULL);
+    if (x == NULL)
+    {
+        snew(x,1);
+        bXNULL = TRUE;
+    }
     snew(*x,natoms);
     if (v)
       snew(*v,natoms);
     read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,ePBC,box);
-    if (bXNULL) {
+    if (bXNULL)
+    {
       sfree(*x);
-      x = NULL;
+      sfree(x);
     }
     if (bMass) {
       aps = gmx_atomprop_init();

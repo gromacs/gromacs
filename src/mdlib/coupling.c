@@ -662,7 +662,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
     tensor dumpres,dumvir;
     double *scalefac,dtc;
     int *trotter_seq;
-    rvec sumv,consk;
+    rvec sumv={0,0,0},consk;
     gmx_bool bCouple;
 
     if (trotter_seqno <= ettTSEQ2)

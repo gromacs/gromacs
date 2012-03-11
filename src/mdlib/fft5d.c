@@ -366,6 +366,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         free(N1); free(oN1); /*these are not used for this order*/
         free(K0); free(oK0); /*the rest is freed in destroy*/
     }
+    N[2]=pN[2]=-1; /*not used*/
     
     /*
       Difference between x-y-z regarding 2d decomposition is whether they are 

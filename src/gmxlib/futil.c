@@ -168,7 +168,7 @@ int ffclose(FILE *fp)
     else {
         while ((ps->prev != NULL) && (ps->prev->fp != fp))
             ps=ps->prev;
-        if (ps->prev->fp == fp) {
+        if ((ps->prev != NULL) && ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
                 ret = pclose(ps->prev->fp);
             tmp=ps->prev;
