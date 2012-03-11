@@ -40,6 +40,7 @@
 #define GMX_FATALERROR_GMXASSERT_H
 
 #include <boost/current_function.hpp>
+#include <boost/exception/detail/attribute_noreturn.hpp>
 
 /*! \addtopublicapi
  * \{
@@ -92,7 +93,7 @@ namespace internal
  * \ingroup module_fatalerror
  */
 void assertHandler(const char *condition, const char *msg,
-                   const char *func, const char *file, int line);
+                   const char *func, const char *file, int line) BOOST_ATTRIBUTE_NORETURN;
 
 } // namespace internal
 //! \endcond

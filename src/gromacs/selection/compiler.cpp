@@ -1179,6 +1179,10 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
 static void
 init_item_evaloutput(t_selelem *sel)
 {
+    GMX_ASSERT(sel->child ||
+            !(sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR),
+            "sel child has to be non-null for subexpressions");
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1465,6 +1469,10 @@ init_item_subexpr_flags(t_selelem *sel)
 static void
 init_item_minmax_groups(t_selelem *sel)
 {
+    GMX_ASSERT(sel->child ||
+            !(sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR),
+            "sel child has to be non-null for subexpressions");
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -2042,6 +2050,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
+            GMX_ASSERT(g, "group cannot be null");
             _gmx_sel_evaluate_method_params(data, sel, g);
             init_method(sel, data->top, g->isize);
             if (!(sel->flags & SEL_DYNAMIC))
@@ -2128,6 +2137,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else if (sel->u.cgrp.isize == 0)
             {
+                GMX_ASSERT(g, "group cannot be null");
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
@@ -2349,6 +2359,10 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 static void
 postprocess_item_subexpressions(t_selelem *sel)
 {
+    GMX_ASSERT(sel->child ||
+            !(sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR),
+            "sel child has to be non-null for subexpressions");
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -2378,10 +2392,8 @@ postprocess_item_subexpressions(t_selelem *sel)
         sel->u.cgrp.name = name;
 
         sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
-        if (sel->cdata)
-        {
-            sel->cdata->evaluate = sel->evaluate;
-        }
+        sel->cdata->evaluate = sel->evaluate;
+
         _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
