@@ -56,6 +56,7 @@
 #include "vec.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+#include "assert.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -334,8 +335,8 @@ t_topology *read_top(const char *fn,int *ePBC)
 
 static void usage(const char *type,const char *arg)
 {
-    if (arg != NULL)
-        gmx_fatal(FARGS,"Expected %s argument for option %s\n",type,arg);
+    assert(arg);
+    gmx_fatal(FARGS,"Expected %s argument for option %s\n",type,arg);
 }
 
 int iscan(int argc,char *argv[],int *i)
