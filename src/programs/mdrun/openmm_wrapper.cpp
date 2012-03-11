@@ -518,7 +518,6 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
                             t_inputrec *ir, gmx_localtop_t *top,
                             t_forcerec *fr, t_state *state)
 {
-    char    warn_buf[STRLEN];
     int     i, j, natoms;
     double  c6, c12;
     double  sigma_ij=0, sigma_ji=0, sigma_ii=0, sigma_jj=0, sigma_comb;

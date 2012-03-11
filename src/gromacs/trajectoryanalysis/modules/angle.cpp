@@ -65,7 +65,7 @@ Angle::Angle()
     : _options("angle", "Angle calculation"),
       _sel1info(NULL), _sel2info(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
-      _bDumpDist(false), _vt0(NULL)
+      _bDumpDist(false), _natoms1(0), _natoms2(0), _vt0(NULL)
 {
 }
 
