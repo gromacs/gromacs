@@ -68,7 +68,8 @@ AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet()
  * AnalysisDataTestInputFrame
  */
 
-AnalysisDataTestInputFrame::AnalysisDataTestInputFrame()
+AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x)
+    : index_(index), x_(x)
 {
 }
 
@@ -85,12 +86,10 @@ AnalysisDataTestInput::AnalysisDataTestInput(const real *data)
 
     while (*dataptr != END_OF_DATA)
     {
-        frames_.push_back(AnalysisDataTestInputFrame());
+        frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), *dataptr));
         AnalysisDataTestInputFrame &frame = frames_.back();
         GMX_RELEASE_ASSERT(*dataptr != END_OF_FRAME && *dataptr != MPSTOP,
                            "Empty data frame");
-        frame.index_ = frames_.size() - 1;
-        frame.x_ = *dataptr;
         while (*dataptr != END_OF_FRAME)
         {
             ++dataptr;

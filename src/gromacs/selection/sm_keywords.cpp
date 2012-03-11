@@ -467,7 +467,6 @@ static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    char               *buf;
     char               *s;
     int                 i;
     size_t              j;
@@ -497,6 +496,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         {
             // TODO: Get rid of these prints to stderr
 #ifdef USE_REGEX
+            char               *buf;
             snew(buf, strlen(s) + 3);
             sprintf(buf, "^%s$", s);
             if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))
