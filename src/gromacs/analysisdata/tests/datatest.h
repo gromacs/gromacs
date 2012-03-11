@@ -103,7 +103,7 @@ class AnalysisDataTestInputPointSet
 class AnalysisDataTestInputFrame
 {
     public:
-        AnalysisDataTestInputFrame();
+        AnalysisDataTestInputFrame(int index, real x);
 
         bool isMultipoint() const { return points_.size() > 1; }
 
