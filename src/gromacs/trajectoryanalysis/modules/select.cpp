@@ -114,7 +114,8 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
  * IndexFileWriterModule
  */
 
-IndexFileWriterModule::IndexFileWriterModule() : _fp(NULL)
+IndexFileWriterModule::IndexFileWriterModule()
+    : _fp(NULL), _currentGroup(-1), _currentSize(0), _bAnyWritten(false)
 {
 }
 
@@ -267,7 +268,8 @@ class Select::ModuleData : public TrajectoryAnalysisModuleData
 
 Select::Select()
     : _options("select", "Selection information"),
-      _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false)
+      _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
+      _top(NULL), _totsize(NULL)
 {
 }
 
