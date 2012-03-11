@@ -66,6 +66,12 @@ extern "C" {
 /* With GPU kernels the cluster size is 8 atoms */
 #define NBNXN_GPU_CLUSTER_SIZE    8
 
+/* Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. nbnxn_rlist_inc gives the extra distance.
+ */
+#define NBNXN_RLIST_INC_NONLOC_FAC 0.6
+#define nbnxn_rlist_inc(cluster_size,atom_density) ((0.5 + NBNXN_RLIST_INC_NONLOC_FAC)*sqr(((cluster_size) - 1.0)/(cluster_size))*pow((cluster_size)/(atom_density),1.0/3.0))
+
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
  * to avoid cache invalidation of the real contents

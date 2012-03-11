@@ -354,8 +354,12 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 #endif /* GMX_THREAD_MPI */
 
 
+/* Environment variable for setting nstlist */
 #define NSTLIST_ENVVAR      "GMX_NSTLIST"
+/* Try to increase nstlist when using a GPU with nstlist less than this */
 #define NSTLIST_GPU_ENOUGH  20
+/* Increase nstlist until the non-bonded cost increases more than this factor */
+#define NBNXN_GPU_LIST_FAC  1.25
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
@@ -365,7 +369,7 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     int  nstl[NNSTL]={ 20, 25, 40, 50 };
     char *env;
     int  nstlist_orig,nstlist_prev;
-    real rlist_max,rlist_new,rlist_prev;
+    real rlist_inc,rlist_max,rlist_new,rlist_prev;
     int  i;
     t_state state_tmp;
     gmx_bool bBox,bDD;
@@ -423,7 +427,13 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     }
 
     /* Allow rlist to make the list double the size of the cut-off sphere */
-    rlist_max = max(ir->rvdw,ir->rcoulomb)*pow(2.0,1.0/3.0);
+    rlist_inc = nbnxn_rlist_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
+    rlist_max = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_FAC,1.0/3.0) - rlist_inc;
+    if (debug)
+    {
+        fprintf(debug,"GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
+                rlist_inc,rlist_max);
+    }
 
     i = 0;
     nstlist_prev = nstlist_orig;

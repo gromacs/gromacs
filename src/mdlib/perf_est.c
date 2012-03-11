@@ -285,7 +285,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     *nq_tot = nqlj + nq;
 
     /* Effective cut-off for cluster pair list of 4x4 atoms */
-    r_eff = ir->rlist + 0.25*sqrt(2)*pow(det(box)*4/mtop->natoms,1.0/3.0);
+    r_eff = ir->rlist + nbnxn_rlist_inc(NBNXN_CPU_CLUSTER_I_SIZE,mtop->natoms/det(box));
 
     if (debug)
     {

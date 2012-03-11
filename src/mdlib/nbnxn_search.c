@@ -4172,7 +4172,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + 0.25*sqrt(xy_diag2);
+    r_eff_sup = rlist + NBNXN_RLIST_INC_NONLOC_FAC*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -4190,7 +4190,7 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         /* Sub-cell interacts with itself */
         vol_est  = ls[XX]*ls[YY]*ls[ZZ];
         /* 6/2 rectangular volume on the faces */
-        vol_est += xy_diag2*r_eff_sup;
+        vol_est += (ls[XX]*ls[YY] + ls[XX]*ls[ZZ] + ls[YY]*ls[ZZ])*r_eff_sup;
         /* 12/2 quarter pie slices on the edges */
         vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*sqr(r_eff_sup);
         /* 4 octants of a sphere */
