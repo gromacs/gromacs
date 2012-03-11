@@ -58,7 +58,9 @@ main(int argc, char *argv[])
         ++argv;
 
         gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
+#ifndef __clang_analyzer__  //Clang BUG: 11722
         bPrintCopyrightOnError = false;
+#endif
         return runner.run(argc, argv);
     }
     catch (const std::exception &ex)
