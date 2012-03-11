@@ -92,7 +92,7 @@ namespace internal
  * \ingroup module_fatalerror
  */
 void assertHandler(const char *condition, const char *msg,
-                   const char *func, const char *file, int line);
+                   const char *func, const char *file, int line) __attribute__((__noreturn__));
 
 } // namespace internal
 //! \endcond

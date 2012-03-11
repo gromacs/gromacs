@@ -1042,7 +1042,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     for (i = i1 = i2 = 0; i < n; ++i)
     {
         lval = left->v.u.r[i1];
-        if (sel->u.arith.type != ARITH_NEG)
+        if (sel->u.arith.type != ARITH_NEG && right)
         {
             rval = right->v.u.r[i2];
         }
@@ -1060,7 +1060,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i1;
         }
-        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        if (sel->u.arith.type != ARITH_NEG && !(right && (right->flags & SEL_SINGLEVAL)))
         {
             ++i2;
         }
