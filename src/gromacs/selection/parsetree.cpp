@@ -469,7 +469,7 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
     }
     /* For root elements, the type should be propagated here, after the
      * children have been updated. */
-    if (sel->type == SEL_ROOT)
+    if (sel->type == SEL_ROOT && sel->child)
     {
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
