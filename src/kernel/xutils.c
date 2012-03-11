@@ -219,6 +219,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   
   if (fr->bBHAM) {
     if (bhama == NULL) {
+      assert(bhamb==NULL && bhamc==NULL);
       snew(bhama,atnr);
       snew(bhamb,atnr);
       snew(bhamc,atnr);
@@ -226,6 +227,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   }
   else {
     if (sigma == NULL) {
+      assert(eps==NULL && c6==NULL && cn==NULL);
       snew(sigma,atnr);
       snew(eps,atnr);
       snew(c6,atnr);
