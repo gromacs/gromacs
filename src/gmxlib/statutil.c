@@ -252,7 +252,7 @@ int check_times(real t)
 
 static void set_default_time_unit(const char *time_list[], gmx_bool bCanTime)
 {
-    int i,j;
+    int i=0,j;
     const char *select;
 
     if (bCanTime)

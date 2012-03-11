@@ -47,7 +47,7 @@
 #include "mshift.h"
 #include "invblock.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "assert.h"
 #include "gmx_fatal.h"
 #include "splitter.h"

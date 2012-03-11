@@ -79,6 +79,10 @@ static void shell_comm(const char *title,const char *script,int nsleep)
     sprintf(tmp,"%ctmp%cdialogXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
     gmx_tmpnam(tmp);
   }
+  else
+  {
+      fclose(tfil);
+  }
   if ((tfil = fopen(tmp,"w")) == NULL) 
     gmx_fatal(FARGS,"Can not open tmp file %s",tmp);
   
@@ -225,7 +229,7 @@ static void ExportCB(t_x11 *x11,int dlg_mess,int item_id,
 #endif
     break;
   case DLG_EXIT:
-    if ((bOk=(gmx_strcasecmp("ok",set))==0)) 
+    if ((bOk=gmx_strcasecmp("ok",set))==0)
       strcpy(gmx->confout,EditText(dlg,eExConf));
     HideDlg(dlg);
     if (bOk)

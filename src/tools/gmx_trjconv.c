@@ -1553,6 +1553,8 @@ int gmx_trjconv(int argc,char *argv[])
         fprintf(stderr,"\n");
 
         close_trj(status);
+        sfree(outf_base);
+
 	if (bRmPBC)
 	  gmx_rmpbc_done(gpbc);
 	
