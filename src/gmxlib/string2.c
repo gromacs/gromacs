@@ -195,7 +195,7 @@ void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
   time_t clock;
-  char   *user=NULL;
+  const char   *user=NULL;
   int    gh;
   uid_t  uid;
   char   buf[256];
@@ -220,9 +220,18 @@ void nice_header (FILE *out,const char *fn)
 #endif
   
   gmx_ctime_r(&clock,timebuf,STRLEN);
+
+  if (!user)
+  {
+      user = unk;
+  }
+  if (gh)
+  {
+      strcpy(buf, unk);
+  }
   fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
-	   user ? user : unk,(int) uid);
-  fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN,(gh == 0) ? buf : unk);
+	   user,(int) uid);
+  fprintf(out,"%c\tOn host: %s\n",COMMENTSIGN, buf);
 
   fprintf (out,"%c\tAt date: %s",COMMENTSIGN,timebuf);
   fprintf (out,"%c\n",COMMENTSIGN);

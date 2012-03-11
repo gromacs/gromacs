@@ -65,7 +65,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
               int tag, tMPI_Comm comm)
 {
     struct envelope *sev;
-    struct tmpi_thread *send_dst=tMPI_Get_thread(comm, dest);
+    struct tmpi_thread *send_dst;
     struct tmpi_thread *cur=tMPI_Get_current();
     struct tmpi_req_ req;
 
@@ -80,6 +80,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
+    send_dst = tMPI_Get_thread(comm, dest);
     if (!send_dst)
     {
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST);
@@ -151,7 +152,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct envelope *rev, *sev;
     struct tmpi_thread *cur=tMPI_Get_current();
     struct tmpi_thread *recv_src=0;
-    struct tmpi_thread *send_dst=tMPI_Get_thread(comm, dest);
+    struct tmpi_thread *send_dst;
     struct tmpi_req_ sreq, rreq;
     int ret=TMPI_SUCCESS;
 
@@ -167,6 +168,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
+    send_dst=tMPI_Get_thread(comm, dest);
     if (!send_dst)
     {
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST); 
@@ -227,7 +229,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
     struct tmpi_thread *cur=tMPI_Get_current();
     struct req_list *rql=&(cur->rql);
     struct tmpi_req_ *rq=tMPI_Get_req(rql);
-    struct tmpi_thread *send_dst=tMPI_Get_thread(comm, dest);
+    struct tmpi_thread *send_dst;
     struct envelope *ev;
 
 #ifdef TMPI_PROFILE
@@ -242,6 +244,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
         tMPI_Return_req(rql,rq);
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
+    send_dst=tMPI_Get_thread(comm, dest);
     if (!send_dst)
     {
         tMPI_Return_req(rql,rq);

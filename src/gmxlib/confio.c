@@ -41,7 +41,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "errno.h"
+#include <errno.h>
 #include "macros.h"
 #include "string2.h"
 #include "confio.h"
@@ -98,7 +98,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 		      "Found more coordinates (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
 	if (atoms) {
-	  if (atoms && fr->bAtoms &&
+	  if (fr->bAtoms &&
 	      (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
 	       != 6)) {
 	    if (oldres>=0)

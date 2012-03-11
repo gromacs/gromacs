@@ -49,7 +49,7 @@
 #include "typedefs.h"
 #include "network.h"
 #include "filenm.h"
-#include "string.h"
+#include <string.h>
 #include "smalloc.h"
 #include "pull.h"
 #include "xvgr.h"
