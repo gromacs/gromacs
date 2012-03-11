@@ -44,6 +44,7 @@
 #include "vec.h"
 #include "genalg.h"
 #include "random.h"
+#include "assert.h"
 
 real mol_dipole(int k0,int k1,rvec x[],real q[])
 {
@@ -219,6 +220,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   
   if (fr->bBHAM) {
     if (bhama == NULL) {
+      assert(bhamb==NULL && bhamc==NULL);
       snew(bhama,atnr);
       snew(bhamb,atnr);
       snew(bhamc,atnr);
@@ -226,6 +228,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
   }
   else {
     if (sigma == NULL) {
+      assert(eps==NULL && c6==NULL && cn==NULL);
       snew(sigma,atnr);
       snew(eps,atnr);
       snew(c6,atnr);
