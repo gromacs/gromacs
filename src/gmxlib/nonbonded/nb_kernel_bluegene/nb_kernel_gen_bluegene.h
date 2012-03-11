@@ -326,6 +326,7 @@ void NB_KERNEL (
             _rinv  = sqrt_newton_scalar(_rinv,_rsq);
 
 #endif
+        /* cppcheck-suppress selfAssignment */
 	    FULL_INTERACTION_(_qq,_rinv,_rsq,jnr);
 
 #ifndef NO_FORCE

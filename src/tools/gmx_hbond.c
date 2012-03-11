@@ -1540,10 +1540,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
         if (bDA || (!bDA && (rha2 <= rc2))) {
             rvec_sub(x[d],x[hh],r_dh);
             if (bBox) {
-                if (hb->bGem)
-                    pbc_correct_gem(r_dh,box,hbox);
-                else
-                    pbc_correct_gem(r_dh,box,hbox);
+                pbc_correct_gem(r_dh,box,hbox);
             }
 	
             if (!bDA)
@@ -2967,10 +2964,7 @@ static void dump_hbmap(t_hbdata *hb,
     fp = opt2FILE("-hbn",nfile,fnm,"w");
     if (opt2bSet("-g",nfile,fnm)) {
         fplog = ffopen(opt2fn("-g",nfile,fnm),"w");
-        if (bContact)
-            fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
-        else
-            fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+        fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
     }
     else
         fplog = NULL;

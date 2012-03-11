@@ -39,7 +39,7 @@
 
 #include "smalloc.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "xvgr.h"
 #include "copyrite.h"
 #include "statutil.h"

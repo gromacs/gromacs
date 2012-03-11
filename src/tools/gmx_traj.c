@@ -542,7 +542,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
     int  i,m,in,nnn;
     real vn,vnmax;
   
-    if (histo == NULL)
+    if (*histo == NULL)
     {
         vnmax = 0;
         for(i=0; (i<gnx); i++)

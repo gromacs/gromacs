@@ -26,7 +26,7 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-#include "nb_kernel430_x86_64_sse2.h"
+#include "../nb_kernel_x86_64_sse2/nb_kernel430_x86_64_sse2.h"
 
 void nb_kernel430_sse2_double(int *           p_nri,
                               int *           iinr,

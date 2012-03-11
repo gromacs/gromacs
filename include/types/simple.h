@@ -166,7 +166,7 @@ typedef int             imatrix[DIM][DIM];
  * Instead, start by looking for "long long", and just go down if we
  * have to (rarely on new systems). /EL 20100810
  */
-#if ( (defined LLONG_MAX && LLONG_MAX==9223372036854775807LL) || (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8) )
+#if ( CPPCHECK ||  (defined LLONG_MAX && LLONG_MAX==9223372036854775807LL) || (defined SIZEOF_LONG_LONG_INT && SIZEOF_LONG_LONG_INT==8) )
 
 /* Long long int is 64 bit */
 typedef long long int gmx_large_int_t;
