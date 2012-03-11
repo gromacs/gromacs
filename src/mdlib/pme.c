@@ -74,6 +74,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"
@@ -3935,6 +3936,11 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
     int     thread;
+    gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
+    gmx_bool bCalcF = flags & GMX_PME_CALC_F;
+
+    assert(pme->nnodes > 0);
+    assert(pme->nnodes == 1 || pme->ndecompdim > 0);
 
     if (pme->nnodes > 1) {
         atc = &pme->atc[0];
@@ -4107,7 +4113,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 loop_count =
                     solve_pme_yzx(pme,cfftgrid,ewaldcoeff,
                                   box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
-                                  flags & GMX_PME_CALC_ENER_VIR,
+                                  bCalcEnerVir,
                                   pme->nthread,thread);
                 if (thread == 0)
                 {
@@ -4118,7 +4124,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 }
             }
 
-            if (flags & GMX_PME_CALC_F)
+            if (bCalcF)
             {
                 /* do 3d-invfft */
                 if (thread == 0)
@@ -4154,7 +4160,7 @@ int gmx_pme_do(gmx_pme_t pme,
          * With MPI we have to synchronize here before gmx_sum_qgrid_dd.
          */
 
-        if (flags & GMX_PME_CALC_F)
+        if (bCalcF)
         {
             /* distribute local grid to all nodes */
 #ifdef GMX_MPI
@@ -4195,7 +4201,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
         }
 
-        if (flags & GMX_PME_CALC_ENER_VIR)
+        if (bCalcEnerVir)
         {
             /* This should only be called on the master thread
              * and after the threads have synchronized.
@@ -4204,7 +4210,7 @@ int gmx_pme_do(gmx_pme_t pme,
         }
     } /* of q-loop */
 
-    if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
+    if (bCalcF && pme->nnodes > 1) {
         wallcycle_start(wcycle,ewcPME_REDISTXF);
         for(d=0; d<pme->ndecompdim; d++)
         {
@@ -4232,15 +4238,23 @@ int gmx_pme_do(gmx_pme_t pme,
     }
     where();
 
-    if (!pme->bFEP) {
-        *energy = energy_AB[0];
-        m_add(vir,vir_AB[0],vir);
-    } else {
-        *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += energy_AB[1] - energy_AB[0];
-        for(i=0; i<DIM; i++)
-            for(j=0; j<DIM; j++)
-                vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+    if (bCalcEnerVir)
+    {
+        if (!pme->bFEP) {
+            *energy = energy_AB[0];
+            m_add(vir,vir_AB[0],vir);
+        } else {
+            *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+            *dvdlambda += energy_AB[1] - energy_AB[0];
+            for(i=0; i<DIM; i++)
+            {
+                for(j=0; j<DIM; j++)
+                {
+                    vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + 
+                        lambda*vir_AB[1][i][j];
+                }
+            }
+        }
     }
 
     if (debug)
