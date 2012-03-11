@@ -79,7 +79,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include "molfile_plugin.h"
 #include "vmddlopen.h"
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#include "glob.h"
+#include <glob.h>
 #else
 #include <windows.h>
 #include <shlobj.h>

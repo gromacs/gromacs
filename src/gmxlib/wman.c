@@ -46,7 +46,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "strdb.h"
-#include "time.h"
+#include <time.h>
 #include "readinp.h"
 
 /* The source code in this file should be thread-safe. 

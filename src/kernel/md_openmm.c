@@ -131,7 +131,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_vcm      *vcm;
     int        nchkpt=1;
     gmx_localtop_t *top;
-    t_mdebin *mdebin=NULL;
+    t_mdebin *mdebin;
     t_state    *state=NULL;
     rvec       *f_global=NULL;
     int        n_xtc=-1;

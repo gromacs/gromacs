@@ -37,7 +37,7 @@
 #endif
 
 #include "smalloc.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"

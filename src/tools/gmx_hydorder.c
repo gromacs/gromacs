@@ -42,7 +42,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "typedefs.h"
 #include "statutil.h"
 #include "smalloc.h"
