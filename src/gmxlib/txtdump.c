@@ -1453,6 +1453,7 @@ void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
         (void) pr_indent(fp,indent);
         (void) fprintf(fp,"name=\"%s\"\n",*(mtop->name));
         pr_int(fp,indent,"#atoms",mtop->natoms);
+        pr_int(fp,indent,"#molblock",mtop->nmolblock);
         for(mb=0; mb<mtop->nmolblock; mb++) {
             pr_molblock(fp,indent,"molblock",&mtop->molblock[mb],mb,
                         mtop->moltype,bShowNumbers);

@@ -96,8 +96,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      int start,int homenr,
 	      t_mdatoms *md)
 {
-  t_atoms   *atoms_mol;
-  int       i,g,ag,as,ae,molb;
+  gmx_mtop_atomlookup_t alook;
+  int       i,g,ag,molb;
   real      mA,mB,fac;
   t_atom    *atom;
   t_grpopts *opts;
@@ -176,22 +176,15 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
       md->pureex = FALSE;
   }
 
+  alook = gmx_mtop_atomlookup_init(mtop);
+
   for(i=0; (i<md->nr); i++) {
     if (index == NULL) {
       ag = i;
-      gmx_mtop_atomnr_to_atom(mtop,ag,&atom);
     } else {
       ag   = index[i];
-      molb = -1;
-      ae   = 0;
-      do {
-	molb++;
-	as = ae;
-	ae = as + molblock[molb].nmol*molblock[molb].natoms_mol;
-      } while (ag >= ae);
-      atoms_mol = &mtop->moltype[molblock[molb].type].atoms;
-      atom = &atoms_mol->atom[(ag - as) % atoms_mol->nr];
     }
+    gmx_mtop_atomnr_to_atom(alook,ag,&atom);
 
     if (md->cFREEZE) {
       md->cFREEZE[i] = ggrpnr(groups,egcFREEZE,ag);
@@ -284,6 +277,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
         }
     }
   }
+
+  gmx_mtop_atomlookup_destroy(alook);
 
   md->start  = start;
   md->homenr = homenr;

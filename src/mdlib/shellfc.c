@@ -117,7 +117,12 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
   int  i,m,s1,n1,n2,n3;
   real dt_1,dt_2,dt_3,fudge,tm,m1,m2,m3;
   rvec *ptr;
+  gmx_mtop_atomlookup_t alook=NULL;
   t_atom *atom;
+
+  if (mass == NULL) {
+    alook = gmx_mtop_atomlookup_init(mtop);
+  }
   
   /* We introduce a fudge factor for performance reasons: with this choice
    * the initial force on the shells is about a factor of two lower than 
@@ -171,11 +176,11 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 	m3 = mass[n3];
       } else {
 	/* Not the correct masses with FE, but it is just a prediction... */
-	gmx_mtop_atomnr_to_atom(mtop,n1,&atom);
+	gmx_mtop_atomnr_to_atom(alook,n1,&atom);
 	m1 = atom->m;
-	gmx_mtop_atomnr_to_atom(mtop,n2,&atom);
+	gmx_mtop_atomnr_to_atom(alook,n2,&atom);
 	m2 = atom->m;
-	gmx_mtop_atomnr_to_atom(mtop,n3,&atom);
+	gmx_mtop_atomnr_to_atom(alook,n3,&atom);
 	m3 = atom->m;
       }
       tm = dt_1/(m1+m2+m3);
@@ -185,6 +190,10 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
     default:
       gmx_fatal(FARGS,"Shell %d has %d nuclei!",i,s[i].nnucl);
     }
+  }
+
+  if (mass == NULL) {
+    gmx_mtop_atomlookup_destroy(alook);
   }
 }
 

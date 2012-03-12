@@ -88,6 +88,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   gmx_mtop_t *mtop=NULL;
   int     ePBC=-1;
   t_block *mols=NULL;
+  gmx_mtop_atomlookup_t alook;
   t_atom  *atom;
   int     version,generation,ii,jj,nsame;
   real    temp,tfac;
@@ -142,6 +143,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   else
     rd_index(ndx,1,&nindex,&index,&gname);
   
+  alook = gmx_mtop_atomlookup_init(mtop);
+
   snew(clust_index,nindex);
   snew(clust_size,nindex);
   cut2   = cut*cut;
@@ -266,7 +269,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	  for(i=0; (i<nindex); i++) 
 	    if (clust_index[i] == max_clust_ind) {
 	      ai    = index[i];
-	      gmx_mtop_atomnr_to_atom(mtop,ai,&atom);
+	      gmx_mtop_atomnr_to_atom(alook,ai,&atom);
 	      ekin += 0.5*atom->m*iprod(v[ai],v[ai]);
 	    }
 	  temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
@@ -281,6 +284,9 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   ffclose(gp);
   ffclose(hp);
   ffclose(tp);
+
+  gmx_mtop_atomlookup_destroy(alook);
+
   if (max_clust_ind >= 0) {
     fp = ffopen(mcn,"w");
     fprintf(fp,"[ max_clust ]\n");

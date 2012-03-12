@@ -1074,6 +1074,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   gmx_bool bDomDec;
   gmx_ga2la_t ga2la=NULL;
   gmx_groups_t *groups;
+  gmx_mtop_atomlookup_t alook;
   t_atom *atom;
 
   bDomDec = (cr && DOMAINDECOMP(cr));
@@ -1109,13 +1110,15 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 
   groups = &mtop->groups;
 
+  alook = gmx_mtop_atomlookup_init(mtop);
+
   nfrozen = 0;
   tmass  = 0;
   wmass  = 0;
   wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
-    gmx_mtop_atomnr_to_atom(mtop,ii,&atom);
+    gmx_mtop_atomnr_to_atom(alook,ii,&atom);
     if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
       pg->ind_loc[pg->nat_loc++] = ii;
     if (ir->opts.nFreeze) {
@@ -1156,6 +1159,8 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     wmass  += m*w;
     wwmass += m*w*w;
   }
+
+  gmx_mtop_atomlookup_destroy(alook);
 
   if (wmass == 0) {
     gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",

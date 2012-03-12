@@ -827,6 +827,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              ind_req_t *ireq)
 {
     gmx_ga2la_t ga2la;
+    gmx_mtop_atomlookup_t alook;
     int settle;
     int sa;
     int cg,a,a_gl,a_glsa,a_gls[3],a_locs[3];
@@ -839,6 +840,8 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
     ga2la  = dd->ga2la;
 
+    alook = gmx_mtop_atomlookup_settle_init(mtop);
+
     for(cg=cg_start; cg<cg_end; cg++)
     {
         if (GET_CGINFO_SETTLE(cginfo[cg]))
@@ -847,7 +850,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
             {
                 a_gl = dd->gatindex[a];
                 
-                gmx_mtop_atomnr_to_molblock_ind(mtop,a_gl,&mb,&molnr,&a_mol);
+                gmx_mtop_atomnr_to_molblock_ind(alook,a_gl,&mb,&molnr,&a_mol);
                 molb = &mtop->molblock[mb];
 
                 settle = at2settle_mt[molb->type][a_mol];
@@ -911,6 +914,8 @@ static void atoms_to_settles(gmx_domdec_t *dd,
             }
         }
     }
+
+    gmx_mtop_atomlookup_destroy(alook);
 }
 
 static void atoms_to_constraints(gmx_domdec_t *dd,
@@ -922,6 +927,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 {
     const t_blocka *at2con;
     gmx_ga2la_t ga2la;
+    gmx_mtop_atomlookup_t alook;
     int ncon1;
     gmx_molblock_t *molb;
     t_iatom *ia1,*ia2,*iap;
@@ -934,6 +940,8 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     
     ga2la  = dd->ga2la;
 
+    alook = gmx_mtop_atomlookup_init(mtop);
+
     nhome = 0;
     for(cg=0; cg<dd->ncg_home; cg++)
     {
@@ -943,7 +951,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
             {
                 a_gl = dd->gatindex[a];
         
-                gmx_mtop_atomnr_to_molblock_ind(mtop,a_gl,&mb,&molnr,&a_mol);
+                gmx_mtop_atomnr_to_molblock_ind(alook,a_gl,&mb,&molnr,&a_mol);
                 molb = &mtop->molblock[mb];
         
                 ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
@@ -1015,6 +1023,8 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
             }
         }
     }
+
+    gmx_mtop_atomlookup_destroy(alook);
 
     if (debug)
     {
