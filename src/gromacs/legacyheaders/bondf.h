@@ -112,6 +112,12 @@ real posres(int nbonds,
 		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);
 /* Position restraints require a different pbc treatment from other bondeds */
 
+real fbposres(int nbonds,
+               const t_iatom forceatoms[],const t_iparams forceparams[],
+               const rvec x[],rvec f[],rvec vir_diag,
+               t_pbc *pbc, int refcoord_scaling,int ePBC,rvec com);
+/* Flat-bottom posres. Same PBC treatment as in normal position restraints */
+
 real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		       const t_pbc *pbc,
 		       rvec r_ij,rvec r_kj,real *costh,
