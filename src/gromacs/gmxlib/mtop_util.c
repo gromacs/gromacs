@@ -766,11 +766,43 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
     }
 }
 
+static void set_fbposres_params(t_idef *idef,gmx_molblock_t *molb,
+                              int i0,int a_offset)
+{
+    t_ilist *il;
+    int i1,i,a_molb;
+    t_iparams *ip;
+
+    il = &idef->il[F_FBPOSRES];
+    i1 = il->nr/2;
+    idef->iparams_fbposres_nalloc = i1;
+    srenew(idef->iparams_fbposres,idef->iparams_fbposres_nalloc);
+    for(i=i0; i<i1; i++)
+    {
+        ip = &idef->iparams_fbposres[i];
+        /* Copy the force constants */
+        *ip    = idef->iparams[il->iatoms[i*2]];
+        a_molb = il->iatoms[i*2+1] - a_offset;
+        if (molb->nposres_xA == 0)
+        {
+            gmx_incons("Position restraint coordinates are missing");
+        }
+        /* Take flat-bottom posres reference from normal position restraints */
+        ip->fbposres.pos0[XX] = molb->posres_xA[a_molb][XX];
+        ip->fbposres.pos0[YY] = molb->posres_xA[a_molb][YY];
+        ip->fbposres.pos0[ZZ] = molb->posres_xA[a_molb][ZZ];
+        /* Note: no B-type for flat-bottom posres */
+
+        /* Set the parameter index for idef->iparams_posre */
+        il->iatoms[i*2] = i;
+    }
+}
+
 static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
                           gmx_bool bMergeConstr,
                           gmx_localtop_t *top)
 {
-    int mb,srcnr,destnr,ftype,ftype_dest,mt,natoms,mol,nposre_old;
+    int mb,srcnr,destnr,ftype,ftype_dest,mt,natoms,mol,nposre_old,nfbposre_old;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
     const gmx_ffparams_t *ffp;
@@ -791,6 +823,8 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     idef->iparams  = ffp->iparams;
     idef->iparams_posres = NULL;
     idef->iparams_posres_nalloc = 0;
+    idef->iparams_fbposres = NULL;
+    idef->iparams_fbposres_nalloc = 0;
     idef->fudgeQQ  = ffp->fudgeQQ;
     idef->cmap_grid = ffp->cmap_grid;
     idef->ilsort   = ilsortUNKNOWN;
@@ -818,6 +852,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
         blockacat(&top->excls,&molt->excls,molb->nmol,destnr,srcnr);
 
         nposre_old = idef->il[F_POSRES].nr;
+        nfbposre_old = idef->il[F_FBPOSRES].nr;
         for(ftype=0; ftype<F_NRE; ftype++)
         {
             if (bMergeConstr &&
@@ -842,6 +877,10 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
         if (idef->il[F_POSRES].nr > nposre_old)
         {
             set_posres_params(idef,molb,nposre_old/2,natoms);
+        }
+        if (idef->il[F_FBPOSRES].nr > nfbposre_old)
+        {
+            set_fbposres_params(idef,molb,nfbposre_old/2,natoms);
         }
 
         natoms += molb->nmol*srcnr;
