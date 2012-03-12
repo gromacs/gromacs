@@ -64,15 +64,17 @@
 #define C_GR_QW       1.75
 
 /* Cost of a pair interaction in the "Verlet" cut-off scheme" */
-#define C_VT_LJ       0.35
-#define C_VT_QLJ_RF   0.4
-#define C_VT_Q_RF     0.35
-#define C_VT_QLJ_TAB  0.6
-#define C_VT_Q_TAB    0.55
+#define C_VT_LJ       0.30
+#define C_VT_QLJ_RF   0.40
+#define C_VT_Q_RF     0.30
+#define C_VT_QLJ_TAB  0.55
+#define C_VT_Q_TAB    0.50
 
 /* Cost of PME, with all components running with SSE instructions */
+/* Cost of particle reordering and redistribution */
+#define C_PME_REDIST  12.0
 /* Cost of q spreading and force interpolation per charge (mainly memory) */
-#define C_PME_SPREAD  0.35
+#define C_PME_SPREAD  0.30
 /* Cost of fft's, will be multiplied with N log(N) */
 #define C_PME_FFT     0.20
 /* Cost of pme_solve, will be multiplied with N */
@@ -307,7 +309,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   t_atom *atom;
   int  mb,nmol,atnr,cg,a,a0,nq_tot;
   gmx_bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
-  double cost_bond,cost_pp,cost_spread,cost_fft,cost_solve,cost_pme;
+  double cost_bond,cost_pp,cost_redist,cost_spread,cost_fft,cost_solve,cost_pme;
   float ratio;
   t_iparams *iparams;
   gmx_moltype_t *molt;
@@ -336,29 +338,31 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
       pp_verlet_load(mtop,ir,box,&nq_tot,&cost_pp,&bChargePerturbed);
   }
   
+  cost_redist = C_PME_REDIST*nq_tot;
   cost_spread = C_PME_SPREAD*nq_tot*pow(ir->pme_order,3);
   cost_fft    = C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
   cost_solve  = C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
 
   if (ir->efep != efepNO && bChargePerturbed) {
-    /* All PME work, except the spline coefficient calculation, doubles */
+    /* All PME work, except redist & spline coefficient calculation, doubles */
     cost_spread *= 2;
     cost_fft    *= 2;
     cost_solve  *= 2;
   }
 
-  cost_pme = cost_spread + cost_fft + cost_solve;
+  cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;
 
   ratio = cost_pme/(cost_bond + cost_pp + cost_pme);
 
   if (debug) {
     fprintf(debug,
-	    "cost_bond   %f\n"
-	    "cost_pp     %f\n"
-	    "cost_spread %f\n"
-	    "cost_fft    %f\n"
-	    "cost_solve  %f\n",
-	    cost_bond,cost_pp,cost_spread,cost_fft,cost_solve);
+            "cost_bond   %f\n"
+            "cost_pp     %f\n"
+            "cost_redist %f\n"
+            "cost_spread %f\n"
+            "cost_fft    %f\n"
+            "cost_solve  %f\n",
+            cost_bond,cost_pp,cost_redist,cost_spread,cost_fft,cost_solve);
 
     fprintf(debug,"Estimate for relative PME load: %.3f\n",ratio);
   }
