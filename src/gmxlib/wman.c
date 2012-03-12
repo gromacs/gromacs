@@ -101,6 +101,10 @@ const t_sandr_const sandrTeX[] = {
   { "[grk]", "}" },
   { "[MATH]","\\ensuremath{" },
   { "[math]","}" },
+  { "[CHEVRON]", "\\ensuremath{<}" },
+  { "[chevron]", "\\ensuremath{>}" },
+  { "[MAG]", "\\ensuremath{|}" },
+  { "[mag]", "\\ensuremath{|}" },
   { "[INT]","\\ensuremath{\\int" },
   { "[FROM]","_" },
   { "[from]","" },
@@ -130,13 +134,7 @@ const t_sandr_const sandrTeX[] = {
   { "[SINH]","\\ensuremath{\\sinh{(" },
   { "[sinh]",")}}" },
   { "[TANH]","\\ensuremath{\\tanh{(" },
-  { "[tanh]",")}}" },
-  /* The next two lines used to substitute "|" and "||" to "or", but only
-   * g_angle used that functionality, so that was changed to a textual
-   * "or" there, so that other places could use those symbols to indicate
-   * magnitudes. */
-  { "||",    "\\textbar{}\\textbar"    },
-  { "|",     "\\textbar{}"    }
+  { "[tanh]",")}}" }
 };
 #define NSRTEX asize(sandrTeX)
 
@@ -149,6 +147,10 @@ const t_sandr_const sandrTty[] = {
   { "[it]", "" },
   { "[MATH]","" },
   { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
   { "[INT]","integral" },
   { "[FROM]"," from " },
   { "[from]","" },
@@ -198,6 +200,10 @@ const t_sandr_const sandrWiki[] = {
   { "[it]", "''" },
   { "[MATH]","" },
   { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
   { "[INT]","integral" },
   { "[FROM]"," from " },
   { "[from]","" },
@@ -244,6 +250,10 @@ const t_sandr_const sandrNROFF[] = {
   { "[it]", "\\fR" },
   { "[MATH]","" },
   { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
   { "[INT]","integral" },
   { "[FROM]"," from " },
   { "[from]","" },
@@ -298,6 +308,10 @@ const t_sandr_const sandrHTML[] = {
   { "[it]", "</it>" },
   { "[MATH]","" },
   { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
   { "[INT]","integral" },
   { "[FROM]"," from " },
   { "[from]","" },
@@ -346,6 +360,10 @@ const t_sandr_const sandrXML[] = {
   { "[it]", "</it>" },
   { "[MATH]","" },
   { "[math]","" },
+  { "[CHEVRON]","<" },
+  { "[chevron]",">" },
+  { "[MAG]", "|" },
+  { "[mag]", "|" },
   { "[INT]","integral" },
   { "[FROM]"," from " },
   { "[from]","" },

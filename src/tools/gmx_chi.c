@@ -1013,7 +1013,7 @@ int gmx_chi(int argc,char *argv[])
     "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all residues of each type.[PAR]", 
     "If option [TT]-corr[tt] is given, the program will",
     "calculate dihedral autocorrelation functions. The function used",
-    "is C(t) = < [COS][GRK]chi[grk]([GRK]tau[grk])[cos] [COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos] >. The use of cosines",
+    "is C(t) = [CHEVRON][COS][GRK]chi[grk]([GRK]tau[grk])[cos] [COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos][chevron]. The use of cosines",
     "rather than angles themselves, resolves the problem of periodicity.",
     "(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032-2041).",
     "Separate files for each dihedral of each residue", 

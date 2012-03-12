@@ -168,7 +168,7 @@ int gmx_mdmat(int argc,char *argv[])
     { "-t",   FALSE, etREAL, {&truncate},
       "trunc distance" },
     { "-nlevels",   FALSE, etINT,  {&nlevels},
-      "Discretize distance in # levels" }
+      "Discretize distance in this number of levels" }
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
