@@ -107,7 +107,7 @@ typedef struct {
 
 #define NBNXN_CI_SHIFT          127
 #define NBNXN_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
-#define NBNXN_CI_HALF_LJ(subc)  (1<<(8+2*(subc)))
+#define NBNXN_CI_HALF_LJ(subc)  (1<<(8+3*(subc)))
 #define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
 /* Simple pair-list i-unit */
