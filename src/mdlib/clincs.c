@@ -1089,10 +1089,18 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
 
     li->nc = 0;
     li->ncc = 0;
+    /* Zero the thread index ranges.
+     * Otherwise without local constraints we could return with old ranges.
+     */
     for(i=0; i<li->nth; i++)
     {
-        li->th[0].b0 = 0;
-        li->th[0].b1 = 0;
+        li->th[i].b0   = 0;
+        li->th[i].b1   = 0;
+        li->th[i].nind = 0;
+    }
+    if (li->nth > 1)
+    {
+        li->th[li->nth].nind = 0;
     }
 		
     /* This is the local topology, so there are only F_CONSTR constraints */
