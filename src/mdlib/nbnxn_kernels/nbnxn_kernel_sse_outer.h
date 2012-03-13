@@ -594,6 +594,8 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 
         cjind = cjind0;
 
+        /* Currently all kernels use (at least half) LJ */
+#define CALC_LJ
         if (half_LJ)
         {
 #define CALC_COULOMB
@@ -642,6 +644,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #include "nbnxn_kernel_sse_inner.h"
             }
         }
+#undef CALC_LJ
         ninner += cjind1 - cjind0;
 
         /* Add i forces to mem and shifted force list */

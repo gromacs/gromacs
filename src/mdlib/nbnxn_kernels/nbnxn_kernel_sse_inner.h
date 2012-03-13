@@ -137,6 +137,7 @@
             gmx_mm_pr  fscal_SSE2;
             gmx_mm_pr  fscal_SSE3;
 
+#ifdef CALC_LJ
 #ifdef LJ_COMB_LB
             gmx_mm_pr  hsig_j_SSE,seps_j_SSE;
             gmx_mm_pr  sig_SSE0,eps_SSE0;
@@ -202,11 +203,12 @@
             gmx_mm_pr  VLJ6_SSE3,VLJ12_SSE3,VLJ_SSE3;
 #endif
 #endif
+#endif /* CALC_LJ */
 
             cj               = l_cj[cjind].cj;
 
             aj               = cj*UNROLLJ;
-#if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+#if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB)
 #if UNROLLJ == STRIDE
             aj2              = aj*2;
 #else
@@ -373,6 +375,7 @@
             qq_SSE3            = gmx_mul_pr(iq_SSE3,jq_SSE);
 #endif
 
+#ifdef CALC_LJ
 #ifdef LJ_COMB_LB
             hsig_j_SSE         = gmx_load_pr(ljc+aj2+0);
             seps_j_SSE         = gmx_load_pr(ljc+aj2+STRIDE);
@@ -418,6 +421,7 @@
 #endif /* FIX_LJ_C */
 #endif /* LJ_COMB_GEOM */
 #endif /* LJ_COMB_LB */
+#endif /* CALC_LJ */
 
             
             rinv_SSE0          = gmx_and_pr(rinv_SSE0,wco_SSE0);
@@ -550,6 +554,7 @@
 #endif
 #endif /* CALC_COULOMB */
 
+#ifdef CALC_LJ
             /* Lennard-Jones interaction */
 #ifdef LJ_COMB_LB
             sir_SSE0           = gmx_mul_pr(sig_SSE0,rinv_SSE0);
@@ -645,6 +650,7 @@
             FrLJ12_SSE3        = gmx_mul_pr(c12_SSE3,gmx_mul_pr(rinvsix_SSE3,rinvsix_SSE3));
 #endif
 #endif /* LJ_COMB_LB */
+#endif /* CALC_LJ */
             
 #ifdef CALC_ENERGIES
 #ifdef ENERGY_GROUPS
@@ -672,6 +678,7 @@
 #endif
 #endif
 
+#ifdef CALC_LJ
             /* Calculate the LJ energies */
 #ifdef NO_LJ_SHIFT
             VLJ6_SSE0          = gmx_mul_pr(sixthSSE,FrLJ6_SSE0);
@@ -732,8 +739,10 @@
             add_ener_grp(VLJ_SSE3,vvdwtp[3],egp_jj);
 #endif
 #endif
-#endif
-                                                                            
+#endif /* CALC_LJ */
+#endif /* CALC_ENERGIES */
+
+#ifdef CALC_LJ
             fscal_SSE0         = gmx_mul_pr(rinvsq_SSE0,
 #ifdef CALC_COULOMB
                                            gmx_add_pr(frcoul_SSE0,
@@ -748,7 +757,11 @@
                                                      (
 #endif
                                                       gmx_sub_pr(FrLJ12_SSE1,FrLJ6_SSE1)));
-#ifndef HALF_LJ
+#else
+            fscal_SSE0         = gmx_mul_pr(rinvsq_SSE0,frcoul_SSE0);
+            fscal_SSE1         = gmx_mul_pr(rinvsq_SSE1,frcoul_SSE1);
+#endif /* CALC_LJ */
+#if defined CALC_LJ && !defined HALF_LJ
             fscal_SSE2         = gmx_mul_pr(rinvsq_SSE2,
 #ifdef CALC_COULOMB
                                            gmx_add_pr(frcoul_SSE2,
