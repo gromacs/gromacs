@@ -57,6 +57,7 @@
  *  algorithmic module in mdrun. */
 typedef struct
 {
+    int max_cores;          /*! Maximum number of cores per node detected in the system. */
     int gnth;               /*! Global num. of threads per PP or PP+PME process/tMPI thread. */
     int gnth_pme;           /*! Global num. of threads per PME only process/tMPI thread. */
 
@@ -92,7 +93,7 @@ static const char *mod_name[emntNR] =
  *  All fields are initialized to 0 which should result in erros if
  *  the init call is omitted
  * */
-static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
+static omp_module_nthreads_t modth = { 0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
 
 
 /*! Determine the number of threads for module \mod.
@@ -185,7 +186,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 {
     int  nth, nth_pmeonly, omp_maxth, gmx_maxth, nppn;
     char *env;
-    char sbuf[STRLEN];
+    char sbuf[STRLEN], sbuf1[STRLEN];
     gmx_bool bSepPME, bOMP, bMaxThreadsSet;
 
 #ifdef GMX_OPENMP
@@ -210,6 +211,12 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         if (modth.initialized)
         {
             return;
+        }
+
+        /* gmx_omp_nthreads_detecthw should have been called before */
+        if (modth.max_cores == 0)
+        {
+            gmx_incons("gmx_omp_nthreads_detecthw has not been called before gmx_omp_nthreads_init!");
         }
 
         /* With full OpenMP support (verlet scheme) set the number of threads
@@ -246,7 +253,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         else if (bFullOmpSupport && bOMP)
         {
             /* max available threads per node */
-            omp_maxth = omp_get_max_threads();
+            omp_maxth = modth.max_cores;
             /* max permitted threads per node set through env var */
             if ((env = getenv("GMX_MAX_THREADS")) != NULL)
             {
@@ -296,28 +303,35 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #endif /* GMX_THREAD_MPI */
 
             /* divide the threads within the MPI processes/tMPI threads */
-            nth /= nppn;
-
-            /* can't have <1 thread per proc. -- something went wrong  */
-            if (nth < 1)
+            if (nth >= nppn)
             {
-#ifdef GMX_MPI
+                nth /= nppn;
+            }
+            else
+            {
+ #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "thred-MPI threads");
+                sprintf(sbuf, "thread-MPI threads");
+                sbuf1[0] = '\0';
 #else
-                sprintf(sbuf, "MPI processes per node");
+                sprintf(sbuf, "MPI processes");
+                sprintf(sbuf1, " per node");
 #endif
 #endif
+                /* bail if total #th exceeds the limit set by the user,
+                 * otherwise warn about oversubscription */
                 if (bMaxThreadsSet)
                 {
-                    gmx_fatal(FARGS, "You started %d %s which exceeds the maximum total "
+                    gmx_fatal(FARGS, "You started %d %s%s which exceeds the maximum total "
                               "number of threads set by GMX_MAX_THREADS=%s",
-                              nppn, sbuf, env);
+                              nppn, sbuf, sbuf1, env);
                 }
                 else
                 {
-                    gmx_incons("Whoops, auto-distribution of resources went wrong, "
-                               "we've eneded up with <1 threads per node!");
+                    gmx_warning("Oversubscribing the available %d logical CPU cores%s with %d %s.\n"
+                                "         This will cause considerable performance loss!",
+                                modth.max_cores, sbuf1, nppn, sbuf);
+                    nth = 1;
                 }
             }
         }
@@ -409,6 +423,11 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             fprintf(stderr, "%s for PME\n", sbuf);
         }
     }
+}
+
+void gmx_omp_nthreads_detecthw()
+{
+    modth.max_cores = omp_get_max_threads();
 }
 
 int gmx_omp_nthreads_get(int mod)

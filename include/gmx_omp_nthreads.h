@@ -53,6 +53,11 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bCurrNodePMEOnly,
                            gmx_bool bFullOmpSupport);
 
+/*! Detect the maximum number of cores per node. This function should be called
+ *  before thread-MPI is initialized so the Intel OpenMP doesn't outsmart us
+ *  (by returning omp_get_max_threads=1 when nt=max virt. logical cores. */
+void gmx_omp_nthreads_detecthw();
+
 /*! Returns the number of threads to be used in the given module m. */
 int gmx_omp_nthreads_get(int mod);
 

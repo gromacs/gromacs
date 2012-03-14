@@ -563,6 +563,8 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         fplog = NULL;
     }
 
+    gmx_omp_nthreads_detecthw();
+
     snew(state,1);
     if (MASTER(cr)) 
     {
