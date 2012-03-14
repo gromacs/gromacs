@@ -356,13 +356,13 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
         }
         if(!xdr_string(xdr,&(nm->name),STRLEN))
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         if (file_version >= 2)
         {
             if(!xdr_string(xdr,&(nm->unit),STRLEN))
             {
-                gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+                gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
             }
         }
         else
@@ -399,7 +399,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     {
         if(!bRead)
         {
-            gmx_file("Cannot write energy names to file; maybe you are out of quota?");
+            gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         *nre=0;
         return;
@@ -698,7 +698,7 @@ void close_enx(ener_file_t ef)
 {
     if(gmx_fio_close(ef->fio) != 0)
     {
-        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of quota?");  
+        gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
     }
 }
 
@@ -758,7 +758,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
             do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
             if(!bOK)
             {
-                gmx_file("Cannot write energy file header; maybe you are out of quota?");
+                gmx_file("Cannot write energy file header; maybe you are out of disk space?");
             }
 
             if (((fr->e_size && (fr->nre == nre) && 
@@ -888,7 +888,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         }
         else
         {
-            gmx_file("Cannot write energy file header; maybe you are out of quota?");
+            gmx_file("Cannot write energy file header; maybe you are out of disk space?");
         }
         return FALSE;
     }
@@ -1017,7 +1017,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     {
         if( gmx_fio_flush(ef->fio) != 0)
         {
-            gmx_file("Cannot write energy file; maybe you are out of quota?");
+            gmx_file("Cannot write energy file; maybe you are out of disk space?");
         }
     }
     
