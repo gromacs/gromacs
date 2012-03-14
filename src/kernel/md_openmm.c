@@ -539,7 +539,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (fflush(fplog) != 0)
             {
-                gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of disk space?");
             }
         }
 
