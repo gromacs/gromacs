@@ -85,6 +85,10 @@ add_executable(tune_pol tune_pol.c)
 target_link_libraries(tune_pol ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_pol PROPERTIES OUTPUT_NAME "tune_pol${GMX_BINARY_SUFFIX}")
 
+add_executable(tune_fc tune_fc.c)
+target_link_libraries(tune_fc ${GMX_EXTRA_LIBRARIES})
+set_target_properties(tune_fc PROPERTIES OUTPUT_NAME "tune_fc${GMX_BINARY_SUFFIX}")
+
 add_executable(tune_dip tune_dip.c)
 target_link_libraries(tune_dip ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_dip PROPERTIES OUTPUT_NAME "tune_dip${GMX_BINARY_SUFFIX}")
@@ -134,6 +138,7 @@ install(TARGETS
         gentop
 	tune_dip
 	tune_pol
+        tune_fc
 	bastat
 	analyze_mp
 	mkyaw
