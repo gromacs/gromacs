@@ -434,15 +434,10 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 if(GMX_GPU)
-    set(CUDA_BUILD_EMULATION OFF)
-    if ("${CUDA_NVCC_FLAGS}" STREQUAL "")
-        set(CUDA_NVCC_FLAGS "-arch=sm_20;-use_fast_math;" CACHE STRING "Compiler flags for nvcc." FORCE)
-    endif()
     find_package(CUDA 3.2 REQUIRED)
     add_definitions(-DGMX_GPU)
-    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
-        set(CUDA_VERBOSE_BUILD ON)
-    endif()
+    set(CUDA_BUILD_EMULATION OFF)
+    include(gmxManageNvccConfig)
     # we need this linker flag for gcc 4.5+, but we'll add it for all gcc as 
     # the compiler version is not available and it doesn't hurt anyway
     if(CMAKE_COMPILER_IS_GNUCC)
