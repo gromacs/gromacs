@@ -64,6 +64,7 @@
 #include <float.h>
 #include <math.h>
 #include <assert.h>
+#include "smalloc.h"
 
 #ifndef __FLT_EPSILON__
 #define __FLT_EPSILON__ FLT_EPSILON
@@ -142,35 +143,6 @@ static int vmax(int* a, int s) {
     }
     return max;
 } 
-
-/*
-copied here from fftgrid, because:
-1. function there not publically available
-2. not sure whether we keep fftgrid
-3. less dependencies for fft5d
-
-Only used for non-fftw case
-*/
-static void *
-gmx_calloc_aligned(size_t size)
-{
-    void *p0,*p;
-    
-    /*We initialize by zero for Valgrind
-      For non-divisible case we communicate more than the data.
-      If we don't initialize the data we communicate uninitialized data*/
-    p0 = calloc(size+32,1);  
-    
-    if(p0 == NULL)
-    {
-        gmx_fatal(FARGS,"Failed to allocated %u bytes of aligned memory.",size+32);
-    }
-    
-    p = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
-    
-    /* Yeah, yeah, we cannot free this pointer, but who cares... */
-    return p;
-}
 
 
 /* NxMxK the size of the data
@@ -401,13 +373,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
     lsize = fft5d_fmax(N[0]*M[0]*K[0]*nP[0],fft5d_fmax(N[1]*M[1]*K[1]*nP[1],C[2]*M[2]*K[2])); 
     /* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
     if (!(flags&FFT5D_NOMALLOC)) { 
-        lin = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);   
-        lout = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize); 
+        snew_aligned(lin, lsize, 32);
+        snew_aligned(lout, lsize, 32);
         if (nthreads > 1)
         {
             /* We need extra transpose buffers to avoid OpenMP barriers */
-            lout2 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
-            lout3 = (t_complex*)gmx_calloc_aligned(sizeof(t_complex) * lsize);
+            snew_aligned(lout2, lsize, 32);
+            snew_aligned(lout3, lsize, 32);
         }
         else
         {
@@ -1183,8 +1155,13 @@ void fft5d_destroy(fft5d_plan plan) {
 #endif /* FFT5D_MPI_TRANSPOS */
 #endif /* GMX_FFT_FFTW3 */
 
-    /*We can't free lin/lout here - is allocated by gmx_calloc_aligned which can't be freed*/
-
+    if (!(plan->flags&FFT5D_NOMALLOC))
+    {
+        sfree_aligned(plan->lin);
+        sfree_aligned(plan->lout);
+        sfree_aligned(plan->lout2);
+        sfree_aligned(plan->lout3);
+    }
     
 #ifdef FFT5D_THREADS
 #ifdef FFT5D_FFTW_THREADS

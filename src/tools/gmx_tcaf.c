@@ -49,7 +49,7 @@
 #include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "string.h"
+#include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"

@@ -45,7 +45,7 @@
 #include "confio.h"
 #include "copyrite.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "random.h"
 #include "futil.h"

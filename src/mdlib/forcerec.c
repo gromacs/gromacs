@@ -1113,7 +1113,6 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
 {
   char buf[STRLEN];
   int i,j;
-  void *      p_tmp;
 
   if (tabfn == NULL) {
     if (debug)
@@ -1139,18 +1138,8 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
    * to do this...
    */
   
-  /* 8 fp entries per vdw table point, n+1 points, and 16 bytes extra to align it. */
-  p_tmp = malloc(8*(nbl->tab.n+1)*sizeof(real)+16);
-  
-  /* align it - size_t has the same same as a pointer */
-  nbl->vdwtab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
-
-  /* 4 fp entries per coul table point, n+1 points, and 16 bytes extra to align it. */
-  p_tmp = malloc(4*(nbl->tab.n+1)*sizeof(real)+16);
-  
-  /* align it - size_t has the same same as a pointer */
-  nbl->coultab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
-
+  snew_aligned(nbl->vdwtab,8*nbl->tab.n,16);
+  snew_aligned(nbl->coultab,4*nbl->tab.n,16);
   
   for(i=0; i<=nbl->tab.n; i++) {
     for(j=0; j<4; j++)

@@ -448,8 +448,8 @@ endif()
 
 if(GMX_OPENMP)
     find_package(OpenMP REQUIRED)
-    list(APPEND GROMACS_C_FLAGS ${OpenMP_C_FLAGS})
-    list(APPEND GROMACS_CXX_FLAGS ${OpenMP_CXX_FLAGS})
+    set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
+    set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
     add_definitions(-DGMX_OPENMP)
 endif()
 
