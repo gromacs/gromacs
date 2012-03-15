@@ -75,11 +75,6 @@ ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/progman.tex
 # In theory, each executable should be a dependency for the above command...
 # I can't be bothered about it
 
-ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/${OPTIONS_PROGRAM_NAME}.tex
-  COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkoptions ARGS ${GMXBIN}
-  DEPENDS mkoptions progman.tex
-  )
-
 # Finally, the command to build the manual.
 
 ADD_LATEX_DOCUMENT(gromacs.tex
@@ -96,7 +91,7 @@ ADD_LATEX_DOCUMENT(gromacs.tex
   # work properly. Using "make clean" from the manual directory will
   # clean these up if you have them lying around from old-style
   # manual builds.
-  DEPENDS ${OPTIONS_PROGRAM_NAME}.tex proglist.tex mdp_opt.tex progman.tex
+  DEPENDS proglist.tex mdp_opt.tex progman.tex
 
   BIBFILES monster.bib unpubl.bib
   IMAGE_DIRS plots
