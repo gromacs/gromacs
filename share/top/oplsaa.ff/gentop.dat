@@ -184,6 +184,7 @@
     <atype elem="F" description="F in difluorobenzene" gt_name="F3b" gt_type="opls_728" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2arfbd" charge="-0.2" vdwparams=""/>
     <atype elem="F" description="F in hexafluorobenzene" gt_name="F3h" gt_type="opls_721" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2arfbh" charge="-0.13" vdwparams=""/>
     <atype elem="F" description="F in fluorobenzene" gt_name="F3a" gt_type="opls_719" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C2" charge="-0.22" vdwparams=""/>
+    <atype elem="F" description="F in alkyne" gt_name="F3l" gt_type="opls_719" miller_equiv="F" geometry="tetrahedral" numbonds="1" neighbors="C1" charge="-0.22" vdwparams=""/>
     
     <!-- HYDROGEN -->
     <atype elem="H" description="H bound to aldehyde C" gt_name="HAacid" gt_type="opls_279" miller_equiv="H" geometry="tetrahedral" numbonds="1" neighbors="C2ac" charge="0.0" vdwparams=""/>
