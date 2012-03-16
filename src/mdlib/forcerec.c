@@ -1040,15 +1040,11 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
    */
 
   /* For performance reasons we want
-   * the table data to be aligned to 16-byte. This is accomplished
-   * by allocating 16 bytes extra to a temporary pointer, and then
-   * calculating an aligned pointer. This new pointer must not be
-   * used in a free() call, but thankfully we're sloppy enough not
-   * to do this...
+   * the table data to be aligned to 16-byte. The pointer could be freed
+   * but currently isn't.
    */
-  
-  snew_aligned(nbl->vdwtab,8*nbl->tab.n,16);
-  snew_aligned(nbl->coultab,4*nbl->tab.n,16);
+  snew_aligned(nbl->vdwtab,8*(nbl->tab.n+1),16);
+  snew_aligned(nbl->coultab,4*(nbl->tab.n+1),16);
   
   for(i=0; i<=nbl->tab.n; i++) {
     for(j=0; j<4; j++)
