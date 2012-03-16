@@ -69,7 +69,7 @@ int main(int argc,char *argv[])
         { efDAT, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD }
     };
-#define NFILE asize(fnm)
+    int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, "molname", "formula", "composition", NULL };
     static int compress=1;
     static real th_toler=170,ph_toler=5;
@@ -97,7 +97,9 @@ int main(int argc,char *argv[])
     CopyRight(stdout,argv[0]);
     
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,NFILE,fnm,
-                      asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
+                      sizeof(pa)/sizeof(pa[0]),pa,
+                      sizeof(desc)/sizeof(desc[0]),desc,
+                      0,NULL,&oenv);
 		    
     ap = gmx_atomprop_init();
     if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),ap)) == NULL)

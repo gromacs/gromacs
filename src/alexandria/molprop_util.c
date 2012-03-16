@@ -1036,7 +1036,9 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
     char *types[] = { (char *)"elec", (char *)"ESP", (char *)"RESP", 
                       (char *)"empirical", (char *)"refractive index", 
                       (char *)"HF", (char *)"MP2", (char *)"Molecular Beam" };
+    int ntypes;
     
+    ntypes = (sizeof(types)/sizeof(types[0]));
     snew(qmc,1);
     for(i=0; (i<np); i++) 
     {
@@ -1070,7 +1072,7 @@ t_qmcount *find_calculations(int np,gmx_molprop_t mp[],int emp,char *fc_str)
         while(gmx_molprop_get_calculation(mp[i],&program,&method,&basis,
                                           &reference,&conformation,&calcref) == 1) 
         {
-            for(k=0; (k<asize(types)); k++) 
+            for(k=0; (k<ntypes); k++) 
             {
                 if ((NULL == fc_str) || (get_qmc_count(qmc,method,basis,types[k]) > 0))
                 {

@@ -847,7 +847,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real toler,
                     break;
                 }
             }
-            for(ne=0; (ne < max(1,nexp)); ne++)
+            for(ne=0; (ne < (nexp > 1 ? nexp : 1)); ne++)
             {
                 if (0 == ne)
                     iprint++;

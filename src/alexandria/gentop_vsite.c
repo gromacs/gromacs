@@ -90,19 +90,19 @@ void gentop_vsite_add_linear(gentop_vsite_t gvt,int ai,int aj,int ak)
   
     for(i=0; (i<gvt->nlinear); i++)
     {
-        if (gvt->lin[i].AJ == aj) 
+        if (gvt->lin[i].a[1] == aj) 
         {
-            if (((gvt->lin[i].AI == ai)  && (gvt->lin[i].AK == ak)) ||
-                ((gvt->lin[i].AI == aj)  && (gvt->lin[i].AK == ai)))
+            if (((gvt->lin[i].a[0] == ai)  && (gvt->lin[i].a[2] == ak)) ||
+                ((gvt->lin[i].a[0] == aj)  && (gvt->lin[i].a[2] == ai)))
                 break;
         }
     }
     if (i == gvt->nlinear)
     {
         srenew(gvt->lin,++gvt->nlinear);
-        gvt->lin[i].AI = ai;
-        gvt->lin[i].AJ = aj;
-        gvt->lin[i].AK = ak;
+        gvt->lin[i].a[0] = ai;
+        gvt->lin[i].a[1] = aj;
+        gvt->lin[i].a[2] = ak;
     }
 }
 
@@ -112,19 +112,19 @@ void gentop_vsite_add_planar(gentop_vsite_t gvt,int ai,int aj,int ak,int al,int 
   
     for(i=0; (i<gvt->nplanar); i++)
     {
-        if (((gvt->plan[i].AI == ai) && (gvt->plan[i].AJ == aj)  &&
-             (gvt->plan[i].AK == ak) && (gvt->plan[i].AL == al)) ||
-            ((gvt->plan[i].AI == al) && (gvt->plan[i].AJ == ak)  &&
-             (gvt->plan[i].AK == aj) && (gvt->plan[i].AL == ai)))
+        if (((gvt->plan[i].a[0] == ai) && (gvt->plan[i].a[1] == aj)  &&
+             (gvt->plan[i].a[2] == ak) && (gvt->plan[i].a[3] == al)) ||
+            ((gvt->plan[i].a[0] == al) && (gvt->plan[i].a[1] == ak)  &&
+             (gvt->plan[i].a[2] == aj) && (gvt->plan[i].a[3] == ai)))
             break;
     }
     if (i == gvt->nplanar)
     {
         srenew(gvt->plan,++gvt->nplanar);
-        gvt->plan[i].AI = ai;
-        gvt->plan[i].AJ = aj;
-        gvt->plan[i].AK = ak;
-        gvt->plan[i].AL = al;
+        gvt->plan[i].a[0] = ai;
+        gvt->plan[i].a[1] = aj;
+        gvt->plan[i].a[2] = ak;
+        gvt->plan[i].a[3] = al;
         for(j=0; (j<4); j++)
             gvt->plan[i].nb[j] = nbonds[gvt->plan[i].a[j]];
     }
@@ -140,10 +140,10 @@ static void delete_params(t_params plist[],int etype,int alist[])
         /* Remove bonds, if present */
         for(j=0; (j<plist[etype].nr); j++)
         {
-            if (((plist[etype].param[j].AI == alist[0]) &&
-                 (plist[etype].param[j].AJ == alist[1])) ||
-                ((plist[etype].param[j].AJ == alist[0]) &&
-                 (plist[etype].param[j].AI == alist[1])))
+            if (((plist[etype].param[j].a[0] == alist[0]) &&
+                 (plist[etype].param[j].a[1] == alist[1])) ||
+                ((plist[etype].param[j].a[1] == alist[0]) &&
+                 (plist[etype].param[j].a[0] == alist[1])))
             {
                 if (NULL != debug)
                     fprintf(debug,"Removing bond beteen atoms %d %d\n",
@@ -168,17 +168,17 @@ static void delete_params(t_params plist[],int etype,int alist[])
         /* Remove dihedral, if present. Allow wildcard in alist[3] (specified as -1) */
         for(j=0; (j<plist[etype].nr); j++)
         {
-            if (((plist[etype].param[j].AI == alist[0]) &&
-                 (plist[etype].param[j].AJ == alist[1]) &&
-                 (plist[etype].param[j].AK == alist[2]) &&
-                 ((alist[3] == -1) || (plist[etype].param[j].AL == alist[3]))) ||
-                ((plist[etype].param[j].AL == alist[0]) &&
-                 (plist[etype].param[j].AK == alist[1]) &&
-                 (plist[etype].param[j].AJ == alist[2]) &&
-                 ((alist[3] == -1) || (plist[etype].param[j].AI == alist[3]))) ||
-                ((plist[etype].param[j].AJ == alist[0]) &&
-                 (plist[etype].param[j].AK == alist[1]) &&
-                 (plist[etype].param[j].AL == alist[2]) &&
+            if (((plist[etype].param[j].a[0] == alist[0]) &&
+                 (plist[etype].param[j].a[1] == alist[1]) &&
+                 (plist[etype].param[j].a[2] == alist[2]) &&
+                 ((alist[3] == -1) || (plist[etype].param[j].a[3] == alist[3]))) ||
+                ((plist[etype].param[j].a[3] == alist[0]) &&
+                 (plist[etype].param[j].a[2] == alist[1]) &&
+                 (plist[etype].param[j].a[1] == alist[2]) &&
+                 ((alist[3] == -1) || (plist[etype].param[j].a[0] == alist[3]))) ||
+                ((plist[etype].param[j].a[1] == alist[0]) &&
+                 (plist[etype].param[j].a[2] == alist[1]) &&
+                 (plist[etype].param[j].a[3] == alist[2]) &&
                  (alist[3] == -1)))
             {
                 if (NULL != debug)
@@ -202,12 +202,12 @@ static void delete_params(t_params plist[],int etype,int alist[])
         /* Remove angle, if present */
         for(j=0; (j<plist[etype].nr); j++)
         {
-            if (plist[etype].param[j].AJ == alist[1])
+            if (plist[etype].param[j].a[1] == alist[1])
             {
-                if (((plist[etype].param[j].AI == alist[0]) &&
-                     (plist[etype].param[j].AK == alist[2])) ||
-                    ((plist[etype].param[j].AK == alist[0]) &&
-                     (plist[etype].param[j].AI == alist[2])))
+                if (((plist[etype].param[j].a[0] == alist[0]) &&
+                     (plist[etype].param[j].a[2] == alist[2])) ||
+                    ((plist[etype].param[j].a[2] == alist[0]) &&
+                     (plist[etype].param[j].a[0] == alist[2])))
                 {
                     if (NULL != debug)
                         fprintf(debug,"Removing angle beteen atoms %d %d %d\n",
@@ -248,18 +248,18 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     if (gvl->nline <= 0)
         return;
     memset(&nbml,0,sizeof(nbml));        
-    rvec_sub((*x)[gvl->AI],(*x)[gvl->AJ],dx);
+    rvec_sub((*x)[gvl->a[0]],(*x)[gvl->a[1]],dx);
     rB    = norm(dx);
-    rvec_sub((*x)[gvl->AJ],(*x)[gvl->AK],dx);
+    rvec_sub((*x)[gvl->a[1]],(*x)[gvl->a[2]],dx);
     rC    = rB+norm(dx);
-    mI    = atoms->atom[gvl->AI].m;
-    mJ    = atoms->atom[gvl->AJ].m;
-    mK    = atoms->atom[gvl->AK].m;
+    mI    = atoms->atom[gvl->a[0]].m;
+    mJ    = atoms->atom[gvl->a[1]].m;
+    mK    = atoms->atom[gvl->a[2]].m;
     if (gvl->nline == 4) 
     {
-        rvec_sub((*x)[gvl->AK],(*x)[gvl->AL],dx);
+        rvec_sub((*x)[gvl->a[2]],(*x)[gvl->a[3]],dx);
         rD = rC+norm(dx);
-        mL = atoms->atom[gvl->AL].m;
+        mL = atoms->atom[gvl->a[3]].m;
     }
     else 
     {
@@ -325,19 +325,19 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     
     /* Add constraint between masses */
     memset(&pp,0,sizeof(pp));
-    pp.AI = gvl->AI;
-    pp.AJ = natoms;
-    pp.C0 = rVV;
+    pp.a[0] = gvl->a[0];
+    pp.a[1] = natoms;
+    pp.c[0] = rVV;
     add_param_to_list(&(plist[F_CONSTR]), &pp);
     
     /* Add vsites */
     for(i=1; (i<gvl->nline); i++)
     {
         memset(&pp,0,sizeof(pp));
-        pp.AI = gvl->a[i];
-        pp.AJ = gvl->AI;
-        pp.AK = natoms;
-        pp.C0 = ac[i];
+        pp.a[0] = gvl->a[i];
+        pp.a[1] = gvl->a[0];
+        pp.a[2] = natoms;
+        pp.c[0] = ac[i];
         add_param_to_list(&(plist[F_VSITE2]), &pp);
     }
 }
@@ -382,17 +382,17 @@ void gentop_vsite_check(gentop_vsite_t gvt,int natom)
                         fprintf(debug," %d",gvt->lin[i].a[k]);
                     fprintf(debug,"\n");
                 }
-                if ((gvt->lin[j].AI == gvt->lin[i].AJ) && 
-                    (gvt->lin[j].AJ == gvt->lin[i].AK)) 
+                if ((gvt->lin[j].a[0] == gvt->lin[i].a[1]) && 
+                    (gvt->lin[j].a[1] == gvt->lin[i].a[2])) 
                 {
-                    gvt->lin[i].AL = gvt->lin[j].AK;
+                    gvt->lin[i].a[3] = gvt->lin[j].a[2];
                     gvt->lin[i].nline = 4;
                     gvt->lin[j].nline = 0;
                 }
-                else if ((gvt->lin[i].AI == gvt->lin[j].AJ) && 
-                         (gvt->lin[i].AJ == gvt->lin[j].AK)) 
+                else if ((gvt->lin[i].a[0] == gvt->lin[j].a[1]) && 
+                         (gvt->lin[i].a[1] == gvt->lin[j].a[2])) 
                 {
-                    gvt->lin[j].AL = gvt->lin[i].AK;
+                    gvt->lin[j].a[3] = gvt->lin[i].a[2];
                     gvt->lin[j].nline = 4;
                     gvt->lin[i].nline = 0;
                 }

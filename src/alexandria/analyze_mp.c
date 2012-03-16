@@ -406,7 +406,7 @@ int main(int argc,char *argv[])
         { efXVG, "-c",    "correl",    ffWRITE  },
         { efXVG, "-his",  "polhisto",  ffWRITE  }
     };
-#define NFILE asize(fnm)
+#define NFILE (sizeof(fnm)/sizeof(fnm[0]))
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
     static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", NULL };
     static char *fc_str = (char *)"";
@@ -445,6 +445,7 @@ int main(int argc,char *argv[])
         { "-fc_str", FALSE, etSTR, {&fc_str},
           "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
     };
+    int        npa;
     FILE       *fp,*gp;
     int        i,alg,np,nspoel,nbosque,nhandbook,ntot,nqm,eMP,eprop;
     double     *fit2,*test2;
@@ -462,8 +463,11 @@ int main(int argc,char *argv[])
     
     CopyRight(stdout,argv[0]);
     
+    npa = sizeof(pa)/sizeof(pa[0]);
     parse_common_args(&argc,argv,PCA_CAN_VIEW,NFILE,fnm,
-                      asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
+                      npa,pa,
+                      sizeof(desc)/sizeof(desc[0]),desc,
+                      0,NULL,&oenv);
 		    
     ap = gmx_atomprop_init();
     
@@ -472,7 +476,7 @@ int main(int argc,char *argv[])
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
     
     alg = -1;
-    if (opt2parg_bSet("-sort",asize(pa),pa)) 
+    if (opt2parg_bSet("-sort",npa,pa)) 
     {
         for(i=0; (i<empSORT_NR); i++)
             if (strcasecmp(sort[0],sort[i+1]) == 0) 
@@ -482,7 +486,7 @@ int main(int argc,char *argv[])
             }
     }
     eprop = -1;
-    if (opt2parg_bSet("-prop",asize(pa),pa)) 
+    if (opt2parg_bSet("-prop",npa,pa)) 
     {
         for(i=0; (i<empNR); i++)
             if (strcasecmp(prop[0],prop[i+1]) == 0) 

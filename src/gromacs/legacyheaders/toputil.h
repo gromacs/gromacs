@@ -87,11 +87,6 @@ void print_bondeds(FILE *out,int natoms,directive d,
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 
-  /* Function from convparm.c */
-int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-		 real forceparams[MAXFORCEPARAM],int comb,real reppow,
-		 int start,gmx_bool bAppend);
-
 #ifdef __cplusplus
 }
 #endif

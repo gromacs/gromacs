@@ -70,8 +70,8 @@
 #include <symtab.h>
 #include <gpp_atomtype.h>
 #include <atomprop.h>
-#include <gaussian_integrals.h>
-#include <slater_integrals.h>
+#include "gaussian_integrals.h"
+#include "slater_integrals.h"
 #include "gmx_resp.h"
 #include "gentop_qgen.h"
 #include "nmsimplex.h"
