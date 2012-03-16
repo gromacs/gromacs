@@ -788,7 +788,7 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
         char buf[STRLEN];
         sprintf(
             buf,
-            "Cannot write file '%s'; maybe you are out of disk space or quota?",
+            "Cannot write file '%s'; maybe you are out of disk space?",
             fio->fn);
         gmx_file(buf);
     }

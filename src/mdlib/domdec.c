@@ -6316,7 +6316,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
-            dd_warning(cr,fplog,"NOTE: Periodic molecules: can not easily determine the required minimum bonded cut-off, using half the non-bonded cut-off\n");
+            dd_warning(cr,fplog,"NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.\n");
             comm->cutoff_mbody = comm->cutoff/2;
             r_bonded_limit = comm->cutoff_mbody;
         }
