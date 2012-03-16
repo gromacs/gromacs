@@ -113,35 +113,35 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
 
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 		   real **dih,int nframes,int nangles,
-		   const char *grpname,real t0,real dt,gmx_bool bRb,
+		   const char *grpname,real *time,gmx_bool bRb,
                    const output_env_t oenv)
 {
   /* just a wrapper; declare extra args, then chuck away at end. */ 
   int maxchi = 0 ; 
   t_dlist *dlist ; 
-  int *xity; 
+  int *multiplicity; 
   int nlist = nangles ; 
   int k ; 
 
   snew(dlist,nlist);  
-  snew(xity,nangles); 
+  snew(multiplicity,nangles); 
   for(k=0; (k<nangles); k++) {
-    xity[k]=3 ; 
+    multiplicity[k]=3 ; 
   }
 
   low_ana_dih_trans(TRUE, fn_trans,TRUE, fn_histo, maxchi, 
                     dih, nlist, dlist, nframes,
-		    nangles, grpname, xity, t0, dt, bRb, 0.5,oenv); 
+		    nangles, grpname, multiplicity, time, bRb, 0.5,oenv);
   sfree(dlist); 
-  sfree(xity); 
+  sfree(multiplicity); 
   
 }
 
 void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 		       gmx_bool bHisto, const char *fn_histo, int maxchi, 
 		       real **dih, int nlist, t_dlist dlist[], int nframes,
-		       int nangles, const char *grpname, int xity[], 
-		       real t0, real dt, gmx_bool bRb, real core_frac,
+		       int nangles, const char *grpname, int multiplicity[],
+		       real *time, gmx_bool bRb, real core_frac,
                        const output_env_t oenv)
 {
   FILE *fp;
@@ -152,6 +152,13 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
   real ttime,tt;
   real *rot_occ[NROT] ; 
   int  (*calc_bin)(real,int,real);  
+  real dt;
+
+  if (1 <= nframes) {
+    return;
+  }
+  /* Assumes the frames are equally spaced in time */
+  dt=(time[nframes-1]-time[0])/(nframes-1);
   
   /* Analysis of dihedral transitions */
   fprintf(stderr,"Now calculating transitions...\n");
@@ -178,12 +185,12 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 #ifdef OLDIE
     mind = maxd = prev = dih[i][0]; 
 #else
-    cur_bin = calc_bin(dih[i][0],xity[i],core_frac);
+    cur_bin = calc_bin(dih[i][0],multiplicity[i],core_frac);
     rot_occ[cur_bin][i]++ ; 
 #endif    
     for (j=1; (j<nframes); j++)
     {
-      new_bin = calc_bin(dih[i][j],xity[i],core_frac);
+      new_bin = calc_bin(dih[i][j],multiplicity[i],core_frac);
       rot_occ[new_bin][i]++ ; 
 #ifndef OLDIE
       if (cur_bin == 0)
@@ -248,8 +255,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     sprintf(title,"Number of transitions: %s",grpname);
     fp=xvgropen(fn_trans,title,"Time (ps)","# transitions/timeframe",oenv);
     for(j=0; (j<nframes); j++) {
-      tt = t0+j*dt;
-      fprintf(fp,"%10.3f  %10d\n",tt,tr_f[j]);
+      fprintf(fp,"%10.3f  %10d\n",time[j],tr_f[j]);
     }
     ffclose(fp);
   }
@@ -281,11 +287,11 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 
 }
 
-void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih, 
 			     int nlist, t_dlist dlist[],int nangles) 
 {
   /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
-   * and store in xity[j] 
+   * and store in multiplicity[j] 
    */ 
 
   int j, Dih, i ; 
@@ -300,11 +306,11 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
 	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
 	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
 	/* default - we will correct the rest below */ 
-	xity[j] = 3 ; 
+	multiplicity[j] = 3 ; 
 
 	/* make omegas 2fold, though doesn't make much more sense than 3 */ 
 	if (Dih == edOmega && (has_dihedral(edOmega,&(dlist[i])))) {
-	  xity[j] = 2 ; 
+	  multiplicity[j] = 2 ; 
 	} 
 
 	/* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
@@ -319,7 +325,7 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
 	       ((strstr(name,"GLN") != NULL) && (Dih == edChi3))  ||   
 	       ((strstr(name,"ASN") != NULL) && (Dih == edChi2))  ||   
 	       ((strstr(name,"ARG") != NULL) && (Dih == edChi4))  ) {
-	    xity[j] = 2; 
+	    multiplicity[j] = 2; 
 	  }
 	}
 	j++ ; 
@@ -331,7 +337,7 @@ void mk_multiplicity_lookup (int *xity, int maxchi, real **dih,
 	    j,nangles);
   /* Check for remaining dihedrals */
   for(;(j < nangles); j++)
-    xity[j] = 3;
+    multiplicity[j] = 3;
 
 }
 
@@ -369,7 +375,7 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 
 void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   int maxchi, t_dlist dlist[], real time[], 
-			   int **lookup, int *xity,gmx_bool bRb, gmx_bool bNormalize,
+			   int **lookup, int *multiplicity,gmx_bool bRb, gmx_bool bNormalize,
 			   real core_frac, gmx_bool bAll, const char *fnall,
                            const output_env_t oenv) 
 {
@@ -407,7 +413,7 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
     for (Xi = 0 ; Xi < maxchi ; Xi ++ ) {
       index = lookup[i][Xi] ; /* chi_(Xi+1) of res i (-1 if off end) */ 
       if ( index >= 0 ) {
-	n = xity[index]; 
+	n = multiplicity[index]; 
 	nbin = n*nbin ; 
       }
     }
@@ -423,14 +429,14 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 	bRotZero = TRUE ; 
 	bHaveChi = FALSE ; 
       } else {
-	b = calc_bin(dih[index][j],xity[index],core_frac) ; 
+	b = calc_bin(dih[index][j],multiplicity[index],core_frac) ; 
 	accum = b - 1 ; 
 	if (b == 0 ) 
 	  bRotZero = TRUE ; 
 	for (Xi = 1 ; Xi < maxchi ; Xi ++ ) {
 	  index = lookup[i][Xi] ; /* chi_(Xi+1) of res i (-1 if off end) */ 
 	  if ( index >= 0 ) {
-	    n = xity[index]; 
+	    n = multiplicity[index]; 
 	    b = calc_bin(dih[index][j],n,core_frac); 
 	    accum = n * accum + b - 1 ; 
 	    if (b == 0 ) 

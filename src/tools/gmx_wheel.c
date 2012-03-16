@@ -60,7 +60,7 @@
 #include "strdb.h"
 #include "gmx_ana.h"
 
-gmx_bool *bPhobics(int nres,char *resnm[])
+static gmx_bool *bPhobics(int nres,char *resnm[])
 {
   int  i,nb;
   char **cb;

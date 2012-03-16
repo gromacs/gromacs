@@ -26,7 +26,7 @@ int main(int argc,char *argv[])
   fprintf(fp,"; Paul J. van Maaren and David van der Spoel\n\n");
   fprintf(fp,"[ defaults ]\n");
   fprintf(fp,"; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n");
-  fprintf(fp,"1               3               yes             1       1\n\n");
+  fprintf(fp,"1               1               yes             1       1\n\n");
 
   fprintf(fp,"[ atomtypes ]\n");
   fprintf(fp,"; name      at.num  mass     charge ptype  repulsion  dispersion\n");

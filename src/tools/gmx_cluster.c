@@ -61,21 +61,67 @@
 #include "viewit.h"
 #include "gmx_ana.h"
 
-/* macro's to print to two file pointers at once (i.e. stderr and log) */
-#define lo_ffprintf(fp1,fp2,buf) \
-   fprintf(fp1,"%s",buf);\
-   fprintf(fp2,"%s",buf);
-/* just print a prepared buffer to fp1 and fp2 */
-#define ffprintf(fp1,fp2,buf) { lo_ffprintf(fp1,fp2,buf) }
-/* prepare buffer with one argument, then print to fp1 and fp2 */
-#define ffprintf1(fp1,fp2,buf,fmt,arg) {\
-   sprintf(buf,fmt,arg);\
-   lo_ffprintf(fp1,fp2,buf)\
+/* print to two file pointers at once (i.e. stderr and log) */
+static inline
+void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
+{
+    fprintf(fp1, "%s", buf);
+    fprintf(fp2, "%s", buf);
 }
+
+/* just print a prepared buffer to fp1 and fp2 */
+static inline
+void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
+{
+    lo_ffprintf(fp1, fp2, buf);
+}
+
+/* prepare buffer with one argument, then print to fp1 and fp2 */
+static inline
+void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
+{
+    sprintf(buf, fmt, arg);
+    lo_ffprintf(fp1, fp2, buf);
+}
+
+/* prepare buffer with one argument, then print to fp1 and fp2 */
+static inline
+void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
+{
+    sprintf(buf, fmt, arg);
+    lo_ffprintf(fp1, fp2, buf);
+}
+
+/* prepare buffer with one argument, then print to fp1 and fp2 */
+static inline
+void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
+{
+    sprintf(buf, fmt, arg);
+    lo_ffprintf(fp1, fp2, buf);
+}
+
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-#define ffprintf2(fp1,fp2,buf,fmt,arg1,arg2) {\
-   sprintf(buf,fmt,arg1,arg2);\
-   lo_ffprintf(fp1,fp2,buf)\
+static inline
+void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
+{
+    sprintf(buf, fmt, arg1, arg2);
+    lo_ffprintf(fp1, fp2, buf);
+}
+
+/* prepare buffer with two arguments, then print to fp1 and fp2 */
+static inline
+void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
+{
+    sprintf(buf, fmt, arg1, arg2);
+    lo_ffprintf(fp1, fp2, buf);
+}
+
+/* prepare buffer with two arguments, then print to fp1 and fp2 */
+static inline
+void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
+{
+    sprintf(buf, fmt, arg1, arg2);
+    lo_ffprintf(fp1, fp2, buf);
 }
 
 typedef struct {
@@ -702,7 +748,7 @@ static void ana_trans(t_clusters *clust, int nf,
       trans[clust->cl[i-1]-1][clust->cl[i]-1]++;
       maxtrans = max(maxtrans, trans[clust->cl[i]-1][clust->cl[i-1]-1]);
     }
-  ffprintf2(stderr,log,buf,"Counted %d transitions in total, "
+  ffprintf_dd(stderr,log,buf,"Counted %d transitions in total, "
 	    "max %d between two specific clusters\n",ntranst,maxtrans);
   if (transfn) {
     fp=ffopen(transfn,"w");
@@ -751,7 +797,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   
   clear_mat(zerobox);
   
-  ffprintf1(stderr,log,buf,"\nFound %d clusters\n\n",clust->ncl);
+  ffprintf_d(stderr,log,buf,"\nFound %d clusters\n\n",clust->ncl);
   trxsfn=NULL;
   if (trxfn) {
     /* do we write all structures? */
@@ -759,7 +805,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       trxsfn = parse_filename(trxfn, max(write_ncl,clust->ncl));
       snew(bWrite,nf);
     }
-    ffprintf2(stderr,log,buf,"Writing %s structure for each cluster to %s\n",
+    ffprintf_ss(stderr,log,buf,"Writing %s structure for each cluster to %s\n",
 	      bAverage ? "average" : "middle", trxfn);
     if (write_ncl) {
       /* find out what we want to tell the user:
@@ -1008,7 +1054,9 @@ int gmx_cluster(int argc,char *argv[])
     "[TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
     "structure of each cluster or writes numbered files with cluster members",
     "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
-    "[TT]-nst[tt] and [TT]-rmsmin[tt]).[BR]",
+    "[TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
+    "structure with the smallest average RMSD from all other structures",
+    "of the cluster.[BR]",
   };
   
   FILE         *fp,*log;
@@ -1174,7 +1222,7 @@ int gmx_cluster(int argc,char *argv[])
       } else
 	sprintf(buf1,"Will use P=%d, M=%d",P,M);
     }
-    ffprintf1(stderr,log,buf,"%s for determining the neighbors\n\n",buf1);
+    ffprintf_s(stderr,log,buf,"%s for determining the neighbors\n\n",buf1);
   } else /* method != m_jarvis */
     bUseRmsdCut = ( bBinary || method == m_linkage || method == m_gromos );
   if (bUseRmsdCut && method != m_jarvis_patrick)
@@ -1316,11 +1364,11 @@ int gmx_cluster(int argc,char *argv[])
     }
     fprintf(stderr,"\n\n");
   }
-  ffprintf2(stderr,log,buf,"The RMSD ranges from %g to %g nm\n",
+  ffprintf_gg(stderr,log,buf,"The RMSD ranges from %g to %g nm\n",
 	    rms->minrms,rms->maxrms);
-  ffprintf1(stderr,log,buf,"Average RMSD is %g\n",2*rms->sumrms/(nf*(nf-1)));
-  ffprintf1(stderr,log,buf,"Number of structures for matrix %d\n",nf);
-  ffprintf1(stderr,log,buf,"Energy of the matrix is %g nm\n",mat_energy(rms));
+  ffprintf_g(stderr,log,buf,"Average RMSD is %g\n",2*rms->sumrms/(nf*(nf-1)));
+  ffprintf_d(stderr,log,buf,"Number of structures for matrix %d\n",nf);
+  ffprintf_g(stderr,log,buf,"Energy of the matrix is %g nm\n",mat_energy(rms));
   if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms) )
     fprintf(stderr,"WARNING: rmsd cutoff %g is outside range of rmsd values "
 	    "%g to %g\n",rmsdcut,rms->minrms,rms->maxrms);

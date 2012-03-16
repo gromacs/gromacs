@@ -56,6 +56,7 @@
 #include "checkpoint.h"
 #include "gmx_ana.h"
 #include "names.h"
+#include "macros.h"
 
 
 
@@ -1149,18 +1150,6 @@ static void make_benchmark_tprs(
 }
 
 
-/* Whether these files are written depends on tpr (or mdp) settings,
- * not on mdrun command line options! */
-static gmx_bool tpr_triggers_file(const char *opt)
-{
-    if ( (0 == strcmp(opt, "-pf"))
-      || (0 == strcmp(opt, "-px")) )
-        return TRUE;
-    else
-        return FALSE;
-}
-
-
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
 static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
@@ -1222,8 +1211,7 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             }
         }
         /* Delete the files which are created for each benchmark run: (options -b*) */
-        else if ( ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) ) 
-                  || tpr_triggers_file(opt) )
+        else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) )
         {
             fn = opt2fn(opt, nfile, fnm);
             if (gmx_fexist(fn))
@@ -1578,10 +1566,11 @@ static void check_input(
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
         gmx_fatal(FARGS, "File %s not found.", opt2fn("-s",nfile,fnm));
     
-    /* Make sure that the checkpoint file is not overwritten by the benchmark runs */
-    if ( (0 == strcmp(opt2fn("-cpi",nfile,fnm), opt2fn("-cpo",nfile,fnm)) ) && (sim_part > 1) )
-        gmx_fatal(FARGS, "Checkpoint input and output file must not be identical,\nbecause then the input file might change during the benchmarks.");
-    
+    /* Make sure that the checkpoint file is not overwritten during benchmarking */
+    if ( (0 == strcmp(opt2fn("-cpi",nfile,fnm), opt2fn("-bcpo",nfile,fnm)) ) && (sim_part > 1) )
+        gmx_fatal(FARGS, "Checkpoint input (-cpi) and benchmark checkpoint output (-bcpo) files must not be identical.\n"
+                         "The checkpoint input file must not be overwritten during the benchmarks.\n");
+
     /* Make sure that repeats is >= 0 (if == 0, only write tpr files) */
     if (repeats < 0)
         gmx_fatal(FARGS, "Number of repeats < 0!");
@@ -1938,6 +1927,49 @@ static void setopt(const char *opt,int nfile,t_filenm fnm[])
 }
 
 
+/* This routine checks for output files that get triggered by a tpr option.
+ * These output files are marked as set to allow for proper cleanup after 
+ * each tuning run. */
+static void get_tpr_outfiles(int nfile, t_filenm fnm[])
+{
+    gmx_bool     bPull;     /* Is pulling requested in .tpr file?             */
+    gmx_bool     bTpi;      /* Is test particle insertion requested?          */
+    gmx_bool     bFree;     /* Is a free energy simulation requested?         */
+    gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
+    t_inputrec   ir;
+    t_state      state;
+    gmx_mtop_t   mtop;
+
+
+    /* Check tpr file for options that trigger extra output files */
+    read_tpx_state(opt2fn("-s",nfile,fnm),&ir,&state,NULL,&mtop);
+    bPull = (epullNO != ir.ePull);
+    bFree = (efepNO  != ir.efep );
+    bNM   = (eiNM    == ir.eI   );
+    bTpi  = EI_TPI(ir.eI);
+
+    /* Set these output files on the tuning command-line */
+    if (bPull)
+    {
+        setopt("-pf"  , nfile, fnm);
+        setopt("-px"  , nfile, fnm);
+    }
+    if (bFree)
+    {
+        setopt("-dhdl", nfile, fnm);
+    }
+    if (bTpi)
+    {
+        setopt("-tpi" , nfile, fnm);
+        setopt("-tpid", nfile, fnm);
+    }
+    if (bNM)
+    {
+        setopt("-mtx" , nfile, fnm);
+    }
+}
+
+
 static void couple_files_options(int nfile, t_filenm fnm[])
 {
     int i;
@@ -2093,6 +2125,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
       { efXVG, "-field",  "field",    ffOPTWR },
       { efXVG, "-table",  "table",    ffOPTRD },
+      { efXVG, "-tabletf", "tabletf",   ffOPTRD },
       { efXVG, "-tablep", "tablep",   ffOPTRD },
       { efXVG, "-tableb", "table",    ffOPTRD },
       { efTRX, "-rerun",  "rerun",    ffOPTRD },
@@ -2107,6 +2140,10 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-runav",  "runaver",  ffOPTWR },
       { efXVG, "-px",     "pullx",    ffOPTWR },
       { efXVG, "-pf",     "pullf",    ffOPTWR },
+      { efXVG, "-ro",     "rotation", ffOPTWR },
+      { efLOG, "-ra",     "rotangles",ffOPTWR },
+      { efLOG, "-rs",     "rotslabs", ffOPTWR },
+      { efLOG, "-rt",     "rottorque",ffOPTWR },
       { efMTX, "-mtx",    "nm",       ffOPTWR },
       { efNDX, "-dn",     "dipole",   ffOPTWR },
       /* Output files that are deleted after each benchmark run */
@@ -2127,6 +2164,10 @@ int gmx_tune_pme(int argc,char *argv[])
       { efXVG, "-brunav", "benchrnav",ffOPTWR },
       { efXVG, "-bpx",    "benchpx",  ffOPTWR },
       { efXVG, "-bpf",    "benchpf",  ffOPTWR },
+      { efXVG, "-bro",    "benchrot", ffOPTWR },
+      { efLOG, "-bra",    "benchrota",ffOPTWR },
+      { efLOG, "-brs",    "benchrots",ffOPTWR },
+      { efLOG, "-brt",    "benchrott",ffOPTWR },
       { efMTX, "-bmtx",   "benchn",   ffOPTWR },
       { efNDX, "-bdn",    "bench",    ffOPTWR }
     };
@@ -2205,7 +2246,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
         "If non-negative, perform this many steps in the real run (overwrites nsteps from [TT].tpr[tt], add [TT].cpt[tt] steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
-        "Lauch the real simulation after optimization" },
+        "Launch the real simulation after optimization" },
       /******************/
       /* mdrun options: */
       /******************/
@@ -2308,6 +2349,9 @@ int gmx_tune_pme(int argc,char *argv[])
         /* and now we just set this; a bit of an ugly hack*/
         nnodes=nthreads;
     }
+    /* tpr-triggered output files */
+    get_tpr_outfiles(NFILE,fnm);
+
     /* Automatically set -beo options if -eo is set etc. */
     couple_files_options(NFILE,fnm);
     
@@ -2345,8 +2389,9 @@ int gmx_tune_pme(int argc,char *argv[])
                 fs, bench_nsteps, fnm, NFILE, sim_part, presteps,
                 asize(pa),pa);
     
-    /* Determine max and min number of PME nodes to test: */
-    if ((nnodes > 2) && (npme_fixed >= -1))
+    /* Determine the maximum and minimum number of PME nodes to test,
+     * the actual list of settings is build in do_the_tests(). */
+    if ((nnodes > 2) && (npme_fixed < -1))
     {
         maxPMEnodes = floor(maxPMEfraction*nnodes);
         minPMEnodes = max(floor(minPMEfraction*nnodes), 0);

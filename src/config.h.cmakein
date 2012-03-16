@@ -47,15 +47,6 @@
 /* As F77_FUNC, but for C identifiers containing underscores. */
 #define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
 
-/* Use the d prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_DFFTW
-
-/* Dont use any prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_FFTW
-
-/* Use the s prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_SFFTW
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
@@ -84,9 +75,6 @@
 
 /* Use Built-in FFTPACK FFT library */
 #cmakedefine GMX_FFT_FFTPACK
-
-/* Use FFTW2 FFT library */
-#cmakedefine GMX_FFT_FFTW2
 
 /* Use FFTW3 FFT library */
 #cmakedefine GMX_FFT_FFTW3
@@ -123,7 +111,7 @@
 #cmakedefine GMX_MPI
 
 /* Use threads for parallelization */
-#cmakedefine GMX_THREADS
+#cmakedefine GMX_THREAD_MPI
 
 /* Use old threading (domain decomp force calc) code */
 #cmakedefine GMX_THREAD_SHM_FDECOMP 
@@ -152,8 +140,11 @@
 /* Use the PowerPC hardware 1/sqrt(x) */
 #cmakedefine GMX_POWERPC_INVSQRT
 
-/* Compile with dlopen */
-#cmakedefine GMX_DLOPEN
+/* Compile with plugin support */
+#cmakedefine GMX_USE_PLUGINS
+
+/* Fallback path for VMD plug-ins */
+#define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
@@ -169,6 +160,12 @@
 
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
+
+/* Define for Linux pthread_setaffinity */
+#cmakedefine HAVE_PTHREAD_SETAFFINITY
+
+/* Define for Windows NUMA-aware allocator functions*/
+#cmakedefine TMPI_WINDOWS_NUMA_API
 
 /* Define for sysconf() */
 #cmakedefine HAVE_SYSCONF
@@ -272,6 +269,9 @@
 /* Define to 1 if you have the _isfinite() function. */
 #cmakedefine HAVE__ISFINITE
 
+/* Define to 1 if you have the _finite() function. */
+#cmakedefine HAVE__FINITE
+
 /* Define to 1 if you have the fsync() function. */
 #cmakedefine HAVE_FSYNC
 
@@ -364,9 +364,6 @@
    set, little-endian if not. Do NOT assume this is the same as the byte
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
 #cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
-
-/* Define as the return type of signal handlers (int or void). */
-#cmakedefine RETSIGTYPE @RETSIGTYPE@
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1

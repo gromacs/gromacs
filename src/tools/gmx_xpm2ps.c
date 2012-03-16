@@ -941,6 +941,12 @@ void write_combined_matrix(int ecombine, const char *fn,
     printf("Combining two %dx%d matrices\n",mat1[k].nx,mat1[k].ny);
     rmat1 = matrix2real(&mat1[k], NULL);
     rmat2 = matrix2real(&mat2[k], NULL);
+    if (NULL == rmat1 || NULL == rmat2)
+    {
+        gmx_fatal(FARGS, "Could not extract real data from %s xpm matrices. Note that, e.g.,\n"
+                         "g_rms and g_mdmat provide such data, but not do_dssp.\n",
+                         (NULL==rmat1 && NULL==rmat2) ? "both" : "one of the" );
+    }
     rlo=1e38;
     rhi=-1e38;
     for(j=0; j<mat1[k].ny; j++)

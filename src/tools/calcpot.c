@@ -284,8 +284,8 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
-		state->box,FALSE,NULL,table,table,NULL,TRUE,-1);
-
+		state->box,FALSE,NULL,table,NULL,table,NULL,TRUE,-1);
+  
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
     box_size[m] = state->box[m][m];

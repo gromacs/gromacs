@@ -254,6 +254,11 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
     fclose(fp);
 }
 
+static void unique_atomnames(t_atoms *atoms)
+{
+    fprintf(stderr,"WARNING: Generating unique atomnames is not implemented yet.\n");
+}
+
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -363,7 +368,7 @@ int main(int argc, char *argv[])
     static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
-    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
+    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE,bUnique=FALSE;
     static char *molnm = "",*dbname = "", *symm_string = "";
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
@@ -397,6 +402,8 @@ int main(int argc, char *argv[])
           "Use periodic boundary conditions." },
         { "-conect", FALSE, etBOOL, {&bCONECT},
           "Use CONECT records in an input pdb file to signify bonds" },
+        { "-unique", FALSE, etBOOL, {&bUnique},
+          "Make atom names unique" },
         { "-genvsites", FALSE, etBOOL, {&bGenVSites},
           "[HIDDEN]Generate virtual sites for linear groups. Check and double check." },
         { "-skipvsites", FALSE, etBOOL, {&bSkipVSites},
@@ -814,17 +821,14 @@ int main(int argc, char *argv[])
         generate_excls(&nnb,nexcl,excls);
         done_nnb(&nnb);
     
-        if (bGenVSites)
+        anr = atoms->nr;    
+        gentop_vsite_generate_special(gvt,bGenVSites,atoms,&x,plist,
+                                      &symtab,atype,&excls);
+        if (atoms->nr > anr) 
         {
-            anr = atoms->nr;    
-            gentop_vsite_generate_vsites(gvt,atoms,&x,plist,
-                                         &symtab,atype,&excls);
-            if (atoms->nr > anr) 
-            {
-                srenew(smnames,atoms->nr);
-                for(i=anr; (i<atoms->nr); i++) {
-                    smnames[i] = strdup("ML");
-                }
+            srenew(smnames,atoms->nr);
+            for(i=anr; (i<atoms->nr); i++) {
+                smnames[i] = strdup("ML");
             }
         }
     
@@ -856,12 +860,13 @@ int main(int argc, char *argv[])
     
         if (bVerbose) 
         {
-            printf("There are %4d proper dihedrals, %4d impropers, %4d angles\n"
-                   "          %4d pairs,     %4d bonds and  %4d atoms\n"
+            printf("There are %4d proper dihedrals, %4d impropers\n"
+                   "          %4d angles, %4d linear angles\n"
+                   "          %4d pairs, %4d bonds, %4d atoms\n"
                    "          %4d polarizations\n",
-                   plist[F_PDIHS].nr, 
-                   plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-                   plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
+                   plist[F_PDIHS].nr,  plist[F_IDIHS].nr, 
+                   plist[F_ANGLES].nr, 666 /*plist[F_LINEAR_ANGLES].nr*/,
+                   plist[F_LJ14].nr,   plist[F_BONDS].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
         }
         printf("Total charge is %g, total mass is %g, dipole is %g D\n",
@@ -875,7 +880,10 @@ int main(int argc, char *argv[])
                                             get_atomtype_name(atoms->atom[i].type,atype));
     
         set_force_const(plist,kb,kt,kp,bRound,bParam);
-    
+        
+        if (bUnique)
+            unique_atomnames(atoms);
+            
         if (bTOP) 
         {    
             /* Write topology file */

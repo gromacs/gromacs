@@ -1,68 +1,68 @@
 [ moleculetype ] ; added by Bjelkmar Jan 2010, from c32b1/toppar/stream/toppar_water_ions.str
-; molname	nrexcl
-OH		1
+; molname   nrexcl
+OH          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   mass
-1       OC      	1       OH               O1	 1	-1.32
-2       H       	1       OH               H1	 1	0.32
+; id    at type     res nr  residu name at name  cg nr  charge   mass
+1       OC          1       OH          O1       1      -1.32
+2       H           1       OH          H1       1      0.32
 
 [ bonds ]
-;i	j	funct	length	force.c.
-1	2	1	0.09700	456056   ; hydroxyl bond
+;i  j   funct   length  force.c.
+1   2   1       0.09700 456056   ; hydroxyl bond
 
 [ moleculetype ]
-; molname	nrexcl
-NA		1
+; molname   nrexcl
+NA          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	SOD		1	NA		NA	 1	1		 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       SOD         1       NA          NA       1      1        
 
 [ moleculetype ]
-; molname	nrexcl
-MG		1
+; molname   nrexcl
+MG          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge
-1	MG		1	MG		MG	 1	2		 
+; id    at type     res nr  residu name at name  cg nr  charge
+1       MG          1       MG          MG       1      2        
 
 [ moleculetype ]
-; molname	nrexcl
-K		1
+; molname   nrexcl
+K           1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	POT		1	K		K	 1	1		 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       POT         1       K           K        1      1        
 
 [ moleculetype ]
-; molname	nrexcl
-Ces		1
+; molname   nrexcl
+CS          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	CES		1	Ces		Ces	 1	1		 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       CES         1       CS          CS       1      1        
 
 [ moleculetype ]
-; molname	nrexcl
-Cal		1
+; molname   nrexcl
+CA          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	CAL		1	Cal		Cal	 1	2	 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       CAL         1       CA          CA       1      2    
 
 [ moleculetype ]
-; molname	nrexcl
-CL		1
+; molname   nrexcl
+CL          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	CLA		1	CL		CL	 1	-1	 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       CLA         1       CL          CL       1      -1   
 
 [ moleculetype ]
-; molname	nrexcl
-ZN		1
+; molname   nrexcl
+ZN          1
 
 [ atoms ]
-; id	at type		res nr 	residu name	at name  cg nr	charge   
-1	ZN		1	ZN		ZN	 1	-2	 
+; id    at type     res nr  residu name at name  cg nr  charge   
+1       ZN          1       ZN          ZN       1      2

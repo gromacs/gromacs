@@ -7,7 +7,6 @@
 #  _LARGE_FILES
 #  _LARGEFILE_SOURCE
 #  _FILE_OFFSET_BITS 64  
-#  HAVE_FSEEKO
 #
 #  However, it is YOUR job to make sure these defines are set in a cmakedefine so they
 #  end up in a config.h file that is included in your source if necessary!
@@ -102,7 +101,6 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
 	    if(FSEEKO_COMPILE_OK)
                 SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-                set(HAVE_FSEEKO 1)
         else(FSEEKO_COMPILE_OK)
 			if (HAVE__FSEEKI64)
 				SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
