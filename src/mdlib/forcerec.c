@@ -1047,8 +1047,8 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
    * to do this...
    */
   
-  snew_aligned(nbl->vdwtab,8*nbl->tab.n,16);
-  snew_aligned(nbl->coultab,4*nbl->tab.n,16);
+  snew_aligned(nbl->vdwtab,8*(nbl->tab.n+1),16);
+  snew_aligned(nbl->coultab,4*(nbl->tab.n+1),16);
   
   for(i=0; i<=nbl->tab.n; i++) {
     for(j=0; j<4; j++)
