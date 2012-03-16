@@ -274,7 +274,7 @@ int main(int argc,char *argv[])
         { efDAT, "-sel", "molselect",ffREAD },
         { efXVG, "-x",  "pol_corr",  ffWRITE }
     };
-#define NFILE asize(fnm)
+    int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
     static int iQM = FALSE,compress=1,mindata=1;
     static char *lot = "B3LYP/aug-cc-pVTZ";
@@ -317,11 +317,12 @@ int main(int argc,char *argv[])
     gmx_poldata_t   pd;
     output_env_t    oenv;
     gmx_molselect_t gms;
-    
+    int npa = sizeof(pa)/sizeof(pa[0]);
     CopyRight(stdout,argv[0]);
     
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,NFILE,fnm,
-                      asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
+                      npa,pa,sizeof(desc)/sizeof(desc[0]),desc,
+                      0,NULL,&oenv);
     ap = gmx_atomprop_init();
     if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),ap)) == NULL)
         gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
@@ -335,7 +336,7 @@ int main(int argc,char *argv[])
     nalexandria_atypes = decompose_frag(debug,0,pd,np,mp,iQM,lot,mindata,gms,sigma,bZero,bForceFit);
 
     alg = -1;
-    if (opt2parg_bSet("-sort",asize(pa),pa))
+    if (opt2parg_bSet("-sort",npa,pa))
     {
         for(i=0; (i<empSORT_NR); i++)
             if (strcasecmp(sort[0],sort[i+1]) == 0) 

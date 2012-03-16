@@ -60,10 +60,10 @@ set(ALEXANDRIA_SOURCES
 	)
 	
 add_library(alexandria ${ALEXANDRIA_SOURCES})	
-target_link_libraries(alexandria gmxpreprocess md)
+target_link_libraries(alexandria libgromacs)
 set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 
-list(APPEND GMX_EXTRA_LIBRARIES alexandria gmxpreprocess md)
+list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
 
 add_executable(g_poldata_test g_poldata_test.c)
 target_link_libraries(g_poldata_test ${GMX_EXTRA_LIBRARIES})

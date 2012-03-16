@@ -75,7 +75,7 @@
 #include "gmx_random.h"
 #include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
-#include "toputil.h"
+#include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
 #include "gen_ad.h"
@@ -1490,7 +1490,7 @@ static void calc_moldip_deviation(t_moldip *md)
     init_nrnb(&my_nrnb);
     snew(epot,1);
   
-    wcycle  = wallcycle_init(stdout,0,md->cr);
+    wcycle  = wallcycle_init(stdout,0,md->cr,1);
     for(j=0; (j<ermsNR); j++)
     {
         etot[j] = 0;

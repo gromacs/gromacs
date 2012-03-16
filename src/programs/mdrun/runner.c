@@ -707,6 +707,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         /* Initiate forcerecord */
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
+                      opt2fn_null("-pd",nfile,fnm),
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tabletf",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),

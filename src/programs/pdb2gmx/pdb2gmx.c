@@ -1629,7 +1629,7 @@ int main(int argc, char *argv[])
 
   sprintf(generator,"%s - %s",ShortProgram(), GromacsVersion() );
 
-  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult);
+  print_top_header(top_file,top_fn,generator,FALSE,ffdir,mHmult,NULL);
 
   nincl=0;
   nmol=0;
@@ -1916,7 +1916,7 @@ int main(int argc, char *argv[])
     nmol++;
 
     if (bITP)
-      print_top_comment(itp_file,itp_fn,generator,ffdir,TRUE);
+        print_top_comment(itp_file,itp_fn,generator,ffdir,TRUE,NULL);
 
     if (cc->bAllWat)
       top_file2=NULL;
