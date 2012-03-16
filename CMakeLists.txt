@@ -38,6 +38,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 enable_language(C)
+enable_language(CXX)
 
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "gromacs.org")
@@ -70,16 +71,24 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
-# Fix stupid flags on MSVC
+# Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+IF( (CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES "NMake") AND MSVC )
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
     SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+ENDIF()
+
+IF(CMAKE_GENERATOR MATCHES "NMake" AND CMAKE_C_COMPILER_ID MATCHES "Intel")
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
+    SET(SHARED_LIBS_DEFAULT OFF)	
+ENDIF()
 
 set(GMX_EXTRA_LIBRARIES)
 
@@ -101,7 +110,7 @@ gmx_c_flags()
 ########################################################################
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (thread-based) version of GROMACS (cannot be combined with MPI yet)" ON)
+option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_POWERPC_INVSQRT "Use PowerPC hardware 1/sqrt" OFF)
@@ -113,7 +122,7 @@ set(GMX_ACCELERATION "auto"
     CACHE STRING "Accelerated kernels. Pick one of: auto, none, SSE, BlueGene, Power6, ia64, altivec, fortran")
 
 set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
+    CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
@@ -132,6 +141,8 @@ option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
 mark_as_advanced(GMX_IA32_ASM)
 option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 mark_as_advanced(GMX_X86_64_ASM)
+
+option(GMX_OPENMP "Enable OpenMP-based mutithreading. " ON)
 
 option(USE_VERSION_H "Generate development version string/information" ON)
 mark_as_advanced(USE_VERSION_H)
@@ -209,11 +220,16 @@ if(GMX_OPENMM)
     if(GMX_MPI)
         message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
-    if(GMX_THREADS)
-        message(STATUS "Threads are  not compatible with OpenMM build, disabled!")
-        set(GMX_THREADS OFF CACHE BOOL 
-		"Threads are not compatible with OpenMM build, disabled!" FORCE)
-    endif(GMX_THREADS)
+    if(GMX_THREAD_MPI)
+        message(STATUS "Thread-MPI not compatible with OpenMM, disabled!")
+        set(GMX_THREAD_MPI OFF CACHE BOOL
+		"Thread-MPI not compatible with OpenMM build, disabled!" FORCE)
+    endif(GMX_THREAD_MPI)
+    if(GMX_OPENMP)
+        message(STATUS "OpenMP multithreading not compatible with OpenMM, disabled")
+        set(GMX_OPENMP OFF CACHE BOOL
+            "OpenMP multithreading not compatible with OpenMM, disabled!" FORCE)
+    endif()
     if(GMX_SOFTWARE_INVSQRT)
         set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
                 "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
@@ -232,10 +248,10 @@ if(GMX_OPENMM)
     endif()
     # mark as advanced the unused variables
     mark_as_advanced(FORCE GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)
+        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 else(GMX_OPENMM)
      mark_as_advanced(CLEAR GMX_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREADS GMX_DOUBLE)   
+        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
 endif(GMX_OPENMM)
 
 
@@ -280,8 +296,6 @@ check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
-check_function_exists(isfinite          HAVE_ISFINITE)
-check_function_exists(_isfinite         HAVE__ISFINITE)
 check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
@@ -400,16 +414,13 @@ if (GMX_X11)
 	endif(X11_FOUND)
 endif(GMX_X11)
 
-if(GMX_THREADS)
-    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREADS")
+if(GMX_THREAD_MPI)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     include(ThreadMPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
     string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
-    if(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-        message(FATAL_ERROR "FFTW2 can't be used with threads. Try fftw3 or mkl.")
-    endif()
-endif(GMX_THREADS)
+endif(GMX_THREAD_MPI)
 
 if(GMX_OPENMM)
     set(CUDA_BUILD_EMULATION OFF)
@@ -420,6 +431,13 @@ if(GMX_OPENMM)
     endif()
     find_package(OpenMM) 
 endif(GMX_OPENMM)
+
+if(GMX_OPENMP)
+    find_package(OpenMP REQUIRED)
+    list(APPEND GROMACS_C_FLAGS ${OpenMP_C_FLAGS})
+    list(APPEND GROMACS_CXX_FLAGS ${OpenMP_CXX_FLAGS})
+    add_definitions(-DGMX_OPENMP)
+endif()
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -456,6 +474,39 @@ else()
     set(USE_VERSION_H OFF)
 endif()
 
+option(GMX_INTERNAL_BOOST "Use minimal internal version of boost" OFF)
+if ( NOT GMX_INTERNAL_BOOST )
+  find_package( Boost 1.36.0 )
+else ( NOT GMX_INTERNAL_BOOST )
+  set (Boost_FOUND FALSE)
+endif( NOT GMX_INTERNAL_BOOST )
+
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+else()
+  message("Boost >= 1.36 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
+  include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+  add_definitions( -DBOOST_NO_TYPEID )  #TYPEID not supported for minimal internal version (would add significant more code)
+  # TODO: Propagate the above settings to the installed CMakeFiles.txt template
+  # (from share/template/)
+  # TODO: Reorder stuff such that INCL_INSTALL_DIR could be used here
+  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost")
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gromacs/external/boost
+          COMPONENT development)
+endif()
+
+option(GMX_USE_GTEST "Build tests that require Google C++ Testing Framework" ON)
+option(GMX_USE_GMOCK "Build tests that require Google C++ Mocking Framework" ON)
+mark_as_advanced(GMX_USE_GTEST)
+mark_as_advanced(GMX_USE_GMOCK)
+if (BUILD_TESTING)
+    add_subdirectory(src/external/gmock-1.6.0)
+endif (BUILD_TESTING)
+set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
+
+find_package(Doxygen)
+
 ########################################################################
 # Generate development version info for cache
 ########################################################################
@@ -467,8 +518,11 @@ endif()
 ########################################################################
 
 add_definitions( -DHAVE_CONFIG_H )
+include_directories(${CMAKE_SOURCE_DIR}/src)
+# Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# Required for now to make old code compile
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxCheckBuildUserTime)
 gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
@@ -493,6 +547,11 @@ gmx_test_inline(RESTRICT_KEYWORD)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
+
+include(gmxTestIsfinite)
+gmx_test_isfinite(HAVE_ISFINITE)
+gmx_test__isfinite(HAVE__ISFINITE)
+gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
@@ -529,12 +588,12 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
     endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
+    if(CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES NMake )
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
-      option(GMX_ASM_USEASM-NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
+      option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
     endif()
-	mark_as_advanced(GMX_ASM_USEASM-NASM)
+	mark_as_advanced(GMX_ASM_USEASM_NASM)
 
     if (NOT GMX_64_BIT)
         # for 32-bit compiles, we might need to turn on sse 
@@ -585,7 +644,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "BLUEGENE")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
     set(GMX_POWERPC_INVSQRT ON CACHE BOOL "Use hardware reciprocal square root on BlueGene" FORCE)
     set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_THREADS OFF CACHE BOOL "Threads not compatible with BlueGene, disabled!" FORCE)
+    set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
     set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
 elseif(${GMX_ACCELERATION} STREQUAL "POWER6")
     set(GMX_POWER6 1)
@@ -605,9 +664,9 @@ else(${GMX_ACCELERATION} STREQUAL "NONE")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 if(GMX_FORTRAN OR GMX_POWER6)
-    if (GMX_THREADS)
-        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with threads and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
-    endif(GMX_THREADS)
+    if (GMX_THREAD_MPI)
+        message(FATAL_ERROR "FORTRAN/POWER6 is incompatible with thread-MPI and only provides a speed-up on certain IBM compilers. Disable FORTRAN (or threads if you really want to use FORTRAN kernels).")
+    endif(GMX_THREAD_MPI)
     enable_language(Fortran)
     include(FortranCInterface)
     discover_fortran_mangling(prefix isupper suffix extra_under_score found)
@@ -662,49 +721,20 @@ string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-#    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
-        find_package(FFTW3 REQUIRED)
-		include_directories(${FFTW3_INCLUDE_DIR})
-        set(FFT_LIBRARIES ${FFTW3_LIBRARIES})
-        set(PKG_FFT "fftw3")
+        find_package(FFTW 3 COMPONENTS fftw)
     else(GMX_DOUBLE)
-        find_package(FFTW3F REQUIRED)
-        include_directories(${FFTW3F_INCLUDE_DIR})
-        set(FFT_LIBRARIES ${FFTW3F_LIBRARIES})
-        set(PKG_FFT "fftw3f")
+        find_package(FFTW 3 COMPONENTS fftwf)
     endif(GMX_DOUBLE)
-
-    if(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
-        MESSAGE(FATAL_ERROR "Cannot find fftw3 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW3_FOUND AND NOT FFTW3F_FOUND)
+    if(NOT FFTW_FOUND)
+      MESSAGE(FATAL_ERROR "Cannot find FFTW3 (with correct precision - libfftw3f for single precision GROMACS or libfftw3 for double precision GROMACS). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
+    endif(NOT FFTW_FOUND)
+    include_directories(${FFTW_INCLUDE_DIRS})
+    set(FFT_LIBRARIES ${FFTW_LIBRARIES})
+    set(PKG_FFT "${FFTW_PKG}")
 
     set(GMX_FFT_FFTW3 1)
 
-elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-#    MESSAGE(STATUS "Using external FFT library - fftw2")
-    if(GMX_DOUBLE)
-        find_package(FFTW2 REQUIRED)
-    else(GMX_DOUBLE)
-        find_package(FFTW2F REQUIRED)
-    endif(GMX_DOUBLE)
-
-    if(NOT FFTW2_FOUND)
-      	   MESSAGE(FATAL_ERROR "Cannot find fftw2 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
-    endif(NOT FFTW2_FOUND)
-    include_directories(${FFTW2_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${FFTW2_LIBRARIES})
-    set(PKG_FFT_LIBS ${FFTW2_LIBRARIES})
-
-    if("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_DFFTW 1)
-    elseif("${FFTW2_LIBRARIES}" MATCHES "sfftw")
-        set(FFTW2_NAME_SFFTW 1)
-    else("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-        set(FFTW2_NAME_FFTW 1) 
-    endif("${FFTW2_LIBRARIES}" MATCHES "dfftw")
-
-    set(GMX_FFT_FFTW2 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
@@ -722,7 +752,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
+    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
 # MKL has BLAS/LAPACK routines
@@ -871,7 +901,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 add_subdirectory(share)
-add_subdirectory(include)
 add_subdirectory(man)
 add_subdirectory(src)
 add_subdirectory(scripts)
@@ -889,6 +918,25 @@ ADD_CUSTOM_TARGET(uninstall
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
 
+########################################################################
+# Doxygen configuration
+########################################################################
+if (DOXYGEN_FOUND)
+    FILE(GLOB NB_KERNEL_DIRS src/gromacs/gmxlib/nonbonded/nb_kernel_*/)
+    LIST(REMOVE_ITEM NB_KERNEL_DIRS
+         ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/nonbonded/nb_kernel_c)
+    FOREACH(NB_KERNEL_DIR ${NB_KERNEL_DIRS})
+        SET(NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN
+            "${NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN} \\\n                         ${NB_KERNEL_DIR}")
+    ENDFOREACH(NB_KERNEL_DIR)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-lib.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-lib)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
+                   ${CMAKE_BINARY_DIR}/Doxyfile-user)
+endif (DOXYGEN_FOUND)
+
 
 ########################################################################
 # Tests                                                                #
@@ -897,7 +945,7 @@ ADD_CUSTOM_TARGET(uninstall
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
-	enable_testing()
-	add_subdirectory(tests)
+    enable_testing()
+    add_subdirectory(tests)
 ENDIF()
 

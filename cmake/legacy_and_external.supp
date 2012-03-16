@@ -1,0 +1,105 @@
+# This suppression file is used to run the CTest Unit Tests
+# All problems in external libraries are excluded
+# Memory leaks in the legacy code are excluded
+# Other problems besides memory leaks should NOT be excluded for legacy code
+
+{
+   libz
+   Memcheck:Cond
+   fun:inflateReset2
+   fun:inflateInit2_
+}
+
+{
+   read_tps_conf
+   Memcheck:Leak
+   ...
+   fun:read_tps_conf
+}
+
+{
+   mdrun
+   Memcheck:Leak
+   ...
+   obj:*/mdrun*
+}
+
+
+#MacOS rules
+{
+   dyld_register_image_state_change_handler
+   Memcheck:Leak
+   fun:malloc
+   fun:malloc
+   ...
+   fun:dyld_register_image_state_change_handler
+}
+
+{
+   __emutls_get_address
+   Memcheck:Leak
+   ...
+   fun:__emutls_get_address
+}
+
+{
+   libSystem_initializer
+   Memcheck:Leak
+   ...
+   fun:libSystem_initializer
+}
+
+{
+   atexit
+   Memcheck:Leak
+   fun:malloc
+   fun:atexit_register
+}
+
+{
+   unw_set_reg
+   Memcheck:Leak
+   ...
+   fun:unw_set_reg
+   fun:__gxx_personality_v0
+}
+
+{
+   printf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:__vfprintf
+}
+
+{
+   strtof
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:strtof_l
+}
+
+{
+   scanf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:__svfscanf_l
+}
+
+{
+   __cxa_get_globals
+   Memcheck:Leak
+   fun:calloc
+   fun:__cxa_get_globals
+   fun:__cxa_throw
+}
+
+# Intel compiler on MacOS
+{
+   __cilkrts_os_mutex_create
+   Memcheck:Leak
+   fun:malloc
+   fun:__cilkrts_os_mutex_create
+}

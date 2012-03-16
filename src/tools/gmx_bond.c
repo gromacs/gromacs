@@ -53,6 +53,9 @@
 #include "tpxio.h"
 #include "gmx_ana.h"
 
+#ifndef even
+#define even(a) ( ( (a+1) / 2) == (a / 2) )
+#endif
 
 static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
                           const output_env_t oenv)

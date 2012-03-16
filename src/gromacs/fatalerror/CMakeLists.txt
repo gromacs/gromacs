@@ -1,0 +1,8 @@
+file(GLOB FATALERROR_SOURCES *.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FATALERROR_SOURCES} PARENT_SCOPE)
+
+set(FATALERROR_PUBLIC_HEADERS
+    errorcodes.h exceptions.h gmxassert.h)
+install(FILES ${FATALERROR_PUBLIC_HEADERS}
+        DESTINATION ${INCL_INSTALL_DIR}/gromacs/fatalerror
+        COMPONENT development)
