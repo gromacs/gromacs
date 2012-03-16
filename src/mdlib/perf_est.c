@@ -247,6 +247,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     t_iparams *iparams;
     gmx_moltype_t *molt;
     float r_eff;
+    double nat;
 
     bQRF = (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT);
 
@@ -298,9 +299,11 @@ static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     /* For the PP non-bonded cost it is (unrealistically) assumed
      * that all atoms are distributed homogeneously in space.
      */
-    *cost_pp = 0.5*(nqlj*mtop->natoms*(bQRF ? C_VT_QLJ_RF : C_VT_QLJ_TAB) +
-                    nq*mtop->natoms*(bQRF ? C_VT_Q_RF : C_VT_Q_TAB) +
-                    nlj*mtop->natoms*C_VT_LJ)
+    /* Convert mtop->natoms to double to avoid int overflow */
+    nat = mtop->natoms;
+    *cost_pp = 0.5*(nqlj*nat*(bQRF ? C_VT_QLJ_RF : C_VT_QLJ_TAB) +
+                    nq*nat*(bQRF ? C_VT_Q_RF : C_VT_Q_TAB) +
+                    nlj*nat*C_VT_LJ)
         *4/3*M_PI*r_eff*r_eff*r_eff/det(box);
 }
 
