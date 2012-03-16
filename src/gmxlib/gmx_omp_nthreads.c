@@ -187,7 +187,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     int  nth, nth_pmeonly, omp_maxth, gmx_maxth, nppn;
     char *env;
     char sbuf[STRLEN], sbuf1[STRLEN];
-    gmx_bool bSepPME, bOMP, bMaxThreadsSet;
+    gmx_bool bSepPME, bOMP, bMaxThreadsSet, bMaxThreadsOversubscr;
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;
@@ -198,7 +198,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
               (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
 
-    bMaxThreadsSet = FALSE; /* true if GMX_MAX_THREADS is set */
+    bMaxThreadsSet          = FALSE; /* true if GMX_MAX_THREADS is set */
+    bMaxThreadsOversubscr   = FALSE; /* true if GMX_MAX_THREADS > # logical cores */
 
 #ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
@@ -247,7 +248,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             }
             else
             {
-                nth = omp_get_max_threads();
+                nth = modth.max_cores;
             }
         }
         else if (bFullOmpSupport && bOMP)
@@ -266,6 +267,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 {
                     if (nth < gmx_maxth)
                     {
+                        bMaxThreadsOversubscr = TRUE;
                         fprintf(stderr, "\nGMX_MAX_THREADS=%d set, but the number of "
                                 "available cores is only %d\n\n", gmx_maxth, nth);
                     }
@@ -320,7 +322,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #endif
                 /* bail if total #th exceeds the limit set by the user,
                  * otherwise warn about oversubscription */
-                if (bMaxThreadsSet)
+                if (bMaxThreadsSet && !bMaxThreadsOversubscr)
                 {
                     gmx_fatal(FARGS, "You started %d %s%s which exceeds the maximum total "
                               "number of threads set by GMX_MAX_THREADS=%s",
