@@ -143,7 +143,6 @@ AbstractPlotModule::AbstractPlotModule()
 {
 }
 
-
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
     : _impl(new Impl(settings))
 {
