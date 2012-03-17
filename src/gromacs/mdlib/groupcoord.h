@@ -60,16 +60,16 @@
 * array and pass it on to communicate_group_positions. Thus the collective array 
 * will always have the same atom order (ascending indices). 
 *
-*  \param ga2la[in]         Global to local atom index conversion data.
-*  \param nr[in]            The total number of atoms that the group contains.
-*  \param anrs[in]          The global atom number of the group's atoms.
-*  \param nr_loc[out]       The number of group atoms present on the local node.
-*  \param anrs_loc[out]     The local atom numbers of the group.
-*  \param nalloc_loc[inout] Local allocation size of anrs_loc array.
-*  \param coll_ind[opt]     If not NULL this array must be of size nr. It stores
-*                           for each local atom where it belongs in the global
-*                           (collective) array such that it can be gmx_summed
-*                           in the communicate_group_positions routine.
+*  \param[in]     ga2la      Global to local atom index conversion data.
+*  \param[in]     nr         The total number of atoms that the group contains.
+*  \param[in]     anrs       The global atom number of the group's atoms.
+*  \param[out]    nr_loc     The number of group atoms present on the local node.
+*  \param[out]    anrs_loc   The local atom numbers of the group.
+*  \param[in,out] nalloc_loc Local allocation size of anrs_loc array.
+*  \param[out]    coll_ind   If not NULL this array must be of size nr. It stores
+*                            for each local atom where it belongs in the global
+*                            (collective) array such that it can be gmx_summed
+*                            in the communicate_group_positions routine.
 */
 extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
                                         const int nr, int anrs[], int *nr_loc,
@@ -85,31 +85,31 @@ extern void dd_make_local_group_indices(gmx_ga2la_t ga2la,
  * retrieved from anrs_loc[0..nr_loc]. If you call the routine for the serial case,
  * provide an array coll_ind[i] = i for i in 1..nr.
  * 
- * \param cr[in]             Pointer to MPI communication data.     
- * \param xcoll[out]         Collective array of positions, idential on all nodes
- *                           after this routine has been called.
- * \param shifts[inout]      Collective array of shifts for xcoll, needed to make
- *                           the group whole. This array remembers the shifts
- *                           since the start of the simulation (where the group
- *                           is whole) and must therefore not be changed outside
- *                           of this routine!
- * \param extra_shifts[buf]  Extra shifts since last time step, only needed as
- *                           buffer variable [0..nr].
- * \param bNS[in]            Neighborsearching/domain redecomposition has been 
- *                           performed at the begin of this time step such that 
- *                           the shifts have changed and need to be updated.
- * \param x_loc[in]          Pointer to the local atom positions this node has. 
- * \param nr[in]             Total number of atoms in the group.
- * \param nr_loc[in]         Number of group atoms on the local node.
- * \param anrs_loc[in]       Array of the local atom indices.
- * \param coll_ind[in]       This array of size nr stores for each local atom where 
- *                           it belongs in the collective array so that the local
- *                           contributions can be gmx_summed. It is provided by
- *                           dd_make_local_group_indices.
- * \param xcoll_old[inout]   Positions from the last time step, used to make the
- *                           group whole.
- * \param box[in]            Simulation box matrix, needed to shift xcoll such that
- *                           the group becomes whole.
+ * \param[in]     cr           Pointer to MPI communication data.
+ * \param[out]    xcoll        Collective array of positions, idential on all nodes
+ *                             after this routine has been called.
+ * \param[in,out] shifts       Collective array of shifts for xcoll, needed to make
+ *                             the group whole. This array remembers the shifts
+ *                             since the start of the simulation (where the group
+ *                             is whole) and must therefore not be changed outside
+ *                             of this routine!
+ * \param[out]    extra_shifts Extra shifts since last time step, only needed as
+ *                             buffer variable [0..nr].
+ * \param[in]     bNS          Neighborsearching/domain redecomposition has been
+ *                             performed at the begin of this time step such that
+ *                             the shifts have changed and need to be updated.
+ * \param[in]     x_loc        Pointer to the local atom positions this node has.
+ * \param[in]     nr           Total number of atoms in the group.
+ * \param[in]     nr_loc       Number of group atoms on the local node.
+ * \param[in]     anrs_loc     Array of the local atom indices.
+ * \param[in]     coll_ind     This array of size nr stores for each local atom where
+ *                             it belongs in the collective array so that the local
+ *                             contributions can be gmx_summed. It is provided by
+ *                             dd_make_local_group_indices.
+ * \param[in,out] xcoll_old    Positions from the last time step, used to make the
+ *                             group whole.
+ * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
+ *                             the group becomes whole.
  */
 extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts,
                                         ivec *extra_shifts, const gmx_bool bNS,
@@ -123,11 +123,11 @@ extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts
  * Calculates the center of mass (if masses are given in the weight array) or
  * the geometrical center (if NULL is passed as weight).
  * 
- * \param x[in]              Positions.
- * \param weight[in]         Can be NULL or an array of weights. If masses are
+ * \param[in]   x            Positions.
+ * \param[in]   weight       Can be NULL or an array of weights. If masses are
  *                           given as weights, the COM is calculated.
- * \param nr[in]             Number of positions and weights if present.
- * \param center[out]        The (weighted) center of the positions.
+ * \param[in]   nr           Number of positions and weights if present.
+ * \param[out]  center       The (weighted) center of the positions.
  * 
  */
 extern void get_center(rvec x[], real weight[], const int nr, rvec center);
@@ -139,10 +139,10 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec center);
  * weights, which is needed when local contributions shall be summed to a 
  * global weighted center.
  * 
- * \param x[in]              Array of positions.
- * \param weight[in]         Can be NULL or an array of weights.
- * \param nr[in]             Number of positions and weights if present.
- * \param dsumvec[out]       The (weighted) sum of the positions.
+ * \param[in]   x            Array of positions.
+ * \param[in]   weight       Can be NULL or an array of weights.
+ * \param[in]   nr           Number of positions and weights if present.
+ * \param[out]  dsumvec      The (weighted) sum of the positions.
  * \return Sum of weights.
  * 
  */
@@ -156,15 +156,15 @@ extern double get_sum_of_positions(rvec x[], real weight[], const int nr, dvec d
  * this routine if no collective coordinates are assembled from which the center 
  * could be calculated without communication.
  * 
- * \param cr[in]             Pointer to MPI communication data.
- * \param x_loc[in]          Array of local positions [0..nr_loc].
- * \param weight_loc[in]     Array of local weights, these are the masses if the
+ * \param[in]   cr           Pointer to MPI communication data.
+ * \param[in]   x_loc        Array of local positions [0..nr_loc].
+ * \param[in]   weight_loc   Array of local weights, these are the masses if the
  *                           center of mass is to be calculated.
- * \param nr_loc[in]         The number of positions on the local node.
- * \param nr_group[in]       The number of positions in the whole group. Since 
+ * \param[in]   nr_loc       The number of positions on the local node.
+ * \param[in]   nr_group     The number of positions in the whole group. Since
  *                           this is known anyway, we do not need to communicate
  *                           and sum nr_loc if we pass it over.
- * \param center[out]        The (weighted) center of all x_loc from all the
+ * \param[out]  center       The (weighted) center of all x_loc from all the
  *                           nodes.
  */
 extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
@@ -175,9 +175,9 @@ extern void get_center_comm(t_commrec *cr, rvec x_loc[], real weight_loc[],
  * 
  * Add a translation vector to the positions x.
  * 
- * \param x[inout]           Array of positions.
- * \param nr[in]             Number of entries in the position array.
- * \param transvec[in]       Translation vector to be added to all positions.
+ * \param[in,out] x          Array of positions.
+ * \param[in]     nr         Number of entries in the position array.
+ * \param[in]     transvec   Translation vector to be added to all positions.
  * 
  */
 extern void translate_x(rvec x[], const int nr, const rvec transvec);
@@ -187,9 +187,9 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  * 
  * Rotate the positions with the rotation matrix.
  * 
- * \param x[inout]           Array of positions.
- * \param nr[in]             Number of entries in the position array.
- * \param rmat[in]           Rotation matrix to operate on all positions.
+ * \param[in,out] x          Array of positions.
+ * \param[in]     nr         Number of entries in the position array.
+ * \param[in]     rmat       Rotation matrix to operate on all positions.
  * 
  */
 extern void rotate_x(rvec x[], const int nr, matrix rmat);
