@@ -773,8 +773,6 @@ void set_constraints(struct gmx_constr *constr,
                 constr->lagr_nalloc = over_alloc_dd(ncons);
                 srenew(constr->lagr,constr->lagr_nalloc);
             }
-
-            constr->shaked = shake_init();
         }
     }
 
@@ -1035,6 +1033,8 @@ gmx_constr_t init_constraints(FILE *fplog,
             {
                 please_cite(fplog,"Barth95a");
             }
+
+            constr->shaked = shake_init();
         }
     }
   
