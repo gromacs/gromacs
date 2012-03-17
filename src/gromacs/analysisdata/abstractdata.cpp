@@ -94,12 +94,12 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
 /********************************************************************
  * AbstractAnalysisData
  */
-
+/*! \cond libapi */
 AbstractAnalysisData::AbstractAnalysisData()
     : _impl(new Impl()), _ncol(0), _bMultiPoint(false)
 {
 }
-
+//! \endcond
 
 AbstractAnalysisData::~AbstractAnalysisData()
 {
@@ -206,7 +206,7 @@ AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
     _impl->presentData(this, module);
 }
 
-
+/*! \cond libapi */
 void
 AbstractAnalysisData::setColumnCount(int ncol)
 {
@@ -330,5 +330,6 @@ AbstractAnalysisData::notifyDataFinish() const
         (*i)->dataFinished();
     }
 }
+//! \endcond
 
 } // namespace gmx

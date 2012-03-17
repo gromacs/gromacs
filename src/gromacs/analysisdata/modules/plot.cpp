@@ -137,12 +137,12 @@ AbstractPlotModule::Impl::closeFile()
 /********************************************************************
  * AbstractPlotModule
  */
-
+/*! \cond libapi */
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
     : _impl(new Impl(settings))
 {
 }
-
+//! \endcond
 
 AbstractPlotModule::~AbstractPlotModule()
 {
@@ -334,7 +334,7 @@ AbstractPlotModule::dataFinished()
     _impl->closeFile();
 }
 
-
+/*! \cond libapi */
 bool
 AbstractPlotModule::isFileOpen() const
 {
@@ -348,7 +348,7 @@ AbstractPlotModule::writeValue(real value) const
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     std::fprintf(_impl->fp, _impl->yfmt, value);
 }
-
+//! \endcond
 
 /********************************************************************
  * DataPlotModule
