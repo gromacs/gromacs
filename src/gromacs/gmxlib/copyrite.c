@@ -48,7 +48,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "macros.h"
-#include "time.h"
+#include <time.h>
 #include "random.h"
 #include "statutil.h"
 #include "copyrite.h"

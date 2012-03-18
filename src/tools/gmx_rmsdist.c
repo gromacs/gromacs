@@ -564,11 +564,11 @@ int gmx_rmsdist (int argc,char *argv[])
 
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  {&nlevels}, 
-      "Discretize rms in # levels" },
+      "Discretize RMS in this number of levels" },
     { "-max",   FALSE, etREAL, {&scalemax},    
       "Maximum level in matrices" },
     { "-sumh",  FALSE, etBOOL, {&bSumH},       
-      "average distance over equivalent hydrogens" },
+      "Average distance over equivalent hydrogens" },
     { "-pbc",   FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions when computing distances" }
   };

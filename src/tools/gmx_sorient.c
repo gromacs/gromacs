@@ -128,9 +128,9 @@ int gmx_sorient(int argc,char *argv[])
     "[TT]g_sorient[tt] analyzes solvent orientation around solutes.", 
     "It calculates two angles between the vector from one or more",
     "reference positions to the first atom of each solvent molecule:[PAR]",
-    "[GRK]theta[grk]1: the angle with the vector from the first atom of the solvent",
+    "[GRK]theta[grk][SUB]1[sub]: the angle with the vector from the first atom of the solvent",
     "molecule to the midpoint between atoms 2 and 3.[BR]",
-    "[GRK]theta[grk]2: the angle with the normal of the solvent plane, defined by the",
+    "[GRK]theta[grk][SUB]2[sub]: the angle with the normal of the solvent plane, defined by the",
     "same three atoms, or, when the option [TT]-v23[tt] is set, ",
     "the angle with the vector between atoms 2 and 3.[PAR]",
     "The reference can be a set of atoms or",
@@ -138,12 +138,12 @@ int gmx_sorient(int argc,char *argv[])
     "consist of 3 atoms per solvent molecule.",
     "Only solvent molecules between [TT]-rmin[tt] and [TT]-rmax[tt] are",
     "considered for [TT]-o[tt] and [TT]-no[tt] each frame.[PAR]",
-    "[TT]-o[tt]: distribtion of cos([GRK]theta[grk]1) for rmin<=r<=rmax.[PAR]",
-    "[TT]-no[tt]: distribution of cos([GRK]theta[grk]2) for rmin<=r<=rmax.[PAR]",
-    "[TT]-ro[tt]: <cos([GRK]theta[grk]1)> and <3cos^2([GRK]theta[grk]2)-1> as a function of the",
+    "[TT]-o[tt]: distribtion of [MATH][COS][GRK]theta[grk][SUB]1[sub][cos][math] for rmin<=r<=rmax.[PAR]",
+    "[TT]-no[tt]: distribution of [MATH][COS][GRK]theta[grk][SUB]2[sub][cos][math] for rmin<=r<=rmax.[PAR]",
+    "[TT]-ro[tt]: [MATH][CHEVRON][COS][GRK]theta[grk][SUB]1[sub][cos][chevron][math] and [MATH][CHEVRON]3[COS]^2[GRK]theta[grk][SUB]2[sub][cos]-1[chevron][math] as a function of the",
     "distance.[PAR]",
     "[TT]-co[tt]: the sum over all solvent molecules within distance r",
-    "of cos([GRK]theta[grk]1) and 3cos^2([GRK]theta[grk]2)-1 as a function of r.[PAR]",
+    "of [MATH][COS][GRK]theta[grk][SUB]1[sub][cos][math] and [MATH]3[COS]^2([GRK]theta[grk][SUB]2[sub])-1[cos][math] as a function of r.[PAR]",
     "[TT]-rc[tt]: the distribution of the solvent molecules as a function of r"
   };
  

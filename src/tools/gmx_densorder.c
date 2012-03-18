@@ -39,7 +39,7 @@
 #endif
 #include <math.h>
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -137,7 +137,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
         gmx_fatal(FARGS,"Invalid axes. Terminating\n");
 	}
 	
-	if( (natoms= read_first_x(oenv,&status,fn,&t,&x0,box)==0))
+	if( (natoms= read_first_x(oenv,&status,fn,&t,&x0,box))==0)
         gmx_fatal(FARGS, "Could not read coordinates from file"); /* Open trajectory for read*/
 	
 
@@ -547,7 +547,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
 
 static void writesurftoxpms(t_interf ***surf1,t_interf ***surf2, int tblocks,int xbins, int ybins, int zbins, real bw,real bwz, char **outfiles,int maplevels ) 
 {
-    char numbuf[12];
+    char numbuf[13];
     int n, i, j;
     real **profile1, **profile2;
     real max1, max2, min1, min2, *xticks, *yticks;

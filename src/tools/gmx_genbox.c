@@ -45,7 +45,7 @@
 #include "confio.h"
 #include "copyrite.h"
 #include "txtdump.h"
-#include "math.h"
+#include <math.h>
 #include "macros.h"
 #include "random.h"
 #include "futil.h"
@@ -713,21 +713,21 @@ int gmx_genbox(int argc,char *argv[])
   output_env_t oenv;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {new_box},   
-      "box size" },
+      "Box size" },
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
-      "no of extra molecules to insert" },
+      "Number of extra molecules to insert" },
     { "-try",    FALSE, etINT , {&nmol_try},  
-      "try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
+      "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times" },
     { "-seed",   FALSE, etINT , {&seed},      
-      "random generator seed"},
+      "Random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},
-      "default vdwaals distance"},
+      "Default van der Waals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
-      "thickness of optional water layer around solute" },
+      "Thickness of optional water layer around solute" },
     { "-maxsol", FALSE, etINT,  {&max_sol},
-      "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
+      "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "keep velocities from input solute and solvent" }
+      "Keep velocities from input solute and solvent" }
   };
 
   CopyRight(stderr,argv[0]);

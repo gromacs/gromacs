@@ -35,6 +35,7 @@ MACRO(gmx_c_flags)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops" 
@@ -46,8 +47,9 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wnon-virtual-dtor -Wno-unused-parameter -Wsign-compare" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function -Wno-unused-parameter" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wextra -Wno-missing-field-initializers" GMXC_CXXFLAGS)
       # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" 
                           GMXC_CXXFLAGS)
@@ -141,6 +143,19 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
     endif()
       
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+    endif()
+
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused" GMXC_CXXFLAGS)
+    endif()
 
     # now actually set the flags:
     # C

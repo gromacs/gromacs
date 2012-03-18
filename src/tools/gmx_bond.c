@@ -251,7 +251,7 @@ int gmx_bond(int argc,char *argv[])
     { "-blen", FALSE, etREAL, {&blen}, 
       "Bond length. By default length of first bond" },
     { "-tol",  FALSE, etREAL, {&tol}, 
-      "Half width of distribution as fraction of blen" },
+      "Half width of distribution as fraction of [TT]-blen[tt]" },
     { "-aver", FALSE, etBOOL, {&bAver},
       "Average bond length distributions" },
     { "-averdist", FALSE, etBOOL, {&bAverDist},
