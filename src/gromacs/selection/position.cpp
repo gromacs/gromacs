@@ -39,13 +39,13 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <string.h>
 
 #include <smalloc.h>
 #include <typedefs.h>
 #include <vec.h>
 
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 
@@ -105,7 +105,8 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
 void
 gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
 {
-    assert(pos->nalloc_x > 0);
+    GMX_RELEASE_ASSERT(pos->nalloc_x > 0,
+                       "No memory reserved yet for positions");
     if (!pos->v)
     {
         snew(pos->v, pos->nalloc_x);
@@ -121,7 +122,8 @@ gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
 {
-    assert(pos->nalloc_x > 0);
+    GMX_RELEASE_ASSERT(pos->nalloc_x > 0,
+                       "No memory reserved yet for positions");
     if (!pos->f)
     {
         snew(pos->f, pos->nalloc_x);

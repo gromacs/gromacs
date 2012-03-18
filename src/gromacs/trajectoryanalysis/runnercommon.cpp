@@ -472,7 +472,7 @@ TrajectoryAnalysisRunnerCommon::topologyInformation() const
 t_trxframe &
 TrajectoryAnalysisRunnerCommon::frame() const
 {
-    assert(_impl->fr != NULL);
+    GMX_RELEASE_ASSERT(_impl->fr != NULL, "Frame not available when accessed");
     return *_impl->fr;
 }
 
