@@ -43,7 +43,6 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"

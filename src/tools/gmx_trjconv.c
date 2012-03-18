@@ -39,7 +39,6 @@
 #include <string.h>
 #include <math.h>
 #include "macros.h"
-#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
