@@ -1466,7 +1466,8 @@ which dimension the freezing applies.
 To avoid spurious contibrutions to the virial and pressure due to large
 forces between completely frozen atoms you need to use
 <A HREF="#egexcl">energy group exclusions</A>, this also saves computing time.
-Note that frozen coordinates are not subject to pressure scaling.</dd>
+Note that coordinates of frozen atoms are not scaled by pressure-coupling
+algorithms.</dd>
 <dt><b>freezedim: </b></dt>
 <dd>dimensions for which groups in <b>freezegrps</b> should be frozen, 
 specify <tt>Y</tt> or <tt>N</tt> for X, Y and Z and for each group

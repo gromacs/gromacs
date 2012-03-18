@@ -259,7 +259,7 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
     }
     if (rc < 0)
     { 
-        gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
+        gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of disk space?");
     }
 }
 
