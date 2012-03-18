@@ -136,7 +136,7 @@ static void init_range(t_range *r,int np,int atype,int ptype,
 static t_range *read_range(const char *db,int *nrange)
 {
   int     nlines,nr,np,i;
-  char    **lines=NULL;
+  char    **lines;
   t_range *range;
   int     atype,ptype;
   double  rmin,rmax;

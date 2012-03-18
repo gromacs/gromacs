@@ -231,6 +231,7 @@ extern void set_reference_positions(
     
     /* Base name and extension of the reference file: */
     strncpy(base, fn, STRLEN - 1);
+    base[STRLEN-1]='\0';
     extpos = strrchr(base, '.');
     strcpy(extension,extpos+1);
     *extpos = '\0';

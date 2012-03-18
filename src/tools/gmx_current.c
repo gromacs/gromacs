@@ -711,7 +711,7 @@ int gmx_current(int argc,char *argv[])
   real       *mass2=NULL;
   rvec       *xtop,*vtop;
   matrix     box;
-  atom_id    *index0=NULL;
+  atom_id    *index0;
   int					*indexm=NULL;
   int        isize;
   t_trxstatus *status;

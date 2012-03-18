@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"

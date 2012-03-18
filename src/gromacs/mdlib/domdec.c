@@ -1859,7 +1859,7 @@ static void write_dd_grid_pdb(const char *fn,gmx_large_int_t step,
                 }
                 else
                 {
-                    if (dd->nc[d] > 1 && d < ddbox->npbcdim)
+                    if (d < ddbox->npbcdim && dd->nc[d] > 1)
                     {
                         tric[d][i] = box[i][d]/box[i][i];
                     }

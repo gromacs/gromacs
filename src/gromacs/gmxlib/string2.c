@@ -195,10 +195,10 @@ void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
   time_t clock;
-  char   *user=NULL;
+  const char *user=unk;
   int    gh;
   uid_t  uid;
-  char   buf[256];
+  char   buf[256]="";
   char   timebuf[STRLEN];
 #ifdef HAVE_PWD_H
   struct passwd *pw;

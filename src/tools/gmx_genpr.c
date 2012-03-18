@@ -39,7 +39,7 @@
 #include <math.h>
 #include "sysstuff.h"
 #include "statutil.h"
-#include "string.h"
+#include <string.h>
 #include "copyrite.h"
 #include "smalloc.h"
 #include "typedefs.h"

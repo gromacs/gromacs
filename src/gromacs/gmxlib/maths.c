@@ -89,7 +89,7 @@ real sign(real x,real y)
  * ====================================================
  */
 
-#if (INT_MAX == 2147483647)
+#if ( (defined SIZEOF_INT && SIZEOF_INT==4) || (SIZEOF_INT_MAX == 2147483647) )
    typedef int erf_int32_t;
    typedef unsigned int erf_u_int32_t;
 #elif (LONG_MAX == 2147483647L)
