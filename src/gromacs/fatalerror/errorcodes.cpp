@@ -97,6 +97,7 @@ ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
     return old_handler;
 }
 
+/*! \cond internal */
 namespace internal
 {
 
@@ -112,5 +113,6 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
 }
 
 } // namespace internal
+//! \endcond
 
 } // namespace gmx

@@ -43,6 +43,7 @@
 namespace gmx
 {
 
+/*! \cond internal */
 namespace internal
 {
 
@@ -55,6 +56,7 @@ std::string formatFatalError(const char *title, const char *details,
                              const char *func, const char *file, int line);
 
 } // namespace internal
+//! \endcond
 
 } // namespace gmx
 

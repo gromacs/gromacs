@@ -111,7 +111,8 @@ std::string getReferenceDataPath();
  */
 int initReferenceData(int *argc, char **argv);
 
-/*! \libinternal \brief
+/*! \cond internal */
+/*! \internal \brief
  * Internal testing namespace.
  *
  * This namespace is used to contain some implementation-specific functions and
@@ -133,6 +134,7 @@ namespace internal
 void addGlobalReferenceDataEnvironment();
 
 } // namespace internal
+//! \endcond
 
 
 class TestReferenceChecker;

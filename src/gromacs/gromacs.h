@@ -68,7 +68,7 @@
  *
  * \inpublicapi
  */
-/*! \namespace gmx::internal
+/*! \internal \namespace gmx::internal
  * \brief
  * Internal Gromacs namespace.
  *

@@ -73,6 +73,7 @@ namespace gmx
 namespace test
 {
 
+/*! \cond internal */
 namespace internal
 {
 
@@ -82,6 +83,7 @@ void addGlobalReferenceDataEnvironment()
 }
 
 } // namespace internal
+//! \endcond
 
 /********************************************************************
  * TestReferenceData::Impl

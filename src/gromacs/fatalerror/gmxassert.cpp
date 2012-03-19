@@ -49,6 +49,7 @@
 namespace gmx
 {
 
+/*! \cond internal */
 namespace internal
 {
 
@@ -64,5 +65,6 @@ void assertHandler(const char *condition, const char *msg,
 }
 
 } // namespace internal
+//! \endcond
 
 } // namespace gmx
