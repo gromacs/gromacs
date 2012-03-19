@@ -254,23 +254,6 @@ int get_tpr_version(const char *infile)
 	return fver;
 }
 
-void set_inbox(int natom, rvec *x)
-{
-	rvec tmp;
-	int  i;
-
-	tmp[XX]=tmp[YY]=tmp[ZZ]=0.0;
-	for(i=0;i<natom;i++)
-	{
-		if(x[i][XX]<tmp[XX])		tmp[XX]=x[i][XX];
-		if(x[i][YY]<tmp[YY])		tmp[YY]=x[i][YY];
-		if(x[i][ZZ]<tmp[ZZ])		tmp[ZZ]=x[i][ZZ];
-	}
-
-	for(i=0;i<natom;i++)
-			rvec_inc(x[i],tmp);
-}
-
 int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
 	int i,j,nr,mol_id;
@@ -418,28 +401,6 @@ real est_prot_area(pos_ins_t *pos_ins,rvec *r,t_block *ins_at, mem_t *mem_p)
 	area=area*dx*dy;
 
 	return area;
-}
-
-void init_lip(matrix box, gmx_mtop_t *mtop, lip_t *lip)
-{
-	int i;
-	real mem_area;
-	int mol1=0;
-
-	mem_area = box[XX][XX]*box[YY][YY]-box[XX][YY]*box[YY][XX];
-	for(i=0;i<mtop->nmolblock;i++)
-	{
-		if(mtop->molblock[i].type == lip->id)
-		{
-			lip->nr=mtop->molblock[i].nmol;
-			lip->natoms=mtop->molblock[i].natoms_mol;
-		}
-	}
-	lip->area=2.0*mem_area/(double)lip->nr;
-
-	for (i=0;i<lip->id;i++)
-		mol1+=mtop->molblock[i].nmol;
-	lip->mol1=mol1;
 }
 
 int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *pos_ins)

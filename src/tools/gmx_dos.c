@@ -140,36 +140,6 @@ static double calc_Shs(double f,double y)
     return BOLTZ*(log(calc_compress(fy)) + fy*(3*fy-4)/sqr(1-fy));
 }
 
-static real old_calc_fluidicity(real Delta,real tol)
-{
-    real fd0,fd,fd1,f,f0=0,f1=1;
-    real tolmin = 1e-6;
-    
-    /* Since the fluidity is monotonous according to Fig. 2 in Lin2003a, 
-       J. Chem. Phys. 112 (2003) p. 11792 we can use a bisection method
-       to get it. */
-    if (tol < tolmin) 
-    {
-        fprintf(stderr,"Unrealistic tolerance %g for calc_fluidity. Setting it to %g\n",tol,tolmin);
-        tol=1e-6;
-    }
-    
-    do {
-        fd0 = FD(Delta,f0);
-        fd1 = FD(Delta,f1);
-        f = (f0+f1)*0.5;
-        fd = FD(Delta,f);
-        if (fd < 0)
-            f0 = f;
-        else if (fd > 0)
-            f1 = f;
-        else
-            return f;
-    } while ((f1-f0) > tol);
-    
-    return f;
-}
-
 static real wCsolid(real nu,real beta)
 {
     real bhn = beta*PLANCK*nu;

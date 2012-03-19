@@ -737,12 +737,6 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
-static gmx_bool inter_res_bond(const t_rbonded *b)
-{
-    return (b->AI[0] == '-' || b->AI[0] == '+' ||
-            b->AJ[0] == '-' || b->AJ[0] == '+');
-}
-
 static void at2bonds(t_params *psb, t_hackblock *hb,
                      int natoms, t_atom atom[], char **aname[], 
                      int nres, rvec x[], 

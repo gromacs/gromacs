@@ -81,17 +81,6 @@ static real myexp(real x,real A,real tau)
   return A*exp(-x/tau);
 }
 
-static real signum(real num){
-	real sign;
-	if(num<0){
-                 sign=-1.0;
-        }
-        else {
-                sign=1.0;
-        }
-        return sign;
-}
-
 void erffit (real x, real a[], real *y, real dyda[])
 {
 /* Fuction 

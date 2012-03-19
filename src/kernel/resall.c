@@ -479,23 +479,6 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
  *                  SEARCH   ROUTINES
  * 
  ***********************************************************/
-static int neq_str(const char *a1,const char *a2)
-{
-    int j,l,l1,l2;;
-  
-    l1 = (int)strlen(a1);
-    l2 = (int)strlen(a2);
-    l = min(l1,l2);
-    
-    j=0;
-    while (j < l && toupper(a1[j]) == toupper(a2[j]))
-    {
-        j++;
-    }
-
-    return j;
-}
-
 static gmx_bool is_sign(char c)
 {
     return (c == '+' || c == '-');
