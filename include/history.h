@@ -35,9 +35,29 @@
 
 #ifndef HISTORY_H_
 #define HISTORY_H_
+
+
+/*! \brief Initialize program for history functionality
+ *  Pass in command line arguments for recording.
+ *
+ *  \param[in] argc     number of arguments
+ *  \param[in] argv     command line arguments, including command name.
+ */
 int history_init(int argc, char** argv);
+
+/*! \brief Write history information
+ * Should not be called directly. Is called from thanx.  Has to be called after all files are closed.
+ */
 int history_write();
 
+/*! \brief Record file usage in history
+ *  Should normally not be called directly. Is called by ffopen. Has to be called after the file has
+ *  already be opened.
+ *
+ *  \param[in] file    file pointer to the opene file
+ *  \param[in] fn      file name of the file
+ *  \param[in] mode    file opening mode string
+ */
 int history_fopen(FILE* file, const char* fn, const char* mode);
 int history_fclose(FILE** file);
 
