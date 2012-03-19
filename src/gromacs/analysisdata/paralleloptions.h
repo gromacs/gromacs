@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal file
+/*! \libinternal \file
  * \brief
  * Declares gmx::AnalysisDataParallelOptions.
  *

@@ -111,6 +111,13 @@ std::string getReferenceDataPath();
  */
 int initReferenceData(int *argc, char **argv);
 
+/*! \libinternal \brief
+ * Internal testing namespace.
+ *
+ * This namespace is used to contain some implementation-specific functions and
+ * classes.  These are not meant for direct access, but typically reside in
+ * visible headers because of implementation reasons.
+ */
 namespace internal
 {
 
@@ -250,6 +257,7 @@ class TestReferenceChecker
         TestReferenceChecker(const TestReferenceChecker &other);
         ~TestReferenceChecker();
 
+        //! Assigns a test reference checker.
         TestReferenceChecker &operator =(const TestReferenceChecker &other);
 
         //! Returns true if reference data is currently being written.

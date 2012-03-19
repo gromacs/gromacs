@@ -51,11 +51,19 @@ namespace test
 /*! \libinternal \brief
  * Exception class for reporting errors in tests.
  *
+ * This exception should be used for error conditions that are internal to the
+ * test, i.e., do not indicate errors in the tested code.
+ *
  * \ingroup module_testutils
  */
 class TestException : public GromacsException
 {
     public:
+        /*! \brief
+         * Creates a test exception object with the provided detailed reason.
+         *
+         * \param[in] reason Detailed reason for the exception.
+         */
         explicit TestException(const std::string &reason)
             : GromacsException(reason) {}
 
