@@ -406,8 +406,8 @@ static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const
                 }
             }
         }
-        fclose(fpsg);
-        fclose(fpsk);   
+        xvgrclose(fpsg);
+        xvgrclose(fpsk);
     } 
 
   

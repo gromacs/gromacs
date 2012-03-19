@@ -2744,7 +2744,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                 fprintf(fp,"  %10g", fittedct[j]);
             fprintf(fp,"\n");
         }
-        fclose(fp);
+        xvgrclose(fp);
 
         sfree(ctdouble);
         sfree(timedouble);

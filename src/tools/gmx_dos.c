@@ -244,7 +244,7 @@ static void dump_fy(output_env_t oenv,real toler)
         y = calc_y(f,Delta,toler);
         fprintf(fp,"%10g  %10g  %10g  %10g\n",Delta,f,f*y,y);
     }
-    fclose(fp);
+    xvgrclose(fp);
 }
 
 static void dump_w(output_env_t oenv,real beta)
@@ -262,7 +262,7 @@ static void dump_w(output_env_t oenv,real beta)
                 wCsolid(nu,beta),wSsolid(nu,beta),
                 wAsolid(nu,beta),wEsolid(nu,beta));
     }
-    fclose(fp);
+    xvgrclose(fp);
 }
 
 int gmx_dos(int argc,char *argv[])
@@ -437,14 +437,14 @@ int gmx_dos(int argc,char *argv[])
         tt[j] = j*dt;
         fprintf(fp,"%10g  %10g\n",tt[j],dos[VACF][j]);
     }
-    fclose(fp);
+    xvgrclose(fp);
     fp = xvgropen(opt2fn("-mvacf",NFILE,fnm),"Mass-weighted velocity ACF",
                   "Time (ps)","C(t)",oenv);
     for(j=0; (j<nframes/2); j++) 
     {
         fprintf(fp,"%10g  %10g\n",tt[j],dos[MVACF][j]);
     }
-    fclose(fp);
+    xvgrclose(fp);
     
     if ((fftcode = gmx_fft_init_1d_real(&fft,nframes/2,
                                         GMX_FFT_FLAG_NONE)) != 0) 
@@ -531,7 +531,7 @@ int gmx_dos(int argc,char *argv[])
                 dos[DOS_SOLID][j]/recip_fac,
                 dos[DOS_DIFF][j]/recip_fac);
     }
-    fclose(fp);
+    xvgrclose(fp);
 
     /* Finally analyze the results! */    
     wCdiff = 0.5;
@@ -572,7 +572,7 @@ int gmx_dos(int argc,char *argv[])
     fprintf(fplog,"Internal energy %g kJ/mol\n",E/Nmol);
     */
     fprintf(fplog,"\nArrivederci!\n");
-    fclose(fplog);
+    gmx_fio_fclose(fplog);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
   

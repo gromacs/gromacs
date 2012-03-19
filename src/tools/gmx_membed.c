@@ -946,10 +946,11 @@ void top_update(const char *topfile, char *ins, rmm_t *rm_p, gmx_mtop_t *mtop)
 		}
 	}
 
-	fclose(fpout);
+	ffclose(fpout);
+	ffclose(fpin);
 	/* use ffopen to generate backup of topinout */
 	fpout=ffopen(topfile,"w");
-	fclose(fpout);
+	ffclose(fpout);
 	rename(TEMP_FILENM,topfile);
 #undef TEMP_FILENM
 }
