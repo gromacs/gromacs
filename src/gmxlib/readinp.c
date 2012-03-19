@@ -179,7 +179,7 @@ t_inpfile *read_inpfile(const char *fn,int *ninp,
     }
   } while (ptr);
   
-  fclose(in);
+  ffclose(in);
 
   if (debug) {
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",

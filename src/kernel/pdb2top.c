@@ -410,7 +410,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
             sfree(model[nwm]);
         }
     }
-    fclose(fp);
+    ffclose(fp);
     fprintf(stderr,"%2d: %s\n",nwm+1,"None");
 
     do
