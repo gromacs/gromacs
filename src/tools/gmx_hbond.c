@@ -2501,7 +2501,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                     hb->time[j]-hb->time[0],
                     ct[j],
                     ctdouble[j]);
-        fclose(fp);
+        xvgrclose(fp);
         sfree(ct);
         sfree(ctdouble);
         sfree(timedouble);
@@ -2744,7 +2744,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                 fprintf(fp,"  %10g", fittedct[j]);
             fprintf(fp,"\n");
         }
-        fclose(fp);
+        xvgrclose(fp);
 
         sfree(ctdouble);
         sfree(timedouble);

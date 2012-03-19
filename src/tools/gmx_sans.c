@@ -228,7 +228,7 @@ int gmx_sans(int argc,char *argv[])
   fp = xvgropen(opt2fn_null("-pr",NFILE,fnm),"G(r)","Distance (nm)","Probability",oenv);
   for(i=0;i<pr->grn;i++)
       fprintf(fp,"%10.6lf%10.6lf\n",pr->r[i],pr->gr[i]);
-  fclose(fp);
+  xvgrclose(fp);
 
   /* prepare sq.xvg */
   sq = convert_histogram_to_intensity_curve(pr,start_q,end_q,q_step);
@@ -236,7 +236,7 @@ int gmx_sans(int argc,char *argv[])
   for(i=0;i<sq->qn;i++) {
       fprintf(fp,"%10.6lf%10.6lf\n",sq->q[i],sq->s[i]);
   }
-  fclose(fp);
+  xvgrclose(fp);
 
   sfree(pr);
 

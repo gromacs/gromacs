@@ -1130,8 +1130,8 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
         }
     }
 #ifdef DEBUG_PME
-    fclose(fp);
-    fclose(fp2);
+    ffclose(fp);
+    ffclose(fp2);
 #endif
     }
     return 0;

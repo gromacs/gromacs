@@ -1355,7 +1355,7 @@ int main(int argc, char *argv[])
   for(i=0; i<nrrn; i++) {
     fp = fflib_open(rrn[i]);
     read_rtprename(rrn[i],fp,&nrtprename,&rtprename);
-    fclose(fp);
+    ffclose(fp);
     sfree(rrn[i]);
   }
   sfree(rrn);
