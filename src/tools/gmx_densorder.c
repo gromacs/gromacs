@@ -445,7 +445,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
         if(debug){
             xvg=xvgropen("DensprofileonZ.xvg", "Averaged Densityprofile on Z","z[nm]","Density[kg/m^3]",oenv);
             for(k=0;k<zslices;k++) fprintf(xvg, "%4f.3   %8f.4\n", k*binwidth,zDensavg[k]);
-            fclose(xvg);
+            xvgrclose(xvg);
         }
 	
         /*Fit average density in z over whole trajectory to obtain tentative fit-parameters in fit1 and fit2*/
