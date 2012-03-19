@@ -57,27 +57,6 @@
 #include "pull.h"
 #include "gmx_ga2la.h"
 
-void pull_d_pbc_dx(int npbcdim,matrix box,
-		   const dvec x1, const dvec x2, dvec dx)
-{
-  int m,d;
-  
-  /* Only correct for atom pairs with a distance within
-   * half of the smallest diagonal element of box.
-   */
-  dvec_sub(x1,x2,dx);
-  for(m=npbcdim-1; m>=0; m--) {
-    while (dx[m] < -0.5*box[m][m]) {
-      for(d=0; d<DIM; d++)
-	dx[d] += box[m][d];
-    }
-    while (dx[m] >=  0.5*box[m][m]) {
-      for(d=0; d<DIM; d++)
-	dx[d] -= box[m][d];
-    }
-  }
-}
-
 static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
 			     t_mdatoms *md, rvec *x,
 			     rvec x_pbc)

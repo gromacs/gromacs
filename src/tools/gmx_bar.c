@@ -253,25 +253,6 @@ static void samples_init(samples_t *s, double native_lambda,
     s->filename=filename;
 }
 
-/* destroy the data structures directly associated with the structure, not
-   the data it points to */
-static void samples_destroy(samples_t *s)
-{
-    if (s->du_alloc)
-    {
-        sfree(s->du_alloc);
-    }
-    if (s->t_alloc)
-    {
-        sfree(s->t_alloc);
-    }
-    if (s->hist_alloc)
-    {
-        hist_destroy(s->hist_alloc);
-        sfree(s->hist_alloc);
-    }
-}
-
 static void sample_range_init(sample_range_t *r, samples_t *s)
 {
     r->start=0;

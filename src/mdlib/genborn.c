@@ -132,29 +132,6 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     return 0;
 }
 
-int print_nblist(int natoms, t_nblist *nl)
-{
-    int i,k,ai,aj,nj0,nj1;
-    
-    printf("genborn.c: print_nblist, natoms=%d\n",nl->nri); 
-    
-    for(i=0;i<nl->nri;i++)
-    {
-        ai=nl->iinr[i];
-        nj0=nl->jindex[i];
-        nj1=nl->jindex[i+1];
-    
-        for(k=nj0;k<nj1;k++)
-        {    
-            aj=nl->jjnr[k];
-            printf("ai=%d, aj=%d\n",ai,aj);
-        }
-    }
-    
-    return 0;    
-}
-
-
 void gb_pd_send(t_commrec *cr, real *send_data, int nr)
 {
 #ifdef GMX_MPI    

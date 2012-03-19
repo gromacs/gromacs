@@ -465,14 +465,6 @@ static void enter_function(t_params *p,t_functype ftype,int comb,real reppow,
   }
 }
 
-static void new_interaction_list(t_ilist *ilist)
-{
-  int i;
-  
-  ilist->nr=0;
-  ilist->iatoms=NULL;
-}
-
 void convert_params(int atnr,t_params nbtypes[],
 		    t_molinfo *mi,int comb,double reppow,real fudgeQQ,
 		    gmx_mtop_t *mtop)

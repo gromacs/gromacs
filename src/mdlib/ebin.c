@@ -51,11 +51,6 @@
 #include "vec.h"
 #include "physics.h"
 
-static real rms_ener(t_energy *e,int nsteps)
-{
-  return sqrt(e->eav/nsteps);
-}
-
 t_ebin *mk_ebin(void)
 {
   t_ebin *eb;

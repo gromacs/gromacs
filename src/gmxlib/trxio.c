@@ -956,35 +956,3 @@ static void clear_v(t_trxframe *fr)
       clear_rvec(fr->v[i]);
 }
 
-int read_first_v(const output_env_t oenv, t_trxstatus **status,const char *fn,
-                 real *t, rvec **v,matrix box)
-{
-  t_trxframe fr;
-
-  read_first_frame(oenv,status,fn,&fr,TRX_NEED_V);
-  *t = fr.time;
-  clear_v(&fr);
-  *v = fr.v;
-  copy_mat(fr.box,box);
-  
-  return fr.natoms;
-}
-
-gmx_bool read_next_v(const output_env_t oenv,t_trxstatus *status,real *t,
-                 int natoms,rvec v[], matrix box)
-{
-  t_trxframe fr;
-  gmx_bool bRet;
-
-  clear_trxframe(&fr,TRUE);
-  fr.flags = TRX_NEED_V;
-  fr.natoms = natoms;
-  fr.time = *t;
-  fr.v = v;
-  bRet = read_next_frame(oenv,status,&fr);
-  *t = fr.time;
-  clear_v(&fr);
-  copy_mat(fr.box,box);
-
-  return bRet;
-}

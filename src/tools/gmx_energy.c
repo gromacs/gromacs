@@ -136,14 +136,6 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-static int strcount(const char *s1,const char *s2)
-{
-  int n=0;
-  while (s1 && s2 && (toupper(s1[n]) == toupper(s2[n])))
-    n++;
-  return n;
-}
-
 static void chomp(char *buf)
 {
   int len = strlen(buf);

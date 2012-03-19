@@ -320,23 +320,6 @@ static real anal_ee_inf(real *parm,real T)
   return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
 }
 
-static real anal_ee(real *parm,real T,real t)
-{
-  real e1,e2;
-
-  if (parm[0])
-    e1 = exp(-t/parm[0]);
-  else
-    e1 = 1;
-  if (parm[2])
-    e2 = exp(-t/parm[2]);
-  else
-    e2 = 1;
-
-  return sqrt(parm[1]*2*parm[0]/T*((e1 - 1)*parm[0]/t + 1) +
-	      parm[3]*2*parm[2]/T*((e2 - 1)*parm[2]/t + 1));
-}
-
 static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                            int nset, double *av,double *sig,real **val,real dt,
                            gmx_bool bFitAc,gmx_bool bSingleExpFit,gmx_bool bAllowNegLTCorr,

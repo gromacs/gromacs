@@ -110,13 +110,6 @@ typedef struct gmx_update
 } t_gmx_update;
 
 
-void store_rvec(rvec *from, rvec *to, int n) {
-  int i;
-  for (i=0;i<n;i++) {
-    copy_rvec(from[i],to[i]);
-  }
-}
-
 static void do_update_md(int start,int nrend,double dt,
                          t_grp_tcstat *tcstat,t_grp_acc *gstat,double nh_vxi[],
                          rvec accel[],ivec nFreeze[],real invmass[],
