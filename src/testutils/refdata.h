@@ -250,6 +250,7 @@ class TestReferenceChecker
         TestReferenceChecker(const TestReferenceChecker &other);
         ~TestReferenceChecker();
 
+        //! Assigns a test reference checker.
         TestReferenceChecker &operator =(const TestReferenceChecker &other);
 
         //! Returns true if reference data is currently being written.

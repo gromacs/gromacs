@@ -30,6 +30,8 @@
  */
 /*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -164,6 +166,9 @@ SelectionTester::writeOutput()
 
 }
 
+/*! \internal \brief
+ * The main function for the selection testing tool.
+ */
 int
 main(int argc, char *argv[])
 {
