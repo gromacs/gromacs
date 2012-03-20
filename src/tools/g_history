@@ -1,18 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#TODO: 
-#in gmx:
-#
-#here:
+#IDEAS: 
 #wrapper for external tools (limit to directories in current folder and folders given on command line, use strace -eopen)
-#
-#BUGS:
 
 from optparse import OptionParser
 from glob import glob
 import os,hashlib,struct
-#OptParse -f file, -h history files/directories
 
 parser = OptionParser(version="GROMACS 4.5")
 parser.add_option("-f", "--file", dest="filename", 
@@ -20,8 +14,8 @@ parser.add_option("-f", "--file", dest="filename",
 parser.add_option("-d", "--hist", dest="history", 
                      help="additional folder/files to search for history,\
            multiple seperated by :", metavar="PATH")
-parser.add_option("-v", "--verbose", dest="verbose", action="store_true",
-                     help="be verbose printing results")
+parser.add_option('-v', action="count", dest='verbose', default=0,
+                     help="be verbose printing results. Can be given more than once for extra verbosity")
 parser.set_description("g_history prints the history stored by GROMACS tools.")
 
 
@@ -41,12 +35,12 @@ def addToDict(d, key, val):
     else:
         d[key]=[val]
 
-#read in history file f and add all cmds to cmds and output files to out_files
+#read in history file f and add all commands to cmds and output files to out_files
 #returns: None
 def read_history(f):
     global cmds, out_fnms
     args = {}
-    for l in file(f):  #loop of lines of one command
+    for l in file(f):  #loop over lines
         l=l.strip()
         opt = l[:3]    #format: e.g. CMD: mdrun, opt=CMD, val=mdrun
         val = l[5:]
@@ -166,20 +160,22 @@ def print_cmd(args):
 def print_history(md5):
     cmd,input=find_cmds(md5)
     if len(cmd)>=1:
-        print "Required input (files without known history):"
+        infile={}
         for l in set(input):
             (fn,md5)=l.split(" ")
-            print os.path.basename(fn),#md5,
-            infile = find_input(md5)
-            if infile:
-                print "   (found content: %s)"%(infile,)
-            else:
-                print "   (file not found)"
+            infile[fn] = find_input(md5)
+        if options.verbose or None in infile.values():
+            print "Required input files without known history:"
+            for fn,infile in infile.iteritems():
+                if not infile:
+                    print os.path.basename(fn),"   (file not found)"                
+                elif options.verbose:
+                    print os.path.basename(fn),"   (found content: %s)"%(infile,)
         print "Commands:"
         for l in cmd:
             args=cmds[l]
             print_cmd(args)
-            if options.verbose:
+            if options.verbose>1:
                 for i in args['IN ']:
                     print "#IN:",i
                 for o in args['OUT']:
@@ -195,7 +191,8 @@ for hist_file in hist_files:
 if options.filename!=None:
     if os.path.isfile(options.filename):
       md5 = md5sum(options.filename)
-      print "md5sum of %s is %s."%(options.filename, md5)
+      if options.verbose:
+          print "md5sum of %s is %s."%(options.filename, md5)
       print_history(md5)
     else:
       print "File %s not found. Cannot compute checksum."%(options.filename,)

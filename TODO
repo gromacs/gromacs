@@ -1,0 +1,6 @@
+install with cmake
+make sure all files stdin is recorded (using ffopen/gmx_fget*)
+test a couple of tools
+improve comments
+make by default not write history
+test for moved files
