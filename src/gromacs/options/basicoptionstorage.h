@@ -69,10 +69,9 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
          */
-        BooleanOptionStorage(const BooleanOption &settings, Options *options)
-            : MyBase(settings, options), info_(this)
+        explicit BooleanOptionStorage(const BooleanOption &settings)
+            : MyBase(settings), info_(this)
         {
         }
 
@@ -93,8 +92,8 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 {
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
-        IntegerOptionStorage(const IntegerOption &settings, Options *options)
-            : MyBase(settings, options), info_(this)
+        explicit IntegerOptionStorage(const IntegerOption &settings)
+            : MyBase(settings), info_(this)
         {
         }
 
@@ -117,7 +116,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
 {
     public:
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
-        DoubleOptionStorage(const DoubleOption &settings, Options *options);
+        explicit DoubleOptionStorage(const DoubleOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const;
@@ -143,7 +142,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
-        StringOptionStorage(const StringOption &settings, Options *options);
+        explicit StringOptionStorage(const StringOption &settings);
 
         virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
@@ -165,7 +164,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         //! \copydoc StringOptionStorage::StringOptionStorage()
-        FileNameOptionStorage(const FileNameOption &settings, Options *options);
+        explicit FileNameOptionStorage(const FileNameOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "file"; }

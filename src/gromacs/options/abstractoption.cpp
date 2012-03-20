@@ -52,13 +52,11 @@ namespace gmx
  */
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
-                                             Options *options,
                                              OptionFlags staticFlags)
     : _flags(settings._flags | staticFlags),
       _minValueCount(settings._minValueCount),
       _maxValueCount(settings._maxValueCount),
-      _inSet(false),
-      _options(*options)
+      _inSet(false)
 {
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.

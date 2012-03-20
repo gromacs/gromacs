@@ -175,7 +175,7 @@ void Options::addSubSection(Options *section)
 
 void Options::addOption(const AbstractOption &settings)
 {
-    AbstractOptionStoragePointer option(settings.createDefaultStorage(this));
+    AbstractOptionStoragePointer option(settings.createStorage());
     if (_impl->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));

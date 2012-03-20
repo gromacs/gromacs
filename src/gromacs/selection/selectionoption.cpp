@@ -59,10 +59,8 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
-                                               Options *options)
-    : MyBase(settings, options,
-             OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
+    : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
       _info(this), _sc(NULL), _selectionFlags(settings._selectionFlags)
 {
     if (settings._infoPtr != NULL)
@@ -250,9 +248,9 @@ void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStoragePointer SelectionOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer SelectionOption::createStorage() const
 {
-    return AbstractOptionStoragePointer(new SelectionOptionStorage(*this, options));
+    return AbstractOptionStoragePointer(new SelectionOptionStorage(*this));
 }
 
 
