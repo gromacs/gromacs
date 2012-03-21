@@ -88,7 +88,9 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         /*! \brief
          * Handle dynamic selections for this option with position masks.
          *
+         * \if internal
          * Sets ::POS_MASKONLY on the positions for this selection.
+         * \endif
          */
         MyClass &dynamicMask()
         { _selectionFlags.set(efDynamicMask); return me(); }

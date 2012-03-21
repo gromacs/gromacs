@@ -50,7 +50,7 @@ class Options;
  * Time values for TimeUnitManager.
  *
  * \if internal
- * Currently, this should match with the ::time_unit_t enum defined in oenv.h
+ * Currently, this should match with the time_unit_t enum defined in oenv.h
  * except that there is no NULL first item in this enum.
  * \endif
  *

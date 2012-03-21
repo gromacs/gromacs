@@ -227,7 +227,7 @@ static const char *const poscalc_enum_strings[] = {
     "dyn_mol_com",   "dyn_mol_cog",
     NULL,
 };
-//! Number of elements in ::poscalc_enum_strings.
+//! Number of elements in poscalc_enum_strings.
 #define NENUM asize(poscalc_enum_strings)
 
 /*! \brief

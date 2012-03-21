@@ -128,6 +128,7 @@ class Selection
         //! Deprecated method for direct access to atom index data.
         gmx_ana_index_t *indexGroup() const { return rawPositions_.g; }
 
+        // TODO: Remove direct access to the flags from the public interface.
         //! Returns true if the given flag is set.
         bool hasFlag(SelectionFlag flag) const { return flags_.test(flag); }
         //! Sets the flags for this selection.
@@ -278,6 +279,12 @@ class SelectionPosition
 {
     public:
         /*! \brief
+         * Constructs a wrapper object for given selection position.
+         *
+         * \param[in] sel    Selection from which the position is wrapped.
+         * \param[in] index  Zero-based index of the position to wrap.
+         *
+         * Does not throw.  Asserts if \p index is out of range.
          */
         SelectionPosition(const Selection *sel, int index)
             : sel_(sel), i_(index)
@@ -367,17 +374,17 @@ class SelectionPosition
          * across frames.  After compilation, these IDs are consequently
          * numbered starting from zero.  For each frame, the ID then reflects
          * the location of the position in the original array of positions.
-         * If ::efDynamicMask has been set for the parent selection, the IDs
-         * for positions not present in the current selection are set to
-         * -1, otherwise they are removed completely.
+         * If SelectionOption::dynamicMask() has been set for the parent
+         * selection, the IDs for positions not present in the current
+         * selection are set to -1, otherwise they are removed completely.
          *
          * Example:
          * If a dynamic selection consists of three positions, after
          * compilation refId() will return 0, 1, 2 for them, respectively.
          * If for a particular frame, only the first and the third are present,
          * refId() will return 0, 2.
-         * If ::efDynamicMask has been set, all three positions can be accessed
-         * also in this case and refId() will return 0, -1, 2.
+         * If SelectionOption::dynamicMask() has been set, all three positions
+         * can be accessed also in this case and refId() will return 0, -1, 2.
          */
         int refId() const
         {

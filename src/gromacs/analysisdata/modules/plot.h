@@ -218,10 +218,21 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
     protected:
         /*! \cond libapi */
         AbstractPlotModule();
-        //! Creates AbstractPlotModule and assign common settings for the plotting
+        //! Creates AbstractPlotModule and assign common settings.
         explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
 
+        //! Whether an output file has been opened.
         bool isFileOpen() const;
+        /*! \brief
+         * Appends a single value to the current output line.
+         *
+         * \param[in] value  Value to append.
+         *
+         * Should be used from pointsAdded() implementations in derived classes
+         * to write out individual y values to the output.
+         *
+         * Must not be called if isFileOpen() returns false.
+         */
         void writeValue(real value) const;
         //! \endcond
 
@@ -244,7 +255,7 @@ class AnalysisDataPlotModule : public AbstractPlotModule
 {
     public:
         AnalysisDataPlotModule();
-        //! Creates AnalysisDataPlotModule and assign common settings for the plotting
+        //! Creates AnalysisDataPlotModule and assign common settings.
         explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -265,7 +276,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 {
     public:
         AnalysisDataVectorPlotModule();
-        //! Creates AnalysisDataVectorPlotModule and assign common settings for the plotting
+        //! Creates AnalysisDataVectorPlotModule and assign common settings.
         explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
 
         /*! \brief

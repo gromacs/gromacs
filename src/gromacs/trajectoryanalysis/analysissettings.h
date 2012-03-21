@@ -163,7 +163,7 @@ class TrajectoryAnalysisSettings
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether PBC are used in the analysis.
-         * If ::efNoUserPBC is not set, a command-line option is provided
+         * If \ref efNoUserPBC is not set, a command-line option is provided
          * for the user to override the default value.
          * If called later, it overrides the setting provided by the user or an
          * earlier call.
@@ -174,7 +174,7 @@ class TrajectoryAnalysisSettings
          * TrajectoryAnalysisModule::analyzeFrame() is NULL.
          * The value of the flag can also be accessed with hasPBC().
          *
-         * \see ::efNoUserPBC
+         * \see efNoUserPBC
          */
         void setPBC(bool bPBC);
         /*! \brief
@@ -184,7 +184,7 @@ class TrajectoryAnalysisSettings
          *
          * If called in TrajectoryAnalysisModule::initOptions(), this function
          * sets the default for whether molecules are made whole.
-         * If ::efNoUserRmPBC is not set, a command-line option is provided
+         * If \ref efNoUserRmPBC is not set, a command-line option is provided
          * for the user to override the default value.
          * If called later, it overrides the setting provided by the user or an
          * earlier call.
@@ -195,11 +195,11 @@ class TrajectoryAnalysisSettings
          * The main use of this function is to call it with \c false if your
          * analysis program does not require whole molecules as this can
          * increase the performance.
-         * In such a case, you can also specify ::efNoUserRmPBC to not to
+         * In such a case, you can also specify \ref efNoUserRmPBC to not to
          * confuse the user with an option that would only slow the program
          * down.
          *
-         * \see ::efNoUserRmPBC
+         * \see efNoUserRmPBC
          */
         void setRmPBC(bool bRmPBC);
         /*! \brief

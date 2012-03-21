@@ -40,7 +40,7 @@
  * \inlibraryapi
  * \ingroup module_testutils
  */
-/*! \defgroup module_testutils Unit Testing Utility Modules
+/*! \libinternal \defgroup module_testutils Unit Testing Utility Modules
  * \brief
  * Common helper classes and functions for writing unit tests.
  *
@@ -96,8 +96,6 @@ const char *getTestDataPath();
  * \inlibraryapi
  */
 void setTestDataPath(const char *path);
-
-/*!\}*/
 
 } // namespace test
 } // namespace gmx
