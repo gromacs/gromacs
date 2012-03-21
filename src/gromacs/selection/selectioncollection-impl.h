@@ -46,10 +46,9 @@
 
 #include "../legacyheaders/typedefs.h"
 
-#include "gromacs/utility/uniqueptr.h"
-
 #include "../options/options.h"
 #include "../utility/flags.h"
+#include "../utility/uniqueptr.h"
 #include "indexutil.h"
 #include "selectioncollection.h"
 
@@ -113,6 +112,11 @@ class SelectionCollection::Impl
             {
             }
 
+            /*! \brief
+             * Returns the number of selections requested in this request.
+             *
+             * -1 indicates no upper limit.
+             */
             int count() const;
 
             std::string                 name;
@@ -169,9 +173,30 @@ class SelectionCollection::Impl
          */
         void runParser(void *scanner, int maxnr,
                        std::vector<Selection *> *output);
+        /*! \brief
+         * Adds a selection request for delayed user input.
+         *
+         * \param[in] name    Name for the requested selections.
+         * \param[in] descr   Description of the requested selections.
+         * \param     storage Storage object to receive the selections.
+         *
+         * \see parseRequestedFromStdin()
+         */
         void requestSelections(const std::string &name,
                                const std::string &descr,
                                SelectionOptionStorage *storage);
+        /*! \brief
+         * Replace group references by group contents.
+         *
+         * \param[in]    root    Root of selection tree to process.
+         * \param        errors  Object for reporting any error messages.
+         *
+         * Recursively searches the selection tree for unresolved external
+         * references.  If one is found, finds the referenced group in
+         * \a _grps and replaces the reference with a constant element that
+         * contains the atoms from the referenced group.  Any failures to
+         * resolve references are reported to \p errors.
+         */
         void resolveExternalGroups(struct t_selelem *root,
                                    MessageStringCollector *errors);
 

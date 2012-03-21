@@ -89,6 +89,13 @@ class TrajectoryAnalysisModule::Impl
 class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
     public:
+        /*! \brief
+         * Initializes thread-local storage for data handles and selections.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         */
         TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
                                           const AnalysisDataParallelOptions &opt,
                                           const SelectionCollection &selections);

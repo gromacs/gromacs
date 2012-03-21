@@ -68,6 +68,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
         virtual const char *typeString() const { return "sel"; }
         virtual std::string formatValue(int i) const;
 
+        //! \copydoc SelectionOptionInfo::setSelectionCollection()
         void setSelectionCollection(SelectionCollection *selections)
         {
             _sc = selections;
