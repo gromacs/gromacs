@@ -57,12 +57,18 @@ class TrajectoryAnalysisSettings::Impl
         //! Initializes the default values for the settings object.
         Impl() : flags(0), frflags(0), bRmPBC(true), bPBC(true) {}
 
+        //! Global time unit setting for the analysis module.
         TimeUnitManager      timeUnitManager;
+        //! Global plotting settings for the analysis module.
         AnalysisDataPlotSettings plotSettings;
+        //! Flags for the analysis module.
         unsigned long        flags;
+        //! Frame reading flags for the analysis module.
         int                  frflags;
 
+        //! Whether to make molecules whole for each frame.
         bool                 bRmPBC;
+        //! Whether to pass PBC information to the analysis module.
         bool                 bPBC;
 };
 

@@ -42,7 +42,7 @@
  * Use of error return codes should be avoided in new code except in C wrappers
  * and similar, but for compatibility, facilities for handling them are
  * provided by the errorcodes.h header file.  It provides a set of error codes
- * (the enum ::ErrorCode) that should be used for return codes in functions.
+ * (the enum \ref gmx::ErrorCode) that should be used for return codes in functions.
  * It also provides macros ::GMX_ERROR and ::GMX_ERROR_NORET that should be
  * used for returning an error code.  setFatalErrorHandler() is provided to
  * alter the behavior of ::GMX_ERROR and ::GMX_ERROR_NORET.  The default

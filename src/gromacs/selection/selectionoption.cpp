@@ -293,10 +293,12 @@ class SelectionCollectionSetter : public OptionsModifyingTypeVisitor<SelectionOp
 
 } // namespace
 
+/*! \cond libapi */
 void setSelectionCollectionForOptions(Options *options,
                                       SelectionCollection *selections)
 {
     SelectionCollectionSetter(selections).visitSubSection(options);
 }
+//! \endcond
 
 } // namespace gmx

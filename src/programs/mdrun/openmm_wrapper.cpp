@@ -380,11 +380,11 @@ void GmxOpenMMPlatformOptions::print()
 class OpenMMData
 {
 public:
-    System* system;      /*! The system to simulate. */
-    Context* context;   /*! The OpenMM context in which the simulation is carried out. */
-    Integrator* integrator; /*! The integrator used in the simulation. */
-    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
-    GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
+    System* system;      //!< The system to simulate.
+    Context* context;   //!< The OpenMM context in which the simulation is carried out.
+    Integrator* integrator; //!< The integrator used in the simulation.
+    gmx_bool removeCM;          //!< If true, remove center of mass motion, false otherwise.
+    GmxOpenMMPlatformOptions *platformOpt; //!< Platform options.
 };
 
 /*!
