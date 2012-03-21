@@ -73,12 +73,15 @@ namespace gmx
 /*! \libinternal \brief
  * Helper class to manage a pointer to a private implementation class.
  *
- * This helper provides the following benefits (the first two could also be
+ * This helper provides the following benefits (all but the last could also be
  * achieved with boost::scoped_ptr):
  *  - Automatic memory management: the implementation pointer is freed in
  *    the destructor automatically.  If the destructor is not declared or is
  *    defined inline in the header file, a compilation error occurs instead
  *    of a memory leak or undefined behavior.
+ *  - Exception safety in constructors: the implementation pointer is freed
+ *    correctly even if the constructor of the containing class throws after
+ *    the implementation class is constructed.
  *  - Copy and/or assignment is automatically disallowed if explicit copy
  *    constructor and/or assignment operator is not provided.
  *  - Compiler helps to manage const-correctness: in const methods, it is not
@@ -125,12 +128,23 @@ class PrivateImplPointer
         explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
         ~PrivateImplPointer() {}
 
+        /*! \brief
+         * Sets a new implementation class and destructs the previous one.
+         *
+         * Needed, e.g., to implement assignable classes.
+         */
         void reset(Impl *ptr) { ptr_.reset(ptr); }
+        //! Access the raw pointer.
         Impl *get() { return ptr_.get(); }
+        //! Access the implementation class as with a raw pointer.
         Impl *operator->() { return ptr_.get(); }
+        //! Access the implementation class as with a raw pointer.
         Impl &operator*() { return *ptr_; }
+        //! Access the raw pointer.
         const Impl *get() const { return ptr_.get(); }
+        //! Access the implementation class as with a raw pointer.
         const Impl *operator->() const { return ptr_.get(); }
+        //! Access the implementation class as with a raw pointer.
         const Impl &operator*() const { return *ptr_; }
 
     private:

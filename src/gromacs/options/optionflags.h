@@ -47,6 +47,7 @@
 namespace gmx
 {
 
+/*! \cond internal */
 /*! \internal \brief
  * Flags for options.
  *
@@ -104,6 +105,7 @@ enum OptionFlag
 
 //! Holds a combination of ::OptionFlag values.
 typedef FlagsTemplate<OptionFlag> OptionFlags;
+//! \endcond
 
 } // namespace gmx
 

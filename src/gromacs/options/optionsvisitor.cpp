@@ -50,10 +50,12 @@ namespace gmx
  * OptionInfo
  */
 
+/*! \cond libapi */
 OptionInfo::OptionInfo(AbstractOptionStorage *option)
     : _option(*option)
 {
 }
+//! \endcond
 
 OptionInfo::~OptionInfo()
 {

@@ -159,6 +159,7 @@ typedef struct t_methoddata_kwstr
             char      *s;
         }              u;
     }                 *m;
+    /**< Array of strings/regular expressions to match against.*/
 } t_methoddata_kwstr;
 
 /** Parameters for integer keyword evaluation. */
