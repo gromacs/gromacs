@@ -134,6 +134,7 @@ class SelectionOptionInfo : public OptionInfo
         const SelectionOptionStorage &option() const;
 };
 
+/*! \cond libapi */
 /*! \libinternal \brief
  * Set selection collection for all selection options.
  *
@@ -147,6 +148,7 @@ class SelectionOptionInfo : public OptionInfo
  */
 void setSelectionCollectionForOptions(Options *options,
                                       SelectionCollection *selections);
+//! \endcond
 
 } // namespace gmx
 
