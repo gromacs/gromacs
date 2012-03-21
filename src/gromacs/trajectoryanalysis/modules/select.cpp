@@ -61,10 +61,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/format.h"
 
-namespace gmx
-{
-
-namespace analysismodules
+namespace
 {
 
 /*! \internal \brief
@@ -78,6 +75,7 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         IndexFileWriterModule();
         virtual ~IndexFileWriterModule();
 
+        //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
         void addGroup(const std::string &name, bool bDynamic);
 
@@ -109,6 +107,14 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         int                     _currentSize;
         bool                    _bAnyWritten;
 };
+
+} // namespace
+
+namespace gmx
+{
+
+namespace analysismodules
+{
 
 /********************************************************************
  * IndexFileWriterModule

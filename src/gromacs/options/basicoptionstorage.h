@@ -122,7 +122,9 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         virtual const char *typeString() const;
         virtual std::string formatValue(int i) const;
 
+        //! \copydoc DoubleOptionInfo::isTime()
         bool isTime() const { return bTime_; }
+        //! \copydoc DoubleOptionInfo::setScaleFactor()
         void setScaleFactor(double factor);
 
     private:
@@ -170,9 +172,13 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
         virtual const char *typeString() const { return "file"; }
         virtual std::string formatValue(int i) const;
 
+        //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }
+        //! \copydoc FileNameOptionInfo::isOutputFile()
         bool isOutputFile() const { return !bRead_ && bWrite_; }
+        //! \copydoc FileNameOptionInfo::isInputOutputFile()
         bool isInputOutputFile() const { return bRead_ && bWrite_; }
+        //! \copydoc FileNameOptionInfo::isLibraryFile()
         bool isLibraryFile() const { return bLibrary_; }
 
     private:
