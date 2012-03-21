@@ -568,7 +568,12 @@ void please_cite(FILE *fp,const char *key)
       "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
       "PLoS ONE",
       6, 2011, "e19791"
-    }
+    },
+    { "Kolafa2004",
+      "J. Kolafa",
+      "Time-Reversible Always Stable Predictor-Corrector Method for Molecular Dynamics of Polarizable Molecules",
+      "J. Comp. Chem.",
+      25, 2004, "335-342" }
   };
 #define NSTR (int)asize(citedb)
   
