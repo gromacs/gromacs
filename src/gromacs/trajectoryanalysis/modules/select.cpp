@@ -67,6 +67,9 @@ namespace gmx
 namespace analysismodules
 {
 
+namespace
+{
+
 /*! \internal \brief
  * Data module for writing index files.
  *
@@ -78,6 +81,7 @@ class IndexFileWriterModule : public AnalysisDataModuleInterface
         IndexFileWriterModule();
         virtual ~IndexFileWriterModule();
 
+        //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
         void addGroup(const std::string &name, bool bDynamic);
 
@@ -227,6 +231,8 @@ void IndexFileWriterModule::dataFinished()
     }
     closeFile();
 }
+
+} // namespace
 
 
 /********************************************************************
