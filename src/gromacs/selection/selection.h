@@ -278,6 +278,12 @@ class SelectionPosition
 {
     public:
         /*! \brief
+         * Constructs a wrapper object for given selection position.
+         *
+         * \param[in] sel    Selection from which the position is wrapped.
+         * \param[in] index  Zero-based index of the position to wrap.
+         *
+         * Does not throw.  Asserts if \p index is out of range.
          */
         SelectionPosition(const Selection *sel, int index)
             : sel_(sel), i_(index)
