@@ -38,7 +38,7 @@
 #ifdef GMX_SSE3
 #  include <pmmintrin.h> /* SSE3 */
 #endif
-#ifdef GMX_SSE4
+#ifdef GMX_SSE4_1
 #  include <smmintrin.h> /* SSE4.1 */
 #endif
 
@@ -71,7 +71,7 @@
  *                                                 *
  ***************************************************/
 
-#ifdef GMX_SSE4
+#ifdef GMX_SSE4_1
 #  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
 #else
 #  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))

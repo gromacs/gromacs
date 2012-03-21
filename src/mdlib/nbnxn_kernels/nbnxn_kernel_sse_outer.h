@@ -276,10 +276,12 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
+#ifdef GMX_NBNXN_KERNEL_AVX
     int        ti0_array[2*UNROLLJ-1],*ti0;
     int        ti1_array[2*UNROLLJ-1],*ti1;
     int        ti2_array[2*UNROLLJ-1],*ti2;
     int        ti3_array[2*UNROLLJ-1],*ti3;
+#endif
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_SSE;
     gmx_mm_pr  sh_ewald_SSE;
@@ -347,10 +349,12 @@ NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
 #endif
 
 #ifndef CALC_COUL_RF
+#ifdef GMX_NBNXN_KERNEL_AVX
     ti0 = (int *)(((size_t)(ti0_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti1 = (int *)(((size_t)(ti1_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti2 = (int *)(((size_t)(ti2_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti3 = (int *)(((size_t)(ti3_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
+#endif
 
     invtsp_SSE  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES

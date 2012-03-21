@@ -258,6 +258,19 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
+
+/* The load_table functions below are performance critical.
+ * The routines issue UNROLLI*UNROLLJ _mm_load_ps calls.
+ * As these all have latencies, scheduling is crucial.
+ * The Intel compilers and CPUs seem to do a good job at this.
+ * But AMD CPUs perform significantly worse with gcc than with icc.
+ * Performance is improved a bit by using the extract function UNROLLJ times,
+ * instead of doing an _mm_store_si128 for every i-particle.
+ * With AVX this significantly deteriorates performance (8 extracts iso 4).
+ * Because of this, the load_table_f macro always takes the ti parameter,
+ * but it is only used with AVX.
+ */
+
 #if defined GMX_SSE_HERE && !defined GMX_DOUBLE
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
@@ -265,10 +278,11 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     __m128 ctab_SSE[4];                                                 \
     int    j;                                                           \
                                                                         \
-    _mm_store_si128((__m128i *)ti,ti_SSE);                              \
     for(j=0; j<4; j++)                                                  \
     {                                                                   \
-        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
+        int idx;                                                        \
+        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
+        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+idx*4);                 \
     }                                                                   \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
@@ -279,10 +293,11 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     __m128 ctab_SSE[4];                                                 \
     int    j;                                                           \
                                                                         \
-    _mm_store_si128((__m128i *)ti,ti_SSE);                              \
     for(j=0; j<4; j++)                                                  \
     {                                                                   \
-        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
+        int idx;                                                        \
+        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
+        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+idx*4);                 \
     }                                                                   \
     /* Shuffle the force  table entries to a convenient order */        \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
