@@ -494,6 +494,7 @@ endif (BUILD_TESTING)
 set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
 find_package(Doxygen)
+find_package(cppcheck)
 
 ########################################################################
 # Generate development version info for cache
