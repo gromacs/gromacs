@@ -97,39 +97,37 @@
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
 
+#define NBK_FUNC_NAME_C_LJC(b,c,ljc,e) b##_##c##_comb_##ljc##_##e
+
+#if defined LJ_COMB_GEOM
+#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,geom,e)
+#else
+#if defined LJ_COMB_LB
+#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,lb,e)
+#else
+#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,none,e)
+#endif
+#endif
+
 #ifdef CALC_COUL_RF
-#if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME(x,y) x##_rf_comb_geom_##y
+#define NBK_FUNC_NAME(b,e) NBK_FUNC_NAME_C(b,rf,e)
 #else
-#if defined LJ_COMB_LB
-#define NBK_FUNC_NAME(x,y) x##_rf_comb_lb_##y
-#else
-#define NBK_FUNC_NAME(x,y) x##_rf_comb_none_##y
-#endif
-#endif
-#else
-#if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME(x,y) x##_tab_comb_geom_##y
-#else
-#if defined LJ_COMB_LB
-#define NBK_FUNC_NAME(x,y) x##_tab_comb_lb_##y
-#else
-#define NBK_FUNC_NAME(x,y) x##_tab_comb_none_##y
-#endif
-#endif
+#define NBK_FUNC_NAME(b,e) NBK_FUNC_NAME_C(b,tab,e)
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nbnxn_kernel_sse_single,noener)
+NBK_FUNC_NAME(nbnxn_kernel_sse,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nbnxn_kernel_sse_single,ener)
+NBK_FUNC_NAME(nbnxn_kernel_sse,ener)
 #else
-NBK_FUNC_NAME(nbnxn_kernel_sse_single,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
+#undef NBK_FUNC_NAME_C
+#undef NBK_FUNC_NAME_C_LJC
                             (const nbnxn_pairlist_t     *nbl,
                              const nbnxn_atomdata_t     *nbat,
                              const interaction_const_t  *ic,

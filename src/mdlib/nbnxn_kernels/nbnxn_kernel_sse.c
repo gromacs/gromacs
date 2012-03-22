@@ -139,28 +139,28 @@ enum { coultRF, coultTAB, coultNR };
 
 
 p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_single_rf_comb_geom_ener,
-    nbnxn_kernel_sse_single_rf_comb_lb_ener,
-    nbnxn_kernel_sse_single_rf_comb_none_ener },
-  { nbnxn_kernel_sse_single_tab_comb_geom_ener,
-    nbnxn_kernel_sse_single_tab_comb_lb_ener,
-    nbnxn_kernel_sse_single_tab_comb_none_ener } };
+{ { nbnxn_kernel_sse_rf_comb_geom_ener,
+    nbnxn_kernel_sse_rf_comb_lb_ener,
+    nbnxn_kernel_sse_rf_comb_none_ener },
+  { nbnxn_kernel_sse_tab_comb_geom_ener,
+    nbnxn_kernel_sse_tab_comb_lb_ener,
+    nbnxn_kernel_sse_tab_comb_none_ener } };
 
 p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_single_rf_comb_geom_energrp,
-    nbnxn_kernel_sse_single_rf_comb_lb_energrp,
-    nbnxn_kernel_sse_single_rf_comb_none_energrp },
-  { nbnxn_kernel_sse_single_tab_comb_geom_energrp,
-    nbnxn_kernel_sse_single_tab_comb_lb_energrp,
-    nbnxn_kernel_sse_single_tab_comb_none_energrp } };
+{ { nbnxn_kernel_sse_rf_comb_geom_energrp,
+    nbnxn_kernel_sse_rf_comb_lb_energrp,
+    nbnxn_kernel_sse_rf_comb_none_energrp },
+  { nbnxn_kernel_sse_tab_comb_geom_energrp,
+    nbnxn_kernel_sse_tab_comb_lb_energrp,
+    nbnxn_kernel_sse_tab_comb_none_energrp } };
 
 p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { nbnxn_kernel_sse_single_rf_comb_geom_noener,
-    nbnxn_kernel_sse_single_rf_comb_lb_noener,
-    nbnxn_kernel_sse_single_rf_comb_none_noener },
-  { nbnxn_kernel_sse_single_tab_comb_geom_noener,
-    nbnxn_kernel_sse_single_tab_comb_lb_noener,
-    nbnxn_kernel_sse_single_tab_comb_none_noener } };
+{ { nbnxn_kernel_sse_rf_comb_geom_noener,
+    nbnxn_kernel_sse_rf_comb_lb_noener,
+    nbnxn_kernel_sse_rf_comb_none_noener },
+  { nbnxn_kernel_sse_tab_comb_geom_noener,
+    nbnxn_kernel_sse_tab_comb_lb_noener,
+    nbnxn_kernel_sse_tab_comb_none_noener } };
 
 
 static void clear_f(const nbnxn_atomdata_t *nbat,
