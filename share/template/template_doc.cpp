@@ -108,22 +108,26 @@
  * to set up options understood by the module, as well as for setting up
  * different options through gmx::TrajectoryAnalysisSettings (see the
  * documentation of that class for more details):
- * \skip  Options *
- * \until return &_options;
+ * \skip  Options &
+ * \until return _options;
  * \until }
  * For additional documentation on how to define different kinds of options, see
- * gmx::Options, basicoptions.h, and gmx::SelectionOption.
+ * gmx::Options, basicoptions.h, and gmx::SelectionOption.  You only need to
+ * define options that are specific to the analysis; common options, e.g., for
+ * specifying input topology and trajectories are added by the framework.
  *
- * If you need to set up settings based on option values, you can also override
+ * If you need to set up settings or adjust selection options (e.g., the number
+ * of accepted selections) based on option values, you can also override
  * gmx::TrajectoryAnalysisModule::initOptionsDone().  For simplicity,
  * this is not done in the template.
  *
  * The actual analysis is initialized in
  * gmx::TrajectoryAnalysisModule::initAnalysis():
- * \skip  int
- * \until return 0;
+ * \skip  void
  * \until }
- * Information about the topology is passed as a parameter.
+ * \until }
+ * Information about the topology is passed as a parameter.  The settings
+ * object can also be used to access information about user input.
  * If the analysis module needs some temporary storage during processing of a
  * frame, this should be allocated in gmx::TrajectoryAnalysisModule::startFrames()
  * (see below) if parallelization is to be supported.
@@ -141,14 +145,13 @@
  * parallelization at all), you can skip this method and ignore the last
  * parameter to gmx::TrajectoryAnalysisModule::analyzeFrame() to make things
  * simpler.  In the template, we do include it:
- * \skip  int
- * \until return rc;
+ * \skip  TrajectoryAnalysisModuleDataPointer
  * \until }
  *
  * The main part of the analysis is (in most analysis codes) done in the
  * gmx::TrajectoryAnalysisModule::analyzeFrame() method, which is called once
  * for each frame:
- * \skip  int
+ * \skip  void
  * \until {
  * The \p frnr parameter gives a zero-based index of the current frame
  * (mostly for use with gmx::AnalysisData), \p pbc contains the PBC
@@ -165,19 +168,17 @@
  * First, we get data from our custom data structure (note the cast on the
  * second line to access our custom data) for shorthand access:
  * \skip  AnalysisDataHandle
- * \until NeighborhoodSearch
+ * \until parallelSelections
  *
  * For the template, we do a simple calculation:
  * \skip  nb
  * \until finishFrame()
- * Finally, we return zero to indicate that all went well.
- * \skipline return 0;
  *
  * After all the frames have been processed,
  * gmx::TrajectoryAnalysisModule::finishAnalysis() is called once.  This is the
  * place to do any custom postprocessing of the data.  For the template, we do
  * nothing, because all necessary processing is done in the data modules:
- * \skip  int
+ * \skip  void
  * \until }
  *
  * There is one additional method that can be implemented if custom data from
@@ -198,8 +199,8 @@
  * analysis modules in, e.g., scripting languages, where output into files
  * might not be desired.  The template simply prints out the average distances
  * for each analysis group:
- * \skipline int
- * \until return 0;
+ * \skip  void
+ * \until }
  * \until }
  *
  *
@@ -209,5 +210,7 @@
  * To implement a command-line tool, it should create a module and run it using
  * gmx::TrajectoryAnalysisCommandLineRunner:
  * \skip  int
+ * \until return 1;
+ * \until }
  * \until }
  */
