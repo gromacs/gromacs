@@ -190,8 +190,9 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 {
     AnalysisDataHandle  dh = pdata->dataHandle(_data);
     NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
+    Selection          *refsel = pdata->parallelSelection(_refsel);
 
-    nb.init(pbc, _refsel->positions());
+    nb.init(pbc, refsel->positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
