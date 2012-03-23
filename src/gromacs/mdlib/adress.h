@@ -59,7 +59,8 @@
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
- * \param[in] pbc for calculating shortest distance to ref
+ * \param[in] pbc pbc struct for calculating shortest distance
+ * \param[in] fr the forcerec containing all the parameters
  *
  * \return weight of the particle
  *
@@ -110,6 +111,7 @@ update_adress_weights_cog(t_iparams            ip[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
                           t_pbc *              pbc);
+
 /** \brief update the weight of all coarse-grained particles in several charge groups for atom vsites
  *
  * \param[in] cg0 first charge group to update
@@ -129,6 +131,16 @@ update_adress_weights_atom(int                  cg0,
                            t_mdatoms *          mdatoms,
                            t_pbc *              pbc);
 
+/** \brief update the weight on per atom basis of all coarse-grained particles in several charge groups for atom vsites
+ *
+ * \param[in] cg0 first charge group to update
+ * \param[in] cg1 last+1 charge group to update
+ * \param[in] cgs block containing the cg index 
+ * \param[in] x array with all the particle positions  
+ * \param[in] fr the forcerec containing all the parameters
+ * \param[in,out] mdatoms the struct containing all the atoms properties
+ * \param[in] pbc for shortest distance in adress_weight
+ */
 void
 update_adress_weights_atom_per_atom(int                  cg0,
                            int                  cg1,
@@ -159,9 +171,27 @@ adress_thermo_force(int                  cg0,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc);
 
+
+/** \brief checks weather a cpu calculates only coarse-grained or explicit interactions
+ *
+ * \param[in] n_ex number of explicit particles 
+ * \param[in] n_hyb number of hybrid particles 
+ * \param[in] n_cg number of coarse-grained particles 
+ * \paramin,out] mdatoms the struct containing all the atoms properties
+ */ 
 void adress_set_kernel_flags(int n_ex, int n_hyb, int n_cg, t_mdatoms * mdatoms);
 
-/* functions to look up if a energy group is explicit or coarse-grained*/
+/** \brief looks up  if a energy group is explicit
+ * \param[in] fr the forcerec containing all the parameters
+ * \param[in] egp_nr energy group number
+ * \return boolean if explicit or not
+ */ 
 gmx_bool egp_explicit(t_forcerec *   fr, int egp_nr);
+
+/** \brief looks up  if a energy group is coarse-grained
+ * \param[in] fr the forcerec containing all the parameters
+ * \param[in] egp_nr energy group number
+ * \return boolean if coarse-grained or not
+ */ 
 gmx_bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
 #endif
