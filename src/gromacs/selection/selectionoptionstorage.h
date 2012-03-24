@@ -39,13 +39,13 @@
 #define GMX_SELECTION_SELECTIONOPTIONSTORAGE_H
 
 #include "../options/optionstoragetemplate.h"
+#include "selection.h"
 #include "selectionenums.h"
 #include "selectionoptioninfo.h"
 
 namespace gmx
 {
 
-class Selection;
 class SelectionCollection;
 class SelectionOption;
 
@@ -54,7 +54,7 @@ class SelectionOption;
  *
  * \ingroup module_selection
  */
-class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
+class SelectionOptionStorage : public OptionStorageTemplate<Selection>
 {
     public:
         /*! \brief
@@ -87,7 +87,7 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection *>
          * \p bFullValue set to true), as well as internally by the storage
          * class (called with \p bFullValue set to false).
          */
-        void addSelections(const std::vector<Selection *> &selections,
+        void addSelections(const SelectionList &selections,
                            bool bFullValue);
 
         // Required to access the number of values in selection requests.
