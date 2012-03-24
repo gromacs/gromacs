@@ -45,6 +45,7 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../utility/common.h"
+#include "selection.h" // For gmx::SelectionList
 
 struct gmx_ana_indexgrps_t;
 struct gmx_ana_poscalc_coll_t;
@@ -53,7 +54,6 @@ namespace gmx
 {
 
 class Options;
-class Selection;
 class SelectionCompiler;
 class SelectionEvaluator;
 class SelectionOptionStorage;
@@ -215,7 +215,7 @@ class SelectionCollection
          * compile() has been called.
          */
         void parseFromStdin(int count, bool bInteractive,
-                            std::vector<Selection *> *output);
+                            SelectionList *output);
         /*! \brief
          * Parses selection(s) from a file.
          *
@@ -233,7 +233,7 @@ class SelectionCollection
          * compile() has been called.
          */
         void parseFromFile(const std::string &filename,
-                           std::vector<Selection *> *output);
+                           SelectionList *output);
         /*! \brief
          * Parses selection(s) from a string.
          *
@@ -251,7 +251,7 @@ class SelectionCollection
          * compile() has been called.
          */
         void parseFromString(const std::string &str,
-                             std::vector<Selection *> *output);
+                             SelectionList *output);
         /*! \brief
          * Prepares the selections for evaluation and performs optimizations.
          *

@@ -37,8 +37,6 @@
 #include <config.h>
 #endif
 
-#include <vector>
-
 #include <gromacs/fatalerror/exceptions.h>
 #include <gromacs/options/basicoptions.h>
 #include <gromacs/options/options.h>
@@ -71,7 +69,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         void printSelections();
 
         Options                  _options;
-        std::vector<Selection *> _selections;
+        SelectionList            _selections;
         int                      _nmaxind;
 };
 
@@ -91,7 +89,7 @@ SelectionTester::printSelections()
     fprintf(stderr, "\nSelections:\n");
     for (size_t g = 0; g < _selections.size(); ++g)
     {
-        _selections[g]->printDebugInfo(stderr, _nmaxind);
+        _selections[g].printDebugInfo(stderr, _nmaxind);
     }
     fprintf(stderr, "\n");
 }
@@ -129,23 +127,23 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
     fprintf(stderr, "\n");
     for (size_t g = 0; g < _selections.size(); ++g)
     {
-        const Selection *sel = _selections[g];
+        const Selection &sel = _selections[g];
 
-        gmx_ana_index_dump(stderr, sel->indexGroup(), g, _nmaxind);
-        fprintf(stderr, "  Positions (%d pcs):\n", sel->posCount());
-        int n = sel->posCount();
+        gmx_ana_index_dump(stderr, sel.indexGroup(), g, _nmaxind);
+        fprintf(stderr, "  Positions (%d pcs):\n", sel.posCount());
+        int n = sel.posCount();
         if (_nmaxind >= 0 && n > _nmaxind)
         {
             n = _nmaxind;
         }
         for (int i = 0; i < n; ++i)
         {
-            SelectionPosition p = sel->position(i);
+            const SelectionPosition &p = sel.position(i);
             fprintf(stderr, "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n",
                     p.x()[XX], p.x()[YY], p.x()[ZZ],
                     p.refId(), p.mappedId(), p.atomCount());
         }
-        if (n < sel->posCount())
+        if (n < sel.posCount())
         {
             fprintf(stderr, "    ...\n");
         }

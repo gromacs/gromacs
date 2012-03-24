@@ -39,17 +39,14 @@
 #define GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 
 #include <string>
-#include <vector>
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
-
-class AnalysisDataPlotModule;
-class Selection;
 
 namespace analysismodules
 {
@@ -79,7 +76,7 @@ class Select : public TrajectoryAnalysisModule
         class ModuleData;
 
         Options                  _options;
-        std::vector<Selection *> _sel;
+        SelectionList            _sel;
 
         std::string              _fnSize;
         std::string              _fnFrac;
@@ -98,7 +95,6 @@ class Select : public TrajectoryAnalysisModule
         AnalysisData             _cdata;
         AnalysisData             _idata;
         AnalysisData             _mdata;
-        std::vector<std::string> _modnames;
 };
 
 } // namespace analysismodules
