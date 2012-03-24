@@ -149,7 +149,7 @@ SelectionCollection::Impl::clearSymbolTable()
 
 void
 SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
-                                     std::vector<Selection *> *output)
+                                     SelectionList *output)
 {
     gmx_ana_selcollection_t *sc = &_sc;
     GMX_ASSERT(sc == _gmx_sel_lexer_selcollection(scanner),
@@ -170,10 +170,10 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
 
     if (bOk)
     {
-        SelectionList::const_iterator i;
+        SelectionDataList::const_iterator i;
         for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
         {
-            output->push_back(i->get());
+            output->push_back(Selection(i->get()));
         }
     }
 
@@ -446,7 +446,7 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
             std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                          request.count() < 0 ? ", Ctrl-D to end" : "");
         }
-        std::vector<Selection *> selections;
+        SelectionList selections;
         parseFromStdin(request.count(), bInteractive, &selections);
         request.storage->addSelections(selections, true);
     }
@@ -458,11 +458,11 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
 {
     Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
-    std::vector<Selection *> selections;
+    SelectionList selections;
     parseFromString(str, &selections);
 
-    std::vector<Selection *>::const_iterator first = selections.begin();
-    std::vector<Selection *>::const_iterator last = first;
+    SelectionList::const_iterator first = selections.begin();
+    SelectionList::const_iterator last = first;
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
     {
@@ -483,7 +483,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
             }
             last = selections.end();
         }
-        std::vector<Selection *> curr(first, last);
+        SelectionList curr(first, last);
         request.storage->addSelections(curr, true);
         first = last;
     }
@@ -496,7 +496,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
 
 void
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    std::vector<Selection *> *output)
+                                    SelectionList *output)
 {
     yyscan_t scanner;
 
@@ -511,7 +511,7 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
 
 void
 SelectionCollection::parseFromFile(const std::string &filename,
-                                   std::vector<Selection *> *output)
+                                   SelectionList *output)
 {
     yyscan_t scanner;
     FILE *fp;
@@ -537,7 +537,7 @@ SelectionCollection::parseFromFile(const std::string &filename,
 
 void
 SelectionCollection::parseFromString(const std::string &str,
-                                     std::vector<Selection *> *output)
+                                     SelectionList *output)
 {
     yyscan_t scanner;
 

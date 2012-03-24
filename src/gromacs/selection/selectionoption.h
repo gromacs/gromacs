@@ -40,12 +40,12 @@
 #define GMX_SELECTION_SELECTIONOPTION_H
 
 #include "../options/abstractoption.h"
+#include "selection.h"
 #include "selectionenums.h"
 
 namespace gmx
 {
 
-class Selection;
 class SelectionOptionInfo;
 class SelectionOptionStorage;
 
@@ -55,7 +55,7 @@ class SelectionOptionStorage;
  * \inpublicapi
  * \ingroup module_selection
  */
-class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
+class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 {
     public:
         //! Initializes an option with the given name.

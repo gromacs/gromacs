@@ -376,9 +376,9 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     _bResInd = (_resNumberType == "index");
 
-    for (std::vector<Selection *>::const_iterator i = _sel.begin(); i != _sel.end(); ++i)
+    for (SelectionList::iterator i = _sel.begin(); i != _sel.end(); ++i)
     {
-        (*i)->initCoveredFraction(CFRAC_SOLIDANGLE);
+        i->initCoveredFraction(CFRAC_SOLIDANGLE);
     }
 
     // TODO: For large systems, a float may not have enough precision
@@ -387,7 +387,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     snew(_totsize, _sel.size());
     for (size_t g = 0; g < _sel.size(); ++g)
     {
-        _totsize[g] = _bTotNorm ? _sel[g]->posCount() : 1;
+        _totsize[g] = _bTotNorm ? _sel[g].posCount() : 1;
     }
     if (!_fnSize.empty())
     {
@@ -440,12 +440,12 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         writer->setFileName(_fnNdx);
         for (size_t g = 0; g < _sel.size(); ++g)
         {
-            writer->addGroup(_sel[g]->name(), _sel[g]->isDynamic());
+            writer->addGroup(_sel[g].name(), _sel[g].isDynamic());
         }
         _idata.addModule(writer);
     }
 
-    _mdata.setColumns(_sel[0]->posCount());
+    _mdata.setColumns(_sel[0].posCount());
     registerAnalysisDataset(&_mdata, "mask");
     if (!_fnMask.empty())
     {
@@ -453,7 +453,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         {
             fprintf(stderr, "WARNING: the mask (-om) will only be written for the first group\n");
         }
-        if (!_sel[0]->isDynamic())
+        if (!_sel[0].isDynamic())
         {
             fprintf(stderr, "WARNING: will not write the mask (-om) for a static selection\n");
         }
@@ -482,8 +482,8 @@ Select::startFrames(const AnalysisDataParallelOptions &opt,
 {
     ModuleData *pdata = new ModuleData(this, opt, selections);
     snew(pdata->_mmap, 1);
-    gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0])->indexGroup(),
-                          _top, _sel[0]->type());
+    gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0]).indexGroup(),
+                          _top, _sel[0].type());
     return TrajectoryAnalysisModuleDataPointer(pdata);
 }
 
@@ -497,33 +497,33 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnalysisDataHandle cdh = pdata->dataHandle(_cdata);
     AnalysisDataHandle idh = pdata->dataHandle(_idata);
     AnalysisDataHandle mdh = pdata->dataHandle(_mdata);
-    std::vector<Selection *> sel(pdata->parallelSelections(_sel));
+    const SelectionList &sel = pdata->parallelSelections(_sel);
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        real normfac = _bFracNorm ? 1.0 / sel[g]->coveredFraction() : 1.0;
+        real normfac = _bFracNorm ? 1.0 / sel[g].coveredFraction() : 1.0;
         normfac /= _totsize[g];
-        sdh.setPoint(g, sel[g]->posCount() * normfac);
+        sdh.setPoint(g, sel[g].posCount() * normfac);
     }
     sdh.finishFrame();
 
     cdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        cdh.setPoint(g, sel[g]->coveredFraction());
+        cdh.setPoint(g, sel[g].coveredFraction());
     }
     cdh.finishFrame();
 
     idh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
-        idh.setPoint(0, sel[g]->posCount());
+        idh.setPoint(0, sel[g].posCount());
         idh.finishPointSet();
-        for (int i = 0; i < sel[g]->posCount(); ++i)
+        for (int i = 0; i < sel[g].posCount(); ++i)
         {
-            SelectionPosition p = sel[g]->position(i);
-            if (sel[g]->type() == INDEX_RES && !_bResInd)
+            const SelectionPosition &p = sel[g].position(i);
+            if (sel[g].type() == INDEX_RES && !_bResInd)
             {
                 idh.setPoint(1, _top->atoms.resinfo[p.mappedId()].nr);
             }
@@ -536,7 +536,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
     idh.finishFrame();
 
-    gmx_ana_indexmap_update(d->_mmap, sel[0]->indexGroup(), true);
+    gmx_ana_indexmap_update(d->_mmap, sel[0].indexGroup(), true);
     mdh.startFrame(frnr, fr.time);
     for (int b = 0; b < d->_mmap->nr; ++b)
     {
