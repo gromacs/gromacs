@@ -71,7 +71,7 @@ TEST_F(AverageModuleTest, BasicTest)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount());
+    data.setColumnCount(input.columnCount());
     gmx::AnalysisDataAverageModulePointer module(
             new gmx::AnalysisDataAverageModule);
     data.addModule(module);
@@ -86,7 +86,7 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount());
+    data.setColumnCount(input.columnCount());
     gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
     data.addModule(module);
     module->setXAxis(0.5, 0.5);

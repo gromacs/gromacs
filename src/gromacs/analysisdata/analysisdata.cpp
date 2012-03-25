@@ -78,14 +78,22 @@ AnalysisData::~AnalysisData()
 
 
 void
-AnalysisData::setColumns(int ncol, bool multipoint)
+AnalysisData::setColumnCount(int ncol)
 {
     GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
-    setColumnCount(ncol);
-    setMultipoint(multipoint);
-    impl_->storage_.setMultipoint(multipoint);
+    AbstractAnalysisData::setColumnCount(ncol);
+}
+
+
+void
+AnalysisData::setMultipoint(bool bMultipoint)
+{
+    GMX_RELEASE_ASSERT(impl_->handles_.empty(),
+                       "Cannot change data type after creating handles");
+    AbstractAnalysisData::setMultipoint(bMultipoint);
+    impl_->storage_.setMultipoint(bMultipoint);
 }
 
 

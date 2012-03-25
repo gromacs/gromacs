@@ -158,7 +158,8 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataSimpleHistogramModulePointer module(
         new gmx::AnalysisDataSimpleHistogramModule(
                 gmx::histogramFromRange(1.0, 3.0).binCount(4)));
@@ -178,7 +179,8 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataSimpleHistogramModulePointer module(
             new gmx::AnalysisDataSimpleHistogramModule(
                     gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
@@ -212,7 +214,8 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataWeightedHistogramModulePointer module(
         new gmx::AnalysisDataWeightedHistogramModule(
                 gmx::histogramFromRange(1.0, 3.0).binCount(4)));
@@ -232,7 +235,8 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataWeightedHistogramModulePointer module(
             new gmx::AnalysisDataWeightedHistogramModule(
                     gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
@@ -258,7 +262,8 @@ TEST_F(BinAverageModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataBinAverageModulePointer module(
         new gmx::AnalysisDataBinAverageModule(
                 gmx::histogramFromRange(1.0, 3.0).binCount(4)));
@@ -275,7 +280,8 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount(), true);
+    data.setColumnCount(input.columnCount());
+    data.setMultipoint(true);
     gmx::AnalysisDataBinAverageModulePointer module(
             new gmx::AnalysisDataBinAverageModule(
                     gmx::histogramFromRange(1.0, 3.0).binCount(4).includeAll()));
