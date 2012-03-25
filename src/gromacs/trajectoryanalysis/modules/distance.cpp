@@ -102,7 +102,7 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
-    _data.setColumns(4);
+    _data.setColumnCount(4);
     registerAnalysisDataset(&_data, "distance");
 
     _data.addModule(_avem);
