@@ -157,7 +157,7 @@ void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation & /*top*/)
 {
-    _data.setColumns(_sel.size());
+    _data.setColumnCount(_sel.size());
     registerAnalysisDataset(&_data, "avedist");
 
     _data.addModule(_avem);

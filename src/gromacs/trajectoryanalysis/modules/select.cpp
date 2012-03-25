@@ -382,7 +382,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     // TODO: For large systems, a float may not have enough precision
-    _sdata.setColumns(_sel.size());
+    _sdata.setColumnCount(_sel.size());
     registerAnalysisDataset(&_sdata, "size");
     snew(_totsize, _sel.size());
     for (size_t g = 0; g < _sel.size(); ++g)
@@ -400,7 +400,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         _sdata.addModule(plot);
     }
 
-    _cdata.setColumns(_sel.size());
+    _cdata.setColumnCount(_sel.size());
     registerAnalysisDataset(&_cdata, "cfrac");
     if (!_fnFrac.empty())
     {
@@ -415,7 +415,8 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
 
     // TODO: For large systems, a float may not have enough precision
-    _idata.setColumns(2, true);
+    _idata.setColumnCount(2);
+    _idata.setMultipoint(true);
     registerAnalysisDataset(&_idata, "index");
     if (!_fnIndex.empty())
     {
@@ -445,7 +446,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         _idata.addModule(writer);
     }
 
-    _mdata.setColumns(_sel[0].posCount());
+    _mdata.setColumnCount(_sel[0].posCount());
     registerAnalysisDataset(&_mdata, "mask");
     if (!_fnMask.empty())
     {
