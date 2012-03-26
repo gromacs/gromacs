@@ -310,6 +310,7 @@ real ewald_spline3_table_scale(real ewaldcoeff,real rc)
 
     /* Energy tolerance: 10x more accurate than the cut-off jump */
     etol = 0.1*gmx_erfc(ewaldcoeff*rc);
+    etol = max(etol,GMX_REAL_EPS);
     sc_e = pow(erf_x_d3/(6*12*sqrt(3)*etol),1.0/3.0)*ewaldcoeff;
 
     return max(sc_f,sc_e);
