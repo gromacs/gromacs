@@ -560,7 +560,6 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
   
 /*   p->logMult      = pow((float)len, 1.0/nLin);/\* pow(t[len-1]-t[0], 1.0/p->nLin); *\/ */
   p->ballistic    =  ballistic;
-  p->bDt;
   return p;
 }
 
