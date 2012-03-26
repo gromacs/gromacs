@@ -9322,7 +9322,9 @@ void dd_partition_system(FILE            *fplog,
     }
 
     wallcycle_sub_stop(wcycle,ewcsDD_MAKECONSTR);
-    
+
+    wallcycle_sub_start(wcycle,ewcsDD_TOPOTHER);
+
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.
      */
@@ -9424,6 +9426,8 @@ void dd_partition_system(FILE            *fplog,
      * atom coordinates again (for spreading the forces this MD step).
      */
     dd_move_x_vsites(dd,state_local->box,state_local->x);
+
+    wallcycle_sub_stop(wcycle,ewcsDD_TOPOTHER);
     
     if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {

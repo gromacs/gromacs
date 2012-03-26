@@ -51,7 +51,8 @@ enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
        ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
        ewcTEST, ewcNR };
 
-enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM, ewcsDD_MAKETOP, ewcsDD_MAKECONSTR,
+enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
+       ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
        ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
        ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
        ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,

@@ -42,6 +42,7 @@
 #include "main.h"
 #include "qmmm.h"
 #include "mtop_util.h"
+#include "gmx_omp_nthreads.h"
 
 #define ALMOST_ZERO 1e-30
 
@@ -97,9 +98,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      t_mdatoms *md)
 {
   gmx_mtop_atomlookup_t alook;
-  int       i,g,ag,molb;
-  real      mA,mB,fac;
-  t_atom    *atom;
+  int       i;
   t_grpopts *opts;
   gmx_groups_t *groups;
   gmx_molblock_t *molblock;
@@ -178,7 +177,12 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 
   alook = gmx_mtop_atomlookup_init(mtop);
 
-  for(i=0; (i<md->nr); i++) {
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) schedule(static)
+  for(i=0; i<md->nr; i++) {
+    int     g,ag,molb;
+    real    mA,mB,fac;
+    t_atom  *atom;
+
     if (index == NULL) {
       ag = i;
     } else {
