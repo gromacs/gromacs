@@ -357,10 +357,11 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     __m128d ctab_SSE[2];                                                \
     int     j;                                                          \
                                                                         \
-    _mm_store_si128((__m128i *)ti,ti_SSE);                              \
     for(j=0; j<2; j++)                                                  \
     {                                                                   \
-        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
+        int idx;                                                        \
+        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
+        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+idx);                     \
     }                                                                   \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0],ctab_SSE[1],ctab0_SSE,ctab1_SSE); \
@@ -372,11 +373,12 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 {                                                                       \
     __m128d ctab_SSE[4];                                                \
     int     j;                                                          \
+    int     idx[2];                                                     \
                                                                         \
-    _mm_store_si128((__m128i *)ti,ti_SSE);                              \
     for(j=0; j<2; j++)                                                  \
     {                                                                   \
-        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
+        idx[j] = gmx_mm_extract_epi32(ti_SSE,j);                        \
+        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+idx[j]);                  \
     }                                                                   \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0],ctab_SSE[1],ctab0_SSE,ctab1_SSE); \
@@ -385,7 +387,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
                                                                         \
     for(j=0; j<2; j++)                                                  \
     {                                                                   \
-        ctab_SSE[2+j] = _mm_loadu_pd(tab_coul_V+ti[j]);                 \
+        ctab_SSE[2+j] = _mm_loadu_pd(tab_coul_V+idx[j]);                \
     }                                                                   \
     /* Shuffle the energy table entries to a single register */         \
     ctabv_SSE = _mm_shuffle_pd(ctab_SSE[2],ctab_SSE[3],_MM_SHUFFLE2(0,0)); \
