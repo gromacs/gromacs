@@ -118,8 +118,9 @@ mknb_keep_comments;
 extern int                 
 mknb_indent_level;     
 
-#define MKNB_C_INDENT_STEP         4
-#define MKNB_FORTRAN_INDENT_STEP   2
+
+#define MKNB_C_INDENT_STEP         4 ///< Number of spaces used to indent per level in C
+#define MKNB_FORTRAN_INDENT_STEP   2 ///< Number of spaces used to indent per level in fortran
 
 
 
