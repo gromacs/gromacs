@@ -9,6 +9,16 @@ if(GMX_GPU)
     set(GMX_GPU_LIBRARIES nbnxn_cuda)
 endif()
 
+# due to a compiler bug gcc 4.4.x crashses on force.c and contr.c with -O3,
+# but strangely not with -O2 + all extra -O3 flags
+if(GMX_OPENMP AND CMAKE_COMPILER_IS_GNUCC AND
+   C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.5.999")
+    set_source_files_properties("force.c" PROPERTIES COMPILE_FLAGS
+        "-O2 -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone")
+    set_source_files_properties("constr.c" PROPERTIES COMPILE_FLAGS
+        "-O2 -finline-functions -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-vectorize -fipa-cp-clone")
+endif()
+
 # Files	called xxx_test.c are test drivers with a main() function for 
 # module xxx.c, so they should not be included in the library
 file(GLOB_RECURSE NOT_MDLIB_SOURCES *_test.c *\#*)

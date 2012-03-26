@@ -104,6 +104,9 @@ include(CheckCXXCompilerFlag)
 include(gmxCFlags)
 gmx_c_flags()
 
+include(gmxGetCompilerVersion)
+get_compiler_version()
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -438,8 +441,8 @@ if(GMX_GPU)
     add_definitions(-DGMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
-    # we need this linker flag for gcc 4.5+, but we'll add it for all gcc as 
-    # the compiler version is not available and it doesn't hurt anyway
+    # we need this linker flag in case if we have ld >= 2.22 (typically with gcc 4.5+),
+    # but it's too cumbersome to check the ld version and the flag should not hurt
     if(CMAKE_COMPILER_IS_GNUCC)
         set(GROMACS_LINKER_FLAGS "-Wl,--add-needed ${GROMACS_LINKER_FLAGS}")
     endif()
