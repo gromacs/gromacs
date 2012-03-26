@@ -311,23 +311,23 @@ static void analyse_other(const char ** restype,t_atoms *atoms,
  *         analyse_prot(). */
 typedef struct gmx_help_make_index_group
 {
-  /* The set of atom names that will be used to form this index group */
+  /** The set of atom names that will be used to form this index group */
   const char **defining_atomnames;
-  /* Size of the defining_atomnames array */
+  /** Size of the defining_atomnames array */
   const int num_defining_atomnames;
-  /* Name of this index group */
+  /** Name of this index group */
   const char *group_name;
-  /* Whether the above atom names name the atoms in the group, or
-   * those not in the group */
+  /** Whether the above atom names name the atoms in the group, or
+      those not in the group */
   gmx_bool bTakeComplement;
-  /* The index in wholename gives the first item in the arrays of
-   * atomnames that should be tested with 'gmx_strncasecmp' in stead of
-   * gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
-   * This is comparable to using a '*' wildcard at the end of specific
-   * atom names, but that is more involved to implement...
+  /** The index in wholename gives the first item in the arrays of
+     atomnames that should be tested with 'gmx_strncasecmp' in stead of
+     gmx_strcasecmp, or -1 if all items should be tested with strcasecmp
+     This is comparable to using a '*' wildcard at the end of specific
+     atom names, but that is more involved to implement...
    */
   int wholename;
-  /* Only create this index group if it differs from the one specified in compareto,
+  /** Only create this index group if it differs from the one specified in compareto,
      where -1 means to always create this group. */
   int compareto;
 } t_gmx_help_make_index_group;
