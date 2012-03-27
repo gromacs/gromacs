@@ -399,6 +399,10 @@ int main(int argc,char *argv[])
     "set an environment variable [TT]DSSP[tt] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
+    "Since version 2.0.0, dssp is invoked with a syntax that differs",
+    "from earlier versions. If you have an older version of dssp,",
+    "use the [TT]-ver[tt] option to direct do_dssp to use the older syntax.",
+    "By default, do_dssp uses the syntax introduced with version 2.0.0.[PAR]",
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
@@ -420,11 +424,14 @@ int main(int argc,char *argv[])
   };
   static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
+  static int dsspVersion=2;
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
     { "-sss", FALSE, etSTR, {&ss_string},
-      "Secondary structures for structure count"}
+      "Secondary structures for structure count"},
+    { "-ver", FALSE, etINT, {&dsspVersion},
+      "DSSP major version. Syntax changed with version 2"}
   };
   
   t_trxstatus *status;
@@ -520,10 +527,18 @@ int main(int argc,char *argv[])
   if (!gmx_fexist(dptr))
     gmx_fatal(FARGS,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
-  sprintf(dssp,"%s %s %s %s > /dev/null %s",
-	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
-  if (bVerbose)
-    fprintf(stderr,"dssp cmd='%s'\n",dssp);
+  if (dsspVersion >= 2)
+  {
+      sprintf(dssp,"%s -i %s -o %s > /dev/null %s",
+              dptr,pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+  }
+  else
+  {
+      sprintf(dssp,"%s %s %s %s > /dev/null %s",
+              dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+
+  }
+  fprintf(stderr,"dssp cmd='%s'\n",dssp);
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
@@ -569,7 +584,8 @@ int main(int argc,char *argv[])
 #else
     if(0 != system(dssp))
     {
-	gmx_fatal(FARGS,"Failed to execute command: %s",dssp);
+        gmx_fatal(FARGS,"Failed to execute command: %s\n",
+                  "Try specifying your dssp version with the -ver option.",dssp);
     }
 #endif
 
