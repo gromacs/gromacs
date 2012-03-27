@@ -41,32 +41,42 @@ if(NOT __pkg_config_checked_PC_FFTW)
   pkg_check_modules(PC_FFTW "${FFTW_PKG}")
 endif(NOT __pkg_config_checked_PC_FFTW)
 
+if (FFTW_LIBRARY)
+  set(FFTW_LIBRARY_${FFTW_PKG} "${FFTW_LIBRARY}" CACHE INTERNAL "Path to library ${FFTW_PKG}" FORCE)
+endif(FFTW_LIBRARY)
+if (FFTW_INCLUDE_DIR)
+  set(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_INCLUDE_DIR}" CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
+endif(FFTW_INCLUDE_DIR)
+
 find_path(FFTW_INCLUDE_DIR_${FFTW_PKG} "${FFTW_HEADER}" HINTS ${PC_FFTW_INCLUDE_DIRS})
 find_library(FFTW_LIBRARY_${FFTW_PKG} NAMES "${FFTW_PKG}" HINTS ${PC_FFTW_LIBRARY_DIRS} )
 
-#make _${FFTW_PKG} variables INTERNAL to avoid confusion
-set(FFTW_LIBRARY_${FFTW_PKG} ${FFTW_LIBRARY_${FFTW_PKG}} CACHE INTERNAL "Path to library ${FFTW_PKG}")
-set(FFTW_INCLUDE_DIR_${FFTW_PKG} ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_HEADER}")
+#make _${FFTW_PKG} variables INTERNAL to avoid confusion in cmake-gui
+set(FFTW_LIBRARY_${FFTW_PKG} ${FFTW_LIBRARY_${FFTW_PKG}} CACHE INTERNAL "Path to library ${FFTW_PKG}" FORCE)
+set(FFTW_INCLUDE_DIR_${FFTW_PKG} ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE INTERNAL "Path to ${FFTW_HEADER}" FORCE)
 
-set(FFTW_LIBRARY ${FFTW_LIBRARY_${FFTW_PKG}} CACHE STRING "Path to library ${FFTW_PKG}")
-set(FFTW_INCLUDE_DIR ${FFTW_INCLUDE_DIR_${FFTW_PKG}} CACHE STRING "Path to ${FFTW_HEADER}")
+# set default find_package outcome variables
+set(FFTW_LIBRARIES "${FFTW_LIBRARY_${FFTW_PKG}}" CACHE INTERNAL "OUTCOME of FindFFTW" FORCE)
+set(FFTW_INCLUDE_DIRS "${FFTW_INCLUDE_DIR_${FFTW_PKG}}" CACHE INTERNAL "OUTCOME of FindFFTW" FORCE)
 
-set(FFTW_LIBRARIES ${FFTW_LIBRARY} )
-set(FFTW_INCLUDE_DIRS ${FFTW_INCLUDE_DIR} )
+set(FFTW_FOUND FALSE)
+if (FFTW_LIBRARY_${FFTW_PKG} AND FFTW_INCLUDE_DIR_${FFTW_PKG})
+  set(FFTW_FOUND TRUE)
+elseif (NOT FFTW_LIBRARY_${FFTW_PKG})
+  message("Could not find library ${FFTW_PKG}, please specified its location in FFTW_LIBRARY by hand (e.g. -DFFTW_LIBRARY='/path/to/lib${FFTW_PKG}.so')")
+elseif (NOT FFTW_INCLUDE_DIR_${FFTW_PKG})
+  message("Could not the header ${FFTW_HEADER}, please specified its path in FFTW_INCLUDE_DIR by hand (e.g. -DFFTW_INCLUDE_DIR='/path/to/include')")
+endif()
 
-include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set FFTW_FOUND to TRUE
-# if all listed variables are TRUE
-
-find_package_handle_standard_args(FFTW DEFAULT_MSG FFTW_LIBRARY FFTW_INCLUDE_DIR )
-
-if (FFTW_FOUND AND HAVE_LIBM)
+if (FFTW_FOUND AND HAVE_LIBM AND NOT FOUND_FFTW_PLAN)
+  #The user could specify trash in FFTW_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
+  unset(FOUND_FFTW_PLAN CACHE)
   check_library_exists("${FFTW_LIBRARIES};m" "${FFTW_FUNCTION}" "" FOUND_FFTW_PLAN)
   if(NOT FOUND_FFTW_PLAN)
-    message(FATAL_ERROR "Could not find ${FFTW_FUNCTION} in ${FFTW_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what was going wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${FFTW_PKG} in FFTW_LIBRARY by hand (e.g. -DFFTW_LIBRARY='/path/to/lib${FFTW_PKG}.so;/path/to/libm.so') !")
+    message(FATAL_ERROR "Could not find ${FFTW_FUNCTION} in ${FFTW_LIBRARY_${FFTW_PKG}}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what was going wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${FFTW_PKG} in FFTW_LIBRARY by hand (e.g. -DFFTW_LIBRARY='/path/to/lib${FFTW_PKG}.so;/path/to/libm.so') !")
   endif(NOT FOUND_FFTW_PLAN)
-endif (FFTW_FOUND AND HAVE_LIBM)
+endif (FFTW_FOUND AND HAVE_LIBM AND NOT FOUND_FFTW_PLAN)
 
 mark_as_advanced(FFTW_INCLUDE_DIR FFTW_LIBRARY )
