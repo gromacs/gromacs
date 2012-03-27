@@ -360,7 +360,9 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 /* Try to increase nstlist when using a GPU with nstlist less than this */
 #define NSTLIST_GPU_ENOUGH  20
 /* Increase nstlist until the non-bonded cost increases more than this factor */
-#define NBNXN_GPU_LIST_FAC  1.25
+#define NBNXN_GPU_LIST_OK_FAC   1.25
+/* Don't increase nstlist beyond a non-bonded cost increases of this factor */
+#define NBNXN_GPU_LIST_MAX_FAC  1.5
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
@@ -370,10 +372,10 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     int  nstl[NNSTL]={ 20, 25, 40, 50 };
     char *env;
     int  nstlist_orig,nstlist_prev;
-    real rlist_inc,rlist_max,rlist_new,rlist_prev;
+    real rlist_inc,rlist_ok,rlist_max,rlist_new,rlist_prev;
     int  i;
     t_state state_tmp;
-    gmx_bool bBox,bDD;
+    gmx_bool bBox,bDD,bCont;
     const char *nstl_fmt="\nFor optimal performace with a GPU nstlist (now %d) should be larger\nThe optimum depends on your CPU and GPU resources\nYou might want to try nstlist values using the env.var. GMX_NSTLIST\n";
     const char *vbd_err="Can not increase nstlist for GPU run because verlet-buffer-drift is not set or used";
     const char *box_err="Can not increase nstlist for GPU run because the box is too small";
@@ -429,7 +431,8 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
 
     /* Allow rlist to make the list double the size of the cut-off sphere */
     rlist_inc = nbnxn_rlist_inc(NBNXN_GPU_CLUSTER_SIZE,mtop->natoms/det(box));
-    rlist_max = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_FAC,1.0/3.0) - rlist_inc;
+    rlist_ok  = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_OK_FAC,1.0/3.0) - rlist_inc;
+    rlist_max = (max(ir->rvdw,ir->rcoulomb) + rlist_inc)*pow(NBNXN_GPU_LIST_MAX_FAC,1.0/3.0) - rlist_inc;
     if (debug)
     {
         fprintf(debug,"GPU nstlist tuning: rlist_inc %.3f rlist_max %.3f\n",
@@ -464,9 +467,18 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
             bDD = change_dd_cutoff(cr,&state_tmp,ir,rlist_new);
         }
 
+        bCont = FALSE;
+
         if (env == NULL)
         {
-            if (!(bBox && bDD && rlist_new <= rlist_max) && i > 0)
+            if (bBox && bDD && rlist_new <= rlist_max)
+            {
+                /* Increase nstlist */
+                nstlist_prev = ir->nstlist;
+                rlist_prev   = rlist_new;
+                bCont = (rlist_new < rlist_ok);
+            }
+            else
             {
                 /* Stick with the previous nstlist */
                 ir->nstlist = nstlist_prev;
@@ -474,16 +486,11 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
                 bBox = TRUE;
                 bDD  = TRUE;
             }
-            else
-            {
-                nstlist_prev = ir->nstlist;
-                rlist_prev   = rlist_new;
-            }
         }
 
         i++;
     }
-    while ((env == NULL) && (i < NNSTL && rlist_new <= rlist_max));
+    while (bCont);
 
     if (!bBox || !bDD)
     {
