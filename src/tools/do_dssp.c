@@ -420,11 +420,14 @@ int main(int argc,char *argv[])
   };
   static gmx_bool bVerbose;
   static const char *ss_string="HEBT"; 
+  static int dsspVersion=1;
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
     { "-sss", FALSE, etSTR, {&ss_string},
-      "Secondary structures for structure count"}
+      "Secondary structures for structure count"},
+    { "-ver", FALSE, etINT, {&dsspVersion},
+      "DSSP major version. Syntax changed in v 2.0."}
   };
   
   t_trxstatus *status;
@@ -520,8 +523,17 @@ int main(int argc,char *argv[])
   if (!gmx_fexist(dptr))
     gmx_fatal(FARGS,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
-  sprintf(dssp,"%s %s %s %s > /dev/null %s",
-	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+  if (dsspVersion >= 2)
+  {
+      sprintf(dssp,"%s -i %s -o %s > /dev/null %s",
+              dptr,pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+  }
+  else
+  {
+      sprintf(dssp,"%s %s %s %s > /dev/null %s",
+              dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+
+  }
   if (bVerbose)
     fprintf(stderr,"dssp cmd='%s'\n",dssp);
   
