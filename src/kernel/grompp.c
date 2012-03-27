@@ -95,27 +95,6 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
-static void remove_chargegroups(gmx_mtop_t *mtop)
-{
-    int mt;
-    t_block *cgs;
-    int i;
-
-    for(mt=0; mt<mtop->nmoltype; mt++)
-    {
-        cgs = &mtop->moltype[mt].cgs;
-        if (cgs->nr < mtop->moltype[mt].atoms.nr)
-        {
-            cgs->nr = mtop->moltype[mt].atoms.nr;
-            srenew(cgs->index,cgs->nr+1);
-            for(i=0; i<cgs->nr+1; i++)
-            {
-                cgs->index[i] = i;
-            }
-        }
-    }
-}
-
 static int check_atom_names(const char *fn1, const char *fn2, 
 			    gmx_mtop_t *mtop, t_atoms *at)
 {
@@ -1421,7 +1400,7 @@ int main (int argc, char *argv[])
                 ecutscheme_names[ir->cutoff_scheme]);
 
         /* Remove all charge groups */
-        remove_chargegroups(sys);
+        gmx_mtop_remove_chargegroups(sys);
     }
   
   if (count_constraints(sys,mi,wi) && (ir->eConstrAlg == econtSHAKE)) {

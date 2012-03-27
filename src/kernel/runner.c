@@ -512,6 +512,58 @@ static void increase_nstlist(FILE *fp,t_commrec *cr,
     }
 }
 
+static void convert_to_verlet_scheme(FILE *fplog,
+                                     t_inputrec *ir,
+                                     gmx_mtop_t *mtop,real box_vol)
+{
+    char *conv_mesg="Converting input file with group cut-off scheme to the Verlet cut-off scheme";
+
+    if (fplog != NULL)
+    {
+        fprintf(fplog,"\n%s\n\n",conv_mesg);
+    }
+    fprintf(stderr,"\n%s\n\n",conv_mesg);
+
+    if (!(ir->vdwtype == evdwCUT &&
+          (ir->coulombtype == eelCUT ||
+           EEL_RF(ir->coulombtype) ||
+           ir->coulombtype == eelPME) &&
+          ir->rcoulomb == ir->rvdw))
+    {
+        gmx_fatal(FARGS,"Can only convert old tpr files to the Verlet cut-off scheme with cut-off LJ interactions and PME, RF or cut-off electrostatics and rcoulomb=rvdw");
+    }
+
+    if (inputrec2nboundeddim(ir) != 3)
+    {
+        gmx_fatal(FARGS,"Can only convert old tpr files to the Verlet cut-off scheme with 3D pbc");
+    }
+
+    if (EI_DYNAMICS(ir->eI) && ir->etc == etcNO)
+    {
+        gmx_fatal(FARGS,"Will not convert old tpr files to the Verlet cut-off scheme without temperature coupling");
+    }
+
+    if (ir->efep != efepNO || ir->implicit_solvent != eisNO)
+    {
+        gmx_fatal(FARGS,"Will not convert old tpr files to the Verlet cut-off scheme with free-energy calculations or implicit solvent");
+    }
+
+    ir->cutoff_scheme   = ecutsVERLET;
+    ir->verletbuf_drift = 0.005;
+
+    if (EI_DYNAMICS(ir->eI))
+    {
+        calc_verlet_buffer_size(mtop,box_vol,ir,ir->verletbuf_drift,
+                                NULL,&ir->rlist);
+    }
+    else
+    {
+        ir->rlist = 1.05*max(ir->rvdw,ir->rcoulomb);
+    }
+
+    gmx_mtop_remove_chargegroups(mtop);
+}
+
 int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm,
@@ -571,6 +623,12 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPX,nfile,fnm),inputrec,state,NULL,mtop);
+
+        if (inputrec->cutoff_scheme != ecutsVERLET &&
+            getenv("GMX_VERLET_SCHEME") != NULL)
+        {
+            convert_to_verlet_scheme(fplog,inputrec,mtop,det(state->box));
+        }
 
         /* NOW the threads will be started: */
 #ifdef GMX_THREAD_MPI

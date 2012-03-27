@@ -89,6 +89,27 @@ int ncg_mtop(const gmx_mtop_t *mtop)
     return ncg;
 }
 
+void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
+{
+    int mt;
+    t_block *cgs;
+    int i;
+
+    for(mt=0; mt<mtop->nmoltype; mt++)
+    {
+        cgs = &mtop->moltype[mt].cgs;
+        if (cgs->nr < mtop->moltype[mt].atoms.nr)
+        {
+            cgs->nr = mtop->moltype[mt].atoms.nr;
+            srenew(cgs->index,cgs->nr+1);
+            for(i=0; i<cgs->nr+1; i++)
+            {
+                cgs->index[i] = i;
+            }
+        }
+    }
+}
+
 
 typedef struct
 {

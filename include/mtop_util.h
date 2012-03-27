@@ -50,6 +50,9 @@ gmx_mtop_finalize(gmx_mtop_t *mtop);
 int
 ncg_mtop(const gmx_mtop_t *mtop);
 
+/* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
+void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
+
 
 /* Abstract data type for looking up atoms by global atom number */
 typedef struct gmx_mtop_atomlookup *gmx_mtop_atomlookup_t;
