@@ -275,30 +275,38 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
 {                                                                       \
+    int    idx[4];                                                      \
     __m128 ctab_SSE[4];                                                 \
-    int    j;                                                           \
                                                                         \
-    for(j=0; j<4; j++)                                                  \
-    {                                                                   \
-        int idx;                                                        \
-        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
-        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+idx*4);                 \
-    }                                                                   \
+    /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
+    idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
+    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]*4);                  \
+    idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
+    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]*4);                  \
+    idx[2] = gmx_mm_extract_epi32(ti_SSE,2);                            \
+    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]*4);                  \
+    idx[3] = gmx_mm_extract_epi32(ti_SSE,3);                            \
+    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]*4);                  \
+                                                                        \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
 }
 
 #define load_table_f_v(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
 {                                                                       \
+    int    idx[4];                                                      \
     __m128 ctab_SSE[4];                                                 \
-    int    j;                                                           \
                                                                         \
-    for(j=0; j<4; j++)                                                  \
-    {                                                                   \
-        int idx;                                                        \
-        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
-        ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+idx*4);                 \
-    }                                                                   \
+    /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
+    idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
+    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]*4);                  \
+    idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
+    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]*4);                  \
+    idx[2] = gmx_mm_extract_epi32(ti_SSE,2);                            \
+    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]*4);                  \
+    idx[3] = gmx_mm_extract_epi32(ti_SSE,3);                            \
+    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]*4);                  \
+                                                                        \
     /* Shuffle the force  table entries to a convenient order */        \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
     /* Shuffle the energy table entries to a convenient order */        \
@@ -354,15 +362,15 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #define load_table_f(tab_coul_F, ti_SSE, ti, ctab0_SSE, ctab1_SSE)      \
 {                                                                       \
+    int     idx[2];                                                     \
     __m128d ctab_SSE[2];                                                \
-    int     j;                                                          \
                                                                         \
-    for(j=0; j<2; j++)                                                  \
-    {                                                                   \
-        int idx;                                                        \
-        idx = gmx_mm_extract_epi32(ti_SSE,j);                           \
-        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+idx);                     \
-    }                                                                   \
+    /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
+    idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
+    ctab_SSE[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
+    idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
+    ctab_SSE[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
+                                                                        \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0],ctab_SSE[1],ctab0_SSE,ctab1_SSE); \
     /* The second force table entry should contain the difference */    \
@@ -371,24 +379,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #define load_table_f_v(tab_coul_F, tab_coul_V, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
 {                                                                       \
-    __m128d ctab_SSE[4];                                                \
-    int     j;                                                          \
     int     idx[2];                                                     \
+    __m128d ctab_SSE[4];                                                \
                                                                         \
-    for(j=0; j<2; j++)                                                  \
-    {                                                                   \
-        idx[j] = gmx_mm_extract_epi32(ti_SSE,j);                        \
-        ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+idx[j]);                  \
-    }                                                                   \
+    /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
+    idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
+    ctab_SSE[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
+    idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
+    ctab_SSE[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
+                                                                        \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0],ctab_SSE[1],ctab0_SSE,ctab1_SSE); \
     /* The second force table entry should contain the difference */    \
     ctab1_SSE = _mm_sub_pd(ctab1_SSE,ctab0_SSE);                        \
                                                                         \
-    for(j=0; j<2; j++)                                                  \
-    {                                                                   \
-        ctab_SSE[2+j] = _mm_loadu_pd(tab_coul_V+idx[j]);                \
-    }                                                                   \
+    ctab_SSE[2] = _mm_loadu_pd(tab_coul_V+idx[0]);                      \
+    ctab_SSE[3] = _mm_loadu_pd(tab_coul_V+idx[1]);                      \
+                                                                        \
     /* Shuffle the energy table entries to a single register */         \
     ctabv_SSE = _mm_shuffle_pd(ctab_SSE[2],ctab_SSE[3],_MM_SHUFFLE2(0,0)); \
 }
