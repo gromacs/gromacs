@@ -57,7 +57,7 @@
  * calculation functions.
  * Note that if you only call gmx_ana_displ_store() for the particles that are
  * present, use gmx_ana_displ_store_array(), or use positions calculated without
- * \ref POS_MASKONLY for gmx_ana_displ_store_pos(), you should ensure that you
+ * POS_MASKONLY for gmx_ana_displ_store_pos(), you should ensure that you
  * do not use the displacements for which \p pout is FALSE (the values cannot
  * be calculated based on the provided data, and are undefined).
  */

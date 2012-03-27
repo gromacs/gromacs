@@ -28,13 +28,10 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
- * \brief
+/*
+ * 
  * C++ wrapper for analysis tool neighborhood searching.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \inpublicapi
- * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_NBSEARCH_H
 #define GMX_TRAJECTORYANALYSIS_NBSEARCH_H
@@ -44,10 +41,9 @@
 namespace gmx
 {
 
-/*! \brief
+/*
  * C++ wrapper for neighborhood searching in selection/nbsearch.h.
  *
- * \ingroup module_trajectoryanalysis
  */
 class NeighborhoodSearch
 {
