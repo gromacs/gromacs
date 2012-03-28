@@ -410,7 +410,7 @@ void choose_watermodel(const char *wmsel,const char *ffdir,
             sfree(model[nwm]);
         }
     }
-    fclose(fp);
+    ffclose(fp);
     fprintf(stderr,"%2d: %s\n",nwm+1,"None");
 
     do
@@ -735,12 +735,6 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
 		  ssbonds[i].a1,ssbonds[i].a2);
     add_param(ps,ai,aj,NULL,NULL);
   }
-}
-
-static gmx_bool inter_res_bond(const t_rbonded *b)
-{
-    return (b->AI[0] == '-' || b->AI[0] == '+' ||
-            b->AJ[0] == '-' || b->AJ[0] == '+');
 }
 
 static void at2bonds(t_params *psb, t_hackblock *hb,

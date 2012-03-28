@@ -434,7 +434,19 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
         
         sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
         CHECK(ir->coulombtype == eelPPPM);
-        
+
+        if (epcPARRINELLORAHMAN == ir->epct && opts->bGenVel)
+        {
+            sprintf(warn_buf,
+                    "You are generating velocities so I am assuming you "
+                    "are equilibrating a system. You are using "
+                    "Parrinello-Rahman pressure coupling, but this can be "
+                    "unstable for equilibration. If your system crashes, try "
+                    "equilibrating first with Berendsen pressure coupling. If "
+                    "you are not equilibrating the system, you can probably "
+                    "ignore this warning.");
+            warning(wi,warn_buf);
+        }
     }
     else if (ir->coulombtype == eelPPPM)
     {

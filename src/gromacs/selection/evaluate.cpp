@@ -55,6 +55,7 @@
 #include <maths.h>
 #include <smalloc.h>
 #include <vec.h>
+#include <assert.h>
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
@@ -1095,6 +1096,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
 {
     int         n, i, i1, i2;
     real        lval, rval=0., val=0.;
+    gmx_bool    bArithNeg;
 
     t_selelem  *const left  = sel->child;
     t_selelem  *const right = left->next;

@@ -219,6 +219,7 @@
 #include <futil.h>
 #include <smalloc.h>
 #include <string2.h>
+#include <assert.h>
 
 #include "gromacs/fatalerror/errorcodes.h"
 #include "gromacs/fatalerror/exceptions.h"

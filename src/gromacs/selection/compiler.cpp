@@ -276,6 +276,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
+#include <assert.h>
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"

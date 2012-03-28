@@ -178,19 +178,6 @@ static const char *get_argtp(int resnr,int nrr,const rtprename_t *rr)
   return select_res(eargNR,resnr,lh,expl,"ARGININE",nrr,rr);
 }
 
-static const char *get_cystp(int resnr,int nrr,const rtprename_t *rr)
-{
-  enum { ecys, ecysH, ecysNR };
-  const char *lh[ecysNR] = { "CYS2", "CYS" };
-  const char *expl[ecysNR] = {
-    "Cysteine in disulfide bridge",
-    "Protonated"
-  };
-
-  return select_res(ecysNR,resnr,lh,expl,"CYSTEINE",nrr,rr);
-
-}
-
 static const char *get_histp(int resnr,int nrr,const rtprename_t *rr)
 {
   const char *expl[ehisNR] = {
@@ -1356,7 +1343,7 @@ int main(int argc, char *argv[])
   for(i=0; i<nrrn; i++) {
     fp = fflib_open(rrn[i]);
     read_rtprename(rrn[i],fp,&nrtprename,&rtprename);
-    fclose(fp);
+    ffclose(fp);
     sfree(rrn[i]);
   }
   sfree(rrn);

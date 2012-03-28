@@ -373,17 +373,6 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
     }
 }
 
-static void gen_units(int n,char ***units)
-{
-    int i;
-
-    snew(*units,n);
-    for(i=0; i<n; i++)
-    {
-        (*units)[i] = strdup("kJ/mol");
-    }
-}
-
 void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 {
     int  magic=-55555;

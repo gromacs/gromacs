@@ -159,13 +159,6 @@ real calc_dx2dx(rvec xi,rvec xj,rvec box,rvec dx)
   return dx2;
 }
 
-real calc_dx2(rvec xi,rvec xj,rvec box)
-{
-  rvec dx;
-  
-  return calc_dx2dx(xi,xj,box,dx);
-}
-
 real shiftfunction(real r1,real rc,real R)
 {
   real dr;
@@ -178,67 +171,6 @@ real shiftfunction(real r1,real rc,real R)
   dr=R-r1;
   
   return A*dr*dr+B*dr*dr*dr;
-}
-
-real new_f(real r,real rc)
-{
-  real rrc,rrc2,rrc3;
-  
-  rrc  = r/rc;
-  rrc2 = rrc*rrc;
-  rrc3 = rrc2*rrc;
-  return 1.5*rrc2*rrc3 - 2.5*rrc3 + 1.0;
-}
-
-real new_phi(real r,real rc)
-{
-  real rrr;
-  
-  rrr = sqr(r/rc);
-  
-  return 1/r-(0.125/rc)*(15 + 3*rrr*rrr - 10*rrr);
-}
-
-real old_f(real r,real rc,real r1)
-{
-  real dr,r2;
-
-  if (r <= r1)
-    return 1.0;
-  else if (r >= rc)
-    return 0;
-  
-  dr = r-r1;
-  r2 = r*r;
-  return 1+A*r2*dr*dr+B*r2*dr*dr*dr;
-}
-
-real old_phi(real r,real rc,real r1)
-{
-  real dr;
-  
-  if (r <= r1)
-    return 1/r-C;
-  else if (r >= rc)
-    return 0.0;
-    
-  dr = r-r1;
-  
-  return 1/r-A_3*dr*dr*dr-B_4*dr*dr*dr*dr - C;
-}
-
-real spreadfunction(real r1,real rc,real R)
-{
-  real dr;
-
-  if (R <= r1)
-    return 0.0;
-  else if (R >= rc)
-    return 0.0;
-  
-  dr=R-r1;
-  
-  return -One_4pi*(dr/R)*(2*A*(2*R-r1)+B*dr*(5*R-2*r1));
 }
 
 real potential(real r1,real rc,real R)
@@ -364,99 +296,5 @@ real phi_aver(int natoms,real phi[])
     phitot=phitot+phi[i];
     
   return (phitot/natoms);
-}
-
-real symmetrize_phi(FILE *log,int natoms,real phi[],gmx_bool bVerbose)
-{
-  real phitot;
-  int  i;
-
-  phitot=phi_aver(natoms,phi); 
-  if (bVerbose)
-    fprintf(log,"phi_aver = %10.3e\n",phitot);
-  
-  for(i=0; (i<natoms); i++)
-    phi[i]-=phitot;
-    
-  return phitot;
-}
-
-static real rgbset(real col)
-{
-  int icol32;
-
-  icol32=32.0*col;
-  return icol32/32.0;
-}
-
-
-
-real analyse_diff(FILE *log,char *label,const output_env_t oenv,
-		  int natom,rvec ffour[],rvec fpppm[],
-		  real phi_f[],real phi_p[],real phi_sr[],
-		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)
-/* Analyse difference between forces from fourier (_f) and other (_p)
- * LR solvers (and potential also).
- * If the filenames are given, xvgr files are written.
- * returns the root mean square error in the force.
- */
-{
-  int  i,m;
-  FILE *fp=NULL,*gp=NULL;
-  real f2sum=0,p2sum=0;
-  real df,fmax,dp,pmax,rmsf;
-  
-  fmax = fabs(ffour[0][0]-fpppm[0][0]);
-  pmax = fabs(phi_f[0] - phi_p[0]);
-  
-  for(i=0; (i<natom); i++) {
-    dp     = fabs(phi_f[i] - phi_p[i]);
-    pmax   = max(dp,pmax);
-    p2sum += dp*dp;
-    for(m=0; (m<DIM); m++) {
-      df     = fabs(ffour[i][m] - fpppm[i][m]);
-      fmax   = max(df,fmax);
-      f2sum += df*df;
-    }
-  }
-  
-  rmsf = sqrt(f2sum/(3.0*natom));
-  fprintf(log,"\n********************************\nERROR ANALYSIS for %s\n",
-	  label);
-  fprintf(log,"%-10s%12s%12s\n","Error:","Max Abs","RMS");
-  fprintf(log,"%-10s  %10.3f  %10.3f\n","Force",fmax,rmsf);
-  fprintf(log,"%-10s  %10.3f  %10.3f\n","Potential",pmax,sqrt(p2sum/(natom)));
-
-  if (fcorr) {  
-    fp = xvgropen(fcorr,"LR Force Correlation","Four-Force","PPPM-Force",oenv);
-    for(i=0; (i<natom); i++) {
-      for(m=0; (m<DIM); m++) {
-	fprintf(fp,"%10.3f  %10.3f\n",ffour[i][m],fpppm[i][m]);
-      }
-    }
-    gmx_fio_fclose(fp);
-    do_view(oenv,fcorr,NULL);
-  }
-  if (pcorr)  
-    fp = xvgropen(pcorr,"LR Potential Correlation","Four-Pot","PPPM-Pot",oenv);
-  if (ptotcorr)
-    gp = xvgropen(ptotcorr,"Total Potential Correlation","Four-Pot","PPPM-Pot",
-                  oenv);
-  for(i=0; (i<natom); i++) {
-    if (pcorr)
-      fprintf(fp,"%10.3f  %10.3f\n",phi_f[i],phi_p[i]);
-    if (ptotcorr)
-      fprintf(gp,"%10.3f  %10.3f\n",phi_f[i]+phi_sr[i],phi_p[i]+phi_sr[i]);
-  }
-  if (pcorr) {
-    gmx_fio_fclose(fp);
-    do_view(oenv,pcorr,NULL);
-  }
-  if (ptotcorr) {
-    gmx_fio_fclose(gp);
-    do_view(oenv,ptotcorr,NULL);
-  }
-
-  return rmsf;
 }
 

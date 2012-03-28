@@ -272,28 +272,6 @@ void freeUmbrellaWindows(t_UmbrellaWindow *win, int nwin)
     sfree(win);
 }
 
-/* Return j such that xx[j] <= x < xx[j+1] */
-void searchOrderedTable(double xx[], int n, double x, int *j)
-{
-    int ju,jm,jl;
-    int ascending;
-    
-    jl=-1;
-    ju=n;
-    ascending=(xx[n-1] > xx[0]);
-    while (ju-jl > 1) 
-    {
-        jm=(ju+jl) >> 1;
-        if ((x >= xx[jm]) == ascending)
-            jl=jm;
-        else
-            ju=jm;
-    }
-    if (x==xx[0]) *j=0;
-    else if (x==xx[n-1]) *j=n-2;
-    else *j=jl;
-}
-
 /* Read and setup tabulated umbrella potential */
 void setup_tab(const char *fn,t_UmbrellaOptions *opt)
 {
@@ -1520,32 +1498,6 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt,gmx_bool *bPipeOpen)
     return pipe;
 }
 
-
-FILE *open_pdo_pipe_gmx(const char *fn)
-{
-    char *fnNoGz=0;
-    FILE *pipe;
-
-    /* gzipped pdo file? */
-    if (strcmp(fn+strlen(fn)-3,".gz")==0)
-    {
-        snew(fnNoGz,strlen(fn));
-        strncpy(fnNoGz,fn,strlen(fn)-3);
-        fnNoGz[strlen(fn)-3]='\0';
-        if (gmx_fexist(fnNoGz) && gmx_fexist(fn))
-            gmx_fatal(FARGS,"Found file %s and %s. That confuses me. Please remove one of them\n",
-                      fnNoGz,fn);
-        pipe=ffopen(fnNoGz,"r");  
-        sfree(fnNoGz);
-    }
-    else
-    {
-        pipe=ffopen(fn,"r");
-    }
-  
-    return pipe;
-}
-
 void pdo_close_file(FILE *fp)
 {
 #ifdef HAVE_PIPES
@@ -1554,7 +1506,6 @@ void pdo_close_file(FILE *fp)
 	ffclose(fp);
 #endif
 }
-
 
 /* Reading pdo files */
 void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,

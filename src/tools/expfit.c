@@ -81,17 +81,6 @@ static real myexp(real x,real A,real tau)
   return A*exp(-x/tau);
 }
 
-static real signum(real num){
-	real sign;
-	if(num<0){
-                 sign=-1.0;
-        }
-        else {
-                sign=1.0;
-        }
-        return sign;
-}
-
 void erffit (real x, real a[], real *y, real dyda[])
 {
 /* Fuction 
@@ -518,7 +507,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 	  fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
 		  ttt,c1[j],fit_function(eFitFn,parm,ttt));
 	}
-	fclose(fp);
+	xvgrclose(fp);
       }
     }
     for(i=0;(i<nparm);i++)

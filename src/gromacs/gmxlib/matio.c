@@ -172,22 +172,6 @@ void writecmap(const char *fn,int n,t_mapping map[])
   gmx_fio_fclose(out);
 }
 
-void do_wmap(FILE *out,int i0,int imax,
-	     int nlevels,t_rgb rlo,t_rgb rhi,real lo,real hi)
-{
-  int  i,nlo;
-  real r,g,b;
-  
-  for(i=0; (i<imax); i++) {
-    nlo=nlevels-i;
-    r=(nlo*rlo.r+i*rhi.r)/nlevels;
-    g=(nlo*rlo.g+i*rhi.g)/nlevels;
-    b=(nlo*rlo.b+i*rhi.b)/nlevels;
-    fprintf(out,"%c %10.3g %10g  %10g  %10g\n",
-	    mapper[i+i0],(nlo*lo+i*hi)/nlevels,r,g,b);
-  }
-}
-
 static char *fgetline(char **line,int llmax,int *llalloc,FILE *in)
 {
   char *fg;
