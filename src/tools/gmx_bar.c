@@ -2030,7 +2030,7 @@ static void read_bar_xvg(char *fn, real *temp, lambda_t *lambda_head)
         gmx_fatal(FARGS,"File '%s' contains fewer than two columns", fn);
     }
 
-    if ( ( *temp != barsim->temp) && (*temp > 0) )
+    if ( !gmx_within_tol(*temp,barsim->temp,GMX_FLOAT_EPS) && (*temp > 0) )
     {
         gmx_fatal(FARGS,"Temperature in file %s different from earlier files or setting\n", fn);
     }
