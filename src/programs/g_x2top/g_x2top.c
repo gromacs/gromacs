@@ -76,26 +76,6 @@ real blen[NATP][NATP] = {
 
 #define MARGIN_FAC 1.1
 
-static real set_x_blen(real scale)
-{
-  real maxlen;
-  int  i,j;
-
-  for(i=0; i<NATP-1; i++) {
-    blen[NATP-1][i] *= scale;
-    blen[i][NATP-1] *= scale;
-  }
-  blen[NATP-1][NATP-1] *= scale;
-  
-  maxlen = 0;
-  for(i=0; i<NATP; i++)
-    for(j=0; j<NATP; j++)
-      if (blen[i][j] > maxlen)
-	maxlen = blen[i][j];
-  
-  return maxlen*MARGIN_FAC;
-}
-
 static gmx_bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
 {
   int i,j;

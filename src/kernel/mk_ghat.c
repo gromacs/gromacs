@@ -83,24 +83,6 @@ real  uhat(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
     return fff;
 }
 
-real  uhat1D(int porder,real k1,real h1)
-{
-  real fac1;
-  real fff;
-  int  i;
-  
-  fac1 = sinx_x(k1*h1*0.5);
-
-  fff  = 1;
-  for(i=1; (i<=porder+1); i++)
-    fff *= fac1;
-
-  if (fabs(fff) < tol)
-    return 0.0;
-  else
-    return fff;
-}
-
 real shat(real acut,real kmag,real r1)
 {
   return gk(kmag,acut,r1);
@@ -209,25 +191,6 @@ real usqsq(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
     tmp = ( (1.0 - t12 + tx*t12*t12)*
 	    (1.0 - t22 + tx*t22*t22)*
 	    (1.0 - t32 + tx*t32*t32) );
-  else 
-    gmx_fatal(FARGS,"porder = %d in usqsq",porder);
-  
-  return tmp*tmp;
-}
-
-real usqsq1D(int porder,real k1,real h1)
-{
-  const real tt=2.0/3.0;
-  const real tx=2.0/15.0;
-  real t1,t12,tmp;
-  
-  t1 = sin(k1*h1*0.5);
-  t12 = t1*t1;
-  
-  if (porder == 1) 
-    tmp = (1.0-tt*t12);
-  else if (porder == 2) 
-    tmp = ( (1.0 - t12 + tx*t12*t12));
   else 
     gmx_fatal(FARGS,"porder = %d in usqsq",porder);
   

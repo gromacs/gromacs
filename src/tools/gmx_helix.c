@@ -62,34 +62,6 @@
 #include "xvgr.h"
 #include "gmx_ana.h"
 
-
-void dump_ahx(int nres,
-	      t_bb bb[],rvec x[],matrix box,int teller)
-{
-  FILE *fp;
-  char buf[256];
-  int  i;
-  
-  sprintf(buf,"dump%d.gro",teller);
-  fp=ffopen(buf,"w");
-  fprintf(fp,"Dumping fitted helix frame %d\n",teller);
-  fprintf(fp,"%5d\n",nres*5);
-  for(i=0; (i<nres); i++) {
-#define PR(AA) fprintf(fp,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",i+1,"GLY",#AA,bb[i].AA,x[bb[i].AA][XX],x[bb[i].AA][YY],x[bb[i].AA][ZZ]); fflush(fp)
-    if (bb[i].bHelix) {
-      PR(N);
-      PR(H);
-      PR(CA);
-      PR(C);
-      PR(O);
-    }
-  }
-  for(i=0; (i<DIM); i++)
-    fprintf(fp,"%10.5f",box[i][i]);
-  fprintf(fp,"\n");
-  ffclose(fp);
-}
-
 void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 	       real fac,rvec xav[])
 {

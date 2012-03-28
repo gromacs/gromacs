@@ -1129,8 +1129,8 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
         }
     }
 #ifdef DEBUG_PME
-    fclose(fp);
-    fclose(fp2);
+    ffclose(fp);
+    ffclose(fp2);
 #endif
     }
     return 0;
@@ -1489,14 +1489,6 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     }
 }
 
-
-static void alloc_real_aligned(int n,real **ptr_raw,real **ptr)
-{
-    snew(*ptr_raw,n+8);
-
-    *ptr = (real *) (((size_t) *ptr_raw + 16) & (~((size_t) 15)));
-
-}
 static void set_grid_alignment(int *pmegrid_nz,int pme_order)
 {
 #ifdef PME_SSE
@@ -2125,36 +2117,6 @@ static void get_pme_ener_vir(const gmx_pme_t pme,int nthread,
         m_add(vir,pme->work[thread].vir,vir);
     }
 }
-
-static int solve_pme_yzx_wrapper(gmx_pme_t pme,t_complex *grid,
-                                 real ewaldcoeff,real vol,
-                                 gmx_bool bEnerVir,real *mesh_energy,matrix vir)
-{
-    int  nthread,thread;
-    int  nelements=0;
-
-    nthread = pme->nthread;
-
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for(thread=0; thread<nthread; thread++)
-    {
-        int n;
-
-        n = solve_pme_yzx(pme,grid,ewaldcoeff,vol,bEnerVir,nthread,thread);
-        if (thread == 0)
-        {
-            nelements = n;
-        }
-    }
-
-    if (bEnerVir)
-    {
-        get_pme_ener_vir(pme,nthread,mesh_energy,vir);
-    }
-
-    return nelements;
-}
-
 
 #define DO_FSPLINE(order)                      \
 for(ithx=0; (ithx<order); ithx++)              \

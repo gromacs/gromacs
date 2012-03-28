@@ -567,50 +567,6 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   }
 }
 
-static void do_x_step(t_commrec *cr,int n,rvec *x1,real a,rvec *f,rvec *x2)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      x2[i][m] = x1[i][m] + a*f[i][m];
-    }
-  }
-}
-
-static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      f[i][m] = (x1[i][m] - x2[i][m])*a;
-    }
-  }
-}
-
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
                                    gmx_mtop_t *top_global,t_inputrec *ir,
                                    em_state_t *ems,gmx_localtop_t *top,

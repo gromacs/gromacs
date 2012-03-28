@@ -1442,7 +1442,7 @@ static void do_the_tests(
     if (0 == repeats)
     {
         fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
-        fclose(fp);
+        ffclose(fp);
         finalize(opt2fn("-p", nfile, fnm));
         exit(0);
     }

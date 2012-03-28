@@ -48,16 +48,6 @@
 #include "smalloc.h"
 #include "bondf.h"
 
-int nhelix(int nres,t_bb bb[])
-{
-  int i,n;
-  
-  for(i=n=0; (i<nres); i++)
-    if (bb[i].bHelix)
-      n++;
-  return n;
-}
-
 real ellipticity(int nres,t_bb bb[])
 {
   typedef struct {

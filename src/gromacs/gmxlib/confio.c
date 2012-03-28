@@ -877,25 +877,6 @@ static void read_whole_conf(const char *infile,char *title,
   gmx_fio_fclose(in);
 }
 
-static void get_conf(FILE *in,char *title,int *natoms, 
-		     rvec x[],rvec *v,matrix box)
-{
-  t_atoms  atoms;
-  int      ndec;
-
-  atoms.nr=*natoms;
-  snew(atoms.atom,*natoms);
-  atoms.nres=*natoms;
-  snew(atoms.resinfo,*natoms);
-  snew(atoms.atomname,*natoms);
-  
-  get_w_conf(in,title,title,&atoms,&ndec,x,v,box);
-  
-  sfree(atoms.atom);
-  sfree(atoms.resinfo);
-  sfree(atoms.atomname);
-}
-
 gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms atoms;

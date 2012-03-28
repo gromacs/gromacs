@@ -53,22 +53,6 @@
 
 #define NOMIN 'X'
 
-static void dump_dih(int nframes,char *title,real time[],real dih[])
-{
-  FILE *out;
-  char fname[256];
-  int  i;
-
-  sprintf(fname,"dih.%s",title);
-  printf("A dihedral transition occurred in %s\n",fname);
-  printf("Do you want to plot it to %s ? (y/n) ",fname);
-  fflush(stdout);
-  out=ffopen(fname,"w");
-  for(i=0; (i<nframes); i++)
-    fprintf(out,"%10.3f  %12.5e\n",time[i],dih[i]);
-  ffclose(out);
-}
-
 static void ana_dih(FILE *out,char *index,int nframes,real dih[],t_dih *dd)
 {
   int i;
