@@ -46,6 +46,7 @@
 #include <vec.h>
 
 #include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -1216,6 +1217,8 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             bOk = false;
             goto next_param;
         }
+        GMX_ASSERT(pparam->value != NULL || pparam->nval == 0,
+                  "Value is required");
         if (oparam->flags & SPAR_SET)
         {
             _gmx_selparser_error(scanner, "parameter set multiple times, extra values skipped");

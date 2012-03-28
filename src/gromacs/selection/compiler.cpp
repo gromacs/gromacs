@@ -485,10 +485,14 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
         {
             return false;
         }
-        child = (sel->type == SEL_SUBEXPRREF ? sel->child : sel);
-        if (child->type == SEL_SUBEXPR)
+        child = sel;
+        if (sel->type == SEL_SUBEXPRREF) 
         {
-            child = child->child;
+            GMX_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR, 
+                "Subexpression expected for subexpression reference");
+            child = sel->child->child;
+            GMX_ASSERT(child, 
+                "Subexpression elements should always have a child element");
         }
         nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
     }
