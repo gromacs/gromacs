@@ -214,6 +214,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <gmx_fatal.h>
+#include <assert.h>
 
 #include <poscalc.h>
 #include <selection.h>
@@ -469,6 +470,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
      * children have been updated. */
     if (sel->type == SEL_ROOT)
     {
+        assert(sel->child);
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
     /* Mark that the flags are set */
