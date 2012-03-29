@@ -453,20 +453,18 @@ _gmx_selelem_free_compiler_data(t_selelem *sel)
  * \param     sel   Selection element to initialize
  * \param[in] isize Maximum evaluation group size.
  * \param[in] bChildEval true if children have already been processed.
- * \returns   true if the memory was allocated, false if children need to
- *   be processed first.
  *
  * If called more than once, memory is (re)allocated to ensure that the
  * maximum of the \p isize values can be stored.
  */
-static bool
+static void
 alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 {
     int        nalloc;
 
     if (sel->mempool)
     {
-        return true;
+        return;
     }
     /* Find out the number of elements to allocate */
     if (sel->flags & SEL_SINGLEVAL)
@@ -483,12 +481,16 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 
         if (!bChildEval)
         {
-            return false;
+            return;
         }
-        child = (sel->type == SEL_SUBEXPRREF ? sel->child : sel);
-        if (child->type == SEL_SUBEXPR)
+        child = sel;
+        if (sel->type == SEL_SUBEXPRREF)
         {
-            child = child->child;
+            GMX_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
+                "Subexpression expected for subexpression reference");
+            child = sel->child->child;
+            GMX_ASSERT(child,
+                "Subexpression elements should always have a child element");
         }
         nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
     }
@@ -517,7 +519,6 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
             gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
         }
     }
-    return true;
 }
 
 /*! \brief

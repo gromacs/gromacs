@@ -46,6 +46,7 @@
 #include <vec.h>
 
 #include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
@@ -1213,6 +1214,13 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         if (!oparam)
         {
             _gmx_selparser_error(scanner, "unknown parameter skipped");
+            bOk = false;
+            goto next_param;
+        }
+        if (oparam->val.type != NO_VALUE && pparam->value == NULL)
+        {
+            GMX_ASSERT(pparam->nval == 0, "Inconsistent values and value count");
+            _gmx_selparser_error(scanner, "no value provided");
             bOk = false;
             goto next_param;
         }
