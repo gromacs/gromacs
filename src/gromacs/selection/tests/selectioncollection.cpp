@@ -340,7 +340,25 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
     EXPECT_NO_THROW(_sc.compile());
 }
 
-// TODO: Tests for parser errors
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
+{
+    EXPECT_THROW(_sc.parseFromString("mindist from atomnr 1 cutoff", &_sel),
+                 gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
+{
+    EXPECT_THROW(_sc.parseFromString("within 1 of", &_sel),
+                 gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
+{
+    EXPECT_THROW(_sc.parseFromString("within of atomnr 1", &_sel),
+                 gmx::InvalidInputError);
+}
+
+// TODO: Tests for more parser errors
 
 TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
 {
