@@ -95,7 +95,7 @@ int gmx_enemat(int argc,char *argv[])
     "calculated ([TT]-etot[tt]).[PAR]",
     
     "An approximation of the free energy can be calculated using:",
-    "E(free) = E0 + kT log( <exp((E-E0)/kT)> ), where '<>'",
+    "[MATH]E[SUB]free[sub] = E[SUB]0[sub] + kT [LOG][CHEVRON][EXP](E-E[SUB]0[sub])/kT[exp][chevron][log][math], where '[MATH][CHEVRON][chevron][math]'",
     "stands for time-average. A file with reference free energies",
     "can be supplied to calculate the free energy difference",
     "with some reference state. Group names (e.g. residue names)",

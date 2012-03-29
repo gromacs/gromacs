@@ -347,41 +347,6 @@ static void evaluate_table(real VFtab[], int offset, int stride,
   *yp      =  (Fp+Geps+2.0*Heps2)*tabscale;
 }
 
-
-static void splint(real xa[],real ya[],real y2a[],
-		   int n,real x,real *y,real *yp)
-{
-  int  klo,khi,k;
-  real h,b,a,eps;
-  real F,G,H;
-  
-  klo=1;
-  khi=n;
-
-  while ((khi-klo) > 1) {
-    k=(khi+klo) >> 1;
-    if (xa[k] > x) 
-      khi=k;
-    else 
-      klo=k;
-  }
-  h = xa[khi]-xa[klo];
-  if (h == 0.0) 
-    gmx_fatal(FARGS,"Bad XA input to function splint");
-  a   = (xa[khi]-x)/h;
-  b   = (x-xa[klo])/h;
-  *y  = a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
-  *yp = (ya[khi]-ya[klo])/h+((3*a*a-1)*y2a[klo]-(3*b*b-1)*y2a[khi])*h/6.0;
-  
-  eps = b;
-  F   = (ya[khi]-ya[klo]-(h*h/6.0)*(2*y2a[klo]+y2a[khi]));
-  G   = (h*h/2.0)*y2a[klo];
-  H   = (h*h/6.0)*(y2a[khi]-y2a[klo]);
-  *y  = ya[klo] + eps*F + eps*eps*G + eps*eps*eps*H;
-  *yp = (F + 2*eps*G + 3*eps*eps*H)/h;
-}
-
-
 static void copy2table(int n,int offset,int stride,
 		       double x[],double Vtab[],double Ftab[],
 		       real dest[])

@@ -43,13 +43,6 @@
 #include "mshift.h"
 #include "macros.h"
 	
-static void dprod1(rvec vir,real x,rvec f)
-{
-  vir[XX]+=x*f[XX];
-  vir[YY]+=x*f[YY];
-  vir[ZZ]+=x*f[ZZ];
-}
-
 static void upd_vir(rvec vir,real dvx,real dvy,real dvz)
 {
   vir[XX]-=0.5*dvx;

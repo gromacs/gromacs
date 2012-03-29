@@ -417,7 +417,12 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
     
     if (maxchange > 0.01 && fplog) {
       char buf[22];
-      fprintf(fplog,"\nStep %s  Warning: Pressure scaling more than 1%%.\n",
+      fprintf(fplog,
+              "\nStep %s  Warning: Pressure scaling more than 1%%. "
+              "This may mean your system\n is not yet equilibrated. "
+              "Use of Parrinello-Rahman pressure coupling during\n"
+              "equilibration can lead to simulation instability, "
+              "and is discouraged.\n",
 	      gmx_step_str(step,buf));
     }
   }

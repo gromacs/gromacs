@@ -67,27 +67,6 @@ static real max_dist(rvec *x, real *r, int start, int end)
   return 0.5*maxd;
 }
 
-static void set_margin(t_atoms *atoms, rvec *x, real *r)
-{
-  int i,d,start;
-  
-  box_margin=0;
-  
-  start=0;
-  for(i=0; i < atoms->nr; i++) {
-    if ( (i+1 == atoms->nr) || 
-	 (atoms->atom[i+1].resind != atoms->atom[i].resind) ) {
-      d=max_dist(x,r,start,i+1);
-      if (debug && d>box_margin)
-	fprintf(debug,"getting margin from %s: %g\n",
-		*(atoms->resinfo[atoms->atom[i].resind].name),box_margin);
-      box_margin=max(box_margin,d);
-      start=i+1;
-    }
-  }
-  fprintf(stderr,"box_margin = %g\n",box_margin);
-}
-
 static gmx_bool outside_box_minus_margin2(rvec x,matrix box)
 {
   return ( (x[XX]<2*box_margin) || (x[XX]>box[XX][XX]-2*box_margin) ||

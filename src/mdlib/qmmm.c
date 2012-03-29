@@ -149,14 +149,6 @@ static int QMlayer_comp(const void *a, const void *b){
   
 } /* QMlayer_comp */
 
-void sort_QMlayers(t_QMMMrec *qr){
-  /* sorts QM layers from small to big */
-  qsort(qr->qm,qr->nrQMlayers,
-	(size_t)sizeof(qr->qm[0]),
-	QMlayer_comp);
-} /* sort_QMlayers */
-
-
 real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, 
 		    t_MMrec *mm, rvec f[], rvec fshift[])
 {

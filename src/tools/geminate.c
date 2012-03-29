@@ -92,10 +92,6 @@ static gem_complex gem_c(double x)
   return value;
 }
 
-/* Real and Imaginary part of a complex number z -- Re (z) and Im (z)        */
-static double gem_Re(gem_complex z) {return z.r;}
-static double gem_Im(gem_complex z) {return z.i;}
-
 /* Magnitude of a complex number z                                           */
 static double gem_cx_abs(gem_complex z) { return (sqrt(z.r*z.r+z.i*z.i)); }
 
@@ -187,34 +183,6 @@ static gem_complex gem_rxcdiv(double r, gem_complex z)
   return value;
 }
 
-/* Integer power of a complex number z -- z^x                                */
-static gem_complex gem_cxintpow(gem_complex z, int x)
-{
-  int i;
-  gem_complex value;
-
-  value.r = 1.;
-  value.i = 0.;
-
-  if(x>0)
-    {
-      for(i=0; i < x; i++)
-	value = gem_cxmul(value, z);
-      return value;
-    }
-  else
-    { 
-      if(x<0) {
-	for(i=0; i > x; i--)
-	  value = gem_cxdiv(value, z);
-	return value;
-      }
-      else {
-	return value;
-      }
-    }
-}
-
 /* Exponential of a complex number-- exp (z)=|exp(z.r)|*{cos(z.i)+I*sin(z.i)}*/
 static gem_complex gem_cxdexp(gem_complex z)
 {
@@ -264,18 +232,6 @@ static gem_complex gem_cxdsqrt(gem_complex z)
   return value;
 }
 
-/* square root of a real number r  */
-static gem_complex gem_cxrsqrt(double r) {
-  if (r < 0)
-    {
-      return(gem_cmplx(0, sqrt(-r)));
-    }
-  else
-    {
-      return(gem_c(sqrt(r)));
-    }
-}
-
 /* Complex power of a complex number z1^z2                                   */
 static gem_complex gem_cxdpow(gem_complex z1, gem_complex z2)
 {
@@ -284,8 +240,6 @@ static gem_complex gem_cxdpow(gem_complex z1, gem_complex z2)
   return value;
 }
 
-/* Print out a complex number z as z: z.r, z.i                               */
-static void gem_cxprintf(gem_complex z) { fprintf(stdout, "z: %lg + %lg_i\n", z.r, z.i); }
 /* ------------ end of complex.c ------------ */
 
 /* This next part was derived from cubic.c, also received from Omer Markovitch.
@@ -420,66 +374,6 @@ static double gem_omega(double x)
   return ans;
 }
 
-/* W(x,y)=exp(-x^2)*omega(x+y)=exp(2xy+y^2)*erfc(x+y)                        */
-static double gem_W(double x, double y){ return(exp(-x*x)*gem_omega(x+y)); }
-
-/**************************************************************/
-/* Complex error function and related functions               */
-/* x, y     : real variables                                  */
-/* z        : complex variable                                */
-/* cerf(z)  : error function                                  */
-/* comega(z): exp(z*z)*cerfc(z)                               */
-/* W(x,z)   : exp(-x*x)*comega(x+z)=exp(2*x*z+z^2)*cerfc(x+z) */
-/**************************************************************/
-static gem_complex gem_cerf(gem_complex z)
-{
-  gem_complex value;
-  double x,y;
-  double sumr,sumi,n,n2,f,temp,temp1;
-  double x2,cos_2xy,sin_2xy,cosh_2xy,sinh_2xy,cosh_ny,sinh_ny;
-
-  x    = z.r;
-  y    = z.i;
-  x2   = x*x;
-  sumr = 0.;
-  sumi = 0.;
-  cos_2xy  = cos(2.*x*y);
-  sin_2xy  = sin(2.*x*y);
-  cosh_2xy = cosh(2.*x*y);
-  sinh_2xy = sinh(2.*x*y);
-
-  for(n=1.0,temp=0.; n<=2000.; n+=1.0)
-    {
-      n2      = n*n;
-      cosh_ny = cosh(n*y);
-      sinh_ny = sinh(n*y);
-      f       = exp(-n2/4.)/(n2+4.*x2);
-      sumr    += (2.*x - 2.*x*cosh_ny*cos_2xy+n*sinh_ny*sin_2xy)*f;
-      sumi    += (2.*x*cosh_ny*sin_2xy + n*sinh_ny*cos_2xy)*f;
-      temp1    = sqrt(sumr*sumr+sumi*sumi);
-      if(fabs((temp1-temp)/temp1)<1.E-16) {
-	break;
-      }
-      temp = temp1;
-    }
-
-  if(n==2000.) {
-    fprintf(stderr, "iteration exceeds %lg\n",n);
-  }
-  
-  sumr*=2./PI;
-  sumi*=2./PI;
-
-  if(x!=0.) {
-    f = 1./2./PI/x;
-  } else {
-    f = 0.;
-  }
-  value.r = gem_erf(x) + (f*(1.-cos_2xy) + sumr)*exp(-x2);
-  value.i = (f*sin_2xy+sumi)*exp(-x2);
-  return value;
-}
-
 /*---------------------------------------------------------------------------*/
 /* Utilzed the series approximation of erf(z=x+iy)                           */
 /* Relative error=|err(z)|/|erf(z)|<EPS                                      */
@@ -535,9 +429,6 @@ static gem_complex gem_comega(gem_complex z)
   value   = gem_cxmul(value,gem_cmplx(exp_y2*cos_2xy,exp_y2*sin_2xy));
   return (value);
 }
-
-/* W(x,z) exp(-x^2)*omega(x+z)                                               */
-static gem_complex gem_cW(double x, gem_complex z){ return(gem_cxrmul(gem_comega(gem_cxradd(z,x)),exp(-x*x))); }
 
 /* ------------ end of [cr]error.c ------------ */
 
@@ -669,7 +560,6 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
   
 /*   p->logMult      = pow((float)len, 1.0/nLin);/\* pow(t[len-1]-t[0], 1.0/p->nLin); *\/ */
   p->ballistic    =  ballistic;
-  p->bDt;
   return p;
 }
 

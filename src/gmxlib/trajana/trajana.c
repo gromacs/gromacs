@@ -711,7 +711,11 @@ parse_trjana_args(gmx_ana_traj_t *d,
     gmx_bool                bSelDump  = FALSE;
     t_pargs             sel_pa[] = {
         {"-select",   FALSE, etSTR,  {&selection},
-         "Selection string (use 'help' for help)"},
+         "Selection string (use 'help' for help). Note that the "
+         "whole selection string will need to be quoted so that "
+         "your shell will pass it in as a string. Example: "
+         "[TT]g_select -select '\"Nearby water\" resname SOL "
+         "and within 0.25 of group Protein'[tt]"},
         {"-seldebug", FALSE, etBOOL, {&bSelDump},
          "HIDDENPrint out the parsed and compiled selection trees"},
     };

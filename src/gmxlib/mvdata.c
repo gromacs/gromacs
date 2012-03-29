@@ -309,19 +309,6 @@ static void bc_ilists(const t_commrec *cr,t_ilist *ilist)
   if (debug) fprintf(debug,"after bc_ilists\n");
 }
 
-static void bc_idef(const t_commrec *cr,t_idef *idef)
-{
-  block_bc(cr,idef->ntypes);
-  block_bc(cr,idef->atnr);
-  snew_bc(cr,idef->functype,idef->ntypes);
-  snew_bc(cr,idef->iparams,idef->ntypes);
-  nblock_bc(cr,idef->ntypes,idef->functype);
-  nblock_bc(cr,idef->ntypes,idef->iparams);
-  block_bc(cr,idef->fudgeQQ);
-  bc_ilists(cr,idef->il);
-  block_bc(cr,idef->ilsort);
-}
-
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
 	int i,j,nelem,ngrid;

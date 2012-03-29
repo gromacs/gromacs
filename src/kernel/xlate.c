@@ -161,7 +161,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         {
             fp = fflib_open(f[i]);
             get_xlatoms(f[i],fp,&nxlate,&xlatom);
-            fclose(fp);
+            ffclose(fp);
             sfree(f[i]);
         }
         sfree(f);
