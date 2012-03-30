@@ -2394,6 +2394,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
       }
+      teller++;
     }
   } while (bCont && (timecheck == 0));
   
