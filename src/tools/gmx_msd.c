@@ -410,6 +410,10 @@ static void prep_data(gmx_bool bMol,int gnx,atom_id index[],
 
         for(m=DIM-1; m>=0; m--) 
         {
+            if (hbox[m] == 0)
+            {
+                continue;
+            }
             while(xcur[ind][m]-xprev[ind][m] <= -hbox[m])
                 rvec_inc(xcur[ind],box[m]);
             while(xcur[ind][m]-xprev[ind][m] >  hbox[m])
