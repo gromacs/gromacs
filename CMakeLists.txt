@@ -345,6 +345,7 @@ check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(lstat             HAVE_LSTAT)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
