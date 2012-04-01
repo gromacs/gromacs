@@ -32,8 +32,8 @@
  * \brief
  * Declares gmx::AnalysisDataProxy.
  *
- * This header is only meant for internal use of the gmx::AbstractAnalysisData
- * class to implement modules that handle only a subset of columns.
+ * This header is only meant for internal use to implement
+ * gmx::AbstractAnalysisData::setColumnModule().
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_analysisdata
@@ -50,6 +50,13 @@ namespace gmx
 /*! \internal \brief
  * Internal implementation class used to implement column modules.
  *
+ * This class serves as a proxy between AbstractAnalysisData and the attached
+ * AnalysisDataModuleInterface object.  For each notification that
+ * AbstractAnalysisData sends, it maps it such that only the relevant columns
+ * are visible to the AnalysisDataModuleInterface.  Similarly, it implements
+ * the frame access methods of AbstractAnalysisData such that only the relevant
+ * columns are returned.
+ *
  * \ingroup module_analysisdata
  */
 class AnalysisDataProxy : public AbstractAnalysisData,
@@ -62,6 +69,8 @@ class AnalysisDataProxy : public AbstractAnalysisData,
          * \param[in] col   First column to present.
          * \param[in] span  Number of columns to present.
          * \param[in] data  Data object that should be wrapped.
+         *
+         * Does not throw.
          */
         AnalysisDataProxy(int col, int span, AbstractAnalysisData *data);
 

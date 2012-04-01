@@ -193,9 +193,8 @@ AnalysisDataStorage::Impl::extendBuffer(AnalysisDataStorage *storage,
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
-        AnalysisDataStorageFrame *frame =
-            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_);
-        frames_.push_back(StoredFrame(frame));
+        frames_.push_back(StoredFrame(
+            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.

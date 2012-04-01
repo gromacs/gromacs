@@ -65,6 +65,8 @@ class AnalysisDataStorage::Impl
 
         /*! \brief
          * Stored information about a single stored frame.
+         *
+         * Methods in this class do not throw.
          */
         struct StoredFrame
         {
@@ -129,17 +131,23 @@ class AnalysisDataStorage::Impl
          *
          * \param[in]  index  Zero-based frame index.
          * \retval  -1 if \p index is not available in \a frames_.
+         *
+         * Does not throw.
          */
         int computeStorageLocation(int index) const;
 
         /*! \brief
          * Computes an index into \a frames_ that is one past the last frame
          * stored.
+         *
+         * Does not throw.
          */
         size_t endStorageLocation() const;
 
         /*! \brief
          * Extends \a frames_ to a new size.
+         *
+         * \throws std::bad_alloc if out of memory.
          */
         void extendBuffer(AnalysisDataStorage *storage, size_t newSize);
         /*! \brief
@@ -148,18 +156,25 @@ class AnalysisDataStorage::Impl
          * Increments \a firstFrameLocation_ and reinitializes the frame that
          * was made unavailable by this operation.
          *
+         * Does not throw.
+         *
          * \see frames_
          */
         void rotateBuffer();
 
         /*! \brief
          * Calls notification method in \a data_.
+         *
+         * \throws    unspecified  Any exception thrown by
+         *      AbstractAnalysisData::notifyPointsAdd().
          */
         void notifyPointSet(const AnalysisDataPointSetRef &points);
         /*! \brief
          * Calls notification methods for new frames.
          *
          * \param[in] firstLocation  First frame to consider.
+         * \throws    unspecified  Any exception thrown by frame notification
+         *      methods in AbstractAnalysisData.
          *
          * Notifies \a data_ of new frames (from \p firstLocation and after
          * that) if all previous frames have already been notified.
