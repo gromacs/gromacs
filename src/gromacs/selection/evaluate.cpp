@@ -931,6 +931,8 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
                                             sel->u.expr.mdata);
     }
+    GMX_RELEASE_ASSERT(sel->child != NULL,
+                       "Modifier element with a value must have a child");
     if (sel->child->v.type != POS_VALUE)
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));

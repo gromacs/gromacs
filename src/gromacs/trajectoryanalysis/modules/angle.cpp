@@ -47,6 +47,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
@@ -423,6 +424,8 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
             svmul(1.0/3.0, cout, cout);
             break;
         }
+        default:
+            GMX_RELEASE_ASSERT(false, "Incorrectly initialized number of atoms");
     }
 }
 

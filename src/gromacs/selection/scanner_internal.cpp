@@ -179,6 +179,8 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
     if (bBoolNo)
     {
+        GMX_RELEASE_ASSERT(param->name != NULL,
+                "bBoolNo should only be set for a parameters with a name");
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
