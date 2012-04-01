@@ -52,11 +52,20 @@ class AnalysisDataPointSetRef;
  * Interface for a module that gets notified whenever data is added.
  *
  * The interface provides one method (flags()) that describes features of
- * data objects the module supports. Only most common features are included
+ * data objects the module supports.  Only most common features are included
  * in the flags; custom checks can be implemented in the dataStarted() method
  * (see below).
  * All other methods in the interface are callbacks that are called by the
  * data object to which the module is attached to describe the data.
+ *
+ * The frames are presented to the module always in the order of increasing
+ * indices, even if they become ready in a different order in the attached
+ * data.
+ *
+ * Currently, if the module throws an exception, it requires the analysis tool
+ * to terminate, since AbstractAnalysisData will be left in a state where it
+ * is not possible to continue processing.  See a related todo item in
+ * AbstractAnalysisData.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -91,36 +100,72 @@ class AnalysisDataModuleInterface
          * for data compatibility in the classes that implement the interface.
          * Instead, AbstractAnalysisData performs these checks based on the
          * flags provided.
+         *
+         * Does not throw.
          */
         virtual int flags() const = 0;
 
         /*! \brief
          * Called (once) when the data has been set up properly.
          *
+         * \param[in] data  Data object to which the module is added.
+         * \throws    APIError if the provided data is not compatible.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
+         *
          * The data to which the module is attached is passed as an argument
          * to provide access to properties of the data for initialization
-         * and/or validation.
+         * and/or validation.  The module can also call
+         * AbstractAnalysisData::requestStorage() if needed.
+         *
          * This is the only place where the module gets access to the data;
          * if properties of the data are required later, the module should
-         * store them internally. It is guaranteed that the data properties
+         * store them internally.  It is guaranteed that the data properties
          * (column count, whether it's multipoint) do not change once this
          * method has been called.
+         *
+         * Notice that \p data will be a proxy object if the module is added as
+         * a column module, not the data object for which
+         * AbstractAnalysisData::addColumnModule() was called.
          */
         virtual void dataStarted(AbstractAnalysisData *data) = 0;
         /*! \brief
          * Called at the start of each data frame.
+         *
+         * \param[in] frame  Header information for the frame that is starting.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
          */
         virtual void frameStarted(const AnalysisDataFrameHeader &frame) = 0;
         /*! \brief
          * Called one or more times during each data frame.
+         *
+         * \param[in] points  Set of points added (also provides access to
+         *      frame-level data).
+         * \throws    APIError if the provided data is not compatible.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
+         *
+         * Can be called once or multiple times for a frame.  For all data
+         * objects currently implemented in the library (and all objects that
+         * will use AnalysisDataStorage for internal implementation), it is
+         * called exactly once for each frame if the data is not multipoint,
+         * but currently this restriction is not enforced.
          */
         virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
         /*! \brief
          * Called when a data frame is finished.
+         *
+         * \param[in] header  Header information for the frame that is ending.
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
          */
         virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;
         /*! \brief
          * Called (once) when no more data is available.
+         *
+         * \throws    unspecified  Can throw any exception required by the
+         *      implementing class to report errors.
          */
         virtual void dataFinished() = 0;
 

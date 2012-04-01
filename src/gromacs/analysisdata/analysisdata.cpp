@@ -195,24 +195,34 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
 
 
 void
-AnalysisDataHandle::setPoint(int col, real y, real dy, bool present)
+AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "setPoint() called without calling startFrame()");
-    impl_->currentFrame_->setValue(col, y, dy, present);
+    impl_->currentFrame_->setValue(column, value, bPresent);
 }
 
 
 void
-AnalysisDataHandle::setPoints(int firstcol, int n, const real *y)
+AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
+{
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "setPoint() called without calling startFrame()");
+    impl_->currentFrame_->setValue(column, value, error, bPresent);
+}
+
+
+void
+AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values)
 {
     GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "setPoints() called without calling startFrame()");
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < count; ++i)
     {
-        impl_->currentFrame_->setValue(firstcol + i, y[i]);
+        impl_->currentFrame_->setValue(firstColumn + i, values[i]);
     }
 }
 

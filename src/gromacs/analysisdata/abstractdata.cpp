@@ -73,6 +73,8 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
         GMX_RELEASE_ASSERT(frame.isValid(), "Invalid data frame returned");
+        // TODO: Check all frames before doing anything for slightly better
+        // exception behavior.
         if (bCheckMissing && !frame.allPresent())
         {
             GMX_THROW(APIError("Missing data not supported by a module"));
