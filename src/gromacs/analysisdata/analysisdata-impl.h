@@ -76,7 +76,7 @@ class AnalysisDataHandleImpl
 class AnalysisData::Impl
 {
     public:
-        //! Shorthand for a smart pointer to a data handle.
+        //! Smart pointer type to manage a data handle implementation.
         typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
                 HandlePointer;
         //! Shorthand for a list of data handles.
@@ -85,10 +85,14 @@ class AnalysisData::Impl
         Impl();
         ~Impl();
 
-        //! Storage implementation
+        //! Storage implementation.
         AnalysisDataStorage     storage_;
-        //! \brief List of handles for this data object.
-        //! Caution: AnalysisDataHandle stores a bare pointer to a HandlePointer
+        /*! \brief
+         * List of handles for this data object.
+         *
+         * Note that AnalysisDataHandle objects also contain (raw) pointers
+         * to these objects.
+         */
         HandleList              handles_;
 };
 
