@@ -49,6 +49,20 @@ set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/admin/InstallWelcome.txt")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/admin/InstallLicense.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 
+# Various binary/source package generators
+if(WIN32)
+    set(CPACK_GENERATOR "NSIS")
+    set(CPACK_SOURCE_GENERATOR "ZIP")
+elseif(APPLE)
+    set(CPACK_GENERATOR "PackageMaker")
+    set(CPACK_SOURCE_GENERATOR "TGZ")
+elseif(UNIX)
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_SOURCE_GENERATOR "TGZ")
+else()
+    message(FATAL_ERROR "unknown operating system")
+endif()
+
 #must come after all cpack settings!
 include(CPack)
 
