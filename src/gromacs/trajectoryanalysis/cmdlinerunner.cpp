@@ -150,17 +150,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         return false;
     }
     _module->initOptionsDone(settings);
-    /*
-    if (rc != 0)
-    {
-        if (rc == eeInconsistentInput)
-        {
-            GMX_ERROR(rc, "Invalid options provided, "
-                          "see above for detailed error messages");
-        }
-        return rc;
-    }
-    */
 
     common->initIndexGroups(selections);
 
