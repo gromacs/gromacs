@@ -52,7 +52,7 @@ namespace gmx
  * \returns  An allocated TrajectoryAnalysisModule object.
  * \throws   InvalidInputError if \p name is not recognized.
  *
- * This function should be used to instantiate selection methods defined in the
+ * This function should be used to instantiate analysis methods defined in the
  * library.
  *
  * In addition to recognizing exact matches on \p name, the function also

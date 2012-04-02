@@ -56,12 +56,18 @@ class TrajectoryAnalysisRunnerCommon;
  *
  * This class is used by trajectory analysis modules to inform the caller
  * about the requirements they have on the input (e.g., whether a topology is
- * required, or whether PBC removal makes sense). It is also used to pass
+ * required, or whether PBC removal makes sense).  It is also used to pass
  * similar information back to the analysis module after parsing user input.
  *
  * Having this functionality as a separate class makes the
  * TrajectoryAnalysisModule interface much cleaner, and also reduces the need to
  * change existing code when new options are added.
+ *
+ * Methods in this class do not throw, except for the constructor, which may
+ * throw an std::bad_alloc.
+ *
+ * \todo
+ * Remove plain flags from the public interface.
  *
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
@@ -104,13 +110,6 @@ class TrajectoryAnalysisSettings
              * \see setRmPBC()
              */
             efNoUserRmPBC    = 1<<5,
-            /*! \brief
-             * Requests dumps of parsed and compiled selection trees.
-             *
-             * This flag is used by internal debugging tools to request
-             * the selection trees dumping to stderr.
-             */
-            efDebugSelection = 1<<16,
         };
 
         //! Initializes default settings.
@@ -225,6 +224,14 @@ class TrajectoryAnalysisSettings
 /*! \brief
  * Topology information passed to a trajectory analysis module.
  *
+ * This class is used to pass topology information to trajectory analysis
+ * modules and to manage memory for them.  Having a single wrapper object
+ * instead of passing each item separately makes TrajectoryAnalysisModule
+ * interface simpler, and also reduces the need to change existing code if
+ * additional information is added.
+ *
+ * Methods in this class do not throw if not explicitly stated.
+ *
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */
@@ -246,6 +253,8 @@ class TopologyInformation
          *      (can be NULL, in which case it is not used).
          * \param[out] box   Box size from the topology file
          *      (can be NULL, in which case it is not used).
+         * \throws  APIError if topology coordinates are not available and
+         *      \p x is not NULL.
          *
          * If TrajectoryAnalysisSettings::efUseTopX has not been specified,
          * \p x should be NULL.
@@ -271,6 +280,9 @@ class TopologyInformation
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);
 
+        /*! \brief
+         * Needed to initialize the data.
+         */
         friend class TrajectoryAnalysisRunnerCommon;
 };
 

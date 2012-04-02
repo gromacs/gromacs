@@ -72,18 +72,6 @@ TrajectoryAnalysisModuleData::Impl::~Impl()
 }
 
 
-void TrajectoryAnalysisModuleData::Impl::finishHandles()
-{
-    // FIXME: Call finishData() for all handles even if one throws
-    HandleContainer::iterator i;
-    for (i = _handles.begin(); i != _handles.end(); ++i)
-    {
-        i->second.finishData();
-    }
-    _handles.clear();
-}
-
-
 /********************************************************************
  * TrajectoryAnalysisModuleData
  */
@@ -104,7 +92,13 @@ TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
 
 void TrajectoryAnalysisModuleData::finishDataHandles()
 {
-    _impl->finishHandles();
+    // FIXME: Call finishData() for all handles even if one throws
+    Impl::HandleContainer::iterator i;
+    for (i = _impl->_handles.begin(); i != _impl->_handles.end(); ++i)
+    {
+        i->second.finishData();
+    }
+    _impl->_handles.clear();
 }
 
 
@@ -238,6 +232,7 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char *name)
 {
+    // TODO: Strong exception safety should be possible to implement.
     GMX_RELEASE_ASSERT(_impl->_datasets.find(name) == _impl->_datasets.end(),
                        "Duplicate data set name registered");
     _impl->_datasets[name] = data;
@@ -248,6 +243,7 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
 void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
                                                        const char *name)
 {
+    // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);
     _impl->_analysisDatasets[name] = data;
 }

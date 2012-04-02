@@ -52,31 +52,52 @@ class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;
 
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModuleData.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
 class TrajectoryAnalysisModuleData::Impl
 {
     public:
+        //! Container that associates a data handle to its AnalysisData object.
         typedef std::map<const AnalysisData *, AnalysisDataHandle>
                 HandleContainer;
 
+        //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
         Impl(TrajectoryAnalysisModule *module,
              const AnalysisDataParallelOptions &opt,
              const SelectionCollection &selections);
         ~Impl();
 
-        void finishHandles();
-
+        //! Keeps a data handle for each AnalysisData object.
         HandleContainer         _handles;
+        //! Stores thread-local selections.
         const SelectionCollection &_selections;
 };
 
+/*! \internal \brief
+ * Private implementation class for TrajectoryAnalysisModule.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
 class TrajectoryAnalysisModule::Impl
 {
     public:
+        //! Container that associates a data set with its name.
         typedef std::map<std::string, AbstractAnalysisData *> DatasetContainer;
+        //! Container that associates a AnalysisData object with its name.
         typedef std::map<std::string, AnalysisData *> AnalysisDatasetContainer;
 
+        //! List of registered data set names.
         std::vector<std::string>        _datasetNames;
+        /*! \brief
+         * Keeps all registered data sets.
+         *
+         * This container also includes datasets from \a _analysisDatasets.
+         */
         DatasetContainer                _datasets;
+        //! Keeps registered AnalysisData objects.
         AnalysisDatasetContainer        _analysisDatasets;
 };
 
@@ -85,6 +106,8 @@ class TrajectoryAnalysisModule::Impl
  *
  * Most simple tools should only require data handles and selections to be
  * thread-local, so this class implements just that.
+ *
+ * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
 {
