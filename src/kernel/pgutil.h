@@ -39,8 +39,7 @@
 #include "typedefs.h"
 
 extern atom_id search_atom(const char *type,int start,
-			   int natoms,t_atom at[],
-			   char ** const * anm,
+			   t_atoms *atoms,
 			   const char *bondtype,gmx_bool bAllowMissing);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
