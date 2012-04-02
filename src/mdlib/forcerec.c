@@ -1459,6 +1459,7 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     return FALSE;
 #endif
 
+    /* cppcheck-suppress unreachableCode */
     /* unless GMX_GPU_ID is set, each process will try to use the GPU with id = nodeid */
     gpu_device_id = cr->nc.rank_intra;
     if (getenv("GMX_GPU_ID") != NULL)

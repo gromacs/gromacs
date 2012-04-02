@@ -321,9 +321,11 @@ NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
 #ifdef CALC_ENERGIES
     gmx_mm_pr  sh_invrc6_SSE,sh_invrc12_SSE;
 
+    /* cppcheck-suppress unassignedVariable */
     real       tmpsum_array[15],*tmpsum;
 #endif
 #ifdef CALC_SHIFTFORCES
+    /* cppcheck-suppress unassignedVariable */
     real       shf_array[15],*shf;
 #endif
 

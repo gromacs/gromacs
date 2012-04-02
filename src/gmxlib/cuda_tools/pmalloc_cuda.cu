@@ -50,7 +50,7 @@ void pmalloc(void **h_ptr, size_t nbytes)
     char        strbuf[STRLEN];
     int         flag = cudaHostAllocDefault;
 
-    if (nbytes <= 0)
+    if (nbytes == 0)
     {
         *h_ptr = NULL;
         return;
@@ -73,7 +73,7 @@ void pmalloc_wc(void **h_ptr, size_t nbytes)
     char        strbuf[STRLEN];
     int         flag = cudaHostAllocDefault || cudaHostAllocWriteCombined;
 
-    if (nbytes <= 0)
+    if (nbytes == 0)
     {
         *h_ptr = NULL;
         return;

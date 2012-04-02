@@ -36,7 +36,7 @@
 #ifndef CUDAUTILS_CUH
 #define CUDAUTILS_CUH
 
-#include "stdio.h"
+#include <stdio.h>
 
 #include "gmx_fatal.h"
 

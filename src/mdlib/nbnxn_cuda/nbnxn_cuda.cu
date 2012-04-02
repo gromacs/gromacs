@@ -33,8 +33,8 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#include "stdlib.h"
-#include "unistd.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "smalloc.h"
 #include "types/simple.h" 

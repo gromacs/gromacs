@@ -1480,6 +1480,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     int  subdiv_y,sub_y,na_y,ash_y;
     int  subdiv_x,sub_x,na_x,ash_x;
 
+    /* cppcheck-suppress unassignedVariable */
     float bb_work_array[SSE_WIDTH*NNBSBB_D+3],*bb_work_align;
 
     bb_work_align = (float *)(((size_t)(bb_work_array+3)) & (~((size_t)15)));

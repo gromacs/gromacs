@@ -606,13 +606,13 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb, gmx_bool bDomDec)
     cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
+    if (cu_nb == NULL) return;
+
     atdat       = cu_nb->atdat;
     nbparam     = cu_nb->nbparam;
     plist       = cu_nb->plist[eintLocal];
     plist_nl    = cu_nb->plist[eintNonlocal];
     timers      = cu_nb->timers;
-
-    if (cu_nb == NULL) return;
 
     if (nbparam->eeltype == cu_eelEWALD)
     {
