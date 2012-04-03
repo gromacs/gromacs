@@ -704,20 +704,23 @@ void write_top(FILE *out, char *pr,char *molname,
 }
 
 static atom_id search_res_atom(const char *type,int resind,
-			       int natom,t_atom at[],
-			       char ** const *aname,
+                   t_atoms *atoms,
 			       const char *bondtype,gmx_bool bAllowMissing)
 {
   int i;
 
-  for(i=0; (i<natom); i++)
-    if (at[i].resind == resind)
-      return search_atom(type,i,natom,at,aname,bondtype,bAllowMissing);
+  for(i=0; (i<atoms->nr); i++)
+  {
+    if (atoms->atom[i].resind == resind)
+    {
+      return search_atom(type,i,atoms,bondtype,bAllowMissing);
+    }
+  }
   
   return NO_ATID;
 }
 
-static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
+static void do_ssbonds(t_params *ps,t_atoms *atoms,
 		       int nssbonds,t_ssbond *ssbonds,gmx_bool bAllowMissing)
 {
   int     i,ri,rj;
@@ -726,9 +729,9 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   for(i=0; (i<nssbonds); i++) {
     ri = ssbonds[i].res1;
     rj = ssbonds[i].res2;
-    ai = search_res_atom(ssbonds[i].a1,ri,natoms,atom,aname,
+    ai = search_res_atom(ssbonds[i].a1,ri,atoms,
 			 "special bond",bAllowMissing);
-    aj = search_res_atom(ssbonds[i].a2,rj,natoms,atom,aname,
+    aj = search_res_atom(ssbonds[i].a2,rj,atoms,
 			 "special bond",bAllowMissing);
     if ((ai == NO_ATID) || (aj == NO_ATID))
       gmx_fatal(FARGS,"Trying to make impossible special bond (%s-%s)!",
@@ -738,8 +741,8 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
 }
 
 static void at2bonds(t_params *psb, t_hackblock *hb,
-                     int natoms, t_atom atom[], char **aname[], 
-                     int nres, rvec x[], 
+                     t_atoms *atoms,
+                     rvec x[],
                      real long_bond_dist, real short_bond_dist,
                      gmx_bool bAllowMissing)
 {
@@ -758,16 +761,16 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 
   fprintf(stderr,"Making bonds...\n");
   i=0;
-  for(resind=0; (resind < nres) && (i<natoms); resind++) {
+  for(resind=0; (resind < atoms->nres) && (i<atoms->nr); resind++) {
     /* add bonds from list of bonded interactions */
     for(j=0; j < hb[resind].rb[ebtsBONDS].nb; j++) {
       /* Unfortunately we can not issue errors or warnings
        * for missing atoms in bonds, as the hydrogens and terminal atoms
        * have not been added yet.
        */
-      ai=search_atom(hb[resind].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname,
+      ai=search_atom(hb[resind].rb[ebtsBONDS].b[j].AI,i,atoms,
 		     ptr,TRUE);
-      aj=search_atom(hb[resind].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname,
+      aj=search_atom(hb[resind].rb[ebtsBONDS].b[j].AJ,i,atoms,
 		     ptr,TRUE);
       if (ai != NO_ATID && aj != NO_ATID) {
           dist2 = distance2(x[ai],x[aj]);
@@ -785,11 +788,11 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
       }
     }
     /* add bonds from list of hacks (each added atom gets a bond) */
-    while( (i<natoms) && (atom[i].resind == resind) ) {
+    while( (i<atoms->nr) && (atoms->atom[i].resind == resind) ) {
       for(j=0; j < hb[resind].nhack; j++)
 	if ( ( hb[resind].hack[j].tp > 0 ||
 	       hb[resind].hack[j].oname==NULL ) &&
-	     strcmp(hb[resind].hack[j].AI,*(aname[i])) == 0 ) {
+	     strcmp(hb[resind].hack[j].AI,*(atoms->atomname[i])) == 0 ) {
 	  switch(hb[resind].hack[j].tp) {
 	  case 9:          /* COOH terminus */
 	    add_param(psb,i,i+1,NULL,NULL);     /* C-O  */
@@ -1345,9 +1348,6 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
 {
     int residx,i,j,k;
     const char *ptr;
-    int natoms = atoms->nr;
-    t_atom *atom = atoms->atom;
-    char ***aname = atoms->atomname;
     t_resinfo *resinfo = atoms->resinfo;
     int nres = atoms->nres;
     gmx_bool bAddCMAP;
@@ -1375,7 +1375,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
             for(k = 0; k < NUM_CMAP_ATOMS && bAddCMAP; k++)
             {
                 cmap_atomid[k] = search_atom(restp[residx].rb[ebtsCMAP].b[j].a[k],
-                                             i,natoms,atom,aname,ptr,TRUE);
+                                             i,atoms,ptr,TRUE);
                 bAddCMAP = bAddCMAP && (cmap_atomid[k] != NO_ATID);
                 if (!bAddCMAP)
                 {
@@ -1384,7 +1384,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
                      * into the atom array. */
                     break;
                 }
-                this_residue_index = atom[cmap_atomid[k]].resind;
+                this_residue_index = atoms->atom[cmap_atomid[k]].resind;
                 if (0 == k)
                 {
                     cmap_chainnum = resinfo[this_residue_index].chainnum;
@@ -1408,7 +1408,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms, gmx_residuet
 		
 		if(residx<nres-1)
 		{
-			while(atom[i].resind<residx+1)
+			while(atoms->atom[i].resind<residx+1)
 			{
 				i++;
 			}
@@ -1467,12 +1467,12 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* Make bonds */
   at2bonds(&(plist[F_BONDS]), hb, 
-           atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x, 
+           atoms, *x,
            long_bond_dist, short_bond_dist, bAllowMissing);
   
   /* specbonds: disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),
-	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds,
+	     atoms, nssbonds, ssbonds,
 	     bAllowMissing);
   
   nmissat = name2type(atoms, &cgnr, atype, restp, rt);
