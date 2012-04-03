@@ -41,10 +41,9 @@
 #include <config.h>
 #endif
 
-// Legacy include.
-#include "smalloc.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/maths.h"
 
-#include "gromacs/basicmath.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/fatalerror/exceptions.h"
@@ -247,8 +246,9 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 
             for (int d = 0; d < _impl->ndim; ++d)
             {
-                dist2 += sqr(_impl->oldval[_impl->ci + j + d]
-                             - _impl->oldval[i + j + d]);
+                real displ = _impl->oldval[_impl->ci + j + d]
+                             - _impl->oldval[i + j + d];
+                dist2 += displ * displ;
             }
             _impl->currValues_.push_back(AnalysisDataValue(dist2));
         }

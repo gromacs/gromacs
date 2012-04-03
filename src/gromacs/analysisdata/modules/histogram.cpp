@@ -41,7 +41,6 @@
 
 #include <limits>
 
-#include "gromacs/basicmath.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/fatalerror/exceptions.h"
