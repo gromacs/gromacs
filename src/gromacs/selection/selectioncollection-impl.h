@@ -47,9 +47,9 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../options/options.h"
-#include "../utility/flags.h"
 #include "../utility/uniqueptr.h"
 #include "indexutil.h"
+#include "poscalc.h"
 #include "selection.h" // For gmx::SelectionList
 #include "selectioncollection.h"
 
@@ -88,7 +88,7 @@ struct gmx_ana_selcollection_t
     /** Index group that contains all the atoms. */
     struct gmx_ana_index_t         gall;
     /** Position calculation collection used for selection position evaluation. */
-    struct gmx_ana_poscalc_coll_t *pcc;
+    gmx::PositionCalculationCollection  pcc;
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
@@ -147,21 +147,14 @@ class SelectionCollection::Impl
                 RequestList    *requests_;
         };
 
-        //! Possible flags for the selection collection.
-        enum Flag
-        {
-            efOwnPositionCollection = 1<<0,
-            efExternalGroupsSet     = 1<<1
-        };
-        //! Holds a collection of Flag values.
-        typedef FlagsTemplate<Flag> Flags;
-
-        //! Creates a new selection collection.
-        explicit Impl(gmx_ana_poscalc_coll_t *pcc);
+        /*! \brief
+         * Creates a new selection collection.
+         *
+         * \throws  std::bad_alloc if out of memory.
+         */
+        Impl();
         ~Impl();
 
-        //! Returns true if the given flag has been set.
-        bool hasFlag(Flag flag) const { return _flags.test(flag); }
         //! Clears the symbol table of the selection collection.
         void clearSymbolTable();
         /*! \brief
@@ -224,8 +217,8 @@ class SelectionCollection::Impl
          *  - 4: combine 2 and 3
          */
         int                     _debugLevel;
-        //! Flags for various properties of the collection.
-        Flags                   _flags;
+        //! Whether external groups have been set for the collection.
+        bool                    _bExternalGroupsSet;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
         //! List of selections requested for later parsing.

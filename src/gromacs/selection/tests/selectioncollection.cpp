@@ -83,7 +83,7 @@ class SelectionCollectionTest : public ::testing::Test
 
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : _sc(NULL), _top(NULL), _frame(NULL)
+    : _top(NULL), _frame(NULL)
 {
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");

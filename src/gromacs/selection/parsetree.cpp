@@ -537,7 +537,7 @@ _gmx_selelem_init_method_params(t_selelem *sel, yyscan_t scanner)
     {
         gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-        sel->u.expr.method->set_poscoll(sc->pcc, mdata);
+        sel->u.expr.method->set_poscoll(&sc->pcc, mdata);
     }
     /* Store the values */
     sel->u.expr.method->param = param;
@@ -574,8 +574,8 @@ _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
  * \returns       0 on success, a non-zero error code on error.
  */
 static int
-set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
-                yyscan_t scanner)
+set_refpos_type(gmx::PositionCalculationCollection *pcc, t_selelem *sel,
+                const char *rpost, yyscan_t scanner)
 {
     if (!rpost)
     {
@@ -591,8 +591,8 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
         try
         {
             /* By default, use whole residues/molecules. */
-            gmx_ana_poscalc_create_enum(&sel->u.expr.pc, pcc, rpost,
-                                        POS_COMPLWHOLE);
+            sel->u.expr.pc
+                = pcc->createCalculationFromEnum(rpost, POS_COMPLWHOLE);
         }
         catch (const gmx::GromacsException &ex)
         {
@@ -770,7 +770,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
             goto on_error;
         }
     }
-    rc = set_refpos_type(sc->pcc, child, rpost, scanner);
+    rc = set_refpos_type(&sc->pcc, child, rpost, scanner);
     if (rc != 0)
     {
         goto on_error;
@@ -829,7 +829,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
         _gmx_selelem_free(root);
         return NULL;
     }
-    rc = set_refpos_type(sc->pcc, root, rpost, scanner);
+    rc = set_refpos_type(&sc->pcc, root, rpost, scanner);
     if (rc != 0)
     {
         _gmx_selelem_free(root);

@@ -57,7 +57,7 @@
 typedef struct
 {
     /** Position calculation collection to use. */
-    gmx_ana_poscalc_coll_t *pcc;
+    gmx::PositionCalculationCollection *pcc;
     /** Index group for which the center should be evaluated. */
     gmx_ana_index_t    g;
     /** Position evaluation data structure. */
@@ -75,7 +75,7 @@ static void *
 init_data_pos(int npar, gmx_ana_selparam_t *param);
 /** Sets the position calculation collection for position evaluation selection methods. */
 static void
-set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data);
+set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data);
 /** Initializes position evaluation keywords. */
 static void
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
@@ -186,7 +186,7 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
  * \param[in,out] data  Should point to \c t_methoddata_pos.
  */
 static void
-set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data)
+set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
 {
     ((t_methoddata_pos *)data)->pcc = pcc;
 }
@@ -194,7 +194,7 @@ set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data)
 /*!
  * \param[in,out] sel   Selection element to initialize.
  * \param[in]     type  One of the enum values acceptable for
- *   gmx_ana_poscalc_type_from_enum().
+ *     PositionCalculationCollection::typeFromEnum().
  *
  * Initializes the reference position type for position evaluation.
  * If called multiple times, the first setting takes effect, and later calls
@@ -224,7 +224,7 @@ _gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
 /*!
  * \param[in,out] sel   Selection element to initialize.
  * \param[in]     flags Default completion flags
- *   (see gmx_ana_poscalc_type_from_enum()).
+ *     (see PositionCalculationCollection::typeFromEnum()).
  *
  * Initializes the flags for position evaluation.
  * If called multiple times, the first setting takes effect, and later calls
@@ -269,7 +269,7 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         d->flags |= POS_DYNAMIC;
     }
-    gmx_ana_poscalc_create_enum(&d->pc, d->pcc, d->type, d->flags);
+    d->pc = d->pcc->createCalculationFromEnum(d->type, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
@@ -286,8 +286,7 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
-    gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                           d->flags);
+    d->pc = d->pcc->createCalculation(d->bPBC ? POS_ALL_PBC : POS_ALL, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 
@@ -305,8 +304,7 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
-    gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                           d->flags);
+    d->pc = d->pcc->createCalculation(d->bPBC ? POS_ALL_PBC : POS_ALL, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 

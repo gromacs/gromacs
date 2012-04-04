@@ -192,7 +192,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     CopyRight(stderr, argv[0]);
 
-    SelectionCollection  selections(NULL);
+    SelectionCollection  selections;
     selections.setDebugLevel(_impl->_debugLevel);
 
     TrajectoryAnalysisSettings  settings;

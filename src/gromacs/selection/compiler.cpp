@@ -2451,7 +2451,7 @@ postprocess_item_subexpressions(t_selelem *sel)
  * the method also defines the \c gmx_ana_selmethod_t::update method.
  */
 static void
-init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
+init_item_comg(t_selelem *sel, gmx::PositionCalculationCollection *pcc,
                e_poscalc_t type, int flags)
 {
     t_selelem *child;
@@ -2471,7 +2471,7 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
             if (!sel->u.expr.pc)
             {
                 cflags |= flags;
-                gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
+                sel->u.expr.pc = pcc->createCalculation(type, cflags);
             }
             else
             {
@@ -2706,13 +2706,14 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
+    PositionCalculationCollection::typeFromEnum(coll->_impl->_rpost.c_str(),
+                                                &post, &flags);
     item = sc->root;
     while (item)
     {
         init_root_item(item, &sc->gall);
         postprocess_item_subexpressions(item);
-        init_item_comg(item, sc->pcc, post, flags);
+        init_item_comg(item, &sc->pcc, post, flags);
         free_item_compilerdata(item);
         item = item->next;
     }

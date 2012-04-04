@@ -60,7 +60,7 @@ class SelectionOptionTest : public ::testing::Test
 };
 
 SelectionOptionTest::SelectionOptionTest()
-    : _sc(NULL), _options(NULL, NULL)
+    : _options(NULL, NULL)
 {
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");

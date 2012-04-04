@@ -48,7 +48,6 @@
 #include "selection.h" // For gmx::SelectionList
 
 struct gmx_ana_indexgrps_t;
-struct gmx_ana_poscalc_coll_t;
 
 namespace gmx
 {
@@ -91,13 +90,9 @@ class SelectionCollection
         /*! \brief
          * Creates an empty selection collection.
          *
-         * \param[in] pcc  Position calculation collection to use for selection
-         *      evaluation.
-         *
-         * If \p pcc is NULL, an internal collection is created and managed by
-         * the object.
+         * \throws  std::bad_alloc if out of memory.
          */
-        explicit SelectionCollection(gmx_ana_poscalc_coll_t *pcc);
+        SelectionCollection();
         ~SelectionCollection();
 
         /*! \brief
@@ -110,7 +105,8 @@ class SelectionCollection
          * collection.
          *
          * \param[in]     type      Default selection reference position type
-         *   (one of the strings acceptable for gmx_ana_poscalc_type_from_enum()).
+         *     (one of the strings acceptable for
+         *     PositionCalculationCollection::typeFromEnum()).
          *
          * Should be called before calling the parser functions, unless
          * initOptions() has been called.  In the latter case, can still be
@@ -123,7 +119,8 @@ class SelectionCollection
          * collection.
          *
          * \param[in]     type      Default selection output position type
-         *   (one of the strings acceptable for gmx_ana_poscalc_type_from_enum()).
+         *     (one of the strings acceptable for
+         *     PositionCalculationCollection::typeFromEnum()).
          *
          * Should be called before calling the parser functions, unless
          * initOptions() has been called.  In the latter case, can still be
