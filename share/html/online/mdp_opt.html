@@ -1292,70 +1292,75 @@ The force constant is then (1 - lambda)*<b>pull_k1</b> + lambda*<b>pull_kB1</b>.
 <dt><b>disre:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->distance restraints<!--EIdx--> (ignore distance
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->distance restraint<!--EIdx--> information in topology file</dd>
 <dt><b>simple</b></dt>
-<dd>simple (per-molecule) distance restraints,
-ensemble averaging can be performed with <tt>mdrun -multi</tt>
-where the environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
-of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value)</dd>
+<dd>simple (per-molecule) distance restraints.
 <dt><b>ensemble</b></dt>
-<dd>distance restraints over an ensemble of molecules in one simulation box,
-should only be used for special cases, such as dimers
-(this option is not fuctional in the current version of GROMACS)</dd>
+<dd>distance restraints over an ensemble of molecules in one
+simulation box. Normally, one would perform ensemble averaging over
+multiple subsystems, each in a separate box, using <tt>mdrun -multi</tt>;s
+upply <tt>topol0.tpr</tt>, <tt>topol1.tpr</tt>, ... with different
+coordinates and/or velocities.
+The environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
+of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value).</dd>
+</dd>
 </dl></dd>
 <dt><b>disre_weighting:</b></dt>
 <dd><dl compact>
+<dt><b>equal</b> (default)</dt>
+<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
 <dt><b>conservative</b></dt>
 <dd>the forces are the derivative of the restraint potential,
-this results in an r<sup>-7</sup> weighting of the atom pairs</dd>
-<dt><b>equal</b></dt>
-<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
+this results in an r<sup>-7</sup> weighting of the atom pairs.
+The forces are conservative when <tt>disre_tau</tt> is zero.</dd>
 </dl></dd>
 <dt><b>disre_mixed:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-time averaged violation </dd>
+time-averaged violation </dd>
 <dt><b>yes</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-square root of the time averaged violation times the instantaneous violation </dd>
+square root of the product of the time-averaged violation and the instantaneous violation</dd>
 </dl></dd>
 
 <dt><b>disre_fc: (1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
 <dd>force constant for distance restraints, which is multiplied by a
-(possibly) different factor for each restraint</dd>
+(possibly) different factor for each restraint given in the <tt>fac</tt>
+column of the interaction in the topology file.</dd>
 
 <dt><b>disre_tau: (0) [ps]</b></dt>
-<dd>time constant for distance restraints running average</dd>
+<dd>time constant for distance restraints running average. A value of zero turns off time averaging.</dd>
 
 <dt><b>nstdisreout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous distances
-of all atom pairs involved in restraints to the energy file
+<dd>period between steps when the running time-averaged and instantaneous distances
+of all atom pairs involved in restraints are written to the energy file
 (can make the energy file very large)</dd>
 
 <A NAME="nmr2">
 <dt><b>orire:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->orientation restraints<!--EIdx--> (ignore orientation
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->orientation restraint<!--EIdx--> information in topology file</dd>
 <dt><b>yes</b></dt>
 <dd>use orientation restraints, ensemble averaging can be performed
 with <tt>mdrun -multi</tt></dd>
 </dl>
 <dt><b>orire_fc: (0) [kJ mol]</b></dt>
 <dd>force constant for orientation restraints, which is multiplied by a
-(possibly) different factor for each restraint, can be set to zero to
+(possibly) different weight factor for each restraint, can be set to zero to
 obtain the orientations from a free simulation</dd>
 <dt><b>orire_tau: (0) [ps]</b></dt>
-<dd>time constant for orientation restraints running average</dd>
+<dd>time constant for orientation restraints running average. A value of zero turns off time averaging.</dd>
 <dt><b>orire_fitgrp: </b></dt>
-<dd>fit group for orientation restraining, for a protein backbone is a good
+<dd>fit group for orientation restraining. This group of atoms is used
+to determine the rotation $\RR$ of the system with respect to the
+reference orientation. The reference orientation is the starting
+conformation of the first subsystem. For a protein, backbone is a reasonable
 choice</dd>
 <dt><b>nstorireout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous orientations
-for all restraints and the molecular order tensor to the energy file
+<dd>period between steps when the running time-averaged and instantaneous orientations
+for all restraints, and the molecular order tensor are written to the energy file
 (can make the energy file very large)</dd>
 </dl>
 
