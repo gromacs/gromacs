@@ -71,11 +71,15 @@ class AnalysisData : public AbstractAnalysisData
         virtual ~AnalysisData();
 
         /*! \brief
-         * Sets the number of columns in the data and type of the data.
+         * Sets the number of columns in the data.
+         */
+        void setColumnCount(int ncol);
+        /*! \brief
+         * Sets whether the data contains multiple points per column per frame.
          *
          * \see isMultipoint()
          */
-        void setColumns(int ncol, bool multipoint = false);
+        void setMultipoint(bool bMultipoint);
 
         /*! \brief
          * Create a handle for adding data.

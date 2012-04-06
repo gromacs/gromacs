@@ -330,7 +330,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (_bMulti)
     {
-        _data.setColumns(_sel1.size());
+        _data.setColumnCount(_sel1.size());
     }
     else if (_bAll)
     {
@@ -339,11 +339,11 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         {
             na /= _natoms1;
         }
-        _data.setColumns(na + 1);
+        _data.setColumnCount(na + 1);
     }
     else
     {
-        _data.setColumns(1);
+        _data.setColumnCount(1);
     }
 
     if (_g2type == "t0")
