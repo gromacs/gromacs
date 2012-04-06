@@ -557,8 +557,8 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
  *      for, or NULL if the element is an internal element.
  */
 static void
-init_pos_keyword_defaults(t_selelem *root, const char *spost,
-                          const char *rpost, const gmx::Selection *sel)
+init_pos_keyword_defaults(t_selelem *root, const char *spost, const char *rpost,
+                          const gmx::internal::SelectionData *sel)
 {
     /* Selections use largest static group by default, while
      * reference positions use the whole residue/molecule. */
@@ -2581,11 +2581,11 @@ SelectionCompiler::compile(SelectionCollection *coll)
      */
     for (i = 0; i < sc->sel.size(); ++i)
     {
-        gmx::Selection *sel = sc->sel[i].get();
-        init_pos_keyword_defaults(sel->rootElement_,
+        gmx::internal::SelectionData &sel = *sc->sel[i];
+        init_pos_keyword_defaults(sel.rootElement(),
                                   coll->_impl->_spost.c_str(),
                                   coll->_impl->_rpost.c_str(),
-                                  sel);
+                                  &sel);
     }
 
     /* Remove any unused variables. */

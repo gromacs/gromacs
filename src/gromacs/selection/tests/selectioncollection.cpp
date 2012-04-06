@@ -39,8 +39,6 @@
 #include <config.h>
 #endif
 
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "smalloc.h"
@@ -78,7 +76,7 @@ class SelectionCollectionTest : public ::testing::Test
         void loadTopology(const char *filename);
 
         gmx::SelectionCollection _sc;
-        std::vector<gmx::Selection *> _sel;
+        gmx::SelectionList       _sel;
         t_topology              *_top;
         t_trxframe              *_frame;
 };
@@ -160,7 +158,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
-                                   const gmx::Selection *sel, TestFlags flags);
+                                   const gmx::Selection &sel, TestFlags flags);
 
         void runParser(const char *const *selections);
         void runCompiler();
@@ -179,23 +177,23 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 void
 SelectionCollectionDataTest::checkSelection(
         gmx::test::TestReferenceChecker *checker,
-        const gmx::Selection *sel, TestFlags flags)
+        const gmx::Selection &sel, TestFlags flags)
 {
     using gmx::test::TestReferenceChecker;
 
     {
-        gmx::ConstArrayRef<int> atoms = sel->atomIndices();
+        gmx::ConstArrayRef<int> atoms = sel.atomIndices();
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
     if (flags.test(efTestPositionAtoms)
         || flags.test(efTestPositionCoordinates))
     {
         TestReferenceChecker compound(
-                checker->checkSequenceCompound("Positions", sel->posCount()));
-        for (int i = 0; i < sel->posCount(); ++i)
+                checker->checkSequenceCompound("Positions", sel.posCount()));
+        for (int i = 0; i < sel.posCount(); ++i)
         {
             TestReferenceChecker poscompound(compound.checkCompound("Position", NULL));
-            gmx::SelectionPosition p = sel->position(i);
+            const gmx::SelectionPosition &p = sel.position(i);
             if (flags.test(efTestPositionAtoms))
             {
                 gmx::ConstArrayRef<int> atoms = p.atomIndices();
@@ -237,9 +235,9 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
             TestReferenceChecker selcompound(
                     compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
-            selcompound.checkString(_sel[_count]->name(), "Name");
-            selcompound.checkString(_sel[_count]->selectionText(), "Text");
-            selcompound.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
+            selcompound.checkString(_sel[_count].name(), "Name");
+            selcompound.checkString(_sel[_count].selectionText(), "Text");
+            selcompound.checkBoolean(_sel[_count].isDynamic(), "Dynamic");
             ++_count;
         }
     }
@@ -265,7 +263,7 @@ SelectionCollectionDataTest::checkCompiled()
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i]->selectionText() + "\"");
+                     _sel[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
@@ -287,7 +285,7 @@ SelectionCollectionDataTest::runEvaluate()
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i]->selectionText() + "\"");
+                     _sel[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));

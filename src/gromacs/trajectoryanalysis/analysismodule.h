@@ -45,6 +45,7 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../selection/selection.h" // For gmx::SelectionList
 #include "../utility/common.h"
 #include "../utility/uniqueptr.h"
 
@@ -56,7 +57,6 @@ class AnalysisData;
 class AnalysisDataHandle;
 class AnalysisDataParallelOptions;
 class Options;
-class Selection;
 class SelectionCollection;
 class TopologyInformation;
 class TrajectoryAnalysisModule;
@@ -99,11 +99,11 @@ class TrajectoryAnalysisModuleData
         /*! \brief
          * Returns a selection that corresponds to the given selection.
          */
-        Selection *parallelSelection(Selection *selection);
+        Selection parallelSelection(const Selection &selection);
         /*! \brief
          * Returns a set of selection that corresponds to the given selections.
          */
-        std::vector<Selection *> parallelSelections(const std::vector<Selection *> &selections);
+        SelectionList parallelSelections(const SelectionList &selections);
 
     protected:
         /*! \brief

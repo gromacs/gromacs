@@ -62,8 +62,8 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         Options                          _options;
         std::string                      _fnDist;
         double                           _cutoff;
-        Selection                       *_refsel;
-        std::vector<Selection *>         _sel;
+        Selection                        _refsel;
+        SelectionList                    _sel;
         AnalysisData                     _data;
         AnalysisDataAverageModulePointer _avem;
 };
@@ -105,7 +105,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 
 AnalysisTemplate::AnalysisTemplate()
     : _options("template", "Template options"), _cutoff(0.0),
-      _refsel(NULL), _avem(new AnalysisDataAverageModule())
+      _avem(new AnalysisDataAverageModule())
 {
 }
 
@@ -180,7 +180,7 @@ AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
-            new ModuleData(this, opt, selections, _cutoff, _refsel->posCount()));
+            new ModuleData(this, opt, selections, _cutoff, _refsel.posCount()));
 }
 
 
@@ -190,18 +190,18 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 {
     AnalysisDataHandle  dh = pdata->dataHandle(_data);
     NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->_nb;
-    Selection          *refsel = pdata->parallelSelection(_refsel);
+    const Selection    &refsel = pdata->parallelSelection(_refsel);
 
-    nb.init(pbc, refsel->positions());
+    nb.init(pbc, refsel.positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < _sel.size(); ++g)
     {
-        Selection *sel = pdata->parallelSelection(_sel[g]);
-        int   nr = sel->posCount();
+        const Selection &sel = pdata->parallelSelection(_sel[g]);
+        int   nr = sel.posCount();
         real  frave = 0.0;
         for (int i = 0; i < nr; ++i)
         {
-            SelectionPosition p = sel->position(i);
+            SelectionPosition p = sel.position(i);
             frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
@@ -224,7 +224,7 @@ AnalysisTemplate::writeOutput()
     for (size_t g = 0; g < _sel.size(); ++g)
     {
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                _sel[g]->name(), _avem->average(g));
+                _sel[g].name(), _avem->average(g));
     }
 }
 

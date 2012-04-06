@@ -1285,9 +1285,10 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
         /* Add the new selection to the collection if it is not a variable. */
         if (sel->child->type != SEL_SUBEXPR)
         {
-            gmx::SelectionPointer selPtr(
-                    new gmx::Selection(sel, _gmx_sel_lexer_pselstr(scanner)));
-            sc->sel.push_back(move(selPtr));
+            gmx::SelectionDataPointer selPtr(
+                    new gmx::internal::SelectionData(
+                        sel, _gmx_sel_lexer_pselstr(scanner)));
+            sc->sel.push_back(gmx::move(selPtr));
         }
     }
     /* Clear the selection string now that we've saved it */

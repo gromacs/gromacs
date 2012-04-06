@@ -241,14 +241,14 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
 
 
 void
-Angle::checkSelections(const std::vector<Selection *> &sel1,
-                       const std::vector<Selection *> &sel2) const
+Angle::checkSelections(const SelectionList &sel1,
+                       const SelectionList &sel2) const
 {
     if (_bMulti)
     {
         for (size_t g = 0; g < sel1.size(); ++g)
         {
-            if (sel1[g]->posCount() % _natoms1 != 0)
+            if (sel1[g].posCount() % _natoms1 != 0)
             {
                 GMX_THROW(InconsistentInputError(formatString(
                     "Number of positions in selection %d not divisible by %d",
@@ -258,8 +258,8 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         return;
     }
 
-    int na1 = sel1[0]->posCount();
-    int na2 = (_natoms2 > 0) ? sel2[0]->posCount() : 0;
+    int na1 = sel1[0].posCount();
+    int na2 = (_natoms2 > 0) ? sel2[0].posCount() : 0;
 
     if (!_bSplit1 && _natoms1 > 1 && na1 % _natoms1 != 0)
     {
@@ -278,7 +278,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
     {
         for (int g = 1; g < _natoms1; ++g)
         {
-            if (sel1[g]->posCount() != na1)
+            if (sel1[g].posCount() != na1)
             {
                 GMX_THROW(InconsistentInputError(
                           "All selections in the first group should contain "
@@ -296,7 +296,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         {
             for (int g = 1; g < _natoms2; ++g)
             {
-                if (sel2[g]->posCount() != na2)
+                if (sel2[g].posCount() != na2)
                 {
                     GMX_THROW(InconsistentInputError(
                               "All selections in the second group should contain "
@@ -314,7 +314,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         GMX_THROW(InconsistentInputError(
                   "Number of vectors defined by the two groups are not the same"));
     }
-    if (_g2type[0] == 's' && sel2[0]->posCount() != 1)
+    if (_g2type[0] == 's' && sel2[0].posCount() != 1)
     {
         GMX_THROW(InconsistentInputError(
                   "The second group should contain a single position with -g2 sphnorm"));
@@ -334,7 +334,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     else if (_bAll)
     {
-        int na = _sel1[0]->posCount();
+        int na = _sel1[0].posCount();
         if (!_bSplit1)
         {
             na /= _natoms1;
@@ -348,7 +348,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (_g2type == "t0")
     {
-        int na = _sel1[0]->posCount();
+        int na = _sel1[0].posCount();
         if (!_bSplit1)
         {
             na /= _natoms1;
@@ -369,21 +369,21 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 static void
-copy_pos(const std::vector<Selection *> &sel, bool bSplit, int natoms,
+copy_pos(const SelectionList &sel, bool bSplit, int natoms,
          int firstg, int first, rvec x[])
 {
     if (bSplit)
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg + k]->position(first).x(), x[k]);
+            copy_rvec(sel[firstg + k].position(first).x(), x[k]);
         }
     }
     else
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg]->position(first + k).x(), x[k]);
+            copy_rvec(sel[firstg].position(first + k).x(), x[k]);
         }
     }
 }
@@ -435,8 +435,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle       dh = pdata->dataHandle(_data);
-    std::vector<Selection *> sel1 = pdata->parallelSelections(_sel1);
-    std::vector<Selection *> sel2 = pdata->parallelSelections(_sel2);
+    const SelectionList     &sel1 = pdata->parallelSelections(_sel1);
+    const SelectionList     &sel2 = pdata->parallelSelections(_sel2);
 
     checkSelections(sel1, sel2);
 
@@ -450,7 +450,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             clear_rvec(c2);
             break;
         case 's':
-            copy_rvec(_sel2[0]->position(0).x(), c2);
+            copy_rvec(_sel2[0].position(0).x(), c2);
             break;
     }
 
@@ -465,7 +465,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         real ave = 0.0;
         int n = 0;
         int i, j;
-        for (i = j = 0; i < sel1[g]->posCount(); i += incr1)
+        for (i = j = 0; i < sel1[g].posCount(); i += incr1)
         {
             rvec x[4];
             real angle;

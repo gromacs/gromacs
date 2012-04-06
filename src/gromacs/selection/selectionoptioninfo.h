@@ -73,7 +73,7 @@ class SelectionOptionStorage;
  *
  * Example use:
  * \code
-std::vector<Selection *> sel;
+SelectionList sel;
 Options options("example", "Example options");
 SelectionOptionInfo *info;
 options.addOption(SelectionOption("sel").storeVector(&sel)

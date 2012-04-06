@@ -50,16 +50,15 @@
 #include "../utility/flags.h"
 #include "../utility/uniqueptr.h"
 #include "indexutil.h"
+#include "selection.h" // For gmx::SelectionList
 #include "selectioncollection.h"
 
 namespace gmx
 {
-class Selection;
-
-//! Smart pointer for managing a selection.
-typedef gmx_unique_ptr<Selection>::type SelectionPointer;
+//! Smart pointer for managing an internal selection data object.
+typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
 //! Shorthand for storing a list of selections internally.
-typedef std::vector<SelectionPointer> SelectionList;
+typedef std::vector<SelectionDataPointer> SelectionDataList;
 }
 
 /*! \internal \brief
@@ -71,8 +70,14 @@ struct gmx_ana_selcollection_t
 {
     /** Root of the selection element tree. */
     struct t_selelem           *root;
-    /** Array of compiled selections. */
-    gmx::SelectionList             sel;
+    /*! \brief
+     * Array of compiled selections.
+     *
+     * Has the responsibility of managing the memory for the contained objects,
+     * but note that gmx::Selection instances also hold pointers to the
+     * objects.
+     */
+    gmx::SelectionDataList         sel;
     /** Number of variables defined. */
     int                            nvars;
     /** Selection strings for variables. */
@@ -172,7 +177,7 @@ class SelectionCollection::Impl
          * Does not clear \p output.
          */
         void runParser(void *scanner, int maxnr,
-                       std::vector<Selection *> *output);
+                       SelectionList *output);
         /*! \brief
          * Adds a selection request for delayed user input.
          *

@@ -72,13 +72,12 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
 
 std::string SelectionOptionStorage::formatValue(int i) const
 {
-    Selection *sel = values().at(i);
-    return (sel != NULL ? sel->selectionText() : "");
+    return values()[i].selectionText();
 }
 
 
 void SelectionOptionStorage::addSelections(
-        const std::vector<Selection *> &selections,
+        const SelectionList &selections,
         bool bFullValue)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
@@ -89,16 +88,15 @@ void SelectionOptionStorage::addSelections(
     {
         clearSet();
     }
-    std::vector<Selection *>::const_iterator i;
+    SelectionList::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
     {
         // TODO: Having this check in the parser would make interactive input
         // behave better.
-        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        if (_selectionFlags.test(efOnlyStatic) && i->isDynamic())
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
-        (*i)->setFlags(_selectionFlags);
         addValue(*i);
     }
     if (bFullValue)
@@ -112,7 +110,7 @@ void SelectionOptionStorage::convertValue(const std::string &value)
 {
     GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
-    std::vector<Selection *> selections;
+    SelectionList selections;
     // TODO: Implement reading from a file.
     _sc->parseFromString(value, &selections);
     addSelections(selections, false);
@@ -123,6 +121,11 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
     if (values->size() > 0 && values->size() < static_cast<size_t>(minValueCount()))
     {
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
+    }
+    ValueList::iterator i;
+    for (i = values->begin(); i != values->end(); ++i)
+    {
+        i->data().setFlags(_selectionFlags);
     }
 }
 
@@ -168,10 +171,10 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
     _selectionFlags.set(flag, bSet);
-    ValueList::const_iterator i;
+    ValueList::iterator i;
     for (i = values().begin(); i != values().end(); ++i)
     {
-        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        if (_selectionFlags.test(efOnlyStatic) && i->isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -179,7 +182,7 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
             errors.finishContext();
             GMX_THROW(InvalidInputError(errors.toString()));
         }
-        (*i)->setFlags(_selectionFlags);
+        i->data().setFlags(_selectionFlags);
     }
 }
 

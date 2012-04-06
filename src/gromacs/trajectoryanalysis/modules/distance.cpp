@@ -62,7 +62,6 @@ namespace analysismodules
 Distance::Distance()
     : _options("distance", "Distance calculation"), _avem(new AnalysisDataAverageModule())
 {
-    _sel[0] = _sel[1] = NULL;
 }
 
 
@@ -95,11 +94,11 @@ void
 Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
-    if (_sel[0]->posCount() != 1)
+    if (_sel[0].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The first selection does not define a single position"));
     }
-    if (_sel[1]->posCount() != 1)
+    if (_sel[1].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
@@ -122,12 +121,12 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle  dh = pdata->dataHandle(_data);
-    Selection          *sel1 = pdata->parallelSelection(_sel[0]);
-    Selection          *sel2 = pdata->parallelSelection(_sel[1]);
+    const Selection    &sel1 = pdata->parallelSelection(_sel[0]);
+    const Selection    &sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
     real                r;
-    SelectionPosition   p1 = sel1->position(0);
-    SelectionPosition   p2 = sel2->position(0);
+    const SelectionPosition &p1 = sel1.position(0);
+    const SelectionPosition &p2 = sel2.position(0);
 
     if (pbc != NULL)
     {

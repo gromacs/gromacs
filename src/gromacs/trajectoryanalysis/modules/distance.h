@@ -39,17 +39,15 @@
 #define GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
 
 #include <string>
-#include <vector>
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
-
-class Selection;
 
 namespace analysismodules
 {
@@ -75,7 +73,7 @@ class Distance : public TrajectoryAnalysisModule
     private:
         Options                          _options;
         std::string                      _fnDist;
-        Selection                       *_sel[2];
+        Selection                        _sel[2];
         AnalysisData                     _data;
         AnalysisDataAverageModulePointer _avem;
 

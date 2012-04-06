@@ -42,6 +42,7 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/selection/selection.h"
 
 #include "analysismodule-impl.h"
 
@@ -117,19 +118,20 @@ TrajectoryAnalysisModuleData::dataHandle(const AnalysisData &data)
 }
 
 
-Selection *TrajectoryAnalysisModuleData::parallelSelection(Selection *selection)
+Selection TrajectoryAnalysisModuleData::parallelSelection(const Selection &selection)
 {
     // TODO: Implement properly.
     return selection;
 }
 
 
-std::vector<Selection *>
-TrajectoryAnalysisModuleData::parallelSelections(const std::vector<Selection *> &selections)
+SelectionList
+TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections)
 {
-    std::vector<Selection *> newSelections;
+    // TODO: Consider an implementation that does not allocate memory every time.
+    SelectionList newSelections;
     newSelections.reserve(selections.size());
-    std::vector<Selection *>::const_iterator i = selections.begin();
+    SelectionList::const_iterator i = selections.begin();
     for ( ; i != selections.end(); ++i)
     {
         newSelections.push_back(parallelSelection(*i));
