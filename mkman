@@ -65,7 +65,7 @@ fi
 # section of the manual appendix compiled from tool output. That
 # section should not be called "g_options_d" (or any such), because it
 # documents the standard and hidden options for all tools.
-sed -i -e "s/${OPTIONS_PROGRAM_NAME}/Standard options for GROMACS tools/g" ${OPTIONS_PROGRAM_NAME}.tex
+sed -i -e "s/\\\\normindex{${OPTIONS_PROGRAM_NAME}}/Standard options for GROMACS tools\\\\index{options!standard}/g" ${OPTIONS_PROGRAM_NAME}.tex
 
 mv ${OPTIONS_PROGRAM_NAME}.tex ${MANDIR}/
 

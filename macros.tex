@@ -66,10 +66,15 @@
 \newcommand{\hdt}{\frac{\Delta t}{2}}
 %\newcommand{\type}[1]{\\ {\tt \% #1}\\}
 \newcommand{\normindex}[1]{#1{\index{#1}}}
-\newcommand{\swapindex}[2]{#1 #2{\index{#1 #2}}{\index{#2, #1|see{#1 #2}}}}
-\newcommand{\pawsindex}[2]{#1 #2{\index{#1 #2|see{#2, #1}}}{\index{#2, #1}}}
+\newcommand{\seeindexquiet}[2]{\index{#1|see{#2}}}
+\newcommand{\seeindex}[2]{#1{\seeindexquiet{#1}{#2}}}
+\newcommand{\swapindexquiet}[2]{{\index{#1 #2}}{\seeindexquiet{#2, #1}{#1 #2}}}
+\newcommand{\swapindex}[2]{{\normindex{#1 #2}}{\seeindexquiet{#2, #1}{#1 #2}}}
+\newcommand{\swapindexthreequiet}[3]{{\index{#1 #2 #3}}{\seeindexquiet{#2!#3!#1}{#1 #2 #3}}}
+\newcommand{\swapindexthree}[3]{{\normindex{#1 #2 #3}}{\seeindexquiet{#2!#3!#1}{#1 #2 #3}}}
+\newcommand{\pawsindexquiet}[2]{{\seeindexquiet{#1 #2}{#2, #1}}{\index{#2, #1}}}
+\newcommand{\pawsindex}[2]{#1 #2{\pawsindexquiet{#1}{#2}}}
 \newcommand{\boldindex}[1]{#1\index{#1@\textbf{#1}}}
-\newcommand{\seeindex}[2]{#1{\index{#1|see{#2}}}}
 \newcommand{\eg}{\em e.g.\@}
 \newcommand{\ie}{\em i.e.\@}
 \newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}}

@@ -4,3 +4,4 @@ delim_2 " \\hfill "
 headings_flag 1
 heading_prefix "\n\\textbf{\\textsf{\\large "
 heading_suffix "}}"
+line_max 9999

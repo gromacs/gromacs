@@ -238,9 +238,9 @@ properly, but there are other reasons to shy away from reactions for
 the time being.
 
 \item[{\bf Force fields are approximate}]\mbox{}\\
-Force fields \index{force-field} provide the forces.
+Force fields \index{force field} provide the forces.
 They are not really a part of the
-simulation method and their parameters can be user-modified as the
+simulation method and their parameters can be modified by the user as the
 need arises or knowledge improves. But the form of the forces that can
 be used in a particular program is subject to limitations. The force
 field that is incorporated in {\gromacs} is described in Chapter 4. In
@@ -270,7 +270,7 @@ exaggerate the long-range Coulomb terms. Luckily, the next item
 compensates this effect a bit.
 
 \item[{\bf Long-range interactions are cut off}]\mbox{}\\
-In this version, {\gromacs} always uses a cut-off radius for the
+In this version, {\gromacs} always uses a \normindex{cut-off} radius for the
 Lennard-Jones interactions and sometimes for the Coulomb interactions
 as well. The ``minimum-image convention'' used by GROMACS requires that only one image of each
 particle in the periodic boundary conditions is considered for a pair

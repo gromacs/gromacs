@@ -114,11 +114,11 @@ Three different types of calculation are supported,
 and in all cases the reference distance can be constant
 or linearly changing with time.
 \begin{enumerate}
-\item{\textbf{\swapindex{Umbrella}{pulling}}}
+\item{\textbf{Umbrella pulling}\swapindexquiet{umbrella}{pulling}}
 A harmonic potential is applied between
 the centers of mass of two groups.
 Thus, the force is proportional to the displacement.
-\item{\textbf{\swapindex{Constraint}{pulling}}}
+\item{\textbf{Constraint pulling\swapindexquiet{constraint}{pulling}}}
 The distance between the centers of mass of two groups is constrained.
 The constraint force can be written to a file.
 This method uses the SHAKE algorithm but only needs 1 iteration to be
@@ -293,7 +293,7 @@ period 13~fs, the next shortest periods are around 20~fs, which will
 allow a maximum time step of about 4~fs.
 
 Removing the bond-angle degrees of freedom from hydrogen atoms can
-best be done by defining them as \normindex{virtual interaction-sites}
+best be done by defining them as \normindex{virtual interaction sites}
 instead of normal atoms. Whereas a normal atom is connected to the molecule
 with bonds, angles and dihedrals, a virtual site's position is calculated
 from the position of three nearby heavy atoms in a predefined manner
@@ -469,7 +469,7 @@ preserved. See \figref{vsitehydro}D.
 
 \end{itemize}
 
-\section{\normindex{Viscosity} calculation}
+\section{Viscosity calculation\index{viscosity}}
 
 The shear viscosity is a property of liquids that can be determined easily  
 by experiment. It is useful for parameterizing a force field
@@ -574,7 +574,7 @@ correlation time of the liquid.
 Two quantities are written to the energy file, along with their averages
 and fluctuations: $V$ and $1/\eta$, as obtained from (\ref{visc}).
 
-\section{\normindex{Tabulated interaction function}s}
+\section{Tabulated interaction functions\index{tabulated interaction functions}}
 \subsection{Cubic splines for potentials}
 \label{subsec:cubicspline}
 In some of the inner loops of {\gromacs}, look-up tables are used 
@@ -642,7 +642,7 @@ representation of it) than to modify the inner loops of the MD
 program.
 
 \subsection{User-specified potential functions}
-You can also use your own \swapindex{potential}{function}s 
+You can also use your own \index{potential function}s 
 without editing the {\gromacs} code. 
 The potential function should be according to the following equation
 \beq

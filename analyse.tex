@@ -34,19 +34,19 @@ Specific information on the in- and output of these programs can be found
 in the online manual at {\wwwpage}.
 The output files are often produced as finished Grace/Xmgr graphs.
 
-First, in \secref{groups}, the group concept in analysis is explained. 
+First, in \secref{usinggroups}, the group concept in analysis is explained. 
 Then, the different analysis tools are presented.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Groups in Analysis
 
-\section{Groups in Analysis.}
-\label{sec:groups}
+\section{Using Groups}
+\label{sec:usinggroups}\index{groups}
 {\tt make_ndx, mk_angndx}\\
 In \chref{algorithms}, it was explained how {\em groups of
-atoms} can be used in {\tt mdrun}.  In most analysis programs, groups
+atoms} can be used in {\tt mdrun} (see~\secref{groupconcept}).  In most analysis programs, groups
 of atoms must also be chosen. Most programs can generate several default
 index groups, but groups can always be read from an index file. Let's
-consider a simulation of a binary mixture of components A and B. When
+consider the example of a simulation of a binary mixture of components A and B. When
 we want to calculate the radial distribution function (RDF)
 $g_{AB}(r)$ of A with respect to B, we have to calculate:
 \beq
@@ -88,6 +88,7 @@ First, the group name is written between square brackets. The following
 atom numbers may be spread out over as many lines as you like. The
 atom numbering starts at 1.
 
+\swapindexquiet{choosing}{groups}%
 Each tool that can use groups will offer the available alternatives
 for the user to choose. That choice can be made with the number of the
 group, or its name. In fact, the first few letters of the group
@@ -99,7 +100,7 @@ webpage for suggestions.
 \subsection{Default Groups}
 \label{subsec:defaultgroups}
 When no index file is supplied to analysis tools or {\tt grompp},
-a number of default groups are generated to choose from:
+a number of \swapindex{default}{groups} are generated to choose from:
 \begin{description}
 \item[{\tt System}]\mbox{}\\
         all atoms in the system
@@ -289,7 +290,7 @@ up to $r_{max}$, so angle dependent, see \figref{rdfex}D.
 The theory of correlation functions is well established~\cite{Allen87}.
 We describe here the implementation of the various 
 \normindex{correlation} function flavors in the {\gromacs} code.
-The definition of the \swapindex{autocorrelation}{function} (ACF)
+The definition of the \index{autocorrelation function} (ACF)
 $C_f(t)$ for a property $f(t)$ is:
 \beq
 C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
@@ -422,7 +423,7 @@ actually the values do not converge.
 \section{Mean Square Displacement}
 \label{sec:msd}
 {\tt g_msd}\\
-To determine the self \swapindex{diffusion}{coefficient} $D_A$ of
+To determine the self \index{diffusion coefficient} $D_A$ of
 particles of type $A$, one can use the \normindex{Einstein
 relation}~\cite{Allen87}:
 \beq 
@@ -621,7 +622,7 @@ where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$
 is compared with the distance between the same atoms at time $0$.
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
-\section{\normindex{Covariance analysis}}
+\section{Covariance analysis\index{covariance analysis}}
 \label{sec:covanal}
 Covariance analysis, also called
 \seeindex{principal component analysis}{covariance analysis}
