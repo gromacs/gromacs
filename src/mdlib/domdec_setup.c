@@ -661,7 +661,7 @@ real dd_choose_grid(FILE *fplog,
                     real cellsize_limit,real cutoff_dd,
                     gmx_bool bInterCGBondeds,gmx_bool bInterCGMultiBody)
 {
-    int  nnodes_div,ldiv;
+    gmx_large_int_t nnodes_div,ldiv;
     real limit;
     
     if (MASTER(cr))
