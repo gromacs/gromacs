@@ -1187,49 +1187,6 @@ $r_2$ from ~\eqnref{disre}.  In some cases it can be useful to have
 different force constants for some restraints; this is controlled by
 the column {\tt fac}.  The force constant in the parameter file is
 multiplied by the value in the column {\tt fac} for each restraint.
-
-Some parameters for NMR refinement can be specified in the
-{\tt grompp.mdp} file:
-\begin{description}
-\item[{\tt disre}: type of distance restraining.]
-        The {\tt disre} variable sets the type of distance restraint.
-        {\tt no/simple} turns the distance restraints off/on.
-        When multiple proteins or peptides are present in one 
-        simulation box, ensemble averaging 
-        can be turned on by setting {\tt disre = ensemble}.
-	Normally one would perform ensemble averaging over multiple
-	subsystems, each in a separate box, using {\tt mdrun -multi};
-	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
-	coordinates and/or velocities.
-\item[{\tt disre_weighting}: force-weighting in restraints with
-         multiple pairs.]
-        By default, the force due to the distance restraint is distributed equally
-        over all the pairs involved in the restraint. This can also be
-        explicitly selected with
-        {\tt disre_weighting = equal}. 
-        If you instead set this option to {\tt disre_weighting = conservative}
-        you get conservative forces when {\tt disre_tau = 0}.
-\item[{\tt disre_mixed}: how to calculate the violations.]
-        {\tt disre_mixed = no} gives normal time-averaged violations.
-        When {\tt disre_mixed = yes} the square root of the
-        product of the time-averaged and the instantaneous
-        violations is used.
-\item[{\tt disre_fc}: force constant $k_{dr}$ for distance restraints.] 
-        $k_{dr}$  (\eqnref{disre}) can be set
-        as variable {\tt disre_fc = 1000} for a force constant of
-        1000 {kJ mol$^{-1}$ nm$^{-2}$}. This value is multiplied by
-        the value in the {\tt fac} column in the distance restraint
-        entries in the topology file.
-\item[{\tt disre_tau}: time constant for restraints.] 
-        $\tau$ (\eqnref{ravdisre}) can be set
-        as variable {\tt disre_tau = 10} for a time constant of
-        10 ps. Time averaging can be turned off by setting {\tt disre_tau}
-        to 0.
-\item[{\tt nstdisreout}: pair distance output frequency.]
-        Determines how often the time-averaged and 
-        instantaneous distances of all atom pairs involved in
-        distance restraints are written to the energy file.
-\end{description}
 %} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\SSS}{{\mathbf S}}
@@ -1468,37 +1425,6 @@ should be the inverse of the square of the unit of the observable.
 Some parameters for orientation restraints can be specified in the
 {\tt grompp.mdp} file, for a study of the effect of different
 force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
-\begin{description}
-\item[{\tt orire}: use orientation restraining.]
-        {\tt no/yes} turns the distance restraints off/on.
-	Ensemble averaging can be performed using {\tt mdrun -multi},
-	which simulates multiple subsystems in separate boxes;
-	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
-	coordinates and/or velocities.
-\item[{\tt orire_fc}: force constant $k$ for orientation restraints.] 
-	The unit of $k$ is kJ mol$^{-1}$.
-	{\bf Note} that the force constant for a restraint is this force constant
-	times the weight of the restraint.
-	When set to zero one obtain the calculated orientation without
-	affecting the simulation.
-\item[{\tt orire_tau}: time constant $\tau$ for restraints.] 
-        Set {\tt orire_tau = 10} for a time constant of
-        10 ps. Time averaging can be turned off by setting {\tt orire_tau}
-        to 0.
-\item[{\tt orire_fitgrp}: the fit group for the restraints.]
-	This group of atoms is used to determine the rotation $\RR$
-	of the system with respect to the reference orientation.
-	The reference orientation is the starting conformation of
-	the first subsystem. For a protein {\tt backbone} should be
-        a reasonable choice.	
-\item[{\tt nstorireout}: orientation output frequency.]
-        Determines how often the orientations for all restraints
-        and the order tensor(s) $\SSS$ are written to the energy file.
-	When using time and/or ensemble averaging, the time and ensemble
-	averaged orientations as well as the instantaneous non-ensemble
-	averaged orientations are written to the energy file.
-	These can be analyzed using {\tt g_energy}.
-\end{description}
 %} % Brace matches ifthenelse test for gmxlite
 
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
