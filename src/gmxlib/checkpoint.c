@@ -1725,7 +1725,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
              * locking
              */
             gmx_fatal(FARGS,"The first output file should always be the log "
-                      "file but instead is: %s", outputfiles[0].filename);
+                      "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
         for(i=0;i<nfiles;i++)
         {
@@ -1771,7 +1771,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
@@ -1808,7 +1808,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                           outputfiles[i].filename);
             }
 #endif        
@@ -1823,7 +1823,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 #endif
                 if(rc!=0)
                 {
-                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Truncation of file %s failed. Cannot do appending because of this failure.",outputfiles[i].filename);
                 }
             }
         }
