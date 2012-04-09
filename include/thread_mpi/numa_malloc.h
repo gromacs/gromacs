@@ -67,7 +67,8 @@ extern "C"
 #endif
 
 
-#if (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 ) || defined (__CYGWIN__))
+#ifdef GMX_WINDOWS
+/* Should not be defined for Cygwin! */
 
 #define TMPI_NUMA_MALLOC
 

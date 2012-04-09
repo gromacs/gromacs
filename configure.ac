@@ -755,6 +755,7 @@ fi
 # check for xtc headers
 case "${host_os}" in
 cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
+  AC_DEFINE(GMX_CYGWIN,,[Compile for Cygwin])
   ;;
 *)
   AC_CHECK_HEADERS([rpc/rpc.h])

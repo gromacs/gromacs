@@ -78,7 +78,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  */
 #include "molfile_plugin.h"
 #include "vmddlopen.h"
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_WINDOWS
 #include "glob.h"
 #else
 #include <windows.h>
@@ -236,7 +236,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     const char *err;
     int i;
     int ret=0;
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_WINDOWS
     glob_t globbuf;
     const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
 #else
@@ -264,7 +264,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         pathenv=defpathenv;
     }
     strncpy(pathname,pathenv,sizeof(pathname));
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_WINDOWS
     strcat(pathname,"/*.so");
     glob(pathname, 0, NULL, &globbuf);
     if (globbuf.gl_pathc == 0)

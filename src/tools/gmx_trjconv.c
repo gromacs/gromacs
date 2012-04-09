@@ -441,7 +441,7 @@ void check_trn(const char *fn)
         gmx_fatal(FARGS,"%s is not a trajectory file, exiting\n",fn);
 }
 
-#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
+#ifndef GMX_WINDOWS
 void do_trunc(const char *fn, real t0)
 {
     t_fileio     *in;
@@ -744,7 +744,7 @@ int gmx_trjconv(int argc,char *argv[])
                         { &bVels }, "Read and write velocities if possible" },
                     { "-force", FALSE, etBOOL,
                         { &bForce }, "Read and write forces if possible" },
-#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
+#ifndef GMX_WINDOWS
                     { "-trunc", FALSE, etTIME,
                         { &ttrunc }, 
                         "Truncate input trajectory file after this time (%t)" },
@@ -853,7 +853,7 @@ int gmx_trjconv(int argc,char *argv[])
     in_file=opt2fn("-f",NFILE,fnm);
 
     if (ttrunc != -1) {
-#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
+#ifndef GMX_WINDOWS
         do_trunc(in_file,ttrunc);
 #endif
     }
