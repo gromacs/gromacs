@@ -44,7 +44,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 /* _isnan() */
 #include <float.h>
 #endif

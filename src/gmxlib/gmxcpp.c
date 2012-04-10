@@ -46,7 +46,7 @@
 #include <ctype.h>
 
 /* Necessary for getcwd */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
 #endif
@@ -273,7 +273,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
       
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
       pdum=_getcwd(cpp->cwd,STRLEN);
       _chdir(cpp->path);
 #else
@@ -587,7 +587,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (NULL != handle->cwd) {
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",handle->cwd);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
       _chdir(handle->cwd);
 #else
       if (-1 == chdir(handle->cwd))
