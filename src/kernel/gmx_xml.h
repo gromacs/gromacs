@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>

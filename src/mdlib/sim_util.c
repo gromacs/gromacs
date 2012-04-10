@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifdef GMX_CRAY_XT3
 #include<catamount/dclock.h>

@@ -32,6 +32,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>

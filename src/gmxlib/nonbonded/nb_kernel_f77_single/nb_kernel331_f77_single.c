@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _

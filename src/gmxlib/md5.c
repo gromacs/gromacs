@@ -34,6 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifdef GMX_INTEGER_BIG_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 1

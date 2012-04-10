@@ -52,9 +52,6 @@
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
 
-/* Detect Cygwin */
-#cmakedefine GMX_CYGWIN
-
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
 

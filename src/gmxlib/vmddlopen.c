@@ -18,6 +18,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 
 /***************************************************************************
@@ -80,6 +81,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 
 #ifdef GMX_USE_PLUGINS

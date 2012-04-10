@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #include "string2.h"
 #include "smalloc.h"
@@ -419,7 +420,7 @@ static char *mydate(char buf[], int maxsize,gmx_bool bWiki)
   struct tm tm;
   
   time(&now);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
   /* Native windows */
   localtime_s(&tm,&now);
 #else

@@ -551,6 +551,7 @@ static yyconst flex_int16_t yy_chk[193] =
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #include <string2.h>
 

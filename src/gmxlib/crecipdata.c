@@ -37,6 +37,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 /* just put something here to avoid empty file warnings */
 const int crecipdata_stub;

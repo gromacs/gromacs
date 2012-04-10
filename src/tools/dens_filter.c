@@ -37,6 +37,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 /* dens_filter.c
  * Routines for Filters and convolutions
  */

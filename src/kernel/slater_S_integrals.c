@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 
 /* slater_S_integrals.c (c) 2008 Paul J. van Maaren and David van der Spoel */

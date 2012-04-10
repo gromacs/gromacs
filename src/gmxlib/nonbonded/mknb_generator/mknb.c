@@ -198,7 +198,7 @@ mknb_write_file_header(void)
 				mknb_options.prefetch_forces ? "yes" : "no",
 				mknb_keep_comments ? "yes" : "no");
 	  
-		fprintf(mknb_output,"#ifdef HAVE_CONFIG_H\n#include<config.h>\n#endif\n");
+		fprintf(mknb_output,"#ifdef HAVE_CONFIG_H\n#include<config.h>\n#endif\n#include \"gmxconfig.h\"\n");
 
 		if(mknb_options.threads)
                 {
@@ -246,7 +246,7 @@ mknb_write_file_header(void)
 				"C the papers people have written on it - you can find them on the website!\n"
 				"C\n\n");
 #ifdef IBM_FORTRAN_CPP
-		fprintf(mknb_output,"#ifdef HAVE_CONFIG_H\n#  include<config.h>\n#endif\n\n");
+		fprintf(mknb_output,"#ifdef HAVE_CONFIG_H\n#  include<config.h>\n#endif\n#include \"gmxconfig.h\"\n\n");
 		fprintf(mknb_output,"#ifdef GMX_DOUBLE\n");
 		fprintf(mknb_output,"#  define gmxreal real*8\n");
 		fprintf(mknb_output,"#else\n");

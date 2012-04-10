@@ -17,6 +17,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 /* Must come directly after config.h */
 #ifdef GMX_THREAD_SHM_FDECOMP

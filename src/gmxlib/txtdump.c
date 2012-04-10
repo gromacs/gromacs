@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 /* This file is completely threadsafe - please keep it that way! */
 #ifdef GMX_THREAD_MPI
