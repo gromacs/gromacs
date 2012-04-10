@@ -55,6 +55,9 @@
 /* Detect Cygwin */
 #cmakedefine GMX_CYGWIN
 
+/* Detect non-Cygwin Windows */
+#cmakedefine GMX_WINDOWS
+
 /* Use assembly intrinsics kernels for BlueGene */
 #cmakedefine GMX_BLUEGENE
 

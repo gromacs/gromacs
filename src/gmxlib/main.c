@@ -76,7 +76,7 @@
 #include <unistd.h>
 #endif
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_WINDOWS
 #include <process.h>
 #endif
 
@@ -327,7 +327,7 @@ void gmx_log_open(const char *lognm,const t_commrec *cr,gmx_bool bMasterOnly,
     time(&t);
 
 #ifndef NO_GETPID
-#   if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#   ifdef GMX_WINDOWS
     pid = _getpid();
 #   else
     pid = getpid();

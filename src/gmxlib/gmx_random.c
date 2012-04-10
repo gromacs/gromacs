@@ -45,7 +45,7 @@
 #endif
 #include <time.h>
 #include <math.h>
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_WINDOWS
 #include <process.h>
 #endif
 
@@ -196,7 +196,7 @@ gmx_rng_make_seed(void)
     fclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_WINDOWS
     my_pid = (long)_getpid();
 #else
     my_pid = (long)getpid();
