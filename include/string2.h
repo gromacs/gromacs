@@ -138,7 +138,8 @@ char **split(char sep,char *str);
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include "gmxconfig.h"
+#ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
 

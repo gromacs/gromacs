@@ -23,7 +23,7 @@
 #endif
 
 
-#if ! (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 ) || defined (__CYGWIN__))
+#ifndef GMX_NATIVE_WINDOWS
 
 
 /* We don't have specific NUMA aware allocators: */
