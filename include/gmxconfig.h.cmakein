@@ -4,5 +4,8 @@
  * available for builds of projects that depend on GROMACS.
  */
 
+/* Detect Cygwin */
+#cmakedefine GMX_CYGWIN
+
 /* Detect native (i.e. non-Cygwin) Windows */
 #cmakedefine GMX_NATIVE_WINDOWS

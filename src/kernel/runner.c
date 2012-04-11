@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 #ifdef __linux
 #define _GNU_SOURCE
 #include <sched.h>
@@ -44,7 +45,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 /* _isnan() */
 #include <float.h>
 #endif

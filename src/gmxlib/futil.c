@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@
 #endif
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
 #endif
@@ -303,7 +304,7 @@ gmx_bool gmx_fexist(const char *fname)
     test=fopen(fname,"r");
     if (test == NULL) {
         /*Windows doesn't allow fopen of directory - so we need to check this seperately */
-        #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+        #ifdef GMX_NATIVE_WINDOWS
             DWORD attr = GetFileAttributes(fname);
             return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
         #else 
@@ -500,7 +501,7 @@ struct gmx_directory
 {
 #ifdef HAVE_DIRENT_H
     DIR  *               dirent_handle;
-#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#elif (defined GMX_NATIVE_WINDOWS)
     intptr_t             windows_handle;
     struct _finddata_t   finddata;
     int                  first;
@@ -531,7 +532,7 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname)
         *p_gmxdir = NULL;
         rc        = EINVAL;
     }
-#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#elif (defined GMX_NATIVE_WINDOWS)
     
     if(dirname!=NULL && strlen(dirname)>0)
     {
@@ -626,7 +627,7 @@ gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name)
         rc      = EINVAL;
     }
     
-#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#elif (defined GMX_NATIVE_WINDOWS)
     
     if(gmxdir!=NULL)
     {
@@ -672,7 +673,7 @@ gmx_directory_close(gmx_directory_t gmxdir)
     int                     rc;
 #ifdef HAVE_DIRENT_H
     rc = (gmxdir != NULL) ? closedir(gmxdir->dirent_handle) : EINVAL;
-#elif (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#elif (defined GMX_NATIVE_WINDOWS)
     rc = (gmxdir != NULL) ? _findclose(gmxdir->windows_handle) : EINVAL;
 #else
     gmx_fatal(FARGS,
@@ -730,7 +731,7 @@ gmx_bool search_subdirs(const char *parent, char *libdir)
  */
 static gmx_bool filename_is_absolute(char *name)
 {
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)) == 0);
 #else
     return (name[0] == DIR_SEPARATOR);
@@ -761,7 +762,7 @@ gmx_bool get_libdir(char *libdir)
     /* On windows & cygwin we need to add the .exe extension
      * too, or we wont be able to detect that the file exists
      */
-#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
+#if (defined GMX_NATIVE_WINDOWS || defined GMX_CYGWIN)
     if(strlen(bin_name)<3 || gmx_strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
         strcat(bin_name,".exe");
 #endif
@@ -772,7 +773,7 @@ gmx_bool get_libdir(char *libdir)
         if (!strchr(bin_name,DIR_SEPARATOR)) {
             /* No slash or backslash in name means it must be in the path - search it! */
             /* Add the local dir since it is not in the path on windows */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
             pdum=_getcwd(system_path,sizeof(system_path)-1);
 #else
             pdum=getcwd(system_path,sizeof(system_path)-1);
@@ -801,7 +802,7 @@ gmx_bool get_libdir(char *libdir)
              * it does not start at the root, i.e.
              * name is relative to the current dir 
              */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
             pdum=_getcwd(buf,sizeof(buf)-1);
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
@@ -814,7 +815,7 @@ gmx_bool get_libdir(char *libdir)
         /* Now we should have a full path and name in full_path,
          * but on unix it might be a link, or a link to a link to a link..
          */
-#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
+#ifndef GMX_NATIVE_WINDOWS
         while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
             buf[i]='\0';
             /* If it doesn't start with "/" it is relative */
@@ -842,7 +843,7 @@ gmx_bool get_libdir(char *libdir)
      * locations before giving up, in case we are running from e.g. 
      * a users home directory. This only works on unix or cygwin...
      */
-#if ((!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64) || defined __CYGWIN__ || defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     if(!found) 
         found=search_subdirs("/usr/local",libdir);
     if(!found) 
@@ -959,7 +960,7 @@ void gmx_tmpnam(char *buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     _mktemp(buf);
 #else
     fd = mkstemp(buf);
@@ -1006,7 +1007,7 @@ int gmx_truncatefile(char *path, gmx_off_t length)
 
 int gmx_file_rename(const char *oldname, const char *newname)
 {
-#if (!(defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)))
+#ifndef GMX_NATIVE_WINDOWS
     /* under unix, rename() is atomic (at least, it should be). */
     return rename(oldname, newname);
 #else
