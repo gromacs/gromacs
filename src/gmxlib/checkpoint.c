@@ -23,6 +23,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <string.h>
 #include <time.h>
@@ -32,7 +33,7 @@
 #endif
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 /* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
@@ -125,7 +126,7 @@ const char *eenh_names[eenhNR]=
 
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 static int
 gmx_wintruncate(const char *filename, __int64 size)
 {
@@ -1487,7 +1488,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     t_fileio *chksum_file;
     FILE* fplog = *pfplog;
     unsigned char digest[16];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     struct flock fl;  /* don't initialize here: the struct order is OS 
                          dependent! */
 #endif
@@ -1500,7 +1501,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+#ifndef GMX_NATIVE_WINDOWS
     fl.l_type=F_WRLCK;
     fl.l_whence=SEEK_SET;
     fl.l_start=0;
@@ -1772,7 +1773,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+#ifndef GMX_NATIVE_WINDOWS
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
                     ==-1)
 #else
@@ -1843,7 +1844,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
               
             if (i!=0) /*log file is already seeked to correct position */
             {
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
                 rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
 #else            
                 rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
