@@ -278,8 +278,6 @@ class Selection
 
         //! Deprecated method for direct access to position data.
         const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
-        //! Deprecated method for direct access to atom index data.
-        gmx_ana_index_t *indexGroup() const { return data().rawPositions_.g; }
 
         /*! \brief
          * Initializes information about covered fractions.

@@ -128,10 +128,27 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
     for (size_t g = 0; g < _selections.size(); ++g)
     {
         const Selection &sel = _selections[g];
+        int n;
 
-        gmx_ana_index_dump(stderr, sel.indexGroup(), g, _nmaxind);
+        fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
+        n = sel.atomCount();
+        if (_nmaxind >= 0 && n > _nmaxind)
+        {
+            n = _nmaxind;
+        }
+        ConstArrayRef<int> atoms = sel.atomIndices();
+        for (int i = 0; i < n; ++i)
+        {
+            fprintf(stderr, " %d", atoms[i]+1);
+        }
+        if (n < sel.atomCount())
+        {
+            fprintf(stderr, " ...");
+        }
+        fprintf(stderr, "\n");
+
         fprintf(stderr, "  Positions (%d pcs):\n", sel.posCount());
-        int n = sel.posCount();
+        n = sel.posCount();
         if (_nmaxind >= 0 && n > _nmaxind)
         {
             n = _nmaxind;

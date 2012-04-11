@@ -39,6 +39,7 @@
 #define GMX_TRAJECTORYANALYSIS_MODULES_SELECT_H
 
 #include <string>
+#include <vector>
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
@@ -63,9 +64,6 @@ class Select : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-                    const AnalysisDataParallelOptions &opt,
-                    const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -73,8 +71,6 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        class ModuleData;
-
         Options                  _options;
         SelectionList            _sel;
 
@@ -90,7 +86,7 @@ class Select : public TrajectoryAnalysisModule
         std::string              _resNumberType;
 
         t_topology              *_top;
-        int                     *_totsize;
+        std::vector<int>         _totsize;
         AnalysisData             _sdata;
         AnalysisData             _cdata;
         AnalysisData             _idata;

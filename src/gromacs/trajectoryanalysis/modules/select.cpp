@@ -47,7 +47,6 @@
 #include <vector>
 
 #include <gmxfio.h>
-#include <smalloc.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
@@ -236,46 +235,13 @@ void IndexFileWriterModule::dataFinished()
 
 
 /********************************************************************
- * Select::ModuleData
- */
-
-class Select::ModuleData : public TrajectoryAnalysisModuleData
-{
-    public:
-        ModuleData(TrajectoryAnalysisModule *module,
-                   const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections)
-            : TrajectoryAnalysisModuleData(module, opt, selections),
-              _mmap(NULL)
-        {
-        }
-
-        virtual ~ModuleData()
-        {
-            if (_mmap)
-            {
-                gmx_ana_indexmap_deinit(_mmap);
-                sfree(_mmap);
-            }
-        }
-
-        virtual void finish()
-        {
-            finishDataHandles();
-        }
-
-        gmx_ana_indexmap_t  *_mmap;
-};
-
-
-/********************************************************************
  * Select
  */
 
 Select::Select()
     : _options("select", "Selection information"),
       _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
-      _top(NULL), _totsize(NULL)
+      _top(NULL)
 {
 }
 
@@ -384,10 +350,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // TODO: For large systems, a float may not have enough precision
     _sdata.setColumnCount(_sel.size());
     registerAnalysisDataset(&_sdata, "size");
-    snew(_totsize, _sel.size());
+    _totsize.reserve(_sel.size());
     for (size_t g = 0; g < _sel.size(); ++g)
     {
-        _totsize[g] = _bTotNorm ? _sel[g].posCount() : 1;
+        _totsize.push_back(_sel[g].posCount());
     }
     if (!_fnSize.empty())
     {
@@ -477,23 +443,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleDataPointer
-Select::startFrames(const AnalysisDataParallelOptions &opt,
-                    const SelectionCollection &selections)
-{
-    ModuleData *pdata = new ModuleData(this, opt, selections);
-    snew(pdata->_mmap, 1);
-    gmx_ana_indexmap_init(pdata->_mmap, pdata->parallelSelection(_sel[0]).indexGroup(),
-                          _top, _sel[0].type());
-    return TrajectoryAnalysisModuleDataPointer(pdata);
-}
-
-
 void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
-    ModuleData *d = static_cast<ModuleData *>(pdata);
     AnalysisDataHandle sdh = pdata->dataHandle(_sdata);
     AnalysisDataHandle cdh = pdata->dataHandle(_cdata);
     AnalysisDataHandle idh = pdata->dataHandle(_idata);
@@ -504,7 +457,10 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     for (size_t g = 0; g < sel.size(); ++g)
     {
         real normfac = _bFracNorm ? 1.0 / sel[g].coveredFraction() : 1.0;
-        normfac /= _totsize[g];
+        if (_bTotNorm)
+        {
+            normfac /= _totsize[g];
+        }
         sdh.setPoint(g, sel[g].posCount() * normfac);
     }
     sdh.finishFrame();
@@ -537,11 +493,16 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     }
     idh.finishFrame();
 
-    gmx_ana_indexmap_update(d->_mmap, sel[0].indexGroup(), true);
     mdh.startFrame(frnr, fr.time);
-    for (int b = 0; b < d->_mmap->nr; ++b)
+    int nextRefId = sel[0].position(0).refId();
+    for (int b = 0, i = 0; b < _totsize[0]; ++b)
     {
-        mdh.setPoint(b, d->_mmap->refid[b] == -1 ? 0 : 1);
+        mdh.setPoint(b, b == nextRefId ? 1 : 0);
+        if (b == nextRefId)
+        {
+            ++i;
+            nextRefId = sel[0].position(i).refId();
+        }
     }
     mdh.finishFrame();
 }
