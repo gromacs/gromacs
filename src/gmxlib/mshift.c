@@ -37,6 +37,7 @@
 #endif
 
 #include <string.h>
+#include <assert.h>
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "macros.h"
@@ -177,6 +178,7 @@ static void calc_1se(t_graph *g,int ftype,t_ilist *il,
     if (ftype == F_SETTLE) {
       iaa          = ia[1];
       if (iaa >= at_start && iaa < at_end) {
+          assert(iaa<at_end-2); /*Selection contains broken water molecules*/
 	nbond[iaa]   += 2;
 	nbond[iaa+1] += 1;
 	nbond[iaa+2] += 1;
