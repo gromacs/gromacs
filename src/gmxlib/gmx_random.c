@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #include <gmx_random.h>
 
@@ -45,7 +46,7 @@
 #endif
 #include <time.h>
 #include <math.h>
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
 
@@ -196,7 +197,7 @@ gmx_rng_make_seed(void)
     fclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     my_pid = (long)_getpid();
 #else
     my_pid = (long)getpid();

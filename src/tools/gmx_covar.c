@@ -35,6 +35,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 #include <math.h>
 #include <string.h>
 #include <time.h>
@@ -44,7 +45,7 @@
 #endif
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #include <io.h>
 #endif
@@ -487,7 +488,7 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Covariance analysis log, written %s\n",timebuf);
     
   fprintf(out,"Program: %s\n",argv[0]);
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
   pcwd=_getcwd(str,STRLEN);
 #else
   pcwd=getcwd(str,STRLEN);

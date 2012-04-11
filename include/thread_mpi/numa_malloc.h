@@ -67,7 +67,8 @@ extern "C"
 #endif
 
 
-#if (defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 ) || defined (__CYGWIN__))
+#include "gmxconfig.h"
+#ifdef GMX_NATIVE_WINDOWS
 
 #define TMPI_NUMA_MALLOC
 
