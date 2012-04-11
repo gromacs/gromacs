@@ -18,6 +18,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 
 
@@ -78,7 +79,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  */
 #include "molfile_plugin.h"
 #include "vmddlopen.h"
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
 #include <glob.h>
 #else
 #include <windows.h>
@@ -237,7 +238,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     int i;
     int ret=0;
     char pathenv_buffer[GMX_PATH_MAX];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     glob_t globbuf;
     const char *defpath_suffix = "/plugins/*/molfile";
     const char *defpathenv = GMX_VMD_PLUGIN_PATH;
@@ -286,7 +287,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
         }
     }
     strncpy(pathname,pathenv,sizeof(pathname));
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     strcat(pathname,"/*.so");
     glob(pathname, 0, NULL, &globbuf);
     if (globbuf.gl_pathc == 0)
