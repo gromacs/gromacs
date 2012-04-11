@@ -36,6 +36,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmxconfig.h"
 
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H
@@ -176,7 +177,7 @@ gmx_ctime_r(const time_t *clock,char *buf, int n)
 {
     char tmpbuf[STRLEN];
   
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
     /* Windows */
     ctime_s( tmpbuf, STRLEN, clock );
 #elif (defined(__sun))
