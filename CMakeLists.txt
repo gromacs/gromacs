@@ -436,6 +436,10 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif(CYGWIN)
 
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_NATIVE_WINDOWS 1)
+endif()
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
@@ -474,6 +478,7 @@ endif()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 include(gmxCheckBuildUserTime)
