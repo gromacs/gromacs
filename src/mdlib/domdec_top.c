@@ -1283,6 +1283,20 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
     return nbonded_local;
 }
 
+static void set_no_exclusions_zone(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
+                                   int iz,t_blocka *lexcls)
+{
+    int  a0,a1,a;
+    
+    a0 = dd->cgindex[zones->cg_range[iz]];
+    a1 = dd->cgindex[zones->cg_range[iz+1]];
+
+    for(a=a0+1; a<a1+1; a++)
+    {
+        lexcls->index[a] = lexcls->nra;
+    }
+}
+
 static int make_exclusions_zone(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                                 const gmx_moltype_t *moltype,
                                 gmx_bool bRCheck,real rc2,
@@ -1298,7 +1312,7 @@ static int make_exclusions_zone(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
     gmx_ga2la_t ga2la;
     int  a_loc;
     int  cell;
-    
+
     ga2la = dd->ga2la;
 
     jla0 = dd->cgindex[zones->izone[iz].jcg0];
@@ -1492,7 +1506,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                     t_idef *idef,gmx_vsite_t *vsite,
                                     t_blocka *lexcls,int *excl_count)
 {
-    int  nzone_bondeds;
+    int  nzone_bondeds,nzone_excl;
     int  iz,cg0,cg1;
     real rc2;
     int  nbonded_local;
@@ -1510,7 +1524,18 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
          */
         nzone_bondeds = 1;
     }
-    
+
+    if (dd->n_intercg_excl > 0)
+    {
+        /* We only use exclusions from i-zones to i- and j-zones */
+        nzone_excl = zones->nizone;
+    }
+    else
+    {
+        /* There are no inter-cg exclusions and only zone 0 sees itself */
+        nzone_excl = 1;
+    }
+
     check_exclusions_alloc(dd,zones,lexcls);
     
     rt = dd->reverse_top;
@@ -1546,17 +1571,11 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             if (thread == 0)
             {
                 idef_t = idef;
-
-                excl_t = lexcls;
             }
             else
             {
                 idef_t = &rt->idef_thread[thread];
                 clear_idef(idef_t);
-
-                excl_t = &rt->excl_thread[thread];
-                excl_t->nr  = 0;
-                excl_t->nra = 0;
             }
 
             if (vsite && vsite->n_intercg_vsite > 0)
@@ -1587,9 +1606,19 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                   iz,zones->n,
                                   dd->cgindex[cg0t],dd->cgindex[cg1t]);
 
-            if ((iz < zones->nizone) &&
-                !(dd->n_intercg_excl == 0 && iz > 0))
+            if (iz < nzone_excl)
             {
+                if (thread == 0)
+                {
+                    excl_t = lexcls;
+                }
+                else
+                {
+                    excl_t = &rt->excl_thread[thread];
+                    excl_t->nr  = 0;
+                    excl_t->nra = 0;
+                }
+
                 rt->excl_count_thread[thread] =
                     make_exclusions_zone(dd,zones,
                                          mtop->moltype,bRCheck2B,rc2,
@@ -1611,8 +1640,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             nbonded_local += rt->nbonded_thread[thread];
         }
 
-        if ((iz < zones->nizone) &&
-            !(dd->n_intercg_excl == 0 && iz > 0))
+        if (iz < nzone_excl)
         {
             if (rt->nthread > 1)
             {
@@ -1624,6 +1652,12 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 *excl_count += rt->excl_count_thread[thread];
             }
         }
+    }
+
+    /* For some zones the "no"-exclusions might not have been set: do it now */
+    for(iz=nzone_excl; iz<zones->nizone; iz++)
+    {
+        set_no_exclusions_zone(dd,zones,iz,lexcls);
     }
 
     finish_local_exclusions(dd,zones,lexcls);
