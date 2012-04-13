@@ -892,3 +892,4 @@ IF(BUILD_TESTING)
 	add_subdirectory(tests)
 ENDIF()
 
+install(FILES cmake/FindGROMACS.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/share/cmake/Modules COMPONENT development)
