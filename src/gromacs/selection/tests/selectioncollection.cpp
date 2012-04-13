@@ -464,7 +464,15 @@ TEST_F(SelectionCollectionDataTest, HandlesResnr)
     runTest("simple.gro", selections);
 }
 
-// TODO: Add test for "resindex"
+TEST_F(SelectionCollectionDataTest, HandlesResIndex)
+{
+    static const char * const selections[] = {
+        "resindex 1 4",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
 // TODO: Add test for "molindex"
 
 TEST_F(SelectionCollectionDataTest, HandlesAtomname)
@@ -478,13 +486,59 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 }
 
 // TODO: Add test for atomtype
-// TODO: Add test for insertcode
-// TODO: Add test for chain
+
+TEST_F(SelectionCollectionDataTest, HandlesChain)
+{
+    static const char * const selections[] = {
+        "chain A",
+        "chain B",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
 // TODO: Add test for mass
 // TODO: Add test for charge
-// TODO: Add test for altloc
-// TODO: Add test for occupancy
-// TODO: Add test for beta
+
+TEST_F(SelectionCollectionDataTest, HandlesAltLoc)
+{
+    static const char * const selections[] = {
+        "altloc \" \"",
+        "altloc A",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesInsertCode)
+{
+    static const char * const selections[] = {
+        "insertcode \" \"",
+        "insertcode A",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesOccupancy)
+{
+    static const char * const selections[] = {
+        "occupancy 1",
+        "occupancy < .5",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesBeta)
+{
+    static const char * const selections[] = {
+        "beta 0",
+        "beta >= 0.3",
+        NULL
+    };
+    runTest("simple.pdb", selections);
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesResname)
 {
