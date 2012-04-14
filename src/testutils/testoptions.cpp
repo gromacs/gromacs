@@ -30,76 +30,76 @@
  */
 /*! \internal \file
  * \brief
- * Implements functions in refdata.h that don't have external dependencies.
+ * Implements functions in testoptions.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_testutils
  */
-#include "refdata.h"
+#include "testoptions.h"
 
-#include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 #include <new>
+#include <string>
+#include <vector>
 
-#include "testutils/datapath.h"
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/options/cmdlineparser.h"
+#include "gromacs/options/options.h"
+
+#include "datapath.h"
+#include "refdata.h"
+#include "testexceptions.h"
+
+static boost::scoped_ptr<std::vector<std::string> > s_commandLine;
 
 namespace gmx
 {
 namespace test
 {
 
-static ReferenceDataMode g_referenceDataMode = erefdataCompare;
-
-
-ReferenceDataMode getReferenceDataMode()
+void initTestUtils(const char *dataPath, int *argc, char *argv[])
 {
-    return g_referenceDataMode;
-}
-
-
-void setReferenceDataMode(ReferenceDataMode mode)
-{
-    g_referenceDataMode = mode;
-}
-
-
-std::string getReferenceDataPath()
-{
-    return getTestFilePath("refdata");
-}
-
-
-void initReferenceData(int *argc, char **argv)
-{
-    int i, newi;
-
-    for (i = newi = 1; i < *argc; ++i, ++newi)
+    if (dataPath != NULL)
     {
-        argv[newi] = argv[i];
-        if (!std::strcmp(argv[i], "--create-ref-data"))
-        {
-            setReferenceDataMode(erefdataCreateMissing);
-            --newi;
-        }
-        else if (!std::strcmp(argv[i], "--update-ref-data"))
-        {
-            setReferenceDataMode(erefdataUpdateAll);
-            --newi;
-        }
+        setTestDataPath(dataPath);
     }
-    *argc = newi;
-#ifdef TESTUTILS_HAVE_REFDATA
+    initReferenceData(argc, argv);
     try
     {
-        internal::addGlobalReferenceDataEnvironment();
+        boost::scoped_ptr<std::vector<std::string> > commandLine(
+                new std::vector<std::string>());
+        for (int i = 0; i < *argc; ++i)
+        {
+            commandLine->push_back(argv[i]);
+        }
+        swap(commandLine, s_commandLine);
     }
     catch (const std::bad_alloc &)
     {
         std::fprintf(stderr, "Out of memory\n");
         std::exit(1);
     }
-#endif
+    ::gmx::setFatalErrorHandler(NULL);
+}
+
+void parseTestOptions(Options *options)
+{
+    GMX_RELEASE_ASSERT(s_commandLine.get() != NULL,
+                       "Test options not initialized");
+    try
+    {
+        CommandLineParser(options).parse(s_commandLine.get());
+        options->finish();
+    }
+    catch (const GromacsException &ex)
+    {
+        GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
+    }
 }
 
 } // namespace test

@@ -47,6 +47,8 @@
 #include "vec.h"
 
 #include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
@@ -55,6 +57,7 @@
 
 #include "testutils/datapath.h"
 #include "testutils/refdata.h"
+#include "testutils/testoptions.h"
 
 namespace
 {
@@ -66,6 +69,10 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
+        static void SetUpTestCase();
+
+        static int               s_debugLevel;
+
         SelectionCollectionTest();
         ~SelectionCollectionTest();
 
@@ -81,10 +88,20 @@ class SelectionCollectionTest : public ::testing::Test
         t_trxframe              *_frame;
 };
 
+int SelectionCollectionTest::s_debugLevel = 0;
+
+void SelectionCollectionTest::SetUpTestCase()
+{
+    gmx::Options options(NULL, NULL);
+    options.addOption(gmx::IntegerOption("seldebug").store(&s_debugLevel));
+    gmx::test::parseTestOptions(&options);
+}
+
 
 SelectionCollectionTest::SelectionCollectionTest()
     : _top(NULL), _frame(NULL)
 {
+    _sc.setDebugLevel(s_debugLevel);
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
 }

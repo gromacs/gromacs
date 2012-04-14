@@ -33,12 +33,16 @@
  * main() for unit tests that use Google C++ Mocking Framework.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \ingroup module_testutils
  */
 #include <gmock/gmock.h>
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "testutils/datapath.h"
-#include "testutils/refdata.h"
+#include "testutils/testoptions.h"
+
+#ifndef TEST_DATA_PATH
+//! Path to test input data directory (needs to be set by the build system).
+#define TEST_DATA_PATH 0
+#endif
 
 /*! \brief
  * Initializes unit testing with Google C++ Mocking Framework.
@@ -46,13 +50,6 @@
 int main(int argc, char *argv[])
 {
     ::testing::InitGoogleMock(&argc, argv);
-#ifdef TEST_DATA_PATH
-    ::gmx::test::setTestDataPath(TEST_DATA_PATH);
-    if (::gmx::test::initReferenceData(&argc, argv) != 0)
-    {
-        return 1;
-    }
-#endif
-    ::gmx::setFatalErrorHandler(NULL);
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
     return RUN_ALL_TESTS();
 }

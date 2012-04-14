@@ -28,79 +28,55 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements functions in refdata.h that don't have external dependencies.
+ * Functions for accessing test command-line options.
+ *
+ * Functions in this header allow accessing command-line options passed to the
+ * test executable from tests.  This can be used to, e.g., enable additional
+ * output for debugging purposes.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
-#include "refdata.h"
-
-#include <cstring>
-#include <cstdio>
-
-#include <new>
-
-#include "testutils/datapath.h"
+#ifndef GMX_TESTUTILS_TESTOPTIONS_H
+#define GMX_TESTUTILS_TESTOPTIONS_H
 
 namespace gmx
 {
+
+class Options;
+
 namespace test
 {
 
-static ReferenceDataMode g_referenceDataMode = erefdataCompare;
-
-
-ReferenceDataMode getReferenceDataMode()
-{
-    return g_referenceDataMode;
-}
-
-
-void setReferenceDataMode(ReferenceDataMode mode)
-{
-    g_referenceDataMode = mode;
-}
-
-
-std::string getReferenceDataPath()
-{
-    return getTestFilePath("refdata");
-}
-
-
-void initReferenceData(int *argc, char **argv)
-{
-    int i, newi;
-
-    for (i = newi = 1; i < *argc; ++i, ++newi)
-    {
-        argv[newi] = argv[i];
-        if (!std::strcmp(argv[i], "--create-ref-data"))
-        {
-            setReferenceDataMode(erefdataCreateMissing);
-            --newi;
-        }
-        else if (!std::strcmp(argv[i], "--update-ref-data"))
-        {
-            setReferenceDataMode(erefdataUpdateAll);
-            --newi;
-        }
-    }
-    *argc = newi;
-#ifdef TESTUTILS_HAVE_REFDATA
-    try
-    {
-        internal::addGlobalReferenceDataEnvironment();
-    }
-    catch (const std::bad_alloc &)
-    {
-        std::fprintf(stderr, "Out of memory\n");
-        std::exit(1);
-    }
-#endif
-}
+/*! \libinternal \brief
+ * Initializes the test utilities library.
+ *
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by test_main_gtest.cpp and
+ * test_main_gmock.cpp.
+ */
+void initTestUtils(const char *dataPath, int *argc, char *argv[]);
+/*! \libinternal \brief
+ * Parses given options from the command line.
+ *
+ * \param[in] options  Definition of options to parse.
+ * \throws  std::bad_alloc if out of memory.
+ * \throws  TestException if an error occurs in the parsing.
+ *
+ * This can be used from test or test fixture setup functions to initialize
+ * local variables.  Although this means that the parameters are potentially
+ * parsed multiple times, the performance impact should not be significant.
+ *
+ * \inlibraryapi
+ */
+void parseTestOptions(Options *options);
 
 } // namespace test
 } // namespace gmx
+
+#endif
