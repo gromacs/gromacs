@@ -106,10 +106,12 @@ std::string getReferenceDataPath();
  * can be used to change it.
  * Recognized command-line arguments are removed from the list.
  *
- * This function is automatically called by test_main_gtest.cpp and
- * test_main_gmock.cpp.
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by initTestUtils().
  */
-int initReferenceData(int *argc, char **argv);
+void initReferenceData(int *argc, char **argv);
 
 /*! \cond internal */
 /*! \internal \brief

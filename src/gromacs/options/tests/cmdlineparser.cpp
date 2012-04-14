@@ -121,4 +121,18 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
     EXPECT_DOUBLE_EQ(2.7, _dvalues[0]);
 }
 
+TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
+{
+    const char *cmdline[] = {"-mvi", "1", "-2", "-mvd", "-2.7", NULL};
+    createArguments(cmdline);
+    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
+    ASSERT_NO_THROW(_options.finish());
+
+    ASSERT_EQ(2U, _ivalues.size());
+    EXPECT_EQ(1, _ivalues[0]);
+    EXPECT_EQ(-2, _ivalues[1]);
+    ASSERT_EQ(1U, _dvalues.size());
+    EXPECT_DOUBLE_EQ(-2.7, _dvalues[0]);
+}
+
 } // namespace

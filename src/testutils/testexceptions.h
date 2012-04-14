@@ -66,9 +66,47 @@ class TestException : public GromacsException
          */
         explicit TestException(const std::string &reason)
             : GromacsException(reason) {}
+        /*! \brief
+         * Creates a test exception based on another GromacsException object.
+         *
+         * \param[in] base  Exception to wrap.
+         *
+         * \see GMX_THROW_WRAPPER_TESTEXCEPTION
+         */
+        explicit TestException(const GromacsException &base)
+            : GromacsException(base) {}
 
         virtual int errorCode() const { return -1; }
 };
+
+/*! \brief
+ * Macro for throwing a TestException that wraps another exception.
+ *
+ * \param[in] e    Exception object to wrap.
+ *
+ * This macro is intended for wrapping exceptions thrown by Gromacs methods
+ * that are called from a test for the test's internal purposes.  It wraps the
+ * exception in a TestException to make it possible to tell from the type of
+ * the exception whether the exception was thrown by the code under test, or by
+ * the test code itself.
+ *
+ * \p e should evaluate to an instance of an object derived from
+ * GromacsException.
+ *
+ * Typical usage in test code:
+ * \code
+try
+{
+    // some code that may throw a GromacsException
+}
+catch (const GromacsException &ex)
+{
+    GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
+}
+ * \endcode
+ */
+#define GMX_THROW_WRAPPER_TESTEXCEPTION(e) \
+    throw ::boost::enable_current_exception(::gmx::test::TestException(e))
 
 } // namespace test
 } // namespace gmx

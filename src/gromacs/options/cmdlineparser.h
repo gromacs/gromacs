@@ -39,6 +39,9 @@
 #ifndef GMX_OPTIONS_CMDLINEPARSER_H
 #define GMX_OPTIONS_CMDLINEPARSER_H
 
+#include <string>
+#include <vector>
+
 #include "../utility/common.h"
 
 namespace gmx
@@ -68,19 +71,45 @@ class CommandLineParser
          * Creates a command-line parser that sets values for options.
          *
          * \param[in] options  Options object whose options should be set.
+         * \throws  std::bad_alloc if out of memory.
          */
         CommandLineParser(Options *options);
         ~CommandLineParser();
 
         /*! \brief
-         * Parses the command-line.
+         * Parses the command line.
          *
-         * \throws InvalidInputError if any errors were detected in the input.
+         * \throws  std::bad_alloc if out of memory.
+         * \throws  InvalidInputError if any errors were detected in the input.
          *
          * All command-line arguments are parsed, and an aggregate exception
          * with all the detected errors is thrown in the end.
+         *
+         * Currently, the input parameters are not modified, but this may
+         * change if/when support for parsing only part of the options is
+         * implemented.
          */
         void parse(int *argc, char *argv[]);
+        /*! \brief
+         * Parses the command line from a std::vector.
+         *
+         * \param[in] commandLine  Array of command-line strings.
+         * \throws  std::bad_alloc if out of memory.
+         * \throws  InvalidInputError if any errors were detected in the input.
+         *
+         * \p commandLine should relate to the standard \c argv array
+         * one-to-one.
+         *
+         * This method is provided for convenience for cases where the command
+         * line needs to be stored before parsing.
+         *
+         * Currently, the input parameters are not modified, but this may
+         * change if/when support for parsing only part of the options is
+         * implemented.
+         *
+         * \see parse(int *, char *[])
+         */
+        void parse(std::vector<std::string> *commandLine);
 
     private:
         class Impl;
