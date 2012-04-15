@@ -41,10 +41,10 @@
 
 #include <cstdio>
 
-#include <smalloc.h>
-#include <statutil.h>
-#include <string2.h>
-#include <xvgr.h>
+#include "futil.h"
+#include "oenv.h"
+#include "smalloc.h"
+#include "xvgr.h"
 
 #include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/fatalerror/gmxassert.h"
@@ -153,11 +153,13 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
     if (bOk)
     {
         SelectionDataList::const_iterator i;
+        output->reserve(output->size() + nr);
         for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
         {
             output->push_back(Selection(i->get()));
         }
     }
+    // TODO: Remove added selections from the collection if parsing failed?
 
     if (!bOk || !errors.isEmpty())
     {
@@ -312,21 +314,18 @@ SelectionCollection::setDebugLevel(int debuglevel)
 void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
-    gmx_ana_selcollection_t *sc = &_impl->_sc;
-    sc->pcc.setTopology(top);
-    sc->top = top;
-
-    /* Get the number of atoms from the topology if it is not given */
+    GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
+        "The number of atoms must be given if there is no topology");
+    // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
-        if (sc->top == NULL)
-        {
-            GMX_THROW(APIError("Selections need either the topology or the number of atoms"));
-        }
-        natoms = sc->top->atoms.nr;
+        natoms = top->atoms.nr;
     }
-
+    gmx_ana_selcollection_t *sc = &_impl->_sc;
+    // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms, NULL);
+    sc->pcc.setTopology(top);
+    sc->top = top;
 }
 
 

@@ -142,6 +142,7 @@ void SelectionOptionStorage::processAll()
 
 void SelectionOptionStorage::setAllowedValueCount(int count)
 {
+    // TODO: It should be possible to have strong exception safety here.
     MessageStringCollector errors;
     errors.startContext("In option '" + name() + "'");
     if (count >= 0)
@@ -170,11 +171,10 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    _selectionFlags.set(flag, bSet);
     ValueList::iterator i;
     for (i = values().begin(); i != values().end(); ++i)
     {
-        if (_selectionFlags.test(efOnlyStatic) && i->isDynamic())
+        if (flag == efOnlyStatic && bSet && i->isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -182,6 +182,10 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
             errors.finishContext();
             GMX_THROW(InvalidInputError(errors.toString()));
         }
+    }
+    _selectionFlags.set(flag, bSet);
+    for (i = values().begin(); i != values().end(); ++i)
+    {
         i->data().setFlags(_selectionFlags);
     }
 }
@@ -296,12 +300,10 @@ class SelectionCollectionSetter : public OptionsModifyingTypeVisitor<SelectionOp
 
 } // namespace
 
-/*! \cond libapi */
 void setSelectionCollectionForOptions(Options *options,
                                       SelectionCollection *selections)
 {
     SelectionCollectionSetter(selections).visitSubSection(options);
 }
-//! \endcond
 
 } // namespace gmx

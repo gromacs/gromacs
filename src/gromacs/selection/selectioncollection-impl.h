@@ -57,7 +57,7 @@ namespace gmx
 {
 //! Smart pointer for managing an internal selection data object.
 typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
-//! Shorthand for storing a list of selections internally.
+//! Container for storing a list of selections internally.
 typedef std::vector<SelectionDataPointer> SelectionDataList;
 }
 
@@ -109,8 +109,15 @@ class SelectionOptionStorage;
 class SelectionCollection::Impl
 {
     public:
+        /*! \brief
+         * Request for postponed parsing of selections.
+         *
+         * Used to communicate what needs to be parsed with
+         * parseRequestedFromStdin() or parseRequstedFromString().
+         */
         struct SelectionRequest
         {
+            //! Initializes a request for the given option.
             SelectionRequest(const std::string &name, const std::string &descr,
                              SelectionOptionStorage *storage)
                 : name(name), descr(descr), storage(storage)
@@ -124,20 +131,31 @@ class SelectionCollection::Impl
              */
             int count() const;
 
+            //! Name of the option to which this request relates to.
             std::string                 name;
+            //! Description of the option to which this request relates to.
             std::string                 descr;
+            //! Storage object to which the selections will be added.
             SelectionOptionStorage     *storage;
         };
 
-        //! Shorthand for a list of selection requests.
+        //! Collection for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
 
+        /*! \brief
+         * Helper class that clears a request list on scope exit.
+         *
+         * Methods in this class do not throw.
+         */
         class RequestsClearer
         {
             public:
-                RequestsClearer(RequestList *requests) : requests_(requests)
+                //! Constructs an object that clears given list on scope exit.
+                explicit RequestsClearer(RequestList *requests)
+                    : requests_(requests)
                 {
                 }
+                //! Clears the request list given to the constructor.
                 ~RequestsClearer()
                 {
                     requests_->clear();
@@ -155,7 +173,11 @@ class SelectionCollection::Impl
         Impl();
         ~Impl();
 
-        //! Clears the symbol table of the selection collection.
+        /*! \brief
+         * Clears the symbol table of the selection collection.
+         *
+         * Does not throw.
+         */
         void clearSymbolTable();
         /*! \brief
          * Helper function that runs the parser once the tokenizer has been
@@ -166,8 +188,14 @@ class SelectionCollection::Impl
          *      (if -1, parse as many as provided by the user).
          * \param[out]    output  Vector to which parsed selections are
          *      appended.
+         * \throws        std::bad_alloc if out of memory.
+         * \throws        InvalidInputError if there is a parsing error.
          *
-         * Does not clear \p output.
+         * Parsed selections are appended to \p output without clearing it
+         * first.  If parsing fails, \p output is not modified.
+         *
+         * Used internally to implement parseFromStdin(), parseFromFile() and
+         * parseFromString().
          */
         void runParser(void *scanner, int maxnr,
                        SelectionList *output);
@@ -177,6 +205,9 @@ class SelectionCollection::Impl
          * \param[in] name    Name for the requested selections.
          * \param[in] descr   Description of the requested selections.
          * \param     storage Storage object to receive the selections.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Strong exception safety.
          *
          * \see parseRequestedFromStdin()
          */
@@ -194,6 +225,9 @@ class SelectionCollection::Impl
          * \a _grps and replaces the reference with a constant element that
          * contains the atoms from the referenced group.  Any failures to
          * resolve references are reported to \p errors.
+         *
+         * Does not throw currently, but this is subject to change when more
+         * underlying code is converted to C++.
          */
         void resolveExternalGroups(struct t_selelem *root,
                                    MessageStringCollector *errors);
@@ -217,7 +251,7 @@ class SelectionCollection::Impl
          *  - 4: combine 2 and 3
          */
         int                     _debugLevel;
-        //! Whether external groups have been set for the collection.
+        //! Whether setIndexGroups() has been called.
         bool                    _bExternalGroupsSet;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
