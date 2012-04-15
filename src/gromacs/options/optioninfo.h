@@ -121,6 +121,8 @@ class OptionInfo
         /*! \cond libapi */
         /*! \brief
          * Wraps a given option object.
+         *
+         * Does not throw.
          */
         explicit OptionInfo(AbstractOptionStorage *option);
 

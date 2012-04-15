@@ -33,13 +33,39 @@
  * \brief
  * Provides functionality for initializing and evaluating selections.
  *
- * \internal
+ * The core of the selection engine is accessed through
+ * gmx::SelectionCollection, which manages a set of selections.
+ * Documentation for that class explains the general selection mechanisms.
+ *
+ * For each selection that is parsed using a gmx::SelectionCollection, a
+ * gmx::Selection handle is returned and can be used to access information
+ * about that selection.  gmx::SelectionPosition is a helper class used to
+ * access information about individual positions in a selection.  These classes
+ * refer to internal state within the gmx::SelectionCollection, and their
+ * contents update automatically when the gmx::SelectionCollection is compiled
+ * or evaluated.
+ *
+ * This module also provides gmx::SelectionOption and gmx::SelectionOptionInfo
+ * classes for declaring options that evaluate to selections (see \ref
+ * module_options for general explanation of the options mechanism).  These
+ * classes provide the main interface to obtain gmx::Selection objects in
+ * trajectory analysis using gmx::TrajectoryAnalysisModule.
+ *
+ * \if libapi
+ * The selection module contains some lower-level functionality that is
+ * currently internal to it (centerofmass.h, indexutil.h, poscalc.h,
+ * position.h), but could possibly be useful also outside the module.
+ * It should be considered whether they should be moved somewhere else.
+ * \endif
+ *
+ * \if internal
  * Implementation details of different parts of the module are discussed on
  * separate pages:
  *   - \ref page_module_selection_custom
  *   - \ref page_module_selection_parser
  *   - \ref page_module_selection_compiler
  *   - \ref page_module_selection_insolidangle
+ * \endif
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
@@ -55,6 +81,8 @@
 #define GMX_SELECTION_H
 
 #include "selection/selection.h"
+#include "selection/selectioncollection.h"
 #include "selection/selectionoption.h"
+#include "selection/selectionoptioninfo.h"
 
 #endif
