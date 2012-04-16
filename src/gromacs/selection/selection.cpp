@@ -30,24 +30,16 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::Selection.
+ * Implements classes in selection.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "selection.h"
 
-#include <statutil.h>
-#include <string2.h>
-#include <xvgr.h>
-
-#include "gromacs/selection/position.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/selection/selvalue.h"
-
+#include "position.h"
 #include "selelem.h"
+#include "selvalue.h"
 
 namespace gmx
 {
@@ -231,7 +223,7 @@ Selection::printInfo(FILE *fp) const
 void
 Selection::printDebugInfo(FILE *fp, int nmaxind) const
 {
-    const gmx_ana_pos_t &p = sel_->rawPositions_;
+    const gmx_ana_pos_t &p = data().rawPositions_;
 
     fprintf(fp, "  ");
     printInfo(fp);

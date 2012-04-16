@@ -164,11 +164,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Adds a value to a temporary storage.
          *
          * \param[in] value  Value to add. A copy is made.
+         * \throws std::bad_alloc if out of memory.
          * \throws InvalidInputError if the maximum value count has been reached.
          *
          * Derived classes should call this function from the convertValue()
          * implementation to add converted values to the storage.
-         * If the maximum value cont has been reached, the value is discarded
+         * If the maximum value count has been reached, the value is discarded
          * and an exception is thrown.
          *
          * If adding values outside convertValue() (e.g., to set a custom
@@ -179,6 +180,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         void addValue(const T &value);
         /*! \brief
          * Commits values added with addValue().
+         *
+         * \throws std::bad_alloc if out of memory.
          *
          * If this function succeeds, values added with addValue() since the
          * previous clearSet() are added to the storage for the option.

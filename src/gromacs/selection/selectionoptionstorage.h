@@ -80,6 +80,11 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
          * \param[in] selections  List of selections to add.
          * \param[in] bFullValue  If true, the provided selections are the full
          *      value of the option, and additional checks are performed.
+         * \throws  std::bad_alloc if out of memory.
+         * \throws  InvalidInputError if
+         *      - There is an incorrect number of selections in \p selections.
+         *      - Any selection in \p selections is not allowed for this
+         *        option.
          *
          * This function is used to implement the methods
          * SelectionCollection::parseRequestedFromStdin() and
@@ -93,25 +98,22 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         // Required to access the number of values in selection requests.
         // See SelectionCollection::Impl.
         using MyBase::maxValueCount;
-        /*! \brief
-         * Sets the number of selections allowed for this selection.
-         *
-         * \param[in] count       Required number of selections for this option.
-         *
-         * If values have already been provided, it is checked that a correct
-         * number has been provided.  If requests have already been made, but
-         * have not yet been processed, they are also affected.
-         */
+        //! \copydoc SelectionOptionInfo::setValueCount()
         void setAllowedValueCount(int count);
         /*! \brief
          * Alters flags for the selections created by this option.
          *
          * \param[in] flag        Flag to change.
          * \param[in] bSet        Whether to set or clear the flag.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if selections have already been
+         *      provided and conflict with the given flags.
          *
-         * If values have already been provided, it is checked that they match
-         * the limitations enforced by the flags.  If requests have already
-         * been made, but have not yet been processed, they are also affected.
+         * If selections have already been provided, it is checked that they
+         * match the limitations enforced by the flags.  Pending requests are
+         * also affected.
+         *
+         * Strong exception safety guarantee.
          */
         void setSelectionFlag(SelectionFlag flag, bool bSet);
 
