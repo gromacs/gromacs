@@ -69,13 +69,19 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+#ifdef GMX_DOUBLE
+#define GMX_CPT_BUILD_DP 1
+#else
+#define GMX_CPT_BUILD_DP 0
+#endif
+
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
  * The state data format itself is backward and forward compatible.
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 12;
+static const int cpt_version = 13;
 
 
 const char *est_names[estNR]=
@@ -686,6 +692,7 @@ static int do_cpte_matrices(XDR *xd,int cptp,int ecpt,int sflags,
 
 static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
                           char **version,char **btime,char **buser,char **bmach,
+                          int *double_prec,
                           char **fprog,char **ftime,
                           int *eIntegrator,int *simulation_part,
                           gmx_large_int_t *step,double *t,
@@ -742,6 +749,14 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
     if (*file_version > cpt_version)
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
+    }
+    if (*file_version >= 13)
+    {
+        do_cpt_int_err(xd,"GROMACS double precision",double_prec,list);
+    }
+    else
+    {
+        *double_prec = -1;
     }
     if (*file_version >= 12)
     {
@@ -1147,6 +1162,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     char *btime;
     char *buser;
     char *bmach;
+    int  double_prec;
     char *fprog;
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
@@ -1240,12 +1256,13 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     btime   = gmx_strdup(BUILD_TIME);
     buser   = gmx_strdup(BUILD_USER);
     bmach   = gmx_strdup(BUILD_MACHINE);
+    double_prec = GMX_CPT_BUILD_DP;
     fprog   = gmx_strdup(Program());
 
     ftime   = &(timebuf[0]);
     
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->nnhpres,
@@ -1391,7 +1408,8 @@ static void check_string(FILE *fplog,const char *type,const char *p,
 
 static void check_match(FILE *fplog,
                         char *version,
-                        char *btime,char *buser,char *bmach,char *fprog,
+                        char *btime,char *buser,char *bmach,int double_prec,
+                        char *fprog,
                         t_commrec *cr,gmx_bool bPartDecomp,int npp_f,int npme_f,
                         ivec dd_nc,ivec dd_nc_f)
 {
@@ -1404,6 +1422,7 @@ static void check_match(FILE *fplog,
     check_string(fplog,"Build time"   ,BUILD_TIME   ,btime  ,&mm);
     check_string(fplog,"Build user"   ,BUILD_USER   ,buser  ,&mm);
     check_string(fplog,"Build machine",BUILD_MACHINE,bmach  ,&mm);
+    check_int   (fplog,"Double prec." ,GMX_CPT_BUILD_DP,double_prec,&mm);
     check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
     check_int   (fplog,"#nodes"       ,cr->nnodes   ,npp_f+npme_f ,&mm);
@@ -1456,6 +1475,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
 	char filename[STRLEN],buf[STEPSTRSIZE];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
@@ -1496,11 +1516,17 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator_f,simulation_part,step,t,
                   &nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,&nnhpres,&nhchainlength,
                   &fflags,&flags_eks,&flags_enh,NULL);
+
+    if (bAppendOutputFiles &&
+        file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
+    {
+        gmx_fatal(FARGS,"Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
+    }
     
     if (cr == NULL || MASTER(cr))
     {
@@ -1518,6 +1544,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         fprintf(fplog,"  GROMACS build time:    %s\n",btime);  
         fprintf(fplog,"  GROMACS build user:    %s\n",buser);  
         fprintf(fplog,"  GROMACS build machine: %s\n",bmach);  
+        fprintf(fplog,"  GROMACS double prec.:  %d\n",double_prec);
         fprintf(fplog,"  simulation part #:     %d\n",*simulation_part);
         fprintf(fplog,"  step:                  %s\n",gmx_step_str(*step,buf));
         fprintf(fplog,"  time:                  %f\n",*t);  
@@ -1650,7 +1677,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
         if (MASTER(cr))
         {
-            check_match(fplog,version,btime,buser,bmach,fprog,
+            check_match(fplog,version,btime,buser,bmach,double_prec,fprog,
                         cr,bPartDecomp,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
         }
     }
@@ -1871,6 +1898,7 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
 {
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
     int  eIntegrator;
     int  nppnodes,npme;
     ivec dd_nc;
@@ -1880,7 +1908,7 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
     int  ret;
 	
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->nnhpres,&state->nhchainlength,
                   &state->flags,&flags_eks,&flags_enh,NULL);
@@ -1991,6 +2019,7 @@ void list_checkpoint(const char *fn,FILE *out)
     t_fileio *fp;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
     int  eIntegrator,simulation_part,nppnodes,npme;
     gmx_large_int_t step;
     double t;
@@ -2007,7 +2036,7 @@ void list_checkpoint(const char *fn,FILE *out)
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.nnhpres,&state.nhchainlength,
                   &state.flags,&flags_eks,&flags_enh,out);
