@@ -4292,9 +4292,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
                             nbnxn_pairlist_t *nblc)
 {
     int nsci,ncj4,nexcl;
-    int n,i,j4;
-    int cj4_offset,ci_offset,excl_offset;
-    const nbnxn_pairlist_t *nbli;
+    int n,i;
 
     if (nblc->simple)
     {
@@ -4332,48 +4330,61 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
                         nblc->alloc,nblc->free);
     }
 
+    /* Each thread should copy its own data to the combined arrays,
+     * as otherwise data will go back and forth between different caches.
+     */
+#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
     for(n=0; n<nnbl; n++)
     {
+        int sci_offset;
+        int cj4_offset;
+        int ci_offset;
+        int excl_offset;
+        int i,j4;
+        const nbnxn_pairlist_t *nbli;
+
+        /* Determine the offset in the combined data for our thread */
+        sci_offset  = nblc->nsci;
         cj4_offset  = nblc->ncj4;
         ci_offset   = nblc->nci_tot;
         excl_offset = nblc->nexcl;
 
+        for(i=0; i<n; i++)
+        {
+            sci_offset  += nbl[i]->nsci;
+            cj4_offset  += nbl[i]->ncj4;
+            ci_offset   += nbl[i]->nci_tot;
+            excl_offset += nbl[i]->nexcl;
+        }
+
         nbli = nbl[n];
 
-        /* We could instead omp prallelizing the two loops below
-         * parallelize the copy of integral parts of the nblist.
-         * However this requires a lot more bookkeeping and does not
-         * lead to a performance improvement.
-         */
-        /* The ci list copy is probably not worth parallelizing */
         for(i=0; i<nbli->nsci; i++)
         {
-            nblc->sci[nblc->nsci]                = nbli->sci[i];
-            nblc->sci[nblc->nsci].cj4_ind_start += cj4_offset;
-            nblc->sci[nblc->nsci].cj4_ind_end   += cj4_offset;
-            nblc->nsci++;
+            nblc->sci[sci_offset+i]                = nbli->sci[i];
+            nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
+            nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
         }
 
-#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntPairsearch))
+        for(j4=0; j4<nbli->ncj4; j4++)
         {
-#pragma omp for schedule(static) nowait
-            for(j4=0; j4<nbli->ncj4; j4++)
-            {
-                nblc->cj4[nblc->ncj4+j4] = nbli->cj4[j4];
-                nblc->cj4[nblc->ncj4+j4].imei[0].excl_ind += excl_offset;
-                nblc->cj4[nblc->ncj4+j4].imei[1].excl_ind += excl_offset;
-            }
-
-#pragma omp for schedule(static)
-            for(j4=0; j4<nbli->nexcl; j4++)
-            {
-                nblc->excl[nblc->nexcl+j4] = nbli->excl[j4];
-            }
+            nblc->cj4[cj4_offset+j4] = nbli->cj4[j4];
+            nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
+            nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
         }
 
-        nblc->ncj4    += nbli->ncj4;
-        nblc->nci_tot += nbli->nci_tot;
-        nblc->nexcl   += nbli->nexcl;
+        for(j4=0; j4<nbli->nexcl; j4++)
+        {
+            nblc->excl[excl_offset+j4] = nbli->excl[j4];
+        }
+    }
+
+    for(n=0; n<nnbl; n++)
+    {
+        nblc->nsci    += nbl[n]->nsci;
+        nblc->ncj4    += nbl[n]->ncj4;
+        nblc->nci_tot += nbl[n]->nci_tot;
+        nblc->nexcl   += nbl[n]->nexcl;
     }
 }
 
