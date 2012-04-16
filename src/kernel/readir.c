@@ -896,12 +896,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
-  ITYPE ("nstxout",	ir->nstxout,	100);
-  ITYPE ("nstvout",	ir->nstvout,	100);
+  ITYPE ("nstxout",	ir->nstxout,	0);
+  ITYPE ("nstvout",	ir->nstvout,	0);
   ITYPE ("nstfout",	ir->nstfout,	0);
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
-  ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstlog",	ir->nstlog,	1000);
   ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
   CTYPE ("Output frequency and precision for .xtc file");
