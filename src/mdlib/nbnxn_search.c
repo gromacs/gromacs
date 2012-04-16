@@ -311,6 +311,7 @@ typedef struct nbnxn_search {
                            * to natoms_nonlocal */
 
     gmx_bool print_cycles;
+    int      search_count;
     nbnxn_cycle_t cc[enbsCCnr];
 
     gmx_icell_set_x_t *icell_set_x;
@@ -364,7 +365,7 @@ static void nbs_cycle_print(FILE *fp,const nbnxn_search_t nbs)
     {
         if (nbs->cc[enbsCCcombine].count > 0)
         {
-            fprintf(fp," comb %4.1f",
+            fprintf(fp," comb %5.2f",
                     Mcyc_av(&nbs->cc[enbsCCcombine]));
         }
         fprintf(fp," s. th");
@@ -494,6 +495,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
 
     /* Initialize detailed nbsearch cycle counting */
     nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != 0);
+    nbs->search_count = 0;
     nbs_cycle_clear(nbs->cc);
     for(t=0; t<nbs->nthread_max; t++)
     {
@@ -5177,9 +5179,14 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     print_supersub_nsp("nsubpair",nbl[0],iloc);
     */
 
+    /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
+    if (LOCAL_I(iloc))
+    {
+        nbs->search_count++;
+    }
     if (nbs->print_cycles &&
-        nbs->cc[enbsCCgrid].count > 0 &&
-        nbs->cc[enbsCCgrid].count % 100 == 0)
+        (!nbs->DomDec || (nbs->DomDec && !LOCAL_I(iloc))) &&
+        nbs->search_count % 100 == 0)
     {
         nbs_cycle_print(stderr,nbs);
     }
