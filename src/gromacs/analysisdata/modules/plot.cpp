@@ -59,10 +59,10 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "plot-impl.h"
 

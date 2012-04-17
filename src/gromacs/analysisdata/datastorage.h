@@ -43,8 +43,8 @@
 
 #include "../legacyheaders/types/simple.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/common.h"
+#include "../utility/gmxassert.h"
 
 #include "dataframe.h"
 

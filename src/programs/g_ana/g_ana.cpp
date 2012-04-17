@@ -33,12 +33,12 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
-#include <copyrite.h>
+#include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/fatalerror.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/modules.h"
+#include "gromacs/utility/exceptions.h"
 
 int
 main(int argc, char *argv[])

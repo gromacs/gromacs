@@ -46,7 +46,7 @@
 #include <utility>
 #include <vector>
 
-#include "../fatalerror/gmxassert.h"
+#include "gmxassert.h"
 
 namespace gmx
 {

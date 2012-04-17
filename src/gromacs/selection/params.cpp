@@ -41,17 +41,17 @@
 
 #include <algorithm>
 
-#include <smalloc.h>
-#include <string2.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "string2.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/selection/selparam.h"
+#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "parsetree.h"
 #include "position.h"

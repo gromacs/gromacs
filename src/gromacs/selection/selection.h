@@ -44,9 +44,9 @@
 
 #include "../legacyheaders/typedefs.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/arrayref.h"
 #include "../utility/common.h"
+#include "../utility/gmxassert.h"
 
 #include "position.h"
 #include "indexutil.h"

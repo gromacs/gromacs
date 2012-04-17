@@ -49,13 +49,13 @@
 #define USE_REGEX
 #endif
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
 #include "parsetree.h"

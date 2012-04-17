@@ -41,12 +41,12 @@
 
 #include <stdlib.h>
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "keywords.h"
 #include "parsetree.h"

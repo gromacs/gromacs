@@ -52,16 +52,16 @@
 
 #include <string.h>
 
-#include <maths.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "maths.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "evaluate.h"
 #include "mempool.h"

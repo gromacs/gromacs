@@ -273,15 +273,15 @@
 #include <math.h>
 #include <stdarg.h>
 
-#include <smalloc.h>
-#include <string2.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "string2.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
 #include "evaluate.h"

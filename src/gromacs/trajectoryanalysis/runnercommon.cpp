@@ -41,21 +41,21 @@
 
 #include <string.h>
 
-#include <rmpbc.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <tpxio.h>
-#include <vec.h>
+#include "rmpbc.h"
+#include "smalloc.h"
+#include "statutil.h"
+#include "tpxio.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "analysissettings-impl.h"
 

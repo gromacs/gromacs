@@ -34,10 +34,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#ifndef GMX_FATALERROR_GMXASSERT_H
-#define GMX_FATALERROR_GMXASSERT_H
+#ifndef GMX_UTILITY_GMXASSERT_H
+#define GMX_UTILITY_GMXASSERT_H
 
 #include <boost/current_function.hpp>
 #include <boost/exception/detail/attribute_noreturn.hpp>
@@ -90,7 +90,7 @@ namespace internal
  * Should not be called directly, but instead through ::GMX_ASSERT or
  * ::GMX_RELEASE_ASSERT.
  *
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
 BOOST_ATTRIBUTE_NORETURN
 void assertHandler(const char *condition, const char *msg,

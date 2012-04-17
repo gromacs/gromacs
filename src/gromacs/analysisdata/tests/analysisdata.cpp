@@ -46,7 +46,7 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "datatest.h"
 #include "mock_module.h"

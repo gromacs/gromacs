@@ -39,13 +39,13 @@
 #include <config.h>
 #endif
 
-#include <macros.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 /*! \internal \brief
  * Data structure for the merging selection modifiers.

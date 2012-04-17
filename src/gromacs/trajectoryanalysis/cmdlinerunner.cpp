@@ -39,14 +39,12 @@
 #include <config.h>
 #endif
 
-#include <copyrite.h>
-#include <pbc.h>
-#include <rmpbc.h>
-#include <statutil.h>
+#include "copyrite.h"
+#include "pbc.h"
+#include "rmpbc.h"
+#include "statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/asciihelpwriter.h"
 #include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/options.h"
@@ -56,6 +54,8 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

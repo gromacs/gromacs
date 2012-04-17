@@ -33,13 +33,13 @@
  * Implements gmx::MessageStringCollector.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#include "gromacs/fatalerror/messagestringcollector.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include <vector>
 
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

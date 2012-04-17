@@ -39,9 +39,9 @@
 
 #include <cctype>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "cmdlineparser-impl.h"
 

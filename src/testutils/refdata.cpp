@@ -46,8 +46,8 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/format.h"
 #include "testutils/testexceptions.h"

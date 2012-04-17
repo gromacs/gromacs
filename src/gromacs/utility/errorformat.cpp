@@ -33,9 +33,9 @@
  * Implements functions declared in errorformat.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#include "gromacs/fatalerror/errorformat.h"
+#include "gromacs/utility/errorformat.h"
 
 #include <string>
 

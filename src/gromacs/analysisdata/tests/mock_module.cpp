@@ -42,8 +42,8 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/refdata.h"
 

@@ -41,7 +41,7 @@
 
 #include <string>
 
-#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
