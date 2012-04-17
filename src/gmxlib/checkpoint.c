@@ -1752,15 +1752,23 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    if (errno!=EACCES && errno!=EAGAIN)
+                    if (errno == ENOSYS)
                     {
-                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                        fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                        if (fplog)
+                        {
+                            fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                        }
                     }
-                    else 
+                    else if (errno == EACCES || errno == EAGAIN)
                     {
                         gmx_fatal(FARGS,"Failed to lock: %s. Already running "
                                   "simulation?", outputfiles[i].filename);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
                     }
                 }
             }
