@@ -82,7 +82,6 @@ typedef gmx_unique_ptr<ExampleClass>::type ExampleClassPointer;
  * For C++11 gmx::move is the std::move, for non-C++11 compilers, the
  * move operation is a no-op.
  *
- * \ingroup module_utility
  * \inlibraryapi
  */
 #ifdef HAVE_CXX11 // C++11 Compiler

@@ -44,11 +44,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/testexceptions.h"
 
 namespace

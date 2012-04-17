@@ -41,13 +41,13 @@
 
 #include <string.h>
 
-#include <smalloc.h>
-#include <typedefs.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "typedefs.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/gmxassert.h"
 
 /*!
  * \param[out] pos      Output structure.

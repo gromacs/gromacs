@@ -40,9 +40,9 @@
 #include <utility>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "analysismodule-impl.h"
 

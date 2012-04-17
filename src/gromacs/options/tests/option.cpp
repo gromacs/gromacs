@@ -43,9 +43,9 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace
 {

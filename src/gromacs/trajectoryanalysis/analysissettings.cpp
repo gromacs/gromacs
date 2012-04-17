@@ -39,12 +39,12 @@
 #include <config.h>
 #endif
 
-#include <smalloc.h>
-#include <statutil.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "statutil.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "analysissettings-impl.h"
 

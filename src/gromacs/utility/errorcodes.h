@@ -34,10 +34,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#ifndef GMX_FATALERROR_ERRORCODES_H
-#define GMX_FATALERROR_ERRORCODES_H
+#ifndef GMX_UTILITY_ERRORCODES_H
+#define GMX_UTILITY_ERRORCODES_H
 
 namespace gmx
 {
@@ -159,7 +159,7 @@ namespace internal
  * Should not be called directly, but instead through ::GMX_ERROR or
  * ::GMX_ERROR_NORET.
  *
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
 void fatalError(int retcode, const char *msg, const char *file, int line);
 

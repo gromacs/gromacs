@@ -37,9 +37,9 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
-#include <string2.h>
+#include "string2.h"
 
-#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
 #include "modules/angle.h"

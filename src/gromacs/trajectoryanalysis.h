@@ -78,10 +78,10 @@
 #include "options.h"
 #include "selection.h"
 
-#include "fatalerror/exceptions.h"
 #include "trajectoryanalysis/analysismodule.h"
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"
 #include "trajectoryanalysis/nbsearch.h"
+#include "utility/exceptions.h"
 
 #endif

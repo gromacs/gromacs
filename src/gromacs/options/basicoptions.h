@@ -44,7 +44,7 @@
 
 #include <string>
 
-#include "../fatalerror/gmxassert.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
 #include "optionfiletype.h"

@@ -30,21 +30,15 @@
  */
 /*! \internal \file
  * \brief
- * Implements assertion handlers.
+ * Declares an internal helper function for formatting standard error messages.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#include "gromacs/fatalerror/gmxassert.h"
-
-#include <cstdio>
-#include <cstdlib>
+#ifndef GMX_UTILITY_ERRORFORMAT_H
+#define GMX_UTILITY_ERRORFORMAT_H
 
 #include <string>
-
-#include "gromacs/utility/format.h"
-
-#include "errorformat.h"
 
 namespace gmx
 {
@@ -53,18 +47,17 @@ namespace gmx
 namespace internal
 {
 
-void assertHandler(const char *condition, const char *msg,
-                   const char *func, const char *file, int line)
-{
-    std::string text =
-        formatFatalError("Assertion failed",
-                         formatString("Condition: %s\n%s", condition, msg).c_str(),
-                         func, file, line);
-    std::fprintf(stderr, "%s", text.c_str());
-    std::abort();
-}
+/*! \internal \brief
+ * Formats common headers and footers for error messages.
+ *
+ * \ingroup module_utility
+ */
+std::string formatFatalError(const char *title, const char *details,
+                             const char *func, const char *file, int line);
 
 } // namespace internal
 //! \endcond
 
 } // namespace gmx
+
+#endif

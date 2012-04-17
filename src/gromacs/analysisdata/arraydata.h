@@ -41,7 +41,7 @@
 
 #include <vector>
 
-#include "../fatalerror/gmxassert.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractdata.h"
 #include "dataframe.h"
