@@ -95,6 +95,8 @@ typedef struct {
 
 typedef struct gmx_ga2la *gmx_ga2la_t;
 
+typedef struct gmx_hash *gmx_hash_t;
+
 typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
 typedef struct gmx_domdec_constraints *gmx_domdec_constraints_p_t;
@@ -190,7 +192,7 @@ typedef struct {
   int  n_intercg_excl;
 
   /* Vsite stuff */
-  int  *ga2la_vsite;
+  gmx_hash_t  ga2la_vsite;
   gmx_domdec_specat_comm_p_t vsite_comm;
 
   /* Constraint stuff */

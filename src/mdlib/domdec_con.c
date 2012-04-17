@@ -27,6 +27,7 @@
 #include "domdec_network.h"
 #include "mtop_util.h"
 #include "gmx_ga2la.h"
+#include "gmx_hash.h"
 #include "gmx_omp_nthreads.h"
 
 typedef struct {
@@ -79,7 +80,7 @@ typedef struct gmx_domdec_constraints {
     /* Boolean that tells if a global constraint index has been requested */
     char *gc_req;
     /* Global to local communicated constraint atom only index */
-    int  *ga2la;
+    gmx_hash_t ga2la;
 
     /* Multi-threading stuff */
     int nthread;
@@ -436,10 +437,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
   
     if (dd->constraint_comm)
     {
-        for(i=dd->constraint_comm->at_start; i<dd->constraint_comm->at_end; i++)
-        {
-            dc->ga2la[dd->gatindex[i]] = -1;
-        }
+        gmx_hash_clear_and_optimize(dc->ga2la);
     }
 }
 
@@ -449,17 +447,14 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
     
     if (dd->vsite_comm)
     {
-        for(i=dd->vsite_comm->at_start; i<dd->vsite_comm->at_end; i++)
-        {
-            dd->ga2la_vsite[dd->gatindex[i]] = -1;
-        }
+        gmx_hash_clear_and_optimize(dd->ga2la_vsite);
     }
 }
 
 static int setup_specat_communication(gmx_domdec_t *dd,
                                       ind_req_t *ireq,
                                       gmx_domdec_specat_comm_t *spac,
-                                      int *ga2la_specat,
+                                      gmx_hash_t ga2la_specat,
                                       int at_start,
                                       int vbuf_fac,
                                       const char *specat_type,
@@ -579,7 +574,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                 if (!ga2la_get_home(dd->ga2la,indr,&ind))
                 {
                     /* Search in the communicated atoms */
-                    ind = ga2la_specat[indr];
+                    ind = gmx_hash_get_minone(ga2la_specat,indr);
                 }
                 if (ind >= 0)
                 {
@@ -672,7 +667,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         /* Make a global to local index for the communication atoms */
         for(i=nat_tot_prev; i<nat_tot_specat; i++)
         {
-            ga2la_specat[dd->gatindex[i]] = i;
+            gmx_hash_change_or_set(ga2la_specat,dd->gatindex[i],i);
         }
     }
     
@@ -687,8 +682,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
             {
                 for(i=0; i<ireq->n; i++)
                 {
+                    ind = gmx_hash_get_minone(ga2la_specat,ireq->ind[i]);
                     fprintf(debug," %s%d",
-                            ga2la_specat[ireq->ind[i]]>=0 ? "" : "!",
+                            (ind >= 0) ? "" : "!",
                             ireq->ind[i]+1);
                 }
                 fprintf(debug,"\n");
@@ -698,7 +694,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                 dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
         for(i=0; i<ireq->n; i++)
         {
-            if (ga2la_specat[ireq->ind[i]] < 0)
+            if (gmx_hash_get_minone(ga2la_specat,ireq->ind[i]) < 0)
             {
                 fprintf(stderr," %d",ireq->ind[i]+1);
             }
@@ -777,7 +773,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
         dc->ncon++;
     }
     /* Check to not ask for the same atom more than once */
-    if (dc->ga2la[offset+a] == -1)
+    if (gmx_hash_get_minone(dc->ga2la,offset+a) == -1)
     {
         /* Add this non-home atom to the list */
         if (ireq->n+1 > ireq->nalloc)
@@ -787,7 +783,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
         }
         ireq->ind[ireq->n++] = offset + a;
         /* Temporarily mark with -2, we get the index later */
-        dc->ga2la[offset+a] = -2;
+        gmx_hash_set(dc->ga2la,offset+a,-2);
     }
     
     if (nrec > 0)
@@ -1046,7 +1042,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
     ind_req_t *ireq;
     const t_blocka *at2con_mt;
     const int **at2settle_mt;
-    int *ga2la_specat;
+    gmx_hash_t ga2la_specat;
     int at_end,i,j;
     t_iatom *iap;
     
@@ -1195,7 +1191,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = ga2la_specat[-iap[j]-1];
+                    iap[j] = gmx_hash_get_minone(ga2la_specat,-iap[j]-1);
                 }
             }
         }
@@ -1207,7 +1203,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
             {
                 if (iap[j] < 0)
                 {
-                    iap[j] = ga2la_specat[-iap[j]-1];
+                    iap[j] = gmx_hash_get_minone(ga2la_specat,-iap[j]-1);
                 }
             }
         }
@@ -1224,7 +1220,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
 {
     gmx_domdec_specat_comm_t *spac;
     ind_req_t *ireq;
-    int  *ga2la_specat;
+    gmx_hash_t ga2la_specat;
     int  ftype,nral,i,j,gat,a;
     t_ilist *lilf;
     t_iatom *iatoms;
@@ -1254,7 +1250,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
                          */
                         a = -iatoms[j] - 1;
                         /* Check to not ask for the same atom more than once */
-                        if (ga2la_specat[a] == -1)
+                        if (gmx_hash_get_minone(dd->ga2la_vsite,a) == -1)
                         {
                             /* Add this non-home atom to the list */
                             if (ireq->n+1 > ireq->nalloc)
@@ -1266,7 +1262,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
                             /* Temporarily mark with -2,
                              * we get the index later.
                              */
-                            ga2la_specat[a] = -2;
+                            gmx_hash_set(ga2la_specat,a,-2);
                         }
                     }
                 }
@@ -1291,7 +1287,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
                 {
                     if (iatoms[j] < 0)
                     {
-                        iatoms[j] = ga2la_specat[-iatoms[j]-1];
+                        iatoms[j] = gmx_hash_get_minone(ga2la_specat,-iatoms[j]-1);
                     }
                 }
             }
@@ -1351,14 +1347,11 @@ void init_domdec_constraints(gmx_domdec_t *dd,
         }
     }
 
-    /* Array of the global system size.
-     * We should try to rewrite the code to avoid this.
+    /* Use a hash table for the global to local index.
+     * The number of keys is a rough estimate, it will be optimized later.
      */
-    snew(dc->ga2la,mtop->natoms);
-    for(a=0; a<mtop->natoms; a++)
-    {
-        dc->ga2la[a] = -1;
-    }
+    dc->ga2la = gmx_hash_init(min(mtop->natoms/20,
+                                  mtop->natoms/(2*dd->nnodes)));
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);
     snew(dc->ils,dc->nthread);
@@ -1366,7 +1359,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
     dd->constraint_comm = specat_comm_init(dc->nthread);
 }
 
-void init_domdec_vsites(gmx_domdec_t *dd,int natoms)
+void init_domdec_vsites(gmx_domdec_t *dd,int n_intercg_vsite)
 {
     int i;
     gmx_domdec_constraints_t *dc;
@@ -1376,14 +1369,11 @@ void init_domdec_vsites(gmx_domdec_t *dd,int natoms)
         fprintf(debug,"Begin init_domdec_vsites\n");
     }
     
-    /* Array of the global system size.
-     * We should try to rewrite the code to avoid this.
+    /* Use a hash table for the global to local index.
+     * The number of keys is a rough estimate, it will be optimized later.
      */
-    snew(dd->ga2la_vsite,natoms);
-    for(i=0; i<natoms; i++)
-    {
-        dd->ga2la_vsite[i] = -1;
-    }
+    dd->ga2la_vsite = gmx_hash_init(min(n_intercg_vsite/20,
+                                        n_intercg_vsite/(2*dd->nnodes)));
     
     dd->vsite_comm = specat_comm_init(1);
 }

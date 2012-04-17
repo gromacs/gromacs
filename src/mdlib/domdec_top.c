@@ -741,7 +741,7 @@ void dd_make_reverse_top(FILE *fplog,
                     "will an extra communication step for selected coordinates and forces\n",
 	      vsite->n_intercg_vsite);
         }
-        init_domdec_vsites(dd,mtop->natoms);
+        init_domdec_vsites(dd,vsite->n_intercg_vsite);
     }
     
     if (dd->bInterCGcons || dd->bInterCGsettles)

@@ -212,7 +212,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
                              gmx_mtop_t *mtop,
                              gmx_constr_t constr);
 
-void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
+void init_domdec_vsites(gmx_domdec_t *dd,int n_intercg_vsite);
 
 
 /* In domdec_top.c */
