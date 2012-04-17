@@ -9,7 +9,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-
 enable_language(C)
 
 option(GMX_DOUBLE "Use double precision" OFF)
@@ -29,22 +28,18 @@ ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 ########################################################################
 
 if (GMX_DOUBLE)
-  set(LIBMD "libmd_d")
+  set(LIBMD "libgmx_d")
 else(GMX_DOUBLE)
-  set(LIBMD "libmd")
+  set(LIBMD "libgmx")
 endif(GMX_DOUBLE)
 
-#only check for libmd, because it depends on libgmx
-FIND_PACKAGE(PkgConfig)
-#do not use REQUIRED here, we have a better error message then pkgconfig
-PKG_CHECK_MODULES(LIBMD ${LIBMD})
-if (NOT LIBMD_FOUND)
-  message(FATAL_ERROR "${LIBMD} not found, source GMXRC.")
-endif (NOT LIBMD_FOUND)
-add_definitions( ${LIBMD_CFLAGS} )
-include_directories( ${LIBMD_INCLUDE_DIRS} )
-link_directories( ${LIBMD_LIBRARY_DIRS} )
+FIND_PACKAGE(GROMACS COMPONENTS ${LIBMD} REQUIRED)
+if ("${GROMACS_VERSION_STRING}" VERSION_LESS "4.5" OR "${GROMACS_VERSION_STRING}" VERSION_GREATER "4.99")
+  message(FATAL_ERROR "This template works only with GROMACS 4.5")
+endif ("${GROMACS_VERSION_STRING}" VERSION_LESS "4.5" OR "${GROMACS_VERSION_STRING}" VERSION_GREATER "4.99")
 
+add_definitions( ${GROMACS_DEFINITIONS} )
+include_directories( ${GROMACS_INCLUDE_DIRS} )
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
@@ -52,4 +47,4 @@ link_directories( ${LIBMD_LIBRARY_DIRS} )
 set(BIN_INSTALL_DIR  ${CMAKE_INSTALL_PREFIX}/bin)
 
 add_executable(template template.c)
-target_link_libraries(template ${LIBMD_LIBRARIES})
+target_link_libraries(template ${GROMACS_LIBRARIES})
