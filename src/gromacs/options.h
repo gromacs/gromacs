@@ -86,7 +86,10 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
+#include "options/basicoptioninfo.h"
 #include "options/basicoptions.h"
+#include "options/filenameoptioninfo.h"
+#include "options/filenameoption.h"
 #include "options/options.h"
 
 #endif

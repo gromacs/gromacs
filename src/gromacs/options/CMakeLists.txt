@@ -7,6 +7,8 @@ set(OPTIONS_PUBLIC_HEADERS
     basicoptions.h
     cmdlinehelpwriter.h
     cmdlineparser.h
+    filenameoption.h
+    filenameoptioninfo.h
     optionfiletype.h
     optionflags.h
     optioninfo.h

@@ -30,7 +30,8 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in basicoptions.h and basicoptionstorage.h.
+ * Implements classes in basicoptions.h, basicoptioninfo.h and
+ * basicoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
@@ -44,7 +45,6 @@
 #include <vector>
 
 #include "gromacs/options/basicoptioninfo.h"
-#include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
@@ -409,72 +409,6 @@ std::string StringOption::createDescription() const
         }
     }
     return value;
-}
-
-
-/********************************************************************
- * FileNameOptionStorage
- */
-
-FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
-    : MyBase(settings), info_(this), filetype_(settings.filetype_),
-      bRead_(settings.bRead_), bWrite_(settings.bWrite_),
-      bLibrary_(settings.bLibrary_)
-{
-}
-
-std::string FileNameOptionStorage::formatValue(int i) const
-{
-    return values()[i];
-}
-
-void FileNameOptionStorage::convertValue(const std::string &value)
-{
-    // TODO: Proper implementation.
-    addValue(value);
-}
-
-/********************************************************************
- * FileNameOptionInfo
- */
-
-FileNameOptionInfo::FileNameOptionInfo(FileNameOptionStorage *option)
-    : OptionInfo(option)
-{
-}
-
-const FileNameOptionStorage &FileNameOptionInfo::option() const
-{
-    return static_cast<const FileNameOptionStorage &>(OptionInfo::option());
-}
-
-bool FileNameOptionInfo::isInputFile() const
-{
-    return option().isInputFile();
-}
-
-bool FileNameOptionInfo::isOutputFile() const
-{
-    return option().isOutputFile();
-}
-
-bool FileNameOptionInfo::isInputOutputFile() const
-{
-    return option().isInputOutputFile();
-}
-
-bool FileNameOptionInfo::isLibraryFile() const
-{
-    return option().isLibraryFile();
-}
-
-/********************************************************************
- * FileNameOption
- */
-
-AbstractOptionStoragePointer FileNameOption::createStorage() const
-{
-    return AbstractOptionStoragePointer(new FileNameOptionStorage(*this));
 }
 
 } // namespace gmx

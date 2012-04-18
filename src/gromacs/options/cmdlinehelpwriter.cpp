@@ -43,6 +43,7 @@
 #include <string>
 
 #include "gromacs/options/basicoptioninfo.h"
+#include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 

@@ -48,6 +48,7 @@
 #include "vec.h"
 
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"

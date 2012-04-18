@@ -43,7 +43,6 @@
 
 #include "basicoptions.h"
 #include "basicoptioninfo.h"
-#include "optionfiletype.h"
 #include "optionstoragetemplate.h"
 
 namespace gmx
@@ -53,7 +52,6 @@ class BooleanOption;
 class IntegerOption;
 class DoubleOption;
 class StringOption;
-class FileNameOption;
 
 /*! \addtogroup module_options
  * \{
@@ -157,38 +155,6 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         StringOptionInfo        _info;
         ValueList               _allowed;
         int                    *_enumIndexStore;
-};
-
-/*! \internal \brief
- * Converts, validates, and stores file names.
- */
-class FileNameOptionStorage : public OptionStorageTemplate<std::string>
-{
-    public:
-        //! \copydoc StringOptionStorage::StringOptionStorage()
-        explicit FileNameOptionStorage(const FileNameOption &settings);
-
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "file"; }
-        virtual std::string formatValue(int i) const;
-
-        //! \copydoc FileNameOptionInfo::isInputFile()
-        bool isInputFile() const { return bRead_ && !bWrite_; }
-        //! \copydoc FileNameOptionInfo::isOutputFile()
-        bool isOutputFile() const { return !bRead_ && bWrite_; }
-        //! \copydoc FileNameOptionInfo::isInputOutputFile()
-        bool isInputOutputFile() const { return bRead_ && bWrite_; }
-        //! \copydoc FileNameOptionInfo::isLibraryFile()
-        bool isLibraryFile() const { return bLibrary_; }
-
-    private:
-        virtual void convertValue(const std::string &value);
-
-        FileNameOptionInfo      info_;
-        OptionFileType          filetype_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
 };
 
 /*!\}*/
