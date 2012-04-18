@@ -93,19 +93,6 @@ ENDIF()
 
 set(GMX_EXTRA_LIBRARIES)
 
-
-
-######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
-#####################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-include(gmxCFlags)
-gmx_c_flags()
-
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -154,6 +141,24 @@ if(UNIX AND NOT APPLE)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
+
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
+# branch (proposed for v2.8.9) to be able to detect invalid options
+# with the Intel Compilers.
+# Remove these files from the source tree when a CMake version that
+# includes the features in question becomes required.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+include(gmxCFlags)
+gmx_c_flags()
+
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -210,7 +215,6 @@ include(gmxManageMPI)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
