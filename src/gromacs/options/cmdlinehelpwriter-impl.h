@@ -30,15 +30,15 @@
  */
 /*! \internal \file
  * \brief
- * Declares private implementation class for gmx::AsciiHelpWriter.
+ * Declares private implementation class for gmx::CommandLineHelpWriter.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_ASCIIHELPWRITER_IMPL_HPP
-#define GMX_OPTIONS_ASCIIHELPWRITER_IMPL_HPP
+#ifndef GMX_OPTIONS_CMDLINEHELPWRITER_IMPL_H
+#define GMX_OPTIONS_CMDLINEHELPWRITER_IMPL_H
 
-#include "asciihelpwriter.h"
+#include "cmdlinehelpwriter.h"
 
 #include "basicoptioninfo.h"
 #include "optionsvisitor.h"
@@ -50,11 +50,11 @@ namespace gmx
 class Options;
 
 /*! \internal \brief
- * Private implementation class for AsciiHelpWriter.
+ * Private implementation class for CommandLineHelpWriter.
  *
  * \ingroup module_options
  */
-class AsciiHelpWriter::Impl
+class CommandLineHelpWriter::Impl
 {
     public:
         /*! \brief

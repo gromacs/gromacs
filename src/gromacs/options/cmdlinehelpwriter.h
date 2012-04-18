@@ -30,14 +30,14 @@
  */
 /*! \file
  * \brief
- * Declares gmx::AsciiHelpWriter.
+ * Declares gmx::CommandLineHelpWriter.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
  * \ingroup module_options
  */
-#ifndef GMX_OPTIONS_ASCIIHELPWRITER_H
-#define GMX_OPTIONS_ASCIIHELPWRITER_H
+#ifndef GMX_OPTIONS_CMDLINEHELPWRITER_H
+#define GMX_OPTIONS_CMDLINEHELPWRITER_H
 
 #include <cstdio>
 
@@ -54,7 +54,7 @@ class Options;
  * \inpublicapi
  * \ingroup module_options
  */
-class AsciiHelpWriter
+class CommandLineHelpWriter
 {
     public:
         /*! \brief
@@ -62,17 +62,17 @@ class AsciiHelpWriter
          *
          * \param[in] options  Options for which help should be printed.
          */
-        explicit AsciiHelpWriter(const Options &options);
-        ~AsciiHelpWriter();
+        explicit CommandLineHelpWriter(const Options &options);
+        ~CommandLineHelpWriter();
 
         /*! \brief
          * Sets whether hidden options are shown in the help.
          */
-        AsciiHelpWriter &setShowHidden(bool bShow);
+        CommandLineHelpWriter &setShowHidden(bool bShow);
         /*! \brief
          * Sets whether long descriptions for sections are shown in the help.
          */
-        AsciiHelpWriter &setShowDescriptions(bool bShow);
+        CommandLineHelpWriter &setShowDescriptions(bool bShow);
 
         /*! \brief
          * Writes the help.

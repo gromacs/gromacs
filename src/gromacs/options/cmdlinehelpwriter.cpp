@@ -30,12 +30,12 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::AsciiHelpWriter.
+ * Implements gmx::CommandLineHelpWriter.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
  */
-#include "gromacs/options/asciihelpwriter.h"
+#include "gromacs/options/cmdlinehelpwriter.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -43,16 +43,16 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 
-#include "asciihelpwriter-impl.h"
+#include "cmdlinehelpwriter-impl.h"
 
 namespace gmx
 {
 
 /********************************************************************
- * AsciiHelpWriter::Impl
+ * CommandLineHelpWriter::Impl
  */
 
-AsciiHelpWriter::Impl::Impl(const Options &options)
+CommandLineHelpWriter::Impl::Impl(const Options &options)
     : _options(options)
 {
 }
@@ -219,31 +219,31 @@ void AsciiParameterWriter::visitOption(const OptionInfo &option)
 }
 
 /********************************************************************
- * AsciiHelpWriter
+ * CommandLineHelpWriter
  */
 
-AsciiHelpWriter::AsciiHelpWriter(const Options &options)
+CommandLineHelpWriter::CommandLineHelpWriter(const Options &options)
     : _impl(new Impl(options))
 {
 }
 
-AsciiHelpWriter::~AsciiHelpWriter()
+CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-AsciiHelpWriter &AsciiHelpWriter::setShowHidden(bool bSet)
+CommandLineHelpWriter &CommandLineHelpWriter::setShowHidden(bool bSet)
 {
     _impl->_flags.set(Impl::efShowHidden, bSet);
     return *this;
 }
 
-AsciiHelpWriter &AsciiHelpWriter::setShowDescriptions(bool bSet)
+CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     _impl->_flags.set(Impl::efShowDescriptions, bSet);
     return *this;
 }
 
-void AsciiHelpWriter::writeHelp(FILE *fp)
+void CommandLineHelpWriter::writeHelp(FILE *fp)
 {
     if (_impl->_flags.test(Impl::efShowDescriptions))
     {

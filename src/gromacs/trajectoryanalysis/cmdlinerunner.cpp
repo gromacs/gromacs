@@ -45,7 +45,7 @@
 #include "statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/options/asciihelpwriter.h"
+#include "gromacs/options/cmdlinehelpwriter.h"
 #include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -103,7 +103,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
-        AsciiHelpWriter(options)
+        CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .writeHelp(stderr);
