@@ -361,13 +361,13 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 	      shell[nsi].k    += ffparams->iparams[type].cubic.kb;
 	      break;
 	    case F_POLARIZATION:
-	      if (qS != atom[aS].qB)
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
 		gmx_fatal(FARGS,"polarize can not be used with qA != qB");
 	      shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 		ffparams->iparams[type].polarize.alpha;
 	      break;
 	    case F_WATER_POL:
-	      if (qS != atom[aS].qB)
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
 		gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
 	      alpha          = (ffparams->iparams[type].wpol.al_x+
 				ffparams->iparams[type].wpol.al_y+
@@ -558,16 +558,16 @@ static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
       for(d=0; d<DIM; d++) {
 	dx = xcur[shell][d] - s[i].xold[d];
 	df =    f[shell][d] - s[i].fold[d];
-	if (dx != 0 && df != 0) {
+	if (!gmx_numzero(dx) && !gmx_numzero(df)) {
 	  k_est = -dx/df;
 	  if (k_est >= 2*s[i].step[d]) {
 	    s[i].step[d] *= 1.2;
-	  } else if (k_est <= 0) {
+	  } else if (k_est < 0 || gmx_numzero(k_est)) {
 	    s[i].step[d] *= 0.8;
 	  } else {
 	    s[i].step[d] = 0.8*s[i].step[d] + 0.2*k_est;
 	  }
-	} else if (dx != 0) {
+	} else if (!gmx_numzero(dx)) {
 	  s[i].step[d] *= 1.2;
 	}
 #ifdef PRINT_STEP
