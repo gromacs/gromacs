@@ -202,14 +202,16 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     } else if (ir->eI == eiBD) {
       /* Make the mass proportional to the friction coefficient for BD.
        * This is necessary for the constraint algorithms.
+       * We use a factor 0.5 to make 0.5*mv^2 with v=dx/dt for one step
+       * give the correct kinetic energy and temperature.
        */
       if (ir->bd_fric) {
-	mA = ir->bd_fric*ir->delta_t;
-	mB = ir->bd_fric*ir->delta_t;
+	mA = 0.5*ir->bd_fric*ir->delta_t;
+	mB = 0.5*ir->bd_fric*ir->delta_t;
       } else {
 	fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
-	mA = atom->m*fac;
-	mB = atom->mB*fac;
+	mA = 0.5*atom->m*fac;
+	mB = 0.5*atom->mB*fac;
       }
     } else {
       mA = atom->m;
