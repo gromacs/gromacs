@@ -1,0 +1,7 @@
+# To-do list for getting this code to the level of publication
+
+* Histidines lead to segfaults.
+  HID are erroneously identified as potential donors.
+  I've started to work on this issue (ERIK)
+* constraints?
+* more?
