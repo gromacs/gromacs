@@ -36,7 +36,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
 #ifdef __linux
 #define _GNU_SOURCE
 #include <sched.h>
@@ -44,11 +43,6 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
-
-#ifdef GMX_NATIVE_WINDOWS
-/* _isnan() */
-#include <float.h>
-#endif
 
 #include "typedefs.h"
 #include "smalloc.h"
