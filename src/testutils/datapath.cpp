@@ -37,7 +37,7 @@
  */
 #include "datapath.h"
 
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 
 static const char *g_testDataPath = NULL;

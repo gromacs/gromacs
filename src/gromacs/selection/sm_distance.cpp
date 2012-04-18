@@ -42,15 +42,15 @@
 #include <config.h>
 #endif
 
-#include <macros.h>
-#include <pbc.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "macros.h"
+#include "pbc.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 /*! \internal \brief
  * Data structure for distance-based selection method.

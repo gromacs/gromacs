@@ -45,7 +45,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/fatalerror/gmxassert.h"
+
+#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/refdata.h"
 

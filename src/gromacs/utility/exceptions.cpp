@@ -33,13 +33,13 @@
  * Implements classes and functions in exceptions.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/utility/exceptions.h"
 
 #include <boost/exception/get_error_info.hpp>
 
-#include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/utility/errorcodes.h"
 
 #include "errorformat.h"
 

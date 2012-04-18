@@ -33,9 +33,9 @@
  * Implements functions in errorcodes.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#include "gromacs/fatalerror/errorcodes.h"
+#include "gromacs/utility/errorcodes.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -43,7 +43,7 @@
 
 #include "errorformat.h"
 
-// This has to match the enum in fatalerror.h
+// This has to match the enum in errorcodes.h
 static const char *const error_names[] =
 {
     "No error",

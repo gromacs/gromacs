@@ -37,13 +37,13 @@
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace
 {

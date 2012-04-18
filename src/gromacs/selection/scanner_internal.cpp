@@ -50,22 +50,21 @@
 #endif
 
 #include <stdlib.h>
-#include <typedefs.h>
-#include <smalloc.h>
 #include <string.h>
 
+#include "typedefs.h"
+#include "smalloc.h"
 #include "string2.h"
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
-
-#include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "parsetree.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selmethod.h"
 #include "symrec.h"
 
 #include "parser.h"

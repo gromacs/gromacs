@@ -39,12 +39,12 @@
 #include <config.h>
 #endif
 
-#include <maths.h>
-#include <macros.h>
-#include <smalloc.h>
+#include "maths.h"
+#include "macros.h"
+#include "smalloc.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 /** Defines the comparison operator for comparison expressions. */
 typedef enum

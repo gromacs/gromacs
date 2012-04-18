@@ -37,8 +37,8 @@
  */
 #include "gromacs/analysisdata/abstractdata.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "abstractdata-impl.h"
 #include "dataframe.h"

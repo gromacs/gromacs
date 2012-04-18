@@ -28,10 +28,12 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \defgroup module_fatalerror Handling of Fatal Errors
+/*! \defgroup module_utility Low-level Utility Module
  * \ingroup group_utilitymodules
  * \brief
- * Provides functions for handling fatal errors.
+ * Provides various low-level utilities.
+ *
+ * <H3>Handling fatal errors</H3>
  *
  * Exception classes used in the library are defined in the exceptions.h header
  * file.  This header also declares a ::GMX_THROW macro that should be used for
@@ -56,17 +58,17 @@
  */
 /*! \file
  * \brief
- * Public API convenience header for fatal error handling.
+ * Public API convenience header for low-level utilities.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#ifndef GMX_FATALERROR_H
-#define GMX_FATALERROR_H
+#ifndef GMX_UTILITY_H
+#define GMX_UTILITY_H
 
-#include "fatalerror/errorcodes.h"
-#include "fatalerror/exceptions.h"
-#include "fatalerror/gmxassert.h"
+#include "utility/errorcodes.h"
+#include "utility/exceptions.h"
+#include "utility/gmxassert.h"
 
 #endif

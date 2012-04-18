@@ -41,17 +41,17 @@
 #include <config.h>
 #endif
 
-#include <pbc.h>
-#include <vec.h>
+#include "pbc.h"
+#include "vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {

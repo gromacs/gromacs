@@ -39,10 +39,10 @@
 
 #include <deque>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "optionsassigner-impl.h"
 #include "options-impl.h"

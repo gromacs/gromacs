@@ -44,8 +44,8 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "../fatalerror/exceptions.h"
-#include "../fatalerror/gmxassert.h"
+#include "../utility/exceptions.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
 #include "abstractoptionstorage.h"

@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-#include <gromacs/fatalerror/exceptions.h>
 #include <gromacs/options/basicoptions.h>
 #include <gromacs/options/options.h>
 #include <gromacs/selection/selection.h>
@@ -45,6 +44,7 @@
 #include <gromacs/trajectoryanalysis/analysismodule.h>
 #include <gromacs/trajectoryanalysis/analysissettings.h>
 #include <gromacs/trajectoryanalysis/cmdlinerunner.h>
+#include <gromacs/utility/exceptions.h>
 
 namespace gmx
 {

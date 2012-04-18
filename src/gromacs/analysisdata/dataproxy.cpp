@@ -38,7 +38,7 @@
 #include "dataproxy.h"
 
 #include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

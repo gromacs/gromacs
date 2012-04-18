@@ -216,16 +216,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <futil.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "futil.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
 #include "parsetree.h"

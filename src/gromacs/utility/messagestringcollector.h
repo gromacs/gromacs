@@ -34,10 +34,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
-#ifndef GMX_FATALERROR_MESSAGESTRINGCOLLECTOR_H
-#define GMX_FATALERROR_MESSAGESTRINGCOLLECTOR_H
+#ifndef GMX_UTILITY_MESSAGESTRINGCOLLECTOR_H
+#define GMX_UTILITY_MESSAGESTRINGCOLLECTOR_H
 
 #include <string>
 
@@ -53,7 +53,7 @@ namespace gmx
  * string for, e.g., printing out or for including in an exception.
  *
  * \inlibraryapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
 class MessageStringCollector
 {
@@ -139,7 +139,7 @@ bool function(::gmx::MessageStringCollector *errors)
  *
  * \see MessageStringCollector
  * \inlibraryapi
- * \ingroup module_fatalerror
+ * \ingroup module_utility
  */
 class MessageStringContext
 {

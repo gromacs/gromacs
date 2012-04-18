@@ -43,9 +43,9 @@
 
 #include "../legacyheaders/types/simple.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/arrayref.h"
 #include "../utility/flags.h"
+#include "../utility/gmxassert.h"
 
 namespace gmx
 {

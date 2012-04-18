@@ -39,7 +39,7 @@
 #ifndef GMX_OPTIONS_TIMEUNITMANAGER_H
 #define GMX_OPTIONS_TIMEUNITMANAGER_H
 
-#include "../fatalerror/gmxassert.h"
+#include "../utility/gmxassert.h"
 
 namespace gmx
 {

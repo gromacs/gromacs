@@ -46,18 +46,18 @@
 #include <string>
 #include <vector>
 
-#include <gmxfio.h>
+#include "gmxfio.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
 namespace gmx

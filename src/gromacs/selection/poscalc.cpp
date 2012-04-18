@@ -61,18 +61,17 @@
 
 #include <string.h>
 
-#include <macros.h>
-#include <smalloc.h>
-#include <typedefs.h>
-#include <pbc.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "typedefs.h"
+#include "pbc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
