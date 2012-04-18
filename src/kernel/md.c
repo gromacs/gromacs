@@ -169,7 +169,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool        bAppend;
     gmx_bool        bResetCountersHalfMaxH=FALSE;
     gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
-    real        temp0,mu_aver=0,dvdl;
+    real        mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
     char        *grpname;
@@ -507,7 +507,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         enerd->term[F_TEMP] *= 2; /* result of averages being done over previous and current step,
                                      and there is no previous step */
     }
-    temp0 = enerd->term[F_TEMP];
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
     if (bIterations) 
@@ -535,7 +534,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     "RMS relative constraint deviation after constraining: %.2e\n",
                     constr_rmsd(constr,FALSE));
         }
-        fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
+        if (EI_STATE_VELOCITY(ir->eI))
+        {
+            fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
+        }
         if (bRerunMD)
         {
             fprintf(stderr,"starting md rerun '%s', reading coordinates from"
