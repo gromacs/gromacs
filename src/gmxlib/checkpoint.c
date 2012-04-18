@@ -1450,7 +1450,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
-                            int *simulation_part,gmx_bool bAppendOutputFiles)
+                            int *simulation_part,
+                            gmx_bool bAppendOutputFiles,gmx_bool bForceAppend)
 {
     t_fileio *fp;
     int  i,j,rc;
@@ -1745,6 +1746,10 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
+                /* Note that there are systems where the lock operation
+                 * will succeed, but a second process can also lock the file.
+                 * We should probably try to detect this.
+                 */
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
                     ==-1)
@@ -1754,10 +1759,17 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 {
                     if (errno == ENOSYS)
                     {
-                        fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
-                        if (fplog)
+                        if (!bForceAppend)
                         {
-                            fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            gmx_fatal(FARGS,"File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            if (fplog)
+                            {
+                                fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            }
                         }
                     }
                     else if (errno == EACCES || errno == EAGAIN)
@@ -1844,7 +1856,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
-                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,gmx_bool bAppend)
+                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,
+                     gmx_bool bAppend,gmx_bool bForceAppend)
 {
     gmx_large_int_t step;
     double t;
@@ -1854,7 +1867,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
                       ir->eI,&step,&t,state,bReadRNG,bReadEkin,
-                      &ir->simulation_part,bAppend);
+                      &ir->simulation_part,bAppend,bForceAppend);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
