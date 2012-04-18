@@ -437,7 +437,17 @@ if(GMX_OPENMM)
 endif(GMX_OPENMM)
 
 if(GMX_GPU)
-    find_package(CUDA 3.2 REQUIRED)
+    find_package(CUDA 3.2)
+    if (NOT EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
+        message(FATAL_ERROR "
+    mdrun supports native GPU acceleration on NVIDIA hardware with compute
+    capability >=2.0. This requires the NVIDIA CUDA library, which was not
+    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR.
+    
+    CPU or GPU acceleration can be selected and runtime, but if you are 
+    sure you can not make use of GPU acceleration, disable it by setting 
+    the CMake variable GMX_GPU=OFF.")
+    endif()
     add_definitions(-DGMX_GPU)
     set(CUDA_BUILD_EMULATION OFF)
     include(gmxManageNvccConfig)
@@ -844,10 +854,6 @@ if (NOT DEFINED GROMACS_C_FLAGS_SET)
         "${GROMACS_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}" 
         CACHE STRING "Linker flags" FORCE) 
 endif (NOT DEFINED GROMACS_C_FLAGS_SET)
-
-#if(GMX_GPU)
-#   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}${GROMACS_CXX_FLAGS}")
-#endif()
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #
