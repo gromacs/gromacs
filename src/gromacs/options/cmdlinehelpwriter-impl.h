@@ -40,10 +40,6 @@
 
 #include "cmdlinehelpwriter.h"
 
-#include "basicoptioninfo.h"
-#include "optionsvisitor.h"
-#include "../utility/flags.h"
-
 namespace gmx
 {
 
@@ -57,96 +53,15 @@ class Options;
 class CommandLineHelpWriter::Impl
 {
     public:
-        /*! \brief
-         * Possible flags for controlling output.
-         */
-        enum Flag
-        {
-            efShowDescriptions  = 1<<0,
-            efShowHidden        = 1<<1
-        };
-
         //! Sets the Options object to use for generating help.
         explicit Impl(const Options &options);
 
         //! Options object to use for generating help.
-        const Options          &_options;
-        //! Flags for controlling what to write.
-        FlagsTemplate<Flag>     _flags;
-};
-
-/*! \internal \brief
- * Helper object for writing section descriptions to help.
- *
- * \ingroup module_options
- */
-class AsciiDescriptionWriter : public OptionsVisitor
-{
-    public:
-        //! Creates a helper object for writing section descriptions.
-        explicit AsciiDescriptionWriter(FILE *fp) : _fp(fp) {}
-
-        virtual void visitSubSection(const Options &section);
-        virtual void visitOption(const OptionInfo & /*option*/) { }
-
-    private:
-        FILE                   *_fp;
-};
-
-/*! \internal \brief
- * Helper object for writing help for file parameters.
- *
- * \ingroup module_options
- */
-class AsciiFileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
-{
-    public:
-        //! Creates a helper object for writing file parameters.
-        explicit AsciiFileParameterWriter(FILE *fp)
-            : _fp(fp), _bFirst(true)
-        {
-        }
-
-        //! Returns true if anything was written out.
-        bool didOutput() const { return !_bFirst; }
-
-        virtual void visitSubSection(const Options &section);
-        virtual void visitOptionType(const FileNameOptionInfo &option);
-
-    private:
-        FILE                   *_fp;
-        bool                    _bFirst;
-};
-
-/*! \internal \brief
- * Helper object for writing help for non-file parameters.
- *
- * \ingroup module_options
- */
-class AsciiParameterWriter : public OptionsVisitor
-{
-    public:
-        //! Creates a helper object for writing non-file parameters.
-        explicit AsciiParameterWriter(FILE *fp)
-            : _fp(fp), _bFirst(true), _bShowHidden(false)
-        {
-        }
-
-        //! Sets the writer to show hidden options.
-        void setShowHidden(bool bSet)
-        {
-            _bShowHidden = bSet;
-        }
-        //! Returns true if anything was written out.
-        bool didOutput() const { return !_bFirst; }
-
-        virtual void visitSubSection(const Options &section);
-        virtual void visitOption(const OptionInfo &option);
-
-    private:
-        FILE                   *_fp;
-        bool                    _bFirst;
-        bool                    _bShowHidden;
+        const Options          &options_;
+        //! Whether to write descriptions to output.
+        bool                    bShowDescriptions_;
+        //! Whether to write hidden options to output.
+        bool                    bShowHidden_;
 };
 
 } // namespace gmx

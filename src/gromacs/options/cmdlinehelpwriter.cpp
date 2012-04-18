@@ -40,6 +40,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <string>
+
+#include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 
@@ -48,56 +51,92 @@
 namespace gmx
 {
 
-/********************************************************************
- * CommandLineHelpWriter::Impl
- */
-
-CommandLineHelpWriter::Impl::Impl(const Options &options)
-    : _options(options)
+namespace
 {
-}
-
 
 /********************************************************************
- * AsciiDescriptionWriter
+ * DescriptionWriter
  */
 
-void AsciiDescriptionWriter::visitSubSection(const Options &section)
+/*! \internal \brief
+ * Helper object for writing section descriptions to help.
+ *
+ * \ingroup module_options
+ */
+class DescriptionWriter : public OptionsVisitor
+{
+    public:
+        //! Creates a helper object for writing section descriptions.
+        explicit DescriptionWriter(FILE *fp) : fp_(fp) {}
+
+        virtual void visitSubSection(const Options &section);
+        virtual void visitOption(const OptionInfo & /*option*/) { }
+
+    private:
+        FILE                   *fp_;
+};
+
+void DescriptionWriter::visitSubSection(const Options &section)
 {
     if (!section.description().empty())
     {
-        fprintf(_fp, "\n");
+        fprintf(fp_, "\n");
         const std::string &title = section.title();
         if (!title.empty())
         {
-            fprintf(_fp, "%s\n\n", title.c_str());
+            fprintf(fp_, "%s\n\n", title.c_str());
         }
         // TODO: Wrap lines and do markup substitutions.
-        fprintf(_fp, "%s\n\n", section.description().c_str());
+        fprintf(fp_, "%s\n\n", section.description().c_str());
     }
     OptionsIterator(section).acceptSubSections(this);
 }
 
 
 /********************************************************************
- * AsciiFileParameterWriter
+ * FileParameterWriter
  */
 
-void AsciiFileParameterWriter::visitSubSection(const Options &section)
+/*! \internal \brief
+ * Helper object for writing help for file parameters.
+ *
+ * \ingroup module_options
+ */
+class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
+{
+    public:
+        //! Creates a helper object for writing file parameters.
+        explicit FileParameterWriter(FILE *fp)
+            : fp_(fp), bFirst_(true)
+        {
+        }
+
+        //! Returns true if anything was written out.
+        bool didOutput() const { return !bFirst_; }
+
+        virtual void visitSubSection(const Options &section);
+        virtual void visitOptionType(const FileNameOptionInfo &option);
+
+    private:
+        FILE                   *fp_;
+        bool                    bFirst_;
+};
+
+void FileParameterWriter::visitSubSection(const Options &section)
 {
     OptionsIterator iterator(section);
     iterator.acceptSubSections(this);
     iterator.acceptOptions(this);
 }
 
-void AsciiFileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
+void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
 {
-    if (_bFirst)
+    if (bFirst_)
     {
-        fprintf(_fp, "%6s %12s  %-12s %s\n",
+        fprintf(fp_, "%6s %12s  %-12s %s\n",
                 "Option", "Filename", "Type", "Description");
-        fprintf(_fp, "------------------------------------------------------------\n");
-        _bFirst = false;
+        fprintf(fp_, "------------------------------------------------------------\n");
+        bFirst_ = false;
     }
 
     std::string optionLine("-");
@@ -151,35 +190,63 @@ void AsciiFileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     // TODO: Markup substitution.
     optionLine.append(option.description());
     // TODO: Wrap lines.
-    fprintf(_fp, "%s\n", optionLine.c_str());
+    fprintf(fp_, "%s\n", optionLine.c_str());
 }
 
 
 /********************************************************************
- * AsciiParameterWriter
+ * ParameterWriter
  */
 
-void AsciiParameterWriter::visitSubSection(const Options &section)
+/*! \internal \brief
+ * Helper object for writing help for non-file parameters.
+ *
+ * \ingroup module_options
+ */
+class ParameterWriter : public OptionsVisitor
+{
+    public:
+        //! Creates a helper object for writing non-file parameters.
+        explicit ParameterWriter(FILE *fp)
+            : fp_(fp), bFirst_(true), bShowHidden_(false)
+        {
+        }
+
+        //! Sets the writer to show hidden options.
+        void setShowHidden(bool bSet) { bShowHidden_ = bSet; }
+        //! Returns true if anything was written out.
+        bool didOutput() const { return !bFirst_; }
+
+        virtual void visitSubSection(const Options &section);
+        virtual void visitOption(const OptionInfo &option);
+
+    private:
+        FILE                   *fp_;
+        bool                    bFirst_;
+        bool                    bShowHidden_;
+};
+
+void ParameterWriter::visitSubSection(const Options &section)
 {
     OptionsIterator iterator(section);
     iterator.acceptSubSections(this);
     iterator.acceptOptions(this);
 }
 
-void AsciiParameterWriter::visitOption(const OptionInfo &option)
+void ParameterWriter::visitOption(const OptionInfo &option)
 {
     if (option.isType<FileNameOptionInfo>()
-        || (!_bShowHidden && option.isHidden()))
+        || (!bShowHidden_ && option.isHidden()))
     {
         return;
     }
 
-    if (_bFirst)
+    if (bFirst_)
     {
-        fprintf(_fp, "%-12s %-6s %-6s  %s\n",
+        fprintf(fp_, "%-12s %-6s %-6s  %s\n",
                 "Option", "Type", "Value", "Description");
-        fprintf(_fp, "----------------------------------------------------\n");
-        _bFirst = false;
+        fprintf(fp_, "----------------------------------------------------\n");
+        bFirst_ = false;
     }
 
     std::string optionLine("-");
@@ -215,7 +282,18 @@ void AsciiParameterWriter::visitOption(const OptionInfo &option)
     // TODO: Markup substitution.
     optionLine.append(option.description());
     // TODO: Wrap lines.
-    fprintf(_fp, "%s\n", optionLine.c_str());
+    fprintf(fp_, "%s\n", optionLine.c_str());
+}
+
+} // namespace
+
+/********************************************************************
+ * CommandLineHelpWriter::Impl
+ */
+
+CommandLineHelpWriter::Impl::Impl(const Options &options)
+    : options_(options)
+{
 }
 
 /********************************************************************
@@ -223,7 +301,7 @@ void AsciiParameterWriter::visitOption(const OptionInfo &option)
  */
 
 CommandLineHelpWriter::CommandLineHelpWriter(const Options &options)
-    : _impl(new Impl(options))
+    : impl_(new Impl(options))
 {
 }
 
@@ -233,36 +311,36 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 
 CommandLineHelpWriter &CommandLineHelpWriter::setShowHidden(bool bSet)
 {
-    _impl->_flags.set(Impl::efShowHidden, bSet);
+    impl_->bShowHidden_ = bSet;
     return *this;
 }
 
 CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
-    _impl->_flags.set(Impl::efShowDescriptions, bSet);
+    impl_->bShowDescriptions_ = bSet;
     return *this;
 }
 
 void CommandLineHelpWriter::writeHelp(FILE *fp)
 {
-    if (_impl->_flags.test(Impl::efShowDescriptions))
+    if (impl_->bShowDescriptions_)
     {
         fprintf(fp, "DESCRIPTION\n"
                     "-----------\n");
-        AsciiDescriptionWriter(fp).visitSubSection(_impl->_options);
+        DescriptionWriter(fp).visitSubSection(impl_->options_);
     }
     {
-        AsciiFileParameterWriter writer(fp);
-        writer.visitSubSection(_impl->_options);
+        FileParameterWriter writer(fp);
+        writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
             fprintf(fp, "\n");
         }
     }
     {
-        AsciiParameterWriter writer(fp);
-        writer.setShowHidden(_impl->_flags.test(Impl::efShowHidden));
-        writer.visitSubSection(_impl->_options);
+        ParameterWriter writer(fp);
+        writer.setShowHidden(impl_->bShowHidden_);
+        writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
             fprintf(fp, "\n");
