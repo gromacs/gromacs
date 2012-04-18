@@ -45,11 +45,6 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#ifdef GMX_NATIVE_WINDOWS
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"

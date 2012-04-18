@@ -38,11 +38,6 @@
 #endif
 #include "gmx_header_config.h"
 
-#ifdef GMX_NATIVE_WINDOWS
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
