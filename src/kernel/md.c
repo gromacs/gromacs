@@ -469,6 +469,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
   
     /* I'm assuming we need global communication the first time! MRS */
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM:0)
                   | (bVV ? CGLO_PRESSURE:0)
                   | (bVV ? CGLO_CONSTRAINT:0)
                   | (bRerunMD ? CGLO_RERUNMD:0)
@@ -490,7 +491,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         NULL,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                         constr,NULL,FALSE,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                        cglo_flags &~ CGLO_PRESSURE);
+                        cglo_flags &~ (CGLO_STOPCM | CGLO_PRESSURE));
     }
     
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -972,7 +973,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* these CGLO_ options remain the same throughout the iteration */
         cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
-                      (bStopCM ? CGLO_STOPCM : 0) |
                       (bGStat ? CGLO_GSTAT : 0)
             );
         
@@ -1133,6 +1133,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                 cglo_flags 
                                 | CGLO_ENERGY 
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | (bTemp ? CGLO_TEMPERATURE:0) 
                                 | (bPres ? CGLO_PRESSURE : 0) 
                                 | (bPres ? CGLO_CONSTRAINT : 0)
@@ -1574,6 +1575,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
+                            | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
