@@ -43,6 +43,7 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
 /* _isnan() */
