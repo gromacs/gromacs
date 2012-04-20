@@ -1626,7 +1626,7 @@ pdihs_noener_sse(int nbonds,
     __m128 mdphi_SSE,sin_SSE,cos_SSE;
 
     /* Ensure 16-byte alignment */
-    rs  = (rvec_sse_t *)(((size_t)(rs_array +3)) & (~((size_t)15)));
+    rs  = (rvec_sse_t *)(((size_t)(rs_array +1)) & (~((size_t)15)));
     buf =      (float *)(((size_t)(buf_array+3)) & (~((size_t)15)));
 
     for(i=0; (i<nbonds); i+=20)
