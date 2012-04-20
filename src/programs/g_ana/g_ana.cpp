@@ -33,42 +33,42 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
-#include <memory>
+#include "gromacs/legacyheaders/copyrite.h"
 
-#include <copyrite.h>
-
-#include "gromacs/fatalerror.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/modules.h"
+#include "gromacs/utility/exceptions.h"
 
 int
 main(int argc, char *argv[])
 {
+    bool bPrintCopyrightOnError = true;
+
     try
     {
         if (argc < 2)
         {
-            CopyRight(stderr, argv[0]);
             GMX_THROW(gmx::InvalidInputError("Not enough command-line arguments"));
         }
 
-        std::auto_ptr<gmx::TrajectoryAnalysisModule>
+        gmx::TrajectoryAnalysisModulePointer
             mod(gmx::createTrajectoryAnalysisModule(argv[1]));
-        if (mod.get() == NULL)
-        {
-            CopyRight(stderr, argv[0]);
-            GMX_THROW(gmx::InvalidInputError(
-                      "Unknown analysis module given as the first command-line argument"));
-        }
         --argc;
         ++argv;
 
         gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
+#ifndef __clang_analyzer__  //Clang BUG: 11722
+        bPrintCopyrightOnError = false;
+#endif
         return runner.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
+        if (bPrintCopyrightOnError)
+        {
+            CopyRight(stderr, argv[0]);
+        }
         fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
         return 1;
     }

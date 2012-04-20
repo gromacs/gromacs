@@ -65,7 +65,7 @@ uint memtestState::allocate(uint mbToTest) {
 			if (cudaMalloc((void**)&devTestMem,megsToTest*1048576UL) != cudaSuccess) throw 1;
 			if (cudaMalloc((void**)&devTempMem,sizeof(uint)*nBlocks) != cudaSuccess) throw 2;
 			if ( (hostTempMem = (uint*)malloc(sizeof(uint)*nBlocks)) == NULL) throw 3;
-		} catch (int allocFailed) {
+		} catch (...) {
             // Clear CUDA error flag for outside world
             cudaGetLastError();
 			if (devTempMem) {

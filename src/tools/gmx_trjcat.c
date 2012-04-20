@@ -567,6 +567,7 @@ int gmx_trjcat(int argc, char *argv[])
                 snew(fnms_out[i],strlen(buf)+32);
                 sprintf(fnms_out[i],"%d_%s",i,buf);
             }
+            sfree(buf);
         }
         do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt,oenv);
     }

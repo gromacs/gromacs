@@ -58,6 +58,9 @@
  * Internally, the module also defines a set of trajectory analysis modules that
  * can be instantiated using createTrajectoryAnalysisModule().
  *
+ * For an example of how to implement an analysis tool using the framework, see
+ * \ref template.cpp.
+ *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 /*! \file
@@ -75,10 +78,10 @@
 #include "options.h"
 #include "selection.h"
 
-#include "fatalerror/exceptions.h"
+#include "selection/nbsearch.h"
 #include "trajectoryanalysis/analysismodule.h"
 #include "trajectoryanalysis/analysissettings.h"
 #include "trajectoryanalysis/cmdlinerunner.h"
-#include "trajectoryanalysis/nbsearch.h"
+#include "utility/exceptions.h"
 
 #endif

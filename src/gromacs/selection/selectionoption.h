@@ -40,22 +40,24 @@
 #define GMX_SELECTION_SELECTIONOPTION_H
 
 #include "../options/abstractoption.h"
+#include "selection.h"
 #include "selectionenums.h"
 
 namespace gmx
 {
 
-class Selection;
 class SelectionOptionInfo;
 class SelectionOptionStorage;
 
 /*! \brief
  * Specifies an option that provides selection(s).
  *
+ * Public methods in this class do not throw.
+ *
  * \inpublicapi
  * \ingroup module_selection
  */
-class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
+class SelectionOption : public OptionTemplate<Selection, SelectionOption>
 {
     public:
         //! Initializes an option with the given name.
@@ -65,11 +67,17 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
 
         /*! \brief
          * Request velocity evaluation for output positions.
+         *
+         * Note that even with this flag set, velocities may not be available,
+         * in which case SelectionPosition::hasVelocity() returns false.
          */
         MyClass &evaluateVelocities()
         { _selectionFlags.set(efEvaluateVelocities); return me(); }
         /*! \brief
          * Request force evaluation for output positions.
+         *
+         * Note that even with this flag set, forces may not be available,
+         * in which case SelectionPosition::hasForce() returns false.
          */
         MyClass &evaluateForces()
         { _selectionFlags.set(efEvaluateForces); return me(); }
@@ -88,7 +96,8 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         /*! \brief
          * Handle dynamic selections for this option with position masks.
          *
-         * Sets ::POS_MASKONLY on the positions for this selection.
+         * \see Selection
+         * \see SelectionPosition::selected()
          */
         MyClass &dynamicMask()
         { _selectionFlags.set(efDynamicMask); return me(); }
@@ -115,7 +124,7 @@ class SelectionOption : public OptionTemplate<Selection *, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
 
         SelectionFlags          _selectionFlags;
         SelectionOptionInfo   **_infoPtr;

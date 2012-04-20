@@ -44,10 +44,9 @@
 
 #include <string>
 
-#include "../fatalerror/gmxassert.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
-#include "optionfiletype.h"
 
 namespace gmx
 {
@@ -55,8 +54,6 @@ namespace gmx
 class IntegerOptionStorage;
 class DoubleOptionStorage;
 class StringOptionStorage;
-class FileNameOptionStorage;
-class Options;
 
 /*! \addtogroup module_options
  * \{
@@ -84,7 +81,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
 };
 
 /*! \brief
@@ -123,7 +120,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
 
         /*! \brief
          * Needed to initialize IntegerOptionStorage from this class without
@@ -165,7 +162,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
 
         bool _bTime;
 
@@ -252,7 +249,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
+        virtual AbstractOptionStoragePointer createStorage() const;
         virtual std::string createDescription() const;
 
         const char *const      *_enumValues;
@@ -264,66 +261,6 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * otherwise unnecessary accessors.
          */
         friend class StringOptionStorage;
-};
-
-/*! \brief
- * Specifies an option that provides file names.
- *
- * Public methods in this class do not throw.
- *
- * This class is currently a stub implementation.
- *
- * \inpublicapi
- */
-class FileNameOption : public OptionTemplate<std::string, FileNameOption>
-{
-    public:
-        //! Initializes an option with the given name.
-        explicit FileNameOption(const char *name)
-            : MyBase(name), filetype_(eftUnknown),
-              bRead_(false), bWrite_(false), bLibrary_(false)
-        {
-        }
-
-        /*! \brief
-         * Sets the type of the file this option accepts.
-         *
-         * This attribute must be provided.
-         */
-        MyClass &filetype(OptionFileType type)
-        { filetype_ = type; return me(); }
-        //! Tells that the file provided by this option is used read-only.
-        MyClass &readOnly()
-        { bRead_ = true; bWrite_ = false; return me(); }
-        //! Tells that the file provided by this option is used write-only.
-        MyClass &writeOnly()
-        { bRead_ = false; bWrite_ = true; return me(); }
-        /*! \brief
-         * Tells that the file provided by this option is used for reading and
-         * writing.
-         */
-        MyClass &readWrite()
-        { bRead_ = bWrite_ = true; return me(); }
-        /*! \brief
-         * Tells that the file will be looked up in library directories in
-         * addition to working directory.
-         */
-        MyClass &libraryFile() { bLibrary_ = true; return me(); }
-
-    private:
-        //! Creates a FileNameOptionStorage object.
-        virtual AbstractOptionStorage *createDefaultStorage(Options *options) const;
-
-        OptionFileType          filetype_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
-
-        /*! \brief
-         * Needed to initialize FileNameOptionStorage from this class without
-         * otherwise unnecessary accessors.
-         */
-        friend class FileNameOptionStorage;
 };
 
 /*!\}*/

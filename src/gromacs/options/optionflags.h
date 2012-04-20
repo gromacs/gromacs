@@ -47,7 +47,8 @@
 namespace gmx
 {
 
-/*! \internal \brief
+/*! \cond libapi */
+/*! \libinternal \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
@@ -102,8 +103,9 @@ enum OptionFlag
     //efAtomVal             = 1<<21,
 };
 
-//! Holds a combination of ::OptionFlag values.
+//! \libinternal Holds a combination of ::OptionFlag values.
 typedef FlagsTemplate<OptionFlag> OptionFlags;
+//! \endcond
 
 } // namespace gmx
 

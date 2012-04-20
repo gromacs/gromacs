@@ -43,9 +43,9 @@
 
 #include "../legacyheaders/types/simple.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/arrayref.h"
 #include "../utility/flags.h"
+#include "../utility/gmxassert.h"
 
 namespace gmx
 {
@@ -57,6 +57,10 @@ namespace gmx
  * intended.
  *
  * Methods in this class do not throw.
+ *
+ * Non-const methods are provided for use within the library only; currently
+ * it is not possible to access a non-const AnalysisDataValue through the
+ * public interface.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -180,6 +184,9 @@ typedef ConstArrayRef<AnalysisDataValue> AnalysisDataValuesRef;
  * Methods in this class do not throw, but may contain asserts for incorrect
  * usage.
  *
+ * Note that it is not possible to change the contents of an initialized
+ * object, except by assigning a new object to replace it completely.
+ *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -266,6 +273,9 @@ class AnalysisDataFrameHeader
  *
  * The design of the interfaces is such that all objects of this type should be
  * valid, i.e., header().isValid() should always return true.
+ *
+ * Note that it is not possible to change the contents of an initialized
+ * object, except by assigning a new object to replace it completely.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -427,6 +437,9 @@ class AnalysisDataPointSetRef
  *
  * Methods in this class do not throw, but may contain asserts for incorrect
  * usage.
+ *
+ * Note that it is not possible to change the contents of an initialized
+ * object, except by assigning a new object to replace it completely.
  *
  * \todo
  * Support for multipoint data.

@@ -40,7 +40,9 @@
 
 #include <vector>
 
-#include "types/simple.h"
+#include "../legacyheaders/types/simple.h"
+
+#include "gromacs/utility/uniqueptr.h"
 
 #include "abstractdata.h"
 #include "dataframe.h"
@@ -57,7 +59,7 @@ class AbstractAnalysisData::Impl
 {
     public:
         //! Shorthand for list of modules added to the data.
-        typedef std::vector<AnalysisDataModuleInterface *> ModuleList;
+        typedef std::vector<AnalysisDataModulePointer> ModuleList;
 
         Impl();
         ~Impl();
@@ -67,13 +69,12 @@ class AbstractAnalysisData::Impl
          *
          * \param[in] data   Data object to read data from.
          * \param[in] module Module to present the data to.
-         * \exception APIError if \p module is not compatible with the
-         *      data object.
-         * \exception APIError if all data is not  available
-         *      through getDataFrame().
-         *
-         * Other exceptions may also be thrown if methods called in \p module
-         * throw them.
+         * \throws    APIError if \p module is not compatible with the data
+         *      object.
+         * \throws    APIError if all data is not available through
+         *      getDataFrame().
+         * \throws    unspecified Any exception thrown by \p module in its data
+         *      notification methods.
          *
          * Uses getDataFrame() in \p data to access all data in the object, and
          * calls the notification functions in \p module as if the module had

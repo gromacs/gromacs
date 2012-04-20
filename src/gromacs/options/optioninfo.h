@@ -118,13 +118,19 @@ class OptionInfo
         std::string formatValues() const;
 
     protected:
+        /*! \cond libapi */
         /*! \brief
          * Wraps a given option object.
+         *
+         * Does not throw.
          */
         explicit OptionInfo(AbstractOptionStorage *option);
 
+        //! Returns the wrapped option storage object.
         AbstractOptionStorage &option() { return _option; }
+        //! Returns the wrapped option storage object.
         const AbstractOptionStorage &option() const { return _option; }
+        //! \endcond
 
     private:
         //! The wrapped option.

@@ -1442,7 +1442,7 @@ static void do_the_tests(
     if (0 == repeats)
     {
         fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
-        fclose(fp);
+        ffclose(fp);
         finalize(opt2fn("-p", nfile, fnm));
         exit(0);
     }
@@ -2295,7 +2295,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-multi",     FALSE, etINT,  {&nmultisim},
         "Do multiple simulations in parallel" },
       { "-replex",    FALSE, etINT,  {&repl_ex_nst},
-        "Attempt replica exchange every # steps" },
+        "Attempt replica exchange periodically with this period (steps)" },
       { "-reseed",    FALSE, etINT,  {&repl_ex_seed},
         "Seed for replica exchange, -1 is generate a seed" },
       { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},

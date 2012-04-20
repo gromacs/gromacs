@@ -320,23 +320,6 @@ static real anal_ee_inf(real *parm,real T)
   return sqrt(parm[1]*2*parm[0]/T+parm[3]*2*parm[2]/T);
 }
 
-static real anal_ee(real *parm,real T,real t)
-{
-  real e1,e2;
-
-  if (parm[0])
-    e1 = exp(-t/parm[0]);
-  else
-    e1 = 1;
-  if (parm[2])
-    e2 = exp(-t/parm[2]);
-  else
-    e2 = 1;
-
-  return sqrt(parm[1]*2*parm[0]/T*((e1 - 1)*parm[0]/t + 1) +
-	      parm[3]*2*parm[2]/T*((e2 - 1)*parm[2]/t + 1));
-}
-
 static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                            int nset, double *av,double *sig,real **val,real dt,
                            gmx_bool bFitAc,gmx_bool bSingleExpFit,gmx_bool bAllowNegLTCorr,
@@ -912,7 +895,7 @@ int gmx_analyze(int argc,char *argv[])
     
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
     "i/2 periods. The formula is:[BR]"
-    "2 (int0-T y(t) cos(i [GRK]pi[grk] t) dt)^2 / int0-T y(t) y(t) dt[BR]",
+    "[MATH]2 ([INT][FROM]0[from][TO]T[to][int] y(t) [COS]i [GRK]pi[grk] t[cos] dt)^2 / [INT][FROM]0[from][TO]T[to][int] y^2(t) dt[math][BR]",
     "This is useful for principal components obtained from covariance",
     "analysis, since the principal components of random diffusion are",
     "pure cosines.[PAR]",
@@ -931,18 +914,18 @@ int gmx_analyze(int argc,char *argv[])
     "Option [TT]-ee[tt] produces error estimates using block averaging.",
     "A set is divided in a number of blocks and averages are calculated for",
     "each block. The error for the total average is calculated from",
-    "the variance between averages of the m blocks B_i as follows:",
-    "error^2 = Sum (B_i - <B>)^2 / (m*(m-1)).",
+    "the variance between averages of the m blocks B[SUB]i[sub] as follows:",
+    "error^2 = [SUM][sum] (B[SUB]i[sub] - [CHEVRON]B[chevron])^2 / (m*(m-1)).",
     "These errors are plotted as a function of the block size.",
     "Also an analytical block average curve is plotted, assuming",
     "that the autocorrelation is a sum of two exponentials.",
     "The analytical curve for the block average is:[BR]",
-    "f(t) = [GRK]sigma[grk][TT]*[tt]sqrt(2/T (  [GRK]alpha[grk]   ([GRK]tau[grk]1 ((exp(-t/[GRK]tau[grk]1) - 1) [GRK]tau[grk]1/t + 1)) +[BR]",
-    "                       (1-[GRK]alpha[grk]) ([GRK]tau[grk]2 ((exp(-t/[GRK]tau[grk]2) - 1) [GRK]tau[grk]2/t + 1)))),[BR]"
+    "[MATH]f(t) = [GRK]sigma[grk][TT]*[tt][SQRT]2/T (  [GRK]alpha[grk]   ([GRK]tau[grk][SUB]1[sub] (([EXP]-t/[GRK]tau[grk][SUB]1[sub][exp] - 1) [GRK]tau[grk][SUB]1[sub]/t + 1)) +[BR]",
+    "                       (1-[GRK]alpha[grk]) ([GRK]tau[grk][SUB]2[sub] (([EXP]-t/[GRK]tau[grk][SUB]2[sub][exp] - 1) [GRK]tau[grk][SUB]2[sub]/t + 1)))[sqrt][math],[BR]"
     "where T is the total time.",
-    "[GRK]alpha[grk], [GRK]tau[grk]1 and [GRK]tau[grk]2 are obtained by fitting f^2(t) to error^2.",
+    "[GRK]alpha[grk], [GRK]tau[grk][SUB]1[sub] and [GRK]tau[grk][SUB]2[sub] are obtained by fitting f^2(t) to error^2.",
     "When the actual block average is very close to the analytical curve,",
-    "the error is [GRK]sigma[grk][TT]*[tt]sqrt(2/T (a [GRK]tau[grk]1 + (1-a) [GRK]tau[grk]2)).",
+    "the error is [MATH][GRK]sigma[grk][TT]*[tt][SQRT]2/T (a [GRK]tau[grk][SUB]1[sub] + (1-a) [GRK]tau[grk][SUB]2[sub])[sqrt][math].",
     "The complete derivation is given in",
     "B. Hess, J. Chem. Phys. 116:209-217, 2002.[PAR]",
 
@@ -970,8 +953,8 @@ int gmx_analyze(int argc,char *argv[])
     "Option [TT]-g[tt] fits the data to the function given with option",
     "[TT]-fitfn[tt].[PAR]",
     
-    "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
-    "by fitting to a t + b on log-log scale. All points after the first",
+    "Option [TT]-power[tt] fits the data to [MATH]b t^a[math], which is accomplished",
+    "by fitting to [MATH]a t + b[math] on log-log scale. All points after the first",
     "zero or with a negative value are ignored.[PAR]"
     
     "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
@@ -998,11 +981,11 @@ int gmx_analyze(int argc,char *argv[])
     { "-e",       FALSE, etREAL, {&te},
       "Last time to read from set" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets separated by &" },
+      "Read this number of sets separated by &" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-dp",      FALSE, etINT, {&d}, 
-      "HIDDENThe derivative is the difference over # points" },
+      "HIDDENThe derivative is the difference over this number of points" },
     { "-bw",      FALSE, etREAL, {&binwidth},
       "Binwidth for the distribution" },
     { "-errbar",  FALSE, etENUM, {avbar_opt},
@@ -1014,22 +997,22 @@ int gmx_analyze(int argc,char *argv[])
     { "-xydy",    FALSE, etBOOL, {&bXYdy},
       "Interpret second data set as error in the y values for integrating" },
     { "-regression",FALSE,etBOOL,{&bRegression},
-      "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize [GRK]chi[grk]^2 = (y - A0 x0 - A1 x1 - ... - AN xN)^2 where now Y is the first data set in the input file and xi the others. Do read the information at the option [TT]-time[tt]." },
+      "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize [MATH][GRK]chi[grk]^2 = (y - A[SUB]0[sub] x[SUB]0[sub] - A[SUB]1[sub] x[SUB]1[sub] - ... - A[SUB]N[sub] x[SUB]N[sub])^2[math] where now Y is the first data set in the input file and x[SUB]i[sub] the others. Do read the information at the option [TT]-time[tt]." },
     { "-luzar",   FALSE, etBOOL, {&bLuzar},
       "Do a Luzar and Chandler analysis on a correlation function and related as produced by [TT]g_hbond[tt]. When in addition the [TT]-xydy[tt] flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
     { "-temp",    FALSE, etREAL, {&temp},
-      "Temperature for the Luzar hydrogen bonding kinetics analysis" },
+      "Temperature for the Luzar hydrogen bonding kinetics analysis (K)" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
     { "-fitend", FALSE, etREAL, {&fit_end},
       "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" }, 
     { "-smooth",FALSE, etREAL, {&smooth_tail_start},
-      "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
+      "If this value is >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: [MATH]y = A [EXP]-x/[GRK]tau[grk][exp][math]" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
-    " a factor 2^(1/#)" },
+    " a factor 2^(1/resol)" },
     { "-eeexpfit", FALSE, etBOOL, {&bEESEF},
       "HIDDENAlways use a single exponential fit for the error estimate" },
     { "-eenlc", FALSE, etBOOL, {&bEENLC},
@@ -1037,7 +1020,7 @@ int gmx_analyze(int argc,char *argv[])
     { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
       "HIDDENAlso plot analytical block average using a autocorrelation fit" },
     { "-filter",  FALSE, etREAL, {&filtlen},
-      "Print the high-frequency fluctuation after filtering with a cosine filter of length #" },
+      "Print the high-frequency fluctuation after filtering with a cosine filter of this length" },
     { "-power", FALSE, etBOOL, {&bPower},
       "Fit data to: b t^a" },
     { "-subav", FALSE, etBOOL, {&bSubAv},

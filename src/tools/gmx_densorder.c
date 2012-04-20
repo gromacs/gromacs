@@ -39,7 +39,7 @@
 #endif
 #include <math.h>
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -137,7 +137,7 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
         gmx_fatal(FARGS,"Invalid axes. Terminating\n");
 	}
 	
-	if( (natoms= read_first_x(oenv,&status,fn,&t,&x0,box)==0))
+	if( (natoms= read_first_x(oenv,&status,fn,&t,&x0,box))==0)
         gmx_fatal(FARGS, "Could not read coordinates from file"); /* Open trajectory for read*/
 	
 
@@ -254,36 +254,6 @@ static void density_in_time (const char *fn, atom_id **index ,int gnx[], int grp
 	
 }
 
-
-
-static void printdensavg(char *fldfn, real ****Densmap, int xslices, int yslices, int zslices, int tdim)
-{
-/*Debug-filename and filehandle*/
-    FILE *fldH;
-    int n,i,j,k;
-    real totdens=0;
-    fldH=ffopen(fldfn,"w");
-    fprintf(fldH,"%i  %i  %i  %i\n",tdim, xslices,yslices,zslices);
-    for(n=0;n<tdim;n++)
-    {
-        for(i=0;i<xslices;i++)
-        {
-            for (j=0;j<yslices;j++)
-            {
-                for (k=0;k<zslices;k++)
-                {
-                    fprintf(fldH,"%i %i %i %f\n",i,j,k,Densmap[n][i][j][k]);
-                    totdens+=(Densmap[n][i][j][k]);
-                }
-            }
-        }
-    }
-    totdens/=(xslices*yslices*zslices*tdim);
-    fprintf(stderr,"Total density [kg/m^3]  %8f",totdens);
-    ffclose(fldH);
-}
-
-
 static void outputfield(const char *fldfn, real ****Densmap, 
                         int xslices, int yslices, int zslices, int tdim)
 {
@@ -317,27 +287,6 @@ static void outputfield(const char *fldfn, real ****Densmap,
     totdens/=(xslices*yslices*zslices*tdim);
     fprintf(stderr,"Total density [kg/m^3]  %8f",totdens);
     ffclose(fldH);
-}
-
-static void periodic_running_average(int npoints,real *x,int naver)
-{
-    int i,j,nj;
-    real *aver;
-  
-    snew(aver,npoints);
-    for(i=0; (i<npoints); i++)  
-    {
-        nj = 0;
-        for(j=i-naver/2; (j<i+naver/2); j++) 
-        {
-            aver[i] += x[(j+npoints) % npoints];
-            nj++;
-        }
-        aver[i] /= nj;
-    }
-    for(i=0; (i<npoints); i++) 
-        x[i] = aver[i];
-    sfree(aver);
 }
 
 static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslices,int tblocks,int ftsize)
@@ -496,7 +445,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
         if(debug){
             xvg=xvgropen("DensprofileonZ.xvg", "Averaged Densityprofile on Z","z[nm]","Density[kg/m^3]",oenv);
             for(k=0;k<zslices;k++) fprintf(xvg, "%4f.3   %8f.4\n", k*binwidth,zDensavg[k]);
-            fclose(xvg);
+            xvgrclose(xvg);
         }
 	
         /*Fit average density in z over whole trajectory to obtain tentative fit-parameters in fit1 and fit2*/
@@ -547,7 +496,7 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
 
 static void writesurftoxpms(t_interf ***surf1,t_interf ***surf2, int tblocks,int xbins, int ybins, int zbins, real bw,real bwz, char **outfiles,int maplevels ) 
 {
-    char numbuf[12];
+    char numbuf[13];
     int n, i, j;
     real **profile1, **profile2;
     real max1, max2, min1, min2, *xticks, *yticks;

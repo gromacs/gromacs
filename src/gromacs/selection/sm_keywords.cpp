@@ -49,13 +49,13 @@
 #define USE_REGEX
 #endif
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -159,6 +159,7 @@ typedef struct t_methoddata_kwstr
             char      *s;
         }              u;
     }                 *m;
+    /**< Array of strings/regular expressions to match against.*/
 } t_methoddata_kwstr;
 
 /** Parameters for integer keyword evaluation. */
@@ -467,7 +468,6 @@ static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    char               *buf;
     char               *s;
     int                 i;
     size_t              j;
@@ -497,6 +497,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         {
             // TODO: Get rid of these prints to stderr
 #ifdef USE_REGEX
+            char               *buf;
             snew(buf, strlen(s) + 3);
             sprintf(buf, "^%s$", s);
             if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))

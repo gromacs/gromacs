@@ -43,8 +43,8 @@
 
 #include "../legacyheaders/types/simple.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/common.h"
+#include "../utility/gmxassert.h"
 
 #include "dataframe.h"
 
@@ -72,6 +72,12 @@ class AnalysisDataStorage;
 class AnalysisDataStorageFrame
 {
     public:
+        /*! \brief Frees the frame object.
+         *
+         * Should not be called outside AnalysisDataStorage.
+         */
+        ~AnalysisDataStorageFrame();
+
         //! Returns header for the frame.
         const AnalysisDataFrameHeader &header() const { return header_; }
         //! Returns zero-based index of the frame.
@@ -184,13 +190,12 @@ class AnalysisDataStorageFrame
          */
         AnalysisDataStorageFrame(AnalysisDataStorage *storage, int columnCount,
                                  int index);
-        ~AnalysisDataStorageFrame();
 
         //! Clear all column values from the frame.
         void clearValues();
 
         //! Storage object that contains this frame.
-        AnalysisDataStorage    *storage_;
+        AnalysisDataStorage    &storage_;
         //! Header for the frame.
         AnalysisDataFrameHeader header_;
         //! Values for the frame.

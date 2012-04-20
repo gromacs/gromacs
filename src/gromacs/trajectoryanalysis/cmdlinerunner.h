@@ -64,6 +64,9 @@ class TrajectoryAnalysisCommandLineRunner
         /*! \brief
          * Create a new runner with the provided module.
          *
+         * \param  module  Analysis module to run using the runner.
+         * \throws std::bad_alloc if out of memory.
+         *
          * The caller should ensure that the provided module is not destroyed
          * while the runner exists.
          */
@@ -75,11 +78,16 @@ class TrajectoryAnalysisCommandLineRunner
          *
          * This is intended only for use by internal debugging tools.
          *
+         * Does not throw.
+         *
          * \see SelectionCollection::setDebugLevel()
          */
         void setSelectionDebugLevel(int debuglevel);
         /*! \brief
          * Parses options from the given command line and runs the analysis.
+         *
+         * \throws  multiple  Exceptions are used to indicate errors.
+         * \returns Zero on success.
          */
         int run(int argc, char *argv[]);
 

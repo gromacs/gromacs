@@ -224,7 +224,7 @@ static void write_constr_pdb(const char *fn,const char *title,
     {
         sprintf(fname,"%s.pdb",fn);
     }
-    sprintf(format,"%s\n",pdbformat);
+    sprintf(format,"%s\n",get_pdbformat());
     
     out = gmx_fio_fopen(fname,"w");
     
@@ -774,8 +774,6 @@ void set_constraints(struct gmx_constr *constr,
                 constr->lagr_nalloc = over_alloc_dd(ncons);
                 srenew(constr->lagr,constr->lagr_nalloc);
             }
-
-            constr->shaked = shake_init();
         }
     }
 
@@ -1036,6 +1034,8 @@ gmx_constr_t init_constraints(FILE *fplog,
             {
                 please_cite(fplog,"Barth95a");
             }
+
+            constr->shaked = shake_init();
         }
     }
   

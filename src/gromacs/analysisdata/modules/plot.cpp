@@ -59,10 +59,10 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "plot-impl.h"
 
@@ -137,15 +137,27 @@ AbstractPlotModule::Impl::closeFile()
 /********************************************************************
  * AbstractPlotModule
  */
+/*! \cond libapi */
+AbstractPlotModule::AbstractPlotModule()
+    : _impl(new Impl(AnalysisDataPlotSettings()))
+{
+}
 
 AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
     : _impl(new Impl(settings))
 {
 }
-
+//! \endcond
 
 AbstractPlotModule::~AbstractPlotModule()
 {
+}
+
+
+void
+AbstractPlotModule::setSettings(const AnalysisDataPlotSettings &settings)
+{
+    _impl->settings = settings;
 }
 
 
@@ -334,7 +346,7 @@ AbstractPlotModule::dataFinished()
     _impl->closeFile();
 }
 
-
+/*! \cond libapi */
 bool
 AbstractPlotModule::isFileOpen() const
 {
@@ -348,11 +360,15 @@ AbstractPlotModule::writeValue(real value) const
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     std::fprintf(_impl->fp, _impl->yfmt, value);
 }
-
+//! \endcond
 
 /********************************************************************
  * DataPlotModule
  */
+
+AnalysisDataPlotModule::AnalysisDataPlotModule()
+{
+}
 
 AnalysisDataPlotModule::AnalysisDataPlotModule(
         const AnalysisDataPlotSettings &settings)
@@ -378,6 +394,16 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 /********************************************************************
  * DataVectorPlotModule
  */
+
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
+{
+    for (int i = 0; i < DIM; ++i)
+    {
+        _bWrite[i] = true;
+    }
+    _bWrite[DIM] = false;
+}
+
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
         const AnalysisDataPlotSettings &settings)

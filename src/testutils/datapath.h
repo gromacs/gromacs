@@ -32,9 +32,19 @@
  * \brief
  * Functions for accessing test input files.
  *
+ * Functions in this header provide methods to access data files that are
+ * located in the test source directory.  This is typically used to provide
+ * input files for the tests.
+ *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inlibraryapi
  * \ingroup module_testutils
+ */
+/*! \libinternal \defgroup module_testutils Unit Testing Utility Modules
+ * \brief
+ * Common helper classes and functions for writing unit tests.
+ *
+ * \ingroup group_utilitymodules
  */
 #ifndef GMX_TESTUTILS_DATAPATH_H
 #define GMX_TESTUTILS_DATAPATH_H
@@ -46,6 +56,11 @@ namespace gmx
 /*! \libinternal \brief
  * Namespace for unit testing utilities.
  *
+ * This namespace contains utilities that are shared between unit tests.
+ * Most members are declared in the \ref module_testutils module, but some
+ * are also declared within individual tests (these are typically candidates
+ * for using in other tests as well).
+ *
  * \ingroup module_testutils
  */
 namespace test
@@ -54,11 +69,16 @@ namespace test
 /*! \libinternal \brief
  * Returns the path to a test input file.
  *
+ * \param[in] filename  Relative path/filename to a test input file.
+ * \returns Path to \p filename under the test input data directory.
+ *
  * \inlibraryapi
  */
 std::string getTestFilePath(const char *filename);
 /*! \libinternal \brief
  * Returns the path to the test input directory.
+ *
+ * \returns Path to input data directory for the test executable.
  *
  * \inlibraryapi
  */
@@ -66,11 +86,16 @@ const char *getTestDataPath();
 /*! \libinternal \brief
  * Sets the test input directory.
  *
+ * \param[in] path  Path from which test input data is looked up from.
+ *
+ * \p path must name an existing directory.
+ *
+ * This function is automatically called by test_main_gtest.cpp and
+ * test_main_gmock.cpp.
+ *
  * \inlibraryapi
  */
 void setTestDataPath(const char *path);
-
-/*!\}*/
 
 } // namespace test
 } // namespace gmx

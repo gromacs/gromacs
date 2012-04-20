@@ -40,11 +40,33 @@
 
 #include <vector>
 
+#include "gromacs/utility/uniqueptr.h"
+
 #include "analysisdata.h"
 #include "datastorage.h"
 
 namespace gmx
 {
+
+namespace internal
+{
+/*! \internal \brief
+ * Private implementation class for AnalysisDataHandle.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataHandleImpl
+{
+    public:
+        //! Creates a handle associated with the given data object.
+        explicit AnalysisDataHandleImpl(AnalysisData *data);
+
+        //! The data object that this handle belongs to.
+        AnalysisData             &data_;
+        //! Current storage frame object, or NULL if no current frame.
+        AnalysisDataStorageFrame *currentFrame_;
+};
+} // namespace internal
 
 /*! \internal \brief
  * Private implementation class for AnalysisData.
@@ -54,32 +76,24 @@ namespace gmx
 class AnalysisData::Impl
 {
     public:
+        //! Smart pointer type to manage a data handle implementation.
+        typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
+                HandlePointer;
         //! Shorthand for a list of data handles.
-        typedef std::vector<AnalysisDataHandle *> HandleList;
+        typedef std::vector<HandlePointer> HandleList;
 
         Impl();
         ~Impl();
 
+        //! Storage implementation.
         AnalysisDataStorage     storage_;
-        //! List of handles for this data object.
+        /*! \brief
+         * List of handles for this data object.
+         *
+         * Note that AnalysisDataHandle objects also contain (raw) pointers
+         * to these objects.
+         */
         HandleList              handles_;
-};
-
-/*! \internal \brief
- * Private implementation class for AnalysisDataHandle.
- *
- * \ingroup module_analysisdata
- */
-class AnalysisDataHandle::Impl
-{
-    public:
-        //! Creates a handle associated with the given data object.
-        explicit Impl(AnalysisData *data);
-
-        //! The data object that this handle belongs to.
-        AnalysisData             &data_;
-        //! Current storage frame object, or NULL if no current frame.
-        AnalysisDataStorageFrame *currentFrame_;
 };
 
 } // namespace gmx

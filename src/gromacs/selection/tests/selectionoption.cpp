@@ -35,17 +35,15 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#include <vector>
-
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace
 {
@@ -62,7 +60,7 @@ class SelectionOptionTest : public ::testing::Test
 };
 
 SelectionOptionTest::SelectionOptionTest()
-    : _sc(NULL), _options(NULL, NULL)
+    : _options(NULL, NULL)
 {
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
@@ -76,7 +74,7 @@ void SelectionOptionTest::setCollection()
 
 TEST_F(SelectionOptionTest, ParsesSimpleSelection)
 {
-    gmx::Selection *sel = NULL;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
     setCollection();
@@ -89,14 +87,13 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
 
-    ASSERT_TRUE(sel != NULL);
-    ASSERT_FALSE(sel->isDynamic());
+    ASSERT_FALSE(sel.isDynamic());
 }
 
 
 TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
 {
-    gmx::Selection *sel = NULL;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(&sel).onlyStatic()));
@@ -114,7 +111,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
 
 TEST_F(SelectionOptionTest, HandlesTooManySelections)
 {
-    gmx::Selection *sel = NULL;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
     setCollection();
@@ -127,13 +124,13 @@ TEST_F(SelectionOptionTest, HandlesTooManySelections)
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
-    ASSERT_TRUE(sel != NULL);
+    ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
 
 TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 {
-    gmx::Selection *sel[2] = {NULL, NULL};
+    gmx::Selection sel[2];
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(sel).valueCount(2)));
@@ -151,7 +148,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 
 TEST_F(SelectionOptionTest, HandlesAdjuster)
 {
-    std::vector<gmx::Selection *> sel;
+    gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
@@ -173,7 +170,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 {
-    gmx::Selection *sel;
+    gmx::Selection sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
@@ -194,7 +191,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 {
-    std::vector<gmx::Selection *> sel;
+    gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
@@ -216,7 +213,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
 {
-    std::vector<gmx::Selection *> sel;
+    gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
@@ -237,7 +234,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
 
 TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
 {
-    gmx::Selection *sel = NULL;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(&sel).required()));
@@ -248,13 +245,13 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
     EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB"));
-    ASSERT_TRUE(sel != NULL);
+    ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
 
 TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
 {
-    gmx::Selection *sel[2] = {NULL, NULL};
+    gmx::Selection sel[2];
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(
                         SelectionOption("sel").store(sel).required()
@@ -271,7 +268,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
 
 TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 {
-    gmx::Selection *sel = NULL;
+    gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(SelectionOption("sel").store(&sel)));
     setCollection();
@@ -283,13 +280,13 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(_options.finish());
     EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB"));
-    ASSERT_TRUE(sel != NULL);
+    ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
 
 TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
 {
-    std::vector<gmx::Selection *> sel;
+    gmx::SelectionList sel;
     gmx::SelectionOptionInfo *info;
     using gmx::SelectionOption;
     ASSERT_NO_THROW(_options.addOption(

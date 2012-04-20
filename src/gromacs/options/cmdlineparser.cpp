@@ -37,9 +37,11 @@
  */
 #include "gromacs/options/cmdlineparser.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
+#include <cctype>
+
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "cmdlineparser-impl.h"
 
@@ -72,16 +74,26 @@ CommandLineParser::~CommandLineParser()
 
 void CommandLineParser::parse(int *argc, char *argv[])
 {
+    std::vector<std::string> commandLine;
+    for (int i = 0; i < *argc; ++i)
+    {
+        commandLine.push_back(argv[i]);
+    }
+    parse(&commandLine);
+}
+
+void CommandLineParser::parse(std::vector<std::string> *commandLine)
+{
     MessageStringCollector errors;
-    int  i = 1;
     // Start in the discard phase to skip options that can't be understood.
     bool bDiscard = true;
 
     _impl->_assigner.start();
-    while (i < *argc)
+    std::vector<std::string>::const_iterator arg;
+    for (arg = commandLine->begin() + 1; arg != commandLine->end(); ++arg)
     {
-        // Lone '-' is passed as a value.
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
+        // Lone '-' and numbers are passed as values.
+        if ((*arg)[0] == '-' && std::isalpha((*arg)[1]))
         {
             if (!bDiscard)
             {
@@ -95,11 +107,11 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 }
                 errors.finishContext();
             }
-            errors.startContext("In command-line option " + std::string(argv[i]));
+            errors.startContext("In command-line option " + *arg);
             bDiscard = false;
             try
             {
-                const char *name = &argv[i][1];
+                const char *name = arg->c_str() + 1;
                 _impl->_assigner.startOption(name);
             }
             catch (const UserInputError &ex)
@@ -113,14 +125,13 @@ void CommandLineParser::parse(int *argc, char *argv[])
         {
             try
             {
-                _impl->_assigner.appendValue(argv[i]);
+                _impl->_assigner.appendValue(*arg);
             }
             catch (const UserInputError &ex)
             {
                 errors.append(ex.what());
             }
         }
-        ++i;
     }
     if (!bDiscard)
     {

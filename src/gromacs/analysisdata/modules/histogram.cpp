@@ -40,13 +40,11 @@
 #include <cmath>
 
 #include <limits>
-#include <memory>
 
-#include "gromacs/basicmath.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "histogram-impl.h"
 
@@ -217,7 +215,7 @@ AbstractAverageHistogram::init(const AnalysisHistogramSettings &settings)
 }
 
 
-AbstractAverageHistogram *
+AverageHistogramPointer
 AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 {
     int nbins;
@@ -230,8 +228,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
         nbins = rowCount() / 2;
     }
 
-    real minx = xstart();
-    std::auto_ptr<AbstractAverageHistogram> dest(
+    AverageHistogramPointer dest(
         new internal::StaticAverageHistogram(
             histogramFromBins(xstart(), nbins, 2*xstep())
                 .integerBins(bIntegerBins)));
@@ -273,17 +270,16 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
             j += 2;
         }
     }
-    return dest.release();
+    return dest;
 }
 
 
-AbstractAverageHistogram *
+AverageHistogramPointer
 AbstractAverageHistogram::clone() const
 {
-    std::auto_ptr<AbstractAverageHistogram> dest(
-            new internal::StaticAverageHistogram());
+    AverageHistogramPointer dest(new internal::StaticAverageHistogram());
     copyContents(this, dest.get());
-    return dest.release();
+    return dest;
 }
 
 
@@ -343,6 +339,13 @@ StaticAverageHistogram::StaticAverageHistogram(
 /********************************************************************
  * BasicAverageHistogramModule
  */
+
+BasicAverageHistogramModule::BasicAverageHistogramModule()
+    : frameCount_(0)
+{
+    setColumnCount(2);
+}
+
 
 BasicAverageHistogramModule::BasicAverageHistogramModule(
         const AnalysisHistogramSettings &settings)
@@ -412,13 +415,13 @@ BasicAverageHistogramModule::dataFinished()
  */
 
 BasicHistogramImpl::BasicHistogramImpl()
-    : averager_(NULL)
+    : averager_(new BasicAverageHistogramModule())
 {
 }
 
 
 BasicHistogramImpl::BasicHistogramImpl(const AnalysisHistogramSettings &settings)
-    : settings_(settings), averager_(NULL)
+    : settings_(settings), averager_(new BasicAverageHistogramModule(settings))
 {
 }
 
@@ -431,21 +434,7 @@ BasicHistogramImpl::~BasicHistogramImpl()
 void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
 {
     settings_ = settings;
-    if (averager_ != NULL)
-    {
-        averager_->init(settings);
-    }
-}
-
-
-void
-BasicHistogramImpl::ensureAveragerExists(AbstractAnalysisData *data)
-{
-    if (averager_ == NULL)
-    {
-        averager_ = new BasicAverageHistogramModule(settings_);
-        data->addModule(averager_);
-    }
+    averager_->init(settings);
 }
 
 
@@ -489,11 +478,10 @@ void AnalysisDataSimpleHistogramModule::init(const AnalysisHistogramSettings &se
 }
 
 
-AbstractAverageHistogram *
+AbstractAverageHistogram &
 AnalysisDataSimpleHistogramModule::averager()
 {
-    impl_->ensureAveragerExists(this);
-    return impl_->averager_;
+    return *impl_->averager_;
 }
 
 
@@ -514,7 +502,7 @@ AnalysisDataSimpleHistogramModule::flags() const
 void
 AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
-    impl_->ensureAveragerExists(this);
+    addModule(impl_->averager_);
     setColumnCount(settings().binCount());
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
@@ -601,11 +589,10 @@ void AnalysisDataWeightedHistogramModule::init(const AnalysisHistogramSettings &
 }
 
 
-AbstractAverageHistogram *
+AbstractAverageHistogram &
 AnalysisDataWeightedHistogramModule::averager()
 {
-    impl_->ensureAveragerExists(this);
-    return impl_->averager_;
+    return *impl_->averager_;
 }
 
 
@@ -626,7 +613,7 @@ AnalysisDataWeightedHistogramModule::flags() const
 void
 AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
-    impl_->ensureAveragerExists(this);
+    addModule(impl_->averager_);
     setColumnCount(settings().binCount());
     notifyDataStart();
     impl_->storage_.startDataStorage(this);

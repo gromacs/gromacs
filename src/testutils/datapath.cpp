@@ -37,8 +37,7 @@
  */
 #include "datapath.h"
 
-#include <cassert>
-
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 
 static const char *g_testDataPath = NULL;
@@ -55,13 +54,14 @@ std::string getTestFilePath(const char *filename)
 
 const char *getTestDataPath()
 {
-    assert(g_testDataPath != NULL || !"Test data path not set");
+    GMX_RELEASE_ASSERT(g_testDataPath != NULL, "Test data path not set");
     return g_testDataPath;
 }
 
 void setTestDataPath(const char *path)
 {
-    assert(Directory::exists(path));
+    GMX_RELEASE_ASSERT(Directory::exists(path),
+                       "Test data directory does not exist");
     g_testDataPath = path;
 }
 

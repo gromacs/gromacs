@@ -851,7 +851,7 @@ int gmx_sham(int argc,char *argv[])
     { "-ttol",     FALSE, etREAL, {&ttol},
       "Tolerance on time in appropriate units (usually ps)" },
     { "-n",       FALSE, etINT, {&nsets_in},
-      "Read # sets separated by &" },
+      "Read this number of sets separated by lines containing only an ampersand" },
     { "-d",       FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
     { "-bw",      FALSE, etREAL, {&binwidth},

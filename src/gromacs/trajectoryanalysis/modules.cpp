@@ -37,7 +37,10 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
-#include <string2.h>
+#include "string2.h"
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/format.h"
 
 #include "modules/angle.h"
 #include "modules/distance.h"
@@ -50,8 +53,8 @@ using namespace gmx::analysismodules;
 
 struct module_map_t
 {
-    const char                         *name;
-    gmx::TrajectoryAnalysisModule      *(*creator)(void);
+    const char                            *name;
+    gmx::TrajectoryAnalysisModulePointer (*creator)(void);
 };
 
 const module_map_t modules[] =
@@ -67,7 +70,8 @@ const module_map_t modules[] =
 namespace gmx
 {
 
-TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name)
+TrajectoryAnalysisModulePointer
+createTrajectoryAnalysisModule(const char *name)
 {
     size_t len = strlen(name);
     int match_i = -1;
@@ -87,7 +91,8 @@ TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name)
             }
             else
             {
-                return NULL;
+                GMX_THROW(InvalidInputError(
+                            gmx::formatString("Requested analysis module '%s' is ambiguous", name)));
             }
         }
     }
@@ -95,7 +100,8 @@ TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name)
     {
         return modules[match_i].creator();
     }
-    return NULL;
+    GMX_THROW(InvalidInputError(
+                gmx::formatString("Unknown analysis module: %s", name)));
 }
 
 } // namespace gmx

@@ -39,17 +39,12 @@
 
 #include <cmath>
 
-// Legacy include
-#include "smalloc.h"
-
-#include "gromacs/basicmath.h"
 #include "gromacs/analysisdata/dataframe.h"
 
 namespace gmx
 {
 
 AnalysisDataAverageModule::AnalysisDataAverageModule()
-    : _nsamples(NULL)
 {
     setColumnCount(2);
 }
@@ -57,7 +52,6 @@ AnalysisDataAverageModule::AnalysisDataAverageModule()
 
 AnalysisDataAverageModule::~AnalysisDataAverageModule()
 {
-    sfree(_nsamples);
 }
 
 
@@ -74,7 +68,7 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
     int nrows = data->columnCount();
     setRowCount(nrows);
     allocateValues();
-    snew(_nsamples, nrows);
+    nsamples_.resize(nrows);
 }
 
 
@@ -95,7 +89,7 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
             real y = points.y(i);
             value(firstcol + i, 0)  += y;
             value(firstcol + i, 1)  += y * y;
-            _nsamples[firstcol + i] += 1;
+            nsamples_[firstcol + i] += 1;
         }
     }
 }
@@ -112,8 +106,8 @@ AnalysisDataAverageModule::dataFinished()
 {
     for (int i = 0; i < rowCount(); ++i)
     {
-        real ave = value(i, 0) / _nsamples[i];
-        real std = sqrt(value(i, 1) / _nsamples[i] - ave * ave);
+        real ave = value(i, 0) / nsamples_[i];
+        real std = sqrt(value(i, 1) / nsamples_[i] - ave * ave);
         setValue(i, 0, ave);
         setValue(i, 1, std);
     }

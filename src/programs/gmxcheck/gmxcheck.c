@@ -41,7 +41,7 @@
 #include <ctype.h>
 #include "main.h"
 #include "macros.h"
-#include "math.h"
+#include <math.h>
 #include "futil.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -519,7 +519,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 void chk_ndx(const char *fn)
 {
   t_blocka *grps;
-  char **grpname=NULL;
+  char **grpname;
   int  i,j;
   
   grps = init_index(fn,&grpname);
@@ -654,7 +654,7 @@ int main(int argc,char *argv[])
     { "-rmsd",   FALSE, etBOOL, {&bRMSD},
       "Print RMSD for x, v and f" },
     { "-tol",    FALSE, etREAL, {&ftol},
-      "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+      "Relative tolerance for comparing real values defined as [MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
     { "-abstol",    FALSE, etREAL, {&abstol},
       "Absolute tolerance, useful when sums are close to zero." },
     { "-ab",     FALSE, etBOOL, {&bCompAB},

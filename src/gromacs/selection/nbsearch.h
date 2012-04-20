@@ -95,4 +95,57 @@ gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d,
 bool
 gmx_ana_nbsearch_next_within(gmx_ana_nbsearch_t *d, int *jp);
 
+namespace gmx
+{
+
+/*
+ * C++ wrapper for neighborhood searching.
+ *
+ */
+class NeighborhoodSearch
+{
+    public:
+        NeighborhoodSearch(real cutoff, int maxn)
+            : d_(gmx_ana_nbsearch_create(cutoff, maxn))
+        {
+        }
+        ~NeighborhoodSearch() { gmx_ana_nbsearch_free(d_); }
+
+        void init(t_pbc *pbc, int n, const rvec x[])
+        { gmx_ana_nbsearch_init(d_, pbc, n, x); }
+
+        void init(t_pbc *pbc, const gmx_ana_pos_t *p)
+        { gmx_ana_nbsearch_pos_init(d_, pbc, p); }
+
+        void setExclusions(int nexcl, atom_id *excl)
+        { gmx_ana_nbsearch_set_excl(d_, nexcl, excl); }
+
+
+        bool isWithin(const rvec x)
+        { return gmx_ana_nbsearch_is_within(d_, x); }
+
+        bool isWithin(const gmx_ana_pos_t *p, int i)
+        { return gmx_ana_nbsearch_pos_is_within(d_, p, i); }
+
+        real minimumDistance(const rvec x)
+        { return gmx_ana_nbsearch_mindist(d_, x); }
+
+        real minimumDistance(const gmx_ana_pos_t *p, int i)
+        { return gmx_ana_nbsearch_pos_mindist(d_, p, i); }
+
+        bool firstWithin(const rvec x, int *jp)
+        { return gmx_ana_nbsearch_first_within(d_, x, jp); }
+
+        bool firstWithin(const gmx_ana_pos_t *p, int i, int *jp)
+        { return gmx_ana_nbsearch_pos_first_within(d_, p, i, jp); }
+
+        bool nextWithin(int *jp)
+        { return gmx_ana_nbsearch_next_within(d_, jp); }
+
+    private:
+        gmx_ana_nbsearch_t  *d_;
+};
+
+} // namespace gmx
+
 #endif

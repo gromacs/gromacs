@@ -64,24 +64,56 @@ class TrajectoryAnalysisRunnerCommon
          */
         enum HelpFlag
         {
-            efHelpShowOptions           = 1<<0,
-            efHelpShowHidden            = 1<<1,
-            efHelpShowDescriptions      = 1<<2,
+            efHelpShowOptions           = 1<<0, //!< Show options.
+            efHelpShowHidden            = 1<<1, //!< Show hidden options.
+            efHelpShowDescriptions      = 1<<2  //!< Show detailed description.
         };
-        //! Combination of ::HelpFlag values.
+        //! Combination of \ref HelpFlag values.
         typedef unsigned long HelpFlags;
 
+        /*! \brief
+         * Initializes a new runner helper.
+         *
+         * \param    settings  Settings object to use.
+         */
         explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
         ~TrajectoryAnalysisRunnerCommon();
 
-        Options *initOptions();
+        //! Initializes common options for trajectory analysis.
+        Options &initOptions();
+        //! Scales time option values according to the time unit set.
         void scaleTimeOptions(Options *options);
+        /*! \brief
+         * Processes common option values after they have been parsed.
+         *
+         * \returns false if the tool should exit after printing help.
+         */
         bool initOptionsDone();
+        //! Initialize index groups for selections.
         void initIndexGroups(SelectionCollection *selections);
+        //! Free memory allocated for index groups.
         void doneIndexGroups(SelectionCollection *selections);
+        //! Load topology information if provided and/or required.
         void initTopology(SelectionCollection *selections);
+        /*! \brief
+         * Reads the first frame from the trajectory.
+         *
+         * After this call, frame() returns the first frame.
+         */
         void initFirstFrame();
+        /*! \brief
+         * Reads the next frame from the trajectory.
+         *
+         * \returns false if there were no more frames.
+         *
+         * After this call, frame() returns the newly loaded frame.
+         */
         bool readNextFrame();
+        /*! \brief
+         * Performs common initialization for the currently loaded frame.
+         *
+         * Currently, makes molecules whole if requested.
+         */
         void initFrame();
 
         //! Returns flags for help printing.

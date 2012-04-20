@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -47,8 +48,7 @@
 #include "mshift.h"
 #include "invblock.h"
 #include "txtdump.h"
-#include "math.h"
-#include "assert.h"
+#include <math.h>
 #include "gmx_fatal.h"
 #include "splitter.h"
 

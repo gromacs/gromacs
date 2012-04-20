@@ -39,6 +39,8 @@
 #ifndef GMX_ANALYSISDATA_MODULES_AVERAGE_H
 #define GMX_ANALYSISDATA_MODULES_AVERAGE_H
 
+#include <vector>
+
 #include "../arraydata.h"
 #include "../datamodule.h"
 
@@ -83,10 +85,14 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         real stddev(int index) const;
 
     private:
-        int                    *_nsamples;
+        std::vector<int>        nsamples_;
 
         // Copy and assign disallowed by base.
 };
+
+//! Smart pointer to manage an AnalysisDataAverageModule object.
+typedef boost::shared_ptr<AnalysisDataAverageModule>
+        AnalysisDataAverageModulePointer;
 
 } // namespace gmx
 

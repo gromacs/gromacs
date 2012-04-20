@@ -1,5 +1,5 @@
 set(TESTUTILS_HAVE_REFDATA FALSE)
-set(COMMON_SOURCES datapath.cpp refdata-common.cpp)
+set(COMMON_SOURCES datapath.cpp refdata-common.cpp testoptions.cpp)
 if (GMX_USE_GTEST AND LIBXML2_FOUND)
     include_directories(${GTEST_INCLUDE_DIRS})
     list(APPEND COMMON_SOURCES refdata.cpp)

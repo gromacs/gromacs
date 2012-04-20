@@ -51,11 +51,6 @@
 #include "vec.h"
 #include "physics.h"
 
-static real rms_ener(t_energy *e,int nsteps)
-{
-  return sqrt(e->eav/nsteps);
-}
-
 t_ebin *mk_ebin(void)
 {
   t_ebin *eb;
@@ -259,7 +254,7 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
     }
     if (rc < 0)
     { 
-        gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
+        gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of disk space?");
     }
 }
 

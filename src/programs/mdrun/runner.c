@@ -483,6 +483,20 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 
     if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
     {
+        if (cr->npmenodes > 0)
+        {
+            if (!EEL_PME(inputrec->coulombtype))
+            {
+                gmx_fatal_collective(FARGS,cr,NULL,
+                                     "PME nodes are requested, but the system does not use PME electrostatics");
+            }
+            if (Flags & MD_PARTDEC)
+            {
+                gmx_fatal_collective(FARGS,cr,NULL,
+                                     "PME nodes are requested, but particle decomposition does not support separate PME nodes");
+            }
+        }
+
         cr->npmenodes = 0;
     }
 

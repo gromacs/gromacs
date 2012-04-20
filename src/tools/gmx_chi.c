@@ -51,7 +51,7 @@
 #include "smalloc.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "string.h"
+#include <string.h>
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "typedefs.h"
@@ -975,7 +975,7 @@ static void order_params(FILE *log,
     x0*=10.0;/* nm -> angstrom */
     y0*=10.0;/* nm -> angstrom */
     z0*=10.0;/* nm -> angstrom */
-    sprintf(buf,"%s%%6.f%%6.2f\n",pdbformat);
+    sprintf(buf,"%s%%6.f%%6.2f\n",get_pdbformat());
     for (i=0; (i<10); i++) {
       fprintf(fp,buf,"ATOM  ", atoms->nr+1+i, "CA", "LEG",' ', 
 	      atoms->nres+1, ' ',x0, y0, z0+(1.2*i), 0.0, -0.1*i);
@@ -1013,7 +1013,7 @@ int gmx_chi(int argc,char *argv[])
     "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all residues of each type.[PAR]", 
     "If option [TT]-corr[tt] is given, the program will",
     "calculate dihedral autocorrelation functions. The function used",
-    "is C(t) = < cos([GRK]chi[grk]([GRK]tau[grk])) cos([GRK]chi[grk]([GRK]tau[grk]+t)) >. The use of cosines",
+    "is C(t) = [CHEVRON][COS][GRK]chi[grk]([GRK]tau[grk])[cos] [COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos][chevron]. The use of cosines",
     "rather than angles themselves, resolves the problem of periodicity.",
     "(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032-2041).",
     "Separate files for each dihedral of each residue", 
@@ -1029,8 +1029,8 @@ int gmx_chi(int argc,char *argv[])
     "rotamers per nanosecond,  and the order parameter S^2 of each dihedral.[BR]",
     "(d) a table for each residue of the rotamer occupancy.[PAR]", 
     "All rotamers are taken as 3-fold, except for [GRK]omega[grk] and [GRK]chi[grk] dihedrals",
-    "to planar groups (i.e. [GRK]chi[grk]2 of aromatics, Asp and Asn; [GRK]chi[grk]3 of Glu", 
-    "and Gln; and [GRK]chi[grk]4 of Arg), which are 2-fold. \"rotamer 0\" means ", 
+    "to planar groups (i.e. [GRK]chi[grk][SUB]2[sub] of aromatics, Asp and Asn; [GRK]chi[grk][SUB]3[sub] of Glu",
+    "and Gln; and [GRK]chi[grk][SUB]4[sub] of Arg), which are 2-fold. \"rotamer 0\" means ",
     "that the dihedral was not in the core region of each rotamer. ", 
     "The width of the core region can be set with [TT]-core_rotamer[tt][PAR]", 
 
@@ -1045,7 +1045,7 @@ int gmx_chi(int argc,char *argv[])
     "are equally spaced in time.[PAR]",
 
     "If [TT]-chi_prod[tt] is set (and [TT]-maxchi[tt] > 0), cumulative rotamers, e.g.", 
-    "1+9([GRK]chi[grk]1-1)+3([GRK]chi[grk]2-1)+([GRK]chi[grk]3-1) (if the residue has three 3-fold ", 
+    "1+9([GRK]chi[grk][SUB]1[sub]-1)+3([GRK]chi[grk][SUB]2[sub]-1)+([GRK]chi[grk][SUB]3[sub]-1) (if the residue has three 3-fold ",
     "dihedrals and [TT]-maxchi[tt] >= 3)", 
     "are calculated. As before, if any dihedral is not in the core region,", 
     "the rotamer is taken to be 0. The occupancies of these cumulative ",
@@ -1087,7 +1087,7 @@ int gmx_chi(int argc,char *argv[])
     { "-omega",FALSE, etBOOL, {&bOmega},  
       "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
     { "-rama", FALSE, etBOOL, {&bRama},
-      "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk]1/[GRK]chi[grk]2 Ramachandran plots" },
+      "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
     { "-viol", FALSE, etBOOL, {&bViol},
       "Write a file that gives 0 or 1 for violated Ramachandran angles" },
     { "-periodic", FALSE, etBOOL, {&bPBC},
@@ -1107,7 +1107,7 @@ int gmx_chi(int argc,char *argv[])
     { "-normhisto", FALSE, etBOOL, {&bNormHisto},
       "Normalize histograms" },
     { "-ramomega",FALSE,etBOOL, {&bRamOmega},
-      "compute average omega as a function of phi/psi and plot it in an [TT].xpm[tt] plot" },
+      "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [TT].xpm[tt] plot" },
     { "-bfact", FALSE, etREAL, {&bfac_init},
       "B-factor value for [TT].pdb[tt] file for atoms with no calculated dihedral order parameter"},
     { "-chi_prod",FALSE,etBOOL, {&bChiProduct},

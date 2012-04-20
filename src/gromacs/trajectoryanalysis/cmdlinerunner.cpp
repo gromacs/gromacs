@@ -39,17 +39,13 @@
 #include <config.h>
 #endif
 
-#include <memory>
-
-#include <copyrite.h>
-#include <pbc.h>
-#include <rmpbc.h>
-#include <statutil.h>
+#include "copyrite.h"
+#include "pbc.h"
+#include "rmpbc.h"
+#include "statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/options/asciihelpwriter.h"
+#include "gromacs/options/cmdlinehelpwriter.h"
 #include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -58,6 +54,8 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -105,7 +103,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
-        AsciiHelpWriter(options)
+        CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .writeHelp(stderr);
@@ -121,14 +119,13 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         Options *options,
         int *argc, char *argv[])
 {
-    Options *moduleOptions = _module->initOptions(settings);
-    GMX_RELEASE_ASSERT(moduleOptions != NULL, "Module returned NULL options");
-    Options *commonOptions = common->initOptions();
-    Options *selectionOptions = selections->initOptions();
+    Options &moduleOptions = _module->initOptions(settings);
+    Options &commonOptions = common->initOptions();
+    Options &selectionOptions = selections->initOptions();
 
-    options->addSubSection(commonOptions);
-    options->addSubSection(selectionOptions);
-    options->addSubSection(moduleOptions);
+    options->addSubSection(&commonOptions);
+    options->addSubSection(&selectionOptions);
+    options->addSubSection(&moduleOptions);
 
     setSelectionCollectionForOptions(options, selections);
 
@@ -153,17 +150,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         return false;
     }
     _module->initOptionsDone(settings);
-    /*
-    if (rc != 0)
-    {
-        if (rc == eeInconsistentInput)
-        {
-            GMX_ERROR(rc, "Invalid options provided, "
-                          "see above for detailed error messages");
-        }
-        return rc;
-    }
-    */
 
     common->initIndexGroups(selections);
 
@@ -203,11 +189,10 @@ int
 TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = _impl->_module;
-    int                       rc;
 
     CopyRight(stderr, argv[0]);
 
-    SelectionCollection  selections(NULL);
+    SelectionCollection  selections;
     selections.setDebugLevel(_impl->_debugLevel);
 
     TrajectoryAnalysisSettings  settings;
@@ -235,8 +220,8 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     int nframes = 0;
     AnalysisDataParallelOptions dataOptions;
-    std::auto_ptr<TrajectoryAnalysisModuleData>
-        pdata(module->startFrames(dataOptions, selections));
+    TrajectoryAnalysisModuleDataPointer pdata(
+            module->startFrames(dataOptions, selections));
     do
     {
         common.initFrame();

@@ -40,11 +40,11 @@
 #include <cctype>
 #include <cstring>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "options-impl.h"
 
@@ -84,11 +84,6 @@ Options::Impl::Impl(const char *name, const char *title)
 
 Options::Impl::~Impl()
 {
-    OptionList::const_iterator i;
-    for (i = _options.begin(); i != _options.end(); ++i)
-    {
-        delete *i;
-    }
 }
 
 Options *Options::Impl::findSubSection(const char *name) const
@@ -111,7 +106,7 @@ AbstractOptionStorage *Options::Impl::findOption(const char *name) const
     {
         if ((*i)->name() == name)
         {
-            return *i;
+            return i->get();
         }
     }
     return NULL;
@@ -122,14 +117,14 @@ void Options::Impl::startSource()
     OptionList::const_iterator i;
     for (i = _options.begin(); i != _options.end(); ++i)
     {
-        AbstractOptionStorage *option = *i;
-        option->startSource();
+        AbstractOptionStorage &option = **i;
+        option.startSource();
     }
     SubSectionList::const_iterator j;
     for (j = _subSections.begin(); j != _subSections.end(); ++j)
     {
-        Options *section = *j;
-        section->_impl->startSource();
+        Options &section = **j;
+        section._impl->startSource();
     }
 }
 
@@ -180,13 +175,12 @@ void Options::addSubSection(Options *section)
 
 void Options::addOption(const AbstractOption &settings)
 {
-    std::auto_ptr<AbstractOptionStorage> option(settings.createDefaultStorage(this));
+    AbstractOptionStoragePointer option(settings.createStorage());
     if (_impl->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));
     }
-    _impl->_options.push_back(option.get());
-    option.release();
+    _impl->_options.push_back(move(option));
 }
 
 bool Options::isSet(const char *name) const
@@ -201,24 +195,24 @@ void Options::finish()
     Impl::OptionList::const_iterator i;
     for (i = _impl->_options.begin(); i != _impl->_options.end(); ++i)
     {
-        AbstractOptionStorage *option = *i;
+        AbstractOptionStorage &option = **i;
         try
         {
-            option->finish();
+            option.finish();
         }
         catch (const UserInputError &ex)
         {
-            MessageStringContext context(&errors, "In option " + option->name());
+            MessageStringContext context(&errors, "In option " + option.name());
             errors.append(ex.what());
         }
     }
     Impl::SubSectionList::const_iterator j;
     for (j = _impl->_subSections.begin(); j != _impl->_subSections.end(); ++j)
     {
-        Options *section = *j;
+        Options &section = **j;
         try
         {
-            section->finish();
+            section.finish();
         }
         catch (const UserInputError &ex)
         {

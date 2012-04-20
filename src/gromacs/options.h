@@ -51,7 +51,7 @@
  * is possible to add descriptions for individual options as well as for the
  * whole set of options.  These can then be used to write out a help using one
  * of the provided help writers.
- * Currently, only one is defined: AsciiHelpWriter
+ * Currently, only one is defined: CommandLineHelpWriter
  * (implementation is not yet complete).
  *
  * \if libapi
@@ -86,7 +86,10 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
+#include "options/basicoptioninfo.h"
 #include "options/basicoptions.h"
+#include "options/filenameoptioninfo.h"
+#include "options/filenameoption.h"
 #include "options/options.h"
 
 #endif

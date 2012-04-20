@@ -14,6 +14,7 @@
 #
 
 MACRO(gmx_test_isfinite VARIABLE)
+  if(NOT DEFINED isfinite_compile_ok)
     MESSAGE(STATUS "Checking for isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
@@ -32,9 +33,12 @@ int main(void) {
     else(isfinite_compile_ok)
         MESSAGE(STATUS "Checking for isfinite - no")
     endif(isfinite_compile_ok)
+    set(isfinite_compile_ok "${isfinite_compile_ok}" CACHE INTERNAL "Result of isfinite check")
+  endif(NOT DEFINED isfinite_compile_ok)
 ENDMACRO(gmx_test_isfinite VARIABLE)
 
 MACRO(gmx_test__isfinite VARIABLE)
+  if(NOT DEFINED _isfinite_compile_ok)
     MESSAGE(STATUS "Checking for _isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
@@ -53,10 +57,13 @@ int main(void) {
     else(_isfinite_compile_ok)
         MESSAGE(STATUS "Checking for _isfinite - no")
     endif(_isfinite_compile_ok)
+    set(_isfinite_compile_ok "${_isfinite_compile_ok}" CACHE INTERNAL "Result of _isfinite check")
+  endif(NOT DEFINED _isfinite_compile_ok)
 ENDMACRO(gmx_test__isfinite VARIABLE)
 
 # Necessary for MSVC
 MACRO(gmx_test__finite VARIABLE)
+  if(NOT DEFINED _finite_compile_ok)
     MESSAGE(STATUS "Checking for _finite")
 
     set(CMAKE_REQUIRED_INCLUDES "float.h")
@@ -74,4 +81,6 @@ int main(void) {
     else(_finite_compile_ok)
         MESSAGE(STATUS "Checking for _finite - no")
     endif(_finite_compile_ok)
+    set(_finite_compile_ok "${_finite_compile_ok}" CACHE INTERNAL "Result of _finite check")
+  endif(NOT DEFINED _finite_compile_ok)
 ENDMACRO(gmx_test__finite VARIABLE)

@@ -68,3 +68,11 @@
  *
  * \inpublicapi
  */
+/*! \internal \namespace gmx::internal
+ * \brief
+ * Internal Gromacs namespace.
+ *
+ * This namespace is used to contain some implementation-specific functions and
+ * classes.  These are not meant for direct user access, but typically reside
+ * in public headers because of implementation reasons.
+ */

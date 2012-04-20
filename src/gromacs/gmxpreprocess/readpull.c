@@ -52,7 +52,7 @@
 #include "symtab.h"
 #include "readinp.h"
 #include "readir.h"
-#include "string.h"
+#include <string.h>
 #include "mdatoms.h"
 #include "pbc.h"
 #include "pull.h"

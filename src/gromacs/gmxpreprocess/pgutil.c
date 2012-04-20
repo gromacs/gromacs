@@ -39,7 +39,7 @@
 #endif
 #include "string2.h"
 #include "pgutil.h"
-#include "string.h"
+#include <string.h>
 #include "gmx_fatal.h"
 
 #define BUFSIZE 1024

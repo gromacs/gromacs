@@ -59,7 +59,7 @@
 #include "pbc.h"
 #include "chargegroup.h"
 #include "vec.h"
-#include "time.h"
+#include <time.h>
 #include "nrnb.h"
 #include "mshift.h"
 #include "mdrun.h"
@@ -843,14 +843,14 @@ void do_force(FILE *fplog,t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle,ewcVSITESPREAD);
-            spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
+            spread_vsite_f(fplog,vsite,x,f,fr->fshift,FALSE,NULL,nrnb,
                            &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
             wallcycle_stop(wcycle,ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle,ewcVSITESPREAD);
-                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,
+                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,FALSE,NULL,
                                nrnb,
                                &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
                 wallcycle_stop(wcycle,ewcVSITESPREAD);
@@ -927,7 +927,9 @@ void do_force(FILE *fplog,t_commrec *cr,
              * if the constructing atoms aren't local.
              */
             wallcycle_start(wcycle,ewcVSITESPREAD);
-            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
+            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,
+                           (flags & GMX_FORCE_VIRIAL),fr->vir_el_recip,
+                           nrnb,
                            &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
             wallcycle_stop(wcycle,ewcVSITESPREAD);
         }

@@ -41,21 +41,22 @@
 
 #include <string.h>
 
-#include <rmpbc.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <tpxio.h>
-#include <vec.h>
+#include "rmpbc.h"
+#include "smalloc.h"
+#include "statutil.h"
+#include "tpxio.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "analysissettings-impl.h"
 
@@ -161,7 +162,7 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 }
 
 
-Options *
+Options &
 TrajectoryAnalysisRunnerCommon::initOptions()
 {
     TrajectoryAnalysisSettings &settings = _impl->_settings;
@@ -217,7 +218,7 @@ TrajectoryAnalysisRunnerCommon::initOptions()
                               .description("Use periodic boundary conditions for distance calculation"));
     }
 
-    return &_impl->_options;
+    return _impl->_options;
 }
 
 
@@ -472,7 +473,7 @@ TrajectoryAnalysisRunnerCommon::topologyInformation() const
 t_trxframe &
 TrajectoryAnalysisRunnerCommon::frame() const
 {
-    assert(_impl->fr != NULL);
+    GMX_RELEASE_ASSERT(_impl->fr != NULL, "Frame not available when accessed");
     return *_impl->fr;
 }
 

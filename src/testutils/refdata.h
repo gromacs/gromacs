@@ -106,11 +106,21 @@ std::string getReferenceDataPath();
  * can be used to change it.
  * Recognized command-line arguments are removed from the list.
  *
- * This function is automatically called by test_main_gtest.cpp and
- * test_main_gmock.cpp.
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by initTestUtils().
  */
-int initReferenceData(int *argc, char **argv);
+void initReferenceData(int *argc, char **argv);
 
+/*! \cond internal */
+/*! \internal \brief
+ * Internal testing namespace.
+ *
+ * This namespace is used to contain some implementation-specific functions and
+ * classes.  These are not meant for direct access, but typically reside in
+ * visible headers because of implementation reasons.
+ */
 namespace internal
 {
 
@@ -126,6 +136,7 @@ namespace internal
 void addGlobalReferenceDataEnvironment();
 
 } // namespace internal
+//! \endcond
 
 
 class TestReferenceChecker;
@@ -250,6 +261,7 @@ class TestReferenceChecker
         TestReferenceChecker(const TestReferenceChecker &other);
         ~TestReferenceChecker();
 
+        //! Assigns a test reference checker.
         TestReferenceChecker &operator =(const TestReferenceChecker &other);
 
         //! Returns true if reference data is currently being written.

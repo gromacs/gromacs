@@ -709,7 +709,8 @@ real dd_choose_grid(FILE *fplog,
         {
             if (cr->npmenodes < 0)
             {
-                if (cr->nnodes <= 10)
+                /* Use PME nodes when the number of nodes is more than 16 */
+                if (cr->nnodes <= 18)
                 {
                     cr->npmenodes = 0;
                 }

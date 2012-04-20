@@ -273,15 +273,15 @@
 #include <math.h>
 #include <stdarg.h>
 
-#include <smalloc.h>
-#include <string2.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "string2.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
 #include "evaluate.h"
@@ -453,20 +453,18 @@ _gmx_selelem_free_compiler_data(t_selelem *sel)
  * \param     sel   Selection element to initialize
  * \param[in] isize Maximum evaluation group size.
  * \param[in] bChildEval true if children have already been processed.
- * \returns   true if the memory was allocated, false if children need to
- *   be processed first.
  *
  * If called more than once, memory is (re)allocated to ensure that the
  * maximum of the \p isize values can be stored.
  */
-static bool
+static void
 alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 {
     int        nalloc;
 
     if (sel->mempool)
     {
-        return true;
+        return;
     }
     /* Find out the number of elements to allocate */
     if (sel->flags & SEL_SINGLEVAL)
@@ -483,12 +481,16 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
 
         if (!bChildEval)
         {
-            return false;
+            return;
         }
-        child = (sel->type == SEL_SUBEXPRREF ? sel->child : sel);
-        if (child->type == SEL_SUBEXPR)
+        child = sel;
+        if (sel->type == SEL_SUBEXPRREF)
         {
-            child = child->child;
+            GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
+                "Subexpression expected for subexpression reference");
+            child = sel->child->child;
+            GMX_RELEASE_ASSERT(child,
+                "Subexpression elements should always have a child element");
         }
         nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
     }
@@ -517,7 +519,6 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
             gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
         }
     }
-    return true;
 }
 
 /*! \brief
@@ -556,8 +557,8 @@ set_evaluation_function(t_selelem *sel, sel_evalfunc eval)
  *      for, or NULL if the element is an internal element.
  */
 static void
-init_pos_keyword_defaults(t_selelem *root, const char *spost,
-                          const char *rpost, const gmx::Selection *sel)
+init_pos_keyword_defaults(t_selelem *root, const char *spost, const char *rpost,
+                          const gmx::internal::SelectionData *sel)
 {
     /* Selections use largest static group by default, while
      * reference positions use the whole residue/molecule. */
@@ -1179,6 +1180,10 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
 static void
 init_item_evaloutput(t_selelem *sel)
 {
+    GMX_ASSERT(!(sel->child == NULL &&
+                 (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)),
+               "Subexpression elements should always have a child element");
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1491,6 +1496,8 @@ init_item_minmax_groups(t_selelem *sel)
                  && ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                      || (sel->cdata->flags & SEL_CDATA_FULLEVAL)))
         {
+            GMX_ASSERT(sel->child,
+                       "Subexpression elements should always have a child element");
             sel->cdata->gmin = sel->child->cdata->gmin;
             sel->cdata->gmax = sel->child->cdata->gmax;
         }
@@ -2019,7 +2026,6 @@ evaluate_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
 static void
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    t_selelem       *child, *next;
     bool             bDoMinMax;
 
     if (sel->type != SEL_ROOT && g)
@@ -2043,6 +2049,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
+            GMX_ASSERT(g, "group cannot be null");
             _gmx_sel_evaluate_method_params(data, sel, g);
             init_method(sel, data->top, g->isize);
             if (!(sel->flags & SEL_DYNAMIC))
@@ -2129,6 +2136,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else if (sel->u.cgrp.isize == 0)
             {
+                GMX_ASSERT(g, "group cannot be null");
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
@@ -2350,6 +2358,10 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 static void
 postprocess_item_subexpressions(t_selelem *sel)
 {
+    GMX_ASSERT(!(sel->child == NULL &&
+                 (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)),
+               "Subexpression elements should always have a child element");
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -2379,10 +2391,8 @@ postprocess_item_subexpressions(t_selelem *sel)
         sel->u.cgrp.name = name;
 
         sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
-        if (sel->cdata)
-        {
-            sel->cdata->evaluate = sel->evaluate;
-        }
+        sel->cdata->evaluate = sel->evaluate;
+
         _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
@@ -2441,7 +2451,7 @@ postprocess_item_subexpressions(t_selelem *sel)
  * the method also defines the \c gmx_ana_selmethod_t::update method.
  */
 static void
-init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
+init_item_comg(t_selelem *sel, gmx::PositionCalculationCollection *pcc,
                e_poscalc_t type, int flags)
 {
     t_selelem *child;
@@ -2461,7 +2471,7 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
             if (!sel->u.expr.pc)
             {
                 cflags |= flags;
-                gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
+                sel->u.expr.pc = pcc->createCalculation(type, cflags);
             }
             else
             {
@@ -2571,11 +2581,11 @@ SelectionCompiler::compile(SelectionCollection *coll)
      */
     for (i = 0; i < sc->sel.size(); ++i)
     {
-        gmx::Selection *sel = sc->sel[i];
-        init_pos_keyword_defaults(sel->rootElement_,
+        gmx::internal::SelectionData &sel = *sc->sel[i];
+        init_pos_keyword_defaults(sel.rootElement(),
                                   coll->_impl->_spost.c_str(),
                                   coll->_impl->_rpost.c_str(),
-                                  sel);
+                                  &sel);
     }
 
     /* Remove any unused variables. */
@@ -2696,13 +2706,14 @@ SelectionCompiler::compile(SelectionCollection *coll)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    gmx_ana_poscalc_type_from_enum(coll->_impl->_rpost.c_str(), &post, &flags);
+    PositionCalculationCollection::typeFromEnum(coll->_impl->_rpost.c_str(),
+                                                &post, &flags);
     item = sc->root;
     while (item)
     {
         init_root_item(item, &sc->gall);
         postprocess_item_subexpressions(item);
-        init_item_comg(item, sc->pcc, post, flags);
+        init_item_comg(item, &sc->pcc, post, flags);
         free_item_compilerdata(item);
         item = item->next;
     }

@@ -30,7 +30,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::Selection.
+ * Declares gmx::Selection and supporting classes.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
@@ -44,9 +44,9 @@
 
 #include "../legacyheaders/typedefs.h"
 
-#include "../fatalerror/gmxassert.h"
 #include "../utility/arrayref.h"
 #include "../utility/common.h"
+#include "../utility/gmxassert.h"
 
 #include "position.h"
 #include "indexutil.h"
@@ -57,19 +57,29 @@ struct t_selelem;
 namespace gmx
 {
 
-class SelectionEvaluator;
-class SelectionCollection;
-class SelectionCompiler;
+class SelectionOptionStorage;
 
+class Selection;
 class SelectionPosition;
 
-/*! \brief
- * Provides access to a single selection.
+//! Container of selections used in public selection interfaces.
+typedef std::vector<Selection> SelectionList;
+
+namespace internal
+{
+
+/*! \internal \brief
+ * Internal data for a single selection.
  *
- * \inpublicapi
+ * This class is internal to the selection module, but resides in a public
+ * header because of efficiency reasons: it allows frequently used access
+ * methods in \ref Selection to be inlined.
+ *
+ * Methods in this class do not throw unless otherwise specified.
+ *
  * \ingroup module_selection
  */
-class Selection
+class SelectionData
 {
     public:
         /*! \brief
@@ -77,115 +87,44 @@ class Selection
          *
          * \param[in] elem   Root of the evaluation tree for this selection.
          * \param[in] selstr String that was parsed to produce this selection.
+         * \throws    std::bad_alloc if out of memory.
          */
-        Selection(t_selelem *elem, const char *selstr);
-        ~Selection();
+        SelectionData(t_selelem *elem, const char *selstr);
+        ~SelectionData();
 
-        //! Returns the name of the selection.
-        const char *name() const  { return name_.c_str(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return selectionText_.c_str(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
         bool isDynamic() const { return bDynamic_; }
-        //! Returns the type of positions in the selection.
-        e_index_t type() const { return rawPositions_.m.type; }
-
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.nr; }
-        //! Total number of atoms in the selection.
-        int atomCount() const
-        {
-            return rawPositions_.g != NULL ? rawPositions_.g->isize : 0;
-        }
-        //! Returns atom indices of all atoms in the selection.
-        ConstArrayRef<int> atomIndices() const
-        {
-            if (rawPositions_.g == NULL)
-            {
-                return ConstArrayRef<int>();
-            }
-            return ConstArrayRef<int>(rawPositions_.g->isize,
-                                      rawPositions_.g->index);
-        }
-        //! Access a single position.
-        SelectionPosition position(int i) const;
-        /*! \brief
-         * Sets the ID for the \p i'th position for use with
-         * SelectionPosition::mappedId().
-         *
-         * This method is not part of SelectionPosition because that interface
-         * only provides access to const data by design.
-         */
-        void setOriginalId(int i, int id) { rawPositions_.m.orgid[i] = id; }
+        //! Returns the root of the evaluation tree for this selection.
+        t_selelem *rootElement() { return rootElement_; }
 
         //! Returns whether the covered fraction can change between frames.
         bool isCoveredFractionDynamic() const { return bDynamicCoveredFraction_; }
-        //! Returns the covered fraction for the current frame.
-        real coveredFraction() const { return coveredFraction_; }
-
-        //! Deprecated method for direct access to position data.
-        const gmx_ana_pos_t *positions() const { return &rawPositions_; }
-        //! Deprecated method for direct access to atom index data.
-        gmx_ana_index_t *indexGroup() const { return rawPositions_.g; }
 
         //! Returns true if the given flag is set.
         bool hasFlag(SelectionFlag flag) const { return flags_.test(flag); }
         //! Sets the flags for this selection.
         void setFlags(SelectionFlags flags) { flags_ = flags; }
-        /*! \brief
-         * Initializes information about covered fractions.
-         *
-         * \param[in] type Type of covered fraction required.
-         * \returns   True if the covered fraction can be calculated for the
-         *      selection.
-         */
+
+        //! \copydoc Selection::initCoveredFraction()
         bool initCoveredFraction(e_coverfrac_t type);
-
-        /*! \brief
-         * Prints out one-line description of the selection.
-         *
-         * \param[in] fp      Where to print the information.
-         */
-        void printInfo(FILE *fp) const;
-        /*! \brief
-         * Prints out extended information about the selection for debugging.
-         *
-         * \param[in] fp      Where to print the information.
-         * \param[in] nmaxind Maximum number of values to print in lists
-         *      (-1 = print all).
-         */
-        void printDebugInfo(FILE *fp, int nmaxind) const;
-
-    private:
-        /*! \brief
-         * Additional information about positions.
-         *
-         * This structure contains information about positions in the
-         * selection that is not stored in ::gmx_ana_pos_t.
-         */
-        struct PositionInfo
-        {
-            //! Construct position information with unit mass and no charge.
-            PositionInfo() : mass(1.0), charge(0.0) {}
-            //! Construct position information with the given information.
-            PositionInfo(real mass, real charge) : mass(mass), charge(charge) {}
-
-            //! Total mass of atoms that make up the position.
-            real                mass;
-            //! Total charge of atoms that make up the position.
-            real                charge;
-        };
 
         /*! \brief
          * Computes total masses and charges for all selection positions.
          *
-         * \param[in]  top   Topology information.
+         * \param[in] top   Topology information.
+         * \throws    std::bad_alloc if out of memory.
          *
          * Computed values are cached, and need to be updated for dynamic
          * selections with refreshMassesAndCharges() after the selection has
          * been evaluated.  This is done by SelectionEvaluator.
          *
          * This function is called by SelectionCompiler.
+         *
+         * Strong exception safety guarantee.
          */
         void initializeMassesAndCharges(const t_topology *top);
         /*! \brief
@@ -220,6 +159,28 @@ class Selection
          */
         void restoreOriginalPositions();
 
+    private:
+        /*! \brief
+         * Additional information about positions.
+         *
+         * This structure contains information about positions in the
+         * selection that is not stored in ::gmx_ana_pos_t.
+         *
+         * Methods in this class do not throw.
+         */
+        struct PositionInfo
+        {
+            //! Construct position information with unit mass and no charge.
+            PositionInfo() : mass(1.0), charge(0.0) {}
+            //! Construct position information with the given information.
+            PositionInfo(real mass, real charge) : mass(mass), charge(charge) {}
+
+            //! Total mass of atoms that make up the position.
+            real                mass;
+            //! Total charge of atoms that make up the position.
+            real                charge;
+        };
+
         //! Name of the selection.
         std::string             name_;
         //! The actual selection string.
@@ -245,31 +206,219 @@ class Selection
         bool                    bDynamicCoveredFraction_;
 
         /*! \brief
-         * Needed for the compiler to access initializeMassesAndCharges().
-         *
-         * Currently the compiler also used rootElement_ directly for
-         * simplicity, but does not modify it.
+         * Needed to wrap access to information.
          */
-        friend class SelectionCompiler;
-        /*! \brief
-         * Needed for the evaluator to access the private methods.
-         */
-        friend class SelectionEvaluator;
+        friend class gmx::Selection;
         /*! \brief
          * Needed for proper access to position information.
          */
-        friend class SelectionPosition;
+        friend class gmx::SelectionPosition;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(Selection);
+        GMX_DISALLOW_COPY_AND_ASSIGN(SelectionData);
+};
+
+} // namespace internal
+
+/*! \brief
+ * Provides access to a single selection.
+ *
+ * This class provides a public interface for accessing selection information.
+ * General information about the selection can be accessed with methods name(),
+ * selectionText(), isDynamic(), and type().  The first three can be accessed
+ * any time after the selection has been parsed, and type() can be accessed
+ * after the selection has been compiled.
+ *
+ * Each selection is made of a set of positions.  Each position has associated
+ * coordinates, and possibly velocities and forces if they have been requested
+ * and are available.  It also has a set of atoms associated with it; typically
+ * the coordinates are the center-of-mass or center-of-geometry coordinates for
+ * that set of atoms.  To access the number of positions in the selection, use
+ * posCount().  To access individual positions, use position().
+ * See SelectionPosition for details of how to use individual positions.
+ * setOriginalId() can be used to adjust the return value of
+ * SelectionPosition::mappedId(); see that method for details.
+ *
+ * It is also possible to access the list of atoms that make up all the
+ * positions directly: atomCount() returns the total number of atoms in the
+ * selection and atomIndices() an array of their indices.
+ *
+ * Both positions and atoms can be accessed after the selection has been
+ * compiled.  For dynamic selections, the return values of these methods change
+ * after each evaluation to reflect the situation for the current frame.
+ * Before any frame has been evaluated, these methods return the maximal set
+ * to which the selection can evaluate.
+ *
+ * There are two possible modes for how positions for dynamic selections are
+ * handled.  In the default mode, posCount() can change, and for each frame,
+ * only the positions that are selected in that frame can be accessed.  In a
+ * masked mode, posCount() remains constant, i.e., the positions are always
+ * evaluated for the maximal set, and SelectionPosition::selected() is used to
+ * determine whether a position is selected for a frame.  The masked mode can
+ * be requested with SelectionOption::dynamicMask().
+ *
+ * The class also provides methods for printing out information: printInfo()
+ * and printDebugInfo().  These are mainly for internal use by Gromacs.
+ *
+ * This class works like a pointer type: copying and assignment is lightweight,
+ * and all copies work interchangeably, accessing the same internal data.
+ *
+ * Methods in this class do not throw.
+ *
+ * \see SelectionPosition
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class Selection
+{
+    public:
+        /*! \brief
+         * Creates a selection wrapper that has no associated selection.
+         *
+         * Any attempt to call methods in the object before a selection is
+         * assigned results in undefined behavior.
+         */
+        Selection() : sel_(NULL) {}
+        /*! \brief
+         * Creates a new selection object.
+         *
+         * \param  sel  Selection data to wrap.
+         *
+         * Only for internal use by the selection module.
+         */
+        explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
+
+        //! Returns the name of the selection.
+        const char *name() const  { return data().name_.c_str(); }
+        //! Returns the string that was parsed to produce this selection.
+        const char *selectionText() const { return data().selectionText(); }
+        //! Returns true if the size of the selection (posCount()) is dynamic.
+        bool isDynamic() const { return data().isDynamic(); }
+        //! Returns the type of positions in the selection.
+        e_index_t type() const { return data().rawPositions_.m.type; }
+
+        //! Total number of atoms in the selection.
+        int atomCount() const
+        {
+            return data().rawPositions_.g != NULL ? data().rawPositions_.g->isize : 0;
+        }
+        //! Returns atom indices of all atoms in the selection.
+        ConstArrayRef<int> atomIndices() const
+        {
+            if (data().rawPositions_.g == NULL)
+            {
+                return ConstArrayRef<int>();
+            }
+            return ConstArrayRef<int>(data().rawPositions_.g->isize,
+                                      data().rawPositions_.g->index);
+        }
+        //! Number of positions in the selection.
+        int posCount() const { return data().posCount(); }
+        //! Access a single position.
+        SelectionPosition position(int i) const;
+        /*! \brief
+         * Sets the ID for the \p i'th position for use with
+         * SelectionPosition::mappedId().
+         *
+         * \param[in] i  Zero-based index
+         * \param[in] id Identifier to set.
+         *
+         * This method is not part of SelectionPosition because that interface
+         * only provides access to const data by design.
+         *
+         * This method can only be called after compilation, before the
+         * selection has been evaluated for any frame.
+         *
+         * \see SelectionPosition::mappedId()
+         */
+        void setOriginalId(int i, int id) { data().rawPositions_.m.orgid[i] = id; }
+
+        //! Deprecated method for direct access to position data.
+        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
+
+        //! Returns whether the covered fraction can change between frames.
+        bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
+        //! Returns the covered fraction for the current frame.
+        real coveredFraction() const { return data().coveredFraction_; }
+        /*! \brief
+         * Initializes information about covered fractions.
+         *
+         * \param[in] type Type of covered fraction required.
+         * \returns   true if the covered fraction can be calculated for the
+         *      selection.
+         */
+        bool initCoveredFraction(e_coverfrac_t type)
+        {
+            return data().initCoveredFraction(type);
+        }
+
+        /*! \brief
+         * Prints out one-line description of the selection.
+         *
+         * \param[in] fp      Where to print the information.
+         *
+         * The output contains the name of the selection, the number of atoms
+         * and the number of positions, and indication of whether the selection
+         * is dynamic.
+         */
+        void printInfo(FILE *fp) const;
+        /*! \brief
+         * Prints out extended information about the selection for debugging.
+         *
+         * \param[in] fp      Where to print the information.
+         * \param[in] nmaxind Maximum number of values to print in lists
+         *      (-1 = print all).
+         */
+        void printDebugInfo(FILE *fp, int nmaxind) const;
+
+    private:
+        internal::SelectionData &data()
+        {
+            GMX_ASSERT(sel_ != NULL,
+                       "Attempted to access uninitialized selection");
+            return *sel_;
+        }
+        const internal::SelectionData &data() const
+        {
+            GMX_ASSERT(sel_ != NULL,
+                       "Attempted to access uninitialized selection");
+            return *sel_;
+        }
+
+        /*! \brief
+         * Pointer to internal data for the selection.
+         *
+         * The memory for this object is managed by a SelectionCollection
+         * object, and the \ref Selection class simply provides a public
+         * interface for accessing the data.
+         */
+        internal::SelectionData *sel_;
+
+        /*! \brief
+         * Needed to access the data to adjust flags.
+         */
+        friend class SelectionOptionStorage;
 };
 
 /*! \brief
- * Wrapper object to access information about a single selected position.
+ * Provides access to information about a single selected position.
+ *
+ * Each position has associated coordinates, and possibly velocities and forces
+ * if they have been requested and are available.  It also has a set of atoms
+ * associated with it; typically the coordinates are the center-of-mass or
+ * center-of-geometry coordinates for that set of atoms.  It is possible that
+ * there are not atoms associated if the selection has been provided as a fixed
+ * position.
+ *
+ * After the selection has been compiled, but not yet evaluated, the contents
+ * of the coordinate, velocity and force vectors are undefined.
  *
  * Default copy constructor and assignment operators are used, and work as
  * intended: the copy references the same position and works identically.
  *
  * Methods in this class do not throw.
+ *
+ * \see Selection
  *
  * \inpublicapi
  * \ingroup module_selection
@@ -278,18 +427,27 @@ class SelectionPosition
 {
     public:
         /*! \brief
+         * Constructs a wrapper object for given selection position.
+         *
+         * \param[in] sel    Selection from which the position is wrapped.
+         * \param[in] index  Zero-based index of the position to wrap.
+         *
+         * Asserts if \p index is out of range.
+         *
+         * Only for internal use of the library.  To obtain a SelectionPosition
+         * object in other code, use Selection::position().
          */
-        SelectionPosition(const Selection *sel, int index)
-            : sel_(sel), i_(index)
+        SelectionPosition(const internal::SelectionData &sel, int index)
+            : sel_(&sel), i_(index)
         {
-            GMX_ASSERT(index >= 0 && index < sel->posCount(),
+            GMX_ASSERT(index >= 0 && index < sel.posCount(),
                        "Invalid selection position index");
         }
 
         /*! \brief
          * Returns type of this position.
          *
-         * Currently returns the same as Selection::type().
+         * Currently always returns the same as Selection::type().
          */
         e_index_t type() const { return sel_->rawPositions_.m.type; }
         //! Returns coordinates for this position.
@@ -312,7 +470,7 @@ class SelectionPosition
         //! Returns whether force is available for this position.
         bool hasForce() const { return sel_->rawPositions_.f != NULL; }
         /*! \brief
-         * Returns velocity for this position.
+         * Returns force for this position.
          *
          * Must not be called if hasForce() returns false.
          */
@@ -325,7 +483,7 @@ class SelectionPosition
          * Returns total mass for this position.
          *
          * Returns the total mass of atoms that make up this position.
-         * If there are not atoms associated or masses are not available,
+         * If there are no atoms associated or masses are not available,
          * returns unity.
          */
         real mass() const
@@ -336,7 +494,7 @@ class SelectionPosition
          * Returns total charge for this position.
          *
          * Returns the sum of charges of atoms that make up this position.
-         * If there are not atoms associated or masses are not available,
+         * If there are no atoms associated or charges are not available,
          * returns zero.
          */
         real charge() const
@@ -361,23 +519,36 @@ class SelectionPosition
                                       &sel_->rawPositions_.g->index[first]);
         }
         /*! \brief
+         * Returns whether this position is selected in the current frame.
+         *
+         * The return value is equivalent to \c refid() == -1.  Returns always
+         * true if SelectionOption::dynamicMask() has not been set.
+         *
+         * \see refId()
+         */
+        bool selected() const
+        {
+            return refId() >= 0;
+        }
+        /*! \brief
          * Returns reference ID for this position.
          *
          * For dynamic selections, this provides means to associate positions
          * across frames.  After compilation, these IDs are consequently
          * numbered starting from zero.  For each frame, the ID then reflects
          * the location of the position in the original array of positions.
-         * If ::efDynamicMask has been set for the parent selection, the IDs
-         * for positions not present in the current selection are set to
-         * -1, otherwise they are removed completely.
+         * If SelectionOption::dynamicMask() has been set for the parent
+         * selection, the IDs for positions not present in the current
+         * selection are set to -1, otherwise they are removed completely.
          *
          * Example:
-         * If a dynamic selection consists of three positions, after
+         * If a dynamic selection consists of at most three positions, after
          * compilation refId() will return 0, 1, 2 for them, respectively.
          * If for a particular frame, only the first and the third are present,
          * refId() will return 0, 2.
-         * If ::efDynamicMask has been set, all three positions can be accessed
-         * also in this case and refId() will return 0, -1, 2.
+         * If SelectionOption::dynamicMask() has been set, all three positions
+         * can be accessed also for that frame and refId() will return 0, -1,
+         * 2.
          */
         int refId() const
         {
@@ -389,9 +560,17 @@ class SelectionPosition
          * Returns ID of the position that corresponds to that set with
          * Selection::setOriginalId().
          *
-         * If for an array \c id, \c setOriginalId(i, c[i]) has been called
+         * If for an array \c id, \c setOriginalId(i, id[i]) has been called
          * for each \c i, then it always holds that
-         * \c mappedId()==c[refId()].
+         * \c mappedId()==id[refId()].
+         *
+         * Selection::setOriginalId() has not been called, the default values
+         * are dependent on type():
+         *  - ::INDEX_ATOM: atom indices
+         *  - ::INDEX_RES:  residue numbers
+         *  - ::INDEX_MOL:  molecule numbers
+         *  .
+         * All the default values are zero-based
          */
         int mappedId() const
         {
@@ -399,15 +578,15 @@ class SelectionPosition
         }
 
     private:
-        const Selection        *sel_;
-        int                     i_;
+        const internal::SelectionData  *sel_;
+        int                             i_;
 };
 
 
 inline SelectionPosition
 Selection::position(int i) const
 {
-    return SelectionPosition(this, i);
+    return SelectionPosition(data(), i);
 }
 
 } // namespace gmx

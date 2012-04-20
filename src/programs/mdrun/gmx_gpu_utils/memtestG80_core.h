@@ -75,7 +75,7 @@ protected:
 	bool allocated;
 public:
     uint initTime;
-	memtestState() : nBlocks(1024), nThreads(512), allocated(false), devTestMem(NULL),devTempMem(NULL),hostTempMem(NULL), initTime(0),lcgPeriod(1024) {};
+    memtestState() : nBlocks(1024), nThreads(512), loopIters(0), megsToTest(0), allocated(false), devTestMem(NULL),devTempMem(NULL),hostTempMem(NULL), initTime(0),lcgPeriod(1024) {};
     ~memtestState() {deallocate();}
 
 	uint allocate(uint mbToTest);

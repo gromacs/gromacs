@@ -30,29 +30,24 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::Selection.
+ * Implements classes in selection.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "selection.h"
 
-#include <statutil.h>
-#include <string2.h>
-#include <xvgr.h>
-
-#include "gromacs/selection/position.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/selection/selvalue.h"
-
+#include "position.h"
 #include "selelem.h"
+#include "selvalue.h"
 
 namespace gmx
 {
 
-Selection::Selection(t_selelem *elem, const char *selstr)
+namespace internal
+{
+
+SelectionData::SelectionData(t_selelem *elem, const char *selstr)
     : name_(elem->name), selectionText_(selstr),
       rootElement_(elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
@@ -102,25 +97,14 @@ Selection::Selection(t_selelem *elem, const char *selstr)
 }
 
 
-Selection::~Selection()
+SelectionData::~SelectionData()
 {
     gmx_ana_pos_deinit(&rawPositions_);
 }
 
 
-void
-Selection::printInfo(FILE *fp) const
-{
-    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name_.c_str(),
-            posCount(),  posCount()  == 1 ? "" : "s",
-            atomCount(), atomCount() == 1 ? "" : "s",
-            isDynamic() ? ", dynamic" : "");
-    fprintf(fp, "\n");
-}
-
-
 bool
-Selection::initCoveredFraction(e_coverfrac_t type)
+SelectionData::initCoveredFraction(e_coverfrac_t type)
 {
     coveredFractionType_ = type;
     if (type == CFRAC_NONE || rootElement_ == NULL)
@@ -143,9 +127,103 @@ Selection::initCoveredFraction(e_coverfrac_t type)
 
 
 void
+SelectionData::initializeMassesAndCharges(const t_topology *top)
+{
+    posInfo_.reserve(posCount());
+    for (int b = 0; b < posCount(); ++b)
+    {
+        real mass   = 1.0;
+        real charge = 0.0;
+        if (top != NULL)
+        {
+            mass = 0.0;
+            for (int i = rawPositions_.m.mapb.index[b];
+                     i < rawPositions_.m.mapb.index[b+1];
+                     ++i)
+            {
+                int index = rawPositions_.g->index[i];
+                mass   += top->atoms.atom[index].m;
+                charge += top->atoms.atom[index].q;
+            }
+        }
+        posInfo_.push_back(PositionInfo(mass, charge));
+    }
+    if (isDynamic() && !hasFlag(efDynamicMask))
+    {
+        originalPosInfo_ = posInfo_;
+    }
+}
+
+
+void
+SelectionData::refreshMassesAndCharges()
+{
+    if (!originalPosInfo_.empty())
+    {
+        posInfo_.clear();
+        for (int i = 0; i < posCount(); ++i)
+        {
+            int refid  = rawPositions_.m.refid[i];
+            posInfo_.push_back(originalPosInfo_[refid]);
+        }
+    }
+}
+
+
+void
+SelectionData::updateCoveredFractionForFrame()
+{
+    if (isCoveredFractionDynamic())
+    {
+        real cfrac = _gmx_selelem_estimate_coverfrac(rootElement());
+        coveredFraction_ = cfrac;
+        averageCoveredFraction_ += cfrac;
+    }
+}
+
+
+void
+SelectionData::computeAverageCoveredFraction(int nframes)
+{
+    if (isCoveredFractionDynamic() && nframes > 0)
+    {
+        averageCoveredFraction_ /= nframes;
+    }
+}
+
+
+void
+SelectionData::restoreOriginalPositions()
+{
+    if (isDynamic())
+    {
+        gmx_ana_pos_t &p = rawPositions_;
+        gmx_ana_index_copy(p.g, rootElement_->v.u.g, false);
+        p.g->name = NULL;
+        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efDynamicMask));
+        p.nr = p.m.nr;
+        refreshMassesAndCharges();
+    }
+}
+
+} // namespace internal
+
+
+void
+Selection::printInfo(FILE *fp) const
+{
+    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name(),
+            posCount(),  posCount()  == 1 ? "" : "s",
+            atomCount(), atomCount() == 1 ? "" : "s",
+            isDynamic() ? ", dynamic" : "");
+    fprintf(fp, "\n");
+}
+
+
+void
 Selection::printDebugInfo(FILE *fp, int nmaxind) const
 {
-    const gmx_ana_pos_t &p = rawPositions_;
+    const gmx_ana_pos_t &p = data().rawPositions_;
 
     fprintf(fp, "  ");
     printInfo(fp);
@@ -199,87 +277,6 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
             fprintf(fp, " ...");
     }
     fprintf(fp, "\n");
-}
-
-
-void
-Selection::initializeMassesAndCharges(const t_topology *top)
-{
-    posInfo_.reserve(posCount());
-    for (int b = 0; b < posCount(); ++b)
-    {
-        real mass   = 1.0;
-        real charge = 0.0;
-        if (top != NULL)
-        {
-            mass = 0.0;
-            for (int i = rawPositions_.m.mapb.index[b];
-                     i < rawPositions_.m.mapb.index[b+1];
-                     ++i)
-            {
-                int index = rawPositions_.g->index[i];
-                mass   += top->atoms.atom[index].m;
-                charge += top->atoms.atom[index].q;
-            }
-        }
-        posInfo_.push_back(PositionInfo(mass, charge));
-    }
-    if (isDynamic() && !hasFlag(efDynamicMask))
-    {
-        originalPosInfo_ = posInfo_;
-    }
-}
-
-
-void
-Selection::refreshMassesAndCharges()
-{
-    if (!originalPosInfo_.empty())
-    {
-        posInfo_.clear();
-        for (int i = 0; i < posCount(); ++i)
-        {
-            int refid  = rawPositions_.m.refid[i];
-            posInfo_.push_back(originalPosInfo_[refid]);
-        }
-    }
-}
-
-
-void
-Selection::updateCoveredFractionForFrame()
-{
-    if (isCoveredFractionDynamic())
-    {
-        real cfrac = _gmx_selelem_estimate_coverfrac(rootElement_);
-        coveredFraction_ = cfrac;
-        averageCoveredFraction_ += cfrac;
-    }
-}
-
-
-void
-Selection::computeAverageCoveredFraction(int nframes)
-{
-    if (isCoveredFractionDynamic() && nframes > 0)
-    {
-        averageCoveredFraction_ /= nframes;
-    }
-}
-
-
-void
-Selection::restoreOriginalPositions()
-{
-    if (isDynamic())
-    {
-        gmx_ana_pos_t &p = rawPositions_;
-        gmx_ana_index_copy(p.g, rootElement_->v.u.g, false);
-        p.g->name = NULL;
-        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efDynamicMask));
-        p.nr = p.m.nr;
-        refreshMassesAndCharges();
-    }
 }
 
 } // namespace gmx

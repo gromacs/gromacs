@@ -181,13 +181,11 @@ class AbstractOptionStorage
          * Initializes the storage object from the settings object.
          *
          * \param[in] settings  Option settings.
-         * \param[in] options   Option collection that will contain the
-         *      option.
          * \param[in] staticFlags Option flags that are always set and specify
          *      generic behavior of the option.
          * \throws  APIError if invalid settings have been provided.
          */
-        AbstractOptionStorage(const AbstractOption &settings, Options *options,
+        AbstractOptionStorage(const AbstractOption &settings,
                               OptionFlags staticFlags);
 
         //! Returns true if the given flag is set.
@@ -230,11 +228,6 @@ class AbstractOptionStorage
          * If attempted, will assert.
          */
         void setMaxValueCount(int count);
-
-        //! Returns the Options object that houses the option.
-        Options &hostOptions() { return *_options; }
-        //! \copydoc hostOptions()
-        const Options &hostOptions() const { return *_options; }
 
         /*! \brief
          * Removes all values from temporary storage for a set.
@@ -297,8 +290,6 @@ class AbstractOptionStorage
         int                     _maxValueCount;
         //! Whether we are currently assigning values to a set.
         bool                    _inSet;
-        //! Parent Options object.
-        Options                *_options;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionStorage);
 };

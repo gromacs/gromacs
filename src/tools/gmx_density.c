@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -395,11 +395,11 @@ int gmx_density(int argc,char *argv[])
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
-      "Divide the box in #nr slices." },
+      "Divide the box in this number of slices." },
     { "-dens",    FALSE, etENUM, {dens_opt},
       "Density"},
     { "-ng",       FALSE, etINT, {&ngrps},
-      "Number of groups to compute densities of" },
+      "Number of groups of which to compute densities." },
     { "-symm",    FALSE, etBOOL, {&bSymmetrize},
       "Symmetrize the density along the axis, with respect to the center. Useful for bilayers." },
     { "-center",  FALSE, etBOOL, {&bCenter},

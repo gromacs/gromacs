@@ -54,7 +54,8 @@ typedef enum
 namespace gmx
 {
 
-/*! \brief
+/*! \cond internal */
+/*! \internal \brief
  * Flags for options.
  *
  * These flags are not part of the public interface, even though they are in an
@@ -73,8 +74,9 @@ enum SelectionFlag
     efEvaluateForces            = 1<<6,
 };
 
-//! Holds a collection of ::SelectionFlag values.
+//! \internal Holds a collection of ::SelectionFlag values.
 typedef FlagsTemplate<SelectionFlag> SelectionFlags;
+//! \endcond
 
 }
 

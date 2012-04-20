@@ -895,20 +895,6 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
         inc_nhbonds(&(hb->d),d,h);
 }
 
-/* Now a redundant function. It might find use at some point though. */
-static gmx_bool in_list(atom_id selection,int isize,atom_id *index)
-{
-    int i;
-    gmx_bool bFound;
-  
-    bFound=FALSE;
-    for(i=0; (i<isize) && !bFound; i++)
-        if(selection == index[i])
-            bFound=TRUE;
-  
-    return bFound;
-}
-
 static char *mkatomname(t_atoms *atoms,int i)
 {
     static char buf[32];
@@ -1154,21 +1140,6 @@ static t_gridcell ***init_grid(gmx_bool bBox,rvec box[],real rcut,ivec ngrid)
             snew((grid)[z][y],ngrid[XX]);
     }
     return grid;
-}
-
-static void control_pHist(t_hbdata *hb, int nframes)
-{
-    int i,j,k;
-    PSTYPE p;
-    for (i=0;i<hb->d.nrd;i++)
-        for (j=0;j<hb->a.nra;j++)
-            if (hb->per->pHist[i][j].len != 0)
-                for (k=hb->hbmap[i][j][0].n0; k<nframes; k++) {
-                    p = getPshift(hb->per->pHist[i][j], k);
-                    if (p>hb->per->nper)
-                        fprintf(stderr, "Weird stuff in pHist[%i][%i].p at frame %i: p=%i\n",
-                                i,j,k,p);
-                }
 }
 
 static void reset_nhbonds(t_donors *ddd)
@@ -1423,17 +1394,6 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
     g=NULL;
 }
 
-static void pbc_correct(rvec dx,matrix box,rvec hbox)
-{
-    int m;
-    for(m=DIM-1; m>=0; m--) {
-        if ( dx[m] < -hbox[m] )
-            rvec_inc(dx,box[m]);
-        else if ( dx[m] >= hbox[m] )
-            rvec_dec(dx,box[m]);
-    }
-}
-
 void pbc_correct_gem(rvec dx,matrix box,rvec hbox)
 {
     int m;
@@ -1540,10 +1500,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
         if (bDA || (!bDA && (rha2 <= rc2))) {
             rvec_sub(x[d],x[hh],r_dh);
             if (bBox) {
-                if (hb->bGem)
-                    pbc_correct_gem(r_dh,box,hbox);
-                else
-                    pbc_correct_gem(r_dh,box,hbox);
+                pbc_correct_gem(r_dh,box,hbox);
             }
 	
             if (!bDA)
@@ -2504,7 +2461,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                     hb->time[j]-hb->time[0],
                     ct[j],
                     ctdouble[j]);
-        fclose(fp);
+        xvgrclose(fp);
         sfree(ct);
         sfree(ctdouble);
         sfree(timedouble);
@@ -2747,7 +2704,7 @@ static void do_hbac(const char *fn,t_hbdata *hb,
                 fprintf(fp,"  %10g", fittedct[j]);
             fprintf(fp,"\n");
         }
-        fclose(fp);
+        xvgrclose(fp);
 
         sfree(ctdouble);
         sfree(timedouble);
@@ -2967,10 +2924,7 @@ static void dump_hbmap(t_hbdata *hb,
     fp = opt2FILE("-hbn",nfile,fnm,"w");
     if (opt2bSet("-g",nfile,fnm)) {
         fplog = ffopen(opt2fn("-g",nfile,fnm),"w");
-        if (bContact)
-            fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
-        else
-            fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+        fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
     }
     else
         fplog = NULL;

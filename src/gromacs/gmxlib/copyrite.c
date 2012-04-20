@@ -48,7 +48,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "macros.h"
-#include "time.h"
+#include <time.h>
 #include "random.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -216,6 +216,26 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
 
 void CopyRight(FILE *out,const char *szProgram)
 {
+  static const char * CopyrightText[] = {
+             "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
+             "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
+             "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
+             "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
+             "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
+             "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
+             "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
+             "Copyright (c) 2001-2010, The GROMACS development team at",
+             "Uppsala University & The Royal Institute of Technology, Sweden.",
+             "check out http://www.gromacs.org for more information.\n"
+  };
+
+  static const char * GPLText[] = {
+              "This program is free software; you can redistribute it and/or",
+              "modify it under the terms of the GNU General Public License",
+              "as published by the Free Software Foundation; either version 2",
+              "of the License, or (at your option) any later version."
+  };
+
   /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the 
    * name of a file. Otherwise, we won't be able to find the library dir.
    */
@@ -639,4 +659,5 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "FFT Library:      unknown\n");
 #endif
+
 }

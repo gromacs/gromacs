@@ -380,11 +380,11 @@ void GmxOpenMMPlatformOptions::print()
 class OpenMMData
 {
 public:
-    System* system;      /*! The system to simulate. */
-    Context* context;   /*! The OpenMM context in which the simulation is carried out. */
-    Integrator* integrator; /*! The integrator used in the simulation. */
-    gmx_bool removeCM;          /*! If \true remove venter of motion, false otherwise. */
-    GmxOpenMMPlatformOptions *platformOpt; /*! Platform options. */
+    System* system;      //!< The system to simulate.
+    Context* context;   //!< The OpenMM context in which the simulation is carried out.
+    Integrator* integrator; //!< The integrator used in the simulation.
+    gmx_bool removeCM;          //!< If true, remove center of mass motion, false otherwise.
+    GmxOpenMMPlatformOptions *platformOpt; //!< Platform options.
 };
 
 /*!
@@ -518,7 +518,6 @@ static void checkGmxOptions(FILE* fplog, GmxOpenMMPlatformOptions *opt,
                             t_inputrec *ir, gmx_localtop_t *top,
                             t_forcerec *fr, t_state *state)
 {
-    char    warn_buf[STRLEN];
     int     i, j, natoms;
     double  c6, c12;
     double  sigma_ij=0, sigma_ji=0, sigma_ii=0, sigma_jj=0, sigma_comb;
@@ -783,7 +782,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (pluginDir != NULL && *pluginDir != '\0')
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(pluginDir);
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = pluginDir;
@@ -801,7 +800,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(OPENMM_PLUGIN_DIR);
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = OPENMM_PLUGIN_DIR;
@@ -812,7 +811,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             if (!hasLoadedPlugins)
             {
                 loadedPlugins = Platform::loadPluginsFromDirectory(Platform::getDefaultPluginsDirectory());
-                if (loadedPlugins.size() > 0)
+                if (!loadedPlugins.empty())
                 {
                     hasLoadedPlugins = true;
                     usedPluginDir = Platform::getDefaultPluginsDirectory();

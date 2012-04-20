@@ -115,18 +115,18 @@
 
 #include <math.h>
 
-#include <macros.h>
-#include <maths.h>
-#include <pbc.h>
-#include <physics.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "macros.h"
+#include "maths.h"
+#include "pbc.h"
+#include "physics.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "selelem.h"
 
@@ -477,7 +477,6 @@ static void
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_insolidangle *d = (t_methoddata_insolidangle *)data;
     int                        b;
 
     out->u.g->isize = 0;
@@ -830,7 +829,7 @@ store_surface_point(t_methoddata_insolidangle *surf, rvec x)
     real theta, phi;
     real pdeltamax, tmax;
     real theta1, theta2, pdelta1, pdelta2;
-    int  tbin, pbin, bin;
+    int  tbin;
 
     theta = acos(x[ZZ]);
     phi = atan2(x[YY], x[XX]);

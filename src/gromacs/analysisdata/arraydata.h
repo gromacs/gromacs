@@ -41,7 +41,7 @@
 
 #include <vector>
 
-#include "../fatalerror/gmxassert.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractdata.h"
 #include "dataframe.h"
@@ -55,7 +55,11 @@ namespace gmx
  * This class implements a subclass of AbstractAnalysisData that presents an
  * in-memory array through the AbstractAnalysisData interface.  Subclasses
  * should initialize the in-memory array through the provided protected member
- * functions.
+ * functions.  This class provides public accessor methods for read access to
+ * the data.
+ *
+ * Public accessor methods in this class do not throw, but assert if data is
+ * accessed before it is available.
  *
  * \todo
  * Add methods to take full advantage of AnalysisDataValue features.
@@ -97,28 +101,52 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         }
 
     protected:
+        /*! \brief
+         * Initializes an empty array data object.
+         *
+         * \throws std::bad_alloc if out of memory.
+         */
         AbstractAnalysisArrayData();
 
         /*! \brief
          * Sets the number of columns in the data array.
          *
+         * \param[in] ncols  Number of columns in the data.
+         *
          * Cannot be called after allocateValues().
+         *
+         * See AbstractAnalysisData::setColumnCount() for exception behavior.
          */
         void setColumnCount(int ncols);
         /*! \brief
          * Sets the number of rows in the data array.
          *
+         * \param[in] nrows  Number of rows in the data.
+         *
          * Cannot be called after allocateValues().
+         *
+         * Does not throw.
          */
         void setRowCount(int nrows);
         /*! \brief
          * Allocates memory for the values.
          *
+         * \throws std::bad_alloc if memory allocation fails.
+         *
          * setColumnCount() and setRowCount() must have been called.
+         *
+         * Strong exception safety guarantee.
          */
         void allocateValues();
         /*! \brief
          * Sets the values reported as x values for frames.
+         *
+         * \param[in] start  x value for the first frame.
+         * \param[in] step   Step between x values of successive frames.
+         *
+         * Must not be called after valuesReady().
+         *
+         * Does not throw.
          */
         void setXAxis(real start, real step);
         //! Returns a reference to a given array element.
@@ -131,6 +159,12 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         }
         /*! \brief
          * Sets the value of an element in the array.
+         *
+         * \param[in] row  Zero-based row index for the value.
+         * \param[in] col  Zero-based column index for the value.
+         * \param[in] val  Value to set in the given location.
+         *
+         * Does not throw.
          */
         void setValue(int row, int col, real val)
         {
@@ -139,8 +173,11 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         /*! \brief
          * Notifies modules of the data.
          *
+         * \throws    unspecified Any exception thrown by attached data modules
+         *      in data notification methods.
+         *
          * This function should be called once the values in the array
-         * have been initialized. The values should not be changed after this
+         * have been initialized.  The values should not be changed after this
          * function has been called.
          */
         void valuesReady();
@@ -150,6 +187,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          *
          * \param[in]     src  Object to copy data from.
          * \param[in,out] dest Empty array data object to copy data to.
+         * \throws std::bad_alloc if memory allocation for \p dest fails.
          *
          * \p dest should not have previous contents.
          */
@@ -172,9 +210,16 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 /*! \brief
  * Simple in-memory data array.
  *
- * This class simply exposes the protected functions of
- * AbstractAnalysisArrayData to allow construction of simple in-memory data
- * arrays for input into data modules.
+ * This class is a simple alternative to AnalysisData for in-memory data arrays
+ * that are constructed in-place.
+ *
+ * Public accessor methods in this class do not throw, but assert if data is
+ * accessed before it is available.
+ *
+ * \if libapi
+ * This class exposes the protected functions of AbstractAnalysisArrayData for
+ * users.
+ * \endif
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -182,6 +227,11 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 class AnalysisArrayData : public AbstractAnalysisArrayData
 {
     public:
+        /*! \brief
+         * Initializes an empty array data object.
+         *
+         * \throws std::bad_alloc if out of memory.
+         */
         AnalysisArrayData() {}
 
         // TODO: These statements cause Doxygen to generate confusing
