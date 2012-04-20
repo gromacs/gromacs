@@ -727,13 +727,14 @@ energy group pairs.
 <h3>Ewald</h3>
 <dl>
 <dt><b>fourierspacing: (0.12) [nm]</b></dt>
-<dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
-For ordinary Ewald the spacing times the box dimensions determines the
-highest magnitude to use in each direction. In all cases
-each direction can be overridden by entering a non-zero value for
-<b>fourier_n[xyz]</b>.
+<dd>For ordinary Ewald, the ratio of the box dimensions and the spacing
+determines a lower bound for the number of wave vectors to use in each
+(signed) direction. For PME and PPPM, that ratio determines a lower bound
+for the number of Fourier-space grid points that will be used along that
+axis. In all cases, the number for each direction can be overridden by
+entering a non-zero value for <b>fourier_n[xyz]</b>.
 For optimizing the relative load of the particle-particle interactions
-and the mesh part of PME it is useful to know that
+and the mesh part of PME, it is useful to know that
 the accuracy of the electrostatics remains nearly constant
 when the Coulomb cut-off and the PME grid spacing are scaled
 by the same factor.</dd>
