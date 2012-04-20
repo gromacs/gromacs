@@ -2,6 +2,10 @@
 #
 # Copy this file to whatever directory you are using for your own software
 #
+# Usage:
+# $ source /path/to/GMXRC
+# $ make -f Makefile.pkg
+#
 #change the name of the program here
 NAME=template
 
@@ -23,8 +27,8 @@ else
 endif
 
 #get CPPFLAGS and LDFLAGS from pkg-config
-CPPFLAGS=`pkg-config --cflags libmd`
-LDFLAGS=`pkg-config --libs libmd`
+CPPFLAGS=`pkg-config --cflags libgmx`
+LDFLAGS=`pkg-config --libs libgmx`
 
 #generate a list of object (.o) files
 OBJS=$(patsubst %.c,%.o,$(NAME).c $(EXTRA_SRC))
