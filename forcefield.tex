@@ -2278,7 +2278,7 @@ fourierspacing  = 0.6
 ewald-rtol      = 1e-5
 \end{verbatim}
 
-The {\tt fourierspacing} parameter times the box dimensions determines
+The ratio of the box dimensions and the {\tt fourierspacing} parameter determines
 the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
 direction. With a 3-nm cubic box this example would use $11$ wave vectors
 (from $-5$ to $5$) in each direction.  The {\tt ewald-rtol} parameter
@@ -2321,7 +2321,8 @@ ewald-rtol      = 1e-5
 \end{verbatim}
 
 In this case the {\tt fourierspacing} parameter determines the maximum
-spacing for the FFT grid and {\tt pme-order} controls the
+spacing for the FFT grid (i.e. minimum number of grid points),
+and {\tt pme-order} controls the
 interpolation order. Using fourth-order (cubic) interpolation and this
 spacing should give electrostatic energies accurate to about
 $5\cdot10^{-3}$. Since the Lennard-Jones energies are not this
