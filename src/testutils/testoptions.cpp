@@ -46,7 +46,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/options/cmdlineparser.h"
+#include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"

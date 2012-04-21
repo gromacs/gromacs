@@ -33,9 +33,9 @@
  * Implements gmx::CommandLineHelpWriter.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#include "gromacs/options/cmdlinehelpwriter.h"
+#include "cmdlinehelpwriter.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -62,7 +62,7 @@ namespace
 /*! \internal \brief
  * Helper object for writing section descriptions to help.
  *
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class DescriptionWriter : public OptionsVisitor
 {
@@ -101,7 +101,7 @@ void DescriptionWriter::visitSubSection(const Options &section)
 /*! \internal \brief
  * Helper object for writing help for file parameters.
  *
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
 {
@@ -202,7 +202,7 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
 /*! \internal \brief
  * Helper object for writing help for non-file parameters.
  *
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class ParameterWriter : public OptionsVisitor
 {

@@ -45,8 +45,8 @@
 #include "statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/options/cmdlinehelpwriter.h"
-#include "gromacs/options/cmdlineparser.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
