@@ -51,6 +51,7 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
@@ -491,24 +492,14 @@ SelectionCollection::parseFromFile(const std::string &filename,
                                    SelectionList *output)
 {
     yyscan_t scanner;
-    FILE *fp;
 
     _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
                         _impl->_bExternalGroupsSet,
                         _impl->_grps);
-    fp = ffopen(filename.c_str(), "r");
-    _gmx_sel_set_lex_input_file(scanner, fp);
-    // TODO: Use RAII
-    try
-    {
-        _impl->runParser(scanner, -1, output);
-    }
-    catch (...)
-    {
-        ffclose(fp);
-        throw;
-    }
-    ffclose(fp);
+    File file(filename, "r");
+    _gmx_sel_set_lex_input_file(scanner, file.handle());
+    _impl->runParser(scanner, -1, output);
+    file.close();
 }
 
 
