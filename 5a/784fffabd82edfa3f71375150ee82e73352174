@@ -1,0 +1,8 @@
+Code-Review+1: David van der Spoel <davidvanderspoel@gmail.com>
+Code-Review+2: Erik Lindahl <erik@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Sun, 22 Apr 2012 18:41:33 +0200
+Reviewed-on: https://gerrit.gromacs.org/722
+Project: gromacs
+Branch: refs/heads/release-4-6
