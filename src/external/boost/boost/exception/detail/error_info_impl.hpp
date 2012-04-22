@@ -30,7 +30,7 @@ boost
 
             protected:
 
-            ~error_info_base() throw()
+            virtual ~error_info_base() throw()
                 {
                 }
             };
@@ -46,7 +46,7 @@ boost
         typedef T value_type;
 
         error_info( value_type const & value );
-        ~error_info() throw();
+        virtual ~error_info() throw();
 
         value_type const &
         value() const
