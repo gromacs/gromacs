@@ -120,6 +120,7 @@ std::string formatErrorMessage(const std::exception &ex)
         file = *boost::get_error_info<boost::throw_file>(*gmxEx);
         line = *boost::get_error_info<boost::throw_line>(*gmxEx);
     }
+    // TODO: Treat errno information in boost exceptions
     return internal::formatFatalError(title, ex.what(), func, file, line);
 }
 
