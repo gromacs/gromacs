@@ -42,6 +42,8 @@
 #include <exception>
 #include <string>
 
+#include <boost/exception/errinfo_api_function.hpp>
+#include <boost/exception/errinfo_errno.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
 #include <boost/throw_exception.hpp>
@@ -248,6 +250,37 @@ if (value < 0)
  */
 #define GMX_THROW(e) \
     BOOST_THROW_EXCEPTION((e))
+
+/*! \brief
+ * Macro for throwing an exception based on errno.
+ *
+ * \param[in] e       Exception object to throw.
+ * \param[in] syscall Name of the syscall that returned the error.
+ * \param[in] errno   errno value returned by the syscall.
+ *
+ * This macro provides a convenience interface for throwing an exception to
+ * report an error based on a errno value.  In addition to adding the necessary
+ * information to the exception object, the macro also ensures that \p errno is
+ * evaluated before, e.g., the constructor of \p e may call other functions
+ * that could overwrite the errno value.
+ * \p e should evaluate to an instance of an object derived from
+ * GromacsException.
+ *
+ * Typical usage (note that gmx::File wraps this particular case):
+ * \code
+FILE *fp = fopen("filename.txt", "r");
+if (fp == NULL)
+{
+    GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
+}
+ * \endcode
+ */
+#define GMX_THROW_WITH_ERRNO(e, syscall, err) \
+    do { \
+        int stored_errno_ = (err); \
+        GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
+                      << boost::errinfo_api_function(syscall)); \
+    } while(0)
 
 /*! \brief
  * Formats a standard error message for reporting an error.

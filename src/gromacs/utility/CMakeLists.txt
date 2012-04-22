@@ -6,6 +6,7 @@ set(UTILITY_PUBLIC_HEADERS
     common.h
     errorcodes.h
     exceptions.h
+    file.h
     flags.h
     format.h
     gmxassert.h
