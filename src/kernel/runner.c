@@ -363,7 +363,7 @@ static int get_nthreads_mpi(int nthreads_requested, t_inputrec *inputrec,
 /* Increase nstlist until the non-bonded cost increases more than this factor */
 #define NBNXN_GPU_LIST_OK_FAC   1.25
 /* Don't increase nstlist beyond a non-bonded cost increases of this factor */
-#define NBNXN_GPU_LIST_MAX_FAC  1.5
+#define NBNXN_GPU_LIST_MAX_FAC  1.40
 
 /* Try to increase nstlist when running on a GPU */
 static void increase_nstlist(FILE *fp,t_commrec *cr,
