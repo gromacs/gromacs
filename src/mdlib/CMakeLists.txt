@@ -12,7 +12,7 @@ endif()
 # due to a compiler bug gcc 4.4.x crashses on force.c and constr.c with -O3,
 # but strangely not with -O2 + all extra -O3 flags
 if(GMX_OPENMP AND CMAKE_COMPILER_IS_GNUCC AND
-   C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.5.999")
+   C_COMPILER_VERSION VERSION_GREATER "4.3.999" AND C_COMPILER_VERSION VERSION_LESS "4.4.999")
     if(GMX_NO_GCC44_BUG_WORKAROUND)
         message(WARNING "gcc ${C_COMPILER_VERSION} detected, but workaround for optimization bug is disabled")
     else()
