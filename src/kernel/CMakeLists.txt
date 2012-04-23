@@ -37,7 +37,7 @@ set(GMXPREPROCESS_SOURCES
 set(MDRUN_SOURCES 
     gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c gmx_membed.c
+    md.c         mdrun.c    genalg.c membed.c
     md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
