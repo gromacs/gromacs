@@ -386,7 +386,6 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	nmol=count=0;
 	mem_a=&(mem_p->mem_at);
 	snew(mol_id,mem_a->nr);
-/*	snew(index,mem_a->nr); */
 	zmin=pos_ins->xmax[ZZ];
 	zmax=pos_ins->xmin[ZZ];
 	for(i=0;i<mem_a->nr;i++)
@@ -413,7 +412,6 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 			if(z<zmin)					zmin=z;
 			if(z>zmax)					zmax=z;
 
-/*			index[count]=at;*/
 			count++;
 		}
 	}
@@ -421,10 +419,6 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 	mem_p->nmol=nmol;
 	srenew(mol_id,nmol);
 	mem_p->mol_id=mol_id;
-/*	srenew(index,count);*/
-/*	mem_p->mem_at.nr=count;*/
-/*	sfree(mem_p->mem_at.index);*/
-/*	mem_p->mem_at.index=index;*/
 
 	if((zmax-zmin)>(box[ZZ][ZZ]-0.5))
 		gmx_fatal(FARGS,"Something is wrong with your membrane. Max and min z values are %f and %f.\n"
@@ -437,8 +431,6 @@ int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_ins_t *
 
 	/*number of membrane molecules in protein box*/
 	nmolbox = count/mtop->molblock[block].natoms_mol;
-	/*mem_area = box[XX][XX]*box[YY][YY]-box[XX][YY]*box[YY][XX];
-	mem_p->lip_area = 2.0*mem_area/(double)mem_p->nmol;*/
 	mem_area = (pos_ins->xmax[XX]-pos_ins->xmin[XX])*(pos_ins->xmax[YY]-pos_ins->xmin[YY]);
 	mem_p->lip_area = 2.0*mem_area/(double)nmolbox;
 
@@ -536,7 +528,6 @@ int gen_rm_list(rm_t *rm_p,t_block *ins_at,t_block *rest_at,t_pbc *pbc, gmx_mtop
 						bRM=FALSE;
 				if(bRM)
 				{
-					/*fprintf(stderr,"%d wordt toegevoegd\n",mol_id);*/
 					rm_p->mol[nrm]=mol_id;
 					rm_p->block[nrm]=block;
 					nrm++;
@@ -891,10 +882,10 @@ void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
 		}
 	}
 
-	fclose(fpout);
+	ffclose(fpout);
 	/* use ffopen to generate backup of topinout */
 	fpout=ffopen(topfile,"w");
-	fclose(fpout);
+	ffclose(fpout);
 	rename(TEMP_FILENM,topfile);
 #undef TEMP_FILENM
 }
