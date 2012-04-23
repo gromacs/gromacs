@@ -127,9 +127,9 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
 
     _options.setDescription(desc);
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnAngle).defaultValueIfSet("angle"));
-    _options.addOption(FileNameOption("od").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("od").filetype(eftPlot).outputFile()
                            .store(&_fnDump).defaultValueIfSet("angdump"));
 
     _options.addOption(StringOption("g1").enumValue(cGroup1TypeEnum)

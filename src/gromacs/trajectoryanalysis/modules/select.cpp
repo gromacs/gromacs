@@ -304,15 +304,15 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
 
     _options.setDescription(desc);
 
-    _options.addOption(FileNameOption("os").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
                            .store(&_fnSize).defaultValueIfSet("size"));
-    _options.addOption(FileNameOption("oc").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
                            .store(&_fnFrac).defaultValueIfSet("frac"));
-    _options.addOption(FileNameOption("oi").filetype(eftGenericData).writeOnly()
+    _options.addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
                            .store(&_fnIndex).defaultValueIfSet("index"));
-    _options.addOption(FileNameOption("on").filetype(eftIndex).writeOnly()
+    _options.addOption(FileNameOption("on").filetype(eftIndex).outputFile()
                            .store(&_fnNdx).defaultValueIfSet("index"));
-    _options.addOption(FileNameOption("om").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("om").filetype(eftPlot).outputFile()
                            .store(&_fnMask).defaultValueIfSet("mask"));
 
     _options.addOption(SelectionOption("select").required().multiValue()
