@@ -180,15 +180,15 @@ TrajectoryAnalysisRunnerCommon::initOptions()
 
     // Add common file name arguments.
     options.addOption(FileNameOption("f")
-                          .filetype(eftTrajectory).readOnly()
+                          .filetype(eftTrajectory).inputFile()
                           .store(&_impl->_trjfile)
                           .description("Input trajectory"));
     options.addOption(FileNameOption("s")
-                          .filetype(eftTopology).readOnly()
+                          .filetype(eftTopology).inputFile()
                           .store(&_impl->_topfile)
                           .description("Input topology"));
     options.addOption(FileNameOption("n")
-                          .filetype(eftIndex).readOnly()
+                          .filetype(eftIndex).inputFile()
                           .store(&_impl->_ndxfile)
                           .description("Extra index groups"));
 

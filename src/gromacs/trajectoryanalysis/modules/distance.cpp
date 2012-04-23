@@ -83,7 +83,7 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
 
     _options.setDescription(desc);
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnDist).defaultValue("dist"));
     _options.addOption(SelectionOption("select").required().valueCount(2)
                            .store(_sel));

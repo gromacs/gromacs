@@ -76,17 +76,17 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
          */
         MyClass &filetype(OptionFileType type)
         { filetype_ = type; return me(); }
-        //! Tells that the file provided by this option is used read-only.
-        MyClass &readOnly()
+        //! Tells that the file provided by this option is used for input only.
+        MyClass &inputFile()
         { bRead_ = true; bWrite_ = false; return me(); }
-        //! Tells that the file provided by this option is used write-only.
-        MyClass &writeOnly()
+        //! Tells that the file provided by this option is used for output only.
+        MyClass &outputFile()
         { bRead_ = false; bWrite_ = true; return me(); }
         /*! \brief
-         * Tells that the file provided by this option is used for reading and
-         * writing.
+         * Tells that the file provided by this option is used for input and
+         * output both.
          */
-        MyClass &readWrite()
+        MyClass &inputOutputFile()
         { bRead_ = bWrite_ = true; return me(); }
         /*! \brief
          * Tells that the file will be looked up in library directories in
