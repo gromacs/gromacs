@@ -64,7 +64,6 @@
 #include "disre.h"
 #include "orires.h"
 #include "dihre.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"

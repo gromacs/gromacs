@@ -479,8 +479,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
          * Use the box from last timestep since we already called update().
          */
         
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
-                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,0.0);
         
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
