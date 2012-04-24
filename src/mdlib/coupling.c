@@ -212,10 +212,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     alpha *= ekind->tcstat[0].ekinscalef_nhc;
     msmul(ekind->ekin,alpha,ekinmod);  
     
-    /* for now, we use Elr = 0, because if you want to get it right, you
-       really should be using PME. Maybe print a warning? */
-    
-    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres,0.0) + pcorr;
+    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres) + pcorr;
     
     vol = det(box);
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
@@ -232,10 +229,10 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
  */
 
 real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
-               tensor pres,real Elr)
+               tensor pres)
 {
     int  n,m;
-    real fac,Plr;
+    real fac;
     
     if (ePBC==epbcNONE || (ePBC==epbcXY && nwall!=2))
         clear_mat(pres);
@@ -245,21 +242,10 @@ real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
          * het systeem...       
          */
         
-        /* Long range correction for periodic systems, see
-         * Neumann et al. JCP
-         * divide by 6 because it is multiplied by fac later on.
-         * If Elr = 0, no correction is made.
-         */
-        
-        /* This formula should not be used with Ewald or PME, 
-         * where the full long-range virial is calculated. EL 990823
-         */
-        Plr = Elr/6.0;
-        
         fac=PRESFAC*2.0/det(box);
         for(n=0; (n<DIM); n++)
             for(m=0; (m<DIM); m++)
-                pres[n][m]=(ekin[n][m]-vir[n][m]+Plr)*fac;
+                pres[n][m] = (ekin[n][m] - vir[n][m])*fac;
         
         if (debug) {
             pr_rvecs(debug,0,"PC: pres",pres,DIM);
