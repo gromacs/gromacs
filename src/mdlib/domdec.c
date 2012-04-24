@@ -7221,11 +7221,14 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
     gmx_ddbox_t ddbox;
     int d,dim,np;
     real inv_cell_size;
+    int LocallyLimited;
 
     dd = cr->dd;
 
     set_ddbox(dd,FALSE,cr,ir,state->box,
               TRUE,&dd->comm->cgs_gl,state->x,&ddbox);
+
+    LocallyLimited = 0;
 
     for(d=0; d<dd->ndim; d++)
     {
@@ -7237,10 +7240,32 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
             inv_cell_size *= DD_PRES_SCALE_MARGIN;
         }
 
-        np = 1 + (int)(cutoff_req*inv_cell_size);
+        np = 1 + (int)(cutoff_req*inv_cell_size*ddbox.skew_fac[dim]);
 
-        if (dim < ddbox.npbcdim && dd->comm->eDLB != edlbNO &&
-           dd->comm->cd[d].np_dlb > 0 && np > dd->comm->cd[d].np_dlb)
+        if (dd->comm->eDLB != edlbNO && dim < ddbox.npbcdim &&
+            dd->comm->cd[d].np_dlb > 0)
+        {
+            if (np > dd->comm->cd[d].np_dlb)
+            {
+                return FALSE;
+            }
+
+            /* If a current local cell size is smaller than the requested
+             * cut-off, we could still fix it, but this gets very complicated.
+             * Without fixing here, we might actually need more checks.
+             */
+            if ((dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim])*ddbox.skew_fac[dim] > dd->comm->cd[d].np_dlb*cutoff_req)
+            {
+                LocallyLimited = 1;
+            }
+        }
+    }
+
+    if (dd->comm->eDLB != edlbNO)
+    {
+        gmx_sumi(1,&LocallyLimited,cr);
+
+        if (LocallyLimited > 0)
         {
             return FALSE;
         }
