@@ -547,8 +547,17 @@ void please_cite(FILE *fp,const char *key)
       "M. Hoefling, N. Lima, D. Haenni, C.A.M. Seidel, B. Schuler, H. Grubmuller",
       "Structural Heterogeneity and Quantitative FRET Efficiency Distributions of Polyprolines through a Hybrid Atomistic Simulation and Monte Carlo Approach",
       "PLoS ONE",
-      6, 2011, "e19791"
-    }
+      6, 2011, "e19791" },
+    { "Hockney1988",
+      "R. W. Hockney and J. W. Eastwood",
+      "Computer simulation using particles",
+      "IOP, Bristol",
+      1, 1988, "1" },
+    { "Ballenegger2012",
+      "V. Ballenegger, J.J. Cerda, and C. Holm",
+      "How to Convert SPME to P3M: Influence Functions and Error Estimates",
+      "J. Chem. Theory Comput.",
+      0, 2012, "doi:10.1021/ct2001792" }
   };
 #define NSTR (int)asize(citedb)
   
