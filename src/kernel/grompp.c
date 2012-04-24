@@ -1571,10 +1571,6 @@ int main (int argc, char *argv[])
       svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
     max_spacing = calc_grid(stdout,box,opts->fourierspacing,
                             &(ir->nkx),&(ir->nky),&(ir->nkz));
-    if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
-        set_warning_line(wi,mdparin,-1);
-        warning_note(wi,"Grid spacing larger then 0.1 while using PPPM.");
-    }
   }
 
   if (ir->ePull != epullNO)

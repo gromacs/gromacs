@@ -493,7 +493,7 @@ and is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.</dd>
 
 <dt><b><!--Idx-->PME<!--EIdx--></b></dt>
-<dd>Fast Particle-Mesh Ewald electrostatics. Direct space is similar
+<dd>Fast smooth Particle-Mesh Ewald (SPME) electrostatics. Direct space is similar
 to the Ewald sum, while the reciprocal part is performed with
 FFTs. Grid dimensions are controlled with <b>fourierspacing</b> and the
 interpolation order with <b>pme-order</b>. With a grid spacing of 0.1
@@ -503,16 +503,11 @@ might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.</dd>
 
-<dt><b><!--Idx-->PPPM<!--EIdx--></b></dt>
-<dd>Particle-Particle Particle-Mesh algorithm for long range
-electrostatic interactions.
-Use for example <b>rlist</b><tt>=0.9</tt>, <b>rcoulomb</b><tt>=0.9</TT>.
-The grid dimensions are controlled by <b>fourierspacing</b>.
-Reasonable grid spacing for PPPM is 0.05-0.1 nm.
-See <tt>Shift</tt> for the details of the particle-particle potential.
-<br>
-NOTE: PPPM is not functional in the current version, but we plan to implement
-PPPM through a small modification of the PME code.</dd>
+<dt><b><!--Idx-->P3M-AD<!--EIdx--></b></dt>
+<dd>Particle-Particle Particle-Mesh algorithm with analytical derivative
+for for long range electrostatic interactions. The method and code
+is identical to SPME, except that the influence function is optimized
+for the grid. This gives a slight performance in accuracy.</dd>
 
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
@@ -726,7 +721,7 @@ energy group pairs.
 <h3>Ewald</h3>
 <dl>
 <dt><b>fourierspacing: (0.12) [nm]</b></dt>
-<dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
+<dd>The maximum grid spacing for the FFT grid when using PME or P3M.
 For ordinary Ewald the spacing times the box dimensions determines the
 highest magnitude to use in each direction. In all cases
 each direction can be overridden by entering a non-zero value for
@@ -739,7 +734,7 @@ by the same factor.</dd>
 
 <dt><b>fourier-nx (0) ; fourier-ny (0) ; fourier-nz: (0)</b></dt>
 <dd>Highest magnitude of wave vectors in reciprocal space when using Ewald.</dd>
-<dd>Grid size when using PPPM or PME. These values override
+<dd>Grid size when using PME or P3M. These values override
 <b>fourierspacing</b> per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.</dd>
 

@@ -700,8 +700,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
 
   clear_mat(ekin);
   enerd->term[F_PRES] =
-    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,
-	      (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,0.0);
 
   sum_dhdl(enerd,ems->s.lambda,inputrec);
 

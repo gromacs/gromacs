@@ -268,6 +268,7 @@ typedef struct gmx_pme {
     gmx_bool bPPnode;        /* Node also does particle-particle forces */
     gmx_bool bFEP;           /* Compute Free energy contribution */
     int nkx,nky,nkz;         /* Grid dimensions */
+    gmx_bool p3m;            /* Do P3M: optimize the influence function */
     int pme_order;
     real epsilon_r;
 
@@ -2427,8 +2428,8 @@ void make_dft_mod(real *mod,real *data,int ndata)
 }
 
 
-
-void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
+static void make_bspline_moduli(splinevec bsp_mod,
+                                int nx,int ny,int nz,int order)
 {
   int nmax=max(nx,max(ny,nz));
   real *data,*ddata,*bsp_data;
@@ -2473,6 +2474,84 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(ddata);
   sfree(bsp_data);
 }
+
+
+/* Return the P3M optimal influence function */
+static double do_p3m_influence(double z, int order)       
+{
+    double z2,z4;
+
+    z2 = z*z;
+    z4 = z2*z2;
+
+    switch(order)
+    {
+    case 2:
+        return 1.0 - 2.0*z2/3.0;
+        break;
+    case 3: 
+        return 1.0 - z2 + 2.0*z4/15.0; 
+        break; 
+    case 4: 
+        return 1.0 - 4.0*z2/3.0 + 2.0*z4/5.0 + 4.0*z2*z4/315.0; 
+        break; 
+    case 5: 
+        return 1.0 - 5.0*z2/3.0 + 7.0*z4/9.0 - 17.0*z2*z4/189.0 + 2.0*z4*z4/2835.0;   
+        break;
+    case 6:
+        return 1.0 - 2.0*z2 + 19.0*z4/15.0 - 256.0*z2*z4/945.0 + 62.0*z4*z4/4725.0 + 4.0*z2*z4*z4/155925.0;
+        break;
+    case 7:
+        return 1.0 - 7.0*z2/3.0 + 28.0*z4/15.0 - 16.0*z2*z4/27.0 + 26.0*z4*z4/405.0 - 2.0*z2*z4*z4/1485.0 + 4.0*z4*z4*z4/6081075.0;
+    case 8:
+        return 1.0 - 8.0*z2/3.0 + 116.0*z4/45.0 - 344.0*z2*z4/315.0 + 914.0*z4*z4/4725.0 - 248.0*z4*z4*z2/22275.0 + 21844.0*z4*z4*z4/212837625.0 - 8.0*z4*z4*z4*z2/638512875.0;
+        break;
+    }
+
+    return 0.0;
+}
+
+/* Calculate the P3M B-spline moduli for one dimension */
+static void make_p3m_bspline_moduli_dim(real *bsp_mod,int n,int order)
+{
+    double zarg,zai,sinzai,infl;
+    int    maxk,i;
+
+    if (order > 8)
+    {
+        gmx_fatal(FARGS,"The current P3M code only supports orders up to 8");
+    }
+
+    zarg = M_PI/n;
+
+    maxk = (n + 1)/2;
+
+    for(i=-maxk; i<0; i++)
+    {
+        zai    = zarg*i;
+        sinzai = sin(zai);
+        infl   = do_p3m_influence(sinzai,order);
+        bsp_mod[n+i] = infl*infl*pow(sinzai/zai,-2.0*order);
+    }
+    bsp_mod[0] = 1.0;
+    for(i=1; i<maxk; i++)
+    {
+        zai    = zarg*i;
+        sinzai = sin(zai);
+        infl   = do_p3m_influence(sinzai,order);
+        bsp_mod[i] = infl*infl*pow(sinzai/zai,-2.0*order);
+    }
+}
+
+/* Calculate the P3M B-spline moduli */
+static void make_p3m_bspline_moduli(splinevec bsp_mod,
+                                    int nx,int ny,int nz,int order)
+{
+    make_p3m_bspline_moduli_dim(bsp_mod[XX],nx,order);
+    make_p3m_bspline_moduli_dim(bsp_mod[YY],ny,order);
+    make_p3m_bspline_moduli_dim(bsp_mod[ZZ],nz,order);
+}
+
 
 static void setup_coordinate_communication(pme_atomcomm_t *atc)
 {
@@ -2938,6 +3017,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nkx         = ir->nkx;
     pme->nky         = ir->nky;
     pme->nkz         = ir->nkz;
+    pme->p3m         = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
 
@@ -3108,7 +3188,16 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->cfftgridB          = NULL;
     }
 
-    make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    if (!pme->p3m)
+    {
+        /* Use plain SPME B-spline interpolation */
+        make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    }
+    else
+    {
+        /* Use the P3M grid-optimized influence function */
+        make_p3m_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    }
 
     /* Use atc[0] for spreading */
     init_atomcomm(pme,&pme->atc[0],cr,nnodes_major > 1 ? 0 : 1,TRUE);
