@@ -3087,7 +3087,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
-                            (Flags & MD_APPENDFILES));
+                            (Flags & MD_APPENDFILES),
+			    (Flags & MD_APPENDFILESSET));
 
             if (bReadRNG)
             {
@@ -3759,6 +3760,7 @@ int gmx_membed(int argc,char *argv[])
 	Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
 	Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
 	Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0);
+	Flags = Flags | (opt2parg_bSet("-append", asize(pa),pa) ? MD_APPENDFILESSET : 0); 
 	Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0);
 	Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 
