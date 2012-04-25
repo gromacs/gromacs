@@ -131,7 +131,7 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
 void SelectionOptionStorage::processAll()
 {
-    if ((hasFlag(efRequired) || hasFlag(efSet)) && valueCount() == 0)
+    if ((isRequired() || isSet()) && valueCount() == 0)
     {
         GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 

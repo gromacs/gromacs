@@ -96,6 +96,8 @@ class AbstractOptionStorage
         bool isBoolean() const;
         //! Returns true if the option is a hidden option.
         bool isHidden() const { return hasFlag(efHidden); }
+        //! Returns true if the option is required.
+        bool isRequired() const { return hasFlag(efRequired); }
         //! Returns the name of the option.
         const std::string &name() const { return _name; }
         //! Returns the description of the option.

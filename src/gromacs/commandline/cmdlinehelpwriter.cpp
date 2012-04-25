@@ -293,7 +293,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
  */
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
-    : options_(options)
+    : options_(options), bShowDescriptions_(false), bShowHidden_(false)
 {
 }
 

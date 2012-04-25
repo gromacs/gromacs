@@ -285,7 +285,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
             // TODO: This is a bit hairy, as it indirectly calls a virtual function.
             commitValues();
         }
-        else if (_ownedValues.get() == NULL && _store != NULL)
+        else if (_ownedValues.get() != NULL && _store != NULL)
         {
             _values->clear();
             int count = (settings.isVector() ?
