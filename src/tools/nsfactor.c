@@ -46,6 +46,12 @@
 #include "vec.h"
 #include "nsfactor.h"
 
+void check_binwidth(real binwidth) {
+    real smallest_bin=0.1;
+    if (binwidth<smallest_bin)
+        gmx_fatal(FARGS,"Binwidth shouldnt be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
+}
+
 void normalize_probability(int n,double *a){
     int i;
     double norm=0.0;
@@ -131,12 +137,21 @@ gmx_sans_t *gmx_sans_init (t_topology *top, gmx_nentron_atomic_structurefactors_
     return (gmx_sans_t *) gsans;
 }
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_sans_t *gsans, rvec *x, atom_id *index, int isize, double binwidth, gmx_bool bMC, gmx_large_int_t nmc, unsigned int seed) {
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
+                            gmx_sans_t *gsans,
+                            rvec *x,
+                            matrix box,
+                            atom_id *index,
+                            int isize,
+                            double binwidth,
+                            gmx_bool bMC,
+                            real mcover,
+                            unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
-    rvec        xmin, xmax;
+    rvec        dist;
     double      rmax;
-    int         i,j,d;
-    int         mc;
+    int         i,j;
+    gmx_large_int_t   mc=0,max;
     gmx_rng_t   rng=NULL;
 
     /* allocate memory for pr */
@@ -144,18 +159,14 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
     /* set some fields */
     pr->binwidth=binwidth;
 
-    /* Lets try to find min and max distance */
-    for(d=0;d<3;d++) {
-        xmax[d]=x[index[0]][d];
-        xmin[d]=x[index[0]][d];
-    }
+    /*
+    * create max dist rvec
+    * dist = box[xx] + box[yy] + box[zz]
+    */
+    rvec_add(box[XX],box[YY],dist);
+    rvec_add(box[ZZ],dist,dist);
 
-    for(i=1;i<isize;i++)
-        for(d=0;d<3;d++)
-            if (xmax[d]<x[index[i]][d]) xmax[d]=x[index[i]][d]; else
-                if (xmin[d]>x[index[i]][d]) xmin[d]=x[index[i]][d];
-
-    rmax=sqrt(distance2(xmax,xmin));
+    rmax=norm(dist);
 
     pr->grn=(int)floor(rmax/pr->binwidth)+1;
     rmax=pr->grn*pr->binwidth;
@@ -163,17 +174,21 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (gmx_san
     snew(pr->gr,pr->grn);
 
     if(bMC) {
-        /* Use several independent mc runs to collect better statistics */
-        for(d=0;d<(int)floor(nmc/524288);d++) {
-            rng=gmx_rng_init(seed);
-            for(mc=0;mc<524288;mc++) {
-                i=(int)floor(gmx_rng_uniform_real(rng)*isize);
-                j=(int)floor(gmx_rng_uniform_real(rng)*isize);
-                if(i!=j)
-                    pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
-            }
-            gmx_rng_destroy(rng);
+        /* Special case for setting automaticaly number of mc iterations to 1% of total number of direct iterations */
+        if (mcover==-1) {
+            max=(gmx_large_int_t)floor(0.5*0.01*isize*(isize-1));
+        } else {
+            max=(gmx_large_int_t)floor(0.5*mcover*isize*(isize-1));
         }
+        rng=gmx_rng_init(seed);
+        while(mc<max) {
+            i=(int)floor(gmx_rng_uniform_real(rng)*isize);
+            j=(int)floor(gmx_rng_uniform_real(rng)*isize);
+            if(i!=j)
+                pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+            mc++;
+        }
+        gmx_rng_destroy(rng);
     } else {
         for(i=0;i<isize;i++)
             for(j=0;j<i;j++)

@@ -557,7 +557,12 @@ void please_cite(FILE *fp,const char *key)
       "V. Ballenegger, J.J. Cerda, and C. Holm",
       "How to Convert SPME to P3M: Influence Functions and Error Estimates",
       "J. Chem. Theory Comput.",
-      8, 2012, "936-947" }
+      8, 2012, "936-947" },
+    { "Garmay2012",
+      "Garmay Yu, Shvetsov A, Karelov D, Lebedev D, Radulescu A, Petukhov M, Isaev-Ivanov V",
+      "Correlated motion of protein subdomains and large-scale conformational flexibility of RecA protein filament",
+      "Journal of Physics: Conference Series",
+      340, 2012, "012094" }
   };
 #define NSTR (int)asize(citedb)
   
