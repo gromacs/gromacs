@@ -68,7 +68,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 {
   t_atoms *atoms;
   gmx_bool   bEnd;
-  int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
+  int    nwanted,natoms,atnr,resnr=0,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
   double db1,db2,db3;
@@ -882,7 +882,7 @@ gmx_bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   t_atoms atoms;
   char    title[STRLEN],*p;
   double  tt;
-  int     ndec,i;
+  int     ndec=0,i;
 
   if (gmx_eof(status))
     return FALSE;
