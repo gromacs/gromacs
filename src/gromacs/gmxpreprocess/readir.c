@@ -351,9 +351,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       warning_note(wi,"Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
-  sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
-  CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
-	&& (ir->efep!=efepNO));
+  sprintf(err_buf,"Free-energy not implemented for Ewald");
+  CHECK((ir->coulombtype==eelEWALD) && (ir->efep!=efepNO));
   
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
@@ -432,9 +431,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 &&
                ir->compress[ZZ][XX] <= 0 && ir->compress[ZZ][YY] <= 0));
         
-        sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
-        CHECK(ir->coulombtype == eelPPPM);
-
         if (epcPARRINELLORAHMAN == ir->epct && opts->bGenVel)
         {
             sprintf(warn_buf,
@@ -447,11 +443,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                     "ignore this warning.");
             warning(wi,warn_buf);
         }
-    }
-    else if (ir->coulombtype == eelPPPM)
-    {
-        sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
-        warning(wi,warn_buf);
     }
     
     if (EI_VV(ir->eI))
@@ -467,10 +458,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
-    if (ir->coulombtype == eelPPPM)
-    {
-        warning_error(wi,"PPPM is not functional in the current version, we plan to implement PPPM through a small modification of the PME code");
-    }
 
   if (ir->coulombtype == eelSWITCH) {
     sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
@@ -538,7 +525,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
     } else {
-      if (ir->coulombtype == eelPME) {
+      if (ir->coulombtype == eelPME || ir->coulombtype == eelP3M_AD) {
 	sprintf(err_buf,
 		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
 		"If you want optimal energy conservation or exact integration use %s",
@@ -896,12 +883,12 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
-  ITYPE ("nstxout",	ir->nstxout,	100);
-  ITYPE ("nstvout",	ir->nstvout,	100);
+  ITYPE ("nstxout",	ir->nstxout,	0);
+  ITYPE ("nstvout",	ir->nstvout,	0);
   ITYPE ("nstfout",	ir->nstfout,	0);
   ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
-  ITYPE ("nstlog",	ir->nstlog,	100);
+  ITYPE ("nstlog",	ir->nstlog,	1000);
   ITYPE ("nstcalcenergy",ir->nstcalcenergy,	-1);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
   CTYPE ("Output frequency and precision for .xtc file");

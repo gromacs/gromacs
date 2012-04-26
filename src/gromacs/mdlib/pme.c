@@ -74,6 +74,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #include "typedefs.h"
 #include "txtdump.h"
 #include "vec.h"
@@ -266,6 +267,7 @@ typedef struct gmx_pme {
     gmx_bool bPPnode;        /* Node also does particle-particle forces */
     gmx_bool bFEP;           /* Compute Free energy contribution */
     int nkx,nky,nkz;         /* Grid dimensions */
+    gmx_bool bP3M;           /* Do P3M: optimize the influence function */
     int pme_order;
     real epsilon_r;
 
@@ -2425,8 +2427,8 @@ void make_dft_mod(real *mod,real *data,int ndata)
 }
 
 
-
-void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
+static void make_bspline_moduli(splinevec bsp_mod,
+                                int nx,int ny,int nz,int order)
 {
   int nmax=max(nx,max(ny,nz));
   real *data,*ddata,*bsp_data;
@@ -2471,6 +2473,87 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(ddata);
   sfree(bsp_data);
 }
+
+
+/* Return the P3M optimal influence function */
+static double do_p3m_influence(double z, int order)
+{
+    double z2,z4;
+
+    z2 = z*z;
+    z4 = z2*z2;
+
+    /* The formula and most constants can be found in:
+     * Ballenegger et al., JCTC 8, 936 (2012)
+     */
+    switch(order)
+    {
+    case 2:
+        return 1.0 - 2.0*z2/3.0;
+        break;
+    case 3:
+        return 1.0 - z2 + 2.0*z4/15.0;
+        break;
+    case 4:
+        return 1.0 - 4.0*z2/3.0 + 2.0*z4/5.0 + 4.0*z2*z4/315.0;
+        break;
+    case 5:
+        return 1.0 - 5.0*z2/3.0 + 7.0*z4/9.0 - 17.0*z2*z4/189.0 + 2.0*z4*z4/2835.0;
+        break;
+    case 6:
+        return 1.0 - 2.0*z2 + 19.0*z4/15.0 - 256.0*z2*z4/945.0 + 62.0*z4*z4/4725.0 + 4.0*z2*z4*z4/155925.0;
+        break;
+    case 7:
+        return 1.0 - 7.0*z2/3.0 + 28.0*z4/15.0 - 16.0*z2*z4/27.0 + 26.0*z4*z4/405.0 - 2.0*z2*z4*z4/1485.0 + 4.0*z4*z4*z4/6081075.0;
+    case 8:
+        return 1.0 - 8.0*z2/3.0 + 116.0*z4/45.0 - 344.0*z2*z4/315.0 + 914.0*z4*z4/4725.0 - 248.0*z4*z4*z2/22275.0 + 21844.0*z4*z4*z4/212837625.0 - 8.0*z4*z4*z4*z2/638512875.0;
+        break;
+    }
+
+    return 0.0;
+}
+
+/* Calculate the P3M B-spline moduli for one dimension */
+static void make_p3m_bspline_moduli_dim(real *bsp_mod,int n,int order)
+{
+    double zarg,zai,sinzai,infl;
+    int    maxk,i;
+
+    if (order > 8)
+    {
+        gmx_fatal(FARGS,"The current P3M code only supports orders up to 8");
+    }
+
+    zarg = M_PI/n;
+
+    maxk = (n + 1)/2;
+
+    for(i=-maxk; i<0; i++)
+    {
+        zai    = zarg*i;
+        sinzai = sin(zai);
+        infl   = do_p3m_influence(sinzai,order);
+        bsp_mod[n+i] = infl*infl*pow(sinzai/zai,-2.0*order);
+    }
+    bsp_mod[0] = 1.0;
+    for(i=1; i<maxk; i++)
+    {
+        zai    = zarg*i;
+        sinzai = sin(zai);
+        infl   = do_p3m_influence(sinzai,order);
+        bsp_mod[i] = infl*infl*pow(sinzai/zai,-2.0*order);
+    }
+}
+
+/* Calculate the P3M B-spline moduli */
+static void make_p3m_bspline_moduli(splinevec bsp_mod,
+                                    int nx,int ny,int nz,int order)
+{
+    make_p3m_bspline_moduli_dim(bsp_mod[XX],nx,order);
+    make_p3m_bspline_moduli_dim(bsp_mod[YY],ny,order);
+    make_p3m_bspline_moduli_dim(bsp_mod[ZZ],nz,order);
+}
+
 
 static void setup_coordinate_communication(pme_atomcomm_t *atc)
 {
@@ -2936,6 +3019,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nkx         = ir->nkx;
     pme->nky         = ir->nky;
     pme->nkz         = ir->nkz;
+    pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
 
@@ -3106,7 +3190,16 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->cfftgridB          = NULL;
     }
 
-    make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    if (!pme->bP3M)
+    {
+        /* Use plain SPME B-spline interpolation */
+        make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    }
+    else
+    {
+        /* Use the P3M grid-optimized influence function */
+        make_p3m_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    }
 
     /* Use atc[0] for spreading */
     init_atomcomm(pme,&pme->atc[0],cr,nnodes_major > 1 ? 0 : 1,TRUE);
@@ -3934,6 +4027,11 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
     int     thread;
+    gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
+    gmx_bool bCalcF = flags & GMX_PME_CALC_F;
+
+    assert(pme->nnodes > 0);
+    assert(pme->nnodes == 1 || pme->ndecompdim > 0);
 
     if (pme->nnodes > 1) {
         atc = &pme->atc[0];
@@ -4095,7 +4193,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 loop_count =
                     solve_pme_yzx(pme,cfftgrid,ewaldcoeff,
                                   box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
-                                  flags & GMX_PME_CALC_ENER_VIR,
+                                  bCalcEnerVir,
                                   pme->nthread,thread);
                 if (thread == 0)
                 {
@@ -4105,7 +4203,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 }
             }
 
-            if (flags & GMX_PME_CALC_F)
+            if (bCalcF)
             {
                 /* do 3d-invfft */
                 if (thread == 0)
@@ -4138,7 +4236,7 @@ int gmx_pme_do(gmx_pme_t pme,
          * With MPI we have to synchronize here before gmx_sum_qgrid_dd.
          */
 
-        if (flags & GMX_PME_CALC_F)
+        if (bCalcF)
         {
             /* distribute local grid to all nodes */
 #ifdef GMX_MPI
@@ -4174,7 +4272,7 @@ int gmx_pme_do(gmx_pme_t pme,
             wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
         }
 
-        if (flags & GMX_PME_CALC_ENER_VIR)
+        if (bCalcEnerVir)
         {
             /* This should only be called on the master thread
              * and after the threads have synchronized.
@@ -4183,7 +4281,7 @@ int gmx_pme_do(gmx_pme_t pme,
         }
     } /* of q-loop */
 
-    if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
+    if (bCalcF && pme->nnodes > 1) {
         wallcycle_start(wcycle,ewcPME_REDISTXF);
         for(d=0; d<pme->ndecompdim; d++)
         {
@@ -4210,15 +4308,27 @@ int gmx_pme_do(gmx_pme_t pme,
     }
     where();
 
-    if (!pme->bFEP) {
-        *energy = energy_AB[0];
-        m_add(vir,vir_AB[0],vir);
-    } else {
-        *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += energy_AB[1] - energy_AB[0];
-        for(i=0; i<DIM; i++)
-            for(j=0; j<DIM; j++)
-                vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+    if (bCalcEnerVir)
+    {
+        if (!pme->bFEP) {
+            *energy = energy_AB[0];
+            m_add(vir,vir_AB[0],vir);
+        } else {
+            *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+            *dvdlambda += energy_AB[1] - energy_AB[0];
+            for(i=0; i<DIM; i++)
+            {
+                for(j=0; j<DIM; j++)
+                {
+                    vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + 
+                        lambda*vir_AB[1][i][j];
+                }
+            }
+        }
+    }
+    else
+    {
+        *energy = 0;
     }
 
     if (debug)

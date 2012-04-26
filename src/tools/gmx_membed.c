@@ -3001,7 +3001,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
-                            (Flags & MD_APPENDFILES));
+                            (Flags & MD_APPENDFILES),
+			    (Flags & MD_APPENDFILESSET));
 
             if (bReadRNG)
             {
@@ -3186,22 +3187,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * and for the initial shell prediction.
                  */
                 construct_vsites_mtop(fplog,vsite,mtop,state->x);
-            }
-        }
-
-        /* Initiate PPPM if necessary */
-        if (fr->eeltype == eelPPPM)
-        {
-            if (mdatoms->nChargePerturbed)
-            {
-                gmx_fatal(FARGS,"Free energy with %s is not implemented",
-                          eel_names[fr->eeltype]);
-            }
-            status = gmx_pppm_init(fplog,cr,oenv,FALSE,TRUE,box,
-                                   getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
-            if (status != 0)
-            {
-                gmx_fatal(FARGS,"Error %d initializing PPPM",status);
             }
         }
 
@@ -3648,6 +3633,7 @@ int gmx_membed(int argc,char *argv[])
                 strcat(buf,buf2);
 	}
         if (opt2bSet("-p",NFILE,fnm))
+	Flags = Flags | (opt2parg_bSet("-append", asize(pa),pa) ? MD_APPENDFILESSET : 0); 
         {
                 sprintf(buf2," -mp %s",opt2fn("-p",NFILE,fnm));
                 strcat(buf,buf2);

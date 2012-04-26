@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -196,25 +197,42 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     if (md->cFREEZE) {
       md->cFREEZE[i] = ggrpnr(groups,egcFREEZE,ag);
     }
-    if (EI_ENERGY_MINIMIZATION(ir->eI)) {
-      mA = 1.0;
-      mB = 1.0;
-    } else if (ir->eI == eiBD) {
-      /* Make the mass proportional to the friction coefficient for BD.
-       * This is necessary for the constraint algorithms.
-       */
-      if (ir->bd_fric) {
-	mA = ir->bd_fric*ir->delta_t;
-	mB = ir->bd_fric*ir->delta_t;
-      } else {
-	fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
-	mA = atom->m*fac;
-	mB = atom->mB*fac;
-      }
-    } else {
-      mA = atom->m;
-      mB = atom->mB;
-    }
+        if (EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            /* Displacement is proportional to F, masses used for constraints */
+            mA = 1.0;
+            mB = 1.0;
+        }
+        else if (ir->eI == eiBD)
+        {
+            /* With BD the physical masses are irrelevant.
+             * To keep the code simple we use most of the normal MD code path
+             * for BD. Thus for constraining the masses should be proportional
+             * to the friction coefficient. We set the absolute value such that
+             * m/2<(dx/dt)^2> = m/2*2kT/fric*dt = kT/2 => m=fric*dt/2
+             * Then if we set the (meaningless) velocity to v=dx/dt, we get the
+             * correct kinetic energy and temperature using the usual code path.
+             * Thus with BD v*dt will give the displacement and the reported
+             * temperature can signal bad integration (too large time step).
+             */
+            if (ir->bd_fric > 0)
+            {
+                mA = 0.5*ir->bd_fric*ir->delta_t;
+                mB = 0.5*ir->bd_fric*ir->delta_t;
+            }
+            else
+            {
+                /* The friction coefficient is mass/tau_t */
+                fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
+                mA = 0.5*atom->m*fac;
+                mB = 0.5*atom->mB*fac;
+            }
+        }
+        else
+        {
+            mA = atom->m;
+            mB = atom->mB;
+        }
     if (md->nMassPerturbed) {
       md->massA[i]	= mA;
       md->massB[i]	= mB;
