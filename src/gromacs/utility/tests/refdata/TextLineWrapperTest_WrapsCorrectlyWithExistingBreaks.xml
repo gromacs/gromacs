@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="WrappedWithNoLimit"><![CDATA[
+A quick brown fox jumps
+over the lazy dog]]></String>
+  <String Name="WrappedAt10"><![CDATA[
+A quick
+brown fox
+jumps
+over the
+lazy dog]]></String>
+  <String Name="WrappedAt14"><![CDATA[
+A quick brown
+fox jumps
+over the lazy
+dog]]></String>
+</ReferenceData>
