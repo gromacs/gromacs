@@ -553,7 +553,7 @@ int gmx_editconf(int argc, char *argv[])
                 "To convert a truncated octrahedron file produced by a package which uses",
                 "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
                 "[TT]editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
-                "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2." };
+                "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2." };
     const char *bugs[] =
         {
             "For complex molecules, the periodicity removal routine may break down, "
@@ -1034,7 +1034,10 @@ int gmx_editconf(int argc, char *argv[])
     }  
 
     if (check_box(epbcXYZ,box))
-        printf("\nWARNING: %s\n",check_box(epbcXYZ,box));
+        printf("\nWARNING: %s\n"
+               "See the GROMACS manual for a description of the requirements that\n"
+               "must be satisfied by descriptions of simulation cells.\n",
+               check_box(epbcXYZ,box));
 
     if (bDist && btype[0][0]=='t')
     {

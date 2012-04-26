@@ -88,18 +88,6 @@ void
 set_shift_consts(FILE *log,real r1,real rc,rvec box,
 			     t_forcerec *fr);
 
-real
-shift_LRcorrection(FILE *fp,int start,int natoms,
-			       t_commrec *cr,t_forcerec *fr,
-			       real charge[],t_blocka *excl,rvec x[],
-			       gmx_bool bOld,matrix box,matrix lrvir);
-/* Calculate the self energy and forces
- * when using long range electrostatics methods.
- * Part of this is a constant, it is computed only once and stored in
- * a local variable. The remainder is computed every step.
- * PBC is taken into account. (Erik L.) 
- */
-
 #ifdef __cplusplus
 }
 #endif

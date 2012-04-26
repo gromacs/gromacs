@@ -43,6 +43,8 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <assert.h>
+
 #include "futil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -826,6 +828,7 @@ static char **read_topol(const char *infile,const char *outfile,
           push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline,wi);
 	    break;
 	  case d_exclusions:
+	    assert(block2);
 	    if (!block2[nmol-1].nr)
 	      init_block2(&(block2[nmol-1]),mi0->atoms.nr);
 	    push_excl(pline,&(block2[nmol-1]));
