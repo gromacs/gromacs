@@ -361,14 +361,14 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 	      shell[nsi].k    += ffparams->iparams[type].cubic.kb;
 	      break;
 	    case F_POLARIZATION:
-	      if (qS != atom[aS].qB)
-		gmx_fatal(FARGS,"polarize can not be used with qA != qB");
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+		gmx_fatal(FARGS,"polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
 	      shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 		ffparams->iparams[type].polarize.alpha;
 	      break;
 	    case F_WATER_POL:
-	      if (qS != atom[aS].qB)
-		gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
+	      if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+		gmx_fatal(FARGS,"water_pol can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
 	      alpha          = (ffparams->iparams[type].wpol.al_x+
 				ffparams->iparams[type].wpol.al_y+
 				ffparams->iparams[type].wpol.al_z)/3.0;
@@ -536,6 +536,10 @@ static void directional_sd(FILE *log,rvec xold[],rvec xnew[],rvec acc_dir[],
 static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
 			 int ns,t_shell s[],int count)
 {
+    const real step_scale_min = 0.8,
+        step_scale_increment = 0.2,
+        step_scale_max = 1.2,
+        step_scale_multiple = (step_scale_max - step_scale_min) / step_scale_increment;
   int  i,shell,d;
   real dx,df,k_est;
 #ifdef PRINT_STEP  
@@ -558,18 +562,33 @@ static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
       for(d=0; d<DIM; d++) {
 	dx = xcur[shell][d] - s[i].xold[d];
 	df =    f[shell][d] - s[i].fold[d];
-	if (dx != 0 && df != 0) {
-	  k_est = -dx/df;
-	  if (k_est >= 2*s[i].step[d]) {
-	    s[i].step[d] *= 1.2;
-	  } else if (k_est <= 0) {
-	    s[i].step[d] *= 0.8;
-	  } else {
-	    s[i].step[d] = 0.8*s[i].step[d] + 0.2*k_est;
-	  }
-	} else if (dx != 0) {
-	  s[i].step[d] *= 1.2;
-	}
+    /* -dx/df gets used to generate an interpolated value, but would
+     * cause a NaN if df were binary-equal to zero. Values close to
+     * zero won't cause problems (because of the min() and max()), so
+     * just testing for binary inequality is OK. */
+    if (0.0 != df)
+    {
+        k_est = -dx/df;
+        /* Scale the step size by a factor interpolated from
+         * step_scale_min to step_scale_max, as k_est goes from 0 to
+         * step_scale_multiple * s[i].step[d] */
+        s[i].step[d] =
+            step_scale_min * s[i].step[d] +
+            step_scale_increment * min(step_scale_multiple * s[i].step[d], max(k_est, 0));
+    }
+    else
+    {
+        /* Here 0 == df */
+        if (gmx_numzero(dx)) /* 0 == dx */
+        {
+            /* Likely this will never happen, but if it does just
+             * don't scale the step. */
+        }
+        else /* 0 != dx */
+        {
+            s[i].step[d] *= step_scale_max;
+        }
+    }
 #ifdef PRINT_STEP
 	step_min = min(step_min,s[i].step[d]);
 	step_max = max(step_max,s[i].step[d]);
