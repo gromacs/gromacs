@@ -293,6 +293,11 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id
             _nextSearchNode = _currNode->xmlChildrenNode;
         }
     }
+    if (node == NULL)
+    {
+        GMX_RELEASE_ASSERT(!_bWrite, "Node creation failed without exception");
+        ADD_FAILURE() << "Reference data item not found";
+    }
     return node;
 }
 
@@ -305,8 +310,6 @@ TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
     xmlNodePtr node = findOrCreateNode(name, id);
     if (node == NULL)
     {
-        GMX_RELEASE_ASSERT(!_bWrite, "Node creation failed without exception");
-        ADD_FAILURE() << "Reference data item not found";
         return std::string();
     }
     *bFound = true;
@@ -431,8 +434,6 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     xmlNodePtr newNode = _impl->findOrCreateNode(xmlNodeName, id);
     if (newNode == NULL)
     {
-        GMX_RELEASE_ASSERT(!isWriteMode(), "Node creation failed without exception");
-        ADD_FAILURE() << "Reference data item not found";
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     return TestReferenceChecker(
@@ -478,6 +479,60 @@ void TestReferenceChecker::checkString(const char *value, const char *id)
 void TestReferenceChecker::checkString(const std::string &value, const char *id)
 {
     checkString(value.c_str(), id);
+}
+
+
+void TestReferenceChecker::checkStringBlock(const std::string &value,
+                                            const char *id)
+{
+    if (_impl->shouldIgnore())
+    {
+        return;
+    }
+    SCOPED_TRACE(_impl->traceString(id));
+    xmlNodePtr node = _impl->findOrCreateNode(Impl::cStringNodeName, id);
+    if (node == NULL)
+    {
+        return;
+    }
+    // An extra newline is written in the beginning to make lines align
+    // in the output xml (otherwise, the first line would be off by the length
+    // of the starting CDATA tag).
+    if (isWriteMode())
+    {
+        std::string adjustedValue = "\n" + value;
+        const xmlChar *xmlValue
+            = reinterpret_cast<const xmlChar *>(adjustedValue.c_str());
+        // TODO: Figure out if \r and \r\n can be handled without them changing
+        // to \n in the roundtrip
+        xmlNodePtr cdata
+            = xmlNewCDataBlock(node->doc, xmlValue,
+                               static_cast<int>(adjustedValue.length()));
+        xmlAddChild(node, cdata);
+    }
+    else
+    {
+        xmlNodePtr cdata = node->children;
+        while (cdata != NULL && cdata->type != XML_CDATA_SECTION_NODE)
+        {
+            cdata = cdata->next;
+        }
+        if (cdata == NULL)
+        {
+            ADD_FAILURE() << "Invalid string block element";
+            return;
+        }
+        xmlChar *refXmlValue = xmlNodeGetContent(cdata);
+        if (refXmlValue[0] != '\n')
+        {
+            ADD_FAILURE() << "Invalid string block element";
+            xmlFree(refXmlValue);
+            return;
+        }
+        std::string refValue(reinterpret_cast<const char *>(refXmlValue + 1));
+        xmlFree(refXmlValue);
+        EXPECT_EQ(refValue, value);
+    }
 }
 
 

@@ -288,6 +288,15 @@ class TestReferenceChecker
         void checkString(const char *value, const char *id);
         //! Check a single string value.
         void checkString(const std::string &value, const char *id);
+        /*! \brief
+         * Check a multi-line string value.
+         *
+         * This method works as checkString(), but should be used for long
+         * strings that may contain, e.g., newlines.  Typically used to check
+         * formatted output, and attempts to make the output XML such that it
+         * is easier to edit by hand to set the desired output formatting.
+         */
+        void checkStringBlock(const std::string &value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single single-precision floating point value.

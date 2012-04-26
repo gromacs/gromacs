@@ -69,6 +69,27 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 }
 
 
+TEST(ReferenceDataTest, HandlesStringBlockData)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock("Line1\nLine2\n", "block");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkStringBlock("Line1\nLine2\n", "block");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Line1\nLine2\n", "block"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("Test", "string"), "");
+    }
+}
+
+
 TEST(ReferenceDataTest, HandlesVectorData)
 {
     using gmx::test::TestReferenceData;
@@ -187,11 +208,14 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
         TestReferenceData data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
+        // \r is not handled correctly
+        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
     }
     {
         TestReferenceData data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
+        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
     }
 }
 
