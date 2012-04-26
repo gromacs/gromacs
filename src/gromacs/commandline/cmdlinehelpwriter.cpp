@@ -46,6 +46,8 @@
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/format.h"
 
 #include "cmdlinehelpwriter-impl.h"
 
@@ -54,6 +56,12 @@ namespace gmx
 
 namespace
 {
+
+std::string substituteMarkup(const std::string &text)
+{
+    // TODO: Implement.
+    return text;
+}
 
 /********************************************************************
  * DescriptionWriter
@@ -81,14 +89,15 @@ void DescriptionWriter::visitSubSection(const Options &section)
 {
     if (!section.description().empty())
     {
-        fprintf(fp_, "\n");
         const std::string &title = section.title();
         if (!title.empty())
         {
             fprintf(fp_, "%s\n\n", title.c_str());
         }
-        // TODO: Wrap lines and do markup substitutions.
-        fprintf(fp_, "%s\n\n", section.description().c_str());
+        TextLineWrapper wrapper;
+        wrapper.setLineLength(78);
+        std::string description(substituteMarkup(section.description()));
+        fprintf(fp_, "%s\n\n", wrapper.wrapToString(description).c_str());
     }
     OptionsIterator(section).acceptSubSections(this);
 }
@@ -107,21 +116,27 @@ class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
 {
     public:
         //! Creates a helper object for writing file parameters.
-        explicit FileParameterWriter(FILE *fp)
-            : fp_(fp), bFirst_(true)
-        {
-        }
+        explicit FileParameterWriter(FILE *fp);
 
         //! Returns true if anything was written out.
-        bool didOutput() const { return !bFirst_; }
+        bool didOutput() const { return formatter_.didOutput(); }
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOptionType(const FileNameOptionInfo &option);
 
     private:
         FILE                   *fp_;
-        bool                    bFirst_;
+        TextTableFormatter      formatter_;
 };
+
+FileParameterWriter::FileParameterWriter(FILE *fp)
+    : fp_(fp)
+{
+    formatter_.addColumn("Option",      6, false);
+    formatter_.addColumn("Filename",    12, false);
+    formatter_.addColumn("Type",        12, false);
+    formatter_.addColumn("Description", 45, true);
+}
 
 void FileParameterWriter::visitSubSection(const Options &section)
 {
@@ -132,66 +147,82 @@ void FileParameterWriter::visitSubSection(const Options &section)
 
 void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
 {
-    if (bFirst_)
-    {
-        fprintf(fp_, "%6s %12s  %-12s %s\n",
-                "Option", "Filename", "Type", "Description");
-        fprintf(fp_, "------------------------------------------------------------\n");
-        bFirst_ = false;
-    }
+    int firstShortValue = 0; // The first value after which the type fits.
+    int firstLongValue = -1; // First value that overlaps description column.
+    int lastLongValue = -1;  // Last value like the above.
 
-    std::string optionLine("-");
-    optionLine.reserve(30 + option.description().size());
-    optionLine.append(option.name()).append(" ");
-    if (optionLine.size() < 11)
-    {
-        optionLine.resize(11, ' ');
-    }
-    bool bTypePrinted = false;
-    size_t lineStart = 0;
+    // Get the values to write and check where text overflows the columns.
+    formatter_.clear();
+    std::string name(formatString("-%s", option.name().c_str()));
+    formatter_.addColumnLine(0, name);
     for (int i = 0; i < option.valueCount(); ++i)
     {
-        if (i > 0)
+        std::string value(option.formatValue(i));
+        formatter_.addColumnLine(1, value);
+        if (value.length() > 12U && i == firstShortValue)
         {
-            optionLine.append("\n");
-            lineStart = optionLine.size();
-            optionLine.append(11, ' ');
+            firstShortValue = i + 1;
         }
-        optionLine.append(option.formatValue(i)).append(" ");
-        // TODO: Do eliding
-        if (optionLine.size() <= lineStart + 21)
+        if (value.length() > 25U)
         {
-            optionLine.resize(lineStart + 21, ' ');
-            if (!bTypePrinted)
+            if (firstLongValue == -1)
             {
-                optionLine.append(option.type()).append(" ");
-                bTypePrinted = true;
+                firstLongValue = i;
             }
+            lastLongValue = i;
         }
     }
-    if (!bTypePrinted)
+    std::string type;
+    if (option.isInputOutputFile())
     {
-        optionLine.append("\n");
-        lineStart = optionLine.size();
-        optionLine.append(21, ' ');
-        optionLine.append(option.type()).append(" ");
+        type = "In/Out";
     }
-    if (optionLine.size() > lineStart + 34)
+    else if (option.isInputFile())
     {
-        if (!option.description().empty())
+        type = "Input";
+    }
+    else if (option.isOutputFile())
+    {
+        type = "Output";
+    }
+    if (!option.isRequired())
+    {
+        type += ", Opt.";
+    }
+    if (option.isLibraryFile())
+    {
+        type += ", Lib.";
+    }
+    bool bLongType = (type.length() > 12U);
+    formatter_.addColumnLine(2, type);
+    formatter_.addColumnLine(3, substituteMarkup(option.description()));
+
+    // Compute layout.
+    if (name.length() > 6U || firstShortValue > 0)
+    {
+        formatter_.setColumnFirstLineOffset(1, 1);
+        // Assume that the name is <20 chars, so that the type fits
+        if (firstLongValue >= 0)
         {
-            optionLine.append("\n");
-            optionLine.append(34, ' ');
+            ++firstLongValue;
+            ++lastLongValue;
         }
     }
-    else
+    int firstDescriptionLine = 0;
+    if (bLongType)
     {
-        optionLine.resize(lineStart + 34, ' ');
+        firstDescriptionLine = 1;
     }
-    // TODO: Markup substitution.
-    optionLine.append(option.description());
-    // TODO: Wrap lines.
-    fprintf(fp_, "%s\n", optionLine.c_str());
+    formatter_.setColumnFirstLineOffset(3, firstDescriptionLine);
+    if (firstLongValue >= 0 && formatter_.lastColumnLine(3) >= firstLongValue)
+    {
+        firstDescriptionLine = lastLongValue + 1;
+        formatter_.setColumnFirstLineOffset(3, firstDescriptionLine);
+    }
+
+    // Do the formatting.
+    std::string row = formatter_.formatRow();
+    fprintf(fp_, "%s", row.c_str());
 }
 
 
@@ -208,24 +239,30 @@ class ParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing non-file parameters.
-        explicit ParameterWriter(FILE *fp)
-            : fp_(fp), bFirst_(true), bShowHidden_(false)
-        {
-        }
+        explicit ParameterWriter(FILE *fp);
 
         //! Sets the writer to show hidden options.
         void setShowHidden(bool bSet) { bShowHidden_ = bSet; }
         //! Returns true if anything was written out.
-        bool didOutput() const { return !bFirst_; }
+        bool didOutput() const { return formatter_.didOutput(); }
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOption(const OptionInfo &option);
 
     private:
         FILE                   *fp_;
-        bool                    bFirst_;
+        TextTableFormatter      formatter_;
         bool                    bShowHidden_;
 };
+
+ParameterWriter::ParameterWriter(FILE *fp)
+    : fp_(fp), bShowHidden_(false)
+{
+    formatter_.addColumn("Option",      12, false);
+    formatter_.addColumn("Type",         6, false);
+    formatter_.addColumn("Value",        6, false);
+    formatter_.addColumn("Description", 51, true);
+}
 
 void ParameterWriter::visitSubSection(const Options &section)
 {
@@ -237,53 +274,101 @@ void ParameterWriter::visitSubSection(const Options &section)
 void ParameterWriter::visitOption(const OptionInfo &option)
 {
     if (option.isType<FileNameOptionInfo>()
+        || option.isType<SelectionOptionInfo>()
         || (!bShowHidden_ && option.isHidden()))
     {
         return;
     }
 
-    if (bFirst_)
+    formatter_.clear();
+    bool bIsBool = option.isType<BooleanOptionInfo>();
+    std::string name(formatString("-%s%s", bIsBool ? "[no]" : "",
+                                           option.name().c_str()));
+    formatter_.addColumnLine(0, name);
+    formatter_.addColumnLine(1, option.type());
+    if (name.length() > 12U)
     {
-        fprintf(fp_, "%-12s %-6s %-6s  %s\n",
-                "Option", "Type", "Value", "Description");
-        fprintf(fp_, "----------------------------------------------------\n");
-        bFirst_ = false;
+        formatter_.setColumnFirstLineOffset(1, 1);
+    }
+    // TODO: Better handling of multiple long values
+    std::string values;
+    for (int i = 0; i < option.valueCount(); ++i)
+    {
+        if (i != 0)
+        {
+            values.append(" ");
+        }
+        values.append(option.formatValue(i));
+    }
+    formatter_.addColumnLine(2, values);
+    formatter_.addColumnLine(3, substituteMarkup(option.description()));
+    if (values.length() > 6U)
+    {
+        formatter_.setColumnFirstLineOffset(3, 1);
     }
 
-    std::string optionLine("-");
-    optionLine.reserve(30 + option.description().size());
-    if (option.isType<BooleanOptionInfo>())
+    std::string row = formatter_.formatRow();
+    fprintf(fp_, "%s", row.c_str());
+}
+
+
+/********************************************************************
+ * SelectionParameterWriter
+ */
+
+/*! \internal \brief
+ * Helper object for writing help for selection parameters.
+ *
+ * \ingroup module_commandline
+ */
+class SelectionParameterWriter : public OptionsTypeVisitor<SelectionOptionInfo>
+{
+    public:
+        //! Creates a helper object for writing selection parameters.
+        explicit SelectionParameterWriter(FILE *fp);
+
+        //! Returns true if anything was written out.
+        bool didOutput() const { return formatter_.didOutput(); }
+
+        virtual void visitSubSection(const Options &section);
+        virtual void visitOptionType(const SelectionOptionInfo &option);
+
+    private:
+        FILE                   *fp_;
+        TextTableFormatter      formatter_;
+};
+
+SelectionParameterWriter::SelectionParameterWriter(FILE *fp)
+    : fp_(fp)
+{
+    formatter_.addColumn("Selection",   10, false);
+    formatter_.addColumn("Description", 67, true);
+}
+
+void SelectionParameterWriter::visitSubSection(const Options &section)
+{
+    OptionsIterator iterator(section);
+    iterator.acceptSubSections(this);
+    iterator.acceptOptions(this);
+}
+
+void SelectionParameterWriter::visitOptionType(const SelectionOptionInfo &option)
+{
+    formatter_.clear();
+    std::string name(formatString("-%s", option.name().c_str()));
+    formatter_.addColumnLine(0, name);
+    formatter_.addColumnLine(1, substituteMarkup(option.description()));
+    std::string row = formatter_.formatRow();
+    fprintf(fp_, "%s", row.c_str());
+
+    // TODO: What to do with selection variables?
+    // They are not printed as values for any option.
+    for (int i = 0; i < option.valueCount(); ++i)
     {
-        optionLine.append("[no]");
+        std::string value(option.formatValue(i));
+        // TODO: Wrapping
+        fprintf(fp_, "    %s\n", value.c_str());
     }
-    optionLine.append(option.name()).append(" ");
-    if (optionLine.size() < 13)
-    {
-        optionLine.resize(13, ' ');
-    }
-    optionLine.append(option.type()).append(" ");
-    if (optionLine.size() < 20)
-    {
-        optionLine.resize(20, ' ');
-    }
-    optionLine.append(option.formatValues()).append(" ");
-    if (optionLine.size() > 28)
-    {
-        // TODO: Wrap lines / do eliding
-        if (!option.description().empty())
-        {
-            optionLine.append("\n");
-            optionLine.append(28, ' ');
-        }
-    }
-    else
-    {
-        optionLine.resize(28, ' ');
-    }
-    // TODO: Markup substitution.
-    optionLine.append(option.description());
-    // TODO: Wrap lines.
-    fprintf(fp_, "%s\n", optionLine.c_str());
 }
 
 } // namespace
@@ -327,7 +412,7 @@ void CommandLineHelpWriter::writeHelp(FILE *fp)
     if (impl_->bShowDescriptions_)
     {
         fprintf(fp, "DESCRIPTION\n"
-                    "-----------\n");
+                    "-----------\n\n");
         DescriptionWriter(fp).visitSubSection(impl_->options_);
     }
     {
@@ -341,6 +426,14 @@ void CommandLineHelpWriter::writeHelp(FILE *fp)
     {
         ParameterWriter writer(fp);
         writer.setShowHidden(impl_->bShowHidden_);
+        writer.visitSubSection(impl_->options_);
+        if (writer.didOutput())
+        {
+            fprintf(fp, "\n");
+        }
+    }
+    {
+        SelectionParameterWriter writer(fp);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
