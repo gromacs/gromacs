@@ -116,8 +116,6 @@ class OptionInfo
         int valueCount() const;
         //! Returns the i'th value of the option as a string.
         std::string formatValue(int i) const;
-        //! Returns all the values of the option as a single string.
-        std::string formatValues() const;
 
     protected:
         /*! \cond libapi */
