@@ -316,6 +316,40 @@ gmx_bool gmx_fexist(const char *fname)
     }
 }
 
+static gmx_bool gmx_is_file(const char *fname)
+{
+    FILE *test;
+
+    if (fname == NULL)
+        return FALSE;
+    test=fopen(fname,"r");
+    if (test == NULL)
+    {
+        return FALSE;
+    }
+    else
+    {
+        fclose(test);
+        /*Windows doesn't allow fopen of directory - so we don't need to check this seperately */
+        #if (!((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__))
+        {
+            int status;
+            struct stat st_buf;
+            #ifdef HAVE_LSTAT
+                status = lstat (fname, &st_buf);
+            #else
+                status = stat (fname, &st_buf);
+            #endif
+            if (status != 0 || !S_ISREG(st_buf.st_mode))
+            {
+                return FALSE;
+            }
+        }
+        #endif
+        return TRUE;
+    }
+}
+
 
 gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
 {
@@ -779,7 +813,7 @@ gmx_bool get_libdir(char *libdir)
             pdum=getcwd(system_path,sizeof(system_path)-1);
 #endif
             sprintf(full_path,"%s%c%s",system_path,DIR_SEPARATOR,bin_name);
-            found = gmx_fexist(full_path);
+            found = gmx_is_file(full_path);
             if (!found && (s=getenv("PATH")) != NULL)
             {
                 char *dupped;
@@ -789,7 +823,7 @@ gmx_bool get_libdir(char *libdir)
                 while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
                 {
                     sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-                    found = gmx_fexist(full_path);
+                    found = gmx_is_file(full_path);
                 }
                 sfree(dupped);
             }
