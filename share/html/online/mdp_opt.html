@@ -96,7 +96,7 @@ that are already available by default are:
 topology, this can be useful for normal mode analysis.</dd>
 <dt>-DPOSRES</dt>
 <dd>Will tell <tt>grompp</tt> to include posre.itp into your topology, used for
-<!--Idx-->position restraints<!--EIdx-->.</dd>
+<!--Idx-->position restraint<!--EIdx-->s.</dd>
 </dl>
 </dl>
 
@@ -108,8 +108,8 @@ topology, this can be useful for normal mode analysis.</dd>
 <dt><b>integrator:</b> (Despite the name, this list includes algorithms that are not actually integrators. <tt>steep</tt> and all entries following it are in this category)</dt>
 <dd><dl compact>
 <dt><b>md</b></dt>
-<dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
-equations of motion.</dd>
+<dd>A leap-frog algorithm<!--QuietIdx-->leap-frog integrator<!--EQuietIdx-->
+for integrating Newton's equations of motion.</dd>
 <dt><b>md-vv</b></dt>
 <dd>A velocity Verlet algorithm for integrating Newton's equations of motion.
 For constant NVE simulations started from corresponding points in the same trajectory, the trajectories 
@@ -186,7 +186,7 @@ In practice this seems to converge faster than Conjugate Gradients, but due
 to the correction steps necessary it is not (yet) parallelized.
 </dd>
 <dt><b>nm</b></dt>
-<dd><!--Idx-->Normal mode analysis<!--EIdx--> is performed
+<dd>Normal mode analysis<!--QuietIdx-->normal-mode analysis<!--EQuietIdx--> is performed
 on the structure in the <tt>tpr</tt> file. GROMACS should be
 compiled in double precision.</dd>
 <dt><b>tpi</b></dt>
@@ -283,7 +283,7 @@ to <b>ld-seed</b> plus the processor number.</dd>
 
 <A NAME="em"><br>
 <hr>
-<h3><!--Idx-->Energy minimization<!--EIdx--></h3>
+<h3>Energy minimization<!--QuietIdx-->energy minimization<!--EQuietIdx--></h3>
 <dl>
 <dt><b>emtol: (10.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</b></dt>
 <dd>the minimization is converged when the maximum force is smaller than 
@@ -300,7 +300,8 @@ number is (at least theoretically) more accurate, but slower.</dd>
 
 <A NAME="xmdrun"><br>
 <hr>
-<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3> When shells or
+<h3>Shell Molecular Dynamics<!--QuietIdx-->shell molecular dynamics<!--EQuietIdx--></h3>
+When shells or
 flexible constraints are present in the system the positions of the shells
 and the lengths of the flexible constraints are optimized at
 every time step until either the RMS force on the shells and constraints
@@ -382,7 +383,7 @@ energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
 
 <A NAME="nl"><br>
 <hr>
-<h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
+<h3>Neighbor searching<!--QuietIdx-->neighbor searching<!--EQuietIdx--></h3>
 <dl>
 <dt><b>nstlist: (10) [steps]</b></dt>
 <dd><dl compact>
@@ -470,7 +471,7 @@ is automatically set to the longest cut-off distance.</dd>
 
 <A NAME="el"><br>
 <hr>
-<h3><!--Idx-->Electrostatics<!--EIdx--></h3>
+<h3>Electrostatics<!--QuietIdx-->electrostatics<!--EQuietIdx--></h3>
 <dl>
 <dt><b>coulombtype:</b></dt>
 <dd><dl compact>
@@ -509,7 +510,7 @@ for for long range electrostatic interactions. The method and code
 is identical to SPME, except that the influence function is optimized
 for the grid. This gives a slight increase in accuracy.</dd>
 
-<dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
+<dt><b>Reaction-Field electrostatics<!--QuietIdx-->reaction-field electrostatics<!--EQuietIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &ge; <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon-rf</b>.
@@ -721,13 +722,14 @@ energy group pairs.
 <h3>Ewald</h3>
 <dl>
 <dt><b>fourierspacing: (0.12) [nm]</b></dt>
-<dd>The maximum grid spacing for the FFT grid when using PME or P3M.
-For ordinary Ewald the spacing times the box dimensions determines the
-highest magnitude to use in each direction. In all cases
-each direction can be overridden by entering a non-zero value for
-<b>fourier-n[xyz]</b>.
+<dd>For ordinary Ewald, the ratio of the box dimensions and the spacing
+determines a lower bound for the number of wave vectors to use in each
+(signed) direction. For PME and P3M, that ratio determines a lower bound
+for the number of Fourier-space grid points that will be used along that
+axis. In all cases, the number for each direction can be overridden by
+entering a non-zero value for <b>fourier_n[xyz]</b>.
 For optimizing the relative load of the particle-particle interactions
-and the mesh part of PME it is useful to know that
+and the mesh part of PME, it is useful to know that
 the accuracy of the electrostatics remains nearly constant
 when the Coulomb cut-off and the PME grid spacing are scaled
 by the same factor.</dd>
@@ -784,7 +786,7 @@ at start.</dd>
 
 <A NAME="tc"><br>
 <hr>
-<h3><!--Idx-->Temperature coupling<!--EIdx--></h3>
+<h3>Temperature coupling<!--QuietIdx-->temperature coupling<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>tcoupl:</b></dt>
@@ -834,7 +836,7 @@ For velocity Verlet integrators <b>nsttcouple</b> is set to 1.</dd>
 
 <A NAME="pc"><br>
 <hr>
-<h3><!--Idx-->Pressure coupling<!--EIdx--></h3>
+<h3>Pressure coupling<!--QuietIdx-->pressure coupling<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>pcoupl:</b></dt>
@@ -935,7 +937,7 @@ positions of the reference coordinates.</dd>
 
 <A NAME="sa"><br>
 <hr>
-<h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
+<h3>Simulated annealing<!--QuietIdx-->simulated annealing<!--EQuietIdx--></h3>
 
 Simulated annealing is controlled separately for each temperature group in GROMACS. The reference temperature is a piecewise linear function, but you can use an arbitrary number of points for each group, and choose either a single sequence or a periodic behaviour for each group. The actual annealing is performed by dynamically changing the reference temperature used in the thermostat algorithm selected, so remember that the system will usually not instantaneously reach the reference temperature!
 <dl>
@@ -993,7 +995,7 @@ the process ID number.
 <h3>Bonds</h3>
 
 <dl>
-<dt><b><!--Idx-->constraints<!--EIdx-->:</b></dt>
+<dt><b>constraints<!--QuietIdx-->constraint algorithms<!--QuietEIdx-->:</b></dt>
 <dd><dl compact>
 <dt><b>none</b></dt>
 <dd>No constraints except for those defined explicitly in the topology,
@@ -1099,7 +1101,7 @@ solvent. This is especially useful for speeding up energy calculations with
 
 <A NAME="walls"><br>
 <hr>
-<h3><!--Idx-->Walls<!--EIdx--></h3>
+<h3>Walls<!--QuietIdx-->walls<!--EQuietIdx--></h3>
 <dl>
 <dt><b>nwall: 0</b></dt>
 <dd>When set to <b>1</b> there is a wall at <tt>z=0</tt>, when set to <b>2</b>
@@ -1287,76 +1289,81 @@ The force constant is then (1 - lambda)*<b>pull-k1</b> + lambda*<b>pull-kB1</b>.
 <dt><b>disre:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->distance restraints<!--EIdx--> (ignore distance
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->distance restraint<!--EIdx--> information in topology file</dd>
 <dt><b>simple</b></dt>
-<dd>simple (per-molecule) distance restraints,
-ensemble averaging can be performed with <tt>mdrun -multi</tt>
-where the environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
-of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value)</dd>
+<dd>simple (per-molecule) distance restraints.
 <dt><b>ensemble</b></dt>
-<dd>distance restraints over an ensemble of molecules in one simulation box,
-should only be used for special cases, such as dimers
-(this option is not fuctional in the current version of GROMACS)</dd>
+<dd>distance restraints over an ensemble of molecules in one
+simulation box. Normally, one would perform ensemble averaging over
+multiple subsystems, each in a separate box, using <tt>mdrun -multi</tt>;s
+upply <tt>topol0.tpr</tt>, <tt>topol1.tpr</tt>, ... with different
+coordinates and/or velocities.
+The environment variable <tt>GMX_DISRE_ENSEMBLE_SIZE</tt> sets the number
+of systems within each ensemble (usually equal to the <tt>mdrun -multi</tt> value).</dd>
+</dd>
 </dl></dd>
 <dt><b>disre-weighting:</b></dt>
 <dd><dl compact>
+<dt><b>equal</b> (default)</dt>
+<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
 <dt><b>conservative</b></dt>
 <dd>the forces are the derivative of the restraint potential,
-this results in an r<sup>-7</sup> weighting of the atom pairs</dd>
-<dt><b>equal</b></dt>
-<dd>divide the restraint force equally over all atom pairs in the restraint</dd>
+this results in an r<sup>-7</sup> weighting of the atom pairs.
+The forces are conservative when <tt>disre-tau</tt> is zero.</dd>
 </dl></dd>
 <dt><b>disre-mixed:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-time averaged violation </dd>
+time-averaged violation </dd>
 <dt><b>yes</b></dt>
 <dd>the violation used in the calculation of the restraint force is the
-square root of the time averaged violation times the instantaneous violation </dd>
+square root of the product of the time-averaged violation and the instantaneous violation</dd>
 </dl></dd>
 
 <dt><b>disre-fc: (1000) [kJ mol<sup>-1</sup> nm<sup>-2</sup>]</b></dt>
 <dd>force constant for distance restraints, which is multiplied by a
-(possibly) different factor for each restraint</dd>
+(possibly) different factor for each restraint given in the <tt>fac</tt>
+column of the interaction in the topology file.</dd>
 
 <dt><b>disre-tau: (0) [ps]</b></dt>
-<dd>time constant for distance restraints running average</dd>
+<dd>time constant for distance restraints running average. A value of zero turns off time averaging.</dd>
 
 <dt><b>nstdisreout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous distances
-of all atom pairs involved in restraints to the energy file
+<dd>period between steps when the running time-averaged and instantaneous distances
+of all atom pairs involved in restraints are written to the energy file
 (can make the energy file very large)</dd>
 
 <A NAME="nmr2">
 <dt><b>orire:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>no <!--Idx-->orientation restraints<!--EIdx--> (ignore orientation
-restraint information in topology file)</dd>
+<dd>ignore <!--Idx-->orientation restraint<!--EIdx--> information in topology file</dd>
 <dt><b>yes</b></dt>
 <dd>use orientation restraints, ensemble averaging can be performed
 with <tt>mdrun -multi</tt></dd>
 </dl>
 <dt><b>orire-fc: (0) [kJ mol]</b></dt>
 <dd>force constant for orientation restraints, which is multiplied by a
-(possibly) different factor for each restraint, can be set to zero to
+(possibly) different weight factor for each restraint, can be set to zero to
 obtain the orientations from a free simulation</dd>
 <dt><b>orire-tau: (0) [ps]</b></dt>
-<dd>time constant for orientation restraints running average</dd>
+<dd>time constant for orientation restraints running average. A value of zero turns off time averaging.</dd>
 <dt><b>orire-fitgrp: </b></dt>
-<dd>fit group for orientation restraining, for a protein backbone is a good
+<dd>fit group for orientation restraining. This group of atoms is used
+to determine the rotation <b>R</b> of the system with respect to the
+reference orientation. The reference orientation is the starting
+conformation of the first subsystem. For a protein, backbone is a reasonable
 choice</dd>
 <dt><b>nstorireout: (100) [steps]</b></dt>
-<dd>frequency to write the running time averaged and instantaneous orientations
-for all restraints and the molecular order tensor to the energy file
+<dd>period between steps when the running time-averaged and instantaneous orientations
+for all restraints, and the molecular order tensor are written to the energy file
 (can make the energy file very large)</dd>
 </dl>
 
 <A NAME="free"><br>
 <hr>
-<h3><!--Idx-->Free energy calculations<!--EIdx--></h3>
+<h3>Free energy calculations<!--QuietIdx-->free energy calculations<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>free-energy:</b></dt>
@@ -1442,7 +1449,7 @@ the molecule definition in the topology.</dd>
 
 <A NAME="neq"><br>
 <hr>
-<h3><!--Idx-->Non-equilibrium MD<!--EIdx--></h3>
+<h3>Non-equilibrium MD<!--QuietIdx-->non-equilibrium MD<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>acc-grps: </b></dt>
@@ -1494,7 +1501,7 @@ or a liquid.</dd>
 
 <A NAME="ef"><br>
 <hr>
-<h3><!--Idx-->Electric field<!--EIdx-->s</h3>
+<h3>Electric fields<!--QuietIdx-->electric field<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>E-x ; E-y ; E-z:</b></dt>
@@ -1512,7 +1519,7 @@ since a cosine of frequency zero has no phase.</dd>
 
 <hr>
 <A NAME="qmmm"><br>
-<h3><!--Idx-->Mixed quantum/classical molecular dynamics<!--EIdx--></h3>
+<h3>Mixed quantum/classical molecular dynamics<!--QuietIdx>QM/MM<!--EQuietIdx--></h3>
 
 <dl>
 <dt><b>QMMM:</b></dt>

@@ -1470,7 +1470,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
-                            int *simulation_part,gmx_bool bAppendOutputFiles)
+                            int *simulation_part,
+                            gmx_bool bAppendOutputFiles,gmx_bool bForceAppend)
 {
     t_fileio *fp;
     int  i,j,rc;
@@ -1753,7 +1754,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
              * locking
              */
             gmx_fatal(FARGS,"The first output file should always be the log "
-                      "file but instead is: %s", outputfiles[0].filename);
+                      "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
         for(i=0;i<nfiles;i++)
         {
@@ -1773,6 +1774,10 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
+                /* Note that there are systems where the lock operation
+                 * will succeed, but a second process can also lock the file.
+                 * We should probably try to detect this.
+                 */
 #ifndef GMX_NATIVE_WINDOWS
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
                     ==-1)
@@ -1780,15 +1785,30 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    if (errno!=EACCES && errno!=EAGAIN)
+                    if (errno == ENOSYS)
                     {
-                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                        if (!bForceAppend)
+                        {
+                            gmx_fatal(FARGS,"File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            if (fplog)
+                            {
+                                fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            }
+                        }
                     }
-                    else 
+                    else if (errno == EACCES || errno == EAGAIN)
                     {
                         gmx_fatal(FARGS,"Failed to lock: %s. Already running "
                                   "simulation?", outputfiles[i].filename);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
                     }
                 }
             }
@@ -1799,7 +1819,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
@@ -1836,7 +1856,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                           outputfiles[i].filename);
             }
 #endif        
@@ -1851,7 +1871,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 #endif
                 if(rc!=0)
                 {
-                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Truncation of file %s failed. Cannot do appending because of this failure.",outputfiles[i].filename);
                 }
             }
         }
@@ -1864,7 +1884,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
-                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,gmx_bool bAppend)
+                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,
+                     gmx_bool bAppend,gmx_bool bForceAppend)
 {
     gmx_large_int_t step;
     double t;
@@ -1874,7 +1895,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
                       ir->eI,&step,&t,state,bReadRNG,bReadEkin,
-                      &ir->simulation_part,bAppend);
+                      &ir->simulation_part,bAppend,bForceAppend);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);

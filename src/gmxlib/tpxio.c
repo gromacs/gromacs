@@ -2538,7 +2538,7 @@ gmx_bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
   }
   else {
     get_stx_coordnum(infile,&natoms);
-    init_t_atoms(&top->atoms,natoms,FALSE);
+    init_t_atoms(&top->atoms,natoms,(fn2ftp(infile) == efPDB));
     if (x == NULL)
     {
         snew(x,1);

@@ -62,12 +62,16 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
  * The master node reads the file
  * and communicates all the modified number of steps and the parallel setup,
  * but not the state itself.
+ * When bAppend is set, lock the log file and truncate the existing output
+ * files so they can be appended.
+ * With bAppend and bForceAppend: truncate anyhow if the system does not
+ * support file locking.
  */
 void load_checkpoint(const char *fn,FILE **fplog,
 			    t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
 			    t_inputrec *ir,t_state *state,gmx_bool *bReadRNG, 
 			    gmx_bool *bReadEkin,
-			    gmx_bool bTruncateOutputFiles);
+		     gmx_bool bAppend,gmx_bool bForceAppend);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.
