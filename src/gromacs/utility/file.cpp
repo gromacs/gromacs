@@ -123,7 +123,12 @@ void File::readBytes(void *buffer, size_t bytes)
     {
         if (feof(fp_))
         {
-            GMX_THROW(FileIOError("Premature end of file"));
+            GMX_THROW(FileIOError(
+                        formatString("Premature end of file\n"
+                                     "Attempted to read: %d bytes\n"
+                                     "Successfully read: %d bytes",
+                                     static_cast<int>(bytes),
+                                     static_cast<int>(bytesRead))));
         }
         else
         {
@@ -139,10 +144,22 @@ std::string File::readToString(const char *filename)
     File file(filename, "r");
     FILE *fp = file.handle();
 
-    // TODO: Full error checking.
-    std::fseek(fp, 0L, SEEK_END);
+    if (std::fseek(fp, 0L, SEEK_END) != 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Seeking to end of file failed"),
+                             "fseek", errno);
+    }
     long len = std::ftell(fp);
-    std::fseek(fp, 0L, SEEK_SET);
+    if (len == -1)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Reading file length failed"),
+                             "ftell", errno);
+    }
+    if (std::fseek(fp, 0L, SEEK_SET) != 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Seeking to start of file failed"),
+                             "fseek", errno);
+    }
 
     std::vector<char> data(len);
     file.readBytes(&data[0], len);
