@@ -117,15 +117,14 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         "supported for static selections).",
         "[TT]-od[tt] can be used to dump all the individual angles,",
         "each on a separate line. This format is better suited for",
-        "further processing, e.g., if angles from multiple runs are needed.",
-        NULL
+        "further processing, e.g., if angles from multiple runs are needed."
     };
     static const char *const cGroup1TypeEnum[] =
         { "angle", "dihedral", "vector", "plane", NULL };
     static const char *const cGroup2TypeEnum[] =
         { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
 
-    _options.setDescription(desc);
+    _options.setDescription(concatenateStrings(desc));
 
     _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnAngle).defaultValueIfSet("angle"));

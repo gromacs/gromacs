@@ -53,6 +53,7 @@
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/format.h"
 
 namespace gmx
 {
@@ -77,11 +78,10 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
     static const char *const desc[] = {
         "g_dist can calculate the distance between two positions as",
         "a function of time. The total distance and its",
-        "x, y and z components are plotted.",
-        NULL
+        "x, y and z components are plotted."
     };
 
-    _options.setDescription(desc);
+    _options.setDescription(concatenateStrings(desc));
 
     _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnDist).defaultValue("dist"));

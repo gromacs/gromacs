@@ -122,6 +122,24 @@ TEST(FormatStringTest, HandlesLongStrings)
 }
 
 /********************************************************************
+ * Tests for concatenateStrings()
+ */
+
+typedef FormatTestBase ConcatenateStringsTest;
+
+TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
+{
+    static const char * const strings[] = {
+        "First string",
+        "Second string ",
+        "Third string\n",
+        "Fourth string",
+        ""
+    };
+    checkFormatting(gmx::concatenateStrings(strings), "CombinedStrings");
+}
+
+/********************************************************************
  * Tests for TextLineWrapper
  */
 

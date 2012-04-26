@@ -61,6 +61,41 @@ namespace gmx
 std::string formatString(const char *fmt, ...);
 
 /*! \brief
+ * Joins strings in an array to a single string.
+ *
+ * \param[in] sarray  Array of strings to concatenate.
+ * \param[in] count   Number of elements in \p sarray to concatenate.
+ * \returns   All strings in \p sarray joined, ensuring at least one space
+ *      between the strings.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * The strings in the \p sarray array are concatenated, adding a single space
+ * between the strings if there is no whitespace in the end of a string.
+ * Terminal whitespace is removed.
+ *
+ * \inpublicapi
+ */
+std::string concatenateStrings(const char * const *sarray, size_t count);
+/*! \brief
+ * Convenience overload for joining strings in a C array (static data).
+ *
+ * \param[in] sarray  Array of strings to concatenate.
+ * \tparam    count   Deduced number of elements in \p sarray.
+ * \returns   All strings in \p sarray joined, ensuring at least one space
+ *      between the strings.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * \see concatenateStrings(const char * const *, size_t)
+ *
+ * \inpublicapi
+ */
+template <size_t count>
+std::string concatenateStrings(const char * const (&sarray)[count])
+{
+    return concatenateStrings(sarray, count);
+}
+
+/*! \brief
  * Wraps lines to a predefined length.
  *
  * This utility class wraps lines at word breaks to produce lines that are not

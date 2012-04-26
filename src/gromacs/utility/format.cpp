@@ -37,8 +37,10 @@
  */
 #include "gromacs/utility/format.h"
 
+#include <cctype>
 #include <cstdio>
 #include <cstdarg>
+#include <cstring>
 
 #include <algorithm>
 #include <string>
@@ -80,6 +82,26 @@ std::string formatString(const char *fmt, ...)
         dynamicBuf.resize(length);
         buf = &dynamicBuf[0];
     }
+}
+
+std::string concatenateStrings(const char *const *sarray, size_t count)
+{
+    std::string result;
+
+    for (size_t i = 0; i < count && sarray[i] != NULL; ++i)
+    {
+        if (sarray[i][0] != '\0')
+        {
+            result.append(sarray[i]);
+            char lastchar = sarray[i][std::strlen(sarray[i])-1];
+            if (!std::isspace(lastchar))
+            {
+                result.append(" ");
+            }
+        }
+    }
+    result.resize(result.find_last_not_of(" \n\r\t") + 1);
+    return result;
 }
 
 /********************************************************************

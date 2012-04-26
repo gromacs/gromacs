@@ -298,11 +298,10 @@ Select::initOptions(TrajectoryAnalysisSettings *settings)
         "one frame, and contains either 0/1 for each atom/residue/molecule",
         "possibly selected. 1 stands for the atom/residue/molecule being",
         "selected for the current frame, 0 for not selected.",
-        "With [TT]-dump[tt], the frame time is omitted from the output.",
-        NULL
+        "With [TT]-dump[tt], the frame time is omitted from the output."
     };
 
-    _options.setDescription(desc);
+    _options.setDescription(concatenateStrings(desc));
 
     _options.addOption(FileNameOption("os").filetype(eftPlot).outputFile()
                            .store(&_fnSize).defaultValueIfSet("size"));

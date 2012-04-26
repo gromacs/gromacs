@@ -37,12 +37,10 @@
  */
 #include "gromacs/options/options.h"
 
-#include <cctype>
-#include <cstring>
-
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
@@ -50,27 +48,6 @@
 
 namespace gmx
 {
-
-// TODO: Move this into the utility module
-static std::string composeString(const char *const *sarray)
-{
-    std::string result;
-
-    for (int i = 0; sarray[i] != NULL; ++i)
-    {
-        if (sarray[i][0] != '\0')
-        {
-            result.append(sarray[i]);
-            char lastchar = sarray[i][std::strlen(sarray[i])-1];
-            if (!std::isspace(lastchar))
-            {
-                result.append(" ");
-            }
-        }
-    }
-    result.resize(result.find_last_not_of(" \n\r\t") + 1);
-    return result;
-}
 
 /********************************************************************
  * Options::Impl
@@ -156,9 +133,9 @@ const std::string &Options::description() const
     return _impl->_description;
 }
 
-void Options::setDescription(const char *const *desc)
+void Options::setDescription(const std::string &desc)
 {
-    _impl->_description = composeString(desc);
+    _impl->_description = desc;
 }
 
 void Options::addSubSection(Options *section)

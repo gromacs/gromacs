@@ -127,11 +127,10 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
         "follow the instructions in the README file provided.",
         "This template implements a simple analysis programs that calculates",
         "average distances from a reference group to one or more",
-        "analysis groups.",
-        NULL
+        "analysis groups."
     };
 
-    options_.setDescription(desc);
+    options_.setDescription(concatenateStrings(desc));
 
     options_.addOption(FileNameOption("o")
         .filetype(eftPlot).outputFile()

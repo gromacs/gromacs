@@ -45,6 +45,7 @@
 #include <gromacs/trajectoryanalysis/analysissettings.h>
 #include <gromacs/trajectoryanalysis/cmdlinerunner.h>
 #include <gromacs/utility/exceptions.h>
+#include <gromacs/utility/format.h>
 
 namespace gmx
 {
@@ -98,11 +99,10 @@ Options &
 SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
-        "This is a test program for selections.",
-        NULL
+        "This is a test program for selections."
     };
 
-    _options.setDescription(desc);
+    _options.setDescription(concatenateStrings(desc));
 
     _options.addOption(SelectionOption("select").storeVector(&_selections)
                            .required().multiValue().allowMultiple()

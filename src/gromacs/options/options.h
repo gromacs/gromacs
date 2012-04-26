@@ -113,14 +113,11 @@ class Options
         /*! \brief
          * Sets the full description of the option collection.
          *
-         * \param[in] desc Array of strings to form the description, terminated
-         *      by a NULL pointer.
+         * \param[in] desc  String to set as the description.
          *
-         * The strings in the \p desc array are concatenated to form the
-         * description, adding a single space between the strings if there is
-         * no whitespace in the end of a string.
+         * concatenateStrings() is useful for forming the input string.
          */
-        void setDescription(const char *const *desc);
+        void setDescription(const std::string &desc);
         //int addBugs(int nbugs, const char *const *bugs);
 
         /*! \brief
