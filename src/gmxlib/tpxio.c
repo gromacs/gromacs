@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 77;
+static const int tpx_version = 78;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -84,7 +84,7 @@ static const int tpx_version = 77;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 23;
+static const int tpx_generation = 24;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -1360,6 +1360,22 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
   }
 }
 
+static void add_settle_atoms(t_ilist *ilist)
+{
+    int i;
+
+    /* Settle used to only store the first atom: add the other two */
+    srenew(ilist->iatoms,2*ilist->nr);
+    for(i=ilist->nr/2-1; i>=0; i--)
+    {
+        ilist->iatoms[4*i+0] = ilist->iatoms[2*i+0];
+        ilist->iatoms[4*i+1] = ilist->iatoms[2*i+1];
+        ilist->iatoms[4*i+2] = ilist->iatoms[2*i+1] + 1;
+        ilist->iatoms[4*i+3] = ilist->iatoms[2*i+1] + 2;
+    }
+    ilist->nr = 2*ilist->nr;
+}
+
 static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead, 
                       int file_version)
 {
@@ -1378,6 +1394,10 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist,gmx_bool bRead,
       ilist[j].iatoms = NULL;
     } else {
       do_ilist(fio, &ilist[j],bRead,file_version,j);
+      if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
+      {
+          add_settle_atoms(&ilist[j]);
+      }
     }
     /*
     if (bRead && gmx_debug_at)
