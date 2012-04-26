@@ -101,21 +101,6 @@ std::string OptionInfo::formatValue(int i) const
     return _option.formatValue(i);
 }
 
-std::string OptionInfo::formatValues() const
-{
-    std::string result;
-    int count = valueCount();
-    for (int i = 0; i < count; ++i)
-    {
-        if (i != 0)
-        {
-            result.append(" ");
-        }
-        result.append(formatValue(i));
-    }
-    return result;
-}
-
 /********************************************************************
  * OptionsIterator
  */
