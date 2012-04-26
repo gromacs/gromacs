@@ -97,10 +97,9 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	  gmx_fatal(FARGS,
 		      "Found more coordinates (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
-	if (atoms) {
-	  if (fr->bAtoms &&
-	      (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
-	       != 6)) {
+	if (fr->bAtoms) {
+	  if (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
+	      != 6) {
 	    if (oldres>=0)
 	      resnr = oldres;
 	    else {

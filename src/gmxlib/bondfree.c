@@ -1441,6 +1441,8 @@ real posres(int nbonds,
                     rdist[m] = L1*posA       + lambda*posB;
                     dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
                     break;
+                default:
+                    gmx_fatal(FARGS, "No such scaling method implemented");
                 }
             }
             else
