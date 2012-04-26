@@ -377,6 +377,92 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 #endif
 }
 
+void gmx_init_intra_counters(t_commrec *cr)
+{
+    /* counters for PP+PME and PP-only processes on my node */
+    int nnodes, nnodes_pp, id_mynode, id_mynode_group, nproc_mynode, nproc_mynode_pp;
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    int i, mynum, *num, *num_pp;
+#endif
+
+    nnodes    = cr->nnodes;
+    nnodes_pp = nnodes - cr->npmenodes;
+
+#if defined GMX_MPI && !defined GMX_THREAD_MPI
+    /* We have MPI and can expect to have different compute nodes */
+    mynum = gmx_hostname_num();
+
+    snew(num, nnodes);
+    snew(num_pp, nnodes_pp);
+
+    num[cr->sim_nodeid] = mynum;
+    if (cr->duty & DUTY_PP)
+    {
+        num_pp[cr->nodeid] = mynum;
+    }
+
+    MPI_Allreduce(MPI_IN_PLACE, num, nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
+    MPI_Allreduce(MPI_IN_PLACE, num_pp, nnodes_pp, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+
+    id_mynode       = 0;
+    id_mynode_group = 0;
+    nproc_mynode    = 0;
+    nproc_mynode_pp = 0;
+    for(i=0; i<nnodes; i++)
+    {
+        if (num[i] == mynum)
+        {
+            nproc_mynode++;
+            if (i < cr->sim_nodeid)
+            {
+                id_mynode++;
+            }
+            if (i < cr->nodeid)
+            {
+                id_mynode_group++;
+            }
+        }
+    }
+    for(i=0; i<nnodes_pp; i++)
+    {
+        if (num_pp[i] == mynum)
+        {
+            nproc_mynode_pp++;
+        }
+    }
+    sfree(num);
+    sfree(num_pp);
+#else
+    /* Serial or thread-MPI code, we are running within a node */
+    id_mynode       = cr->sim_nodeid;
+    id_mynode_group = cr->nodeid;
+    nproc_mynode    = cr->nnodes;
+    nproc_mynode_pp = cr->nnodes - cr->npmenodes;
+#endif
+
+    if (debug)
+    {
+        char sbuf[STRLEN];
+        if (cr->duty & DUTY_PP && cr->duty & DUTY_PME)
+        {
+            sprintf(sbuf, "PP+PME");
+        }
+        else
+        {
+            sprintf(sbuf, "%s", cr->duty & DUTY_PP ? "PP" : "PME");
+        }
+        fprintf(debug, "On %3s node %d: nodeid_intra=%d, nodeid_group_intra=%d, "
+                "nnodes_intra=%d, nnodes_pp_intra=%d\n", sbuf, cr->sim_nodeid,
+                id_mynode, id_mynode_group, nproc_mynode, nproc_mynode_pp);
+    }
+
+    cr->nodeid_intra        = id_mynode;
+    cr->nodeid_group_intra  = id_mynode_group;
+    cr->nnodes_intra        = nproc_mynode;
+    cr->nnodes_pp_intra     = nproc_mynode_pp;
+}
+
+
 void gmx_barrier(const t_commrec *cr)
 {
 #ifndef GMX_MPI

@@ -45,6 +45,7 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "network.h"
+#include "statutil.h"
 #include "gmx_omp_nthreads.h"
 
 #ifdef GMX_OPENMP
@@ -130,8 +131,8 @@ static int pick_module_nthreads(FILE *fplog, int m,
         sscanf(env, "%d", &nth);
 
 #ifndef GMX_OPENMP
-        gmx_warning("%s=%d is set, but mdrun is compiled without OpenMP!",
-                    modth_env_var[m], nth);
+        gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
+                    modth_env_var[m], nth, ShortProgram());
 #endif
 
         /* with the verlet codepath, when any GMX_*_NUM_THREADS env var is set,
@@ -244,7 +245,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
         {
             if (!bOMP)
             {
-                gmx_warning("OMP_NUM_THREADS is set, but mdrun is compiled without OpenMP!");
+                gmx_warning("OMP_NUM_THREADS is set, but %s is compiled without OpenMP!",
+                            ShortProgram());
             }
             else
             {
@@ -288,21 +290,18 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             }
 
             /* get the number of processes per node */
-#ifdef GMX_THREAD_MPI
-            nppn = cr->nnodes;
-#else
 #ifdef GMX_MPI
+            if (PAR(cr))
             {
-                MPI_Comm c_intra;
-                MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), gmx_node_rank(), &c_intra);
-                MPI_Comm_size(c_intra, &nppn);
-                MPI_Comm_free(&c_intra);
+                /* MPI or tMPI */
+                nppn = cr->nnodes_intra;
             }
-#else
-            /* neither MPI nor tMPI */
-            nppn = 1;
-#endif /* GMX_MPI */
-#endif /* GMX_THREAD_MPI */
+            else
+#endif
+            {
+                /* neither MPI nor tMPI */
+                nppn = 1;
+            }
 
             /* divide the threads within the MPI processes/tMPI threads */
             if (nth >= nppn)
@@ -311,7 +310,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
             }
             else
             {
- #ifdef GMX_MPI
+#ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
                 sprintf(sbuf, "thread-MPI threads");
                 sbuf1[0] = '\0';

@@ -877,6 +877,9 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         gmx_setup_nodecomm(fplog,cr);
     }
 
+    /* Initialize per-node process ID and counters. */
+    gmx_init_intra_counters(cr);
+
     gmx_omp_nthreads_init(fplog, cr, (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
@@ -924,7 +927,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         }
         if (fplog)
         {
-            fprintf(fplog, "\n%s\n\n", stmp);
+            fprintf(fplog, "%s\n\n", stmp);
         }
     }
 
@@ -1061,7 +1064,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
            if only PME is using threads.
         */
 
-#ifdef GMX_OPENMP
+#ifdef GMX_OPENMP /* TODO: actually we could do this even without OpenMP! */
 #ifdef __linux
     if (getenv("GMX_NO_THREAD_PINNING") == NULL)
     {
@@ -1077,30 +1080,38 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
             local_nthreads = (cr->duty & DUTY_PME) ? nthreads_pme : 1;
         }
 
+        /* map the current process to cores */
         if (PAR(cr) || MULTISIM(cr))
         {
-#ifdef GMX_LIB_MPI
-            MPI_Comm comm_intra; /* intra communicator (but different to nc.comm_intra includes PME nodes) */
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),gmx_node_rank(),&comm_intra);
-            
-            MPI_Scan(&local_nthreads,&core, 1, MPI_INT, MPI_SUM, comm_intra);
-            core -= local_nthreads; /* make exclusive scan */
-#else
-            /* With thread-MPI we have a single compute node: use the MPI rank */
-            core = gmx_node_rank()*local_nthreads;
-#endif
+            core = cr->nodeid_intra*local_nthreads;
         }
         else
         {
             core = 0;
         }
+
+        /* set the per-thread affinity */
 #pragma omp parallel firstprivate(core) num_threads(local_nthreads)
         {
             cpu_set_t mask;
             CPU_ZERO(&mask);
-            core+=omp_get_thread_num();
-            CPU_SET(core,&mask);
-            sched_setaffinity((pid_t) syscall (SYS_gettid),sizeof(cpu_set_t),&mask);
+            core += omp_get_thread_num();
+            CPU_SET(core, &mask);
+            sched_setaffinity((pid_t) syscall (SYS_gettid), sizeof(cpu_set_t), &mask);
+        }
+    }
+    else
+    {
+        char sbuf[STRLEN];
+        sprintf(sbuf, "NOTE: Thread pinning turned off by the "
+                "GMX_NO_THREAD_PINNING environment variable");
+        if (SIMMASTER(cr))
+        {
+            fprintf(stderr, "%s\n\n", sbuf);
+        }
+        if (fplog)
+        {
+            fprintf(fplog, "\n%s\n", sbuf);
         }
     }
 #endif /* __linux    */
