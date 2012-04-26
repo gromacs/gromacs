@@ -56,7 +56,6 @@
 #include "mshift.h"
 #include "txtdump.h"
 #include "coulomb.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdrun.h"
 #include "domdec.h"
@@ -503,27 +502,16 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
             enerd->dvdl_lin += dvdlambda;
         }
-        else
-        {
-            Vcorr = shift_LRcorrection(fplog,md->start,md->homenr,cr,fr,
-                                       md->chargeA,excl,x,TRUE,box,
-                                       fr->vir_el_recip);
-        }
         
         dvdlambda = 0;
         status = 0;
         switch (fr->eeltype)
         {
-        case eelPPPM:
-            status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_novirsum,
-                                 md->chargeA,
-                                 box_size,fr->phi,cr,md->start,md->homenr,
-                                 nrnb,ir->pme_order,&Vlr);
-            break;
         case eelPME:
         case eelPMESWITCH:
         case eelPMEUSER:
         case eelPMEUSERSWITCH:
+        case eelP3M_AD:
             if (cr->duty & DUTY_PME)
             {
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))

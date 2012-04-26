@@ -70,7 +70,6 @@
 #include "force.h"
 #include "bondf.h"
 #include "pme.h"
-#include "pppm.h"
 #include "disre.h"
 #include "orires.h"
 #include "network.h"
@@ -1902,7 +1901,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
 {
     int    i,m,start,end;
     gmx_large_int_t step;
-    double mass,tmass,vcm[4];
     real   dt=ir->delta_t;
     real   dvdlambda;
     rvec   *savex;
@@ -1982,38 +1980,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         }
     }
     
-    for(m=0; (m<4); m++)
-        vcm[m] = 0;
-    for(i=start; i<end; i++) {
-        mass = md->massT[i];
-        for(m=0; m<DIM; m++) {
-            vcm[m] += state->v[i][m]*mass;
-        }
-        vcm[3] += mass;
-    }
-    
-    if (ir->nstcomm != 0 || debug) {
-        /* Compute the global sum of vcm */
-        if (debug)
-            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-        if (PAR(cr))
-            gmx_sumd(4,vcm,cr);
-        tmass = vcm[3];
-        for(m=0; (m<DIM); m++)
-            vcm[m] /= tmass;
-        if (debug) 
-            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-        if (ir->nstcomm != 0) {
-            /* Now we have the velocity of center of mass, let's remove it */
-            for(i=start; (i<end); i++) {
-                for(m=0; (m<DIM); m++)
-                    state->v[i][m] -= vcm[m];
-            }
-
-        }
-    }
     sfree(savex);
 }
 

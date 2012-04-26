@@ -94,7 +94,7 @@ int gmx_vanhove(int argc,char *argv[])
   static real sbin=0,rmax=2,rbin=0.01,mmax=0,rint=0;
   t_pargs pa[] = {
     { "-sqrt",    FALSE, etREAL,{&sbin},
-      "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in sqrt(ps)" },
+      "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
     { "-fm",      FALSE, etINT, {&fmmax},
       "Number of frames in the matrix, 0 is plot all" },
     { "-rmax",    FALSE, etREAL, {&rmax},

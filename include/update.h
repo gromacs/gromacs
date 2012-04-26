@@ -219,11 +219,10 @@ void update_annealing_target_temp(t_grpopts *opts,real t);
 real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC,int nwall,matrix box,
-		      tensor ekin,tensor vir,tensor pres,real Elr);
+real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
+	       tensor pres);
 /* Calculate the pressure tensor, returns the scalar pressure.
- * The unit of pressure is bar, If Elr != 0
- * a long range correction based on Ewald/PPPM is made (see c-code)
+ * The unit of pressure is bar.
  */
 
 void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,

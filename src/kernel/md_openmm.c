@@ -40,11 +40,6 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -72,7 +67,6 @@
 #include "disre.h"
 #include "orires.h"
 #include "dihre.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "qmmm.h"

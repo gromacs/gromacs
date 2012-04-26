@@ -929,7 +929,6 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
   case eelCUT:
     tabsel[etiCOUL] = etabCOUL;
     break;
-  case eelPPPM:
   case eelPOISSON:
     tabsel[etiCOUL] = etabShift;
     break;
@@ -941,6 +940,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,gmx_bool b14only)
     break;
   case eelEWALD:
   case eelPME:
+  case eelP3M_AD:
     tabsel[etiCOUL] = etabEwald;
     break;
   case eelPMESWITCH:

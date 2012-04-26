@@ -2179,7 +2179,15 @@ void init_forcerec(FILE *fp,
         {
             if (fp)
                 fprintf(fp,"Will do PME sum in reciprocal space.\n");
-            please_cite(fp,"Essmann95a");
+            if (ir->coulombtype == eelP3M_AD)
+            {
+                please_cite(fp,"Hockney1988");
+                please_cite(fp,"Ballenegger2012");
+            }
+            else
+            {
+                please_cite(fp,"Essmann95a");
+            }
             
             if (ir->ewald_geometry == eewg3DC)
             {
@@ -2214,27 +2222,12 @@ void init_forcerec(FILE *fp,
     {
         init_generalized_rf(fp,mtop,ir,fr);
     }
-    else if (EEL_FULL(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
-             (fr->eeltype == eelUSER) || (fr->eeltype == eelSWITCH))
+    else if (fr->eeltype == eelSHIFT)
     {
-        /* We must use the long range cut-off for neighboursearching...
-         * An extra range of e.g. 0.1 nm (half the size of a charge group)
-         * is necessary for neighboursearching. This allows diffusion 
-         * into the cut-off range (between neighborlist updates), 
-         * and gives more accurate forces because all atoms within the short-range
-         * cut-off rc must be taken into account, while the ns criterium takes
-         * only those with the center of geometry within the cut-off.
-         * (therefore we have to add half the size of a charge group, plus
-         * something to account for diffusion if we have nstlist > 1)
-         */
         for(m=0; (m<DIM); m++)
             box_size[m]=box[m][m];
         
-        if (fr->eeltype == eelPPPM && fr->phi == NULL)
-            snew(fr->phi,natoms);
-        
-        if ((fr->eeltype==eelPPPM) || (fr->eeltype==eelPOISSON) || 
-            (fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
+        if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
             set_shift_consts(fp,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
     }
     

@@ -777,9 +777,9 @@ static void do_update_bd(int start,int nrend,double dt,
                 } 
                 else 
                 {
-                    /* NOTE: invmass = 1/(mass*friction_constant*dt) */
-                    vn = invmass[n]*f[n][d]*dt 
-                        + sqrt(invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
+                    /* NOTE: invmass = 2/(mass*friction_constant*dt) */
+                    vn = 0.5*invmass[n]*f[n][d]*dt 
+                        + sqrt(0.5*invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
                 }
 
                 v[n][d]      = vn;

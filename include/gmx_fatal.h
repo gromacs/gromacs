@@ -46,6 +46,23 @@
 extern "C" {
 #endif
 
+#ifndef __has_feature      // Optional.
+#define __has_feature(x) 0 // Compatibility with non-clang compilers.
+#endif
+
+/** \def GMX_ATTRIBUTE_NORETURN \brief Indicate that a function is not
+ * expected to return.
+ * WARNING: In general this flag should not be used for compiler
+ * optimizations, since set_gmx_error_handler can be set to a
+ * handler which does not quit.
+ */
+#ifndef GMX_ATTRIBUTE_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define GMX_ATTRIBUTE_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define GMX_ATTRIBUTE_NORETURN
+#endif
+#endif
   
 void 
 _where(const char *file,int line);
@@ -63,7 +80,7 @@ _unset_fatal_tmp_file(const char *fn, const char *file, int line);
 /* unsets filename to be removed */
 
 void 
-gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
+gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATTRIBUTE_NORETURN;
 #define FARGS 0,__FILE__,__LINE__
 /*
  * Routine gmx_fatal prints 
@@ -142,7 +159,7 @@ void doexceptions(void);
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  void _gmx_error(const char *key,const char *msg,const char *file,int line);
+  void _gmx_error(const char *key,const char *msg,const char *file,int line) GMX_ATTRIBUTE_NORETURN;
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)

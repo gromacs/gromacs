@@ -75,7 +75,6 @@
 #include "disre.h"
 #include "orires.h"
 #include "dihre.h"
-#include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
 #include "qmmm.h"
@@ -3088,7 +3087,8 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
-                            (Flags & MD_APPENDFILES));
+                            (Flags & MD_APPENDFILES),
+			    (Flags & MD_APPENDFILESSET));
 
             if (bReadRNG)
             {
@@ -3280,22 +3280,6 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * and for the initial shell prediction.
                  */
                 construct_vsites_mtop(fplog,vsite,mtop,state->x);
-            }
-        }
-
-        /* Initiate PPPM if necessary */
-        if (fr->eeltype == eelPPPM)
-        {
-            if (mdatoms->nChargePerturbed)
-            {
-                gmx_fatal(FARGS,"Free energy with %s is not implemented",
-                          eel_names[fr->eeltype]);
-            }
-            status = gmx_pppm_init(fplog,cr,oenv,FALSE,TRUE,box,
-                                   getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
-            if (status != 0)
-            {
-                gmx_fatal(FARGS,"Error %d initializing PPPM",status);
             }
         }
 
@@ -3860,6 +3844,7 @@ int gmx_membed(int argc,char *argv[])
 	Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
 	Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
 	Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0);
+	Flags = Flags | (opt2parg_bSet("-append", asize(pa),pa) ? MD_APPENDFILESSET : 0); 
 	Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0);
 	Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 

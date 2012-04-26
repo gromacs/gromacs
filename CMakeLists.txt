@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
+# Keep CMake suitably quiet on Cygwin
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
 project(Gromacs)
 include(Dart)
@@ -160,6 +162,24 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
+# branch (proposed for v2.8.9) to be able to detect invalid options
+# with the Intel Compilers.
+# Remove these files from the source tree when a CMake version that
+# includes the features in question becomes required.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+include(gmxCFlags)
+gmx_c_flags()
+
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
@@ -215,7 +235,6 @@ include(gmxManageMPI)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
@@ -317,6 +336,8 @@ check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(lstat             HAVE_LSTAT)
+check_function_exists(sigaction         HAVE_SIGACTION)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -475,6 +496,10 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif(CYGWIN)
 
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_NATIVE_WINDOWS 1)
+endif()
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
@@ -513,6 +538,7 @@ endif()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
+include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 include(gmxCheckBuildUserTime)
@@ -709,6 +735,10 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     set(PKG_FFT "${FFTW_PKG}")
 
     set(GMX_FFT_FFTW3 1)
+
+    if (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+      message(WARNING "The fftw library found is compiled without SSE support, which makes it slow. Consider recompiling it or contact your admin")
+    endif (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")

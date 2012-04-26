@@ -74,7 +74,7 @@ static atom_id pdbasearch_atom(const char *name,int resind,t_atoms *pdba,
   for(i=0; (i<pdba->nr) && (pdba->atom[i].resind != resind); i++)
     ;
     
-  return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname,
+  return search_atom(name,i,pdba,
 		     searchtype,bAllowMissing);
 }
 

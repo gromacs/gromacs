@@ -120,8 +120,10 @@ gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef,int ePBC,int natoms,
     {
         fprintf(stderr,
                 "\n"
-                "WARNING: if there are broken molecules in the trajectory file,\n"
-                "         they can not be made whole without a run input file\n\n");
+                "WARNING: If there are molecules in the input trajectory file\n"
+                "         that are broken across periodic boundaries, they\n"
+                "         cannot be made whole (or treated as whole) without\n"
+                "         you providing a run input file.\n\n");
     }
 
     return gpbc;

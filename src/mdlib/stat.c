@@ -273,24 +273,25 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               }
           }
       }
+  }
 
-      if (vcm) 
+  if (vcm)
+  {
+      icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+      where();
+      imass = add_binr(rb,vcm->nr,vcm->group_mass);
+      where();
+      if (vcm->mode == ecmANGULAR)
       {
-          icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+          icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
           where();
-          imass = add_binr(rb,vcm->nr,vcm->group_mass);
+          icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
           where();
-          if (vcm->mode == ecmANGULAR) 
-          {
-              icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
-              where();
-              icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
-              where();
-              ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-              where();
-          }
+          ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+          where();
       }
   }
+
   if (DOMAINDECOMP(cr)) 
   {
       nb = cr->dd->nbonded_local;
@@ -373,23 +374,6 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
               }
           }
-          /* should this be here, or with ekin?*/
-          if (vcm) 
-          {
-              extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
-              where();
-              extract_binr(rb,imass,vcm->nr,vcm->group_mass);
-              where();
-              if (vcm->mode == ecmANGULAR) 
-              {
-                  extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
-                  where();
-                  extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
-                  where();
-                  extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-                  where();
-              }
-          }
           if (DOMAINDECOMP(cr)) 
           {
               extract_bind(rb,inb,1,&nb);
@@ -403,6 +387,23 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           filter_enerdterm(copyenerd,FALSE,enerd->term,bTemp,bPres,bEner);    
 /* Small hack for temp only - not entirely clear if still needed?*/
           /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
+      }
+  }
+
+  if (vcm)
+  {
+      extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
+      where();
+      extract_binr(rb,imass,vcm->nr,vcm->group_mass);
+      where();
+      if (vcm->mode == ecmANGULAR)
+      {
+          extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+          where();
+          extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+          where();
+          extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+          where();
       }
   }
 
