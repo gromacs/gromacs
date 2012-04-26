@@ -3714,6 +3714,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #endif
 
     nthread = pme->nthread;
+    assert(nthread>0);
 
 #ifdef PME_TIME_THREADS
     c1 = omp_cyc_start();
@@ -4028,8 +4029,8 @@ int gmx_pme_do(gmx_pme_t pme,
     real *  fftgrid;
     t_complex * cfftgrid;
     int     thread;
-    gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
-    gmx_bool bCalcF = flags & GMX_PME_CALC_F;
+    const gmx_bool bCalcEnerVir = flags & GMX_PME_CALC_ENER_VIR;
+    const gmx_bool bCalcF = flags & GMX_PME_CALC_F;
 
     assert(pme->nnodes > 0);
     assert(pme->nnodes == 1 || pme->ndecompdim > 0);
