@@ -1497,6 +1497,87 @@ static int parse_gmx_gpu_id(const t_commrec *cr)
     }
 }
 
+
+/* Check the consistency of the GMX_GPU_ID string.
+
+   Make sure that with thread-MPI each thread uses a different, otherwise
+   threads mess up each others GPU context. */
+static void check_gmx_gpu_id_consistency(const char *gpu_id_str,
+                                         const t_commrec *cr)
+{
+    gmx_bool bAllSame = TRUE, bAllDifferent = TRUE, bSomeSame = FALSE;
+    int len, i, j, npppn;
+    char sbuf[STRLEN], sbuf1[STRLEN], sbuf2[STRLEN];
+
+    len = strlen(gpu_id_str);
+    if (len == 0)
+    {
+        gmx_fatal(FARGS, "GMX_GPU_ID environment variable set but empty.");
+    }
+
+    /* number of PP processes on my node */
+    npppn = cr->nnodes_pp_intra;
+    sbuf2[0] = '\0';
+#ifdef GMX_THREAD_MPI
+    sprintf(sbuf1, "thread-MPI thread");
+    if (npppn > 1)
+    {
+        strcat(sbuf1, "s");
+    }
+#else
+#ifdef GMX_MPI
+    sprintf(sbuf1, "MPI process");
+    if (npppn > 1)
+    {
+        strcat(sbuf1, "es");
+    }
+    sprintf(sbuf2, " per node");
+#else
+    /* neither MPI nor tMPI */
+    sprintf(sbuf1, "process");
+#endif
+#endif
+
+    if (len != npppn)
+    {
+        gmx_fatal(FARGS, "On node %d incorrect GMX_GPU_ID: %d device IDs passed, but %s is\n"
+                  "using %d PP %s%s requiring one GPU for each.",
+                  cr->nodeid, len, ShortProgram(), npppn, sbuf1, sbuf2);
+    }
+
+    if (len < 2)
+    {
+        return;
+    }
+
+    for (i = 0; i < len - 1; i++)
+    {
+        for (j = i + 1; j < len; j++)
+        {
+            bAllSame        &= gpu_id_str[i] == gpu_id_str[j];
+            bSomeSame       |= gpu_id_str[i] == gpu_id_str[j];
+            bAllDifferent   &= gpu_id_str[i] != gpu_id_str[j];
+        }
+    }
+
+#ifdef GMX_THREAD_MPI
+    if (!bAllDifferent)
+    {
+        gmx_fatal(FARGS,
+                  "Invalid GPU assignment: multiple tMPI threads per GPU (GMX_GPU_ID=%s).\n"
+                  "Use MPI if you are sure that you want multiple processes to use the same GPU.",
+                  gpu_id_str);
+    }
+#endif
+
+    if (bSomeSame)
+    {
+        gmx_warning("GMX_GPU_ID=%s assigns a/some GPU(s) to multiple %s;\n"
+                    "         this should be avoided as it generally causes performance loss.",
+                    gpu_id_str, sbuf1);
+    }
+}
+
 /* TODO print some stats to the log! */
 static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
 {
@@ -1522,6 +1603,8 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     if ((env = getenv("GMX_GPU_ID")) != NULL)
     {
         gpu_device_id = parse_gmx_gpu_id(cr);
+
+        check_gmx_gpu_id_consistency(env, cr);
 
         /* If you set this env.var, you want to use a GPU */
         forceGPU = TRUE;
