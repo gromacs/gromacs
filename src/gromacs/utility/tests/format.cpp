@@ -147,6 +147,7 @@ const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 const char g_wrapTextLongWord[]
     = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
+const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 
 typedef FormatTestBase TextLineWrapperTest;
 
@@ -155,7 +156,9 @@ TEST_F(TextLineWrapperTest, HandlesEmptyStrings)
     gmx::TextLineWrapper wrapper;
 
     EXPECT_EQ("", wrapper.wrapToString(""));
+    EXPECT_EQ("", wrapper.wrapToString("   "));
     EXPECT_TRUE(wrapper.wrapToVector("").empty());
+    EXPECT_TRUE(wrapper.wrapToString("   ").empty());
 }
 
 TEST_F(TextLineWrapperTest, HandlesTrailingNewlines)
@@ -220,6 +223,14 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExistingBreaks)
     checkFormatting(wrapper.wrapToString(g_wrapText2), "WrappedAt10");
     wrapper.setLineLength(14);
     checkFormatting(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
+}
+
+TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
+{
+    gmx::TextLineWrapper wrapper;
+
+    wrapper.setLineLength(14);
+    checkFormatting(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14");
 }
 
 /********************************************************************

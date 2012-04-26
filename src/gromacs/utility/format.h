@@ -102,6 +102,7 @@ std::string concatenateStrings(const char * const (&sarray)[count])
  * longer than a predefined length.  Explicit newlines ('\\n') are preserved.
  * Only space is considered a word separator.  If a single word exceeds the
  * maximum line length, it is still printed on a single line.
+ * Extra whitespace is stripped from the start and end of produced lines.
  * If maximum line length is not set using setLineLength(), only wraps at
  * explicit newlines.
  *
