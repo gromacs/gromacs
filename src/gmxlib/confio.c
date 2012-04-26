@@ -68,7 +68,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 {
   t_atoms *atoms;
   gmx_bool   bEnd;
-  int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
+  int    nwanted,natoms,atnr,resnr=0,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
   double db1,db2,db3;
