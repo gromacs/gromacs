@@ -713,7 +713,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    gmx_bool       bWrongPrecision,bOK=TRUE;
+    gmx_bool       bWrongPrecision=FALSE,bOK=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
