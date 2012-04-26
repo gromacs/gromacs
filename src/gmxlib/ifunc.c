@@ -147,7 +147,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
   def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk     ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
-  def_shkcb   ("SETTLE",   "Settle",          1, 2, 0                             ),
+  def_shkcb   ("SETTLE",   "Settle",          3, 2, 0                             ),
   def_vsite   ("VSITE2",   "Virtual site 2",  3, 1                                ),
   def_vsite   ("VSITE3",   "Virtual site 3",  4, 2                                ),
   def_vsite   ("VSITE3FD", "Virtual site 3fd",4, 2                                ),

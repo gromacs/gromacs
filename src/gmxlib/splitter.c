@@ -188,10 +188,11 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
       /* Only the first particle is stored for settles ... */
       ai=ilist->iatoms[i+1];
       nodeid=hid[ai];
-      if ((nodeid != hid[ai+1]) ||
-	  (nodeid != hid[ai+2]))
+      if (nodeid != hid[ilist->iatoms[i+2]] ||
+          nodeid != hid[ilist->iatoms[i+3]])
 	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
-		  "constraint between atoms (%d-%d)",ai+1,ai+2+1);
+		  "constraint between atoms %d, %d, %d)",
+              ai,ilist->iatoms[i+2],ilist->iatoms[i+3]);
     }
     else if(interaction_function[ftype].flags & IF_VSITE) 
 	{

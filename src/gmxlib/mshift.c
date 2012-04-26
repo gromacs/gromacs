@@ -98,7 +98,7 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
     np = interaction_function[ftype].nratoms;
     
     if (ia[1] >= at_start && ia[1] < at_end) {
-      if (ia[np] >= at_end || (ftype == F_SETTLE && ia[1]+2 >= at_end))
+      if (ia[np] >= at_end)
 	gmx_fatal(FARGS,
 		  "Molecule in topology has atom numbers below and "
 		  "above natoms (%d).\n"
@@ -108,8 +108,8 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
 		  at_end,at_end);
       if (ftype == F_SETTLE) {
 	/* Bond all the atoms in the settle */
-	add_gbond(g,ia[1],ia[1]+1);
-	add_gbond(g,ia[1],ia[1]+2);
+	add_gbond(g,ia[1],ia[2]);
+	add_gbond(g,ia[1],ia[3]);
       } else if (part == NULL) {
 	/* Simply add this bond */
 	for(j=1; j<np; j++) {
@@ -179,8 +179,8 @@ static void calc_1se(t_graph *g,int ftype,t_ilist *il,
       iaa          = ia[1];
       if (iaa >= at_start && iaa < at_end) {
 	nbond[iaa]   += 2;
-	nbond[iaa+1] += 1;
-	nbond[iaa+2] += 1;
+	nbond[ia[2]] += 1;
+	nbond[ia[3]] += 1;
 	g->at_start   = min(g->at_start,iaa);
 	g->at_end     = max(g->at_end,iaa+2+1);
       }
