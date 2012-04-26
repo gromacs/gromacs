@@ -40,6 +40,7 @@
 #include <cerrno>
 #include <cstdio>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -141,7 +142,9 @@ void File::readBytes(void *buffer, size_t bytes)
 // static
 std::string File::readToString(const char *filename)
 {
-    File file(filename, "r");
+    // Binary mode is required on Windows to be able to determine a size
+    // that can be passed to fread().
+    File file(filename, "rb");
     FILE *fp = file.handle();
 
     if (std::fseek(fp, 0L, SEEK_END) != 0)
@@ -163,9 +166,15 @@ std::string File::readToString(const char *filename)
 
     std::vector<char> data(len);
     file.readBytes(&data[0], len);
-    std::string result(&data[0], len);
-
     file.close();
+
+    std::string result(&data[0], len);
+    // The below is necessary on Windows to make newlines stay as '\n' on a
+    // roundtrip.  Perhaps would be better to only replace '\r\n' with '\n',
+    // but in practice this probably makes little difference.
+    std::string::iterator end = std::remove(result.begin(), result.end(), '\r');
+    result.erase(end, result.end());
+
     return result;
 }
 
