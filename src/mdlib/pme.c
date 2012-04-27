@@ -2082,7 +2082,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
 #ifdef GMX_MPI
             pme->mpi_comm_d[0] = pme->mpi_comm;
-            pme->mpi_comm_d[1] = NULL;
+            pme->mpi_comm_d[1] = MPI_COMM_NULL;
 #endif
             pme->ndecompdim = 1;
             pme->nodeid_major = pme->nodeid;
@@ -2092,7 +2092,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         else if (nnodes_major == 1)
         {
 #ifdef GMX_MPI
-            pme->mpi_comm_d[0] = NULL;
+            pme->mpi_comm_d[0] = MPI_COMM_NULL;
             pme->mpi_comm_d[1] = pme->mpi_comm;
 #endif
             pme->ndecompdim = 1;
