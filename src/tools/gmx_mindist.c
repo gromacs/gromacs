@@ -40,7 +40,7 @@
 #include <stdlib.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"

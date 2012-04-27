@@ -1122,22 +1122,6 @@ static int pr_blocka_title(FILE *fp,int indent,const char *title,t_blocka *block
   return indent;
 }
 
-static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, gmx_bool bShowNumbers)
-{
-  int i;
-  
-  if (available(fp,block,indent,title))
-    {
-      indent=pr_block_title(fp,indent,title,block);
-      for (i=0; i<=block->nr; i++)
-        {
-          (void) pr_indent(fp,indent+INDENT);
-          (void) fprintf(fp,"%s->index[%d]=%u\n",
-			 title,bShowNumbers?i:-1,block->index[i]);
-        }
-    }
-}
-
 static void low_pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block, gmx_bool bShowNumbers)
 {
   int i;

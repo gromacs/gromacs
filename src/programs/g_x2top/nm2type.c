@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-#include "assert.h"
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"

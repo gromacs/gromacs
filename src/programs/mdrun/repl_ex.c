@@ -703,19 +703,6 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     return exchange;
 }
 
-static void write_debug_x(t_state *state)
-{
-    int i;
-
-    if (debug)
-    {
-        for(i=0; i<state->natoms; i+=10)
-        {
-            fprintf(debug,"dx %5d %10.5f %10.5f %10.5f\n",i,state->x[i][XX],state->x[i][YY],state->x[i][ZZ]);
-        }
-    }
-}
-
 gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
                           t_state *state,real *ener,
                           t_state *state_local,

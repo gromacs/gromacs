@@ -42,7 +42,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include "string.h"
+#include <string.h>
 #include "typedefs.h"
 #include "statutil.h"
 #include "smalloc.h"
@@ -407,8 +407,8 @@ static void calc_tetra_order_interface(const char *fnNDX,const char *fnTPS,const
                 }
             }
         }
-        fclose(fpsg);
-        fclose(fpsk);   
+        xvgrclose(fpsg);
+        xvgrclose(fpsk);
     } 
 
   

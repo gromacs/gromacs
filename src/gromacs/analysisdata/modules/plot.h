@@ -41,6 +41,8 @@
 
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 #include "../datamodule.h"
 #include "../../options/timeunitmanager.h"
 #include "../../utility/common.h"
@@ -136,6 +138,10 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
         virtual ~AbstractPlotModule();
 
         /*! \brief
+         * Set common settings for the plotting.
+         */
+        void setSettings(const AnalysisDataPlotSettings &settings);
+        /*! \brief
          * Set the output file name.
          *
          * If no file name is set (or if \p fnm is NULL), no output occurs.
@@ -211,9 +217,22 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 
     protected:
         /*! \cond libapi */
+        AbstractPlotModule();
+        //! Creates AbstractPlotModule and assign common settings.
         explicit AbstractPlotModule(const AnalysisDataPlotSettings &settings);
 
+        //! Whether an output file has been opened.
         bool isFileOpen() const;
+        /*! \brief
+         * Appends a single value to the current output line.
+         *
+         * \param[in] value  Value to append.
+         *
+         * Should be used from pointsAdded() implementations in derived classes
+         * to write out individual y values to the output.
+         *
+         * Must not be called if isFileOpen() returns false.
+         */
         void writeValue(real value) const;
         //! \endcond
 
@@ -235,6 +254,8 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
 class AnalysisDataPlotModule : public AbstractPlotModule
 {
     public:
+        AnalysisDataPlotModule();
+        //! Creates AnalysisDataPlotModule and assign common settings.
         explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
@@ -254,6 +275,8 @@ class AnalysisDataPlotModule : public AbstractPlotModule
 class AnalysisDataVectorPlotModule : public AbstractPlotModule
 {
     public:
+        AnalysisDataVectorPlotModule();
+        //! Creates AnalysisDataVectorPlotModule and assign common settings.
         explicit AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings &settings);
 
         /*! \brief
@@ -284,6 +307,13 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 
         // Copy and assign disallowed by base.
 };
+
+//! Smart pointer to manage an AnalysisDataPlotModule object.
+typedef boost::shared_ptr<AnalysisDataPlotModule>
+        AnalysisDataPlotModulePointer;
+//! Smart pointer to manage an AnalysisDataVectorPlotModule object.
+typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
+        AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx
 

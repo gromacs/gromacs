@@ -46,7 +46,7 @@
 #include <utility>
 #include <vector>
 
-#include "../fatalerror/gmxassert.h"
+#include "gmxassert.h"
 
 namespace gmx
 {
@@ -73,11 +73,17 @@ template <typename T>
 class ConstArrayRef
 {
     public:
+        //! Type of values stored in the container.
         typedef T         value_type;
+        //! Type for representing size of the container.
         typedef size_t    size_type;
+        //! Type for representing difference between two container indices.
         typedef ptrdiff_t difference_type;
+        //! Const reference to a container element.
         typedef const T  &const_reference;
+        //! Const pointer to a container element.
         typedef const T  *const_pointer;
+        //! Const iterator type for the container.
         typedef const T  *const_iterator;
         //! Equal to \a const_reference since changes are not allowed.
         typedef const_reference reference;
@@ -137,16 +143,25 @@ class ConstArrayRef
         {
         }
 
+        //! Returns an interator to the beginning of the container.
         const_iterator begin() const { return begin_; }
+        //! Returns an interator to the end of the container.
         const_iterator end() const { return end_; }
+        //! Returns an interator to the reverse beginning of the container.
         const_iterator rbegin() const { return reverse_iterator(end()); }
+        //! Returns an interator to the reverse end of the container.
         const_iterator rend() const { return reverse_iterator(begin()); }
 
+        //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }
+        //! Identical to size().
         size_type capacity() const { return end_ - begin_; }
+        //! Whether the container is empty.
         bool empty() const { return begin_ == end_; }
 
+        //! Access container element.
         const_reference operator[](size_type n) const { return begin_[n]; }
+        //! Access container element (throws on out-of-range error).
         const_reference at(size_type n) const
         {
             if (n >= size())
@@ -155,7 +170,9 @@ class ConstArrayRef
             }
             return begin_[n];
         }
+        //! Returns the first element in the container.
         const_reference front() const { return *begin_; }
+        //! Returns the last element in the container.
         const_reference back() const { return *(end_ - 1); }
 
         /*! \brief

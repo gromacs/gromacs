@@ -42,6 +42,10 @@
 #include "nb_kernel_allvsall.h"
 #include "nb_kernel_allvsallgb.h"
 
+/** \brief setup list with vanilla nonbonded kernels written in C
+ * \param[in] fplog General output file, normally md.log
+ * \param[in,out] list list to write the kernels in
+ */
 void
 nb_kernel_setup(FILE *fplog,nb_kernel_t **list);
 

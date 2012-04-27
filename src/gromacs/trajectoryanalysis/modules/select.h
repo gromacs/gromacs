@@ -44,12 +44,10 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
-
-class AnalysisDataPlotModule;
-class Selection;
 
 namespace analysismodules
 {
@@ -60,15 +58,12 @@ class Select : public TrajectoryAnalysisModule
         Select();
         virtual ~Select();
 
-        static TrajectoryAnalysisModule *create();
+        static TrajectoryAnalysisModulePointer create();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleData *startFrames(
-                    const AnalysisDataParallelOptions &opt,
-                    const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -76,10 +71,8 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        class ModuleData;
-
         Options                  _options;
-        std::vector<Selection *> _sel;
+        SelectionList            _sel;
 
         std::string              _fnSize;
         std::string              _fnFrac;
@@ -93,12 +86,11 @@ class Select : public TrajectoryAnalysisModule
         std::string              _resNumberType;
 
         t_topology              *_top;
-        int                     *_totsize;
+        std::vector<int>         _totsize;
         AnalysisData             _sdata;
         AnalysisData             _cdata;
         AnalysisData             _idata;
         AnalysisData             _mdata;
-        std::vector<std::string> _modnames;
 };
 
 } // namespace analysismodules

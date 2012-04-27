@@ -39,9 +39,9 @@
 #include <config.h>
 #endif
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 /** Evaluates the \p all selection keyword. */
 static void

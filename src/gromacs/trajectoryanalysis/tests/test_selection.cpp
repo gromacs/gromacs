@@ -30,14 +30,13 @@
  */
 /*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <vector>
-
-#include <gromacs/fatalerror/exceptions.h>
 #include <gromacs/options/basicoptions.h>
 #include <gromacs/options/options.h>
 #include <gromacs/selection/selection.h>
@@ -45,6 +44,7 @@
 #include <gromacs/trajectoryanalysis/analysismodule.h>
 #include <gromacs/trajectoryanalysis/analysissettings.h>
 #include <gromacs/trajectoryanalysis/cmdlinerunner.h>
+#include <gromacs/utility/exceptions.h>
 
 namespace gmx
 {
@@ -55,7 +55,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
@@ -69,7 +69,7 @@ class SelectionTester : public TrajectoryAnalysisModule
         void printSelections();
 
         Options                  _options;
-        std::vector<Selection *> _selections;
+        SelectionList            _selections;
         int                      _nmaxind;
 };
 
@@ -89,12 +89,12 @@ SelectionTester::printSelections()
     fprintf(stderr, "\nSelections:\n");
     for (size_t g = 0; g < _selections.size(); ++g)
     {
-        _selections[g]->printDebugInfo(stderr, _nmaxind);
+        _selections[g].printDebugInfo(stderr, _nmaxind);
     }
     fprintf(stderr, "\n");
 }
 
-Options *
+Options &
 SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
@@ -110,7 +110,7 @@ SelectionTester::initOptions(TrajectoryAnalysisSettings * /*settings*/)
     _options.addOption(IntegerOption("pmax").store(&_nmaxind)
                            .description("Maximum number of indices to print in lists (-1 = print all)"));
 
-    return &_options;
+    return _options;
 }
 
 void
@@ -127,23 +127,40 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*
     fprintf(stderr, "\n");
     for (size_t g = 0; g < _selections.size(); ++g)
     {
-        const Selection *sel = _selections[g];
+        const Selection &sel = _selections[g];
+        int n;
 
-        gmx_ana_index_dump(stderr, sel->indexGroup(), g, _nmaxind);
-        fprintf(stderr, "  Positions (%d pcs):\n", sel->posCount());
-        int n = sel->posCount();
+        fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
+        n = sel.atomCount();
+        if (_nmaxind >= 0 && n > _nmaxind)
+        {
+            n = _nmaxind;
+        }
+        ConstArrayRef<int> atoms = sel.atomIndices();
+        for (int i = 0; i < n; ++i)
+        {
+            fprintf(stderr, " %d", atoms[i]+1);
+        }
+        if (n < sel.atomCount())
+        {
+            fprintf(stderr, " ...");
+        }
+        fprintf(stderr, "\n");
+
+        fprintf(stderr, "  Positions (%d pcs):\n", sel.posCount());
+        n = sel.posCount();
         if (_nmaxind >= 0 && n > _nmaxind)
         {
             n = _nmaxind;
         }
         for (int i = 0; i < n; ++i)
         {
-            SelectionPosition p = sel->position(i);
+            const SelectionPosition &p = sel.position(i);
             fprintf(stderr, "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n",
                     p.x()[XX], p.x()[YY], p.x()[ZZ],
                     p.refId(), p.mappedId(), p.atomCount());
         }
-        if (n < sel->posCount())
+        if (n < sel.posCount())
         {
             fprintf(stderr, "    ...\n");
         }
@@ -164,6 +181,9 @@ SelectionTester::writeOutput()
 
 }
 
+/*! \internal \brief
+ * The main function for the selection testing tool.
+ */
 int
 main(int argc, char *argv[])
 {

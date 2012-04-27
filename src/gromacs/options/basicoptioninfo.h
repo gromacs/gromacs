@@ -48,7 +48,6 @@ class BooleanOptionStorage;
 class IntegerOptionStorage;
 class DoubleOptionStorage;
 class StringOptionStorage;
-class FileNameOptionStorage;
 
 /*! \addtogroup module_options
  * \{
@@ -62,6 +61,7 @@ class FileNameOptionStorage;
 class BooleanOptionInfo : public OptionInfo
 {
     public:
+        //! Creates an option info object for the given option.
         explicit BooleanOptionInfo(BooleanOptionStorage *option);
 };
 
@@ -73,6 +73,7 @@ class BooleanOptionInfo : public OptionInfo
 class IntegerOptionInfo : public OptionInfo
 {
     public:
+        //! Creates an option info object for the given option.
         explicit IntegerOptionInfo(IntegerOptionStorage *option);
 };
 
@@ -84,9 +85,10 @@ class IntegerOptionInfo : public OptionInfo
 class DoubleOptionInfo : public OptionInfo
 {
     public:
+        //! Creates an option info object for the given option.
         explicit DoubleOptionInfo(DoubleOptionStorage *option);
 
-        //! Whether the option provides a time value.
+        //! Whether the option specifies a time value.
         bool isTime() const;
 
         /*! \brief
@@ -112,26 +114,8 @@ class DoubleOptionInfo : public OptionInfo
 class StringOptionInfo : public OptionInfo
 {
     public:
+        //! Creates an option info object for the given option.
         explicit StringOptionInfo(StringOptionStorage *option);
-};
-
-/*! \brief
- * Wrapper class for accessing file name option information.
- *
- * \inpublicapi
- */
-class FileNameOptionInfo : public OptionInfo
-{
-    public:
-        explicit FileNameOptionInfo(FileNameOptionStorage *option);
-
-        bool isInputFile() const;
-        bool isOutputFile() const;
-        bool isInputOutputFile() const;
-        bool isLibraryFile() const;
-
-    private:
-        const FileNameOptionStorage &option() const;
 };
 
 /*!\}*/

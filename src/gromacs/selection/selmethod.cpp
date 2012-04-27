@@ -228,7 +228,6 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
     if (nparams > 0 && !param)
     {
         report_error(fp, name, "error: missing parameter data");
-        bOk = false;
         return false;
     }
     if (nparams == 0 && param)

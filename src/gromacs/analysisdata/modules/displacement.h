@@ -39,7 +39,7 @@
 #ifndef GMX_ANALYSISDATA_MODULES_DISPLACEMENT_H
 #define GMX_ANALYSISDATA_MODULES_DISPLACEMENT_H
 
-#include "../analysisdata.h"
+#include "../abstractdata.h"
 #include "../datamodule.h"
 
 namespace gmx
@@ -77,7 +77,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
          *
          * If this function is not called, no histogram is calculated.
          */
-        void setMSDHistogram(AnalysisDataBinAverageModule *histm);
+        void setMSDHistogram(boost::shared_ptr<AnalysisDataBinAverageModule> histm);
 
         virtual int flags() const;
 
@@ -95,6 +95,10 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 
         PrivateImplPointer<Impl> _impl;
 };
+
+//! Smart pointer to manage an AnalysisDataDisplacementModule object.
+typedef boost::shared_ptr<AnalysisDataDisplacementModule>
+        AnalysisDataDisplacementModulePointer;
 
 } // namespace gmx
 

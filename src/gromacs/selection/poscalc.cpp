@@ -28,59 +28,9 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal
- * \page poscalcengine Position calculation engine
- *
- * The header file \ref poscalc.h defines an API for calculating positions
- * in an automated way. This is useful mostly in the selection engine, in
- * particular with dynamic selections, because the same COM/COG positions
- * may be needed in several contexts. The API makes it possible to
- * optimize the evaluation such that any heavy calculation is only done once,
- * and the results just copied if needed more than once.
- * The functions also provide a convenient interface for keeping the whole
- * \c gmx_ana_pos_t structure up-to-date.
- *
- * A new collection of position calculations is allocated with
- * gmx_ana_poscalc_coll_create().
- * Calculations within one collection should share the same topology, and
- * they are optimized. Calculations in different collections do not interact.
- * The topology for a collection can be set with
- * gmx_ana_poscalc_coll_set_topology().
- * This needs to be done before calling gmx_ana_poscalc_set_maxindex() for
- * any calculation in the collection, unless that calculation does not
- * require topology information.
- * All memory allocated for a collection and the calculations in it can be
- * freed with gmx_ana_poscalc_coll_free().
- *
- * A new calculation is created with gmx_ana_poscalc_create().
- * If flags need to be adjusted later, gmx_ana_poscalc_set_flags() can be
- * used.
- * After the flags are final, the largest possible index group for which the
- * positions are needed has to be set with gmx_ana_poscalc_set_maxindex().
- * gmx_ana_poscalc_coll_set_topology() should have been called before this
- * function is called.
- * After the above calls, gmx_ana_poscalc_init_pos() can be used to initialize
- * output to a \c gmx_ana_pos_t structure. Several different structures can be
- * initialized for the same calculation; the only requirement is that the
- * structure passed later to gmx_ana_poscalc_update() has been initialized
- * properly.
- * The memory allocated for a calculation can be freed with
- * gmx_ana_poscalc_free().
- *
- * The position evaluation is simple: gmx_ana_poscalc_init_frame() should be
- * called once for each frame, and gmx_ana_poscalc_update() can then be called
- * for each calculation that is needed for that frame.
- *
- * It is also possible to initialize the calculations based on a type provided
- * as a string.
- * The possible strings are returned by gmx_ana_poscalc_create_type_enum(),
- * and the string can be converted to the parameters for
- * gmx_ana_poscalc_create() using gmx_ana_poscalc_type_from_enum().
- * gmx_ana_poscalc_create_enum() is also provided for convenience.
- */
 /*! \internal \file
  * \brief
- * Implements functions in poscalc.h.
+ * Implements gmx::PositionCalculationCollection and functions in poscalc.h.
  *
  * \todo
  * There is probably some room for optimization in the calculation of
@@ -111,40 +61,75 @@
 
 #include <string.h>
 
-#include <macros.h>
-#include <smalloc.h>
-#include <typedefs.h>
-#include <pbc.h>
-#include <vec.h>
+#include "smalloc.h"
+#include "typedefs.h"
+#include "pbc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+
+namespace gmx
+{
 
 /*! \internal \brief
- * Collection of \c gmx_ana_poscalc_t structures for the same topology.
+ * Private implementation class for PositionCalculationCollection.
  *
- * Calculations within the same structure are optimized to eliminate duplicate
- * calculations.
+ * \ingroup module_selection
  */
-struct gmx_ana_poscalc_coll_t
+class PositionCalculationCollection::Impl
 {
-    /*! \brief
-     * Topology data.
-     *
-     * Can be NULL if none of the calculations require topology data or if
-     * gmx_ana_poscalc_coll_set_topology() has not been called.
-     */
-    t_topology               *top;
-    /** Pointer to the first data structure. */
-    gmx_ana_poscalc_t        *first;
-    /** Pointer to the last data structure. */
-    gmx_ana_poscalc_t        *last;
-    /** Whether the collection has been initialized for evaluation. */
-    bool                      bInit;
+    public:
+        Impl();
+        ~Impl();
+
+        /*! \brief
+         * Inserts a position calculation structure into its collection.
+         *
+         * \param pc     Data structure to insert.
+         * \param before Data structure before which to insert
+         *   (NULL = insert at end).
+         *
+         * Inserts \p pc to its collection before \p before.
+         * If \p before is NULL, \p pc is appended to the list.
+         */
+        void insertCalculation(gmx_ana_poscalc_t *pc, gmx_ana_poscalc_t *before);
+        /*! \brief
+         * Removes a position calculation structure from its collection.
+         *
+         * \param pc    Data structure to remove.
+         *
+         * Removes \p pc from its collection.
+         */
+        void removeCalculation(gmx_ana_poscalc_t *pc);
+
+        /*! \copydoc PositionCalculationCollection::createCalculation()
+         *
+         * This method contains the actual implementation of the similarly
+         * named method in the parent class.
+         */
+        gmx_ana_poscalc_t *createCalculation(e_poscalc_t type, int flags);
+
+        /*! \brief
+         * Topology data.
+         *
+         * Can be NULL if none of the calculations require topology data or if
+         * setTopology() has not been called.
+         */
+        t_topology               *top_;
+        //! Pointer to the first data structure.
+        gmx_ana_poscalc_t        *first_;
+        //! Pointer to the last data structure.
+        gmx_ana_poscalc_t        *last_;
+        //! Whether the collection has been initialized for evaluation.
+        bool                      bInit_;
 };
+
+} // namespace gmx
 
 /*! \internal \brief
  * Data structure for position calculation.
@@ -211,11 +196,10 @@ struct gmx_ana_poscalc_t
     /** Number of references to this structure. */
     int                       refcount;
     /** Collection this calculation belongs to. */
-    gmx_ana_poscalc_coll_t   *coll;
+    gmx::PositionCalculationCollection::Impl *coll;
 };
 
-//! Strings returned by gmx_ana_poscalc_create_type_enum().
-static const char *const poscalc_enum_strings[] = {
+const char * const gmx::PositionCalculationCollection::typeEnumValues[] = {
     "atom",
     "res_com",       "res_cog",
     "mol_com",       "mol_cog",
@@ -227,8 +211,6 @@ static const char *const poscalc_enum_strings[] = {
     "dyn_mol_com",   "dyn_mol_cog",
     NULL,
 };
-//! Number of elements in ::poscalc_enum_strings.
-#define NENUM asize(poscalc_enum_strings)
 
 /*! \brief
  * Returns the partition type for a given position type.
@@ -250,28 +232,14 @@ index_type_for_poscalc(e_poscalc_t type)
     return INDEX_UNKNOWN;
 }
 
-/*!
- * \param[in]     post  String (typically an enum command-line argument).
- *   Allowed values: 'atom', 'res_com', 'res_cog', 'mol_com', 'mol_cog',
- *   or one of the last four prepended by 'whole_', 'part_', or 'dyn_'.
- * \param[out]    type  \c e_poscalc_t corresponding to \p post.
- * \param[in,out] flags Flags corresponding to \p post.
- *   On input, the flags should contain the default flags.
- *   On exit, the flags \ref POS_MASS, \ref POS_COMPLMAX and
- *   \ref POS_COMPLWHOLE have been set according to \p post
- *   (the completion flags are left at the default values if no completion
- *   prefix is given).
- * \throws  InternalError  if post is not recognized.
- *
- * \attention
- * Checking is not complete, and other values than those listed above
- * may be accepted for \p post, but the results are undefined.
- */
-void
-gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
+namespace gmx
 {
-    const char *ptr;
 
+// static
+void
+PositionCalculationCollection::typeFromEnum(const char *post,
+                                            e_poscalc_t *type, int *flags)
+{
     if (post[0] == 'a')
     {
         *type   = POS_ATOM;
@@ -280,7 +248,7 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     }
 
     /* Process the prefix */
-    ptr = post;
+    const char *ptr = post;
     if (post[0] == 'w')
     {
         *flags &= ~POS_COMPLMAX;
@@ -309,11 +277,11 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     }
     else
     {
-        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
+        GMX_THROW(InternalError("Unknown position calculation type"));
     }
     if (strlen(ptr) < 7)
     {
-        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
+        GMX_THROW(InternalError("Unknown position calculation type"));
     }
     if (ptr[6] == 'm')
     {
@@ -325,109 +293,129 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     }
     else
     {
-        GMX_THROW(gmx::InternalError("Unknown position calculation type"));
+        GMX_THROW(InternalError("Unknown position calculation type"));
     }
 }
 
-/*!
- * \param[in]  bAtom    If true, the "atom" value is included.
- * \returns    NULL-terminated array of strings that contains the string
- *   values acceptable for gmx_ana_poscalc_type_from_enum().
- *
- * The first string in the returned list is always NULL to allow the list to
- * be used with Gromacs command-line parsing.
+/********************************************************************
+ * PositionCalculationCollection::Impl
  */
-const char **
-gmx_ana_poscalc_create_type_enum(bool bAtom)
-{
-    const char **pcenum;
-    size_t       i;
 
-    if (bAtom)
+PositionCalculationCollection::Impl::Impl()
+    : top_(NULL), first_(NULL), last_(NULL), bInit_(false)
+{
+}
+
+PositionCalculationCollection::Impl::~Impl()
+{
+    // Loop backwards, because there can be internal references in that are
+    // correctly handled by this direction.
+    while (last_ != NULL)
     {
-        snew(pcenum, NENUM+1);
-        for (i = 0; i < NENUM; ++i)
+        GMX_ASSERT(last_->refcount == 1,
+                   "Dangling references to position calculations");
+        gmx_ana_poscalc_free(last_);
+    }
+}
+
+void
+PositionCalculationCollection::Impl::insertCalculation(gmx_ana_poscalc_t *pc,
+                                                       gmx_ana_poscalc_t *before)
+{
+    GMX_RELEASE_ASSERT(pc->coll == this, "Inconsistent collections");
+    if (before == NULL)
+    {
+        pc->next = NULL;
+        pc->prev = last_;
+        if (last_ != NULL)
         {
-            pcenum[i+1] = poscalc_enum_strings[i];
+            last_->next = pc;
         }
+        last_ = pc;
     }
     else
     {
-        snew(pcenum, NENUM+1-1);
-        for (i = 1; i < NENUM; ++i)
+        pc->prev     = before->prev;
+        pc->next     = before;
+        if (before->prev)
         {
-            pcenum[i] = poscalc_enum_strings[i];
+            before->prev->next = pc;
         }
+        before->prev = pc;
     }
-    pcenum[0] = NULL;
-    return pcenum;
-}
-
-/*!
- * \param[out] pccp   Allocated position calculation collection.
- * \returns    0 for success.
- */
-int
-gmx_ana_poscalc_coll_create(gmx_ana_poscalc_coll_t **pccp)
-{
-    gmx_ana_poscalc_coll_t *pcc;
-
-    snew(pcc, 1);
-    pcc->top   = NULL;
-    pcc->first = NULL;
-    pcc->last  = NULL;
-    pcc->bInit = false;
-    *pccp = pcc;
-    return 0;
-}
-
-/*!
- * \param[in,out] pcc   Position calculation collection data structure.
- * \param[in]     top   Topology data structure.
- *
- * This function should be called to set the topology before using
- * gmx_ana_poscalc_set_maxindex() for any calculation that requires
- * topology information.
- */
-void
-gmx_ana_poscalc_coll_set_topology(gmx_ana_poscalc_coll_t *pcc, t_topology *top)
-{
-    pcc->top = top;
-}
-
-/*!
- * \param[in] pcc   Position calculation collection to free.
- *
- * The pointer \p pcc is invalid after the call.
- * Any calculations in the collection are also freed, no matter how many
- * references to them are left.
- */
-void
-gmx_ana_poscalc_coll_free(gmx_ana_poscalc_coll_t *pcc)
-{
-    while (pcc->first)
+    if (pc->prev == NULL)
     {
-        gmx_ana_poscalc_free(pcc->first);
+        first_ = pc;
     }
-    sfree(pcc);
 }
 
-/*!
- * \param[in] fp    File handle to receive the output.
- * \param[in] pcc   Position calculation collection to print.
- *
- * The output is very technical, making this function mainly useful for
- * debugging purposes.
- */
 void
-gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
+PositionCalculationCollection::Impl::removeCalculation(gmx_ana_poscalc_t *pc)
+{
+    GMX_RELEASE_ASSERT(pc->coll == this, "Inconsistent collections");
+    if (pc->prev != NULL)
+    {
+        pc->prev->next = pc->next;
+    }
+    else if (pc == first_)
+    {
+        first_ = pc->next;
+    }
+    if (pc->next != NULL)
+    {
+        pc->next->prev = pc->prev;
+    }
+    else if (pc == last_)
+    {
+        last_ = pc->prev;
+    }
+    pc->prev = pc->next = NULL;
+}
+
+gmx_ana_poscalc_t *
+PositionCalculationCollection::Impl::createCalculation(e_poscalc_t type, int flags)
+{
+    gmx_ana_poscalc_t *pc;
+
+    snew(pc, 1);
+    pc->type     = type;
+    pc->itype    = index_type_for_poscalc(type);
+    gmx_ana_poscalc_set_flags(pc, flags);
+    pc->refcount = 1;
+    pc->coll     = this;
+    insertCalculation(pc, NULL);
+    return pc;
+}
+
+
+/********************************************************************
+ * PositionCalculationCollection
+ */
+
+PositionCalculationCollection::PositionCalculationCollection()
+    : impl_(new Impl)
+{
+}
+
+PositionCalculationCollection::~PositionCalculationCollection()
+{
+}
+
+void
+PositionCalculationCollection::setTopology(t_topology *top)
+{
+    impl_->top_ = top;
+}
+
+void
+PositionCalculationCollection::printTree(FILE *fp) const
 {
     gmx_ana_poscalc_t *pc;
     int                i, j;
 
     fprintf(fp, "Position calculations:\n");
     i  = 1;
-    pc = pcc->first;
+    pc = impl_->first_;
     while (pc)
     {
         fprintf(fp, "%2d ", i);
@@ -534,7 +522,7 @@ gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
 
             fprintf(fp, "   Base: ");
             j = 1;
-            base = pcc->first;
+            base = impl_->first_;
             while (base && base != pc->sbase)
             {
                 ++j;
@@ -556,73 +544,85 @@ gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
     }
 }
 
-/*! \brief
- * Inserts a position calculation structure into its collection.
- *
- * \param pc     Data structure to insert.
- * \param before Data structure before which to insert
- *   (NULL = insert at end).
- *
- * Inserts \p pc to its collection before \p before.
- * If \p before is NULL, \p pc is appended to the list.
- */
-static void
-insert_poscalc(gmx_ana_poscalc_t *pc, gmx_ana_poscalc_t *before)
+gmx_ana_poscalc_t *
+PositionCalculationCollection::createCalculation(e_poscalc_t type, int flags)
 {
-    if (before == NULL)
+    return impl_->createCalculation(type, flags);
+}
+
+gmx_ana_poscalc_t *
+PositionCalculationCollection::createCalculationFromEnum(const char *post, int flags)
+{
+    e_poscalc_t  type;
+    int cflags = flags;
+    typeFromEnum(post, &type, &cflags);
+    return impl_->createCalculation(type, cflags);
+}
+
+void PositionCalculationCollection::initEvaluation()
+{
+    if (impl_->bInit_)
     {
-        pc->next = NULL;
-        pc->prev = pc->coll->last;
-        if (pc->coll->last)
-        {
-            pc->coll->last->next = pc;
-        }
-        pc->coll->last = pc;
+        return;
     }
-    else
+    gmx_ana_poscalc_t *pc = impl_->first_;
+    while (pc)
     {
-        pc->prev     = before->prev;
-        pc->next     = before;
-        if (before->prev)
+        /* Initialize position storage for base calculations */
+        if (pc->p)
         {
-            before->prev->next = pc;
+            gmx_ana_poscalc_init_pos(pc, pc->p);
         }
-        before->prev = pc;
+        /* Construct the mapping of the base positions */
+        if (pc->sbase)
+        {
+            int                     bi, bj;
+
+            snew(pc->baseid, pc->b.nr);
+            for (bi = bj = 0; bi < pc->b.nr; ++bi, ++bj)
+            {
+                while (pc->sbase->b.a[pc->sbase->b.index[bj]] != pc->b.a[pc->b.index[bi]])
+                {
+                    ++bj;
+                }
+                pc->baseid[bi] = bj;
+            }
+        }
+        /* Free the block data for dynamic calculations */
+        if (pc->flags & POS_DYNAMIC)
+        {
+            if (pc->b.nalloc_index > 0)
+            {
+                sfree(pc->b.index);
+                pc->b.nalloc_index = 0;
+            }
+            if (pc->b.nalloc_a > 0)
+            {
+                sfree(pc->b.a);
+                pc->b.nalloc_a = 0;
+            }
+        }
+        pc = pc->next;
     }
-    if (!pc->prev)
+    impl_->bInit_ = true;
+}
+
+void PositionCalculationCollection::initFrame()
+{
+    if (!impl_->bInit_)
     {
-        pc->coll->first = pc;
+        initEvaluation();
+    }
+    /* Clear the evaluation flags */
+    gmx_ana_poscalc_t *pc = impl_->first_;
+    while (pc)
+    {
+        pc->bEval = false;
+        pc = pc->next;
     }
 }
 
-/*! \brief
- * Removes a position calculation structure from its collection.
- *
- * \param pc    Data structure to remove.
- *
- * Removes \p pc from its collection.
- */
-static void
-remove_poscalc(gmx_ana_poscalc_t *pc)
-{
-    if (pc->prev)
-    {
-        pc->prev->next = pc->next;
-    }
-    else if (pc == pc->coll->first)
-    {
-        pc->coll->first = pc->next;
-    }
-    if (pc->next)
-    {
-        pc->next->prev = pc->prev;
-    }
-    else if (pc == pc->coll->last)
-    {
-        pc->coll->last = pc->prev;
-    }
-    pc->prev = pc->next = NULL;
-}
+} // namespace gmx
 
 /*! \brief
  * Initializes position calculation using the maximum possible input index.
@@ -636,7 +636,8 @@ remove_poscalc(gmx_ana_poscalc_t *pc)
 static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
-    gmx_ana_index_make_block(&pc->b, pc->coll->top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
+    t_topology *top = pc->coll->top_;
+    gmx_ana_index_make_block(&pc->b, top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
@@ -648,7 +649,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     if (!(pc->flags & POS_COMPLWHOLE)
         && (!(pc->flags & POS_DYNAMIC) || (pc->flags & POS_COMPLMAX))
         && (pc->type == POS_RES || pc->type == POS_MOL)
-        && gmx_ana_index_has_complete_elems(g, pc->itype, pc->coll->top))
+        && gmx_ana_index_has_complete_elems(g, pc->itype, top))
     {
         pc->flags &= ~POS_COMPLMAX;
         pc->flags |= POS_COMPLWHOLE;
@@ -768,14 +769,14 @@ create_simple_base(gmx_ana_poscalc_t *pc)
     int                flags;
 
     flags = pc->flags & ~(POS_DYNAMIC | POS_MASKONLY);
-    gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
+    base = pc->coll->createCalculation(pc->type, flags);
     set_poscalc_maxindex(base, &pc->gmax, true);
 
     snew(base->p, 1);
 
     pc->sbase = base;
-    remove_poscalc(base);
-    insert_poscalc(base, pc);
+    pc->coll->removeCalculation(base);
+    pc->coll->insertCalculation(base, pc);
 
     return base;
 }
@@ -797,7 +798,7 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
 {
     gmx_ana_index_t  gp, gb, g;
     int              isize, bnr;
-    int              i, j, bi, bj, bo;
+    int              i, bi, bj, bo;
 
     base->flags |= pc->flags & (POS_VELOCITIES | POS_FORCES);
     gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
@@ -877,9 +878,9 @@ merge_bases(gmx_ana_poscalc_t *tbase, gmx_ana_poscalc_t *mbase)
     gmx_ana_poscalc_t *pc;
 
     merge_to_base(tbase, mbase);
-    remove_poscalc(mbase);
+    mbase->coll->removeCalculation(mbase);
     /* Set tbase as the base for all calculations that had mbase */
-    pc = tbase->coll->first;
+    pc = tbase->coll->first_;
     while (pc)
     {
         if (pc->sbase == mbase)
@@ -915,7 +916,7 @@ setup_base(gmx_ana_poscalc_t *pc)
     gmx_ana_index_clear(&g);
     gmx_ana_index_reserve(&g, pc->b.nra);
     pbase = pc;
-    base = pc->coll->first;
+    base = pc->coll->first_;
     while (base)
     {
         /* Save the next calculation so that we can safely delete base */
@@ -980,58 +981,6 @@ setup_base(gmx_ana_poscalc_t *pc)
 }
 
 /*!
- * \param[out] pcp   Position calculation data structure pointer to initialize.
- * \param[in,out] pcc   Position calculation collection.
- * \param[in]  type  Type of calculation.
- * \param[in]  flags Flags for setting calculation options
- *   (see \ref poscalc_flags "documentation of the flags").
- */
-void
-gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
-                       e_poscalc_t type, int flags)
-{
-    gmx_ana_poscalc_t *pc;
-
-    snew(pc, 1);
-    pc->type     = type;
-    pc->itype    = index_type_for_poscalc(type);
-    gmx_ana_poscalc_set_flags(pc, flags);
-    pc->refcount = 1;
-    pc->coll     = pcc;
-    insert_poscalc(pc, NULL);
-    *pcp = pc;
-}
-
-/*!
- * \param[out] pcp   Position calculation data structure pointer to initialize.
- * \param[in,out] pcc   Position calculation collection.
- * \param[in]  post  One of the strings acceptable for
- *   gmx_ana_poscalc_type_from_enum().
- * \param[in]  flags Flags for setting calculation options
- *   (see \ref poscalc_flags "documentation of the flags").
- * \returns    0 on success, a non-zero error value on error.
- *
- * This is a convenience wrapper for gmx_ana_poscalc_create().
- * \p flags sets the default calculation options if not overridden by \p post;
- * see gmx_ana_poscalc_type_from_enum().
- *
- * \see gmx_ana_poscalc_create(), gmx_ana_poscalc_type_from_enum()
- */
-void
-gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
-                            const char *post, int flags)
-{
-    e_poscalc_t  type;
-    int          cflags;
-    int          rc;
-
-    cflags = flags;
-    *pcp = NULL;
-    gmx_ana_poscalc_type_from_enum(post, &type, &cflags);
-    gmx_ana_poscalc_create(pcp, pcc, type, cflags);
-}
-
-/*!
  * \param[in,out] pc    Position calculation data structure.
  * \param[in]     flags New flags.
  *
@@ -1090,7 +1039,7 @@ gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g)
 void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
-    gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
+    gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top_, pc->itype);
     /* Only do the static optimization when there is no completion */
     if (!(pc->flags & POS_DYNAMIC) && pc->b.nra == pc->gmax.isize)
     {
@@ -1128,7 +1077,7 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
         return;
     }
 
-    remove_poscalc(pc);
+    pc->coll->removeCalculation(pc);
     if (pc->b.nalloc_index > 0)
     {
         sfree(pc->b.index);
@@ -1169,99 +1118,6 @@ gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 }
 
 /*!
- * \param[in,out] pcc Position calculation collection to initialize.
- *
- * This function does some final initialization of the data structures in the
- * collection to prepare them for evaluation.
- * After this function has been called, it is no longer possible to add new
- * calculations to the collection.
- *
- * This function is automatically called by gmx_ana_poscalc_init_frame() 
- * if not called by the user earlier.
- * Multiple calls to the function are ignored.
- */
-void
-gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc)
-{
-    gmx_ana_poscalc_t      *pc;
-    int                     bi, bj;
-
-    if (pcc->bInit)
-    {
-        return;
-    }
-    pc = pcc->first;
-    while (pc)
-    {
-        /* Initialize position storage for base calculations */
-        if (pc->p)
-        {
-            gmx_ana_poscalc_init_pos(pc, pc->p);
-        }
-        /* Construct the mapping of the base positions */
-        if (pc->sbase)
-        {
-            snew(pc->baseid, pc->b.nr);
-            for (bi = bj = 0; bi < pc->b.nr; ++bi, ++bj)
-            {
-                while (pc->sbase->b.a[pc->sbase->b.index[bj]] != pc->b.a[pc->b.index[bi]])
-                {
-                    ++bj;
-                }
-                pc->baseid[bi] = bj;
-            }
-        }
-        /* Free the block data for dynamic calculations */
-        if (pc->flags & POS_DYNAMIC)
-        {
-            if (pc->b.nalloc_index > 0)
-            {
-                sfree(pc->b.index);
-                pc->b.nalloc_index = 0;
-            }
-            if (pc->b.nalloc_a > 0)
-            {
-                sfree(pc->b.a);
-                pc->b.nalloc_a = 0;
-            }
-        }
-        pc = pc->next;
-    }
-    pcc->bInit = true;
-}
-
-/*!
- * \param[in,out] pcc Position calculation collection to initialize.
- *
- * Clears the evaluation flag for all calculations.
- * Should be called for each frame before calling gmx_ana_poscalc_update().
- *
- * This function is automatically called by gmx_ana_do() for each
- * frame, and should not be called by the user unless gmx_ana_do() is
- * not being used.
- *
- * This function calls gmx_ana_poscalc_init_eval() automatically if it has
- * not been called earlier.
- */
-void
-gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc)
-{
-    gmx_ana_poscalc_t      *pc;
-
-    if (!pcc->bInit)
-    {
-        gmx_ana_poscalc_init_eval(pcc);
-    }
-    /* Clear the evaluation flags */
-    pc = pcc->first;
-    while (pc)
-    {
-        pc->bEval = false;
-        pc = pc->next;
-    }
-}
-
-/*!
  * \param[in]     pc   Position calculation data.
  * \param[in,out] p    Output positions, initialized previously with
  *   gmx_ana_poscalc_init_pos() using \p pc.
@@ -1276,7 +1132,7 @@ void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                        gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
-    int  i, j, bi, bj;
+    int  i, bi, bj;
     
     if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
     {
@@ -1392,6 +1248,8 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         }
         /* Here, we assume that the topology has been properly initialized,
          * and do not check the return values of gmx_calc_comg*(). */
+        t_topology *top = pc->coll->top_;
+        bool bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {
         case POS_ATOM:
@@ -1415,45 +1273,36 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
             break;
         case POS_ALL:
-            gmx_calc_comg(pc->coll->top, fr->x, pc->b.nra, pc->b.a,
-                          pc->flags & POS_MASS, p->x[0]);
+            gmx_calc_comg(top, fr->x, pc->b.nra, pc->b.a, bMass, p->x[0]);
             if (p->v && fr->bV)
             {
-                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
-                              pc->flags & POS_MASS, p->v[0]);
+                gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
             }
             if (p->f && fr->bF)
             {
-                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
-                                pc->flags & POS_MASS, p->f[0]);
+                gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
             }
             break;
         case POS_ALL_PBC:
-            gmx_calc_comg_pbc(pc->coll->top, fr->x, pbc, pc->b.nra, pc->b.a,
-                              pc->flags & POS_MASS, p->x[0]);
+            gmx_calc_comg_pbc(top, fr->x, pbc, pc->b.nra, pc->b.a, bMass, p->x[0]);
             if (p->v && fr->bV)
             {
-                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
-                              pc->flags & POS_MASS, p->v[0]);
+                gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
             }
             if (p->f && fr->bF)
             {
-                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
-                                pc->flags & POS_MASS, p->f[0]);
+                gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
             }
             break;
         default:
-            gmx_calc_comg_blocka(pc->coll->top, fr->x, &pc->b,
-                                 pc->flags & POS_MASS, p->x);
+            gmx_calc_comg_blocka(top, fr->x, &pc->b, bMass, p->x);
             if (p->v && fr->bV)
             {
-                gmx_calc_comg_blocka(pc->coll->top, fr->v, &pc->b,
-                                     pc->flags & POS_MASS, p->v);
+                gmx_calc_comg_blocka(top, fr->v, &pc->b, bMass, p->v);
             }
             if (p->f && fr->bF)
             {
-                gmx_calc_comg_blocka(pc->coll->top, fr->f, &pc->b,
-                                     pc->flags & POS_MASS, p->f);
+                gmx_calc_comg_blocka(top, fr->f, &pc->b, bMass, p->f);
             }
             break;
         }

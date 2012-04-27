@@ -37,14 +37,11 @@
  */
 #include "gromacs/analysisdata/analysisdata.h"
 
-#include <algorithm>
-#include <memory>
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "analysisdata-impl.h"
 
@@ -62,11 +59,6 @@ AnalysisData::Impl::Impl()
 
 AnalysisData::Impl::~Impl()
 {
-    HandleList::const_iterator i;
-    for (i = handles_.begin(); i != handles_.end(); ++i)
-    {
-        delete *i;
-    }
 }
 
 
@@ -86,18 +78,26 @@ AnalysisData::~AnalysisData()
 
 
 void
-AnalysisData::setColumns(int ncol, bool multipoint)
+AnalysisData::setColumnCount(int ncol)
 {
     GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
-    setColumnCount(ncol);
-    setMultipoint(multipoint);
-    impl_->storage_.setMultipoint(multipoint);
+    AbstractAnalysisData::setColumnCount(ncol);
 }
 
 
-AnalysisDataHandle *
+void
+AnalysisData::setMultipoint(bool bMultipoint)
+{
+    GMX_RELEASE_ASSERT(impl_->handles_.empty(),
+                       "Cannot change data type after creating handles");
+    AbstractAnalysisData::setMultipoint(bMultipoint);
+    impl_->storage_.setMultipoint(bMultipoint);
+}
+
+
+AnalysisDataHandle
 AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.size() < static_cast<unsigned>(opt.parallelizationFactor()),
@@ -113,23 +113,28 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
         GMX_THROW(NotImplementedError("Parallelism not supported for multipoint data"));
     }
 
-    std::auto_ptr<AnalysisDataHandle> handle(new AnalysisDataHandle(this));
-    impl_->handles_.push_back(handle.get());
-    return handle.release();
+    Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));
+    impl_->handles_.push_back(move(handle));
+    return AnalysisDataHandle(impl_->handles_.back().get());
 }
 
 
 void
-AnalysisData::finishData(AnalysisDataHandle *handle)
+AnalysisData::finishData(AnalysisDataHandle handle)
 {
     Impl::HandleList::iterator i;
 
-    i = std::find(impl_->handles_.begin(), impl_->handles_.end(), handle);
+    for (i = impl_->handles_.begin(); i != impl_->handles_.end(); ++i)
+    {
+        if (i->get() == handle.impl_)
+        {
+            break;
+        }
+    }
     GMX_RELEASE_ASSERT(i != impl_->handles_.end(),
                        "finishData() called for an unknown handle");
 
     impl_->handles_.erase(i);
-    delete handle;
 
     if (impl_->handles_.empty())
     {
@@ -153,10 +158,10 @@ AnalysisData::requestStorageInternal(int nframes)
 
 
 /********************************************************************
- * AnalysisDataHandle::Impl
+ * AnalysisDataHandleImpl
  */
 
-AnalysisDataHandle::Impl::Impl(AnalysisData *data)
+internal::AnalysisDataHandleImpl::AnalysisDataHandleImpl(AnalysisData *data)
     : data_(*data), currentFrame_(NULL)
 {
 }
@@ -166,13 +171,14 @@ AnalysisDataHandle::Impl::Impl(AnalysisData *data)
  * AnalysisDataHandle
  */
 
-AnalysisDataHandle::AnalysisDataHandle(AnalysisData *data)
-    : impl_(new Impl(data))
+AnalysisDataHandle::AnalysisDataHandle()
+    : impl_(NULL)
 {
 }
 
 
-AnalysisDataHandle::~AnalysisDataHandle()
+AnalysisDataHandle::AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl)
+    : impl_(impl)
 {
 }
 
@@ -180,6 +186,7 @@ AnalysisDataHandle::~AnalysisDataHandle()
 void
 AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ == NULL,
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_ =
@@ -188,22 +195,34 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
 
 
 void
-AnalysisDataHandle::setPoint(int col, real y, real dy, bool present)
+AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 {
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "setPoint() called without calling startFrame()");
-    impl_->currentFrame_->setValue(col, y, dy, present);
+    impl_->currentFrame_->setValue(column, value, bPresent);
 }
 
 
 void
-AnalysisDataHandle::setPoints(int firstcol, int n, const real *y)
+AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
 {
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "setPoint() called without calling startFrame()");
+    impl_->currentFrame_->setValue(column, value, error, bPresent);
+}
+
+
+void
+AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values)
+{
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "setPoints() called without calling startFrame()");
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < count; ++i)
     {
-        impl_->currentFrame_->setValue(firstcol + i, y[i]);
+        impl_->currentFrame_->setValue(firstColumn + i, values[i]);
     }
 }
 
@@ -211,6 +230,7 @@ AnalysisDataHandle::setPoints(int firstcol, int n, const real *y)
 void
 AnalysisDataHandle::finishPointSet()
 {
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->data_.isMultipoint(),
                        "finishPointSet() called for non-multipoint data");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
@@ -222,6 +242,7 @@ AnalysisDataHandle::finishPointSet()
 void
 AnalysisDataHandle::finishFrame()
 {
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "finishFrame() called without calling startFrame()");
     int index = impl_->currentFrame_->frameIndex();
@@ -233,8 +254,10 @@ AnalysisDataHandle::finishFrame()
 void
 AnalysisDataHandle::finishData()
 {
-    // Calls delete this
-    impl_->data_.finishData(this);
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    // Deletes the implementation pointer.
+    impl_->data_.finishData(*this);
+    impl_ = NULL;
 }
 
 } // namespace gmx

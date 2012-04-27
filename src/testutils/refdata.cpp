@@ -46,8 +46,8 @@
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/format.h"
 #include "testutils/testexceptions.h"
@@ -73,6 +73,7 @@ namespace gmx
 namespace test
 {
 
+/*! \cond internal */
 namespace internal
 {
 
@@ -82,6 +83,7 @@ void addGlobalReferenceDataEnvironment()
 }
 
 } // namespace internal
+//! \endcond
 
 /********************************************************************
  * TestReferenceData::Impl
@@ -510,7 +512,7 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
         _impl->processItem(Impl::cRealNodeName, id, strValue, &bFound);
     if (bFound)
     {
-        char *endptr = NULL;
+        char *endptr;
         double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
         EXPECT_NEAR(refValue, value, 0.0001);

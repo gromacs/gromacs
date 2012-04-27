@@ -293,8 +293,12 @@
 #include "selparam.h"
 #include "selvalue.h"
 
+namespace gmx
+{
+class PositionCalculationCollection;
+} // namespace gmx
+
 struct gmx_ana_pos_t;
-struct gmx_ana_poscalc_coll_t;
 struct gmx_ana_selcollection_t;
 
 /*! \name Selection method flags
@@ -389,7 +393,7 @@ typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
  * The pointer \p pcc should then be stored and used for initialization for
  * any position calculation structures.
  */
-typedef void  (*sel_posfunc)(struct gmx_ana_poscalc_coll_t *pcc, void *data);
+typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data);
 /*! \brief
  * Does initialization based on topology and/or parameter values.
  *

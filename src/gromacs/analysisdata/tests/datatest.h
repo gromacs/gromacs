@@ -45,7 +45,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
-#include "gromacs/fatalerror/gmxassert.h"
+
+#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/refdata.h"
 
@@ -81,15 +82,21 @@ const real MPSTOP = -std::numeric_limits<real>::max();
 class AnalysisDataTestInputPointSet
 {
     public:
-        AnalysisDataTestInputPointSet();
-
+        //! Returns the number of columns in the point set.
         int size() const { return y_.size(); }
+        //! Returns the value in column \p i.
         real y(int i) const { return y_[i]; }
+        //! Returns the error in column \p i.
         real dy(int i) const { return 0.0; }
+        //! Returns whether the value in column \p i is present.
         real present(int i) const { return true; }
+        //! Returns a vector of values for all columns.
         const std::vector<real> &yvector() const { return y_; }
 
     private:
+        //! Creates an empty point set.
+        AnalysisDataTestInputPointSet();
+
         std::vector<real>       y_;
 
         friend class AnalysisDataTestInput;
@@ -103,15 +110,16 @@ class AnalysisDataTestInputPointSet
 class AnalysisDataTestInputFrame
 {
     public:
-        AnalysisDataTestInputFrame();
-
-        bool isMultipoint() const { return points_.size() > 1; }
-
+        //! Returns zero-based index for the frame.
         int index() const { return index_; }
+        //! Returns x coordinate for the frame.
         real x() const { return x_; }
+        //! Returns error in the x coordinate for the frame.
         real dx() const { return 0.0; }
 
+        //! Number of individual point sets in the frame.
         int pointSetCount() const { return points_.size(); }
+        //! Returns a point set object for a given point set.
         const AnalysisDataTestInputPointSet &points(int index = 0) const
         {
             GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < points_.size(),
@@ -120,6 +128,9 @@ class AnalysisDataTestInputFrame
         }
 
     private:
+        //! Constructs a new frame object with the given values.
+        AnalysisDataTestInputFrame(int index, real x);
+
         int                     index_;
         real                    x_;
         std::vector<AnalysisDataTestInputPointSet>  points_;
@@ -160,9 +171,13 @@ class AnalysisDataTestInput
         explicit AnalysisDataTestInput(const real *data);
         ~AnalysisDataTestInput();
 
+        //! Returns the number of frames in the input data.
         int frameCount() const { return frames_.size(); }
+        //! Returns the number of columns in the input data.
         int columnCount() const { return columnCount_; }
+        //! Whether the input data is multipoint.
         bool isMultipoint() const { return bMultipoint_; }
+        //! Returns a frame object for the given input frame.
         const AnalysisDataTestInputFrame &frame(int index) const;
 
     private:
@@ -222,7 +237,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          * Adds a single frame from AnalysisDataTestInput into an AnalysisData.
          */
         static void presentDataFrame(const AnalysisDataTestInput &input, int row,
-                                     AnalysisDataHandle *handle);
+                                     AnalysisDataHandle handle);
         /*! \brief
          * Initializes an array data object from AnalysisDataTestInput.
          *
@@ -335,6 +350,11 @@ class AnalysisDataTestFixture : public ::testing::Test
                                        AbstractAnalysisData *source);
 
     protected:
+        /*! \brief
+         * Reference data object used for the reference checker modules.
+         *
+         * Tests can use the data object also for their own purposes if needed.
+         */
         gmx::test::TestReferenceData  data_;
 };
 

@@ -1859,7 +1859,7 @@ static void write_dd_grid_pdb(const char *fn,gmx_large_int_t step,
                 }
                 else
                 {
-                    if (dd->nc[d] > 1 && d < ddbox->npbcdim)
+                    if (d < ddbox->npbcdim && dd->nc[d] > 1)
                     {
                         tric[d][i] = box[i][d]/box[i][i];
                     }
@@ -1871,7 +1871,7 @@ static void write_dd_grid_pdb(const char *fn,gmx_large_int_t step,
             }
         }
         sprintf(fname,"%s_%s.pdb",fn,gmx_step_str(step,buf));
-        sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
+        sprintf(format,"%s%s\n",get_pdbformat(),"%6.2f%6.2f");
         out = gmx_fio_fopen(fname,"w");
         gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
         a = 1;
@@ -1935,8 +1935,8 @@ void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
     
     sprintf(fname,"%s_%s_n%d.pdb",fn,gmx_step_str(step,buf),cr->sim_nodeid);
     
-    sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
-    sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
+    sprintf(format,"%s%s\n",get_pdbformat(),"%6.2f%6.2f");
+    sprintf(format4,"%s%s\n",get_pdbformat4(),"%6.2f%6.2f");
     
     out = gmx_fio_fopen(fname,"w");
     
@@ -6317,7 +6317,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
-            dd_warning(cr,fplog,"NOTE: Periodic molecules: can not easily determine the required minimum bonded cut-off, using half the non-bonded cut-off\n");
+            dd_warning(cr,fplog,"NOTE: Periodic molecules are present in this system. Because of this, the domain decomposition algorithm cannot easily determine the minimum cell size that it requires for treating bonded interactions. Instead, domain decomposition will assume that half the non-bonded cut-off will be a suitable lower bound.\n");
             comm->cutoff_mbody = comm->cutoff/2;
             r_bonded_limit = comm->cutoff_mbody;
         }

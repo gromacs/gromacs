@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 4.0.5
  * Written by Christoph Junghans, Brad Lambeth, and possibly others.
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
@@ -16,23 +16,23 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
- 
+
 #include "adress.h"
 #include "maths.h"
 #include "pbc.h"
@@ -40,7 +40,7 @@
 #include "typedefs.h"
 #include "vec.h"
 
-real 
+real
 adress_weight(rvec            x,
               int             adresstype,
               real            adressr,
@@ -57,11 +57,11 @@ adress_weight(rvec            x,
 
     sqr_dl = 0.0;
 
-    if (pbc) 
+    if (pbc)
     {
         pbc_dx(pbc,(*ref),x,dx);
-    } 
-    else 
+    }
+    else
     {
         rvec_sub((*ref),x,dx);
     }
@@ -71,10 +71,10 @@ adress_weight(rvec            x,
     case eAdressOff:
         /* default to explicit simulation */
         return 1;
-    case eAdressConst:              
+    case eAdressConst:
         /* constant value for weighting function = adressw */
         return fr->adress_const_wf;
-    case eAdressXSplit:              
+    case eAdressXSplit:
         /* plane through center of ref, varies in x direction */
         sqr_dl         = dx[0]*dx[0];
         break;
@@ -88,9 +88,9 @@ adress_weight(rvec            x,
         /* default to explicit simulation */
         return 1;
     }
-    
+
     dl=sqrt(sqr_dl);
-    
+
     /* molecule is coarse grained */
     if (dl > l2)
     {
@@ -145,7 +145,7 @@ update_adress_weights_com(FILE *               fplog,
 
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
-     * to be on the same node as the constructing atoms.  Therefore we 
+     * to be on the same node as the constructing atoms.  Therefore we
      * loop over the charge groups, calculate their center of mass,
      * then use this to calculate wf for each atom.  This wastes vsite
      * construction, but it's the only way to assure that the explicit
@@ -156,9 +156,9 @@ update_adress_weights_com(FILE *               fplog,
             cg0,cg1);
 #endif
     cgindex = cgs->index;
-    
+
     /* Compute the center of mass for all charge groups */
-    for(icg=cg0; (icg<cg1); icg++) 
+    for(icg=cg0; (icg<cg1); icg++)
     {
         k0      = cgindex[icg];
         k1      = cgindex[icg+1];
@@ -180,7 +180,7 @@ update_adress_weights_com(FILE *               fplog,
             if (mtot > 0.0)
             {
                 inv_mtot = 1.0/mtot;
-                
+
                 clear_rvec(ix);
                 for(k=k0; (k<k1); k++)
                 {
@@ -230,7 +230,7 @@ update_adress_weights_com(FILE *               fplog,
 
     adress_set_kernel_flags(n_ex, n_hyb, n_cg, mdatoms);
 
-    
+
 }
 void update_adress_weights_atom_per_atom(
                             int                  cg0,
@@ -271,7 +271,7 @@ void update_adress_weights_atom_per_atom(
      * This is an approximation
      * as in the theory requires an interpolation based on the center of masses.
      * Should be used with caution */
-   
+
     for (icg = cg0; (icg < cg1); icg++) {
         k0 = cgindex[icg];
         k1 = cgindex[icg + 1];
@@ -326,15 +326,15 @@ update_adress_weights_cog(t_iparams            ip[],
      * Loop over vsite types, calculate the weight of the vsite,
      * then assign that weight to the constructing atoms. */
 
-    for(ftype=0; (ftype<F_NRE); ftype++) 
+    for(ftype=0; (ftype<F_NRE); ftype++)
     {
-        if (interaction_function[ftype].flags & IF_VSITE) 
+        if (interaction_function[ftype].flags & IF_VSITE)
         {
             nra    = interaction_function[ftype].nratoms;
             nr     = ilist[ftype].nr;
             ia     = ilist[ftype].iatoms;
-            
-            for(i=0; (i<nr); ) 
+
+            for(i=0; (i<nr); )
             {
                 /* The vsite and first constructing atom */
                 avsite     = ia[1];
@@ -399,7 +399,7 @@ update_adress_weights_cog(t_iparams            ip[],
                     break;
                 case F_VSITEN:
                     inc    = 3*ip[ia[0]].vsiten.n;
-                    for(j=3; j<inc; j+=3) 
+                    for(j=3; j<inc; j+=3)
                     {
                         ai = ia[j+2];
                         wf[ai] = wf[avsite];
@@ -449,8 +449,8 @@ update_adress_weights_atom(int                  cg0,
      * We still can't be sure that the vsite and constructing
      * atoms are on the same processor, so we must calculate
      * in the same way as com adress. */
-    
-    for(icg=cg0; (icg<cg1); icg++) 
+
+    for(icg=cg0; (icg<cg1); icg++)
     {
         k0      = cgindex[icg];
         k1      = cgindex[icg+1];
@@ -551,7 +551,7 @@ adress_thermo_force(int                  start,
                         ATFtab = fr->atf_tabs[DEFAULT_TF_TABLE].tab;
                         tabscale = fr->atf_tabs[DEFAULT_TF_TABLE].scale;
                     }
-                    
+
                     fscal            = 0;
                     if (pbc)
                     {
@@ -562,8 +562,8 @@ adress_thermo_force(int                  start,
                         rvec_sub((*ref),x[iatom],dr);
                     }
 
-                    
-                    
+
+
 
                     /* calculate distace to adress center again */
                     sqr_dl =0.0;

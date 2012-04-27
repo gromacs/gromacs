@@ -132,24 +132,6 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr, int omp_
     return wc;
 }
 
-void wallcycle_destroy(gmx_wallcycle_t wc)
-{
-    if (wc == NULL)
-    {
-        return;
-    }
-    
-    if (wc->wcc != NULL)
-    {
-        sfree(wc->wcc);
-    }
-    if (wc->wcc_all != NULL)
-    {
-        sfree(wc->wcc_all);
-    }
-    sfree(wc);
-}
-
 static void wallcycle_all_start(gmx_wallcycle_t wc,int ewc,gmx_cycles_t cycle)
 {
     wc->ewc_prev = ewc;

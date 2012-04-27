@@ -38,21 +38,13 @@
  * Basic interface for providing options is implemented by the Options class
  * and classes defined in basicoptions.h for specifying individual options.
  * Only these are needed if a class wants to provide a set of standard options.
+ * When creating an Options object and adding options, it is possible to add
+ * descriptions for individual options as well as for the whole set of options.
+ * These can then be used to write out help text.
  *
- * Values for options can be set using option parsers.
- * Currently, only one is defined: CommandLineParser.
- * As the name suggests, this parser gets values from command-line arguments.
- * Multiple parsers can be used in sequence to provide option values from
- * multiple sources; in such cases, if an option is provided in multiple
- * sources, new values overwrite any values from previous sources.
- *
- * In most cases, it is desirable to be able to provide a help describing the
- * available options.  When creating an Options object and adding options, it
- * is possible to add descriptions for individual options as well as for the
- * whole set of options.  These can then be used to write out a help using one
- * of the provided help writers.
- * Currently, only one is defined: AsciiHelpWriter
- * (implementation is not yet complete).
+ * Module \ref module_commandline implements classes that assign option values
+ * from command line and produce help for programs that use the command line
+ * parser.
  *
  * \if libapi
  * <H3>Advanced Use (in library API)</H3>
@@ -86,7 +78,10 @@
 #ifndef GMX_OPTIONS_H
 #define GMX_OPTIONS_H
 
+#include "options/basicoptioninfo.h"
 #include "options/basicoptions.h"
+#include "options/filenameoptioninfo.h"
+#include "options/filenameoption.h"
 #include "options/options.h"
 
 #endif

@@ -394,16 +394,6 @@ extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, re
 	return success;
 }
 
-int atp_size (int *index_atp)
-{
-    int i = 0;
-
-    while (index_atp[i])
-	i++;
-    return i;
-}
-
-
 extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              const char* fnXVG, const char *fnTRX,
                              const char* fnDAT,

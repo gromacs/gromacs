@@ -164,7 +164,7 @@ static void cp_warning(FILE *fp)
 
 static void cp_error()
 {
-    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of quota?");
+    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of disk space?");
 }
 
 static void do_cpt_string_err(XDR *xd,gmx_bool bRead,const char *desc,char **s,FILE *list)
@@ -711,7 +711,7 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
     res = xdr_int(xd,&magic);
     if (res == 0)
     {
-        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or maybe you are out of quota?");
+        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or maybe you are out of disk space?");
     }
     if (magic != CPT_MAGIC1)
     {
@@ -1264,7 +1264,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
        (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,
                      file_version) < 0))
     {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
@@ -1279,7 +1279,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     {
         char buf[STRLEN];
         sprintf(buf,
-                "Cannot fsync '%s'; maybe you are out of disk space or quota?",
+                "Cannot fsync '%s'; maybe you are out of disk space?",
                 gmx_fio_getname(ret));
 
         if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV)==NULL)
@@ -1294,7 +1294,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
 
     if( gmx_fio_close(fp) != 0)
     {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
     /* we don't move the checkpoint if the user specified they didn't want it,
@@ -1324,7 +1324,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
         }
         if (gmx_file_rename(fntemp, fn) != 0)
         {
-            gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
+            gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
 
@@ -1701,7 +1701,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     }
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
     
     sfree(fprog);
@@ -1940,7 +1940,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     read_checkpoint_data(fp,simulation_part,step,t,state,FALSE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
 }
 
@@ -2041,7 +2041,7 @@ void list_checkpoint(const char *fn,FILE *out)
     }
     if( gmx_fio_close(fp) != 0)
 	{
-		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
 	}
     
     done_state(&state);
@@ -2097,7 +2097,7 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
                                  &nfiles,&outputfiles);
             if( gmx_fio_close(fp) != 0)
             {
-                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
             }
             done_state(&state);
 

@@ -37,11 +37,11 @@
  */
 #include "gromacs/options/timeunitmanager.h"
 
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

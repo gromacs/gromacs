@@ -39,11 +39,11 @@
 #include <config.h>
 #endif
 
-#include <index.h>
-#include <smalloc.h>
-#include <string2.h>
-#include <typedefs.h>
-#include <gmx_fatal.h>
+#include "gromacs/legacyheaders/index.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #include "gromacs/selection/indexutil.h"
 
@@ -76,34 +76,6 @@ gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps)
 
 /*!
  * \param[out] g     Index group structure.
- * \param[in]  ngrps Number of index groups.
- * \param[in]  isize Array of index group sizes.
- * \param[in]  index Array of pointers to indices of each group.
- * \param[in]  name  Array of names of the groups.
- * \param[in]  bFree If true, the \p isize, \p index and \p name arrays
- *   are freed after they have been copied.
- */
-void
-gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
-                      atom_id **index, char **name, bool bFree)
-{
-    int  i;
-
-    gmx_ana_indexgrps_alloc(g, ngrps);
-    for (i = 0; i < ngrps; ++i)
-    {
-        gmx_ana_index_set(&(*g)->g[i], isize[i], index[i], name[i], isize[i]);
-    }
-    if (bFree)
-    {
-        sfree(isize);
-        sfree(index);
-        sfree(name);
-    }
-}
-
-/*!
- * \param[out] g     Index group structure.
  * \param[in]  top   Topology structure.
  * \param[in]  fnm   File name for the index file.
  *   Memory is automatically allocated.
@@ -116,7 +88,7 @@ gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
                        const char *fnm)
 {
     t_blocka *block = NULL;
@@ -158,56 +130,6 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     done_blocka(block);
     sfree(block);
     sfree(names);
-}
-
-/*!
- * \param[out] g     Index group structure.
- * \param[in]  top   Topology structure.
- * \param[in]  fnm   File name for the index file.
- * \param[in]  ngrps Number of required groups.
- *   Memory is automatically allocated.
- *
- * One of \p top or \p fnm can be NULL, but not both.
- * If \p top is NULL, an index file is required and the groups are read
- * from the file (uses Gromacs routine rd_index()).
- * If \p fnm is NULL, default groups are constructed based on the
- * topology (uses Gromacs routine get_index()).
- */
-void
-gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
-                      const char *fnm, int ngrps)
-{
-    int      *isize;
-    atom_id **index;
-    char    **name;
-
-    snew(isize, ngrps);
-    snew(index, ngrps);
-    snew(name,  ngrps);
-    if (!top)
-    {
-        rd_index(fnm, ngrps, isize, index, name);
-    }
-    else
-    {
-        get_index(&(top->atoms), fnm, ngrps, isize, index, name);
-    }
-    gmx_ana_indexgrps_set(g, ngrps, isize, index, name, true);
-}
-
-/*!
- * \param[out] g     Index group structure.
- * \param[in]  fnm   File name for the index file.
- * \param[in]  ngrps Number of required groups.
- *   Memory is automatically allocated.
- *
- * This is a convenience function for calling the Gromacs routine
- * rd_index().
- */
-void
-gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, const char *fnm, int ngrps)
-{
-    gmx_ana_indexgrps_get(g, NULL, fnm, ngrps);
 }
 
 /*!
@@ -740,7 +662,6 @@ gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b)
 void
 gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
                         gmx_ana_index_t *src, gmx_ana_index_t *g)
-                     
 {
     int i, j, k;
 

@@ -43,7 +43,6 @@
 
 #include "basicoptions.h"
 #include "basicoptioninfo.h"
-#include "optionfiletype.h"
 #include "optionstoragetemplate.h"
 
 namespace gmx
@@ -53,7 +52,6 @@ class BooleanOption;
 class IntegerOption;
 class DoubleOption;
 class StringOption;
-class FileNameOption;
 
 /*! \addtogroup module_options
  * \{
@@ -69,10 +67,9 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
          */
-        BooleanOptionStorage(const BooleanOption &settings, Options *options)
-            : MyBase(settings, options), info_(this)
+        explicit BooleanOptionStorage(const BooleanOption &settings)
+            : MyBase(settings), info_(this)
         {
         }
 
@@ -93,8 +90,8 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 {
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
-        IntegerOptionStorage(const IntegerOption &settings, Options *options)
-            : MyBase(settings, options), info_(this)
+        explicit IntegerOptionStorage(const IntegerOption &settings)
+            : MyBase(settings), info_(this)
         {
         }
 
@@ -117,13 +114,15 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
 {
     public:
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
-        DoubleOptionStorage(const DoubleOption &settings, Options *options);
+        explicit DoubleOptionStorage(const DoubleOption &settings);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const;
         virtual std::string formatValue(int i) const;
 
+        //! \copydoc DoubleOptionInfo::isTime()
         bool isTime() const { return bTime_; }
+        //! \copydoc DoubleOptionInfo::setScaleFactor()
         void setScaleFactor(double factor);
 
     private:
@@ -143,7 +142,7 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 {
     public:
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
-        StringOptionStorage(const StringOption &settings, Options *options);
+        explicit StringOptionStorage(const StringOption &settings);
 
         virtual OptionInfo &optionInfo() { return _info; }
         virtual const char *typeString() const { return _allowed.empty() ? "string" : "enum"; }
@@ -156,34 +155,6 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         StringOptionInfo        _info;
         ValueList               _allowed;
         int                    *_enumIndexStore;
-};
-
-/*! \internal \brief
- * Converts, validates, and stores file names.
- */
-class FileNameOptionStorage : public OptionStorageTemplate<std::string>
-{
-    public:
-        //! \copydoc StringOptionStorage::StringOptionStorage()
-        FileNameOptionStorage(const FileNameOption &settings, Options *options);
-
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual const char *typeString() const { return "file"; }
-        virtual std::string formatValue(int i) const;
-
-        bool isInputFile() const { return bRead_ && !bWrite_; }
-        bool isOutputFile() const { return !bRead_ && bWrite_; }
-        bool isInputOutputFile() const { return bRead_ && bWrite_; }
-        bool isLibraryFile() const { return bLibrary_; }
-
-    private:
-        virtual void convertValue(const std::string &value);
-
-        FileNameOptionInfo      info_;
-        OptionFileType          filetype_;
-        bool                    bRead_;
-        bool                    bWrite_;
-        bool                    bLibrary_;
 };
 
 /*!\}*/

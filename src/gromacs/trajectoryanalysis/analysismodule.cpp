@@ -37,8 +37,12 @@
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 
+#include <utility>
+
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "analysismodule-impl.h"
 
@@ -59,24 +63,12 @@ TrajectoryAnalysisModuleData::Impl::Impl(
     for (i = module->_impl->_analysisDatasets.begin();
          i != module->_impl->_analysisDatasets.end(); ++i)
     {
-        _handles[i->first] = i->second->startData(opt);
+        _handles.insert(std::make_pair(i->second, i->second->startData(opt)));
     }
 }
 
 TrajectoryAnalysisModuleData::Impl::~Impl()
 {
-}
-
-
-void TrajectoryAnalysisModuleData::Impl::finishHandles()
-{
-    // FIXME: Call finishData() for all handles even if one throws
-    HandleContainer::const_iterator i;
-    for (i = _handles.begin(); i != _handles.end(); ++i)
-    {
-        i->second->finishData();
-    }
-    _handles.clear();
 }
 
 
@@ -100,32 +92,40 @@ TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
 
 void TrajectoryAnalysisModuleData::finishDataHandles()
 {
-    _impl->finishHandles();
+    // FIXME: Call finishData() for all handles even if one throws
+    Impl::HandleContainer::iterator i;
+    for (i = _impl->_handles.begin(); i != _impl->_handles.end(); ++i)
+    {
+        i->second.finishData();
+    }
+    _impl->_handles.clear();
 }
 
 
-AnalysisDataHandle *TrajectoryAnalysisModuleData::dataHandle(const char *name)
+AnalysisDataHandle
+TrajectoryAnalysisModuleData::dataHandle(const AnalysisData &data)
 {
-    Impl::HandleContainer::const_iterator i = _impl->_handles.find(name);
+    Impl::HandleContainer::const_iterator i = _impl->_handles.find(&data);
     GMX_RELEASE_ASSERT(i != _impl->_handles.end(),
                        "Data handle requested on unknown dataset");
-    return (i != _impl->_handles.end()) ? (*i).second : NULL;
+    return i->second;
 }
 
 
-Selection *TrajectoryAnalysisModuleData::parallelSelection(Selection *selection)
+Selection TrajectoryAnalysisModuleData::parallelSelection(const Selection &selection)
 {
     // TODO: Implement properly.
     return selection;
 }
 
 
-std::vector<Selection *>
-TrajectoryAnalysisModuleData::parallelSelections(const std::vector<Selection *> &selections)
+SelectionList
+TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections)
 {
-    std::vector<Selection *> newSelections;
+    // TODO: Consider an implementation that does not allocate memory every time.
+    SelectionList newSelections;
     newSelections.reserve(selections.size());
-    std::vector<Selection *>::const_iterator i = selections.begin();
+    SelectionList::const_iterator i = selections.begin();
     for ( ; i != selections.end(); ++i)
     {
         newSelections.push_back(parallelSelection(*i));
@@ -178,11 +178,12 @@ void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
                                       const SelectionCollection &selections)
 {
-    return new TrajectoryAnalysisModuleDataBasic(this, opt, selections);
+    return TrajectoryAnalysisModuleDataPointer(
+            new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
 }
 
 
@@ -203,35 +204,36 @@ const std::vector<std::string> &TrajectoryAnalysisModule::datasetNames() const
 }
 
 
-AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromIndex(int index) const
+AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromIndex(int index) const
 {
     if (index < 0 || index >= datasetCount())
     {
-        return NULL;
+        GMX_THROW(APIError("Out of range data set index"));
     }
     Impl::DatasetContainer::const_iterator item
         = _impl->_datasets.find(_impl->_datasetNames[index]);
     GMX_RELEASE_ASSERT(item != _impl->_datasets.end(),
                        "Inconsistent data set names");
-    return item->second;
+    return *item->second;
 }
 
 
-AbstractAnalysisData *TrajectoryAnalysisModule::datasetFromName(const char *name) const
+AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name) const
 {
     Impl::DatasetContainer::const_iterator item = _impl->_datasets.find(name);
     if (item == _impl->_datasets.end())
     {
-        return NULL;
+        GMX_THROW(APIError("Unknown data set name"));
     }
-    return item->second;
+    return *item->second;
 }
 
 
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char *name)
 {
-    GMX_RELEASE_ASSERT(datasetFromName(name) == NULL,
+    // TODO: Strong exception safety should be possible to implement.
+    GMX_RELEASE_ASSERT(_impl->_datasets.find(name) == _impl->_datasets.end(),
                        "Duplicate data set name registered");
     _impl->_datasets[name] = data;
     _impl->_datasetNames.push_back(name);
@@ -241,6 +243,7 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
 void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
                                                        const char *name)
 {
+    // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);
     _impl->_analysisDatasets[name] = data;
 }

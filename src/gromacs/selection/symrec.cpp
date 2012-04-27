@@ -189,18 +189,18 @@ add_reserved_symbols(gmx_sel_symtab_t *tab)
 static void
 add_position_symbols(gmx_sel_symtab_t *tab)
 {
-    const char       **postypes;
     gmx_sel_symrec_t  *sym;
     gmx_sel_symrec_t  *last;
     int                i;
 
-    postypes = gmx_ana_poscalc_create_type_enum(true);
+    const char *const *postypes
+        = gmx::PositionCalculationCollection::typeEnumValues;
     last = tab->first;
     while (last && last->next)
     {
         last = last->next;
     }
-    for (i = 1; postypes[i] != NULL; ++i)
+    for (i = 0; postypes[i] != NULL; ++i)
     {
         snew(sym, 1);
         sym->name = strdup(postypes[i]);
@@ -216,7 +216,6 @@ add_position_symbols(gmx_sel_symtab_t *tab)
         }
         last = sym;
     }
-    sfree(postypes);
 }
 
 /*!
@@ -396,7 +395,6 @@ static gmx_sel_symrec_t *
 add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
 {
     gmx_sel_symrec_t *sym, *psym;
-    int               len;
 
     /* Check if there is a conflicting symbol */
     psym = NULL;

@@ -30,7 +30,8 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in basicoptions.h and basicoptionstorage.h.
+ * Implements classes in basicoptions.h, basicoptioninfo.h and
+ * basicoptionstorage.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_options
@@ -43,9 +44,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptioninfo.h"
-#include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
 
 #include "basicoptionstorage.h"
@@ -107,9 +107,9 @@ BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
  * BooleanOption
  */
 
-AbstractOptionStorage *BooleanOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer BooleanOption::createStorage() const
 {
-    return new BooleanOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new BooleanOptionStorage(*this));
 }
 
 
@@ -126,7 +126,7 @@ std::string IntegerOptionStorage::formatValue(int i) const
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr = NULL;
+    char *endptr;
     long int ival = std::strtol(ptr, &endptr, 10);
     if (*endptr != '\0')
     {
@@ -156,9 +156,9 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
  * IntegerOption
  */
 
-AbstractOptionStorage *IntegerOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer IntegerOption::createStorage() const
 {
-    return new IntegerOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new IntegerOptionStorage(*this));
 }
 
 
@@ -166,8 +166,8 @@ AbstractOptionStorage *IntegerOption::createDefaultStorage(Options *options) con
  * DoubleOptionStorage
  */
 
-DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings, Options *options)
-    : MyBase(settings, options), info_(this), bTime_(settings._bTime), factor_(1.0)
+DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
+    : MyBase(settings), info_(this), bTime_(settings._bTime), factor_(1.0)
 {
 }
 
@@ -184,7 +184,7 @@ std::string DoubleOptionStorage::formatValue(int i) const
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr = NULL;
+    char *endptr;
     double dval = std::strtod(ptr, &endptr);
     if (*endptr != '\0')
     {
@@ -254,9 +254,9 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStorage *DoubleOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer DoubleOption::createStorage() const
 {
-    return new DoubleOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new DoubleOptionStorage(*this));
 }
 
 
@@ -264,8 +264,8 @@ AbstractOptionStorage *DoubleOption::createDefaultStorage(Options *options) cons
  * StringOptionStorage
  */
 
-StringOptionStorage::StringOptionStorage(const StringOption &settings, Options *options)
-    : MyBase(settings, options), _info(this), _enumIndexStore(NULL)
+StringOptionStorage::StringOptionStorage(const StringOption &settings)
+    : MyBase(settings), _info(this), _enumIndexStore(NULL)
 {
     if (settings._defaultEnumIndex >= 0 && settings._enumValues == NULL)
     {
@@ -387,9 +387,9 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
  * StringOption
  */
 
-AbstractOptionStorage *StringOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer StringOption::createStorage() const
 {
-    return new StringOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new StringOptionStorage(*this));
 }
 
 std::string StringOption::createDescription() const
@@ -409,72 +409,6 @@ std::string StringOption::createDescription() const
         }
     }
     return value;
-}
-
-
-/********************************************************************
- * FileNameOptionStorage
- */
-
-FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings, Options *options)
-    : MyBase(settings, options), info_(this), filetype_(settings.filetype_),
-      bRead_(settings.bRead_), bWrite_(settings.bWrite_),
-      bLibrary_(settings.bLibrary_)
-{
-}
-
-std::string FileNameOptionStorage::formatValue(int i) const
-{
-    return values()[i];
-}
-
-void FileNameOptionStorage::convertValue(const std::string &value)
-{
-    // TODO: Proper implementation.
-    addValue(value);
-}
-
-/********************************************************************
- * FileNameOptionInfo
- */
-
-FileNameOptionInfo::FileNameOptionInfo(FileNameOptionStorage *option)
-    : OptionInfo(option)
-{
-}
-
-const FileNameOptionStorage &FileNameOptionInfo::option() const
-{
-    return static_cast<const FileNameOptionStorage &>(OptionInfo::option());
-}
-
-bool FileNameOptionInfo::isInputFile() const
-{
-    return option().isInputFile();
-}
-
-bool FileNameOptionInfo::isOutputFile() const
-{
-    return option().isOutputFile();
-}
-
-bool FileNameOptionInfo::isInputOutputFile() const
-{
-    return option().isInputOutputFile();
-}
-
-bool FileNameOptionInfo::isLibraryFile() const
-{
-    return option().isLibraryFile();
-}
-
-/********************************************************************
- * FileNameOption
- */
-
-AbstractOptionStorage *FileNameOption::createDefaultStorage(Options *options) const
-{
-    return new FileNameOptionStorage(*this, options);
 }
 
 } // namespace gmx

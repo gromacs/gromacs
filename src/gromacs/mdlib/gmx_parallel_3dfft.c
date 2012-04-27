@@ -42,31 +42,6 @@ struct gmx_parallel_3dfft  {
     fft5d_plan p1,p2;    
 };
 
-
-static int *copy_int_array(int n,int *src)
-{
-    int *dest,i;
-
-    dest = (int*)malloc(n*sizeof(int));
-    for(i=0; i<n; i++)
-        dest[i] = src[i];
-
-    return dest;
-}
-
-static int *make_slab2grid(int nnodes,int ngrid)
-{
-    int *s2g,i;
-
-    s2g = (int*)malloc((nnodes+1)*sizeof(int));
-    for(i=0; i<nnodes+1; i++) {
-        /* We always round up */
-        s2g[i] = (i*ngrid + nnodes - 1)/nnodes;
-    }
-
-    return s2g;
-}
-
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            ivec                      ndata,

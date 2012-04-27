@@ -39,12 +39,13 @@
 #ifndef GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 #define GMX_OPTIONS_OPTIONSTORAGETEMPLATE_H
 
-#include <memory>
 #include <string>
 #include <vector>
 
-#include "../fatalerror/exceptions.h"
-#include "../fatalerror/gmxassert.h"
+#include <boost/scoped_ptr.hpp>
+
+#include "../utility/exceptions.h"
+#include "../utility/gmxassert.h"
 
 #include "abstractoption.h"
 #include "abstractoptionstorage.h"
@@ -100,14 +101,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Initializes the storage from option settings.
          *
          * \param[in] settings  Option settings.
-         * \param[in] options   Option collection that will contain the
-         *     option.
          * \param[in] staticFlags Option flags that are always set and specify
          *      generic behavior of the option.
          * \throws  APIError if invalid settings have been provided.
          */
         template <class U>
-        OptionStorageTemplate(const OptionTemplate<T, U> &settings, Options *options,
+        OptionStorageTemplate(const OptionTemplate<T, U> &settings,
                               OptionFlags staticFlags = OptionFlags());
 
 
@@ -165,11 +164,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Adds a value to a temporary storage.
          *
          * \param[in] value  Value to add. A copy is made.
+         * \throws std::bad_alloc if out of memory.
          * \throws InvalidInputError if the maximum value count has been reached.
          *
          * Derived classes should call this function from the convertValue()
          * implementation to add converted values to the storage.
-         * If the maximum value cont has been reached, the value is discarded
+         * If the maximum value count has been reached, the value is discarded
          * and an exception is thrown.
          *
          * If adding values outside convertValue() (e.g., to set a custom
@@ -180,6 +180,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         void addValue(const T &value);
         /*! \brief
          * Commits values added with addValue().
+         *
+         * \throws std::bad_alloc if out of memory.
          *
          * If this function succeeds, values added with addValue() since the
          * previous clearSet() are added to the storage for the option.
@@ -238,8 +240,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         ValueList              *_values;
         T                      *_store;
         int                    *_countptr;
-        // Could be scoped_ptr
-        std::auto_ptr<T>        _defaultValueIfSet;
+        boost::scoped_ptr<ValueList> _ownedValues;
+        boost::scoped_ptr<T>    _defaultValueIfSet;
 
         // Copy and assign disallowed by base.
 };
@@ -248,21 +250,19 @@ class OptionStorageTemplate : public AbstractOptionStorage
 template <typename T>
 template <class U>
 OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
-                                                Options *options,
                                                 OptionFlags staticFlags)
-    : AbstractOptionStorage(settings, options, staticFlags),
+    : AbstractOptionStorage(settings, staticFlags),
       _values(settings._storeVector),
       _store(settings._store),
       _countptr(settings._countptr)
 {
-    std::auto_ptr<std::vector<T> > valueGuard;
-    if (!_values)
+    if (_values == NULL)
     {
         // The flag should be set for proper error checking.
         GMX_RELEASE_ASSERT(!hasFlag(efExternalValueVector),
                            "Internal inconsistency");
-        valueGuard.reset(new std::vector<T>);
-        _values = valueGuard.get();
+        _ownedValues.reset(new std::vector<T>);
+        _values = _ownedValues.get();
     }
     if (hasFlag(efNoDefaultValue)
         && (settings._defaultValue != NULL
@@ -285,7 +285,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
             // TODO: This is a bit hairy, as it indirectly calls a virtual function.
             commitValues();
         }
-        else if (!hasFlag(efExternalValueVector) && _store != NULL)
+        else if (_ownedValues.get() != NULL && _store != NULL)
         {
             _values->clear();
             int count = (settings.isVector() ?
@@ -305,17 +305,12 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         }
     }
     setFlag(efClearOnNextSet);
-    valueGuard.release();
 }
 
 
 template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
-    if (!hasFlag(efExternalValueVector))
-    {
-        delete _values;
-    }
 }
 
 

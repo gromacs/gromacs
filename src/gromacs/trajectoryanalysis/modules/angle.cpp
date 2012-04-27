@@ -41,19 +41,21 @@
 #include <config.h>
 #endif
 
-#include <pbc.h>
-#include <vec.h>
+#include "pbc.h"
+#include "vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/format.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -65,7 +67,7 @@ Angle::Angle()
     : _options("angle", "Angle calculation"),
       _sel1info(NULL), _sel2info(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
-      _bDumpDist(false), _vt0(NULL)
+      _bDumpDist(false), _natoms1(0), _natoms2(0), _vt0(NULL)
 {
 }
 
@@ -76,7 +78,7 @@ Angle::~Angle()
 }
 
 
-Options *
+Options &
 Angle::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -125,9 +127,9 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
 
     _options.setDescription(desc);
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnAngle).defaultValueIfSet("angle"));
-    _options.addOption(FileNameOption("od").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("od").filetype(eftPlot).outputFile()
                            .store(&_fnDump).defaultValueIfSet("angdump"));
 
     _options.addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
@@ -154,7 +156,7 @@ Angle::initOptions(TrajectoryAnalysisSettings *settings)
         .dynamicOnlyWhole().storeVector(&_sel2).getAdjuster(&_sel2info)
         .description("Second analysis/vector selection"));
 
-    return &_options;
+    return _options;
 }
 
 
@@ -240,14 +242,14 @@ Angle::initOptionsDone(TrajectoryAnalysisSettings *settings)
 
 
 void
-Angle::checkSelections(const std::vector<Selection *> &sel1,
-                       const std::vector<Selection *> &sel2) const
+Angle::checkSelections(const SelectionList &sel1,
+                       const SelectionList &sel2) const
 {
     if (_bMulti)
     {
         for (size_t g = 0; g < sel1.size(); ++g)
         {
-            if (sel1[g]->posCount() % _natoms1 != 0)
+            if (sel1[g].posCount() % _natoms1 != 0)
             {
                 GMX_THROW(InconsistentInputError(formatString(
                     "Number of positions in selection %d not divisible by %d",
@@ -257,8 +259,8 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         return;
     }
 
-    int na1 = sel1[0]->posCount();
-    int na2 = (_natoms2 > 0) ? sel2[0]->posCount() : 0;
+    int na1 = sel1[0].posCount();
+    int na2 = (_natoms2 > 0) ? sel2[0].posCount() : 0;
 
     if (!_bSplit1 && _natoms1 > 1 && na1 % _natoms1 != 0)
     {
@@ -277,7 +279,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
     {
         for (int g = 1; g < _natoms1; ++g)
         {
-            if (sel1[g]->posCount() != na1)
+            if (sel1[g].posCount() != na1)
             {
                 GMX_THROW(InconsistentInputError(
                           "All selections in the first group should contain "
@@ -295,7 +297,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         {
             for (int g = 1; g < _natoms2; ++g)
             {
-                if (sel2[g]->posCount() != na2)
+                if (sel2[g].posCount() != na2)
                 {
                     GMX_THROW(InconsistentInputError(
                               "All selections in the second group should contain "
@@ -313,7 +315,7 @@ Angle::checkSelections(const std::vector<Selection *> &sel1,
         GMX_THROW(InconsistentInputError(
                   "Number of vectors defined by the two groups are not the same"));
     }
-    if (_g2type[0] == 's' && sel2[0]->posCount() != 1)
+    if (_g2type[0] == 's' && sel2[0].posCount() != 1)
     {
         GMX_THROW(InconsistentInputError(
                   "The second group should contain a single position with -g2 sphnorm"));
@@ -329,25 +331,25 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (_bMulti)
     {
-        _data.setColumns(_sel1.size());
+        _data.setColumnCount(_sel1.size());
     }
     else if (_bAll)
     {
-        int na = _sel1[0]->posCount();
+        int na = _sel1[0].posCount();
         if (!_bSplit1)
         {
             na /= _natoms1;
         }
-        _data.setColumns(na + 1);
+        _data.setColumnCount(na + 1);
     }
     else
     {
-        _data.setColumns(1);
+        _data.setColumnCount(1);
     }
 
     if (_g2type == "t0")
     {
-        int na = _sel1[0]->posCount();
+        int na = _sel1[0].posCount();
         if (!_bSplit1)
         {
             na /= _natoms1;
@@ -357,8 +359,8 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     registerAnalysisDataset(&_data, "angle");
 
-    AnalysisDataPlotModule *plotm
-        = new AnalysisDataPlotModule(settings.plotSettings());
+    AnalysisDataPlotModulePointer plotm(
+        new AnalysisDataPlotModule(settings.plotSettings()));
     plotm->setFileName(_fnAngle);
     plotm->setTitle("Angle");
     plotm->setXAxisIsTime();
@@ -368,21 +370,21 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 static void
-copy_pos(const std::vector<Selection *> &sel, bool bSplit, int natoms,
+copy_pos(const SelectionList &sel, bool bSplit, int natoms,
          int firstg, int first, rvec x[])
 {
     if (bSplit)
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg + k]->position(first).x(), x[k]);
+            copy_rvec(sel[firstg + k].position(first).x(), x[k]);
         }
     }
     else
     {
         for (int k = 0; k < natoms; ++k)
         {
-            copy_rvec(sel[firstg]->position(first + k).x(), x[k]);
+            copy_rvec(sel[firstg].position(first + k).x(), x[k]);
         }
     }
 }
@@ -423,6 +425,8 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
             svmul(1.0/3.0, cout, cout);
             break;
         }
+        default:
+            GMX_RELEASE_ASSERT(false, "Incorrectly initialized number of atoms");
     }
 }
 
@@ -431,9 +435,9 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("angle");
-    std::vector<Selection *> sel1 = pdata->parallelSelections(_sel1);
-    std::vector<Selection *> sel2 = pdata->parallelSelections(_sel2);
+    AnalysisDataHandle       dh = pdata->dataHandle(_data);
+    const SelectionList     &sel1 = pdata->parallelSelections(_sel1);
+    const SelectionList     &sel2 = pdata->parallelSelections(_sel2);
 
     checkSelections(sel1, sel2);
 
@@ -447,11 +451,11 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             clear_rvec(c2);
             break;
         case 's':
-            copy_rvec(_sel2[0]->position(0).x(), c2);
+            copy_rvec(_sel2[0].position(0).x(), c2);
             break;
     }
 
-    dh->startFrame(frnr, fr.time);
+    dh.startFrame(frnr, fr.time);
 
     int incr1 = _bSplit1 ? 1 : _natoms1;
     int incr2 = _bSplit2 ? 1 : _natoms2;
@@ -462,7 +466,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         real ave = 0.0;
         int n = 0;
         int i, j;
-        for (i = j = 0; i < sel1[g]->posCount(); i += incr1)
+        for (i = j = 0; i < sel1[g].posCount(); i += incr1)
         {
             rvec x[4];
             real angle;
@@ -547,6 +551,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
             angle *= RAD2DEG;
+            /* TODO: add support for -od and -dumpd 
             real dist = 0.0;
             if (_bDumpDist)
             {
@@ -561,9 +566,10 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     dist = sqrt(distance2(c1, c2));
                 }
             }
+            */
             if (_bAll)
             {
-                dh->setPoint(n + 1, angle);
+                dh.setPoint(n + 1, angle);
             }
             ave += angle;
             ++n;
@@ -572,9 +578,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             ave /= n;
         }
-        dh->setPoint(g, ave);
+        dh.setPoint(g, ave);
     }
-    dh->finishFrame();
+    dh.finishFrame();
 }
 
 
@@ -590,10 +596,10 @@ Angle::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Angle::create()
 {
-    return new Angle();
+    return TrajectoryAnalysisModulePointer(new Angle());
 }
 
 } // namespace modules

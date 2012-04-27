@@ -43,11 +43,11 @@
 
 #include <new>
 
-#include <smalloc.h>
+#include "smalloc.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "mempool.h"
 

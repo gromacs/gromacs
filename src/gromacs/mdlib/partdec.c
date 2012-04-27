@@ -762,40 +762,6 @@ gmx_localtop_t *split_system(FILE *log,
   return top;
 }
 
-static void create_vsitelist(int nindex, int *list,
-                             int *targetn, int **listptr)
-{
-  int i,j,k,inr;
-  int minidx;
-  int *newlist;
-
-  /* remove duplicates */
-  for(i=0;i<nindex;i++) {
-    inr=list[i];
-    for(j=i+1;j<nindex;j++) {
-      if(list[j]==inr) {
-        for(k=j;k<nindex-1;k++)
-          list[k]=list[k+1];
-        nindex--;
-      }
-    }
-  }
-
-  *targetn=nindex;
-  snew(newlist,nindex);
-  
-  /* sort into the new array */
-  for(i=0;i<nindex;i++) {
-    inr=-1;
-    for(j=0;j<nindex;j++)
-      if(list[j]>0 && (inr==-1 || list[j]<list[inr])) 
-        inr=j; /* smallest so far */
-    newlist[i]=list[inr];
-    list[inr]=-1;
-  }
-  *listptr=newlist;
-}
-  
 static void
 add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
 {

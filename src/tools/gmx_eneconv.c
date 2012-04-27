@@ -99,24 +99,6 @@ static int *select_it(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
-static gmx_bool same_time(real t1,real t2)
-{
-  const real tol=1e-5;
-
-  return (fabs(t1-t2) < tol);
-}
-
-
-gmx_bool bRgt(double a,double b)
-{
-  double tol = 1e-6;
-  
-  if ( a > (b - tol*(a+b)) )
-    return TRUE;
-  else
-    return FALSE;
-}
-
 static void sort_files(char **fnms,real *settime,int nfile)
 {
     int i,j,minidx;
@@ -314,23 +296,6 @@ static void copy_ee(t_energy *src, t_energy *dst, int nre)
   }
 }
 
-
-static void remove_last_eeframe(t_energy *lastee, gmx_large_int_t laststep,
-				t_energy *ee, int nre)
-{
-    int i;
-    gmx_large_int_t p=laststep+1;
-    double sigmacorr;
-    
-    for(i=0;i<nre;i++) {
-	lastee[i].esum-=ee[i].e;
-	sigmacorr=lastee[i].esum-(p-1)*ee[i].e;
-	lastee[i].eav-=(sigmacorr*sigmacorr)/((p-1)*p);
-    }
-}
-
-
-
 static void update_ee(t_energy *lastee,gmx_large_int_t laststep,
 		      t_energy *startee,gmx_large_int_t startstep,
 		      t_energy *ee, int step,
@@ -380,17 +345,6 @@ static void update_ee(t_energy *lastee,gmx_large_int_t laststep,
     if((outee[i].eav/(laststep+step+1))<(GMX_REAL_EPS))
       outee[i].eav=0;
   }
-}
-
-
-static void update_last_ee(t_energy *lastee, gmx_large_int_t laststep,
-			   t_energy *ee,gmx_large_int_t step,int nre)
-{
-    t_energy *tmp;
-    snew(tmp,nre);
-    update_ee(lastee,laststep,NULL,0,ee,step,tmp,nre);
-    copy_ee(tmp,lastee,nre);
-    sfree(tmp);
 }
 
 static void update_ee_sum(int nre,

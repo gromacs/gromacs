@@ -39,20 +39,20 @@
 #ifndef GMX_TRAJECTORYANALYSIS_MODULES_H
 #define GMX_TRAJECTORYANALYSIS_MODULES_H
 
+#include "analysismodule.h"
+
 namespace gmx
 {
-
-class TrajectoryAnalysisModule;
 
 /*! \brief
  * Creates a TrajectoryAnalysisModule object corresponding to a name.
  *
  * \param[in]  name  Name of the module to create (recognized names are
  *      defined in modules.h).
- * \returns  An allocated TrajectoryAnalysisModule object, or NULL if \p name
- *      is not valid.
+ * \returns  An allocated TrajectoryAnalysisModule object.
+ * \throws   InvalidInputError if \p name is not recognized.
  *
- * This function should be used to instantiate selection methods defined in the
+ * This function should be used to instantiate analysis methods defined in the
  * library.
  *
  * In addition to recognizing exact matches on \p name, the function also
@@ -61,7 +61,8 @@ class TrajectoryAnalysisModule;
  *
  * \inpublicapi
  */
-TrajectoryAnalysisModule *createTrajectoryAnalysisModule(const char *name);
+TrajectoryAnalysisModulePointer
+createTrajectoryAnalysisModule(const char *name);
 
 namespace analysismodules
 {

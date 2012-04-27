@@ -324,9 +324,9 @@ void write_pdbfile_indexed(FILE *out,const char *title,
     else {
       /* Check whether atomname is an element name */
       if ((strlen(nm)<4) && (gmx_strcasecmp(nm,atoms->atom[i].elem) != 0))
-	strcpy(pdbform,pdbformat);
+	strcpy(pdbform,get_pdbformat());
       else {
-	strcpy(pdbform,pdbformat4);
+	strcpy(pdbform,get_pdbformat4());
 	if (strlen(nm) > 4) {
 	  int maxwln=20;
 	  if (nlongname < maxwln) {
@@ -751,8 +751,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                 {
                     c=line+6;
                     /* skip HEADER or TITLE and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"      ");
                     if (d) 
@@ -774,8 +774,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
                         c=line;
                     }
                     /* skip 'MOLECULE:' and spaces */
-                    while (c && (c[0]!=' ')) c++;
-                    while (c && (c[0]==' ')) c++;
+                    while (c[0]!=' ') c++;
+                    while (c[0]==' ') c++;
                     /* truncate after title */
                     d=strstr(c,"   ");
                     if (d) 
@@ -879,4 +879,16 @@ gmx_conect gmx_conect_generate(t_topology *top)
     }
   }
   return gc;
+}
+
+const char* get_pdbformat()
+{
+    static const char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f";
+    return pdbformat;
+}
+
+const char* get_pdbformat4()
+{
+    static const char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d%c   %8.3f%8.3f%8.3f";
+    return pdbformat4;
 }

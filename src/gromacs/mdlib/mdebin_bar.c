@@ -95,16 +95,6 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     mde_delta_h_reset(dh);
 }
 
-/* free the contents of the delta_h list */
-static void mde_delta_h_free(t_mde_delta_h *dh)
-{
-    int i;
-    for(i=0;i<dh->nhist;i++)
-    {
-        sfree(dh->bin[i]);
-    }
-}
-
 /* Add a value to the delta_h list */
 static void mde_delta_h_add_dh(t_mde_delta_h *dh, double delta_h, double time)
 {

@@ -434,8 +434,8 @@ endif(GMX_OPENMM)
 
 if(GMX_OPENMP)
     find_package(OpenMP REQUIRED)
-    list(APPEND GROMACS_C_FLAGS ${OpenMP_C_FLAGS})
-    list(APPEND GROMACS_CXX_FLAGS ${OpenMP_CXX_FLAGS})
+    set(GROMACS_C_FLAGS "${OpenMP_C_FLAGS} ${GROMACS_C_FLAGS}")
+    set(GROMACS_CXX_FLAGS "${OpenMP_CXX_FLAGS} ${GROMACS_CXX_FLAGS}")
     add_definitions(-DGMX_OPENMP)
 endif()
 
@@ -502,6 +502,7 @@ mark_as_advanced(GMX_USE_GTEST)
 mark_as_advanced(GMX_USE_GMOCK)
 if (BUILD_TESTING)
     add_subdirectory(src/external/gmock-1.6.0)
+    add_custom_target(tests)
 endif (BUILD_TESTING)
 set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
@@ -556,6 +557,10 @@ gmx_test__finite(HAVE__FINITE)
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
+
+include(gmxTestCXX11)
+gmx_test_cxx11(HAVE_CXX11 CXX11_FLAG)
+set(GROMACS_CXX_FLAGS "${CXX11_FLAG} ${GROMACS_CXX_FLAGS}")
 
 # turn on SSE if supported with reasonable defaults.
 if (${GMX_ACCELERATION} STREQUAL "auto" AND NOT GMX_OPENMM)
@@ -935,6 +940,18 @@ if (DOXYGEN_FOUND)
                    ${CMAKE_BINARY_DIR}/Doxyfile-lib)
     CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/Doxyfile-user.cmakein
                    ${CMAKE_BINARY_DIR}/Doxyfile-user)
+    add_custom_target(doc
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating full documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-user
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-user
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating user documentation with Doxygen" VERBATIM)
+    add_custom_target(doc-lib
+      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-lib
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMENT "Generating libary documentation with Doxygen" VERBATIM)
 endif (DOXYGEN_FOUND)
 
 

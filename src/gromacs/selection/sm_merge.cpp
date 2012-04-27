@@ -39,13 +39,13 @@
 #include <config.h>
 #endif
 
-#include <macros.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 /*! \internal \brief
  * Data structure for the merging selection modifiers.
@@ -184,7 +184,6 @@ static void
 init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-    int                 i;
 
     if (d->stride < 0)
     {

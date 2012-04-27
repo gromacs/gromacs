@@ -439,14 +439,14 @@ static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
   *ems2 = tmp;
 }
 
-static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
+static void copy_em_coords(em_state_t *ems,t_state *state)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<state->natoms); i++)
-    copy_rvec(ems->s.x[i],state->x[i]);
-  if (f != NULL)
-    copy_rvec(ems->f[i],f[i]);
+    for(i=0; (i<state->natoms); i++)
+    {
+        copy_rvec(ems->s.x[i],state->x[i]);
+    }
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
@@ -461,8 +461,8 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 
     if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
     {
+        copy_em_coords(state,state_global);
         f_global = state->f;
-        copy_em_coords_back(state,state_global,bF ? f_global : NULL);
     }
     
     mdof_flags = 0;
@@ -564,50 +564,6 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
               s1->x,s2->x,NULL,s2->box,s2->lambda,
               &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
     wallcycle_stop(wcycle,ewcCONSTR);
-  }
-}
-
-static void do_x_step(t_commrec *cr,int n,rvec *x1,real a,rvec *f,rvec *x2)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      x2[i][m] = x1[i][m] + a*f[i][m];
-    }
-  }
-}
-
-static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
-
-{
-  int  start,end,i,m;
-
-  if (DOMAINDECOMP(cr)) {
-    start = 0;
-    end   = cr->dd->nat_home;
-  } else if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&start,&end);
-  } else {
-    start = 0;
-    end   = n;
-  }
-
-  for(i=start; i<end; i++) {
-    for(m=0; m<DIM; m++) {
-      f[i][m] = (x1[i][m] - x2[i][m])*a;
-    }
   }
 }
 

@@ -41,12 +41,12 @@
 
 #include <stdlib.h>
 
-#include <macros.h>
-#include <smalloc.h>
-#include <string2.h>
+#include "macros.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -495,7 +495,7 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
-    int                    i, j;
+    int                    j;
 
     out->u.g->isize = 0;
     j = 0;

@@ -64,37 +64,6 @@ extern "C" {
 #ifndef M_1_PI
 #define M_1_PI      0.31830988618379067154
 #endif
-    
-/* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
-/* for n=1, w0 = 1 */
-/* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
-/* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
-    
-#define MAX_SUZUKI_YOSHIDA_NUM 5
-#define SUZUKI_YOSHIDA_NUM  5
-
-static const double sy_const_1[] = { 1. };
-static const double sy_const_3[] = { 0.828981543588751,-0.657963087177502,0.828981543588751 };
-static const double sy_const_5[] = { 0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065 };
-
-static const double* sy_const[] = {
-    NULL,
-    sy_const_1,
-    NULL,
-    sy_const_3,
-    NULL,
-    sy_const_5
-};
-
-/*
-static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
-    {},
-    {1},
-    {},
-    {0.828981543588751,-0.657963087177502,0.828981543588751},
-    {},
-    {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
-};*/
 
 int		gmx_nint(real a);
 real    sign(real x,real y);

@@ -302,18 +302,18 @@ char *pargs_print_line(t_pargs *pa,gmx_bool bLeadingSpace)
   else
     strcpy(buf,pa->option);
   desc = check_tty(pa->desc);
-  if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa->type]),4))) {
+  if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(get_arg_desc(pa->type)),4))) {
     sprintf(buf2,"%s%s %-6s %-6s  %-s\n",
 	    bLeadingSpace ? " " : "",buf,
-	    argtp[pa->type],pa_val(pa,tmp,LONGSTR-1),desc);
+	    get_arg_desc(pa->type),pa_val(pa,tmp,LONGSTR-1),desc);
   } else if (strlen(buf)>OPTLEN) {
     /* so type can be 3 or 4 char's, this fits in the %4s */
     sprintf(buf2,"%s%-14s %-4s %-6s  %-s\n",
-	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
+	    bLeadingSpace ? " " : "",buf,get_arg_desc(pa->type),
 	    pa_val(pa,tmp,LONGSTR-1),desc);
   } else
     sprintf(buf2,"%s%-12s %-6s %-6s  %-s\n",
-	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
+	    bLeadingSpace ? " " : "",buf,get_arg_desc(pa->type),
 	    pa_val(pa,tmp,LONGSTR-1),desc);
   sfree(desc);
   sfree(tmp);

@@ -39,16 +39,15 @@
 #define GMX_TRAJECTORYANALYSIS_MODULES_ANGLE_H
 
 #include <string>
-#include <vector>
 
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selection.h"
 
 namespace gmx
 {
 
-class Selection;
 class SelectionOptionInfo;
 
 namespace analysismodules
@@ -60,9 +59,9 @@ class Angle : public TrajectoryAnalysisModule
         Angle();
         virtual ~Angle();
 
-        static TrajectoryAnalysisModule *create();
+        static TrajectoryAnalysisModulePointer create();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
@@ -74,13 +73,13 @@ class Angle : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        void checkSelections(const std::vector<Selection *> &sel1,
-                             const std::vector<Selection *> &sel2) const;
+        void checkSelections(const SelectionList &sel1,
+                             const SelectionList &sel2) const;
 
         Options                 _options;
 
-        std::vector<Selection *> _sel1;
-        std::vector<Selection *> _sel2;
+        SelectionList           _sel1;
+        SelectionList           _sel2;
         SelectionOptionInfo    *_sel1info;
         SelectionOptionInfo    *_sel2info;
         std::string             _fnAngle;

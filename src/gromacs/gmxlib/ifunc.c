@@ -173,13 +173,3 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
   def_nofc    ("DH/DL_CON","dH/dl constr."    )
 };
-
-gmx_bool have_interaction(t_idef *idef,int ftype)
-{
-  int i;
-  
-  for(i=0; (i<idef->ntypes); i++)
-    if (idef->functype[i] == ftype)
-      return TRUE;
-  return FALSE;
-}

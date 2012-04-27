@@ -38,6 +38,9 @@
 #include "refdata.h"
 
 #include <cstring>
+#include <cstdio>
+
+#include <new>
 
 #include "testutils/datapath.h"
 
@@ -67,7 +70,7 @@ std::string getReferenceDataPath()
 }
 
 
-int initReferenceData(int *argc, char **argv)
+void initReferenceData(int *argc, char **argv)
 {
     int i, newi;
 
@@ -87,10 +90,16 @@ int initReferenceData(int *argc, char **argv)
     }
     *argc = newi;
 #ifdef TESTUTILS_HAVE_REFDATA
-    internal::addGlobalReferenceDataEnvironment();
+    try
+    {
+        internal::addGlobalReferenceDataEnvironment();
+    }
+    catch (const std::bad_alloc &)
+    {
+        std::fprintf(stderr, "Out of memory\n");
+        std::exit(1);
+    }
 #endif
-
-    return 0;
 }
 
 } // namespace test

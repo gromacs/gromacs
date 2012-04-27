@@ -160,16 +160,6 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   return curr;
 }
 
-static void done_corr(t_corr *curr)
-{
-  int i;
-  
-  sfree(curr->n_offs);
-  for(i=0; (i<curr->nrestart); i++)
-    sfree(curr->x0[i]);
-  sfree(curr->x0);
-}
-
 static void corr_print(t_corr *curr,gmx_bool bTen,const char *fn,const char *title,
                        const char *yaxis,
 		       real msdtime,real beginfit,real endfit,

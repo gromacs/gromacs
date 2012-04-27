@@ -57,11 +57,16 @@ namespace test
 class TestReferenceData::Impl
 {
     public:
+        //! String constant for output XML version string.
         static const xmlChar * const cXmlVersion;
+        //! String constant for XML stylesheet processing instruction name.
         static const xmlChar * const cXmlStyleSheetNodeName;
+        //! String constant for XML stylesheet reference.
         static const xmlChar * const cXmlStyleSheetContent;
+        //! String constant for naming the root XML element.
         static const xmlChar * const cRootNodeName;
 
+        //! Initializes a checker in the given mode.
         explicit Impl(ReferenceDataMode mode);
         ~Impl();
 
@@ -93,13 +98,21 @@ class TestReferenceData::Impl
 class TestReferenceChecker::Impl
 {
     public:
+        //! String constant for naming XML elements for boolean values.
         static const xmlChar * const cBooleanNodeName;
+        //! String constant for naming XML elements for string values.
         static const xmlChar * const cStringNodeName;
+        //! String constant for naming XML elements for integer values.
         static const xmlChar * const cIntegerNodeName;
+        //! String constant for naming XML elements for floating-point values.
         static const xmlChar * const cRealNodeName;
+        //! String constant for naming XML attribute for value identifiers.
         static const xmlChar * const cIdAttrName;
+        //! String constant for naming compounds for vectors.
         static const char * const cVectorType;
+        //! String constant for naming compounds for sequences.
         static const char * const cSequenceType;
+        //! String constant for value identifier for sequence length.
         static const char * const cSequenceLengthName;
 
         //! Creates a checker that does nothing.
@@ -112,11 +125,59 @@ class TestReferenceChecker::Impl
         //! Returns the path of this checker with \p id appended.
         std::string appendPath(const char *id) const;
 
+        /*! \brief
+         * Finds/creates a reference data node to match against.
+         *
+         * \param[in]  name   Type of node to find.
+         * \param[in]  id     Unique identifier of the node (can be NULL, in
+         *      which case the next node without an id is matched).
+         * \returns Matching node, or NULL if no matching node found
+         *      (NULL is never returned in write mode).
+         * \throws  TestException if node creation fails in write mode.
+         *
+         * Searches for a node in the reference data that matches the given
+         * \p name and \p id.  Searching starts from the node that follows the
+         * previously matched node (relevant for performance, and if there are
+         * duplicate ids or nodes without ids).  If a match is not found, the
+         * method returns NULL in read mode and creates a new node in write
+         * mode.  If the creation fails in write mode, throws.
+         */
         xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
+        /*! \brief
+         * Helper method for checking a reference data value.
+         *
+         * \param[in]  name   Type of node to find.
+         * \param[in]  id     Unique identifier of the node (can be NULL, in
+         *      which case the next node without an id is matched).
+         * \param[in]  value  String value of the value to be compared.
+         * \param[out] bFound true if a matchin value was found.
+         * \returns String value for the reference value.
+         * \throws  TestException if node creation fails in write mode.
+         *
+         * Performs common tasks in checking a reference value:
+         * finding/creating the correct XML node and reading/writing its string
+         * value.  Caller is responsible for converting the value to and from
+         * string where necessary and performing the actual comparison.
+         *
+         * In read mode, if a value is not found, adds a Google Test failure
+         * and returns an empty string.  If the reference value is found,
+         * returns it (\p value is not used in this case).
+         *
+         * In write mode, creates the node if it is not found, sets its value
+         * as \p value and returns \p value.
+         */
         std::string processItem(const xmlChar *name, const char *id,
                                 const char *value, bool *bFound);
+        //! Convenience wrapper that takes a std::string.
         std::string processItem(const xmlChar *name, const char *id,
                                 const std::string &value, bool *bFound);
+        /*! \brief
+         * Whether the checker should ignore all validation calls.
+         *
+         * This is used to ignore any calls within compounds for which
+         * reference data could not be found, such that only one error is
+         * issued for the missing compound, instead of every individual value.
+         */
         bool shouldIgnore() const;
 
         /*! \brief
@@ -134,7 +195,7 @@ class TestReferenceChecker::Impl
          * a compound node.
          *
          * Can be NULL, in which case this checker does nothing (doesn't even
-         * report errors).
+         * report errors, see shouldIgnore()).
          */
         xmlNodePtr              _currNode;
         /*! \brief

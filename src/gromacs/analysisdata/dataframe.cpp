@@ -37,7 +37,7 @@
  */
 #include "dataframe.h"
 
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

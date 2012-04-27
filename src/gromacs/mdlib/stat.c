@@ -662,7 +662,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
                        (mdof_flags & MDOF_F) ? f_global : NULL);
             if (gmx_fio_flush(of->fp_trn) != 0)
             {
-                gmx_file("Cannot write trajectory; maybe you are out of quota?");
+                gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_trn);
         }      
@@ -702,7 +702,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             if (write_xtc(of->fp_xtc,*n_xtc,step,t,
                           state_local->box,xxtc,of->xtc_prec) == 0)
             {
-                gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
+                gmx_fatal(FARGS,"XTC error - maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_xtc);
         }

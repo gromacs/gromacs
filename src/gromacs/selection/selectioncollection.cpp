@@ -41,24 +41,23 @@
 
 #include <cstdio>
 
-#include <smalloc.h>
-#include <statutil.h>
-#include <string2.h>
-#include <xvgr.h>
+#include "futil.h"
+#include "oenv.h"
+#include "smalloc.h"
+#include "xvgr.h"
 
-#include "poscalc.h"
-#include "selmethod.h"
-
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "compiler.h"
 #include "mempool.h"
+#include "poscalc.h"
 #include "scanner.h"
 #include "selectioncollection-impl.h"
 #include "selectionoptionstorage.h"
@@ -85,30 +84,18 @@ int SelectionCollection::Impl::SelectionRequest::count() const
     return storage->maxValueCount();
 }
 
-SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
+SelectionCollection::Impl::Impl()
     : _options("selection", "Common selection control"),
-      _debugLevel(0), _grps(NULL)
+      _debugLevel(0), _bExternalGroupsSet(false), _grps(NULL)
 {
     _sc.root      = NULL;
     _sc.nvars     = 0;
     _sc.varstrs   = NULL;
     _sc.top       = NULL;
     gmx_ana_index_clear(&_sc.gall);
-    _sc.pcc       = pcc;
     _sc.mempool   = NULL;
     _sc.symtab    = NULL;
 
-    // TODO: This is not exception-safe if any called function throws.
-    if (_sc.pcc == NULL)
-    {
-        int rc = gmx_ana_poscalc_coll_create(&_sc.pcc);
-        if (rc != 0)
-        {
-            // TODO: A more reasonable error
-            GMX_THROW(InternalError("Failed to create position calculation collection"));
-        }
-        _flags.set(Impl::efOwnPositionCollection);
-    }
     _gmx_sel_symtab_create(&_sc.symtab);
     gmx_ana_selmethod_register_defaults(_sc.symtab);
 }
@@ -117,11 +104,7 @@ SelectionCollection::Impl::Impl(gmx_ana_poscalc_coll_t *pcc)
 SelectionCollection::Impl::~Impl()
 {
     _gmx_selelem_free_chain(_sc.root);
-    SelectionList::const_iterator isel;
-    for (isel = _sc.sel.begin(); isel != _sc.sel.end(); ++isel)
-    {
-        delete *isel;
-    }
+    _sc.sel.clear();
     for (int i = 0; i < _sc.nvars; ++i)
     {
         sfree(_sc.varstrs[i]);
@@ -131,10 +114,6 @@ SelectionCollection::Impl::~Impl()
     if (_sc.mempool)
     {
         _gmx_sel_mempool_destroy(_sc.mempool);
-    }
-    if (hasFlag(efOwnPositionCollection))
-    {
-        gmx_ana_poscalc_coll_free(_sc.pcc);
     }
     clearSymbolTable();
 }
@@ -153,7 +132,7 @@ SelectionCollection::Impl::clearSymbolTable()
 
 void
 SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
-                                     std::vector<Selection *> *output)
+                                     SelectionList *output)
 {
     gmx_ana_selcollection_t *sc = &_sc;
     GMX_ASSERT(sc == _gmx_sel_lexer_selcollection(scanner),
@@ -174,12 +153,14 @@ SelectionCollection::Impl::runParser(yyscan_t scanner, int maxnr,
 
     if (bOk)
     {
-        SelectionList::const_iterator i;
+        SelectionDataList::const_iterator i;
+        output->reserve(output->size() + nr);
         for (i = _sc.sel.begin() + oldCount; i != _sc.sel.end(); ++i)
         {
-            output->push_back(*i);
+            output->push_back(Selection(i->get()));
         }
     }
+    // TODO: Remove added selections from the collection if parsing failed?
 
     if (!bOk || !errors.isEmpty())
     {
@@ -254,8 +235,8 @@ void SelectionCollection::Impl::resolveExternalGroups(
  * SelectionCollection
  */
 
-SelectionCollection::SelectionCollection(gmx_ana_poscalc_coll_t *pcc)
-    : _impl(new Impl(pcc))
+SelectionCollection::SelectionCollection()
+    : _impl(new Impl)
 {
 }
 
@@ -265,7 +246,7 @@ SelectionCollection::~SelectionCollection()
 }
 
 
-Options *
+Options &
 SelectionCollection::initOptions()
 {
     static const char * const debug_levels[]
@@ -281,17 +262,12 @@ SelectionCollection::initOptions()
     */
 
     Options &options = _impl->_options;
-    const char **postypes = gmx_ana_poscalc_create_type_enum(true);
-    if (postypes == NULL)
-    {
-        // TODO: Use an out-of-memory exception here
-        GMX_THROW(InternalError("Could not create position calculation enum"));
-    }
-    options.addOption(StringOption("selrpos").enumValue(postypes + 1)
-                          .store(&_impl->_rpost).defaultValue(postypes[1])
+    const char *const *postypes = PositionCalculationCollection::typeEnumValues;
+    options.addOption(StringOption("selrpos").enumValue(postypes)
+                          .store(&_impl->_rpost).defaultValue(postypes[0])
                           .description("Selection reference positions"));
-    options.addOption(StringOption("seltype").enumValue(postypes + 1)
-                          .store(&_impl->_spost).defaultValue(postypes[1])
+    options.addOption(StringOption("seltype").enumValue(postypes)
+                          .store(&_impl->_spost).defaultValue(postypes[0])
                           .description("Default selection output positions"));
     GMX_RELEASE_ASSERT(_impl->_debugLevel >= 0 && _impl->_debugLevel <= 4,
                        "Debug level out of range");
@@ -300,9 +276,8 @@ SelectionCollection::initOptions()
                           .defaultValue(debug_levels[_impl->_debugLevel])
                           .storeEnumIndex(&_impl->_debugLevel)
                           .description("Print out selection trees for debugging"));
-    sfree(postypes);
 
-    return &_impl->_options;
+    return _impl->_options;
 }
 
 
@@ -310,10 +285,10 @@ void
 SelectionCollection::setReferencePosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
-    //! Check that the type is valid.
+    // Check that the type is valid, throw if it is not.
     e_poscalc_t  dummytype;
     int          dummyflags;
-    gmx_ana_poscalc_type_from_enum(type, &dummytype, &dummyflags);
+    PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     _impl->_rpost = type;
 }
 
@@ -322,49 +297,46 @@ void
 SelectionCollection::setOutputPosType(const char *type)
 {
     GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
-    //! Check that the type is valid.
+    // Check that the type is valid, throw if it is not.
     e_poscalc_t  dummytype;
     int          dummyflags;
-    gmx_ana_poscalc_type_from_enum(type, &dummytype, &dummyflags);
+    PositionCalculationCollection::typeFromEnum(type, &dummytype, &dummyflags);
     _impl->_spost = type;
 }
 
 
 void
-SelectionCollection::setDebugLevel(int debuglevel)
+SelectionCollection::setDebugLevel(int debugLevel)
 {
-    _impl->_debugLevel = debuglevel;
+    _impl->_debugLevel = debugLevel;
 }
 
 
 void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
-    gmx_ana_selcollection_t *sc = &_impl->_sc;
-    gmx_ana_poscalc_coll_set_topology(sc->pcc, top);
-    sc->top = top;
-
-    /* Get the number of atoms from the topology if it is not given */
+    GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
+        "The number of atoms must be given if there is no topology");
+    // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
-        if (sc->top == NULL)
-        {
-            GMX_THROW(APIError("Selections need either the topology or the number of atoms"));
-        }
-        natoms = sc->top->atoms.nr;
+        natoms = top->atoms.nr;
     }
-
+    gmx_ana_selcollection_t *sc = &_impl->_sc;
+    // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms, NULL);
+    sc->pcc.setTopology(top);
+    sc->top = top;
 }
 
 
 void
 SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 {
-    GMX_RELEASE_ASSERT(grps == NULL || !_impl->hasFlag(Impl::efExternalGroupsSet),
+    GMX_RELEASE_ASSERT(grps == NULL || !_impl->_bExternalGroupsSet,
                        "Can only set external groups once or clear them afterwards");
     _impl->_grps = grps;
-    _impl->_flags.set(Impl::efExternalGroupsSet);
+    _impl->_bExternalGroupsSet = true;
 
     MessageStringCollector errors;
     t_selelem *root = _impl->_sc.root;
@@ -391,7 +363,8 @@ SelectionCollection::requiresTopology() const
     {
         flags = 0;
         // Should not throw, because has been checked earlier.
-        gmx_ana_poscalc_type_from_enum(_impl->_rpost.c_str(), &type, &flags);
+        PositionCalculationCollection::typeFromEnum(_impl->_rpost.c_str(),
+                                                    &type, &flags);
         if (type != POS_ATOM)
         {
             return true;
@@ -401,7 +374,8 @@ SelectionCollection::requiresTopology() const
     {
         flags = 0;
         // Should not throw, because has been checked earlier.
-        gmx_ana_poscalc_type_from_enum(_impl->_spost.c_str(), &type, &flags);
+        PositionCalculationCollection::typeFromEnum(_impl->_spost.c_str(),
+                                                    &type, &flags);
         if (type != POS_ATOM)
         {
             return true;
@@ -450,7 +424,7 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
             std::fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                          request.count() < 0 ? ", Ctrl-D to end" : "");
         }
-        std::vector<Selection *> selections;
+        SelectionList selections;
         parseFromStdin(request.count(), bInteractive, &selections);
         request.storage->addSelections(selections, true);
     }
@@ -462,11 +436,11 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
 {
     Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
 
-    std::vector<Selection *> selections;
+    SelectionList selections;
     parseFromString(str, &selections);
 
-    std::vector<Selection *>::const_iterator first = selections.begin();
-    std::vector<Selection *>::const_iterator last = first;
+    SelectionList::const_iterator first = selections.begin();
+    SelectionList::const_iterator last = first;
     Impl::RequestList::const_iterator i;
     for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
     {
@@ -487,7 +461,7 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
             }
             last = selections.end();
         }
-        std::vector<Selection *> curr(first, last);
+        SelectionList curr(first, last);
         request.storage->addSelections(curr, true);
         first = last;
     }
@@ -500,12 +474,12 @@ SelectionCollection::parseRequestedFromString(const std::string &str)
 
 void
 SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    std::vector<Selection *> *output)
+                                    SelectionList *output)
 {
     yyscan_t scanner;
 
     _gmx_sel_init_lexer(&scanner, &_impl->_sc, bInteractive, nr,
-                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_bExternalGroupsSet,
                         _impl->_grps);
     /* We don't set the lexer input here, which causes it to use a special
      * internal implementation for reading from stdin. */
@@ -515,38 +489,28 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive,
 
 void
 SelectionCollection::parseFromFile(const std::string &filename,
-                                   std::vector<Selection *> *output)
+                                   SelectionList *output)
 {
     yyscan_t scanner;
-    FILE *fp;
 
     _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
-                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_bExternalGroupsSet,
                         _impl->_grps);
-    fp = ffopen(filename.c_str(), "r");
-    _gmx_sel_set_lex_input_file(scanner, fp);
-    // TODO: Use RAII
-    try
-    {
-        _impl->runParser(scanner, -1, output);
-    }
-    catch (...)
-    {
-        ffclose(fp);
-        throw;
-    }
-    ffclose(fp);
+    File file(filename, "r");
+    _gmx_sel_set_lex_input_file(scanner, file.handle());
+    _impl->runParser(scanner, -1, output);
+    file.close();
 }
 
 
 void
 SelectionCollection::parseFromString(const std::string &str,
-                                     std::vector<Selection *> *output)
+                                     SelectionList *output)
 {
     yyscan_t scanner;
 
     _gmx_sel_init_lexer(&scanner, &_impl->_sc, false, -1,
-                        _impl->hasFlag(Impl::efExternalGroupsSet),
+                        _impl->_bExternalGroupsSet,
                         _impl->_grps);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
     _impl->runParser(scanner, -1, output);
@@ -560,7 +524,7 @@ SelectionCollection::compile()
     {
         GMX_THROW(InconsistentInputError("Selection requires topology information, but none provided"));
     }
-    if (!_impl->hasFlag(Impl::efExternalGroupsSet))
+    if (!_impl->_bExternalGroupsSet)
     {
         setIndexGroups(NULL);
     }
@@ -572,22 +536,19 @@ SelectionCollection::compile()
     SelectionCompiler compiler;
     compiler.compile(this);
 
-    if (_impl->hasFlag(Impl::efOwnPositionCollection))
+    if (_impl->_debugLevel >= 1)
     {
-        if (_impl->_debugLevel >= 1)
-        {
-            std::fprintf(stderr, "\n");
-            printTree(stderr, false);
-            std::fprintf(stderr, "\n");
-            gmx_ana_poscalc_coll_print_tree(stderr, _impl->_sc.pcc);
-            std::fprintf(stderr, "\n");
-        }
-        gmx_ana_poscalc_init_eval(_impl->_sc.pcc);
-        if (_impl->_debugLevel >= 1)
-        {
-            gmx_ana_poscalc_coll_print_tree(stderr, _impl->_sc.pcc);
-            std::fprintf(stderr, "\n");
-        }
+        std::fprintf(stderr, "\n");
+        printTree(stderr, false);
+        std::fprintf(stderr, "\n");
+        _impl->_sc.pcc.printTree(stderr);
+        std::fprintf(stderr, "\n");
+    }
+    _impl->_sc.pcc.initEvaluation();
+    if (_impl->_debugLevel >= 1)
+    {
+        _impl->_sc.pcc.printTree(stderr);
+        std::fprintf(stderr, "\n");
     }
 }
 
@@ -595,10 +556,7 @@ SelectionCollection::compile()
 void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
-    if (_impl->hasFlag(Impl::efOwnPositionCollection))
-    {
-        gmx_ana_poscalc_init_frame(_impl->_sc.pcc);
-    }
+    _impl->_sc.pcc.initFrame();
 
     SelectionEvaluator evaluator;
     evaluator.evaluate(this, fr, pbc);

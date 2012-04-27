@@ -71,14 +71,14 @@ TEST_F(AverageModuleTest, BasicTest)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount());
-    gmx::AnalysisDataAverageModule *module =
-        new gmx::AnalysisDataAverageModule();
+    data.setColumnCount(input.columnCount());
+    gmx::AnalysisDataAverageModulePointer module(
+            new gmx::AnalysisDataAverageModule);
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module.get()));
     ASSERT_NO_THROW(presentAllData(input, &data));
 }
 
@@ -86,15 +86,14 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
     gmx::AnalysisData data;
-    data.setColumns(input.columnCount());
-    gmx::AnalysisDataAverageModule *module =
-        new gmx::AnalysisDataAverageModule();
+    data.setColumnCount(input.columnCount());
+    gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
     data.addModule(module);
     module->setXAxis(0.5, 0.5);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
     ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module));
+    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module.get()));
     ASSERT_NO_THROW(presentAllData(input, &data));
 }
 

@@ -41,18 +41,18 @@
 #include <config.h>
 #endif
 
-#include <pbc.h>
-#include <vec.h>
+#include "pbc.h"
+#include "vec.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
@@ -61,9 +61,8 @@ namespace analysismodules
 {
 
 Distance::Distance()
-    : _options("distance", "Distance calculation")
+    : _options("distance", "Distance calculation"), _avem(new AnalysisDataAverageModule())
 {
-    _sel[0] = _sel[1] = NULL;
 }
 
 
@@ -72,7 +71,7 @@ Distance::~Distance()
 }
 
 
-Options *
+Options &
 Distance::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -84,11 +83,11 @@ Distance::initOptions(TrajectoryAnalysisSettings *settings)
 
     _options.setDescription(desc);
 
-    _options.addOption(FileNameOption("o").filetype(eftPlot).writeOnly()
+    _options.addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&_fnDist).defaultValue("dist"));
     _options.addOption(SelectionOption("select").required().valueCount(2)
                            .store(_sel));
-    return &_options;
+    return _options;
 }
 
 
@@ -96,21 +95,20 @@ void
 Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation & /*top*/)
 {
-    if (_sel[0]->posCount() != 1)
+    if (_sel[0].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The first selection does not define a single position"));
     }
-    if (_sel[1]->posCount() != 1)
+    if (_sel[1].posCount() != 1)
     {
         GMX_THROW(InvalidInputError("The second selection does not define a single position"));
     }
-    _data.setColumns(4);
+    _data.setColumnCount(4);
     registerAnalysisDataset(&_data, "distance");
 
-    _avem = new AnalysisDataAverageModule();
     _data.addModule(_avem);
-
-    _plotm = new AnalysisDataPlotModule(settings.plotSettings());
+    AnalysisDataPlotModulePointer _plotm(new AnalysisDataPlotModule());
+    _plotm->setSettings(settings.plotSettings());
     _plotm->setFileName(_fnDist);
     _plotm->setTitle("Distance");
     _plotm->setXAxisIsTime();
@@ -123,13 +121,13 @@ void
 Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                        TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("distance");
-    Selection          *sel1 = pdata->parallelSelection(_sel[0]);
-    Selection          *sel2 = pdata->parallelSelection(_sel[1]);
+    AnalysisDataHandle  dh = pdata->dataHandle(_data);
+    const Selection    &sel1 = pdata->parallelSelection(_sel[0]);
+    const Selection    &sel2 = pdata->parallelSelection(_sel[1]);
     rvec                dx;
     real                r;
-    SelectionPosition   p1 = sel1->position(0);
-    SelectionPosition   p2 = sel2->position(0);
+    const SelectionPosition &p1 = sel1.position(0);
+    const SelectionPosition &p2 = sel2.position(0);
 
     if (pbc != NULL)
     {
@@ -140,10 +138,10 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         rvec_sub(p1.x(), p2.x(), dx);
     }
     r = norm(dx);
-    dh->startFrame(frnr, fr.time);
-    dh->setPoint(0, r);
-    dh->setPoints(1, 3, dx);
-    dh->finishFrame();
+    dh.startFrame(frnr, fr.time);
+    dh.setPoint(0, r);
+    dh.setPoints(1, 3, dx);
+    dh.finishFrame();
 }
 
 
@@ -161,10 +159,10 @@ Distance::writeOutput()
 }
 
 
-TrajectoryAnalysisModule *
+TrajectoryAnalysisModulePointer
 Distance::create()
 {
-    return new Distance();
+    return TrajectoryAnalysisModulePointer(new Distance());
 }
 
 } // namespace analysismodules

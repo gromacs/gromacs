@@ -41,7 +41,6 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"
@@ -148,14 +147,6 @@ static int QMlayer_comp(const void *a, const void *b){
   return (int)(((t_QMrec *)a)->nrQMatoms)-(int)(((t_QMrec *)b)->nrQMatoms);
   
 } /* QMlayer_comp */
-
-void sort_QMlayers(t_QMMMrec *qr){
-  /* sorts QM layers from small to big */
-  qsort(qr->qm,qr->nrQMlayers,
-	(size_t)sizeof(qr->qm[0]),
-	QMlayer_comp);
-} /* sort_QMlayers */
-
 
 real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, 
 		    t_MMrec *mm, rvec f[], rvec fshift[])

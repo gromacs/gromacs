@@ -73,7 +73,7 @@ class SelectionOptionStorage;
  *
  * Example use:
  * \code
-std::vector<Selection *> sel;
+SelectionList sel;
 Options options("example", "Example options");
 SelectionOptionInfo *info;
 options.addOption(SelectionOption("sel").storeVector(&sel)
@@ -95,17 +95,25 @@ if ( condition )
 class SelectionOptionInfo : public OptionInfo
 {
     public:
-        //! Creates option info object for given storage object.
+        /*! \brief
+         * Creates option info object for given storage object.
+         *
+         * Does not throw.
+         */
         explicit SelectionOptionInfo(SelectionOptionStorage *option);
 
         /*! \brief
          * Set selection collection into which this option adds selections.
+         *
+         * \param   selections  Selection collection to set.
          *
          * This must be called before the values are added.
          *
          * Typically it is called through setSelectionCollectionForOptions(),
          * which recursively sets the collection for all selection options in
          * an Options object.
+         *
+         * Does not throw.
          */
         void setSelectionCollection(SelectionCollection *selections);
 
@@ -113,20 +121,78 @@ class SelectionOptionInfo : public OptionInfo
          * Sets the number of selections allowed for the option.
          *
          * \param[in] count  Number of allowed selections.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if values have already been provided
+         *      and their count does not match.
          */
         void setValueCount(int count);
 
-        //! \copydoc SelectionOption::evaluateVelocities()
+        /*! \brief
+         * Sets whether this option evaluates velocities for positions.
+         *
+         * \param[in] bEnabled  If true, velocities are evaluated.
+         *
+         * Does not throw.
+         *
+         * \see SelectionOption::evaluateVelocities()
+         */
         void setEvaluateVelocities(bool bEnabled);
-        //! \copydoc SelectionOption::evaluateForces()
+        /*! \brief
+         * Sets whether this option evaluates forces for positions.
+         *
+         * \param[in] bEnabled  If true, forces are evaluated.
+         *
+         * Does not throw.
+         *
+         * \see SelectionOption::evaluateForces()
+         */
         void setEvaluateForces(bool bEnabled);
-        //! \copydoc SelectionOption::onlyAtoms()
+        /*! \brief
+         * Sets whether this option accepts positions that come from multiple
+         * atoms.
+         *
+         * \param[in] bEnabled  If true, the option accepts only positions that
+         *      evaluate to atom positions.
+         *
+         * TODO: This is not yet implemented.
+         *
+         * \see SelectionOption::onlyAtoms()
+         */
         void setOnlyAtoms(bool bEnabled);
-        //! \copydoc SelectionOption::onlyStatic()
+        /*! \brief
+         * Sets whether this option accepts dynamic selections.
+         *
+         * \param[in] bEnabled  If true, the option accepts only static
+         *      selections.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if dynamic selections have already been
+         *      provided.
+         *
+         * Strong exception safety guarantee.
+         *
+         * \see SelectionOption::onlyStatic()
+         */
         void setOnlyStatic(bool bEnabled);
-        //! \copydoc SelectionOption::dynamicMask()
+        /*! \brief
+         * Sets whether this option uses position masks for dynamic selections.
+         *
+         * \param[in] bEnabled  If true, the position masks are used.
+         *
+         * Does not throw.
+         *
+         * \see SelectionOption::dynamicMask()
+         */
         void setDynamicMask(bool bEnabled);
-        //! \copydoc SelectionOption::dynamicOnlyWhole()
+        /*! \brief
+         * Sets whether atom coordinates are allowed as reference positions.
+         *
+         * \param[in] bEnabled  If true, the option does not accept atom
+         *      coordinates as reference positions.
+         *
+         * TODO: This is not yet implemented.
+         *
+         * \see SelectionOption::dynamicOnlyWhole()
+         */
         void setDynamicOnlyWhole(bool bEnabled);
 
     private:
@@ -134,7 +200,7 @@ class SelectionOptionInfo : public OptionInfo
         const SelectionOptionStorage &option() const;
 };
 
-/*! \libinternal \brief
+/*! \brief
  * Set selection collection for all selection options.
  *
  * Recursively sets the selection collection to \p selections for all selection
@@ -143,10 +209,11 @@ class SelectionOptionInfo : public OptionInfo
  *
  * Does not throw.
  *
- * \inlibraryapi
+ * \inpublicapi
  */
 void setSelectionCollectionForOptions(Options *options,
                                       SelectionCollection *selections);
+//! \endcond
 
 } // namespace gmx
 

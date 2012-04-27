@@ -52,34 +52,52 @@
 
 #include <string.h>
 
-#include <maths.h>
-#include <smalloc.h>
-#include <vec.h>
+#include "maths.h"
+#include "smalloc.h"
+#include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "evaluate.h"
 #include "mempool.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 
+namespace
+{
+
 /*! \internal \brief
  * Reserves memory for a selection element from the evaluation memory pool.
+ *
+ * This class implements RAII semantics for allocating memory for selection
+ * element values from a selection evaluation memory pool.
+ *
+ * \ingroup module_selection
  */
 class MempoolSelelemReserver
 {
     public:
+        //! Constructs a reserver without initial reservation.
         MempoolSelelemReserver() : sel_(NULL) {}
+        /*! \brief
+         * Constructs a reserver with initial reservation.
+         *
+         * \param[in,out] sel    Selection element for which to reserve.
+         * \param[in]     count  Number of values to reserve.
+         *
+         * \see reserve()
+         */
         MempoolSelelemReserver(t_selelem *sel, int count)
             : sel_(NULL)
         {
             reserve(sel, count);
         }
+        //! Frees any memory allocated using this reserver.
         ~MempoolSelelemReserver()
         {
             if (sel_ != NULL)
@@ -88,6 +106,17 @@ class MempoolSelelemReserver
             }
         }
 
+        /*! \brief
+         * Reserves memory for selection element values using this reserver.
+         *
+         * \param[in,out] sel    Selection element for which to reserve.
+         * \param[in]     count  Number of values to reserve.
+         *
+         * Allocates space to store \p count output values in \p sel from the
+         * memory pool associated with \p sel, or from the heap if there is no
+         * memory pool.  Type of values to allocate is automatically determined
+         * from \p sel.
+         */
         void reserve(t_selelem *sel, int count)
         {
             GMX_RELEASE_ASSERT(sel_ == NULL, "Can only reserve one element with one instance");
@@ -101,14 +130,25 @@ class MempoolSelelemReserver
 
 /*! \internal \brief
  * Reserves memory for an index group from the evaluation memory pool.
+ *
+ * This class implements RAII semantics for allocating memory for an index
+ * group from a selection evaluation memory pool.
+ *
+ * \ingroup module_selection
  */
 class MempoolGroupReserver
 {
     public:
+        /*! \brief
+         * Creates a reserver associated with a given memory pool.
+         *
+         * \param    mp  Memory pool from which to reserve memory.
+         */
         explicit MempoolGroupReserver(gmx_sel_mempool_t *mp)
             : mp_(mp), g_(NULL)
         {
         }
+        //! Frees any memory allocated using this reserver.
         ~MempoolGroupReserver()
         {
             if (g_ != NULL)
@@ -117,6 +157,15 @@ class MempoolGroupReserver
             }
         }
 
+        /*! \brief
+         * Reserves memory for an index group using this reserver.
+         *
+         * \param[in,out] g      Index group to reserve.
+         * \param[in]     count  Number of atoms to reserve space for.
+         *
+         * Allocates memory from the memory pool to store \p count atoms in
+         * \p g.
+         */
         void reserve(gmx_ana_index_t *g, int count)
         {
             GMX_RELEASE_ASSERT(g_ == NULL, "Can only reserve one element with one instance");
@@ -131,19 +180,34 @@ class MempoolGroupReserver
 
 /*! \internal \brief
  * Assigns a temporary value for a selection element.
+ *
+ * This class implements RAII semantics for temporarily assigning the value
+ * pointer of a selection element to point to a different location.
+ *
+ * \ingroup module_selection
  */
 class SelelemTemporaryValueAssigner
 {
     public:
+        //! Constructs an assigner without an initial assignment.
         SelelemTemporaryValueAssigner()
             : sel_(NULL), old_ptr_(NULL), old_nalloc_(0)
         {
         }
+        /*! \brief
+         * Constructs an assigner with an initial assignment.
+         *
+         * \param[in,out] sel     Selection element for which to assign.
+         * \param[in]     vsource Element to which \p sel values will point to.
+         *
+         * \see assign()
+         */
         SelelemTemporaryValueAssigner(t_selelem *sel, t_selelem *vsource)
             : sel_(NULL)
         {
             assign(sel, vsource);
         }
+        //! Undoes any temporary assignment done using this assigner.
         ~SelelemTemporaryValueAssigner()
         {
             if (sel_ != NULL)
@@ -152,9 +216,22 @@ class SelelemTemporaryValueAssigner
             }
         }
 
+        /*! \brief
+         * Assigns a temporary value pointer.
+         *
+         * \param[in,out] sel     Selection element for which to assign.
+         * \param[in]     vsource Element to which \p sel values will point to.
+         *
+         * Assigns the value pointer in \p sel to point to the values in
+         * \p vsource, i.e., any access/modification to values in \p sel
+         * actually accesses values in \p vsource.
+         */
         void assign(t_selelem *sel, t_selelem *vsource)
         {
-            GMX_RELEASE_ASSERT(sel_ == NULL, "Can only assign one element with one instance");
+            GMX_RELEASE_ASSERT(sel_ == NULL,
+                               "Can only assign one element with one instance");
+            GMX_RELEASE_ASSERT(sel->v.type == vsource->v.type,
+                               "Mismatching selection value types");
             old_ptr_ = sel->v.u.ptr;
             old_nalloc_ = sel->v.nalloc;
             _gmx_selvalue_setstore(&sel->v, vsource->v.u.ptr);
@@ -166,6 +243,8 @@ class SelelemTemporaryValueAssigner
         void                   *old_ptr_;
         int                     old_nalloc_;
 };
+
+} // namespace
 
 /*!
  * \param[in] fp       File handle to receive the output.
@@ -314,13 +393,12 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
         sel = sel->next;
     }
     /* Update selection information */
-    std::vector<Selection *>::iterator isel;
+    SelectionDataList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        Selection *sel = *isel;
-
-        sel->refreshMassesAndCharges();
-        sel->updateCoveredFractionForFrame();
+        internal::SelectionData &sel = **isel;
+        sel.refreshMassesAndCharges();
+        sel.updateCoveredFractionForFrame();
     }
 }
 
@@ -333,12 +411,12 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
 {
     gmx_ana_selcollection_t *sc = &coll->_impl->_sc;
 
-    std::vector<Selection *>::iterator isel;
+    SelectionDataList::const_iterator isel;
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
-        Selection *sel = *isel;
-        sel->restoreOriginalPositions();
-        sel->computeAverageCoveredFraction(nframes);
+        internal::SelectionData &sel = **isel;
+        sel.restoreOriginalPositions();
+        sel.computeAverageCoveredFraction(nframes);
     }
 }
 
@@ -853,6 +931,8 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
                                             sel->u.expr.mdata);
     }
+    GMX_RELEASE_ASSERT(sel->child != NULL,
+                       "Modifier element with a value must have a child");
     if (sel->child->v.type != POS_VALUE)
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));
@@ -1015,12 +1095,11 @@ void
 _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
-    t_selelem  *left, *right;
     int         n, i, i1, i2;
     real        lval, rval=0., val=0.;
 
-    left  = sel->child;
-    right = left->next;
+    t_selelem  *const left  = sel->child;
+    t_selelem  *const right = left->next;
 
     SelelemTemporaryValueAssigner assigner;
     MempoolSelelemReserver reserver;
@@ -1040,10 +1119,14 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
 
     n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
+
+    bool bArithNeg = (sel->u.arith.type == ARITH_NEG);
+    GMX_ASSERT(right || bArithNeg,
+               "Right operand cannot be null except for negations");
     for (i = i1 = i2 = 0; i < n; ++i)
     {
         lval = left->v.u.r[i1];
-        if (sel->u.arith.type != ARITH_NEG)
+        if (!bArithNeg)
         {
             rval = right->v.u.r[i2];
         }
@@ -1061,7 +1144,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i1;
         }
-        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        if (!bArithNeg && !(right->flags & SEL_SINGLEVAL))
         {
             ++i2;
         }

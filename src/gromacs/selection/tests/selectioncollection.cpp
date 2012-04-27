@@ -39,8 +39,6 @@
 #include <config.h>
 #endif
 
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "smalloc.h"
@@ -48,15 +46,18 @@
 #include "tpxio.h"
 #include "vec.h"
 
-#include "gromacs/fatalerror/exceptions.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/flags.h"
 #include "gromacs/utility/format.h"
 
 #include "testutils/datapath.h"
 #include "testutils/refdata.h"
+#include "testutils/testoptions.h"
 
 namespace
 {
@@ -68,6 +69,10 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
+        static void SetUpTestCase();
+
+        static int               s_debugLevel;
+
         SelectionCollectionTest();
         ~SelectionCollectionTest();
 
@@ -78,15 +83,25 @@ class SelectionCollectionTest : public ::testing::Test
         void loadTopology(const char *filename);
 
         gmx::SelectionCollection _sc;
-        std::vector<gmx::Selection *> _sel;
+        gmx::SelectionList       _sel;
         t_topology              *_top;
         t_trxframe              *_frame;
 };
 
+int SelectionCollectionTest::s_debugLevel = 0;
+
+void SelectionCollectionTest::SetUpTestCase()
+{
+    gmx::Options options(NULL, NULL);
+    options.addOption(gmx::IntegerOption("seldebug").store(&s_debugLevel));
+    gmx::test::parseTestOptions(&options);
+}
+
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : _sc(NULL), _top(NULL), _frame(NULL)
+    : _top(NULL), _frame(NULL)
 {
+    _sc.setDebugLevel(s_debugLevel);
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
 }
@@ -160,7 +175,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
-                                   const gmx::Selection *sel, TestFlags flags);
+                                   const gmx::Selection &sel, TestFlags flags);
 
         void runParser(const char *const *selections);
         void runCompiler();
@@ -179,23 +194,23 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 void
 SelectionCollectionDataTest::checkSelection(
         gmx::test::TestReferenceChecker *checker,
-        const gmx::Selection *sel, TestFlags flags)
+        const gmx::Selection &sel, TestFlags flags)
 {
     using gmx::test::TestReferenceChecker;
 
     {
-        gmx::ConstArrayRef<int> atoms = sel->atomIndices();
+        gmx::ConstArrayRef<int> atoms = sel.atomIndices();
         checker->checkSequence(atoms.begin(), atoms.end(), "Atoms");
     }
     if (flags.test(efTestPositionAtoms)
         || flags.test(efTestPositionCoordinates))
     {
         TestReferenceChecker compound(
-                checker->checkSequenceCompound("Positions", sel->posCount()));
-        for (int i = 0; i < sel->posCount(); ++i)
+                checker->checkSequenceCompound("Positions", sel.posCount()));
+        for (int i = 0; i < sel.posCount(); ++i)
         {
             TestReferenceChecker poscompound(compound.checkCompound("Position", NULL));
-            gmx::SelectionPosition p = sel->position(i);
+            const gmx::SelectionPosition &p = sel.position(i);
             if (flags.test(efTestPositionAtoms))
             {
                 gmx::ConstArrayRef<int> atoms = p.atomIndices();
@@ -237,9 +252,9 @@ SelectionCollectionDataTest::runParser(const char *const *selections)
             TestReferenceChecker selcompound(
                     compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
-            selcompound.checkString(_sel[_count]->name(), "Name");
-            selcompound.checkString(_sel[_count]->selectionText(), "Text");
-            selcompound.checkBoolean(_sel[_count]->isDynamic(), "Dynamic");
+            selcompound.checkString(_sel[_count].name(), "Name");
+            selcompound.checkString(_sel[_count].selectionText(), "Text");
+            selcompound.checkBoolean(_sel[_count].isDynamic(), "Dynamic");
             ++_count;
         }
     }
@@ -265,7 +280,7 @@ SelectionCollectionDataTest::checkCompiled()
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i]->selectionText() + "\"");
+                     _sel[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
@@ -287,7 +302,7 @@ SelectionCollectionDataTest::runEvaluate()
     for (size_t i = 0; i < _count; ++i)
     {
         SCOPED_TRACE(std::string("Checking selection \"") +
-                     _sel[i]->selectionText() + "\"");
+                     _sel[i].selectionText() + "\"");
         std::string id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
@@ -340,7 +355,25 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
     EXPECT_NO_THROW(_sc.compile());
 }
 
-// TODO: Tests for parser errors
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
+{
+    EXPECT_THROW(_sc.parseFromString("mindist from atomnr 1 cutoff", &_sel),
+                 gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
+{
+    EXPECT_THROW(_sc.parseFromString("within 1 of", &_sel),
+                 gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
+{
+    EXPECT_THROW(_sc.parseFromString("within of atomnr 1", &_sel),
+                 gmx::InvalidInputError);
+}
+
+// TODO: Tests for more parser errors
 
 TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
 {

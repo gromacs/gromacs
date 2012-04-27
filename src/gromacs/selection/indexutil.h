@@ -44,14 +44,14 @@
  * needs to have a unique ID for each possible atom/residue/molecule in the
  * selection, e.g., for analysis of dynamics or for look-up tables.
  *
- * Mostly, these functions are used internally by the library and the
- * selection engine.
- * However, some of the checking functions can be useful in user code to
+ * Mostly, these functions are used internally by the selection engine, but
+ * it is necessary to use some of these functions in order to provide external
+ * index groups to a gmx::SelectionCollection.
+ * Some of the checking functions can be useful outside the selection engine to
  * check the validity of input groups.
- * Also, the mapping functions are useful when dealing with dynamic index
- * groups.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \inlibraryapi
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_INDEXUTIL_H
@@ -190,22 +190,10 @@ typedef struct gmx_ana_indexmap_t
 /** Allocate memory for index groups. */
 void
 gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps);
-/** Initializes index groups from arrays. */
-void
-gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
-                      atom_id **index, char **name, bool bFree);
 /** Reads index groups from a file or constructs them from topology. */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
                        const char *fnm);
-/** Ask user to select index groups, possibly constructing groups from 
- *  topology. */
-void
-gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
-                      const char *fnm, int ngrps);
-/** Ask user to select index groups from those specified in a file. */
-void
-gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, const char *fnm, int ngrps);
 /** Frees memory allocated for index groups. */
 void
 gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g);

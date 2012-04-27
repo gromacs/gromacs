@@ -37,10 +37,8 @@
  */
 #include "gromacs/analysisdata/abstractdata.h"
 
-#include <memory>
-
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "abstractdata-impl.h"
 #include "dataframe.h"
@@ -61,11 +59,6 @@ AbstractAnalysisData::Impl::Impl()
 
 AbstractAnalysisData::Impl::~Impl()
 {
-    ModuleList::const_iterator i;
-    for (i = _modules.begin(); i != _modules.end(); ++i)
-    {
-        delete *i;
-    }
 }
 
 
@@ -76,11 +69,12 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
     module->dataStarted(data);
     bool bCheckMissing = _bAllowMissing
         && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
-    int ncol = data->columnCount();
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
         GMX_RELEASE_ASSERT(frame.isValid(), "Invalid data frame returned");
+        // TODO: Check all frames before doing anything for slightly better
+        // exception behavior.
         if (bCheckMissing && !frame.allPresent())
         {
             GMX_THROW(APIError("Missing data not supported by a module"));
@@ -99,12 +93,12 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
 /********************************************************************
  * AbstractAnalysisData
  */
-
+/*! \cond libapi */
 AbstractAnalysisData::AbstractAnalysisData()
     : _impl(new Impl()), _ncol(0), _bMultiPoint(false)
 {
 }
-
+//! \endcond
 
 AbstractAnalysisData::~AbstractAnalysisData()
 {
@@ -154,9 +148,8 @@ AbstractAnalysisData::requestStorage(int nframes)
 
 
 void
-AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
+AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    std::auto_ptr<AnalysisDataModuleInterface> module_ptr(module);
     if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
         || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
         || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
@@ -168,22 +161,20 @@ AbstractAnalysisData::addModule(AnalysisDataModuleInterface *module)
     {
         GMX_RELEASE_ASSERT(!_impl->_bInFrame,
                            "Cannot add data modules in mid-frame");
-        _impl->presentData(this, module);
+        _impl->presentData(this, module.get());
     }
     if (!(module->flags() & AnalysisDataModuleInterface::efAllowMissing))
     {
         _impl->_bAllowMissing = false;
     }
-    _impl->_modules.push_back(module);
-    module_ptr.release();
+    _impl->_modules.push_back(move(module));
 }
 
 
 void
 AbstractAnalysisData::addColumnModule(int col, int span,
-                                      AnalysisDataModuleInterface *module)
+                                      AnalysisDataModulePointer module)
 {
-    std::auto_ptr<AnalysisDataModuleInterface> module_ptr(module);
     GMX_RELEASE_ASSERT(col >= 0 && span >= 1 && col + span <= _ncol,
                        "Invalid columns specified for a column module");
     if (_impl->_bDataStart)
@@ -191,9 +182,10 @@ AbstractAnalysisData::addColumnModule(int col, int span,
         GMX_THROW(NotImplementedError("Cannot add column modules after data"));
     }
 
-    std::auto_ptr<AnalysisDataProxy> proxy(new AnalysisDataProxy(col, span, this));
-    proxy->addModule(module_ptr.release());
-    addModule(proxy.release());
+    boost::shared_ptr<AnalysisDataProxy> proxy(
+            new AnalysisDataProxy(col, span, this));
+    proxy->addModule(module);
+    addModule(proxy);
 }
 
 
@@ -212,7 +204,7 @@ AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
     _impl->presentData(this, module);
 }
 
-
+/*! \cond libapi */
 void
 AbstractAnalysisData::setColumnCount(int ncol)
 {
@@ -336,5 +328,6 @@ AbstractAnalysisData::notifyDataFinish() const
         (*i)->dataFinished();
     }
 }
+//! \endcond
 
 } // namespace gmx

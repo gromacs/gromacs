@@ -50,10 +50,12 @@ namespace gmx
  * OptionInfo
  */
 
+/*! \cond libapi */
 OptionInfo::OptionInfo(AbstractOptionStorage *option)
     : _option(*option)
 {
 }
+//! \endcond
 
 OptionInfo::~OptionInfo()
 {
@@ -67,6 +69,11 @@ bool OptionInfo::isSet() const
 bool OptionInfo::isHidden() const
 {
     return _option.isHidden();
+}
+
+bool OptionInfo::isRequired() const
+{
+    return _option.isRequired();
 }
 
 const std::string &OptionInfo::name() const

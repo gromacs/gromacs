@@ -82,17 +82,17 @@ int main(int argc,char *argv[])
   static real Abh=1e5,Bbh=32,Cbh=1e-3;
   static int  npow=12;
   t_pargs pa[] = {
-    { "-c6",   FALSE,  etREAL,  {&c6},  "c6"   },
-    { "-cn",   FALSE,  etREAL,  {&cn},  "constant for repulsion"   },
-    { "-pow",  FALSE,  etINT,   {&npow},"power of the repulsion term" },
-    { "-sig",  FALSE,  etREAL,  {&sig}, "sig"  },
-    { "-eps",  FALSE,  etREAL,  {&eps}, "eps"  },
+    { "-c6",   FALSE,  etREAL,  {&c6},  "C6"   },
+    { "-cn",   FALSE,  etREAL,  {&cn},  "Constant for repulsion"   },
+    { "-pow",  FALSE,  etINT,   {&npow},"Power of the repulsion term" },
+    { "-sig",  FALSE,  etREAL,  {&sig}, "[GRK]sigma[grk]"  },
+    { "-eps",  FALSE,  etREAL,  {&eps}, "[GRK]epsilon[grk]"  },
     { "-A",    FALSE,  etREAL,  {&Abh}, "Buckingham A" },
     { "-B",    FALSE,  etREAL,  {&Bbh}, "Buckingham B" },
     { "-C",    FALSE,  etREAL,  {&Cbh}, "Buckingham C" },
     { "-qi",   FALSE,  etREAL,  {&qi},  "qi"   },
     { "-qj",   FALSE,  etREAL,  {&qj},  "qj"   },
-    { "-sigfac", FALSE, etREAL, {&sigfac}, "Factor in front of sigma for starting the plot" }
+    { "-sigfac", FALSE, etREAL, {&sigfac}, "Factor in front of [GRK]sigma[grk] for starting the plot" }
   };
   t_filenm fnm[] = {
     { efXVG, "-o", "potje", ffWRITE }

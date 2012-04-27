@@ -104,6 +104,8 @@ class OptionInfo
         bool isSet() const;
         //! Returns true if the option is a hidden option.
         bool isHidden() const;
+        //! Returns true if the option is required.
+        bool isRequired() const;
         //! Returns the name of the option.
         const std::string &name() const;
         //! Returns the description of the option.
@@ -118,13 +120,19 @@ class OptionInfo
         std::string formatValues() const;
 
     protected:
+        /*! \cond libapi */
         /*! \brief
          * Wraps a given option object.
+         *
+         * Does not throw.
          */
         explicit OptionInfo(AbstractOptionStorage *option);
 
+        //! Returns the wrapped option storage object.
         AbstractOptionStorage &option() { return _option; }
+        //! Returns the wrapped option storage object.
         const AbstractOptionStorage &option() const { return _option; }
+        //! \endcond
 
     private:
         //! The wrapped option.

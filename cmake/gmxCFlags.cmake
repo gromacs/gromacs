@@ -34,7 +34,8 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops" 
@@ -46,7 +47,9 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function -Wno-unused-parameter" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wextra -Wno-missing-field-initializers" GMXC_CXXFLAGS)
       # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" 
                           GMXC_CXXFLAGS)
@@ -74,7 +77,6 @@ MACRO(gmx_c_flags)
 
     if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
         if (NOT WIN32) 
-            GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-std=gnu99" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "-mtune=core2" GMXC_CXXFLAGS_RELEASE)
@@ -125,6 +127,34 @@ MACRO(gmx_c_flags)
         #      deprecated (posix, secure) functions
         GMX_TEST_CFLAG(CFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CFLAGS)
         GMX_TEST_CFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996" GMXC_CXXFLAGS)
+    endif()
+
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused" GMXC_CFLAGS)
+    endif()
+
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
+    endif()
+      
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
+        endif()
+        GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
+    endif()
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if(NOT GMX_OPENMP)
+            GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
     endif()
 
     # now actually set the flags:

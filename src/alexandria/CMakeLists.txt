@@ -1,6 +1,7 @@
 
 set(ALEXANDRIA_SOURCES
 	xml_util.c
+        mymol.c
 	poldata.c
 	poldata_xml.c
 	gaussian_integrals.c
@@ -81,6 +82,10 @@ add_executable(gentop gentop.c)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gentop PROPERTIES OUTPUT_NAME "gentop${GMX_BINARY_SUFFIX}")
 
+add_executable(gauss2molprop gauss2molprop.c)
+target_link_libraries(gauss2molprop ${GMX_EXTRA_LIBRARIES})
+set_target_properties(gauss2molprop PROPERTIES OUTPUT_NAME "gauss2molprop${GMX_BINARY_SUFFIX}")
+
 add_executable(tune_pol tune_pol.c)
 target_link_libraries(tune_pol ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_pol PROPERTIES OUTPUT_NAME "tune_pol${GMX_BINARY_SUFFIX}")
@@ -145,6 +150,7 @@ install(TARGETS
 	addquote
 	gen_ff
 	gen_table
+        gauss2molprop
         COMPONENT runtime
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 

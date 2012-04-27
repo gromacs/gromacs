@@ -39,7 +39,6 @@
 #include <string.h>
 #include <math.h>
 #include "macros.h"
-#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -66,34 +65,6 @@
 #include "gmx_sort.h"
 
 enum { euSel,euRect, euTric, euCompact, euNR};
-
-
-static int 
-sort_comdist2(void *thunk, const void *a, const void *b)
-{
-    /* Thunk should point to a real array with the distance to the cluster COM for each molecule,
-     * a/b point to integers that refer to the molecule number. 
-     */
-    real *pcomdist2 = (real *)thunk;
-    int  ia    = * (int *)a;
-    int  ib    = * (int *)b;
-    int  rc;
-    
-    if(pcomdist2[ia]<pcomdist2[ib])
-    {
-        rc=-1;
-    }
-    else if (pcomdist2[ia]>pcomdist2[ib])
-    {
-        rc=1;
-    }
-    else
-    {
-        rc=0;
-    }
-    return rc;
-}
-
 
 static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
                              rvec x[],atom_id index[],
@@ -1553,6 +1524,8 @@ int gmx_trjconv(int argc,char *argv[])
         fprintf(stderr,"\n");
 
         close_trj(status);
+        sfree(outf_base);
+
 	if (bRmPBC)
 	  gmx_rmpbc_done(gpbc);
 	

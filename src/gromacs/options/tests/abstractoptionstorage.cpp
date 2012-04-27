@@ -44,11 +44,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/exceptions.h"
 #include "testutils/testexceptions.h"
 
 namespace
@@ -71,9 +71,8 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
          * Initializes the storage from option settings.
          *
          * \param[in] settings   Storage settings.
-         * \param[in] options    Options object.
          */
-        MockOptionStorage(const MockOption &settings, gmx::Options *options);
+        MockOptionStorage(const MockOption &settings);
 
         /*! \brief
          * Calls addValue("dummy") in the base class.
@@ -133,21 +132,21 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         { _storagePtr = storagePtr; return me(); }
 
     private:
-        virtual gmx::AbstractOptionStorage *createDefaultStorage(gmx::Options *options) const
+        virtual gmx::AbstractOptionStoragePointer createStorage() const
         {
-            MockOptionStorage *storage = new MockOptionStorage(*this, options);
+            MockOptionStorage *storage = new MockOptionStorage(*this);
             if (_storagePtr != NULL)
             {
                 *_storagePtr = storage;
             }
-            return storage;
+            return gmx::AbstractOptionStoragePointer(storage);
         }
 
         MockOptionStorage     **_storagePtr;
 };
 
-MockOptionStorage::MockOptionStorage(const MockOption &settings, gmx::Options *options)
-    : MyBase(settings, options)
+MockOptionStorage::MockOptionStorage(const MockOption &settings)
+    : MyBase(settings)
 {
     using ::testing::_;
     using ::testing::Invoke;
@@ -164,11 +163,11 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock = NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock).required()
                             .storeVector(&values)));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -237,11 +236,11 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock=NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).multiValue()));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -279,11 +278,11 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
     gmx::Options                options(NULL, NULL);
     std::vector<std::string>    values;
-    MockOptionStorage          *mock;
+    MockOptionStorage          *mock=NULL;
     ASSERT_NO_THROW(options.addOption(
                         MockOption("name").storageObject(&mock)
                             .storeVector(&values).valueCount(2)));
-
+    ASSERT_TRUE(mock != NULL);
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;

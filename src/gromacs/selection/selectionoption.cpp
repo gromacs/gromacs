@@ -40,14 +40,14 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "selectioncollection-impl.h"
 #include "selectionoptionstorage.h"
@@ -59,10 +59,8 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
-                                               Options *options)
-    : MyBase(settings, options,
-             OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
+    : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
       _info(this), _sc(NULL), _selectionFlags(settings._selectionFlags)
 {
     if (settings._infoPtr != NULL)
@@ -74,13 +72,12 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings,
 
 std::string SelectionOptionStorage::formatValue(int i) const
 {
-    Selection *sel = values().at(i);
-    return (sel != NULL ? sel->selectionText() : "");
+    return values()[i].selectionText();
 }
 
 
 void SelectionOptionStorage::addSelections(
-        const std::vector<Selection *> &selections,
+        const SelectionList &selections,
         bool bFullValue)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
@@ -91,16 +88,15 @@ void SelectionOptionStorage::addSelections(
     {
         clearSet();
     }
-    std::vector<Selection *>::const_iterator i;
+    SelectionList::const_iterator i;
     for (i = selections.begin(); i != selections.end(); ++i)
     {
         // TODO: Having this check in the parser would make interactive input
         // behave better.
-        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        if (_selectionFlags.test(efOnlyStatic) && i->isDynamic())
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
-        (*i)->setFlags(_selectionFlags);
         addValue(*i);
     }
     if (bFullValue)
@@ -114,7 +110,7 @@ void SelectionOptionStorage::convertValue(const std::string &value)
 {
     GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
-    std::vector<Selection *> selections;
+    SelectionList selections;
     // TODO: Implement reading from a file.
     _sc->parseFromString(value, &selections);
     addSelections(selections, false);
@@ -126,11 +122,16 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
     {
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
     }
+    ValueList::iterator i;
+    for (i = values->begin(); i != values->end(); ++i)
+    {
+        i->data().setFlags(_selectionFlags);
+    }
 }
 
 void SelectionOptionStorage::processAll()
 {
-    if ((hasFlag(efRequired) || hasFlag(efSet)) && valueCount() == 0)
+    if ((isRequired() || isSet()) && valueCount() == 0)
     {
         GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
@@ -141,6 +142,7 @@ void SelectionOptionStorage::processAll()
 
 void SelectionOptionStorage::setAllowedValueCount(int count)
 {
+    // TODO: It should be possible to have strong exception safety here.
     MessageStringCollector errors;
     errors.startContext("In option '" + name() + "'");
     if (count >= 0)
@@ -169,11 +171,10 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    _selectionFlags.set(flag, bSet);
-    ValueList::const_iterator i;
+    ValueList::iterator i;
     for (i = values().begin(); i != values().end(); ++i)
     {
-        if (_selectionFlags.test(efOnlyStatic) && (*i)->isDynamic())
+        if (flag == efOnlyStatic && bSet && i->isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -181,7 +182,11 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
             errors.finishContext();
             GMX_THROW(InvalidInputError(errors.toString()));
         }
-        (*i)->setFlags(_selectionFlags);
+    }
+    _selectionFlags.set(flag, bSet);
+    for (i = values().begin(); i != values().end(); ++i)
+    {
+        i->data().setFlags(_selectionFlags);
     }
 }
 
@@ -250,9 +255,9 @@ void SelectionOptionInfo::setDynamicOnlyWhole(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStorage *SelectionOption::createDefaultStorage(Options *options) const
+AbstractOptionStoragePointer SelectionOption::createStorage() const
 {
-    return new SelectionOptionStorage(*this, options);
+    return AbstractOptionStoragePointer(new SelectionOptionStorage(*this));
 }
 
 

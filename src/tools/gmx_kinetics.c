@@ -725,7 +725,7 @@ int gmx_kinetics(int argc,char *argv[])
     { "-T",       FALSE, etREAL, {&tref},
       "Reference temperature for computing rate constants" },
     { "-n",       FALSE, etINT, {&nreplica},
-      "Read data for # replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters." },
+      "Read data for this number of replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters." },
     { "-cut",     FALSE, etREAL, {&cutoff},
       "Cut-off (max) value for regarding a structure as folded" },
     { "-ucut",    FALSE, etREAL, {&ucut},

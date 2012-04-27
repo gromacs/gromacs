@@ -115,10 +115,8 @@ enum {
   etINT, etGMX_LARGE_INT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
 };
 
-/* names to print in help info */
-static const char *argtp[etNR] = {
-  "int", "step", "real", "time", "string", "bool", "vector", "enum" 
-};
+/* name to print in help info for command line arguments (defined in enum above) */
+const char *get_arg_desc(int type);
 
 typedef struct {
   const char *option;

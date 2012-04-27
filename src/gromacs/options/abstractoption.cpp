@@ -37,10 +37,10 @@
  */
 #include "gromacs/options/abstractoption.h"
 
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "basicoptionstorage.h"
 
@@ -52,13 +52,11 @@ namespace gmx
  */
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
-                                             Options *options,
                                              OptionFlags staticFlags)
     : _flags(settings._flags | staticFlags),
       _minValueCount(settings._minValueCount),
       _maxValueCount(settings._maxValueCount),
-      _inSet(false),
-      _options(options)
+      _inSet(false)
 {
     // If the maximum number of values is not known, storage to
     // caller-allocated memory is unsafe.

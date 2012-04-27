@@ -28,7 +28,6 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -44,11 +43,11 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual Options *initOptions(TrajectoryAnalysisSettings *settings);
+        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation &top);
 
-        virtual TrajectoryAnalysisModuleData *startFrames(
+        virtual TrajectoryAnalysisModuleDataPointer startFrames(
                     const AnalysisDataParallelOptions &opt,
                     const SelectionCollection &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
@@ -60,13 +59,15 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     private:
         class ModuleData;
 
-        Options                      _options;
-        std::string                  _fnDist;
-        double                       _cutoff;
-        Selection                   *_refsel;
-        std::vector<Selection *>     _sel;
-        AnalysisData                 _data;
-        AnalysisDataAverageModule   *_avem;
+        Options                          options_;
+
+        std::string                      fnDist_;
+        double                           cutoff_;
+        Selection                        refsel_;
+        SelectionList                    sel_;
+
+        AnalysisData                     data_;
+        AnalysisDataAverageModulePointer avem_;
 };
 
 /*! \brief
@@ -75,17 +76,23 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
 class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
 {
     public:
+        /*! \brief
+         * Initializes frame-local data.
+         *
+         * \param[in] module     Analysis module to use for data objects.
+         * \param[in] opt        Data parallelization options.
+         * \param[in] selections Thread-local selection collection.
+         * \param[in] cutoff     Cutoff distance for the search
+         *   (<=0 stands for no cutoff).
+         * \param[in] posCount   Maximum number of reference particles.
+         */
         ModuleData(TrajectoryAnalysisModule *module,
                    const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections)
+                   const SelectionCollection &selections,
+                   double cutoff, int posCount)
             : TrajectoryAnalysisModuleData(module, opt, selections),
-              _nb(NULL)
+              nb_(cutoff, posCount)
         {
-        }
-
-        virtual ~ModuleData()
-        {
-            delete _nb;
         }
 
         virtual void finish()
@@ -93,18 +100,18 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
             finishDataHandles();
         }
 
-        NeighborhoodSearch          *_nb;
+        //! Neighborhood search data for distance calculation.
+        NeighborhoodSearch      nb_;
 };
 
 
 AnalysisTemplate::AnalysisTemplate()
-    : _options("template", "Template options"), _cutoff(0.0),
-      _refsel(NULL), _avem(NULL)
+    : options_("template", "Template options"), cutoff_(0.0)
 {
 }
 
 
-Options *
+Options &
 AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -119,31 +126,31 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
         "To get started with implementing your own analysis program,",
         "follow the instructions in the README file provided.",
         "This template implements a simple analysis programs that calculates",
-        "average distances from the a reference group to one or more",
+        "average distances from a reference group to one or more",
         "analysis groups.",
         NULL
     };
 
-    _options.setDescription(desc);
+    options_.setDescription(desc);
 
-    _options.addOption(FileNameOption("o")
-        .filetype(eftPlot).writeOnly()
-        .store(&_fnDist).defaultValueIfSet("avedist")
+    options_.addOption(FileNameOption("o")
+        .filetype(eftPlot).outputFile()
+        .store(&fnDist_).defaultValueIfSet("avedist")
         .description("Average distances from reference group"));
 
-    _options.addOption(SelectionOption("reference")
-        .store(&_refsel).required()
+    options_.addOption(SelectionOption("reference")
+        .store(&refsel_).required()
         .description("Reference group to calculate distances from"));
-    _options.addOption(SelectionOption("select")
-        .storeVector(&_sel).required().multiValue()
+    options_.addOption(SelectionOption("select")
+        .storeVector(&sel_).required().multiValue()
         .description("Groups to calculate distances to"));
 
-    _options.addOption(DoubleOption("cutoff").store(&_cutoff)
+    options_.addOption(DoubleOption("cutoff").store(&cutoff_)
         .description("Cutoff for distance calculation (0 = no cutoff)"));
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
-    return &_options;
+    return options_;
 }
 
 
@@ -151,32 +158,31 @@ void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation & /*top*/)
 {
-    _data.setColumns(_sel.size());
-    registerAnalysisDataset(&_data, "avedist");
+    data_.setColumnCount(sel_.size());
+    registerAnalysisDataset(&data_, "avedist");
 
-    _avem = new AnalysisDataAverageModule();
-    _data.addModule(_avem);
+    avem_.reset(new AnalysisDataAverageModule());
+    data_.addModule(avem_);
 
-    if (!_fnDist.empty())
+    if (!fnDist_.empty())
     {
-        AnalysisDataPlotModule *plotm
-            = new AnalysisDataPlotModule(settings.plotSettings());
-        plotm->setFileName(_fnDist);
+        AnalysisDataPlotModulePointer plotm(
+            new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnDist_);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Distance (nm)");
-        _data.addModule(plotm);
+        data_.addModule(plotm);
     }
 }
 
 
-TrajectoryAnalysisModuleData *
+TrajectoryAnalysisModuleDataPointer
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
                               const SelectionCollection &selections)
 {
-    std::auto_ptr<ModuleData> pdata(new ModuleData(this, opt, selections));
-    pdata->_nb = new NeighborhoodSearch(_cutoff, _refsel->posCount());
-    return pdata.release();
+    return TrajectoryAnalysisModuleDataPointer(
+            new ModuleData(this, opt, selections, cutoff_, refsel_.posCount()));
 }
 
 
@@ -184,25 +190,26 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle *dh = pdata->dataHandle("avedist");
-    NeighborhoodSearch *nb = static_cast<ModuleData *>(pdata)->_nb;
+    AnalysisDataHandle  dh = pdata->dataHandle(data_);
+    NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->nb_;
+    const Selection    &refsel = pdata->parallelSelection(refsel_);
 
-    nb->init(pbc, _refsel->positions());
-    dh->startFrame(frnr, fr.time);
-    for (size_t g = 0; g < _sel.size(); ++g)
+    nb.init(pbc, refsel.positions());
+    dh.startFrame(frnr, fr.time);
+    for (size_t g = 0; g < sel_.size(); ++g)
     {
-        Selection *sel = pdata->parallelSelection(_sel[g]);
-        int   nr = sel->posCount();
+        const Selection &sel = pdata->parallelSelection(sel_[g]);
+        int   nr = sel.posCount();
         real  frave = 0.0;
         for (int i = 0; i < nr; ++i)
         {
-            SelectionPosition p = sel->position(i);
-            frave += nb->minimumDistance(p.x());
+            SelectionPosition p = sel.position(i);
+            frave += nb.minimumDistance(p.x());
         }
         frave /= nr;
-        dh->setPoint(g, frave);
+        dh.setPoint(g, frave);
     }
-    dh->finishFrame();
+    dh.finishFrame();
 }
 
 
@@ -216,10 +223,10 @@ void
 AnalysisTemplate::writeOutput()
 {
     // We print out the average of the mean distances for each group.
-    for (size_t g = 0; g < _sel.size(); ++g)
+    for (size_t g = 0; g < sel_.size(); ++g)
     {
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                _sel[g]->name(), _avem->average(g));
+                sel_[g].name(), avem_->average(g));
     }
 }
 

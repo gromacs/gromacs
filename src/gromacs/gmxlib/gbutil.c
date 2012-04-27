@@ -115,14 +115,6 @@ void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma)
     low_rotate_conf(natom,v,alfa,beta,gamma);
 }
 
-void rotate_conf_indexed(int nindex,atom_id *index,rvec *x,rvec *v,real alfa, real beta,real gamma)
-{
-  if (x)
-    low_rotate_conf_indexed(nindex,index,x,alfa,beta,gamma);
-  if (v)
-    low_rotate_conf_indexed(nindex,index,v,alfa,beta,gamma);
-}
-
 void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
 {
   real longest,rij,rzi;

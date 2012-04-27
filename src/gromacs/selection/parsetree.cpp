@@ -216,18 +216,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <memory>
+#include "futil.h"
+#include "smalloc.h"
+#include "string2.h"
 
-#include <futil.h>
-#include <smalloc.h>
-#include <string2.h>
-
-#include "gromacs/fatalerror/errorcodes.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/messagestringcollector.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -473,6 +471,7 @@ _gmx_selelem_update_flags(t_selelem *sel, yyscan_t scanner)
      * children have been updated. */
     if (sel->type == SEL_ROOT)
     {
+        GMX_ASSERT(sel->child, "Root elements should always have a child");
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
     /* Mark that the flags are set */
@@ -538,7 +537,7 @@ _gmx_selelem_init_method_params(t_selelem *sel, yyscan_t scanner)
     {
         gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-        sel->u.expr.method->set_poscoll(sc->pcc, mdata);
+        sel->u.expr.method->set_poscoll(&sc->pcc, mdata);
     }
     /* Store the values */
     sel->u.expr.method->param = param;
@@ -557,8 +556,6 @@ void
 _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
                         yyscan_t scanner)
 {
-    int      i;
-
     _gmx_selelem_set_vtype(sel, method->type);
     sel->name   = method->name;
     snew(sel->u.expr.method, 1);
@@ -577,8 +574,8 @@ _gmx_selelem_set_method(t_selelem *sel, gmx_ana_selmethod_t *method,
  * \returns       0 on success, a non-zero error code on error.
  */
 static int
-set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
-                yyscan_t scanner)
+set_refpos_type(gmx::PositionCalculationCollection *pcc, t_selelem *sel,
+                const char *rpost, yyscan_t scanner)
 {
     if (!rpost)
     {
@@ -594,8 +591,8 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost,
         try
         {
             /* By default, use whole residues/molecules. */
-            gmx_ana_poscalc_create_enum(&sel->u.expr.pc, pcc, rpost,
-                                        POS_COMPLWHOLE);
+            sel->u.expr.pc
+                = pcc->createCalculationFromEnum(rpost, POS_COMPLWHOLE);
         }
         catch (const gmx::GromacsException &ex)
         {
@@ -664,7 +661,6 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
     const char        *name;
-    int                rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     gmx::MessageStringContext  context(errors, "In comparison initialization");
@@ -774,7 +770,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
             goto on_error;
         }
     }
-    rc = set_refpos_type(sc->pcc, child, rpost, scanner);
+    rc = set_refpos_type(&sc->pcc, child, rpost, scanner);
     if (rc != 0)
     {
         goto on_error;
@@ -833,7 +829,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
         _gmx_selelem_free(root);
         return NULL;
     }
-    rc = set_refpos_type(sc->pcc, root, rpost, scanner);
+    rc = set_refpos_type(&sc->pcc, root, rpost, scanner);
     if (rc != 0)
     {
         _gmx_selelem_free(root);
@@ -860,7 +856,6 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selelem         *root;
     t_selelem         *mod;
     t_selexpr_param   *vparam;
-    int                i;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -1079,7 +1074,6 @@ _gmx_sel_init_variable_ref(t_selelem *sel)
 t_selelem *
 _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
     int                      rc;
 
@@ -1291,10 +1285,10 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
         /* Add the new selection to the collection if it is not a variable. */
         if (sel->child->type != SEL_SUBEXPR)
         {
-            std::auto_ptr<gmx::Selection> newsel(
-                new gmx::Selection(sel, _gmx_sel_lexer_pselstr(scanner)));
-            sc->sel.push_back(newsel.get());
-            newsel.release();
+            gmx::SelectionDataPointer selPtr(
+                    new gmx::internal::SelectionData(
+                        sel, _gmx_sel_lexer_pselstr(scanner)));
+            sc->sel.push_back(gmx::move(selPtr));
         }
     }
     /* Clear the selection string now that we've saved it */

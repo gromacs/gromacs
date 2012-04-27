@@ -39,14 +39,14 @@
 #include <config.h>
 #endif
 
-#include <smalloc.h>
-#include <gmx_fatal.h>
+#include "gmx_fatal.h"
+#include "smalloc.h"
 
-#include "gromacs/fatalerror/exceptions.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "keywords.h"
 #include "mempool.h"

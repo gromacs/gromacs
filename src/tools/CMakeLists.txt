@@ -4,7 +4,7 @@ add_library(gmxana
             eigio.c         cmat.c          
             eigensolver.c   nsc.c           
             hxprops.c       fitahx.c        
-            geminate.c
+            geminate.c      nsfactor.c
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
             gmx_bundle.c    gmx_chi.c       gmx_cluster.c   gmx_confrms.c   
             gmx_covar.c     gmx_current.c   

@@ -44,16 +44,21 @@
 #include <string>
 #include <vector>
 
-#include <typedefs.h>
+#include "../legacyheaders/typedefs.h"
 
 #include "../options/options.h"
-#include "../utility/flags.h"
+#include "../utility/uniqueptr.h"
 #include "indexutil.h"
+#include "poscalc.h"
+#include "selection.h" // For gmx::SelectionList
 #include "selectioncollection.h"
 
 namespace gmx
 {
-class Selection;
+//! Smart pointer for managing an internal selection data object.
+typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
+//! Container for storing a list of selections internally.
+typedef std::vector<SelectionDataPointer> SelectionDataList;
 }
 
 /*! \internal \brief
@@ -65,8 +70,14 @@ struct gmx_ana_selcollection_t
 {
     /** Root of the selection element tree. */
     struct t_selelem           *root;
-    /** Array of compiled selections. */
-    std::vector<gmx::Selection *>  sel;
+    /*! \brief
+     * Array of compiled selections.
+     *
+     * Has the responsibility of managing the memory for the contained objects,
+     * but note that gmx::Selection instances also hold pointers to the
+     * objects.
+     */
+    gmx::SelectionDataList         sel;
     /** Number of variables defined. */
     int                            nvars;
     /** Selection strings for variables. */
@@ -77,7 +88,7 @@ struct gmx_ana_selcollection_t
     /** Index group that contains all the atoms. */
     struct gmx_ana_index_t         gall;
     /** Position calculation collection used for selection position evaluation. */
-    struct gmx_ana_poscalc_coll_t *pcc;
+    gmx::PositionCalculationCollection  pcc;
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
@@ -98,32 +109,53 @@ class SelectionOptionStorage;
 class SelectionCollection::Impl
 {
     public:
+        /*! \brief
+         * Request for postponed parsing of selections.
+         *
+         * Used to communicate what needs to be parsed with
+         * parseRequestedFromStdin() or parseRequstedFromString().
+         */
         struct SelectionRequest
         {
+            //! Initializes a request for the given option.
             SelectionRequest(const std::string &name, const std::string &descr,
                              SelectionOptionStorage *storage)
                 : name(name), descr(descr), storage(storage)
             {
             }
 
+            /*! \brief
+             * Returns the number of selections requested in this request.
+             *
+             * -1 indicates no upper limit.
+             */
             int count() const;
 
+            //! Name of the option to which this request relates to.
             std::string                 name;
+            //! Description of the option to which this request relates to.
             std::string                 descr;
+            //! Storage object to which the selections will be added.
             SelectionOptionStorage     *storage;
         };
 
-        //! Shorthand for a list of selections stored internally.
-        typedef std::vector<Selection *> SelectionList;
-        //! Shorthand for a list of selection requests.
+        //! Collection for a list of selection requests.
         typedef std::vector<SelectionRequest> RequestList;
 
+        /*! \brief
+         * Helper class that clears a request list on scope exit.
+         *
+         * Methods in this class do not throw.
+         */
         class RequestsClearer
         {
             public:
-                RequestsClearer(RequestList *requests) : requests_(requests)
+                //! Constructs an object that clears given list on scope exit.
+                explicit RequestsClearer(RequestList *requests)
+                    : requests_(requests)
                 {
                 }
+                //! Clears the request list given to the constructor.
                 ~RequestsClearer()
                 {
                     requests_->clear();
@@ -133,22 +165,19 @@ class SelectionCollection::Impl
                 RequestList    *requests_;
         };
 
-        //! Possible flags for the selection collection.
-        enum Flag
-        {
-            efOwnPositionCollection = 1<<0,
-            efExternalGroupsSet     = 1<<1
-        };
-        //! Holds a collection of Flag values.
-        typedef FlagsTemplate<Flag> Flags;
-
-        //! Creates a new selection collection.
-        explicit Impl(gmx_ana_poscalc_coll_t *pcc);
+        /*! \brief
+         * Creates a new selection collection.
+         *
+         * \throws  std::bad_alloc if out of memory.
+         */
+        Impl();
         ~Impl();
 
-        //! Returns true if the given flag has been set.
-        bool hasFlag(Flag flag) const { return _flags.test(flag); }
-        //! Clears the symbol table of the selection collection.
+        /*! \brief
+         * Clears the symbol table of the selection collection.
+         *
+         * Does not throw.
+         */
         void clearSymbolTable();
         /*! \brief
          * Helper function that runs the parser once the tokenizer has been
@@ -159,14 +188,47 @@ class SelectionCollection::Impl
          *      (if -1, parse as many as provided by the user).
          * \param[out]    output  Vector to which parsed selections are
          *      appended.
+         * \throws        std::bad_alloc if out of memory.
+         * \throws        InvalidInputError if there is a parsing error.
          *
-         * Does not clear \p output.
+         * Parsed selections are appended to \p output without clearing it
+         * first.  If parsing fails, \p output is not modified.
+         *
+         * Used internally to implement parseFromStdin(), parseFromFile() and
+         * parseFromString().
          */
         void runParser(void *scanner, int maxnr,
-                       std::vector<Selection *> *output);
+                       SelectionList *output);
+        /*! \brief
+         * Adds a selection request for delayed user input.
+         *
+         * \param[in] name    Name for the requested selections.
+         * \param[in] descr   Description of the requested selections.
+         * \param     storage Storage object to receive the selections.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Strong exception safety.
+         *
+         * \see parseRequestedFromStdin()
+         */
         void requestSelections(const std::string &name,
                                const std::string &descr,
                                SelectionOptionStorage *storage);
+        /*! \brief
+         * Replace group references by group contents.
+         *
+         * \param[in]    root    Root of selection tree to process.
+         * \param        errors  Object for reporting any error messages.
+         *
+         * Recursively searches the selection tree for unresolved external
+         * references.  If one is found, finds the referenced group in
+         * \a _grps and replaces the reference with a constant element that
+         * contains the atoms from the referenced group.  Any failures to
+         * resolve references are reported to \p errors.
+         *
+         * Does not throw currently, but this is subject to change when more
+         * underlying code is converted to C++.
+         */
         void resolveExternalGroups(struct t_selelem *root,
                                    MessageStringCollector *errors);
 
@@ -189,8 +251,8 @@ class SelectionCollection::Impl
          *  - 4: combine 2 and 3
          */
         int                     _debugLevel;
-        //! Flags for various properties of the collection.
-        Flags                   _flags;
+        //! Whether setIndexGroups() has been called.
+        bool                    _bExternalGroupsSet;
         //! External index groups (can be NULL).
         gmx_ana_indexgrps_t    *_grps;
         //! List of selections requested for later parsing.

@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \libinternal file
+/*! \libinternal \file
  * \brief
  * Declares gmx::AnalysisDataParallelOptions.
  *
@@ -46,12 +46,13 @@
 namespace gmx
 {
 
-/*! \brief
+/*! \libinternal \brief
  * Parallelization options for analysis data objects.
  *
  * Methods in this class do not throw.
  *
  * \inlibraryapi
+ * \ingroup module_analysisdata
  */
 class AnalysisDataParallelOptions
 {

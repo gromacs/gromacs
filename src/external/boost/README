@@ -10,4 +10,5 @@ Steps to produce minimal version of BOOST:
    Make sure that they are really not needed and that activating the feature they implement gives a compiler
    not linker error (by adding an appropriate #error directive). If any source files are added make sure 
    to add them to cmake.
-
+6) Check that boost/exception/detail/error_info_impl.hpp has virtual
+   destructors to avoid compiler warnings.

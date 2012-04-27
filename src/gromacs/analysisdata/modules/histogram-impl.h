@@ -63,6 +63,7 @@ class StaticAverageHistogram : public AbstractAverageHistogram
 {
     public:
         StaticAverageHistogram();
+        //! Creates an average histogram module with defined bin parameters.
         explicit StaticAverageHistogram(const AnalysisHistogramSettings &settings);
 
         // Copy and assign disallowed by base.
@@ -83,6 +84,8 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
                                     public AnalysisDataModuleInterface
 {
     public:
+        BasicAverageHistogramModule();
+        //! Creates an average histogram module with defined bin parameters.
         explicit BasicAverageHistogramModule(const AnalysisHistogramSettings &settings);
 
         using AbstractAverageHistogram::init;
@@ -102,6 +105,9 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
         // Copy and assign disallowed by base.
 };
 
+//! Smart pointer to manage an BasicAverageHistogramModule object.
+typedef boost::shared_ptr<BasicAverageHistogramModule>
+    BasicAverageHistogramModulePointer;
 
 /*! \internal \brief
  * Private implementation class for AnalysisDataSimpleHistogramModule and
@@ -113,6 +119,7 @@ class BasicHistogramImpl
 {
     public:
         BasicHistogramImpl();
+        //! Creates an histogram impl with defined bin parameters.
         explicit BasicHistogramImpl(const AnalysisHistogramSettings &settings);
         ~BasicHistogramImpl();
 
@@ -121,21 +128,16 @@ class BasicHistogramImpl
          */
         void init(const AnalysisHistogramSettings &settings);
         /*! \brief
-         * Creates the averager and adds it as a module to \p data if it does
-         * not exist.
-         */
-        void ensureAveragerExists(AbstractAnalysisData *data);
-        /*! \brief
          * Initializes data storage frame when a new frame starts.
          */
         void initFrame(AnalysisDataStorageFrame *frame);
 
         //! Storage implementation object.
-        AnalysisDataStorage             storage_;
+        AnalysisDataStorage                  storage_;
         //! Settings for the histogram object.
-        AnalysisHistogramSettings       settings_;
-        //! Averager module, or NULL if not yet allocated.
-        BasicAverageHistogramModule    *averager_;
+        AnalysisHistogramSettings            settings_;
+        //! Averager module.
+        BasicAverageHistogramModulePointer   averager_;
 };
 
 } // namespace internal

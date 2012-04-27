@@ -133,7 +133,7 @@ int gmx_saltbr(int argc,char *argv[])
   static real truncate=1000.0;
   t_pargs pa[] = {
     { "-t",   FALSE, etREAL, {&truncate},
-      "trunc distance" },
+      "Groups that are never closer than this distance are not plotted" },
     { "-sep", FALSE, etBOOL, {&bSep},
       "Use separate files for each interaction (may be MANY)" }
   };

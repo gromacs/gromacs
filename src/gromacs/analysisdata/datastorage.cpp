@@ -42,8 +42,8 @@
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/fatalerror/exceptions.h"
-#include "gromacs/fatalerror/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "datastorage-impl.h"
 
@@ -74,7 +74,7 @@ AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFact
 
 AnalysisDataStorageFrame::AnalysisDataStorageFrame(AnalysisDataStorage *storage,
                                                    int columnCount, int index)
-    : storage_(storage), header_(index, 0.0, 0.0), values_(columnCount)
+    : storage_(*storage), header_(index, 0.0, 0.0), values_(columnCount)
 {
 }
 
@@ -117,7 +117,7 @@ AnalysisDataStorageFrame::clearValues()
 void
 AnalysisDataStorageFrame::finishPointSet()
 {
-    storage_->impl_->notifyPointSet(currentPoints());
+    storage_.impl_->notifyPointSet(currentPoints());
     clearValues();
 }
 
@@ -135,11 +135,6 @@ AnalysisDataStorage::Impl::Impl()
 
 AnalysisDataStorage::Impl::~Impl()
 {
-    FrameList::const_iterator i;
-    for (i = frames_.begin(); i != frames_.end(); ++i)
-    {
-        delete i->frame;
-    }
 }
 
 
@@ -198,9 +193,8 @@ AnalysisDataStorage::Impl::extendBuffer(AnalysisDataStorage *storage,
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
-        AnalysisDataStorageFrame *frame =
-            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_);
-        frames_.push_back(StoredFrame(frame));
+        frames_.push_back(StoredFrame(
+            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -331,7 +325,7 @@ AnalysisDataStorage::tryGetDataFrame(int index) const
     {
         return AnalysisDataFrameRef();
     }
-    const AnalysisDataStorageFrame *frame = storedFrame.frame;
+    const Impl::FramePointer &frame = storedFrame.frame;
     return AnalysisDataFrameRef(frame->header(), frame->values_);
 }
 

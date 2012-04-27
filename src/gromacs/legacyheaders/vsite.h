@@ -90,12 +90,17 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
  */
 
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
-			   rvec x[],rvec f[],rvec *fshift,
-			   t_nrnb *nrnb,t_idef *idef,
-			   int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
-			   t_commrec *cr);
+		    rvec x[],rvec f[],rvec *fshift,
+		    gmx_bool VirCorr,matrix vir,
+		    t_nrnb *nrnb,t_idef *idef,
+		    int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
+		    t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
+ * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
+ * to vir. This correction is required when the virial is not calculated
+ * afterwards from the particle position and forces, but in a different way,
+ * as for instance for the PME mesh contribution.
  */
 
 gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);

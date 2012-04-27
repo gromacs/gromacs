@@ -38,10 +38,10 @@
 #ifndef GMX_OPTIONS_OPTIONS_IMPL_H
 #define GMX_OPTIONS_OPTIONS_IMPL_H
 
-#include <memory>
 #include <string>
 #include <vector>
 
+#include "abstractoption.h"
 #include "options.h"
 
 namespace gmx
@@ -63,7 +63,7 @@ class Options::Impl
         //! Convenience type for list of sections.
         typedef std::vector<Options *> SubSectionList;
         //! Convenience type for list of options.
-        typedef std::vector<AbstractOptionStorage *> OptionList;
+        typedef std::vector<AbstractOptionStoragePointer> OptionList;
 
         //! Sets the name and title.
         Impl(const char *name, const char *title);

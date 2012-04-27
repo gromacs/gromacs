@@ -89,7 +89,7 @@ real sign(real x,real y)
  * ====================================================
  */
 
-#if (INT_MAX == 2147483647)
+#if ( (defined SIZEOF_INT && SIZEOF_INT==4) || (SIZEOF_INT_MAX == 2147483647) )
    typedef int erf_int32_t;
    typedef unsigned int erf_u_int32_t;
 #elif (LONG_MAX == 2147483647L)
@@ -640,28 +640,6 @@ float gmx_erfc(float x)
 }
 
 #endif
-
-float fast_float_erf(float x)
-{
-	float t,ans;
-
-	t=1.0/(1.0+0.5*x);
-	ans=t*exp(-x*x-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+
-		t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
-		t*(-0.82215223+t*0.17087277)))))))));
-	return 1.0-ans;
-}
-
-float fast_float_erfc(float x)
-{
-	float t,ans;
-
-	t=1.0/(1.0+0.5*x);
-	ans=t*exp(-x*x-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+
-		t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
-		t*(-0.82215223+t*0.17087277)))))))));
-	return ans;
-}
 
 gmx_bool gmx_isfinite(real x)
 {
