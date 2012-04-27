@@ -2148,10 +2148,10 @@ for(ithx=0; (ithx<order); ithx++)              \
 }
 
 
-void gather_f_bsplines(gmx_pme_t pme,real *grid,
-                       gmx_bool bClearF,pme_atomcomm_t *atc,
-                       splinedata_t *spline,
-                       real scale)
+static void gather_f_bsplines(gmx_pme_t pme,real *grid,
+                              gmx_bool bClearF,pme_atomcomm_t *atc,
+                              splinedata_t *spline,
+                              real scale)
 {
     /* sum forces for local particles */
     int     nn,n,ithx,ithy,ithz,i0,j0,k0;
@@ -2194,7 +2194,7 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
     for(nn=0; nn<spline->n; nn++)
     {
         n  = spline->ind[nn];
-        qn = atc->q[n];
+        qn = scale*atc->q[n];
 
         if (bClearF)
         {
