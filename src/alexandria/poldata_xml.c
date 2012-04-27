@@ -457,7 +457,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
 }
 
 void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
-                       int compress)
+                       gmx_bool bCompress)
 {
     xmlDocPtr  doc;
     xmlDtdPtr  dtd;
@@ -483,7 +483,7 @@ void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
     /* Add molecule definitions */
     add_xml_poldata(myroot,pd,aps);
 
-    xmlSetDocCompressMode(doc,compress);
+    xmlSetDocCompressMode(doc,(int)bCompress);
     xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
         gmx_fatal(FARGS,"Saving file",fn);

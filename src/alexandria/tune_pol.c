@@ -276,12 +276,12 @@ int main(int argc,char *argv[])
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
-    static int iQM = FALSE,compress=1,mindata=1;
+    static int iQM = FALSE,mindata=1;
     static char *lot = "B3LYP/aug-cc-pVTZ";
     static real th_toler=170,ph_toler=5;
     static real sigma=0;
     static int seed=1993;
-    static gmx_bool bZero=FALSE,bForceFit=FALSE;
+    static gmx_bool bZero=FALSE,bForceFit=FALSE,bCompress=TRUE;
     t_pargs pa[] = 
     {
         { "-sort",   FALSE, etENUM, {sort},
@@ -302,7 +302,7 @@ int main(int argc,char *argv[])
           "If bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
-        { "-compress", FALSE, etBOOL, {&compress},
+        { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
     FILE  *fp,*gp;
@@ -349,8 +349,8 @@ int main(int argc,char *argv[])
     {
         gmx_molprop_sort(np,mp,alg,ap,NULL);
     }
-    gmx_poldata_write(opt2fn("-do",NFILE,fnm),pd,ap,compress);
-    gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,compress);
+    gmx_poldata_write(opt2fn("-do",NFILE,fnm),pd,ap,bCompress);
+    gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,bCompress);
     thanx(stdout);
   
     return 0;
