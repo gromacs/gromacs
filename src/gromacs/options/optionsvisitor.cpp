@@ -38,68 +38,12 @@
 #include "gromacs/options/optionsvisitor.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
-#include "gromacs/options/optioninfo.h"
 #include "gromacs/options/options.h"
 
 #include "options-impl.h"
 
 namespace gmx
 {
-
-/********************************************************************
- * OptionInfo
- */
-
-/*! \cond libapi */
-OptionInfo::OptionInfo(AbstractOptionStorage *option)
-    : _option(*option)
-{
-}
-//! \endcond
-
-OptionInfo::~OptionInfo()
-{
-}
-
-bool OptionInfo::isSet() const
-{
-    return _option.isSet();
-}
-
-bool OptionInfo::isHidden() const
-{
-    return _option.isHidden();
-}
-
-bool OptionInfo::isRequired() const
-{
-    return _option.isRequired();
-}
-
-const std::string &OptionInfo::name() const
-{
-    return _option.name();
-}
-
-const std::string &OptionInfo::description() const
-{
-    return _option.description();
-}
-
-const char *OptionInfo::type() const
-{
-    return _option.typeString();
-}
-
-int OptionInfo::valueCount() const
-{
-    return _option.valueCount();
-}
-
-std::string OptionInfo::formatValue(int i) const
-{
-    return _option.formatValue(i);
-}
 
 /********************************************************************
  * OptionsIterator

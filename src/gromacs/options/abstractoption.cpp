@@ -39,6 +39,7 @@
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"
+#include "gromacs/options/optioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -153,6 +154,61 @@ void AbstractOptionStorage::setMaxValueCount(int count)
     {
         GMX_THROW(InvalidInputError("Too many values"));
     }
+}
+
+/********************************************************************
+ * OptionInfo
+ */
+
+/*! \cond libapi */
+OptionInfo::OptionInfo(AbstractOptionStorage *option)
+    : option_(*option)
+{
+}
+//! \endcond
+
+OptionInfo::~OptionInfo()
+{
+}
+
+bool OptionInfo::isSet() const
+{
+    return option().isSet();
+}
+
+bool OptionInfo::isHidden() const
+{
+    return option().isHidden();
+}
+
+bool OptionInfo::isRequired() const
+{
+    return option().isRequired();
+}
+
+const std::string &OptionInfo::name() const
+{
+    return option().name();
+}
+
+const std::string &OptionInfo::description() const
+{
+    return option().description();
+}
+
+const char *OptionInfo::type() const
+{
+    return option().typeString();
+}
+
+int OptionInfo::valueCount() const
+{
+    return option().valueCount();
+}
+
+std::string OptionInfo::formatValue(int i) const
+{
+    return option().formatValue(i);
 }
 
 } // namespace gmx
