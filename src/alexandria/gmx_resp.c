@@ -924,6 +924,7 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     int i,k,kk,zz,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
     gmx_bool bWarnESP=FALSE;
     gmx_bool bAtomicCenter;
+    gmx_bool bGINC;
     
     nstrings = get_file(fn,&strings);
     natom = 0;
@@ -1060,6 +1061,11 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
             if (NULL != debug)
                 fprintf(debug,"Potential %d found on line %d\n",k,i);
         }
+        else if (strstr(strings[i],"GINC")) 
+        {
+            bGINC = TRUE;
+            trim(strings[i]);
+        }
         sfree(strings[i]);
     }
     if (debug)
@@ -1068,9 +1074,9 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     gr->natom  = natom;
     gr->nesp   = nesp;
     
-    if ((charge == NOTSET) || (natom == 0) || (nesp <= natom)) 
+    if ((charge == NOTSET) || (natom == 0)) 
         gmx_fatal(FARGS,"Error reading Gaussian log file.");
-    
+  
     if  (charge != gr->qtot)
     {
         fprintf(stderr,"WARNING: Total charge in Gaussian file is %d, while on command line %g was given.\n",
@@ -1079,7 +1085,9 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
         gr->qtot = charge;
         gr->qsum = charge;
     }
-    snew(gr->pot_calc,gr->nesp);
+    if (gr->nesp > 0) {
+        snew(gr->pot_calc,gr->nesp);
+    }
 }
 
 static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom,
