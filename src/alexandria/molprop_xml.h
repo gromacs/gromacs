@@ -40,7 +40,7 @@
 #include "molprop.h"
 
 extern void gmx_molprops_write(const char *fn,int nmolprop,
-			       gmx_molprop_t mpt[],int compress);
+			       gmx_molprop_t mpt[],gmx_bool bCompress);
   
 extern gmx_molprop_t *gmx_molprops_read(const char *fn,int *nmolprop);
 

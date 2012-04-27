@@ -138,7 +138,7 @@ extern "C" {
 
   /* The routines below can be used for converting units from or to GROMACS
      internal units. */
-  enum { eg2cAngstrom, eg2cNm, eg2cBohr, eg2cKcal_Mole, 
+  enum { eg2cAngstrom, eg2cNm, eg2cPm, eg2cBohr, eg2cKcal_Mole, 
 	 eg2cHartree, eg2cHartree_e, eg2cAngstrom3, eg2cCoulomb,
 	 eg2cDebye, eg2cElectron, eg2cBuckingham, eg2cNR };
   

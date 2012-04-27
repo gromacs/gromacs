@@ -70,7 +70,7 @@
 #include "poldata_xml.h"
 
 gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
-                                   const char *fn)
+                                   const char *fn,char *molnm)
 {
   /* Read a gaussian log file */
   char **strings=NULL;
@@ -201,7 +201,10 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
               if (1 == sscanf(strings[i],"%*s%s",sbuf))
                 {
                   gmx_molprop_set_formula(mpt,sbuf);
-                  gmx_molprop_set_molname(mpt,sbuf);
+                  if (NULL == molnm)
+                      gmx_molprop_set_molname(mpt,sbuf);
+                  else
+                      gmx_molprop_set_molname(mpt,molnm);
                 }
             }
           else if (NULL != strstr(strings[i],"Coordinates (Angstroms)"))
@@ -336,11 +339,15 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = TRUE;
-  static char *program="Gaussian";
-  static int compress=0;
+  static char *molnm=NULL;
+  static gmx_bool compress=FALSE;
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
-      "Generate verbose output in the top file and on terminal." }
+      "Generate verbose output in the top file and on terminal." },
+    { "-compress", FALSE, etBOOL, {&compress},
+      "Compress output XML files" },
+    { "-molnm", FALSE, etSTR, {&molnm},
+      "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." }
   };
   output_env_t oenv;
   gmx_atomprop_t aps;
@@ -364,7 +371,7 @@ int main(int argc, char *argv[])
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
   nmp = 0;
   for(i=0; (i<nfn); i++) {
-    mp = gmx_molprop_read_log(aps,pd,fns[i]);
+      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm);
     if (NULL != mp) 
       {
         srenew(mps,++nmp);
@@ -374,7 +381,7 @@ int main(int argc, char *argv[])
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
   if (nmp > 0)
     {
-      gmx_molprops_write(ftp2fn(efDAT,NFILE,fnm),nmp,mps,compress);
+        gmx_molprops_write(ftp2fn(efDAT,NFILE,fnm),nmp,mps,(int)compress);
     }
       
   thanx(stderr);

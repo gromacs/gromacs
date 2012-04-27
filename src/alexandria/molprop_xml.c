@@ -627,7 +627,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 }
 
 void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
-                        int compress)
+                        gmx_bool bCompress)
 {
     xmlDocPtr  doc;
     xmlDtdPtr  dtd;
@@ -654,7 +654,7 @@ void gmx_molprops_write(const char *fn,int nmolprop,gmx_molprop_t mpt[],
     for(i=0; (i<nmolprop); i++)
         add_xml_molprop(myroot,mpt[i]);
 
-    xmlSetDocCompressMode(doc,compress);
+    xmlSetDocCompressMode(doc,(int)bCompress);
     xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
         gmx_fatal(FARGS,"Saving file",fn);

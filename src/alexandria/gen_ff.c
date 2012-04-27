@@ -45,7 +45,7 @@ int main(int argc,char *argv[])
 	    fprintf(fp,"%5s   %3d  %12.6f  %10.4f  A  %-s\n",
 		    gt_type,atomnumber,mass,0.0,vdwparams);
 	    fprintf(fp,"%5ss  %3d  %12.6f  %10.4f  S  0  0\n",
-		    gt_type,0,0.0,0.0,0.0);
+		    gt_type,0,0.0,0.0);
 	  }
 	  gt_old = gt_type;
 	}
