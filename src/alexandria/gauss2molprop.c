@@ -37,7 +37,10 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "typedefs.h"
 #include "maths.h"
 #include "macros.h"
@@ -73,14 +76,14 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   char **strings=NULL;
   char sbuf[STRLEN];
   int  nstrings,atomiccenter=-1,atomicnumber=-1;
-  double x,y,z,V,mass=0;
-  int i,k,kk,zz,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
+  double ee,x,y,z,V,mass=0;
+  int i,j,k,kk,zz,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
   int calcref=NOTSET,atomref=NOTSET,len,iMP;
   gmx_bool bWarnESP=FALSE;
   gmx_bool bAtomicCenter;
   gmx_molprop_t mpt;
   real mm;
-  char *atomname;
+  char *atomname,*ginc,*hfener,*mp2ener;
   char *conformation = "unknown";
   char *reference = "This Work";
   char *program=NULL,*method=NULL,*basis=NULL;
@@ -98,6 +101,8 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   nesp    = 0;
   nelprop = NOTSET;
   charge  = NOTSET;
+  hfener  = NULL;
+  mp2ener = NULL;
   
   /* First loop over strings to deduct basic stuff */
   for(i=0; (i<nstrings); i++) 
@@ -118,6 +123,26 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
             basis = strdup(ptr[2]);
           }
       }
+      else if (NULL != strstr(strings[i],"GINC")) {
+          j = 0;
+          while ((j<nstrings) && (strlen(strings[i+j]) > 0))
+              j++;
+          snew(ginc,80*(j+1));
+          for(k=i; (k<i+j); k++) {
+              trim(strings[k]);
+              strncat(ginc,strings[k],80);
+          }
+          i = k-1;
+          ptr = split('\\',ginc);
+          for(j=0; (NULL != ptr[j]); j++) {
+              if (NULL != strstr(ptr[j],"HF=")) {
+                  hfener = strdup(ptr[j]+3);
+              }
+              if (NULL != strstr(ptr[j],"MP2=")) {
+                  mp2ener = strdup(ptr[j]+4);
+              }
+          }
+      }
       else if (NULL != strstr(strings[i],"#P")) {
         ptr = split(' ',strings[i]);
         if (NULL != ptr[1]) {
@@ -132,6 +157,16 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
   if ((calcref == NOTSET) && (NULL != program) && (NULL != method) && (NULL != basis))
     {
       gmx_molprop_add_calculation(mpt,program,method,basis,reference,conformation,&calcref);
+      if (NULL != hfener)
+      {
+          ee = convert2gmx(atof(hfener),eg2cHartree);
+          gmx_molprop_add_energy(mpt,calcref,"HF","kJ/mol",ee,0);
+      }
+      if (NULL != mp2ener)
+      {
+          ee = convert2gmx(atof(mp2ener),eg2cHartree);
+          gmx_molprop_add_energy(mpt,calcref,"MP2","kJ/mol",ee,0);
+      }		
     }
   if (calcref != NOTSET) 
     {
