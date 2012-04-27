@@ -2945,12 +2945,16 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->nnodes_minor        = nnodes_minor;
 
 #ifdef GMX_MPI
-    if (PAR(cr))
+    if (nnodes_major*nnodes_minor > 1)
     {
         pme->mpi_comm        = cr->mpi_comm_mygroup;
 
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+        if (pme->nnodes != nnodes_major*nnodes_minor)
+        {
+            gmx_incons("PME node count mismatch");
+        }
     }
 #endif
 
@@ -3749,7 +3753,7 @@ static void spread_on_grid(gmx_pme_t pme,
         pmegrid_t *grid;
 
         /* make local bsplines  */
-        if (grids->nthread == 1)
+        if (grids == NULL || grids->nthread == 1)
         {
             spline = &atc->spline[0];
 
@@ -3795,7 +3799,7 @@ static void spread_on_grid(gmx_pme_t pme,
     cs2 += (double)c2;
 #endif
 
-    if (grids->nthread > 1)
+    if (bSpread && grids->nthread > 1)
     {
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
@@ -3895,6 +3899,11 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     }
 
     atc = &pme->atc_energy;
+    atc->nthread   = 1;
+    if (atc->spline == NULL)
+    {
+        snew(atc->spline,atc->nthread);
+    }
     atc->nslab     = 1;
     atc->bSpread   = TRUE;
     atc->pme_order = pme->pme_order;
