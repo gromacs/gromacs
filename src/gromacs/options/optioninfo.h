@@ -104,6 +104,8 @@ class OptionInfo
         bool isSet() const;
         //! Returns true if the option is a hidden option.
         bool isHidden() const;
+        //! Returns true if the option is required.
+        bool isRequired() const;
         //! Returns the name of the option.
         const std::string &name() const;
         //! Returns the description of the option.

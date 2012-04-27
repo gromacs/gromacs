@@ -34,10 +34,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#ifndef GMX_OPTIONS_CMDLINEPARSER_H
-#define GMX_OPTIONS_CMDLINEPARSER_H
+#ifndef GMX_COMMANDLINE_CMDLINEPARSER_H
+#define GMX_COMMANDLINE_CMDLINEPARSER_H
 
 #include <string>
 #include <vector>
@@ -62,7 +62,7 @@ options.finish();
  * \endcode
  *
  * \inpublicapi
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class CommandLineParser
 {

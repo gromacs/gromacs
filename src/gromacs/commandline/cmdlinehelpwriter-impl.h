@@ -33,10 +33,10 @@
  * Declares private implementation class for gmx::CommandLineHelpWriter.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#ifndef GMX_OPTIONS_CMDLINEHELPWRITER_IMPL_H
-#define GMX_OPTIONS_CMDLINEHELPWRITER_IMPL_H
+#ifndef GMX_COMMANDLINE_CMDLINEHELPWRITER_IMPL_H
+#define GMX_COMMANDLINE_CMDLINEHELPWRITER_IMPL_H
 
 #include "cmdlinehelpwriter.h"
 
@@ -48,7 +48,7 @@ class Options;
 /*! \internal \brief
  * Private implementation class for CommandLineHelpWriter.
  *
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class CommandLineHelpWriter::Impl
 {

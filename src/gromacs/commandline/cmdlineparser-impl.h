@@ -33,13 +33,13 @@
  * Declares private implementation class for gmx::CommandLineParser.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#ifndef GMX_OPTIONS_CMDLINEPARSER_IMPL_H
-#define GMX_OPTIONS_CMDLINEPARSER_IMPL_H
+#ifndef GMX_COMMANDLINE_CMDLINEPARSER_IMPL_H
+#define GMX_COMMANDLINE_CMDLINEPARSER_IMPL_H
 
 #include "cmdlineparser.h"
-#include "optionsassigner.h"
+#include "../options/optionsassigner.h"
 
 namespace gmx
 {
@@ -47,13 +47,13 @@ namespace gmx
 /*! \internal \brief
  * Private implementation class for CommandLineParser.
  *
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 class CommandLineParser::Impl
 {
     public:
         //! Sets the options object to parse to.
-        Impl(Options *options);
+        explicit Impl(Options *options);
 
         //! Helper object for assigning the options.
         OptionsAssigner         _assigner;

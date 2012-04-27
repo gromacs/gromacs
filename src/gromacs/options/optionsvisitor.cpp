@@ -71,6 +71,11 @@ bool OptionInfo::isHidden() const
     return _option.isHidden();
 }
 
+bool OptionInfo::isRequired() const
+{
+    return _option.isRequired();
+}
+
 const std::string &OptionInfo::name() const
 {
     return _option.name();

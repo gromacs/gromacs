@@ -36,7 +36,7 @@
  * catch errors in other parts than just in command-line parsing.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_commandline
  */
 #include <cstdlib>
 #include <cstring>
@@ -44,8 +44,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/cmdlineparser.h"
 #include "gromacs/options/options.h"
 
 namespace

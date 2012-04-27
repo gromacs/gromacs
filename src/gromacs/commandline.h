@@ -28,65 +28,30 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
+/*! \defgroup module_commandline Command Line Parsing and Help
+ * \ingroup group_utilitymodules
+ * \brief
+ * Provides functionality for parsing command-line arguments and writing help.
+ *
+ * This module implements gmx::CommandLineParser that assigns values to
+ * gmx::Options (see \ref module_options) based on command-line arguments.
+ * gmx::CommandLineHelpWriter is also provided to write help text for a program
+ * that uses the parser.
+ *
+ * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ */
 /*! \file
  * \brief
- * Declares gmx::CommandLineHelpWriter.
+ * Public API convenience header for handling command-line parameters.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \inpublicapi
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#ifndef GMX_OPTIONS_CMDLINEHELPWRITER_H
-#define GMX_OPTIONS_CMDLINEHELPWRITER_H
+#ifndef GMX_COMMANDLINE_H
+#define GMX_COMMANDLINE_H
 
-#include <cstdio>
-
-#include "../utility/common.h"
-
-namespace gmx
-{
-
-class Options;
-
-/*! \brief
- * Writes help information for Options in ascii format.
- *
- * \inpublicapi
- * \ingroup module_options
- */
-class CommandLineHelpWriter
-{
-    public:
-        /*! \brief
-         * Creates an object that writer ascii-formatted help for Options.
-         *
-         * \param[in] options  Options for which help should be printed.
-         */
-        explicit CommandLineHelpWriter(const Options &options);
-        ~CommandLineHelpWriter();
-
-        /*! \brief
-         * Sets whether hidden options are shown in the help.
-         */
-        CommandLineHelpWriter &setShowHidden(bool bShow);
-        /*! \brief
-         * Sets whether long descriptions for sections are shown in the help.
-         */
-        CommandLineHelpWriter &setShowDescriptions(bool bShow);
-
-        /*! \brief
-         * Writes the help.
-         *
-         * \param[in] fp  File to write the help to.
-         */
-        void writeHelp(FILE *fp);
-
-    private:
-        class Impl;
-
-        PrivateImplPointer<Impl> impl_;
-};
-
-} // namespace gmx
+#include "commandline/cmdlinehelpwriter.h"
+#include "commandline/cmdlineparser.h"
 
 #endif

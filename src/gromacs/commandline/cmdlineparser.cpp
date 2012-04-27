@@ -33,9 +33,9 @@
  * Implements gmx::CommandLineParser.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_options
+ * \ingroup module_commandline
  */
-#include "gromacs/options/cmdlineparser.h"
+#include "cmdlineparser.h"
 
 #include <cctype>
 

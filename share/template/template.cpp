@@ -134,7 +134,7 @@ AnalysisTemplate::initOptions(TrajectoryAnalysisSettings *settings)
     options_.setDescription(desc);
 
     options_.addOption(FileNameOption("o")
-        .filetype(eftPlot).writeOnly()
+        .filetype(eftPlot).outputFile()
         .store(&fnDist_).defaultValueIfSet("avedist")
         .description("Average distances from reference group"));
 
