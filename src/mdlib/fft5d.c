@@ -191,7 +191,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     /* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
 #ifdef GMX_MPI
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != 0)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != MPI_COMM_NULL)
     {
         MPI_Comm_size(comm[0],&P[0]);
         MPI_Comm_rank(comm[0],&prank[0]);
@@ -203,7 +203,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         prank[0] = 0;
     }
 #ifdef GMX_MPI
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != 0)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != MPI_COMM_NULL)
     {
         MPI_Comm_size(comm[1],&P[1]);
         MPI_Comm_rank(comm[1],&prank[1]);
@@ -868,7 +868,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
         if (plan->flags&FFT5D_DEBUG) print_localdata(lout, "%d %d: FFT %d\n", s, plan);
         
 #ifdef GMX_MPI
-        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] !=0 && P[s]>1 )
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s]!=MPI_COMM_NULL && P[s]>1)
         {
             if (times!=0)
                 time=MPI_Wtime(); 
