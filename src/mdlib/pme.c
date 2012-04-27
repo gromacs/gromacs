@@ -1780,7 +1780,6 @@ static void realloc_work(pme_work_t *work,int nkx)
         srenew(work->mhy  ,work->nalloc);
         srenew(work->mhz  ,work->nalloc);
         srenew(work->m2   ,work->nalloc);
-        srenew(work->denom,work->nalloc);
         /* Allocate an aligned pointer for SSE operations, including 3 extra
          * elements at the end since SSE operates on 4 elements at a time.
          */
