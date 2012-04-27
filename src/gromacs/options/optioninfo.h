@@ -127,14 +127,14 @@ class OptionInfo
         explicit OptionInfo(AbstractOptionStorage *option);
 
         //! Returns the wrapped option storage object.
-        AbstractOptionStorage &option() { return _option; }
+        AbstractOptionStorage &option() { return option_; }
         //! Returns the wrapped option storage object.
-        const AbstractOptionStorage &option() const { return _option; }
+        const AbstractOptionStorage &option() const { return option_; }
         //! \endcond
 
     private:
         //! The wrapped option.
-        AbstractOptionStorage  &_option;
+        AbstractOptionStorage  &option_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(OptionInfo);
 };
