@@ -72,26 +72,44 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+
+if(NOT APPLE)
+    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (Note: \".a\" for Unix and /MT for Windows, not enabled on APPLE). It might not always work!" OFF)
+    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+endif()
+
+########################################################################
 # Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF( MSVC )
+IF( WIN32 AND NOT CYGWIN)
+  IF (GMX_PREFER_STATIC_LIBS)
+    #Only setting Debug and Release flags. Others configurations not used.
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE) 
     SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF()
+  ENDIF()
 
-IF( WIN32 AND NOT CYGWIN AND CMAKE_C_COMPILER_ID MATCHES "Intel" )
-    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+  #Workaround for cmake bug 13174. Replace deprecated options.
+  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF()
+  ENDIF()
+  IF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
+    STRING(REPLACE /GZ /RTC1 CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE) 
 
-set(GMX_EXTRA_LIBRARIES)
+    STRING(REPLACE /GX /EHsc CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+    SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE) 
+  ENDIF()
+ENDIF()
 
 ########################################################################
 # User input options                                                   #
@@ -137,10 +155,6 @@ mark_as_advanced(USE_VERSION_H)
 
 option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 
-if(UNIX AND NOT APPLE)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
-    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
-endif()
 
 
 ######################################################################
