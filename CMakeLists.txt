@@ -72,28 +72,6 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
-# Fix stupid flags on Windows
-########################################################################
-SET(SHARED_LIBS_DEFAULT ON) 
-IF( MSVC )
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF()
-
-IF( WIN32 AND NOT CYGWIN AND CMAKE_C_COMPILER_ID MATCHES "Intel" )
-    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE) 
-    SET(SHARED_LIBS_DEFAULT OFF)	
-ENDIF()
-
-set(GMX_EXTRA_LIBRARIES)
-
-########################################################################
 # User input options                                                   #
 ########################################################################
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
