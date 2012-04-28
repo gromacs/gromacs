@@ -2946,7 +2946,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 #ifdef GMX_MPI
     if (nnodes_major*nnodes_minor > 1)
     {
-        pme->mpi_comm        = cr->mpi_comm_mygroup;
+        pme->mpi_comm = cr->mpi_comm_mygroup;
 
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
@@ -2954,6 +2954,10 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
             gmx_incons("PME node count mismatch");
         }
+    }
+    else
+    {
+        pme->mpi_comm = MPI_COMM_NULL;
     }
 #endif
 
