@@ -2147,10 +2147,10 @@ for(ithx=0; (ithx<order); ithx++)              \
 }
 
 
-static void gather_f_bsplines(gmx_pme_t pme,real *grid,
-                              gmx_bool bClearF,pme_atomcomm_t *atc,
-                              splinedata_t *spline,
-                              real scale)
+void gather_f_bsplines(gmx_pme_t pme,real *grid,
+                       gmx_bool bClearF,pme_atomcomm_t *atc,
+                       splinedata_t *spline,
+                       real scale)
 {
     /* sum forces for local particles */
     int     nn,n,ithx,ithy,ithz,i0,j0,k0;
@@ -2193,7 +2193,7 @@ static void gather_f_bsplines(gmx_pme_t pme,real *grid,
     for(nn=0; nn<spline->n; nn++)
     {
         n  = spline->ind[nn];
-        qn = scale*atc->q[n];
+        qn = atc->q[n];
 
         if (bClearF)
         {
@@ -2946,7 +2946,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 #ifdef GMX_MPI
     if (nnodes_major*nnodes_minor > 1)
     {
-        pme->mpi_comm        = cr->mpi_comm_mygroup;
+        pme->mpi_comm = cr->mpi_comm_mygroup;
 
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
@@ -2954,6 +2954,10 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         {
             gmx_incons("PME node count mismatch");
         }
+    }
+    else
+    {
+        pme->mpi_comm = MPI_COMM_NULL;
     }
 #endif
 
