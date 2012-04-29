@@ -23,6 +23,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "gmx_header_config.h"
 
 #include <string.h>
 #include <time.h>
@@ -32,7 +33,7 @@
 #endif
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 /* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
@@ -69,13 +70,19 @@ gmx_ctime_r(const time_t *clock,char *buf, int n);
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+#ifdef GMX_DOUBLE
+#define GMX_CPT_BUILD_DP 1
+#else
+#define GMX_CPT_BUILD_DP 0
+#endif
+
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
  * The state data format itself is backward and forward compatible.
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 12;
+static const int cpt_version = 13;
 
 
 const char *est_names[estNR]=
@@ -119,7 +126,7 @@ const char *eenh_names[eenhNR]=
 
 
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 static int
 gmx_wintruncate(const char *filename, __int64 size)
 {
@@ -686,6 +693,7 @@ static int do_cpte_matrices(XDR *xd,int cptp,int ecpt,int sflags,
 
 static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
                           char **version,char **btime,char **buser,char **bmach,
+                          int *double_prec,
                           char **fprog,char **ftime,
                           int *eIntegrator,int *simulation_part,
                           gmx_large_int_t *step,double *t,
@@ -742,6 +750,14 @@ static void do_cpt_header(XDR *xd,gmx_bool bRead,int *file_version,
     if (*file_version > cpt_version)
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
+    }
+    if (*file_version >= 13)
+    {
+        do_cpt_int_err(xd,"GROMACS double precision",double_prec,list);
+    }
+    else
+    {
+        *double_prec = -1;
     }
     if (*file_version >= 12)
     {
@@ -1147,6 +1163,7 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     char *btime;
     char *buser;
     char *bmach;
+    int  double_prec;
     char *fprog;
     char *fntemp; /* the temporary checkpoint file name */
     time_t now;
@@ -1240,12 +1257,13 @@ void write_checkpoint(const char *fn,gmx_bool bNumberAndKeep,
     btime   = gmx_strdup(BUILD_TIME);
     buser   = gmx_strdup(BUILD_USER);
     bmach   = gmx_strdup(BUILD_MACHINE);
+    double_prec = GMX_CPT_BUILD_DP;
     fprog   = gmx_strdup(Program());
 
     ftime   = &(timebuf[0]);
     
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->nnhpres,
@@ -1391,7 +1409,8 @@ static void check_string(FILE *fplog,const char *type,const char *p,
 
 static void check_match(FILE *fplog,
                         char *version,
-                        char *btime,char *buser,char *bmach,char *fprog,
+                        char *btime,char *buser,char *bmach,int double_prec,
+                        char *fprog,
                         t_commrec *cr,gmx_bool bPartDecomp,int npp_f,int npme_f,
                         ivec dd_nc,ivec dd_nc_f)
 {
@@ -1404,6 +1423,7 @@ static void check_match(FILE *fplog,
     check_string(fplog,"Build time"   ,BUILD_TIME   ,btime  ,&mm);
     check_string(fplog,"Build user"   ,BUILD_USER   ,buser  ,&mm);
     check_string(fplog,"Build machine",BUILD_MACHINE,bmach  ,&mm);
+    check_int   (fplog,"Double prec." ,GMX_CPT_BUILD_DP,double_prec,&mm);
     check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
     check_int   (fplog,"#nodes"       ,cr->nnodes   ,npp_f+npme_f ,&mm);
@@ -1450,12 +1470,14 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,gmx_bool *bReadRNG,gmx_bool *bReadEkin,
-                            int *simulation_part,gmx_bool bAppendOutputFiles)
+                            int *simulation_part,
+                            gmx_bool bAppendOutputFiles,gmx_bool bForceAppend)
 {
     t_fileio *fp;
     int  i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
 	char filename[STRLEN],buf[STEPSTRSIZE];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
@@ -1467,7 +1489,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     t_fileio *chksum_file;
     FILE* fplog = *pfplog;
     unsigned char digest[16];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifndef GMX_NATIVE_WINDOWS
     struct flock fl;  /* don't initialize here: the struct order is OS 
                          dependent! */
 #endif
@@ -1480,7 +1502,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+#ifndef GMX_NATIVE_WINDOWS
     fl.l_type=F_WRLCK;
     fl.l_whence=SEEK_SET;
     fl.l_start=0;
@@ -1496,11 +1518,17 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator_f,simulation_part,step,t,
                   &nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,&nnhpres,&nhchainlength,
                   &fflags,&flags_eks,&flags_enh,NULL);
+
+    if (bAppendOutputFiles &&
+        file_version >= 13 && double_prec != GMX_CPT_BUILD_DP)
+    {
+        gmx_fatal(FARGS,"Output file appending requested, but the code and checkpoint file precision (single/double) don't match");
+    }
     
     if (cr == NULL || MASTER(cr))
     {
@@ -1518,6 +1546,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         fprintf(fplog,"  GROMACS build time:    %s\n",btime);  
         fprintf(fplog,"  GROMACS build user:    %s\n",buser);  
         fprintf(fplog,"  GROMACS build machine: %s\n",bmach);  
+        fprintf(fplog,"  GROMACS double prec.:  %d\n",double_prec);
         fprintf(fplog,"  simulation part #:     %d\n",*simulation_part);
         fprintf(fplog,"  step:                  %s\n",gmx_step_str(*step,buf));
         fprintf(fplog,"  time:                  %f\n",*t);  
@@ -1650,7 +1679,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
         }
         if (MASTER(cr))
         {
-            check_match(fplog,version,btime,buser,bmach,fprog,
+            check_match(fplog,version,btime,buser,bmach,double_prec,fprog,
                         cr,bPartDecomp,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
         }
     }
@@ -1725,7 +1754,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
              * locking
              */
             gmx_fatal(FARGS,"The first output file should always be the log "
-                      "file but instead is: %s", outputfiles[0].filename);
+                      "file but instead is: %s. Cannot do appending because of this condition.", outputfiles[0].filename);
         }
         for(i=0;i<nfiles;i++)
         {
@@ -1745,22 +1774,41 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+                /* Note that there are systems where the lock operation
+                 * will succeed, but a second process can also lock the file.
+                 * We should probably try to detect this.
+                 */
+#ifndef GMX_NATIVE_WINDOWS
                 if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
                     ==-1)
 #else
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
 #endif
                 {
-                    if (errno!=EACCES && errno!=EAGAIN)
+                    if (errno == ENOSYS)
                     {
-                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                        if (!bForceAppend)
+                        {
+                            gmx_fatal(FARGS,"File locking is not supported on this system. Use -noappend or specify -append explicitly to append anyhow.");
+                        }
+                        else
+                        {
+                            fprintf(stderr,"\nNOTE: File locking is not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            if (fplog)
+                            {
+                                fprintf(fplog,"\nNOTE: File locking not supported on this system, will not lock %s\n\n",outputfiles[i].filename);
+                            }
+                        }
                     }
-                    else 
+                    else if (errno == EACCES || errno == EAGAIN)
                     {
                         gmx_fatal(FARGS,"Failed to lock: %s. Already running "
                                   "simulation?", outputfiles[i].filename);
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS,"Failed to lock: %s. %s.",
+                                  outputfiles[i].filename, strerror(errno));
                     }
                 }
             }
@@ -1771,7 +1819,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
                                      digest) != outputfiles[i].chksum_size)  /*at the end of the call the file position is at the end of the file*/
                 {
-                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents has been modified.",
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute checksum. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                               outputfiles[i].chksum_size, 
                               outputfiles[i].filename);
                 }
@@ -1808,7 +1856,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     }
                     fprintf(debug,"\n");
                 }
-                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents has been modified.",
+                gmx_fatal(FARGS,"Checksum wrong for '%s'. The file has been replaced or its contents have been modified. Cannot do appending because of this condition.",
                           outputfiles[i].filename);
             }
 #endif        
@@ -1816,14 +1864,14 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
               
             if (i!=0) /*log file is already seeked to correct position */
             {
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
                 rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
 #else            
                 rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
 #endif
                 if(rc!=0)
                 {
-                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                    gmx_fatal(FARGS,"Truncation of file %s failed. Cannot do appending because of this failure.",outputfiles[i].filename);
                 }
             }
         }
@@ -1836,7 +1884,8 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,gmx_bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
-                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,gmx_bool bAppend)
+                     gmx_bool *bReadRNG,gmx_bool *bReadEkin,
+                     gmx_bool bAppend,gmx_bool bForceAppend)
 {
     gmx_large_int_t step;
     double t;
@@ -1846,7 +1895,7 @@ void load_checkpoint(const char *fn,FILE **fplog,
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
                       ir->eI,&step,&t,state,bReadRNG,bReadEkin,
-                      &ir->simulation_part,bAppend);
+                      &ir->simulation_part,bAppend,bForceAppend);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
@@ -1871,6 +1920,7 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
 {
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
     int  eIntegrator;
     int  nppnodes,npme;
     ivec dd_nc;
@@ -1880,7 +1930,7 @@ static void read_checkpoint_data(t_fileio *fp,int *simulation_part,
     int  ret;
 	
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->nnhpres,&state->nhchainlength,
                   &state->flags,&flags_eks,&flags_enh,NULL);
@@ -1991,6 +2041,7 @@ void list_checkpoint(const char *fn,FILE *out)
     t_fileio *fp;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  double_prec;
     int  eIntegrator,simulation_part,nppnodes,npme;
     gmx_large_int_t step;
     double t;
@@ -2007,7 +2058,7 @@ void list_checkpoint(const char *fn,FILE *out)
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
-                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &version,&btime,&buser,&bmach,&double_prec,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.nnhpres,&state.nhchainlength,
                   &state.flags,&flags_eks,&flags_enh,out);

@@ -37,11 +37,6 @@
 #include <config.h>
 #endif
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-/* _isnan() */
-#include <float.h>
-#endif
-
 #include "typedefs.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -343,16 +338,16 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         
         debug_gmx();
-        
-        /* Calculate center of mass velocity if necessary, also parallellized */
-        if (bStopCM && !bRerunMD && bEner) 
-        {
-            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
-                         state->x,state->v,vcm);
-        }
     }
 
-    if (bTemp || bPres || bEner || bConstrain) 
+    /* Calculate center of mass velocity if necessary, also parallellized */
+    if (bStopCM)
+    {
+        calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
+                     state->x,state->v,vcm);
+    }
+
+    if (bTemp || bStopCM || bPres || bEner || bConstrain)
     {
         if (!bGStat)
         {
@@ -375,7 +370,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             {
                 wallcycle_start(wcycle,ewcMoveE);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,
+                            ir,ekind,constr,bStopCM ? vcm : NULL,
                             gs != NULL ? eglsNR : 0,gs_buf,
                             top_global,state,
                             *bSumEkinhOld,flags);
@@ -424,16 +419,17 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      mdatoms->massT,mdatoms->tmass,ekind->ekin);
     }
     
-    if (bEner) {
-        /* Do center of mass motion removal */
-        if (bStopCM && !bRerunMD) /* is this correct?  Does it get called too often with this logic? */
-        {
-            check_cm_grp(fplog,vcm,ir,1);
-            do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
-                          state->x,state->v,vcm);
-            inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
-        }
+    /* Do center of mass motion removal */
+    if (bStopCM)
+    {
+        check_cm_grp(fplog,vcm,ir,1);
+        do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
+                      state->x,state->v,vcm);
+        inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+    }
 
+    if (bEner)
+    {
         /* Calculate the amplitude of the cosine velocity profile */
         ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
     }
@@ -483,8 +479,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
          * Use the box from last timestep since we already called update().
          */
         
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
-                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres);
         
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 

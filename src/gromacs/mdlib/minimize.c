@@ -654,16 +654,6 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
   clear_mat(shake_vir);
   clear_mat(pres);
 
-  /* Calculate long range corrections to pressure and energy */
-  calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda,
-                pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
-  /* don't think these next 4 lines  can be moved in for now, because we 
-     don't always want to write it -- figure out how to clean this up MRS 8/4/2009 */
-  enerd->term[F_DISPCORR] = enercorr;
-  enerd->term[F_EPOT] += enercorr;
-  enerd->term[F_PRES] += prescorr;
-  enerd->term[F_DVDL] += dvdlcorr;
-
     /* Communicate stuff when parallel */
     if (PAR(cr) && inputrec->eI != eiNM)
     {
@@ -679,6 +669,14 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
 
         wallcycle_stop(wcycle,ewcMoveE);
     }
+
+    /* Calculate long range corrections to pressure and energy */
+    calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda,
+                  pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
+    enerd->term[F_DISPCORR] = enercorr;
+    enerd->term[F_EPOT] += enercorr;
+    enerd->term[F_PRES] += prescorr;
+    enerd->term[F_DVDL] += dvdlcorr;
 
   ems->epot = enerd->term[F_EPOT];
   
@@ -701,8 +699,7 @@ static void evaluate_energy(FILE *fplog,gmx_bool bVerbose,t_commrec *cr,
 
   clear_mat(ekin);
   enerd->term[F_PRES] =
-    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,
-	      (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres);
 
   sum_dhdl(enerd,ems->s.lambda,inputrec);
 

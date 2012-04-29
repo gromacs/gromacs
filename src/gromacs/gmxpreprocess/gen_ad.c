@@ -417,7 +417,7 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
 	bStop=FALSE;
 	for(k=0; (k<4) && !bStop; k++) {
 	  ai[k] = search_atom(idihs->b[j].a[k],start,
-			      atoms->nr,atoms->atom,atoms->atomname,
+                          atoms,
 			      "improper",bAllowMissing);
 	  if (ai[k] == NO_ATID)
 	    bStop = TRUE;
@@ -500,10 +500,10 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
       
       for(e=0; e<hbexcl->nb; e++) {
 	anm = hbexcl->b[e].a[0];
-	i1 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname,
+	i1 = search_atom(anm,astart,atoms,
 			 "exclusion",bAllowMissing);
 	anm = hbexcl->b[e].a[1];
-	i2 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname,
+	i2 = search_atom(anm,astart,atoms,
 			 "exclusion",bAllowMissing);
 	if (i1!=NO_ATID && i2!=NO_ATID) {
 	  if (i1 > i2) {

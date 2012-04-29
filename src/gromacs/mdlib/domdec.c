@@ -3815,8 +3815,8 @@ static void get_cg_distribution(FILE *fplog,gmx_large_int_t step,gmx_domdec_t *d
     ivec npulse;
     int  i,cg_gl;
     int  *ibuf,buf2[2] = { 0, 0 };
-    
-    if (DDMASTER(dd))
+    gmx_bool bMaster = DDMASTER(dd);
+    if (bMaster)
     {
         ma = dd->ma;
         
@@ -3851,7 +3851,7 @@ static void get_cg_distribution(FILE *fplog,gmx_large_int_t step,gmx_domdec_t *d
         srenew(dd->index_gl,dd->cg_nalloc);
         srenew(dd->cgindex,dd->cg_nalloc+1);
     }
-    if (DDMASTER(dd))
+    if (bMaster)
     {
         for(i=0; i<dd->nnodes; i++)
         {

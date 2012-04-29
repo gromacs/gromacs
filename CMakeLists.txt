@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
+# Keep CMake suitably quiet on Cygwin
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 
 project(Gromacs)
 include(Dart)
@@ -74,7 +76,7 @@ endif()
 # Fix stupid flags on Windows
 ########################################################################
 SET(SHARED_LIBS_DEFAULT ON) 
-IF( (CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES "NMake") AND MSVC )
+IF( MSVC )
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
@@ -82,7 +84,7 @@ IF( (CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES "NMake")
     SET(SHARED_LIBS_DEFAULT OFF)	
 ENDIF()
 
-IF(CMAKE_GENERATOR MATCHES "NMake" AND CMAKE_C_COMPILER_ID MATCHES "Intel")
+IF( WIN32 AND NOT CYGWIN AND CMAKE_C_COMPILER_ID MATCHES "Intel" )
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
     SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
     STRING(REPLACE /GZ /RTC1 CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
@@ -91,19 +93,6 @@ IF(CMAKE_GENERATOR MATCHES "NMake" AND CMAKE_C_COMPILER_ID MATCHES "Intel")
 ENDIF()
 
 set(GMX_EXTRA_LIBRARIES)
-
-
-
-######################################################################
-# compiler tests
-# these need ot be done early (before further tests).
-#####################################################################
-
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-
-include(gmxCFlags)
-gmx_c_flags()
 
 ########################################################################
 # User input options                                                   #
@@ -153,6 +142,24 @@ if(UNIX AND NOT APPLE)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer \".a\" static archives (NOTE: this is enabled only for UNIX (excluding APPLE) platforms but it might not always work!" OFF)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
+
+
+######################################################################
+# compiler tests
+# these need ot be done early (before further tests).
+#####################################################################
+
+# cmake/Check{C,CXX}CompilerFlag.cmake are lifted from CMake git next
+# branch (proposed for v2.8.9) to be able to detect invalid options
+# with the Intel Compilers.
+# Remove these files from the source tree when a CMake version that
+# includes the features in question becomes required.
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+include(gmxCFlags)
+gmx_c_flags()
+
 
 ########################################################################
 # Set up binary and library suffixing 
@@ -209,7 +216,6 @@ include(gmxManageMPI)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
-    cmake_minimum_required(VERSION 2.6.4)
     # we'll use the built-in fft to avoid unnecessary dependencies
     string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
@@ -300,6 +306,8 @@ check_function_exists(fsync             HAVE_FSYNC)
 check_function_exists(_fileno           HAVE__FILENO)
 check_function_exists(fileno            HAVE_FILENO)
 check_function_exists(_commit           HAVE__COMMIT)
+check_function_exists(lstat             HAVE_LSTAT)
+check_function_exists(sigaction         HAVE_SIGACTION)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
@@ -435,6 +443,10 @@ if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif(CYGWIN)
 
+if(WIN32 AND NOT CYGWIN)
+    set(GMX_NATIVE_WINDOWS 1)
+endif()
+
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
@@ -510,6 +522,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(${CMAKE_BINARY_DIR}/src)
 # Required for now to make old code compile
+include_directories(${CMAKE_BINARY_DIR}/src/gromacs/legacyheaders)
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
 
 include(gmxCheckBuildUserTime)
@@ -580,7 +593,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
       set(GMX_IA32_ASM ON CACHE BOOL "Add SSE assembly files for i386" FORCE)
     endif (GMX_64_BIT)
 
-    if(CMAKE_GENERATOR MATCHES "Visual Studio" OR CMAKE_GENERATOR MATCHES NMake )
+    if( WIN32 AND NOT CYGWIN )
       option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" ON)
     else()
       option(GMX_ASM_USEASM_NASM "Use Nasm for assembly instead of compiler (necessary on windows)" OFF)
@@ -726,6 +739,10 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     set(PKG_FFT "${FFTW_PKG}")
 
     set(GMX_FFT_FFTW3 1)
+
+    if (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
+      message(WARNING "The fftw library found is compiled without SSE support, which makes it slow. Consider recompiling it or contact your admin")
+    endif (${GMX_ACCELERATION} STREQUAL "SSE" AND NOT FFTW_HAVE_SSE)
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")

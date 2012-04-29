@@ -526,10 +526,8 @@ int main(int argc,char *argv[])
   if (MASTER(cr))
     CopyRight(stderr, argv[0]);
 
-  PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
-	       | (MASTER(cr) ? 0 : PCA_QUIET));
+  PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
   
-
   /* Comment this in to do fexist calls only on master
    * works not with rerun or tables at the moment
    * also comment out the version of init_forcerec in md.c 
@@ -647,6 +645,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
+  Flags = Flags | (opt2parg_bSet("-append", asize(pa),pa) ? MD_APPENDFILESSET : 0); 
   Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
   Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
