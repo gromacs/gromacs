@@ -282,10 +282,10 @@ static void check_bonds_timestep(gmx_mtop_t *mtop,double dt,warninp_t wi)
                                 bFound = TRUE;
                             }
                         }
-                    for(j=0; j<ils->nr; j+=2)
+                    for(j=0; j<ils->nr; j+=4)
                     {
-                        if ((a1 >= ils->iatoms[j+1] && a1 < ils->iatoms[j+1]+3) &&
-                            (a2 >= ils->iatoms[j+1] && a2 < ils->iatoms[j+1]+3))
+                        if ((a1 == ils->iatoms[j+1] || a1 == ils->iatoms[j+2] || a1 == ils->iatoms[j+3]) &&
+                            (a2 == ils->iatoms[j+1] || a2 == ils->iatoms[j+2] || a2 == ils->iatoms[j+3]))
                         {
                             bFound = TRUE;
                         }

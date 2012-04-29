@@ -1601,14 +1601,15 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       ia = molt->ilist[F_SETTLE].iatoms;
       for(i=0; i<molt->ilist[F_SETTLE].nr; ) {
 	/* Subtract 1 dof from every atom in the SETTLE */
-	for(ai=as+ia[1]; ai<as+ia[1]+3; ai++) {
+	for(j=0; j<3; j++) {
+      ai = as + ia[1+j];
 	  imin = min(2,nrdf2[ai]);
 	  nrdf2[ai] -= imin;
 	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
 	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
 	}
-	ia += 2;
-	i  += 2;
+	ia += 4;
+	i  += 4;
       }
       as += molt->atoms.nr;
     }

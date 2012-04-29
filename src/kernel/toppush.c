@@ -1487,7 +1487,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      nr,i,j,nral,nread,ftype;
+  int      nr,i,j,nral,nral_fmt,nread,ftype;
   char     format[STRLEN];
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
@@ -1499,36 +1499,65 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
   nparam_defA=nparam_defB=0;
 	
-  ftype = ifunc_index(d,1);
-  nral  = NRAL(ftype);
-  for(j=0; j<MAXATOMLIST; j++)
-    aa[j]=NOTSET;
-  bDef = (NRFP(ftype) > 0);
-  
-  nread = sscanf(line,aaformat[nral-1],
-		 &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
-  if (nread < nral) {
-    too_few(wi);
-    return;
-  } else if (nread == nral) 
     ftype = ifunc_index(d,1);
-  else {
-    /* this is a hack to allow for virtual sites with swapped parity */
-    bSwapParity = (aa[nral]<0);
-    if (bSwapParity)
-      aa[nral] = -aa[nral];
-    ftype = ifunc_index(d,aa[nral]);
-    if (bSwapParity)
-      switch(ftype) {
-      case F_VSITE3FAD:
-      case F_VSITE3OUT:
-	break;
-      default:
-	gmx_fatal(FARGS,"Negative function types only allowed for %s and %s",
-		    interaction_function[F_VSITE3FAD].longname,
-		    interaction_function[F_VSITE3OUT].longname);
-      }
-  }
+    nral  = NRAL(ftype);
+    for(j=0; j<MAXATOMLIST; j++)
+    {
+        aa[j] = NOTSET;
+    }
+    bDef = (NRFP(ftype) > 0);
+
+    if (ftype == F_SETTLE)
+    {
+        /* SETTLE acts on 3 atoms, but the topology format only specifies
+         * the first atom (for historical reasons).
+         */
+        nral_fmt = 1;
+    }
+    else
+    {
+        nral_fmt = nral;
+    }
+
+    nread = sscanf(line,aaformat[nral_fmt-1],
+                   &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
+
+    if (ftype == F_SETTLE)
+    {
+        aa[3] = aa[1];
+        aa[1] = aa[0] + 1;
+        aa[2] = aa[0] + 2;
+    }
+
+    if (nread < nral_fmt)
+    {
+        too_few(wi);
+        return;
+    }
+    else if (nread > nral_fmt)
+    {
+        /* this is a hack to allow for virtual sites with swapped parity */
+        bSwapParity = (aa[nral]<0);
+        if (bSwapParity)
+        {
+            aa[nral] = -aa[nral];
+        }
+        ftype = ifunc_index(d,aa[nral]);
+        if (bSwapParity)
+        {
+            switch(ftype)
+            {
+            case F_VSITE3FAD:
+            case F_VSITE3OUT:
+                break;
+            default:
+                gmx_fatal(FARGS,"Negative function types only allowed for %s and %s",
+                          interaction_function[F_VSITE3FAD].longname,
+                          interaction_function[F_VSITE3OUT].longname);
+            }
+        }
+    }
+
   
   /* Check for double atoms and atoms out of bounds */
   for(i=0; (i<nral); i++) {
@@ -1546,14 +1575,6 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	warning(wi,errbuf);
       }
   }
-  if (ftype == F_SETTLE)
-    if (aa[0]+2 > at->nr)
-      gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		  "             Atom index (%d) in %s out of bounds (1-%d)\n"
-		  "             Settle works on atoms %d, %d and %d",
-		  get_warning_file(wi),get_warning_line(wi),
-		  aa[0],dir2str(d),at->nr,
-		  aa[0],aa[0]+1,aa[0]+2);
   
   /* default force parameters  */
   for(j=0; (j<MAXATOMLIST); j++)
@@ -1597,10 +1618,10 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     gmx_incons("Unknown function type in push_bond");
   }
   	
-  if (nread > nral) {  
+  if (nread > nral_fmt) {  
 	  /* Manually specified parameters - in this case we discard multiple torsion info! */
-	  
-    strcpy(format,asformat[nral-1]);
+
+    strcpy(format,asformat[nral_fmt-1]);
     strcat(format,ccformat);
     
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
