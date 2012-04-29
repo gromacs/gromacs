@@ -282,7 +282,7 @@ typedef struct {
   mpi_in_place_buf_t *mpb;
 } t_commrec;
 
-#define MASTERNODE(cr)     ((cr)->nodeid == 0)
+#define MASTERNODE(cr)     (((cr)->nodeid == 0) || !PAR(cr))
   /* #define MASTERTHREAD(cr)   ((cr)->threadid == 0) */
   /* #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr)) */
 #define MASTER(cr)         MASTERNODE(cr)
@@ -294,7 +294,7 @@ typedef struct {
 #define RANK(cr,nodeid)    (nodeid)
 #define MASTERRANK(cr)     (0)
 
-#define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
+#define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
 #define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)

@@ -366,6 +366,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         free(N1); free(oN1); /*these are not used for this order*/
         free(K0); free(oK0); /*the rest is freed in destroy*/
     }
+    N[2]=pN[2]=-1; /*not used*/
     
     /*
       Difference between x-y-z regarding 2d decomposition is whether they are 
@@ -881,7 +882,7 @@ void fft5d_execute(fft5d_plan plan,int thread,fft5d_time times) {
         for (s=0;s<2;s++) {  /*loop over first two FFT steps (corner rotations)*/
 
 #ifdef GMX_MPI
-        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] !=0 && P[s]>1 )
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s]!=MPI_COMM_NULL && P[s]>1)
         {
             bParallelDim = 1;
         }

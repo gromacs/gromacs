@@ -52,6 +52,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include "gmx_header_config.h"
 
 /*#include "typedefs.h"*/
 #include "types/simple.h"
@@ -138,7 +139,7 @@ char **split(char sep,const char *str);
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
 
