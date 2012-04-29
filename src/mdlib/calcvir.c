@@ -88,21 +88,20 @@ void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
 }
 
 
-static void lo_fcv(int i0,int i1,int g0,
+static void lo_fcv(int i0,int i1,
 		   real x[],real f[],tensor vir,
 		   int is[],real box[], gmx_bool bTriclinic)
 {
-  int      i,i3,gg,g3,tx,ty,tz;
+  int      i,i3,tx,ty,tz;
   real     xx,yy,zz;
   real     dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
 
   if(bTriclinic) {
-      for(i=i0,gg=g0; (i<i1); i++,gg++) {
+      for(i=i0; (i<i1); i++) {
 	  i3=DIM*i;
-	  g3=DIM*gg;
-	  tx=is[g3+XX];
-	  ty=is[g3+YY];
-	  tz=is[g3+ZZ];
+	  tx=is[i3+XX];
+	  ty=is[i3+YY];
+	  tz=is[i3+ZZ];
 	  
 	  xx=x[i3+XX]-tx*box[XXXX]-ty*box[YYXX]-tz*box[ZZXX];
 	  dvxx+=xx*f[i3+XX];
@@ -120,12 +119,11 @@ static void lo_fcv(int i0,int i1,int g0,
 	  dvzz+=zz*f[i3+ZZ];
       }
   } else {
-      for(i=i0,gg=g0; (i<i1); i++,gg++) {
+      for(i=i0; (i<i1); i++) {
 	  i3=DIM*i;
-	  g3=DIM*gg;
-	  tx=is[g3+XX];
-	  ty=is[g3+YY];
-	  tz=is[g3+ZZ];
+	  tx=is[i3+XX];
+	  ty=is[i3+YY];
+	  tz=is[i3+ZZ];
 	  
 	  xx=x[i3+XX]-tx*box[XXXX];
 	  dvxx+=xx*f[i3+XX];
@@ -215,12 +213,12 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
     /* Calculate virial for bonded forces only when they belong to
      * this node.
      */
-    start = max(i0,g->start);
-    end   = min(i1,g->end+1);
+    start = max(i0,g->at_start);
+    end   = min(i1,g->at_end);
 #ifdef SAFE
     lo_fcv2(start,end,x,f,vir,g->ishift,box,TRICLINIC(box));
 #else
-    lo_fcv(start,end,0,x[0],f[0],vir,g->ishift[0],box[0],TRICLINIC(box));
+    lo_fcv(start,end,x[0],f[0],vir,g->ishift[0],box[0],TRICLINIC(box));
 #endif
     
     /* If not all atoms are bonded, calculate their virial contribution 
