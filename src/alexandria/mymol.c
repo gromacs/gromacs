@@ -753,24 +753,59 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
     return nsupported;
 }
 
-t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
+t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
+                      int  iModel,real rDecrZeta,real epsr,
                       real J0_0,real Chi0_0,real w_0,
                       real J0_1,real Chi0_1,real w_1,
                       real fc_bound,real fc_mu,real fc_quad,real fc_charge,
-                      real fc_esp,int  iModel,
-                      char *fixchi,int minimum_data,
-                      gmx_bool bZero,gmx_bool bWeighted,
+                      real fc_esp,char *fixchi,
                       gmx_bool bOptHfac,real hfac,
-                      char *opt_elem,char *const_elem,
-                      gmx_bool bQM,char *lot,gmx_bool bCharged,
-                      output_env_t oenv,gmx_molselect_t gms,
-                      real th_toler,real ph_toler,real dip_toler,
-                      gmx_bool bGaussianBug,real watoms,real rDecrZeta,
-                      gmx_bool bPol,gmx_bool bFitZeta,real epsr)
+                      gmx_bool bPol,gmx_bool bFitZeta)
+{
+  t_moldip *md;
+    
+  snew(md,1);
+  md->cr       = cr;
+  md->bQM      = bQM;
+  md->bDone    = FALSE;
+  md->bFinal   = FALSE;
+  md->bGaussianBug = bGaussianBug;
+  md->bFitZeta = bFitZeta;
+  md->iModel   = iModel;
+  md->decrzeta = rDecrZeta;
+  md->epsr     = epsr;
+  md->J0_0       = J0_0;
+  md->Chi0_0     = Chi0_0;
+  md->w_0        = w_0;
+  md->J0_1       = J0_1;
+  md->Chi0_1     = Chi0_1;
+  md->w_1        = w_1;
+  md->fc[ermsMU]     = fc_mu;
+  md->fc[ermsBOUNDS] = fc_bound;
+  md->fc[ermsQUAD]   = fc_quad;
+  md->fc[ermsCHARGE] = fc_charge;
+  md->fc[ermsESP]    = fc_esp;
+  md->fixchi     = strdup(fixchi);
+  md->hfac       = hfac;	  
+  md->hfac0      = hfac;	  
+  md->bOptHfac   = bOptHfac;
+  md->bPol       = bPol;
+  
+  return md;
+}
+
+void read_moldip(t_moldip *md,
+                 FILE *fp,const char *fn,const char *pd_fn,
+                 int minimum_data,
+                 gmx_bool bZero,gmx_bool bWeighted,
+                 char *opt_elem,char *const_elem,
+                 char *lot,gmx_bool bCharged,
+                 output_env_t oenv,gmx_molselect_t gms,
+                 real th_toler,real ph_toler,real dip_toler,
+                 real watoms,gmx_bool bCheckSupport)
 {
     char     **strings,buf[STRLEN];
     int      i,j,n,kk,nstrings,nwarn=0,nzero=0,nmol_cpu;
-    t_moldip *md;
     double   dip,dip_err,dx,dy,dz;
     rvec     mu;
     int      nmol,imm,imm_count[immNR];
@@ -780,16 +815,6 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
     MPI_Status status;
 #endif
     
-    snew(md,1);
-    md->cr       = cr;
-    md->bQM      = bQM;
-    md->bDone    = FALSE;
-    md->bFinal   = FALSE;
-    md->bGaussianBug = bGaussianBug;
-    md->bFitZeta = bFitZeta;
-    md->iModel   = iModel;
-    md->decrzeta = rDecrZeta;
-    md->epsr     = epsr;
     for(imm = 0; (imm<immNR); imm++)
         imm_count[imm] = 0;
         
@@ -800,8 +825,8 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
     if ((md->pd = gmx_poldata_read(pd_fn,md->atomprop)) == NULL)
         gmx_fatal(FARGS,"Can not read the force field information. File %s missing or incorrect.",pd_fn);
     
-    if ((n = gmx_poldata_get_numprops(md->pd,iModel)) == 0)
-        gmx_fatal(FARGS,"File %s does not contain the requested parameters",pd_fn);
+    if ((n = gmx_poldata_get_numprops(md->pd,md->iModel)) == 0)
+      gmx_fatal(FARGS,"File %s does not contain the requested parameters for model %d",pd_fn,md->iModel);
     
     if (NULL != fp)
     {  
@@ -811,46 +836,46 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
     }
     
     /* Read other stuff */
-    if (MASTER(cr))
+    if (MASTER(md->cr))
     {
         /* Now read the molecules */
         mp = gmx_molprops_read(fn,&nmol);
         for(i=0; (i<nmol); i++) 
             gmx_molprop_check_consistency(mp[i]);
-        nmol_cpu = nmol/cr->nnodes + 1;
+        nmol_cpu = nmol/md->cr->nnodes + 1;
     }
     else {
         nmol_cpu = 0;
     }
-    if (PAR(cr))
-        gmx_sumi(1,&nmol_cpu,cr);
-    if (MASTER(cr))
+    if (PAR(md->cr))
+        gmx_sumi(1,&nmol_cpu,md->cr);
+    if (MASTER(md->cr))
         snew(md->mymol,nmol);
     else
         snew(md->mymol,nmol_cpu);
     
-    if (MASTER(cr)) 
+    if (MASTER(md->cr)) 
     {
         for(i=n=0; (i<nmol); i++)
         {
             if (imsTrain == gmx_molselect_status(gms,gmx_molprop_get_iupac(mp[i])))
             {
-                int dest = (n % cr->nnodes);
+                int dest = (n % md->cr->nnodes);
                 
-                imm = init_mymol(&(md->mymol[n]),mp[i],bQM,lot,bZero,
+                imm = init_mymol(&(md->mymol[n]),mp[i],md->bQM,lot,bZero,
                                  md->pd,md->atomprop,
-                                 iModel,md->cr,&nwarn,bCharged,oenv,
+                                 md->iModel,md->cr,&nwarn,bCharged,oenv,
                                  th_toler,ph_toler,dip_toler,md->hfac,
-                                 (fc_esp > 0),watoms,rDecrZeta,bPol,bFitZeta);
+                                 (md->fc[ermsESP] > 0),watoms,md->decrzeta,md->bPol,md->bFitZeta);
                 if (immOK == imm)
                 {
                     if (dest > 0)
                     {
                         md->mymol[n].eSupport = eSupportRemote;
                         /* Send another molecule */
-                        gmx_send_int(cr,dest,1);
-                        gmx_molprop_send(cr,dest,mp[i]);
-                        imm = gmx_recv_int(cr,dest);
+                        gmx_send_int(md->cr,dest,1);
+                        gmx_molprop_send(md->cr,dest,mp[i]);
+                        imm = gmx_recv_int(md->cr,dest);
                         if (imm != immOK) 
                             fprintf(stderr,"Molecule %s was not accepted on node %d - error %s\n",
                                     md->mymol[n].molname,dest,immsg(imm));
@@ -873,30 +898,30 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
             gmx_molprop_delete(mp[i]);
         }
         /* Send signal done with transferring molecules */
-        for(i=1; (i<cr->nnodes); i++) 
+        for(i=1; (i<md->cr->nnodes); i++) 
         {
-            gmx_send_int(cr,i,0);
+          gmx_send_int(md->cr,i,0);
         }
     }
     else 
     {
         n = 0;
-        while (gmx_recv_int(cr,0) == 1) 
+        while (gmx_recv_int(md->cr,0) == 1) 
         {
             /* Receive another molecule */
-            gmx_molprop_t mpnew = gmx_molprop_receive(cr,0);
-            imm = init_mymol(&(md->mymol[n]),mpnew,bQM,lot,bZero,
+            gmx_molprop_t mpnew = gmx_molprop_receive(md->cr,0);
+            imm = init_mymol(&(md->mymol[n]),mpnew,md->bQM,lot,bZero,
                              md->pd,md->atomprop,
-                             iModel,md->cr,&nwarn,bCharged,oenv,
+                             md->iModel,md->cr,&nwarn,bCharged,oenv,
                              th_toler,ph_toler,dip_toler,md->hfac,
-                             (fc_esp > 0),watoms,rDecrZeta,bPol,bFitZeta);
+                             (md->fc[ermsESP] > 0),watoms,md->decrzeta,md->bPol,md->bFitZeta);
             md->mymol[n].eSupport = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
             {
                 n++;
             }
-            gmx_send_int(cr,0,imm);
+            gmx_send_int(md->cr,0,imm);
             /* Dipose of the molecules */
             gmx_molprop_delete(mpnew);
         }
@@ -907,7 +932,7 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
     {
         fprintf(fp,"There were %d warnings because of zero error bars.\n",nwarn);
         fprintf(fp,"Made topologies for %d out of %d molecules.\n",n,
-                (MASTER(cr)) ? nmol : nmol_cpu);
+                (MASTER(md->cr)) ? nmol : nmol_cpu);
         for(i=0; (i<immNR); i++)
             if (imm_count[i] > 0)
                 fprintf(fp,"%d molecules - %s.\n",imm_count[i],immsg(i));
@@ -917,30 +942,16 @@ t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
         }
     }
     snew(md->ic,1);
-    md->nmol_support =
-        check_data_sufficiency(MASTER(cr) ? fp : NULL,md->nmol,md->mymol,
-                               minimum_data,md->pd,md->ic,md->atomprop,
-                               md->iModel,opt_elem,const_elem,cr,
-                               bPol,md->bFitZeta);
-    if (md->nmol_support == 0)
-        gmx_fatal(FARGS,"No support for any molecule!");
-    md->J0_0       = J0_0;
-    md->Chi0_0     = Chi0_0;
-    md->w_0        = w_0;
-    md->J0_1       = J0_1;
-    md->Chi0_1     = Chi0_1;
-    md->w_1        = w_1;
-    md->fc[ermsMU]     = fc_mu;
-    md->fc[ermsBOUNDS] = fc_bound;
-    md->fc[ermsQUAD]   = fc_quad;
-    md->fc[ermsCHARGE] = fc_charge;
-    md->fc[ermsESP]    = fc_esp;
-    md->fixchi     = strdup(fixchi);
-    md->hfac       = hfac;	  
-    md->hfac0      = hfac;	  
-    md->bOptHfac   = bOptHfac;
-    md->bPol       = bPol;
-    
-    return md;
+    if (bCheckSupport) 
+      {
+        md->nmol_support =
+          check_data_sufficiency(MASTER(md->cr) ? fp : NULL,md->nmol,md->mymol,
+                                 minimum_data,md->pd,md->ic,md->atomprop,
+                                 md->iModel,opt_elem,const_elem,md->cr,
+                                 md->bPol,md->bFitZeta);
+        if (md->nmol_support == 0)
+          gmx_fatal(FARGS,"No support for any molecule!");
+      }
 }
+
 

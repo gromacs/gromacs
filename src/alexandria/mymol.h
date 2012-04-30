@@ -78,20 +78,24 @@ extern int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                       real dip_toler,real hfac,gmx_bool bESP,
                       real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);
 
-extern t_moldip *read_moldip(FILE *fp,t_commrec *cr,const char *fn,const char *pd_fn,
+extern t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
+                             int  iModel,real rDecrZeta,real epsr,
                              real J0_0,real Chi0_0,real w_0,
                              real J0_1,real Chi0_1,real w_1,
                              real fc_bound,real fc_mu,real fc_quad,real fc_charge,
-                             real fc_esp,int  iModel,
-                             char *fixchi,int minimum_data,
-                             gmx_bool bZero,gmx_bool bWeighted,
+                             real fc_esp,char *fixchi,
                              gmx_bool bOptHfac,real hfac,
-                             char *opt_elem,char *const_elem,
-                             gmx_bool bQM,char *lot,gmx_bool bCharged,
-                             output_env_t oenv,gmx_molselect_t gms,
-                             real th_toler,real ph_toler,real dip_toler,
-                             gmx_bool bGaussianBug,real watoms,real rDecrZeta,
-                             gmx_bool bPol,gmx_bool bFitZeta,real epsr);
+                             gmx_bool bPol,gmx_bool bFitZeta);
+                             
+extern void read_moldip(t_moldip *md,
+                        FILE *fp,const char *fn,const char *pd_fn,
+                        int minimum_data,
+                        gmx_bool bZero,gmx_bool bWeighted,
+                        char *opt_elem,char *const_elem,
+                        char *lot,gmx_bool bCharged,
+                        output_env_t oenv,gmx_molselect_t gms,
+                        real th_toler,real ph_toler,real dip_toler,
+                        real watoms,gmx_bool bCheckSupport);
 
 extern char *opt_index_count(t_index_count *ic);
 

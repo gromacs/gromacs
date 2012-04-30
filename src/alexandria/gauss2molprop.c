@@ -65,12 +65,13 @@
 #include "gpp_atomtype.h"
 #include "atomprop.h"
 #include "molprop.h"
+#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 
 gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
-                                   const char *fn,char *molnm)
+                                   const char *fn,char *molnm,char *iupac)
 {
   /* Read a gaussian log file */
   char **strings=NULL;
@@ -205,6 +206,10 @@ gmx_molprop_t gmx_molprop_read_log(gmx_atomprop_t aps,gmx_poldata_t pd,
                       gmx_molprop_set_molname(mpt,sbuf);
                   else
                       gmx_molprop_set_molname(mpt,molnm);
+                  if (NULL == iupac)
+                      gmx_molprop_set_iupac(mpt,sbuf);
+                  else
+                      gmx_molprop_set_iupac(mpt,iupac);
                 }
             }
           else if (NULL != strstr(strings[i],"Coordinates (Angstroms)"))
@@ -339,15 +344,22 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = TRUE;
-  static char *molnm=NULL;
+  static char *molnm=NULL,*iupac=NULL;
+  static real th_toler=170,ph_toler=5;
   static gmx_bool compress=FALSE;
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose output in the top file and on terminal." },
+    { "-th_toler", FALSE, etREAL, {&th_toler},
+      "Minimum angle to be considered a linear A-B-C bond" },
+    { "-ph_toler", FALSE, etREAL, {&ph_toler},
+      "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
     { "-compress", FALSE, etBOOL, {&compress},
       "Compress output XML files" },
     { "-molnm", FALSE, etSTR, {&molnm},
-      "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." }
+      "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
+    { "-iupac", FALSE, etSTR, {&iupac},
+      "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." }
   };
   output_env_t oenv;
   gmx_atomprop_t aps;
@@ -371,13 +383,14 @@ int main(int argc, char *argv[])
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
   nmp = 0;
   for(i=0; (i<nfn); i++) {
-      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm);
+      mp = gmx_molprop_read_log(aps,pd,fns[i],molnm,iupac);
     if (NULL != mp) 
       {
         srenew(mps,++nmp);
         mps[nmp-1] = mp;
       }
   }
+  generate_composition(nmp,mps,pd,aps,TRUE,th_toler,ph_toler);
   printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
   if (nmp > 0)
     {
