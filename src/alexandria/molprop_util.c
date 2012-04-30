@@ -393,9 +393,9 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         return elgcNOTOP;
 }
 
-static void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
-                                 gmx_atomprop_t ap,gmx_bool bForceGenComp,
-                                 double th_toler,double phi_toler)
+void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
+                          gmx_atomprop_t ap,gmx_bool bForceGenComp,
+                          double th_toler,double phi_toler)
 {
     int    i,j,cnumber,elgc,atomnumber,nok=0,ntest=0,natom;
     char   *compname,*catom,*miller_equiv=NULL,*elem,*alexandria_equiv,*atomname,*molname;

@@ -680,7 +680,7 @@ int main(int argc, char *argv[])
     if (qgen[0]) 
         iModel = name2eemtype(qgen[0]);
     else
-        iModel = eqgNone;
+        iModel = eqgAXg;
     
     if (MASTER(cr)) {
         fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
@@ -698,15 +698,17 @@ int main(int argc, char *argv[])
         gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
     else
         gms = NULL;
-    md  = read_moldip(fp ? fp : (debug ? debug : NULL),
-                      cr,opt2fn("-f",NFILE,fnm),
-                      opt2fn("-d",NFILE,fnm),
-                      J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-                      fc_bound,fc_mu,fc_quad,fc_charge,fc_esp,
-                      iModel,fixchi,minimum_data,bZero,bWeighted,
-                      bOptHfac,hfac,opt_elem,const_elem,
-                      bQM,lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-                      bGaussianBug,watoms,rDecrZeta,bPol,bFitZeta,epsr);
+    md = init_moldip(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
+                     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
+                     fc_bound,fc_mu,fc_quad,fc_charge,
+                     fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
+    read_moldip(md,fp ? fp : (debug ? debug : NULL),
+                opt2fn("-f",NFILE,fnm),
+                opt2fn_null("-d",NFILE,fnm),
+                minimum_data,bZero,bWeighted,
+                opt_elem,const_elem,
+                lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
+                watoms,FALSE);
     
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,opt2fn_null("-conv",NFILE,fnm),
                     md,maxiter,tol,nrun,reinit,step,seed,
