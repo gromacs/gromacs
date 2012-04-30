@@ -278,15 +278,17 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     int    idx[4];                                                      \
     __m128 ctab_SSE[4];                                                 \
                                                                         \
+    /* Table has 4 entries, left-shift index by 2 */                    \
+    ti_SSE = _mm_slli_epi32(ti_SSE,2);                                  \
     /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
     idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
-    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]*4);                  \
+    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
     idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
-    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]*4);                  \
+    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
     idx[2] = gmx_mm_extract_epi32(ti_SSE,2);                            \
-    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]*4);                  \
+    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
     idx[3] = gmx_mm_extract_epi32(ti_SSE,3);                            \
-    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]*4);                  \
+    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
                                                                         \
     /* Shuffle the force table entries to a convenient order */         \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
@@ -297,15 +299,17 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     int    idx[4];                                                      \
     __m128 ctab_SSE[4];                                                 \
                                                                         \
+    /* Table has 4 entries, left-shift index by 2 */                    \
+    ti_SSE = _mm_slli_epi32(ti_SSE,2);                                  \
     /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
     idx[0] = gmx_mm_extract_epi32(ti_SSE,0);                            \
-    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]*4);                  \
+    ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
     idx[1] = gmx_mm_extract_epi32(ti_SSE,1);                            \
-    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]*4);                  \
+    ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
     idx[2] = gmx_mm_extract_epi32(ti_SSE,2);                            \
-    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]*4);                  \
+    ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
     idx[3] = gmx_mm_extract_epi32(ti_SSE,3);                            \
-    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]*4);                  \
+    ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
                                                                         \
     /* Shuffle the force  table entries to a convenient order */        \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0],ctab_SSE[1],ctab_SSE[2],ctab_SSE[3],ctab0_SSE,ctab1_SSE); \
@@ -322,6 +326,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     __m128 ctab_SSE[8],ctabt_SSE[4];                                    \
     int    j;                                                           \
                                                                         \
+    /* Bit shifting would be faster, but AVX doesn't support that */    \
     _mm256_store_si256((__m256i *)ti,ti_SSE);                           \
     for(j=0; j<8; j++)                                                  \
     {                                                                   \
@@ -339,6 +344,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     __m128 ctab_SSE[8],ctabt_SSE[4],ctabvt_SSE[2];                      \
     int    j;                                                           \
                                                                         \
+    /* Bit shifting would be faster, but AVX doesn't support that */    \
     _mm256_store_si256((__m256i *)ti,ti_SSE);                           \
     for(j=0; j<8; j++)                                                  \
     {                                                                   \
@@ -465,6 +471,10 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
 {
     int jj;
 
+    /* We need to balance the number of store operations with
+     * the rapidly increases number of combinations of energy groups.
+     * We add to a temporary buffer for 1 i-group vs 2 j-groups.
+     */
     for(jj=0; jj<(UNROLLJ>>1); jj++)
     {
         gmx_mm_pr v_SSE;

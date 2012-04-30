@@ -45,6 +45,13 @@
 #define EXCL_FORCES
 #endif
 
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && (defined GMX_SSE4_1 || defined GMX_AVX_HERE) && !defined COUNT_PAIRS
+/* Without exclusions and energies we only need to mask the cut-off,
+ * this is faster with blendv (only available with SSE4.1).
+ */
+#define CUTOFF_BLENDV
+#endif
+
         {
             int        cj,aj,ajx,ajy,ajz;
 
@@ -55,6 +62,7 @@
 #endif
 
 #ifdef CHECK_EXCLS
+            /* Interaction (non-exclusion) mask of all 1's or 0's */
             gmx_mm_pr  int_SSE0;
             gmx_mm_pr  int_SSE1;
             gmx_mm_pr  int_SSE2;
@@ -74,12 +82,16 @@
             gmx_mm_pr  rsq_SSE1,rinv_SSE1,rinvsq_SSE1;
             gmx_mm_pr  rsq_SSE2,rinv_SSE2,rinvsq_SSE2;
             gmx_mm_pr  rsq_SSE3,rinv_SSE3,rinvsq_SSE3;
+#ifndef CUTOFF_BLENDV
+            /* wco: within cut-off, mask of all 1's or 0's */
             gmx_mm_pr  wco_SSE0;
             gmx_mm_pr  wco_SSE1;
             gmx_mm_pr  wco_SSE2;
             gmx_mm_pr  wco_SSE3;
+#endif
 #ifdef CALC_COULOMB
 #ifdef CHECK_EXCLS
+            /* 1/r masked with the interaction mask */
             gmx_mm_pr  rinv_ex_SSE0;
             gmx_mm_pr  rinv_ex_SSE1;
             gmx_mm_pr  rinv_ex_SSE2;
@@ -91,47 +103,56 @@
             gmx_mm_pr  qq_SSE2;
             gmx_mm_pr  qq_SSE3;
 #ifndef CALC_COUL_RF
-            gmx_mm_pr  fexcl_SSE0;
-            gmx_mm_pr  fexcl_SSE1;
-            gmx_mm_pr  fexcl_SSE2;
-            gmx_mm_pr  fexcl_SSE3;
+            /* The force (PME mesh force) we need to subtract from 1/r^2 */
+            gmx_mm_pr  fsub_SSE0;
+            gmx_mm_pr  fsub_SSE1;
+            gmx_mm_pr  fsub_SSE2;
+            gmx_mm_pr  fsub_SSE3;
 #endif
+            /* frcoul = (1/r - fsub)*r */
             gmx_mm_pr  frcoul_SSE0;
             gmx_mm_pr  frcoul_SSE1;
             gmx_mm_pr  frcoul_SSE2;
             gmx_mm_pr  frcoul_SSE3;
 #ifndef CALC_COUL_RF
+            /* For tables: r, rs=r/sp, rf=floor(rs), frac=rs-rf */
             gmx_mm_pr  r_SSE0,rs_SSE0,rf_SSE0,frac_SSE0;
             gmx_mm_pr  r_SSE1,rs_SSE1,rf_SSE1,frac_SSE1;
             gmx_mm_pr  r_SSE2,rs_SSE2,rf_SSE2,frac_SSE2;
             gmx_mm_pr  r_SSE3,rs_SSE3,rf_SSE3,frac_SSE3;
+            /* Table index: rs converted to an int */ 
 #if !(defined GMX_AVX_HERE && defined GMX_DOUBLE)
             gmx_epi32  ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
 #else
             __m128i    ti_SSE0,ti_SSE1,ti_SSE2,ti_SSE3;
 #endif
+            /* Linear force table values */
             gmx_mm_pr  ctab0_SSE0,ctab1_SSE0;
             gmx_mm_pr  ctab0_SSE1,ctab1_SSE1;
             gmx_mm_pr  ctab0_SSE2,ctab1_SSE2;
             gmx_mm_pr  ctab0_SSE3,ctab1_SSE3;
 #ifdef CALC_ENERGIES
+            /* Quadratic energy table value */
             gmx_mm_pr  ctabv_SSE0;
             gmx_mm_pr  ctabv_SSE1;
             gmx_mm_pr  ctabv_SSE2;
             gmx_mm_pr  ctabv_SSE3;
-            gmx_mm_pr  vc_excl_SSE0;
-            gmx_mm_pr  vc_excl_SSE1;
-            gmx_mm_pr  vc_excl_SSE2;
-            gmx_mm_pr  vc_excl_SSE3;
+            /* The potential (PME mesh) we need to subtract from 1/r */
+            gmx_mm_pr  vc_sub_SSE0;
+            gmx_mm_pr  vc_sub_SSE1;
+            gmx_mm_pr  vc_sub_SSE2;
+            gmx_mm_pr  vc_sub_SSE3;
 #endif
 #endif
 #ifdef CALC_ENERGIES
+            /* Electrostatic potential */
             gmx_mm_pr  vcoul_SSE0;
             gmx_mm_pr  vcoul_SSE1;
             gmx_mm_pr  vcoul_SSE2;
             gmx_mm_pr  vcoul_SSE3;
 #endif
 #endif
+            /* The force times 1/r */
             gmx_mm_pr  fscal_SSE0;
             gmx_mm_pr  fscal_SSE1;
             gmx_mm_pr  fscal_SSE2;
@@ -139,7 +160,9 @@
 
 #ifdef CALC_LJ
 #ifdef LJ_COMB_LB
+            /* LJ sigma_j/2 and sqrt(epsilon_j) */
             gmx_mm_pr  hsig_j_SSE,seps_j_SSE;
+            /* LJ sigma_ij and epsilon_ij */
             gmx_mm_pr  sig_SSE0,eps_SSE0;
             gmx_mm_pr  sig_SSE1,eps_SSE1;
 #ifndef HALF_LJ
@@ -161,10 +184,12 @@
 #endif
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
+            /* Index for loading LJ parameters, complicated when interleaving */
             int         aj2;
 #endif
 
 #ifndef FIX_LJ_C
+            /* LJ C6 and C12 parameters, used with geometric comb. rule */
             gmx_mm_pr  c6_SSE0,c12_SSE0;
             gmx_mm_pr  c6_SSE1,c12_SSE1;
 #ifndef HALF_LJ
@@ -173,6 +198,7 @@
 #endif
 #endif
 
+            /* Intermediate variables for LJ calculation */
 #ifdef LJ_COMB_LB
             gmx_mm_pr  sir_SSE0,sir2_SSE0,sir6_SSE0;
             gmx_mm_pr  sir_SSE1,sir2_SSE1,sir6_SSE1;
@@ -205,23 +231,25 @@
 #endif
 #endif /* CALC_LJ */
 
-            cj               = l_cj[cjind].cj;
+            /* j-cluster index */
+            cj            = l_cj[cjind].cj;
 
-            aj               = cj*UNROLLJ;
+            /* Atom indices (of the first atom in the cluster) */
+            aj            = cj*UNROLLJ;
 #if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB)
 #if UNROLLJ == STRIDE
-            aj2              = aj*2;
+            aj2           = aj*2;
 #else
-            aj2              = (cj>>1)*2*STRIDE + (cj & 1)*UNROLLJ;
+            aj2           = (cj>>1)*2*STRIDE + (cj & 1)*UNROLLJ;
 #endif
 #endif
 #if UNROLLJ == STRIDE
-            ajx              = aj*DIM;
+            ajx           = aj*DIM;
 #else
-            ajx              = (cj>>1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
+            ajx           = (cj>>1)*DIM*STRIDE + (cj & 1)*UNROLLJ;
 #endif
-            ajy              = ajx + STRIDE;
-            ajz              = ajy + STRIDE;
+            ajy           = ajx + STRIDE;
+            ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
 #ifndef GMX_AVX_HERE
@@ -230,59 +258,63 @@
                 __m128i mask_int = _mm_set1_epi32(l_cj[cjind].excl);
 
                 /* The is no unequal sse instruction, so we need a not here */
-                int_SSE0     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zero_SSE));
-                int_SSE1     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zero_SSE));
-                int_SSE2     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zero_SSE));
-                int_SSE3     = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zero_SSE));
+                int_SSE0  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zeroi_SSE));
+                int_SSE1  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zeroi_SSE));
+                int_SSE2  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zeroi_SSE));
+                int_SSE3  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zeroi_SSE));
             }
 #else
             {
                 /* Load integer interaction mask */
+                /* With AVX there are no integer operations, so cast to real */
                 gmx_mm_pr mask_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl));
 #ifndef GMX_DOUBLE
+                /* We can't compare all 4*8=32 float bits: shift the mask */
                 gmx_mm_pr masksh_pr = gmx_mm_castsi256_pr(_mm256_set1_epi32(l_cj[cjind].excl>>(2*UNROLLJ)));
 #endif
-                int_SSE0     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask0),zero_SSE);
-                int_SSE1     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask1),zero_SSE);
+                int_SSE0  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask0),zero_SSE);
+                int_SSE1  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask1),zero_SSE);
 #ifndef GMX_DOUBLE
-                int_SSE2     = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask0),zero_SSE);
-                int_SSE3     = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask1),zero_SSE);
+                int_SSE2  = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask0),zero_SSE);
+                int_SSE3  = gmx_cmpneq_pr(gmx_and_pr(masksh_pr,mask1),zero_SSE);
 #else
-                int_SSE2     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask2),zero_SSE);
-                int_SSE3     = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask3),zero_SSE);
+                int_SSE2  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask2),zero_SSE);
+                int_SSE3  = gmx_cmpneq_pr(gmx_and_pr(mask_pr,mask3),zero_SSE);
 #endif
             }
 #endif
 #endif
             /* load j atom coordinates */
-            jxSSE            = gmx_load_pr(x+ajx);
-            jySSE            = gmx_load_pr(x+ajy);
-            jzSSE            = gmx_load_pr(x+ajz);
+            jxSSE         = gmx_load_pr(x+ajx);
+            jySSE         = gmx_load_pr(x+ajy);
+            jzSSE         = gmx_load_pr(x+ajz);
             
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(ix_SSE0,jxSSE);
-            dy_SSE0            = gmx_sub_pr(iy_SSE0,jySSE);
-            dz_SSE0            = gmx_sub_pr(iz_SSE0,jzSSE);
-            dx_SSE1            = gmx_sub_pr(ix_SSE1,jxSSE);
-            dy_SSE1            = gmx_sub_pr(iy_SSE1,jySSE);
-            dz_SSE1            = gmx_sub_pr(iz_SSE1,jzSSE);
-            dx_SSE2            = gmx_sub_pr(ix_SSE2,jxSSE);
-            dy_SSE2            = gmx_sub_pr(iy_SSE2,jySSE);
-            dz_SSE2            = gmx_sub_pr(iz_SSE2,jzSSE);
-            dx_SSE3            = gmx_sub_pr(ix_SSE3,jxSSE);
-            dy_SSE3            = gmx_sub_pr(iy_SSE3,jySSE);
-            dz_SSE3            = gmx_sub_pr(iz_SSE3,jzSSE);
+            dx_SSE0       = gmx_sub_pr(ix_SSE0,jxSSE);
+            dy_SSE0       = gmx_sub_pr(iy_SSE0,jySSE);
+            dz_SSE0       = gmx_sub_pr(iz_SSE0,jzSSE);
+            dx_SSE1       = gmx_sub_pr(ix_SSE1,jxSSE);
+            dy_SSE1       = gmx_sub_pr(iy_SSE1,jySSE);
+            dz_SSE1       = gmx_sub_pr(iz_SSE1,jzSSE);
+            dx_SSE2       = gmx_sub_pr(ix_SSE2,jxSSE);
+            dy_SSE2       = gmx_sub_pr(iy_SSE2,jySSE);
+            dz_SSE2       = gmx_sub_pr(iz_SSE2,jzSSE);
+            dx_SSE3       = gmx_sub_pr(ix_SSE3,jxSSE);
+            dy_SSE3       = gmx_sub_pr(iy_SSE3,jySSE);
+            dz_SSE3       = gmx_sub_pr(iz_SSE3,jzSSE);
             
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
+            rsq_SSE0      = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
+            rsq_SSE1      = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
+            rsq_SSE2      = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE3      = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
 
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
-            wco_SSE1           = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
-            wco_SSE3           = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
+#ifndef CUTOFF_BLENDV
+            wco_SSE0      = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
+            wco_SSE1      = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
+            wco_SSE2      = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
+            wco_SSE3      = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
+#endif
 
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
@@ -290,50 +322,50 @@
 #if UNROLLJ == UNROLLI
             if (cj == ci_sh)
             {
-                wco_SSE0       = gmx_and_pr(wco_SSE0,diag_SSE0);
-                wco_SSE1       = gmx_and_pr(wco_SSE1,diag_SSE1);
-                wco_SSE2       = gmx_and_pr(wco_SSE2,diag_SSE2);
-                wco_SSE3       = gmx_and_pr(wco_SSE3,diag_SSE3);
+                wco_SSE0  = gmx_and_pr(wco_SSE0,diag_SSE0);
+                wco_SSE1  = gmx_and_pr(wco_SSE1,diag_SSE1);
+                wco_SSE2  = gmx_and_pr(wco_SSE2,diag_SSE2);
+                wco_SSE3  = gmx_and_pr(wco_SSE3,diag_SSE3);
             }
 #else
 #if UNROLLJ < UNROLLI
             if (cj == ci_sh*2)
             {
-                wco_SSE0       = gmx_and_pr(wco_SSE0,diag0_SSE0);
-                wco_SSE1       = gmx_and_pr(wco_SSE1,diag0_SSE1);
-                wco_SSE2       = gmx_and_pr(wco_SSE2,diag0_SSE2);
-                wco_SSE3       = gmx_and_pr(wco_SSE3,diag0_SSE3);
+                wco_SSE0  = gmx_and_pr(wco_SSE0,diag0_SSE0);
+                wco_SSE1  = gmx_and_pr(wco_SSE1,diag0_SSE1);
+                wco_SSE2  = gmx_and_pr(wco_SSE2,diag0_SSE2);
+                wco_SSE3  = gmx_and_pr(wco_SSE3,diag0_SSE3);
             }
             if (cj == ci_sh*2 + 1)
             { 
-                wco_SSE0       = gmx_and_pr(wco_SSE0,diag1_SSE0);
-                wco_SSE1       = gmx_and_pr(wco_SSE1,diag1_SSE1);
-                wco_SSE2       = gmx_and_pr(wco_SSE2,diag1_SSE2);
-                wco_SSE3       = gmx_and_pr(wco_SSE3,diag1_SSE3);
+                wco_SSE0  = gmx_and_pr(wco_SSE0,diag1_SSE0);
+                wco_SSE1  = gmx_and_pr(wco_SSE1,diag1_SSE1);
+                wco_SSE2  = gmx_and_pr(wco_SSE2,diag1_SSE2);
+                wco_SSE3  = gmx_and_pr(wco_SSE3,diag1_SSE3);
             }
 #else
             if (cj*2 == ci_sh)
             {
-                wco_SSE0       = gmx_and_pr(wco_SSE0,diag0_SSE0);
-                wco_SSE1       = gmx_and_pr(wco_SSE1,diag0_SSE1);
-                wco_SSE2       = gmx_and_pr(wco_SSE2,diag0_SSE2);
-                wco_SSE3       = gmx_and_pr(wco_SSE3,diag0_SSE3);
+                wco_SSE0  = gmx_and_pr(wco_SSE0,diag0_SSE0);
+                wco_SSE1  = gmx_and_pr(wco_SSE1,diag0_SSE1);
+                wco_SSE2  = gmx_and_pr(wco_SSE2,diag0_SSE2);
+                wco_SSE3  = gmx_and_pr(wco_SSE3,diag0_SSE3);
             }
             else if (cj*2 + 1 == ci_sh)
             {
-                wco_SSE0       = gmx_and_pr(wco_SSE0,diag1_SSE0);
-                wco_SSE1       = gmx_and_pr(wco_SSE1,diag1_SSE1);
-                wco_SSE2       = gmx_and_pr(wco_SSE2,diag1_SSE2);
-                wco_SSE3       = gmx_and_pr(wco_SSE3,diag1_SSE3);
+                wco_SSE0  = gmx_and_pr(wco_SSE0,diag1_SSE0);
+                wco_SSE1  = gmx_and_pr(wco_SSE1,diag1_SSE1);
+                wco_SSE2  = gmx_and_pr(wco_SSE2,diag1_SSE2);
+                wco_SSE3  = gmx_and_pr(wco_SSE3,diag1_SSE3);
             }
 #endif
 #endif
 #else
             /* Remove all excluded atom pairs from the list */
-            wco_SSE0           = gmx_and_pr(wco_SSE0,int_SSE0);
-            wco_SSE1           = gmx_and_pr(wco_SSE1,int_SSE1);
-            wco_SSE2           = gmx_and_pr(wco_SSE2,int_SSE2);
-            wco_SSE3           = gmx_and_pr(wco_SSE3,int_SSE3);
+            wco_SSE0      = gmx_and_pr(wco_SSE0,int_SSE0);
+            wco_SSE1      = gmx_and_pr(wco_SSE1,int_SSE1);
+            wco_SSE2      = gmx_and_pr(wco_SSE2,int_SSE2);
+            wco_SSE3      = gmx_and_pr(wco_SSE3,int_SSE3);
 #endif
 #endif
 
@@ -357,10 +389,10 @@
 
             /* Calculate 1/r */
 #ifndef GMX_DOUBLE
-            rinv_SSE0          = gmx_invsqrt_pr(rsq_SSE0);
-            rinv_SSE1          = gmx_invsqrt_pr(rsq_SSE1);
-            rinv_SSE2          = gmx_invsqrt_pr(rsq_SSE2);
-            rinv_SSE3          = gmx_invsqrt_pr(rsq_SSE3);
+            rinv_SSE0     = gmx_invsqrt_pr(rsq_SSE0);
+            rinv_SSE1     = gmx_invsqrt_pr(rsq_SSE1);
+            rinv_SSE2     = gmx_invsqrt_pr(rsq_SSE2);
+            rinv_SSE3     = gmx_invsqrt_pr(rsq_SSE3);
 #else
             GMX_MM_INVSQRT2_PD(rsq_SSE0,rsq_SSE1,rinv_SSE0,rinv_SSE1);
             GMX_MM_INVSQRT2_PD(rsq_SSE2,rsq_SSE3,rinv_SSE2,rinv_SSE3);
@@ -368,43 +400,43 @@
 
 #ifdef CALC_COULOMB
             /* Load parameters for j atom */
-            jq_SSE             = gmx_load_pr(q+aj);
-            qq_SSE0            = gmx_mul_pr(iq_SSE0,jq_SSE);
-            qq_SSE1            = gmx_mul_pr(iq_SSE1,jq_SSE);
-            qq_SSE2            = gmx_mul_pr(iq_SSE2,jq_SSE);
-            qq_SSE3            = gmx_mul_pr(iq_SSE3,jq_SSE);
+            jq_SSE        = gmx_load_pr(q+aj);
+            qq_SSE0       = gmx_mul_pr(iq_SSE0,jq_SSE);
+            qq_SSE1       = gmx_mul_pr(iq_SSE1,jq_SSE);
+            qq_SSE2       = gmx_mul_pr(iq_SSE2,jq_SSE);
+            qq_SSE3       = gmx_mul_pr(iq_SSE3,jq_SSE);
 #endif
 
 #ifdef CALC_LJ
 #ifdef LJ_COMB_LB
-            hsig_j_SSE         = gmx_load_pr(ljc+aj2+0);
-            seps_j_SSE         = gmx_load_pr(ljc+aj2+STRIDE);
+            hsig_j_SSE    = gmx_load_pr(ljc+aj2+0);
+            seps_j_SSE    = gmx_load_pr(ljc+aj2+STRIDE);
 
-            sig_SSE0           = gmx_add_pr(hsig_i_SSE0,hsig_j_SSE);
-            sig_SSE1           = gmx_add_pr(hsig_i_SSE1,hsig_j_SSE);
-            eps_SSE0           = gmx_mul_pr(seps_i_SSE0,seps_j_SSE);
-            eps_SSE1           = gmx_mul_pr(seps_i_SSE1,seps_j_SSE);
+            sig_SSE0      = gmx_add_pr(hsig_i_SSE0,hsig_j_SSE);
+            sig_SSE1      = gmx_add_pr(hsig_i_SSE1,hsig_j_SSE);
+            eps_SSE0      = gmx_mul_pr(seps_i_SSE0,seps_j_SSE);
+            eps_SSE1      = gmx_mul_pr(seps_i_SSE1,seps_j_SSE);
 #ifndef HALF_LJ
-            sig_SSE2           = gmx_add_pr(hsig_i_SSE2,hsig_j_SSE);
-            sig_SSE3           = gmx_add_pr(hsig_i_SSE3,hsig_j_SSE);
-            eps_SSE2           = gmx_mul_pr(seps_i_SSE2,seps_j_SSE);
-            eps_SSE3           = gmx_mul_pr(seps_i_SSE3,seps_j_SSE);
+            sig_SSE2      = gmx_add_pr(hsig_i_SSE2,hsig_j_SSE);
+            sig_SSE3      = gmx_add_pr(hsig_i_SSE3,hsig_j_SSE);
+            eps_SSE2      = gmx_mul_pr(seps_i_SSE2,seps_j_SSE);
+            eps_SSE3      = gmx_mul_pr(seps_i_SSE3,seps_j_SSE);
 #endif
 #else
 #ifdef LJ_COMB_GEOM
-            c6s_j_SSE          = gmx_load_pr(ljc+aj2+0);
-            c12s_j_SSE         = gmx_load_pr(ljc+aj2+STRIDE);
-            c6_SSE0            = gmx_mul_pr(c6s_SSE0 ,c6s_j_SSE );
-            c6_SSE1            = gmx_mul_pr(c6s_SSE1 ,c6s_j_SSE );
+            c6s_j_SSE     = gmx_load_pr(ljc+aj2+0);
+            c12s_j_SSE    = gmx_load_pr(ljc+aj2+STRIDE);
+            c6_SSE0       = gmx_mul_pr(c6s_SSE0 ,c6s_j_SSE );
+            c6_SSE1       = gmx_mul_pr(c6s_SSE1 ,c6s_j_SSE );
 #ifndef HALF_LJ
-            c6_SSE2            = gmx_mul_pr(c6s_SSE2 ,c6s_j_SSE );
-            c6_SSE3            = gmx_mul_pr(c6s_SSE3 ,c6s_j_SSE );
+            c6_SSE2       = gmx_mul_pr(c6s_SSE2 ,c6s_j_SSE );
+            c6_SSE3       = gmx_mul_pr(c6s_SSE3 ,c6s_j_SSE );
 #endif
-            c12_SSE0           = gmx_mul_pr(c12s_SSE0,c12s_j_SSE);
-            c12_SSE1           = gmx_mul_pr(c12s_SSE1,c12s_j_SSE);
+            c12_SSE0      = gmx_mul_pr(c12s_SSE0,c12s_j_SSE);
+            c12_SSE1      = gmx_mul_pr(c12s_SSE1,c12s_j_SSE);
 #ifndef HALF_LJ
-            c12_SSE2           = gmx_mul_pr(c12s_SSE2,c12s_j_SSE);
-            c12_SSE3           = gmx_mul_pr(c12s_SSE3,c12s_j_SSE);
+            c12_SSE2      = gmx_mul_pr(c12s_SSE2,c12s_j_SSE);
+            c12_SSE3      = gmx_mul_pr(c12s_SSE3,c12s_j_SSE);
 #endif
 #else
 #if UNROLLJ <= 4
@@ -423,81 +455,88 @@
 #endif /* LJ_COMB_LB */
 #endif /* CALC_LJ */
 
-            
-            rinv_SSE0          = gmx_and_pr(rinv_SSE0,wco_SSE0);
-            rinv_SSE1          = gmx_and_pr(rinv_SSE1,wco_SSE1);
-            rinv_SSE2          = gmx_and_pr(rinv_SSE2,wco_SSE2);
-            rinv_SSE3          = gmx_and_pr(rinv_SSE3,wco_SSE3);
+#ifndef CUTOFF_BLENDV
+            rinv_SSE0     = gmx_and_pr(rinv_SSE0,wco_SSE0);
+            rinv_SSE1     = gmx_and_pr(rinv_SSE1,wco_SSE1);
+            rinv_SSE2     = gmx_and_pr(rinv_SSE2,wco_SSE2);
+            rinv_SSE3     = gmx_and_pr(rinv_SSE3,wco_SSE3);
+#else
+            /* We only need to mask for the cut-off: blendv is faster */
+            rinv_SSE0     = gmx_blendv_pr(rinv_SSE0,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE0));
+            rinv_SSE1     = gmx_blendv_pr(rinv_SSE1,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE1));
+            rinv_SSE2     = gmx_blendv_pr(rinv_SSE2,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE2));
+            rinv_SSE3     = gmx_blendv_pr(rinv_SSE3,zero_SSE,gmx_sub_pr(rc2_SSE,rsq_SSE3));
+#endif
 
-            rinvsq_SSE0        = gmx_mul_pr(rinv_SSE0,rinv_SSE0);
-            rinvsq_SSE1        = gmx_mul_pr(rinv_SSE1,rinv_SSE1);
-            rinvsq_SSE2        = gmx_mul_pr(rinv_SSE2,rinv_SSE2);
-            rinvsq_SSE3        = gmx_mul_pr(rinv_SSE3,rinv_SSE3);
+            rinvsq_SSE0   = gmx_mul_pr(rinv_SSE0,rinv_SSE0);
+            rinvsq_SSE1   = gmx_mul_pr(rinv_SSE1,rinv_SSE1);
+            rinvsq_SSE2   = gmx_mul_pr(rinv_SSE2,rinv_SSE2);
+            rinvsq_SSE3   = gmx_mul_pr(rinv_SSE3,rinv_SSE3);
 
 #ifdef CALC_COULOMB
 
 #ifdef EXCL_FORCES
             /* Only add 1/r for non-excluded atom pairs */
-            rinv_ex_SSE0       = gmx_and_pr(rinv_SSE0,int_SSE0);
-            rinv_ex_SSE1       = gmx_and_pr(rinv_SSE1,int_SSE1);
-            rinv_ex_SSE2       = gmx_and_pr(rinv_SSE2,int_SSE2);
-            rinv_ex_SSE3       = gmx_and_pr(rinv_SSE3,int_SSE3);
+            rinv_ex_SSE0  = gmx_and_pr(rinv_SSE0,int_SSE0);
+            rinv_ex_SSE1  = gmx_and_pr(rinv_SSE1,int_SSE1);
+            rinv_ex_SSE2  = gmx_and_pr(rinv_SSE2,int_SSE2);
+            rinv_ex_SSE3  = gmx_and_pr(rinv_SSE3,int_SSE3);
 #else
             /* No exclusion forces, we always need 1/r */
-#define     rinv_ex_SSE0         rinv_SSE0
-#define     rinv_ex_SSE1         rinv_SSE1
-#define     rinv_ex_SSE2         rinv_SSE2
-#define     rinv_ex_SSE3         rinv_SSE3
+#define     rinv_ex_SSE0    rinv_SSE0
+#define     rinv_ex_SSE1    rinv_SSE1
+#define     rinv_ex_SSE2    rinv_SSE2
+#define     rinv_ex_SSE3    rinv_SSE3
 #endif
 
 #ifdef CALC_COUL_RF
             /* Coulomb interaction */
-            frcoul_SSE0        = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_mul_pr(rsq_SSE0,mrc_3_SSE)));
-            frcoul_SSE1        = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_mul_pr(rsq_SSE1,mrc_3_SSE)));
-            frcoul_SSE2        = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_mul_pr(rsq_SSE2,mrc_3_SSE)));
-            frcoul_SSE3        = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_mul_pr(rsq_SSE3,mrc_3_SSE)));
+            frcoul_SSE0   = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_mul_pr(rsq_SSE0,mrc_3_SSE)));
+            frcoul_SSE1   = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_mul_pr(rsq_SSE1,mrc_3_SSE)));
+            frcoul_SSE2   = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_mul_pr(rsq_SSE2,mrc_3_SSE)));
+            frcoul_SSE3   = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_mul_pr(rsq_SSE3,mrc_3_SSE)));
 
 #ifdef CALC_ENERGIES
-            vcoul_SSE0         = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_add_pr(gmx_mul_pr(rsq_SSE0,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE1         = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_add_pr(gmx_mul_pr(rsq_SSE1,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE2         = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_add_pr(gmx_mul_pr(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE3         = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_add_pr(gmx_mul_pr(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
-            vcoul_SSE0         = gmx_and_pr(vcoul_SSE0,wco_SSE0);
-            vcoul_SSE1         = gmx_and_pr(vcoul_SSE1,wco_SSE1);
-            vcoul_SSE2         = gmx_and_pr(vcoul_SSE2,wco_SSE2);
-            vcoul_SSE3         = gmx_and_pr(vcoul_SSE3,wco_SSE3);
+            vcoul_SSE0    = gmx_mul_pr(qq_SSE0,gmx_add_pr(rinv_ex_SSE0,gmx_add_pr(gmx_mul_pr(rsq_SSE0,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE1    = gmx_mul_pr(qq_SSE1,gmx_add_pr(rinv_ex_SSE1,gmx_add_pr(gmx_mul_pr(rsq_SSE1,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE2    = gmx_mul_pr(qq_SSE2,gmx_add_pr(rinv_ex_SSE2,gmx_add_pr(gmx_mul_pr(rsq_SSE2,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE3    = gmx_mul_pr(qq_SSE3,gmx_add_pr(rinv_ex_SSE3,gmx_add_pr(gmx_mul_pr(rsq_SSE3,hrc_3_SSE),moh_rc_SSE)));
+            vcoul_SSE0    = gmx_and_pr(vcoul_SSE0,wco_SSE0);
+            vcoul_SSE1    = gmx_and_pr(vcoul_SSE1,wco_SSE1);
+            vcoul_SSE2    = gmx_and_pr(vcoul_SSE2,wco_SSE2);
+            vcoul_SSE3    = gmx_and_pr(vcoul_SSE3,wco_SSE3);
 #endif
 #else
-            r_SSE0             = gmx_mul_pr(rsq_SSE0,rinv_SSE0);
-            r_SSE1             = gmx_mul_pr(rsq_SSE1,rinv_SSE1);
-            r_SSE2             = gmx_mul_pr(rsq_SSE2,rinv_SSE2);
-            r_SSE3             = gmx_mul_pr(rsq_SSE3,rinv_SSE3);
+            r_SSE0        = gmx_mul_pr(rsq_SSE0,rinv_SSE0);
+            r_SSE1        = gmx_mul_pr(rsq_SSE1,rinv_SSE1);
+            r_SSE2        = gmx_mul_pr(rsq_SSE2,rinv_SSE2);
+            r_SSE3        = gmx_mul_pr(rsq_SSE3,rinv_SSE3);
             /* Convert r to scaled table units */
-            rs_SSE0            = gmx_mul_pr(r_SSE0,invtsp_SSE);
-            rs_SSE1            = gmx_mul_pr(r_SSE1,invtsp_SSE);
-            rs_SSE2            = gmx_mul_pr(r_SSE2,invtsp_SSE);
-            rs_SSE3            = gmx_mul_pr(r_SSE3,invtsp_SSE);
+            rs_SSE0       = gmx_mul_pr(r_SSE0,invtsp_SSE);
+            rs_SSE1       = gmx_mul_pr(r_SSE1,invtsp_SSE);
+            rs_SSE2       = gmx_mul_pr(r_SSE2,invtsp_SSE);
+            rs_SSE3       = gmx_mul_pr(r_SSE3,invtsp_SSE);
             /* Truncate scaled r to an int */
-            ti_SSE0            = gmx_cvttpr_epi32(rs_SSE0);
-            ti_SSE1            = gmx_cvttpr_epi32(rs_SSE1);
-            ti_SSE2            = gmx_cvttpr_epi32(rs_SSE2);
-            ti_SSE3            = gmx_cvttpr_epi32(rs_SSE3);
+            ti_SSE0       = gmx_cvttpr_epi32(rs_SSE0);
+            ti_SSE1       = gmx_cvttpr_epi32(rs_SSE1);
+            ti_SSE2       = gmx_cvttpr_epi32(rs_SSE2);
+            ti_SSE3       = gmx_cvttpr_epi32(rs_SSE3);
 #if defined GMX_SSE4_1 || defined GMX_AVX_HERE
             /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
-            rf_SSE0            = gmx_floor_pr(rs_SSE0);
-            rf_SSE1            = gmx_floor_pr(rs_SSE1);
-            rf_SSE2            = gmx_floor_pr(rs_SSE2);
-            rf_SSE3            = gmx_floor_pr(rs_SSE3);
+            rf_SSE0       = gmx_floor_pr(rs_SSE0);
+            rf_SSE1       = gmx_floor_pr(rs_SSE1);
+            rf_SSE2       = gmx_floor_pr(rs_SSE2);
+            rf_SSE3       = gmx_floor_pr(rs_SSE3);
 #else
-            rf_SSE0            = gmx_cvtepi32_pr(ti_SSE0);
-            rf_SSE1            = gmx_cvtepi32_pr(ti_SSE1);
-            rf_SSE2            = gmx_cvtepi32_pr(ti_SSE2);
-            rf_SSE3            = gmx_cvtepi32_pr(ti_SSE3);
+            rf_SSE0       = gmx_cvtepi32_pr(ti_SSE0);
+            rf_SSE1       = gmx_cvtepi32_pr(ti_SSE1);
+            rf_SSE2       = gmx_cvtepi32_pr(ti_SSE2);
+            rf_SSE3       = gmx_cvtepi32_pr(ti_SSE3);
 #endif
-            frac_SSE0          = gmx_sub_pr(rs_SSE0,rf_SSE0);
-            frac_SSE1          = gmx_sub_pr(rs_SSE1,rf_SSE1);
-            frac_SSE2          = gmx_sub_pr(rs_SSE2,rf_SSE2);
-            frac_SSE3          = gmx_sub_pr(rs_SSE3,rf_SSE3);
+            frac_SSE0     = gmx_sub_pr(rs_SSE0,rf_SSE0);
+            frac_SSE1     = gmx_sub_pr(rs_SSE1,rf_SSE1);
+            frac_SSE2     = gmx_sub_pr(rs_SSE2,rf_SSE2);
+            frac_SSE3     = gmx_sub_pr(rs_SSE3,rf_SSE3);
 
             /* Load and interpolate table forces and possibly energies.
              * Force and energy can be combined in one table, stride 4: FDV0
@@ -522,33 +561,33 @@
             load_table_f_v(tab_coul_F,tab_coul_V,ti_SSE3,ti3,ctab0_SSE3,ctab1_SSE3,ctabv_SSE3);
 #endif
 #endif
-            fexcl_SSE0         = gmx_add_pr(ctab0_SSE0,gmx_mul_pr(frac_SSE0,ctab1_SSE0));
-            fexcl_SSE1         = gmx_add_pr(ctab0_SSE1,gmx_mul_pr(frac_SSE1,ctab1_SSE1));
-            fexcl_SSE2         = gmx_add_pr(ctab0_SSE2,gmx_mul_pr(frac_SSE2,ctab1_SSE2));
-            fexcl_SSE3         = gmx_add_pr(ctab0_SSE3,gmx_mul_pr(frac_SSE3,ctab1_SSE3));
-            frcoul_SSE0        = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,gmx_mul_pr(fexcl_SSE0,r_SSE0)));
-            frcoul_SSE1        = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,gmx_mul_pr(fexcl_SSE1,r_SSE1)));
-            frcoul_SSE2        = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,gmx_mul_pr(fexcl_SSE2,r_SSE2)));
-            frcoul_SSE3        = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,gmx_mul_pr(fexcl_SSE3,r_SSE3)));
+            fsub_SSE0     = gmx_add_pr(ctab0_SSE0,gmx_mul_pr(frac_SSE0,ctab1_SSE0));
+            fsub_SSE1     = gmx_add_pr(ctab0_SSE1,gmx_mul_pr(frac_SSE1,ctab1_SSE1));
+            fsub_SSE2     = gmx_add_pr(ctab0_SSE2,gmx_mul_pr(frac_SSE2,ctab1_SSE2));
+            fsub_SSE3     = gmx_add_pr(ctab0_SSE3,gmx_mul_pr(frac_SSE3,ctab1_SSE3));
+            frcoul_SSE0   = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,gmx_mul_pr(fsub_SSE0,r_SSE0)));
+            frcoul_SSE1   = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,gmx_mul_pr(fsub_SSE1,r_SSE1)));
+            frcoul_SSE2   = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,gmx_mul_pr(fsub_SSE2,r_SSE2)));
+            frcoul_SSE3   = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,gmx_mul_pr(fsub_SSE3,r_SSE3)));
 
 #ifdef CALC_ENERGIES
-            vc_excl_SSE0       = gmx_add_pr(ctabv_SSE0,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE0),gmx_add_pr(ctab0_SSE0,fexcl_SSE0)));
-            vc_excl_SSE1       = gmx_add_pr(ctabv_SSE1,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE1),gmx_add_pr(ctab0_SSE1,fexcl_SSE1)));
-            vc_excl_SSE2       = gmx_add_pr(ctabv_SSE2,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE2),gmx_add_pr(ctab0_SSE2,fexcl_SSE2)));
-            vc_excl_SSE3       = gmx_add_pr(ctabv_SSE3,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE3),gmx_add_pr(ctab0_SSE3,fexcl_SSE3)));
+            vc_sub_SSE0   = gmx_add_pr(ctabv_SSE0,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE0),gmx_add_pr(ctab0_SSE0,fsub_SSE0)));
+            vc_sub_SSE1   = gmx_add_pr(ctabv_SSE1,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE1),gmx_add_pr(ctab0_SSE1,fsub_SSE1)));
+            vc_sub_SSE2   = gmx_add_pr(ctabv_SSE2,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE2),gmx_add_pr(ctab0_SSE2,fsub_SSE2)));
+            vc_sub_SSE3   = gmx_add_pr(ctabv_SSE3,gmx_mul_pr(gmx_mul_pr(mhalfsp_SSE,frac_SSE3),gmx_add_pr(ctab0_SSE3,fsub_SSE3)));
 
 #ifndef NO_SHIFT_EWALD
-            /* Add Ewald potential shift to vc_excl for convenience */
-            vc_excl_SSE0       = gmx_add_pr(vc_excl_SSE0,gmx_and_pr(sh_ewald_SSE,wco_SSE0));
-            vc_excl_SSE1       = gmx_add_pr(vc_excl_SSE1,gmx_and_pr(sh_ewald_SSE,wco_SSE1));
-            vc_excl_SSE2       = gmx_add_pr(vc_excl_SSE2,gmx_and_pr(sh_ewald_SSE,wco_SSE2));
-            vc_excl_SSE3       = gmx_add_pr(vc_excl_SSE3,gmx_and_pr(sh_ewald_SSE,wco_SSE3));
+            /* Add Ewald potential shift to vc_sub for convenience */
+            vc_sub_SSE0   = gmx_add_pr(vc_sub_SSE0,gmx_and_pr(sh_ewald_SSE,wco_SSE0));
+            vc_sub_SSE1   = gmx_add_pr(vc_sub_SSE1,gmx_and_pr(sh_ewald_SSE,wco_SSE1));
+            vc_sub_SSE2   = gmx_add_pr(vc_sub_SSE2,gmx_and_pr(sh_ewald_SSE,wco_SSE2));
+            vc_sub_SSE3   = gmx_add_pr(vc_sub_SSE3,gmx_and_pr(sh_ewald_SSE,wco_SSE3));
 #endif
             
-            vcoul_SSE0         = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,vc_excl_SSE0));
-            vcoul_SSE1         = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,vc_excl_SSE1));
-            vcoul_SSE2         = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,vc_excl_SSE2));
-            vcoul_SSE3         = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,vc_excl_SSE3));
+            vcoul_SSE0    = gmx_mul_pr(qq_SSE0,gmx_sub_pr(rinv_ex_SSE0,vc_sub_SSE0));
+            vcoul_SSE1    = gmx_mul_pr(qq_SSE1,gmx_sub_pr(rinv_ex_SSE1,vc_sub_SSE1));
+            vcoul_SSE2    = gmx_mul_pr(qq_SSE2,gmx_sub_pr(rinv_ex_SSE2,vc_sub_SSE2));
+            vcoul_SSE3    = gmx_mul_pr(qq_SSE3,gmx_sub_pr(rinv_ex_SSE3,vc_sub_SSE3));
 
 #endif
 #endif
@@ -557,97 +596,97 @@
 #ifdef CALC_LJ
             /* Lennard-Jones interaction */
 #ifdef LJ_COMB_LB
-            sir_SSE0           = gmx_mul_pr(sig_SSE0,rinv_SSE0);
-            sir_SSE1           = gmx_mul_pr(sig_SSE1,rinv_SSE1);
+            sir_SSE0      = gmx_mul_pr(sig_SSE0,rinv_SSE0);
+            sir_SSE1      = gmx_mul_pr(sig_SSE1,rinv_SSE1);
 #ifndef HALF_LJ
-            sir_SSE2           = gmx_mul_pr(sig_SSE2,rinv_SSE2);
-            sir_SSE3           = gmx_mul_pr(sig_SSE3,rinv_SSE3);
+            sir_SSE2      = gmx_mul_pr(sig_SSE2,rinv_SSE2);
+            sir_SSE3      = gmx_mul_pr(sig_SSE3,rinv_SSE3);
 #endif
-            sir2_SSE0          = gmx_mul_pr(sir_SSE0,sir_SSE0);
-            sir2_SSE1          = gmx_mul_pr(sir_SSE1,sir_SSE1);
+            sir2_SSE0     = gmx_mul_pr(sir_SSE0,sir_SSE0);
+            sir2_SSE1     = gmx_mul_pr(sir_SSE1,sir_SSE1);
 #ifndef HALF_LJ
-            sir2_SSE2          = gmx_mul_pr(sir_SSE2,sir_SSE2);
-            sir2_SSE3          = gmx_mul_pr(sir_SSE3,sir_SSE3);
+            sir2_SSE2     = gmx_mul_pr(sir_SSE2,sir_SSE2);
+            sir2_SSE3     = gmx_mul_pr(sir_SSE3,sir_SSE3);
 #endif
-            sir6_SSE0          = gmx_mul_pr(sir2_SSE0,gmx_mul_pr(sir2_SSE0,sir2_SSE0));
-            sir6_SSE1          = gmx_mul_pr(sir2_SSE1,gmx_mul_pr(sir2_SSE1,sir2_SSE1));
+            sir6_SSE0     = gmx_mul_pr(sir2_SSE0,gmx_mul_pr(sir2_SSE0,sir2_SSE0));
+            sir6_SSE1     = gmx_mul_pr(sir2_SSE1,gmx_mul_pr(sir2_SSE1,sir2_SSE1));
 #ifdef EXCL_FORCES
-            sir6_SSE0          = gmx_and_pr(sir6_SSE0,int_SSE0);
-            sir6_SSE1          = gmx_and_pr(sir6_SSE1,int_SSE1);
+            sir6_SSE0     = gmx_and_pr(sir6_SSE0,int_SSE0);
+            sir6_SSE1     = gmx_and_pr(sir6_SSE1,int_SSE1);
 #endif
 #ifndef HALF_LJ
-            sir6_SSE2          = gmx_mul_pr(sir2_SSE2,gmx_mul_pr(sir2_SSE2,sir2_SSE2));
-            sir6_SSE3          = gmx_mul_pr(sir2_SSE3,gmx_mul_pr(sir2_SSE3,sir2_SSE3));
+            sir6_SSE2     = gmx_mul_pr(sir2_SSE2,gmx_mul_pr(sir2_SSE2,sir2_SSE2));
+            sir6_SSE3     = gmx_mul_pr(sir2_SSE3,gmx_mul_pr(sir2_SSE3,sir2_SSE3));
 #ifdef EXCL_FORCES
-            sir6_SSE2          = gmx_and_pr(sir6_SSE2,int_SSE2);
-            sir6_SSE3          = gmx_and_pr(sir6_SSE3,int_SSE3);
+            sir6_SSE2     = gmx_and_pr(sir6_SSE2,int_SSE2);
+            sir6_SSE3     = gmx_and_pr(sir6_SSE3,int_SSE3);
 #endif
 #endif
-            FrLJ6_SSE0         = gmx_mul_pr(eps_SSE0,sir6_SSE0);
-            FrLJ6_SSE1         = gmx_mul_pr(eps_SSE1,sir6_SSE1);
+            FrLJ6_SSE0    = gmx_mul_pr(eps_SSE0,sir6_SSE0);
+            FrLJ6_SSE1    = gmx_mul_pr(eps_SSE1,sir6_SSE1);
 #ifndef HALF_LJ
-            FrLJ6_SSE2         = gmx_mul_pr(eps_SSE2,sir6_SSE2);
-            FrLJ6_SSE3         = gmx_mul_pr(eps_SSE3,sir6_SSE3);
+            FrLJ6_SSE2    = gmx_mul_pr(eps_SSE2,sir6_SSE2);
+            FrLJ6_SSE3    = gmx_mul_pr(eps_SSE3,sir6_SSE3);
 #endif
-            FrLJ12_SSE0        = gmx_mul_pr(FrLJ6_SSE0,sir6_SSE0);
-            FrLJ12_SSE1        = gmx_mul_pr(FrLJ6_SSE1,sir6_SSE1);
+            FrLJ12_SSE0   = gmx_mul_pr(FrLJ6_SSE0,sir6_SSE0);
+            FrLJ12_SSE1   = gmx_mul_pr(FrLJ6_SSE1,sir6_SSE1);
 #ifndef HALF_LJ
-            FrLJ12_SSE2        = gmx_mul_pr(FrLJ6_SSE2,sir6_SSE2);
-            FrLJ12_SSE3        = gmx_mul_pr(FrLJ6_SSE3,sir6_SSE3);
+            FrLJ12_SSE2   = gmx_mul_pr(FrLJ6_SSE2,sir6_SSE2);
+            FrLJ12_SSE3   = gmx_mul_pr(FrLJ6_SSE3,sir6_SSE3);
 #endif
 #if defined CALC_ENERGIES && !defined NO_LJ_SHIFT
             /* We need C6 and C12 to calculate the LJ potential shift */
-            sig6_SSE0          = gmx_mul_pr(sig_SSE0,sig_SSE0);
-            sig6_SSE1          = gmx_mul_pr(sig_SSE1,sig_SSE1);
+            sig6_SSE0     = gmx_mul_pr(sig_SSE0,sig_SSE0);
+            sig6_SSE1     = gmx_mul_pr(sig_SSE1,sig_SSE1);
 #ifndef HALF_LJ
-            sig6_SSE2          = gmx_mul_pr(sig_SSE2,sig_SSE2);
-            sig6_SSE3          = gmx_mul_pr(sig_SSE3,sig_SSE3);
+            sig6_SSE2     = gmx_mul_pr(sig_SSE2,sig_SSE2);
+            sig6_SSE3     = gmx_mul_pr(sig_SSE3,sig_SSE3);
 #endif
-            sig6_SSE0          = gmx_mul_pr(sig6_SSE0,gmx_mul_pr(sig6_SSE0,sig6_SSE0));
-            sig6_SSE1          = gmx_mul_pr(sig6_SSE1,gmx_mul_pr(sig6_SSE1,sig6_SSE1));
+            sig6_SSE0     = gmx_mul_pr(sig6_SSE0,gmx_mul_pr(sig6_SSE0,sig6_SSE0));
+            sig6_SSE1     = gmx_mul_pr(sig6_SSE1,gmx_mul_pr(sig6_SSE1,sig6_SSE1));
 #ifndef HALF_LJ
-            sig6_SSE2          = gmx_mul_pr(sig6_SSE2,gmx_mul_pr(sig6_SSE2,sig6_SSE2));
-            sig6_SSE3          = gmx_mul_pr(sig6_SSE3,gmx_mul_pr(sig6_SSE3,sig6_SSE3));
+            sig6_SSE2     = gmx_mul_pr(sig6_SSE2,gmx_mul_pr(sig6_SSE2,sig6_SSE2));
+            sig6_SSE3     = gmx_mul_pr(sig6_SSE3,gmx_mul_pr(sig6_SSE3,sig6_SSE3));
 #endif
-            c6_SSE0            = gmx_mul_pr(eps_SSE0,sig6_SSE0);
-            c6_SSE1            = gmx_mul_pr(eps_SSE1,sig6_SSE1);
+            c6_SSE0       = gmx_mul_pr(eps_SSE0,sig6_SSE0);
+            c6_SSE1       = gmx_mul_pr(eps_SSE1,sig6_SSE1);
 #ifndef HALF_LJ
-            c6_SSE2            = gmx_mul_pr(eps_SSE2,sig6_SSE2);
-            c6_SSE3            = gmx_mul_pr(eps_SSE3,sig6_SSE3);
+            c6_SSE2       = gmx_mul_pr(eps_SSE2,sig6_SSE2);
+            c6_SSE3       = gmx_mul_pr(eps_SSE3,sig6_SSE3);
 #endif
-            c12_SSE0           = gmx_mul_pr(c6_SSE0,sig6_SSE0);
-            c12_SSE1           = gmx_mul_pr(c6_SSE1,sig6_SSE1);
+            c12_SSE0      = gmx_mul_pr(c6_SSE0,sig6_SSE0);
+            c12_SSE1      = gmx_mul_pr(c6_SSE1,sig6_SSE1);
 #ifndef HALF_LJ
-            c12_SSE2           = gmx_mul_pr(c6_SSE2,sig6_SSE2);
-            c12_SSE3           = gmx_mul_pr(c6_SSE3,sig6_SSE3);
+            c12_SSE2      = gmx_mul_pr(c6_SSE2,sig6_SSE2);
+            c12_SSE3      = gmx_mul_pr(c6_SSE3,sig6_SSE3);
 #endif
 #endif
 #else /* ifdef LJ_COMB_LB */
-            rinvsix_SSE0       = gmx_mul_pr(rinvsq_SSE0,gmx_mul_pr(rinvsq_SSE0,rinvsq_SSE0));
-            rinvsix_SSE1       = gmx_mul_pr(rinvsq_SSE1,gmx_mul_pr(rinvsq_SSE1,rinvsq_SSE1));
+            rinvsix_SSE0  = gmx_mul_pr(rinvsq_SSE0,gmx_mul_pr(rinvsq_SSE0,rinvsq_SSE0));
+            rinvsix_SSE1  = gmx_mul_pr(rinvsq_SSE1,gmx_mul_pr(rinvsq_SSE1,rinvsq_SSE1));
 #ifdef EXCL_FORCES
-            rinvsix_SSE0       = gmx_and_pr(rinvsix_SSE0,int_SSE0);
-            rinvsix_SSE1       = gmx_and_pr(rinvsix_SSE1,int_SSE1);
+            rinvsix_SSE0  = gmx_and_pr(rinvsix_SSE0,int_SSE0);
+            rinvsix_SSE1  = gmx_and_pr(rinvsix_SSE1,int_SSE1);
 #endif
 #ifndef HALF_LJ
-            rinvsix_SSE2       = gmx_mul_pr(rinvsq_SSE2,gmx_mul_pr(rinvsq_SSE2,rinvsq_SSE2));
-            rinvsix_SSE3       = gmx_mul_pr(rinvsq_SSE3,gmx_mul_pr(rinvsq_SSE3,rinvsq_SSE3));
+            rinvsix_SSE2  = gmx_mul_pr(rinvsq_SSE2,gmx_mul_pr(rinvsq_SSE2,rinvsq_SSE2));
+            rinvsix_SSE3  = gmx_mul_pr(rinvsq_SSE3,gmx_mul_pr(rinvsq_SSE3,rinvsq_SSE3));
 #ifdef EXCL_FORCES
-            rinvsix_SSE2       = gmx_and_pr(rinvsix_SSE2,int_SSE2);
-            rinvsix_SSE3       = gmx_and_pr(rinvsix_SSE3,int_SSE3);
+            rinvsix_SSE2  = gmx_and_pr(rinvsix_SSE2,int_SSE2);
+            rinvsix_SSE3  = gmx_and_pr(rinvsix_SSE3,int_SSE3);
 #endif
 #endif
-            FrLJ6_SSE0         = gmx_mul_pr(c6_SSE0,rinvsix_SSE0);
-            FrLJ6_SSE1         = gmx_mul_pr(c6_SSE1,rinvsix_SSE1);
+            FrLJ6_SSE0    = gmx_mul_pr(c6_SSE0,rinvsix_SSE0);
+            FrLJ6_SSE1    = gmx_mul_pr(c6_SSE1,rinvsix_SSE1);
 #ifndef HALF_LJ
-            FrLJ6_SSE2         = gmx_mul_pr(c6_SSE2,rinvsix_SSE2);
-            FrLJ6_SSE3         = gmx_mul_pr(c6_SSE3,rinvsix_SSE3);
+            FrLJ6_SSE2    = gmx_mul_pr(c6_SSE2,rinvsix_SSE2);
+            FrLJ6_SSE3    = gmx_mul_pr(c6_SSE3,rinvsix_SSE3);
 #endif
-            FrLJ12_SSE0        = gmx_mul_pr(c12_SSE0,gmx_mul_pr(rinvsix_SSE0,rinvsix_SSE0));
-            FrLJ12_SSE1        = gmx_mul_pr(c12_SSE1,gmx_mul_pr(rinvsix_SSE1,rinvsix_SSE1));
+            FrLJ12_SSE0   = gmx_mul_pr(c12_SSE0,gmx_mul_pr(rinvsix_SSE0,rinvsix_SSE0));
+            FrLJ12_SSE1   = gmx_mul_pr(c12_SSE1,gmx_mul_pr(rinvsix_SSE1,rinvsix_SSE1));
 #ifndef HALF_LJ
-            FrLJ12_SSE2        = gmx_mul_pr(c12_SSE2,gmx_mul_pr(rinvsix_SSE2,rinvsix_SSE2));
-            FrLJ12_SSE3        = gmx_mul_pr(c12_SSE3,gmx_mul_pr(rinvsix_SSE3,rinvsix_SSE3));
+            FrLJ12_SSE2   = gmx_mul_pr(c12_SSE2,gmx_mul_pr(rinvsix_SSE2,rinvsix_SSE2));
+            FrLJ12_SSE3   = gmx_mul_pr(c12_SSE3,gmx_mul_pr(rinvsix_SSE3,rinvsix_SSE3));
 #endif
 #endif /* LJ_COMB_LB */
 #endif /* CALC_LJ */
@@ -656,20 +695,20 @@
 #ifdef ENERGY_GROUPS
             /* Extract the group pair index per j pair */
 #if UNROLLJ == 2
-            egps_j             = nbat->energrp[cj>>1];
-            egp_jj[0]          = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
+            egps_j        = nbat->energrp[cj>>1];
+            egp_jj[0]     = ((egps_j >> ((cj & 1)*egps_jshift)) & egps_jmask)*egps_jstride;
 #else
-            egps_j             = nbat->energrp[cj];
+            egps_j        = nbat->energrp[cj];
             for(jj=0; jj<(UNROLLJ>>1); jj++)
             {
-                egp_jj[jj]     = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;
+                egp_jj[jj]  = ((egps_j >> (jj*egps_jshift)) & egps_jmask)*egps_jstride;
             }
 #endif
 #endif
 
 #ifdef CALC_COULOMB
 #ifndef ENERGY_GROUPS
-            vctotSSE           = gmx_add_pr(vctotSSE, gmx_sum4_pr(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
+            vctotSSE      = gmx_add_pr(vctotSSE, gmx_sum4_pr(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
 #else
             add_ener_grp(vcoul_SSE0,vctp[0],egp_jj);
             add_ener_grp(vcoul_SSE1,vctp[1],egp_jj);
@@ -681,56 +720,56 @@
 #ifdef CALC_LJ
             /* Calculate the LJ energies */
 #ifdef NO_LJ_SHIFT
-            VLJ6_SSE0          = gmx_mul_pr(sixthSSE,FrLJ6_SSE0);
-            VLJ6_SSE1          = gmx_mul_pr(sixthSSE,FrLJ6_SSE1);
+            VLJ6_SSE0     = gmx_mul_pr(sixthSSE,FrLJ6_SSE0);
+            VLJ6_SSE1     = gmx_mul_pr(sixthSSE,FrLJ6_SSE1);
 #ifndef HALF_LJ
-            VLJ6_SSE2          = gmx_mul_pr(sixthSSE,FrLJ6_SSE2);
-            VLJ6_SSE3          = gmx_mul_pr(sixthSSE,FrLJ6_SSE3);
+            VLJ6_SSE2     = gmx_mul_pr(sixthSSE,FrLJ6_SSE2);
+            VLJ6_SSE3     = gmx_mul_pr(sixthSSE,FrLJ6_SSE3);
 #endif
-            VLJ12_SSE0         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE0);
-            VLJ12_SSE1         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE1);
+            VLJ12_SSE0    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE0);
+            VLJ12_SSE1    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE1);
 #ifndef HALF_LJ
-            VLJ12_SSE2         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE2);
-            VLJ12_SSE3         = gmx_mul_pr(twelvethSSE,FrLJ12_SSE3);
+            VLJ12_SSE2    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE2);
+            VLJ12_SSE3    = gmx_mul_pr(twelvethSSE,FrLJ12_SSE3);
 #endif
 #else /* ifdef NO_LJ_SHIFT */
-            VLJ6_SSE0          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE0,gmx_mul_pr(c6_SSE0,sh_invrc6_SSE)));
-            VLJ6_SSE1          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE1,gmx_mul_pr(c6_SSE1,sh_invrc6_SSE)));
+            VLJ6_SSE0     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE0,gmx_mul_pr(c6_SSE0,sh_invrc6_SSE)));
+            VLJ6_SSE1     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE1,gmx_mul_pr(c6_SSE1,sh_invrc6_SSE)));
 #ifndef HALF_LJ
-            VLJ6_SSE2          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE2,gmx_mul_pr(c6_SSE2,sh_invrc6_SSE)));
-            VLJ6_SSE3          = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE3,gmx_mul_pr(c6_SSE3,sh_invrc6_SSE)));
+            VLJ6_SSE2     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE2,gmx_mul_pr(c6_SSE2,sh_invrc6_SSE)));
+            VLJ6_SSE3     = gmx_mul_pr(sixthSSE,gmx_sub_pr(FrLJ6_SSE3,gmx_mul_pr(c6_SSE3,sh_invrc6_SSE)));
 #endif
-            VLJ12_SSE0         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE0,gmx_mul_pr(c12_SSE0,sh_invrc12_SSE)));
-            VLJ12_SSE1         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE1,gmx_mul_pr(c12_SSE1,sh_invrc12_SSE)));
+            VLJ12_SSE0    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE0,gmx_mul_pr(c12_SSE0,sh_invrc12_SSE)));
+            VLJ12_SSE1    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE1,gmx_mul_pr(c12_SSE1,sh_invrc12_SSE)));
 #ifndef HALF_LJ
-            VLJ12_SSE2         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE2,gmx_mul_pr(c12_SSE2,sh_invrc12_SSE)));
-            VLJ12_SSE3         = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE3,gmx_mul_pr(c12_SSE3,sh_invrc12_SSE)));
+            VLJ12_SSE2    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE2,gmx_mul_pr(c12_SSE2,sh_invrc12_SSE)));
+            VLJ12_SSE3    = gmx_mul_pr(twelvethSSE,gmx_sub_pr(FrLJ12_SSE3,gmx_mul_pr(c12_SSE3,sh_invrc12_SSE)));
 #endif
 #endif /* ifdef NO_LJ_SHIFT */
 
-            VLJ_SSE0           = gmx_sub_pr(VLJ12_SSE0,VLJ6_SSE0);
-            VLJ_SSE1           = gmx_sub_pr(VLJ12_SSE1,VLJ6_SSE1);
+            VLJ_SSE0      = gmx_sub_pr(VLJ12_SSE0,VLJ6_SSE0);
+            VLJ_SSE1      = gmx_sub_pr(VLJ12_SSE1,VLJ6_SSE1);
 #ifndef HALF_LJ
-            VLJ_SSE2           = gmx_sub_pr(VLJ12_SSE2,VLJ6_SSE2);
-            VLJ_SSE3           = gmx_sub_pr(VLJ12_SSE3,VLJ6_SSE3);
+            VLJ_SSE2      = gmx_sub_pr(VLJ12_SSE2,VLJ6_SSE2);
+            VLJ_SSE3      = gmx_sub_pr(VLJ12_SSE3,VLJ6_SSE3);
 #endif
 #ifndef NO_LJ_SHIFT
             /* The potential shift should be removed non-interacting pairs */
-            VLJ_SSE0           = gmx_and_pr(VLJ_SSE0,wco_SSE0);
-            VLJ_SSE1           = gmx_and_pr(VLJ_SSE1,wco_SSE1);
+            VLJ_SSE0      = gmx_and_pr(VLJ_SSE0,wco_SSE0);
+            VLJ_SSE1      = gmx_and_pr(VLJ_SSE1,wco_SSE1);
 #ifndef HALF_LJ
-            VLJ_SSE2           = gmx_and_pr(VLJ_SSE2,wco_SSE2);
-            VLJ_SSE3           = gmx_and_pr(VLJ_SSE3,wco_SSE3);
+            VLJ_SSE2      = gmx_and_pr(VLJ_SSE2,wco_SSE2);
+            VLJ_SSE3      = gmx_and_pr(VLJ_SSE3,wco_SSE3);
 #endif
 #endif
 #ifndef ENERGY_GROUPS
-            VvdwtotSSE         = gmx_add_pr(VvdwtotSSE,
+            VvdwtotSSE    = gmx_add_pr(VvdwtotSSE,
 #ifndef HALF_LJ
-                                            gmx_sum4_pr(VLJ_SSE0,VLJ_SSE1,VLJ_SSE2,VLJ_SSE3)
+                                       gmx_sum4_pr(VLJ_SSE0,VLJ_SSE1,VLJ_SSE2,VLJ_SSE3)
 #else
-                                            gmx_add_pr(VLJ_SSE0,VLJ_SSE1)
+                                       gmx_add_pr(VLJ_SSE0,VLJ_SSE1)
 #endif
-                                           );
+                                      );
 #else
             add_ener_grp(VLJ_SSE0,vvdwtp[0],egp_jj);
             add_ener_grp(VLJ_SSE1,vvdwtp[1],egp_jj);
@@ -743,72 +782,72 @@
 #endif /* CALC_ENERGIES */
 
 #ifdef CALC_LJ
-            fscal_SSE0         = gmx_mul_pr(rinvsq_SSE0,
+            fscal_SSE0    = gmx_mul_pr(rinvsq_SSE0,
 #ifdef CALC_COULOMB
-                                           gmx_add_pr(frcoul_SSE0,
+                                                   gmx_add_pr(frcoul_SSE0,
 #else
-                                                     (
+                                                   (
 #endif
-                                                      gmx_sub_pr(FrLJ12_SSE0,FrLJ6_SSE0)));
-            fscal_SSE1         = gmx_mul_pr(rinvsq_SSE1,
+                                                    gmx_sub_pr(FrLJ12_SSE0,FrLJ6_SSE0)));
+            fscal_SSE1    = gmx_mul_pr(rinvsq_SSE1,
 #ifdef CALC_COULOMB
-                                           gmx_add_pr(frcoul_SSE1,
+                                                   gmx_add_pr(frcoul_SSE1,
 #else
-                                                     (
+                                                   (
 #endif
-                                                      gmx_sub_pr(FrLJ12_SSE1,FrLJ6_SSE1)));
+                                                    gmx_sub_pr(FrLJ12_SSE1,FrLJ6_SSE1)));
 #else
-            fscal_SSE0         = gmx_mul_pr(rinvsq_SSE0,frcoul_SSE0);
-            fscal_SSE1         = gmx_mul_pr(rinvsq_SSE1,frcoul_SSE1);
+            fscal_SSE0    = gmx_mul_pr(rinvsq_SSE0,frcoul_SSE0);
+            fscal_SSE1    = gmx_mul_pr(rinvsq_SSE1,frcoul_SSE1);
 #endif /* CALC_LJ */
 #if defined CALC_LJ && !defined HALF_LJ
-            fscal_SSE2         = gmx_mul_pr(rinvsq_SSE2,
+            fscal_SSE2    = gmx_mul_pr(rinvsq_SSE2,
 #ifdef CALC_COULOMB
-                                           gmx_add_pr(frcoul_SSE2,
+                                                   gmx_add_pr(frcoul_SSE2,
 #else
-                                                     (
+                                                   (
 #endif
-                                                      gmx_sub_pr(FrLJ12_SSE2,FrLJ6_SSE2)));
-            fscal_SSE3         = gmx_mul_pr(rinvsq_SSE3,
+                                                    gmx_sub_pr(FrLJ12_SSE2,FrLJ6_SSE2)));
+            fscal_SSE3    = gmx_mul_pr(rinvsq_SSE3,
 #ifdef CALC_COULOMB
-                                           gmx_add_pr(frcoul_SSE3,
+                                                   gmx_add_pr(frcoul_SSE3,
 #else
-                                                     (
+                                                   (
 #endif
-                                                      gmx_sub_pr(FrLJ12_SSE3,FrLJ6_SSE3)));
+                                                    gmx_sub_pr(FrLJ12_SSE3,FrLJ6_SSE3)));
 #else
             /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
-            fscal_SSE2         = gmx_mul_pr(rinvsq_SSE2,frcoul_SSE2);
-            fscal_SSE3         = gmx_mul_pr(rinvsq_SSE3,frcoul_SSE3);
+            fscal_SSE2    = gmx_mul_pr(rinvsq_SSE2,frcoul_SSE2);
+            fscal_SSE3    = gmx_mul_pr(rinvsq_SSE3,frcoul_SSE3);
 #endif
             
             /* Calculate temporary vectorial force */
-            tx_SSE0            = gmx_mul_pr(fscal_SSE0,dx_SSE0);
-            tx_SSE1            = gmx_mul_pr(fscal_SSE1,dx_SSE1);
-            tx_SSE2            = gmx_mul_pr(fscal_SSE2,dx_SSE2);
-            tx_SSE3            = gmx_mul_pr(fscal_SSE3,dx_SSE3);
-            ty_SSE0            = gmx_mul_pr(fscal_SSE0,dy_SSE0);
-            ty_SSE1            = gmx_mul_pr(fscal_SSE1,dy_SSE1);
-            ty_SSE2            = gmx_mul_pr(fscal_SSE2,dy_SSE2);
-            ty_SSE3            = gmx_mul_pr(fscal_SSE3,dy_SSE3);
-            tz_SSE0            = gmx_mul_pr(fscal_SSE0,dz_SSE0);
-            tz_SSE1            = gmx_mul_pr(fscal_SSE1,dz_SSE1);
-            tz_SSE2            = gmx_mul_pr(fscal_SSE2,dz_SSE2);
-            tz_SSE3            = gmx_mul_pr(fscal_SSE3,dz_SSE3);
+            tx_SSE0       = gmx_mul_pr(fscal_SSE0,dx_SSE0);
+            tx_SSE1       = gmx_mul_pr(fscal_SSE1,dx_SSE1);
+            tx_SSE2       = gmx_mul_pr(fscal_SSE2,dx_SSE2);
+            tx_SSE3       = gmx_mul_pr(fscal_SSE3,dx_SSE3);
+            ty_SSE0       = gmx_mul_pr(fscal_SSE0,dy_SSE0);
+            ty_SSE1       = gmx_mul_pr(fscal_SSE1,dy_SSE1);
+            ty_SSE2       = gmx_mul_pr(fscal_SSE2,dy_SSE2);
+            ty_SSE3       = gmx_mul_pr(fscal_SSE3,dy_SSE3);
+            tz_SSE0       = gmx_mul_pr(fscal_SSE0,dz_SSE0);
+            tz_SSE1       = gmx_mul_pr(fscal_SSE1,dz_SSE1);
+            tz_SSE2       = gmx_mul_pr(fscal_SSE2,dz_SSE2);
+            tz_SSE3       = gmx_mul_pr(fscal_SSE3,dz_SSE3);
             
             /* Increment i atom force */
-            fix_SSE0          = gmx_add_pr(fix_SSE0,tx_SSE0);
-            fix_SSE1          = gmx_add_pr(fix_SSE1,tx_SSE1);
-            fix_SSE2          = gmx_add_pr(fix_SSE2,tx_SSE2);
-            fix_SSE3          = gmx_add_pr(fix_SSE3,tx_SSE3);
-            fiy_SSE0          = gmx_add_pr(fiy_SSE0,ty_SSE0);
-            fiy_SSE1          = gmx_add_pr(fiy_SSE1,ty_SSE1);
-            fiy_SSE2          = gmx_add_pr(fiy_SSE2,ty_SSE2);
-            fiy_SSE3          = gmx_add_pr(fiy_SSE3,ty_SSE3);
-            fiz_SSE0          = gmx_add_pr(fiz_SSE0,tz_SSE0);
-            fiz_SSE1          = gmx_add_pr(fiz_SSE1,tz_SSE1);
-            fiz_SSE2          = gmx_add_pr(fiz_SSE2,tz_SSE2);
-            fiz_SSE3          = gmx_add_pr(fiz_SSE3,tz_SSE3);
+            fix_SSE0      = gmx_add_pr(fix_SSE0,tx_SSE0);
+            fix_SSE1      = gmx_add_pr(fix_SSE1,tx_SSE1);
+            fix_SSE2      = gmx_add_pr(fix_SSE2,tx_SSE2);
+            fix_SSE3      = gmx_add_pr(fix_SSE3,tx_SSE3);
+            fiy_SSE0      = gmx_add_pr(fiy_SSE0,ty_SSE0);
+            fiy_SSE1      = gmx_add_pr(fiy_SSE1,ty_SSE1);
+            fiy_SSE2      = gmx_add_pr(fiy_SSE2,ty_SSE2);
+            fiy_SSE3      = gmx_add_pr(fiy_SSE3,ty_SSE3);
+            fiz_SSE0      = gmx_add_pr(fiz_SSE0,tz_SSE0);
+            fiz_SSE1      = gmx_add_pr(fiz_SSE1,tz_SSE1);
+            fiz_SSE2      = gmx_add_pr(fiz_SSE2,tz_SSE2);
+            fiz_SSE3      = gmx_add_pr(fiz_SSE3,tz_SSE3);
             
             /* Decrement j atom force */
             gmx_store_pr(f+ajx,
@@ -823,5 +862,7 @@
 #undef  rinv_ex_SSE1
 #undef  rinv_ex_SSE2
 #undef  rinv_ex_SSE3
+
+#undef  CUTOFF_BLENDV
 
 #undef  EXCL_FORCES

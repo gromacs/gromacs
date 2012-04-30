@@ -64,11 +64,13 @@
 #define gmx_add_pr        _mm_add_ps
 #define gmx_sub_pr        _mm_sub_ps
 #define gmx_mul_pr        _mm_mul_ps
+#define gmx_max_pr        _mm_max_ps
 #define gmx_cmplt_pr      _mm_cmplt_ps
 #define gmx_and_pr        _mm_and_ps
 #define gmx_or_pr         _mm_or_ps
 /* SSE 4.1 */
 #define gmx_floor_pr      _mm_floor_ps
+#define gmx_blendv_pr     _mm_blendv_ps
 
 #define gmx_movemask_pr   _mm_movemask_ps
 
@@ -97,11 +99,13 @@
 #define gmx_add_pr        _mm_add_pd
 #define gmx_sub_pr        _mm_sub_pd
 #define gmx_mul_pr        _mm_mul_pd
+#define gmx_max_pr        _mm_max_pd
 #define gmx_cmplt_pr      _mm_cmplt_pd
 #define gmx_and_pr        _mm_and_pd
 #define gmx_or_pr         _mm_or_pd
 /* SSE 4.1 */
 #define gmx_floor_pr      _mm_floor_pd
+#define gmx_blendv_pr     _mm_blendv_pd
 
 #define gmx_movemask_pr   _mm_movemask_pd
 
@@ -138,6 +142,7 @@
 #define gmx_add_pr        _mm256_add_ps
 #define gmx_sub_pr        _mm256_sub_ps
 #define gmx_mul_pr        _mm256_mul_ps
+#define gmx_max_pr        _mm256_max_ps
 /* Not-equal (ordered, non-signaling)  */
 #define gmx_cmpneq_pr(x,y)  _mm256_cmp_ps(x,y,0x0c)
 /* Less-than (ordered, non-signaling)  */
@@ -146,6 +151,7 @@
 #define gmx_or_pr         _mm256_or_ps
 
 #define gmx_floor_pr      _mm256_floor_ps
+#define gmx_blendv_pr     _mm256_blendv_ps
 
 #define gmx_movemask_pr   _mm256_movemask_ps
 
@@ -173,6 +179,7 @@
 #define gmx_add_pr        _mm256_add_pd
 #define gmx_sub_pr        _mm256_sub_pd
 #define gmx_mul_pr        _mm256_mul_pd
+#define gmx_max_pr        _mm256_max_pd
 /* Not-equal (ordered, non-signaling)  */
 #define gmx_cmpneq_pr(x,y)  _mm256_cmp_pd(x,y,0x0c)
 /* Less-than (ordered, non-signaling)  */
@@ -181,6 +188,7 @@
 #define gmx_or_pr         _mm256_or_pd
 
 #define gmx_floor_pr      _mm256_floor_pd
+#define gmx_blendv_pr     _mm256_blendv_pd
 
 #define gmx_movemask_pr   _mm256_movemask_pd
 

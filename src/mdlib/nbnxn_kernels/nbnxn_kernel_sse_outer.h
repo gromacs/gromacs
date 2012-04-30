@@ -253,8 +253,9 @@ NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
 #endif
 
 #ifndef GMX_AVX_HERE
-    __m128i    zero_SSE = _mm_setzero_si128();
-#else
+    __m128i    zeroi_SSE = _mm_setzero_si128();
+#endif
+#if defined GMX_SSE4_1 || defined GMX_AVX_HERE
     gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
 #endif
 
