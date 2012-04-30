@@ -52,6 +52,7 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/format.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
@@ -175,6 +176,48 @@ void SelectionCollection::Impl::requestSelections(
         SelectionOptionStorage *storage)
 {
     _requests.push_back(SelectionRequest(name, descr, storage));
+}
+
+
+void SelectionCollection::Impl::placeSelectionsInRequests(
+        const SelectionList &selections)
+{
+    RequestsClearer clearRequestsOnExit(&_requests);
+
+    SelectionList::const_iterator first = selections.begin();
+    SelectionList::const_iterator last = first;
+    RequestList::const_iterator i;
+    // TODO: Improve error messages.
+    for (i = _requests.begin(); i != _requests.end(); ++i)
+    {
+        const SelectionRequest &request = *i;
+        if (request.count() > 0)
+        {
+            if (selections.end() - first < request.count())
+            {
+                GMX_THROW(InvalidInputError("Too few selections provided"));
+            }
+            last = first + request.count();
+        }
+        else
+        {
+            if (i != _requests.end() - 1)
+            {
+                GMX_THROW(InvalidInputError(
+                            formatString("Request for selection '%s' must "
+                                         "not be followed by others",
+                                         request.name.c_str())));
+            }
+            last = selections.end();
+        }
+        SelectionList curr(first, last);
+        request.storage->addSelections(curr, true);
+        first = last;
+    }
+    if (last != selections.end())
+    {
+        GMX_THROW(InvalidInputError("Too many selections provided"));
+    }
 }
 
 
@@ -432,43 +475,20 @@ SelectionCollection::parseRequestedFromStdin(bool bInteractive)
 
 
 void
+SelectionCollection::parseRequestedFromFile(const std::string &filename)
+{
+    SelectionList selections;
+    parseFromFile(filename, &selections);
+    _impl->placeSelectionsInRequests(selections);
+}
+
+
+void
 SelectionCollection::parseRequestedFromString(const std::string &str)
 {
-    Impl::RequestsClearer clearRequestsOnExit(&_impl->_requests);
-
     SelectionList selections;
     parseFromString(str, &selections);
-
-    SelectionList::const_iterator first = selections.begin();
-    SelectionList::const_iterator last = first;
-    Impl::RequestList::const_iterator i;
-    for (i = _impl->_requests.begin(); i != _impl->_requests.end(); ++i)
-    {
-        const Impl::SelectionRequest &request = *i;
-        if (request.count() > 0)
-        {
-            if (selections.end() - first < request.count())
-            {
-                GMX_THROW(InvalidInputError("Too few selections provided"));
-            }
-            last = first + request.count();
-        }
-        else
-        {
-            if (i != _impl->_requests.end() - 1)
-            {
-                GMX_THROW(APIError("Request for all selections not the last option"));
-            }
-            last = selections.end();
-        }
-        SelectionList curr(first, last);
-        request.storage->addSelections(curr, true);
-        first = last;
-    }
-    if (last != selections.end())
-    {
-        GMX_THROW(InvalidInputError("Too many selections provided"));
-    }
+    _impl->placeSelectionsInRequests(selections);
 }
 
 

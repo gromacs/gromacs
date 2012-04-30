@@ -215,6 +215,22 @@ class SelectionCollection::Impl
                                const std::string &descr,
                                SelectionOptionStorage *storage);
         /*! \brief
+         * Assign selections from a list to pending requests.
+         *
+         * \param[in] selections  List of selections to assign.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InvalidInputError if the assignment cannot be done
+         *      (see parseRequestedFromFile() for documented conditions).
+         *
+         * Loops through \p selections and the pending requests lists in order,
+         * and for each requests, assigns the first yet unassigned selections
+         * from the list.
+         *
+         * Used to implement parseRequestedFromFile() and
+         * parseRequestedFromStdin().
+         */
+        void placeSelectionsInRequests(const SelectionList &selections);
+        /*! \brief
          * Replace group references by group contents.
          *
          * \param[in]    root    Root of selection tree to process.
