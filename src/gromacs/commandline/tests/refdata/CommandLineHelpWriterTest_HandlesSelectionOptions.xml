@@ -4,6 +4,7 @@
   <String Name="HelpText"><![CDATA[
 Selection  Description
 -----------------------------------
+-sf        Provide selections from files
 -refsel    Reference selection option
     resname SOL
 -sel       Selection option

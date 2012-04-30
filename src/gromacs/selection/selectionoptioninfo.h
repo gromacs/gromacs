@@ -213,7 +213,6 @@ class SelectionOptionInfo : public OptionInfo
  */
 void setSelectionCollectionForOptions(Options *options,
                                       SelectionCollection *selections);
-//! \endcond
 
 } // namespace gmx
 

@@ -50,6 +50,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -185,6 +186,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
                         .description("Output file description")
                         .filetype(eftPlot).outputFile());
 
+    options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("sel").description("Selection option"));
 
     CommandLineHelpWriter writer(options);
@@ -263,9 +265,11 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
  */
 TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 {
+    using gmx::SelectionFileOption;
     using gmx::SelectionOption;
 
     gmx::Options options(NULL, NULL);
+    options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("refsel").required()
                         .description("Reference selection option"));
     options.addOption(SelectionOption("sel").required().valueCount(2)

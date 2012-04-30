@@ -52,6 +52,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
@@ -191,6 +192,7 @@ TrajectoryAnalysisRunnerCommon::initOptions()
                           .filetype(eftIndex).inputFile()
                           .store(&_impl->_ndxfile)
                           .description("Extra index groups"));
+    options.addOption(SelectionFileOption("sf"));
 
     // Add options for trajectory time control.
     options.addOption(DoubleOption("b").store(&_impl->_startTime).timeValue()
