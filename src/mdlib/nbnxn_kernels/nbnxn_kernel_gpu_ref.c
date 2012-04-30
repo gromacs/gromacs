@@ -65,7 +65,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     gmx_bool      bEner;
     gmx_bool      bEwald;
     const real    *Ftab=NULL;
-    real          rcut2;
+    real          rcut2,rlist2;
     int           ntype;
     real          facel;
     int           n;
@@ -125,6 +125,8 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     }
 
     rcut2               = iconst->rvdw*iconst->rvdw;
+
+    rlist2              = nbl->rlist*nbl->rlist;
 
     type                = nbat->type;
     facel               = iconst->epsfac;
@@ -195,9 +197,12 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                      */
                     if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm*NSUBCELL+im)) & 1)
                     {
+                        gmx_bool within_rlist;
+
                         ci               = sci*NSUBCELL + im;
 
-                        npair = 0;
+                        within_rlist     = FALSE;
+                        npair            = 0;
                         for(ic=0; ic<NA_C; ic++)
                         {
                             ia               = ci*NA_C + ic;
@@ -212,7 +217,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                             fix              = 0;
                             fiy              = 0;
                             fiz              = 0;
-                    
+
                             for(jc=0; jc<NA_C; jc++)
                             {
                                 ja               = cj*NA_C + jc;
@@ -233,6 +238,10 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 dy               = iy - jy;      
                                 dz               = iz - jz;      
                                 rsq              = dx*dx + dy*dy + dz*dz;
+                                if (rsq < rlist2)
+                                {
+                                    within_rlist = TRUE;
+                                }
                                 if (rsq >= rcut2 || rsq < 1e-12)
                                 {
                                     continue;
@@ -320,12 +329,13 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
                                 npair_tot += npair;
 
                                 nhwu++;
-                                if (npair > 0)
+                                if (within_rlist)
                                 {
                                     nhwu_pruned++;
                                 }
 
-                                npair = 0;
+                                within_rlist = FALSE;
+                                npair        = 0;
                             }
                         }
                     }
@@ -343,7 +353,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
     if (debug)
     {
-        fprintf(debug,"number of half %dx%d atom pairs: %d pruned: %d fraction %4.2f\n",
+        fprintf(debug,"number of half %dx%d atom pairs: %d after pruning: %d fraction %4.2f\n",
                 nbl->na_ci,nbl->na_ci,
                 nhwu,nhwu_pruned,nhwu_pruned/(double)nhwu);
         fprintf(debug,"generic kernel pair interactions:            %d\n",
