@@ -247,27 +247,43 @@ class SelectionCollection
          */
         void parseRequestedFromStdin(bool bInteractive);
         /*! \brief
+         * Parses selection(s) from a file for options not yet provided.
+         *
+         * \param[in]  filename Name of the file to parse selections from.
+         * \throws     unspecified  Can throw any exception thrown by
+         *      parseFromFile().
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     InvalidInputError if
+         *      - the number of selections in \p filename doesn't match the
+         *        number requested.
+         *      - any selection uses a feature that is not allowed for the
+         *        corresponding option.
+         *      - if there is a request for any number of selections that is
+         *        not the last (in which case it is not possible to determine
+         *        which selections belong to which request).
+         *
+         * This method behaves as parseRequestedFromStdin(), but reads the
+         * selections from a file instead of standard input.
+         * This is used to implement SelectionFileOption.
+         *
+         * \see parseRequestedFromStdin()
+         */
+        void parseRequestedFromFile(const std::string &filename);
+        /*! \brief
          * Parses selection(s) from a string for options not yet provided.
          *
          * \param[in]  str     String to parse.
          * \throws     unspecified  Can throw any exception thrown by
          *      parseFromString().
          * \throws     std::bad_alloc if out of memory.
-         * \throws     InvalidInputError if
-         *      - the number of selections in \p str doesn't match the number
-         *        requested.
-         *      - any selection uses a feature that is not allowed for the
-         *        corresponding option.
-         * \throws     APIError if there is a request for any number of
-         *      selections that is not the last (in which case it is not
-         *      possible to determine which selections belong to which
-         *      request).
+         * \throws     InvalidInputError in same conditions as
+         *      parseRequestedFromFile().
          *
-         * This method behaves as parseRequestedFromStdin(), but reads the
-         * selections from a string instead of standard input.
+         * This method behaves as parseRequestedFromFile(), but reads the
+         * selections from a string instead of a file.
          * This method is mainly used for testing.
          *
-         * \see parseRequestedFromStdin()
+         * \see parseRequestedFromFile()
          */
         void parseRequestedFromString(const std::string &str);
         /*! \brief

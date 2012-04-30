@@ -355,6 +355,16 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
     EXPECT_NO_THROW(_sc.compile());
 }
 
+TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
+{
+    ASSERT_NO_THROW(_sc.parseFromFile(gmx::test::getTestFilePath("selfile.dat"),
+                                      &_sel));
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(2U, _sel.size());
+    EXPECT_STREQ("resname RA RB", _sel[0].selectionText());
+    EXPECT_STREQ("resname RB RC", _sel[1].selectionText());
+}
+
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
     EXPECT_THROW(_sc.parseFromString("mindist from atomnr 1 cutoff", &_sel),

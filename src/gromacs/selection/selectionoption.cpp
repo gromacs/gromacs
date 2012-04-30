@@ -44,12 +44,14 @@
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
 
 #include "selectioncollection-impl.h"
+#include "selectionfileoptionstorage.h"
 #include "selectionoptionstorage.h"
 
 namespace gmx
@@ -63,6 +65,8 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
     : MyBase(settings, OptionFlags() | efNoDefaultValue | efDontCheckMinimumCount),
       _info(this), _sc(NULL), _selectionFlags(settings._selectionFlags)
 {
+    GMX_RELEASE_ASSERT(!hasFlag(efMulti),
+                       "allowMultiple() is not supported for selection options");
     if (settings._infoPtr != NULL)
     {
         *settings._infoPtr = &_info;
@@ -111,14 +115,19 @@ void SelectionOptionStorage::convertValue(const std::string &value)
     GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
     SelectionList selections;
-    // TODO: Implement reading from a file.
     _sc->parseFromString(value, &selections);
     addSelections(selections, false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
 {
-    if (values->size() > 0 && values->size() < static_cast<size_t>(minValueCount()))
+    GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
+
+    if (values->size() == 0)
+    {
+        _sc->_impl->requestSelections(name(), description(), this);
+    }
+    else if (values->size() < static_cast<size_t>(minValueCount()))
     {
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
     }
@@ -131,7 +140,7 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
 
 void SelectionOptionStorage::processAll()
 {
-    if ((isRequired() || isSet()) && valueCount() == 0)
+    if (isRequired() && !isSet())
     {
         GMX_RELEASE_ASSERT(_sc != NULL, "Selection collection is not set");
 
@@ -262,6 +271,84 @@ AbstractOptionStoragePointer SelectionOption::createStorage() const
 
 
 /********************************************************************
+ * SelectionFileOptionStorage
+ */
+
+SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption &settings)
+    : AbstractOptionStorage(settings, OptionFlags() | efMulti | efDontCheckMinimumCount),
+      info_(this), sc_(NULL), bValueParsed_(false)
+{
+}
+
+void SelectionFileOptionStorage::clearSet()
+{
+    bValueParsed_ = false;
+}
+
+void SelectionFileOptionStorage::convertValue(const std::string &value)
+{
+    GMX_RELEASE_ASSERT(sc_ != NULL, "Selection collection is not set");
+
+    if (bValueParsed_)
+    {
+        GMX_THROW(InvalidInputError("More than one file name provided"));
+    }
+    bValueParsed_ = true;
+    // TODO: Should we throw an InvalidInputError if the file does not exist?
+    sc_->parseRequestedFromFile(value);
+}
+
+void SelectionFileOptionStorage::processSet()
+{
+    if (!bValueParsed_)
+    {
+        GMX_THROW(InvalidInputError("No file name provided"));
+    }
+}
+
+
+/********************************************************************
+ * SelectionFileOptionInfo
+ */
+
+SelectionFileOptionInfo::SelectionFileOptionInfo(SelectionFileOptionStorage *option)
+    : OptionInfo(option)
+{
+}
+
+SelectionFileOptionStorage &SelectionFileOptionInfo::option()
+{
+    return static_cast<SelectionFileOptionStorage &>(OptionInfo::option());
+}
+
+const SelectionFileOptionStorage &SelectionFileOptionInfo::option() const
+{
+    return static_cast<const SelectionFileOptionStorage &>(OptionInfo::option());
+}
+
+void SelectionFileOptionInfo::setSelectionCollection(SelectionCollection *selections)
+{
+    option().setSelectionCollection(selections);
+}
+
+
+/********************************************************************
+ * SelectionFileOption
+ */
+
+SelectionFileOption::SelectionFileOption(const char *name)
+    : AbstractOption(name)
+{
+    setDescription("Provide selections from files");
+}
+
+AbstractOptionStoragePointer SelectionFileOption::createStorage() const
+{
+    return AbstractOptionStoragePointer(new SelectionFileOptionStorage(*this));
+}
+
+
+/********************************************************************
  * Global functions
  */
 
@@ -273,7 +360,7 @@ namespace
  *
  * \ingroup module_selection
  */
-class SelectionCollectionSetter : public OptionsModifyingTypeVisitor<SelectionOptionInfo>
+class SelectionCollectionSetter : public OptionsModifyingVisitor
 {
     public:
         //! Construct a visitor that sets given selection collection.
@@ -289,9 +376,20 @@ class SelectionCollectionSetter : public OptionsModifyingTypeVisitor<SelectionOp
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(SelectionOptionInfo *option)
+        void visitOption(OptionInfo *option)
         {
-            option->setSelectionCollection(selections_);
+            SelectionOptionInfo *selOption
+                = option->toType<SelectionOptionInfo>();
+            if (selOption != NULL)
+            {
+                selOption->setSelectionCollection(selections_);
+            }
+            SelectionFileOptionInfo *selFileOption
+                = option->toType<SelectionFileOptionInfo>();
+            if (selFileOption != NULL)
+            {
+                selFileOption->setSelectionCollection(selections_);
+            }
         }
 
     private:

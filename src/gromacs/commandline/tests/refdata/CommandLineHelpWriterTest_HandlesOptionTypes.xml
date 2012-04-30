@@ -25,6 +25,7 @@ Option       Type   Value  Description
 
 Selection  Description
 -----------------------------------
+-sf        Provide selections from files
 -sel       Selection option
 
 ]]></String>

@@ -49,6 +49,7 @@
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/selection/selectionfileoptioninfo.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/utility/format.h"
 
@@ -287,6 +288,7 @@ void ParameterWriter::visitSubSection(const Options &section)
 void ParameterWriter::visitOption(const OptionInfo &option)
 {
     if (option.isType<FileNameOptionInfo>()
+        || option.isType<SelectionFileOptionInfo>()
         || option.isType<SelectionOptionInfo>()
         || (!bShowHidden_ && option.isHidden()))
     {
@@ -334,7 +336,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
  *
  * \ingroup module_commandline
  */
-class SelectionParameterWriter : public OptionsTypeVisitor<SelectionOptionInfo>
+class SelectionParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing selection parameters.
@@ -344,7 +346,7 @@ class SelectionParameterWriter : public OptionsTypeVisitor<SelectionOptionInfo>
         bool didOutput() const { return formatter_.didOutput(); }
 
         virtual void visitSubSection(const Options &section);
-        virtual void visitOptionType(const SelectionOptionInfo &option);
+        virtual void visitOption(const OptionInfo &option);
 
     private:
         FILE                   *fp_;
@@ -365,8 +367,14 @@ void SelectionParameterWriter::visitSubSection(const Options &section)
     iterator.acceptOptions(this);
 }
 
-void SelectionParameterWriter::visitOptionType(const SelectionOptionInfo &option)
+void SelectionParameterWriter::visitOption(const OptionInfo &option)
 {
+    if (!option.isType<SelectionFileOptionInfo>()
+        && !option.isType<SelectionOptionInfo>())
+    {
+        return;
+    }
+
     formatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     formatter_.addColumnLine(0, name);
