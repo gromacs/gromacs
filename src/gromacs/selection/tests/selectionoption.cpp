@@ -43,15 +43,22 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "testutils/datapath.h"
 
 namespace
 {
 
-class SelectionOptionTest : public ::testing::Test
+/********************************************************************
+ * Base fixture for tests in this file.
+ */
+
+class SelectionOptionTestBase : public ::testing::Test
 {
     public:
-        SelectionOptionTest();
+        SelectionOptionTestBase();
 
         void setCollection();
 
@@ -59,18 +66,24 @@ class SelectionOptionTest : public ::testing::Test
         gmx::Options             _options;
 };
 
-SelectionOptionTest::SelectionOptionTest()
+SelectionOptionTestBase::SelectionOptionTestBase()
     : _options(NULL, NULL)
 {
     _sc.setReferencePosType("atom");
     _sc.setOutputPosType("atom");
 }
 
-void SelectionOptionTest::setCollection()
+void SelectionOptionTestBase::setCollection()
 {
     setSelectionCollectionForOptions(&_options, &_sc);
 }
 
+
+/********************************************************************
+ * Tests for SelectionOption
+ */
+
+typedef SelectionOptionTestBase SelectionOptionTest;
 
 TEST_F(SelectionOptionTest, ParsesSimpleSelection)
 {
@@ -302,6 +315,179 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     EXPECT_NO_THROW(_options.finish());
     EXPECT_NO_THROW(info->setValueCount(2));
     EXPECT_NO_THROW(_sc.parseRequestedFromString("resname RA RB; resname RB RC"));
+}
+
+
+/********************************************************************
+ * Tests for SelectionFileOption
+ */
+
+class SelectionFileOptionTest : public SelectionOptionTestBase
+{
+    public:
+        SelectionFileOptionTest();
+};
+
+SelectionFileOptionTest::SelectionFileOptionTest()
+{
+    _options.addOption(gmx::SelectionFileOption("sf"));
+}
+
+
+TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
+{
+    gmx::SelectionList sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(2U, sel.size());
+    EXPECT_STREQ("resname RA RB", sel[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel[1].selectionText());
+}
+
+
+TEST_F(SelectionFileOptionTest, HandlesTwoSeparateSelectionOptions)
+{
+    gmx::SelectionList sel1;
+    gmx::SelectionList sel2;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel1").storeVector(&sel1).multiValue()));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel2").storeVector(&sel2).multiValue()));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel1"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(value));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sel2"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(value));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(2U, sel1.size());
+    EXPECT_STREQ("resname RA RB", sel1[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel1[1].selectionText());
+    ASSERT_EQ(2U, sel2.size());
+    EXPECT_STREQ("resname RA RB", sel2[0].selectionText());
+    EXPECT_STREQ("resname RB RC", sel2[1].selectionText());
+}
+
+
+TEST_F(SelectionFileOptionTest, HandlesTwoSelectionOptionsFromSingleFile)
+{
+    gmx::SelectionList sel1;
+    gmx::SelectionList sel2;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel1").storeVector(&sel1)));
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel2").storeVector(&sel2)));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    std::string value(gmx::test::getTestFilePath("selfile.dat"));
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel1"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sel2"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(value));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+
+    // These should match the contents of selfile.dat
+    ASSERT_EQ(1U, sel1.size());
+    EXPECT_STREQ("resname RA RB", sel1[0].selectionText());
+    ASSERT_EQ(1U, sel2.size());
+    EXPECT_STREQ("resname RB RC", sel2[0].selectionText());
+}
+
+
+TEST_F(SelectionFileOptionTest, GivesErrorWithNoFile)
+{
+    gmx::SelectionList sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_THROW(assigner.finishOption(), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+}
+
+
+TEST_F(SelectionFileOptionTest, GivesErrorWithNonExistentFile)
+{
+    gmx::SelectionList sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    // TODO: Should this be changed to an InvalidInputError?
+    EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::FileIOError);
+    EXPECT_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")),
+                 gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
+}
+
+
+TEST_F(SelectionFileOptionTest, GivesErrorWithMultipleFiles)
+{
+    gmx::SelectionList sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW(_options.addOption(
+                        SelectionOption("sel").storeVector(&sel).multiValue()));
+    setCollection();
+
+    gmx::OptionsAssigner assigner(&_options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("sel"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW(assigner.appendValue(gmx::test::getTestFilePath("selfile.dat")));
+    EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::InvalidInputError);
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(_options.finish());
 }
 
 } // namespace
