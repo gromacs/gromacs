@@ -35,19 +35,13 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
+
 #include <math.h>
 #include <string.h>
 #include <time.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <direct.h>
-#include <io.h>
 #endif
 
 #include "statutil.h"
@@ -488,15 +482,7 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Covariance analysis log, written %s\n",timebuf);
     
   fprintf(out,"Program: %s\n",argv[0]);
-#ifdef GMX_NATIVE_WINDOWS
-  pcwd=_getcwd(str,STRLEN);
-#else
-  pcwd=getcwd(str,STRLEN);
-#endif
-  if(NULL==pcwd)
-  {
-      gmx_fatal(FARGS,"Current working directory is undefined");
-  }
+  gmx_getcwd(str, STRLEN);
 
   fprintf(out,"Working directory: %s\n\n",str);
 

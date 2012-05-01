@@ -35,7 +35,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
 
 #include <math.h>
 #include <ctype.h>
@@ -55,12 +54,7 @@
 #include "statutil.h"
 #include "index.h"
 #include "gmx_ana.h"
-
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#undef toupper
-#endif
+#include "string2.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
