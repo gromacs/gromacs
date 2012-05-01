@@ -41,6 +41,9 @@
 #ifdef GMX_NATIVE_WINDOWS
 #include <process.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "random.h"

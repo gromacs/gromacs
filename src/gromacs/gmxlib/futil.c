@@ -50,6 +50,9 @@
 #include <dirent.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
@@ -807,11 +810,7 @@ gmx_bool get_libdir(char *libdir)
         if (!strchr(bin_name,DIR_SEPARATOR)) {
             /* No slash or backslash in name means it must be in the path - search it! */
             /* Add the local dir since it is not in the path on windows */
-#ifdef GMX_NATIVE_WINDOWS
-            pdum=_getcwd(system_path,sizeof(system_path)-1);
-#else
-            pdum=getcwd(system_path,sizeof(system_path)-1);
-#endif
+            gmx_getcwd(system_path, sizeof(system_path));
             sprintf(full_path,"%s%c%s",system_path,DIR_SEPARATOR,bin_name);
             found = gmx_is_file(full_path);
             if (!found && (s=getenv("PATH")) != NULL)
@@ -836,11 +835,7 @@ gmx_bool get_libdir(char *libdir)
              * it does not start at the root, i.e.
              * name is relative to the current dir 
              */
-#ifdef GMX_NATIVE_WINDOWS
-            pdum=_getcwd(buf,sizeof(buf)-1);
-#else
-            pdum=getcwd(buf,sizeof(buf)-1);
-#endif
+            gmx_getcwd(buf, sizeof(buf));
             sprintf(full_path,"%s%c%s",buf,DIR_SEPARATOR,bin_name);
         } else {
             strncpy(full_path,bin_name,GMX_PATH_MAX);
@@ -1163,5 +1158,30 @@ int gmx_fsync(FILE *fp)
     return rc;
 }
 
+void gmx_chdir(const char *directory)
+{
+#ifdef GMX_NATIVE_WINDOWS
+    int rc = _chdir(directory);
+#else
+    int rc = chdir(directory);
+#endif
+    if (rc != 0)
+    {
+        gmx_fatal(FARGS, "Cannot change directory to '%s'. Reason: %s",
+                  directory, strerror(errno));
+    }
+}
 
-
+void gmx_getcwd(char *buffer, size_t size)
+{
+#ifdef GMX_NATIVE_WINDOWS
+    char *pdum = _getcwd(buffer, size);
+#else
+    char *pdum = getcwd(buffer, size);
+#endif
+    if (pdum == NULL)
+    {
+        gmx_fatal(FARGS, "Cannot get working directory. Reason: %s",
+                  strerror(errno));
+    }
+}

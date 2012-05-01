@@ -192,10 +192,8 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
    Only use this during checkpointing! */
 int gmx_fsync(FILE *fp);
 
-#ifdef GMX_NATIVE_WINDOWS
-#define chdir _chdir
-#define getcwd _getcwd
-#endif
+void gmx_chdir(const char *directory);
+void gmx_getcwd(char *buffer, size_t size);
 
 #ifdef __cplusplus
 }

@@ -43,6 +43,9 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "typedefs.h"
 #include "smalloc.h"
