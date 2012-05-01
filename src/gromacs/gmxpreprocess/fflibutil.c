@@ -36,7 +36,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,11 +50,6 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <direct.h>
-#include <io.h>
-#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

@@ -32,6 +32,9 @@
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef GMX_NATIVE_WINDOWS
 /* _chsize_s */

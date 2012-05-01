@@ -34,7 +34,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -64,12 +63,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "index.h"
-
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#undef isdigit
-#endif
+#include "string2.h"
 
 typedef struct
 {

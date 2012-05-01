@@ -43,6 +43,9 @@
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gmx_fatal.h"
 #include "macros.h"

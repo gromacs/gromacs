@@ -36,17 +36,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
 
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <direct.h>
-#include <io.h>
-#endif
-
 
 #include "vec.h"
 #include "copyrite.h"

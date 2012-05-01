@@ -48,12 +48,6 @@
 #include <sys/time.h>
 #endif
 
-#ifdef HAVE_DIRECT_H
-/* windows-specific include for _chdir() */
-#include <direct.h>
-#endif
-
-
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "network.h"
@@ -488,12 +482,7 @@ void init_multisystem(t_commrec *cr,int nsim, char **multidirs,
         {
             fprintf(debug,"Changing to directory %s\n",multidirs[cr->ms->sim]);
         }
-        if (chdir(multidirs[cr->ms->sim]) != 0)
-        {
-            gmx_fatal(FARGS, "Couldn't change directory to %s: %s",
-                      multidirs[cr->ms->sim],
-                      strerror(errno));
-        }
+        gmx_chdir(multidirs[cr->ms->sim]);
     }
     else if (bParFn)
     {
