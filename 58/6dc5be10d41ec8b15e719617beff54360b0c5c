@@ -1,0 +1,9 @@
+Code-Review+1: Kasson <kasson@gmail.com>
+Code-Review+2: Erik Lindahl <erik@kth.se>
+Code-Review+1: Sander Pronk <sndr.sndr@gmail.com>
+Verified+1: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Wed, 02 May 2012 00:20:13 +0200
+Reviewed-on: https://gerrit.gromacs.org/837
+Project: gromacs
+Branch: refs/heads/release-4-6
