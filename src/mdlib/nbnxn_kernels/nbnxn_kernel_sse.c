@@ -40,6 +40,9 @@
 #include "smalloc.h"
 #include "force.h"
 #include "gmx_omp_nthreads.h"
+
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
+
 #include "nbnxn_kernel_sse.h"
 
 /* Include all flavors of the SSE kernel loops */
@@ -162,6 +165,8 @@ p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
     nbnxn_kernel_sse_tab_comb_lb_noener,
     nbnxn_kernel_sse_tab_comb_none_noener } };
 
+#endif /* SSE */
+
 
 static void clear_f(const nbnxn_atomdata_t *nbat,
                     real *f)
@@ -239,6 +244,7 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
                  real                       *fshift,
                  real                       *Vc,
                  real                       *Vvdw)
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_X86_64_SSE2) )
 {
     int              nnbl;
     nbnxn_pairlist_t **nbl;
@@ -356,3 +362,8 @@ nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
         /* printf("vdw %f c %f\n",Vvdw[0],Vc[0]); */
     }
 }
+#else
+{
+    gmx_incons("nbnxn_kernel_sse called while GROMACS was configured with SSE enabled");
+}
+#endif

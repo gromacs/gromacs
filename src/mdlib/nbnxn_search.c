@@ -68,8 +68,6 @@
 #ifdef GMX_SSE4_1
 #include <smmintrin.h>
 #endif
-#endif
-
 
 #ifndef GMX_NBNXN_KERNEL_AVX
 #define GMX_SSE_HERE
@@ -77,6 +75,8 @@
 #define GMX_AVX_HERE
 #endif
 #include "gmx_sse_or_avx.h"
+
+#endif
 
 #define SSE_WIDTH        4
 #define SSE_WIDTH_2LOG   2
