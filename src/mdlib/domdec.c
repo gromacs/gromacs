@@ -7254,7 +7254,7 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
              * cut-off, we could still fix it, but this gets very complicated.
              * Without fixing here, we might actually need more checks.
              */
-            if ((dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim])*ddbox.skew_fac[dim] > dd->comm->cd[d].np_dlb*cutoff_req)
+            if ((dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim])*ddbox.skew_fac[dim]*dd->comm->cd[d].np_dlb < cutoff_req)
             {
                 LocallyLimited = 1;
             }
