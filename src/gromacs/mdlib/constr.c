@@ -407,7 +407,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
     settle  = &idef->il[F_SETTLE];
     if (settle->nr > 0)
     {
-        nsettle = settle->nr/2;
+        nsettle = settle->nr/4;
         
         switch (econq)
         {
@@ -432,7 +432,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
                 sprintf(buf,
                         "\nstep " gmx_large_int_pfmt ": Water molecule starting at atom %d can not be "
                         "settled.\nCheck for bad contacts and/or reduce the timestep if appropriate.\n",
-                        step,ddglatnr(cr->dd,settle->iatoms[error*2+1]));
+                        step,ddglatnr(cr->dd,settle->iatoms[error*4+1]));
                 if (fplog)
                 {
                     fprintf(fplog,"%s",buf);
@@ -781,7 +781,7 @@ void set_constraints(struct gmx_constr *constr,
     {
         settle = &idef->il[F_SETTLE];
         iO = settle->iatoms[1];
-        iH = settle->iatoms[1]+1;
+        iH = settle->iatoms[2];
         constr->settled =
             settle_init(md->massT[iO],md->massT[iH],
                         md->invmass[iO],md->invmass[iH],
@@ -1047,7 +1047,7 @@ gmx_constr_t init_constraints(FILE *fplog,
         iloop = gmx_mtop_ilistloop_init(mtop);
         while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol)) 
         {
-            for (i=0; i<ilist[F_SETTLE].nr; i+=2) 
+            for (i=0; i<ilist[F_SETTLE].nr; i+=4) 
             {
                 if (settle_type == -1) 
                 {

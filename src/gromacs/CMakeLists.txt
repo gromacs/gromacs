@@ -16,7 +16,7 @@ install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs
         COMPONENT development)
 
 # only fiddle with assembly kernels if we're not doing OpenMM build
-if(NOT GMX_OPENMM) 
+if(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 if(GMX_ASM_USEASM_NASM)
   enable_language(ASM_NASM)
   # if NASM is used, we need a special build command for windows...
@@ -40,7 +40,7 @@ else(GMX_ASM_USEASM_NASM)
     set_source_files_properties(${GMX_SSEKERNEL_ASM_SRC} PROPERTIES COMPILE_FLAGS "-c -m64")
   endif()
 endif(GMX_ASM_USEASM_NASM)
-endif(NOT GMX_OPENMM)
+endif(GMX_SSEKERNEL_ASM_SRC AND NOT GMX_OPENMM)
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${GMX_SSEKERNEL_ASM_SRC} ${MDLIB_SOURCES})
 
