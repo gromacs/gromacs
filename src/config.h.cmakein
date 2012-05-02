@@ -435,9 +435,6 @@
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
-/* Define if we have sufficient C++11 support */
-#cmakedefine HAVE_CXX11
-
 /* Catch stupid CMake problems on OS X */
 #ifdef __APPLE__
 #  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))

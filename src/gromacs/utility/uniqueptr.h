@@ -40,11 +40,9 @@
 #ifndef GMX_UTILITY_UNIQUEPTR_H
 #define GMX_UTILITY_UNIQUEPTR_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmx_header_config.h"
 
-#ifdef HAVE_CXX11 // C++11 Compiler
+#ifdef GMX_CXX11 // C++11 Compiler
 #include <memory>
 #include <utility>
 #else      // C++03 Compiler
@@ -71,20 +69,11 @@ typedef gmx_unique_ptr<ExampleClass>::type ExampleClassPointer;
  * \ingroup module_utility
  * \inlibraryapi
  */
-
 /*! \typedef gmx_unique_ptr::type
  * \brief The smart pointer type.
  * Work-around for the non-existence of template typedefs in C++03.
  */
-
-/*! \fn boost::shared_ptr<T> &move(boost::shared_ptr<T> &ptr)
- * \brief Moves gmx::gmx_unique_ptr type pointers
- * For C++11 gmx::move is the std::move, for non-C++11 compilers, the
- * move operation is a no-op.
- *
- * \inlibraryapi
- */
-#ifdef HAVE_CXX11 // C++11 Compiler
+#ifdef GMX_CXX11 // C++11 Compiler
 using std::move;
 template<typename T>
 struct gmx_unique_ptr
@@ -92,6 +81,15 @@ struct gmx_unique_ptr
     typedef std::unique_ptr<T> type;
 };
 #else // C++03 Compiler
+/*! \fn boost::shared_ptr<T> &move(boost::shared_ptr<T> &ptr)
+ * \brief
+ * Moves gmx::gmx_unique_ptr type pointers
+ *
+ * For C++11 gmx::move is the std::move, for non-C++11 compilers, the
+ * move operation is a no-op.
+ *
+ * \inlibraryapi
+ */
 template<typename T>
 boost::shared_ptr<T> &move(boost::shared_ptr<T> &ptr)
 {
