@@ -65,6 +65,10 @@
 #include "gmx_ana.h"
 #include "gmx_sort.h"
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 enum { euSel,euRect, euTric, euCompact, euNR};
 
 

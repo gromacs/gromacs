@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-
 #include <ctype.h>
 #include <assert.h>
 #include "copyrite.h"
@@ -60,6 +59,10 @@
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 /* used for npri */

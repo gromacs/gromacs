@@ -36,26 +36,13 @@
 #ifndef _sysstuff_h
 #define _sysstuff_h
 
-
-#ifdef __cplusplus
-extern "C" { 
-#endif
-
 #ifndef _386_
 #include <stdlib.h>
 #endif
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
-#include "gmx_header_config.h" /* for GMX_NATIVE_WINDOWS */
-#ifndef GMX_NATIVE_WINDOWS
-#  include <unistd.h>
-#endif
 #include <limits.h>
 #include <time.h>
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif	/* _sysstuff_h */
