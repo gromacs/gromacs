@@ -503,11 +503,12 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name, 
-                         int nnodes, int nthreads,
+                         int nnodes_tot,int nnodes, int nthreads,
                          int n, double c, double tot)
 {
     char num[11];
     char thstr[6];
+    double wallt;
   
     if (c > 0)
     {
@@ -524,8 +525,9 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
             sprintf(num,"          ");
             sprintf(thstr, "    ");
         }
+        wallt = c*c2t*nnodes_tot/(double)nnodes;
         fprintf(fplog," %-19s %4d %4s %10s  %10.3f %12.3f   %5.1f\n",
-                name,nnodes,thstr,num,c*c2t,c*1e-9,100*c/tot);
+                name,nnodes,thstr,num,wallt,c*1e-9,100*c/tot);
     }
 }
 
@@ -606,7 +608,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         if (!pme_subdivision(i))
         {
-            print_cycles(fplog,c2t,wcn[i],
+            print_cycles(fplog,c2t,wcn[i],nnodes,
                          (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
                          (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp, 
                          wc->wcc[i].n,cycles[i],tot);
@@ -623,7 +625,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 buf[9] = ' ';
                 sprintf(buf+10,"%-9s",wcn[j]);
                 buf[19] = '\0';
-                print_cycles(fplog,c2t,buf,
+                print_cycles(fplog,c2t,buf,nnodes,
                              (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
                              (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp,
                              wc->wcc_all[i*ewcNR+j].n,
@@ -632,9 +634,9 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             }
         }
     }
-    print_cycles(fplog,c2t,"Rest",npp,-1,0,tot-sum,tot);
+    print_cycles(fplog,c2t,"Rest",npp,npp,-1,0,tot-sum,tot);
     fprintf(fplog,"%s\n",hline);
-    print_cycles(fplog,c2t,"Total",nnodes,-1,0,tot,tot);
+    print_cycles(fplog,c2t,"Total",nnodes,nnodes,-1,0,tot,tot);
     fprintf(fplog,"%s\n",hline);
     
     if (wc->wcc[ewcPMEMESH].n > 0)
@@ -644,7 +646,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             if (pme_subdivision(i))
             {
-                print_cycles(fplog,c2t,wcn[i],
+                print_cycles(fplog,c2t,wcn[i],nnodes,
                              (i>=ewcPMEMESH || i<=ewcPME_SOLVE) ? npme : npp,
                              (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? nth_pme : nth_pp,
                              wc->wcc[i].n,cycles[i],tot);
@@ -657,7 +659,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog,"%s\n",hline);
     for(i=0; i<ewcsNR; i++)
     {
-        print_cycles(fplog,c2t,wcsn[i],npp,nth_pp,
+        print_cycles(fplog,c2t,wcsn[i],nnodes,npp,nth_pp,
                      wc->wcsc[i].n,cycles[ewcNR+i],tot);
     }
     fprintf(fplog,"%s\n",hline);

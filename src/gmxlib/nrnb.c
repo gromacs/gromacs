@@ -404,7 +404,7 @@ void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
           fprintf(out,"%12s %12s %12s\n",
                   "","(ns/day)","(hour/ns)");
           fprintf(out,"%12s %12.3f %12.3f\n","Performance:",
-                  runtime*24*3.6/realtime,1000*nodetime/(3600*runtime));
+                  runtime*24*3.6/realtime,1000*realtime/(3600*runtime));
       }
       else
       {
