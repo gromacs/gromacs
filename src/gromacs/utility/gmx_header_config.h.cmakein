@@ -9,3 +9,6 @@
 
 /* Detect native (i.e. non-Cygwin) Windows */
 #cmakedefine GMX_NATIVE_WINDOWS
+
+/* Define if we have sufficient C++11 support */
+#cmakedefine GMX_CXX11

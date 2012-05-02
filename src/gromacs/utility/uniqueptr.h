@@ -40,11 +40,9 @@
 #ifndef GMX_UTILITY_UNIQUEPTR_H
 #define GMX_UTILITY_UNIQUEPTR_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmx_header_config.h"
 
-#ifdef HAVE_CXX11 // C++11 Compiler
+#ifdef GMX_CXX11 // C++11 Compiler
 #include <memory>
 #include <utility>
 #else      // C++03 Compiler
@@ -84,7 +82,7 @@ typedef gmx_unique_ptr<ExampleClass>::type ExampleClassPointer;
  *
  * \inlibraryapi
  */
-#ifdef HAVE_CXX11 // C++11 Compiler
+#ifdef GMX_CXX11 // C++11 Compiler
 using std::move;
 template<typename T>
 struct gmx_unique_ptr
