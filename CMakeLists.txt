@@ -572,7 +572,7 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 gmx_test_inline_asm_msvc_x86(GMX_X86_MSVC_INLINE_ASM)
 
 include(gmxTestCXX11)
-gmx_test_cxx11(HAVE_CXX11 CXX11_FLAG)
+gmx_test_cxx11(GMX_CXX11 CXX11_FLAG)
 set(GROMACS_CXX_FLAGS "${CXX11_FLAG} ${GROMACS_CXX_FLAGS}")
 
 # turn on SSE if supported with reasonable defaults.
