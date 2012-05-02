@@ -52,7 +52,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
-#include "gmx_header_config.h"
+#include "../utility/gmx_header_config.h"
 
 /*#include "typedefs.h"*/
 #include "types/simple.h"

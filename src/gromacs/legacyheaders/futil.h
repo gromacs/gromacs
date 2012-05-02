@@ -51,7 +51,7 @@ extern "C" {
  * When reading the PATH environment variable, Unix separates entries
  * with colon, while windows uses semicolon.
  */
-#include "gmx_header_config.h"
+#include "../utility/gmx_header_config.h"
 #ifdef GMX_NATIVE_WINDOWS
 #define DIR_SEPARATOR '\\'
 #define PATH_SEPARATOR ";"

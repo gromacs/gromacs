@@ -23,7 +23,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gmx_header_config.h"
+#include "gromacs/utility/gmx_header_config.h"
 
 #include <string.h>
 #include <time.h>
