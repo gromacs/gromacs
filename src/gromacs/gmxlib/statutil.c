@@ -583,8 +583,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
 #define FF(arg) ((Flags & arg)==arg)
 
-    snew(*oenv, 1);
-    
     cmdlength = strlen(argv[0]);
     /* Check for double arguments */
     for (i=1; (i<*argc); i++) 
@@ -684,7 +682,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
     /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, (time_unit_t)nenum(time_units), bView, 
+    output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
  
     if (bVersion) {
@@ -756,10 +754,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     }
 #endif
 #endif
-   
-    /* Update oenv for parsed command line options settings. */
-    (*oenv)->xvg_format = (xvg_format_t)nenum(xvg_format);
-    (*oenv)->time_unit  = (time_unit_t)nenum(time_units);
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)

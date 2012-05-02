@@ -49,11 +49,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <gmxfio.h>
-#include <smalloc.h>
-#include <statutil.h>
-#include <vec.h>
-#include <xvgr.h>
+#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/vec.h"
+#include "gromacs/legacyheaders/xvgr.h"
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/analysisdata/dataframe.h"
@@ -277,15 +276,15 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
         }
         else
         {
-            output_env_t oenv;
-            snew(oenv, 1);
-            output_env_init_default(oenv);
-            boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
-            oenv->time_unit = static_cast<time_unit_t>(_impl->settings.timeUnit() + 1);
-            oenv->xvg_format =
-                (_impl->settings.plotFormat() > 0
+            time_unit_t time_unit
+                = static_cast<time_unit_t>(_impl->settings.timeUnit() + 1);
+            xvg_format_t xvg_format
+                = (_impl->settings.plotFormat() > 0
                     ? static_cast<xvg_format_t>(_impl->settings.plotFormat())
                     : exvgNONE);
+            output_env_t oenv;
+            output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
+            boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             _impl->fp = xvgropen(_impl->fnm.c_str(), _impl->title.c_str(),
                                  _impl->xlabel.c_str(), _impl->ylabel.c_str(),
                                  oenv);

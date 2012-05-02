@@ -64,20 +64,7 @@ typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
 /* the xvg output formattings */
 
 
-struct output_env
-{
-    time_unit_t time_unit; /* the time unit, enum defined in statuti.h */
-    gmx_bool view;  /* view of file requested */
-    xvg_format_t xvg_format; /* xvg output format, enum defined in statutil.h */
-    int  verbosity; /* The level of verbosity for this program */
-    int debug_level; /* the debug level */
-
-    char *program_name; /* the program name */
-    char *cmd_line; /* the re-assembled command line */
-};
-
-
-void output_env_init(output_env_t oenv,  int argc, char *argv[],
+void output_env_init(output_env_t *oenvp,  int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level);
 /* initialize an output_env structure, setting the command line, 
@@ -85,7 +72,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
    user requests direct viewing of graphs, 
    the graph formatting type, the verbosity, and debug level */
 
-void output_env_init_default(output_env_t oenv);
+void output_env_init_default(output_env_t *oenvp);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
 

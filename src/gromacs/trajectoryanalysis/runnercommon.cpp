@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+#include "oenv.h"
 #include "rmpbc.h"
 #include "smalloc.h"
 #include "statutil.h"
@@ -341,10 +342,9 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     {
         return;
     }
-    snew(_impl->_oenv, 1);
-    output_env_init_default(_impl->_oenv);
-    _impl->_oenv->time_unit
+    time_unit_t time_unit
         = static_cast<time_unit_t>(_impl->_settings.timeUnit() + 1);
+    output_env_init(&_impl->_oenv, 0, NULL, time_unit, FALSE, exvgNONE, 0, 0);
 
     int frflags = _impl->_settings.frflags();
     frflags |= TRX_NEED_X;

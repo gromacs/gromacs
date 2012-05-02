@@ -61,7 +61,17 @@
 #include "thread_mpi.h"
 #endif
 
+struct output_env
+{
+    time_unit_t time_unit; /* the time unit, enum defined in oenv.h */
+    gmx_bool view;  /* view of file requested */
+    xvg_format_t xvg_format; /* xvg output format, enum defined in oenv.h */
+    int  verbosity; /* The level of verbosity for this program */
+    int debug_level; /* the debug level */
 
+    char *program_name; /* the program name */
+    char *cmd_line; /* the re-assembled command line */
+};
 
 /* The source code in this file should be thread-safe. 
       Please keep it that way. */
@@ -73,7 +83,7 @@
  ******************************************************************/
 
 /* read only time names */
-/* These must correspond to the time units type time_unit_t in statutil.h */
+/* These must correspond to the time units type time_unit_t in oenv.h */
 static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
 static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
 static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
@@ -85,14 +95,17 @@ static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(output_env_t oenv,  int argc, char *argv[],
+void output_env_init(output_env_t *oenvp, int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
     int i;
     int cmdlength=0;
     char *argvzero=NULL;
+    output_env_t oenv;
 
+    snew(oenv, 1);
+    *oenvp = oenv;
     oenv->time_unit  = tmu;
     oenv->view=view;
     oenv->xvg_format = xvg_format;
@@ -141,9 +154,9 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
 }
 
 
-void output_env_init_default(output_env_t oenv)
+void output_env_init_default(output_env_t *oenvp)
 {
-    output_env_init(oenv, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
+    output_env_init(oenvp, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
 }
 
 
