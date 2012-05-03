@@ -41,7 +41,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_commandline
  */
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
@@ -56,44 +55,21 @@
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/file.h"
 
-#include "testutils/refdata.h"
-#include "testutils/testoptions.h"
+#include "testutils/stringtest.h"
 
 namespace
 {
 
-using gmx::test::TestReferenceData;
-using gmx::test::TestReferenceChecker;
-
-class CommandLineHelpWriterTest : public ::testing::Test
+class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 {
     public:
-        static void SetUpTestCase();
-
-        static bool                     s_bWriteToStdOut;
-
         CommandLineHelpWriterTest();
         ~CommandLineHelpWriterTest();
-
-        TestReferenceChecker &checker();
 
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
         std::string                     helpfile_;
-
-    private:
-        TestReferenceData       data_;
-        boost::scoped_ptr<TestReferenceChecker> checker_;
 };
-
-bool CommandLineHelpWriterTest::s_bWriteToStdOut = false;
-
-void CommandLineHelpWriterTest::SetUpTestCase()
-{
-    gmx::Options options(NULL, NULL);
-    options.addOption(gmx::BooleanOption("stdout").store(&s_bWriteToStdOut));
-    gmx::test::parseTestOptions(&options);
-}
 
 CommandLineHelpWriterTest::CommandLineHelpWriterTest()
 {
@@ -109,30 +85,13 @@ CommandLineHelpWriterTest::~CommandLineHelpWriterTest()
     std::remove(helpfile_.c_str());
 }
 
-TestReferenceChecker &CommandLineHelpWriterTest::checker()
-{
-    if (checker_.get() == NULL)
-    {
-        checker_.reset(new TestReferenceChecker(data_.rootChecker()));
-    }
-    return *checker_;
-}
-
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
     gmx::File file(helpfile_, "w");
     writer->writeHelp(file.handle());
     file.close();
 
-    std::string text = gmx::File::readToString(helpfile_);
-    if (s_bWriteToStdOut)
-    {
-        printf("%s", text.c_str());
-    }
-    else
-    {
-        checker().checkStringBlock(text, "HelpText");
-    }
+    checkFileContents(helpfile_, "HelpText");
 }
 
 
