@@ -6,7 +6,6 @@ if (BUILD_TESTING)
 endif (BUILD_TESTING)
 
 add_subdirectory(gromacs)
-add_subdirectory(kernel)
 add_subdirectory(programs)
 
 if(NOT GMX_FAHCORE)

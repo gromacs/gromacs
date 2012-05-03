@@ -85,7 +85,7 @@ cat >> $HTMLIDX <<EOD
 <br>
 EOD
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then  
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) ) then
     echo "<br><a href="$MANDIR/$program.html">$program</a>" >> $HTMLIDX
   endif
 end
@@ -136,7 +136,7 @@ echo "-------------------------------------------"
 cd $dir
 
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) ) then
     echo -n "$program "
     cd $HTMLOL
     $GMXBINDIR/$program -quiet -man html >& /dev/null
