@@ -71,6 +71,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         ~Impl();
 
         void printHelp(const Options &options,
+                       const TrajectoryAnalysisSettings &settings,
                        const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
@@ -98,6 +99,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 void
 TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
         const Options &options,
+        const TrajectoryAnalysisSettings &settings,
         const TrajectoryAnalysisRunnerCommon &common)
 {
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
@@ -106,6 +108,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
         CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
+            .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
             .writeHelp(stderr);
     }
 }
@@ -137,10 +140,10 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         }
         catch (const UserInputError &ex)
         {
-            printHelp(*options, *common);
+            printHelp(*options, *settings, *common);
             throw;
         }
-        printHelp(*options, *common);
+        printHelp(*options, *settings, *common);
         common->scaleTimeOptions(options);
         options->finish();
     }

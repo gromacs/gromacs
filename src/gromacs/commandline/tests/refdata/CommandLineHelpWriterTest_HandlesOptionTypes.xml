@@ -19,7 +19,7 @@ Option       Type   Value  Description
 -double      double 2.5    Double option
 -dvec        vector 1.1 2.3 3.2
                            Double vector option
--time        double 10     Time option
+-time        time   10     Time option (ps)
 -string      string test   String option
 -enum        enum   no     Enum option: no, opt1, or opt2
 
