@@ -42,68 +42,15 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
 #include "gromacs/utility/format.h"
 
 #include "testutils/refdata.h"
-#include "testutils/testoptions.h"
+#include "testutils/stringtest.h"
 
 namespace
 {
-
-using gmx::test::TestReferenceData;
-using gmx::test::TestReferenceChecker;
-
-class FormatTestBase : public ::testing::Test
-{
-    public:
-        static void SetUpTestCase();
-
-        static bool             s_bWriteToStdOut;
-
-        TestReferenceChecker &checker();
-
-        void checkFormatting(const std::string &text, const char *id);
-
-    private:
-        TestReferenceData       data_;
-        boost::scoped_ptr<TestReferenceChecker> checker_;
-};
-
-bool FormatTestBase::s_bWriteToStdOut = false;
-
-void FormatTestBase::SetUpTestCase()
-{
-    gmx::Options options(NULL, NULL);
-    options.addOption(gmx::BooleanOption("stdout").store(&s_bWriteToStdOut));
-    gmx::test::parseTestOptions(&options);
-}
-
-TestReferenceChecker &FormatTestBase::checker()
-{
-    if (checker_.get() == NULL)
-    {
-        checker_.reset(new TestReferenceChecker(data_.rootChecker()));
-    }
-    return *checker_;
-}
-
-void FormatTestBase::checkFormatting(const std::string &text, const char *id)
-{
-    if (s_bWriteToStdOut)
-    {
-        printf("%s:\n", id);
-        printf("%s\n", text.c_str());
-    }
-    else
-    {
-        checker().checkStringBlock(text, id);
-    }
-}
 
 /********************************************************************
  * Tests for formatString()
@@ -125,7 +72,7 @@ TEST(FormatStringTest, HandlesLongStrings)
  * Tests for concatenateStrings()
  */
 
-typedef FormatTestBase ConcatenateStringsTest;
+typedef gmx::test::StringTestBase ConcatenateStringsTest;
 
 TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
 {
@@ -136,7 +83,7 @@ TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
         "Fourth string",
         ""
     };
-    checkFormatting(gmx::concatenateStrings(strings), "CombinedStrings");
+    checkText(gmx::concatenateStrings(strings), "CombinedStrings");
 }
 
 /********************************************************************
@@ -149,7 +96,7 @@ const char g_wrapTextLongWord[]
     = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
 const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 
-typedef FormatTestBase TextLineWrapperTest;
+typedef gmx::test::StringTestBase TextLineWrapperTest;
 
 TEST_F(TextLineWrapperTest, HandlesEmptyStrings)
 {
@@ -204,25 +151,25 @@ TEST_F(TextLineWrapperTest, WrapsCorrectly)
     gmx::TextLineWrapper wrapper;
 
     wrapper.setLineLength(10);
-    checkFormatting(wrapper.wrapToString(g_wrapText), "WrappedAt10");
+    checkText(wrapper.wrapToString(g_wrapText), "WrappedAt10");
     std::vector<std::string> wrapped(wrapper.wrapToVector(g_wrapText));
     checker().checkSequence(wrapped.begin(), wrapped.end(), "WrappedToVector");
     wrapper.setLineLength(13);
-    checkFormatting(wrapper.wrapToString(g_wrapText), "WrappedAt13");
+    checkText(wrapper.wrapToString(g_wrapText), "WrappedAt13");
     wrapper.setLineLength(14);
-    checkFormatting(wrapper.wrapToString(g_wrapText), "WrappedAt14");
-    checkFormatting(wrapper.wrapToString(g_wrapTextLongWord), "WrappedWithLongWord");
+    checkText(wrapper.wrapToString(g_wrapText), "WrappedAt14");
+    checkText(wrapper.wrapToString(g_wrapTextLongWord), "WrappedWithLongWord");
 }
 
 TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExistingBreaks)
 {
     gmx::TextLineWrapper wrapper;
 
-    checkFormatting(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
     wrapper.setLineLength(10);
-    checkFormatting(wrapper.wrapToString(g_wrapText2), "WrappedAt10");
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt10");
     wrapper.setLineLength(14);
-    checkFormatting(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
+    checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
 }
 
 TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
@@ -230,14 +177,14 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
     gmx::TextLineWrapper wrapper;
 
     wrapper.setLineLength(14);
-    checkFormatting(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14");
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14");
 }
 
 /********************************************************************
  * Tests for TextTableFormatter
  */
 
-class TextTableFormatterTest : public FormatTestBase
+class TextTableFormatterTest : public gmx::test::StringTestBase
 {
     public:
         TextTableFormatterTest();
@@ -260,7 +207,7 @@ TEST_F(TextTableFormatterTest, HandlesBasicCase)
     formatter_.addColumnLine(1, "bar");
     formatter_.addColumnLine(2, g_wrapText);
     formatter_.addColumnLine(3, g_wrapText2);
-    checkFormatting(formatter_.formatRow(), "FormattedTable");
+    checkText(formatter_.formatRow(), "FormattedTable");
 }
 
 TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
@@ -270,14 +217,14 @@ TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
     formatter_.addColumnLine(1, "barfoo");
     formatter_.addColumnLine(2, g_wrapText);
     formatter_.addColumnLine(3, g_wrapText2);
-    checkFormatting(formatter_.formatRow(), "FormattedTable");
+    checkText(formatter_.formatRow(), "FormattedTable");
     formatter_.clear();
     formatter_.addColumnLine(0, "foobar");
     formatter_.addColumnLine(1, "barfoo");
     formatter_.setColumnFirstLineOffset(1, 1);
     formatter_.addColumnLine(2, g_wrapText);
     formatter_.addColumnLine(3, g_wrapText2);
-    checkFormatting(formatter_.formatRow(), "FormattedRow2");
+    checkText(formatter_.formatRow(), "FormattedRow2");
     formatter_.clear();
     formatter_.addColumnLine(0, "foobar");
     formatter_.addColumnLine(1, "barfoo");
@@ -285,7 +232,7 @@ TEST_F(TextTableFormatterTest, HandlesOverflowingLines)
     formatter_.addColumnLine(2, g_wrapText);
     formatter_.setColumnFirstLineOffset(2, 2);
     formatter_.addColumnLine(3, g_wrapText2);
-    checkFormatting(formatter_.formatRow(), "FormattedRow3");
+    checkText(formatter_.formatRow(), "FormattedRow3");
 }
 
 TEST_F(TextTableFormatterTest, HandlesEmptyColumns)
@@ -294,20 +241,20 @@ TEST_F(TextTableFormatterTest, HandlesEmptyColumns)
     formatter_.addColumnLine(0, "foo");
     formatter_.addColumnLine(1, "bar");
     formatter_.addColumnLine(3, "Text");
-    checkFormatting(formatter_.formatRow(), "FormattedTable");
+    checkText(formatter_.formatRow(), "FormattedTable");
     formatter_.clear();
     formatter_.addColumnLine(0, "foo");
     formatter_.addColumnLine(1, "bar");
     formatter_.setColumnFirstLineOffset(2, 1);
     formatter_.addColumnLine(3, "Text");
-    checkFormatting(formatter_.formatRow(), "FormattedRow2");
+    checkText(formatter_.formatRow(), "FormattedRow2");
     formatter_.clear();
     formatter_.addColumnLine(0, "foo");
     formatter_.addColumnLine(1, "bar");
     formatter_.addColumnLine(2, "");
     formatter_.setColumnFirstLineOffset(2, 1);
     formatter_.addColumnLine(3, "Text");
-    checkFormatting(formatter_.formatRow(), "FormattedRow3");
+    checkText(formatter_.formatRow(), "FormattedRow3");
 }
 
 } // namespace
