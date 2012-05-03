@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpText"><![CDATA[
+Option Filename     Type         Description
+---------------------------------------------------------
+-f     traj         Input        Input file description
+-lib                Input, Opt., Lib.
+                                 Library file description
+-io                 In/Out, Opt. Input/Output file description
+-o                  Output, Opt. Output file description
+
+Option       Type   Value  Description
+---------------------------------------------------
+-[no]bool    bool   yes    Boolean option
+-[no]hidden  bool   yes    Hidden option
+-int         int    2      Integer option
+-ivec        vector 1 2 3  Integer vector option
+-double      double 2.5    Double option
+-dvec        vector 1.1 2.3 3.2
+                           Double vector option
+-time        double 10     Time option
+-string      string test   String option
+-enum        enum   no     Enum option: no, opt1, or opt2
+
+Selection  Description
+-----------------------------------
+-sel       Selection option
+
+]]></String>
+</ReferenceData>
