@@ -42,6 +42,9 @@
 
 #include <string>
 
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/wman.h"
+
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
@@ -59,8 +62,18 @@ namespace
 
 std::string substituteMarkup(const std::string &text)
 {
-    // TODO: Implement.
-    return text;
+    char *resultStr = check_tty(text.c_str());
+    try
+    {
+        std::string result(resultStr);
+        sfree(resultStr);
+        return result;
+    }
+    catch (...)
+    {
+        sfree(resultStr);
+        throw;
+    }
 }
 
 /********************************************************************

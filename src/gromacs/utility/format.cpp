@@ -139,7 +139,14 @@ std::string
 TextLineWrapper::Impl::wrapNextLine(const std::string &input,
                                     size_t *lineStartPtr) const
 {
-    size_t lineStart = *lineStartPtr;
+    // Strip leading whitespace.
+    size_t lineStart = input.find_first_not_of(' ', *lineStartPtr);
+    if (lineStart == std::string::npos)
+    {
+        *lineStartPtr = lineStart;
+        return std::string();
+    }
+
     size_t lineEnd = std::string::npos;
     size_t nextNewline
         = std::min(input.find('\n', lineStart), input.length());
@@ -156,9 +163,19 @@ TextLineWrapper::Impl::wrapNextLine(const std::string &input,
         }
         lineEnd = std::min(bestSpace, nextNewline);
     }
+
+    if (lineEnd == std::string::npos)
+    {
+        lineEnd = input.length();
+    }
+    *lineStartPtr = lineEnd + 1;
+    // Strip trailing whitespace.
+    while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
+    {
+        --lineEnd;
+    }
+
     size_t lineLength = lineEnd - lineStart;
-    *lineStartPtr
-        = (lineEnd < std::string::npos) ? lineEnd + 1 : std::string::npos;
     return input.substr(lineStart, lineLength);
 }
 
