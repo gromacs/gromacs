@@ -104,6 +104,55 @@ std::string concatenateStrings(const char *const *sarray, size_t count)
     return result;
 }
 
+namespace
+{
+
+std::string
+replaceInternal(const std::string &input, const char *from, const char *to,
+                bool bWholeWords)
+{
+    GMX_RELEASE_ASSERT(from != NULL && to != NULL,
+                       "Replacement strings must not be NULL");
+    size_t matchLength = std::strlen(from);
+    std::string result;
+    size_t inputPos = 0;
+    size_t matchPos = input.find(from);
+    while (matchPos < input.length())
+    {
+        size_t matchEnd = matchPos + matchLength;
+        if (bWholeWords)
+        {
+            if (!((matchPos == 0 || !std::isalnum(input[matchPos-1]))
+                  && (matchEnd == input.length() || !std::isalnum(input[matchEnd]))))
+            {
+                matchPos = input.find(from, matchPos + 1);
+                continue;
+            }
+
+        }
+        result.append(input, inputPos, matchPos - inputPos);
+        result.append(to);
+        inputPos = matchEnd;
+        matchPos = input.find(from, inputPos);
+    }
+    result.append(input, inputPos, matchPos - inputPos);
+    return result;
+}
+
+} // namespace
+
+std::string
+replaceAll(const std::string &input, const char *from, const char *to)
+{
+    return replaceInternal(input, from, to, false);
+}
+
+std::string
+replaceAllWords(const std::string &input, const char *from, const char *to)
+{
+    return replaceInternal(input, from, to, true);
+}
+
 /********************************************************************
  * TextLineWrapper::Impl
  */
