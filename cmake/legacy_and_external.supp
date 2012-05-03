@@ -96,6 +96,15 @@
    fun:__cxa_throw
 }
 
+{
+   _Unwind_RaiseException
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:_Unwind_RaiseException
+   fun:__cxa_throw
+}
+
 # Intel compiler on MacOS
 {
    __cilkrts_os_mutex_create

@@ -119,6 +119,9 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         { _infoPtr = infoPtr; return me(); }
 
     private:
+        // Disable possibility to allow multiple occurrences, since it isn't
+        // implemented.
+        using MyBase::allowMultiple;
         // Disable default value because it is impossible to provide a
         // Selection object.
         using MyBase::defaultValue;
