@@ -2,7 +2,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
-file(GLOB GMXLIB_SOURCES *.c 
+file(GLOB GMXLIB_SOURCES *.c *.cpp
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c
      nonbonded/nb_kernel_adress_c/*.c)
 

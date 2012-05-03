@@ -37,17 +37,22 @@
 #endif
 #include "gromacs/utility/gmx_header_config.h"
 
+#include <time.h>
+
+#include <string>
+
+#include "gromacs/utility/format.h"
+
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "filenm.h"
 #include "macros.h"
-#include "replace.h"
 #include "wman.h"
 #include "statutil.h"
 #include "copyrite.h"
 #include "strdb.h"
-#include <time.h>
 #include "readinp.h"
 
 /* The source code in this file should be thread-safe. 
@@ -415,7 +420,6 @@ static char *mydate(char buf[], int maxsize,gmx_bool bWiki)
   const char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 			 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
   const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-  const char *num[] = { "01", "02", "03", "04", "05", "06","07", "08", "09" }; 
   time_t now;
   struct tm tm;
   
@@ -476,45 +480,38 @@ static void finish_linkdata(t_linkdata *p)
 
 static char *repall(const char *s,int nsr,const t_sandr_const sa[])
 {
-  int  i;
-  char *buf1,*buf2;
-  
-  /* Copy input to a non-constant char buffer.
-   * buf1 is allocated here 
-   */
-  buf1=gmx_strdup(s); 
-  
-  for(i=0; (i<nsr); i++) {
-    /* Replace in buffer1, put result in buffer2.
-     * buf2 is allocated here.
-     */
-    buf2=replace(buf1,sa[i].search,sa[i].replace);
-    sfree(buf1);
-    buf1=buf2;
-  }
-  
-  return buf1;
-} 
+    try
+    {
+        std::string result(s);
+        for (int i = 0; i < nsr; ++i)
+        {
+            result = gmx::replaceAll(result, sa[i].search, sa[i].replace);
+        }
+        return gmx_strdup(result.c_str());
+    }
+    catch (const std::bad_alloc &)
+    {
+        gmx_fatal(FARGS, "Out of memory");
+    }
+    return gmx_strdup(s);
+}
 
 static char *repallww(const char *s,int nsr,const t_sandr sa[])
 {
-  int  i;
-  char *buf1,*buf2;
-
-  /* Copy input to a non-constant char buffer.
-   * buf1 is allocated here 
-   */
-  buf1=gmx_strdup(s); 
-  
-  for(i=0; (i<nsr); i++) {
-    /* Replace in buffer1, put result in buffer2.
-     * buf2 is allocated here.
-     */
-    buf2=replaceww(buf1,sa[i].search,sa[i].replace);
-    sfree(buf1);
-    buf1=buf2;
-  }
-  return buf1;
+    try
+    {
+        std::string result(s);
+        for (int i = 0; i < nsr; ++i)
+        {
+            result = gmx::replaceAllWords(result, sa[i].search, sa[i].replace);
+        }
+        return gmx_strdup(result.c_str());
+    }
+    catch (const std::bad_alloc &)
+    {
+        gmx_fatal(FARGS, "Out of memory");
+    }
+    return gmx_strdup(s);
 }
 
 static char *html_xref(char *s,const char *program, t_linkdata *links,gmx_bool bWiki)
@@ -764,7 +761,7 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
 {
   char *buf;
   char *temp;
-  int buflen,i,j;
+  int buflen,i;
 
   buflen = 80*nldesc;
   snew(buf,buflen);
@@ -884,8 +881,8 @@ static void write_wikiman(FILE *out,
 			  t_linkdata *links)
 {
   int i;
-  char buf[256],link[10];
-  char *tmp,*tmp2;
+  char buf[256];
+  char *tmp;
   fprintf(out,"<page>\n<title>Manual:%s_%s</title>\n",program,
 	  VERSION);
   fprintf(out,"<revision>\n");
@@ -936,7 +933,7 @@ static void write_htmlman(FILE *out,
 			  t_linkdata *links)
 {
   int i;
-  char link[10],tmp[255];
+  char tmp[255];
   
   fprintf(out,"<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n",program);
   fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
@@ -1179,7 +1176,6 @@ static void write_py(FILE *out,const char *program,
 		     int nbug,const char **bugs,
 		     t_linkdata *links)
 {
-  gmx_bool bHidden;
   const char *cls = program;
   char *tmp;
   int  i,j;
