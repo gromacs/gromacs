@@ -96,6 +96,46 @@ std::string concatenateStrings(const char * const (&sarray)[count])
 }
 
 /*! \brief
+ * Replace all occurrences of a string with another string.
+ *
+ * \param[in] input  Input string.
+ * \param[in] from   String to find.
+ * \param[in] to     String to use to replace \p from.
+ * \returns   \p input with all occurrences of \p from replaced with \p to.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * The replacement is greedy and not recursive: starting from the beginning of
+ * \p input, each match of \p from is replaced with \p to, and the search for
+ * the next match begins after the end of the previous match.
+ *
+ * Compexity is O(N), where N is length of output.
+ *
+ * \see replaceAllWords()
+ *
+ * \inpublicapi
+ */
+std::string replaceAll(const std::string &input,
+                       const char *from, const char *to);
+/*! \brief
+ * Replace whole words with others.
+ *
+ * \param[in] input  Input string.
+ * \param[in] from   String to find.
+ * \param[in] to     String to use to replace \p from.
+ * \returns   \p input with all \p from words replaced with \p to.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * Works as replaceAll(), but a match is only considered if it is delimited by
+ * non-alphanumeric characters.
+ *
+ * \see replaceAll()
+ *
+ * \inpublicapi
+ */
+std::string replaceAllWords(const std::string &input,
+                            const char *from, const char *to);
+
+/*! \brief
  * Wraps lines to a predefined length.
  *
  * This utility class wraps lines at word breaks to produce lines that are not

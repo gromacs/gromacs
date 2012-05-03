@@ -170,10 +170,8 @@ std::string File::readToString(const char *filename)
 
     std::string result(&data[0], len);
     // The below is necessary on Windows to make newlines stay as '\n' on a
-    // roundtrip.  Perhaps would be better to only replace '\r\n' with '\n',
-    // but in practice this probably makes little difference.
-    std::string::iterator end = std::remove(result.begin(), result.end(), '\r');
-    result.erase(end, result.end());
+    // roundtrip.
+    result = replaceAll(result, "\r\n", "\n");
 
     return result;
 }

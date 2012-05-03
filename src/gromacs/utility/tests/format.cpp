@@ -87,6 +87,54 @@ TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
 }
 
 /********************************************************************
+ * Tests for replaceAll() and replaceAllWords()
+ */
+
+TEST(ReplaceAllTest, HandlesEmptyStrings)
+{
+    EXPECT_EQ("", gmx::replaceAll("", "aaa", "bbbb"));
+    EXPECT_EQ("", gmx::replaceAllWords("", "aaa", "bbbb"));
+}
+
+TEST(ReplaceAllTest, HandlesNoMatches)
+{
+    const std::string text("Text with no matches");
+    EXPECT_EQ(text, gmx::replaceAll(text, "aaa", "bbbb"));
+    EXPECT_EQ(text, gmx::replaceAllWords(text, "aaa", "bbbb"));
+}
+
+TEST(ReplaceAllTest, HandlesMatchesAtEnds)
+{
+    EXPECT_EQ("bbbbtext", gmx::replaceAll("aaatext", "aaa", "bbbb"));
+    EXPECT_EQ("textbbbb", gmx::replaceAll("textaaa", "aaa", "bbbb"));
+    EXPECT_EQ("bbbb text", gmx::replaceAllWords("aaa text", "aaa", "bbbb"));
+    EXPECT_EQ("text bbbb", gmx::replaceAllWords("text aaa", "aaa", "bbbb"));
+}
+
+TEST(ReplaceAllTest, HandlesMultipleMatches)
+{
+    const std::string text("Text aaa with multiple aaa matches");
+    EXPECT_EQ("Text bbbb with multiple bbbb matches",
+              gmx::replaceAll(text, "aaa", "bbbb"));
+    EXPECT_EQ("Text bbbb with multiple bbbb matches",
+              gmx::replaceAllWords(text, "aaa", "bbbb"));
+}
+
+TEST(ReplaceAllTest, HandlesWordBoundaries)
+{
+    const std::string text("Text aaax with one word aaa match");
+    EXPECT_EQ("Text aaax with one word bbbb match",
+              gmx::replaceAllWords(text, "aaa", "bbbb"));
+}
+
+TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
+{
+    const std::string text("Text with recursive aaabbbbbb matches");
+    EXPECT_EQ("Text with recursive aaaaaabbb matches",
+              gmx::replaceAll(text, "aaabbb", "aaaaaa"));
+}
+
+/********************************************************************
  * Tests for TextLineWrapper
  */
 
