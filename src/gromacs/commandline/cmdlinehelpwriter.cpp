@@ -49,6 +49,7 @@
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
+#include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectionfileoptioninfo.h"
 #include "gromacs/selection/selectionoptioninfo.h"
 #include "gromacs/utility/format.h"
@@ -253,7 +254,7 @@ class ParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing non-file parameters.
-        explicit ParameterWriter(FILE *fp);
+        ParameterWriter(FILE *fp, const char *timeUnit);
 
         //! Sets the writer to show hidden options.
         void setShowHidden(bool bSet) { bShowHidden_ = bSet; }
@@ -266,11 +267,12 @@ class ParameterWriter : public OptionsVisitor
     private:
         FILE                   *fp_;
         TextTableFormatter      formatter_;
+        const char             *timeUnit_;
         bool                    bShowHidden_;
 };
 
-ParameterWriter::ParameterWriter(FILE *fp)
-    : fp_(fp), bShowHidden_(false)
+ParameterWriter::ParameterWriter(FILE *fp, const char *timeUnit)
+    : fp_(fp), timeUnit_(timeUnit), bShowHidden_(false)
 {
     formatter_.addColumn("Option",      12, false);
     formatter_.addColumn("Type",         6, false);
@@ -316,7 +318,13 @@ void ParameterWriter::visitOption(const OptionInfo &option)
         values.append(option.formatValue(i));
     }
     formatter_.addColumnLine(2, values);
-    formatter_.addColumnLine(3, substituteMarkup(option.description()));
+    std::string description(substituteMarkup(option.description()));
+    const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
+    if (doubleOption != NULL && doubleOption->isTime())
+    {
+        description = replaceAll(description, "%t", timeUnit_);
+    }
+    formatter_.addColumnLine(3, description);
     if (values.length() > 6U)
     {
         formatter_.setColumnFirstLineOffset(3, 1);
@@ -399,7 +407,8 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
  */
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
-    : options_(options), bShowDescriptions_(false), bShowHidden_(false)
+    : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
+      bShowDescriptions_(false), bShowHidden_(false)
 {
 }
 
@@ -428,6 +437,12 @@ CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
     return *this;
 }
 
+CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
+{
+    impl_->timeUnit_ = timeUnit;
+    return *this;
+}
+
 void CommandLineHelpWriter::writeHelp(FILE *fp)
 {
     if (impl_->bShowDescriptions_)
@@ -445,7 +460,7 @@ void CommandLineHelpWriter::writeHelp(FILE *fp)
         }
     }
     {
-        ParameterWriter writer(fp);
+        ParameterWriter writer(fp, impl_->timeUnit_.c_str());
         writer.setShowHidden(impl_->bShowHidden_);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())

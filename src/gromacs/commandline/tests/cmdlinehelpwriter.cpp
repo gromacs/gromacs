@@ -122,8 +122,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     dvec dblvec = {1.1, 2.3, 3.2};
     options.addOption(DoubleOption("dvec").description("Double vector option")
                         .vector().store(dblvec));
-    options.addOption(DoubleOption("time").description("Time option")
-                        .defaultValue(10.0));
+    options.addOption(DoubleOption("time").description("Time option (%t)")
+                        .timeValue().defaultValue(10.0));
     options.addOption(StringOption("string").description("String option")
                         .defaultValue("test"));
     const char * const enumValues[] = {"no", "opt1", "opt2", NULL};

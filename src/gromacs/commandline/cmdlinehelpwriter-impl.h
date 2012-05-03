@@ -38,6 +38,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPWRITER_IMPL_H
 #define GMX_COMMANDLINE_CMDLINEHELPWRITER_IMPL_H
 
+#include <string>
+
 #include "cmdlinehelpwriter.h"
 
 namespace gmx
@@ -58,6 +60,8 @@ class CommandLineHelpWriter::Impl
 
         //! Options object to use for generating help.
         const Options          &options_;
+        //! Time unit to show in descriptions.
+        std::string             timeUnit_;
         //! Whether to write descriptions to output.
         bool                    bShowDescriptions_;
         //! Whether to write hidden options to output.
