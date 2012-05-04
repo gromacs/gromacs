@@ -766,7 +766,7 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
 {
     const t_atoms *atoms,*atoms_tpi;
     const t_blocka *excl;
-    int    mb,nmol,nmolc,i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
+    int    mb,nmol,nmolc,i,j,tpi,tpj,j1,j2,k,n,nexcl,q,itype;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
     long long int  npair,npair_ij,tmpi,tmpj;
 #else
@@ -776,6 +776,7 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
     int    ntp,*typecount;
     gmx_bool   bBHAM;
     real   *nbfp;
+    t_ilist *ilist;
 
     ntp = fr->ntype;
     bBHAM = fr->bBHAM;
@@ -832,7 +833,8 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
              * any value. These unused values should not influence the dispersion
              * correction.
              */
-            for(mb=0; mb<mtop->nmolblock; mb++) {
+            for(mb=0; mb<mtop->nmolblock; mb++)
+            {
                 nmol  = mtop->molblock[mb].nmol;
                 atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
                 excl  = &mtop->moltype[mtop->molblock[mb].type].excls;
@@ -869,8 +871,22 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
                         }
                     }
                 }
+
+                /* Add the listed non-bonded LJC interactions */
+                ilist = &mtop->moltype[mtop->molblock[mb].type].ilist[F_LJC_PAIRS_NB];
+                for(i=0; i<ilist->nr; i+=3)
+                {
+                    itype = ilist->iatoms[i];
+                    csix    += nmol*mtop->ffparams.iparams[itype].ljcnb.c6;
+                    ctwelve += nmol*mtop->ffparams.iparams[itype].ljcnb.c12;
+                    /* We need to add nmol to the count, do that by
+                     * subtracting from the exclusions.
+                     */
+                    nexcl -= nmol;
+                }
             }
-        } else {
+        }
+ else {
             /* Only correct for the interaction of the test particle
              * with the rest of the system.
              */
