@@ -39,13 +39,12 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 #define GMX_COMMANDLINE_CMDLINEHELPWRITER_H
 
-#include <cstdio>
-
 #include "../utility/common.h"
 
 namespace gmx
 {
 
+class File;
 class Options;
 
 /*! \brief
@@ -88,9 +87,9 @@ class CommandLineHelpWriter
         /*! \brief
          * Writes the help.
          *
-         * \param[in] fp  File to write the help to.
+         * \param[in] file  File to write the help to.
          */
-        void writeHelp(FILE *fp);
+        void writeHelp(File *file);
 
     private:
         class Impl;

@@ -37,9 +37,6 @@
  */
 #include "cmdlinehelpwriter.h"
 
-#include <cstdio>
-#include <cstdlib>
-
 #include <string>
 
 #include "gromacs/legacyheaders/smalloc.h"
@@ -52,6 +49,7 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectionfileoptioninfo.h"
 #include "gromacs/selection/selectionoptioninfo.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/format.h"
 
 #include "cmdlinehelpwriter-impl.h"
@@ -91,13 +89,13 @@ class DescriptionWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing section descriptions.
-        explicit DescriptionWriter(FILE *fp) : fp_(fp) {}
+        explicit DescriptionWriter(File *file) : file_(*file) {}
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOption(const OptionInfo & /*option*/) { }
 
     private:
-        FILE                   *fp_;
+        File                   &file_;
 };
 
 void DescriptionWriter::visitSubSection(const Options &section)
@@ -107,12 +105,14 @@ void DescriptionWriter::visitSubSection(const Options &section)
         const std::string &title = section.title();
         if (!title.empty())
         {
-            fprintf(fp_, "%s\n\n", title.c_str());
+            file_.writeLine(title);
+            file_.writeLine();
         }
         TextLineWrapper wrapper;
         wrapper.setLineLength(78);
         std::string description(substituteMarkup(section.description()));
-        fprintf(fp_, "%s\n\n", wrapper.wrapToString(description).c_str());
+        file_.writeLine(wrapper.wrapToString(description));
+        file_.writeLine();
     }
     OptionsIterator(section).acceptSubSections(this);
 }
@@ -131,7 +131,7 @@ class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
 {
     public:
         //! Creates a helper object for writing file parameters.
-        explicit FileParameterWriter(FILE *fp);
+        explicit FileParameterWriter(File *file);
 
         //! Returns true if anything was written out.
         bool didOutput() const { return formatter_.didOutput(); }
@@ -140,12 +140,12 @@ class FileParameterWriter : public OptionsTypeVisitor<FileNameOptionInfo>
         virtual void visitOptionType(const FileNameOptionInfo &option);
 
     private:
-        FILE                   *fp_;
+        File                   &file_;
         TextTableFormatter      formatter_;
 };
 
-FileParameterWriter::FileParameterWriter(FILE *fp)
-    : fp_(fp)
+FileParameterWriter::FileParameterWriter(File *file)
+    : file_(*file)
 {
     formatter_.addColumn("Option",      6, false);
     formatter_.addColumn("Filename",    12, false);
@@ -236,8 +236,7 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     }
 
     // Do the formatting.
-    std::string row = formatter_.formatRow();
-    fprintf(fp_, "%s", row.c_str());
+    file_.writeString(formatter_.formatRow());
 }
 
 
@@ -254,7 +253,7 @@ class ParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing non-file parameters.
-        ParameterWriter(FILE *fp, const char *timeUnit);
+        ParameterWriter(File *file, const char *timeUnit);
 
         //! Sets the writer to show hidden options.
         void setShowHidden(bool bSet) { bShowHidden_ = bSet; }
@@ -265,14 +264,14 @@ class ParameterWriter : public OptionsVisitor
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        FILE                   *fp_;
+        File                   &file_;
         TextTableFormatter      formatter_;
         const char             *timeUnit_;
         bool                    bShowHidden_;
 };
 
-ParameterWriter::ParameterWriter(FILE *fp, const char *timeUnit)
-    : fp_(fp), timeUnit_(timeUnit), bShowHidden_(false)
+ParameterWriter::ParameterWriter(File *file, const char *timeUnit)
+    : file_(*file), timeUnit_(timeUnit), bShowHidden_(false)
 {
     formatter_.addColumn("Option",      12, false);
     formatter_.addColumn("Type",         6, false);
@@ -330,8 +329,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
         formatter_.setColumnFirstLineOffset(3, 1);
     }
 
-    std::string row = formatter_.formatRow();
-    fprintf(fp_, "%s", row.c_str());
+    file_.writeString(formatter_.formatRow());
 }
 
 
@@ -348,7 +346,7 @@ class SelectionParameterWriter : public OptionsVisitor
 {
     public:
         //! Creates a helper object for writing selection parameters.
-        explicit SelectionParameterWriter(FILE *fp);
+        explicit SelectionParameterWriter(File *file);
 
         //! Returns true if anything was written out.
         bool didOutput() const { return formatter_.didOutput(); }
@@ -357,12 +355,12 @@ class SelectionParameterWriter : public OptionsVisitor
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        FILE                   *fp_;
+        File                   &file_;
         TextTableFormatter      formatter_;
 };
 
-SelectionParameterWriter::SelectionParameterWriter(FILE *fp)
-    : fp_(fp)
+SelectionParameterWriter::SelectionParameterWriter(File *file)
+    : file_(*file)
 {
     formatter_.addColumn("Selection",   10, false);
     formatter_.addColumn("Description", 67, true);
@@ -387,8 +385,7 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
     std::string name(formatString("-%s", option.name().c_str()));
     formatter_.addColumnLine(0, name);
     formatter_.addColumnLine(1, substituteMarkup(option.description()));
-    std::string row = formatter_.formatRow();
-    fprintf(fp_, "%s", row.c_str());
+    file_.writeString(formatter_.formatRow());
 
     // TODO: What to do with selection variables?
     // They are not printed as values for any option.
@@ -396,7 +393,7 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
     {
         std::string value(option.formatValue(i));
         // TODO: Wrapping
-        fprintf(fp_, "    %s\n", value.c_str());
+        file_.writeLine(formatString("    %s", value.c_str()));
     }
 }
 
@@ -443,37 +440,38 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
     return *this;
 }
 
-void CommandLineHelpWriter::writeHelp(FILE *fp)
+void CommandLineHelpWriter::writeHelp(File *file)
 {
     if (impl_->bShowDescriptions_)
     {
-        fprintf(fp, "DESCRIPTION\n"
-                    "-----------\n\n");
-        DescriptionWriter(fp).visitSubSection(impl_->options_);
+        file->writeLine("DESCRIPTION");
+        file->writeLine("-----------");
+        file->writeLine();
+        DescriptionWriter(file).visitSubSection(impl_->options_);
     }
     {
-        FileParameterWriter writer(fp);
+        FileParameterWriter writer(file);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            fprintf(fp, "\n");
+            file->writeLine();
         }
     }
     {
-        ParameterWriter writer(fp, impl_->timeUnit_.c_str());
+        ParameterWriter writer(file, impl_->timeUnit_.c_str());
         writer.setShowHidden(impl_->bShowHidden_);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            fprintf(fp, "\n");
+            file->writeLine();
         }
     }
     {
-        SelectionParameterWriter writer(fp);
+        SelectionParameterWriter writer(file);
         writer.visitSubSection(impl_->options_);
         if (writer.didOutput())
         {
-            fprintf(fp, "\n");
+            file->writeLine();
         }
     }
 }
