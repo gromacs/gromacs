@@ -1,64 +1,64 @@
 # Generate Gromacs development build version information.
 #
-# The script generates version information for a build from a development 
-# source tree based on git repository information. 
+# The script generates version information for a build from a development
+# source tree based on git repository information.
 # It is assumed that by default the script is run in cmake script mode.
-# If *not* called in script mode but used in generating cache variables,  
+# If *not* called in script mode but used in generating cache variables,
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
-# The following variables have to be previously defined: 
+# The following variables have to be previously defined:
 # Git_EXECUTABLE        - path to git binary
 # Git_VERSION           - git version (if not defined it's assumed that >=1.5.3)
-# PROJECT_VERSION       - hard-coded version string, should have the following structure: 
-#                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix 
+# PROJECT_VERSION       - hard-coded version string, should have the following structure:
+#                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 #                       is optional but should start with -dev
 # PROJECT_SOURCE_DIR    - top level source directory (which has to be in git)
-# VERSION_C_CMAKEIN     - path to the version.c.cmakein file 
+# VERSION_C_CMAKEIN     - path to the version.c.cmakein file
 # VERSION_C_OUT         - path to the version.c output file
 #
-# Output: 
-# i)  Script mode: version.c configured from the input version.c.cmakein using 
-# the variables listed below. 
+# Output:
+# i)  Script mode: version.c configured from the input version.c.cmakein using
+# the variables listed below.
 # ii) Cache variable mode: the varables below are set in cache.
 #
-# GMX_PROJECT_VERSION_STR   - version string 
-# GMX_GIT_HEAD_HASH         - git hash of current local HEAD 
-# GMX_GIT_REMOTE_HASH       - git hash of the first ancestor commit from the 
-#                             main Gromacs repository 
-# 
-# Szilard Pall (pszilard@cbr.su.se) 
+# GMX_PROJECT_VERSION_STR   - version string
+# GMX_GIT_HEAD_HASH         - git hash of current local HEAD
+# GMX_GIT_REMOTE_HASH       - git hash of the first ancestor commit from the
+#                             main Gromacs repository
+#
+# Szilard Pall (pszilard@cbr.su.se)
 
-if(${PROJECT_VERSION} STREQUAL "")
+if("${PROJECT_VERSION}" STREQUAL "")
     message(FATAL_ERROR "PROJECT_VERSION undefined!")
 endif()
 set(VER ${PROJECT_VERSION})
 
-# if we're generating variables for cache unset the variables 
+# if we're generating variables for cache unset the variables
 if(GEN_VERSION_INFO_INTERNAL)
     set(GMX_PROJECT_VERSION_STR)
     set(GMX_GIT_HEAD_HASH)
     set(GMX_GIT_REMOTE_HASH)
 endif()
 
-# bail if the source tree is not in a git repository  
+# bail if the source tree is not in a git repository
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/.git")
-    message(FATAL_ERROR " Project source directory ${PROJECT_SOURCE_DIR} not in git")
+    message(FATAL_ERROR "Project source directory ${PROJECT_SOURCE_DIR} not in git")
 endif()
 
-# if git executable xists and it's compatible version
-# build the development version string 
+# if git executable exists and it's compatible version
+# build the development version string
 # this should at some point become VERSION_LESS
-if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
-    # refresh git index 
+if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
+    # refresh git index
     execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
         OUTPUT_QUIET
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
-    ) 
+    )
 
-   # get the full hash of the current HEAD 
+    # get the full hash of the current HEAD
     execute_process(COMMAND ${Git_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE HEAD_HASH
@@ -80,8 +80,8 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
         OUTPUT_VARIABLE SRC_LOCAL_CHANGES
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
-    )   
-    if(NOT ${SRC_LOCAL_CHANGES} STREQUAL "")
+    )
+    if(NOT "${SRC_LOCAL_CHANGES}" STREQUAL "")
         set(DIRTY_STR "-dirty")
         set(GMX_GIT_HEAD_HASH "${GMX_GIT_HEAD_HASH} (dirty)")
     endif()
@@ -93,12 +93,12 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    string(REGEX REPLACE "\n| " ";" HEAD_DATE ${HEAD_DATE})
+    string(REGEX REPLACE "\n| " ";" HEAD_DATE "${HEAD_DATE}")
     list(GET HEAD_DATE 2 HEAD_DATE)
-    string(REGEX REPLACE "-" "" HEAD_DATE ${HEAD_DATE})
+    string(REGEX REPLACE "-" "" HEAD_DATE "${HEAD_DATE}")
 
     # compile the version string suffix
-    set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}") 
+    set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}")
 
     # find the names of remotes that are located on the official gromacs
     # git/gerrit servers
@@ -114,8 +114,8 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
     # otherwise, label the build "unknown"
     if("${GMX_REMOTES}" STREQUAL "")
         set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
-        set(GMX_GIT_REMOTE_HASH "unknown")        
-    else()         
+        set(GMX_GIT_REMOTE_HASH "unknown")
+    else()
         string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
         # construct a command pipeline that produces a reverse-time-ordered
         # list of commits and their annotated names in GMX_REMOTES
@@ -128,9 +128,9 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
         # this is necessary for CMake to properly split the variable into
         # parameters for execute_process().
         string(REPLACE " " ";" BASEREVCOMMAND ${BASEREVCOMMAND})
-        # find the first ancestor in the list provided by rev-list (not 
-        # necessarily the last though) which is in GMX_REMOTE, extract the 
-        # hash and the number of commits HEAD is ahead with 
+        # find the first ancestor in the list provided by rev-list (not
+        # necessarily the last though) which is in GMX_REMOTE, extract the
+        # hash and the number of commits HEAD is ahead with
         execute_process(${BASEREVCOMMAND}
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE ANCESTOR_LIST
@@ -151,7 +151,7 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
             endif()
             math(EXPR AHEAD ${AHEAD}+1)
         endforeach(ANCESTOR)
-        # mark the build "local" if didn't find any commits that are from 
+        # mark the build "local" if didn't find any commits that are from
         # remotes/${GMX_REMOTE}/*
         if("${GMX_GIT_REMOTE_HASH}" STREQUAL "")
             set(GMX_GIT_REMOTE_HASH "unknown")
@@ -164,36 +164,36 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
         endif()
     endif()
 
-    # compile final version string, if there is already a -dev suffix in VER 
+    # compile final version string, if there is already a -dev suffix in VER
     # remove everything after this and replace it with the generated suffix
-    string(REGEX REPLACE "(.*)-dev.*" "\\1" VER ${VER})
+    string(REGEX REPLACE "(.*)-dev.*" "\\1" VER "${VER}")
     set(GMX_PROJECT_VERSION_STR "${VER}-dev-${VERSION_STR_SUFFIX}")
 else()
-    # the version has to be defined - if not we're not using version.h/.c and set 
+    # the version has to be defined - if not we're not using version.h/.c and set
     # the GIT related information to "unknown"
-    message(WARNING " Source tree seems to be a repository, but no compatible git is available, using hard-coded version string")
+    message(WARNING "Source tree seems to be a repository, but no compatible git is available, using hard-coded version string")
     set(GMX_PROJECT_VERSION_STR "${PROJECT_VERSION}")
     set(GMX_GIT_HEAD_HASH "unknown")
     set(GMX_GIT_REMOTE_HASH "unknown")
 endif()
 
 # if we're generating cache variables set these
-# otherwise it's assumed that it's called in script mode to generate version.c 
+# otherwise it's assumed that it's called in script mode to generate version.c
 if(GEN_VERSION_INFO_INTERNAL)
-    set(GMX_PROJECT_VERSION_STR ${GMX_PROJECT_VERSION_STR} 
+    set(GMX_PROJECT_VERSION_STR ${GMX_PROJECT_VERSION_STR}
         CACHE STRING "Gromacs version string" FORCE)
-    set(GMX_GIT_HEAD_HASH ${GMX_GIT_HEAD_HASH}${DIRTY_STR}  
+    set(GMX_GIT_HEAD_HASH ${GMX_GIT_HEAD_HASH}${DIRTY_STR}
         CACHE STRING "Current git HEAD commit object" FORCE)
-    set(GMX_GIT_REMOTE_HASH ${GMX_GIT_REMOTE_HASH} 
+    set(GMX_GIT_REMOTE_HASH ${GMX_GIT_REMOTE_HASH}
         CACHE STRING "Commmit object of the nearest ancestor present in the Gromacs git repository" FORCE)
     mark_as_advanced(GMX_GIT_HEAD_HASH GMX_GIT_REMOTE_HASH)
 else()
-    if(${VERSION_C_CMAKEIN} STREQUAL "")
+    if("${VERSION_C_CMAKEIN}" STREQUAL "")
         message(FATAL_ERROR "Missing input parameter VERSION_C_CMAKEIN!")
     endif()
-    if(${VERSION_C_OUT} STREQUAL "")
+    if("${VERSION_C_OUT}" STREQUAL "")
         message(FATAL_ERROR "Missing input parameter VERSION_C_OUT!")
     endif()
     # generate version.c
-   configure_file(${VERSION_C_CMAKEIN} ${VERSION_C_OUT})    
+    configure_file(${VERSION_C_CMAKEIN} ${VERSION_C_OUT})
 endif()
