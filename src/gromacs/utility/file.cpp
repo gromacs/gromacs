@@ -39,6 +39,7 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 #include <string>
@@ -51,21 +52,41 @@
 namespace gmx
 {
 
-File::File(const char *filename, const char *mode)
-    : fp_(NULL)
+/*! \internal \brief
+ * Private implementation class for File.
+ *
+ * \ingroup module_utility
+ */
+class File::Impl
 {
-    open(filename, mode);
+    public:
+        /*! \brief
+         * Initialize a file object with the given handle.
+         *
+         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  bClose Whether this object should close its file handle.
+         */
+        Impl(FILE *fp, bool bClose);
+        ~Impl();
+
+        //! File handle for this object (may be NULL).
+        FILE                   *fp_;
+        /*! \brief
+         * Whether \p fp_ should be closed by this object.
+         *
+         * Can be true if \p fp_ is NULL.
+         */
+        bool                    bClose_;
+};
+
+File::Impl::Impl(FILE *fp, bool bClose)
+    : fp_(fp), bClose_(bClose)
+{
 }
 
-File::File(const std::string &filename, const char *mode)
-    : fp_(NULL)
+File::Impl::~Impl()
 {
-    open(filename, mode);
-}
-
-File::~File()
-{
-    if (fp_ != NULL)
+    if (fp_ != NULL && bClose_)
     {
         if (fclose(fp_) != 0)
         {
@@ -74,13 +95,34 @@ File::~File()
     }
 }
 
+File::File(const char *filename, const char *mode)
+    : impl_(new Impl(NULL, true))
+{
+    open(filename, mode);
+}
+
+File::File(const std::string &filename, const char *mode)
+    : impl_(new Impl(NULL, true))
+{
+    open(filename, mode);
+}
+
+File::File(FILE *fp, bool bClose)
+    : impl_(new Impl(fp, bClose))
+{
+}
+
+File::~File()
+{
+}
+
 void File::open(const char *filename, const char *mode)
 {
-    GMX_RELEASE_ASSERT(fp_ == NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ == NULL,
                        "Attempted to open the same file object twice");
     // TODO: Port all necessary functionality from ffopen() here.
-    fp_ = fopen(filename, mode);
-    if (fp_ == NULL)
+    impl_->fp_ = fopen(filename, mode);
+    if (impl_->fp_ == NULL)
     {
         GMX_THROW_WITH_ERRNO(
                 FileIOError(formatString("Could not open file '%s'", filename)),
@@ -95,10 +137,12 @@ void File::open(const std::string &filename, const char *mode)
 
 void File::close()
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
                        "Attempted to close a file object that is not open");
-    bool bOk = (fclose(fp_) == 0);
-    fp_ = NULL;
+    GMX_RELEASE_ASSERT(impl_->bClose_,
+                       "Attempted to close a file object that should not be");
+    bool bOk = (fclose(impl_->fp_) == 0);
+    impl_->fp_ = NULL;
     if (!bOk)
     {
         GMX_THROW_WITH_ERRNO(
@@ -108,21 +152,20 @@ void File::close()
 
 FILE *File::handle()
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
+    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
                        "Attempted to access a file object that is not open");
-    return fp_;
+    return impl_->fp_;
 }
 
 void File::readBytes(void *buffer, size_t bytes)
 {
-    GMX_RELEASE_ASSERT(fp_ != NULL,
-                       "Attempted to access a file object that is not open");
     errno = 0;
+    FILE *fp = handle();
     // TODO: Retry based on errno or something else?
-    size_t bytesRead = std::fread(buffer, 1, bytes, fp_);
+    size_t bytesRead = std::fread(buffer, 1, bytes, fp);
     if (bytesRead != bytes)
     {
-        if (feof(fp_))
+        if (feof(fp))
         {
             GMX_THROW(FileIOError(
                         formatString("Premature end of file\n"
@@ -137,6 +180,38 @@ void File::readBytes(void *buffer, size_t bytes)
                                  "fread", errno);
         }
     }
+}
+
+void File::writeString(const char *str)
+{
+    if (fprintf(handle(), "%s", str) < 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
+                             "fprintf", errno);
+    }
+}
+
+void File::writeLine(const char *line)
+{
+    size_t length = std::strlen(line);
+
+    writeString(line);
+    if (length == 0 || line[length-1] != '\n')
+    {
+        writeString("\n");
+    }
+}
+
+void File::writeLine()
+{
+    writeString("\n");
+}
+
+// static
+File &File::standardError()
+{
+    static File stderrObject(stderr, false);
+    return stderrObject;
 }
 
 // static

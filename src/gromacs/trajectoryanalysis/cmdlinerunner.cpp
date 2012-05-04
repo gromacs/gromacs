@@ -55,6 +55,7 @@
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 #include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -110,7 +111,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
             .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(stderr);
+            .writeHelp(&File::standardError());
     }
 }
 

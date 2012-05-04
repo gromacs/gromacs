@@ -65,6 +65,7 @@ class File
          *
          * \param[in] filename  Path of the file to open.
          * \param[in] mode      Mode to open the file in (for fopen()).
+         * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          *
          * \see open(const char *, const char *)
@@ -121,6 +122,45 @@ class File
         void readBytes(void *buffer, size_t bytes);
 
         /*! \brief
+         * Writes a string to the file.
+         *
+         * \param[in]  str  String to write.
+         * \throws     FileIOError on any I/O error.
+         *
+         * The file must be open.
+         */
+        void writeString(const char *str);
+        //! \copydoc writeString(const char *)
+        void writeString(const std::string &str) { writeString(str.c_str()); }
+        /*! \brief
+         * Writes a line to the file.
+         *
+         * \param[in]  line  Line to write.
+         * \throws     FileIOError on any I/O error.
+         *
+         * If \p line does not end in a newline, one newline is appended.
+         * Otherwise, works as writeString().
+         *
+         * The file must be open.
+         */
+        void writeLine(const char *line);
+        //! \copydoc writeLine(const char *)
+        void writeLine(const std::string &line) { writeLine(line.c_str()); }
+        /*! \brief
+         * Writes a newline to the file.
+         *
+         * \throws     FileIOError on any I/O error.
+         */
+        void writeLine();
+
+        /*! \brief
+         * Returns a File object for accessing stderr.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         */
+        static File &standardError();
+
+        /*! \brief
          * Reads contents of a file to a std::string.
          *
          * \param[in] filename  File to read.
@@ -133,9 +173,20 @@ class File
         static std::string readToString(const std::string &filename);
 
     private:
-        FILE                   *fp_;
+        /*! \brief
+         * Initialize file object from an existing file handle.
+         *
+         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  bClose Whether this object should close its file handle.
+         * \throws     std::bad_alloc if out of memory.
+         *
+         * Used internally to implement standardError().
+         */
+        File(FILE *fp, bool bClose);
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(File);
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

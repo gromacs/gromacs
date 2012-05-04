@@ -88,7 +88,7 @@ CommandLineHelpWriterTest::~CommandLineHelpWriterTest()
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
     gmx::File file(helpfile_, "w");
-    writer->writeHelp(file.handle());
+    writer->writeHelp(&file);
     file.close();
 
     checkFileContents(helpfile_, "HelpText");
