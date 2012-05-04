@@ -4,6 +4,7 @@
 
 #include "typedefs.h"
 #include "vsite.h"
+#include "gpp_atomtype.h"
 #include "atomprop.h"
 #include "gmx_resp.h"
 #include "gentop_qgen.h"
@@ -28,11 +29,14 @@ typedef struct {
     real           *qESP;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;
+    gpp_atomtype_t atype;
     t_symtab       symtab;
+    t_excls        *excls;
     t_inputrec     ir;
     gmx_shellfc_t  shell;
     t_mdatoms      *md;
     t_atoms        *atoms;
+    char           **smnames;
     t_forcerec     *fr;
     gmx_vsite_t    *vs;
     gmx_resp_t     gr;
@@ -69,15 +73,6 @@ typedef struct {
 
 extern const char *immsg(int imm);
 
-extern int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
-                      gmx_bool bQM,char *lot,gmx_bool bZero,
-                      gmx_poldata_t pd,gmx_atomprop_t aps,
-                      int  iModel,t_commrec *cr,int *nwarn,
-                      gmx_bool bCharged,const output_env_t oenv,
-                      real th_toler,real ph_toler,
-                      real dip_toler,real hfac,gmx_bool bESP,
-                      real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);
-
 extern t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
                              int  iModel,real rDecrZeta,real epsr,
                              real J0_0,real Chi0_0,real w_0,
@@ -95,7 +90,8 @@ extern void read_moldip(t_moldip *md,
                         char *lot,gmx_bool bCharged,
                         output_env_t oenv,gmx_molselect_t gms,
                         real th_toler,real ph_toler,real dip_toler,
-                        real watoms,gmx_bool bCheckSupport);
+                        gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+                        int nexcl,real watoms,gmx_bool bCheckSupport);
 
 extern char *opt_index_count(t_index_count *ic);
 

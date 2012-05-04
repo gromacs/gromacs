@@ -250,8 +250,8 @@ void unitcell_d(rvec x[],rvec box,real odist)
   printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
 }
 
-static t_bbb *mk_bonds(int natoms,rvec x[],real odist,
-		       gmx_bool bPBC,matrix box)
+static t_bbb *mk_ice_bonds(int natoms,rvec x[],real odist,
+                           gmx_bool bPBC,matrix box)
 {
   real  od2 = odist*odist+1e-5;
   t_pbc pbc;
@@ -294,7 +294,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
   
   do {
     nrm = 0;
-    bbb = mk_bonds(a->nr,x,odist,bPBC,box);
+    bbb = mk_ice_bonds(a->nr,x,odist,bPBC,box);
     
     for(i=0; (i<a->nr); i++) {
       if (bbb[i].n < 2) {
@@ -326,7 +326,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
     sfree(bbb);
   } while (nrm > 0);
   /* Rename atoms */
-  bbb = mk_bonds(a->nr,x,odist,bPBC,box);
+  bbb = mk_ice_bonds(a->nr,x,odist,bPBC,box);
   for(i=0; (i<a->nr); i++) {
     switch (bbb[i].n) {
     case 4:

@@ -334,7 +334,8 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
   
   snew(index,*ndih+1);
   if (bAlldih) {
-    fprintf(stderr,"Keeping all generated dihedrals\n");
+    if (NULL != debug)
+      fprintf(debug,"Keeping all generated dihedrals\n");
     nind = *ndih;
     for(i=0; i<nind; i++) 
       index[i] = i;
@@ -810,7 +811,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
     /* Remove doubles, could occur in 6-rings, such as phenyls,
        maybe one does not want this when fudgeQQ < 1.
        */
-    fprintf(stderr,"Before cleaning: %d pairs\n",npai);
+    if (NULL != debug)
+      fprintf(debug,"Before cleaning: %d pairs\n",npai);
     rm2par(pai,&npai,preq);
   }
 
@@ -824,7 +826,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
     /* Remove dihedrals which are impropers
        and when bAlldih is not set remove multiple dihedrals over one bond.
        */
-    fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
+    if (NULL != debug)
+      fprintf(debug,"Before cleaning: %d dihedrals\n",ndih);
     clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih,bRemoveDih);
   }
 

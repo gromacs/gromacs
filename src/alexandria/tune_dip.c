@@ -1197,7 +1197,7 @@ int main(int argc, char *argv[])
                 minimum_data,bZero,bWeighted,
                 opt_elem,const_elem,
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-                watoms,TRUE);
+                TRUE,TRUE,TRUE,2,watoms,TRUE);
     
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,opt2fn_null("-conv",NFILE,fnm),
                     md,maxiter,tol,nrun,reinit,step,seed,

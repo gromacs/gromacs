@@ -62,7 +62,9 @@ extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
                       t_params plist[],int cgnr[],int nbts,int bts[]);
 		      
 extern void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-                     gmx_conect gc,t_params *bond,int nbond[],
+                     gmx_conect gc,t_params plist[],int nbond[],
+                     gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+                     int nexcl,t_excls **excls,
                      gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol);
 		     
 extern gpp_atomtype_t set_atom_type(FILE *fp,char *molname,

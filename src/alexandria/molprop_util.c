@@ -270,10 +270,12 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
     t_atoms    *atoms;
     rvec       *x=NULL;
     int        i,j,natom=-1,bOK=FALSE;
+    int        nexcl=1;
     char       **anames=NULL,**smnames;
     int        *nbonds,bDone=0,calcref,atomref,atomid;
-    t_params   *bonds=NULL;
-    double       btol=0.2;
+    t_params   *plist=NULL;
+    t_excls    *excls;
+    double     btol=0.2;
     gpp_atomtype_t atype;
     t_symtab   symtab;
     matrix     box;
@@ -344,12 +346,14 @@ static int lo_gen_composition(gmx_molprop_t mp,gmx_poldata_t pd,gmx_atomprop_t a
         }
         snew(nbonds,atoms->nr);
         snew(smnames,atoms->nr);
-        snew(bonds,1);
-        mk_bonds(pd,atoms,x,NULL,bonds,nbonds,FALSE,NULL,aps,btol);
+        snew(plist,F_NRE);
+        mk_bonds(pd,atoms,x,NULL,plist,nbonds,TRUE,TRUE,TRUE,
+                 nexcl,&excls,FALSE,NULL,aps,btol);
         
         /* Setting the atom types: this depends on the bonding */
         gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,bonds,nbonds,smnames,
+        if ((atype = set_atom_type(NULL,molname,&symtab,atoms,&(plist[F_BONDS]),
+                                   nbonds,smnames,
                                    pd,aps,x,&pbc,th_toler,phi_toler,gvt)) != NULL) 
             bOK = TRUE;
         gentop_vsite_done(&gvt);

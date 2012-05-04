@@ -60,6 +60,7 @@
 #include "atomprop.h"
 #include "grompp.h"
 #include "toputil.h"
+#include "gen_ad.h"
 #include "pdbio.h"
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
@@ -69,7 +70,9 @@
 #include "gentop_vsite.h"
 
 void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-              gmx_conect gc,t_params *bond,int nbond[],
+              gmx_conect gc,t_params plist[],int nbond[],
+              gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+              int nexcl,t_excls **excls,
               gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol)
 {
     t_param  b;
@@ -80,7 +83,8 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     double   b_order;
     gmx_bool bBond;
     char     *elem_i,*elem_j;
-    
+    t_nextnb   nnb;
+
     for(i=0; (i<MAXATOMLIST); i++)
         b.a[i] = -1;
     for(i=0; (i<MAXFORCEPARAM); i++)
@@ -91,8 +95,6 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     for(i=0; (i<atoms->nr); i++) 
     {
         elem_i = gmx_atomprop_element(aps,atoms->atom[i].atomnumber);
-        /*    if ((i % 10) == 0)
-              fprintf(stderr,"\ratom %d",i);*/
         for(j=i+1; (j<atoms->nr); j++) 
         {
             elem_j = gmx_atomprop_element(aps,atoms->atom[j].atomnumber);
@@ -124,7 +126,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
                 b.AI = i;
                 b.AJ = j;
                 b.C0 = dx1;
-                add_param_to_list (bond,&b);
+                add_param_to_list (&(plist[F_BONDS]),&b);
                 nbond[i] += b_order;
                 nbond[j] += b_order;
             }
@@ -139,7 +141,15 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             }
         }
     }
-    /*fprintf(stderr,"\ratom %d\n",i);*/
+    /* Make Angles and Dihedrals */
+    snew(*excls,atoms->nr);
+    init_nnb(&nnb,atoms->nr,nexcl+2);
+    gen_nnb(&nnb,plist);
+    print_nnb(&nnb,"NNB");
+    gen_pad(&nnb,atoms,bH14,nexcl,plist,*excls,NULL,
+            bAllDihedrals,bRemoveDoubleDihedrals,TRUE);
+    generate_excls(&nnb,nexcl,*excls);
+    done_nnb(&nnb);
 }
 
 gpp_atomtype_t set_atom_type(FILE *fp,char *molname,

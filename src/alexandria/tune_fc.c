@@ -599,16 +599,9 @@ int main(int argc, char *argv[])
     t_filenm fnm[] = {
         { efDAT, "-f", "allmols",    ffREAD  },
         { efDAT, "-d", "gentop",     ffOPTRD },
-        { efDAT, "-o", "tunedip",    ffWRITE },
+        { efDAT, "-o", "tune_fc",    ffWRITE },
         { efDAT, "-sel", "molselect",ffREAD },
-        { efLOG, "-g", "charges",    ffWRITE },
-        { efXVG, "-x", "dipcorr",    ffWRITE },
-        { efXVG, "-qhisto", "q_histo",    ffWRITE },
-        { efXVG, "-qdiff", "q_diff",    ffWRITE },
-        { efXVG, "-mudiff", "mu_diff",    ffWRITE },
-        { efXVG, "-thetadiff", "theta_diff",    ffWRITE },
-        { efXVG, "-espdiff", "esp_diff",    ffWRITE },
-        { efXVG, "-conv", "convergence", ffOPTWR }
+        { efLOG, "-g", "tune_fc",    ffWRITE }
     };
 #define NFILE asize(fnm)
     static int  nrun=1,maxiter=100,reinit=0,seed=1993;
@@ -622,6 +615,7 @@ int main(int argc, char *argv[])
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
+    static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
@@ -657,6 +651,10 @@ int main(int argc, char *argv[])
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
+#ifdef GMX_THREAD_MPI
+    { "-nt",      FALSE, etINT, {&nthreads},
+      "Number of threads to start (0 is guess)" },
+#endif
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
@@ -677,6 +675,9 @@ int main(int argc, char *argv[])
     parse_common_args(&argc,argv,PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
+#ifndef GMX_THREAD_MPI
+    nthreads=1;
+#endif
     if (qgen[0]) 
         iModel = name2eemtype(qgen[0]);
     else
@@ -694,6 +695,8 @@ int main(int argc, char *argv[])
     }
     else
         fp = NULL;
+        
+        
     if (MASTER(cr)) 
         gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
     else
@@ -708,9 +711,9 @@ int main(int argc, char *argv[])
                 minimum_data,bZero,bWeighted,
                 opt_elem,const_elem,
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-                watoms,FALSE);
-    
-    optimize_moldip(MASTER(cr) ? stderr : NULL,fp,opt2fn_null("-conv",NFILE,fnm),
+                TRUE,TRUE,TRUE,2,watoms,FALSE);
+                    
+    optimize_moldip(MASTER(cr) ? stderr : NULL,fp,NULL,
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv);
     if (MASTER(cr)) 
@@ -721,7 +724,8 @@ int main(int argc, char *argv[])
     }
     
 #ifdef GMX_MPI
-    gmx_finalize();
+    if (gmx_parallel_env_initialized())
+        gmx_finalize();
 #endif
 
     return 0;

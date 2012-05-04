@@ -61,7 +61,6 @@
 #include "vec.h"
 #include "gmx_random.h"
 #include "pdb2top.h"
-#include "gen_ad.h"
 #include "toputil.h"
 #include "slater_integrals.h"
 #include "gpp_atomtype.h"
@@ -300,7 +299,6 @@ int main(int argc, char *argv[])
     t_atoms    *atoms;       /* list with all atoms */
     gpp_atomtype_t atype;
     output_env_t oenv;
-    t_nextnb   nnb;
     t_mols     mymol;
     gmx_atomprop_t aps;
     gmx_poldata_t  pd;
@@ -674,7 +672,8 @@ int main(int argc, char *argv[])
         printf("Generating bonds from distances...\n");
     snew(nbonds,atoms->nr);
     snew(smnames,atoms->nr);
-    mk_bonds(pd,atoms,x,gc,&(plist[F_BONDS]),nbonds,bPBC,box,aps,btol);
+    mk_bonds(pd,atoms,x,gc,plist,nbonds,bH14,(dih == edihAll),bRemoveDih,
+             nexcl,&excls,bPBC,box,aps,btol);
 
     /* Setting the atom types: this depends on the bonding */
     gvt = gentop_vsite_init(egvtALL);
@@ -809,18 +808,6 @@ int main(int argc, char *argv[])
     {
         int  anr;
         
-        /* Make Angles and Dihedrals */
-        snew(excls,atoms->nr);
-        if (bVerbose)
-            printf("Generating angles and dihedrals from bonds...\n");
-        init_nnb(&nnb,atoms->nr,nexcl+2);
-        gen_nnb(&nnb,plist);
-        print_nnb(&nnb,"NNB");
-        gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
-                (dih == edihAll),bRemoveDih,TRUE);
-        generate_excls(&nnb,nexcl,excls);
-        done_nnb(&nnb);
-    
         anr = atoms->nr;    
         gentop_vsite_generate_special(gvt,bGenVSites,atoms,&x,plist,
                                       &symtab,atype,&excls);
@@ -865,7 +852,7 @@ int main(int argc, char *argv[])
                    "          %4d pairs, %4d bonds, %4d atoms\n"
                    "          %4d polarizations\n",
                    plist[F_PDIHS].nr,  plist[F_IDIHS].nr, 
-                   plist[F_ANGLES].nr, 666 /*plist[F_LINEAR_ANGLES].nr*/,
+                   plist[F_ANGLES].nr, plist[F_LINEAR_ANGLES].nr,
                    plist[F_LJ14].nr,   plist[F_BONDS].nr,atoms->nr,
                    plist[F_POLARIZATION].nr);
         }
