@@ -61,12 +61,13 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
    # get the full hash of the current HEAD 
     execute_process(COMMAND ${Git_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        OUTPUT_VARIABLE GMX_GIT_HEAD_HASH
+        OUTPUT_VARIABLE HEAD_HASH
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    set(GMX_GIT_HEAD_HASH ${HEAD_HASH})
     # extract the shortened hash (7 char)
-    string(SUBSTRING ${GMX_GIT_HEAD_HASH} 0 5 HEAD_HASH_SHORT) 
+    string(SUBSTRING ${HEAD_HASH} 0 5 HEAD_HASH_SHORT)
 
     # if there are local uncommitted changes, the build gets labeled "dirty"
     execute_process(COMMAND ${Git_EXECUTABLE} diff-index --name-only HEAD
@@ -124,26 +125,39 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
 
     # compile the version string suffix
     set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}") 
-    
-    # find the name of the remote which is located on the official gromacs git server
-    execute_process(COMMAND ${Git_EXECUTABLE} config --get-regexp 
-                    "remote\\..*\\.url" "git\\.gromacs\\.org[:|/]gromacs"
+
+    # find the names of remotes that are located on the official gromacs
+    # git/gerrit servers
+    execute_process(COMMAND ${Git_EXECUTABLE} config --get-regexp
+                    "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        OUTPUT_VARIABLE GMX_REMOTE
+        OUTPUT_VARIABLE GMX_REMOTES
         ERROR_VARIABLE EXEC_ERR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    # if there's a remote from the gromacs git, try to find ancestor commits of the 
-    # current HEAD from this remote; otherwise, label the buld "unknown"
-    if(GMX_REMOTE STREQUAL "")
+    string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
+    # if there are remotes from the gromacs git servers, try to find ancestor
+    # commits of the current HEAD from this remote;
+    # otherwise, label the build "unknown"
+    if(GMX_REMOTES STREQUAL "")
         set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
         set(GMX_GIT_REMOTE_HASH "unknown")        
     else()         
-        string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" GMX_REMOTE ${GMX_REMOTE})
+        # construct a command pipeline that produces a reverse-time-ordered
+        # list of commits and their annotated names in GMX_REMOTES
+        # the max-count limit is there to put an upper bound on the execution time
+        set(BASEREVCOMMAND "COMMAND ${Git_EXECUTABLE} rev-list --max-count=1000 HEAD")
+        foreach(REMOTE ${GMX_REMOTES})
+            string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
+            set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${Git_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
+        endforeach(REMOTE)
+        # this is necessary for CMake to properly split the variable into
+        # parameters for execute_process().
+        string(REPLACE " " ";" BASEREVCOMMAND ${BASEREVCOMMAND})
         # find the first ancestor in the list provided by rev-list (not 
         # necessarily the last though) which is in GMX_REMOTE, extract the 
         # hash and the number of commits HEAD is ahead with 
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list --max-count=100 HEAD
+        execute_process(${BASEREVCOMMAND}
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE ANCESTOR_LIST
         )
@@ -151,31 +165,28 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
 
         set(AHEAD 0)
         set(GMX_GIT_REMOTE_HASH "")
-        foreach(OBJ ${ANCESTOR_LIST})
-            execute_process(COMMAND ${Git_EXECUTABLE} name-rev --refs=refs/remotes/${GMX_REMOTE}/* ${OBJ}
-                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-                OUTPUT_VARIABLE HASH_AND_REVNAME
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            string(REGEX REPLACE "\n" "" HASH_AND_REVNAME ${HASH_AND_REVNAME})
-            string(REGEX REPLACE " " ";" HASH_AND_REVNAME ${HASH_AND_REVNAME})
-            list(GET HASH_AND_REVNAME 0 GMX_GIT_REMOTE_HASH) 
-            list(GET HASH_AND_REVNAME 1 REVNAME)
+        foreach(ANCESTOR ${ANCESTOR_LIST})
+            string(REPLACE "\n" "" HASH_AND_REVNAMES ${ANCESTOR})
+            string(REPLACE " " ";" HASH_AND_REVNAMES ${HASH_AND_REVNAMES})
+            list(LENGTH HASH_AND_REVNAMES COUNT)
             # stop and set the hash if we have a hit, otherwise loop and count
             # how far ahead is the local repo
-            if(${REVNAME} MATCHES "remotes/${GMX_REMOTE}/.*")
-                set(GMX_GIT_REMOTE_HASH 
-                        "${GMX_GIT_REMOTE_HASH} (${AHEAD} newer local commits)")
+            if(COUNT GREATER 1)
+                LIST(GET HASH_AND_REVNAMES 0 GMX_GIT_REMOTE_HASH)
                 break()
-            else()
-                math(EXPR AHEAD ${AHEAD}+1)
             endif()
-        endforeach(OBJ)
+            math(EXPR AHEAD ${AHEAD}+1)
+        endforeach(ANCESTOR)
         # mark the build "local" if didn't find any commits that are from 
         # remotes/${GMX_REMOTE}/*
         if(${GMX_GIT_REMOTE_HASH} STREQUAL "")
             set(GMX_GIT_REMOTE_HASH "unknown")
-            set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-local") 
+            set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-local")
+        # don't print the remote hash if there are no local commits
+        elseif(${GMX_GIT_REMOTE_HASH} STREQUAL ${HEAD_HASH})
+            set(GMX_GIT_REMOTE_HASH "")
+        else()
+            set(GMX_GIT_REMOTE_HASH "${GMX_GIT_REMOTE_HASH} (${AHEAD} newer local commits)")
         endif()
     endif()
 
