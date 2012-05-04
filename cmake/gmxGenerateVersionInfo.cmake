@@ -48,7 +48,7 @@ endif()
 # if git executable xists and it's compatible version
 # build the development version string 
 # this should at some point become VERSION_LESS
-if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
+if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.3")
     # refresh git index 
     execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -86,47 +86,16 @@ if(EXISTS ${Git_EXECUTABLE} AND NOT Git_VERSION STRLESS "1.5.1")
         set(GMX_GIT_HEAD_HASH "${GMX_GIT_HEAD_HASH} (dirty)")
     endif()
 
-    # if git is older then 1.5.3 we need to extract the RFC2822 style date 
-    # and massage it, otherwise the ISO 8601 format is more trusworthy
-    # this should at some point become VERSION_LESS
-    if (NOT Git_VERSION STREQUAL "" AND Git_VERSION STRLESS "1.5.3")
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%cD" HEAD
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            OUTPUT_VARIABLE HEAD_DATE
-            ERROR_VARIABLE EXEC_ERR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        # date format: day, D Mmm YYYY  -> YYYY-MM-DD
-        # if the day is single sigit need to insert a "0"
-        string(REGEX REPLACE ".*(, )([0-9] )(.*)" "\\10\\2\\3" 
-            HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE ".*, ([0-9][0-9]) ([A-Z][a-z]+) ([0-9]+).*" "\\3\\2\\1" 
-            HEAD_DATE ${HEAD_DATE})
-        string(TOUPPER ${HEAD_DATE} HEAD_DATE)
-        string(REGEX REPLACE "JAN" "01" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "FEB" "02" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "MAR" "03" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "APR" "04" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "MAY" "05" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "JUN" "06" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "JUL" "07" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "AUG" "08" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "SEP" "09" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "OCT" "10" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "NOV" "11" HEAD_DATE ${HEAD_DATE})
-        string(REGEX REPLACE "DEC" "12" HEAD_DATE ${HEAD_DATE})
-    else()
-        # get the date of the HEAD commit
-        execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            OUTPUT_VARIABLE HEAD_DATE
-            ERROR_VARIABLE EXEC_ERR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        string(REGEX REPLACE "\n| " ";" HEAD_DATE ${HEAD_DATE})
-        list(GET HEAD_DATE 2 HEAD_DATE)
-        string(REGEX REPLACE "-" "" HEAD_DATE ${HEAD_DATE})
-    endif()
+    # get the date of the HEAD commit
+    execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        OUTPUT_VARIABLE HEAD_DATE
+        ERROR_VARIABLE EXEC_ERR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    string(REGEX REPLACE "\n| " ";" HEAD_DATE ${HEAD_DATE})
+    list(GET HEAD_DATE 2 HEAD_DATE)
+    string(REGEX REPLACE "-" "" HEAD_DATE ${HEAD_DATE})
 
     # compile the version string suffix
     set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}") 
