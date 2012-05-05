@@ -292,7 +292,10 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
   
   /* Column 5 & 6 aren't really bonded types, but we include
    * them here to avoid introducing a new section:
-   * Column 5: 1 means generate all dihedrals, 0 not.
+   * Column 5: 1 means keep all generated dihedrals,
+   *           0 means permit generated dihedrals to have their parameters
+   *              superseded by ones on the same central bond that have
+   *              fewer hydrogen atoms.
    * Column 6: Number of bonded neighbors to exclude.
    * Coulmn 7: Generate 1,4 interactions between pairs of hydrogens
    * Column 8: Remove impropers over the same bond as a proper dihedral
