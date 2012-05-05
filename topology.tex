@@ -678,8 +678,23 @@ The residue database is constructed in the following way:
 {\small
 \begin{verbatim}
 [ bondedtypes ]  ; mandatory
-; bonds  angles  dihedrals  impropers
-     1       1          1          2  ; mandatory
+; The first four columns are mandatory. Later columns are optional.
+
+; Column 1 : default bondtype
+; Column 2 : default angletype
+; Column 3 : default proper dihedraltype
+; Column 4 : default improper dihedraltype
+; Column 5 : 1 = generate all possible dihedrals from bonding connectivity
+;            0 = generate only heavy-atom dihedrals from bonding connectivity
+; Column 6 : number of excluded neighbors for non-bonded interactions
+; Column 7 : 1 = generate 1,4 interactions between pairs of hydrogen atoms
+;            0 = not
+; Column 8 : 1 = remove improper dihedrals on same bond as a proper dihedral
+;            0 = not
+
+; The default values are as shown here:
+; bondtype angletype dihedraltype impropertype all_dih nrexcl HH14 bRemoveDih
+     1         1          1            2          0      3     1       1
 
 [ GLY ]  ; mandatory
 
@@ -721,9 +736,10 @@ The residue database is constructed in the following way:
 
 The file is free format; the only restriction is that there can be at
 most one entry on a line.  The first field in the file is the
-{\tt [~bondedtypes~]} field, which is followed by four numbers,
-indicating the interaction type for bonds, angles, dihedrals, and
-improper dihedrals.  The file contains residue entries, which consist
+{\tt [~bondedtypes~]} field, which is followed by at least four numbers,
+indicating the default interaction type for bonds, angles, dihedrals, and
+improper dihedrals. Further numbers control other behaviour as described
+in the comments above. The file contains residue entries, which consist
 of atoms and (optionally) bonds, angles, dihedrals, and impropers.  The
 charge group codes denote the charge group numbers. Atoms in the same
 charge group should always be ordered consecutively. When using the
@@ -748,15 +764,15 @@ parameters. For the \gromosv{96} force field the interaction number
 of all angles need to be specified.
 
 {\tt pdb2gmx} automatically generates one proper dihedral for every rotatable
-bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
+bond, by default only on heavy atoms. When the {\tt [~dihedrals~]} field is used,
 no other dihedrals will be generated for the bonds corresponding to the
 specified  dihedrals. It is possible to put more than one dihedral
 function on a rotatable bond. 
 
-{\tt pdb2gmx} sets the number of exclusions to 3, which
-means that interactions between atoms connected by at most 3 bonds are
-excluded. Pair interactions are generated for all pairs of atoms that are
-separated by 3 bonds (except pairs of hydrogens).
+The default number of exclusions is set to 3, which means that non-bonded
+interactions between atoms connected by at most 3 bonds are excluded. Pair
+interactions are generated for all pairs of atoms that are separated by 3
+bonds (but pairs of hydrogens as controlled by the above option).
 When more interactions need to be excluded, or some pair interactions should
 not be generated, an {\tt [~exclusions~]} field can be added, followed by
 pairs of atom names on separate lines. All non-bonded and pair interactions
