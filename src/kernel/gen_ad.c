@@ -56,6 +56,12 @@
 #include "resall.h"
 #include "gen_ad.h"
 
+#define DIHEDRAL_WAS_SET_IN_RTP 0
+static gmx_bool was_dihedral_set_in_rtp(t_param *dih)
+{
+    return dih->c[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
+}
+
 typedef gmx_bool (*peq)(t_param *p1, t_param *p2);
 
 static int acomp(const void *a1, const void *a2)
@@ -88,29 +94,44 @@ static int pcomp(const void *a1, const void *a2)
 
 static int dcomp(const void *d1, const void *d2)
 {
-  t_param *p1,*p2;
-  int     dc;
+    t_param *p1,*p2;
+    int     dc;
   
-  p1=(t_param *)d1;
-  p2=(t_param *)d2;
-  /* First sort by J & K (the two central) atoms */
-  if ((dc=(p1->AJ-p2->AJ))!=0)
-    return dc;
-  else if ((dc=(p1->AK-p2->AK))!=0)
-    return dc;
-  /* Then make sure to put rtp dihedrals before generated ones */
-  else if (p1->c[MAXFORCEPARAM-1]==0 && p2->c[MAXFORCEPARAM-1]==NOTSET)
-    return -1;
-  else if (p1->c[MAXFORCEPARAM-1]==NOTSET && p2->c[MAXFORCEPARAM-1]==0)
-    return 1;
-  /* Finally, sort by I and J (two outer) atoms */
-  else if ((dc=(p1->AI-p2->AI))!=0)
-    return dc;
-  else
-    return (p1->AL-p2->AL);
+    p1=(t_param *)d1;
+    p2=(t_param *)d2;
+    /* First sort by J & K (the two central) atoms */
+    if ((dc=(p1->AJ-p2->AJ))!=0)
+    {
+        return dc;
+    }
+    else if ((dc=(p1->AK-p2->AK))!=0)
+    {
+        return dc;
+    }
+    /* Then make sure to put rtp dihedrals before generated ones */
+    else if (was_dihedral_set_in_rtp(p1) &&
+             !was_dihedral_set_in_rtp(p2))
+    {
+        return -1;
+    }
+    else if (!was_dihedral_set_in_rtp(p1) &&
+             was_dihedral_set_in_rtp(p2))
+    {
+        return 1;
+    }
+    /* Finally, sort by I and J (two outer) atoms */
+    else if ((dc=(p1->AI-p2->AI))!=0)
+    {
+        return dc;
+    }
+    else
+    {
+        return (p1->AL-p2->AL);
+    }
 }
 
-static gmx_bool deq(t_param *p1, t_param *p2)
+
+static gmx_bool is_dihedral_equal(t_param *p1, t_param *p2)
 {
   if (((p1->AJ==p2->AJ) && (p1->AK==p2->AK)) ||
       ((p1->AJ==p2->AK) && (p1->AK==p2->AJ)))
@@ -119,30 +140,6 @@ static gmx_bool deq(t_param *p1, t_param *p2)
     return FALSE;
 }
 
-
-static gmx_bool remove_dih(t_param *p, int i, int np)
-     /* check if dihedral p[i] should be removed */
-{
-  gmx_bool bRem;
-  int j;
-
-  if (p[i].c[MAXFORCEPARAM-1]==NOTSET) {
-    if (i>0)
-      bRem = deq(&p[i],&p[i-1]);
-    else
-      bRem = FALSE;
-    /* also remove p[i] if there is a dihedral on the same bond
-       which has parameters set */
-    j=i+1;
-    while (!bRem && (j<np) && deq(&p[i],&p[j])) {
-      bRem = (p[j].c[MAXFORCEPARAM-1] != NOTSET);
-      j++;
-    }
-  } else
-    bRem = FALSE;
-
-  return bRem;
-}
 
 static gmx_bool preq(t_param *p1, t_param *p2)
 {
@@ -324,112 +321,148 @@ static int n_hydro(atom_id a[],char ***atomname)
   return nh;
 }
 
-static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
-		      t_atoms *atoms,gmx_bool bAlldih, gmx_bool bRemoveDih)
+static void clean_dih(t_param *dih, int *ndih,t_param improper[],int nimproper,
+		      t_atoms *atoms,gmx_bool bKeepAllGeneratedDihedrals,
+                      gmx_bool bRemoveDihedralIfWithImproper)
 {
-  int  i,j,k,l;
-  int  *index,nind;
-  gmx_bool bIsSet,bKeep;
-  int  bestl,nh,minh;
+    int  i,j,k,l;
+    int  *index,nind;
   
-  snew(index,*ndih+1);
-  if (bAlldih) {
-    fprintf(stderr,"Keeping all generated dihedrals\n");
-    nind = *ndih;
-    for(i=0; i<nind; i++) 
-      index[i] = i;
-    index[nind] = *ndih;
-  } else {
-    /* Make an index of all dihedrals over each bond */
-    nind = 0;
-    for(i=0; i<*ndih; i++) 
-      if (!remove_dih(dih,i,*ndih)) 
-	index[nind++]=i;
-    index[nind] = *ndih;
-  }
-
-  /* if we don't want all dihedrals, we need to select the ones with the 
-   *  fewest hydrogens
-   */
-  
-  k=0;
-  for(i=0; i<nind; i++) {
-    bIsSet = (dih[index[i]].c[MAXFORCEPARAM-1] != NOTSET);
-    bKeep = TRUE;
-    if (!bIsSet && bRemoveDih)
-      /* remove the dihedral if there is an improper on the same bond */
-      for(j=0; (j<nidih) && bKeep; j++)
-	bKeep = !deq(&dih[index[i]],&idih[j]);
-
-    if (bKeep) {
-      /* Now select the "fittest" dihedral:
-       * the one with as few hydrogens as possible 
-       */
-      
-      /* Best choice to get dihedral from */
-      bestl=index[i];
-      if (!bAlldih && !bIsSet) {
-	/* Minimum number of hydrogens for i and l atoms */
-	minh=2;
-	for(l=index[i]; (l<index[i+1]) && deq(&dih[index[i]],&dih[l]); l++) {
-	  if ((nh=n_hydro(dih[l].a,atoms->atomname)) < minh) {
-	    minh=nh;
-	    bestl=l;
-	  }
-	  if (minh == 0)
-	    break;
-	}
-      }
-      if (k != bestl)
-	cpparam(&(dih[k]),&dih[bestl]);
-      k++;
+    /* Construct the list of the indices of the dihedrals
+     * (i.e. generated or read) that might be kept. */
+    snew(index, *ndih+1);
+    if (bKeepAllGeneratedDihedrals)
+    {
+        fprintf(stderr,"Keeping all generated dihedrals\n");
+        nind = *ndih;
+        for(i = 0; i < nind; i++)
+        {
+            index[i] = i;
+        }
+        index[nind] = *ndih;
     }
-  }
+    else
+    {
+        nind = 0;
+        /* Check if generated dihedral i should be removed. The
+         * dihedrals have been sorted by dcomp() above, so all those
+         * on the same two central atoms are together, with those from
+         * the .rtp file preceding those that were automatically
+         * generated. We remove the latter if the former exist. */
+        for(i = 0; i < *ndih; i++)
+        {
+            /* Keep the dihedrals that were defined in the .rtp file,
+             * and the dihedrals that were generated and different
+             * from the last one (whether it was generated or not). */
+            if (was_dihedral_set_in_rtp(&dih[i]) ||
+                0 == i ||
+                !is_dihedral_equal(&dih[i],&dih[i-1]))
+            {
+                index[nind++] = i;
+            }
+        }
+        index[nind] = *ndih;
+    }
 
-  for (i=k; i<*ndih; i++)
-    strcpy(dih[i].s,"");
-  *ndih = k;
+    /* If we don't want all dihedrals, we need to select the ones with
+     * the fewest hydrogens. */
+    k=0;
+    for(i=0; i<nind; i++)
+    {
+        gmx_bool bWasSetInRTP = was_dihedral_set_in_rtp(&dih[index[i]]);
+        gmx_bool bRemove = FALSE;
+        if (!bWasSetInRTP && bRemoveDihedralIfWithImproper)
+        {
+            /* Remove the dihedral if there is an improper on the same
+             * bond. */
+            for(j = 0; j < nimproper && !bRemove; j++)
+            {
+                bRemove = is_dihedral_equal(&dih[index[i]],&improper[j]);
+            }
+        }
 
-  sfree(index);
+        if (!bRemove)
+        {
+            /* Now select the "fittest" dihedral: the one with as few
+             * hydrogens as possible. */
+      
+            /* Find the best choice for the dihedral to keep: */
+            int bestl = index[i];
+            if (!bKeepAllGeneratedDihedrals && !bWasSetInRTP)
+            {
+                /* Minimum number of hydrogens for i and l atoms */
+                int minh = 2;
+                for(l = index[i];
+                    (l < index[i+1] &&
+                     is_dihedral_equal(&dih[index[i]],&dih[l]));
+                    l++)
+                {
+                    int nh = n_hydro(dih[l].a,atoms->atomname);
+                    if (nh < minh)
+                    {
+                        minh=nh;
+                        bestl=l;
+                    }
+                    if (0 == minh)
+                    {
+                        break;
+                    }
+                }
+            }
+            if (k != bestl)
+            {
+                cpparam(&dih[k],&dih[bestl]);
+            }
+            k++;
+        }
+    }
+
+    for (i = k; i < *ndih; i++)
+    {
+        strcpy(dih[i].s,"");
+    }
+    *ndih = k;
+
+    sfree(index);
 }
 
-static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
+static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **improper,
 			 gmx_bool bAllowMissing)
 {
   char      *a0;
-  t_rbondeds *idihs;
-  t_rbonded  *hbidih;
-  int       nidih,i,j,k,r,start,ninc,nalloc;
+  t_rbondeds *impropers;
+  t_rbonded  *hbimproper;
+  int       nimproper,i,j,k,r,start,ninc,nalloc;
   atom_id   ai[MAXATOMLIST];
   gmx_bool      bStop;
   
   ninc = 500;
   nalloc = ninc;
-  snew(*idih,nalloc);
+  snew(*improper,nalloc);
 
   /* Add all the impropers from the residue database to the list. */
-  nidih = 0;
+  nimproper = 0;
   start = 0;
   if (hb != NULL) {
     for(i=0; (i<atoms->nres); i++) {
-      idihs=&hb[i].rb[ebtsIDIHS];
-      for(j=0; (j<idihs->nb); j++) {
+      impropers=&hb[i].rb[ebtsIMPROPERS];
+      for(j=0; (j<impropers->nb); j++) {
 	bStop=FALSE;
 	for(k=0; (k<4) && !bStop; k++) {
-	  ai[k] = search_atom(idihs->b[j].a[k],start,
+	  ai[k] = search_atom(impropers->b[j].a[k],start,
                           atoms,
 			      "improper",bAllowMissing);
 	  if (ai[k] == NO_ATID)
 	    bStop = TRUE;
 	}
 	if (!bStop) {
-	  if (nidih == nalloc) {
+	  if (nimproper == nalloc) {
 	    nalloc += ninc;
-	    srenew(*idih,nalloc);
+	    srenew(*improper,nalloc);
 	  }
 	  /* Not broken out */
-	  set_p(&((*idih)[nidih]),ai,NULL,idihs->b[j].s);
-	  nidih++;
+	  set_p(&((*improper)[nimproper]),ai,NULL,impropers->b[j].s);
+	  nimproper++;
 	}
       }
       while ((start<atoms->nr) && (atoms->atom[start].resind == i))
@@ -437,7 +470,7 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
     }
   }
   
-  return nidih;
+  return nimproper;
 }
 
 static int nb_dist(t_nextnb *nnb,int ai,int aj)
@@ -599,17 +632,18 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
   }
 }
 
-void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
+/* Generate pairs, angles and dihedrals from .rtp settings */
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 	     t_params plist[], t_excls excls[], t_hackblock hb[], 
-	     gmx_bool bAlldih, gmx_bool bRemoveDih, gmx_bool bAllowMissing)
+	     gmx_bool bAllowMissing)
 {
-  t_param *ang,*dih,*pai,*idih;
+  t_param *ang,*dih,*pai,*improper;
   t_rbondeds *hbang, *hbdih;
   char    **anm;
   int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n,i1,i2;
   int     ninc,maxang,maxdih,maxpai;
-  int     nang,ndih,npai,nidih,nbd;
+  int     nang,ndih,npai,nimproper,nbd;
   int     nFound;
   gmx_bool    bFound,bExcl;
   
@@ -634,7 +668,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
   if (hb)
     gen_excls(atoms,excls,hb,bAllowMissing);
   
-  /* extract all i-j-k-l neighbours from nnb struct */
+  /* Extract all i-j-k-l neighbours from nnb struct to generate all
+   * angles and dihedrals. */
   for(i=0; (i<nnb->nr); i++) 
     /* For all particles */
     for(j=0; (j<nnb->nrexcl[i][1]); j++) {
@@ -729,7 +764,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
 			/* Set the last parameter to be able to see
 			   if the dihedral was in the rtp list.
 			   */
-			dih[ndih].c[MAXFORCEPARAM-1] = 0;
+			dih[ndih].c[MAXFORCEPARAM-1] = DIHEDRAL_WAS_SET_IN_RTP;
 			nFound++;
 			ndih++;
 			/* Set the next direct in case the rtp contains
@@ -815,17 +850,19 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
   }
 
   /* Get the impropers from the database */
-  nidih = get_impropers(atoms,hb,&idih,bAllowMissing);
+  nimproper = get_impropers(atoms,hb,&improper,bAllowMissing);
 
   /* Sort the impropers */
-  sort_id(nidih,idih);
+  sort_id(nimproper,improper);
  
   if (ndih > 0) {
     /* Remove dihedrals which are impropers
-       and when bAlldih is not set remove multiple dihedrals over one bond.
+       and when bKeepAllGeneratedDihedrals is not set remove multiple dihedrals over one bond.
        */
     fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
-    clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih,bRemoveDih);
+    clean_dih(dih,&ndih,improper,nimproper,atoms,
+              rtp[0].bKeepAllGeneratedDihedrals,
+              rtp[0].bRemoveDihedralIfWithImproper);
   }
 
   /* Now we have unique lists of angles and dihedrals 
@@ -833,7 +870,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
    */
   cppar(ang, nang, plist,F_ANGLES);
   cppar(dih, ndih, plist,F_PDIHS);
-  cppar(idih,nidih,plist,F_IDIHS);
+  cppar(improper,nimproper,plist,F_IDIHS);
   cppar(pai, npai, plist,F_LJ14);
 
   /* Remove all exclusions which are within nrexcl */
@@ -841,7 +878,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, gmx_bool bH14,
 
   sfree(ang);
   sfree(dih);
-  sfree(idih);
+  sfree(improper);
   sfree(pai);
 }
 

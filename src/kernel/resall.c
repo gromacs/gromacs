@@ -256,13 +256,8 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
   int       dum1,dum2,dum3;
-  t_restp   *rrtp;
+  t_restp   *rrtp, *header_settings;
   gmx_bool      bNextResidue,bError;
-  int       bts[ebtsNR];
-  gmx_bool      bAlldih;
-  int       nrexcl;
-  gmx_bool      HH14;
-  gmx_bool      bRemoveDih;
   int       firstrtp;
 
   fflib_filename_base(rrdb,filebase,STRLEN);
@@ -275,72 +270,70 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
       fprintf(debug," %10s",btsNames[i]);
     fprintf(debug,"\n");
   }
+  snew(header_settings, 1);
 
   /* these bonded parameters will overwritten be when  *
    * there is a [ bondedtypes ] entry in the .rtp file */
-  bts[ebtsBONDS]  = 1; /* normal bonds     */
-  bts[ebtsANGLES] = 1; /* normal angles    */
-  bts[ebtsPDIHS]  = 1; /* normal dihedrals */
-  bts[ebtsIDIHS]  = 2; /* normal impropers */
-  bts[ebtsEXCLS]  = 1; /* normal exclusions */
-  bts[ebtsCMAP]   = 1; /* normal cmap torsions */
+  header_settings->rb[ebtsBONDS].type  = 1; /* normal bonds     */
+  header_settings->rb[ebtsANGLES].type = 1; /* normal angles    */
+  header_settings->rb[ebtsPDIHS].type  = 1; /* normal dihedrals */
+  header_settings->rb[ebtsIDIHS].type  = 2; /* normal impropers */
+  header_settings->rb[ebtsEXCLS].type  = 1; /* normal exclusions */
+  header_settings->rb[ebtsCMAP].type   = 1; /* normal cmap torsions */
 
-  bAlldih    = FALSE;
-  nrexcl     = 3;
-  HH14       = TRUE;
-  bRemoveDih = TRUE;
+  header_settings->bKeepAllGeneratedDihedrals = FALSE;
+  header_settings->nrexcl     = 3;
+  header_settings->HH14       = TRUE;
+  header_settings->bRemoveDihedralIfWithImproper = TRUE;
   
   /* Column 5 & 6 aren't really bonded types, but we include
    * them here to avoid introducing a new section:
-   * Column 5: 1 means generate all dihedrals, 0 not.
+   * Column 5: 1 means keep all generated dihedrals,
+   *           0 means permit generated dihedrals to have their parameters
+   *              superseded by ones from the .rtp, or generated ones that are
+   *              on the same central bond and have fewer hydrogen atoms.
    * Column 6: Number of bonded neighbors to exclude.
-   * Coulmn 7: Generate 1,4 interactions between pairs of hydrogens
-   * Column 8: Remove impropers over the same bond as a proper dihedral
+   * Column 7: Generate 1,4 interactions between pairs of hydrogens
+   * Column 8: Remove proper dihedrals if centered on the same bond
+   *           as an improper dihedral
    */
-  
   get_a_line(in,line,STRLEN);
   if (!get_header(line,header))
     gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
   if (gmx_strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
     if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",
-		       &bts[ebtsBONDS],&bts[ebtsANGLES],
-		       &bts[ebtsPDIHS],&bts[ebtsIDIHS],
+		       &header_settings->rb[ebtsBONDS].type,&header_settings->rb[ebtsANGLES].type,
+		       &header_settings->rb[ebtsPDIHS].type,&header_settings->rb[ebtsIDIHS].type,
 		       &dum1,&nrexcl,&dum2,&dum3)) < 4 )
     {
-      gmx_fatal(FARGS,"need at least 4 (up to 8) parameters in .rtp file at line:\n%s\n",line);
+      gmx_fatal(FARGS,"need 4 to 8 parameters in the header of .rtp file %s at line:\n%s\n", rrdb, line);
     }
-    bAlldih    = (dum1 != 0);
-    HH14       = (dum2 != 0);
-    bRemoveDih = (dum3 != 0);
+    header_settings->bKeepAllGeneratedDihedrals    = (dum1 != 0);
+    header_settings->HH14       = (dum2 != 0);
+    header_settings->bRemoveDihedralIfWithImproper = (dum3 != 0);
     get_a_line(in,line,STRLEN);
     if(nparam<5) {
       fprintf(stderr,"Using default: not generating all possible dihedrals\n");
-      bAlldih = FALSE;
+      header_settings->bKeepAllGeneratedDihedrals = FALSE;
     }
     if(nparam<6) {
       fprintf(stderr,"Using default: excluding 3 bonded neighbors\n");
-      nrexcl = 3;
+      header_settings->nrexcl = 3;
     }
     if(nparam<7) {
       fprintf(stderr,"Using default: generating 1,4 H--H interactions\n");
-      HH14 = TRUE;
+      header_settings->HH14 = TRUE;
     }
     if(nparam<8) {
-      fprintf(stderr,"Using default: removing impropers on same bond as a proper\n");
-      bRemoveDih = TRUE;
+      fprintf(stderr,"Using default: removing proper dihedrals found on the same bond as a proper dihedral\n");
+      header_settings->bRemoveDihedralIfWithImproper = TRUE;
     }
   } else {
     fprintf(stderr,
 	    "Reading .rtp file without '[ bondedtypes ]' directive,\n"
-	    "Will proceed as if the entry\n"
-	    "\n"
-	    "\n[ bondedtypes ]"
-	    "\n; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions HH14 remove_dih"
-	    "\n   %3d     %3d        %3d        %3d           %3d           %3d   %3d    %3d"
-	    "\n"
-	    "was present at the beginning of %s",
-	    bts[0],bts[1],bts[2],bts[3], bAlldih ? 1 : 0,nrexcl,HH14,bRemoveDih,rrdb);
+	    "Will proceed as if the entry was:\n");
+    print_resall_header(stderr, &header_settings);
   }
   /* We don't know the current size of rrtp, but simply realloc immediately */
   nrtp = *nrtpptr;
@@ -351,20 +344,13 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
       maxrtp+=100;
       srenew(rrtp,maxrtp);
     }
-    clear_t_restp(&rrtp[nrtp]);
+
+    /* Initialise rtp entry structure */
+    rrtp[nrtp] = *header_settings;
     if (!get_header(line,header))
       gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
     rrtp[nrtp].resname  = strdup(header);
     rrtp[nrtp].filebase = strdup(filebase);
-
-    /* Set the bonded types */
-    rrtp[nrtp].bAlldih    = bAlldih;
-    rrtp[nrtp].nrexcl     = nrexcl;
-    rrtp[nrtp].HH14       = HH14;
-    rrtp[nrtp].bRemoveDih = bRemoveDih;
-    for(i=0; i<ebtsNR; i++) {
-      rrtp[nrtp].rb[i].type = bts[i];
-    }
 
     get_a_line(in,line,STRLEN);
     bError=FALSE;
@@ -446,6 +432,22 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
   *rtp     = rrtp;
 }
 
+/* print all the ebtsNR type numbers */
+void print_resall_header(FILE *out, t_restp rtp[])
+{
+  fprintf(out,"[ bondedtypes ]\n");
+  fprintf(out,"; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
+  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",
+          rtp[0].rb[0].type,
+          rtp[0].rb[1].type,
+          rtp[0].rb[2].type,
+          rtp[0].rb[3].type,
+          rtp[0].bKeepAllGeneratedDihedrals,
+          rtp[0].nrexcl,
+          rtp[0].HH14,
+          rtp[0].bRemoveDihedralIfWithImproper);
+}
+
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
 		  gpp_atomtype_t atype)
 {
@@ -455,15 +457,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
     return;
   }
 
-  /* print all the ebtsNR type numbers */
-  fprintf(out,"[ bondedtypes ]\n");
-  fprintf(out,"; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
-  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",
-	  rtp[0].rb[0].type,
-	  rtp[0].rb[1].type,
-	  rtp[0].rb[2].type,
-	  rtp[0].rb[3].type,
-	  rtp[0].bAlldih,rtp[0].nrexcl,rtp[0].HH14,rtp[0].bRemoveDih);
+  print_resall_header(out, rtp[0]);
 
   for(i=0; i<nrtp; i++) {
     if (rtp[i].natom > 0) {
