@@ -896,10 +896,10 @@ static void check_restp_types(t_restp *r0,t_restp *r1)
 {
     int i;
 
-    check_restp_type("all dihedrals",r0->bAlldih,r1->bAlldih);
+    check_restp_type("all dihedrals",r0->bKeepAllGeneratedDihedrals,r1->bKeepAllGeneratedDihedrals);
     check_restp_type("nrexcl",r0->nrexcl,r1->nrexcl);
-    check_restp_type("HH14",r0->HH14,r1->HH14);
-    check_restp_type("remove dihedrals",r0->bRemoveDih,r1->bRemoveDih);
+    check_restp_type("HH14",r0->bGenerateHH14Interactions,r1->bGenerateHH14Interactions);
+    check_restp_type("remove dihedrals",r0->bRemoveDihedralIfWithImproper,r1->bRemoveDihedralIfWithImproper);
 
     for(i=0; i<ebtsNR; i++)
     {
@@ -1505,9 +1505,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,restp[0].nrexcl,restp[0].HH14,
-          plist,excls,hb,restp[0].bAlldih,restp[0].bRemoveDih,
-          bAllowMissing);
+  gen_pad(&nnb,atoms,restp,plist,excls,hb,bAllowMissing);
   done_nnb(&nnb);
   
     /* Make CMAP */
