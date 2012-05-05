@@ -80,10 +80,10 @@ typedef struct {
   char   ***atomname;
   int    *cgnr;
   /* Bonded interaction setup */
-  gmx_bool      bAlldih;
+  gmx_bool      bKeepAllGeneratedDihedrals;
   int       nrexcl;
-  gmx_bool      HH14;
-  gmx_bool      bRemoveDih;
+  gmx_bool      bGenerateHH14Interactions;
+  gmx_bool      bRemoveDihedralIfWithImproper;
   /* list of bonded interactions to add */
   t_rbondeds rb[ebtsNR];
 } t_restp;
