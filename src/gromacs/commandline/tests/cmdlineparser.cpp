@@ -38,8 +38,6 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_commandline
  */
-#include <cstdlib>
-#include <cstring>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -48,6 +46,8 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 
+#include "cmdlinetest.h"
+
 namespace
 {
 
@@ -55,23 +55,17 @@ class CommandLineParserTest : public ::testing::Test
 {
     public:
         CommandLineParserTest();
-        ~CommandLineParserTest();
-
-        void createArguments(const char *cmdline[]);
 
         gmx::Options            _options;
         gmx::CommandLineParser  _parser;
         bool                    _flag;
         std::vector<int>        _ivalues;
         std::vector<double>     _dvalues;
-        int                     _argc;
-        char                  **_argv;
 };
 
 CommandLineParserTest::CommandLineParserTest()
     : _options(NULL, NULL), _parser(&_options),
-      _flag(false),
-      _argc(0), _argv(NULL)
+      _flag(false)
 {
     using gmx::BooleanOption;
     using gmx::IntegerOption;
@@ -81,37 +75,13 @@ CommandLineParserTest::CommandLineParserTest()
     _options.addOption(DoubleOption("mvd").storeVector(&_dvalues).allowMultiple());
 }
 
-CommandLineParserTest::~CommandLineParserTest()
-{
-    if (_argv != NULL)
-    {
-        for (int i = 0; i < _argc; ++i)
-        {
-            free(_argv[i]);
-        }
-    }
-    delete [] _argv;
-}
-
-void CommandLineParserTest::createArguments(const char *cmdline[])
-{
-    _argc = 0;
-    while (cmdline[_argc] != NULL) ++_argc;
-    ++_argc;
-
-    _argv = new char *[_argc];
-    _argv[0] = strdup("test");
-    for (int i = 1; i < _argc; ++i)
-    {
-        _argv[i] = strdup(cmdline[i - 1]);
-    }
-}
-
 TEST_F(CommandLineParserTest, HandlesSingleValues)
 {
-    const char *cmdline[] = {"-flag", "yes", "-mvi", "2", "-mvd", "2.7", NULL};
-    createArguments(cmdline);
-    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
+    const char *const cmdline[] = {
+        "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
+    };
+    gmx::test::CommandLine args(cmdline);
+    ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(_options.finish());
 
     EXPECT_TRUE(_flag);
@@ -123,9 +93,11 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
 
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 {
-    const char *cmdline[] = {"-mvi", "1", "-2", "-mvd", "-2.7", NULL};
-    createArguments(cmdline);
-    ASSERT_NO_THROW(_parser.parse(&_argc, _argv));
+    const char *const cmdline[] = {
+        "test", "-mvi", "1", "-2", "-mvd", "-2.7"
+    };
+    gmx::test::CommandLine args(cmdline);
+    ASSERT_NO_THROW(_parser.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW(_options.finish());
 
     ASSERT_EQ(2U, _ivalues.size());
