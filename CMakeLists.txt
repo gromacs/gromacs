@@ -463,7 +463,7 @@ endif()
 # only bother with finding git and using version.h if the source is a git repo
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(USE_VERSION_H)
-        # We need at least git v1.5.1 be able to parse git's date output. If not 
+        # We need at least git v1.5.3 be able to parse git's date output. If not
         # found or the version is too small, we can't generate version information.
         find_package(Git)
 
@@ -477,7 +477,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	  mark_as_advanced(GIT_VERSION)
 	endif()
 
-        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.1")
+        if(NOT GIT_FOUND OR GIT_VERSION VERSION_LESS "1.5.3")
           message("No compatible git version found, won't be able to generate proper development version information.")
           set(USE_VERSION_H OFF)
         endif()
