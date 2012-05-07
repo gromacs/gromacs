@@ -116,6 +116,12 @@ class OptionInfo
         int valueCount() const;
         //! Returns the i'th value of the option as a string.
         std::string formatValue(int i) const;
+        /*! \brief
+         * Returns the default value if set for the option as a string.
+         *
+         * \see OptionTemplate::defaultValueIfSet()
+         */
+        std::string formatDefaultValueIfSet() const;
 
     protected:
         /*! \cond libapi */

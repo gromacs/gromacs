@@ -61,7 +61,7 @@ class FileNameOptionStorage : public OptionStorageTemplate<std::string>
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual const char *typeString() const { return "file"; }
-        virtual std::string formatValue(int i) const;
+        virtual std::string formatSingleValue(const std::string &value) const;
 
         //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }

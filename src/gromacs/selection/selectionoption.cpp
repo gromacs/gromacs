@@ -74,9 +74,9 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption &settings)
 }
 
 
-std::string SelectionOptionStorage::formatValue(int i) const
+std::string SelectionOptionStorage::formatSingleValue(const Selection &value) const
 {
-    return values()[i].selectionText();
+    return value.selectionText();
 }
 
 

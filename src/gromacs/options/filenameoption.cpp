@@ -58,9 +58,9 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption &settings)
 {
 }
 
-std::string FileNameOptionStorage::formatValue(int i) const
+std::string FileNameOptionStorage::formatSingleValue(const std::string &value) const
 {
-    return values()[i];
+    return value;
 }
 
 void FileNameOptionStorage::convertValue(const std::string &value)

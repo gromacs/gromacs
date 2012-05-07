@@ -170,9 +170,17 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     formatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     formatter_.addColumnLine(0, name);
-    for (int i = 0; i < option.valueCount(); ++i)
+    for (int i = 0; i < option.valueCount() || i == 0; ++i)
     {
-        std::string value(option.formatValue(i));
+        std::string value;
+        if (option.valueCount() == 0)
+        {
+            value = option.formatDefaultValueIfSet();
+        }
+        else
+        {
+            value = option.formatValue(i);
+        }
         formatter_.addColumnLine(1, value);
         if (value.length() > 12U && i == firstShortValue)
         {
