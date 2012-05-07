@@ -55,10 +55,10 @@ namespace analysismodules
 class Select : public TrajectoryAnalysisModule
 {
     public:
+        static const char name[];
+
         Select();
         virtual ~Select();
-
-        static TrajectoryAnalysisModulePointer create();
 
         virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,

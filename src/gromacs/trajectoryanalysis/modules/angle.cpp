@@ -63,8 +63,10 @@ namespace gmx
 namespace analysismodules
 {
 
+const char Angle::name[] = "angle";
+
 Angle::Angle()
-    : _options("angle", "Angle calculation"),
+    : _options(name, "Angle calculation"),
       _sel1info(NULL), _sel2info(NULL),
       _bSplit1(false), _bSplit2(false), _bMulti(false), _bAll(false),
       _bDumpDist(false), _natoms1(0), _natoms2(0), _vt0(NULL)
@@ -592,13 +594,6 @@ Angle::finishAnalysis(int /*nframes*/)
 void
 Angle::writeOutput()
 {
-}
-
-
-TrajectoryAnalysisModulePointer
-Angle::create()
-{
-    return TrajectoryAnalysisModulePointer(new Angle());
 }
 
 } // namespace modules

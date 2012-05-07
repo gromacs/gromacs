@@ -30,78 +30,88 @@
  */
 /*! \internal \file
  * \brief
- * Implements createTrajectoryAnalysisModule().
+ * Implements registerTrajectoryAnalysisModules().
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_trajectoryanalysis
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
-#include "string2.h"
-
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/format.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/select.h"
 
+namespace gmx
+{
+
 namespace
 {
 
-using namespace gmx::analysismodules;
-
-struct module_map_t
+/*! \internal \brief
+ * Base class for trajectory analysis module command-line wrappers.
+ *
+ * This class exists to avoid multiple identical copies of the \p run() method
+ * to be generated for the TrajAnalysisCmdLineWrapper template classes.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
 {
-    const char                            *name;
-    gmx::TrajectoryAnalysisModulePointer (*creator)(void);
+    public:
+        virtual const char *name() const = 0;
+
+        virtual int run(int argc, char *argv[]);
+
+    protected:
+        //! Creates the analysis module for this wrapper.
+        virtual TrajectoryAnalysisModulePointer createModule() = 0;
 };
 
-const module_map_t modules[] =
+int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
 {
-    {gmx::analysismodules::angle,    Angle::create},
-    {gmx::analysismodules::distance, Distance::create},
-    {gmx::analysismodules::select,   Select::create},
-    {NULL,                           NULL},
+    TrajectoryAnalysisModulePointer module(createModule());
+    TrajectoryAnalysisCommandLineRunner runner(module.get());
+    runner.setPrintCopyright(false);
+    return runner.run(argc, argv);
+}
+
+/*! \internal \brief
+ * Template for command-line wrapper of a trajectory analysis module.
+ *
+ * \tparam Module  Trajectory analysis module to wrap.
+ *
+ * \p Module should be default-constructible, derive from
+ * TrajectoryAnalysisModule, and have a static public member
+ * \c "const char name[]".
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+template <class Module>
+class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
+{
+    public:
+        virtual const char *name() const
+        {
+            return Module::name;
+        }
+        virtual TrajectoryAnalysisModulePointer createModule()
+        {
+            return TrajectoryAnalysisModulePointer(new Module);
+        }
 };
 
 } // namespace
 
-namespace gmx
+void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
-
-TrajectoryAnalysisModulePointer
-createTrajectoryAnalysisModule(const char *name)
-{
-    size_t len = strlen(name);
-    int match_i = -1;
-
-    for (int i = 0; modules[i].name != NULL; ++i)
-    {
-        if (gmx_strncasecmp(name, modules[i].name, len) == 0)
-        {
-            if (strlen(modules[i].name) == len)
-            {
-                match_i = i;
-                break;
-            }
-            else if (match_i == -1)
-            {
-                match_i = i;
-            }
-            else
-            {
-                GMX_THROW(InvalidInputError(
-                            gmx::formatString("Requested analysis module '%s' is ambiguous", name)));
-            }
-        }
-    }
-    if (match_i != -1)
-    {
-        return modules[match_i].creator();
-    }
-    GMX_THROW(InvalidInputError(
-                gmx::formatString("Unknown analysis module: %s", name)));
+    using namespace gmx::analysismodules;
+    manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
 }
 
 } // namespace gmx

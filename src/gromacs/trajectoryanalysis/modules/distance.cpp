@@ -61,8 +61,10 @@ namespace gmx
 namespace analysismodules
 {
 
+const char Distance::name[] = "distance";
+
 Distance::Distance()
-    : _options("distance", "Distance calculation"), _avem(new AnalysisDataAverageModule())
+    : _options(name, "Distance calculation"), _avem(new AnalysisDataAverageModule())
 {
 }
 
@@ -156,13 +158,6 @@ Distance::writeOutput()
 {
     fprintf(stderr, "Average distance: %f\n", _avem->average(0));
     fprintf(stderr, "Std. deviation:   %f\n", _avem->stddev(0));
-}
-
-
-TrajectoryAnalysisModulePointer
-Distance::create()
-{
-    return TrajectoryAnalysisModulePointer(new Distance());
 }
 
 } // namespace analysismodules

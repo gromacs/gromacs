@@ -35,40 +35,22 @@
  */
 #include "gromacs/legacyheaders/copyrite.h"
 
-#include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
 
 int
 main(int argc, char *argv[])
 {
-    bool bPrintCopyrightOnError = true;
-
+    CopyRight(stderr, argv[0]);
     try
     {
-        if (argc < 2)
-        {
-            GMX_THROW(gmx::InvalidInputError("Not enough command-line arguments"));
-        }
-
-        gmx::TrajectoryAnalysisModulePointer
-            mod(gmx::createTrajectoryAnalysisModule(argv[1]));
-        --argc;
-        ++argv;
-
-        gmx::TrajectoryAnalysisCommandLineRunner runner(mod.get());
-#ifndef __clang_analyzer__  //Clang BUG: 11722
-        bPrintCopyrightOnError = false;
-#endif
-        return runner.run(argc, argv);
+        gmx::CommandLineModuleManager manager;
+        registerTrajectoryAnalysisModules(&manager);
+        return manager.run(argc, argv);
     }
     catch (const std::exception &ex)
     {
-        if (bPrintCopyrightOnError)
-        {
-            CopyRight(stderr, argv[0]);
-        }
         fprintf(stderr, "%s", gmx::formatErrorMessage(ex).c_str());
         return 1;
     }
