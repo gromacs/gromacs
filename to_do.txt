@@ -1,6 +1,7 @@
 # To-do list for getting this code to the level of publication
 
 * Histidines lead to segfaults.
+  BUG FOUND! WILL FIX!
  (ERIK)
 * constraints?
   Does it work with SHAKE? All-bonds? H-bonds?
