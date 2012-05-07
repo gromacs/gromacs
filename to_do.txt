@@ -1,7 +1,16 @@
 # To-do list for getting this code to the level of publication
 
 * Histidines lead to segfaults.
-  HID are erroneously identified as potential donors.
-  I've started to work on this issue (ERIK)
+ (ERIK)
 * constraints?
-* more?
+  Does it work with SHAKE? All-bonds? H-bonds?
+  (HAIYANG)
+* There are differences in Ecoul with ICE turned on/off.
+  ** Test pure water
+  (HAIYANG)
+  ** See which particles have interactions turned on
+  (ERIK)
+* Move do_titration to a point AFTER the calculation of full-step velocities.
+  This could make energy conservaion easier. Test this when the rest works.
+* See that the regressiontests have all tests needed.
+  (DAVID)
