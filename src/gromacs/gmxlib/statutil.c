@@ -112,9 +112,6 @@ const char *ShortProgram(void)
 #endif
     if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
         ret=pr+1;
-    /* Strip away the libtool prefix if it's still there. */
-    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
-        ret = ret + 3;
     return ret;
 }
 
@@ -149,16 +146,9 @@ void set_program_name(const char *argvzero)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&init_mutex);
 #endif
-    /* When you run a dynamically linked program before installing
-     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-     * Until libtool is fixed to set argv[0] right, rip away the prefix:
-     */
     if (program_name == NULL)
     {
-        if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-            program_name=strdup(argvzero+3);
-        else
-            program_name=strdup(argvzero);
+        program_name = strdup(argvzero);
     }
     if (program_name == NULL)
         program_name="GROMACS";
