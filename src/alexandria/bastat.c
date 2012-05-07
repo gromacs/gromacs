@@ -39,7 +39,9 @@
 #include "typedefs.h"
 #include "physics.h"
 #include "pdbio.h"
+#include "pbc.h"
 #include "smalloc.h"
+#include "bondf.h"
 #include "atomprop.h"
 #include "macros.h"
 #include "maths.h"
@@ -51,6 +53,7 @@
 #include "statutil.h"
 #include "mymol.h"
 #include "gmx_statistics.h"
+#include "poldata_xml.h"
 
 typedef struct {
     char *a1,*a2;
@@ -67,10 +70,19 @@ typedef struct {
 } t_angle;
 
 typedef struct {
+    char *a1,*a2,*a3,*a4;
+    int  nhisto;
+    int  *histo;
+    gmx_stats_t lsq;
+} t_dih;
+
+typedef struct {
     int nbond;
     t_bond *bond;
     int nangle;
     t_angle *angle;
+    int ndih;
+    t_dih *dih;
 } t_bonds;
 
 int bondcmp(const void *a,const void *b)
@@ -98,13 +110,28 @@ int anglecmp(const void *a,const void *b)
     return d;
 }
 
+int dihcmp(const void *a,const void *b)
+{
+    t_dih *ba = (t_dih *)a;
+    t_dih *bb = (t_dih *)b;
+    int d;
+  
+    if ((d = strcmp(ba->a1,bb->a1)) == 0)
+        if ((d = strcmp(ba->a2,bb->a2)) == 0)
+            if ((d = strcmp(ba->a3,bb->a3)) == 0)
+                return strcmp(ba->a4,bb->a4);
+  
+    return d;
+}
+
 void sort_bonds(t_bonds *b)
 {
     qsort(b->bond,b->nbond,sizeof(b->bond[0]),bondcmp);
     qsort(b->angle,b->nangle,sizeof(b->angle[0]),anglecmp);
+    qsort(b->dih,b->ndih,sizeof(b->dih[0]),dihcmp);
 }
 
-void add_bond(t_bonds *b,char *a1,char *a2,double blen,double spacing)
+void add_bond(char *molname,t_bonds *b,char *a1,char *a2,double blen,double spacing)
 {
     int i,j,index;
   
@@ -140,9 +167,12 @@ void add_bond(t_bonds *b,char *a1,char *a2,double blen,double spacing)
     }
     gmx_stats_add_point(b->bond[i].lsq,0,blen,0,0);
     b->bond[i].histo[index]++;
+    if (NULL != debug) {
+        fprintf(debug,"%s bond %s-%s %g\n",molname,a1,a2,blen);
+    }
 }
 
-void add_angle(t_bonds *b,char *a1,char *a2,char *a3,double angle,double spacing)
+void add_angle(char *molname,t_bonds *b,char *a1,char *a2,char *a3,double angle,double spacing)
 {
     int i,j,index;
   
@@ -173,12 +203,60 @@ void add_angle(t_bonds *b,char *a1,char *a2,char *a3,double angle,double spacing
         b->angle[i].lsq = gmx_stats_init();
     }
     gmx_stats_add_point(b->angle[i].lsq,0,angle,0,0);
-
     b->angle[i].histo[index]++;
+    if (NULL != debug) {
+        fprintf(debug,"%s angle %s-%s-%s %g\n",molname,a1,a2,a3,angle);
+    }
 }
 
-void lo_dump_histo(FILE *fp,int n,int histo[],double spacing)
+void add_dih(char *molname,t_bonds *b,char *a1,char *a2,char *a3,char *a4,
+             double angle,double spacing)
 {
+    int i,j,index;
+    
+    if (angle < 0)
+        angle += 360;
+    index = gmx_nint(angle/spacing);
+    for(i=0; (i<b->ndih); i++) {
+        if (((strcmp(a1,b->dih[i].a1) == 0) && (strcmp(a2,b->dih[i].a2) == 0) && 
+             (strcmp(a3,b->dih[i].a3) == 0) && (strcmp(a4,b->dih[i].a4) == 0)) ||
+            ((strcmp(a1,b->dih[i].a4) == 0) && (strcmp(a2,b->dih[i].a3) == 0) && 
+             (strcmp(a3,b->dih[i].a2) == 0) && (strcmp(a4,b->dih[i].a1) == 0))) {
+            break;
+        }
+    }
+    if (i == b->ndih) {
+        b->ndih++;
+        srenew(b->dih,b->ndih);
+        if (strcmp(a1,a4) < 0) 
+        {
+            b->dih[i].a1     = strdup(a1);
+            b->dih[i].a2     = strdup(a2);
+            b->dih[i].a3     = strdup(a3);
+            b->dih[i].a4     = strdup(a4);
+        }
+        else 
+        {
+            b->dih[i].a4     = strdup(a1);
+            b->dih[i].a3     = strdup(a2);
+            b->dih[i].a2     = strdup(a3);
+            b->dih[i].a1     = strdup(a4);
+        }
+        b->dih[i].nhisto = (int) (360/spacing) + 1;
+        snew(b->dih[i].histo,b->dih[i].nhisto);
+        b->dih[i].lsq = gmx_stats_init();
+    }
+    gmx_stats_add_point(b->dih[i].lsq,0,angle,0,0);
+    b->dih[i].histo[index]++;
+    if (NULL != debug) {
+        fprintf(debug,"%s dihedrals %s-%s-%s-%s %g\n",molname,a1,a2,a3,a4,angle);
+    }
+}
+
+void lo_dump_histo(char *fn,char *xaxis,output_env_t oenv,
+                   int n,int histo[],double spacing)
+{
+    FILE *fp;
     int j,j0,j1;
     double sum;
   
@@ -191,112 +269,83 @@ void lo_dump_histo(FILE *fp,int n,int histo[],double spacing)
     sum=0;
     for(j=j0; (j<=j1); j++) 
         sum+=histo[j];
-    if (sum == 0) {
-        fprintf(stderr,"Empty histogram\n");
-        exit(1);
+    if (sum > 0) {
+        fp = xvgropen(fn,fn,xaxis,"P (a.u.)",oenv);
+        for(j=j0; (j<=j1); j++) 
+            fprintf(fp,"%g  %g\n",spacing*j,histo[j]/sum);
+        fclose(fp);
     }
-    for(j=j0; (j<=j1); j++) 
-        fprintf(fp,"%g  %g\n",spacing*j,histo[j]/sum);
 }
 
-void dump_histo(t_bonds *b,double bspacing,double aspacing,output_env_t oenv)
+void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
+                output_env_t oenv)
 {
     int  i,j,j0,j1;
-    FILE *fp;
     char buf[256];
   
     for(i=0; (i<b->nbond); i++) {
         sprintf(buf,"bond-%s-%s.xvg",b->bond[i].a1,b->bond[i].a2);
-        fp = xvgropen(buf,buf,"Distance (pm)","P (a.u.)",oenv);
-        lo_dump_histo(fp,b->bond[i].nhisto,b->bond[i].histo,bspacing);
-        fclose(fp);
+        lo_dump_histo(buf,"Distance (pm)",oenv,
+                      b->bond[i].nhisto,b->bond[i].histo,bspacing);
     }
     for(i=0; (i<b->nangle); i++) {
         sprintf(buf,"angle-%s-%s-%s.xvg",
                 b->angle[i].a1,b->angle[i].a2,b->angle[i].a3);
-        fp = xvgropen(buf,buf,"Angle (deg.)","P (a.u.)",oenv);
-        lo_dump_histo(fp,b->angle[i].nhisto,b->angle[i].histo,aspacing);
-        fclose(fp);
+        lo_dump_histo(buf,"Angle (deg.)",oenv,
+                      b->angle[i].nhisto,b->angle[i].histo,aspacing);
+    }
+    for(i=0; (i<b->ndih); i++) {
+        sprintf(buf,"dih-%s-%s-%s-%s.xvg",
+                b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4);
+        lo_dump_histo(buf,"Dihedral angle (deg.)",oenv,
+                      b->dih[i].nhisto,b->dih[i].histo,aspacing);
     }
 }
 
-void dump_table(t_bonds *b,double bspacing,double aspacing,
-                gmx_atomprop_t aps)
+void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps)
 {
-    int i,j,k,N;
-    real x,y,av,sig;
-    FILE *fp;
-  
-    fp = fopen("gt_bonds.xml","w");
-    fprintf(fp,"  <gt_bonds length_unit=\"pm\">\n");
+    int i,N;
+    real av,sig;
+    char pbuf[256];
+    
+    gmx_poldata_set_length_unit(pd,"pm");
     for(i=0; (i<b->nbond); i++) {
-        for(j=0; (j<b->bond[i].nhisto); j++) {
-            x = j*bspacing;
-            y = b->bond[i].histo[j];
-        }
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);
         gmx_stats_get_npoints(b->bond[i].lsq,&N);
-        
-        fprintf(fp,"    <gt_bond atom1=\"%s\" atom2=\"%s\" length=\"%.1f\" stddev=\%.1f\" npoints=\"%d\"/>\n",
-                b->bond[i].a1,b->bond[i].a2,av,sig,N);
+        sprintf(pbuf,"%g",av);
+        gmx_poldata_add_gt_bond(pd,b->bond[i].a1,b->bond[i].a2,av,sig,1.0,pbuf);
+        fprintf(fp,"bond %s-%s len %g sigma %g (pm)\n",
+                b->bond[i].a1,b->bond[i].a2,av,sig);
     }
-    fprintf(fp,"  </gt_bonds>\n");
-    fprintf(fp,"  <gt_angles angle_unit=\"degree\">\n");
     for(i=0; (i<b->nangle); i++) {
-        for(j=0; (j<b->angle[i].nhisto); j++) {
-            x = j*aspacing;
-            y = b->angle[i].histo[j];
-        }
         gmx_stats_get_average(b->angle[i].lsq,&av);
         gmx_stats_get_sigma(b->angle[i].lsq,&sig);
         gmx_stats_get_npoints(b->angle[i].lsq,&N);
-        
-        fprintf(fp,"    <gt_angle atom1=\"%s\" atom2=\"%s\" atom3=\"%s\" angle=\"%.1f\" stddev=\"%.1f\" npoints=\"%d\"/>\n",
-                b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig,N);
+        sprintf(pbuf,"%g",av);
+        gmx_poldata_add_gt_angle(pd,b->angle[i].a1,b->angle[i].a2,
+                                 b->angle[i].a3,av,sig,pbuf);
+        fprintf(fp,"angle %s-%s-%s angle %g sigma %g (deg)\n",
+                b->angle[i].a1,b->angle[i].a2,b->angle[i].a3,av,sig);
     }
-    fprintf(fp,"  </gt_angles>\n");
-    fclose(fp);
+    for(i=0; (i<b->ndih); i++) {
+        gmx_stats_get_average(b->dih[i].lsq,&av);
+        gmx_stats_get_sigma(b->dih[i].lsq,&sig);
+        gmx_stats_get_npoints(b->dih[i].lsq,&N);
+        sprintf(pbuf,"%g",av);
+        gmx_poldata_add_gt_dihedral(pd,b->dih[i].a1,b->dih[i].a2,
+                                    b->dih[i].a3,b->dih[i].a4,av,sig,pbuf);
+        fprintf(fp,"dihedral %s-%s-%s-%s angle %g sigma %g (deg)\n",
+                b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4,av,sig);
+    }
 }
 
 int main(int argc,char *argv[])
 {
     static const char *desc[] = {
-        "bastat read a series of molecules and corresponding experimental",
-        "dipole moments from a file, and tunes parameters in an algorithm",
-        "until the experimental dipole moments are reproduced by the",
-        "charge generating algorithm AX as implemented in the gentop program.[PAR]",
-        "Minima and maxima for the parameters can be set, these are however",
-        "not strictly enforced, but rather they are penalized with a harmonic",
-        "function, for which the force constant can be set explicitly.[PAR]",
-        "At every reinit step parameters are changed by a random amount within",
-        "the fraction set by step size, and within the boundaries given",
-        "by the minima and maxima. If the [TT]-random[tt] flag is",
-        "given a completely random set of parameters is generated at the start",
-        "of each run. At reinit steps however, the parameters are only changed",
-        "slightly, in order to speed-up local search but not global search."
-        "In other words, complete random starts are done only at the beginning of each",
-        "run, and only when explicitly requested.[PAR]",
-        "The absolut dipole moment of a molecule remains unchanged if all the",
-        "atoms swap the sign of the charge. To prevent this kind of mirror",
-        "effects a penalty is added to the square deviation ",
-        "if hydrogen atoms have a negative charge. Similarly a penalty is",
-        "added if atoms from row VI or VII in the periodic table have a positive",
-        "charge. The penalty is equal to the force constant given on the command line",
-        "time the square of the charge.[PAR]",
-        "One of the electronegativities (chi) is redundant in the optimization,",
-        "only the relative values are meaningful.",
-        "Therefore by default we fix the value for hydrogen to what is written",
-        "in the eemprops.dat file (or whatever is given with the [tt]-d[TT] flag).",
-        "A suitable value would be 2.3, the original, value due to Pauling,",
-        "this can by overridden by setting the [tt]-fixchi[TT] flag to something else (e.g. a non-existing atom).[PAR]",
-        "A selection of molecules into a training set and a test set (or ignore set)",
-        "can be made using option [TT]-sel[tt]. The format of this file is:[BR]",
-        "iupac|Train[BR]",
-        "iupac|Test[BR]",
-        "iupac|Ignore[BR]",
-        "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-f[tt] option). Missing molecules will be ignored."
+        "bastat read a series of molecules and extracts average geometries from",
+        "those. First atomtypes are determined and then bond-lengths, bond-angles",
+        "and dihedral angles are extracted. The results are stored in a gentop.dat file."
     };
   
     t_filenm fnm[] = {
@@ -307,10 +356,10 @@ int main(int argc,char *argv[])
         { efLOG, "-g", "bastat",    ffWRITE }
     };
 #define NFILE asize(fnm)
-    static int  nrun=1,maxiter=100,reinit=0,seed=1993;
-    static int  minimum_data=3,compress=1;
-    static real tol=1e-3,stol=1e-6,watoms=1;
-    static gmx_bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
+    static int  compress=0;
+    static gmx_bool bHisto=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
+    int minimum_data = 3;
+    real watoms = 1;
     static real J0_0=5,Chi0_0=1,w_0=5,step=0.01,hfac=0,rDecrZeta=-1;
     static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
     static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
@@ -320,44 +369,8 @@ int main(int argc,char *argv[])
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     static int  nthreads=0; /* set to determine # of threads automatically */
     t_pargs pa[] = {
-        { "-tol",   FALSE, etREAL, {&tol},
-          "Tolerance for convergence in optimization" },
-        { "-maxiter",FALSE, etINT, {&maxiter},
-          "Max number of iterations for optimization" },
-        { "-reinit", FALSE, etINT, {&reinit},
-          "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
-        { "-stol",   FALSE, etREAL, {&stol},
-          "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
-        { "-nrun",   FALSE, etINT,  {&nrun},
-          "This many runs will be done, before each run a complete randomization will be done" },
-        { "-qm",     FALSE, etBOOL, {&bQM},
-          "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
-        { "-lot",    FALSE, etSTR,  {&lot},
-          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-fc_bound",    FALSE, etREAL, {&fc_bound},
-          "Force constant in the penalty function for going outside the borders given with the above six options." },
-        { "-step",  FALSE, etREAL, {&step},
-          "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
-        { "-min_data",  FALSE, etINT, {&minimum_data},
-          "Minimum number of data points in order to be able to optimize the parameters for a given atomtype" },
-        { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of elements to optimize, e.g. \"H C Br\". The other available elements in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
-        { "-const_elem",  FALSE, etSTR, {&const_elem},
-          "Space-separated list of elements to include but keep constant, e.g. \"O N\". These elements from gentop.dat are left unmodified" },
-        { "-seed", FALSE, etINT, {&seed},
-          "Random number seed for reinit" },
-        { "-random", FALSE, etBOOL, {&bRandom},
-          "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
-        { "-weight", FALSE, etBOOL, {&bWeighted},
-          "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "Minimum angle to be considered a linear A-B-C bond" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
-#ifdef GMX_THREAD_MPI
-        { "-nt",      FALSE, etINT, {&nthreads},
-          "Number of threads to start (0 is guess)" },
-#endif
+        { "-histo", FALSE, etBOOL, {&bHisto},
+          "Print (hundreds of) xvg files containing histograms for bonds, angles and dihedrals" },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
@@ -370,25 +383,29 @@ int main(int argc,char *argv[])
     char      pukestr[STRLEN];
     t_bonds   *b;
     FILE *in;
-    int i,j,l,ai,aj,ak;
-    char *cai,*caj,*cak;
+    int i,j,l,ai,aj,ak,al;
+    char *cai,*caj,*cak,*cal;
     t_atoms atoms;
     char title[2560];
-    rvec *x,dx,dx2;
+    rvec *x,dx,dx2,r_ij,r_kj,r_kl,mm,nn;
+    t_pbc pbc;
+    int t1,t2,t3;
     matrix box;
+    real sign;
     gmx_conect conect;
     gmx_atomprop_t aps;
     double ang;
     double bspacing = 1; /* pm */
-    double aspacing = 0.1; /* degree */
+    double aspacing = 0.5; /* degree */
+    double dspacing = 1; /* degree */
     output_env_t oenv = NULL;
+    char *molname;
     
     cr = init_par(&argc,&argv);
 
-    if (MASTER(cr))
-        CopyRight(stdout,argv[0]);
+    CopyRight(stdout,argv[0]);
 
-    parse_common_args(&argc,argv,PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
+    parse_common_args(&argc,argv,PCA_CAN_VIEW,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
 #ifndef GMX_THREAD_MPI
@@ -399,24 +416,16 @@ int main(int argc,char *argv[])
     else
         iModel = eqgAXg;
     
-    if (MASTER(cr)) {
-        fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
+    fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
 
-        time(&my_t);
-        fprintf(fp,"# This file was created %s",ctime(&my_t));
-        fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
-        fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
-        bromacs(pukestr,99);
-        fprintf(fp,"# %s\n#\n",pukestr);
-    }
-    else
-        fp = NULL;
+    time(&my_t);
+    fprintf(fp,"# This file was created %s",ctime(&my_t));
+    fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
+    fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
+    bromacs(pukestr,99);
+    fprintf(fp,"# %s\n#\n",pukestr);
         
-        
-    if (MASTER(cr)) 
-        gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    else
-        gms = NULL;
+    gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
     md = init_moldip(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
                      J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
                      fc_bound,fc_mu,fc_quad,fc_charge,
@@ -432,13 +441,14 @@ int main(int argc,char *argv[])
 #define ATP(ii) get_atomtype_name(md->mymol[i].atoms->atom[ii].type,md->mymol[i].atype)
     snew(b,1);
     for(i=0; (i<md->nmol); i++) {
+        molname = md->mymol[i].molname;
         for(j=0; (j<md->mymol[i].ltop->idef.il[F_BONDS].nr); j+=interaction_function[F_BONDS].nratoms+1) {
             ai = md->mymol[i].ltop->idef.il[F_BONDS].iatoms[j+1];
             aj = md->mymol[i].ltop->idef.il[F_BONDS].iatoms[j+2];
             rvec_sub(md->mymol[i].x[ai],md->mymol[i].x[aj],dx);
             cai = ATP(ai);
             caj = ATP(aj);
-            add_bond(b,cai,caj,1000*norm(dx),bspacing);
+            add_bond(molname,b,cai,caj,1000*norm(dx),bspacing);
         }
         for(j=0; (j<md->mymol[i].ltop->idef.il[F_ANGLES].nr); j+=interaction_function[F_ANGLES].nratoms+1) {
             ai = md->mymol[i].ltop->idef.il[F_ANGLES].iatoms[j+1];
@@ -446,23 +456,43 @@ int main(int argc,char *argv[])
             ak = md->mymol[i].ltop->idef.il[F_ANGLES].iatoms[j+3];
             rvec_sub(md->mymol[i].x[ai],md->mymol[i].x[aj],dx);
             rvec_sub(md->mymol[i].x[ak],md->mymol[i].x[aj],dx2);
-            ang = RAD2DEG*acos(cos_angle(dx,dx2));
+            ang = RAD2DEG*gmx_angle(dx,dx2);
             cai = ATP(ai);
             caj = ATP(aj);
             cak = ATP(ak);
-            add_angle(b,cai,caj,cak,ang,aspacing);
+            add_angle(molname,b,cai,caj,cak,ang,aspacing);
+        }
+        clear_mat(box);
+        set_pbc(&pbc,epbcNONE,box);
+        
+        for(j=0; (j<md->mymol[i].ltop->idef.il[F_PDIHS].nr); j+=interaction_function[F_PDIHS].nratoms+1) {
+            ai = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+1];
+            aj = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+2];
+            ak = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+3];
+            al = md->mymol[i].ltop->idef.il[F_PDIHS].iatoms[j+4];
+            ang = RAD2DEG*dih_angle(md->mymol[i].x[ai],md->mymol[i].x[aj],
+                                    md->mymol[i].x[ak],md->mymol[i].x[al],
+                                    &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
+                                    &sign,&t1,&t2,&t3);
+            cai = ATP(ai);
+            caj = ATP(aj);
+            cak = ATP(ak);
+            cal = ATP(al);
+            add_dih(molname,b,cai,caj,cak,cal,ang,dspacing);
         }
     }
     sort_bonds(b);
-    dump_histo(b,bspacing,aspacing,oenv);
-    dump_table(b,bspacing,aspacing,aps);
-  
-    if (MASTER(cr)) 
-    {
-        ffclose(fp);
-  
-        thanx(stdout);
-    }
+    if (bHisto)
+        dump_histo(b,bspacing,aspacing,dspacing,oenv);
+    update_pd(fp,b,md->pd,md->atomprop);
+    
+    gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);    
+    
+    printf("Extracted %d bondtypes, %d angletypes and %d dihedraltypes.\n",
+           b->nbond,b->nangle,b->ndih);
+    
+    ffclose(fp);
+    thanx(stdout);
     
 #ifdef GMX_MPI
     if (gmx_parallel_env_initialized())

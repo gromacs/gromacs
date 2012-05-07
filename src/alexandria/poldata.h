@@ -132,27 +132,50 @@ extern char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *name,char *elem,
                                     double *polarizability);
 				  
 extern void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                                   double length,double bondorder);
+                                    double length,double sigma,double bondorder,
+                                    char *params);
 				   
 extern int gmx_poldata_get_gt_bond(gmx_poldata_t pd,char **atom1,char **atom2,
-                                  double *length,double *bondorder);
+                                   double *length,double *sigma,double *bondorder,
+                                   char **params);
+
+extern int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                                      double *length,double *sigma,char **params);
 
 /* Returns the bondorder */
 extern double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *atom1,char *atom2,
                                         double distance,double toler);
 				     
 extern void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                                    char *atom3,double angle);
+                                     char *atom3,double angle,double sigma,char *params);
 				   
 extern int gmx_poldata_get_gt_angle(gmx_poldata_t pd,char **atom1,char **atom2,
-                                   char **atom3,double *angle);
+                                    char **atom3,double *angle,double *sigma,
+                                    char **params);
 
 extern int gmx_poldata_search_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                                      char *atom3,double *angle);
+                                       char *atom3,double *angle,double *sigma,
+                                       char **params);
 
 extern void gmx_poldata_set_angle_unit(gmx_poldata_t pd,char *angle_unit);
 
 extern char *gmx_poldata_get_angle_unit(gmx_poldata_t pd);
+
+extern void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                        char *atom3,char *atom4,
+                                        double dihedral,double sigma,char *params);
+				   
+extern int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
+                                       char **atom3,char **atom4,
+                                       double *dihedral,double *sigma,char **params);
+
+extern int gmx_poldata_search_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                          char *atom3,char *atom4,
+                                          double *dihedral,double *sigma,char **params);
+
+extern void gmx_poldata_set_dihedral_unit(gmx_poldata_t pd,char *dihedral_unit);
+
+extern char *gmx_poldata_get_dihedral_unit(gmx_poldata_t pd);
 
 extern void gmx_poldata_add_symcharges(gmx_poldata_t pd,char *central,
                                        char *attached,int numattach);

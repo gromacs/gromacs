@@ -41,7 +41,7 @@ const char *immsg(int imm)
   return msg[imm];
 }
 
-static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,
+static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,char **molname,
                          int natoms,t_atoms **atoms)
 {
     init_mtop(mtop);
@@ -52,6 +52,7 @@ static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,
     } 
     mtop->nmoltype = nmoltype;
     snew(mtop->moltype,mtop->nmoltype);
+    mtop->moltype[0].name = molname;
     mtop->nmolblock = nmoltype;
     snew(mtop->molblock,mtop->nmolblock);
     mtop->molblock[0].nmol = 1;
@@ -199,6 +200,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
 {
   int      i,j,k,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
     char     *mylot=NULL,*myref=NULL;
+    char     **molnameptr;
     rvec     xmin,xmax;
     tensor   quadrupole;
     double   value,error,vec[3];
@@ -228,8 +230,10 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     {
         mymol->molname  = strdup(gmx_molprop_get_molname(mp));
         /* Read coordinates */
-        do_init_mtop(&mymol->mtop,1,1,mymol->natom,&(mymol->atoms));
         open_symtab(&(mymol->symtab));
+        molnameptr = put_symtab(&(mymol->symtab),mymol->molname);
+        do_init_mtop(&mymol->mtop,1,1,molnameptr,
+                     mymol->natom,&(mymol->atoms));
         if (molprop_2_atoms(mp,aps,&(mymol->symtab),lot,mymol->atoms,
                             (const char *)"ESP",&(mymol->x)) == 0)
             imm = immMolpropConv;

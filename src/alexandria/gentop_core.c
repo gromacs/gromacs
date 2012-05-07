@@ -83,13 +83,15 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     double   b_order;
     gmx_bool bBond;
     char     *elem_i,*elem_j;
-    t_nextnb   nnb;
+    char     *length_unit;
+    t_nextnb nnb;
 
     for(i=0; (i<MAXATOMLIST); i++)
         b.a[i] = -1;
     for(i=0; (i<MAXFORCEPARAM); i++)
         b.c[i] = 0.0;
     
+    length_unit = gmx_poldata_get_length_unit(pd);
     if (bPBC)
         set_pbc(&pbc,-1,box);
     for(i=0; (i<atoms->nr); i++) 
@@ -105,7 +107,7 @@ void mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
             else
                 rvec_sub(x[i],x[j],dx);
       
-            dx1 = norm(dx);
+            dx1 = gmx2convert(norm(dx),string2unit(length_unit));
       
             if (gc) 
             {
