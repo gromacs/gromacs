@@ -28,59 +28,50 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Declares trajectory analysis module for distance calculations.
+ * Declares gmx::CommandLineModuleInterface.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_trajectoryanalysis
+ * \inpublicapi
+ * \ingroup module_commandline
  */
-#ifndef GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
-#define GMX_TRAJECTORYANALYSIS_MODULES_DISTANCE_H
-
-#include <string>
-
-#include "../analysismodule.h"
-#include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
-#include "gromacs/options/options.h"
-#include "gromacs/selection/selection.h"
+#ifndef GMX_COMMANDLINE_CMDLINEMODULE_H
+#define GMX_COMMANDLINE_CMDLINEMODULE_H
 
 namespace gmx
 {
 
-namespace analysismodules
-{
-
-class Distance : public TrajectoryAnalysisModule
+/*! \brief
+ * Module that can be run from command line using CommandLineModuleManager.
+ *
+ * \see CommandLineModuleManager
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class CommandLineModuleInterface
 {
     public:
-        static const char name[];
+        virtual ~CommandLineModuleInterface() {}
 
-        Distance();
-        virtual ~Distance();
+        //! Returns the name of the module.
+        virtual const char *name() const = 0;
 
-        virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
-
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
-
-    private:
-        Options                          _options;
-        std::string                      _fnDist;
-        Selection                        _sel[2];
-        AnalysisData                     _data;
-        AnalysisDataAverageModulePointer _avem;
-
-        // Copy and assign disallowed by base.
+        /*! \brief
+         * Runs the module with the given arguments.
+         *
+         * \param[in] argc  Number of elements in \p argv.
+         * \param[in] argv  Command-line arguments.
+         * \throws   unspecified  May throw exceptions to indicate errors.
+         * \returns  Exit code for the program.
+         * \retval   0 on successful termination.
+         *
+         * \p argv[0] is the name of the module, i.e., the arguments are as if
+         * the module was run as a standalone executable.
+         */
+        virtual int run(int argc, char *argv[]) = 0;
 };
-
-} // namespace analysismodules
 
 } // namespace gmx
 

@@ -56,10 +56,10 @@ namespace analysismodules
 class Angle : public TrajectoryAnalysisModule
 {
     public:
+        static const char name[];
+
         Angle();
         virtual ~Angle();
-
-        static TrajectoryAnalysisModulePointer create();
 
         virtual Options &initOptions(TrajectoryAnalysisSettings *settings);
         virtual void initOptionsDone(TrajectoryAnalysisSettings *settings);
