@@ -67,7 +67,9 @@ class CommandLineModuleManager::Impl
         typedef std::map<std::string, CommandLineModulePointer> ModuleMap;
 
         //! Prints usage message to stderr.
-        void printUsage() const;
+        void printUsage(bool bModuleList) const;
+        //! Prints the list of modules to stderr.
+        void printModuleList() const;
 
         /*! \brief
          * Maps module names to module objects.
@@ -77,11 +79,96 @@ class CommandLineModuleManager::Impl
         ModuleMap               modules_;
 };
 
-void CommandLineModuleManager::Impl::printUsage() const
+void CommandLineModuleManager::Impl::printUsage(bool bModuleList) const
 {
-    fprintf(stderr, "Usage: %s <command> [<args>]\n",
-            ShortProgram());
+    const char *program = ShortProgram();
+    fprintf(stderr, "Usage: %s <command> [<args>]\n\n", program);
+    if (bModuleList)
+    {
+        printModuleList();
+    }
+    else
+    {
+        fprintf(stderr, "See '%s help' for list of commands.\n", program);
+    }
 }
+
+void CommandLineModuleManager::Impl::printModuleList() const
+{
+    int maxNameLength = 0;
+    ModuleMap::const_iterator module;
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        int nameLength = static_cast<int>(module->first.length());
+        if (nameLength > maxNameLength)
+        {
+            maxNameLength = nameLength;
+        }
+    }
+    fprintf(stderr, "The following commands are available:\n");
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        const char *name = module->first.c_str();
+        const char *description = module->second->shortDescription();
+        fprintf(stderr, "    %*s  %s\n", -maxNameLength, name, description);
+    }
+}
+
+
+/********************************************************************
+ * CommandLineHelpModule
+ */
+
+namespace internal
+{
+
+/*! \internal \brief
+ * Command-line module for producing help.
+ *
+ * This module implements the 'help' subcommand that is automatically added by
+ * CommandLineModuleManager.
+ *
+ * \ingroup module_commandline
+ */
+class CommandLineHelpModule : public CommandLineModuleInterface
+{
+    public:
+        /*! \brief
+         * Creates a help module for the given module manager.
+         *
+         * \param[in] manager  Manager for which this module provides help.
+         *
+         * Does not throw.
+         */
+        explicit CommandLineHelpModule(const CommandLineModuleManager &manager);
+
+        virtual const char *name() const { return "help"; }
+        virtual const char *shortDescription() const
+        {
+            return "Print help information";
+        }
+
+        virtual int run(int argc, char *argv[]);
+
+    private:
+        const CommandLineModuleManager &manager_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
+};
+
+CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleManager &manager)
+    : manager_(manager)
+{
+}
+
+int CommandLineHelpModule::run(int argc, char *argv[])
+{
+    manager_.impl_->printUsage(true);
+    return 0;
+}
+
+} // namespace internal
+
 
 /********************************************************************
  * CommandLineModuleManager
@@ -90,6 +177,7 @@ void CommandLineModuleManager::Impl::printUsage() const
 CommandLineModuleManager::CommandLineModuleManager()
     : impl_(new Impl)
 {
+    addModule(CommandLineModulePointer(new internal::CommandLineHelpModule(*this)));
 }
 
 CommandLineModuleManager::~CommandLineModuleManager()
@@ -109,7 +197,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     if (argc < 2)
     {
         fprintf(stderr, "\n");
-        impl_->printUsage();
+        impl_->printUsage(false);
         return 2;
     }
     // TODO: Accept unambiguous prefixes?
@@ -117,8 +205,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     if (module == impl_->modules_.end())
     {
         fprintf(stderr, "\n");
-        fprintf(stderr, "Unknown command: %s\n", argv[1]);
-        impl_->printUsage();
+        fprintf(stderr, "Unknown command: '%s'\n", argv[1]);
+        impl_->printUsage(true);
         return 2;
     }
     return module->second->run(argc - 1, argv + 1);

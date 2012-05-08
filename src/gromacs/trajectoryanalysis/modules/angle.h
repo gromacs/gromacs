@@ -57,6 +57,7 @@ class Angle : public TrajectoryAnalysisModule
 {
     public:
         static const char name[];
+        static const char shortDescription[];
 
         Angle();
         virtual ~Angle();

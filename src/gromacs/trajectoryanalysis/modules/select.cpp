@@ -240,9 +240,11 @@ void IndexFileWriterModule::dataFinished()
  */
 
 const char Select::name[] = "select";
+const char Select::shortDescription[] =
+    "Print general information about selections";
 
 Select::Select()
-    : _options(name, "Selection information"),
+    : _options(name, shortDescription),
       _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
       _top(NULL)
 {

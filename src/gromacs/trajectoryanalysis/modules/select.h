@@ -56,6 +56,7 @@ class Select : public TrajectoryAnalysisModule
 {
     public:
         static const char name[];
+        static const char shortDescription[];
 
         Select();
         virtual ~Select();
