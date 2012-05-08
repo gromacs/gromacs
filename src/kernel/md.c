@@ -123,7 +123,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     t,t0,lam0;
     gmx_bool       bGStatEveryStep,bGStat,bNstEner,bCalcEnerPres;
     gmx_bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,
+               bFirstStep,bStateFromCP,bStateFromTPX,bInitStep,bLastStep,
                bBornRadii,bStartingFromCpt;
     gmx_bool       bDoDHDL=FALSE;
     gmx_bool       do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
@@ -374,9 +374,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     update_mdatoms(mdatoms,state->lambda);
 
+    if (opt2bSet("-cpi",nfile,fnm))
+    {
+        bStateFromCP = gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr);
+    }
+    else
+    {
+        bStateFromCP = FALSE;
+    }
+
     if (MASTER(cr))
     {
-        if (opt2bSet("-cpi",nfile,fnm))
+        if (bStateFromCP)
         {
             /* Update mdebin with energy history if appending to output files */
             if ( Flags & MD_APPENDFILES )
@@ -650,7 +659,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* loop over MD steps or if rerunMD to end of input trajectory */
     bFirstStep = TRUE;
     /* Skip the first Nose-Hoover integration when we get the state from tpx */
-    bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bStateFromTPX = !bStateFromCP;
     bInitStep = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep    = FALSE;
