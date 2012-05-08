@@ -72,9 +72,8 @@ namespace gmx
  * BooleanOptionStorage
  */
 
-std::string BooleanOptionStorage::formatValue(int i) const
+std::string BooleanOptionStorage::formatSingleValue(const bool &value) const
 {
-    bool value = values()[i];
     return value ? "yes" : "no";
 }
 
@@ -117,9 +116,8 @@ AbstractOptionStoragePointer BooleanOption::createStorage() const
  * IntegerOptionStorage
  */
 
-std::string IntegerOptionStorage::formatValue(int i) const
+std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 {
-    int value = values()[i];
     return formatString("%d", value);
 }
 
@@ -176,9 +174,9 @@ const char *DoubleOptionStorage::typeString() const
     return hasFlag(efVector) ? "vector" : (isTime() ? "time" : "double");
 }
 
-std::string DoubleOptionStorage::formatValue(int i) const
+std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 {
-    return formatString("%g", values()[i] / factor_);
+    return formatString("%g", value / factor_);
 }
 
 void DoubleOptionStorage::convertValue(const std::string &value)
@@ -324,9 +322,9 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
     }
 }
 
-std::string StringOptionStorage::formatValue(int i) const
+std::string StringOptionStorage::formatSingleValue(const std::string &value) const
 {
-    return values()[i];
+    return value;
 }
 
 void StringOptionStorage::convertValue(const std::string &value)

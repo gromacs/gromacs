@@ -94,7 +94,14 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // the declarations are still included for clarity.
         virtual const char *typeString() const = 0;
         virtual int valueCount() const { return static_cast<int>(_values->size()); }
-        virtual std::string formatValue(int i) const = 0;
+        /*! \copydoc AbstractOptionStorage::formatValue()
+         *
+         * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
+         * in this method, as well as checking that \p i is a valid index.
+         * Derived classes must implement formatSingleValue() to provide the
+         * actual formatting for a value of type \p T.
+         */
+        virtual std::string formatValue(int i) const;
 
     protected:
         /*! \brief
@@ -138,7 +145,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
         }
         /*! \copydoc AbstractOptionStorage::processSet()
          *
-         * OptionStorage template implements transaction support for a set of
+         * OptionStorageTemplate implements transaction support for a set of
          * values in this method (see the class description), and provides a
          * more detailed processSetValues() method that can be overridden in
          * subclasses to process the actual values.  Derived classes should
@@ -153,6 +160,16 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual void processAll()
         {
         }
+        /*! \brief
+         * Formats a single value as a string.
+         *
+         * \param[in] value  Value to format.
+         * \returns   \p value formatted as a string.
+         *
+         * The derived class must provide this method to format values a
+         * strings.  Called by formatValue() to do the actual formatting.
+         */
+        virtual std::string formatSingleValue(const T &value) const = 0;
 
         /*! \brief
          * Removes all values from the storage.
@@ -311,6 +328,23 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
 template <typename T>
 OptionStorageTemplate<T>::~OptionStorageTemplate()
 {
+}
+
+
+template <typename T>
+std::string OptionStorageTemplate<T>::formatValue(int i) const
+{
+    GMX_RELEASE_ASSERT(i == DefaultValueIfSetIndex || (i >= 0 && i < valueCount()),
+                       "Invalid value index");
+    if (i == DefaultValueIfSetIndex)
+    {
+        if (_defaultValueIfSet.get() != NULL)
+        {
+            return formatSingleValue(*_defaultValueIfSet);
+        }
+        return std::string();
+    }
+    return formatSingleValue(values()[i]);
 }
 
 

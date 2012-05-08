@@ -5,7 +5,7 @@
 Option Filename     Type         Description
 ---------------------------------------------------------
 -f     traj         Input        Input file description
--lib                Input, Opt., Lib.
+-lib   libdata      Input, Opt., Lib.
                                  Library file description
 -io                 In/Out, Opt. Input/Output file description
 -o                  Output, Opt. Output file description

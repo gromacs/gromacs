@@ -211,4 +211,9 @@ std::string OptionInfo::formatValue(int i) const
     return option().formatValue(i);
 }
 
+std::string OptionInfo::formatDefaultValueIfSet() const
+{
+    return option().formatDefaultValueIfSet();
+}
+
 } // namespace gmx

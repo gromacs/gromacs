@@ -106,7 +106,10 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
             GMX_THROW(gmx::test::TestException("Not implemented"));
         }
         virtual const char *typeString() const { return "mock"; }
-        virtual std::string formatValue(int /*i*/) const { return ""; }
+        virtual std::string formatSingleValue(const std::string &/*value*/) const
+        {
+            return "";
+        }
 
         MOCK_METHOD1(convertValue, void(const std::string &value));
         MOCK_METHOD1(processSetValues, void(ValueList *values));
