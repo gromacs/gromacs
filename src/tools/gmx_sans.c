@@ -55,6 +55,10 @@
 #include "gmx_ana.h"
 #include "nsfactor.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 
 int gmx_sans(int argc,char *argv[])
 {
@@ -87,6 +91,11 @@ int gmx_sans(int argc,char *argv[])
     gmx_nentron_atomic_structurefactors_t    *gnsf;
     gmx_sans_t              *gsans;
 
+#ifdef GMX_OPENMP
+    static int              nthreads;
+    nthreads = omp_get_max_threads();
+#endif
+
 #define NPA asize(pa)
 
     t_pargs pa[] = {
@@ -95,7 +104,7 @@ int gmx_sans(int argc,char *argv[])
         { "-mode", FALSE, etENUM, {emode},
           "Mode for sans spectra calculation" },
         { "-mcover", FALSE, etREAL, {&mcover},
-          "Monte-Carlo coverage"},
+          "Monte-Carlo coverage should be -1(default) or (0,1]"},
         { "-method", FALSE, etENUM, {emethod},
           "[HIDDEN]Method for sans spectra calculation" },
         { "-pbc", FALSE, etBOOL, {&bPBC},
@@ -110,6 +119,10 @@ int gmx_sans(int argc,char *argv[])
           "Stepping in q (1/nm)"},
         { "-seed",     FALSE, etINT,  {&seed},
           "Random seed for Monte-Carlo"},
+#ifdef GMX_OPENMP
+        { "-nt",  FALSE, etINT, {&nthreads},
+          "Number of threads to start"},
+#endif
     };
   FILE      *fp;
   const char *fnTPX,*fnNDX,*fnDAT=NULL;
@@ -150,7 +163,12 @@ int gmx_sans(int argc,char *argv[])
 
   /* check that binwidth not smaller than smallers distance */
   check_binwidth(binwidth);
+  check_mcover(mcover);
 
+  /* setting number of omp threads globaly */
+#ifdef GMX_OPENMP
+  omp_set_num_threads(nthreads);
+#endif
   /* Now try to parse opts for modes */
   switch(emethod[0][0]) {
   case 'd':
