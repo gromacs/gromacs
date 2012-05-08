@@ -22,7 +22,7 @@ $dir = `pwd`;
 chomp $dir;
 
 @exclude = ( "my_dssp", "copyrgt", "addquote", "GMXRC", "completion.csh",
-	     "completion.zsh", "average", "completion.bash", "luck", 
+	     "completion.zsh", "average", "completion.bash",
 	     "xplor2gmx.pl", "mptest", "ffscan", "demux.pl", "gentop", "mkyaw",
 	     "tune_dip", "tune_pol", "hrefify", "options", "genvsites",
 	     "pdtest", "bastat", "ehole", "GMXRC.bash", "GMXRC.csh",

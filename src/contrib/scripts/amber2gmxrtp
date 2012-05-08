@@ -646,7 +646,6 @@ END {
   printf("Found %d residues\n", nres);
   print_warn();
   printf("; Found %d residues\n", nres) > ffrtp;
-  system("luck");
 }
 
 #last line
