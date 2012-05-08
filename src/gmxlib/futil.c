@@ -436,6 +436,11 @@ gmx_bool make_backup(const char * name)
     int  count_max;
     char * backup;
 
+    if (name == NULL) 
+    {
+        return FALSE;
+    }
+
 #ifdef GMX_FAHCORE
     return FALSE; /* skip making backups */
 #else
