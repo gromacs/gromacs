@@ -81,12 +81,13 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
         TrajectoryAnalysisModule *_module;
         int                     _debugLevel;
+        bool                    _bPrintCopyright;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : _module(module), _debugLevel(0)
+    : _module(module), _debugLevel(0), _bPrintCopyright(true)
 {
 }
 
@@ -182,6 +183,13 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 
 
 void
+TrajectoryAnalysisCommandLineRunner::setPrintCopyright(bool bPrint)
+{
+    _impl->_bPrintCopyright = bPrint;
+}
+
+
+void
 TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
 {
     _impl->_debugLevel = 1;
@@ -193,7 +201,10 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = _impl->_module;
 
-    CopyRight(stderr, argv[0]);
+    if (_impl->_bPrintCopyright)
+    {
+        CopyRight(stderr, argv[0]);
+    }
 
     SelectionCollection  selections;
     selections.setDebugLevel(_impl->_debugLevel);

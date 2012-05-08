@@ -239,8 +239,10 @@ void IndexFileWriterModule::dataFinished()
  * Select
  */
 
+const char Select::name[] = "select";
+
 Select::Select()
-    : _options("select", "Selection information"),
+    : _options(name, "Selection information"),
       _bDump(false), _bTotNorm(false), _bFracNorm(false), _bResInd(false),
       _top(NULL)
 {
@@ -518,13 +520,6 @@ Select::finishAnalysis(int /*nframes*/)
 void
 Select::writeOutput()
 {
-}
-
-
-TrajectoryAnalysisModulePointer
-Select::create()
-{
-    return TrajectoryAnalysisModulePointer(new Select());
 }
 
 } // namespace analysismodules

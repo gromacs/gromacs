@@ -74,6 +74,18 @@ class TrajectoryAnalysisCommandLineRunner
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
+         * Sets whether the runner will print the copyright header.
+         *
+         * \param[in] bPrint  Whether to print the copyright header.
+         *
+         * By default, the copyright header is printed.
+         * This is used internally when executing the runner in a context where
+         * the copyright has already been printed at a higher level.
+         *
+         * Does not throw.
+         */
+        void setPrintCopyright(bool bPrint);
+        /*! \brief
          * Sets the default debugging level for selections.
          *
          * This is intended only for use by internal debugging tools.
