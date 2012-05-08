@@ -439,16 +439,12 @@
             c12_SSE3      = gmx_mul_pr(c12s_SSE3,c12s_j_SSE);
 #endif
 #else
-#if UNROLLJ <= 4
 #ifndef FIX_LJ_C
             load_lj_pair_params(nbfp0,type,aj,c6_SSE0,c12_SSE0);
             load_lj_pair_params(nbfp1,type,aj,c6_SSE1,c12_SSE1);
 #ifndef HALF_LJ
             load_lj_pair_params(nbfp2,type,aj,c6_SSE2,c12_SSE2);
             load_lj_pair_params(nbfp3,type,aj,c6_SSE3,c12_SSE3);
-#endif
-#else
-            gmx_incons("no comb rule unimplemented for avx");
 #endif
 #endif /* FIX_LJ_C */
 #endif /* LJ_COMB_GEOM */

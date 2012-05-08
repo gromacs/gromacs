@@ -200,7 +200,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 #if defined GMX_AVX_HERE && !defined GMX_DOUBLE
 
 /* Put two 128-bit 4-float registers into one 256-bit 8-float register */
-#define GMX_2_MM_TO_M256(in0,in1,out)                                  \
+#define GMX_2_MM_TO_M256(in0,in1,out)                                   \
 {                                                                       \
     out = _mm256_insertf128_ps(_mm256_castps128_ps256(in0),in1,1);      \
 }
@@ -217,8 +217,8 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
     GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
                                                                         \
-    GMX_2_MM_TO_MM256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                    \
-    GMX_2_MM_TO_MM256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                 \
+    GMX_2_MM_TO_M256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                     \
+    GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
 }
 
 #endif
