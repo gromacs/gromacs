@@ -56,6 +56,7 @@ class Distance : public TrajectoryAnalysisModule
 {
     public:
         static const char name[];
+        static const char shortDescription[];
 
         Distance();
         virtual ~Distance();

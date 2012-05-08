@@ -59,19 +59,21 @@ namespace
 class MockModule : public gmx::CommandLineModuleInterface
 {
     public:
-        //! Creates a mock module with the given name.
-        explicit MockModule(const char *name);
+        //! Creates a mock module with the given name and description.
+        MockModule(const char *name, const char *description);
 
         virtual const char *name() const { return name_; }
+        virtual const char *shortDescription() const { return descr_; }
 
         MOCK_METHOD2(run, int(int argc, char *argv[]));
 
     private:
         const char             *name_;
+        const char             *descr_;
 };
 
-MockModule::MockModule(const char *name)
-    : name_(name)
+MockModule::MockModule(const char *name, const char *description)
+    : name_(name), descr_(description)
 {
 }
 
@@ -82,15 +84,15 @@ MockModule::MockModule(const char *name)
 class CommandLineModuleManagerTest : public ::testing::Test
 {
     public:
-        MockModule &addModule(const char *name);
+        MockModule &addModule(const char *name, const char *description);
 
         gmx::CommandLineModuleManager manager_;
 };
 
 MockModule &
-CommandLineModuleManagerTest::addModule(const char *name)
+CommandLineModuleManagerTest::addModule(const char *name, const char *description)
 {
-    MockModule *module = new MockModule(name);
+    MockModule *module = new MockModule(name, description);
     manager_.addModule(gmx::CommandLineModulePointer(module));
     return *module;
 }
@@ -105,8 +107,8 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
         "test", "module", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
-    MockModule &mod1 = addModule("module");
-    addModule("other");
+    MockModule &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;

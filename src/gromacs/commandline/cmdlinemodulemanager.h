@@ -51,6 +51,11 @@ class CommandLineModuleInterface;
 typedef gmx_unique_ptr<CommandLineModuleInterface>::type
         CommandLineModulePointer;
 
+namespace internal
+{
+class CommandLineHelpModule;
+}
+
 /*! \brief
  * Implements a wrapper command-line interface for multiple modules.
  *
@@ -136,6 +141,11 @@ class CommandLineModuleManager
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+
+        /*! \brief
+         * Needed to access information about registered modules etc.
+         */
+        friend class internal::CommandLineHelpModule;
 };
 
 } // namespace gmx

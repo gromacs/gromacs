@@ -63,6 +63,7 @@ class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
 {
     public:
         virtual const char *name() const = 0;
+        virtual const char *shortDescription() const = 0;
 
         virtual int run(int argc, char *argv[]);
 
@@ -85,8 +86,8 @@ int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
  * \tparam Module  Trajectory analysis module to wrap.
  *
  * \p Module should be default-constructible, derive from
- * TrajectoryAnalysisModule, and have a static public member
- * \c "const char name[]".
+ * TrajectoryAnalysisModule, and have a static public members
+ * \c "const char name[]" and \c "const char shortDescription[]".
  *
  * \ingroup module_trajectoryanalysis
  */
@@ -97,6 +98,10 @@ class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
         virtual const char *name() const
         {
             return Module::name;
+        }
+        virtual const char *shortDescription() const
+        {
+            return Module::shortDescription;
         }
         virtual TrajectoryAnalysisModulePointer createModule()
         {

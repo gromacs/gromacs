@@ -62,9 +62,11 @@ namespace analysismodules
 {
 
 const char Distance::name[] = "distance";
+const char Distance::shortDescription[] =
+    "Calculate distances";
 
 Distance::Distance()
-    : _options(name, "Distance calculation"), _avem(new AnalysisDataAverageModule())
+    : _options(name, shortDescription), _avem(new AnalysisDataAverageModule())
 {
 }
 
