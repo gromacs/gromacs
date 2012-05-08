@@ -46,10 +46,24 @@
 #include "vec.h"
 #include "nsfactor.h"
 
+#ifdef GMX_OPENMP
+#include <omp.h>
+#endif
+
 void check_binwidth(real binwidth) {
     real smallest_bin=0.1;
     if (binwidth<smallest_bin)
         gmx_fatal(FARGS,"Binwidth shouldnt be smaller then smallest bond length (H-H bond ~0.1nm) in a box");
+}
+
+void check_mcover(real mcover) {
+    if (mcover>1.0) {
+        gmx_fatal(FARGS,"mcover should be -1 or (0,1]");
+    } else if ((mcover<0)&(mcover != -1)) {
+        gmx_fatal(FARGS,"mcover should be -1 or (0,1]");
+    } else {
+        return;
+    }
 }
 
 void normalize_probability(int n,double *a){
@@ -148,11 +162,17 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
                             real mcover,
                             unsigned int seed) {
     gmx_radial_distribution_histogram_t    *pr=NULL;
-    rvec        dist;
-    double      rmax;
-    int         i,j;
-    gmx_large_int_t   mc=0,max;
-    gmx_rng_t   rng=NULL;
+    rvec            dist;
+    double          rmax;
+    int             i,j;
+#ifdef GMX_OPENMP
+    double          **tgr;
+    int             tid;
+    int             nthreads;
+    gmx_rng_t       *trng=NULL;
+#endif
+    gmx_large_int_t mc=0,max;
+    gmx_rng_t       rng=NULL;
 
     /* allocate memory for pr */
     snew(pr,1);
@@ -181,18 +201,91 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             max=(gmx_large_int_t)floor(0.5*mcover*isize*(isize-1));
         }
         rng=gmx_rng_init(seed);
-        while(mc<max) {
+#ifdef GMX_OPENMP
+        nthreads = omp_get_max_threads();
+        snew(tgr,nthreads);
+        snew(trng,nthreads);
+        for(i=0;i<nthreads;i++){
+            snew(tgr[i],pr->grn);
+            trng[i]=gmx_rng_init(gmx_rng_uniform_uint32(rng));
+        }
+        #pragma omp parallel shared(tgr,trng,mc) private(tid)
+        {
+            tid = omp_get_thread_num();
+            /* We need to allocat tgr and trng for threads */
+            #pragma omp barrier
+            /* now starting parallel threads */
+            #pragma omp for schedule(dynamic)
+            for(mc=0;mc<max;mc++) {
+                i=(int)floor(gmx_rng_uniform_real(trng[tid])*isize);
+                j=(int)floor(gmx_rng_uniform_real(trng[tid])*isize);
+                if(i!=j) {
+                    tgr[tid][(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+                }
+            }
+            #pragma omp barrier
+        }
+        /* collecting data from threads */
+        for(i=0;i<pr->grn;i++) {
+            for(j=0;j<nthreads;j++) {
+                pr->gr[i] += tgr[j][i];
+            }
+        }
+        /* freeing memory for tgr and destroying trng */
+        for(i=0;i<nthreads;i++) {
+            sfree(tgr[i]);
+            gmx_rng_destroy(trng[i]);
+        }
+        sfree(tgr);
+        sfree(trng);
+#else
+        for(mc=0;mc<max;mc++) {
             i=(int)floor(gmx_rng_uniform_real(rng)*isize);
             j=(int)floor(gmx_rng_uniform_real(rng)*isize);
             if(i!=j)
                 pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
-            mc++;
         }
+#endif
         gmx_rng_destroy(rng);
     } else {
-        for(i=0;i<isize;i++)
-            for(j=0;j<i;j++)
+#ifdef GMX_OPENMP
+        nthreads = omp_get_max_threads();
+        /* Allocating memory for tgr arrays */
+        snew(tgr,nthreads);
+        for(i=0;i<nthreads;i++) {
+            snew(tgr[i],pr->grn);
+        }
+        #pragma omp parallel shared(tgr) private(tid)
+        {
+            tid = omp_get_thread_num();
+            #pragma omp barrier
+            /* starting parallel threads */
+            #pragma omp for schedule(dynamic)
+            for(i=0;i<isize;i++) {
+                for(j=0;j<i;j++) {
+                    tgr[tid][(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+                }
+            }
+            #pragma omp barrier
+        }
+        /* collecating data for pr->gr */
+        for(i=0;i<pr->grn;i++) {
+            for(j=0;j<nthreads;j++) {
+                pr->gr[i] += tgr[j][i];
+            }
+        }
+        /* freeing memory for tgr */
+        for(i=0;i<nthreads;i++) {
+            sfree(tgr[i]);
+        }
+        sfree(tgr);
+#else
+        for(i=0;i<isize;i++) {
+            for(j=0;j<i;j++) {
                 pr->gr[(int)floor(sqrt(distance2(x[index[i]],x[index[j]]))/binwidth)]+=gsans->slength[index[i]]*gsans->slength[index[j]];
+            }
+        }
+#endif
     }
 
     /* normalize */
