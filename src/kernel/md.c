@@ -443,9 +443,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
 
+    /* PME tuning is not supported with separate PME nodes or with rerun */
     if ((Flags & MD_TUNEPME) &&
+        EEL_PME(fr->eeltype) &&
         fr->cutoff_scheme == ecutsVERLET &&
-        EEL_PME(fr->eeltype) && fr->nbv->useGPU &&
+        nb_kernel_pmetune_support(fr->nbv) &&
+        (cr->duty & DUTY_PME) &&
         !bRerunMD)
     {
         switch_pme_init(&pme_switch,ir,state->box,fr->ic,fr->pmedata);
