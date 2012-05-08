@@ -253,6 +253,63 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
     fclose(fp);
 }
 
+static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms)
+{
+    int i,j,n,length;
+    double xx,sx,cc;
+    char *params,**ptr;
+    
+    length = string2unit(gmx_poldata_get_length_unit(pd));
+    for(j=0; (j<plist[F_BONDS].nr); j++) {
+        if (1 == gmx_poldata_search_gt_bond(pd,
+                                            *atoms->atomtype[plist[F_BONDS].param[j].a[0]],
+                                            *atoms->atomtype[plist[F_BONDS].param[j].a[1]],
+                                            &xx,&sx,&params)) {
+            ptr = split(' ',params);
+            n = 0;
+            while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
+                plist[F_BONDS].param[j].c[n] = atof(ptr[n]);
+                sfree(ptr[n]);
+                n++;
+            }
+            sfree(ptr);
+        }
+    }
+    for(j=0; (j<plist[F_ANGLES].nr); j++) {
+        if (1 == gmx_poldata_search_gt_angle(pd,
+                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[0]],
+                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[1]],
+                                             *atoms->atomtype[plist[F_ANGLES].param[j].a[2]],
+                                             &xx,&sx,&params)) {
+            ptr = split(' ',params);
+            n = 0;
+            while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
+                plist[F_ANGLES].param[j].c[n] = atof(ptr[n]);
+                sfree(ptr[n]);
+                n++;
+            }
+            sfree(ptr);
+        }
+    }
+    for(j=0; (j<plist[F_PDIHS].nr); j++) {
+        if (1 == gmx_poldata_search_gt_dihedral(pd,
+                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[0]],
+                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[1]],
+                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[2]],
+                                                *atoms->atomtype[plist[F_PDIHS].param[j].a[3]],
+                                                &xx,&sx,&params)) {
+            ptr = split(' ',params);
+            n = 0;
+            while ((n<MAXFORCEPARAM) && (NULL != ptr[n])) {
+                plist[F_PDIHS].param[j].c[n] = atof(ptr[n]);
+                sfree(ptr[n]);
+                n++;
+            }
+            sfree(ptr);
+        }
+    }
+}
+
 static void unique_atomnames(t_atoms *atoms)
 {
     fprintf(stderr,"WARNING: Generating unique atomnames is not implemented yet.\n");
@@ -682,6 +739,8 @@ int main(int argc, char *argv[])
                                gvt)) == NULL) 
         gmx_fatal(FARGS,"Can not find all atomtypes. Better luck next time!");
     
+    get_force_constants(pd,plist,atoms);
+    
     if (NULL != gr)
         gmx_resp_update_atomtypes(gr,atoms);
     
@@ -834,8 +893,6 @@ int main(int argc, char *argv[])
         }
         mu = calc_dip(atoms,x);
         
-        calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
-    
         if ((cgnr = generate_charge_groups(cgtp,atoms,
                                            &plist[F_BONDS],&plist[F_POLARIZATION],
                                            bUsePDBcharge,
@@ -866,8 +923,6 @@ int main(int argc, char *argv[])
             atoms->atomtype[i] = put_symtab(&symtab,
                                             get_atomtype_name(atoms->atom[i].type,atype));
     
-        set_force_const(plist,kb,kt,kp,bRound,bParam);
-        
         if (bUnique)
             unique_atomnames(atoms);
             
