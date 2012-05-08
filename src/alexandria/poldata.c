@@ -53,6 +53,7 @@ typedef struct {
 
 typedef struct {
     char   *atom1,*atom2,*params;
+    char   *elem1,*elem2;
     double length,sigma,bondorder; 
 } t_gt_bond;
 
@@ -438,21 +439,22 @@ double gmx_poldata_get_bondorder(gmx_poldata_t pd,char *elem1,char *elem2,
                                  double distance,double toler)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
-    double dev,dev_best = 100;
     char *ba1,*ba2;
+    double dev,dev_best = 100000;
     int j,i,i_best=-1;
   
     if ((NULL == elem1) || (NULL == elem2))
         return 0.0;
     for(i=0; (i<pold->ngt_bond); i++) {
-        ba1 = pold->gt_bond[i].atom1;
-        ba2 = pold->gt_bond[i].atom2;
-        for(j=0; (j<pold->nspoel); j++) {
-            if (strcasecmp(pold->spoel[j].name,pold->gt_bond[i].atom1) == 0)
-                ba1 = pold->spoel[j].elem;
-            if (strcasecmp(pold->spoel[j].name,pold->gt_bond[i].atom2) == 0)
-                ba2 = pold->spoel[j].elem;
+        if (NULL == pold->gt_bond[i].elem1) {
         }
+        if (NULL == pold->gt_bond[i].elem2) {
+            for(j=0; (j<pold->nspoel); j++) 
+                if (strcasecmp(pold->spoel[j].name,pold->gt_bond[i].atom2) == 0)
+                    pold->gt_bond[i].elem2 = strdup(pold->spoel[j].elem);
+        }
+        ba1 = pold->gt_bond[i].elem1;
+        ba2 = pold->gt_bond[i].elem2;
         if (((NULL != ba1) && (NULL != ba2)) &&
             (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
              ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0)))) {
@@ -605,7 +607,7 @@ void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
-    int i;
+    int i,j;
   
     for(i=0; (i<pold->ngt_bond); i++) {
         gt_b = &(pold->gt_bond[i]);
@@ -629,12 +631,25 @@ void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
         pold->ngt_bond++;
         srenew(pold->gt_bond,pold->ngt_bond);
         gt_b = &(pold->gt_bond[pold->ngt_bond-1]);
-        gt_b->atom1   = strdup(atom1);
-        gt_b->atom2   = strdup(atom2);
-        gt_b->length = length;
-        gt_b->sigma = sigma;
+        gt_b->atom1 = NULL;
+        gt_b->atom2 = NULL;
+        for(j=0; (j<pold->nspoel); j++) {
+            if (strcasecmp(pold->spoel[j].type,atom1) == 0) {
+                gt_b->atom1     = strdup(atom1);
+                gt_b->elem1     = strdup(pold->spoel[j].elem);
+            }
+            if (strcasecmp(pold->spoel[j].type,atom2) == 0) {
+                gt_b->atom2     = strdup(atom2);
+                gt_b->elem2     = strdup(pold->spoel[j].elem);
+            }
+        }
+        if ((NULL == gt_b->atom1) || (NULL == gt_b->atom2))
+            gmx_fatal(FARGS,"Either atomtype %s or atomtype %s unknown when trying to define a bond.",
+                      atom1,atom2);
+        gt_b->length    = length;
+        gt_b->sigma     = sigma;
         gt_b->bondorder = bondorder;
-        gt_b->params = strdup(params);
+        gt_b->params    = strdup(params);
     }
 }
 
