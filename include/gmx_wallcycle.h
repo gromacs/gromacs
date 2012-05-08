@@ -55,6 +55,7 @@ enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
        ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
        ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
        ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+       ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
        ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
        ewcsNR };
 

@@ -162,6 +162,8 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 ######################################################################
 # compiler tests
@@ -498,6 +500,12 @@ endif(CYGWIN)
 
 if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
+endif()
+
+if(GMX_CYCLE_SUBCOUNTERS)
+    add_definitions(-DGMX_CYCLE_SUB)
+else()
+    remove_definitions(-DGMX_CYCLE_SUB)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo

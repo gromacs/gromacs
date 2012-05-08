@@ -229,30 +229,30 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If doing GB, reset dvda and calculate the Born radii */
 	if (ir->implicit_solvent)
 	{
-		/* wallcycle_start(wcycle,ewcGB); */
-		
+
+                wallcycle_sub_start(wcycle, ewcsNONBONDED);
 		for(i=0;i<born->nr;i++)
 		{
 			fr->dvda[i]=0;
 		}
-		
+
 		if(bBornRadii)
 		{
 			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md,nrnb);
 		}
-		
-		/* wallcycle_stop(wcycle, ewcGB); */
+                wallcycle_sub_stop(wcycle, ewcsNONBONDED);
 	}
-	
+
     where();
     if (flags & GMX_FORCE_NONBONDED)
     {
-        donb_flags = 0;    
+        donb_flags = 0;
         if (flags & GMX_FORCE_FORCES)
         {
             donb_flags |= GMX_DONB_FORCES;
         }
-        
+
+        wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(cr,fr,x,f,md,excl,
                     fr->bBHAM ?
                     enerd->grpp.ener[egBHAMSR] :
@@ -260,15 +260,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     enerd->grpp.ener[egCOULSR],
                     enerd->grpp.ener[egGB],box_size,nrnb,
                     lambda,&dvdlambda,-1,-1,donb_flags);
+        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
-    
+
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
     if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) && ir->sc_alpha != 0)
     {
+        wallcycle_sub_start(wcycle, ewcsNONBONDED);
         init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
-        
+
         for(i=0; i<enerd->n_lambda; i++)
         {
             lam_i = (i==0 ? lambda : ir->flambda[i-1]);
@@ -286,14 +288,18 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
         }
         destroy_enerdata(&ed_lam);
+        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
     where();
-	
-	/* If we are doing GB, calculate bonded forces and apply corrections 
-	 * to the solvation forces */
-	if (ir->implicit_solvent)  {
-		calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+
+    /* If we are doing GB, calculate bonded forces and apply corrections
+     * to the solvation forces */
+    if (ir->implicit_solvent)
+    {
+        wallcycle_sub_start(wcycle, ewcsBONDED);
+        calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
                        ir->gb_algorithm,ir->sa_algorithm,nrnb,bBornRadii,&pbc,graph,enerd);
+        wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
 
 #ifdef GMX_MPI
@@ -365,16 +371,18 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
     }
     debug_gmx();
-    
+
     if (flags & GMX_FORCE_BONDED)
     {
         GMX_MPE_LOG(ev_calc_bonds_start);
+
+        wallcycle_sub_start(wcycle, ewcsBONDED);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
                    flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY),
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
-        
+
         /* Check if we have to determine energy differences
          * at foreign lambda's.
          */
@@ -403,6 +411,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         }
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
+        wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
 
     where();
@@ -436,6 +445,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 ir->ewald_geometry != eewg3D ||
                 ir->epsilon_surface != 0)
             {
+                wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
+
                 int nthreads,t;
 
                 if (fr->n_tpi > 0)
@@ -491,6 +502,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                          &Vcorr,&dvdlambda,
                                          nthreads,fr->f_t);
                 }
+
+                wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
             if (fr->n_tpi == 0)

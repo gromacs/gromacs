@@ -578,7 +578,8 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          gmx_bool clearF, /* FIXME this argument is very uncool */
-                         t_nrnb *nrnb)
+                         t_nrnb *nrnb,
+                         gmx_wallcycle_t wcycle)
 {
     int     nnbl, kernel_type, sh_e;
     char    *env;
@@ -592,11 +593,16 @@ static void do_nb_verlet(t_forcerec *fr,
 
     nbvg = &fr->nbv->grp[ilocality];
 
+    /* CUDA kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
     {
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
+    if (nbvg->kernel_type != nbk8x8x8CUDA)
+    {
+        wallcycle_sub_start(wcycle, ewcsNONBONDED);
+    }
     switch (nbvg->kernel_type)
     {
         case nbk4x4PlainC:
@@ -648,6 +654,10 @@ static void do_nb_verlet(t_forcerec *fr,
         default:
             gmx_incons("Invalid nonbonded kernel type passed!");
 
+    }
+    if (nbvg->kernel_type != nbk8x8x8CUDA)
+    {
+        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
 
     /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
@@ -895,7 +905,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     { 
         wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE, nrnb);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, FALSE, nrnb, wcycle);
         wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 #endif
@@ -972,7 +982,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         { 
             wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE, nrnb);
+            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, FALSE, nrnb, wcycle);
             cycles_force += wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
 #endif
@@ -1120,7 +1130,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE, nrnb);
+        do_nb_verlet(fr, ic, enerd, flags, eintLocal, TRUE, nrnb, wcycle);
     }
         
 
@@ -1131,7 +1141,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (DOMAINDECOMP(cr))
         {
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, bDiffKernels,
-                         nrnb);
+                         nrnb, wcycle);
         }
 
         if (!bUseOrEmulGPU)
@@ -1192,7 +1202,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             else
             {
                 wallcycle_start_nocount(wcycle,ewcFORCE);
-                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE, nrnb);
+                do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, TRUE, nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle,ewcFORCE);
             }            
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1259,7 +1269,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         {            
             wallcycle_start_nocount(wcycle,ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal, !DOMAINDECOMP(cr),
-                         nrnb);
+                         nrnb, wcycle);
             wallcycle_stop(wcycle,ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
