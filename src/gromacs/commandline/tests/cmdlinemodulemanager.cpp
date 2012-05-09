@@ -35,6 +35,11 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_commandline
  */
+// For GMX_BINARY_SUFFIX
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -84,10 +89,17 @@ MockModule::MockModule(const char *name, const char *description)
 class CommandLineModuleManagerTest : public ::testing::Test
 {
     public:
+        CommandLineModuleManagerTest();
+
         MockModule &addModule(const char *name, const char *description);
 
         gmx::CommandLineModuleManager manager_;
 };
+
+CommandLineModuleManagerTest::CommandLineModuleManagerTest()
+    : manager_("g_test")
+{
+}
 
 MockModule &
 CommandLineModuleManagerTest::addModule(const char *name, const char *description)
@@ -104,10 +116,64 @@ CommandLineModuleManagerTest::addModule(const char *name, const char *descriptio
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {
     const char *const cmdline[] = {
-        "test", "module", "-flag", "yes"
+        "g_test", "module", "-flag", "yes"
     };
     gmx::test::CommandLine args(cmdline);
     MockModule &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    using ::testing::Args;
+    using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, run(_, _))
+        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    int rc = 0;
+    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
+{
+    const char *const cmdline[] = {
+        "g_module", "-flag", "yes"
+    };
+    gmx::test::CommandLine args(cmdline);
+    MockModule &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    using ::testing::Args;
+    using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, run(_, _))
+        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
+    int rc = 0;
+    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffix)
+{
+    const char *const cmdline[] = {
+        "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
+    };
+    gmx::test::CommandLine args(cmdline);
+    MockModule &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    using ::testing::Args;
+    using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, run(_, _))
+        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
+    int rc = 0;
+    ASSERT_NO_THROW(rc = manager_.run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
+{
+    const char *const cmdline[] = {
+        "g_test", "test", "-flag", "yes"
+    };
+    gmx::test::CommandLine args(cmdline);
+    MockModule &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;

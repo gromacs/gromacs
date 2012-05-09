@@ -67,7 +67,7 @@ main(int argc, char *argv[])
     CopyRight(stderr, argv[0]);
     try
     {
-        gmx::CommandLineModuleManager manager;
+        gmx::CommandLineModuleManager manager("g_ana");
         // <register all necessary modules>
         return manager.run(argc, argv);
     }
@@ -85,7 +85,17 @@ main(int argc, char *argv[])
 class CommandLineModuleManager
 {
     public:
-        CommandLineModuleManager();
+        /*! \brief
+         * Initializes a command-line module manager.
+         *
+         * \param[in] realBinaryName  Name of the binary that this manager runs
+         *     (without Gromacs binary suffix or .exe on Windows).
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * The binary name is used to detect when the binary is run through a
+         * symlink, and automatically invoke a matching module in such a case.
+         */
+        explicit CommandLineModuleManager(const char *realBinaryName);
         ~CommandLineModuleManager();
 
         /*! \brief

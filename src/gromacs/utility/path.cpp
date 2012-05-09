@@ -47,6 +47,7 @@
 #endif
 
 static const char cDirSeparator = '/';
+static const char cDirSeparators[] = "/\\";
 
 namespace gmx
 {
@@ -65,6 +66,17 @@ std::string Path::join(const std::string &path1,
 {
     // TODO: Remove extra separators if they are present in the input paths.
     return path1 + cDirSeparator + path2 + cDirSeparator + path3;
+}
+
+std::pair<std::string, std::string>
+Path::splitToPathAndFilename(const std::string &path)
+{
+    size_t pos = path.find_last_of(cDirSeparators);
+    if (pos == std::string::npos)
+    {
+        return std::make_pair(std::string(), path);
+    }
+    return std::make_pair(path.substr(0, pos), path.substr(pos+1));
 }
 
 
