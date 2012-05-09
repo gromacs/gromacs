@@ -46,7 +46,7 @@ double convert2gmx(double x,int unit)
     case eg2cNm:
         return x;
     case eg2cPm:
-        return 0.01*x;
+        return 0.001*x;
     case eg2cBohr:
         return x*BOHR2NM;
     case eg2cKcal_Mole:
@@ -80,7 +80,7 @@ double gmx2convert(double x,int unit)
     case eg2cNm:
         return x;
     case eg2cPm:
-        return 100*x;
+        return 1000*x;
     case eg2cBohr:
         return x/BOHR2NM;
     case eg2cKcal_Mole:

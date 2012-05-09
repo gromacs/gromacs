@@ -41,7 +41,7 @@ const char *immsg(int imm)
   return msg[imm];
 }
 
-static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,
+static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,char **molname,
                          int natoms,t_atoms **atoms)
 {
     init_mtop(mtop);
@@ -52,6 +52,7 @@ static void do_init_mtop(gmx_mtop_t *mtop,int ntype,int nmoltype,
     } 
     mtop->nmoltype = nmoltype;
     snew(mtop->moltype,mtop->nmoltype);
+    mtop->moltype[0].name = molname;
     mtop->nmolblock = nmoltype;
     snew(mtop->molblock,mtop->nmolblock);
     mtop->molblock[0].nmol = 1;
@@ -157,9 +158,10 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
             com[m] += mm*mymol->x[i][m];
         }
     }
-    for(m=0; (m<DIM); m++) 
+    if (tm > 0) {
+      for(m=0; (m<DIM); m++) 
         com[m] /= tm;
-  
+    }
     for(i=0; (i<mymol->atoms->nr); i++) 
         rvec_dec(mymol->x[i],com);
     
@@ -179,6 +181,8 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
         bSymmAll = bSymmAll && bSymm[i];
     }
     sfree(bSymm);
+    for(i=0; (i<mymol->atoms->nr); i++) 
+      rvec_inc(mymol->x[i],com);
   
     return bSymmAll;
 }
@@ -189,15 +193,17 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
                int  iModel,t_commrec *cr,int *nwarn,
                gmx_bool bCharged,const output_env_t oenv,
                real th_toler,real ph_toler,
-               real dip_toler,real hfac,gmx_bool bESP,
+               real dip_toler,real hfac,gmx_bool bH14,
+               gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+               int nexcl,gmx_bool bESP,
                real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
 {
-    int      i,j,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
-    char     **smnames,*mylot,*myref;
+  int      i,j,k,m,version,generation,step,*nbonds,tatomnumber,imm=immOK;
+    char     *mylot=NULL,*myref=NULL;
+    char     **molnameptr;
     rvec     xmin,xmax;
     tensor   quadrupole;
     double   value,error,vec[3];
-    gpp_atomtype_t atype;
     gentop_vsite_t gvt;
     real     btol = 0.2;
     t_pbc    pbc;
@@ -224,8 +230,10 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     {
         mymol->molname  = strdup(gmx_molprop_get_molname(mp));
         /* Read coordinates */
-        do_init_mtop(&mymol->mtop,1,1,mymol->natom,&(mymol->atoms));
         open_symtab(&(mymol->symtab));
+        molnameptr = put_symtab(&(mymol->symtab),mymol->molname);
+        do_init_mtop(&mymol->mtop,1,1,molnameptr,
+                     mymol->natom,&(mymol->atoms));
         if (molprop_2_atoms(mp,aps,&(mymol->symtab),lot,mymol->atoms,
                             (const char *)"ESP",&(mymol->x)) == 0)
             imm = immMolpropConv;
@@ -276,16 +284,27 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             mymol->box[m][m] = 2*(xmax[m]-xmin[m]) + 1;
         
         snew(nbonds,mymol->nalloc);
-        snew(smnames,mymol->nalloc);
-        mk_bonds(pd,mymol->atoms,mymol->x,NULL,&(plist[F_BONDS]),nbonds,
+        snew(mymol->smnames,mymol->nalloc);
+        mk_bonds(pd,mymol->atoms,mymol->x,NULL,plist,nbonds,
+                 bH14,bAllDihedrals,bRemoveDoubleDihedrals,
+                 nexcl,&mymol->excls,
                  TRUE,mymol->box,aps,btol);
-    
+        
+        /* Set the generated FF params to zero */
+        for(i=0; (i<F_NRE); i++) {
+          for(j=0; (j<plist[i].nr); j++) {
+            for(k=0; (k<MAXFORCEPARAM); k++) {
+              plist[i].param[j].c[k] = 0;
+            }
+          }
+        }
+        
         /* Setting the atom types: this depends on the bonding */
         set_pbc(&pbc,epbcNONE,mymol->box);
         gvt = gentop_vsite_init(egvtLINEAR);
-        if ((atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
-                                   &(plist[F_BONDS]),nbonds,smnames,pd,aps,
-                                   mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
+        if ((mymol->atype = set_atom_type(NULL,mymol->molname,&(mymol->symtab),mymol->atoms,
+                                          &(plist[F_BONDS]),nbonds,mymol->smnames,pd,aps,
+                                          mymol->x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             imm = immAtomTypes;
         gentop_vsite_done(&gvt);
         close_symtab(&(mymol->symtab));
@@ -293,17 +312,18 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     if (immOK == imm)
     {
         sfree(nbonds);
-        /* Move plist into idef: not implemented yet. */
-        mymol->ltop     = gmx_mtop_generate_local_top(&(mymol->mtop),&(mymol->ir));
         mymol->eSupport = eSupportLocal;
         if (mp_get_prop_ref(mp,empDIPOLE,(bQM ? iqmQM : iqmBoth),
                             lot,NULL,(char *)"elec",
                             &value,&error,&myref,&mylot,
                             vec,quadrupole) == 0)
         {
-            imm = immZeroDip;
-            sfree(myref);
-            sfree(mylot);
+            if (!bZero)
+              imm = immZeroDip;
+            if (NULL != myref)
+              sfree(myref);
+            if (NULL != mylot)
+              sfree(mylot);
         }
         else
         {
@@ -417,8 +437,8 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             snew(newexcls,mymol->nalloc);
             srenew(mymol->x,mymol->nalloc);
             add_shells(pd,mymol->nalloc,&(mymol->mtop.moltype[0].atoms),
-                       atype,plist,mymol->x,&mymol->symtab,
-                       &newexcls,smnames);
+                       mymol->atype,plist,mymol->x,&mymol->symtab,
+                       &newexcls,mymol->smnames);
             mymol->mtop.natoms = mymol->mtop.moltype[0].atoms.nr;
             mymol->mtop.molblock[0].natoms_mol = mymol->mtop.natoms;
             excls_to_blocka(mymol->nalloc,newexcls,&(mymol->mtop.moltype[0].excls));
@@ -426,14 +446,17 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             plist_to_mtop(plist,&mymol->mtop);
             reset_q(mymol->atoms);
             mymol->shell = init_shell_flexcon(debug,&mymol->mtop,0,mymol->x);
-            mymol->fr = mk_forcerec();
-            init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
-                          mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
         }
-        else 
+        else {
             mymol->shell = NULL;
-  
+            plist_to_mtop(plist,&mymol->mtop);
+        }
+        
+        mymol->fr = mk_forcerec();
+        init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
+                      mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
         init_state(&mymol->state,mymol->atoms->nr,1,1,1);
+        mymol->ltop = gmx_mtop_generate_local_top(&(mymol->mtop),&(mymol->ir));
         mymol->md = init_mdatoms(debug,&mymol->mtop,FALSE);
     }
     if (immOK != imm) 
@@ -802,7 +825,8 @@ void read_moldip(t_moldip *md,
                  char *lot,gmx_bool bCharged,
                  output_env_t oenv,gmx_molselect_t gms,
                  real th_toler,real ph_toler,real dip_toler,
-                 real watoms,gmx_bool bCheckSupport)
+                 gmx_bool bH14,gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
+                 int nexcl,real watoms,gmx_bool bCheckSupport)
 {
     char     **strings,buf[STRLEN];
     int      i,j,n,kk,nstrings,nwarn=0,nzero=0,nmol_cpu;
@@ -865,7 +889,8 @@ void read_moldip(t_moldip *md,
                 imm = init_mymol(&(md->mymol[n]),mp[i],md->bQM,lot,bZero,
                                  md->pd,md->atomprop,
                                  md->iModel,md->cr,&nwarn,bCharged,oenv,
-                                 th_toler,ph_toler,dip_toler,md->hfac,
+                                 th_toler,ph_toler,dip_toler,md->hfac,bH14,
+                                 bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
                                  (md->fc[ermsESP] > 0),watoms,md->decrzeta,md->bPol,md->bFitZeta);
                 if (immOK == imm)
                 {
@@ -914,7 +939,9 @@ void read_moldip(t_moldip *md,
                              md->pd,md->atomprop,
                              md->iModel,md->cr,&nwarn,bCharged,oenv,
                              th_toler,ph_toler,dip_toler,md->hfac,
-                             (md->fc[ermsESP] > 0),watoms,md->decrzeta,md->bPol,md->bFitZeta);
+                             bH14,bAllDihedrals,bRemoveDoubleDihedrals,
+                             nexcl,(md->fc[ermsESP] > 0),
+                             watoms,md->decrzeta,md->bPol,md->bFitZeta);
             md->mymol[n].eSupport = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
