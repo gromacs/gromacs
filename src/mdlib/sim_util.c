@@ -87,6 +87,7 @@
 #include "genborn.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_sse.h"
+#include "nbnxn_kernels/nbnxn_kernel_avx.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
@@ -630,6 +631,18 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egBHAMSR] :
                              enerd->grpp.ener[egLJSR]);
             break;
+        case nbk4xNAVX:
+            nbnxn_kernel_avx(&nbvg->nbl_lists,
+                             nbvg->nbat, ic,
+                             fr->shift_vec,
+                             flags,
+                             clearF,
+                             fr->fshift[0],
+                             enerd->grpp.ener[egCOULSR],
+                             fr->bBHAM ?
+                             enerd->grpp.ener[egBHAMSR] :
+                             enerd->grpp.ener[egLJSR]);
+            break;
 
         case nbk8x8x8CUDA:
 #ifdef GMX_GPU
@@ -879,6 +892,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                             nbv->min_ci_balanced,
                             &nbv->grp[eintLocal].nbl_lists,
                             eintLocal,
+                            nbv->grp[eintLocal].kernel_type,
                             nrnb);
 
         wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_LOCAL);
@@ -935,7 +949,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
             if (bDiffKernels)
             {
-                nbnxn_grid_simple(nbv->nbs,nbv->grp[eintNonlocal].nbat);
+                nbnxn_grid_add_simple(nbv->nbs,nbv->grp[eintNonlocal].nbat);
             }
 
             nbnxn_make_pairlist(nbv->nbs,nbv->grp[eintNonlocal].nbat,
@@ -944,6 +958,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                                 nbv->min_ci_balanced,
                                 &nbv->grp[eintNonlocal].nbl_lists,
                                 eintNonlocal,
+                                nbv->grp[eintNonlocal].kernel_type,
                                 nrnb);
 
             wallcycle_sub_stop(wcycle,ewcsNBS_SEARCH_NONLOCAL);

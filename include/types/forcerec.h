@@ -106,22 +106,19 @@ typedef struct {
 #define GMX_CUTOFF_INF 1E+18
 
 /*! Nonbonded kernel types: SSE, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, nbk4x4PlainC, nbk4xNSSE, nbk8x8x8CUDA, nbk8x8x8PlainC };
+enum { nbkNotSet = 0, nbk4x4PlainC, nbk4xNSSE, nbk4xNAVX, nbk8x8x8CUDA, nbk8x8x8PlainC };
 
 static const char *nbk_name[] =
   { "not set", "plain C 4x4",
-#ifndef GMX_NBNXN_KERNEL_AVX
 #ifndef GMX_DOUBLE
     "SSE 4x4",
 #else
     "SSE 4x2",
 #endif
-#else
 #ifndef GMX_DOUBLE
     "AVX 4x8",
 #else
     "AVX 4x4",
-#endif
 #endif
     "CUDA 8x8x8", "plain C 8x8x8" };
 

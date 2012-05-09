@@ -27,8 +27,46 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
-#ifndef _gmx_sse_or_avx_single_h_
-#define _gmx_sse_or_avx_single_h_
+
+/* Undefine all defines used below so we can include this file multiple times
+ * with different settings from the same source file.
+ */
+
+#undef SSE_OR_AVX_WIDTH
+
+#undef gmx_epi32
+
+#undef gmx_mm_pr
+
+#undef gmx_load_pr
+#undef gmx_load1_pr
+#undef gmx_set1_pr
+#undef gmx_setzero_pr
+#undef gmx_store_pr
+#undef gmx_storeu_pr
+
+#undef gmx_add_pr
+#undef gmx_sub_pr
+#undef gmx_mul_pr
+#undef gmx_max_pr
+#undef gmx_cmplt_pr
+#undef gmx_and_pr
+#undef gmx_or_pr
+
+#undef gmx_floor_pr
+#undef gmx_blendv_pr
+
+#undef gmx_movemask_pr
+
+#undef gmx_mm_castsi128_pr
+
+#undef gmx_cvttpr_epi32
+#undef gmx_cvtepi32_pr
+
+#undef gmx_invsqrt_pr
+#undef gmx_calc_rsq_pr
+#undef gmx_sum4_pr
+
 
 /* By defining GMX_SSE_HERE or GMX_AVX_HERE before including this file
  * the same intrinsics, with defines, can be compiled for either SSE or AVX.
@@ -51,6 +89,8 @@
 #ifndef GMX_DOUBLE
 
 #include "gmx_sse2_single.h"
+
+#define SSE_OR_AVX_WIDTH  4
 
 #define gmx_mm_pr  __m128
 
@@ -86,6 +126,8 @@
 #else /* ifndef GMX_DOUBLE */
 
 #include "gmx_sse2_double.h"
+
+#define SSE_OR_AVX_WIDTH  2
 
 #define gmx_mm_pr  __m128d
 
@@ -130,6 +172,8 @@
 
 #include "gmx_avx_single.h"
 
+#define SSE_OR_AVX_WIDTH  8
+
 #define gmx_mm_pr  __m256
 
 #define gmx_load_pr       _mm256_load_ps
@@ -167,6 +211,8 @@
 
 #include "gmx_avx_double.h"
 
+#define SSE_OR_AVX_WIDTH  4
+
 #define gmx_mm_pr  __m256d
 
 #define gmx_load_pr       _mm256_load_pd
@@ -203,5 +249,3 @@
 #endif
 
 #endif /* GMX_AVX_HERE */
-
-#endif /* _gmx_sse_or_avx_singe_h_ */

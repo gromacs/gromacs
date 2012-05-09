@@ -957,6 +957,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
                                strcmp(nbpu_opt,"auto") == 0),
                               &useGPU,
                               strncmp(nbpu_opt,"gpu",3) == 0,
+                              EEL_FULL(inputrec->coulombtype),
                               &nbnxn_kernel);
             if ((EI_DYNAMICS(inputrec->eI) &&
                  (nbnxn_kernel == nbk8x8x8CUDA ||

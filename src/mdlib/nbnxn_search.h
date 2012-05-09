@@ -42,11 +42,16 @@
 extern "C" {
 #endif
 
+/* Tells if the pair-list corresponding to nb_kernel_type is simple.
+ * Returns FALSE for super-sub type pair-list.
+ */
+gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
+
 /* Allocates and initializes a pair search data structure */
 void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
                        ivec *n_dd_cells,
                        gmx_domdec_zones_t *zones,
-                       gmx_bool simple,
+		       int nb_kernel_type_loc,
                        int natoms_cluster,
                        int nthread_max);
 
@@ -83,8 +88,8 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                                 nbnxn_atomdata_t *nbat);
 
 /* Add simple grid type information to the local super/sub grid */
-void nbnxn_grid_simple(nbnxn_search_t nbs,
-                       nbnxn_atomdata_t *nbat);
+void nbnxn_grid_add_simple(nbnxn_search_t nbs,
+			   nbnxn_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs,int *ncx,int *ncy);
@@ -114,6 +119,7 @@ void nbnxn_make_pairlist(nbnxn_search_t nbs,
                          int min_ci_balanced,
                          nbnxn_pairlist_set_t *nbl_list,
                          int iloc,
+			 int nb_kernel_type,
 			 t_nrnb *nrnb);
 
 /* Initialize the non-bonded atom data structure.
@@ -122,14 +128,13 @@ void nbnxn_make_pairlist(nbnxn_search_t nbs,
  * to the atom data structure.
  */
 void nbnxn_atomdata_init(FILE *fp,
-                          nbnxn_atomdata_t *nbat,
-                          gmx_bool simple,
-                          gmx_bool XFormatXXXX,
-                          int ntype,const real *nbfp,
-                          int n_energygroups,
-                          int nout,
-                          gmx_nbat_alloc_t *alloc,
-                          gmx_nbat_free_t  *free);
+			 nbnxn_atomdata_t *nbat,
+			 int nb_kernel_type,
+			 int ntype,const real *nbfp,
+			 int n_energygroups,
+			 int nout,
+			 gmx_nbat_alloc_t *alloc,
+			 gmx_nbat_free_t  *free);
 
 /* Copy the atom data to the non-bonded atom data structure */
 void nbnxn_atomdata_set(nbnxn_atomdata_t *nbat,

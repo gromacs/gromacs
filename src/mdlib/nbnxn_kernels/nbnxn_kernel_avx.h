@@ -32,8 +32,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-#ifndef _nbnxn_kernel_sse_h
-#define _nbnxn_kernel_sse_h
+#ifndef _nbnxn_kernel_avx_h
+#define _nbnxn_kernel_avx_h
 
 #include "typedefs.h"
 
@@ -43,7 +43,7 @@ extern "C" {
 
 /* Wrapper call for the non-bonded cell vs cell kernels */
 void
-nbnxn_kernel_sse(nbnxn_pairlist_set_t       *nbl_list,
+nbnxn_kernel_avx(nbnxn_pairlist_set_t       *nbl_list,
                  const nbnxn_atomdata_t     *nbat,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,

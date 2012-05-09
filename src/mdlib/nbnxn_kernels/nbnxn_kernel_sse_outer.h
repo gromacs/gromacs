@@ -43,20 +43,19 @@
 
 #include "typedefs.h"
 
-
-#ifndef GMX_NBNXN_KERNEL_AVX
-#define GMX_SSE_HERE
-#else
-#define GMX_AVX_HERE
-#endif
+/* GMX_SSE_HERE or GMX_AVX_HERE should be set before including this file */
 #include "gmx_sse_or_avx.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_SSE_CLUSTER_J_SIZE
+#define UNROLLJ    SSE_OR_AVX_WIDTH
 
-#define STRIDE     NBNXN_SSE_STRIDE
+#if defined GMX_AVX_HERE && !defined GMX_DOUBLE
+#define STRIDE     8
+#else
+#define STRIDE     4
+#endif 
 
 #ifndef GMX_AVX_HERE
 #ifndef GMX_DOUBLE
@@ -97,32 +96,38 @@
 /* Assumes all LJ parameters are identical */
 /* #define FIX_LJ_C */
 
-#define NBK_FUNC_NAME_C_LJC(b,c,ljc,e) b##_##c##_comb_##ljc##_##e
+#define NBK_FUNC_NAME_C_LJC(b,s,c,ljc,e) b##_##s##_##c##_comb_##ljc##_##e
 
 #if defined LJ_COMB_GEOM
-#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,geom,e)
+#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,geom,e)
 #else
 #if defined LJ_COMB_LB
-#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,lb,e)
+#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,lb,e)
 #else
-#define NBK_FUNC_NAME_C(b,c,e) NBK_FUNC_NAME_C_LJC(b,c,none,e)
+#define NBK_FUNC_NAME_C(b,s,c,e) NBK_FUNC_NAME_C_LJC(b,s,c,none,e)
 #endif
 #endif
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(b,e) NBK_FUNC_NAME_C(b,rf,e)
+#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,rf,e)
 #else
-#define NBK_FUNC_NAME(b,e) NBK_FUNC_NAME_C(b,tab,e)
+#define NBK_FUNC_NAME(b,s,e) NBK_FUNC_NAME_C(b,s,tab,e)
+#endif
+
+#ifdef GMX_SSE_HERE
+#define NBK_FUNC_NAME_SSE_OR_AVX(b,e) NBK_FUNC_NAME(b,sse,e)
+#else
+#define NBK_FUNC_NAME_SSE_OR_AVX(b,e) NBK_FUNC_NAME(b,avx,e)
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nbnxn_kernel_sse,noener)
+NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nbnxn_kernel_sse,ener)
+NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,ener)
 #else
-NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
+NBK_FUNC_NAME_SSE_OR_AVX(nbnxn_kernel,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
@@ -275,7 +280,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#ifdef GMX_NBNXN_KERNEL_AVX
+#ifdef GMX_AVX_HERE
     int        ti0_array[2*UNROLLJ-1],*ti0;
     int        ti1_array[2*UNROLLJ-1],*ti1;
     int        ti2_array[2*UNROLLJ-1],*ti2;
@@ -350,7 +355,7 @@ NBK_FUNC_NAME(nbnxn_kernel_sse,energrp)
 #endif
 
 #ifndef CALC_COUL_RF
-#ifdef GMX_NBNXN_KERNEL_AVX
+#ifdef GMX_AVX_HERE
     ti0 = (int *)(((size_t)(ti0_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti1 = (int *)(((size_t)(ti1_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
     ti2 = (int *)(((size_t)(ti2_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));

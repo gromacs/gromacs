@@ -40,28 +40,10 @@
 extern "C" {
 #endif
 
-/* Define GMX_NBNXN_KERNEL_AVX for nbnxn AVX kernels */
-
 /* With CPU kernels the i-cluster size is always 4 atoms.
  * Without SSE the j-cluster size is also 4.
  */
 #define NBNXN_CPU_CLUSTER_I_SIZE  4
-
-#if (!defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX) || (defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
-/* SSE single or AVX double: 4x4 */
-#define NBNXN_SSE_CLUSTER_J_SIZE  4
-#define NBNXN_SSE_STRIDE          4
-#endif
-#if (defined GMX_DOUBLE && !defined GMX_NBNXN_KERNEL_AVX)
-/* SSE double: 4x2 */
-#define NBNXN_SSE_CLUSTER_J_SIZE  2
-#define NBNXN_SSE_STRIDE          4
-#endif
-#if (!defined GMX_DOUBLE && defined GMX_NBNXN_KERNEL_AVX)
-/* AVX single: 4x8 */
-#define NBNXN_SSE_CLUSTER_J_SIZE  8
-#define NBNXN_SSE_STRIDE          8
-#endif
 
 /* With GPU kernels the cluster size is 8 atoms */
 #define NBNXN_GPU_CLUSTER_SIZE    8
@@ -189,7 +171,7 @@ typedef struct {
     int          natpair_q;   /* Total number of atom pairs for Q kernel    */
 } nbnxn_pairlist_set_t;
 
-    enum { nbatXYZ, nbatXYZQ, nbatXXXX };
+    enum { nbatXYZ, nbatXYZQ, nbatX4, nbatX8 };
 
 typedef struct {
     real *f;      /* f, size natoms*xstride                             */

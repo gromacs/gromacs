@@ -142,17 +142,15 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
  * tryGPU: should we try to use a GPU/emulation?
  * useGPU: return if a are using a real GPU
  * forceGPU: force the use of a GPU
+ * tabulated_force: do we use tables for the force calculation
  * kernel_type: return the selected kernel type
  */
 void pick_nbnxn_kernel(FILE *fp,
                        const t_commrec *cr,
                        gmx_bool tryGPU, gmx_bool *useGPU,
                        gmx_bool forceGPU,
+		       gmx_bool tabulated_force,
                        int *kernel_type);
-
-gmx_bool is_nbl_type_simple(int nb_kernel_type);
-/* Return TRUE if the Verlet-style neighborlist has simple type.
- */
 
 void init_interaction_const_tables(FILE *fp, 
                                    interaction_const_t *ic,

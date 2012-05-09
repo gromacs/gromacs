@@ -1331,16 +1331,64 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
 }
 
 
+/* Return TRUE if the CPU vendor is Intel, or possibly Intel and x86_64 */
+static gmx_bool 
+check_intel_x86_64()
+{
+    unsigned int level;
+    unsigned int _ebx,_ecx,_edx;
+    gmx_bool status;
+    int CPUInfo[4];
+
+    level = 0;
+#ifdef _MSC_VER
+    __cpuid(CPUInfo,0);
+	
+    _ebx=CPUInfo[1];
+    _ecx=CPUInfo[2];
+    _edx=CPUInfo[3];
+
+#elif defined(__x86_64__)
+    __asm__ ("push %%rbx\n\tcpuid\n\tmov %%rbx, %%rax\n\tpop %%rbx\n"   \
+             : "=a" (_ebx), "=c" (_ecx), "=d" (_edx)                    \
+             : "1" (level));
+#else
+    _ebx=_ecx=_edx=0;
+#endif
+
+    /* In sequence these ints as chars read "GenuineIntel" */
+    status = (_ebx == 0x756e6547 &&
+              _edx == 0x49656e69 &&
+              _ecx == 0x6c65746e);
+
+    return status;
+}
+
+typedef struct
+{
+    gmx_bool sse2;
+    gmx_bool sse4_1;
+    gmx_bool avx;
+    gmx_bool avx_intel;
+} cpuinfo_t;
+
 /* Return 1 if SSE2 support is present, otherwise 0. */
-static int 
-forcerec_check_sse2()
+static void 
+get_cpuinfo(cpuinfo_t *cpuinfo)
 {
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
 	unsigned int level;
 	unsigned int _eax,_ebx,_ecx,_edx;
 	int status;
 	int CPUInfo[4];
-	
+    gmx_bool intel_x86_64;
+
+    /* This code is tricky.
+     * Moving this call further down changes the results of the assembly
+     * for getting the CPU vendor information.
+     */
+	intel_x86_64 = check_intel_x86_64();
+
 	level = 1;
 #ifdef _MSC_VER
 	__cpuid(CPUInfo,1);
@@ -1363,20 +1411,29 @@ forcerec_check_sse2()
 	_eax=_ebx=_ecx=_edx=0;
 #endif
     
-	/* Features:                                                                                                       
-	 *                                                                                                                 
-	 * SSE      Bit 25 of edx should be set                                                                            
-	 * SSE2     Bit 26 of edx should be set                                                                            
-	 * SSE3     Bit  0 of ecx should be set                                                                            
-	 * SSE4.1   Bit 19 of ecx should be set                                                                            
-	 */
-	status =  (_edx & (1 << 26)) != 0;
-    
+    /* Features:
+     * SSE      Bit 25 of edx should be set
+     * SSE2     Bit 26 of edx should be set
+     * SSE3     Bit  0 of ecx should be set
+     * SSE4.1   Bit 19 of ecx should be set
+     * AVX      Bit 28 of ecx should be set
+     */
+    cpuinfo->sse2      = (_edx & (1 << 26)) != 0;
+    cpuinfo->sse4_1    = (_ecx & (1 << 19)) != 0;
+    cpuinfo->avx       = (_ecx & (1 << 28)) != 0;
+    cpuinfo->avx_intel = (cpuinfo->avx && intel_x86_64);
+
+    if (debug)
+    {
+        fprintf(debug,"cpuinfo: sse2 %d sse4_1 %d avx %d avx_intel %d\n",
+                cpuinfo->sse2,cpuinfo->sse4_1,cpuinfo->avx,cpuinfo->avx_intel);
+    }
 #else
-        int status = 0;
+    cpuinfo->sse2      = FALSE;
+    cpuinfo->sse4_1    = FALSE;
+    cpuinfo->avx       = FALSE;
+    cpuinfo->avx_intel = FALSE;
 #endif
-	/* Return SSE2 status */
-	return status;
 }
 
 
@@ -1518,14 +1575,78 @@ static gmx_bool init_cu_nbv(FILE *fp,const t_commrec *cr,gmx_bool forceGPU)
     return (ngpu > 0);
 }
 
-/* Selects the nbnxn (Verlet) kernel to be used. */
+static void pick_nbnxn_kernel_cpu(FILE *fp,
+                                  const t_commrec *cr,
+                                  gmx_bool tabulated_force,
+                                  int *kernel_type)
+{
+#if defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2)
+    /* by default we'll use the 4xN SSE kernels */
+    if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
+    {
+        cpuinfo_t cpuinfo;
+#ifdef GMX_DOUBLE
+        gmx_bool double_prec = TRUE;
+#else
+        gmx_bool double_prec = FALSE;
+#endif
+
+        get_cpuinfo(&cpuinfo);
+
+        /* On Intel Sandy-Bridge AVX kernels are always faster, except for
+         * tabulated forces in single precision, which are memory limited.
+         * On AMD Bulldozer AVX is much slower than SSE.
+         */
+        if (cpuinfo.avx_intel &&
+            (double_prec || !tabulated_force))
+        {
+#ifdef GMX_AVX
+            *kernel_type = nbk4xNAVX;
+#else
+            md_print_warning(cr,fp,"NOTE: Gromacs was compiled without AVX support,\n      can not use the faster AVX kernels\n");
+            *kernel_type = nbk4xNSSE;
+#endif
+        }
+        else
+        {
+            *kernel_type = nbk4xNSSE;
+        }
+
+        if (getenv("GMX_NBNXN_SSE") != NULL)
+        {
+            *kernel_type = nbk4xNSSE;
+        }
+#ifdef GMX_AVX
+        if (getenv("GMX_NBNXN_AVX") != NULL)
+        {
+            *kernel_type = nbk4xNAVX;
+        }
+#endif
+
+#ifndef GMX_SSE4_1
+        if (*kernel_type == nbk4xNSSE && cpuinfo.sse4_1)
+        {
+            md_print_warning(cr,fp,"NOTE: Gromacs was compiled without SSE4.1 support,\n      can not use the faster SSE4.1 kernels\n");
+        }
+#endif
+    }
+    else
+#endif
+    {
+        *kernel_type = nbk4x4PlainC;
+    }
+}
+
 void pick_nbnxn_kernel(FILE *fp,
                        const t_commrec *cr,
                        gmx_bool tryGPU, gmx_bool *useGPU,
                        gmx_bool forceGPU,
+                       gmx_bool tabulated_force,
                        int *kernel_type)
 {
     gmx_bool emulateGPU=FALSE;
+
+    *kernel_type = nbkNotSet;
 
     if (tryGPU)
     {
@@ -1544,18 +1665,6 @@ void pick_nbnxn_kernel(FILE *fp,
                 gmx_warning("GPU mode turned off by GMX_NO_GPU env var!");
             }
         }
-    }
-
-    /* by default we'll use the 4xN SSE kernels */
-#if defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2)
-    if (getenv("GMX_NOOPTIMIZEDKERNELS") == NULL)
-    {
-        *kernel_type = nbk4xNSSE;
-    }
-    else
-#endif
-    {
-        *kernel_type = nbk4x4PlainC;
     }
 
     if (tryGPU)
@@ -1588,32 +1697,20 @@ void pick_nbnxn_kernel(FILE *fp,
         }
     }
 
+    if (*kernel_type == nbkNotSet)
+    {
+        pick_nbnxn_kernel_cpu(fp,cr,tabulated_force,kernel_type);
+    }
+
     if (fp != NULL)
     {
-        fprintf(fp,"\nUsing %s non-bonded kernels\n\n",nbk_name[*kernel_type]);
-    }
-}
-
-gmx_bool is_nbl_type_simple(int nb_kernel_type)
-{
-    if (nb_kernel_type == nbkNotSet)
-    {
-        gmx_fatal(FARGS, "Non-bonded kernel type not set for Verlet-style pair-list.");
-    }
-
-    switch (nb_kernel_type)
-    {
-        case nbk8x8x8CUDA:
-        case nbk8x8x8PlainC:
-            return FALSE;
-
-        case nbk4x4PlainC:
-        case nbk4xNSSE:
-            return TRUE;
-
-        default:
-            gmx_incons("Invalid nonbonded kernel type passed!");
-            return FALSE;
+        if (MASTER(cr))
+        {
+            fprintf(stderr,"Using %s non-bonded kernels\n",
+                    nbk_name[*kernel_type]);
+        }
+        fprintf(fp,"\nUsing %s non-bonded kernels\n\n",
+                nbk_name[*kernel_type]);
     }
 }
 
@@ -1622,10 +1719,8 @@ static void init_ewald_f_table(interaction_const_t *ic,
 {
 #define GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE 1536
 
-    switch (verlet_kernel_type)
+    if (nbnxn_kernel_pairlist_simple(verlet_kernel_type))
     {
-    case nbk4x4PlainC:
-    case nbk4xNSSE:
         /* With a spacing of 0.0005 we are at the force summation accuracy
          * for the SSE kernels for "normal" atomistic simulations.
          */
@@ -1637,9 +1732,9 @@ static void init_ewald_f_table(interaction_const_t *ic,
 #else
         ic->tabq_format = tableformatF;
 #endif
-        break;
-    case nbk8x8x8CUDA:
-    case nbk8x8x8PlainC:
+    }
+    else
+    {
         /* Table size identical to the CUDA implementation */
         ic->tabq_size = GPU_REF_EWALD_COULOMB_FORCE_TABLE_SIZE;
         /* Subtract 2 iso 1 to avoid access out of range due to rounding */
@@ -1653,9 +1748,6 @@ static void init_ewald_f_table(interaction_const_t *ic,
         {
             ic->tabq_format = tableformatF;
         }
-        break;
-    default:
-        gmx_incons("Unimplemented nbnxn kernel type");
     }
 
     switch (ic->tabq_format)
@@ -1799,7 +1891,7 @@ gmx_bool nb_kernel_pmetune_support(const nonbonded_verlet_t *nbv)
 {
     /* PME tuning is currently only supported with only CUDA kernels */
     return (nbv->useGPU &&
-            !(nbv->nloc == 2 && is_nbl_type_simple(nbv->grp[1].kernel_type)));
+            !(nbv->nloc == 2 && nbnxn_kernel_pairlist_simple(nbv->grp[1].kernel_type)));
 }
 
 static void init_nb_verlet(FILE *fp, 
@@ -1839,6 +1931,7 @@ static void init_nb_verlet(FILE *fp,
                                   &nbv->useGPU,
                                   (nbpu_opt != NULL &&
                                    strncmp(nbpu_opt,"gpu",3) == 0),
+                                  EEL_FULL(ir->coulombtype),
                                   &nbv->grp[i].kernel_type);
             }
             else
@@ -1852,13 +1945,13 @@ static void init_nb_verlet(FILE *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt,"gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE,
+                pick_nbnxn_kernel(fp, cr, FALSE, NULL, FALSE, FALSE,
                                   &nbv->grp[i].kernel_type);
             }
             else
             {
                 /* Use the same kernel for local and non-local interactions */
-                 nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
+                nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
             }
         }
     }
@@ -1898,7 +1991,7 @@ static void init_nb_verlet(FILE *fp,
     nbnxn_init_search(&nbv->nbs,
                       DOMAINDECOMP(cr) ? & cr->dd->nc : NULL,
                       DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : NULL,
-                      is_nbl_type_simple(nbv->grp[0].kernel_type),
+                      nbv->grp[0].kernel_type,
                       NBNXN_GPU_CLUSTER_SIZE,
                       gmx_omp_nthreads_get(emntNonbonded));
 
@@ -1918,9 +2011,9 @@ static void init_nb_verlet(FILE *fp,
         }
 
         nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
-                                is_nbl_type_simple(nbv->grp[i].kernel_type),
+                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
                                 /* 8x8x8 "non-simple" lists are ATM always combined */
-                                !is_nbl_type_simple(nbv->grp[i].kernel_type),
+                                !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
                                 nb_alloc, nb_free);
 
         if (i == 0 ||
@@ -1928,13 +2021,12 @@ static void init_nb_verlet(FILE *fp,
         {
             snew(nbv->grp[i].nbat,1);
             nbnxn_atomdata_init(fp,
-                                 nbv->grp[i].nbat,
-                                 is_nbl_type_simple(nbv->grp[i].kernel_type),
-                                 nbv->grp[i].kernel_type == nbk4xNSSE,
-                                 fr->ntype,fr->nbfp,
-                                 ir->opts.ngener,
-                                is_nbl_type_simple(nbv->grp[i].kernel_type) ? gmx_omp_nthreads_get(emntNonbonded) : 1,
-                                 nb_alloc, nb_free);
+                                nbv->grp[i].nbat,
+                                nbv->grp[i].kernel_type,
+                                fr->ntype,fr->nbfp,
+                                ir->opts.ngener,
+                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type) ? gmx_omp_nthreads_get(emntNonbonded) : 1,
+                                nb_alloc, nb_free);
         }
         else
         {
@@ -2089,9 +2181,12 @@ void init_forcerec(FILE *fp,
     }    
 
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE)|| defined(GMX_SSE2) )
-    if( forcerec_check_sse2() == 0 )
     {
-        fr->UseOptimizedKernels = FALSE;
+        cpuinfo_t cpuinfo;
+
+        get_cpuinfo(&cpuinfo);
+
+        fr->UseOptimizedKernels = cpuinfo.sse2;
     }
 #endif
     
