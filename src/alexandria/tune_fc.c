@@ -401,14 +401,12 @@ static void optimize_moldip(FILE *fp,FILE *fplog,const char *convfn,
 {
     FILE   *cfp=NULL;
     double chi2,chi2_min,wj,rms_nw;
-    int    nzeta,zz;
     int    status = 0;
     int    i,k,index,n,nparam;
     double *test_param,*orig_param,*best_param,*start;
     gmx_bool   bMinimum=FALSE;
-    double J00,chi0,zeta;
     char   *name,*qstr,*rowstr;
-    char   zstr[STRLEN],buf[STRLEN];
+    char   buf[STRLEN];
     gmx_rng_t rng;
   
     if (MASTER(md->cr)) 
@@ -696,9 +694,9 @@ int main(int argc, char *argv[])
     else
         fp = NULL;
         
-        
-    if (MASTER(cr)) 
-        gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
+
+    if (MASTER(cr))
+        gms = gmx_molselect_init(opt2fn_null("-sel",NFILE,fnm));
     else
         gms = NULL;
     md = init_moldip(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
