@@ -39,6 +39,7 @@
 #define GMX_UTILITY_PATH_H
 
 #include <string>
+#include <utility>
 
 namespace gmx
 {
@@ -51,6 +52,8 @@ class Path
         static std::string join(const std::string &path1,
                                 const std::string &path2,
                                 const std::string &path3);
+        static std::pair<std::string, std::string>
+        splitToPathAndFilename(const std::string &path);
 
     private:
         // Disallow instantiation.

@@ -31,6 +31,9 @@
 /* User doing build */
 #cmakedefine BUILD_USER "@BUILD_USER@"
 
+/* Binary suffix for the created binaries */
+#define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
+
 /* Turn off water-water neighborlist optimization only */
 #cmakedefine DISABLE_WATERWATER_NLIST
 

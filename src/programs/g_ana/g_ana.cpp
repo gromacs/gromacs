@@ -45,7 +45,7 @@ main(int argc, char *argv[])
     CopyRight(stderr, argv[0]);
     try
     {
-        gmx::CommandLineModuleManager manager;
+        gmx::CommandLineModuleManager manager("g_ana");
         registerTrajectoryAnalysisModules(&manager);
         return manager.run(argc, argv);
     }

@@ -37,7 +37,13 @@
  */
 #include "cmdlinemodulemanager.h"
 
+// For GMX_BINARY_SUFFIX
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <cstdio>
+#include <cstring>
 
 #include <map>
 #include <string>
@@ -47,6 +53,7 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 
 namespace gmx
 {
@@ -66,6 +73,37 @@ class CommandLineModuleManager::Impl
         //! Container for mapping module names to module objects.
         typedef std::map<std::string, CommandLineModulePointer> ModuleMap;
 
+        /*! \brief
+         * Initializes the implementation class.
+         *
+         * \param[in] realBinaryName  Name of the binary that this manager runs.
+         */
+        explicit Impl(const char *realBinaryName);
+
+        /*! \brief
+         * Finds a module that matches a name.
+         *
+         * \param[in] name  Module name to find.
+         * \returns   Iterator to the found module, or
+         *      \c modules_.end() if not found.
+         *
+         * Does not throw.
+         */
+        ModuleMap::const_iterator findModuleByName(const std::string &name) const;
+        /*! \brief
+         * Finds a module that the name of the binary.
+         *
+         * \param[in] argv0  argv[0] passed to the program.
+         * \throws    std::bad_alloc if out of memory.
+         * \returns   Iterator to the found module, or
+         *      \c modules_.end() if not found.
+         *
+         * Checks whether the program is invoked through a symlink whose name
+         * is different from \a realBinaryName_, and if so, checks if a module
+         * name matches the name of the symlink.
+         */
+        ModuleMap::const_iterator findModuleFromBinaryName(const std::string &argv0) const;
+
         //! Prints usage message to stderr.
         void printUsage(bool bModuleList) const;
         //! Prints the list of modules to stderr.
@@ -77,7 +115,53 @@ class CommandLineModuleManager::Impl
          * Owns the contained modules.
          */
         ModuleMap               modules_;
+        //! Real name of the binary that is running (without suffixes).
+        std::string             realBinaryName_;
 };
+
+CommandLineModuleManager::Impl::Impl(const char *realBinaryName)
+    : realBinaryName_(realBinaryName)
+{
+}
+
+CommandLineModuleManager::Impl::ModuleMap::const_iterator
+CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
+{
+    // TODO: Accept unambiguous prefixes?
+    return modules_.find(name);
+}
+
+CommandLineModuleManager::Impl::ModuleMap::const_iterator
+CommandLineModuleManager::Impl::findModuleFromBinaryName(const std::string &argv0) const
+{
+    // TODO: Move this logic into a common place in utility/ and remove
+    // dependency on config.h from this file.
+    // (most natural place would be in a location that wraps Program() etc.)
+    std::string binaryName = Path::splitToPathAndFilename(argv0).second;
+    if (binaryName.length() >= 4
+        && binaryName.compare(binaryName.length() - 4, 4, ".exe") == 0)
+    {
+        binaryName.erase(binaryName.length() - 4);
+    }
+#ifdef GMX_BINARY_SUFFIX
+    size_t suffixLength = std::strlen(GMX_BINARY_SUFFIX);
+    if (suffixLength > 0 && binaryName.length() >= suffixLength
+        && binaryName.compare(binaryName.length() - suffixLength, suffixLength,
+                              GMX_BINARY_SUFFIX) == 0)
+    {
+        binaryName.erase(binaryName.length() - suffixLength);
+    }
+#endif
+    if (binaryName == realBinaryName_)
+    {
+        return modules_.end();
+    }
+    if (binaryName.compare(0, 2, "g_") == 0)
+    {
+        binaryName.erase(0, 2);
+    }
+    return findModuleByName(binaryName);
+}
 
 void CommandLineModuleManager::Impl::printUsage(bool bModuleList) const
 {
@@ -174,8 +258,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager()
-    : impl_(new Impl)
+CommandLineModuleManager::CommandLineModuleManager(const char *realBinaryName)
+    : impl_(new Impl(realBinaryName))
 {
     addModule(CommandLineModulePointer(new internal::CommandLineHelpModule(*this)));
 }
@@ -194,14 +278,20 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    if (argc < 2)
+    int argOffset = 0;
+    Impl::ModuleMap::const_iterator module
+        = impl_->findModuleFromBinaryName(argv[0]);
+    if (module == impl_->modules_.end())
     {
-        fprintf(stderr, "\n");
-        impl_->printUsage(false);
-        return 2;
+        if (argc < 2)
+        {
+            fprintf(stderr, "\n");
+            impl_->printUsage(false);
+            return 2;
+        }
+        module = impl_->findModuleByName(argv[1]);
+        argOffset = 1;
     }
-    // TODO: Accept unambiguous prefixes?
-    Impl::ModuleMap::const_iterator module = impl_->modules_.find(argv[1]);
     if (module == impl_->modules_.end())
     {
         fprintf(stderr, "\n");
@@ -209,7 +299,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         impl_->printUsage(true);
         return 2;
     }
-    return module->second->run(argc - 1, argv + 1);
+    return module->second->run(argc - argOffset, argv + argOffset);
 }
 
 } // namespace gmx
