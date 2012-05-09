@@ -1,6 +1,10 @@
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 if (BUILD_TESTING)
+    add_custom_target(tests)
+    if (GMX_BUILD_UNITTESTS)
+        add_subdirectory(external/gmock-1.6.0)
+    endif (GMX_BUILD_UNITTESTS)
     include(testutils/TestMacros.cmake)
     add_subdirectory(testutils)
 endif (BUILD_TESTING)

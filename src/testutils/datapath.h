@@ -40,9 +40,11 @@
  * \inlibraryapi
  * \ingroup module_testutils
  */
-/*! \libinternal \defgroup module_testutils Unit Testing Utility Modules
+/*! \libinternal \defgroup module_testutils Unit Testing Utilities
  * \brief
  * Common helper classes and functions for writing unit tests.
+ *
+ * To build unit tests using these utilities, libxml2 is required.
  *
  * \ingroup group_utilitymodules
  */

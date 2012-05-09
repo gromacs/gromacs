@@ -30,7 +30,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::test::TestReferenceData.
+ * Implements classes and functions from refdata.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_testutils
@@ -39,7 +39,9 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
+#include <new>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -50,6 +52,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/format.h"
+#include "testutils/datapath.h"
 #include "testutils/testexceptions.h"
 
 #include "refdata-impl.h"
@@ -73,17 +76,52 @@ namespace gmx
 namespace test
 {
 
-/*! \cond internal */
-namespace internal
-{
+static ReferenceDataMode g_referenceDataMode = erefdataCompare;
 
-void addGlobalReferenceDataEnvironment()
+ReferenceDataMode getReferenceDataMode()
 {
-    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
+    return g_referenceDataMode;
 }
 
-} // namespace internal
-//! \endcond
+void setReferenceDataMode(ReferenceDataMode mode)
+{
+    g_referenceDataMode = mode;
+}
+
+std::string getReferenceDataPath()
+{
+    return getTestFilePath("refdata");
+}
+
+void initReferenceData(int *argc, char **argv)
+{
+    int i, newi;
+
+    for (i = newi = 1; i < *argc; ++i, ++newi)
+    {
+        argv[newi] = argv[i];
+        if (!std::strcmp(argv[i], "--create-ref-data"))
+        {
+            setReferenceDataMode(erefdataCreateMissing);
+            --newi;
+        }
+        else if (!std::strcmp(argv[i], "--update-ref-data"))
+        {
+            setReferenceDataMode(erefdataUpdateAll);
+            --newi;
+        }
+    }
+    *argc = newi;
+    try
+    {
+        ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
+    }
+    catch (const std::bad_alloc &)
+    {
+        std::fprintf(stderr, "Out of memory\n");
+        std::exit(1);
+    }
+}
 
 /********************************************************************
  * TestReferenceData::Impl
