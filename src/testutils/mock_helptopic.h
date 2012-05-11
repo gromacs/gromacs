@@ -28,31 +28,54 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Functions for initializing online help for selections.
+ * Declares mock implementation of gmx::HelpTopicInterface.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_selection
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#ifndef GMX_SELECTION_SELHELP_H
-#define GMX_SELECTION_SELHELP_H
+#ifndef GMX_TESTUTILS_MOCK_HELPTOPIC_H
+#define GMX_TESTUTILS_MOCK_HELPTOPIC_H
 
-#include "../onlinehelp/helptopicinterface.h"
+#include <gmock/gmock.h>
+
+#include "gromacs/onlinehelp/helptopic.h"
 
 namespace gmx
 {
+namespace test
+{
 
-/*! \internal \brief
- * Creates a help tree for selections.
- *
- * \throws   std::bad_alloc if out of memory.
- * \returns  Root topic of the created selection tree.
- *
- * \ingroup module_selection
- */
-HelpTopicPointer createSelectionHelpTopic();
+class MockHelpTopic : public AbstractCompositeHelpTopic
+{
+    public:
+        static MockHelpTopic &addSubTopic(
+                gmx::AbstractCompositeHelpTopic *parent,
+                const char *name, const char *title, const char *text);
 
+        MockHelpTopic(const char *name, const char *title, const char *text);
+        virtual ~MockHelpTopic();
+
+        virtual const char *name() const;
+        virtual const char *title() const;
+
+        MOCK_CONST_METHOD1(writeHelp, void(File *));
+
+        MockHelpTopic &addSubTopic(const char *name, const char *title,
+                                   const char *text);
+        using AbstractCompositeHelpTopic::addSubTopic;
+
+    private:
+        virtual std::string helpText() const;
+
+        const char             *name_;
+        const char             *title_;
+        const char             *text_;
+};
+
+} // namespace test
 } // namespace gmx
 
 #endif

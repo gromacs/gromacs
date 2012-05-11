@@ -35,34 +35,32 @@
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
  * \ingroup module_selection
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <string>
+#include <vector>
+#include <utility>
 
-#include <macros.h>
-#include <string2.h>
-#include <wman.h>
-
-#include "gromacs/selection/selmethod.h"
+#include "gromacs/onlinehelp/helptopic.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/format.h"
 
 #include "selhelp.h"
+#include "selmethod.h"
 #include "symrec.h"
 
-/*! \internal \brief
- * Describes a selection help section.
- */
-typedef struct {
-    //! Topic keyword that produces this help.
-    const char  *topic;
-    //! Number of items in the \a text array.
-    int          nl;
-    //! Help text as a list of strings that will be concatenated.
-    const char **text;
-} t_selection_help_item;
+namespace
+{
 
-static const char *help_common[] = {
-    "SELECTION HELP[PAR]",
+struct CommonHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char CommonHelpText::name[] = "selections";
+const char CommonHelpText::title[] =
+    "Selection syntax and usage";
+const char *const CommonHelpText::text[] = {
     "This program supports selections in addition to traditional index files.",
     "Please read the subtopic pages (available through \"help topic\") for",
     "more information.",
@@ -74,18 +72,34 @@ static const char *help_common[] = {
     "\"help all\" prints the help for all subtopics.",
 };
 
-static const char *help_arithmetic[] = {
-    "ARITHMETIC EXPRESSIONS IN SELECTIONS[PAR]",
+struct ArithmeticHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char ArithmeticHelpText::name[] = "arithmetic";
+const char ArithmeticHelpText::title[] =
+    "Arithmetic expressions in selections";
+const char *const ArithmeticHelpText::text[] = {
     "Basic arithmetic evaluation is supported for numeric expressions.",
     "Supported operations are addition, subtraction, negation, multiplication,",
     "division, and exponentiation (using ^).",
     "Result of a division by zero or other illegal operations is undefined.",
 };
 
-static const char *help_cmdline[] = {
-    "SELECTION COMMAND-LINE ARGUMENTS[PAR]",
+struct CmdLineHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char CmdLineHelpText::name[] = "cmdline";
+const char CmdLineHelpText::title[] =
+    "Specifying selections from command line";
+const char *const CmdLineHelpText::text[] = {
     "There are two alternative command-line arguments for specifying",
     "selections:[BR]",
     "1. [TT]-select[tt] can be used to specify the complete selection as a",
@@ -115,9 +129,17 @@ static const char *help_cmdline[] = {
     "See \"help positions\" for more information on these options.",
 };
 
-static const char *help_eval[] = {
-    "SELECTION EVALUATION AND OPTIMIZATION[PAR]",
+struct EvaluationHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char EvaluationHelpText::name[] = "evaluation";
+const char EvaluationHelpText::title[] =
+    "Selection evaluation and optimization";
+const char *const EvaluationHelpText::text[] = {
     "Boolean evaluation proceeds from left to right and is short-circuiting",
     "i.e., as soon as it is known whether an atom will be selected, the",
     "remaining expressions are not evaluated at all.",
@@ -146,9 +168,17 @@ static const char *help_eval[] = {
     "a major problem.",
 };
 
-static const char *help_examples[] = {
-    "SELECTION EXAMPLES[PAR]",
+struct ExamplesHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char ExamplesHelpText::name[] = "examples";
+const char ExamplesHelpText::title[] =
+    "Selection examples";
+const char *const ExamplesHelpText::text[] = {
     "Below, examples of increasingly complex selections are given.[PAR]",
 
     "Selection of all water oxygens:[BR]",
@@ -180,17 +210,33 @@ static const char *help_examples[] = {
     "  name \"C[1-8]\" merge name \"C[2-9]\"",
 };
 
-static const char *help_keywords[] = {
-    "SELECTION KEYWORDS[PAR]",
+struct KeywordsHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char KeywordsHelpText::name[] = "keywords";
+const char KeywordsHelpText::title[] =
+    "Selection keywords";
+const char *const KeywordsHelpText::text[] = {
     "The following selection keywords are currently available.",
     "For keywords marked with a star, additional help is available through",
     "\"help KEYWORD\", where KEYWORD is the name of the keyword.",
 };
 
-static const char *help_limits[] = {
-    "SELECTION LIMITATIONS[PAR]",
+struct LimitationsHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char LimitationsHelpText::name[] = "limitations";
+const char LimitationsHelpText::title[] =
+    "Selection limitations";
+const char *const LimitationsHelpText::text[] = {
     "Some analysis programs may require a special structure for the input",
     "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
     "of groups of three or four atoms).",
@@ -206,9 +252,17 @@ static const char *help_limits[] = {
     "instead.",
 };
 
-static const char *help_positions[] = {
-    "SPECIFYING POSITIONS[PAR]",
+struct PositionsHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char PositionsHelpText::name[] = "positions";
+const char PositionsHelpText::title[] =
+    "Specifying positions in selections";
+const char *const PositionsHelpText::text[] = {
     "Possible ways of specifying positions in selections are:[PAR]",
 
     "1. A constant position can be defined as [TT][XX, YY, ZZ][tt], where",
@@ -251,9 +305,17 @@ static const char *help_positions[] = {
     "are either selected or not, based on the single distance calculated.",
 };
 
-static const char *help_syntax[] = {
-    "SELECTION SYNTAX[PAR]",
+struct SyntaxHelpText
+{
+    static const char name[];
+    static const char title[];
+    static const char *const text[];
+};
 
+const char SyntaxHelpText::name[] = "syntax";
+const char SyntaxHelpText::title[] =
+    "Selection syntax";
+const char *const SyntaxHelpText::text[] = {
     "A set of selections consists of one or more selections, separated by",
     "semicolons. Each selection defines a set of positions for the analysis.",
     "Each selection can also be preceded by a string that gives a name for",
@@ -312,178 +374,191 @@ static const char *help_syntax[] = {
     "in the beginning of a line.",
 };
 
-static const t_selection_help_item helpitems[] = {
-    {NULL,          asize(help_common),     help_common},
-    {"cmdline",     asize(help_cmdline),    help_cmdline},
-    {"syntax",      asize(help_syntax),     help_syntax},
-    {"positions",   asize(help_positions),  help_positions},
-    {"arithmetic",  asize(help_arithmetic), help_arithmetic},
-    {"keywords",    asize(help_keywords),   help_keywords},
-    {"evaluation",  asize(help_eval),       help_eval},
-    {"limitations", asize(help_limits),     help_limits},
-    {"examples",    asize(help_examples),   help_examples},
+} // namespace
+
+namespace gmx
+{
+
+namespace
+{
+
+/*! \internal \brief
+ * Help topic implementation for an individual selection method.
+ *
+ * \ingroup module_selection
+ */
+class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
+{
+    public:
+        //! Initialize help topic for the given selection method.
+        explicit KeywordDetailsHelpTopic(const gmx_ana_selmethod_t &method)
+            : method_(method)
+        {
+        }
+
+        virtual const char *name() const
+        {
+            return method_.name;
+        }
+        virtual const char *title() const
+        {
+            return NULL;
+        }
+
+    protected:
+        virtual std::string helpText() const
+        {
+            return concatenateStrings(method_.help.help, method_.help.nlhelp);
+        }
+
+    private:
+        const gmx_ana_selmethod_t &method_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(KeywordDetailsHelpTopic);
 };
 
-/*! \brief
- * Prints a brief list of keywords (selection methods) available.
+/*! \internal \brief
+ * Custom help topic for printing a list of selection keywords.
  *
- * \param[in] fp    Where to write the list.
- * \param[in] symtab  Symbol table to use to find available keywords.
- * \param[in] type  Only methods that return this type are printed.
- * \param[in] bMod  If false, \ref SMETH_MODIFIER methods are excluded, otherwise
- *     only them are printed.
+ * \ingroup module_selection
  */
-static void
-print_keyword_list(FILE *fp, gmx_sel_symtab_t *symtab, e_selvalue_t type,
-                   bool bMod)
+class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
 {
-    gmx_sel_symrec_t *symbol;
+    public:
+        KeywordsHelpTopic();
 
-    symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
+        virtual void writeHelp(File *file) const;
+
+    private:
+        /*! \brief
+         * Container for known selection methods.
+         *
+         * The first item in the pair is the name of the selection method, and
+         * the second points to the static data structure that describes the
+         * method.
+         * The name in the first item may differ from the name of the static
+         * data structure if an alias is defined for that method.
+         */
+        typedef std::vector<std::pair<std::string,
+                                      const gmx_ana_selmethod_t *> >
+                MethodList;
+
+        /*! \brief
+         * Prints a brief list of keywords (selection methods) available.
+         *
+         * \param[in] file  Where to write the list.
+         * \param[in] type  Only methods that return this type are printed.
+         * \param[in] bModifiers  If false, \ref SMETH_MODIFIER methods are
+         *      excluded, otherwise only them are printed.
+         */
+        void printKeywordList(File *file, e_selvalue_t type, bool bModifiers) const;
+
+        MethodList              methods_;
+};
+
+KeywordsHelpTopic::KeywordsHelpTopic()
+{
+    // TODO: This is not a very elegant way of getting the list of selection
+    // methods, but this needs to be rewritten in any case if/when #652 is
+    // implemented.
+    gmx_sel_symtab_t *symtab;
+    _gmx_sel_symtab_create(&symtab);
+    gmx_ana_selmethod_register_defaults(symtab);
+    boost::shared_ptr<gmx_sel_symtab_t> symtabGuard(symtab, &_gmx_sel_symtab_free);
+
+    gmx_sel_symrec_t *symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
     while (symbol)
     {
-        gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-        bool                 bShow;
-        bShow = (method->type == type)
-            && ((bMod && (method->flags & SMETH_MODIFIER))
-                || (!bMod && !(method->flags & SMETH_MODIFIER)));
-        if (bShow)
+        const char *symname = _gmx_sel_sym_name(symbol);
+        const gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
+        methods_.push_back(std::make_pair(std::string(symname), method));
+        if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
-            fprintf(fp, " %c ",
-                    (method->help.nlhelp > 0 && method->help.help) ? '*' : ' ');
-            if (method->help.syntax)
-            {
-                fprintf(fp, "%s\n", method->help.syntax);
-            }
-            else
-            {
-                const char *symname = _gmx_sel_sym_name(symbol);
-
-                fprintf(fp, "%s", symname);
-                if (strcmp(symname, method->name) != 0)
-                {
-                    fprintf(fp, " (synonym for %s)", method->name);
-                }
-                fprintf(fp, "\n");
-            }
+            addSubTopic(HelpTopicPointer(new KeywordDetailsHelpTopic(*method)));
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
     }
 }
 
-/*!
- * \param[in]  fp      Where to write the help.
- * \param[in]  symtab  Symbol table to use to find available keywords.
- * \param[in]  topic Topic to print help on, or NULL for general help.
- *
- * \p symtab is used to get information on which keywords are available in the
- * present context.
- */
-void
-_gmx_sel_print_help(FILE *fp, gmx_sel_symtab_t *symtab, const char *topic)
+void KeywordsHelpTopic::writeHelp(File *file) const
 {
-    const t_selection_help_item *item = NULL;
-    size_t i;
+    writeBasicHelpTopic(file, *this, helpText());
 
-    /* Find the item for the topic */
-    if (!topic)
+    /* Print the list of keywords */
+    file->writeLine();
+    file->writeLine("Keywords that select atoms by an integer property:");
+    file->writeLine("(use in expressions or like \"atomnr 1 to 5 7 9\")");
+    printKeywordList(file, INT_VALUE, false);
+
+    file->writeLine();
+    file->writeLine("Keywords that select atoms by a numeric property:");
+    file->writeLine("(use in expressions or like \"occupancy 0.5 to 1\")");
+    printKeywordList(file, REAL_VALUE, false);
+
+    file->writeLine();
+    file->writeLine("Keywords that select atoms by a string property:");
+    file->writeLine("(use like \"name PATTERN [PATTERN] ...\")");
+    printKeywordList(file, STR_VALUE, false);
+
+    file->writeLine();
+    file->writeLine("Additional keywords that directly select atoms:");
+    printKeywordList(file, GROUP_VALUE, false);
+
+    file->writeLine();
+    file->writeLine("Keywords that directly evaluate to positions:");
+    file->writeLine("(see also \"help positions\")");
+    printKeywordList(file, POS_VALUE, false);
+
+    file->writeLine();
+    file->writeLine("Additional keywords:");
+    printKeywordList(file, POS_VALUE, true);
+    printKeywordList(file, NO_VALUE, true);
+}
+
+void KeywordsHelpTopic::printKeywordList(File *file, e_selvalue_t type,
+                                         bool bModifiers) const
+{
+    MethodList::const_iterator iter;
+    for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {
-        item = &helpitems[0];
-    }
-    else if (strcmp(topic, "all") == 0)
-    {
-        for (i = 0; i < asize(helpitems); ++i)
+        const gmx_ana_selmethod_t &method = *iter->second;
+        bool bIsModifier = (method.flags & SMETH_MODIFIER) != 0;
+        if (method.type == type && bModifiers == bIsModifier)
         {
-            item = &helpitems[i];
-            _gmx_sel_print_help(fp, symtab, item->topic);
-            if (i != asize(helpitems) - 1)
+            bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
+            file->writeString(formatString(" %c ", bHasHelp ? '*' : ' '));
+            if (method.help.syntax != NULL)
             {
-                fprintf(fp, "\n\n");
+                file->writeLine(method.help.syntax);
+            }
+            else
+            {
+                const std::string &symname = iter->first;
+                file->writeString(symname);
+                if (symname != method.name)
+                {
+                    file->writeString(formatString(" (synonym for %s)", method.name));
+                }
+                file->writeLine();
             }
         }
-        return;
-    }
-    else
-    {
-        for (i = 1; i < asize(helpitems); ++i)
-        {
-            if (strncmp(helpitems[i].topic, topic, strlen(topic)) == 0)
-            {
-                item = &helpitems[i];
-                break;
-            }
-        }
-    }
-    /* If the topic is not found, check the available methods.
-     * If they don't provide any help either, tell the user and exit. */
-    if (!item)
-    {
-        gmx_sel_symrec_t *symbol;
-
-        symbol = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
-        while (symbol)
-        {
-            gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
-            if (method->help.nlhelp > 0 && method->help.help
-                && strncmp(method->name, topic, strlen(topic)) == 0)
-            {
-                print_tty_formatted(fp, method->help.nlhelp,
-                        method->help.help, 0, NULL, NULL, false);
-                return;
-            }
-            symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
-        }
-
-        fprintf(fp, "No help available for '%s'.\n", topic);
-        return;
-    }
-    /* Print the help */
-    print_tty_formatted(fp, item->nl, item->text, 0, NULL, NULL, false);
-    /* Special handling of certain pages */
-    if (!topic)
-    {
-        int len = 0;
-
-        /* Print the subtopics on the main page */
-        fprintf(fp, "\nAvailable subtopics:\n");
-        for (i = 1; i < asize(helpitems); ++i)
-        {
-            int len1 = strlen(helpitems[i].topic) + 2;
-
-            len += len1;
-            if (len > 79)
-            {
-                fprintf(fp, "\n");
-                len = len1;
-            }
-            fprintf(fp, "  %s", helpitems[i].topic);
-        }
-        fprintf(fp, "\n");
-    }
-    else if (strcmp(item->topic, "keywords") == 0)
-    {
-        /* Print the list of keywords */
-        fprintf(fp, "\nKeywords that select atoms by an integer property:\n");
-        fprintf(fp, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
-        print_keyword_list(fp, symtab, INT_VALUE, false);
-
-        fprintf(fp, "\nKeywords that select atoms by a numeric property:\n");
-        fprintf(fp, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
-        print_keyword_list(fp, symtab, REAL_VALUE, false);
-
-        fprintf(fp, "\nKeywords that select atoms by a string property:\n");
-        fprintf(fp, "(use like \"name PATTERN [PATTERN] ...\")\n");
-        print_keyword_list(fp, symtab, STR_VALUE, false);
-
-        fprintf(fp, "\nAdditional keywords that directly select atoms:\n");
-        print_keyword_list(fp, symtab, GROUP_VALUE, false);
-
-        fprintf(fp, "\nKeywords that directly evaluate to positions:\n");
-        fprintf(fp, "(see also \"help positions\")\n");
-        print_keyword_list(fp, symtab, POS_VALUE, false);
-
-        fprintf(fp, "\nAdditional keywords:\n");
-        print_keyword_list(fp, symtab, POS_VALUE, true);
-        print_keyword_list(fp, symtab, NO_VALUE, true);
     }
 }
+
+} // namespace
+
+HelpTopicPointer createSelectionHelpTopic()
+{
+    CompositeHelpTopicPointer root(new CompositeHelpTopic<CommonHelpText>);
+    root->registerSubTopic<SimpleHelpTopic<ArithmeticHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<CmdLineHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<EvaluationHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<ExamplesHelpText> >();
+    root->registerSubTopic<KeywordsHelpTopic>();
+    root->registerSubTopic<SimpleHelpTopic<LimitationsHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<PositionsHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<SyntaxHelpText> >();
+    return move(root);
+}
+
+} // namespace gmx
