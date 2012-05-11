@@ -485,6 +485,11 @@ FILE *ffopen(const char *file,const char *mode)
     gmx_bool bRead;
     int  bs;
 
+    if (file == NULL) 
+    {
+        return NULL;
+    }
+
     if (mode[0]=='w') {
         make_backup(file);
     }
