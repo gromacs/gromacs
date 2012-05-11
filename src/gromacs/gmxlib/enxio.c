@@ -444,7 +444,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     xdr_datatype dtreal=xdr_datatype_double; 
 #endif
     
-    if (nre_test >= 0)
+    if (bWrongPrecision)
     {
         *bWrongPrecision = FALSE;
     }
