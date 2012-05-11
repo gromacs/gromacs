@@ -216,15 +216,19 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <boost/shared_ptr.hpp>
+
 #include "futil.h"
 #include "smalloc.h"
 #include "string2.h"
 
+#include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/messagestringcollector.h"
 
 #include "keywords.h"
@@ -1353,13 +1357,30 @@ _gmx_sel_handle_empty_cmd(yyscan_t scanner)
  * \p topic is freed by this function.
  */
 void
-_gmx_sel_handle_help_cmd(char *topic, yyscan_t scanner)
+_gmx_sel_handle_help_cmd(t_selexpr_value *topic, yyscan_t scanner)
 {
+    boost::shared_ptr<t_selexpr_value> topicGuard(topic, &_gmx_selexpr_free_values);
+
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-    _gmx_sel_print_help(stderr, sc->symtab, topic);
-    if (topic)
+    if (sc->rootHelp.get() == NULL)
     {
-        sfree(topic);
+        sc->rootHelp = gmx::createSelectionHelpTopic();
     }
+    gmx::HelpManager manager(*sc->rootHelp);
+    try
+    {
+        t_selexpr_value *value = topic;
+        while (value != NULL)
+        {
+            manager.enterTopic(value->u.s);
+            value = value->next;
+        }
+    }
+    catch (const gmx::InvalidInputError &ex)
+    {
+        fprintf(stderr, "%s\n", ex.what());
+        return;
+    }
+    manager.writeCurrentTopic(&gmx::File::standardError());
 }

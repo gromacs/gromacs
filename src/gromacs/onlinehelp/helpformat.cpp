@@ -37,6 +37,8 @@
  */
 #include "helpformat.h"
 
+#include <cctype>
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -52,6 +54,13 @@ namespace gmx
 {
 
 /*! \cond libapi */
+std::string toUpperCase(const std::string &text)
+{
+    std::string result(text);
+    transform(result.begin(), result.end(), result.begin(), toupper);
+    return result;
+}
+
 std::string substituteMarkupForConsole(const std::string &text)
 {
     char *resultStr = check_tty(text.c_str());
