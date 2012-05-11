@@ -49,7 +49,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wextra -Wno-missing-field-initializers -Wno-sign-compare" GMXC_CFLAGS)
         # new in gcc 4.5
         GMX_TEST_CFLAG(CFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CFLAGS_RELEASE)
-        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops"
+        GMX_TEST_CFLAG(CFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                        GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_NOINLINE "-fno-inline" GMXC_CFLAGS_DEBUG)
     endif()
@@ -63,7 +63,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wextra -Wno-missing-field-initializers" GMXC_CXXFLAGS)
       # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
-        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -finline-functions -funroll-all-loops"
+        GMX_TEST_CXXFLAG(CXXFLAGS_COPT "-fomit-frame-pointer -funroll-all-loops"
                          GMXC_CXXFLAGS_RELEASE)
         GMX_TEST_CXXFLAG(CXXFLAGS_NOINLINE "-fno-inline" GMXC_CXXFLAGS_DEBUG)
     endif()

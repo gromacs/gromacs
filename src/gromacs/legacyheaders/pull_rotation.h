@@ -44,10 +44,6 @@
 #ifndef _pull_rotation_h
 #define _pull_rotation_h
 
-#ifdef HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include "vec.h"
 #include "typedefs.h"
 
