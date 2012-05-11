@@ -464,6 +464,7 @@ gmx_bool switch_pme(pme_switch_t pmes,
             }
             pmes->fastest = 0;
             pmes->start   = 0;
+            pmes->end     = pmes->cur;
             pmes->cur     = pmes->start;
         }
     }
