@@ -167,6 +167,7 @@ yyerror(yyscan_t, char const *s);
 %type <param> method_params method_param_list method_param
 %type <val>   value_list value_list_contents value_item value_item_range
 %type <val>   basic_value_list basic_value_list_contents basic_value_item
+%type <val>   help_topic
 
 %destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER CMP_OP string
 %destructor { if($$) free($$);              } PARAM
@@ -176,6 +177,7 @@ yyerror(yyscan_t, char const *s);
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_contents value_item value_item_range
 %destructor { _gmx_selexpr_free_values($$); } basic_value_list basic_value_list_contents basic_value_item
+%destructor { _gmx_selexpr_free_values($$); } help_topic
 
 %expect 50
 %debug
@@ -258,12 +260,16 @@ cmd_plain:   /* empty */
 
 /* Help requests */
 help_request:
-             HELP                   { _gmx_sel_handle_help_cmd(NULL, scanner); }
-           | help_topic
+             HELP help_topic
+             { _gmx_sel_handle_help_cmd(process_value_list($2, NULL), scanner); }
 ;
 
-help_topic:  HELP HELP_TOPIC        { _gmx_sel_handle_help_cmd($2, scanner); }
-           | help_topic HELP_TOPIC  { _gmx_sel_handle_help_cmd($2, scanner); }
+help_topic:  /* empty */            { $$ = NULL; }
+           | help_topic HELP_TOPIC
+             {
+                 $$ = _gmx_selexpr_create_value(STR_VALUE);
+                 $$->u.s = $2; $$->next = $1;
+             }
 ;
 
 /* Selection is made of an expression and zero or more modifiers */

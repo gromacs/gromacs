@@ -1,5 +1,6 @@
 include_directories(${GMOCK_INCLUDE_DIRS})
 set(COMMON_SOURCES datapath.cpp
+                   mock_helptopic.cpp
                    refdata.cpp
                    stringtest.cpp
                    testoptions.cpp)

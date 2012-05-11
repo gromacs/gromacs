@@ -30,31 +30,66 @@
  */
 /*! \internal \file
  * \brief
- * Functions for initializing online help for selections.
+ * Implements classes in mock_helptopic.h.
  *
  * \author Teemu Murtola <teemu.murtola@cbr.su.se>
- * \ingroup module_selection
+ * \ingroup module_testutils
  */
-#ifndef GMX_SELECTION_SELHELP_H
-#define GMX_SELECTION_SELHELP_H
+#include "mock_helptopic.h"
 
-#include "../onlinehelp/helptopicinterface.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 namespace gmx
 {
+namespace test
+{
 
-/*! \cond internal */
-/*! \internal \brief
- * Creates a help tree for selections.
- *
- * \throws   std::bad_alloc if out of memory.
- * \returns  Root topic of the created selection tree.
- *
- * \ingroup module_selection
+/********************************************************************
+ * MockHelpTopic
  */
-HelpTopicPointer createSelectionHelpTopic();
-//! \endcond
 
+// static
+MockHelpTopic &
+MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic *parent,
+                           const char *name, const char *title,
+                           const char *text)
+{
+    MockHelpTopic *topic = new MockHelpTopic(name, title, text);
+    parent->addSubTopic(gmx::HelpTopicPointer(topic));
+    return *topic;
+}
+
+MockHelpTopic::MockHelpTopic(const char *name, const char *title, const char *text)
+    : name_(name), title_(title), text_(text)
+{
+}
+
+MockHelpTopic::~MockHelpTopic()
+{
+}
+
+const char *MockHelpTopic::name() const
+{
+    return name_;
+}
+
+const char *MockHelpTopic::title() const
+{
+    return title_;
+}
+
+std::string MockHelpTopic::helpText() const
+{
+    return text_;
+}
+
+MockHelpTopic &
+MockHelpTopic::addSubTopic(const char *name, const char *title,
+                           const char *text)
+{
+    return addSubTopic(this, name, title, text);
+}
+
+} // namespace test
 } // namespace gmx
-
-#endif
