@@ -50,6 +50,17 @@ class File;
 
 /*! \cond libapi */
 /*! \libinternal \brief
+ * Make the string uppercase.
+ *
+ * \param[in] text  Input text.
+ * \returns   \p text with all characters transformed to uppercase.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * \inlibraryapi
+ */
+std::string toUpperCase(const std::string &text);
+
+/*! \libinternal \brief
  * Substitute markup used in help text for console output.
  *
  * \param[in] text  Text to substitute.

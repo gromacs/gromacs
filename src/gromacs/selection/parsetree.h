@@ -198,7 +198,7 @@ void
 _gmx_sel_handle_empty_cmd(void *scanner);
 /** Process help commands. */
 void
-_gmx_sel_handle_help_cmd(char *topic, void *scanner);
+_gmx_sel_handle_help_cmd(t_selexpr_value *topic, void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

@@ -46,6 +46,7 @@
 
 #include "../legacyheaders/typedefs.h"
 
+#include "../onlinehelp/helptopicinterface.h"
 #include "../options/options.h"
 #include "../utility/uniqueptr.h"
 #include "indexutil.h"
@@ -93,6 +94,8 @@ struct gmx_ana_selcollection_t
     struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
     struct gmx_sel_symtab_t     *symtab;
+    //! Root of help topic tree (NULL is no help yet requested).
+    gmx::HelpTopicPointer          rootHelp;
 };
 
 namespace gmx
