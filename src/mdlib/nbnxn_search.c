@@ -5785,8 +5785,8 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                                       rvec *x,
                                       nbnxn_atomdata_t *nbat)
 {
-    int g0=0,g1=0,g,cxy;
-    const nbnxn_grid_t *grid;
+    int g0=0,g1=0;
+    int nth,th;
 
     switch (aloc)
     {
@@ -5809,34 +5809,47 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
         nbat->natoms_local = nbs->grid[0].nc*nbs->grid[0].na_sc;
     }
 
-    for(g=g0; g<g1; g++)
+    nth = gmx_omp_nthreads_get(emntPairsearch);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+    for(th=0; th<nth; th++)
     {
-        grid = &nbs->grid[g];
+        int g;
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
-        for(cxy=0; cxy<grid->ncx*grid->ncy; cxy++)
+        for(g=g0; g<g1; g++)
         {
-            int na,ash,na_fill;
+            const nbnxn_grid_t *grid;
+            int cxy0,cxy1,cxy;
 
-            na  = grid->cxy_na[cxy];
-            ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
+            grid = &nbs->grid[g];
 
-            if (g == 0 && FillLocal)
+            cxy0 = (grid->ncx*grid->ncy* th   +nth-1)/nth;
+            cxy1 = (grid->ncx*grid->ncy*(th+1)+nth-1)/nth;
+
+            for(cxy=cxy0; cxy<cxy1; cxy++)
             {
-                na_fill =
-                    (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+                int na,ash,na_fill;
+
+                na  = grid->cxy_na[cxy];
+                ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
+
+                if (g == 0 && FillLocal)
+                {
+                    na_fill =
+                        (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+                }
+                else
+                {
+                    /* We fill only the real particle locations.
+                     * We assume the filling entries at the end have been
+                     * properly set before during ns.
+                     */
+                    na_fill = na;
+                }
+                copy_rvec_to_nbat_real(nbs->a+ash,na,na_fill,x,
+                                       nbat->XFormat,nbat->x,ash,
+                                       0,0,0);
             }
-            else
-            {
-                /* We fill only the real particle locations.
-                 * We assume the filling entries at the end have been
-                 * properly set before during ns.
-                 */
-                na_fill = na;
-            }
-            copy_rvec_to_nbat_real(nbs->a+ash,na,na_fill,x,
-                                   nbat->XFormat,nbat->x,ash,
-                                   0,0,0);
         }
     }
 }
