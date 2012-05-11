@@ -25,7 +25,7 @@ typedef struct {
     char           *molname,*lot,*ref;
     int            eSupport;
     int            qtotal,mult,natom,nalloc,nshell;
-    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq;
+    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,ener_exp;
     real           *qESP;
     gmx_mtop_t     mtop;
     gmx_localtop_t *ltop;
@@ -34,6 +34,7 @@ typedef struct {
     t_excls        *excls;
     t_inputrec     ir;
     gmx_shellfc_t  shell;
+    gmx_enerdata_t enerd;
     t_mdatoms      *md;
     t_atoms        *atoms;
     char           **smnames;
@@ -55,7 +56,7 @@ typedef struct {
     gmx_bool *bConst;
 } t_index_count;
 
-enum { ermsBOUNDS, ermsMU, ermsQUAD, ermsCHARGE, ermsESP, ermsTOT, ermsNR };
+enum { ermsBOUNDS, ermsMU, ermsQUAD, ermsCHARGE, ermsESP, ermsEPOT, ermsTOT, ermsNR };
 
 typedef struct {
     gmx_bool    bDone,bFinal,bGaussianBug,bFitZeta;

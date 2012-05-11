@@ -214,6 +214,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     mymol->qtotal  = gmx_molprop_get_charge(mp);
     mymol->mult    = gmx_molprop_get_multiplicity(mp);
     mymol->natom   = gmx_molprop_get_natom(mp);
+
     if (mymol->natom <= 0)
         imm = immAtomTypes;
     else
@@ -345,14 +346,19 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             }
             mymol->dip_weight = sqr(1.0/error);
         }
-        if (mp_get_prop_ref(mp,empDIPOLE,(bQM ? iqmQM : iqmBoth),
-                            lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
+        if (mp_get_prop_ref(mp,empDIPOLE,iqmQM,
+                        lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
         {
             for(m=0; (m<DIM); m++)
             {
                 mymol->mu_esp[m] = vec[m];
             }
         }
+        if (mp_get_prop(mp,empENERGY,(bQM ? iqmQM : iqmBoth),
+                        lot,NULL,(char *)"ESP",&value) != 0)
+          {
+            mymol->ener_exp = value;
+          }
     }
     if (immOK == imm)
     {
@@ -432,7 +438,6 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
     {
         if (bPol) {
             mymol->vs = init_vsite(&mymol->mtop,cr);
-            snew(mymol->f,mymol->nalloc);
             snew(mymol->buf,mymol->nalloc);
             snew(newexcls,mymol->nalloc);
             srenew(mymol->x,mymol->nalloc);
@@ -451,7 +456,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             mymol->shell = NULL;
             plist_to_mtop(plist,&mymol->mtop);
         }
-        
+        snew(mymol->f,mymol->nalloc);
         mymol->fr = mk_forcerec();
         init_forcerec(debug,oenv,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
                       mymol->box,FALSE,NULL,NULL,NULL,NULL,NULL, TRUE,-1);
@@ -808,6 +813,7 @@ t_moldip *init_moldip(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
   md->fc[ermsQUAD]   = fc_quad;
   md->fc[ermsCHARGE] = fc_charge;
   md->fc[ermsESP]    = fc_esp;
+  md->fc[ermsEPOT]   = 1;
   md->fixchi     = strdup(fixchi);
   md->hfac       = hfac;	  
   md->hfac0      = hfac;	  
@@ -979,6 +985,9 @@ void read_moldip(t_moldip *md,
         if (md->nmol_support == 0)
           gmx_fatal(FARGS,"No support for any molecule!");
       }
+    else {
+      md->nmol_support = md->nmol;
+    }
 }
 
 

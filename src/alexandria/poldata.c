@@ -602,32 +602,38 @@ char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd)
 /* 
  * gt_bond stuff 
  */
-void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
-                             double length,double sigma,double bondorder,char *params)
+int gmx_poldata_set_gt_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                   char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
-    int i,j;
+    int i;
   
     for(i=0; (i<pold->ngt_bond); i++) {
         gt_b = &(pold->gt_bond[i]);
         if ((((strcasecmp(gt_b->atom1,atom1) == 0) && 
               (strcasecmp(gt_b->atom2,atom2) == 0)) ||
              ((strcasecmp(gt_b->atom1,atom2) == 0) && 
-              (strcasecmp(gt_b->atom2,atom1) == 0))) &&
-            (gt_b->bondorder == bondorder))
+              (strcasecmp(gt_b->atom2,atom1) == 0))))
             break;
     }
     if (i < pold->ngt_bond) {
-        if (gt_b->length != length) {
-            fprintf(stderr,"Updating bond %s-%s, bondorder %g, length %g with different bondlength %g.\n",
-                    atom1,atom2,bondorder,gt_b->length,length);
-            gt_b->length = length;
-            gt_b->sigma = sigma;
-            gt_b->params = strdup(params);
-        }
+        if (NULL != gt_b->params)
+            sfree(gt_b->params);
+        gt_b->params = strdup(params);
+        return 1;
     }
-    else {
+    return 0;
+}
+
+void gmx_poldata_add_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
+                             double length,double sigma,double bondorder,char *params)
+{
+    gmx_poldata *pold = (gmx_poldata *) pd;
+    t_gt_bond *gt_b;
+    int j;
+
+    if (gmx_poldata_set_gt_bond_params(pd,atom1,atom2,params) == 0) {
         pold->ngt_bond++;
         srenew(pold->gt_bond,pold->ngt_bond);
         gt_b = &(pold->gt_bond[pold->ngt_bond-1]);
@@ -703,8 +709,8 @@ int gmx_poldata_search_gt_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 /*
  * gt_angle stuff
  */
-void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
-                              char *atom3,double angle,double sigma,char *params)
+int gmx_poldata_set_gt_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                    char *atom3,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
@@ -720,15 +726,22 @@ void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
             break;
     }
     if (i < pold->ngt_angle) {
-        if (gt_b->angle != angle) {
-            fprintf(stderr,"Updating angle %s-%s-%s with different angle %g (was %g).\n",
-                    atom1,atom2,atom3,angle,gt_b->angle);
-            gt_b->angle = angle;
-            gt_b->sigma = sigma;
-            gt_b->params = strdup(params);
-        }
+        if (NULL != gt_b->params)
+            sfree(gt_b->params);
+        gt_b->params = strdup(params);
+        return 1;
     }
-    else {
+    return 0;
+}
+				   
+void gmx_poldata_add_gt_angle(gmx_poldata_t pd,char *atom1,char *atom2,
+                              char *atom3,double angle,double sigma,char *params)
+{
+    gmx_poldata *pold = (gmx_poldata *) pd;
+    t_gt_angle *gt_b;
+    int i;
+  
+    if (0 == gmx_poldata_set_gt_angle_params(pd,atom1,atom2,atom3,params)) {
         pold->ngt_angle++;
         srenew(pold->gt_angle,pold->ngt_angle);
         gt_b = &(pold->gt_angle[pold->ngt_angle-1]);
@@ -806,9 +819,8 @@ char *gmx_poldata_get_angle_unit(gmx_poldata_t pd)
 /*
  * gt_dihedral stuff
  */
-void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
-                                 char *atom3,char *atom4,double dihedral,
-                                 double sigma,char *params)
+int gmx_poldata_set_gt_dihedral_params(gmx_poldata_t pd,char *atom1,char *atom2,
+                                       char *atom3,char *atom4,char *params)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_dihedral *gt_b;
@@ -827,15 +839,23 @@ void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
             break;
     }
     if (i < pold->ngt_dihedral) {
-        if (gt_b->dihedral != dihedral) {
-            fprintf(stderr,"Updating dihedral %s-%s-%s-%s with different dihedral %g (was %g).\n",
-                    atom1,atom2,atom3,atom4,dihedral,gt_b->dihedral);
-            gt_b->dihedral = dihedral;
-            gt_b->sigma = sigma;
-            gt_b->params = strdup(params);
-        }
+        if (NULL != gt_b->params)
+            sfree(gt_b->params);
+        gt_b->params = strdup(params);
+        return 1;
     }
-    else {
+    return 0;
+}
+
+void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
+                                 char *atom3,char *atom4,double dihedral,
+                                 double sigma,char *params)
+{
+    gmx_poldata *pold = (gmx_poldata *) pd;
+    t_gt_dihedral *gt_b;
+    int i;
+
+    if (0 == gmx_poldata_set_gt_dihedral_params(pd,atom1,atom2,atom3,atom4,params)) {  
         pold->ngt_dihedral++;
         srenew(pold->gt_dihedral,pold->ngt_dihedral);
         gt_b = &(pold->gt_dihedral[pold->ngt_dihedral-1]);
@@ -848,7 +868,7 @@ void gmx_poldata_add_gt_dihedral(gmx_poldata_t pd,char *atom1,char *atom2,
         gt_b->params = strdup(params);
     }
 }
-				   
+
 int gmx_poldata_get_gt_dihedral(gmx_poldata_t pd,char **atom1,char **atom2,
                                 char **atom3,char **atom4,double *dihedral,
                                 double *sigma,char **params)
