@@ -42,6 +42,8 @@ files.
       polluting the global namespace. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef min
+#undef max
 #undef WIN32_LEAN_AND_MEAN
 
 #if (!defined(inline)) && (!defined(__cplusplus))
