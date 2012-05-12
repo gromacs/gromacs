@@ -39,9 +39,7 @@
 
 #include <string>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/wman.h"
-
+#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/options/basicoptioninfo.h"
 #include "gromacs/options/filenameoptioninfo.h"
 #include "gromacs/options/options.h"
@@ -59,22 +57,6 @@ namespace gmx
 
 namespace
 {
-
-std::string substituteMarkup(const std::string &text)
-{
-    char *resultStr = check_tty(text.c_str());
-    try
-    {
-        std::string result(resultStr);
-        sfree(resultStr);
-        return result;
-    }
-    catch (...)
-    {
-        sfree(resultStr);
-        throw;
-    }
-}
 
 /********************************************************************
  * DescriptionWriter
@@ -108,10 +90,7 @@ void DescriptionWriter::visitSubSection(const Options &section)
             file_.writeLine(title);
             file_.writeLine();
         }
-        TextLineWrapper wrapper;
-        wrapper.setLineLength(78);
-        std::string description(substituteMarkup(section.description()));
-        file_.writeLine(wrapper.wrapToString(description));
+        writeHelpTextForConsole(&file_, section.description());
         file_.writeLine();
     }
     OptionsIterator(section).acceptSubSections(this);
@@ -218,7 +197,7 @@ void FileParameterWriter::visitOptionType(const FileNameOptionInfo &option)
     }
     bool bLongType = (type.length() > 12U);
     formatter_.addColumnLine(2, type);
-    formatter_.addColumnLine(3, substituteMarkup(option.description()));
+    formatter_.addColumnLine(3, substituteMarkupForConsole(option.description()));
 
     // Compute layout.
     if (name.length() > 6U || firstShortValue > 0)
@@ -325,7 +304,7 @@ void ParameterWriter::visitOption(const OptionInfo &option)
         values.append(option.formatValue(i));
     }
     formatter_.addColumnLine(2, values);
-    std::string description(substituteMarkup(option.description()));
+    std::string description(substituteMarkupForConsole(option.description()));
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
@@ -392,7 +371,7 @@ void SelectionParameterWriter::visitOption(const OptionInfo &option)
     formatter_.clear();
     std::string name(formatString("-%s", option.name().c_str()));
     formatter_.addColumnLine(0, name);
-    formatter_.addColumnLine(1, substituteMarkup(option.description()));
+    formatter_.addColumnLine(1, substituteMarkupForConsole(option.description()));
     file_.writeString(formatter_.formatRow());
 
     // TODO: What to do with selection variables?
