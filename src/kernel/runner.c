@@ -1068,7 +1068,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
 #ifdef __linux
     if (getenv("GMX_NO_THREAD_PINNING") == NULL)
     {
-        int core, local_nthreads;
+        int core, local_nthreads, offset;
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
@@ -1088,6 +1088,20 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
         else
         {
             core = 0;
+        }
+
+        char *env;
+        if ((env = getenv("GMX_THREAD_PINNING_OFFSET")) != NULL)
+        {
+            char *end;
+            offset = strtol(env, &end, 10);
+            if (!end || (*end != 0))
+            {
+                gmx_fatal(FARGS, "Invalid thread pinning offset: %s", env);
+            }
+
+            fprintf(stderr, "Applying thread pinning offset %d\n", offset);
+            core += offset;
         }
 
         /* set the per-thread affinity */
