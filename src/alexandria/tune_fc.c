@@ -591,6 +591,16 @@ static real quality_of_fit(real chi2,int N)
     return -1;
 }
 
+static void print_moldip_specs(FILE *fp,t_moldip *md)
+{
+    int i;
+    
+    fprintf(fp,"%-40s  %10s\n","Molecule","Energy");
+    for(i=0; (i<md->nmol); i++) {
+        fprintf(fp,"%-40s  %10g\n",md->mymol[i].molname,md->mymol[i].ener_exp);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -747,7 +757,8 @@ int main(int argc, char *argv[])
                 opt_elem,const_elem,
                 lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
                 TRUE,TRUE,TRUE,2,watoms,FALSE);
-                    
+    print_moldip_specs(fp,md);
+    
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
                     md,maxiter,tol,nrun,reinit,step,seed,
                     bRandom,stol,oenv);

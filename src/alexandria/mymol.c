@@ -355,7 +355,7 @@ int init_mymol(t_mymol *mymol,gmx_molprop_t mp,
             }
         }
         if (mp_get_prop(mp,empENERGY,(bQM ? iqmQM : iqmBoth),
-                        lot,NULL,(char *)"ESP",&value) != 0)
+                        lot,NULL,NULL,&value) != 0)
           {
             mymol->ener_exp = value;
           }
