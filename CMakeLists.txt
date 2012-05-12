@@ -80,6 +80,9 @@ IF( WIN32 AND NOT CYGWIN)
   option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
   mark_as_advanced(GMX_PREFER_STATIC_LIBS)
   SET(SHARED_LIBS_DEFAULT OFF)  #is currently not working on Windows
+  # This makes windows.h not declare min/max as macros that would break
+  # C++ code using std::min/std::max.
+  add_definitions(-DNOMINMAX)
 
   IF (GMX_PREFER_STATIC_LIBS)
     #Only setting Debug and Release flags. Others configurations current not used.
