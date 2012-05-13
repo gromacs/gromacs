@@ -244,6 +244,10 @@ void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
     rvec xcm;
     real tm,mm;
     
+    if (ndim>DIM)
+    {
+    	gmx_incons("More than 3 dimensions not supported.");
+    }
     tm = 0.0;
     clear_rvec(xcm);
     if (ind_cm != NULL)

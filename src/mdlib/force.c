@@ -469,7 +469,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                      * the force call (without PME).
                      */
                 }
-                if (fr->n_tpi > 0)
+                if (fr->n_tpi)
                 {
                     /* Determine the PME grid energy of the test molecule
                      * with the PME grid potential of the other charges.
