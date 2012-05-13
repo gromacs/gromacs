@@ -58,6 +58,7 @@
 #include <pwd.h>
 #endif
 #include <time.h>
+#include <assert.h>
 
 #include "typedefs.h"
 #include "smalloc.h"
@@ -72,6 +73,7 @@ int continuing(char *s)
  */
 {
   int sl;
+  assert(s);
 
   rtrim(s);
   sl = strlen(s);
