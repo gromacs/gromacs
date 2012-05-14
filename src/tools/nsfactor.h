@@ -45,6 +45,16 @@
 extern "C" {
 #endif
 
+#ifndef PATH_MAX
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64)
+#ifdef MAX_PATH
+#define PATH_MAX MAX_PATH
+#else
+#define PATH_MAX 260
+#endif
+#endif
+#endif
+
 typedef struct gmx_nentron_atomic_structurefactors_t {
     int     nratoms;
     int     *p; /* proton number */
@@ -72,11 +82,18 @@ typedef struct gmx_static_structurefator_t {
     double  qstep; /* q increment */
 } gmx_static_structurefator_t;
 
+typedef struct gmx_fname_t {
+    char    *base;
+    char    *ext;
+} gmx_fname_t;
+
 void check_binwidth(real binwidth);
 
 void check_mcover(real mcover);
 
 void normalize_probability(int n, double *a);
+
+gmx_fname_t *splitfnm(const char *fnm);
 
 gmx_nentron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
 
@@ -89,6 +106,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
                             int isize,
                             double binwidth,
                             gmx_bool bMC,
+                            gmx_bool bNORM,
                             real mcover,
                             unsigned int seed);
 
